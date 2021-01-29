@@ -89,20 +89,22 @@ $(document).ready(function(){
 	var api_url = "{% url 'db:suggestions' %}";
 	$.getJSON(api_url, { 'term': term },
  
-	    function (data) {   
+	    function (data) {
+		//console.log(data);
+		console.log(data['time_request']);
+		entries = data['entries'];
 		var availableTags = [];
-		if (data == '4') {
+		if (entries == '4') {
 	            $('#msg-no-record').show();
 	            $('#msg-no-entry').hide();
- 	        } else if (Object.keys(data).length == 0) {
+ 	        } else if (Object.keys(entries).length == 0) {
 	            $('#msg-no-record').hide();
 	            $('#msg-no-entry').show();
 		} else {
-		    console.log("data:",data);
-		    console.log(Object.keys(data));
+		    //console.log(Object.keys(entries));
 	            $('#msg-no-record').hide();
 	            $('#msg-no-entry').hide();
-	            availableTags = data;
+	            availableTags = entries;
 	        }
 		response(availableTags);
 	     }

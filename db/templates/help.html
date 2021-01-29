@@ -28,7 +28,8 @@
 The searchbar can be used to search for:
 
 <ul>
-<li>
+
+<li id="how-to-search-real-numbers">
 <div class="li-header">Real numbers:</div>
 Enter the number in one of three formats:
 <ul>
@@ -40,7 +41,7 @@ Entering "3.14" will search for numbers in the interval (3.13, 3.15).
 <em>Scientific notation</em> (no period necessary), e.g. "14e2" to search numbers between 1300 and 1500.
 </li>
 <li>
-NumberDB's <em>p-notation</em>: Enter a term of the form "ApB", where A and B are integers. It corresponds to the number 10^A * 0.B, e.g. "1p314" for pi.
+NumberDB's <em>p-notation</em>: Enter a term of the form "ApB", where A and B are integers. It corresponds to the number 10<sup>A</sup> &middot; 0.B, e.g. "1p314" for pi.
 </li>
 </ul>
 </li>
@@ -48,6 +49,13 @@ NumberDB's <em>p-notation</em>: Enter a term of the form "ApB", where A and B ar
 <li>
 <div class="li-header">Fractional parts of real numbers:</div>
 Enter the first few digits after the period, e.g. "1415" for pi.
+</li>
+
+<li>
+<div class="li-header">Integers:</div>
+Enter the exact integer without period, e.g. "-1".
+This works for integers with up to 127 binary digits (roughly 38 decimal digits).
+For longer numbers, try to <a href="#how-to-search-real-numbers">search them as real numbers</a>.
 </li>
 
 <li>
@@ -127,9 +135,9 @@ That database can be accessed through numberdb.org's searchbar.
 
 <ul>
 <li>
-<div class="li-header">Why do I need to specify the period in the number search?</div>
+<div class="li-header">Why do I need to specify the period in the real number search?</div>
 Because the period is even more significant than the highest digit.
-In principle, one could implement a search of numbers by their first few digits without the knowledge of the period; however this would tie the search to base 10, which does not seem natural enough in general.
+In principle, one could implement a search of real numbers by their first few digits without the knowledge of the period; however this would ask for number up to powers of 10, which does not seem natural enough in general.
 We implemented a search by the fractional part, as it does not depend on the base.
 </li>
 </ul>

@@ -235,6 +235,7 @@ class Number(Searchable):
 
 	number_blob = models.BinaryField(
 		max_length = 2 * HALF_BLOB_LENGTH,
+		db_index = True, #Perhaps rather implement search via SearchTerm?
 	)
 	my_collection = models.ForeignKey(
 		Collection, 
@@ -375,7 +376,7 @@ class Number(Searchable):
 class SearchTerm(models.Model):
 	
 	MAX_LENGTH_TERM_FOR_TEXT = 8
-	#MAX_LENGTH_TERM_FOR_INTS = 4
+	#MAX_LENGTH_TERM_FOR_INTS = 8
 	#MAX_LENGTH_TERM_FOR_REAL_EXPONENT = 4
 	MAX_LENGTH_TERM_FOR_REAL_FRAC = 8
 	NUM_BYTES_REAL_EXPONENT = 4

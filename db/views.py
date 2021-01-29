@@ -8,6 +8,7 @@ from django.contrib import messages
 
 from numpy import random as random
 import re
+from time import time
 #from sage import *
 #from sage.all import *
 #from sage.arith.all import *
@@ -373,10 +374,19 @@ def parse_real_interval(s):
 	r = RIF(s)
 
 def suggestions(request):
+	time0 = time()
+	
+	def wrap_response(entries):
+		data = {
+			'entries': entries,
+			'time_request': "{:.3f}s".format(time()-time0),
+		}
+		return JsonResponse(data,safe=True)
+	
 	term_entered = request.GET['term']
 	term = term_entered.strip(" \n")
 	if term == '':
-		return JsonResponse({},safe=True)
+		return wrap_response({})
 
 	def text_term_to_bytes(term):
 		for i in range(SearchTerm.MAX_LENGTH_TERM_FOR_TEXT,0,-1):
@@ -386,15 +396,46 @@ def suggestions(request):
 				return term_bytes
 		return SearchTerm.TERM_TEXT
 
+	entries = {}
+	i = 1
+	exact_number = None
 	
+	cZZ = re.compile(r'([+1]?)(\d+)')
 	cZZplus = re.compile(r'\d+')
 	cRIF = re.compile(r'([+-]?)(\d*)((?:\.\d*)?)((?:[eE]-?\d+)?)')
 	cRIF_P = re.compile(r'([+-]?)(\d*)[pP]([+-]?)([1-9]\d*)')
 	
 	#Determine type of search term:
 	
-	matchZZ = cZZplus.match(term)
+	matchZZ = cZZ.match(term)
 	if matchZZ != None and matchZZ.end() == len(term):
+		try:
+			number = Number(sage_number=ZZ(term))
+		except OverflowError:
+			number = None
+		if number != None:
+			for number in Number.objects.filter(
+							number_blob = number.number_blob,
+							number_type = Number.NUMBER_TYPE_ZZ,
+						):
+				exact_number = number
+				collection = number.my_collection
+				entry_i = {}
+				entry_i['value'] = str(i)
+				entry_i['label'] = ''
+				entry_i['type'] = 'number'
+				entry_i['title'] = '%s' % (collection.title,)
+				param = number.param.decode()
+				if len(number.param) > 0: 
+					entry_i['subtitle'] = '%s (#%s)' % (number.to_RIF(), param)
+				else:
+					entry_i['subtitle'] = '%s' % (number.to_RIF(),)
+				entry_i['url'] = '/' + "%s#%s" % (collection.url, param)
+				entries[i] = entry_i
+				i += 1
+	
+	matchZZplus = cZZplus.match(term)
+	if matchZZplus != None and matchZZplus.end() == len(term):
 		#Given searchterm is a positive integer:
 		term = text_term_to_bytes(term)
 
@@ -445,10 +486,8 @@ def suggestions(request):
 	try:
 		searchterm = SearchTerm.objects.get(term=term)
 	except SearchTerm.DoesNotExist:
-		return JsonResponse({},safe=True)
+		return wrap_response({})
 	
-	data = {}
-	i = 1
 	
 
 	#for searchable in searchterm.searchables.all():
@@ -456,54 +495,57 @@ def suggestions(request):
 		searchable = value.searchable
 	
 		of_type = searchable.of_type
-		data_i = {}
+		entry_i = {}
 		if of_type == Searchable.TYPE_TAG:
 			tag = searchable.tag
-			data_i['value'] = str(i)
-			data_i['label'] = ''
-			data_i['type'] = 'tag'
-			data_i['title'] = 'Tag: %s' % (tag.name,)
-			data_i['subtitle'] = '%s collection%s, %s number%s' % (
+			entry_i['value'] = str(i)
+			entry_i['label'] = ''
+			entry_i['type'] = 'tag'
+			entry_i['title'] = 'Tag: %s' % (tag.name,)
+			entry_i['subtitle'] = '%s collection%s, %s number%s' % (
 				tag.collection_count,
 				's' if tag.collection_count != 1 else '',
 				tag.number_count,
 				's' if tag.number_count != 1 else '',
 			)
-			data_i['url'] = reverse('db:tag', kwargs={'tag_name': tag.url()})
-			#data_i['subtitle'] = 'dummy subtitle'
+			entry_i['url'] = reverse('db:tag', kwargs={'tag_name': tag.url()})
+			#entry_i['subtitle'] = 'dummy subtitle'
 
 		elif of_type == Searchable.TYPE_COLLECTION:
 			collection = searchable.collection
-			data_i['value'] = str(i)
-			data_i['label'] = ''
-			data_i['type'] = 'collection'
-			data_i['title'] = '%s' % (collection.title,)
+			entry_i['value'] = str(i)
+			entry_i['label'] = ''
+			entry_i['type'] = 'collection'
+			entry_i['title'] = '%s' % (collection.title,)
 			if collection.number_count != 1:
-				data_i['subtitle'] = '%s numbers' % collection.number_count
+				entry_i['subtitle'] = '%s numbers' % collection.number_count
 			else:
 				n = collection.my_numbers.first()
 				#r = RIF(n.lower,n.upper)
 				#r = n.lower
-				data_i['subtitle'] = '%s' % (n,)
-			data_i['url'] = '/' + collection.url
+				entry_i['subtitle'] = '%s' % (n,)
+			entry_i['url'] = '/' + collection.url
 
 		elif of_type == Searchable.TYPE_NUMBER:
 			number = searchable.number
+			if exact_number != None and number.pk == exact_number.pk:
+				#The exact number is already listed in entries.
+				continue
 			collection = number.my_collection
-			data_i['value'] = str(i)
-			data_i['label'] = ''
-			data_i['type'] = 'number'
-			data_i['title'] = '%s' % (collection.title,)
+			entry_i['value'] = str(i)
+			entry_i['label'] = ''
+			entry_i['type'] = 'number'
+			entry_i['title'] = '%s' % (collection.title,)
 			param = number.param.decode()
 			if len(number.param) > 0: 
-				data_i['subtitle'] = '%s (#%s)' % (number.to_RIF(), param)
+				entry_i['subtitle'] = '%s (#%s)' % (number.to_RIF(), param)
 			else:
-				data_i['subtitle'] = '%s' % (number.to_RIF(),)
-			data_i['url'] = '/' + "%s#%s" % (collection.url, param)
+				entry_i['subtitle'] = '%s' % (number.to_RIF(),)
+			entry_i['url'] = '/' + "%s#%s" % (collection.url, param)
 		
-		#if 'url' in data_i:
-		#	data_i['url'] += '?searchterm=%s' % (term_entered,)
-		data[i] = data_i
+		#if 'url' in entry_i:
+		#	entry_i['url'] += '?searchterm=%s' % (term_entered,)
+		entries[i] = entry_i
 		i += 1
 	
 	'''
@@ -515,4 +557,4 @@ def suggestions(request):
 	}
 	'''
 	
-	return JsonResponse(data,safe=True)
+	return wrap_response(entries)
