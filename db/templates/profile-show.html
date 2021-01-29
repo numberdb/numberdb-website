@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load account %}
+{% load static %}
+
+
+
+
+{% block content %}
+
+<h2>{{ user_shown.get_full_name }}</h2>
+<ul>
+  <li>Username: {{ user_shown.username }}</li>
+  <li>Bio: {{ user_shown.userprofile.bio }}
+  {% if is_self %}
+    (<a href="{% url 'db:profile-edit' %}">edit</a>)
+  {% endif %}
+  </li>
+</ul>
+
+<br>
+
+
+
+{% load socialaccount %}
+
+<a href="{% provider_login_url 'github' process='connect' %}">Connect a GitHub account</a>
+
+<br>
+
+
+{% if user.is_authenticated %}
+{% get_social_accounts user as accounts %}
+
+{% if accounts %}
+{% if accounts.github %}
+Linked GitHub accounts:
+{{accounts.github}}
+{% endif %}
+{% endif %}
+
+
+<!--
+<br>
+
+Social account providers:
+
+{% get_providers as socialaccount_providers %}
+{{ socialaccount_providers }}
+-->
+
+{% endif %}
+
+
+
+{% endblock %}

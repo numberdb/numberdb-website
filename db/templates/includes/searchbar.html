@@ -1,0 +1,155 @@
+
+
+<style>
+.highlight .ui-menu-item {
+  background: #fff;
+}
+.highlight .ui-state-active {
+  background: #eee;
+}
+#searchbox {
+/*  
+  box-shadow: 0 0 10px #ccc;
+*/
+  border-radius: 5px;
+  border: 1px solid #bbb;
+  padding: 10px;
+  color: #000;
+  background-color: #fff;
+  outline: 0;
+}
+a.ui-menu-item-wrapper {
+  display: block;
+  text-decoration: none;
+}
+#searchbox:focus {
+  box-shadow: 0 0 10px #ddd;
+}
+#searchbox.ui-autocomplete-loading {
+/*  text-decoration: underline;     
+  text-decoration-color: #aaa;
+*/  
+}
+</style>
+
+
+<div id="searchbox-container">
+  <!--<label for="searchbox">Search a number:</label>
+  -->
+  <input id="searchbox" placeholder="Try 3.14 or L-function" 
+    {% if searchterm %} value="{{ searchterm }}" {% endif %}>
+  <span style="display:none" id="msg-no-record">No Record Found</span><br>
+  <span style="display:none" id="msg-no-entry">No match in database</span><br>
+</div>
+
+
+ 
+<script>
+$(document).ready(function(){
+    //all the jquery code must be placed here
+    
+    $.widget( "numberdb.searchbox", $.ui.autocomplete, {
+	_renderItem: function( ul, item ) {
+	    if (item['type'] == 'tag') { 
+		li = $( "<li></li>" )
+		    .append(`<a href="${item.url}">${item.title}<br>&nbsp;&nbsp;${item.subtitle}</a>`)
+		    //.append(`<a href="${item.url}">${item.title}</a>`)
+		    .appendTo( ul );
+	    } else if (item['type'] == 'number') { 
+		li = $( "<li></li>" )
+		    .append(`<div><a href="${item.url}">${item.title}</a><br>&nbsp;&nbsp;${item.subtitle}</div>`)
+		    .appendTo( ul );
+	    } else if (item['type'] == 'collection') { 
+		li = $( "<li></li>" )
+		    .append(`<a href="${item.url}">${item.title}<br>&nbsp;&nbsp;${item.subtitle}</a>`)
+		    .appendTo( ul );
+	    }
+	    return li;
+	}
+    });
+    
+    var selectItem = function (event, item) {
+	//$("#searchbox").val(ui.item.value);
+	//return false;
+	console.log("select():")
+	console.log(event)
+	console.log(item)
+	event.preventDefault();
+	window.location.href = item.item.url
+    }
+    
+    var getData = function (request, response) {
+ 
+	var term = $('#searchbox').val().trim();
+	if (term == '') {
+            $('#msg-no-record').hide();
+            $('#msg-no-entry').hide();
+	    return;
+	}
+	var api_url = "{% url 'db:suggestions' %}";
+	$.getJSON(api_url, { 'term': term },
+ 
+	    function (data) {   
+		var availableTags = [];
+		if (data == '4') {
+	            $('#msg-no-record').show();
+	            $('#msg-no-entry').hide();
+ 	        } else if (Object.keys(data).length == 0) {
+	            $('#msg-no-record').hide();
+	            $('#msg-no-entry').show();
+		} else {
+		    console.log("data:",data);
+		    console.log(Object.keys(data));
+	            $('#msg-no-record').hide();
+	            $('#msg-no-entry').hide();
+	            availableTags = data;
+	        }
+		response(availableTags);
+	     }
+	);
+    };
+    
+    
+    $( "#searchbox" ).searchbox({
+    	//source: [ "c++", "java", "php", "coldfusion", "javascript", "asp", "ruby" ]
+	source: getData,
+        select: selectItem,
+        minLength: 0,
+        change: function() {
+	    var term = $('#searchbox').val().trim();
+	    if (term == '') {
+		$('#msg-no-record').hide();
+		$('#msg-no-entry').hide();
+	    }
+	},
+	focus: function( event, ui ) {
+	    //console.log("focussed:", ui);
+	    return false; //Avoids search text to be altered?
+	},
+/*	close: function( event, ui ) {
+	    console.log("closing",ui);
+	    //event.preventDefault();
+	    $('.ui-autocomplete').show()
+	    return false; //Avoids search text to be altered?
+	},
+*/	classes: {
+	    "ui-autocomplete": "highlight",
+	    //"ui-menu-item": "highlight"
+	}
+    });
+
+    $( "#searchbox" ).focus(function () {
+	//console.log("focus");
+	$(this).searchbox("search");
+	//$('.ui-autocomplete').show(); 
+	//show() may not be good enough:
+	//
+	return true;
+    });
+    
+});
+</script>
+
+
+
+

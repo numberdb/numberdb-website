@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% load account %}
+{% load static %}
+
+
+
+
+{% block content %}
+
+
+<h1>{{ question.question_text }}</h1>
+
+{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+
+<form action="{% url 'db:profile-update' user.pk %}" method="post">
+{% csrf_token %}
+    <label for="bio"></label>
+    <textarea name="bio">{{ user.profile.bio }}</textarea>
+<input type="submit" value="Save">
+</form>
+
+
+{% endblock %}

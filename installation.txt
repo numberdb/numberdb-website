@@ -1,0 +1,64 @@
+Django quick install guide:
+ https://docs.djangoproject.com/en/3.1/intro/install/
+
+Als Datenbank benutzen wir zur Zeit zur Einfachheit sqlite,
+es muss also kein DB-server laufen.
+Das wird fuer die echte Webseite natuerlich geaendert (Postgres oder MySQL, ...) 
+
+Braucht Python 3.
+
+Die folgenden zusaetzlichen Pakete werden gebraucht:
+
+sage -pip install virtualenv
+sage -python -m venv venv
+source venv/bin/activate 
+
+sage -pip install django
+sage -pip install django-allauth
+sage -pip install django-db
+sage -pip install requests
+sage -pip install requests-oauthlib
+sage -pip install psycopg2-binary
+sage -pip install python-decouple
+sage -pip install dj-database-url
+sage -pip install "django-anymail[mailgun]"
+#sage -pip install django-crispy-forms
+#sage -pip install django-bootstrap4
+sage -pip install django-widget-tweaks
+
+Benutze: sage -pip freeze > requirements.txt
+
+---------------------------
+
+Server starten:
+python manage.py runserver
+Die Webseite laeuft dann auf 
+ http://127.0.0.1:8000/
+
+Neue app installieren:
+ python manage.py startapp name_der_app
+
+Falls sich Modelle aendern:
+ python manage.py makemigrations
+was die Migrations-python-Dateien erstellt, die angepasst werden koennen, 
+und danach zur Durchfuehrung der Migration in der DB:
+ python manage.py migrate
+Um zu sehen, wie der SQL code der Migrationen aussehen wuerden:
+ python manage.py sqlmigrate polls 0001  )
+
+
+Shell starten (e.g. um DB zu per Python zu durchforsten)
+ python3 manage.py shell
+
+Super user (admin) erstellen:
+ python manage.py createsuperuser
+Admin-Webseite: 
+ http://127.0.0.1:8000/admin
+
+
+
+########
+
+Postgres:
+Ver Cluster Port Status Owner    Data directory              Log file
+12  main    5432 down   postgres /var/lib/postgresql/12/main /var/log/postgresql/postgresql-12-main.log

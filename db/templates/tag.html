@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'db:tags' %}">Tags</a></li>
+  <li class="breadcrumb-item active">{{ tag.name }}</li>
+{% endblock %}
+
+{% block content %}
+
+    <h1>Tag: {{ tag.name }}</h1>
+
+    Sort by:
+    <a href="?sort_by=id">id</a> &middot; 
+    <a href="?sort_by=title">title</a> &middot;
+    <a href="?sort_by=number_count">numbers</a>
+    <br>
+    <br>
+
+    {% for collection in collections %}
+      {{ collection.cid }}: 
+		<a href="{% url 'db:collection' collection.cid %}">{{ collection.title }}</a>
+		
+		{% if collection.number_count == 1 %} 
+		    (1 number)
+		{% else %}
+		    ({{ collection.number_count }} numbers)
+		{% endif %}
+
+       <br>
+    {% endfor %}
+
+{% endblock %}

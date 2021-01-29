@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item active">Home</li>
+{% endblock %}
+
+
+{% block top-searchbar %}
+{% endblock %}
+
+{% block content %}
+
+
+<style>
+#title {
+  text-align: center;
+  font-weight: 200;
+  font-size: 3rem;
+}
+#subtitle {
+  font-weight: 200;
+  text-align: center;
+  font-size: 1rem;
+}
+</style>
+
+<br>
+    <div id="title">
+	NumberDB
+    </div>
+
+<!--
+    <div id="subtitle">
+	A collaborative database of numbers
+    </div>
+-->
+
+<br>    
+{% include 'includes/searchbar.html' %}
+
+<!--
+    <a href="{% url 'db:collections' %}">
+	All collections
+    </a>
+    <br>
+
+    <a href="{% url 'db:tags' %}">
+	All tags
+    </a>
+    <br>
+-->
+
+    
+{% endblock %}

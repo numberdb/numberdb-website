@@ -1,0 +1,318 @@
+{% load static %}{% load account %}<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block head-title %}The Number Database{% endblock %}</title>
+    <!--<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">-->
+
+<link rel="apple-touch-icon" sizes="180x180" href="{% static '/apple-touch-icon.png' %}">
+<link rel="icon" type="image/png" sizes="32x32" href="{% static '/favicon-32x32.png' %}">
+<link rel="icon" type="image/png" sizes="16x16" href="{% static '/favicon-16x16.png' %}">
+<link rel="manifest" href="{% static '/site.webmanifest'%}">
+
+    <script src="{% static 'load-mathjax.js' %}" async></script>
+
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css">
+  <script src="//code.jquery.com/jquery-1.12.4.js"></script>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>  
+
+<!--https://fonts.google.com/specimen/Source+Sans+Pro?category=Sans+Serif&preview.text=NumberDB&preview.text_type=custom&slant=1&thickness=4&sidebar.open=true&selection.family=Source+Sans+Pro:wght@200;400
+-->
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@200;400&display=swap" rel="stylesheet"> 
+
+<!--    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+-->
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW" crossorigin="anonymous"></script>
+
+<script src="{% static 'scrollIntoView.min.js' %}"></script>
+
+    {% block extra_head %}
+    {% endblock %}
+
+<style>
+/* Respect user's setting for font-size until it gets too cramped: */
+@media only screen and (max-width: 25rem) {
+  :root {
+    font-size: calc(100vw / 25);
+  }
+}
+
+/* Define a variables that are 0rem for small screens,
+ * 1rem for bigger ones, and interpolate linearly in between: */
+:root {
+  --srem: 0rem;
+  --mrem: 0rem;
+  --lrem: 0rem;
+}
+@media only screen and (min-width: 25rem) {
+  :root {
+    --srem: calc((100vw - 25rem) / (37.5 - 25));
+    --mrem: calc((100vw - 25rem) / (48 - 25));
+    --lrem: calc((100vw - 25rem) / (64 - 25));
+  }
+}
+@media only screen and (min-width: 37.5rem) {
+  :root {
+    --srem: 1rem;
+  }
+}
+@media only screen and (min-width: 48rem) {
+  :root {
+    --mrem: 1rem;
+  }
+}
+@media only screen and (min-width: 64rem) {
+  :root {
+    --lrem: 1rem;
+  }
+}
+
+/**
+ * Assuming default 1rem = 16px, we get natural break points:
+ * 320px = 20rem
+ * 400px = 25rem
+ * 600px = 37.5rem
+ * 748px = 48rem
+ * 1024px = 64 rem
+ */
+
+html * {
+  font-family: 'Source Sans Pro', sans-serif;
+}
+
+h1 {
+  font-weight: 400;
+}
+h2 {
+  margin: 0.5rem 0;
+}
+h3 {
+  /*font-weight: bold;*/   
+  font-style: italic;
+  font-size: 1.1rem;
+  margin-bottom: 0.2rem; 
+}
+
+
+body {
+  background: #eee;#fff; #e5eecc; #fff;
+  padding: 0;
+  margin: 0;
+}
+
+div.horizontal-container {
+  margin: auto;
+  max-width: 48rem;
+  font-size: 1rem; /* base for most em's */
+  background: #fff;
+  padding: calc(1rem + 1 * var(--srem));
+  padding-bottom: 4rem;
+  padding-top: 0;
+  /*border-top: 0.3rem solid #aeb;*/
+  /*border: 1px solid #ddd;*/
+  /*border-left: 0.5em solid #5a8;*/
+}
+
+
+#searchbox {
+/*  width: calc(60vw + 7 * (1rem - var(--srem)));
+*/
+  width: calc(20rem + 10 * var(--lrem));
+}
+#searchbox-container {
+  text-align: center;   
+}
+
+form#logoutForm {
+  display: inline;   
+}
+
+.MathJax {
+  font-size: 0.8rem;   
+}
+
+
+a.navbar-field {
+  vertical-align: sup;
+  display: inline-block;
+  padding: 1rem;
+  margin: 0;
+  /*color: #555;
+  */
+  color: #555;
+  text-decoration: none;
+  font-weight: 400;
+}
+a.logo {
+  padding-top: 0.05rem;
+  padding-bottom: 0.05rem;   
+  font-weight: 200;
+  font-size: 1.5rem;
+}
+a.navbar-field:hover {
+  /*background: #eee;
+  */
+  text-decoration: underline;   
+}
+
+
+a.tag {
+  display: inline-block;
+  font-size: 0.8rem;
+  border: 1px solid #aaa;
+  border-radius: 1rem;
+  padding: 0.05rem 0.3rem;
+  color: #000;
+  background: #fff;
+  text-decoration: none;
+}
+a.tag:hover {
+  background: #ddd;
+  /*text-decoration: underline;   */
+}
+a.github-link {
+  font-size: 0.8rem;
+  color: #555;
+  text-decoration: dotted underline;
+}
+a.github-link:hover {
+  text-decoration: underline;   
+}
+
+:target {
+  #border: 2px solid #D4D4D4;
+  background-color: #e5eecc;
+}
+
+
+a.contents {
+  margin-left: 1.5rem;   
+}
+
+ul, 
+ol {
+  padding-left: calc(1.2rem + 0.8 * var(--srem));
+}
+.li-header {
+  /*font-weight: bold;*/   
+  font-style: italic;
+  font-size: 1.1rem;
+  margin-bottom: 0.2rem; 
+}
+li {
+  margin-bottom: 0.3rem;  
+}
+
+div.quote {
+  font-style: italic;
+  text-align: center;
+  padding: 0.5rem;
+  font-size: 1.0rem;
+}
+
+/* FORMS */
+
+input.form-control {
+  display: block;
+}
+
+form.account {
+  margin: 0.5rem 2rem;
+}
+
+div.medskip {
+  margin-bottom: 0.5rem;   
+}
+
+</style>
+
+
+   </head>
+
+<body>
+  <div class="horizontal-container">
+
+  {% include 'includes/messaging.html' %}
+
+    {% block body %}
+
+
+
+
+<!--
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    </nav>
+-->
+
+<!--
+      <div class="container">
+        <a class="navbar-brand" href="{% url 'db:home' %}">
+          <img src="{% static 'logo3.png' %}" height="40px">
+	    </a>
+      </div>
+-->
+
+<!--        <a class="navbar-field logo" href="{% url 'db:home' %}">NumberDB</a>
+-->
+      <a class="navbar-field" href="{% url 'db:home' %}">NumberDB</a>
+      <a class="navbar-field" href="{% url 'db:tags' %}">Tags</a>      
+      <a class="navbar-field" href="{% url 'db:collections' %}">Collections</a>      
+      <a class="navbar-field" href="{% url 'db:about' %}">About</a>
+      <a class="navbar-field" href="{% url 'db:help' %}">Help</a>
+
+      {% if user.is_authenticated == False %}
+        <a class="navbar-field" href="{% url 'account_login' %}">Login</a>
+      {% else %}
+        <a class="navbar-field" href="{% url 'db:profile' %}">{% user_display user %}</a>
+
+          <!-- The following yields a GET request, which is "unsafe" if it logs out directly.
+	     But it should be ok since we don't allow arbitrary html code etc. by users. 
+          <a href="{% url 'account_logout' %}">Logout</a>-->
+	  
+	  <script> 
+	  function logout() {
+	      document.getElementById('logoutForm').submit();
+	  }
+	  </script>
+	  
+	  <form id="logoutForm" action="{% url 'account_logout' %}" method="post">
+            {% csrf_token %}
+	    <!--<input type"hidden" name="id" value="4"/>-->
+          </form>
+	<a class="navbar-field" href="javascript:logout()">Logout</a>
+      {% endif %}  
+  
+    {% block top-searchbar %}
+      {% include 'includes/searchbar.html' %}
+    {% endblock %}
+
+
+
+    <div class="container">
+<!--
+
+<hr>
+      <ol class="breadcrumb my-4">
+        {% block breadcrumb %}
+        {% endblock %}
+      </ol>
+
+<hr>
+-->
+
+      {% block content %}
+      {% endblock %}
+      
+      {% endblock %}
+
+    </div>
+    
+    </div>
+  </body>
+</html>

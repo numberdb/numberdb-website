@@ -1,0 +1,40 @@
+<style>
+ul.messages {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;  
+}
+ul.messages > li {
+  padding: 0.5rem 1rem;
+  background-color: #d4edda;
+  color: #155724;
+  border-color: #c3e6cb;
+}
+</style>
+
+
+
+{% if messages %}
+<ul class="messages">
+    {% for message in messages %}
+    <li {% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+
+<!--
+
+{% for message in messages %}
+<div class="container-fluid p-0">
+  <div class="alert {{ message.tags }} alert-dismissible" role="alert" >
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+    {{ message }}
+  </div>
+</div>
+{% endfor %}
+
+
+-->
