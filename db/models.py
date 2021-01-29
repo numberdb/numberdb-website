@@ -19,6 +19,9 @@ class UserProfile(models.Model):
 	date_updated = models.DateTimeField(auto_now=True)
 	date_created = models.DateTimeField(auto_now_add=True)
 	
+	def __str__(self):
+		return 'Profile of %s' % (self.user,)
+	
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
@@ -55,6 +58,14 @@ class Searchable(models.Model):
 	# - collection
 	# - numberapprox
 	# - tag
+	
+	def __str__(self):
+		if self.of_type == Searchable.TYPE_TAG:
+			return self.tag.__str__()
+		elif self.of_type == Searchable.TYPE_COLLECTION:
+			return self.collection.__str__()
+		elif self.of_type == Searchable.TYPE_NUMBER:
+			return self.number.__str__()
 
 class Tag(Searchable):
 
@@ -90,6 +101,9 @@ class Tag(Searchable):
 	
 	def url(self):
 		return quote_plus(self.name)
+		
+	def __str__(self):
+		return 'Tag %s (%s/%s)' % (self.name,self.collection_count,self.number_count)
 		
 
 class Collection(Searchable):
@@ -143,6 +157,9 @@ class Collection(Searchable):
 	#	super(Searchable, self).__init__(*args, **kwargs)
 	#	self.of_type = Searchable.TYPE_COLLECTION
 
+	def __str__(self):
+		return 'Collection %s' % (self.title,)
+
 class CollectionData(models.Model):
 
 	collection = models.OneToOneField(
@@ -154,6 +171,9 @@ class CollectionData(models.Model):
 	json = models.JSONField(
 		default = dict
 	)
+	
+	def __str__(self):
+		return 'Data for %s' % (self.collection,)
 
 '''
 class NumberApprox(Searchable):
@@ -385,6 +405,9 @@ class SearchTerm(models.Model):
         through_fields=('searchterm', 'searchable'),
 	)
 	
+	def __str__(self):
+		return 'Search term %s' % (self.term,)
+	
 class SearchTermValue(models.Model):
 
 	searchterm = models.ForeignKey(
@@ -402,4 +425,11 @@ class SearchTermValue(models.Model):
 	value = models.IntegerField(
 		default = int(0),
 	)
+	
+	def __str__(self):
+		return 'Value %s for %s -> %s' % (
+			self.value, 
+			self.searchterm, 
+			self.searchable,
+		)
 

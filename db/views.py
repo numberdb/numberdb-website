@@ -452,7 +452,7 @@ def suggestions(request):
 	
 
 	#for searchable in searchterm.searchables.all():
-	for value in searchterm.values.order_by('-value'):
+	for value in searchterm.values.order_by('-value')[:10]:
 		searchable = value.searchable
 	
 		of_type = searchable.of_type
@@ -471,6 +471,7 @@ def suggestions(request):
 			)
 			data_i['url'] = reverse('db:tag', kwargs={'tag_name': tag.url()})
 			#data_i['subtitle'] = 'dummy subtitle'
+
 		elif of_type == Searchable.TYPE_COLLECTION:
 			collection = searchable.collection
 			data_i['value'] = str(i)
@@ -480,11 +481,12 @@ def suggestions(request):
 			if collection.number_count != 1:
 				data_i['subtitle'] = '%s numbers' % collection.number_count
 			else:
-				n = collection.my_numberapproxs.first()
+				n = collection.my_numbers.first()
 				#r = RIF(n.lower,n.upper)
 				#r = n.lower
 				data_i['subtitle'] = '%s' % (n,)
 			data_i['url'] = '/' + collection.url
+
 		elif of_type == Searchable.TYPE_NUMBER:
 			number = searchable.number
 			collection = number.my_collection

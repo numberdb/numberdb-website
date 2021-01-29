@@ -105,14 +105,13 @@ class MyTimer:
 	def __repr__(self):
 		return self.__str__()
 		
-	def run(self,function):
+	def run(self,function,*args,**kwargs):
 		timer_name = 'Function %s' % (function.__name__,)
+		timer_name += '(%s)' % (', '.join('%s=%s' % (key,kwargs[key]) for key in kwargs),) 
 		self.startTimer(timer_name)
-		function()
+		function(*args,**kwargs)
 		self.endTimer(timer_name)
 		
-	
-
 def id_to_int(id):
 	return int(id[1:])
 
@@ -203,10 +202,6 @@ def iter_collections_bulk(weight="number_count", bulk_size=10000):
 
 	if len(cs_bulk) > 0:
 		yield cs_bulk
-	
-#collection_id_to_path = {}
-#collection_id_to_url = {}
-#collection_url_to_id = {}
 
 @transaction.atomic
 def delete_all_tables():
@@ -225,7 +220,7 @@ def delete_all_tables():
 	Searchable.objects.all().delete()
 
 @transaction.atomic
-def build_collection_table():
+def build_collection_table(test_run=False):
 
 	print("BUILDING COLLECTION TABLE")
 	
@@ -247,9 +242,6 @@ def build_collection_table():
 		#print("id:",id)
 		#print("path:",path)
 		url = os.path.split(path)[-1]
-		#collection_id_to_path[id] = path
-		#collection_id_to_url[id] = url
-		#collection_url_to_id[url] = id
 		
 		collection_data = normalize_data(collection_data)
 		
@@ -263,7 +255,8 @@ def build_collection_table():
 		c.path = path
 		c.of_type = Searchable.TYPE_COLLECTION #not anymore automatic
 		#print("try saving c:",c)
-		c.save()
+		if not test_run:
+			c.save()
 		#print("saved c:",c)
 		#print(type(c.pk))
 		#print(c.pk, c.id)
@@ -275,16 +268,10 @@ def build_collection_table():
 		#c_data.collection_id = c.id
 		c_data.collection = c
 		
-		#print("try saving c_data:",c_data)
-		c_data.save()
-		
-		#print("saved c_data:",c_data)
-		
-
-	#print("collection_id_to_url:",collection_id_to_url)
-
-
-
+		if not test_run:
+			#print("try saving c_data:",c_data)
+			c_data.save()
+			#print("saved c_data:",c_data)
 
 @transaction.atomic
 def build_tag_table():
@@ -314,6 +301,8 @@ def build_number_table():
 	def save_number(c, number, param):
 		#print("save number,param:",number,param)
 		x = None #just to declare x as local variable
+		
+		#TODO: Find more stable type queries:
 		try:
 			x = ZZ(number)
 		except TypeError:
@@ -324,28 +313,15 @@ def build_number_table():
 					x = RIF(number)
 				except TypeError:
 						x = RBF('[%s]' % (number,))
-		'''
-		#OLD via NumberApprox:
-		a = float(a)
-		b = float(b)
-		p = ",".join(flatten(param))
-		p = bytes(p,encoding='cp437')
-		#print("p,a,b,c:",p,a,b,c)
-		
-		n = NumberApprox()
-		n.lower = a
-		n.upper = b
-		#n.from_collection_id = c.id
-		n.my_collection = c
-		n.param = p
-		n.of_type = Searchable.TYPE_NUMBER #is automatic
-		n.save()
-		'''
 		
 		p = ",".join(flatten(param))
 		p = bytes(p,encoding='cp437')
 		
-		n = Number(sage_number = x)
+		try:
+			n = Number(sage_number = x)
+		except OverflowError:
+			x = RIF(x)
+			n = Number(sage_number = x)
 		n.of_type = Searchable.TYPE_NUMBER #not anymore automatic
 		n.my_collection = c
 		n.param = p
@@ -424,30 +400,7 @@ def add_sentence_to_search_index(list_of_sentence_searchable_value):
 			term = SearchTerm.TERM_TEXT + subword.encode()
 			if len(term) > SearchTerm.term.field.max_length:
 				break
-			'''
-			#OLD:
-			searchterm, created = SearchTerm.objects.get_or_create(term = term)
-			#print("searchterm:",searchterm)
-			#print("searchable:",searchable)
-			searchterm.searchables.add(searchable,through_defaults={'value': value})
-			'''
-			
-			'''
-			#NEW OLD: (bulk create and update)
-			if run == 'searchterms':
-				searchterm = SearchTerm(term = term)
-				searchterms.append(searchterm)
-			elif run == 'searchtermvalues':
-				
-				if (term,searchable.id) not in searchterm_value_pairs:
-					searchtermvalue = SearchTermValue(
-						searchterm_id = term,
-						searchable_id = searchable.id,
-						value = value,
-					)
-					searchterm_value_pairs.add((term,searchable.id))
-					searchtermvalues.append(searchtermvalue)
-			'''
+
 			key = (term, searchable.id)
 			if key not in value_dict:
 				value_dict[key] = value
@@ -466,16 +419,7 @@ def add_sentence_to_search_index(list_of_sentence_searchable_value):
 			if len(terms) > 1:
 				#Also add the whole word (e.g. "L-function"):
 				add_term_to_search_index(word, searchable, value)
-	'''
-	#NEW OLD:
-	if run == 'searchterms':
-		#ignore_conflicts is set to True, as searchterms may exist already,
-		#in which case they are ignored:
-		SearchTerm.objects.bulk_create(searchterms,ignore_conflicts=True)
 
-	elif run == 'searchtermvalues':
-		SearchTerm.searchables.through.objects.bulk_create(searchtermvalues)
-	'''
 	#Create new searchterms in DB:
 	terms = set(term for term, searchable_id in value_dict)
 	searchterms = [SearchTerm(term = term) for term in terms]
@@ -513,15 +457,20 @@ def build_search_index_for_fractional_parts():
 			for n in c.my_numbers.all():
 				if n.number_type == Number.NUMBER_TYPE_ZZ:
 					continue
-				r = n.to_RIF()
+				r = n.to_RIF().frac()
 				#print("r:",r, n.number_type)
 				if r.contains_zero():
 					continue
+				if r.lower() < 0:
+					r += 1; 
 				if r.diameter() > 0.1:
 					continue
 				str_r = str(r)
 				if '.' not in str_r:
 					continue
+					
+				#TODO: Bug if scientific notation is used for r:
+					
 				word = str(r).split(".")[1].strip("?")
 				list_of_sentence_searchable_value.append((word, n, 1))
 		add_sentence_to_search_index(list_of_sentence_searchable_value)
@@ -533,10 +482,7 @@ def build_search_index_for_real_numbers():
 		with transaction.atomic():
 
 			value_dict = {}
-			#searchterms = []
-			#searchtermvalues = []
-			
-			#for run in ['searchterms','searchtermvalues']:
+
 			for c in cs_bulk:
 				for n in c.my_numbers.all():
 					r = n.to_RIF()
@@ -565,27 +511,6 @@ def build_search_index_for_real_numbers():
 								int(exp_i).to_bytes(SearchTerm.NUM_BYTES_REAL_EXPONENT,byteorder='big',signed=True) + \
 								int(f).to_bytes(SearchTerm.NUM_BYTES_REAL_FRAC,byteorder='big',signed=True) 
 							
-							'''
-							#OLD:
-							searchterm, created = SearchTerm.objects.get_or_create(term = term)
-							searchterm.searchables.add(n.searchable_ptr,through_defaults={'value': 10*i})
-							'''
-							
-							'''
-							#NEW OLD: (bulk create and update)
-							if run == 'searchterms':
-								searchterm = SearchTerm(term = term)
-								searchterms.append(searchterm)
-							elif run == 'searchtermvalues':
-								
-								searchtermvalue = SearchTermValue(
-									searchterm_id = term,
-									searchable_id = n.searchable_ptr_id,
-									value = int(10*i),
-								)
-								searchtermvalues.append(searchtermvalue)
-							'''
-							
 							value = int(10*i)
 							key = (term, n.searchable_ptr_id)
 							if key not in value_dict:
@@ -593,16 +518,6 @@ def build_search_index_for_real_numbers():
 							else:
 								value_dict[key] = max(value, value_dict[key])
 			
-			'''
-			#NEW OLD:
-			if run == 'searchterms':
-				#ignore_conflicts is set to True, as searchterms may exist already,
-				#in which case they are ignored:
-				SearchTerm.objects.bulk_create(searchterms,ignore_conflicts=True)
-
-			elif run == 'searchtermvalues':
-				SearchTerm.searchables.through.objects.bulk_create(searchtermvalues)
-			'''
 
 			#Create new searchterms in DB:
 			terms = set(term for term, searchable_id in value_dict)
@@ -617,10 +532,14 @@ def build_search_index_for_real_numbers():
 								) for (term,searchable_id),value in value_dict.items()]
 			SearchTerm.searchables.through.objects.bulk_create(searchtermvalues)
 
+
+
+
 #timer = MyTimer(cputime)
 timer = MyTimer(walltime)
 
 with transaction.atomic():
+	timer.run(build_collection_table,test_run=True)
 	timer.run(delete_all_tables)
 	timer.run(build_collection_table)
 	timer.run(build_tag_table)	
@@ -633,10 +552,9 @@ with transaction.atomic():
 
 print("Times:\n%s" % (timer,))
 
-'''
-				
-				
 
+
+'''
 print("new_collection_paths:",new_collection_paths)
 
 new_filenames = []
