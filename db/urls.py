@@ -14,7 +14,7 @@ urlpatterns = [
     re_path(r'^(?P<cid>(C\d+))$', views.collection, name='collection'),
 
     path('tags/', views.tags, name='tags'),
-    path('tags/<str:tag_name>', views.tag, name='tag'),
+    path('tags/<str:tag_url>', views.tag, name='tag'),
 
     path('profile/', views.show_own_profile, name='profile'),
     path('profile/<int:other_user_id>/', views.show_other_profile, name='show-other-profile'),

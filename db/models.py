@@ -5,12 +5,14 @@ from django.dispatch import receiver
 from django.db.models.signals import post_save
 
 from urllib.parse import quote_plus
+from urllib.parse import unquote_plus
 
 import numpy as np
 
 from sage import *
 from sage.rings.all import *
 
+from .utils import my_real_interval_to_string
 
 class UserProfile(models.Model):
 	user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -101,6 +103,11 @@ class Tag(Searchable):
 	
 	def url(self):
 		return quote_plus(self.name)
+		#return self.name
+		
+	def from_url(url):
+		name = unquote_plus(url)
+		return Tag.objects.get(name=name)
 		
 	def __str__(self):
 		return 'Tag %s (%s/%s)' % (self.name,self.collection_count,self.number_count)
@@ -342,6 +349,9 @@ class Number(Searchable):
 			radius = np.frombuffer(b1,dtype=np.float64)[0]
 			return RBF(center,radius)
 
+	def str_as_real_interval(self):
+		return my_real_interval_to_string(self.to_RIF())
+
 	def __str__(self):
 		r = self.to_sage()
 		if r.parent() == ZZ:
@@ -351,20 +361,7 @@ class Number(Searchable):
 			return r.__str__()
 		
 		elif r.parent() == RIF:
-			if r.contains_zero():
-				#Relative diameter won't make sense, 
-				#so just print it normally:
-				return r.__str__()
-			if r.relative_diameter() < 0.001:
-				#Enough relative precision,
-				#thus print the number normally:
-				return r.__str__()
-			else:
-				#Not enough relative precision, 
-				#thus rather print the number as an interval:
-				Rup = RealField(15,rnd='RNDU')
-				Rdown = RealField(15,rnd='RNDD')
-				return '[%s,%s]' % (Rdown(r.lower()),Rup(r.upper()))
+			return my_real_interval_to_string(r)
 		
 		elif r.parent() == RBF:
 			return r.__str__().strip('[]')
@@ -374,6 +371,8 @@ class Number(Searchable):
 			raise NotImplementedError()
 
 class SearchTerm(models.Model):
+	
+	MAX_RESULTS = 10
 	
 	MAX_LENGTH_TERM_FOR_TEXT = 8
 	#MAX_LENGTH_TERM_FOR_INTS = 8
@@ -425,6 +424,7 @@ class SearchTermValue(models.Model):
 	)
 	value = models.IntegerField(
 		default = int(0),
+		#db_index = True,
 	)
 	
 	def __str__(self):

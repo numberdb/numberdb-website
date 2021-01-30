@@ -80,8 +80,9 @@ def tags(request):
         tags = tags.order_by(sortby_default)
     return render(request, 'tags.html', {'tags': tags})
 
-def tag(request, tag_name):
-    tag = Tag.objects.get(name=tag_name)
+def tag(request, tag_url):
+    tag = Tag.from_url(tag_url)
+    #tag = Tag.objects.get(name=tag_name)
     collections = tag.my_collections.all()
     sortby_default = 'number_count'
     sortby = request.GET.get('sort_by',default=sortby_default)
@@ -184,8 +185,10 @@ def render_collection(request, collection):
         return new_text
         
     for tag in collection.my_tags.all():
-        html += '<a class="tag" href="%s">%s</a> ' % \
-                (reverse('db:tag',kwargs={'tag_name': tag.name}),tag.name)
+        html += '<a class="tag" href="%s">%s</a> ' % (
+            reverse('db:tag',kwargs={'tag_url': tag.url()}),
+            tag.name,
+        )
         
     if 'Definition' in data:
         html += '<div class="collection-section">%s</div>' % ("Definition")
@@ -400,7 +403,7 @@ def suggestions(request):
 	i = 1
 	exact_number = None
 	
-	cZZ = re.compile(r'([+1]?)(\d+)')
+	cZZ = re.compile(r'([+-]?)(\d+)')
 	cZZplus = re.compile(r'\d+')
 	cRIF = re.compile(r'([+-]?)(\d*)((?:\.\d*)?)((?:[eE]-?\d+)?)')
 	cRIF_P = re.compile(r'([+-]?)(\d*)[pP]([+-]?)([1-9]\d*)')
@@ -427,9 +430,9 @@ def suggestions(request):
 				entry_i['title'] = '%s' % (collection.title,)
 				param = number.param.decode()
 				if len(number.param) > 0: 
-					entry_i['subtitle'] = '%s (#%s)' % (number.to_RIF(), param)
+					entry_i['subtitle'] = '%s (#%s)' % (number.str_as_real_interval(), param)
 				else:
-					entry_i['subtitle'] = '%s' % (number.to_RIF(),)
+					entry_i['subtitle'] = '%s' % (number.str_as_real_interval(),)
 				entry_i['url'] = '/' + "%s#%s" % (collection.url, param)
 				entries[i] = entry_i
 				i += 1
@@ -486,7 +489,7 @@ def suggestions(request):
 	try:
 		searchterm = SearchTerm.objects.get(term=term)
 	except SearchTerm.DoesNotExist:
-		return wrap_response({})
+		return wrap_response(entries)
 	
 	
 
@@ -501,14 +504,15 @@ def suggestions(request):
 			entry_i['value'] = str(i)
 			entry_i['label'] = ''
 			entry_i['type'] = 'tag'
-			entry_i['title'] = 'Tag: %s' % (tag.name,)
+			#entry_i['title'] = 'Tag: %s' % (tag.name,)
+			entry_i['title'] = '<div class="tag">%s</div>' % (tag.name,)
 			entry_i['subtitle'] = '%s collection%s, %s number%s' % (
 				tag.collection_count,
 				's' if tag.collection_count != 1 else '',
 				tag.number_count,
 				's' if tag.number_count != 1 else '',
 			)
-			entry_i['url'] = reverse('db:tag', kwargs={'tag_name': tag.url()})
+			entry_i['url'] = reverse('db:tag', kwargs={'tag_url': tag.url()})
 			#entry_i['subtitle'] = 'dummy subtitle'
 
 		elif of_type == Searchable.TYPE_COLLECTION:
@@ -520,10 +524,8 @@ def suggestions(request):
 			if collection.number_count != 1:
 				entry_i['subtitle'] = '%s numbers' % collection.number_count
 			else:
-				n = collection.my_numbers.first()
-				#r = RIF(n.lower,n.upper)
-				#r = n.lower
-				entry_i['subtitle'] = '%s' % (n,)
+				number = collection.my_numbers.first()
+				entry_i['subtitle'] = '%s' % (number.str_as_real_interval(),)
 			entry_i['url'] = '/' + collection.url
 
 		elif of_type == Searchable.TYPE_NUMBER:
@@ -538,9 +540,9 @@ def suggestions(request):
 			entry_i['title'] = '%s' % (collection.title,)
 			param = number.param.decode()
 			if len(number.param) > 0: 
-				entry_i['subtitle'] = '%s (#%s)' % (number.to_RIF(), param)
+				entry_i['subtitle'] = '%s (#%s)' % (number.str_as_real_interval(), param)
 			else:
-				entry_i['subtitle'] = '%s' % (number.to_RIF(),)
+				entry_i['subtitle'] = '%s' % (number.str_as_real_interval(),)
 			entry_i['url'] = '/' + "%s#%s" % (collection.url, param)
 		
 		#if 'url' in entry_i:

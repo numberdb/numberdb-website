@@ -331,12 +331,12 @@ def build_number_table():
 
 	def traverse_number_table(c, numbers, params_so_far, groups_left):
 		if isinstance(numbers,dict):
+			if 'equals' in numbers:
+				return 0 #not counted
 			if 'number' in numbers:
 				return traverse_number_table(c, numbers['number'], params_so_far, groups_left)
 			if 'numbers' in numbers:
 				return traverse_number_table(c, numbers['numbers'], params_so_far, groups_left)
-			if 'equals' in numbers:
-				return 0 #not counted
 
 		count = 0  
 		if len(groups_left) == 0:
@@ -347,10 +347,11 @@ def build_number_table():
 				for number in numbers:
 					count += save_number(c, number, params_so_far)
 			elif isinstance(numbers,dict):
-				for key, value in numbers.items():
-					#print("key,value:",key,value)
-					if key == 'number':
-						count += save_number(c, value, params_so_far)
+				if 'equals' not in numbers:
+					for key, value in numbers.items():
+						#print("key,value:",key,value)
+						if key == 'number':
+							count += save_number(c, value, params_so_far)
 		else:
 			next_group = groups_left[0]
 			for p, numbers_p in numbers.items():
@@ -545,8 +546,34 @@ def build_search_index_for_real_numbers():
 			SearchTerm.searchables.through.objects.bulk_create(searchtermvalues)
 
 
-
-
+def clean_search_index():
+	print("CLEAN SEARCH INDEX")
+	for searchterm in SearchTerm.objects.all():
+		num_searchables = 0	
+		searchables_to_stay = set()
+		values_to_delete = []
+		last_index = 0
+		query = searchterm.values.order_by('-value')
+		for value in query:
+			last_index += 1
+			if value.searchable_id in searchables_to_stay:
+				#Already better value:
+				values_to_delete.append(value)
+				continue
+				
+			searchables_to_stay.add(value.searchable_id)
+			num_searchables += 1
+			if num_searchables >= SearchTerm.MAX_RESULTS:
+				break
+		
+		#continue #debug
+		
+		with transaction.atomic():
+			for value in values_to_delete:
+				value.delete()
+			#query.reverse()[:query.count()-SearchTerm.MAX_RESULTS].delete()
+		
+			
 #timer = MyTimer(cputime)
 timer = MyTimer(walltime)
 
@@ -562,6 +589,7 @@ with transaction.atomic():
 	timer.run(build_search_index_for_collection_keywords)
 	timer.run(build_search_index_for_fractional_parts)
 	timer.run(build_search_index_for_real_numbers)
+	#timer.run(clean_search_index)
 
 print("Times:\n%s" % (timer,))
 

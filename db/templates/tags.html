@@ -17,7 +17,7 @@
     <br>
     
     {% for tag in tags %}
-		<a class="tag" href="{% url 'db:tag' tag.name %}">{{ tag.name }}</a>
+		<a class="tag" href="{% url 'db:tag' tag.url %}">{{ tag.name }}</a>
 		
 		{% if tag.collection_count == 1 %} 
 		    (1 collection,

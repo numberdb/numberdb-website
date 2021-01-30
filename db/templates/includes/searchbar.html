@@ -1,4 +1,4 @@
-
+{% load static %}
 
 <style>
 .highlight .ui-menu-item {
@@ -7,28 +7,45 @@
 .highlight .ui-state-active {
   background: #eee;
 }
-#searchbox {
-/*  
-  box-shadow: 0 0 10px #ccc;
-*/
-  border-radius: 5px;
-  border: 1px solid #bbb;
-  padding: 10px;
-  color: #000;
-  background-color: #fff;
-  outline: 0;
-}
 a.ui-menu-item-wrapper {
   display: block;
   text-decoration: none;
-}
-#searchbox:focus {
-  box-shadow: 0 0 10px #ddd;
 }
 #searchbox.ui-autocomplete-loading {
 /*  text-decoration: underline;     
   text-decoration-color: #aaa;
 */  
+}
+
+#searchbox-component {
+  --searchbox-width: calc(20rem + 10 * var(--lrem));
+    
+  display: block;
+  border-radius: 5px;
+  border: 1px solid #bbb;
+  padding: 0px;
+  color: #000;
+  background-color: #fff;
+  outline: 0;
+  width: var(--searchbox-width);
+  text-align: left;
+  margin: auto;
+}
+#searchbox-component:focus-within {
+  box-shadow: 0 0 10px #ddd;
+}
+#searchbox {
+  border: 1px solid black;
+  border: none;
+  margin: 0;
+  padding: 10px;
+  outline: 0;
+  width: calc(var(--searchbox-width) - 1.8rem - 3px);
+  border-radius: 5px;
+}
+#searchbox-image {
+  width: calc(1rem);
+  /*border: 1px solid black;*/
 }
 </style>
 
@@ -36,8 +53,12 @@ a.ui-menu-item-wrapper {
 <div id="searchbox-container">
   <!--<label for="searchbox">Search a number:</label>
   -->
-  <input id="searchbox" placeholder="Try 3.14 or L-function" 
-    {% if searchterm %} value="{{ searchterm }}" {% endif %}>
+  <div id="searchbox-component">
+    <input id="searchbox" {# placeholder="Try 3.14 or L-function" #} 
+      {% if searchterm %} value="{{ searchterm }}" {% endif %}
+    ><img id="searchbox-image" src="{% static 'search.png' %}">
+  </div>
+  
   <span style="display:none" id="msg-no-record">No Record Found</span><br>
   <span style="display:none" id="msg-no-entry">No match in database</span><br>
 </div>
@@ -148,6 +169,16 @@ $(document).ready(function(){
 	//
 	return true;
     });
+    
+    $( "#searchbox-image, #searchbox-component").bind( 
+	"click", 
+	function() {
+	    var sb = document.getElementById("searchbox");
+	    if (sb !== document.activeElement) {
+		sb.focus();
+	    }
+	}
+    ); 
     
 });
 </script>

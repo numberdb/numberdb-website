@@ -34,14 +34,18 @@ The searchbar can be used to search for:
 Enter the number in one of three formats:
 <ul>
 <li>
-<em>Decimal representation</em> including the period, e.g. "3.14" to search for pi.
+<em>Decimal representation</em> including the period, 
+e.g. "3.14" to search for pi.
 The search will be done in an interval around the entered number: 
 Entering "3.14" will search for numbers in the interval (3.13, 3.15).
 <li>
-<em>Scientific notation</em> (no period necessary), e.g. "14e2" to search numbers between 1300 and 1500.
+<em>Scientific notation</em> (no period necessary), 
+e.g. "14e2" to search numbers between 1300 and 1500.
 </li>
 <li>
-NumberDB's <em>p-notation</em>: Enter a term of the form "ApB", where A and B are integers. It corresponds to the number 10<sup>A</sup> &middot; 0.B, e.g. "1p314" for pi.
+NumberDB's <em>p-notation</em>: 
+Enter a term of the form "ApB", where A and B are integers. 
+It corresponds to the number 10<sup>A</sup> &middot; 0.B, e.g. "1p314" for pi.
 </li>
 </ul>
 </li>
@@ -83,27 +87,36 @@ Visit the GitHub issue page (preferred), or send an email to info@numberdb.org.
 
 <li>
 <div class="li-header">Typos in collections, adding references, comments, etc.:</div>
-Edit the corresponding yaml-file in the <a href="https://github.com/bmatschke/numberdb-data">numberdb-data</a> repository.
+Edit the corresponding yaml-file in the 
+<a href="https://github.com/bmatschke/numberdb-data">numberdb-data</a> repository.
 The link can be found above the title on the collection's webpage.
 </li>
 
 <li>
 <div class="li-header">Contribute new collections:</div>
 There will be soon a more complete guideline for that.
-You need to create a collection.yaml in a new folder of the <a href="https://github.com/bmatschke/numberdb-data">numberdb-data</a> repository and submit a pull request.
-It will be easiest to copy an existing collection.yaml from come other collection, and modify it.
-Keep the first line "ID: INPUT{id.yaml}", but do not copy the id.yaml, as it will be added automatically by our robot zeta3.
+You need to create a collection.yaml in a new folder of the 
+<a href="https://github.com/bmatschke/numberdb-data">numberdb-data</a> 
+repository and submit a pull request.
+It will be easiest to copy an existing collection.yaml 
+from another collection, and modify it.
+Keep the first line "ID: INPUT{id.yaml}", but do not copy the id.yaml, 
+as it will be added automatically by our robot zeta3.
 </li>
 
 <li>
 <div class="li-header">Programming the webpage:</div>
 The current webpage is still in development. 
-See the issues section of the GitHub repository <a href="https://github.com/bmatschke/numberdb-website">numberdb-website</a>, or the <a href="{% url 'db:about' %}#work-in-progress">work in progress</a> section.
+See the issues section of the GitHub repository 
+<a href="https://github.com/bmatschke/numberdb-website">numberdb-website</a>, 
+or the <a href="{% url 'db:about' %}#work-in-progress">work in progress</a> section.
 </li>
 </ul>
 
-Credits for contributions are automatically given within git and on GitHub, as every single change is stored in a permanent history.
-In the future, contributors to collections of numbers will be automatically displayed also on numberdb.org.
+Credits for contributions are automatically given within git and on GitHub, 
+as every single change is stored in a permanent history.
+In the future, contributors to collections of numbers will be 
+automatically displayed also on numberdb.org.
 
 <!--------------------------------------------------------------------->
 
@@ -114,13 +127,14 @@ In the future, contributors to collections of numbers will be automatically disp
 <ol>
 <li>
 <div class="li-header">Raw data:</div>
-The raw data is entered in human readable form (yaml) in a <a href="https://github.com/bmatschke/numberdb-data">git repository on GitHub</a>.
+The raw data is entered in human readable form (yaml) in a the git repository <a href="https://github.com/bmatschke/numberdb-data">numberdb-data</a> on GitHub.
+A bot associates to every new collection an ID that serves as a permanent identifier.
 </li>
 
 <li>
-<div class="li-header">Builder:</div>
+<div class="li-header">Database builder:</div>
 The raw data gets transformed regularly into the numberdb.org database.
-In this process, every collection receives an ID that serves as a permanent identifier.
+During this process, a search index is created.
 </li>
 
 <li>
@@ -137,8 +151,12 @@ That database can be accessed through numberdb.org's searchbar.
 <li>
 <div class="li-header">Why do I need to specify the period in the real number search?</div>
 Because the period is even more significant than the highest digit.
-In principle, one could implement a search of real numbers by their first few digits without the knowledge of the period; however this would ask for number up to powers of 10, which does not seem natural enough in general.
-We implemented a search by the fractional part, as it does not depend on the base.
+In principle, one could implement a search of real numbers 
+by their first few digits without the knowledge of the period; 
+however this would ask for numbers up to powers of 10, 
+which does not seem natural enough in general.
+We implemented a search by the fractional part, 
+as it does not depend on the base.
 </li>
 </ul>
 
