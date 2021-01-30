@@ -447,6 +447,18 @@ def build_search_index_for_collection_titles():
 			[(c.title, c.searchable_ptr, int(100)) for c in cs_bulk]
 		add_sentence_to_search_index(list_of_sentence_searchable_value)
 
+def build_search_index_for_collection_keywords():
+	print("BUILD SEARCH INDEX for COLLECTION KEYWORDS")
+	for cs_bulk in iter_collections_bulk(weight=1,bulk_size=1000):
+		list_of_sentence_searchable_value = []
+		for c in cs_bulk:
+			keywords = c.data.json.get('Keywords')
+			if keywords == None:
+				continue
+			for keyword in keywords:
+				list_of_sentence_searchable_value.append((keyword, c.searchable_ptr, int(100)))
+		add_sentence_to_search_index(list_of_sentence_searchable_value)
+
 def build_search_index_for_fractional_parts():
 	print("BUILD SEARCH INDEX for FRACTIONAL PARTS")
 	for cs_bulk in iter_collections_bulk():
@@ -547,6 +559,7 @@ with transaction.atomic():
 
 	timer.run(build_search_index_for_tags)
 	timer.run(build_search_index_for_collection_titles)
+	timer.run(build_search_index_for_collection_keywords)
 	timer.run(build_search_index_for_fractional_parts)
 	timer.run(build_search_index_for_real_numbers)
 
