@@ -39,10 +39,11 @@ div.collection-table {
 }
 div.collection-subtable {
   display: table;
+  width: 100%;
 }
 div.collection-block {
   display: table-row;
-  scroll-margin-top: 100px;
+  scroll-margin-top: 30vh;
 }
 div.collection-label {
   display: table-cell;
@@ -55,6 +56,7 @@ div.collection-param-group {
   padding: 0 0.5rem;
   text-align: right;
   width: 2rem;
+  scroll-margin-top: 30vh;
 }
 div.collection-cell-right,
 div.collection-entry {
@@ -63,6 +65,28 @@ div.collection-entry {
 div.collection-number {
   word-wrap: break-word;
 }
+div.collection-number-section-outer-container {
+}
+div.collection-number-section-container {
+  overflow-y: auto;
+  max-height: 50vh;
+}
+
+@media only screen and (min-width: 64rem) {
+  div.collection-number-section-outer-container {
+    width: calc(50% + 1.5rem);
+    padding-left: 3rem;
+    padding-bottom: 2rem;
+    /*border-left: 1px solid #eee;*/
+    float: right;
+    background: #fff;
+  }
+  div.collection-number-section-container {
+    overflow-y: auto;
+    max-height: 70vh;
+  }
+}
+
 a.HREF {
   color: #22a;   
 }
@@ -86,17 +110,24 @@ function scrollTo(event, id) {
 
 <div class="collection-title">{{ collection.title | safe }}</div>
 
-
 {% for tag in collection.my_tags.all %}
   <a class="tag" href="{% url 'db:tag' tag.url %}">{{ tag.name | safe }}</a>
 {% endfor %}
 
+<div></div>
+
+<div class="collection-number-section-outer-container">
+<div class="collection-section-title">{{ number_section.title | safe }}</div>
+<div class="collection-number-section-container">
+  <div class="collection-text">{{ number_section.text | safe }}</div>
+</div>
+</div>
 
 {% for section in sections %}
   <div class="collection-section-title">{{ section.title | safe }}</div>
   <div class="collection-section-container">
     {% if section.text %}
-      <div class="collection-entry">{{ section.text | safe }}</div>
+      <div class="collection-text">{{ section.text | safe }}</div>
     {% endif %}
     {% if section.labeled_list %}
       <div class="collection-table">
@@ -119,7 +150,6 @@ function scrollTo(event, id) {
     {% endif %}
   </div>
 {% endfor %}
-
 
 
 {{  collection_html | safe }}

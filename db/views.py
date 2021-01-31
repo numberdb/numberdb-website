@@ -398,6 +398,7 @@ def render_collection(request, collection):
 				#html += '</div>'
 				#html += '</div>'
 				#html += '</div>'
+			'''
 			param = number_param_groups_to_string(params_so_far)
 			#print("param:",param)
 			if param != '':
@@ -405,12 +406,17 @@ def render_collection(request, collection):
 					param,
 					html,
 				)
-		
+			'''
 		else:
 			next_group = groups_left[0]
 			html += '<div class="collection-subtable">'
 			for p, numbers_p in numbers.items():
-				html_p = '<div class="collection-block">'
+				if len(groups_left) <= 1:
+					param = number_param_groups_to_string(params_so_far+[p])
+					id_str = 'id="%s"' % (param,) if param != '' else ''
+				else:
+					id_str = ''
+				html_p = '<div %s class="collection-block">' % (id_str,)
 				html_p += '<div class="collection-param-group">%s:</div>' % (format_param_group(p),)
 				html_inner = render_number_table(numbers_p, params_so_far+[p], groups_left[1:])
 				html_p += '<div class="collection-cell-right">%s</div>' % (wrap_in_subtable(html_inner),)
@@ -425,11 +431,11 @@ def render_collection(request, collection):
 			
 	if 'Numbers' in data and len(data['Numbers']) > 0:
 		numbers = data['Numbers']
-		section = {
+		number_section = {
 			'title': pluralize('Number',collection.number_count),
 			'text': render_number_table(numbers),
 		}
-		sections.append(section)
+		#sections.append(number_section)
 
 	#html += '</div>'
 	#html += '</div>'
@@ -437,7 +443,7 @@ def render_collection(request, collection):
 	context = {
 		'collection': collection,
 		'sections': sections,
-		'collection_html': html,	
+		'number_section': number_section,
 	}
 							
 	return render(request, 'collection.html', context)
