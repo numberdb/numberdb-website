@@ -27,15 +27,33 @@ div.collection-section {
   padding-bottom: 0.2rem;
   border-bottom: 1px solid #aaa;
 }
-div.collection-label {
-  display: inline-block;
-  padding: 0 0.5rem;
+div.collection-table {
+  display: table;
+  width: 100%;
 }
-div.collection-entry {
-  display: inline;
+div.collection-subtable {
+  display: table;
+  /*width: 100%;*/
 }
 div.collection-block {
-    scroll-margin-top: 100px;
+  display: table-row;
+  scroll-margin-top: 100px;
+}
+div.collection-label {
+  display: table-cell;
+  padding: 0 0.5rem;
+  text-align: center;
+  width: 2rem;
+}
+div.collection-param-group {
+  display: table-cell;
+  padding: 0 0.5rem;
+  text-align: right;
+  width: 2rem;
+}
+div.collection-cell-right,
+div.collection-entry {
+  display: table-cell;
 }
 a.HREF {
   color: #22a;   

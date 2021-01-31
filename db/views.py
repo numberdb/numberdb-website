@@ -119,221 +119,269 @@ def collection_by_url(request, url):
     return render_collection(request, collection)
 
 def render_collection(request, collection):
-    data = collection.data.json
-    html = ""
-    html += '<a class="github-link" href="https://github.com/bmatschke/numberdb-data/tree/main/%s/collection.yaml">edit on github</a>' % (collection.path,)
-    html += '<div class="collection-title">%s</div>' % (collection.title,)
+	data = collection.data.json
+	html = ""
+	html += '<a class="github-link" href="https://github.com/bmatschke/numberdb-data/tree/main/%s/collection.yaml">edit on github</a>' % (collection.path,)
+	html += '<div class="collection-title">%s</div>' % (collection.title,)
 
-    #Deduce label names:
-    show_label_as = {}
-    i_label = 1
-    for header in ('Formulas','Comments'):
-        if header in data and len(data[header]) > 0:
-            for label in data[header]:
-                show_label_as[label] = '(%s)' % (i_label,)
-                i_label += 1
-    i_label = 1
-    if 'Programs' in data and len(data['Programs']) > 0:
-        for label in data['Programs']:
-            show_label_as[label] = '(P%s)' % (i_label,)
-            i_label += 1
-    i_label = 1
-    for header in ('References','Links'):
-        if header in data and len(data[header]) > 0:
-            for label in data[header]:
-                show_label_as[label] = '[%s]' % (i_label,)
-                i_label += 1
-    
-    def render_text(text):
-        '''
-        Parse text for 'CITE', 'HREF', and '\n', 
-        and replace accordingly.
-        '''
-        
-        #Parse 'CITE's:
-        parts = text.split("CITE{")
-        new_text = parts[0]
-        for part in parts[1:]:
-            try: 
-                ref, part2 = part.split("}",maxsplit=1)
-                new_text += '<a class="CITE" href="#%s">%s</a>%s' % (ref, show_label_as[ref], part2)
-                #new_text += '<a class="CITE" href="#%s" onClick="(event) => {scrollTo(event,);}">%s</a>%s' % (ref, ref, show_label_as[ref], part2)
-            except (ValueError, KeyError):
-                new_text += "(???)" + part2
-                #TODO: Should output warning: "No closing bracket!"
+	#Deduce label names:
+	show_label_as = {}
+	i_label = 1
+	for header in ('Formulas','Comments'):
+		if header in data and len(data[header]) > 0:
+			for label in data[header]:
+				show_label_as[label] = '(%s)' % (i_label,)
+				i_label += 1
+	i_label = 1
+	if 'Programs' in data and len(data['Programs']) > 0:
+		for label in data['Programs']:
+			show_label_as[label] = '(P%s)' % (i_label,)
+			i_label += 1
+	i_label = 1
+	for header in ('References','Links'):
+		if header in data and len(data[header]) > 0:
+			for label in data[header]:
+				show_label_as[label] = '[%s]' % (i_label,)
+				i_label += 1
 
-        #Parse 'HREF's:
-        parts = new_text.split("HREF{")
-        new_text = parts[0]
-        for part in parts[1:]:
-            try: 
-                ref, part2 = part.split("}",maxsplit=1)
-                if part2 != "" and part2[0] == "[":
-                    try:
-                        caption, part2 = part2[1:].split("]",maxsplit=1)
-                    except ValueError:
-                        caption = ref
-                else:
-                    caption = ref
-                new_text += '<a class="HREF" href="%s">%s</a>%s' % (ref, caption, part2)
-            except (ValueError, KeyError):
-                new_text += "[???]" + part2
-                #TODO: Should output warning: "No closing bracket!"
+	def render_text(text):
+		'''
+		Parse text for 'CITE', 'HREF', and '\n', 
+		and replace accordingly.
+		'''
+		
+		#Parse 'CITE's:
+		parts = text.split("CITE{")
+		new_text = parts[0]
+		for part in parts[1:]:
+			try: 
+				ref, part2 = part.split("}",maxsplit=1)
+				new_text += '<a class="CITE" href="#%s">%s</a>%s' % (ref, show_label_as[ref], part2)
+				#new_text += '<a class="CITE" href="#%s" onClick="(event) => {scrollTo(event,);}">%s</a>%s' % (ref, ref, show_label_as[ref], part2)
+			except (ValueError, KeyError):
+				new_text += "(???)" + part2
+				#TODO: Should output warning: "No closing bracket!"
 
-        #Parse '\n's:
-        new_text = new_text.replace("\n","<br>")
-        return new_text
-        
-    for tag in collection.my_tags.all():
-        html += '<a class="tag" href="%s">%s</a> ' % (
-            reverse('db:tag',kwargs={'tag_url': tag.url()}),
-            tag.name,
-        )
-        
-    if 'Definition' in data:
-        html += '<div class="collection-section">%s</div>' % ("Definition")
-        html += '<div class="collection-entry">%s</div>' % (render_text(data['Definition']),)
+		#Parse 'HREF's:
+		parts = new_text.split("HREF{")
+		new_text = parts[0]
+		for part in parts[1:]:
+			try: 
+				ref, part2 = part.split("}",maxsplit=1)
+				if part2 != "" and part2[0] == "[":
+					try:
+						caption, part2 = part2[1:].split("]",maxsplit=1)
+					except ValueError:
+						caption = ref
+				else:
+					caption = ref
+				new_text += '<a class="HREF" href="%s">%s</a>%s' % (ref, caption, part2)
+			except (ValueError, KeyError):
+				new_text += "[???]" + part2
+				#TODO: Should output warning: "No closing bracket!"
 
-    type_names = {
-        "Z": "integer",
-        "R": "real number",
-        "C": "complex number",
-        "ZI": "integer interval",
-        "RI": "real interval",
-        "CI": "complex interval",
-        "RB": "real ball",
-        "CB": "complex ball",
-    }  
-    if 'Parameters' in data and len(data['Parameters']) > 0:
-        html += '<div class="collection-section">%s</div>' % ("Parameters")
-        for p, info in data['Parameters'].items():
-            p_latex = info['latex-name'] if 'latex-name' in info else "$%s$" % (p,)
-            html += '<div class="collection-block" id="%s">' % (p,)
-            html += '<div class="collection-label">%s</div>' % (render_text(p_latex))
-            html += ' &mdash;&nbsp;&nbsp; '
-            if 'title' in info:
-                html += '%s' % (render_text(info['title']),)    
-            elif 'type' in info:
-            #if 'type' in info:
-                if info['type'] in type_names:
-                    text = type_names[info['type']]
-                else:
-                    text = "%s (Unknown type)" % (info['type'],)
-                html += text    
-            if 'constraints' in info: 
-                html += ' (%s)' % (render_text(info['constraints']),)
-            html += '</div>'
-        parameters = data['Parameters'].keys() 
-    else:
-        parameters = []
-                    
-    for header in ('Formulas','Comments'):
-        if header in data and len(data[header]) > 0:
-            html += '<div class="collection-section">%s</div>' % (header,)
-            for label, text in data[header].items():
-                html += '<div class="collection-block" id="%s">' % (label,)
-                html += '<div class="collection-label">%s</div>' % (show_label_as[label],)
-                html += '<div class="collection-entry">%s</div>' % (render_text(text),)
-                html += '</div>'
+		#Parse '\n's:
+		new_text = new_text.replace("\n","<br>")
+		return new_text
+		
+	for tag in collection.my_tags.all():
+		html += '<a class="tag" href="%s">%s</a> ' % (
+			reverse('db:tag',kwargs={'tag_url': tag.url()}),
+			tag.name,
+		)
+		
+	if 'Definition' in data:
+		html += '<div class="collection-section">%s</div>' % ("Definition")
+		html += '<div class="collection-entry">%s</div>' % (render_text(data['Definition']),)
 
-    #Continue i_label, as it's all interior data, not a direct reference.
-    if 'Programs' in data and len(data['Programs']) > 0:
-        html += '<div class="collection-section">%s</div>' % ('Programs',)
-        for label, program in data['Programs'].items():
-            html += '<div class="collection-block" id="%s">'  % (label,)
-            html += '<div class="collection-label">%s</div>' % (show_label_as[label],)
-            html += '<div class="collection-entry">(%s)<br><code>%s</code></div>' % (render_text(program['language']),render_text(program['code']))
-            html += '</div>'
+	type_names = {
+		"Z": "integer",
+		"R": "real number",
+		"C": "complex number",
+		"ZI": "integer interval",
+		"RI": "real interval",
+		"CI": "complex interval",
+		"RB": "real ball",
+		"CB": "complex ball",
+	}  
+	if 'Parameters' in data and len(data['Parameters']) > 0:
+		html += '<div class="collection-section">%s</div>' % ("Parameters")
+		html += '<div class="collection-table">'
+		for p, info in data['Parameters'].items():
+			p_latex = info['latex-name'] if 'latex-name' in info else "$%s$" % (p,)
+			html += '<div class="collection-block" id="%s">' % (p,)
+			html += '<div class="collection-label">%s</div>' % (render_text(p_latex))
+			text = ' &mdash;&nbsp;&nbsp; '
+			if 'title' in info:
+				text += '%s' % (render_text(info['title']),)    
+			elif 'type' in info:
+			#if 'type' in info:
+				if info['type'] in type_names:
+					text += type_names[info['type']]
+				else:
+					text += "%s (Unknown type)" % (info['type'],)
+			if 'constraints' in info: 
+				text += ' (%s)' % (render_text(info['constraints']),)
+			html += '<div class="collection-entry">%s</div>' % (text,)			
+			html += '</div>'
+		html += '</div>'
+		parameters = data['Parameters'].keys() 
+	else:
+		parameters = []
+					
+	for header in ('Formulas','Comments'):
+		if header in data and len(data[header]) > 0:
+			html += '<div class="collection-section">%s</div>' % (header,)
+			html += '<div class="collection-table">'
+			for label, text in data[header].items():
+				html += '<div class="collection-block" id="%s">' % (label,)
+				html += '<div class="collection-label">%s</div>' % (show_label_as[label],)
+				html += '<div class="collection-entry">%s</div>' % (render_text(text),)
+				html += '</div>'
+			html += '</div>'
 
-    for header in ('References','Links'):
-        if header in data and len(data[header]) > 0:
-            html += '<div class="collection-section">%s</div>' % (header,)
-            for label, reference in data[header].items():
-                html += '<div class="collection-block" id="%s">' % (label,)
-                html += '<div class="collection-label">%s</div>' % (show_label_as[label],)
-                text = ""
-                if 'bib' in reference:
-                    text += render_text(reference['bib']) + " "
-                if 'arXiv' in reference:
-                    link = reference['arXiv']
-                    link = link.split("[")[0].strip(" \n")
-                    link = link.split("/")[-1]
-                    link = "https://www.arxiv.org/abs/%s" % (link,)
-                    text += '(<a href="%s">arXiv</a>) ' % (link,)
-                if 'doi' in reference:
-                    link = reference['doi'].split("doi.org/")[-1]
-                    link = "https://doi.org/%s" % (link,)
-                    text += '(<a href="%s">doi</a>) ' % (link,)
-                if 'url' in reference:
-                    if 'title' in reference:
-                        text += '<a href="%s">%s</a> ' % (reference['url'],reference['title'])
-                    else:
-                        text += '<a href="%s">%s</a> ' % (reference['url'],reference['url'])
-                html += '<div class="collection-entry">%s</div>' % (text,)
-                html += '</div>'
+	#Continue i_label, as it's all interior data, not a direct reference.
+	if 'Programs' in data and len(data['Programs']) > 0:
+		html += '<div class="collection-section">%s</div>' % ('Programs',)
+		html += '<div class="collection-table">'
+		for label, program in data['Programs'].items():
+			html += '<div class="collection-block" id="%s">'  % (label,)
+			html += '<div class="collection-label">%s</div>' % (show_label_as[label],)
+			html += '<div class="collection-entry">(%s)<br><code>%s</code></div>' % (render_text(program['language']),render_text(program['code']))
+			html += '</div>'
+		html += '</div>'
 
-    property_names = {
-        'type': 'Numbers are of type',
-        'complete': 'Collection is complete',
-        'sources': 'Sources of data',
-        'relative precision': 'Relative precision',
-        'absolute precision': 'Absolute precision',
-    }
-    if 'Data properties' in data and len(data['Data properties']) > 0:
-        properties = data['Data properties']
-        html += '<div class="collection-section">%s</div>' % ('Data properties',)
-        for key, value in properties.items():
-            if len(value) == 0:
-                continue
-            if key in property_names:
-                text = "%s: " % (property_names[key])
-                if key == 'type':
-                    if properties['type'] in type_names:
-                        text += type_names[value]
-                    else:
-                        text += "%s (Unknown value)" % (value,)
-                elif key == 'sources':
-                    text += ", ".join(value)                
-                else:
-                    text += value
-            else:
-                text = "%s: %s (Unknown key)" % (key, value)     
-            html += '<div class="collection-block">'
-            html += '<div class="collection-entry">%s</div>' % (render_text(text),)
-            html += '</div>'
-   
-    if 'Display properties' in data and 'group parameters' in data['Display properties']:
-        param_groups = data['Display properties']['group parameters']
-    else:
-        param_groups = [[p] for p in parameters]
-    
-    def render_number_table(numbers, params_so_far=[], groups_left=param_groups):
-        html = ''
-        if len(groups_left) == 0:
-            #numbers is an entry for a number now, either a string or a dict:
-            if isinstance(numbers,str):
-                html += '<div class="number">%s</div>' % (numbers,)
-            elif isinstance(numbers,list):           
-                for number in numbers:
-                    html += '<div class="number">%s</div>' % (number,)
-            elif isinstance(numbers,dict):  
-                for key, value in numbers.items():
-                    html += '<div class="number-%s">%s</div>' % (key,render_text(value),)
-        else:
-            next_group = groups_left[0]
-            for p, numbers_p in numbers.items():
-                html_p = '<div class="param-group">%s:</div>' % (p,)
-                html_inner = render_number_table(numbers_p, params_so_far+[p], groups_left[1:])
-                html_p += '<div class="cell-right">%s</div>' % (html_inner,)
-                html += html_p
-        return html    
-            
-    if 'Numbers' in data and len(data['Numbers']) > 0:
-        numbers = data['Numbers']
-        html += '<div class="collection-section">%s</div>' % ('Numbers',)
-        html += render_number_table(numbers)
-                            
-    return render(request, 'collection.html', {'collection': collection, 'collection_html': html})
+	for header in ('References','Links'):
+		if header in data and len(data[header]) > 0:
+			html += '<div class="collection-section">%s</div>' % (header,)
+			html += '<div class="collection-table">'
+			for label, reference in data[header].items():
+				html += '<div class="collection-block" id="%s">' % (label,)
+				html += '<div class="collection-label">%s</div>' % (show_label_as[label],)
+				text = ""
+				if 'bib' in reference:
+					text += render_text(reference['bib']) + " "
+				if 'arXiv' in reference:
+					link = reference['arXiv']
+					link = link.split("[")[0].strip(" \n")
+					link = link.split("/")[-1]
+					link = "https://www.arxiv.org/abs/%s" % (link,)
+					text += '(<a href="%s">arXiv</a>) ' % (link,)
+				if 'doi' in reference:
+					link = reference['doi'].split("doi.org/")[-1]
+					link = "https://doi.org/%s" % (link,)
+					text += '(<a href="%s">doi</a>) ' % (link,)
+				if 'url' in reference:
+					if 'title' in reference:
+						text += '<a href="%s">%s</a> ' % (reference['url'],reference['title'])
+					else:
+						text += '<a href="%s">%s</a> ' % (reference['url'],reference['url'])
+				html += '<div class="collection-entry">%s</div>' % (text,)
+				html += '</div>'
+			html += '</div>'
+
+	property_names = {
+		'type': 'Numbers are of type',
+		'complete': 'Collection is complete',
+		'sources': 'Sources of data',
+		'relative precision': 'Relative precision',
+		'absolute precision': 'Absolute precision',
+	}
+	if 'Data properties' in data and len(data['Data properties']) > 0:
+		properties = data['Data properties']
+		html += '<div class="collection-section">%s</div>' % ('Data properties',)
+		html += '<div class="collection-table">'
+		for key, value in properties.items():
+			if len(value) == 0:
+				continue
+			if key in property_names:
+				text = "%s: " % (property_names[key])
+				if key == 'type':
+					if properties['type'] in type_names:
+						text += type_names[value]
+					else:
+						text += "%s (Unknown value)" % (value,)
+				elif key == 'sources':
+					text += ", ".join(value)                
+				else:
+					text += value
+			else:
+				text = "%s: %s (Unknown key)" % (key, value)     
+			html += '<div class="collection-block">'
+			html += '<div class="collection-entry">%s</div>' % (render_text(text),)
+			html += '</div>'
+		html += '</div>'
+
+	if 'Display properties' in data and 'group parameters' in data['Display properties']:
+		param_groups = data['Display properties']['group parameters']
+	else:
+		param_groups = [[p] for p in parameters]
+	#print("param_groups:",param_groups)
+
+	def render_number_table(numbers, params_so_far=[], groups_left=param_groups):
+		html = ''
+
+		def wrap_in_subtable(inner_html):
+			return '<div class="collection-subtable">%s</div>' % (inner_html,)
+
+		def format_param_group(param_group):
+			result = ', '.join(p.strip(' ') for p in param_group.split(','))
+			result = result.replace(' ','&nbsp;')
+			return result
+
+		if isinstance(numbers,dict):
+			if 'number' in numbers or \
+				'numbers' in numbers or \
+				'equals' in numbers:
+				#Numbers are given with extra information at this level:
+				for key in numbers:
+					if key in ('number','numbers'):
+						continue
+					html += '%s: %s<br>' % (key, render_text(numbers[key]))
+				if 'number' in numbers:
+					html += render_number_table(numbers['number'], params_so_far, groups_left)
+				elif 'numbers' in numbers:
+					html += render_number_table(numbers['numbers'], params_so_far, groups_left)
+				return html
+			
+		if len(groups_left) == 0:
+			#numbers is an entry for a number now, either a string or a dict:
+			if isinstance(numbers,str):
+				html += '<div class="collection-number">%s</div>' % (numbers,)
+			else:
+				#html += '<div class="collection-subtable">'
+				#html += '<div class="collection-block">'
+				#html += '<div class="collection-entry">'
+				if isinstance(numbers,list):           
+					for number in numbers:
+						html += '<div class="collection-number">%s</div>' % (number,)
+				elif isinstance(numbers,dict):  
+					for key, value in numbers.items():
+						html += '<div class="collection-number-%s">%s</div>' % (key,render_text(value),)
+				#html += '</div>'
+				#html += '</div>'
+				#html += '</div>'
+		
+		else:
+			next_group = groups_left[0]
+			html += '<div class="collection-subtable">'
+			for p, numbers_p in numbers.items():
+				html_p = '<div class="collection-block">'
+				html_p += '<div class="collection-param-group">%s:</div>' % (format_param_group(p),)
+				html_inner = render_number_table(numbers_p, params_so_far+[p], groups_left[1:])
+				html_p += '<div class="collection-cell-right">%s</div>' % (wrap_in_subtable(html_inner),)
+				html_p += '</div>'
+				html += html_p
+			html += '</div>'
+
+		return html    
+			
+	if 'Numbers' in data and len(data['Numbers']) > 0:
+		numbers = data['Numbers']
+		html += '<div class="collection-section">%s</div>' % ('Numbers',)
+		html += render_number_table(numbers)
+							
+	return render(request, 'collection.html', {'collection': collection, 'collection_html': html})
 
 def show_own_profile(request):
     #latest_question_list = Question.objects.order_by('-pub_date')[:5]

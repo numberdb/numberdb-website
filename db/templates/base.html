@@ -130,14 +130,21 @@ form#logoutForm {
 }
 
 .MathJax {
-  font-size: 0.8rem;   
+  font-size: 0.95rem;   
 }
 
+div.navbar-container {
+  /*text-align: center;*/
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-around;   
+}
 
 a.navbar-field {
   vertical-align: sup;
   display: inline-block;
-  padding: 1rem;
+  padding: 1rem 0.5rem;
   margin: 0;
   /*color: #555;
   */
@@ -159,7 +166,12 @@ a.navbar-field:hover {
 a.right-field {
   float: right;
 }
-
+img.profile {
+  content: url("{% static 'profile.png' %}");   
+  width: 0.7em;
+  position: relative;
+  top: -0.1em;
+}
 
 div.tag,
 a.tag {
@@ -260,6 +272,7 @@ div.medskip {
 
 <!--        <a class="navbar-field logo" href="{% url 'db:home' %}">NumberDB</a>
 -->
+    <div class="navbar-container">
       <a class="navbar-field" href="{% url 'db:home' %}">NumberDB</a>
       <a class="navbar-field" href="{% url 'db:tags' %}">Tags</a>      
       <a class="navbar-field" href="{% url 'db:collections' %}">Collections</a>      
@@ -267,9 +280,10 @@ div.medskip {
       <a class="navbar-field" href="{% url 'db:help' %}">Help</a>
 
       {% if user.is_authenticated == False %}
-        <a class="navbar-field" href="{% url 'account_login' %}">Login</a>
+        <!--<a class="navbar-field" href="{% url 'account_login' %}">Login</a>-->
+        <a class="navbar-field" href="{% url 'account_login' %}"><img class="profile" src="{% static 'profile.png' %}"></a>
       {% else %}
-        <a class="navbar-field" href="{% url 'db:profile' %}">{% user_display user %}</a>
+        <a class="navbar-field" href="{% url 'db:profile' %}"><img class="profile" src="{% static 'profile.png' %}">&nbsp;{% user_display user %}</a>
 
           <!-- The following yields a GET request, which is "unsafe" if it logs out directly.
 	     But it should be ok since we don't allow arbitrary html code etc. by users. 
@@ -281,13 +295,16 @@ div.medskip {
 	  }
 	  </script>
 	  
+	<div style="display: inline-block">
 	  <form id="logoutForm" action="{% url 'account_logout' %}" method="post">
             {% csrf_token %}
 	    <!--<input type"hidden" name="id" value="4"/>-->
           </form>
-	<a class="navbar-field" href="javascript:logout()">Logout</a>
+	  <a class="navbar-field" href="javascript:logout()">Logout</a>
+        </div>
       {% endif %}  
-  
+    </div>
+    
     {% block top-searchbar %}
       {% include 'includes/searchbar.html' %}
     {% endblock %}
