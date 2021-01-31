@@ -1,6 +1,6 @@
 from sage import *
 from sage.rings.all import *
-
+from sage.misc.flatten import flatten
 
 
 def my_real_interval_to_string(r):
@@ -59,3 +59,11 @@ def get_css_grid_classes():
     }
     css_grid_classes['default'] = css_grid_classes['normal']
     return css_grid_classes
+
+def number_param_groups_to_bytes(param):
+    p = ",".join(flatten(param))
+    p = bytes(p,encoding='cp437')
+    return p
+
+def number_param_groups_to_string(param):
+    return number_param_groups_to_bytes(param).decode()

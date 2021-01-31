@@ -320,10 +320,11 @@ html * {
 }
 
 h1 {
+  margin: 0.9rem 0 0.5rem 0;
   font-weight: 400;
 }
 h2 {
-  margin: 0.5rem 0;
+  margin: 0.9rem 0 0.3rem 0;
 }
 h3 {
   /*font-weight: bold;*/   
@@ -342,14 +343,14 @@ body {
 div.horizontal-container {
   margin: auto;
   margin-color: #ddd;
-  max-width: 64; 48rem;
+  max-width: 48rem;
   font-size: 1rem; /* base for most em's */
   background: #fff;
   padding: calc(1rem + 1 * var(--srem));
   padding-bottom: 4rem;
   padding-top: 0;
   /*border-top: 0.3rem solid #aeb;*/
-  border: 1px solid #aaa;
+  /*border: 1px solid #aaa;*/
   /*border-left: 0.5em solid #5a8;*/
 }
 
@@ -405,6 +406,7 @@ img.profile {
   position: relative;
   top: -0.1em;
 }
+
 
 div.tag,
 a.tag {
@@ -475,6 +477,8 @@ div.medskip {
   margin-bottom: 0.5rem;   
 }
 
+
+
 </style>
 
 
@@ -506,7 +510,7 @@ div.medskip {
 <!--        <a class="navbar-field logo" href="{% url 'db:home' %}">NumberDB</a>
 -->
     <div class="navbar-container">
-      <a class="navbar-field" href="{% url 'db:home' %}">NumberDB</a>
+      <a class="navbar-field" href="{% url 'db:home' %}">NumberDB$^\beta$</a>
       <a class="navbar-field" href="{% url 'db:tags' %}">Tags</a>      
       <a class="navbar-field" href="{% url 'db:collections' %}">Collections</a>      
       <a class="navbar-field" href="{% url 'db:about' %}">About</a>

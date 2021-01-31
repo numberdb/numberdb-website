@@ -47,6 +47,15 @@ a.ui-menu-item-wrapper {
   width: calc(1rem);
   /*border: 1px solid black;*/
 }
+#msg-no-entry {
+  background: #fff;
+  padding: 0.1rem 0.5rem;
+  margin: 0.3rem;
+  position: fixed;
+  z-index: 1;
+  transform: translateX(-50%) translateY(0);   
+  border-radius: 1em;
+}
 </style>
 
 
@@ -54,13 +63,14 @@ a.ui-menu-item-wrapper {
   <!--<label for="searchbox">Search a number:</label>
   -->
   <div id="searchbox-component">
-    <input id="searchbox" {# placeholder="Try 3.14 or L-function" #} 
+    <input id="searchbox" 
+      {% if autofocus %} autofocus {% endif %} 
+      {# placeholder="Try 3.14 or L-function" #} 
       {% if searchterm %} value="{{ searchterm }}" {% endif %}
     ><img id="searchbox-image" src="{% static 'search.png' %}">
   </div>
   
-  <span style="display:none" id="msg-no-record">No Record Found</span><br>
-  <span style="display:none" id="msg-no-entry">No match in database</span><br>
+  <span style="display:none" id="msg-no-entry">No match in database</span>
 </div>
 
 

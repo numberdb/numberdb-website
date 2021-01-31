@@ -41,6 +41,7 @@ from .models import SearchTerm
 from .models import SearchTermValue
 
 from .utils import pluralize
+from .utils import number_param_groups_to_string
 
 def home(request):
     #messages.success(request, 'Test message for home page.')
@@ -120,30 +121,9 @@ def collection_by_url(request, url):
     return render_collection(request, collection)
 
 def render_collection(request, collection):
-	data = collection.data.json
-	html = ""
-	html += '<a class="github-link" href="https://github.com/bmatschke/numberdb-data/tree/main/%s/collection.yaml">edit on github</a>' % (collection.path,)
-	html += '<div class="collection-title">%s</div>' % (collection.title,)
 
-	#Deduce label names:
-	show_label_as = {}
-	i_label = 1
-	for header in ('Formulas','Comments'):
-		if header in data and len(data[header]) > 0:
-			for label in data[header]:
-				show_label_as[label] = '(%s)' % (i_label,)
-				i_label += 1
-	i_label = 1
-	if 'Programs' in data and len(data['Programs']) > 0:
-		for label in data['Programs']:
-			show_label_as[label] = '(P%s)' % (i_label,)
-			i_label += 1
-	i_label = 1
-	for header in ('References','Links'):
-		if header in data and len(data[header]) > 0:
-			for label in data[header]:
-				show_label_as[label] = '[%s]' % (i_label,)
-				i_label += 1
+	def wrap_in_div(div_class,html):
+		return '<div class="%s">%s</div>' % (div_class,html)
 
 	def render_text(text):
 		'''
@@ -184,20 +164,45 @@ def render_collection(request, collection):
 		#Parse '\n's:
 		new_text = new_text.replace("\n","<br>")
 		return new_text
+
+
+	data = collection.data.json
+
+	html = ''
+
+	#Deduce label names:
+	show_label_as = {}
+	i_label = 1
+	for header in ('Formulas','Comments'):
+		if header in data and len(data[header]) > 0:
+			for label in data[header]:
+				show_label_as[label] = '(%s)' % (i_label,)
+				i_label += 1
+	i_label = 1
+	if 'Programs' in data and len(data['Programs']) > 0:
+		for label in data['Programs']:
+			show_label_as[label] = '(P%s)' % (i_label,)
+			i_label += 1
+	i_label = 1
+	for header in ('References','Links'):
+		if header in data and len(data[header]) > 0:
+			for label in data[header]:
+				show_label_as[label] = '[%s]' % (i_label,)
+				i_label += 1
 		
-	for tag in collection.my_tags.all():
-		html += '<a class="tag" href="%s">%s</a> ' % (
-			reverse('db:tag',kwargs={'tag_url': tag.url()}),
-			tag.name,
-		)
 	
-	html += '<div class="grid12">'
-	html += '<div class="col-m-6">'
+	#html += '<div class="grid12">'
+	#html += '<div class="col-m-6">'
+
+	sections = []
 		
 	if 'Definition' in data:
-		html += '<div class="collection-section-title">%s</div>' % ("Definition")
-		html += '<div class="collection-entry">%s</div>' % (render_text(data['Definition']),)
-
+		section = {
+			'title': 'Definition',
+			'text': render_text(data['Definition']),
+		}
+		sections.append(section)
+		
 	type_names = {
 		"Z": "integer",
 		"R": "real number",
@@ -209,13 +214,10 @@ def render_collection(request, collection):
 		"CB": "complex ball",
 	}  
 	if 'Parameters' in data and len(data['Parameters']) > 0:
-		html += '<div class="collection-section-title">%s</div>' % ("Parameters")
-		html += '<div class="collection-section-container">'
-		html += '<div class="collection-table">'
+		labeled_list = []
 		for p, info in data['Parameters'].items():
 			p_latex = info['latex-name'] if 'latex-name' in info else "$%s$" % (p,)
-			html += '<div class="collection-block" id="%s">' % (p,)
-			html += '<div class="collection-label">%s</div>' % (render_text(p_latex))
+
 			text = ' &mdash;&nbsp;&nbsp; '
 			if 'title' in info:
 				text += '%s' % (render_text(info['title']),)    
@@ -227,48 +229,60 @@ def render_collection(request, collection):
 					text += "%s (Unknown type)" % (info['type'],)
 			if 'constraints' in info: 
 				text += ' (%s)' % (render_text(info['constraints']),)
-			html += '<div class="collection-entry">%s</div>' % (text,)			
-			html += '</div>'
-		html += '</div>'
-		html += '</div>'
+
+			labeled_list.append({
+				'label_id': p,
+				'label_caption': render_text(p_latex),
+				'text': text,
+			})
+		section = {
+			'title': 'Parameters',
+			'labeled_list': labeled_list,
+		}
+		sections.append(section)
+
 		parameters = data['Parameters'].keys() 
 	else:
 		parameters = []
 					
 	for header in ('Formulas','Comments'):
 		if header in data and len(data[header]) > 0:
-			html += '<div class="collection-section-title">%s</div>' % (header,)
-			html += '<div class="collection-section-container">'
-			html += '<div class="collection-table">'
+			labeled_list = []
 			for label, text in data[header].items():
-				html += '<div class="collection-block" id="%s">' % (label,)
-				html += '<div class="collection-label">%s</div>' % (show_label_as[label],)
-				html += '<div class="collection-entry">%s</div>' % (render_text(text),)
-				html += '</div>'
-			html += '</div>'
-			html += '</div>'
+				labeled_list.append({
+					'label_id': label,
+					'label_caption': show_label_as[label],
+					'text': render_text(text),
+				})
+			section = {
+				'title': header,
+				'labeled_list': labeled_list,
+			}
+			sections.append(section)
 
 	#Continue i_label, as it's all interior data, not a direct reference.
 	if 'Programs' in data and len(data['Programs']) > 0:
-		html += '<div class="collection-section-title">%s</div>' % ('Programs',)
-		html += '<div class="collection-section-container">'
-		html += '<div class="collection-table">'
+		labeled_list = []
 		for label, program in data['Programs'].items():
-			html += '<div class="collection-block" id="%s">'  % (label,)
-			html += '<div class="collection-label">%s</div>' % (show_label_as[label],)
-			html += '<div class="collection-entry">(%s)<br><code>%s</code></div>' % (render_text(program['language']),render_text(program['code']))
-			html += '</div>'
-		html += '</div>'
-		html += '</div>'
+			text = '%s<br><code>%s</code>' % (
+				render_text(program['language']),
+				render_text(program['code']),
+			)
+			labeled_list.append({
+				'label_id': label,
+				'label_caption': show_label_as[label],
+				'text': text,
+			})
+		section = {
+			'title': 'Programs',
+			'labeled_list': labeled_list,
+		}
+		sections.append(section)
 
 	for header in ('References','Links'):
 		if header in data and len(data[header]) > 0:
-			html += '<div class="collection-section-title">%s</div>' % (header,)
-			html += '<div class="collection-section-container">'
-			html += '<div class="collection-table">'
+			labeled_list = []
 			for label, reference in data[header].items():
-				html += '<div class="collection-block" id="%s">' % (label,)
-				html += '<div class="collection-label">%s</div>' % (show_label_as[label],)
 				text = ""
 				if 'bib' in reference:
 					text += render_text(reference['bib']) + " "
@@ -287,10 +301,17 @@ def render_collection(request, collection):
 						text += '<a href="%s">%s</a> ' % (reference['url'],reference['title'])
 					else:
 						text += '<a href="%s">%s</a> ' % (reference['url'],reference['url'])
-				html += '<div class="collection-entry">%s</div>' % (text,)
-				html += '</div>'
-			html += '</div>'
-			html += '</div>'
+
+				labeled_list.append({
+					'label_id': label,
+					'label_caption': show_label_as[label],
+					'text': text,
+				})
+			section = {
+				'title': header,
+				'labeled_list': labeled_list,
+			}
+			sections.append(section)
 
 	property_names = {
 		'type': 'Numbers are of type',
@@ -301,9 +322,7 @@ def render_collection(request, collection):
 	}
 	if 'Data properties' in data and len(data['Data properties']) > 0:
 		properties = data['Data properties']
-		html += '<div class="collection-section-title">%s</div>' % ('Data properties',)
-		html += '<div class="collection-section-container">'
-		html += '<div class="collection-table">'
+		unlabeled_list = []
 		for key, value in properties.items():
 			if len(value) == 0:
 				continue
@@ -320,11 +339,15 @@ def render_collection(request, collection):
 					text += value
 			else:
 				text = "%s: %s (Unknown key)" % (key, value)     
-			html += '<div class="collection-block">'
-			html += '<div class="collection-entry">%s</div>' % (render_text(text),)
-			html += '</div>'
-		html += '</div>'
-		html += '</div>'
+			unlabeled_list.append({
+				'text': render_text(text),
+			})
+		section = {
+			'title': 'Data properties',
+			'unlabeled_list': unlabeled_list,
+		}
+		sections.append(section)
+
 
 	if 'Display properties' in data and 'group parameters' in data['Display properties']:
 		param_groups = data['Display properties']['group parameters']
@@ -375,6 +398,13 @@ def render_collection(request, collection):
 				#html += '</div>'
 				#html += '</div>'
 				#html += '</div>'
+			param = number_param_groups_to_string(params_so_far)
+			#print("param:",param)
+			if param != '':
+				html = '<div id="%s" class="anchor-id">%s</div>' % (
+					param,
+					html,
+				)
 		
 		else:
 			next_group = groups_left[0]
@@ -390,20 +420,27 @@ def render_collection(request, collection):
 
 		return html    
 
-	html += '</div>'
-	html += '<div class="col-m-6">'
+	#html += '</div>'
+	#html += '<div class="col-m-6">'
 			
 	if 'Numbers' in data and len(data['Numbers']) > 0:
 		numbers = data['Numbers']
-		html += '<div class="collection-section-title">%s</div>' % (pluralize('Number',collection.number_count),)
-		html += '<div class="collection-section-container">'
-		html += render_number_table(numbers)
-		html += '</div>'
+		section = {
+			'title': pluralize('Number',collection.number_count),
+			'text': render_number_table(numbers),
+		}
+		sections.append(section)
 
-	html += '</div>'
-	html += '</div>'
+	#html += '</div>'
+	#html += '</div>'
+	
+	context = {
+		'collection': collection,
+		'sections': sections,
+		'collection_html': html,	
+	}
 							
-	return render(request, 'collection.html', {'collection': collection, 'collection_html': html})
+	return render(request, 'collection.html', context)
 
 def show_own_profile(request):
     #latest_question_list = Question.objects.order_by('-pub_date')[:5]
@@ -483,7 +520,7 @@ def suggestions(request):
 	matchZZ = cZZ.match(term)
 	if matchZZ != None and matchZZ.end() == len(term):
 		try:
-			number = Number(sage_number=ZZ(term))
+			number = Number(sage_number=ZZ(int(term)))
 		except OverflowError:
 			number = None
 		if number != None:

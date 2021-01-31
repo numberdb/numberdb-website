@@ -22,11 +22,22 @@
   text-align: center;
   font-size: 1rem;
 }
+#beta-title {
+  display: inline;
+  position: fixed;
+  font-size: 0.4em;
+  font-weight: 200;
+  color: inherit;
+  text-decoration: none;
+}
+#beta-title:hover {
+  text-decoration: underline;
+}
 </style>
 
 <br>
     <div id="title">
-	NumberDB
+	NumberDB<a href="{% url 'db:about'%}#work-in-progress" id="beta-title">beta</a>
     </div>
 
 <!--
@@ -36,7 +47,7 @@
 -->
 
 <br>    
-{% include 'includes/searchbar.html' %}
+{% include 'includes/searchbar.html' with autofocus=True %}
 
 <!--
     <a href="{% url 'db:collections' %}">

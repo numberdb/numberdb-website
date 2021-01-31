@@ -19,6 +19,8 @@ from db.models import SearchTerm
 from db.models import Searchable
 from db.models import SearchTermValue
 
+from db.utils import number_param_groups_to_bytes
+
 from git import Repo
 import yaml
 import os
@@ -314,8 +316,8 @@ def build_number_table():
 				except TypeError:
 						x = RBF('[%s]' % (number,))
 		
-		p = ",".join(flatten(param))
-		p = bytes(p,encoding='cp437')
+		
+		p = number_param_groups_to_bytes(param)
 		
 		try:
 			n = Number(sage_number = x)

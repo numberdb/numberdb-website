@@ -60,6 +60,9 @@ div.collection-cell-right,
 div.collection-entry {
   display: table-cell;
 }
+div.collection-number {
+  word-wrap: break-word;
+}
 a.HREF {
   color: #22a;   
 }
@@ -77,6 +80,46 @@ function scrollTo(event, id) {
 }
 */
 </script>
+
+
+<a class="github-link" href="https://github.com/bmatschke/numberdb-data/tree/main/{{ collection.path }}/collection.yaml">edit on github</a>
+
+<div class="collection-title">{{ collection.title | safe }}</div>
+
+
+{% for tag in collection.my_tags.all %}
+  <a class="tag" href="{% url 'db:tag' tag.url %}">{{ tag.name | safe }}</a>
+{% endfor %}
+
+
+{% for section in sections %}
+  <div class="collection-section-title">{{ section.title | safe }}</div>
+  <div class="collection-section-container">
+    {% if section.text %}
+      <div class="collection-entry">{{ section.text | safe }}</div>
+    {% endif %}
+    {% if section.labeled_list %}
+      <div class="collection-table">
+      {% for block in section.labeled_list %}
+        <div class="collection-block" id="{{ block.label_id | safe }}">
+          <div class="collection-label">{{ block.label_caption | safe }}</div>
+          <div class="collection-entry">{{ block.text | safe }}</div>			
+        </div>
+      {% endfor %}
+	  </div>
+    {% endif %}
+    {% if section.unlabeled_list %}
+      <div class="collection-table">
+      {% for block in section.unlabeled_list %}
+        <div class="collection-block">
+          <div class="collection-entry">{{ block.text | safe }}</div>			
+        </div>
+      {% endfor %}
+	  </div>
+    {% endif %}
+  </div>
+{% endfor %}
+
 
 
 {{  collection_html | safe }}
