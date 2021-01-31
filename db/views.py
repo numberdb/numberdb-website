@@ -40,6 +40,7 @@ from .models import Searchable
 from .models import SearchTerm
 from .models import SearchTermValue
 
+from .utils import pluralize
 
 def home(request):
     #messages.success(request, 'Test message for home page.')
@@ -189,9 +190,12 @@ def render_collection(request, collection):
 			reverse('db:tag',kwargs={'tag_url': tag.url()}),
 			tag.name,
 		)
+	
+	html += '<div class="grid12">'
+	html += '<div class="col-m-6">'
 		
 	if 'Definition' in data:
-		html += '<div class="collection-section">%s</div>' % ("Definition")
+		html += '<div class="collection-section-title">%s</div>' % ("Definition")
 		html += '<div class="collection-entry">%s</div>' % (render_text(data['Definition']),)
 
 	type_names = {
@@ -205,7 +209,8 @@ def render_collection(request, collection):
 		"CB": "complex ball",
 	}  
 	if 'Parameters' in data and len(data['Parameters']) > 0:
-		html += '<div class="collection-section">%s</div>' % ("Parameters")
+		html += '<div class="collection-section-title">%s</div>' % ("Parameters")
+		html += '<div class="collection-section-container">'
 		html += '<div class="collection-table">'
 		for p, info in data['Parameters'].items():
 			p_latex = info['latex-name'] if 'latex-name' in info else "$%s$" % (p,)
@@ -225,13 +230,15 @@ def render_collection(request, collection):
 			html += '<div class="collection-entry">%s</div>' % (text,)			
 			html += '</div>'
 		html += '</div>'
+		html += '</div>'
 		parameters = data['Parameters'].keys() 
 	else:
 		parameters = []
 					
 	for header in ('Formulas','Comments'):
 		if header in data and len(data[header]) > 0:
-			html += '<div class="collection-section">%s</div>' % (header,)
+			html += '<div class="collection-section-title">%s</div>' % (header,)
+			html += '<div class="collection-section-container">'
 			html += '<div class="collection-table">'
 			for label, text in data[header].items():
 				html += '<div class="collection-block" id="%s">' % (label,)
@@ -239,10 +246,12 @@ def render_collection(request, collection):
 				html += '<div class="collection-entry">%s</div>' % (render_text(text),)
 				html += '</div>'
 			html += '</div>'
+			html += '</div>'
 
 	#Continue i_label, as it's all interior data, not a direct reference.
 	if 'Programs' in data and len(data['Programs']) > 0:
-		html += '<div class="collection-section">%s</div>' % ('Programs',)
+		html += '<div class="collection-section-title">%s</div>' % ('Programs',)
+		html += '<div class="collection-section-container">'
 		html += '<div class="collection-table">'
 		for label, program in data['Programs'].items():
 			html += '<div class="collection-block" id="%s">'  % (label,)
@@ -250,10 +259,12 @@ def render_collection(request, collection):
 			html += '<div class="collection-entry">(%s)<br><code>%s</code></div>' % (render_text(program['language']),render_text(program['code']))
 			html += '</div>'
 		html += '</div>'
+		html += '</div>'
 
 	for header in ('References','Links'):
 		if header in data and len(data[header]) > 0:
-			html += '<div class="collection-section">%s</div>' % (header,)
+			html += '<div class="collection-section-title">%s</div>' % (header,)
+			html += '<div class="collection-section-container">'
 			html += '<div class="collection-table">'
 			for label, reference in data[header].items():
 				html += '<div class="collection-block" id="%s">' % (label,)
@@ -279,6 +290,7 @@ def render_collection(request, collection):
 				html += '<div class="collection-entry">%s</div>' % (text,)
 				html += '</div>'
 			html += '</div>'
+			html += '</div>'
 
 	property_names = {
 		'type': 'Numbers are of type',
@@ -289,7 +301,8 @@ def render_collection(request, collection):
 	}
 	if 'Data properties' in data and len(data['Data properties']) > 0:
 		properties = data['Data properties']
-		html += '<div class="collection-section">%s</div>' % ('Data properties',)
+		html += '<div class="collection-section-title">%s</div>' % ('Data properties',)
+		html += '<div class="collection-section-container">'
 		html += '<div class="collection-table">'
 		for key, value in properties.items():
 			if len(value) == 0:
@@ -310,6 +323,7 @@ def render_collection(request, collection):
 			html += '<div class="collection-block">'
 			html += '<div class="collection-entry">%s</div>' % (render_text(text),)
 			html += '</div>'
+		html += '</div>'
 		html += '</div>'
 
 	if 'Display properties' in data and 'group parameters' in data['Display properties']:
@@ -375,11 +389,19 @@ def render_collection(request, collection):
 			html += '</div>'
 
 		return html    
+
+	html += '</div>'
+	html += '<div class="col-m-6">'
 			
 	if 'Numbers' in data and len(data['Numbers']) > 0:
 		numbers = data['Numbers']
-		html += '<div class="collection-section">%s</div>' % ('Numbers',)
+		html += '<div class="collection-section-title">%s</div>' % (pluralize('Number',collection.number_count),)
+		html += '<div class="collection-section-container">'
 		html += render_number_table(numbers)
+		html += '</div>'
+
+	html += '</div>'
+	html += '</div>'
 							
 	return render(request, 'collection.html', {'collection': collection, 'collection_html': html})
 

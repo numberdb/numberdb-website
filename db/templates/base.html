@@ -36,6 +36,14 @@
     {% endblock %}
 
 <style>
+/**********************************************************************/
+/**********************************************************************/
+/**********************************************************************/
+/* 1. ------------------------------------------------------------------
+ *                            Variables
+ *
+ */
+
 /* Respect user's setting for font-size until it gets too cramped: */
 @media only screen and (max-width: 25rem) {
   :root {
@@ -55,6 +63,10 @@
     --srem: calc((100vw - 25rem) / (37.5 - 25));
     --mrem: calc((100vw - 25rem) / (48 - 25));
     --lrem: calc((100vw - 25rem) / (64 - 25));
+    --xlrem: calc((100vw - 25rem) / (96 - 25));
+    --xxlrem: calc((100vw - 25rem) / (128 - 25));
+    --xxxlrem: calc((100vw - 25rem) / (192 - 25));
+    --xxxxlrem: calc((100vw - 25rem) / (256 - 25));
   }
 }
 @media only screen and (min-width: 37.5rem) {
@@ -72,6 +84,26 @@
     --lrem: 1rem;
   }
 }
+@media only screen and (min-width: 96rem) {
+  :root {
+    --xlrem: 1rem;
+  }
+}
+@media only screen and (min-width: 128rem) {
+  :root {
+    --xxlrem: 1rem;
+  }
+}
+@media only screen and (min-width: 192rem) {
+  :root {
+    --xxxlrem: 1rem;
+  }
+}
+@media only screen and (min-width: 256rem) {
+  :root {
+    --xxxxlrem: 1rem;
+  }
+}
 
 /**
  * Assuming default 1rem = 16px, we get natural break points:
@@ -81,6 +113,207 @@
  * 748px = 48rem
  * 1024px = 64 rem
  */
+
+/**********************************************************************/
+/**********************************************************************/
+/**********************************************************************/
+/* 2. ------------------------------------------------------------------
+ *                           Generic elements
+ *
+ * 
+ * Put here all generic definitions for elements and pseudo-elements
+ * for the main content of the page. 
+ *
+ */
+
+
+
+
+/**********************************************************************/
+/**********************************************************************/
+/**********************************************************************/
+/* 2. ------------------------------------------------------------------
+ *                 Generic classes (and pseudo-classes)
+ *
+ * 
+ * Put here all generic definitions for elements and pseudo-elements
+ * for the main content of the page. 
+ * 
+ */
+
+/************** Grid layout with 12 columns ***************************/
+
+{#
+Quick guide on how to use responsive grids:
+Give the container div the class "grid12".
+For the items in the container, give them classes either
+ - from utils.get_css_grid_classes(), or more directly
+ - e.g. "col-m-4" if it should use (at most) 4 out of 12 columns
+   on screens that are at least medium ("m") wide.
+   These classes can be combined.
+ - e.g. "row-span-2" for items of larger height.
+#}
+
+.grid12 {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-flow: dense;
+}
+
+/* For small phones: */
+[class*="col-"],
+.col-all {
+  grid-column: auto / span 12;
+}
+
+.col-xs-1 { grid-column: auto / span 1; }
+.col-xs-2 { grid-column: auto / span 2; }
+.col-xs-3 { grid-column: auto / span 3; }
+.col-xs-4 { grid-column: auto / span 4; }
+.col-xs-5 { grid-column: auto / span 5; }
+.col-xs-6 { grid-column: auto / span 6; }
+.col-xs-7 { grid-column: auto / span 7; }
+.col-xs-8 { grid-column: auto / span 8; }
+.col-xs-9 { grid-column: auto / span 9; }
+.col-xs-10 { grid-column: auto / span 10; }
+.col-xs-11 { grid-column: auto / span 11; }
+.col-xs-12 { grid-column: auto / span 12; }
+
+/* For tablets, large phones: */
+/* factor to previous min-width is 1.5 */
+@media only screen and (min-width: 37.5rem) {
+  .col-s-1 { grid-column: auto / span 1; }
+  .col-s-2 { grid-column: auto / span 2; }
+  .col-s-3 { grid-column: auto / span 3; }
+  .col-s-4 { grid-column: auto / span 4; }
+  .col-s-5 { grid-column: auto / span 5; }
+  .col-s-6 { grid-column: auto / span 6; }
+  .col-s-7 { grid-column: auto / span 7; }
+  .col-s-8 { grid-column: auto / span 8; }
+  .col-s-9 { grid-column: auto / span 9; }
+  .col-s-10 { grid-column: auto / span 10; }
+  .col-s-11 { grid-column: auto / span 11; }
+  .col-s-12 { grid-column: auto / span 12; }
+}
+
+/* For large tablet, small laptop: */
+/* factor to previous min-width is 1.28 */
+@media only screen and (min-width: 48rem) {
+  .col-m-1 { grid-column: auto / span 1; }
+  .col-m-2 { grid-column: auto / span 2; }
+  .col-m-3 { grid-column: auto / span 3; }
+  .col-m-4 { grid-column: auto / span 4; }
+  .col-m-5 { grid-column: auto / span 5; }
+  .col-m-6 { grid-column: auto / span 6; }
+  .col-m-7 { grid-column: auto / span 7; }
+  .col-m-8 { grid-column: auto / span 8; }
+  .col-m-9 { grid-column: auto / span 9; }
+  .col-m-10 { grid-column: auto / span 10; }
+  .col-m-11 { grid-column: auto / span 11; }
+  .col-m-12 { grid-column: auto / span 12; }
+} 
+
+/* For large desktop: */
+/* factor to previous min-width is 1.33 */
+@media only screen and (min-width: 64rem) {
+  .col-l-1 { grid-column: auto / span 1; }
+  .col-l-2 { grid-column: auto / span 2; }
+  .col-l-3 { grid-column: auto / span 3; }
+  .col-l-4 { grid-column: auto / span 4; }
+  .col-l-5 { grid-column: auto / span 5; }
+  .col-l-6 { grid-column: auto / span 6; }
+  .col-l-7 { grid-column: auto / span 7; }
+  .col-l-8 { grid-column: auto / span 8; }
+  .col-l-9 { grid-column: auto / span 9; }
+  .col-l-10 { grid-column: auto / span 10; }
+  .col-l-11 { grid-column: auto / span 11; }
+  .col-l-12 { grid-column: auto / span 12; }
+} 
+
+/* For x-large desktop: */
+/* factor to previous min-width is 1.5 */
+@media only screen and (min-width: 96rem) {
+  .col-xl-1 { grid-column: auto / span 1; }
+  .col-xl-2 { grid-column: auto / span 2; }
+  .col-xl-3 { grid-column: auto / span 3; }
+  .col-xl-4 { grid-column: auto / span 4; }
+  .col-xl-5 { grid-column: auto / span 5; }
+  .col-xl-6 { grid-column: auto / span 6; }
+  .col-xl-7 { grid-column: auto / span 7; }
+  .col-xl-8 { grid-column: auto / span 8; }
+  .col-xl-9 { grid-column: auto / span 9; }
+  .col-xl-10 { grid-column: auto / span 10; }
+  .col-xl-11 { grid-column: auto / span 11; }
+  .col-xl-12 { grid-column: auto / span 12; }
+} 
+
+/* For xx-large desktop: */
+/* factor to previous min-width is 1.33 */
+@media only screen and (min-width: 128rem) {
+  .col-xxl-1 { grid-column: auto / span 1; }
+  .col-xxl-2 { grid-column: auto / span 2; }
+  .col-xxl-3 { grid-column: auto / span 3; }
+  .col-xxl-4 { grid-column: auto / span 4; }
+  .col-xxl-5 { grid-column: auto / span 5; }
+  .col-xxl-6 { grid-column: auto / span 6; }
+  .col-xxl-7 { grid-column: auto / span 7; }
+  .col-xxl-8 { grid-column: auto / span 8; }
+  .col-xxl-9 { grid-column: auto / span 9; }
+  .col-xxl-10 { grid-column: auto / span 10; }
+  .col-xxl-11 { grid-column: auto / span 11; }
+  .col-xxl-12 { grid-column: auto / span 12; }
+} 
+
+/* For xxx-large desktop: */
+/* factor to previous min-width is 1.5 */
+@media only screen and (min-width: 192rem) {
+  .col-xxxl-1 { grid-column: auto / span 1; }
+  .col-xxxl-2 { grid-column: auto / span 2; }
+  .col-xxxl-3 { grid-column: auto / span 3; }
+  .col-xxxl-4 { grid-column: auto / span 4; }
+  .col-xxxl-5 { grid-column: auto / span 5; }
+  .col-xxxl-6 { grid-column: auto / span 6; }
+  .col-xxxl-7 { grid-column: auto / span 7; }
+  .col-xxxl-8 { grid-column: auto / span 8; }
+  .col-xxxl-9 { grid-column: auto / span 9; }
+  .col-xxxl-10 { grid-column: auto / span 10; }
+  .col-xxxl-11 { grid-column: auto / span 11; }
+  .col-xxxl-12 { grid-column: auto / span 12; }
+} 
+
+/* For xxxx-large desktop: */
+/* factor to previous min-width is 1.33 */
+@media only screen and (min-width: {{ xxxx_width }}) {
+  .col-xxxxl-1 { grid-column: auto / span 1; }
+  .col-xxxxl-2 { grid-column: auto / span 2; }
+  .col-xxxxl-3 { grid-column: auto / span 3; }
+  .col-xxxxl-4 { grid-column: auto / span 4; }
+  .col-xxxxl-5 { grid-column: auto / span 5; }
+  .col-xxxxl-6 { grid-column: auto / span 6; }
+  .col-xxxxl-7 { grid-column: auto / span 7; }
+  .col-xxxxl-8 { grid-column: auto / span 8; }
+  .col-xxxxl-9 { grid-column: auto / span 9; }
+  .col-xxxxl-10 { grid-column: auto / span 10; }
+  .col-xxxxl-11 { grid-column: auto / span 11; }
+  .col-xxxxl-12 { grid-column: auto / span 12; }
+} 
+
+.row-span-2 {
+  grid-row: auto / span 2;
+}
+.row-span-3 {
+  grid-row: auto / span 3;
+}
+.row-span-4 {
+  grid-row: auto / span 4;
+}
+
+
+
+
+
+
+
 
 html * {
   font-family: 'Source Sans Pro', sans-serif;
@@ -109,14 +342,14 @@ body {
 div.horizontal-container {
   margin: auto;
   margin-color: #ddd;
-  max-width: 48rem;
+  max-width: 64; 48rem;
   font-size: 1rem; /* base for most em's */
   background: #fff;
   padding: calc(1rem + 1 * var(--srem));
   padding-bottom: 4rem;
   padding-top: 0;
   /*border-top: 0.3rem solid #aeb;*/
-  /*border: 1px solid #ddd;*/
+  border: 1px solid #aaa;
   /*border-left: 0.5em solid #5a8;*/
 }
 
@@ -167,8 +400,8 @@ a.right-field {
   float: right;
 }
 img.profile {
-  content: url("{% static 'profile.png' %}");   
-  width: 0.7em;
+/*  content: url("{% static 'profile.png' %}");   
+*/  width: 0.65em;
   position: relative;
   top: -0.1em;
 }
@@ -281,9 +514,9 @@ div.medskip {
 
       {% if user.is_authenticated == False %}
         <!--<a class="navbar-field" href="{% url 'account_login' %}">Login</a>-->
-        <a class="navbar-field" href="{% url 'account_login' %}"><img class="profile" src="{% static 'profile.png' %}"></a>
+        <a class="navbar-field" href="{% url 'account_login' %}"><img class="profile" src="{% static 'profile2.png' %}" alt="Login"></a>
       {% else %}
-        <a class="navbar-field" href="{% url 'db:profile' %}"><img class="profile" src="{% static 'profile.png' %}">&nbsp;{% user_display user %}</a>
+        <a class="navbar-field" href="{% url 'db:profile' %}"><img class="profile" src="{% static 'profile2.png' %}">&nbsp;{% user_display user %}</a>
 
           <!-- The following yields a GET request, which is "unsafe" if it logs out directly.
 	     But it should be ok since we don't allow arbitrary html code etc. by users. 
@@ -311,8 +544,9 @@ div.medskip {
 
 
 
-    <div class="container">
 <!--
+    <div class="container">
+    </div>
 
 <hr>
       <ol class="breadcrumb my-4">
@@ -328,7 +562,6 @@ div.medskip {
       
       {% endblock %}
 
-    </div>
     
     </div>
   </body>

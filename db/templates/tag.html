@@ -21,11 +21,7 @@
       {{ collection.cid }}: 
 		<a href="{% url 'db:collection' collection.cid %}">{{ collection.title }}</a>
 		
-		{% if collection.number_count == 1 %} 
-		    (1 number)
-		{% else %}
-		    ({{ collection.number_count }} numbers)
-		{% endif %}
+		({{ collection.number_count }} number{{ collection.number_count|pluralize }})
 
        <br>
     {% endfor %}

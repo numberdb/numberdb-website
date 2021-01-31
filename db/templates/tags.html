@@ -19,16 +19,8 @@
     {% for tag in tags %}
 		<a class="tag" href="{% url 'db:tag' tag.url %}">{{ tag.name }}</a>
 		
-		{% if tag.collection_count == 1 %} 
-		    (1 collection,
-		{% else %}
-		    ({{ tag.collection_count }} collections,
-		{% endif %}
-		{% if tag.number_count == 1 %} 
-		    1 number)
-		{% else %}
-		    {{ tag.number_count }} numbers)
-		{% endif %}
+		({{ tag.collection_count }} collection{{ tag.collection_count|pluralize }}, 
+		 {{ tag.number_count }} number{{ tag.number_count|pluralize }})
 
 		<br>
     {% endfor %}
