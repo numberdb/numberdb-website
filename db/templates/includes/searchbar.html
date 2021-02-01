@@ -20,16 +20,17 @@ a.ui-menu-item-wrapper {
 #searchbox-component {
   --searchbox-width: calc(20rem + 10 * var(--lrem));
     
-  display: block;
+  display: inline-block;
   border-radius: 5px;
   border: 1px solid #bbb;
   padding: 0px;
   color: #000;
   background-color: #fff;
   outline: 0;
-  width: var(--searchbox-width);
-  text-align: left;
+  width: 100%; var(--searchbox-width);
+  text-align: center;
   margin: auto;
+  /*margin: 0;*/
 }
 #searchbox-component:focus-within {
   box-shadow: 0 0 10px #ddd;
@@ -40,11 +41,12 @@ a.ui-menu-item-wrapper {
   margin: 0;
   padding: 10px;
   outline: 0;
-  width: calc(var(--searchbox-width) - 1.8rem - 3px);
+  width: 100%; calc(var(--searchbox-width) - 1.8rem - 3px);
   border-radius: 5px;
 }
 #searchbox-image {
   width: calc(1rem);
+  margin: 0 0.8rem;
   /*border: 1px solid black;*/
 }
 #msg-no-entry {
@@ -58,21 +60,33 @@ a.ui-menu-item-wrapper {
 }
 </style>
 
-
-<div id="searchbox-container">
-  <!--<label for="searchbox">Search a number:</label>
-  -->
-  <div id="searchbox-component">
-    <input id="searchbox" 
+<!--
+  <div id="searchbox-component"
+    ><input id="searchbox" 
       {% if autofocus %} autofocus {% endif %} 
       {# placeholder="Try 3.14 or L-function" #} 
       {% if searchterm %} value="{{ searchterm }}" {% endif %}
-    ><img id="searchbox-image" src="{% static 'search.png' %}">
-  </div>
-  
-  <span style="display:none" id="msg-no-entry">No match in database</span>
-</div>
+    ><img id="searchbox-image" src="{% static 'search.png' %}"
+  ></div>
+-->
 
+<div id="searchbox-component">
+ <table width="100%" style="border-spacing:0;">
+  <tbody>
+   <tr>
+    <td width="100%"
+     ><input id="searchbox" 
+      {% if autofocus %} autofocus {% endif %} 
+      {# placeholder="Try 3.14 or L-function" #} 
+      {% if searchterm %} value="{{ searchterm }}" {% endif %}
+     ></td>
+    <td><img id="searchbox-image" src="{% static 'search.png' %}"></td>
+   </tr>
+  </tbody>
+ </table>
+ <span style="display:none" id="msg-no-entry">No match in database</span>
+</div>
+ 
 
  
 <script>

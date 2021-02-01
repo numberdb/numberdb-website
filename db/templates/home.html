@@ -5,6 +5,7 @@
 {% endblock %}
 
 
+{# Remove search bar from top: #}
 {% block top-searchbar %}
 {% endblock %}
 
@@ -33,6 +34,11 @@
 #beta-title:hover {
   text-decoration: underline;
 }
+div.home-searchbar-container {
+  --searchbox-width: calc(20rem + 10 * var(--lrem));
+  width: var(--searchbox-width);
+  margin: auto;
+}
 </style>
 
 <br>
@@ -46,8 +52,11 @@
     </div>
 -->
 
-<br>    
+<br>
+
+<div class="home-searchbar-container">   
 {% include 'includes/searchbar.html' with autofocus=True %}
+</div> 
 
 <!--
     <a href="{% url 'db:collections' %}">

@@ -57,6 +57,10 @@
   --srem: 0rem;
   --mrem: 0rem;
   --lrem: 0rem;
+  --xlrem: 0rem;
+  --xxlrem: 0rem;
+  --xxxlrem: 0rem;
+  --xxxxlrem: 0rem;
 }
 @media only screen and (min-width: 25rem) {
   :root {
@@ -346,9 +350,7 @@ div.horizontal-container {
   max-width: 96rem;
   font-size: 1rem; /* base for most em's */
   background: #fff;
-  padding: calc(1rem + 2 * var(--srem));
-  padding-bottom: 4rem;
-  padding-top: 0;
+  padding: 0 calc(1rem + 2 * var(--srem));
   /*border-top: 0.3rem solid #aeb;*/
   /*border: 1px solid #aaa;*/
   /*border-left: 0.5em solid #5a8;*/
@@ -372,13 +374,14 @@ div.navbar-container {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  justify-content: space-around;   
+  /*justify-content: space-around;*/
+  justify-content: flex-end;   
 }
 
 a.navbar-field {
   vertical-align: sup;
   display: inline-block;
-  padding: 1rem 0.5rem;
+  padding: 0.7rem 0.5rem 0.3rem 0.5rem;
   margin: 0;
   /*color: #555;
   */
@@ -427,6 +430,7 @@ a.github-link {
   font-size: 0.8rem;
   color: #555;
   text-decoration: dotted underline;
+  float: right;
 }
 a.github-link:hover {
   text-decoration: underline;   
@@ -477,7 +481,9 @@ div.medskip {
   margin-bottom: 0.5rem;   
 }
 
-
+div.navbar-outer {
+  text-align: center;
+}
 
 </style>
 
@@ -491,6 +497,7 @@ div.medskip {
 
     {% block body %}
 
+  </div>
 
 
 
@@ -509,8 +516,14 @@ div.medskip {
 
 <!--        <a class="navbar-field logo" href="{% url 'db:home' %}">NumberDB</a>
 -->
+
+<div class="navbar-outer">
+  <div class="horizontal-container">
+
+    <a class="navbar-field" href="{% url 'db:home' %}" style="float:left;">NumberDB$^\beta$</a>
+
     <div class="navbar-container">
-      <a class="navbar-field" href="{% url 'db:home' %}">NumberDB$^\beta$</a>
+
       <a class="navbar-field" href="{% url 'db:tags' %}">Tags</a>      
       <a class="navbar-field" href="{% url 'db:collections' %}">Collections</a>      
       <a class="navbar-field" href="{% url 'db:about' %}">About</a>
@@ -541,12 +554,17 @@ div.medskip {
         </div>
       {% endif %}  
     </div>
-    
+   
+
     {% block top-searchbar %}
       {% include 'includes/searchbar.html' %}
     {% endblock %}
 
+  </div>
+</div>
 
+
+  <div class="horizontal-container">
 
 <!--
     <div class="container">

@@ -83,7 +83,7 @@ div.collection-number-section-container {
   }
   div.collection-number-section-container {
     overflow-y: auto;
-    max-height: 70vh;
+    max-height: calc(100vh - 15rem); 70vh;
   }
 }
 
@@ -106,9 +106,10 @@ function scrollTo(event, id) {
 </script>
 
 
-<a class="github-link" href="https://github.com/bmatschke/numberdb-data/tree/main/{{ collection.path }}/collection.yaml">edit on github</a>
 
-<div class="collection-title">{{ collection.title | safe }}</div>
+<div class="collection-title">{{ collection.title | safe }}
+<a class="github-link" href="https://github.com/bmatschke/numberdb-data/tree/main/{{ collection.path }}/collection.yaml">edit on github</a>
+</div>
 
 {% for tag in collection.my_tags.all %}
   <a class="tag" href="{% url 'db:tag' tag.url %}">{{ tag.name | safe }}</a>
