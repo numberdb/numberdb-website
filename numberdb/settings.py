@@ -35,23 +35,21 @@ BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
 
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+#DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.sqlite3',
+#        'NAME': BASE_DIR / 'db.sqlite3',
+#    }
+#}
 
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())
-
-
-#DATABASES = {
-#    'default': dj_database_url.config(
-#        default=config('DATABASE_URL')
-#    )
-#}
+DATABASES = {
+    'default': dj_database_url.config(
+        default=config('DATABASE_URL')
+    )
+}
 
 
 # Application definition
@@ -249,6 +247,8 @@ if EMAIL_BACKEND == "anymail.backends.mailgun.EmailBackend":
     EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"  # or sendgrid.EmailBackend, or...
     DEFAULT_FROM_EMAIL = "info@numberdb.org"  # if you don't already have this in settings
     SERVER_EMAIL = "zeta3@numberdb.org"  # ditto (default from-email for Django errors)
+
+
 
 #elif EMAIL_BACKEND == "django.core.mail.backends.console.EmailBackend"
 #    pass

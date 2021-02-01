@@ -32,7 +32,8 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
     path('welcome/', db_views.welcome, name='welcome'),
 
-    path('' if DEBUG else 'db/', include('db.urls',namespace='db')),
+    path('', include('db.urls',namespace='db')),
+    #path('' if DEBUG else 'db/', include('db.urls',namespace='db')),
     #path('' if DEBUG else 'db', include('db.urls')),
 
     #path('', views.maintenance_in_progress, name='maintenance-in-progress')

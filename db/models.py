@@ -73,7 +73,7 @@ class Tag(Searchable):
 
 	#sub_id = models.AutoField(primary_key=True)
 	name = models.CharField(
-		max_length = 20,
+		max_length = 32,
 		unique = True,
 		#primary_key = True,
 		db_index = True,
