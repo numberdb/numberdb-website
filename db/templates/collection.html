@@ -57,6 +57,7 @@ div.collection-param-group {
   text-align: right;
   width: 2rem;
   scroll-margin-top: 30vh;
+  white-space: nowrap;
 }
 div.collection-cell-right,
 div.collection-entry {
@@ -93,6 +94,16 @@ a.HREF {
 a.CITE {
   color: #22a;   
 }
+
+a.github-link {
+  font-size: 0.8rem;
+  color: #555;
+  text-decoration: dotted underline;
+  /*float: right;*/
+}
+a.github-link:hover {
+  text-decoration: underline;   
+}
 </style>
 
 <script>
@@ -107,10 +118,9 @@ function scrollTo(event, id) {
 
 
 
-<div class="collection-title">{{ collection.title | safe }}
-<a class="github-link" href="https://github.com/bmatschke/numberdb-data/tree/main/{{ collection.path }}/collection.yaml">edit on github</a>
-</div>
+<div class="collection-title">{{ collection.title | safe }}</div>
 
+<a class="github-link" target="_blank" href="https://github.com/bmatschke/numberdb-data/tree/main/{{ collection.path }}/collection.yaml">edit on github</a>
 {% for tag in collection.my_tags.all %}
   <a class="tag" href="{% url 'db:tag' tag.url %}">{{ tag.name | safe }}</a>
 {% endfor %}

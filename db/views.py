@@ -230,16 +230,21 @@ def render_collection(request, collection):
 			if 'constraints' in info: 
 				text += ' (%s)' % (render_text(info['constraints']),)
 
+			if 'show-in-parameter-list' in info and info['show-in-parameter-list'].lower() == 'no':
+				#Don't show this parameter in the homepage of this collection.
+				continue
+				
 			labeled_list.append({
 				'label_id': p,
 				'label_caption': render_text(p_latex),
 				'text': text,
 			})
-		section = {
-			'title': 'Parameters',
-			'labeled_list': labeled_list,
-		}
-		sections.append(section)
+		if len(labeled_list) > 0:
+			section = {
+				'title': 'Parameters',
+				'labeled_list': labeled_list,
+			}
+			sections.append(section)
 
 		parameters = data['Parameters'].keys() 
 	else:
@@ -319,6 +324,7 @@ def render_collection(request, collection):
 		'sources': 'Sources of data',
 		'relative precision': 'Relative precision',
 		'absolute precision': 'Absolute precision',
+		'reliability': 'Reliability',
 	}
 	if 'Data properties' in data and len(data['Data properties']) > 0:
 		properties = data['Data properties']
@@ -372,7 +378,7 @@ def render_collection(request, collection):
 				'equals' in numbers:
 				#Numbers are given with extra information at this level:
 				for key in numbers:
-					if key in ('number','numbers'):
+					if key in ('number','numbers','param-latex'):
 						continue
 					html += '%s: %s<br>' % (key, render_text(numbers[key]))
 				if 'number' in numbers:
@@ -417,7 +423,11 @@ def render_collection(request, collection):
 				else:
 					id_str = ''
 				html_p = '<div %s class="collection-block">' % (id_str,)
-				html_p += '<div class="collection-param-group">%s:</div>' % (format_param_group(p),)
+				if isinstance(numbers_p,dict) and 'param-latex' in numbers_p:
+					param_html = numbers_p['param-latex']
+				else:
+					param_html = format_param_group(p)
+				html_p += '<div class="collection-param-group"><span>%s:</span></div>' % (param_html,)
 				html_inner = render_number_table(numbers_p, params_so_far+[p], groups_left[1:])
 				html_p += '<div class="collection-cell-right">%s</div>' % (wrap_in_subtable(html_inner),)
 				html_p += '</div>'

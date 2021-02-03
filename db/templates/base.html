@@ -406,8 +406,10 @@ a.right-field {
 img.profile {
 /*  content: url("{% static 'profile.png' %}");   
 */  width: 0.65em;
-  position: relative;
+/*  position: relative;
   top: -0.1em;
+*/
+vertical-align: baseline;
 }
 
 
@@ -425,15 +427,6 @@ a.tag {
 a.tag:hover {
   background: #ddd;
   /*text-decoration: underline;   */
-}
-a.github-link {
-  font-size: 0.8rem;
-  color: #555;
-  text-decoration: dotted underline;
-  float: right;
-}
-a.github-link:hover {
-  text-decoration: underline;   
 }
 
 :target {
@@ -531,9 +524,9 @@ div.navbar-outer {
 
       {% if user.is_authenticated == False %}
         <!--<a class="navbar-field" href="{% url 'account_login' %}">Login</a>-->
-        <a class="navbar-field" href="{% url 'account_login' %}"><img class="profile" src="{% static 'profile2.png' %}" alt="Login"></a>
+        <a class="navbar-field" href="{% url 'account_login' %}"><img class="profile" src="{% static 'profile3.png' %}" alt="Login"></a>
       {% else %}
-        <a class="navbar-field" href="{% url 'db:profile' %}"><img class="profile" src="{% static 'profile2.png' %}">&nbsp;{% user_display user %}</a>
+        <a class="navbar-field" href="{% url 'db:profile' %}"><img class="profile" src="{% static 'profile3.png' %}">&nbsp;{% user_display user %}</a>
 
           <!-- The following yields a GET request, which is "unsafe" if it logs out directly.
 	     But it should be ok since we don't allow arbitrary html code etc. by users. 
@@ -581,6 +574,8 @@ div.navbar-outer {
 
       {% block content %}
       {% endblock %}
+      
+      <br>
       
       {% endblock %}
 

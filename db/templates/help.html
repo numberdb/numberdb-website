@@ -25,53 +25,7 @@
 
 <h2 id="how-to-search">How to search</h2>
 
-The searchbar can be used to search for:
-
-<ul>
-
-<li id="how-to-search-real-numbers">
-<div class="li-header">Real numbers:</div>
-Enter the number in one of three formats:
-<ul>
-<li>
-<em>Decimal representation</em> including the period, 
-e.g. "3.14" to search for pi.
-The search will be done in an interval around the entered number: 
-Entering "3.14" will search for numbers in the interval (3.13, 3.15).
-<li>
-<em>Scientific notation</em> (no period necessary), 
-e.g. "14e2" to search numbers between 1300 and 1500.
-</li>
-<li>
-NumberDB's <em>p-notation</em>: 
-Enter a term of the form "ApB", where A and B are integers. 
-It corresponds to the number 10<sup>A</sup> &middot; 0.B, e.g. "1p314" for pi.
-</li>
-</ul>
-</li>
-
-<li>
-<div class="li-header">Fractional parts of real numbers:</div>
-Enter the first few digits after the period, e.g. "1415" for pi.
-</li>
-
-<li>
-<div class="li-header">Integers:</div>
-Enter the exact integer without period, e.g. "-1".
-This works for integers with up to 127 binary digits (roughly 38 decimal digits).
-For longer numbers, try to <a href="#how-to-search-real-numbers">search them as real numbers</a>.
-</li>
-
-<li>
-<div class="li-header">Collection titles:</div>
-Enter the first letters of one word in the title, e.g. "Rie" for zeros of the Riemann zeta function. 
-</li>
-
-<li>
-<div class="li-header">Tags:</div>
-Enter the first letters of one word of a tag, e.g. "irr" for the Tag "Irrational".
-</li>
-</ul>
+{% include 'includes/search-tips.html' %}
 
 <!--------------------------------------------------------------------->
 
@@ -81,7 +35,7 @@ Contributions are possible in number of ways:
 
 <ul>
 <li>
-<div class="li-header">Bugs reports, feature requests, general discussions:</div>
+<div class="li-header">Bug reports, feature requests, general discussions:</div>
 Visit the GitHub issue page (preferred), or send an email to info@numberdb.org.
 </li>
 
@@ -94,7 +48,7 @@ The link can be found above the title on the collection's webpage.
 
 <li>
 <div class="li-header">Contribute new collections:</div>
-There will be soon a more complete guideline for that.
+There will soon be a more complete guideline for that.
 You need to create a collection.yaml in a new folder of the 
 <a href="https://github.com/bmatschke/numberdb-data">numberdb-data</a> 
 repository and submit a pull request.
@@ -127,8 +81,8 @@ automatically displayed also on numberdb.org.
 <ol>
 <li>
 <div class="li-header">Raw data:</div>
-The raw data is entered in human readable form (yaml) in a the git repository <a href="https://github.com/bmatschke/numberdb-data">numberdb-data</a> on GitHub.
-A bot associates to every new collection an ID that serves as a permanent identifier.
+The raw data is entered in human readable form (yaml) in the git repository <a href="https://github.com/bmatschke/numberdb-data">numberdb-data</a> on GitHub.
+To every new collection, a bot associates an ID that serves as a permanent identifier.
 </li>
 
 <li>

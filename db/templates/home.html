@@ -25,7 +25,7 @@
 }
 #beta-title {
   display: inline;
-  position: fixed;
+  position: absolute;
   font-size: 0.4em;
   font-weight: 200;
   color: inherit;
@@ -38,6 +38,24 @@ div.home-searchbar-container {
   --searchbox-width: calc(20rem + 10 * var(--lrem));
   width: var(--searchbox-width);
   margin: auto;
+}
+a#searchbar-help {
+  color: #888;
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+a#searchbar-help:hover {
+  text-decoration: underline;
+}
+div.searchbar-help {
+  text-align: right;
+}
+div#searchtips {
+  display: none;
+  width: calc(23rem + 30 * var(--lrem));
+  margin: auto;
+  border: 1rem solid #ddd;
+  padding: 0.5rem;
 }
 </style>
 
@@ -56,7 +74,30 @@ div.home-searchbar-container {
 
 <div class="home-searchbar-container">   
 {% include 'includes/searchbar.html' with autofocus=True %}
+<div class="searchbar-help">
+<a id="searchbar-help" href="#" onclick="toggle_visibility('searchtips','searchbar-help');">search tips</a>
+</div>
 </div> 
+
+<div id="searchtips">
+{% include 'includes/search-tips.html' %}
+</div>
+
+<script type="text/javascript">
+<!--
+    function toggle_visibility(id_content, id_link) {
+       var content = document.getElementById(id_content);
+       var a = document.getElementById(id_link);
+       if(content.style.display == 'block') {
+          content.style.display = 'none';
+          a.text = 'search tips';
+       } else {
+          content.style.display = 'block';
+          a.text = 'close search tips';
+       }
+    }
+//-->
+</script>
 
 <!--
     <a href="{% url 'db:collections' %}">
