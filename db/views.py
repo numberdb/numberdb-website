@@ -9,6 +9,8 @@ from django.contrib import messages
 from numpy import random as random
 import re
 from time import time
+#import os
+import yaml
 #from sage import *
 #from sage.all import *
 #from sage.arith.all import *
@@ -34,6 +36,7 @@ from sage.rings.infinity import infinity
 
 from .models import UserProfile
 from .models import Collection
+from .models import CollectionData
 from .models import Tag
 from .models import Number
 from .models import Searchable
@@ -42,6 +45,8 @@ from .models import SearchTermValue
 
 from .utils import pluralize
 from .utils import number_param_groups_to_string
+
+from db_builder.utils import normalize_collection_data
 
 def home(request):
     #messages.success(request, 'Test message for home page.')
@@ -120,7 +125,7 @@ def collection_by_url(request, url):
         raise Http404
     return render_collection(request, collection)
 
-def render_collection(request, collection):
+def collection_context(collection, preview=False):
 
 	def wrap_in_div(div_class,html):
 		return '<div class="%s">%s</div>' % (div_class,html)
@@ -181,6 +186,7 @@ def render_collection(request, collection):
 	i_label = 1
 	if 'Programs' in data and len(data['Programs']) > 0:
 		for label in data['Programs']:
+			print("label:",label)
 			show_label_as[label] = '(P%s)' % (i_label,)
 			i_label += 1
 	i_label = 1
@@ -414,6 +420,8 @@ def render_collection(request, collection):
 				)
 			'''
 		else:
+			if preview and isinstance(numbers,str) and numbers.startswith("INPUT"):
+				return '%s (not shown in preview)' % numbers
 			next_group = groups_left[0]
 			html += '<div class="collection-subtable">'
 			for p, numbers_p in numbers.items():
@@ -455,8 +463,63 @@ def render_collection(request, collection):
 		'sections': sections,
 		'number_section': number_section,
 	}
-							
+	if not preview:
+		context['tags'] = collection.my_tags.all()
+	else:
+		context['tags'] = []
+	
+	return context
+
+def render_collection(request, collection):
+	context = collection_context(collection)							
 	return render(request, 'collection.html', context)
+
+def preview(request, cid=None):
+	#First try to get yaml from Textarea:
+	collection_yaml = request.GET.get('collection',default=None)
+	
+	#Second try to get yaml from collection if cid is give:
+	if collection_yaml == None:
+		print('cid:',cid)
+		if cid != None:
+			collection = Collection.objects.get(cid=cid)
+			if collection != None:
+				collection_yaml = collection.data.raw_yaml
+	
+	#Third option is: Set collection_yaml to default:
+	if collection_yaml == None:
+		collection_yaml = \
+			'ID: INPUT{id.yaml} #keep this and do not worry\n\n' + \
+			'Title: <title>\n\n' + \
+			'Definition: >\n' + \
+			'  <definition>\n\n' + \
+			'Numbers:\n' + \
+			'- 3.14\n'
+			
+	c_data = CollectionData()
+	c_data.json = yaml.load(collection_yaml,Loader=yaml.BaseLoader)
+	c_data.json = normalize_collection_data(c_data.json)
+	print("c_data.json:",c_data.json)
+	
+	c = Collection()
+	c.data = c_data
+	c.title = c_data.json['Title']
+	c.path = 'PATH-OF-COLLECTION-YAML'
+	c.cid = 'AUTOMATIC-COLLECTION-ID'
+	
+	tags = []
+	if 'Tags' in c_data.json:
+		for tag_name in c_data.json['Tags']:
+			tags.append(Tag(name=tag_name))
+	
+	#print('collection_yaml:',collection_yaml)
+	context = collection_context(c,preview=True)
+	context.update({
+		'collection_yaml': collection_yaml,
+		'preview': True,
+		'tags': tags,
+	})
+	return render(request,'preview.html',context)
 
 def show_own_profile(request):
     #latest_question_list = Question.objects.order_by('-pub_date')[:5]

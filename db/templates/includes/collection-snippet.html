@@ -1,0 +1,212 @@
+<style>
+div.collection-title {
+  font-weight: 400;
+  font-size: 2rem;
+  margin: 0.2rem 0rem;   
+}
+div.collection-section-title {
+  font-weight: 400;
+  font-size: 1.3rem;
+  margin: 1rem 0 0.2rem 0;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid #aaa;
+}
+div.collection-section-container {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: auto;
+}
+div.collection-table {
+  display: table;
+  width: 100%;
+}
+div.collection-subtable {
+  display: table;
+  width: 100%;
+}
+div.collection-block {
+  display: table-row;
+  scroll-margin-top: 30vh;
+}
+div.collection-label {
+  display: table-cell;
+  padding: 0 0.5rem;
+  text-align: center;
+  width: 2rem;
+}
+div.collection-param-group {
+  display: table-cell;
+  padding: 0 0.5rem;
+  text-align: right;
+  width: 2rem;
+  scroll-margin-top: 30vh;
+  white-space: nowrap;
+}
+div.collection-cell-right,
+div.collection-entry {
+  display: table-cell;
+}
+div.collection-number {
+  word-wrap: break-word;
+}
+div.collection-number-section-outer-container {
+}
+div.collection-number-section-container {
+  overflow-y: auto;
+  max-height: 50vh;
+}
+
+@media only screen and (min-width: 64rem) {
+  div.collection-number-section-outer-container {
+    width: calc(50% + 1.5rem);
+    padding-left: 3rem;
+    padding-bottom: 2rem;
+    /*border-left: 1px solid #eee;*/
+    float: right;
+    background: #fff;
+  }
+  div.collection-number-section-container {
+    overflow-y: auto;
+    max-height: calc(100vh - 15rem); 70vh;
+  }
+}
+
+a.HREF {
+  color: #22a;   
+}
+a.CITE {
+  color: #22a;   
+}
+
+a.github-link,
+a.preview-link {
+  font-size: 0.8rem;
+  color: #555;
+  text-decoration: dotted underline;
+  /*float: right;*/
+}
+a.github-link:hover,
+a.preview-link:hover {
+  text-decoration: underline;   
+}
+</style>
+
+<script>
+/*
+function scrollTo(event, id) {
+  event.preventDefault();
+  element = document.getElementById(id);
+  element.scrollIntoView({behavior: "smooth", block: "nearest", inline: "nearest"});
+}
+*/
+</script>
+
+
+
+<div class="collection-title">{{ collection.title | safe }}</div>
+
+<a class="github-link" target="_blank" href="https://github.com/bmatschke/numberdb-data/tree/main/{{ collection.path }}/collection.yaml">edit on github</a>
+{% if preview %}
+{% else %}
+&middot; <a class="preview-link" href="{% url 'db:preview-collection' collection.cid %}">preview edits</a>
+{% endif %}
+&middot; 
+{% for tag in tags %}
+  <a class="tag" href="{% url 'db:tag' tag.url %}">{{ tag.name | safe }}</a>
+{% endfor %}
+
+<div></div>
+
+<div class="collection-number-section-outer-container">
+<div class="collection-section-title">{{ number_section.title | safe }}</div>
+<div class="collection-number-section-container">
+  <div class="collection-text">{{ number_section.text | safe }}</div>
+</div>
+</div>
+
+{% for section in sections %}
+  <div class="collection-section-title">{{ section.title | safe }}</div>
+  <div class="collection-section-container">
+    {% if section.text %}
+      <div class="collection-text">{{ section.text | safe }}</div>
+    {% endif %}
+    {% if section.labeled_list %}
+      <div class="collection-table">
+      {% for block in section.labeled_list %}
+        <div class="collection-block" id="{{ block.label_id | safe }}">
+          <div class="collection-label">{{ block.label_caption | safe }}</div>
+          <div class="collection-entry">{{ block.text | safe }}</div>			
+        </div>
+      {% endfor %}
+	  </div>
+    {% endif %}
+    {% if section.unlabeled_list %}
+      <div class="collection-table">
+      {% for block in section.unlabeled_list %}
+        <div class="collection-block">
+          <div class="collection-entry">{{ block.text | safe }}</div>			
+        </div>
+      {% endfor %}
+	  </div>
+    {% endif %}
+  </div>
+{% endfor %}
+
+
+{{  collection_html | safe }}
+
+
+<!--
+<hr>Data: {{ collection.data.json }}
+-->
+
+<script>
+/*
+var acites = document.getElementsByClassName("CITE");
+for (i = 0; i < acites.length; i++) {
+    //break;
+    a = acites.item(i);
+    a.CITE_TARGET_ID = a.getAttribute('HREF').substring(1);
+    a.setAttribute('HREF','#');
+    a.addEventListener("click",function(event) {
+            //Event.stop(event);
+            //event.preventDefault();
+            console.log(event);
+            aself = event.target;
+            id_target = aself.CITE_TARGET_ID;
+            console.log(id_target);
+            target = document.getElementById(id_target);
+            //target.scrollIntoView({behavior: "smooth", block: "nearest", inline: "nearest"});
+            window.scrollIntoView(target);
+            return false;
+        }, false
+    );
+}
+*/
+/*
+$(document).ready(function() {
+          $('a[href^="#"]').click(function() {
+              $('html, body').animate({
+                  scrollTop: $('[id="' + $.attr(this, 'href').substr(1) + '"]').offset().top
+                }, 500, function() {
+            window.location.hash = href;
+          });
+              return false;
+            });
+        });
+*/        
+ let $root = $('html, body');
+      $('a[href^="#"]').click(function() {
+          let href = $.attr(this, 'href');
+          var newScrollTop = $(href).offset().top - 100
+          $root.animate({
+            'scrollTop': newScrollTop,
+            //'background-color': '#e5eecc'
+          }, 400, function() {
+            //$('html').append('<style>'+href+':target {scrollTop: '+newScrollTop+';}</style>');
+            window.location.hash = href;
+          });
+          return false;
+        });
+</script>

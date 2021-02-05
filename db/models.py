@@ -176,7 +176,10 @@ class CollectionData(models.Model):
 		#db_constraint=False,
 	)
 	json = models.JSONField(
-		default = dict
+		default = dict,
+	)
+	raw_yaml = models.TextField(
+		default = '',
 	)
 	
 	def __str__(self):

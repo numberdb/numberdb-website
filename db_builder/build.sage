@@ -27,6 +27,8 @@ import os
 
 path_data = "../numberdb-data/"
 
+from db_builder.utils import normalize_collection_data
+from db_builder.utils import load_yaml_recursively
 
 
 
@@ -117,67 +119,6 @@ class MyTimer:
 def id_to_int(id):
 	return int(id[1:])
 
-def load_yaml_recursively(path_filename):
-	'''
-	Loads a yaml-file with BaseLoader.
-	Replaces strings of the form 'INPUT{<other-filename>}' recursively
-	by the content of the yaml file <other-filename>.
-	'''
-	
-	path, filename = os.path.split(path_filename)
-		
-	def load_recursively(y):
-		if isinstance(y,str):
-			s = y.strip(" \n")
-			if s.startswith("INPUT{") and s.endswith("}"):
-				s = s[6:-1]
-				filename_s = os.path.join(path,s)
-				return load_yaml_recursively(filename_s)
-			else:
-				return s
-		elif isinstance(y,list):
-			#TODO: Don't construct new list, just update the old one.
-			return [load_recursively(s) for s in y]
-		elif isinstance(y,dict):
-			#TODO: Don't construct new dict, just update the old one.
-			return {k: load_recursively(v) for k,v in y.items() 
-						if k not in ["IGNORE",'TODO']}
-	
-	with open(path_filename,'r') as f:
-		y = yaml.load(f,Loader=yaml.BaseLoader)
-	#print("y after loading file:",y)
-	y = load_recursively(y)
-	return y
-
-def normalize_data(data):
-	'''
-	Brings the data into a more "canonical form".	
-	'''
-	
-	header_singulars = []
-	#header_singulars.append(("Definition","definition"))
-	header_singulars.append(("Formulas","formula"))
-	header_singulars.append(("Comments","comment"))
-	header_singulars.append(("Programs","program"))
-	#header_singulars.append(("Numbers","number"))
-	header_singulars.append(("References","reference"))
-	header_singulars.append(("Links","link"))
-
-	for header, singular in header_singulars:
-		if header in data:
-			data_header = data[header]
-			if isinstance(data_header,str):
-				if data_header.strip(" \n") == "":
-					data[header] = {}
-				else:
-					data[header] = {'%s_1' % (singular,): data_header}
-			elif isinstance(data_header,list):
-				data[header] = {'%s_%s' % (singular,i): dhi for i, dhi in enumerate(data_header)}
-			elif isinstance(data_header,dict):
-				pass
-			else:
-				raise ValueError("YAML file contains unexpected data types at " + header)
-	return data
 
 def iter_collections_bulk(weight="number_count", bulk_size=10000):
 	'''
@@ -235,7 +176,8 @@ def build_collection_table(test_run=False):
 
 		#print("path:",path)
 
-		collection_data = load_yaml_recursively(os.path.join(path_data,item.path))
+		path_filename = os.path.join(path_data,item.path)
+		collection_data = load_yaml_recursively(path_filename)
 		
 		#print("y:",y)
 		if 'ID' not in collection_data:
@@ -245,7 +187,7 @@ def build_collection_table(test_run=False):
 		#print("path:",path)
 		url = os.path.split(path)[-1]
 		
-		collection_data = normalize_data(collection_data)
+		collection_data = normalize_collection_data(collection_data)
 		
 		#Create Collection:
 		c = Collection()
@@ -266,9 +208,12 @@ def build_collection_table(test_run=False):
 		
 		#Create CollectionData:
 		c_data = CollectionData()
-		c_data.json = collection_data
 		#c_data.collection_id = c.id
 		c_data.collection = c
+		c_data.json = collection_data
+		with open(path_filename) as f: #not recurse into yaml
+			c_data.raw_yaml = f.read()
+		print("c_data.raw_yaml:",c_data.raw_yaml)
 		
 		if not test_run:
 			#print("try saving c_data:",c_data)

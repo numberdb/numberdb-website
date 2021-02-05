@@ -1,0 +1,74 @@
+{% extends 'base.html' %}{% load static %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item active">Home</li>
+{% endblock %}
+
+
+{# Remove search bar from top: #}
+{% block top-searchbar %}
+{% endblock %}
+
+{% block content %}
+
+
+<link rel=stylesheet href="{% static '/codemirror-5.59.2/lib/codemirror.css' %}">
+<script src="{% static '/codemirror-5.59.2/lib/codemirror.js' %}"></script>
+<script src="{% static '/codemirror-5.59.2/mode/yaml/yaml.js' %}"></script>
+
+<style>
+/*  .CodeMirror { height: auto; border: 1px solid #ddd; }
+  .CodeMirror-scroll { max-height: 200px; }
+  .CodeMirror pre { padding-left: 7px; line-height: 1.25; }
+  .banner { background: #ffc; padding: 6px; border-bottom: 2px solid silver; text-align: center }
+*/
+</style>
+
+
+<style>
+textarea.collection-yaml {
+/*  font-family: monospace;
+*/
+}
+.CodeMirror {
+  height: calc(100vh - 15rem);
+  border: 1px solid #ddd;  
+}
+</style>
+
+<div style="height:1px;"></div>
+
+<h1>Preview for editing collections</h1>
+In this editor you can enter or edit collections in <a href="https://en.wikipedia.org/wiki/YAML">YAML format</a>, and you can get a <b>preview</b> of how numberdb would render it.
+You <b>cannot save</b> changes here. 
+Once everything looks good, upload it to the git repository <a href="https://github.com/bmatschke/numberdb-data">numberdb-data</a>.
+
+<form style="position: relative; margin-top: 0.5em;" action="{% url 'db:preview' %}" method="get">
+<textarea id=collection-yaml name="collection">
+{% if collection_yaml %}{{ collection_yaml }}{% endif %}
+</textarea>
+<input type="submit" value="Show preview">
+</form>
+
+  <script>
+    var editor = CodeMirror.fromTextArea(document.getElementById("collection-yaml"), {
+      lineNumbers: true,
+      mode: "text/x-yaml",
+      matchBrackets: true,
+      spellcheck: true,
+      viewportMargin: 1,
+    });
+    $('.CodeMirror').resizable({
+      resize: function() {
+        editor.setSize("100%", $(this).height());
+      }
+    });
+  </script>
+
+
+{% if collection %}
+{% include 'includes/collection-snippet.html' %}
+{% endif %}
+
+    
+{% endblock %}
