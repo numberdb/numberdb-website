@@ -90,7 +90,24 @@ a.github-link:hover,
 a.preview-link:hover {
   text-decoration: underline;   
 }
+:target {
+  scroll-margin-top: 5rem;
+}
+
+code.collection-code {
+  /*white-space: nowrap;*/
+  background: #fff;
+  font-size: 0.9em;
+  padding: 0.1rem 0;  
+}
 </style>
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.5.0/build/styles/default.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.5.0/build/highlight.min.js"></script>
+<!-- and it's easy to individually load additional languages -->
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.5.0/build/languages/python.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
 
 <script>
 /*
@@ -104,7 +121,7 @@ function scrollTo(event, id) {
 
 
 
-<div class="collection-title">{{ collection.title | safe }}</div>
+<div id="collection-title" class="collection-title">{{ collection.title }}</div>
 
 <a class="github-link" target="_blank" href="https://github.com/bmatschke/numberdb-data/tree/main/{{ collection.path }}/collection.yaml">edit on github</a>
 {% if preview %}

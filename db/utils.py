@@ -2,6 +2,11 @@ from sage import *
 from sage.rings.all import *
 from sage.misc.flatten import flatten
 
+def to_bytes(m):
+    if isinstance(m,bytes):
+        return m
+    if isinstance(m,memoryview):
+        return m.tobytes()
 
 def my_real_interval_to_string(r):
 

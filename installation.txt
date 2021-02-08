@@ -30,10 +30,27 @@ sage -pip install pyyaml
 
 Fuer server:
 sage -pip install gunicorn
-sage -pip install psycopg2
+sage -pip install psycopg2 #Needs sudo apt-get install libpq-dev
 
 Benutze: 
 sage -pip freeze > requirements.txt
+
+
+Setup Postgres:
+---------------
+#Switch to postgres user:
+sudo su - postgres
+#Create a database user:
+createuser u_numberdb
+#Create a new database and set the user as the owner:
+createdb numberdb --owner numberdb
+#Define a strong password for the user:
+psql -c "ALTER USER u_number WITH PASSWORD '23lkj4hkjrnmvcx98x908v09fjwelkjuojhlkjrwhre'"
+#Exit the postgres user:
+exit
+
+#In .env, put the line (using the password from above):
+DATABASE_URL=postgres://u_numberdb:23lkj4hkjrnmvcx98x908v09fjwelkjuojhlkjrwhre@localhost:5432/numberdb
 
 
 ---------------------------

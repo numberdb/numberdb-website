@@ -13,6 +13,7 @@ from sage import *
 from sage.rings.all import *
 
 from .utils import my_real_interval_to_string
+from .utils import to_bytes
 
 class UserProfile(models.Model):
 	user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -56,17 +57,22 @@ class Searchable(models.Model):
 		#choices = TYPES,
 		default = TYPE_COLLECTION,
 	)
+
 	#Obtains the following entries by inheritance:
 	# - collection
 	# - numberapprox
 	# - tag
+
+	def of_type_bytes(self):
+		return to_bytes(self.of_type)
 	
 	def __str__(self):
-		if self.of_type == Searchable.TYPE_TAG:
+		of_type = self.of_type_bytes()
+		if of_type == Searchable.TYPE_TAG:
 			return self.tag.__str__()
-		elif self.of_type == Searchable.TYPE_COLLECTION:
+		elif of_type == Searchable.TYPE_COLLECTION:
 			return self.collection.__str__()
-		elif self.of_type == Searchable.TYPE_NUMBER:
+		elif of_type == Searchable.TYPE_NUMBER:
 			return self.number.__str__()
 
 class Tag(Searchable):
@@ -255,7 +261,16 @@ class Number(Searchable):
 	param = models.BinaryField(
 		max_length = 16,
 	)
+
+	def number_type_bytes(self):
+		return to_bytes(self.number_type)
+
+	def number_blob_bytes(self):
+		return to_bytes(self.number_blob)
 	
+	def param_bytes(self):
+		return to_bytes(self.param)
+
 	def __init__(self, *args, **kwargs):
 		
 		if not 'sage_number' in kwargs:
@@ -323,27 +338,28 @@ class Number(Searchable):
 		return RBF(self.to_sage())
 
 	def to_sage(self):
-		b = self.number_blob
+		b = self.number_blob_bytes()
+		number_type = self.number_type_bytes()
 		
-		if self.number_type == Number.NUMBER_TYPE_ZZ:
+		if number_type == Number.NUMBER_TYPE_ZZ:
 			i = int.from_bytes(b,byteorder='big',signed=True)
 			return ZZ(i)
 		
-		elif self.number_type == Number.NUMBER_TYPE_QQ:
+		elif number_type == Number.NUMBER_TYPE_QQ:
 			b0 = b[:Number.HALF_BLOB_LENGTH]
 			b1 = b[Number.HALF_BLOB_LENGTH:]
 			p = int.from_bytes(b0,byteorder='big',signed=True)
 			q = int.from_bytes(b1,byteorder='big',signed=False)
 			return QQ(p)/QQ(q)
 			
-		elif self.number_type == Number.NUMBER_TYPE_RIF:
+		elif number_type == Number.NUMBER_TYPE_RIF:
 			b0 = b[:Number.HALF_BLOB_LENGTH]
 			b1 = b[Number.HALF_BLOB_LENGTH:]
 			lower = np.frombuffer(b0,dtype=np.float64)[0]
 			upper = np.frombuffer(b1,dtype=np.float64)[0]
 			return RIF(lower,upper)
 		
-		elif self.number_type == Number.NUMBER_TYPE_RBF:
+		elif number_type == Number.NUMBER_TYPE_RBF:
 			#TODO: Perhaps adjust how many bytes are used for 
 			#center and accuracy:
 			b0 = b[:Number.HALF_BLOB_LENGTH]
@@ -407,10 +423,13 @@ class SearchTerm(models.Model):
 		through='SearchTermValue',
         through_fields=('searchterm', 'searchable'),
 	)
+
+	def term_bytes(self):
+		return to_bytes(self.term)
 	
 	def __str__(self):
-		return 'Search term %s' % (self.term,)
-	
+		return 'Search term %s' % (self.term_bytes(),)
+		
 class SearchTermValue(models.Model):
 
 	searchterm = models.ForeignKey(

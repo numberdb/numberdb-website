@@ -20,6 +20,7 @@ from db.models import Searchable
 from db.models import SearchTermValue
 
 from db.utils import number_param_groups_to_bytes
+from db.utils import to_bytes
 
 from git import Repo
 import yaml
@@ -213,7 +214,7 @@ def build_collection_table(test_run=False):
 		c_data.json = collection_data
 		with open(path_filename) as f: #not recurse into yaml
 			c_data.raw_yaml = f.read()
-		print("c_data.raw_yaml:",c_data.raw_yaml)
+		#print("c_data.raw_yaml:",c_data.raw_yaml)
 		
 		if not test_run:
 			#print("try saving c_data:",c_data)
@@ -415,7 +416,7 @@ def build_search_index_for_fractional_parts():
 			#print("c.title:",c.title)
 			#print(c.my_numbers.first())
 			for n in c.my_numbers.all():
-				if n.number_type == Number.NUMBER_TYPE_ZZ:
+				if n.number_type_bytes() == Number.NUMBER_TYPE_ZZ:
 					continue
 				r = n.to_RIF().frac()
 				#print("r:",r, n.number_type)

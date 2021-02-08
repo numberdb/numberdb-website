@@ -45,6 +45,7 @@ from .models import SearchTermValue
 
 from .utils import pluralize
 from .utils import number_param_groups_to_string
+from .utils import to_bytes
 
 from db_builder.utils import normalize_collection_data
 
@@ -270,14 +271,26 @@ def collection_context(collection, preview=False):
 				'labeled_list': labeled_list,
 			}
 			sections.append(section)
+	
+	highlight_language = {
+		'Sage': 'python',
+		'default': '',
+	}
 
 	#Continue i_label, as it's all interior data, not a direct reference.
 	if 'Programs' in data and len(data['Programs']) > 0:
 		labeled_list = []
 		for label, program in data['Programs'].items():
-			text = '%s<br><code>%s</code>' % (
-				render_text(program['language']),
-				render_text(program['code']),
+			language = render_text(program['language'])
+			if language in highlight_language:
+				code_language = highlight_language[language]
+			else:
+				code_language = highlight_language['default']
+			text = '%s<br><pre><code class="collection-code language-%s">%s</code></pre>' % (
+				language,
+				code_language,
+				#render_text(program['code']),
+				program['code'],
 			)
 			labeled_list.append({
 				'label_id': label,
@@ -495,11 +508,23 @@ def preview(request, cid=None):
 			'  <definition>\n\n' + \
 			'Numbers:\n' + \
 			'- 3.14\n'
+	
+	context = {
+		'collection_yaml': collection_yaml,
+	}
 			
 	c_data = CollectionData()
-	c_data.json = yaml.load(collection_yaml,Loader=yaml.BaseLoader)
+	try:
+		c_data.json = yaml.load(collection_yaml,Loader=yaml.BaseLoader)
+	except (yaml.scanner.ScannerError, 
+			yaml.composer.ComposerError) as e:
+		print("e:",e)
+		messages.error(request, 'YAML format error: %s' % (
+			e.__str__().replace(' in "<unicode string>"','').replace('^','')),)
+		return render(request,'preview.html',context)
+	
 	c_data.json = normalize_collection_data(c_data.json)
-	print("c_data.json:",c_data.json)
+	#print("c_data.json:",c_data.json)
 	
 	c = Collection()
 	c.data = c_data
@@ -510,15 +535,17 @@ def preview(request, cid=None):
 	tags = []
 	if 'Tags' in c_data.json:
 		for tag_name in c_data.json['Tags']:
+			assert(isinstance(tag_name,str))
 			tags.append(Tag(name=tag_name))
 	
 	#print('collection_yaml:',collection_yaml)
-	context = collection_context(c,preview=True)
+	context.update(collection_context(c,preview=True))
 	context.update({
-		'collection_yaml': collection_yaml,
 		'preview': True,
 		'tags': tags,
 	})
+	print("context:",context)
+
 	return render(request,'preview.html',context)
 
 def show_own_profile(request):
@@ -570,6 +597,7 @@ def suggestions(request):
 			'entries': entries,
 			'time_request': "{:.3f}s".format(time()-time0),
 		}
+		print("data:",data)
 		return JsonResponse(data,safe=True)
 	
 	term_entered = request.GET['term']
@@ -614,8 +642,8 @@ def suggestions(request):
 				entry_i['label'] = ''
 				entry_i['type'] = 'number'
 				entry_i['title'] = '%s' % (collection.title,)
-				param = number.param.decode()
-				if len(number.param) > 0: 
+				param = number.param_bytes().decode()
+				if len(param) > 0: 
 					entry_i['subtitle'] = '%s (#%s)' % (number.str_as_real_interval(), param)
 				else:
 					entry_i['subtitle'] = '%s' % (number.str_as_real_interval(),)
@@ -683,7 +711,7 @@ def suggestions(request):
 	for value in searchterm.values.order_by('-value')[:10]:
 		searchable = value.searchable
 	
-		of_type = searchable.of_type
+		of_type = searchable.of_type_bytes()
 		entry_i = {}
 		if of_type == Searchable.TYPE_TAG:
 			tag = searchable.tag
@@ -724,8 +752,8 @@ def suggestions(request):
 			entry_i['label'] = ''
 			entry_i['type'] = 'number'
 			entry_i['title'] = '%s' % (collection.title,)
-			param = number.param.decode()
-			if len(number.param) > 0: 
+			param = number.param_bytes().decode()
+			if len(param) > 0: 
 				entry_i['subtitle'] = '%s (#%s)' % (number.str_as_real_interval(), param)
 			else:
 				entry_i['subtitle'] = '%s' % (number.str_as_real_interval(),)

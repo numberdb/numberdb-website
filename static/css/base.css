@@ -312,7 +312,6 @@ div.horizontal-container {
   margin: auto;
   margin-color: #ddd;
   max-width: 96rem;
-  font-size: 1rem; /* base for most em's */
   background: #fff;
   padding: 0 calc(1rem + 2 * var(--srem));
   /*border-top: 0.3rem solid #aeb;*/
@@ -330,7 +329,7 @@ form#logoutForm {
 }
 
 .MathJax {
-  font-size: 0.95rem;   
+  font-size: 0.95em; 
 }
 
 div.navbar-container {
@@ -409,9 +408,11 @@ ol {
 }
 .li-header {
   /*font-weight: bold;*/   
-  font-style: italic;
-  font-size: 1.1rem;
-  margin-bottom: 0.2rem; 
+  /*font-style: italic;*/
+  font-size: 1.3rem;
+  color: #555;
+  /*margin-bottom: 0.2rem; */
+  margin: 0.2rem 0;
 }
 li {
   margin-bottom: 0.3rem;  
