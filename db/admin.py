@@ -7,11 +7,6 @@ from .models import CollectionData
 from .models import CollectionSearch
 from .models import Tag
 from .models import Number
-#from .models import Searchable
-#from .models import SearchTerm
-#from .models import SearchTermValue
-#from .models import Number
-
 
 admin.site.register(UserProfile)
 
@@ -24,9 +19,6 @@ admin.site.register(CollectionData)
 admin.site.register(CollectionSearch)
 admin.site.register(Tag)
 admin.site.register(Number)
-#admin.site.register(Searchable)
-#admin.site.register(SearchTerm)
-#admin.site.register(SearchTermValue)
 
 
 

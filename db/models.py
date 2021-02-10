@@ -26,7 +26,6 @@ class UserProfile(models.Model):
 	def __str__(self):
 		return 'Profile of %s' % (self.user,)
 	
-
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
 	if created:
@@ -38,48 +37,8 @@ def save_user_profile(sender, instance, **kwargs):
 		instance.profile.save()
     
 
-
-
-'''
-class Searchable(models.Model):
-
-	TYPE_TAG = b't'
-	TYPE_COLLECTION = b'c'
-	TYPE_NUMBER = b'n'
-	
-	TYPES = [
-		(TYPE_TAG, "Tag"),
-		(TYPE_COLLECTION, "Type Collection"),
-		(TYPE_NUMBER, "Number"),
-	]
-	
-	of_type = models.BinaryField(
-		max_length = 1,
-		#choices = TYPES,
-		default = TYPE_COLLECTION,
-	)
-
-	#Obtains the following entries by inheritance:
-	# - collection
-	# - numberapprox
-	# - tag
-
-	def of_type_bytes(self):
-		return to_bytes(self.of_type)
-	
-	def __str__(self):
-		of_type = self.of_type_bytes()
-		if of_type == Searchable.TYPE_TAG:
-			return self.tag.__str__()
-		elif of_type == Searchable.TYPE_COLLECTION:
-			return self.collection.__str__()
-		elif of_type == Searchable.TYPE_NUMBER:
-			return self.number.__str__()
-'''
-
 class Tag(models.Model):
 
-	#sub_id = models.AutoField(primary_key=True)
 	name = models.CharField(
 		max_length = 32,
 		unique = True,
@@ -92,11 +51,6 @@ class Tag(models.Model):
 		#primary_key = True,
 		db_index = True,
 	)
-	#collections = models.ManyToManyField(
-	#	Collection,
-	#	related_name = "tags",
-	#)
-	
 	collection_count = models.IntegerField(
 		default = 0,
 	)
@@ -105,12 +59,6 @@ class Tag(models.Model):
 	)
 	search_vector = SearchVectorField(
 	)
-
-	
-	#Don't set of_type here, rather do in once in build.sage:
-	#def __init__(self, *args, **kwargs):
-	#	super(Searchable, self).__init__(*args, **kwargs)
-	#	self.of_type = Searchable.TYPE_TAG
 	
 	def url(self):
 		return quote_plus(self.name)
@@ -165,15 +113,6 @@ class Collection(models.Model):
 	number_count = models.IntegerField(   
 		default = 0,
 	)
-	#subtitle = models.CharField(
-	#	max_length = 32,
-	#	unique = False,
-	#}
-
-	#Don't set of_type here, rather do in once in build.sage:
-	#def __init__(self, *args, **kwargs):
-	#	super(Searchable, self).__init__(*args, **kwargs)
-	#	self.of_type = Searchable.TYPE_COLLECTION
 
 	def __str__(self):
 		return 'Collection %s' % (self.title,)
@@ -212,7 +151,6 @@ class CollectionSearch(models.Model):
 	)
 	search_vector = SearchVectorField(
 	)
-	
 	collection = models.OneToOneField(
 		Collection,
 		on_delete = models.CASCADE,
@@ -221,41 +159,6 @@ class CollectionSearch(models.Model):
 	def __str__(self):
 		return 'Search vector for %s' % (self.collection,)
 
-'''
-class NumberApprox(Searchable):
-
-	lower = models.FloatField(
-	)
-	upper = models.FloatField(
-	)
-	my_collection = models.ForeignKey(
-		Collection, 
-		on_delete=models.CASCADE,
-		related_name="my_numberapproxs"
-	)
-	param = models.BinaryField(
-		max_length = 16,
-	)
-	def __str__(self):
-		r = RIF(self.lower,self.upper)
-		if r.contains_zero():
-			#Relative diameter won't make sense, so just print it normally:
-			return r.__str__()
-		if r.relative_diameter() < 0.001:
-			#Enough relative precision,
-			#thus print the number normally:
-			return r.__str__()
-		else:
-			#Not enough relative precision, 
-			#thus rather print the number as an interval:
-			Rup = RealField(15,rnd='RNDU')
-			Rdown = RealField(15,rnd='RNDD')
-			return '[%s,%s]' % (Rdown(r.lower()),Rup(r.upper()))
-		
-		#Bad: RBF(r) for a real interval r is not "centered"!
-		#It takes r.lower() as center and r.diameter() as radius!
-		#return RBF(r).__str__().strip('[]')
-'''
 
 class Number(models.Model):
 
@@ -315,16 +218,10 @@ class Number(models.Model):
 	def __init__(self, *args, **kwargs):
 		
 		if not 'sage_number' in kwargs:
-			#super(Searchable, self).__init__(*args, **kwargs)
 			super(Number, self).__init__(*args, **kwargs)
 			return
 			
-		#rather do this once in build.sage:
-		#self.of_type = Searchable.TYPE_NUMBER
-
-		
 		r = kwargs.pop('sage_number')
-		#super(Searchable, self).__init__(*args, **kwargs)
 		super(Number, self).__init__(*args, **kwargs)
 		
 		#print("r:",r)
@@ -382,14 +279,6 @@ class Number(models.Model):
 	def to_RIF(self):
 		return RIF(self.to_sage())
 	
-	'''
-	def lower(self):
-		return self.to_RIF().lower()
-
-	def upper(self):
-		return self.to_RIF().upper()
-    '''
-    
 	def to_RBF(self):
 		return RBF(self.to_sage())
 
@@ -444,72 +333,3 @@ class Number(models.Model):
 		else:
 			print("r:",r)
 			raise NotImplementedError()
-
-'''
-class SearchTerm(models.Model):
-	
-	MAX_RESULTS = 10
-	
-	MAX_LENGTH_TERM_FOR_TEXT = 8
-	#MAX_LENGTH_TERM_FOR_INTS = 8
-	#MAX_LENGTH_TERM_FOR_REAL_EXPONENT = 4
-	MAX_LENGTH_TERM_FOR_REAL_FRAC = 8
-	NUM_BYTES_REAL_EXPONENT = 4
-	NUM_BYTES_REAL_FRAC = 4
-	
-	#First byte of term stores the type
-	TERM_TEXT = b't'
-	#TERM_INT = b'i'
-	TERM_REAL = b'r'
-	
-	#We make term the private key, 
-	#such that we can bulk_create them faster.
-	term = models.BinaryField(
-		max_length = 1 + max(
-			MAX_LENGTH_TERM_FOR_TEXT, 
-			MAX_LENGTH_TERM_FOR_REAL_FRAC,
-			NUM_BYTES_REAL_EXPONENT + NUM_BYTES_REAL_FRAC,
-		),						
-		unique = True,
-		primary_key = True, 
-		#db_index = True
-	)
-	searchables = models.ManyToManyField(
-		Searchable,
-		related_name = '+', #No backward relation
-		through='SearchTermValue',
-        through_fields=('searchterm', 'searchable'),
-	)
-
-	def term_bytes(self):
-		return to_bytes(self.term)
-	
-	def __str__(self):
-		return 'Search term %s' % (self.term_bytes(),)
-		
-class SearchTermValue(models.Model):
-
-	searchterm = models.ForeignKey(
-		SearchTerm, 
-		on_delete=models.CASCADE,
-        #db_constraint=False,
-        related_name="values",
-	)
-	searchable = models.ForeignKey(
-		Searchable, 
-		on_delete=models.CASCADE,
-        #db_constraint=False,
-        related_name="values",
-	)
-	value = models.IntegerField(
-		default = int(0),
-		#db_index = True,
-	)
-	
-	def __str__(self):
-		return 'Value %s for %s -> %s' % (
-			self.value, 
-			self.searchterm, 
-			self.searchable,
-		)
-'''

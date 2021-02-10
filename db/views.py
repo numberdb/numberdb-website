@@ -33,17 +33,13 @@ from sage.rings.rational import Rational
 from sage.rings.integer_ring import ZZ
 from sage.rings.rational_field import QQ
 from sage.rings.infinity import infinity
-'''
-'''
+
 from .models import UserProfile
 from .models import Collection
 from .models import CollectionData
 from .models import CollectionSearch
 from .models import Tag
 from .models import Number
-#from .models import Searchable
-#from .models import SearchTerm
-#from .models import SearchTermValue
 
 from .utils import pluralize
 from .utils import number_param_groups_to_string

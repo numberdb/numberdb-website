@@ -14,11 +14,7 @@ from db.models import Collection
 from db.models import CollectionData
 from db.models import CollectionSearch
 from db.models import Tag
-#from db.models import NumberApprox
 from db.models import Number
-#from db.models import SearchTerm
-#from db.models import Searchable
-#from db.models import SearchTermValue
 
 from db.utils import number_param_groups_to_bytes
 from db.utils import to_bytes
@@ -60,21 +56,8 @@ tree = commit.tree
 index = repo.index
 #i = index
 
-#next_ids_filename = os.path.join("data","next_ids.yaml")
 collection_id_prefix = "C"
 
-'''
-try:
-	with open(next_ids_filename,"r") as f:
-		next_ids = yaml.load(f,Loader=yaml.BaseLoader)
-		next_collection_id = next_ids["next_collection_id"]
-		
-except FileNotFoundError:
-	next_collection_id = collection_id_prefix + "0"
-
-print("next_collection_id:",next_collection_id)
-
-'''
 
 class MyTimer:
 	'''
@@ -155,17 +138,11 @@ def iter_collections_bulk(weight="number_count", bulk_size=10000):
 def delete_all_tables():
 	print("DELETING ALL TABLES")
 
-	#SearchTermValue.objects.all().delete()
-	#SearchTerm.objects.all().delete()
-
-	#NumberApprox.objects.all().delete()
 	Number.objects.all().delete()
+	CollectionSearch.objects.all().delete()
 	CollectionData.objects.all().delete()
 	Collection.objects.all().delete()
-
 	Tag.objects.all().delete()
-
-	#Searchable.objects.all().delete()
 
 @transaction.atomic
 def build_collection_table(test_run=False):
@@ -246,7 +223,6 @@ def build_tag_table():
 
 	Tag.objects.update(search_vector = SearchVector('name', weight='A'))
 		
-		#c.save() #Does c.tags.add(tag) need to be saved?
 
 def build_number_table():
 
@@ -270,23 +246,23 @@ def build_number_table():
 		
 		
 		p = number_param_groups_to_bytes(param)
-		print("x:",x)
+		#print("x:",x)
 		
 		try:
 			n = Number(sage_number = x)
 		except OverflowError:
-			print("make x to real interval")
+			#print("make x to real interval")
 			x = RIFprec(x)
 			n = Number(sage_number = x)
 		#n.of_type = Searchable.TYPE_NUMBER #not anymore automatic
 		
-		print("debug0")
+		#print("debug0")
 		n.collection = c
 		
-		print("debug1")
+		#print("debug1")
 		n.param = p
 	
-		print("before saving number")
+		#print("before saving number")
 		n.save()
 
 		return 1 #Count of saved numbers
@@ -374,9 +350,6 @@ def build_search_index_for_collections():
 				if 'Comments' in json:
 					c_search.weight_D_text = ' '.join(json['Comments'].values())
 				c_search.save()
-					
-				
-				
 				
 	search_vector = SearchVector('weight_A_text',weight='A')
 	search_vector += SearchVector('weight_B_text',weight='B')
@@ -384,193 +357,7 @@ def build_search_index_for_collections():
 	search_vector += SearchVector('weight_D_text',weight='D')
 	CollectionSearch.objects.update(search_vector = search_vector)
 				
-				
-'''
-@transaction.atomic
-def add_sentence_to_search_index(list_of_sentence_searchable_value):
-
-	value_dict = {}
-		
-	def add_term_to_search_index(word, searchable, value):
-		for i in range(1, 1 + max(SearchTerm.MAX_LENGTH_TERM_FOR_TEXT,
-									len(word))):
-			subword = word.lower()[:i] #first i letters of the word
-			term = SearchTerm.TERM_TEXT + subword.encode()
-			if len(term) > SearchTerm.term.field.max_length:
-				break
-
-			key = (term, searchable.id)
-			if key not in value_dict:
-				value_dict[key] = value
-			else:
-				value_dict[key] = max(value, value_dict[key])
-			
-	#for run in ['searchterms','searchtermvalues']:
-	for sentence, searchable, value in list_of_sentence_searchable_value:	
-		for word in sentence.strip(" \n").split(" "):
-			if word == "":
-				continue
-			terms = word.split("-")
-			#terms = [word] #debug
-			for term in terms:
-				add_term_to_search_index(term, searchable, value)
-			if len(terms) > 1:
-				#Also add the whole word (e.g. "L-function"):
-				add_term_to_search_index(word, searchable, value)
-
-	#Create new searchterms in DB:
-	terms = set(term for term, searchable_id in value_dict)
-	searchterms = [SearchTerm(term = term) for term in terms]
-	SearchTerm.objects.bulk_create(searchterms,ignore_conflicts=True)
 	
-	#Create new searchtermvalues in DB:
-	searchtermvalues = [SearchTermValue(
-							searchterm_id = term,
-							searchable_id = searchable_id,
-							value = value,
-						) for (term,searchable_id),value in value_dict.items()]
-	SearchTerm.searchables.through.objects.bulk_create(searchtermvalues)
-	
-			
-def build_search_index_for_tags():
-	print("BUILD SEARCH INDEX for TAGS")
-	for tag in Tag.objects.all():
-		#print(tag.name)
-		add_sentence_to_search_index([(tag.name, tag.searchable_ptr, int(1000))])
-
-def build_search_index_for_collection_titles():
-	print("BUILD SEARCH INDEX for COLLECTION TITLES")
-	for cs_bulk in iter_collections_bulk(weight=1,bulk_size=1000):
-		list_of_sentence_searchable_value = \
-			[(c.title, c.searchable_ptr, int(100)) for c in cs_bulk]
-		add_sentence_to_search_index(list_of_sentence_searchable_value)
-
-def build_search_index_for_collection_keywords():
-	print("BUILD SEARCH INDEX for COLLECTION KEYWORDS")
-	for cs_bulk in iter_collections_bulk(weight=1,bulk_size=1000):
-		list_of_sentence_searchable_value = []
-		for c in cs_bulk:
-			keywords = c.data.json.get('Keywords')
-			if keywords == None:
-				continue
-			for keyword in keywords:
-				list_of_sentence_searchable_value.append((keyword, c.searchable_ptr, int(100)))
-		add_sentence_to_search_index(list_of_sentence_searchable_value)
-
-def build_search_index_for_fractional_parts():
-	print("BUILD SEARCH INDEX for FRACTIONAL PARTS")
-	for cs_bulk in iter_collections_bulk():
-		list_of_sentence_searchable_value = []
-		for c in cs_bulk:
-			#print("c.title:",c.title)
-			#print(c.my_numbers.first())
-			for n in c.numbers.all():
-				if n.number_type_bytes() == Number.NUMBER_TYPE_ZZ:
-					continue
-				r = n.to_RIF().frac()
-				#print("r:",r, n.number_type)
-				if r.contains_zero():
-					continue
-				if r.lower() < 0:
-					r += 1; 
-				if r.diameter() > 0.1:
-					continue
-				str_r = str(r)
-				if '.' not in str_r:
-					continue
-					
-				#TODO: Bug if scientific notation is used for r:
-					
-				word = str(r).split(".")[1].strip("?")
-				list_of_sentence_searchable_value.append((word, n, 1))
-		add_sentence_to_search_index(list_of_sentence_searchable_value)
-
-def build_search_index_for_real_numbers():
-	print("BUILD SEARCH INDEX for REAL_NUMBERS")
-	
-	for cs_bulk in iter_collections_bulk():
-		with transaction.atomic():
-
-			value_dict = {}
-
-			for c in cs_bulk:
-				for n in c.numbers.all():
-					r = n.to_RIF()
-					if r.contains_zero():
-						continue
-					log10 = abs(r).log(10)
-					if log10.diameter() > 0.5:
-						continue
-					exp = ZZ(log10.lower().floor())+1
-					frac = r/RIF(10)^exp
-					
-					#r = frac * 10^exp and normally 0.1 <= frac < 1
-					
-					for i in range(1,SearchTerm.MAX_LENGTH_TERM_FOR_REAL_FRAC+1):
-						frac_i = frac * RIF(10)^i
-						exp_i = exp - i
-						if frac_i.diameter() >= 0.5:
-							break
-						l = ZZ(frac_i.lower().floor())
-						u = ZZ(frac_i.upper().ceil())
-						if u > l+1:
-							break
-						
-						for f in set((l,u)):
-							term = SearchTerm.TERM_REAL + \
-								int(exp_i).to_bytes(SearchTerm.NUM_BYTES_REAL_EXPONENT,byteorder='big',signed=True) + \
-								int(f).to_bytes(SearchTerm.NUM_BYTES_REAL_FRAC,byteorder='big',signed=True) 
-							
-							value = int(10*i)
-							key = (term, n.searchable_ptr_id)
-							if key not in value_dict:
-								value_dict[key] = value
-							else:
-								value_dict[key] = max(value, value_dict[key])
-			
-
-			#Create new searchterms in DB:
-			terms = set(term for term, searchable_id in value_dict)
-			searchterms = [SearchTerm(term = term) for term in terms]
-			SearchTerm.objects.bulk_create(searchterms,ignore_conflicts=True)
-			
-			#Create new searchtermvalues in DB:
-			searchtermvalues = [SearchTermValue(
-									searchterm_id = term,
-									searchable_id = searchable_id,
-									value = value,
-								) for (term,searchable_id),value in value_dict.items()]
-			SearchTerm.searchables.through.objects.bulk_create(searchtermvalues)
-
-
-def clean_search_index():
-	print("CLEAN SEARCH INDEX")
-	for searchterm in SearchTerm.objects.all():
-		num_searchables = 0	
-		searchables_to_stay = set()
-		values_to_delete = []
-		last_index = 0
-		query = searchterm.values.order_by('-value')
-		for value in query:
-			last_index += 1
-			if value.searchable_id in searchables_to_stay:
-				#Already better value:
-				values_to_delete.append(value)
-				continue
-				
-			searchables_to_stay.add(value.searchable_id)
-			num_searchables += 1
-			if num_searchables >= SearchTerm.MAX_RESULTS:
-				break
-		
-		#continue #debug
-		
-		with transaction.atomic():
-			for value in values_to_delete:
-				value.delete()
-			#query.reverse()[:query.count()-SearchTerm.MAX_RESULTS].delete()
-'''		
-			
 #timer = MyTimer(cputime)
 timer = MyTimer(walltime)
 
@@ -583,61 +370,5 @@ with transaction.atomic():
 	
 	timer.run(build_search_index_for_collections)
 
-	#timer.run(build_search_index_for_tags)
-	#timer.run(build_search_index_for_collection_titles)
-	#timer.run(build_search_index_for_collection_keywords)
-	#timer.run(build_search_index_for_fractional_parts)
-	#timer.run(build_search_index_for_real_numbers)
-	
-	#timer.run(clean_search_index)
-
 print("Times:\n%s" % (timer,))
 
-
-
-'''
-print("new_collection_paths:",new_collection_paths)
-
-new_filenames = []
-
-for path in new_collection_paths:
-	filename = os.path.join(path,"id.yaml")
-	with open(filename,"w") as f:
-		f.writelines([
-			"# Automatically created file. Do NOT edit.\n",
-			"# If you copy the containing folder, delete this file in the copy.\n",
-			"\n",
-			"id: %s\n" % (next_collection_id,),
-			])
-	new_filenames.append(filename)
-	commit_message += "    %s: %s\n" % (next_collection_id, filename)
-
-	print("saved ",filename)
-	next_collection_id = succ_id(next_collection_id)
-
-if len(new_filenames) == 0:
-	print("Done: No new id needed.") 
-	return True
- 
-with open(next_ids_filename,"w") as f:
-	f.writelines([
-		"# Automatically created file. Do NOT edit.\n",
-		"# If you copy the containing folder, delete this file in the copy.\n",
-		"\n",
-		"next_collection_id: %s\n" % (next_collection_id,),
-		])
-	print("saved ",next_ids_filename)
-	commit_message += "    updated %s\n" % (next_ids_filename,)
-	new_filenames.append(next_ids_filename)
-	
-for filename in new_filenames:
-	index.add([filename])
-
-
-final_commit = index.commit(commit_message)
-print("final_commit.type:",final_commit.type)		
-
-#repo.active_branch.commit = repo.commit('HEAD~1')     
-
-
-'''
