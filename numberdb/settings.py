@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     'anymail',
     #'userprofile.apps.UserProfileConfig',
     'db.apps.DbConfig',
+    #'db',
     #'crispy_forms',
     #'bootstrap4',
     'widget_tweaks',

@@ -5,6 +5,8 @@ from django.contrib.auth.models import User
 from django.views import generic
 from django.http import JsonResponse
 from django.contrib import messages
+from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
+from django.db.models import F
 
 from numpy import random as random
 import re
@@ -22,7 +24,6 @@ import yaml
 from sage import *
 from sage.rings.all import *
 
-'''
 from sage.all import ceil
 from sage.rings.complex_number import ComplexNumber
 from sage.rings.complex_field import ComplexField
@@ -33,15 +34,16 @@ from sage.rings.integer_ring import ZZ
 from sage.rings.rational_field import QQ
 from sage.rings.infinity import infinity
 '''
-
+'''
 from .models import UserProfile
 from .models import Collection
 from .models import CollectionData
+from .models import CollectionSearch
 from .models import Tag
 from .models import Number
-from .models import Searchable
-from .models import SearchTerm
-from .models import SearchTermValue
+#from .models import Searchable
+#from .models import SearchTerm
+#from .models import SearchTermValue
 
 from .utils import pluralize
 from .utils import number_param_groups_to_string
@@ -91,7 +93,7 @@ def tags(request):
 def tag(request, tag_url):
     tag = Tag.from_url(tag_url)
     #tag = Tag.objects.get(name=tag_name)
-    collections = tag.my_collections.all()
+    collections = tag.collections.all()
     sortby_default = 'number_count'
     sortby = request.GET.get('sort_by',default=sortby_default)
     if sortby == 'number_count':
@@ -477,7 +479,7 @@ def collection_context(collection, preview=False):
 		'number_section': number_section,
 	}
 	if not preview:
-		context['tags'] = collection.my_tags.all()
+		context['tags'] = collection.tags.all()
 	else:
 		context['tags'] = []
 	
@@ -586,8 +588,79 @@ def update(request, user_id):
     profile.save()
     return HttpResponseRedirect(reverse('db:profile'))
 
+def parse_integer(s):
+	cZZ = re.compile(r'^([+-]?)(\d+)$')
+	matchZZ = cZZ.match(s)
+	if matchZZ == None:
+		return None
+	return ZZ(int(s)) #int takes care of leading zeros
+
+def parse_positive_integer(s):
+	cZZplus = re.compile(r'^\d+$')
+	matchZZplus = cZZplus.match(s)
+	if matchZZplus == None:
+		return None
+	return ZZ(int(s)) #int takes care of leading zeros
+
 def parse_real_interval(s):
-	r = RIF(s)
+	#First sage's RIF notation:
+	cRIF = re.compile(r'^([+-]?)(\d*)((?:\.\d*)?)((?:[eE]-?\d+)?)$')
+	matchRIF = cRIF.match(s)
+	if matchRIF != None:
+		#Given searchterm is a real interval:
+		if '?' in s:
+			return RIF(s)
+
+		#If no '?' in s, we will treat last given digit as possibly off by 1:
+		sign, a, b, e = matchRIF.groups()
+		if sign != '-':
+			sign = ''
+		if b != '':
+			b = b[1:]
+		exp = ZZ(e[1:]) if e != '' else 0 
+		exp -= len(b)
+		ab = (a + b).lstrip('0')
+		
+		#Don't crop here during parsing:
+		#ab_cropped = ab[:SearchTerm.MAX_LENGTH_TERM_FOR_REAL_FRAC]
+		#print("ab,ab_cropped:",ab,ab_cropped)
+		#exp += len(ab) - len(ab_cropped)
+		
+		f = ZZ(int(sign + ab)) if ab != '' else 0			
+		r = RIF(f-1,f+1) * RIF(10)**exp
+		return r
+		
+	#Next try numberdb's p-notation:
+	cRIF_P = re.compile(r'^([+-]?)(\d*)[pP]([+-]?)([1-9]\d*)$')
+	matchRIF_P = cRIF_P.match(s)
+	if matchRIF_P != None:
+		#Given searchterm is a real interval in "p-notation":
+		signExp, exp, signFrac, frac = matchRIF_P.groups()
+		print("signExp, exp, signFrac, frac:",signExp, exp, signFrac, frac)
+		if signExp != '-':
+			signExp = ''
+		if signFrac != '-':
+			signFrac = ''
+		exp = ZZ(int(signExp + exp)) if exp != '' else 0 
+		
+		#Don't crop here during parsing:
+		#frac_cropped = frac[:SearchTerm.MAX_LENGTH_TERM_FOR_REAL_FRAC]
+		
+		exp -= len(frac)
+		f = ZZ(int(signFrac + frac))
+		r = RIF(f-1,f+1) * RIF(10)**exp
+		return r
+		
+	return None
+
+def parse_fractional_part(s):
+	f = parse_integer(s)
+	if f == None:
+		return None
+	r = RIF(f-1,f+1) * RIF(10)**(-len(s.lstrip('-+')))
+	if r < 0:
+		r += 1
+	return r	
 
 def suggestions(request):
 	time0 = time()
@@ -597,14 +670,15 @@ def suggestions(request):
 			'entries': entries,
 			'time_request': "{:.3f}s".format(time()-time0),
 		}
-		print("data:",data)
+		#print("data:",data)
 		return JsonResponse(data,safe=True)
 	
 	term_entered = request.GET['term']
 	term = term_entered.strip(" \n")
 	if term == '':
 		return wrap_response({})
-
+	
+	'''
 	def text_term_to_bytes(term):
 		for i in range(SearchTerm.MAX_LENGTH_TERM_FOR_TEXT,0,-1):
 			term_suffix = term[:i].lower() #substring of at most 4 letters
@@ -612,101 +686,127 @@ def suggestions(request):
 			if len(term_bytes) <= SearchTerm.term.field.max_length:
 				return term_bytes
 		return SearchTerm.TERM_TEXT
-
+	'''
+	
 	entries = {}
 	i = 1
-	exact_number = None
 	
-	cZZ = re.compile(r'([+-]?)(\d+)')
-	cZZplus = re.compile(r'\d+')
-	cRIF = re.compile(r'([+-]?)(\d*)((?:\.\d*)?)((?:[eE]-?\d+)?)')
-	cRIF_P = re.compile(r'([+-]?)(\d*)[pP]([+-]?)([1-9]\d*)')
-	
-	#Determine type of search term:
-	
-	matchZZ = cZZ.match(term)
-	if matchZZ != None and matchZZ.end() == len(term):
+	#Searching for exactly given integer:
+	query_integers = Number.objects.none()
+	n = parse_integer(term)
+	if n != None:
 		try:
-			number = Number(sage_number=ZZ(int(term)))
+			number = Number(sage_number=n)
 		except OverflowError:
 			number = None
 		if number != None:
-			for number in Number.objects.filter(
-							number_blob = number.number_blob,
-							number_type = Number.NUMBER_TYPE_ZZ,
-						):
-				exact_number = number
-				collection = number.my_collection
-				entry_i = {}
-				entry_i['value'] = str(i)
-				entry_i['label'] = ''
-				entry_i['type'] = 'number'
-				entry_i['title'] = '%s' % (collection.title,)
-				param = number.param_bytes().decode()
-				if len(param) > 0: 
-					entry_i['subtitle'] = '%s (#%s)' % (number.str_as_real_interval(), param)
-				else:
-					entry_i['subtitle'] = '%s' % (number.str_as_real_interval(),)
-				entry_i['url'] = '/' + "%s#%s" % (collection.url, param)
-				entries[i] = entry_i
-				i += 1
+			query_integers = Number.objects.filter(
+				number_blob = number.number_blob_bytes(),
+				#number_type = Number.NUMBER_TYPE_ZZ,
+				number_type = number.number_type,
+			)			
+			print("number:",number)
 	
-	matchZZplus = cZZplus.match(term)
-	if matchZZplus != None and matchZZplus.end() == len(term):
-		#Given searchterm is a positive integer:
-		term = text_term_to_bytes(term)
 
-	else:
-		matchRIF = cRIF.match(term)
-		if matchRIF != None and matchRIF.end() == len(term):
-			#Given searchterm is a real interval:
-			sign, a, b, e = matchRIF.groups()
-			if sign != '-':
-				sign = ''
-			if b != '':
-				b = b[1:]
-			exp = ZZ(e[1:]) if e != '' else 0 
-			exp -= len(b)
-			ab = (a + b).lstrip('0')
-			ab_cropped = ab[:SearchTerm.MAX_LENGTH_TERM_FOR_REAL_FRAC]
-			print("ab,ab_cropped:",ab,ab_cropped)
-			exp += len(ab) - len(ab_cropped)
-			f = ZZ(sign+ab_cropped) if ab_cropped != '' else 0			
-			term = SearchTerm.TERM_REAL + \
-				int(exp).to_bytes(SearchTerm.NUM_BYTES_REAL_EXPONENT,byteorder='big',signed=True) + \
-				int(f).to_bytes(SearchTerm.NUM_BYTES_REAL_FRAC,byteorder='big',signed=True) 
-			print("exp,f:",exp,f)
-		
+	#Searching for real number up to given precision:
+	query_real_intervals = Number.objects.none()
+	if '.' in term or 'p' in term or 'P' in term:
+		r = parse_real_interval(term)
+		if r != None:
+			print("r:",r)
+			query_real_intervals = Number.objects.filter(
+				lower__range = (float(r.lower()),float(r.upper())),
+				upper__range = (float(r.lower()),float(r.upper())),							
+			)
+
+	#Searching for real numbers by given fractional part:
+	query_fractional_part = Number.objects.none()
+	f = parse_fractional_part(term)
+	if f != None:
+		query_fractional_part = Number.objects.filter(
+			frac_lower__range = (float(f.lower()),float(f.upper())),
+			frac_upper__range = (float(f.lower()),float(f.upper())),							
+		)
+
+	#TODOs:
+	#- exact integers should go on top of search results
+	#- need to allow some slack when searching for RIFs via high prevision terms
+
+	query_numbers = query_integers.union(
+						query_real_intervals,
+						query_fractional_part
+					)[:10]
+	#print("query_numbers:",query_numbers)
+	
+	for number in query_numbers:
+		collection = number.collection
+		param = number.param_bytes().decode()
+		entry_i = {
+			'value': str(i),
+			'label': '',
+			'type': 'number',
+			'title': collection.title,
+			'url': '/%s#%s' % (collection.url, param),
+		}
+		if len(param) > 0: 
+			entry_i['subtitle'] = '%s (#%s)' % (number.str_as_real_interval(), param)
 		else:
-			matchRIF_P = cRIF_P.match(term)
-			if matchRIF_P != None and matchRIF_P.end() == len(term):
-				#Given searchterm is a real interval in "p-notation":
-				signExp, exp, signFrac, frac = matchRIF_P.groups()
-				print("signExp, exp, signFrac, frac:",signExp, exp, signFrac, frac)
-				if signExp != '-':
-					signExp = ''
-				if signFrac != '-':
-					signFrac = ''
-				exp = ZZ(signExp + exp) if exp != '' else 0 
-				frac_cropped = frac[:SearchTerm.MAX_LENGTH_TERM_FOR_REAL_FRAC]
-				exp -= len(frac_cropped)
-				f = ZZ(signFrac+frac_cropped)			
-				term = SearchTerm.TERM_REAL + \
-					int(exp).to_bytes(SearchTerm.NUM_BYTES_REAL_EXPONENT,byteorder='big',signed=True) + \
-					int(f).to_bytes(SearchTerm.NUM_BYTES_REAL_FRAC,byteorder='big',signed=True) 
-				print("exp,f:",exp,f)
+			entry_i['subtitle'] = '%s' % (number.str_as_real_interval(),)
+		entries[i] = entry_i
+		i += 1
 
-			else:
-				#Given searchterm is something else:
-				term = text_term_to_bytes(term)
-
-	try:
-		searchterm = SearchTerm.objects.get(term=term)
-	except SearchTerm.DoesNotExist:
+	if i >= 10:
 		return wrap_response(entries)
 	
-	
+	#Searching for tag names:
+	query_tags = Tag.objects.filter(search_vector = term)[:(10-i)]
+	for tag in query_tags:
+		entry_i = {
+			'value': str(i),
+			'label': '',
+			'type': 'tag',
+			'title': '<div class="tag">%s</div>' % (tag.name,),
+			'subtitle': '%s collection%s, %s number%s' % (
+				tag.collection_count,
+				's' if tag.collection_count != 1 else '',
+				tag.number_count,
+				's' if tag.number_count != 1 else '',
+			),
+			'url': reverse('db:tag', kwargs={'tag_url': tag.url()}),
+		}
+		entries[i] = entry_i
+		i += 1
 
+	if i >= 10:
+		return wrap_response(entries)
+		
+	#Searching for collections:
+	
+	query_collections = CollectionSearch.objects.annotate(rank=SearchRank(F('search_vector'),SearchQuery(term))).filter(rank__gte=0.1).order_by('-rank')[:(10-i)]
+	#query_collections = CollectionSearch.objects.filter(search_vector = term)[:(10-i)]
+	
+	for c_search in query_collections:
+		collection = c_search.collection
+		entry_i = {
+			'value': str(i),
+			'label': '',
+			'type': 'collection',
+			'title': collection.title,
+			'url': '/%s' % (collection.url,),
+		}
+		if collection.number_count != 1:
+			entry_i['subtitle'] = '%s numbers' % collection.number_count
+		else:
+			number = collection.numbers.first()
+			entry_i['subtitle'] = '%s' % (number.str_as_real_interval(),)
+		entries[i] = entry_i
+		i += 1
+		
+	
+	return wrap_response(entries)
+	
+	'''
+			
 	#for searchable in searchterm.searchables.all():
 	for value in searchterm.values.order_by('-value')[:10]:
 		searchable = value.searchable
@@ -738,7 +838,7 @@ def suggestions(request):
 			if collection.number_count != 1:
 				entry_i['subtitle'] = '%s numbers' % collection.number_count
 			else:
-				number = collection.my_numbers.first()
+				number = collection.numbers.first()
 				entry_i['subtitle'] = '%s' % (number.str_as_real_interval(),)
 			entry_i['url'] = '/' + collection.url
 
@@ -747,7 +847,7 @@ def suggestions(request):
 			if exact_number != None and number.pk == exact_number.pk:
 				#The exact number is already listed in entries.
 				continue
-			collection = number.my_collection
+			collection = number.collection
 			entry_i['value'] = str(i)
 			entry_i['label'] = ''
 			entry_i['type'] = 'number'
@@ -763,6 +863,8 @@ def suggestions(request):
 		#	entry_i['url'] += '?searchterm=%s' % (term_entered,)
 		entries[i] = entry_i
 		i += 1
+
+	'''
 	
 	'''
 	#Debug:

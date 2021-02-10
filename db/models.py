@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-
+from django.contrib.postgres.search import SearchVectorField
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 
@@ -14,6 +14,8 @@ from sage.rings.all import *
 
 from .utils import my_real_interval_to_string
 from .utils import to_bytes
+
+
 
 class UserProfile(models.Model):
 	user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -39,7 +41,7 @@ def save_user_profile(sender, instance, **kwargs):
 
 
 
-
+'''
 class Searchable(models.Model):
 
 	TYPE_TAG = b't'
@@ -74,8 +76,9 @@ class Searchable(models.Model):
 			return self.collection.__str__()
 		elif of_type == Searchable.TYPE_NUMBER:
 			return self.number.__str__()
+'''
 
-class Tag(Searchable):
+class Tag(models.Model):
 
 	#sub_id = models.AutoField(primary_key=True)
 	name = models.CharField(
@@ -101,6 +104,9 @@ class Tag(Searchable):
 	number_count = models.IntegerField(
 		default = 0,
 	)
+	search_vector = SearchVectorField(
+	)
+
 	
 	#Don't set of_type here, rather do in once in build.sage:
 	#def __init__(self, *args, **kwargs):
@@ -119,7 +125,7 @@ class Tag(Searchable):
 		return 'Tag %s (%s/%s)' % (self.name,self.collection_count,self.number_count)
 		
 
-class Collection(Searchable):
+class Collection(models.Model):
 
 	#sub_id = models.AutoField(primary_key=True)
 	cid = models.CharField(
@@ -152,9 +158,9 @@ class Collection(Searchable):
 		db_index=True,
 		default = '',
 	)
-	my_tags = models.ManyToManyField(
+	tags = models.ManyToManyField(
 		Tag,
-		related_name = 'my_collections',
+		related_name = 'collections',
 		#db_constraint=False,
 	)
 	number_count = models.IntegerField(   
@@ -190,6 +196,31 @@ class CollectionData(models.Model):
 	
 	def __str__(self):
 		return 'Data for %s' % (self.collection,)
+
+class CollectionSearch(models.Model):
+	
+	weight_A_text = models.TextField(
+		default = '',
+	)
+	weight_B_text = models.TextField(
+		default = '',
+	)
+	weight_C_text = models.TextField(
+		default = '',
+	)
+	weight_D_text = models.TextField(
+		default = '',
+	)
+	search_vector = SearchVectorField(
+	)
+	
+	collection = models.OneToOneField(
+		Collection,
+		on_delete = models.CASCADE,
+	)
+
+	def __str__(self):
+		return 'Search vector for %s' % (self.collection,)
 
 '''
 class NumberApprox(Searchable):
@@ -227,7 +258,7 @@ class NumberApprox(Searchable):
 		#return RBF(r).__str__().strip('[]')
 '''
 
-class Number(Searchable):
+class Number(models.Model):
 
 	NUMBER_TYPE_ZZ = b'z'
 	NUMBER_TYPE_QQ = b'q'
@@ -248,15 +279,26 @@ class Number(Searchable):
 		#choices = NUMBER_TYPES,
 		default = NUMBER_TYPE_RIF,
 	)
-
 	number_blob = models.BinaryField(
 		max_length = 2 * HALF_BLOB_LENGTH,
-		db_index = True, #Perhaps rather implement search via SearchTerm?
+		db_index = True, #Should rather have a constrained postgres hash index for integers!
 	)
-	my_collection = models.ForeignKey(
+	lower = models.FloatField(
+		db_index = True,
+	)
+	upper = models.FloatField(
+		db_index = True,
+	)
+	frac_lower = models.FloatField(
+		db_index = True,
+	)
+	frac_upper = models.FloatField(
+		db_index = True,
+	)
+	collection = models.ForeignKey(
 		Collection, 
 		on_delete=models.CASCADE,
-		related_name="my_numbers"
+		related_name="numbers"
 	)
 	param = models.BinaryField(
 		max_length = 16,
@@ -274,7 +316,8 @@ class Number(Searchable):
 	def __init__(self, *args, **kwargs):
 		
 		if not 'sage_number' in kwargs:
-			super(Searchable, self).__init__(*args, **kwargs)
+			#super(Searchable, self).__init__(*args, **kwargs)
+			super(Number, self).__init__(*args, **kwargs)
 			return
 			
 		#rather do this once in build.sage:
@@ -282,7 +325,8 @@ class Number(Searchable):
 
 		
 		r = kwargs.pop('sage_number')
-		super(Searchable, self).__init__(*args, **kwargs)
+		#super(Searchable, self).__init__(*args, **kwargs)
+		super(Number, self).__init__(*args, **kwargs)
 		
 		#print("r:",r)
 		if r == None:
@@ -324,15 +368,28 @@ class Number(Searchable):
 
 		else:
 			raise NotImplementedError("sage_number is of non-implemented type")
+			
+		ri = RIF(r)
+		self.lower = ri.lower()
+		self.upper = ri.upper()
+		
+		frac = ri.frac()
+		if frac <= 0:
+			frac += 1
+		self.frac_lower = frac.lower()
+		self.frac_upper = frac.upper()
+
 
 	def to_RIF(self):
 		return RIF(self.to_sage())
-
+	
+	'''
 	def lower(self):
 		return self.to_RIF().lower()
 
 	def upper(self):
 		return self.to_RIF().upper()
+    '''
     
 	def to_RBF(self):
 		return RBF(self.to_sage())
@@ -389,6 +446,7 @@ class Number(Searchable):
 			print("r:",r)
 			raise NotImplementedError()
 
+'''
 class SearchTerm(models.Model):
 	
 	MAX_RESULTS = 10
@@ -455,4 +513,4 @@ class SearchTermValue(models.Model):
 			self.searchterm, 
 			self.searchable,
 		)
-
+'''

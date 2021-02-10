@@ -12,12 +12,13 @@ os.environ["DJANGO_SETTINGS_MODULE"] = 'numberdb.settings'
 django.setup()
 from db.models import Collection
 from db.models import CollectionData
+from db.models import CollectionSearch
 from db.models import Tag
 #from db.models import NumberApprox
 from db.models import Number
-from db.models import SearchTerm
-from db.models import Searchable
-from db.models import SearchTermValue
+#from db.models import SearchTerm
+#from db.models import Searchable
+#from db.models import SearchTermValue
 
 from db.utils import number_param_groups_to_bytes
 from db.utils import to_bytes
@@ -31,6 +32,7 @@ path_data = "../numberdb-data/"
 from db_builder.utils import normalize_collection_data
 from db_builder.utils import load_yaml_recursively
 
+from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 
 
 repo = Repo(path_data) #numberdb-data repository
@@ -151,8 +153,8 @@ def iter_collections_bulk(weight="number_count", bulk_size=10000):
 def delete_all_tables():
 	print("DELETING ALL TABLES")
 
-	SearchTermValue.objects.all().delete()
-	SearchTerm.objects.all().delete()
+	#SearchTermValue.objects.all().delete()
+	#SearchTerm.objects.all().delete()
 
 	#NumberApprox.objects.all().delete()
 	Number.objects.all().delete()
@@ -161,7 +163,7 @@ def delete_all_tables():
 
 	Tag.objects.all().delete()
 
-	Searchable.objects.all().delete()
+	#Searchable.objects.all().delete()
 
 @transaction.atomic
 def build_collection_table(test_run=False):
@@ -198,7 +200,7 @@ def build_collection_table(test_run=False):
 		c.title_lowercase = c.title.lower()
 		c.url = url
 		c.path = path
-		c.of_type = Searchable.TYPE_COLLECTION #not anymore automatic
+		#c.of_type = Searchable.TYPE_COLLECTION #not anymore automatic
 		#print("try saving c:",c)
 		if not test_run:
 			c.save()
@@ -233,14 +235,16 @@ def build_tag_table():
 			for tag_name in collection_data['Tags']:
 				tag, created = Tag.objects.get_or_create(name=tag_name)
 				#OLD: tag.my_collections.add(c)	
-				c.my_tags.add(tag)
+				c.tags.add(tag)
 				if created:
-					tag.of_type = Searchable.TYPE_TAG #not anymore automatic
+					#tag.of_type = Searchable.TYPE_TAG #not anymore automatic
 					tag.name_lowercase = tag_name.lower()
 				tag.collection_count += 1
 				tag.save()
+
+	Tag.objects.update(search_vector = SearchVector('name', weight='A'))
 		
-		#c.save() #Does c.my_tags.add(tag) need to be saved?
+		#c.save() #Does c.tags.add(tag) need to be saved?
 
 def build_number_table():
 
@@ -264,15 +268,23 @@ def build_number_table():
 		
 		
 		p = number_param_groups_to_bytes(param)
+		print("x:",x)
 		
 		try:
 			n = Number(sage_number = x)
 		except OverflowError:
+			print("make x to real interval")
 			x = RIF(x)
 			n = Number(sage_number = x)
-		n.of_type = Searchable.TYPE_NUMBER #not anymore automatic
-		n.my_collection = c
+		#n.of_type = Searchable.TYPE_NUMBER #not anymore automatic
+		
+		print("debug0")
+		n.collection = c
+		
+		print("debug1")
 		n.param = p
+	
+		print("before saving number")
 		n.save()
 
 		return 1 #Count of saved numbers
@@ -333,10 +345,45 @@ def build_number_table():
 			#Update counts:
 			c.number_count = count
 			c.save()
-			for tag in c.my_tags.all():
+			for tag in c.tags.all():
 				tag.number_count += count
 				tag.save()
-		
+
+def build_search_index_for_collections():
+	print("BUILD SEARCH INDEX for COLLECTIONS")
+	
+	for cs_bulk in iter_collections_bulk():
+		with transaction.atomic():
+
+			collection_search_vectors = []
+
+			for c in cs_bulk:
+				c_search = CollectionSearch()
+				c_search.collection = c
+				json = c_data = c.data.json
+				#c_search.save()
+				c_search.weight_A_text = c.title
+				if 'Keywords' in json:
+					c_search.weight_A_text += ' ' + ' '.join(json['Keywords'])
+				if 'Tags' in json:
+					c_search.weight_B_text += ' ' + ' '.join(json['Tags'])
+				if 'Definition' in json:
+					c_search.weight_C_text = json['Definition']
+				if 'Comments' in json:
+					c_search.weight_D_text = ' '.join(json['Comments'].values())
+				c_search.save()
+					
+				
+				
+				
+	search_vector = SearchVector('weight_A_text',weight='A')
+	search_vector += SearchVector('weight_B_text',weight='B')
+	search_vector += SearchVector('weight_C_text',weight='C')
+	search_vector += SearchVector('weight_D_text',weight='D')
+	CollectionSearch.objects.update(search_vector = search_vector)
+				
+				
+'''
 @transaction.atomic
 def add_sentence_to_search_index(list_of_sentence_searchable_value):
 
@@ -415,7 +462,7 @@ def build_search_index_for_fractional_parts():
 		for c in cs_bulk:
 			#print("c.title:",c.title)
 			#print(c.my_numbers.first())
-			for n in c.my_numbers.all():
+			for n in c.numbers.all():
 				if n.number_type_bytes() == Number.NUMBER_TYPE_ZZ:
 					continue
 				r = n.to_RIF().frac()
@@ -445,7 +492,7 @@ def build_search_index_for_real_numbers():
 			value_dict = {}
 
 			for c in cs_bulk:
-				for n in c.my_numbers.all():
+				for n in c.numbers.all():
 					r = n.to_RIF()
 					if r.contains_zero():
 						continue
@@ -520,7 +567,7 @@ def clean_search_index():
 			for value in values_to_delete:
 				value.delete()
 			#query.reverse()[:query.count()-SearchTerm.MAX_RESULTS].delete()
-		
+'''		
 			
 #timer = MyTimer(cputime)
 timer = MyTimer(walltime)
@@ -531,12 +578,15 @@ with transaction.atomic():
 	timer.run(build_collection_table)
 	timer.run(build_tag_table)	
 	timer.run(build_number_table)
+	
+	timer.run(build_search_index_for_collections)
 
-	timer.run(build_search_index_for_tags)
-	timer.run(build_search_index_for_collection_titles)
-	timer.run(build_search_index_for_collection_keywords)
-	timer.run(build_search_index_for_fractional_parts)
-	timer.run(build_search_index_for_real_numbers)
+	#timer.run(build_search_index_for_tags)
+	#timer.run(build_search_index_for_collection_titles)
+	#timer.run(build_search_index_for_collection_keywords)
+	#timer.run(build_search_index_for_fractional_parts)
+	#timer.run(build_search_index_for_real_numbers)
+	
 	#timer.run(clean_search_index)
 
 print("Times:\n%s" % (timer,))
