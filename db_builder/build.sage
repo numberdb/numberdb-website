@@ -22,6 +22,8 @@ from db.models import Number
 
 from db.utils import number_param_groups_to_bytes
 from db.utils import to_bytes
+from db.utils import RIFprec
+from db.utils import RBFprec
 
 from git import Repo
 import yaml
@@ -262,9 +264,9 @@ def build_number_table():
 				x == QQ(number)
 			except TypeError:
 				try:
-					x = RIF(number)
+					x = RIFprec(number)
 				except TypeError:
-						x = RBF('[%s]' % (number,))
+						x = RBFprec('[%s]' % (number,))
 		
 		
 		p = number_param_groups_to_bytes(param)
@@ -274,7 +276,7 @@ def build_number_table():
 			n = Number(sage_number = x)
 		except OverflowError:
 			print("make x to real interval")
-			x = RIF(x)
+			x = RIFprec(x)
 			n = Number(sage_number = x)
 		#n.of_type = Searchable.TYPE_NUMBER #not anymore automatic
 		

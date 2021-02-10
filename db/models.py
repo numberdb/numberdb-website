@@ -14,8 +14,7 @@ from sage.rings.all import *
 
 from .utils import my_real_interval_to_string
 from .utils import to_bytes
-
-
+from .utils import RIFprec, RBFprec
 
 class UserProfile(models.Model):
 	user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -354,13 +353,13 @@ class Number(models.Model):
 			)       
 			self.number_blob = b0 + b1
 
-		elif r.parent() == RIF:
+		elif r.parent() in (RIF, RIFprec):
 			self.number_type = Number.NUMBER_TYPE_RIF
 			b0 = np.float64(r.lower()).tobytes()
 			b1 = np.float64(r.upper()).tobytes()
 			self.number_blob = b0 + b1
 
-		elif r.parent() == RBF:
+		elif r.parent() in (RBF, RBFprec):
 			self.number_type = Number.NUMBER_TYPE_RBF
 			b0 = np.float64(r.center()).tobytes()
 			b1 = np.float64(r.rad()).tobytes()
@@ -369,15 +368,15 @@ class Number(models.Model):
 		else:
 			raise NotImplementedError("sage_number is of non-implemented type")
 			
-		ri = RIF(r)
+		ri = RIFprec(r)
 		self.lower = ri.lower()
 		self.upper = ri.upper()
 		
 		frac = ri.frac()
 		if frac <= 0:
 			frac += 1
-		self.frac_lower = frac.lower()
-		self.frac_upper = frac.upper()
+		self.frac_lower = float(frac.lower())
+		self.frac_upper = float(frac.upper())
 
 
 	def to_RIF(self):

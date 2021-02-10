@@ -19,9 +19,10 @@ a.ui-menu-item-wrapper {
 
 #searchbox-component {
   --searchbox-width: calc(20rem + 10 * var(--lrem));
+  --searchbox-border: 0.3rem; 
     
   display: inline-block;
-  border-radius: 5px;
+  border-radius: var(--searchbox-border);
   border: 1px solid #bbb;
   padding: 0px;
   color: #000;
@@ -39,10 +40,10 @@ a.ui-menu-item-wrapper {
   border: 1px solid black;
   border: none;
   margin: 0;
-  padding: 10px;
+  padding: 0.6rem;
   outline: 0;
   width: 100%; calc(var(--searchbox-width) - 1.8rem - 3px);
-  border-radius: 5px;
+  border-radius: var(--searchbox-border);
 }
 #searchbox-image {
   width: calc(1rem);
@@ -58,6 +59,10 @@ a.ui-menu-item-wrapper {
   transform: translateX(-50%) translateY(0);   
   border-radius: 1em;
 }
+table.searchbox-table  td {
+  width: 100%;
+  padding: 0 var(--searchbox-border);
+}
 </style>
 
 <!--
@@ -71,10 +76,10 @@ a.ui-menu-item-wrapper {
 -->
 
 <div id="searchbox-component">
- <table width="100%" style="border-spacing:0;">
+ <table class="searchbox-table" width="100%" style="border-spacing:0;">
   <tbody>
    <tr>
-    <td width="100%"
+    <td 
      ><input id="searchbox" 
       {% if autofocus %} autofocus {% endif %} 
       {# placeholder="Try 3.14 or L-function" #} 

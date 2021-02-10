@@ -2,6 +2,9 @@ from sage import *
 from sage.rings.all import *
 from sage.misc.flatten import flatten
 
+RIFprec = RealIntervalField(1000)
+RBFprec = RealBallField(1000)
+
 def to_bytes(m):
     if isinstance(m,bytes):
         return m

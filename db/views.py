@@ -660,7 +660,12 @@ def parse_fractional_part(s):
 	r = RIF(f-1,f+1) * RIF(10)**(-len(s.lstrip('-+')))
 	if r < 0:
 		r += 1
-	return r	
+	return r
+	
+def blur_real_interval(r):
+	e = r.prec() - 2
+	blur = RIF(1 - 2**(-e), 1 + 2**(-e))
+	return r * blur	
 
 def suggestions(request):
 	time0 = time()
@@ -672,24 +677,29 @@ def suggestions(request):
 		}
 		#print("data:",data)
 		return JsonResponse(data,safe=True)
+
+	def full_text_search_query(term):
+		#OLD:
+		#return SearchQuery(term, search_type='plain')
+		
+		terms = term.split(' ')
+		term1 = ' & '.join("'%s'" % (t,) for t in terms[:-1])
+		term2 = '%s:*' % (terms[-1][:6],)
+		q1 = SearchQuery(term1, search_type='raw')
+		q2 = SearchQuery(term2, search_type='raw')
+		#print('term1, term2:', term1, term2)
+		if term1 != '':
+			return q1 & q2
+		else:
+			return q2
 	
 	term_entered = request.GET['term']
 	term = term_entered.strip(" \n")
 	if term == '':
 		return wrap_response({})
 	
-	'''
-	def text_term_to_bytes(term):
-		for i in range(SearchTerm.MAX_LENGTH_TERM_FOR_TEXT,0,-1):
-			term_suffix = term[:i].lower() #substring of at most 4 letters
-			term_bytes = SearchTerm.TERM_TEXT + term_suffix.encode()
-			if len(term_bytes) <= SearchTerm.term.field.max_length:
-				return term_bytes
-		return SearchTerm.TERM_TEXT
-	'''
-	
 	entries = {}
-	i = 1
+	i = 0
 	
 	#Searching for exactly given integer:
 	query_integers = Number.objects.none()
@@ -713,7 +723,8 @@ def suggestions(request):
 	if '.' in term or 'p' in term or 'P' in term:
 		r = parse_real_interval(term)
 		if r != None:
-			print("r:",r)
+			r = blur_real_interval(r)
+			#print("r:",r)
 			query_real_intervals = Number.objects.filter(
 				lower__range = (float(r.lower()),float(r.upper())),
 				upper__range = (float(r.lower()),float(r.upper())),							
@@ -723,6 +734,9 @@ def suggestions(request):
 	query_fractional_part = Number.objects.none()
 	f = parse_fractional_part(term)
 	if f != None:
+		print("f:",f)
+		f = blur_real_interval(f)
+		print("f:",f)
 		query_fractional_part = Number.objects.filter(
 			frac_lower__range = (float(f.lower()),float(f.upper())),
 			frac_upper__range = (float(f.lower()),float(f.upper())),							
@@ -735,7 +749,7 @@ def suggestions(request):
 	query_numbers = query_integers.union(
 						query_real_intervals,
 						query_fractional_part
-					)[:10]
+					)[:(10-i)]
 	#print("query_numbers:",query_numbers)
 	
 	for number in query_numbers:
@@ -759,7 +773,13 @@ def suggestions(request):
 		return wrap_response(entries)
 	
 	#Searching for tag names:
-	query_tags = Tag.objects.filter(search_vector = term)[:(10-i)]
+	search_query = full_text_search_query(term)
+	rank = SearchRank(F('search_vector'), search_query)
+	query_tags = Tag.objects.annotate(rank=rank).filter(rank__gte=0.01).order_by('-rank')[:(10-i)]
+	
+	#OLD: Simpler query:
+	#query_tags = Tag.objects.filter(search_vector = term)[:(10-i)]
+	
 	for tag in query_tags:
 		entry_i = {
 			'value': str(i),
@@ -781,8 +801,11 @@ def suggestions(request):
 		return wrap_response(entries)
 		
 	#Searching for collections:
+	search_query = full_text_search_query(term)
+	rank = SearchRank(F('search_vector'), search_query)
+	query_collections = CollectionSearch.objects.annotate(rank=rank).filter(rank__gte=0.01).order_by('-rank')[:(10-i)]
 	
-	query_collections = CollectionSearch.objects.annotate(rank=SearchRank(F('search_vector'),SearchQuery(term))).filter(rank__gte=0.1).order_by('-rank')[:(10-i)]
+	#OLD: Simpler query:
 	#query_collections = CollectionSearch.objects.filter(search_vector = term)[:(10-i)]
 	
 	for c_search in query_collections:
@@ -805,74 +828,3 @@ def suggestions(request):
 	
 	return wrap_response(entries)
 	
-	'''
-			
-	#for searchable in searchterm.searchables.all():
-	for value in searchterm.values.order_by('-value')[:10]:
-		searchable = value.searchable
-	
-		of_type = searchable.of_type_bytes()
-		entry_i = {}
-		if of_type == Searchable.TYPE_TAG:
-			tag = searchable.tag
-			entry_i['value'] = str(i)
-			entry_i['label'] = ''
-			entry_i['type'] = 'tag'
-			#entry_i['title'] = 'Tag: %s' % (tag.name,)
-			entry_i['title'] = '<div class="tag">%s</div>' % (tag.name,)
-			entry_i['subtitle'] = '%s collection%s, %s number%s' % (
-				tag.collection_count,
-				's' if tag.collection_count != 1 else '',
-				tag.number_count,
-				's' if tag.number_count != 1 else '',
-			)
-			entry_i['url'] = reverse('db:tag', kwargs={'tag_url': tag.url()})
-			#entry_i['subtitle'] = 'dummy subtitle'
-
-		elif of_type == Searchable.TYPE_COLLECTION:
-			collection = searchable.collection
-			entry_i['value'] = str(i)
-			entry_i['label'] = ''
-			entry_i['type'] = 'collection'
-			entry_i['title'] = '%s' % (collection.title,)
-			if collection.number_count != 1:
-				entry_i['subtitle'] = '%s numbers' % collection.number_count
-			else:
-				number = collection.numbers.first()
-				entry_i['subtitle'] = '%s' % (number.str_as_real_interval(),)
-			entry_i['url'] = '/' + collection.url
-
-		elif of_type == Searchable.TYPE_NUMBER:
-			number = searchable.number
-			if exact_number != None and number.pk == exact_number.pk:
-				#The exact number is already listed in entries.
-				continue
-			collection = number.collection
-			entry_i['value'] = str(i)
-			entry_i['label'] = ''
-			entry_i['type'] = 'number'
-			entry_i['title'] = '%s' % (collection.title,)
-			param = number.param_bytes().decode()
-			if len(param) > 0: 
-				entry_i['subtitle'] = '%s (#%s)' % (number.str_as_real_interval(), param)
-			else:
-				entry_i['subtitle'] = '%s' % (number.str_as_real_interval(),)
-			entry_i['url'] = '/' + "%s#%s" % (collection.url, param)
-		
-		#if 'url' in entry_i:
-		#	entry_i['url'] += '?searchterm=%s' % (term_entered,)
-		entries[i] = entry_i
-		i += 1
-
-	'''
-	
-	'''
-	#Debug:
-	data = {
-		1: {"value": "1 value", "label": "", "type": "number", "title": "Pi", "subtitle": "3.14159265?", "url": "Pi"},
-		2: {"value": "2 value", "label": "", "type": "number", "title": "E", "subtitle": "2.718281828?", "url": "E"},
-		#2: {"label": "2 label", "value": "2 value"},
-	}
-	'''
-	
-	return wrap_response(entries)
