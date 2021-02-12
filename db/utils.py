@@ -1,3 +1,10 @@
+import timeout_decorator
+import multiprocessing
+import func_timeout
+from cysignals import AlarmInterrupt
+from cysignals.alarm import alarm, cancel_alarm
+
+
 from sage import *
 from sage.rings.all import *
 from sage.misc.flatten import flatten
@@ -29,6 +36,9 @@ def my_real_interval_to_string(r):
         Rup = RealField(15,rnd='RNDU')
         Rdown = RealField(15,rnd='RNDD')
         return '[%s,%s]' % (Rdown(r.lower()),Rup(r.upper()))
+        
+def real_interval_to_string_via_endpoints(r):
+    return '[%s,%s]' % (r.lower(),r.upper(),)
 
 def pluralize(string, count, singular_ending="", plural_ending="s"):
 
@@ -75,3 +85,78 @@ def number_param_groups_to_bytes(param):
 
 def number_param_groups_to_string(param):
     return number_param_groups_to_bytes(param).decode()
+
+'''
+#Doesn't work in multithreaded processes:
+@timeout_decorator.timeout(1)
+def factor_with_timeout(n):
+    return n.factor()
+'''
+
+'''
+#Doesn't work, doesn't kill timed-out processes:
+def factor_with_timeout(n):
+    @timeout_decorator.timeout(1,use_signals=False)
+    def factor_n(n):
+        return n.factor()
+
+    try:
+        return factor_n(n)
+    except timeout_decorator.TimeoutError:
+        return None
+'''
+
+'''
+#Doesn't work, doesn't hear alarm signal:
+def factor_with_timeout(n):
+    try:
+        alarm(1)
+        result = n.factor()
+        cancel_alarm()
+        return result
+    except AlarmError:
+        return None
+'''
+
+'''
+#Doesn't work, doesn't kill timed-out processes:
+def factor_with_timeout(n):
+    def factor_n(n,return_dict):
+        return_dict[n] = n.factor()
+        return 0
+        
+    manager = multiprocessing.Manager()
+    return_dict = manager.dict()
+    p = multiprocessing.Process(target=factor_n, name='factor_n', args=(n,return_dict))
+    p.start()
+    p.join(timeout=1)
+    p.terminate()
+    
+    #if p.exitcode is None:
+    #   print(f'Oops, {p1} timeouts!')
+    if p.exitcode == 0:
+        return return_dict[n]
+
+    return None
+'''
+
+'''
+#Doesn't work, doesn't hear the timeout:
+def factor_with_timeout(n):
+    
+    @func_timeout.func_set_timeout(1)
+    def factor_n(n):
+        return n.factor()
+    
+    try:
+        return factor_n(n)
+    except func_timeout.FunctionTimedOut:
+        return None
+'''
+
+#Work-around: (TODO: Need proper time-out)
+def factor_with_timeout(n):
+    if n.abs() <= 10**80:
+        return n.factor()
+    else:
+        return None

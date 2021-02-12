@@ -13,6 +13,9 @@ import re
 from time import time
 #import os
 import yaml
+from cysignals import AlarmInterrupt
+from cysignals.alarm import alarm, cancel_alarm
+
 #from sage import *
 #from sage.all import *
 #from sage.arith.all import *
@@ -34,6 +37,11 @@ from sage.rings.integer_ring import ZZ
 from sage.rings.rational_field import QQ
 from sage.rings.infinity import infinity
 
+#from sage.repl.rich_output.pretty_print import pretty_print
+from sage.misc.latex import latex
+
+from mpmath import pslq
+
 from .models import UserProfile
 from .models import Collection
 from .models import CollectionData
@@ -44,6 +52,8 @@ from .models import Number
 from .utils import pluralize
 from .utils import number_param_groups_to_string
 from .utils import to_bytes
+from .utils import real_interval_to_string_via_endpoints
+from .utils import factor_with_timeout
 
 from db_builder.utils import normalize_collection_data
 
@@ -129,7 +139,7 @@ def collection_context(collection, preview=False):
 	def wrap_in_div(div_class,html):
 		return '<div class="%s">%s</div>' % (div_class,html)
 
-	def render_text(text):
+	def render_text(text, line_breaks = True):
 		'''
 		Parse text for 'CITE', 'HREF', and '\n', 
 		and replace accordingly.
@@ -165,8 +175,9 @@ def collection_context(collection, preview=False):
 				new_text += "[???]" + part2
 				#TODO: Should output warning: "No closing bracket!"
 
-		#Parse '\n's:
-		new_text = new_text.replace("\n","<br>")
+		if line_breaks:
+			#Parse '\n's:
+			new_text = new_text.replace("\n","<br>")
 		return new_text
 
 
@@ -307,7 +318,7 @@ def collection_context(collection, preview=False):
 			for label, reference in data[header].items():
 				text = ""
 				if 'bib' in reference:
-					text += render_text(reference['bib']) + " "
+					text += render_text(reference['bib'].rstrip('\n')) + " "
 				if 'arXiv' in reference:
 					link = reference['arXiv']
 					link = link.split("[")[0].strip(" \n")
@@ -646,7 +657,21 @@ def parse_real_interval(s):
 		f = ZZ(int(signFrac + frac))
 		r = RIF(f-1,f+1) * RIF(10)**exp
 		return r
-		
+	
+	print("s:",s)	
+	if (s[0] == '[' and s[-1] == ']') or \
+		(s[0] == '(' and s[-1] == ')'):
+		l_u = s[1:-1].split(',')
+		print("l_u:",l_u)
+		if len(l_u) == 2:
+			l, u = l_u
+			lower = parse_real_interval(l)
+			if lower != None:
+				upper = parse_real_interval(u)
+				if upper != None:
+					r = lower.union(upper)
+					return r
+						
 	return None
 
 def parse_fractional_part(s):
@@ -697,6 +722,8 @@ def suggestions(request):
 	entries = {}
 	i = 0
 	
+	suggested_numbers = []
+	
 	#Searching for exactly given integer:
 	query_integers = Number.objects.none()
 	n = parse_integer(term)
@@ -706,24 +733,42 @@ def suggestions(request):
 		except OverflowError:
 			number = None
 		if number != None:
-			query_integers = Number.objects.filter(
+			query_integer = Number.objects.filter(
 				number_blob = number.number_blob_bytes(),
 				#number_type = Number.NUMBER_TYPE_ZZ,
 				number_type = number.number_type,
-			)			
+			)[:1]
 			print("number:",number)
-	
+			if len(query_integer) > 0:
+				suggested_numbers.append(query_integer[0])
+			else:
+				number = None
+		if number == None:
+			entry_i = {
+				'value': str(i),
+				'label': '',
+				'type': 'link',
+				'title': 'Compute properties of',
+				'subtitle': '%s (not in database)'  % (term),
+				'url': reverse('db:properties',kwargs={'number':term}),
+			}
+			entries[i] = entry_i
+			i += 1
+
+	if i >= 10:
+		return wrap_response(entries)
 
 	#Searching for real number up to given precision:
 	query_real_intervals = Number.objects.none()
-	if '.' in term or 'p' in term or 'P' in term:
+	r = None
+	if '.' in term or 'p' in term or 'P' in term or 'e' in term or 'E' in term:
 		r = parse_real_interval(term)
 		if r != None:
-			r = blur_real_interval(r)
-			#print("r:",r)
+			r_query = blur_real_interval(r)
+			print("r_query:",r_query)
 			query_real_intervals = Number.objects.filter(
-				lower__range = (float(r.lower()),float(r.upper())),
-				upper__range = (float(r.lower()),float(r.upper())),							
+				lower__range = (float(r_query.lower()),float(r_query.upper())),
+				upper__range = (float(r_query.lower()),float(r_query.upper())),							
 			)
 
 	#Searching for real numbers by given fractional part:
@@ -731,24 +776,35 @@ def suggestions(request):
 	f = parse_fractional_part(term)
 	if f != None:
 		print("f:",f)
-		f = blur_real_interval(f)
-		print("f:",f)
+		f_query = blur_real_interval(f)
+		print("f_query:",f_query)
 		query_fractional_part = Number.objects.filter(
-			frac_lower__range = (float(f.lower()),float(f.upper())),
-			frac_upper__range = (float(f.lower()),float(f.upper())),							
+			frac_lower__range = (float(f_query.lower()),float(f_query.upper())),
+			frac_upper__range = (float(f_query.lower()),float(f_query.upper())),							
 		)
 
-	#TODOs:
-	#- exact integers should go on top of search results
-	#- need to allow some slack when searching for RIFs via high prevision terms
-
-	query_numbers = query_integers.union(
+	query_real_numbers = query_integers.union(
 						query_real_intervals,
 						query_fractional_part
 					)[:(10-i)]
-	#print("query_numbers:",query_numbers)
+	#print("query_real_numbers:",query_real_numbers)
+	if len(query_real_numbers) > 0:
+		suggested_numbers += list(query_real_numbers)
+	else:
+		number = r if r != None else f
+		if number != None:
+			entry_i = {
+				'value': str(i),
+				'label': '',
+				'type': 'link',
+				'title': 'Compute properties of' ,
+				'subtitle': '%s (not in database)' % (number,),
+				'url': reverse('db:properties',kwargs={'number':real_interval_to_string_via_endpoints(number)}),
+			}
+			entries[i] = entry_i
+			i += 1
 	
-	for number in query_numbers:
+	for number in suggested_numbers:
 		collection = number.collection
 		param = number.param_bytes().decode()
 		entry_i = {
@@ -824,3 +880,90 @@ def suggestions(request):
 	
 	return wrap_response(entries)
 	
+def properties(request, number):
+	
+	def wrap_response(context):
+		print("context:",context)
+		return render(request,'properties.html',context)
+	
+	context = {
+		'properties': [],
+	}
+	
+	#Case 1: given number is an integer:
+	n = parse_integer(number)
+	if n != None:
+		context['number'] = n
+		context['properties'].append({
+			'title': 'Number',
+			'plain': str(n),
+			'latex': '$%s$' % (latex(n),),
+		})
+		
+		#Prime factorization:
+		factorization = factor_with_timeout(n)
+		if factorization != None:
+			context['properties'].append({
+				'title': 'Prime factorization',
+				'plain': str(factorization),
+				'latex': '$%s$' % (latex(factorization),),
+			})
+		else:
+			timeout_message = 'The factorization timed out.'
+			context['properties'].append({
+				'title': 'Prime factorization',
+				'plain': timeout_message,
+				'latex': timeout_message,
+			})
+		return wrap_response(context)
+
+	#Case 2: given number is real interval:
+	r = parse_real_interval(number)
+	if r != None:
+		print("r:",r)
+		context['number'] = r
+		context['properties'].append({
+			'title': 'Number',
+			'plain': str(r),
+			'latex': '$%s$' % (latex(r),),
+		})
+		
+		#Continued fraction:
+		cf = continued_fraction(r)
+		context['properties'].append({
+			'title': 'Possible continued fraction',
+			'latex': '$%s$' % (latex(cf),),
+			'plain': cf,
+		})
+		
+		#Convergents:
+		convergents = cf.convergents()
+		context['properties'].append({
+			'title': 'Convergents',
+			'plain': ', '.join(str(convergent) for convergent in convergents),
+			'latex': ', '.join('$%s$' % (latex(convergent),) for convergent in convergents),
+		})
+		minpolys = {}
+		for deg in range(1,10+1):
+			f = r.algdep(deg)
+			if f.degree() == deg:
+				if f(r).contains_zero():
+					if f.is_irreducible():
+						minpolys[deg] = f
+		if len(minpolys) > 0:
+			context['properties'].append({
+				'title': 'Possible algebraic dependences',
+				'plain': ', '.join('%s = 0' % (f,) for f in minpolys.values()), 
+				'latex': ', '.join('$%s = 0$' % (latex(f),) for f in minpolys.values()), 
+			})
+		else:
+			empty_message = 'No heuristic algebraic dependencies up to degree 10 found.'
+			context['properties'].append({
+				'title': 'Possible algebraic dependences',
+				'plain': empty_message, 
+				'latex': empty_message, 
+			})
+		
+		return wrap_response(context)
+
+	raise Http404("Number cannot be parsed.")

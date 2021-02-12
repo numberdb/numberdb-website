@@ -9,6 +9,7 @@ urlpatterns = [
     path('help', views.help, name='help'),
 
     path('suggestions', views.suggestions, name='suggestions'),
+    path('properties/<str:number>', views.properties, name='properties'),
 
     path('collections/', views.collections, name='collections'),
     re_path(r'^(?P<cid>(C\d+))$', views.collection, name='collection'),

@@ -113,6 +113,10 @@ $(document).ready(function(){
 		li = $( "<li></li>" )
 		    .append(`<a href="${item.url}">${item.title}<br>&nbsp;&nbsp;${item.subtitle}</a>`)
 		    .appendTo( ul );
+	    } else if (item['type'] == 'link') { 
+		li = $( "<li></li>" )
+		    .append(`<a href="${item.url}">${item.title}<br>&nbsp;&nbsp;${item.subtitle}</a>`)
+		    .appendTo( ul );
 	    }
 	    return li;
 	}

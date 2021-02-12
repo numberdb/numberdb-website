@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'db:tags' %}">Tags</a></li>
+  <li class="breadcrumb-item active">{{ tag.name }}</li>
+{% endblock %}
+
+{% block content %}
+
+<style>
+
+div.property-title {
+  font-size: 1.3rem;
+  display: block;
+  margin: 1rem 0 0.5rem 0;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid #888;
+}
+div.property-plain,
+div.property-latex {
+  display: inline;   
+}
+div.property-plain {
+  display: none;   
+}
+
+/* The container */
+label.container {
+  display: inline;
+  padding: 0;
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+/* Hide the browser's default radio button */
+label.container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+.checkmark {
+  color: #0a58ca;
+  text-decoration: underline;
+}
+label.container:hover input ~ .checkmark {
+  color: #000;
+}
+label.container input:checked ~ .checkmark {
+  color: #000;
+  text-decoration: none;
+}
+  
+</style>
+
+<h1>Properties</h1>
+
+Show in:
+<label class="container">
+  <input type="radio" checked="checked" name="radio" value="latex">
+  <span class="checkmark">latex</span>
+</label>
+&middot;
+<label class="container">
+  <input type="radio" name="radio" value="plain">
+  <span class="checkmark">plain text</span>
+</label>
+
+<!--
+<div class="property">
+Number: 
+{{ number }}
+</div>
+-->
+
+{% for property in properties %}
+  <div class="property">
+    <div class="property-title">{{ property.title }}:</div> 
+    <div class="property-plain">{{ property.plain }}</div> 
+    <div class="property-latex">{{ property.latex }}</div> 
+  </div>
+{% endfor %}
+
+
+  <script>
+      
+  
+  
+  $( function() {
+    $( "#show-select" ).selectable({
+      stop: function() {
+        //var result = $( "#select-result" ).empty();
+        $( ".ui-selected", this ).each(function() {
+          var index = $( "#show-select li" ).index( this );
+          //result.append( " #" + ( index + 1 ) );
+            console.log(index);
+          if (index == 0) {
+            $(".property-latex").css('display','inline');
+            $(".property-plain").css('display','none');
+          }
+          else if (index == 1) {
+            $(".property-latex").css('display','none');
+            $(".property-plain").css('display','inline');
+          }
+        });
+      }
+    });
+  } );
+
+
+  $(function() {
+    $("input[type='radio']").on('click', function(e) {
+       var value = $(this).val();
+       //console.log(value);
+       if (value == "latex") {
+         $(".property-latex").css('display','inline');
+         $(".property-plain").css('display','none');
+       }
+       else if (value == "plain") {
+         $(".property-latex").css('display','none');
+         $(".property-plain").css('display','inline');
+       }
+    });
+  });
+  </script>    
+
+{% endblock %}
