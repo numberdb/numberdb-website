@@ -7,6 +7,8 @@ from .models import CollectionData
 from .models import CollectionSearch
 from .models import Tag
 from .models import Number
+from .models import OeisNumber
+from .models import OeisSequence
 
 admin.site.register(UserProfile)
 
@@ -19,6 +21,8 @@ admin.site.register(CollectionData)
 admin.site.register(CollectionSearch)
 admin.site.register(Tag)
 admin.site.register(Number)
+admin.site.register(OeisNumber)
+admin.site.register(OeisSequence)
 
 
 

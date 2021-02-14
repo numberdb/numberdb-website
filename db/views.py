@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.db.models import F
 
+import numpy as np
 from numpy import random as random
 import re
 from time import time
@@ -48,12 +49,15 @@ from .models import CollectionData
 from .models import CollectionSearch
 from .models import Tag
 from .models import Number
+from .models import OeisNumber
+from .models import OeisSequence
 
-from .utils import pluralize
-from .utils import number_param_groups_to_string
-from .utils import to_bytes
-from .utils import real_interval_to_string_via_endpoints
-from .utils import factor_with_timeout
+from utils.utils import pluralize
+from utils.utils import number_param_groups_to_string
+from utils.utils import to_bytes
+from utils.utils import real_interval_to_string_via_endpoints
+from utils.utils import factor_with_timeout
+from utils.utils import my_continued_fraction
 
 from db_builder.utils import normalize_collection_data
 
@@ -748,7 +752,7 @@ def suggestions(request):
 				'value': str(i),
 				'label': '',
 				'type': 'link',
-				'title': 'Compute properties of',
+				'title': 'Basic properties of',
 				'subtitle': '%s (not in database)'  % (term),
 				'url': reverse('db:properties',kwargs={'number':term}),
 			}
@@ -797,7 +801,7 @@ def suggestions(request):
 				'value': str(i),
 				'label': '',
 				'type': 'link',
-				'title': 'Compute properties of' ,
+				'title': 'Basic properties of' ,
 				'subtitle': '%s (not in database)' % (number,),
 				'url': reverse('db:properties',kwargs={'number':real_interval_to_string_via_endpoints(number)}),
 			}
@@ -915,6 +919,37 @@ def properties(request, number):
 				'plain': timeout_message,
 				'latex': timeout_message,
 			})
+			
+		special_families = []
+		if n.is_perfect_power():
+			special_families.append('perfect power')
+		if n.is_prime():
+			special_families.append('prime')
+		if n.is_prime_power():
+			special_families.append('prime power')
+		if n.is_squarefree():
+			special_families.append('squarefree')
+		if n.is_square():
+			special_families.append('square')
+		if len(special_families) > 0:
+			context['properties'].append({
+				'title': 'Belongs to special families',
+				'plain': ', '.join(special_families),
+				'latex': ', '.join(special_families),
+			})
+			
+		context['OEIS_href'] = 'https://oeis.org/search?q=%s' % (n,)
+		try:
+			#Check whether n is small enough for database:
+			np.int64(n)
+			#oeis_number = OeisNumber.objects.get(number=int(n))
+			oeis_sequences = OeisSequence.objects.filter(numbers__number = n)
+			if len(oeis_sequences) > 0:
+				print('oeis_sequences:',oeis_sequences)
+				context['OEIS_sequences'] = oeis_sequences
+		except OverflowError:
+			pass
+	
 		return wrap_response(context)
 
 	#Case 2: given number is real interval:
@@ -927,22 +962,44 @@ def properties(request, number):
 			'plain': str(r),
 			'latex': '$%s$' % (latex(r),),
 		})
+	
+		#Simplest rational:
+		q = r.simplest_rational()
+		context['properties'].append({
+			'title': 'Simplest contained rational number',
+			'plain': str(q),
+			'latex': '$%s$' % (latex(q),),
+		})
 		
 		#Continued fraction:
-		cf = continued_fraction(r)
-		context['properties'].append({
-			'title': 'Possible continued fraction',
-			'latex': '$%s$' % (latex(cf),),
-			'plain': cf,
-		})
-		
-		#Convergents:
-		convergents = cf.convergents()
-		context['properties'].append({
-			'title': 'Convergents',
-			'plain': ', '.join(str(convergent) for convergent in convergents),
-			'latex': ', '.join('$%s$' % (latex(convergent),) for convergent in convergents),
-		})
+		cf = my_continued_fraction(r)
+		if cf != None:
+			context['properties'].append({
+				'title': 'Continued fraction',
+				'latex': '$%s$' % (latex(cf),),
+				'plain': str(cf),
+			})
+			
+			#Convergents:
+			convergents = cf.convergents()
+			context['properties'].append({
+				'title': 'Convergents',
+				'plain': ', '.join(str(convergent) for convergent in convergents),
+				'latex': ', '.join('$%s$' % (latex(convergent),) for convergent in convergents),
+			})
+		else:
+			precision_message = 'Insufficient precision.'
+			context['properties'].append({
+				'title': 'Possible continued fraction',
+				'latex': precision_message,
+				'plain': precision_message,
+			})
+			context['properties'].append({
+				'title': 'Convergents',
+				'plain': precision_message,
+				'latex': precision_message,
+			})
+			
 		minpolys = {}
 		for deg in range(1,10+1):
 			f = r.algdep(deg)
@@ -953,8 +1010,8 @@ def properties(request, number):
 		if len(minpolys) > 0:
 			context['properties'].append({
 				'title': 'Possible algebraic dependences',
-				'plain': ', '.join('%s = 0' % (f,) for f in minpolys.values()), 
-				'latex': ', '.join('$%s = 0$' % (latex(f),) for f in minpolys.values()), 
+				'plain': '<br> '.join('%s = 0' % (f,) for f in minpolys.values()), 
+				'latex': '<br> '.join('$%s = 0$' % (latex(f),) for f in minpolys.values()), 
 			})
 		else:
 			empty_message = 'No heuristic algebraic dependencies up to degree 10 found.'
@@ -963,6 +1020,8 @@ def properties(request, number):
 				'plain': empty_message, 
 				'latex': empty_message, 
 			})
+		
+		context['ISC_href'] = 'http://wayback.cecm.sfu.ca/cgi-bin/isc/lookup?number=%s&lookup_type=simple' % (r.center(),)
 		
 		return wrap_response(context)
 

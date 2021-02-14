@@ -156,7 +156,23 @@ def factor_with_timeout(n):
 
 #Work-around: (TODO: Need proper time-out)
 def factor_with_timeout(n):
-    if n.abs() <= 10**80:
+    if n.abs() <= 10**50:
         return n.factor()
     else:
         return None
+
+def my_continued_fraction(r):
+	result = []
+	q = r
+	while True:
+		try:
+			a = q.unique_floor()
+		except ValueError:
+			break		
+		result.append(a)
+		f = q-a
+		q = 1/f
+	if len(result) == 0:
+		return None
+	else:
+		return continued_fraction(result)

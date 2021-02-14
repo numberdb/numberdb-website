@@ -16,10 +16,10 @@ from db.models import CollectionSearch
 from db.models import Tag
 from db.models import Number
 
-from db.utils import number_param_groups_to_bytes
-from db.utils import to_bytes
-from db.utils import RIFprec
-from db.utils import RBFprec
+from utils.utils import number_param_groups_to_bytes
+from utils.utils import to_bytes
+from utils.utils import RIFprec
+from utils.utils import RBFprec
 
 from git import Repo
 import yaml

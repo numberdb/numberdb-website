@@ -12,9 +12,9 @@ import numpy as np
 from sage import *
 from sage.rings.all import *
 
-from .utils import my_real_interval_to_string
-from .utils import to_bytes
-from .utils import RIFprec, RBFprec
+from utils.utils import my_real_interval_to_string
+from utils.utils import to_bytes
+from utils.utils import RIFprec, RBFprec
 
 class UserProfile(models.Model):
 	user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -333,3 +333,25 @@ class Number(models.Model):
 		else:
 			print("r:",r)
 			raise NotImplementedError()
+
+class OeisNumber(models.Model):
+	
+	number = models.BigIntegerField(
+		primary_key = True,
+	)
+	sequence_count = models.IntegerField(
+		default = 0,
+	)
+
+class OeisSequence(models.Model):
+	
+	a_number = models.IntegerField(
+		primary_key = True,
+	)
+	name = models.TextField(
+		default = '',
+	)
+	numbers = models.ManyToManyField(
+		OeisNumber,
+		related_name = 'sequences',
+	)

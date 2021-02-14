@@ -37,27 +37,33 @@ label.container {
 }
 /* Hide the browser's default radio button */
 label.container input {
-  position: absolute;
+  display: none;
+/*  position: absolute;
   opacity: 0;
   cursor: pointer;
+*/
 }
 .checkmark {
   color: #0a58ca;
   text-decoration: underline;
 }
-label.container:hover input ~ .checkmark {
-  color: #000;
-}
 label.container input:checked ~ .checkmark {
   color: #000;
   text-decoration: none;
+}
+label.container:hover .checkmark {
+  color: #22a;
+}
+div.normal-font {
+  display: inline;
+  font-size: 1rem;
 }
   
 </style>
 
 <h1>Properties</h1>
 
-Show in:
+Show as:
 <label class="container">
   <input type="radio" checked="checked" name="radio" value="latex">
   <span class="checkmark">latex</span>
@@ -68,6 +74,19 @@ Show in:
   <span class="checkmark">plain text</span>
 </label>
 
+{% if ISC_href %}
+<br>
+Lookup number at <a href="{{ ISC_href }}">ISC</a>.
+{% endif %}
+
+
+{% if OEIS_href %}
+<!--
+<br>
+Lookup number at <a href="{{ OEIS_href }}">OEIS</a>.
+-->
+{% endif %}
+
 <!--
 <div class="property">
 Number: 
@@ -75,14 +94,26 @@ Number:
 </div>
 -->
 
+
 {% for property in properties %}
   <div class="property">
-    <div class="property-title">{{ property.title }}:</div> 
-    <div class="property-plain">{{ property.plain }}</div> 
-    <div class="property-latex">{{ property.latex }}</div> 
+    <div class="property-title">{{ property.title | safe }}:</div> 
+    <div class="property-plain">{{ property.plain | safe }}</div> 
+    <div class="property-latex">{{ property.latex | safe }}</div> 
   </div>
 {% endfor %}
 
+{% if OEIS_sequences %}
+  <div class="property">
+    <div class="property-title">OEIS sequences containing this number &nbsp; <div class="normal-font">(lookup number at <a href="{% if OEIS_href %}{{ OEIS_href }}{% else %}www.oeis.org{% endif %}">OEIS</a>)</div></div>
+     {% for sequence in OEIS_sequences %}
+       <div class="property-block">
+         <a href="https://www.oeis.org/A{{ sequence.a_number }}">{{ sequence.a_number }}</a>:
+         {{ sequence.name }}
+       </div>
+     {% endfor %}        
+  </div>
+{% endif %}
 
   <script>
       
