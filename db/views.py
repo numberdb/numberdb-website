@@ -889,21 +889,9 @@ def properties(request, number):
 	def wrap_response(context):
 		print("context:",context)
 		return render(request,'properties.html',context)
-	
-	context = {
-		'properties': [],
-	}
-	
-	#Case 1: given number is an integer:
-	n = parse_integer(number)
-	if n != None:
-		context['number'] = n
-		context['properties'].append({
-			'title': 'Number',
-			'plain': str(n),
-			'latex': '$%s$' % (latex(n),),
-		})
-		
+
+	def append_context_for_integer(n, context):
+
 		#Prime factorization:
 		factorization = factor_with_timeout(n)
 		if factorization != None:
@@ -944,12 +932,30 @@ def properties(request, number):
 			np.int64(n)
 			#oeis_number = OeisNumber.objects.get(number=int(n))
 			oeis_sequences = OeisSequence.objects.filter(numbers__number = n)
-			if len(oeis_sequences) > 0:
-				print('oeis_sequences:',oeis_sequences)
-				context['OEIS_sequences'] = oeis_sequences
+			#print('oeis_sequences:',oeis_sequences)
+			context['show_OEIS_sequences'] = True
+			context['OEIS_sequences'] = oeis_sequences
 		except OverflowError:
 			pass
+			
+		return context
 	
+	context = {
+		'properties': [],
+	}
+	
+	
+	
+	#Case 1: given number is an integer:
+	n = parse_integer(number)
+	if n != None:
+		context['number'] = n
+		context['properties'].append({
+			'title': 'Number',
+			'plain': str(n),
+			'latex': '$%s$' % (latex(n),),
+		})
+		append_context_for_integer(n, context)
 		return wrap_response(context)
 
 	#Case 2: given number is real interval:
@@ -1022,6 +1028,17 @@ def properties(request, number):
 			})
 		
 		context['ISC_href'] = 'http://wayback.cecm.sfu.ca/cgi-bin/isc/lookup?number=%s&lookup_type=simple' % (r.center(),)
+		
+		try:
+			n = r.unique_integer()
+			context['properties'].append({
+				'title': 'Unique integer contained in this real interval',
+				'plain': str(n), 
+				'latex': '$%s$' % latex(n), 
+			})
+			append_context_for_integer(n, context)			
+		except ValueError:
+			pass
 		
 		return wrap_response(context)
 
