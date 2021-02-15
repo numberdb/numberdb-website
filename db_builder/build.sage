@@ -1,4 +1,9 @@
-#Needs to be run within numberdb-website/
+#Needs to be run within numberdb-website/ as follows:
+#sage 
+#load('db_builder.sage')
+#exit
+
+
 #numberdb-data must have same 
 
 #Assume we are in numberdb-data working directory.

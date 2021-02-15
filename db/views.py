@@ -935,6 +935,7 @@ def properties(request, number):
 			#print('oeis_sequences:',oeis_sequences)
 			context['show_OEIS_sequences'] = True
 			context['OEIS_sequences'] = oeis_sequences
+			context['integer'] = n
 		except OverflowError:
 			pass
 			

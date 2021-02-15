@@ -27,6 +27,8 @@ sage -pip install "django-anymail[mailgun]"
 sage -pip install django-widget-tweaks
 sage -pip install gitpython
 sage -pip install pyyaml
+sage -pip install timeout-decorator
+sage -pip install func_timeout
 
 Fuer server:
 sage -pip install gunicorn

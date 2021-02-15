@@ -1,11 +1,12 @@
 #Data is taken from www.oeis.org, the On-Line Encyclopedia of Integer Sequences.
 
 #Needs to be run within numberdb-website/
-#Assumed that update.sh was executed beforehand in ../oeis-data/
+#Assumed that update-oeis.sh was executed beforehand 
 
 
 import os
 import django
+from django.db import models
 from django.db import transaction
 
 os.environ["DJANGO_SETTINGS_MODULE"] = 'numberdb.settings'
@@ -15,7 +16,7 @@ from db.models import OeisSequence
 
 import numpy as np
 
-path_oeis_data = "../oeis-data/"
+path_oeis_data = "db_builder/oeis-data/"
 
 
 class MyTimer:
@@ -64,14 +65,14 @@ class MyTimer:
 		self.endTimer(timer_name)
 
 
-@transaction.atomic
+transaction.atomic
 def delete_all_oeis_tables():
 	print("DELETING ALL OEIS TABLES")
 
 	OeisNumber.objects.all().delete()
 	OeisSequence.objects.all().delete()
 
-@transaction.atomic
+transaction.atomic
 def build_oeis_name_table():
 
 	print("BUILDING OEIS SEQUENCE NAMES TABLE")
@@ -97,8 +98,15 @@ def build_oeis_name_table():
 			sequences.append(sequence)
 			i += 1
 			print("i:",i)
+			
+			if i % 10000 == 0:
+				OeisSequence.objects.bulk_create(sequences)
+				sequences = []
+				
 		OeisSequence.objects.bulk_create(sequences)
 
+'''
+#OLD: Works but uses tons of memory (around 16GB)
 @transaction.atomic
 def build_oeis_number_table():
 
@@ -141,14 +149,92 @@ def build_oeis_number_table():
 			print("i:",i)
 		OeisNumber.objects.bulk_create(oeis_numbers.values())
 		OeisSequence.numbers.through.objects.bulk_create(sequence_number_links)
+'''
+
+
+#@transaction.atomic
+def build_oeis_number_table():
+
+	print("BUILDING OEIS NUMBER TABLE")
 	
+	i = 0
+	
+	filename_numbers = os.path.join(path_oeis_data,'stripped')
+	with open(filename_numbers,'r') as f:
+		oeis_numbers = {}
+		sequence_number_links = []
+
+		for line in f.readlines():
+			if line.startswith('#'):
+				continue
+			if not line.startswith('A'):
+				continue
+			a, numbers = line.split(' ',maxsplit = 1)
+			a_number = int(a[1:])
+			numbers_list = [int(n) for n in numbers.split(',') if len(n.lstrip('-'))>=3]
+			numbers = set(numbers_list)
+			
+			for n in numbers:
+				try:
+					np.int64(n)
+				except OverflowError:
+					continue
+				if n not in oeis_numbers:
+					oeis_numbers[n] = OeisNumber(number = n, sequence_count = -1)
+				#else:
+				#	oeis_numbers[n].sequence_count += 1
+				sequence_number_links.append(
+					OeisSequence.numbers.through(
+						oeisnumber_id = n,
+						oeissequence_id = a_number,
+					)
+				)
+			i += 1
+			print("i:",i)
+
+			if i % 1000 == 0:
+				OeisNumber.objects.bulk_create(oeis_numbers.values(),ignore_conflicts=True)
+				OeisSequence.numbers.through.objects.bulk_create(sequence_number_links,ignore_conflicts=True)
+				oeis_numbers = {}
+				sequence_number_links = []
+			
+		OeisNumber.objects.bulk_create(oeis_numbers.values(),ignore_conflicts=True)
+		OeisSequence.numbers.through.objects.bulk_create(sequence_number_links,ignore_conflicts=True)
+
+
+#@transaction.atomic
+def build_oeis_sequence_counter():
+
+	print("BUILDING OEIS SEQUENCE_COUNTER")
+	
+	i = 0
+
+	#q = OeisNumber.objects.annotate(count=models.Count('sequences')).update(sequence_count=models.F('count'))
+	
+	numbers = []
+	
+	for n in OeisNumber.objects.iterator():
+		n.sequence_count = n.sequences.count()
+		numbers.append(n)
+		
+		i += 1
+		print("i:",i)
+
+		if i % 10000 == 0:
+			OeisNumber.objects.bulk_update(numbers,['sequence_count'])
+			numbers = []
+
+	OeisNumber.objects.bulk_update(numbers,['sequence_count'])
+		
+
 #timer = MyTimer(cputime)
 timer = MyTimer(walltime)
 
-with transaction.atomic():
-	timer.run(delete_all_oeis_tables)
-	timer.run(build_oeis_name_table)
-	timer.run(build_oeis_number_table)
+#with transaction.atomic():
+timer.run(delete_all_oeis_tables)
+timer.run(build_oeis_name_table)
+timer.run(build_oeis_number_table)
+timer.run(build_oeis_sequence_counter)
 
 print("Times:\n%s" % (timer,))
 

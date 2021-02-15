@@ -58,7 +58,27 @@ div.normal-font {
   display: inline;
   font-size: 1rem;
 }
-  
+td.oeis-a {
+  padding: 0 0.5rem 0 0.5rem;
+  text-align: right;
+  vertical-align: top;    
+}
+td.oeis-name {
+  padding: 0 0.5rem 0 0.5rem;
+}
+
+tr:not(:last-child) {
+  border-bottom: 1px solid #aaa;   
+}
+@media only screen and (min-width: 48rem) {
+  tr:not(:last-child) {
+    border-bottom: 1px solid #eee;   
+  }
+}
+
+tr:nth-child(even) {
+  /*background: #eee; #f5f5f5;*/
+}
 </style>
 
 <h1>Properties</h1>
@@ -114,14 +134,49 @@ Number:
                 </div>
             {% endif %}
     </div>
+    
+    
+    <table>
+    <tbody>
+    
+     {% for sequence in OEIS_sequences %}
+       <tr>
+         <td class="oeis-a">
+           <a href="https://www.oeis.org/A{{ sequence.a_number }}">A{{ sequence.a_number }}</a>
+         </td>
+         <td class="oeis-name">
+           {{ sequence.name }}
+         </td>
+       </tr>
+     {% empty %}
+       {% if integer >= 100 or integer <= -100 %}
+         None.
+       {% else %}
+         Look up number at <a href="{% if OEIS_href %}{{ OEIS_href }}{% else %}www.oeis.org{% endif %}">OEIS</a>.
+       {% endif %}  
+     {% endfor %}        
+    
+    
+    </tbody>
+    </table>
+    
+    
+    {% comment %}
+    
      {% for sequence in OEIS_sequences %}
        <div class="property-block">
-         <a href="https://www.oeis.org/A{{ sequence.a_number }}">{{ sequence.a_number }}</a>:
+         <a href="https://www.oeis.org/A{{ sequence.a_number }}">A{{ sequence.a_number }}</a>:
          {{ sequence.name }}
        </div>
      {% empty %}
-       None.
+       {% if integer >= 100 or integer <= -100 %}
+         None.
+       {% else %}
+         Look up number at <a href="{% if OEIS_href %}{{ OEIS_href }}{% else %}www.oeis.org{% endif %}">OEIS</a>.
+       {% endif %}  
      {% endfor %}        
+
+    {% endcomment %}
   </div>
 {% endif %}
 
