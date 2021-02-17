@@ -186,7 +186,8 @@ def collection_context(collection, preview=False):
 		return new_text
 
 
-	data = collection.data.json
+	#data = collection.data.json
+	data = yaml.load(collection.data.full_yaml,Loader=yaml.BaseLoader)
 
 	html = ''
 
@@ -529,7 +530,7 @@ def preview(request, cid=None):
 			
 	c_data = CollectionData()
 	try:
-		c_data.json = yaml.load(collection_yaml,Loader=yaml.BaseLoader)
+		yaml_data = yaml.load(collection_yaml,Loader=yaml.BaseLoader)
 	except (yaml.scanner.ScannerError, 
 			yaml.composer.ComposerError) as e:
 		print("e:",e)
@@ -537,8 +538,13 @@ def preview(request, cid=None):
 			e.__str__().replace(' in "<unicode string>"','').replace('^','')),)
 		return render(request,'preview.html',context)
 	
-	c_data.json = normalize_collection_data(c_data.json)
+	
+	#Not used currently:
+	#c_data.json = normalize_collection_data(yaml_data)
 	#print("c_data.json:",c_data.json)
+
+	#TODO: Should avoid dumping yaml, and reloading it in collection_context():
+	c_data.full_yaml = yaml.dump(normalize_collection_data(yaml_data),sort_keys=False)
 	
 	c = Collection()
 	c.data = c_data

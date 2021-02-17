@@ -125,10 +125,16 @@ class CollectionData(models.Model):
 		on_delete=models.CASCADE,
 		#db_constraint=False,
 	)
+	#Full collection data in json:
 	json = models.JSONField(
 		default = dict,
 	)
+	#Original content of collection.yaml:
 	raw_yaml = models.TextField(
+		default = '',
+	)
+	#Normalized yaml of full collection:
+	full_yaml = models.TextField(
 		default = '',
 	)
 	

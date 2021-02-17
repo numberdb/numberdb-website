@@ -198,6 +198,7 @@ def build_collection_table(test_run=False):
 		#c_data.collection_id = c.id
 		c_data.collection = c
 		c_data.json = collection_data
+		c_data.full_yaml = yaml.dump(collection_data, sort_keys=False)
 		with open(path_filename) as f: #not recurse into yaml
 			c_data.raw_yaml = f.read()
 		#print("c_data.raw_yaml:",c_data.raw_yaml)
