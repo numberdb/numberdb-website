@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block head-title %}The Number Database{% endblock %}</title>
+    <title>{% block full-head-title %}{% block head-title %}{% endblock %} - NumberDB{% endblock %}</title>
     <!--<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">-->
 
 <link rel="apple-touch-icon" sizes="180x180" href="{% static '/apple-touch-icon.png' %}">

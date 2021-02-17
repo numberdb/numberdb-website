@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 
+{% block head-title %}Properties of {{ number | truncatechars_html:10 }}{% endblock %}
+
 {% block breadcrumb %}
   <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
   <li class="breadcrumb-item"><a href="{% url 'db:tags' %}">Tags</a></li>
@@ -96,20 +98,20 @@ Show as:
 
 {% if ISC_href %}
 <br>
-Lookup number at <a href="{{ ISC_href }}">ISC</a>.
+Look up number at <a href="{{ ISC_href }}">ISC</a>.
 {% endif %}
 
 
 {% if OEIS_href %}
 <!--
 <br>
-Lookup number at <a href="{{ OEIS_href }}">OEIS</a>.
+Look up number at <a href="{{ OEIS_href }}">OEIS</a>.
 -->
 {% endif %}
 
 {% if Wiki_href %}
 <br>
-Lookup number at <a href="{{ Wiki_href }}">Wikipedia</a>.
+Look up number at <a href="{{ Wiki_href }}">Wikipedia</a>.
 {% endif %}
 
 <!--
@@ -134,7 +136,7 @@ Number:
             {% if OEIS_sequences %} 
                 &nbsp; 
                 <div class="normal-font">
-                  (lookup number at 
+                  (look up number at 
                   <a href="{% if OEIS_href %}{{ OEIS_href }}{% else %}www.oeis.org{% endif %}">OEIS</a>)
                 </div>
             {% endif %}

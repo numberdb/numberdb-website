@@ -3,7 +3,7 @@
 {% load i18n %}
 {% load account socialaccount %}
 
-{% block head_title %}{% trans "Sign In" %}{% endblock %}
+{% block head-title %}{% trans "Sign in" %}{% endblock %}
 
 {% block content %}
 
@@ -14,7 +14,7 @@ ul.socialaccount_providers {
 }
 </style>
 
-<h1>{% trans "Sign In" %}</h1>
+<h1>{% trans "Sign in" %}</h1>
 
 {% get_providers as socialaccount_providers %}
 
@@ -45,9 +45,9 @@ ul.socialaccount_providers {
   {% if redirect_field_value %}
   <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
   {% endif %}
-  <button class="primaryAction" type="submit">{% trans "Sign In" %}</button>
+  <button class="primaryAction" type="submit">{% trans "Sign in" %}</button>
   <br>
-  <a class="button secondaryAction" href="{% url 'account_reset_password' %}">{% trans "Forgot Password?" %}</a>
+  <a class="button secondaryAction" href="{% url 'account_reset_password' %}">{% trans "Forgot password?" %}</a>
 </form>
 
 {% endblock %}

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block head-title %}
-  {{ collection.title }} 
+  {{ collection.title | truncatewords:15 }} 
 {% endblock %}
 
 {% block breadcrumb %}

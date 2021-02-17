@@ -754,8 +754,8 @@ def suggestions(request):
 				'label': '',
 				'type': 'link',
 				'title': 'Basic properties of',
-				'subtitle': '%s (not in database)'  % (term),
-				'url': reverse('db:properties',kwargs={'number':term}),
+				'subtitle': '%s (not in database)'  % (n,),
+				'url': reverse('db:properties',kwargs={'number':str(n)}),
 			}
 			entries[i] = entry_i
 			i += 1

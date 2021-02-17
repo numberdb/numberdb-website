@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 
+{% block head-title %}{{ tag.name | safe }} (tag){% endblock %}
+
 {% block breadcrumb %}
   <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
   <li class="breadcrumb-item"><a href="{% url 'db:tags' %}">Tags</a></li>

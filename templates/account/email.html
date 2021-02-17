@@ -2,10 +2,10 @@
 
 {% load i18n %}
 
-{% block head_title %}{% trans "E-mail Addresses" %}{% endblock %}
+{% block head-title %}{% trans "E-mail addresses" %}{% endblock %}
 
 {% block content %}
-    <h1>{% trans "E-mail Addresses" %}</h1>
+    <h1>{% trans "E-mail addresses" %}</h1>
 {% if user.emailaddress_set.all %}
 <p>{% trans 'The following e-mail addresses are associated with your account:' %}</p>
 
@@ -31,8 +31,8 @@
   {% endfor %}
 
 <div class="buttonHolder">
-      <button class="secondaryAction" type="submit" name="action_primary" >{% trans 'Make Primary' %}</button>
-      <button class="secondaryAction" type="submit" name="action_send" >{% trans 'Re-send Verification' %}</button>
+      <button class="secondaryAction" type="submit" name="action_primary" >{% trans 'Make primary' %}</button>
+      <button class="secondaryAction" type="submit" name="action_send" >{% trans 'Re-send verification' %}</button>
       <button class="primaryAction" type="submit" name="action_remove" >{% trans 'Remove' %}</button>
 </div>
 
@@ -45,12 +45,12 @@
 {% endif %}
 
   {% if can_add_email %}
-    <h2>{% trans "Add E-mail Address" %}</h2>
+    <h2>{% trans "Add e-mail address" %}</h2>
 
     <form method="post" action="{% url 'account_email' %}" class="add_email account">
         {% csrf_token %}
         {% include 'includes/form.html' %}
-        <button name="action_add" type="submit">{% trans "Add E-mail" %}</button>
+        <button name="action_add" type="submit">{% trans "Add e-mail" %}</button>
     </form>
   {% endif %}
 
