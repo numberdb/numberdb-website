@@ -51,6 +51,7 @@ from .models import Tag
 from .models import Number
 from .models import OeisNumber
 from .models import OeisSequence
+from .models import WikipediaNumber
 
 from utils.utils import pluralize
 from utils.utils import number_param_groups_to_string
@@ -937,6 +938,12 @@ def properties(request, number):
 			context['OEIS_sequences'] = oeis_sequences
 			context['integer'] = n
 		except OverflowError:
+			pass
+			
+		try:
+			wiki_number = WikipediaNumber.objects.get(number=n)
+			context['Wiki_href'] = wiki_number.url
+		except WikipediaNumber.DoesNotExist:
 			pass
 			
 		return context

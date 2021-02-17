@@ -355,3 +355,12 @@ class OeisSequence(models.Model):
 		OeisNumber,
 		related_name = 'sequences',
 	)
+
+class WikipediaNumber(models.Model):
+	
+	number = models.BigIntegerField(
+		primary_key = True,
+	)
+	url = models.URLField(
+		default = '',
+	)
