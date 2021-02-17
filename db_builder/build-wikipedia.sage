@@ -14,7 +14,6 @@ from db.models import WikipediaNumber
 
 import numpy as np
 import urllib
-#from html.parser import HTMLParser
 from bs4 import BeautifulSoup 
 import re
 
@@ -72,23 +71,6 @@ def delete_all_wikipedia_tables():
 	print("DELETING ALL WIKIPEDIA TABLES")
 
 	WikipediaNumber.objects.all().delete()
-
-
-class ParseWiki(HTMLParser):
-	def __init__(self):
-		super().__init__()
-		self.reset()
-
-	def handle_starttag(self, tag, attrs):
-		print("Start tag: ", tag)
-		for a in attrs:
-			print("Attributes of the tag: ", a)
-
-	def handle_data(self, data):
-		print("Here's the data: ", data)
-
-	def handle_endtag(self, tag):
-		print("End tag: ", tag)
 
 
 transaction.atomic
