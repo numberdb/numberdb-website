@@ -1,0 +1,24 @@
+<style>
+</style>
+
+
+<h2>Search results</h2>
+
+{% for result in results %}
+  {% if result.param %}
+    {{ result.param }}:
+  {% endif %}
+  
+  <a href="{{ result.collection.url }}#{{ result.number.param_str }}">
+    {{ result.number.str_as_real_interval }}
+  </a>
+  
+  (<a href="{{ result.collection.url }}">
+    {{ result.collection.title }}
+  </a>)
+  
+  <br>
+
+{% endfor %}
+
+

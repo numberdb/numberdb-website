@@ -6,9 +6,26 @@ ul.messages {
 }
 ul.messages > li {
   padding: 0.5rem 1rem;
+}
+.alert-success {
   background-color: #d4edda;
   color: #155724;
   border-color: #c3e6cb;
+}
+.alert-warning {
+    color: #8a6d3b;
+    background-color: #fcf8e3;
+    border-color: #faebcc;
+}
+.alert-info {
+    color: #31708f;
+    background-color: #d9edf7;
+    border-color: #bce8f1;
+}
+.alert-danger {
+  color: #a94442;
+  background-color: #f2dede;
+  border-color: #ebccd1;
 }
 </style>
 
@@ -17,7 +34,9 @@ ul.messages > li {
 {% if messages %}
 <ul class="messages">
     {% for message in messages %}
-    <li {% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+    <li {% if message.tags %} class="{{ message.tags }}"{% endif %}>
+        {% if message.text %}{{ message.text }}{% else %}{{ message }}{% endif %}
+    </li>
     {% endfor %}
 </ul>
 {% endif %}

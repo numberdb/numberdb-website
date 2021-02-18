@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from django.contrib import messages
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.db.models import F
+from django.template.loader import render_to_string
 
 import numpy as np
 from numpy import random as random
@@ -28,6 +29,7 @@ from cysignals.alarm import alarm, cancel_alarm
 from sage import *
 from sage.rings.all import *
 
+'''
 from sage.all import ceil
 from sage.rings.complex_number import ComplexNumber
 from sage.rings.complex_field import ComplexField
@@ -37,9 +39,15 @@ from sage.rings.rational import Rational
 from sage.rings.integer_ring import ZZ
 from sage.rings.rational_field import QQ
 from sage.rings.infinity import infinity
+'''
 
 #from sage.repl.rich_output.pretty_print import pretty_print
 from sage.misc.latex import latex
+
+from sage.repl.preparse import preparse
+from sage.arith.srange import ellipsis_range
+from sage.functions.trig import *
+from sage.symbolic.constants import *
 
 from mpmath import pslq
 
@@ -548,13 +556,16 @@ def preview(request, cid=None):
 	
 	c = Collection()
 	c.data = c_data
-	c.title = c_data.json['Title']
+	#c.title = c_data.json['Title']
+	c.title = yaml_data['Title']
 	c.path = 'PATH-OF-COLLECTION-YAML'
 	c.cid = 'AUTOMATIC-COLLECTION-ID'
 	
 	tags = []
-	if 'Tags' in c_data.json:
-		for tag_name in c_data.json['Tags']:
+	#if 'Tags' in c_data.json:
+	if 'Tags' in yaml_data:
+		#for tag_name in c_data.json['Tags']:
+		for tag_name in yaml_data['Tags']:
 			assert(isinstance(tag_name,str))
 			tags.append(Tag(name=tag_name))
 	
@@ -817,7 +828,7 @@ def suggestions(request):
 	
 	for number in suggested_numbers:
 		collection = number.collection
-		param = number.param_bytes().decode()
+		param = number.param_str()
 		entry_i = {
 			'value': str(i),
 			'label': '',
@@ -1057,3 +1068,145 @@ def properties(request, number):
 		return wrap_response(context)
 
 	raise Http404("Number cannot be parsed.")
+
+def advanced_search(request):
+	context = {
+		#'program': 'x = 3.14159265\nnumbers = {n: sin(x/n) for n in [1..10]}\n', 
+		#'program': '{n: sin(pi/n) for n in [1..10]}\n',
+		'program': '{n: sin(pi*n/2)\n  for n in [1..10000]\n}\n',
+		#'program': '{n: sin(1/n) for n in [1..10]}\n', 
+	}
+	return render(request, 'advanced-search.html', context)
+
+def advanced_suggestions(request):
+	time0 = time()
+	
+	def wrap_response(results, messages = None):
+		context = {
+			'results': results,
+			'messages': messages,
+		}
+		messages_html = render_to_string(
+			'includes/messaging.html',
+			context = context,
+		)
+		result_html = render_to_string(
+			'includes/advanced-search-results.html', 
+			context = context,
+		)
+		data = {
+			'messages_html': messages_html,
+			'result_html': result_html,
+			'time_request': "{:.3f}s".format(time()-time0),
+		}
+		#print("data:",data)
+		return JsonResponse(data,safe=True)
+
+	def parse_numbers(nested, parent_key = '', separator=', '):
+		'''
+			Returns a list of pairs (key, value), possibly with repeating keys.
+		'''
+		if isinstance(nested, list):
+			result = []
+			for value in nested:
+				result += parse_numbers(
+					value, 
+					parent_key = parent_key,
+					separator = separator,
+				)
+			return result			
+			
+		elif isinstance(nested, dict):
+			result = []
+			if parent_key != '':
+				parent_key = parent_key + separator
+			for key, value in nested.items():
+				result += parse_numbers(
+					value, 
+					parent_key = parent_key + str(key),
+					separator = separator,
+				)
+			return result
+			
+		else:
+			value = RIF(nested)
+			return [(parent_key, value)]
+		
+	messages = []
+
+	program = request.GET.get('program',default=None)
+	if program == None:
+		return wrap_response(None,messages)
+	print('program:',program)
+	
+	try:
+		preparsed = preparse(program)
+		print("preparsed:",preparsed)
+		evaluated = eval(preparsed,globals())
+		print("evaluated:",evaluated, type(evaluated))
+	except Exception as e:
+		messages.append({
+			'tags': 'alert-danger',
+			'text': 'Parsing error: %s' % (e,),
+		})
+		return wrap_response(None, messages)
+		
+	max_queries = 1000
+		
+	param_numbers = parse_numbers(evaluated)
+
+	if len(param_numbers) > max_queries:
+		messages.append({
+			'tags': 'alert-warning',
+			'text': 'We only check the first %s given numbers.' % (max_queries,),
+		})
+		param_numbers = param_numbers[:max_queries]
+
+	results = [];
+	
+	i = 0
+	max_results = 100
+	query_i = 0 
+	query_bulk_size = 1 #Apparently, bulk_size doesn't really matter, and also as is, only query_bulk_size=1 yields correct param.
+	query_real_intervals = Number.objects.none()
+
+	def do_query():
+		nonlocal i
+		nonlocal param
+		
+		for number in query_real_intervals[:(max_results - i)]:
+			results.append({
+				'param': param,
+				'number': number,
+				'collection': number.collection,		
+			})
+			i += 1
+			if i >= max_results:
+				break
+	
+	for param, r in param_numbers:
+		#Searching for real number up to given precision:
+		r_query = blur_real_interval(r)
+		print("r_query:",r_query)
+		query_real_intervals |= Number.objects.filter(
+			lower__range = (float(r_query.lower()),float(r_query.upper())),
+			upper__range = (float(r_query.lower()),float(r_query.upper())),							
+		)
+		query_i += 1
+		if query_i >= query_bulk_size:
+			do_query()
+			query_real_intervals = Number.objects.none()
+			query_i = 0
+			
+		if i >= max_results:
+			messages.append({
+				'tags': 'alert-warning',
+				'text': 'We only show the first %s results.' % (max_results,),
+			})
+			break
+			
+	do_query()
+	
+	return wrap_response(results,messages)
+	
+	

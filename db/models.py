@@ -221,6 +221,9 @@ class Number(models.Model):
 	def param_bytes(self):
 		return to_bytes(self.param)
 
+	def param_str(self):
+		return self.param_bytes().decode()
+
 	def __init__(self, *args, **kwargs):
 		
 		if not 'sage_number' in kwargs:

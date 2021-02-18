@@ -1,0 +1,273 @@
+{% extends 'base.html' %}{% load static %}
+
+{% block head-title %}Advanced search{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item active">Home</li>
+{% endblock %}
+
+
+{# Remove search bar from top: #}
+{% block top-searchbar %}
+{% endblock %}
+
+{% block content %}
+
+<style>
+#title {
+  text-align: center;
+  font-weight: 200;
+  font-size: 3rem;
+}
+#subtitle {
+  font-weight: 200;
+  text-align: center;
+  font-size: 1rem;
+}
+#beta-title {
+  display: inline;
+  position: absolute;
+  font-size: 0.4em;
+  font-weight: 200;
+  color: inherit;
+  text-decoration: none;
+}
+#beta-title:hover {
+  text-decoration: underline;
+}
+a#searchbar-help {
+  float: right;
+  color: #888;
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+a#searchbar-help:hover {
+  text-decoration: underline;
+}
+div.searchbar-help {
+  text-align: left;
+}
+div#searchtips {
+  display: none;
+  width: 100%; calc(23rem + 30 * var(--lrem));
+  margin: auto;
+  border: 1rem solid #ddd;
+  padding: 0.5rem;
+}
+
+
+.highlight .ui-menu-item {
+  background: #fff;
+}
+.highlight .ui-state-active {
+  background: #eee;
+}
+a.ui-menu-item-wrapper {
+  display: block;
+  text-decoration: none;
+}
+#searchbox.ui-autocomplete-loading {
+/*  text-decoration: underline;     
+  text-decoration-color: #aaa;
+*/  
+}
+#advanced-searchbox-component {
+  --searchbox-width: calc(25rem + 20 * var(--lrem));
+  --searchbox-border: 0.3rem; 
+    
+  display: inline-block;
+  border-radius: var(--searchbox-border);
+  border: 1px solid #bbb;
+  padding: 0px;
+  color: #000;
+  background-color: #fff;
+  outline: 0;
+  width: 100%; var(--searchbox-width);
+  text-align: center;
+  margin: auto;
+  /*margin: 0;*/
+}
+#advanced-searchbox-component:focus-within {
+  box-shadow: 0 0 10px #ddd;
+}
+#advanced-searchbox {
+  border: 1px solid black;
+  border: none;
+  margin: 0;
+  padding: 0.6rem;
+  outline: 0;
+  width: 100%; calc(var(--searchbox-width) - 1.8rem - 3px);
+  height: 8rem;
+  border-radius: var(--searchbox-border);
+}
+#searchbox-image {
+  width: calc(1rem);
+  margin: 0 0 0 0.4rem;
+  /*border: 1px solid black;*/
+}
+#msg-no-entry {
+  background: #fff;
+  padding: 0.1rem 0.5rem;
+  margin: 0.3rem;
+  position: fixed;
+  z-index: 1;
+  transform: translateX(-50%) translateY(0);   
+  border-radius: 1em;
+}
+table.advanced-searchbox-table  td {
+  width: 100%;
+  padding: 0 var(--searchbox-border);
+}
+div.advanced-searchbar-container {
+  --searchbox-width: calc(23rem + 30 * var(--lrem));
+  width: 100%; var(--searchbox-width);
+  margin: auto;
+}
+div#searching {
+  display: none;
+  color: #8b8;
+}
+</style>
+
+<link rel=stylesheet href="{% static '/codemirror-5.59.2/lib/codemirror.css' %}">
+<script src="{% static '/codemirror-5.59.2/lib/codemirror.js' %}"></script>
+<script src="{% static '/codemirror-5.59.2/mode/python/python.js' %}"></script>
+
+<style>
+/*  .CodeMirror { height: auto; border: 1px solid #ddd; }
+  .CodeMirror-scroll { max-height: 200px; }
+  .CodeMirror pre { padding-left: 7px; line-height: 1.25; }
+  .banner { background: #ffc; padding: 6px; border-bottom: 2px solid silver; text-align: center }
+*/
+
+textarea.search-code {
+/*  font-family: monospace;
+*/
+}
+.CodeMirror {
+  height: 10rem;
+  border: 1px solid #ddd;
+  font-size: 1em;  
+}
+</style>
+
+
+<h1>Advanced search</h1>
+
+<div id="search-messages">
+</div>
+
+<div class="advanced-searchbar-container">   
+
+<!--
+<div id="advanced-searchbox-component">
+ <table class="advanced-searchbox-table" width="100%" style="border-spacing:0;">
+  <tbody>
+   <tr>
+    <td 
+     ><textarea id="advanced-searchbox" 
+      {% if autofocus %} autofocus {% endif %} 
+      {# placeholder="Try 3.14 or L-function" #} 
+      {% if searchterm %} value="{{ searchterm }}" {% endif %}
+     ></textarea></td>
+   </tr>
+  </tbody>
+ </table>
+ <span style="display:none" id="msg-no-entry">No match in database</span>
+</div>
+-->
+
+<textarea id="advanced-searchbox" name="collection">
+{% if program %}{{ program }}{% endif %}
+</textarea>
+<!--<input type="submit" value="Search">-->
+</form>
+
+ <span style="display:none" id="msg-no-entry">No match in database</span>
+
+
+ <div class="searchbar-help">
+ <button id="button-advanced-search">Search <img id="searchbox-image" src="{% static 'search.png' %}"></button>
+ <div id="searching">(searching...)</div>
+ 
+ <a id="searchbar-help" href="#" onclick="toggle_visibility('searchtips','searchbar-help');">search tips</a>
+ </div>
+</div> 
+
+
+
+  <script>
+    var editor = CodeMirror.fromTextArea(document.getElementById("advanced-searchbox"), {
+      lineNumbers: true,
+      mode: "text/x-python",
+      matchBrackets: true,
+      spellcheck: true,
+      viewportMargin: 1,
+    });
+    $('.CodeMirror').resizable({
+      resize: function() {
+        editor.setSize("100%", $(this).height());
+      }
+    });
+
+$(document).ready(function(){
+    $('#button-advanced-search').on("click", function(e){ 
+        //var program = $('#advanced-searchbox').val().trim();
+        var program = editor.getValue();
+        console.log('program:',program);
+        if (program == '') {
+                $('#msg-no-entry').hide();
+            return;
+        }
+        $('#searching').css({'display':'inline-block'});
+        var api_url = "{% url 'db:advanced-suggestions' %}";
+        $.getJSON(api_url, { 'program': program },     
+            function (data) {
+                //console.log(data);
+                console.log(data['time_request']);
+                messages_html = data['messages_html'];
+                result_html = data['result_html'];
+                if (result_html == '') {
+                        $('#msg-no-entry').show();
+                } else {
+                        $('#msg-no-entry').hide();
+                }
+                //console.log(result);
+                $('#search-messages').html(messages_html);
+                $('#search-results').html(result_html);
+                $('#searching').css({'display':'none'});
+            }
+        );
+    });
+    
+    $('#button-advanced-search').trigger("click");
+});    
+    
+  </script>
+
+
+
+<div id="searchtips">
+{% include 'includes/search-tips-advanced.html' %}
+</div>
+
+<script type="text/javascript">
+<!--
+    function toggle_visibility(id_content, id_link) {
+       var content = document.getElementById(id_content);
+       var a = document.getElementById(id_link);
+       if(content.style.display == 'block') {
+          content.style.display = 'none';
+          a.text = 'search tips';
+       } else {
+          content.style.display = 'block';
+          a.text = 'close search tips';
+       }
+    }
+//-->
+</script>
+
+<div id="search-results">
+</div>
+    
+{% endblock %}

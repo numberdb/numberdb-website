@@ -11,6 +11,9 @@ urlpatterns = [
     path('suggestions', views.suggestions, name='suggestions'),
     path('properties/<str:number>', views.properties, name='properties'),
 
+    path('advanced-search', views.advanced_search, name='advanced-search'),
+    path('advanced-suggestions', views.advanced_suggestions, name='advanced-suggestions'),
+
     path('collections/', views.collections, name='collections'),
     re_path(r'^(?P<cid>(C\d+))$', views.collection, name='collection'),
 
