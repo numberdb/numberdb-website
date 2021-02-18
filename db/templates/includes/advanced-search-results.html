@@ -1,24 +1,41 @@
 <style>
+td.search-result-param {
+  text-align: right;
+  color: #333;
+  padding-right: 0.5rem;
+  font-size: 0.9rem;
+}
+td.search-result-number {
+  text-align: right;
+  padding-right: 0.5rem;   
+}
 </style>
 
 
 <h2>Search results</h2>
 
+<table>
+<tbody>
 {% for result in results %}
+ <tr>  
   {% if result.param %}
+   <td class="search-result-param"> 
     {{ result.param }}:
+   </td>
   {% endif %}
   
-  <a href="{{ result.collection.url }}#{{ result.number.param_str }}">
-    {{ result.number.str_as_real_interval }}
-  </a>
+   <td class="search-result-number">
+    <a href="{{ result.collection.url }}#{{ result.number.param_str }}">{{ result.number.str_as_real_interval }}</a>
+   </td>
   
-  (<a href="{{ result.collection.url }}">
-    {{ result.collection.title }}
-  </a>)
+   <td class="search-result-collection">
+    (<a href="{{ result.collection.url }}">{{ result.collection.title }}</a>)
+   </td>
   
-  <br>
+ </tr>
 
 {% endfor %}
+</tbody>
+</table>
 
 

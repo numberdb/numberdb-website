@@ -3,7 +3,25 @@ The advanced searchbar can be used to search for:
 <ul>
 <li id="how-to-search-real-numbers">
 <div class="li-header">Lists of real numbers</div>
-TODO
+Use <a href="https://sagemath.org">Sage syntax</a> to enter 
+a number, a list of numbers, or a dictionary of the form {param: number}.
+The lists and dictionaries may be nested.
+The numbers might be given via formulas involving standard functions such as sin and sqrt, as well as standard constants such as e and pi.
+<br>
+Examples:
+<ul>
+<li>
+<code>{n: 2^n for n in range(10)}</code> searches for $2^0$, ..., $2^9$.
+</li>
+<li>
+<code>{n: arctan(sqrt(n)) for n in range(0,10)}</code> searches for certain values of arctan.
+</li>
+<li>
+<pre><code>{a: {b: a/b 
+      for b in range(5) if b != 0
+    } 
+  for a in range(5)
+}</code></pre> searches certain small rational numbers.
 </li>
 </ul>
 </li>

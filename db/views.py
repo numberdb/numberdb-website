@@ -18,6 +18,8 @@ import yaml
 from cysignals import AlarmInterrupt
 from cysignals.alarm import alarm, cancel_alarm
 
+import Pyro5.api
+
 #from sage import *
 #from sage.all import *
 #from sage.arith.all import *
@@ -26,8 +28,8 @@ from cysignals.alarm import alarm, cancel_alarm
 #from sage.rings.all import RealIntervalField
 
 
-from sage import *
-from sage.rings.all import *
+from sage.all import *
+#from sage.rings.all import *
 
 '''
 from sage.all import ceil
@@ -40,14 +42,17 @@ from sage.rings.integer_ring import ZZ
 from sage.rings.rational_field import QQ
 from sage.rings.infinity import infinity
 '''
-
+'''
 #from sage.repl.rich_output.pretty_print import pretty_print
 from sage.misc.latex import latex
+from sage.misc.misc import is_iterator
 
 from sage.repl.preparse import preparse
 from sage.arith.srange import ellipsis_range
 from sage.functions.trig import *
 from sage.symbolic.constants import *
+from sage.functions.all import *
+'''
 
 from mpmath import pslq
 
@@ -1102,35 +1107,6 @@ def advanced_suggestions(request):
 		#print("data:",data)
 		return JsonResponse(data,safe=True)
 
-	def parse_numbers(nested, parent_key = '', separator=', '):
-		'''
-			Returns a list of pairs (key, value), possibly with repeating keys.
-		'''
-		if isinstance(nested, list):
-			result = []
-			for value in nested:
-				result += parse_numbers(
-					value, 
-					parent_key = parent_key,
-					separator = separator,
-				)
-			return result			
-			
-		elif isinstance(nested, dict):
-			result = []
-			if parent_key != '':
-				parent_key = parent_key + separator
-			for key, value in nested.items():
-				result += parse_numbers(
-					value, 
-					parent_key = parent_key + str(key),
-					separator = separator,
-				)
-			return result
-			
-		else:
-			value = RIF(nested)
-			return [(parent_key, value)]
 		
 	messages = []
 
@@ -1139,28 +1115,12 @@ def advanced_suggestions(request):
 		return wrap_response(None,messages)
 	print('program:',program)
 	
-	try:
-		preparsed = preparse(program)
-		print("preparsed:",preparsed)
-		evaluated = eval(preparsed,globals())
-		print("evaluated:",evaluated, type(evaluated))
-	except Exception as e:
-		messages.append({
-			'tags': 'alert-danger',
-			'text': 'Parsing error: %s' % (e,),
-		})
-		return wrap_response(None, messages)
-		
-	max_queries = 1000
-		
-	param_numbers = parse_numbers(evaluated)
+	E = Pyro5.api.Proxy("PYRONAME:save_eval")
+	param_numbers, messages_eval = loads(bytes(E.eval_search_program(program), encoding='cp437'))
 
-	if len(param_numbers) > max_queries:
-		messages.append({
-			'tags': 'alert-warning',
-			'text': 'We only check the first %s given numbers.' % (max_queries,),
-		})
-		param_numbers = param_numbers[:max_queries]
+	if param_numbers == None:
+		param_numbers = []
+	messages += messages_eval
 
 	results = [];
 	
