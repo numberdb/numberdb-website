@@ -1078,7 +1078,8 @@ def advanced_search(request):
 	context = {
 		#'program': 'x = 3.14159265\nnumbers = {n: sin(x/n) for n in [1..10]}\n', 
 		#'program': '{n: sin(pi/n) for n in [1..10]}\n',
-		'program': '{n: sin(pi*n/2)\n  for n in [1..10000]\n}\n',
+		#'program': '{n: sin(pi*n/2)\n  for n in [1..10000]\n}\n',
+		'program': '{n: sin(pi*n/2)\n  for n in [1..10]\n}\n',
 		#'program': '{n: sin(1/n) for n in [1..10]}\n', 
 	}
 	return render(request, 'advanced-search.html', context)

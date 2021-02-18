@@ -34,7 +34,15 @@ td.search-result-number {
   
  </tr>
 
+{% empty %}
+
+No results.
+{% if messages %}
+See the above message{{ messages | pluralize }}.
+{% endif %}
+
 {% endfor %}
+
 </tbody>
 </table>
 

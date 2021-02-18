@@ -79,6 +79,7 @@ class SafeEval(object):
 		messages = []
 		
 		def wrap_result(param_numbers, messages):
+			cancel_alarm()
 			result_bytes = dumps((param_numbers, messages))
 			result = str(result_bytes,'cp437')
 			return result
@@ -90,7 +91,7 @@ class SafeEval(object):
 				program_python = preparse(program)
 				print("program_python:", program_python)
 				program_evaluated = eval(program_python, globals())
-				print("program_evaluated:", program_evaluated, type(program_evaluated))
+				#print("program_evaluated:", program_evaluated, type(program_evaluated))
 			except Exception as e:
 				messages.append({
 					'tags': 'alert-danger',
@@ -130,7 +131,7 @@ class SafeEval(object):
 				'text': 'Timed out (1 second).',
 			})
 			return wrap_result(None, messages)
-			
+
 		return wrap_result(param_numbers, messages)
 
 daemon = Pyro5.server.Daemon()         # make a Pyro daemon
