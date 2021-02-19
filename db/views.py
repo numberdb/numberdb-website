@@ -19,6 +19,7 @@ from cysignals import AlarmInterrupt
 from cysignals.alarm import alarm, cancel_alarm
 
 import Pyro5.api
+import Pyro5.errors
 
 #from sage import *
 #from sage.all import *
@@ -1075,6 +1076,32 @@ def properties(request, number):
 	raise Http404("Number cannot be parsed.")
 
 def advanced_search(request):
+
+	try:
+		E = Pyro5.api.Proxy("PYRONAME:save_eval")
+		#print("E:",E)
+		ping_back = E.ping(b'test')
+		print("ping_back:",ping_back)
+	
+	except (Pyro5.errors.NamingError,Pyro5.errors.CommunicationError) as e:
+		print("e:",e, type(e))
+		'''
+		#print("error:",error)
+		messages.append({
+			'tags': 'alert-danger',
+			'text': 'Error: The advanced search server is currently not running and has to be restarted. We apologize.',
+		})
+		return wrap_response(None, messages)
+		'''
+		messages.error(request, 'Error: The advanced search server is currently not running and has to be restarted. We apologize.')
+		#return HttpResponseRedirect(reverse('db:home'))
+	
+	'''	
+	if not request.user.is_authenticated:	
+		print("not authenticated")
+		messages.error(request, 'You need to be logged in to use advanced search.')
+	'''
+	
 	context = {
 		#'program': 'x = 3.14159265\nnumbers = {n: sin(x/n) for n in [1..10]}\n', 
 		#'program': '{n: sin(pi/n) for n in [1..10]}\n',
@@ -1082,6 +1109,7 @@ def advanced_search(request):
 		'program': '{n: sin(pi*n/2)\n  for n in [1..10]\n}\n',
 		#'program': '{n: sin(1/n) for n in [1..10]}\n', 
 	}
+	
 	return render(request, 'advanced-search.html', context)
 
 def advanced_suggestions(request):
@@ -1111,13 +1139,37 @@ def advanced_suggestions(request):
 		
 	messages = []
 
+	'''
+	if not request.user.is_authenticated:	
+		print("not authenticated")
+		messages.append({
+			'tags': 'alert-danger',
+			'text': 'You need to be logged in to use advanced search.',
+		})
+		return wrap_response(None, messages)
+	'''
+
 	program = request.GET.get('program',default=None)
 	if program == None:
-		return wrap_response(None,messages)
+		return wrap_response(None, messages)
 	print('program:',program)
 	
-	E = Pyro5.api.Proxy("PYRONAME:save_eval")
-	param_numbers, messages_eval = loads(bytes(E.eval_search_program(program), encoding='cp437'))
+	
+	try:
+		E = Pyro5.api.Proxy("PYRONAME:save_eval")
+		#print("E:",E)
+		param_numbers, messages_eval = loads(bytes(E.eval_search_program(program), encoding='cp437'))
+		print("messages_eval:",messages_eval)
+	
+	except (Pyro5.errors.NamingError,Pyro5.errors.CommunicationError) as e:
+		print("e:",e, type(e))
+		#print("error:",error)
+		messages.append({
+			'tags': 'alert-danger',
+			'text': 'Error: The advanced search server is currently not running and has to be restarted. We apologize.',
+		})
+		return wrap_response(None, messages)
+				
 
 	if param_numbers == None:
 		param_numbers = []

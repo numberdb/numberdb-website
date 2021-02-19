@@ -30,6 +30,7 @@ sage -pip install pyyaml
 sage -pip install timeout-decorator
 sage -pip install func_timeout
 sage -pip install bs4
+sage -pip install pyro5
 
 Fuer server:
 sage -pip install gunicorn

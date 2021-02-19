@@ -11,16 +11,16 @@ The numbers might be given via formulas involving standard functions such as sin
 Examples:
 <ul>
 <li>
-<code>{n: 2^n for n in range(10)}</code> searches for $2^0$, ..., $2^9$.
+<code>{n: 2^n for n in [1..10]}</code> searches for $2^1$, ..., $2^{10}$.
 </li>
 <li>
-<code>{n: arctan(sqrt(n)) for n in range(0,10)}</code> searches for certain values of arctan.
+<code>{n: arctan(sqrt(n)) for n in [-10,10]}</code> searches for certain values of arctan.
 </li>
 <li>
 <pre><code>{a: {b: a/b 
-      for b in range(5) if b != 0
+      for b in [1..5] if gcd(a,b) == 1
     } 
-  for a in range(5)
+  for a in [-5..5] 
 }</code></pre> searches certain small rational numbers.
 </li>
 </ul>

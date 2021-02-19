@@ -306,6 +306,12 @@ h3 {
   margin-bottom: 0.2rem; 
 }
 
+h1.title {
+  font-weight: 400;
+  text-align: left; center;
+  color: #333;
+}
+
 
 
 div.horizontal-container {

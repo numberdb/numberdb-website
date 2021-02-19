@@ -78,10 +78,11 @@
 
     <div class="navbar-container">
 
-      {% if user.is_authenticated == True %}
+      {% if True or user.is_authenticated == True %}
         <a class="navbar-field" href="{% url 'db:advanced-search' %}">Advanced search</a>      
       {% endif %}  
-
+      
+      
       <a class="navbar-field" href="{% url 'db:tags' %}">Tags</a>      
       <a class="navbar-field" href="{% url 'db:collections' %}">Collections</a>      
       <a class="navbar-field" href="{% url 'db:about' %}">About</a>
