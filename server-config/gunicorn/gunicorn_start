@@ -1,0 +1,31 @@
+#!/bin/bash
+
+NAME="numberdb"
+DIR=/home/zeta3/numberdb/numberdb-website/
+USER=zeta3
+GROUP=zeta3
+WORKERS=2
+BIND=unix:/home/zeta3/run/gunicorn.sock
+DJANGO_SETTINGS_MODULE=numberdb.settings
+DJANGO_WSGI_MODULE=numberdb.wsgi
+LOG_LEVEL=error
+
+cd $DIR
+#Don't use venv, rather use gunicorn that is installed in sage.
+#source ../../venv/bin/activate
+
+alias python="/home/zeta3/SageMath/local/bin/sage-python"
+alias python3="/home/zeta3/SageMath/local/bin/sage-python"
+alias python3.8="/home/zeta3/SageMath/local/bin/sage-python"
+
+export DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE
+export PYTHONPATH=$DIR:$PYTHONPATH
+
+exec /home/zeta3/SageMath/local/bin/gunicorn ${DJANGO_WSGI_MODULE}:application \
+  --name $NAME \
+  --workers $WORKERS \
+  --user=$USER \
+  --group=$GROUP \
+  --bind=$BIND \
+  --log-level=$LOG_LEVEL \
+  --log-file=-
