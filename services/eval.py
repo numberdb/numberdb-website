@@ -94,7 +94,7 @@ class SafeEval(object):
 			v = e.value
 		else:
 			v = e
-		#print('dump e:', ast.dump(e))
+		print('dump e:', ast.dump(e))
 
 		if isinstance(v, ast.BoolOp):
 			#ignore v.op
@@ -217,8 +217,8 @@ class SafeEval(object):
 			#ignore
 			return True
 
-		elif isinstance(v, Str):
-			return check_Identifier(v.s)
+		elif isinstance(v, ast.Str):
+			return self.check_Identifier(v.s)
 		
 		else:
 			raise ValueError('Unknown expression type')
@@ -266,6 +266,8 @@ class SafeEval(object):
 		if id.startswith('_') or \
 			id.startswith('sage') or \
 			id.startswith('SAGE_') or \
+			id.startswith('SafeEval_') or \
+			id.startswith('Pyro_') or \
 			id.endswith('_DIR') or \
 			id.endswith('PATH') or \
 			id.endswith('_DOCS') or \
@@ -273,6 +275,9 @@ class SafeEval(object):
 				'eval', 'parse', 'preparse',
 				'localvars','locals','globals','In',
 				'load', 'load_attach_mode', 'load_attach_path', 'load_session',
+				'exec', 'breakpoint', 'classmethod', 'compile'
+				'delattr', 'dir', 'getattr', 'hasattr', 'help', 'input',
+				'memory_view', 'open', 'property', 'setattr', 'vars', 
 				'import', 'lazy_import', 'kernel',
 				'interact', 'interacts',
 				'install_scripts',
@@ -387,10 +392,12 @@ class SafeEval(object):
 
 		return wrap_result(param_numbers, messages)
 
-daemon = Pyro5.server.Daemon()         # make a Pyro daemon
-ns = Pyro5.api.locate_ns()             # find the name server
-uri = daemon.register(SafeEval)   # register the greeting maker as a Pyro object
-ns.register("save_eval", uri)   # register the object with a name in the name server
+Pyro_daemon = Pyro5.server.Daemon()         # make a Pyro daemon
+Pyro_ns = Pyro5.api.locate_ns()             # find the name server
+SafeEval_uri = Pyro_daemon.register(SafeEval)   # register SaveEval as a Pyro object
+Pyro_ns.register("safe_eval", SafeEval_uri)   # register the object with a name in the name server
 
-print("Ready.")
-daemon.requestLoop()
+if __name__ == "__main__":
+	print("Ready.")
+	Pyro_daemon.requestLoop()
+

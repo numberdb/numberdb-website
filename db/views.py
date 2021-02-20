@@ -1078,7 +1078,7 @@ def properties(request, number):
 def advanced_search(request):
 
 	try:
-		E = Pyro5.api.Proxy("PYRONAME:save_eval")
+		E = Pyro5.api.Proxy("PYRONAME:safe_eval")
 		#print("E:",E)
 		ping_back = E.ping(b'test')
 		print("ping_back:",ping_back)
@@ -1156,7 +1156,7 @@ def advanced_suggestions(request):
 	
 	
 	try:
-		E = Pyro5.api.Proxy("PYRONAME:save_eval")
+		E = Pyro5.api.Proxy("PYRONAME:safe_eval")
 		#print("E:",E)
 		param_numbers, messages_eval = loads(bytes(E.eval_search_program(program), encoding='cp437'))
 		print("messages_eval:",messages_eval)
