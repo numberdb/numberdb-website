@@ -68,6 +68,7 @@ class SafeEval(object):
 
 		elif is_iterator(nested) or \
 			isinstance(nested,list) or \
+			isinstance(nested,tuple) or \
 			isinstance(nested,range):
 			
 			for value in nested:

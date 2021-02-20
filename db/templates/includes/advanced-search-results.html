@@ -18,11 +18,11 @@ td.search-result-number {
 <tbody>
 {% for result in results %}
  <tr>  
-  {% if result.param %}
    <td class="search-result-param"> 
-    {{ result.param }}:
+    {% if result.param %}
+      {{ result.param }}:
+    {% endif %}
    </td>
-  {% endif %}
   
    <td class="search-result-number">
     <a href="{{ result.collection.url }}#{{ result.number.param_str }}">{{ result.number.str_as_real_interval }}</a>
