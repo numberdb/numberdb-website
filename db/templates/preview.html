@@ -11,6 +11,11 @@
 {% block top-searchbar %}
 {% endblock %}
 
+{# Remove messages from top (we put them further below) #}
+{% block messages %}
+{% endblock %}
+
+
 {% block content %}
 
 
@@ -50,6 +55,8 @@ div#preview-header {
 In this editor you can enter or edit collections in <a href="https://en.wikipedia.org/wiki/YAML">YAML format</a>, and you can get a <b>preview</b> of how numberdb would render it.
 You <b>cannot save</b> changes here. 
 Once everything looks good, upload it to the git repository <a href="https://github.com/bmatschke/numberdb-data">numberdb-data</a>.
+
+{% include 'includes/messaging.html' %}
 
 <form style="position: relative; margin-top: 0.5em;" action="{% url 'db:preview' %}#preview-header" method="get">
 <textarea id=collection-yaml name="collection">

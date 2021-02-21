@@ -134,7 +134,11 @@ def tag(request, tag_url):
 def welcome(request):
     return render(request, 'welcome.html')
 
-def collection(request, cid):
+def render_collection(request, collection):
+	context = collection_context(collection)							
+	return render(request, 'collection.html', context)
+
+def collection_by_cid(request, cid):
     # do something else...
     # return some data along with the view...
     
@@ -164,357 +168,387 @@ def collection_context(collection, preview=False):
 		and replace accordingly.
 		'''
 		
+		if not isinstance(text, str):
+			raise ValueError('string expected instead of %s' % text.__class__)
+		
 		#Parse 'CITE's:
 		parts = text.split("CITE{")
 		new_text = parts[0]
 		for part in parts[1:]:
 			try: 
 				ref, part2 = part.split("}",maxsplit=1)
+			except ValueError:
+				raise ValueError('no closing bracket in CITE')
+			try:
 				new_text += '<a class="CITE" href="#%s">%s</a>%s' % (ref, show_label_as[ref], part2)
 				#new_text += '<a class="CITE" href="#%s" onClick="(event) => {scrollTo(event,);}">%s</a>%s' % (ref, ref, show_label_as[ref], part2)
-			except (ValueError, KeyError):
-				new_text += "(???)" + part2
-				#TODO: Should output warning: "No closing bracket!"
-
+			except KeyError:
+				raise ValueError('unknown label %s in CITE' % (ref,))
+				
 		#Parse 'HREF's:
 		parts = new_text.split("HREF{")
 		new_text = parts[0]
 		for part in parts[1:]:
 			try: 
 				ref, part2 = part.split("}",maxsplit=1)
-				if part2 != "" and part2[0] == "[":
-					try:
-						caption, part2 = part2[1:].split("]",maxsplit=1)
-					except ValueError:
-						caption = ref
-				else:
+			except ValueError:
+				raise ValueError('no closing bracket in HREF')
+			if part2 != "" and part2[0] == "[":
+				try:
+					caption, part2 = part2[1:].split("]",maxsplit=1)
+				except ValueError:
 					caption = ref
-				new_text += '<a class="HREF" href="%s">%s</a>%s' % (ref, caption, part2)
-			except (ValueError, KeyError):
-				new_text += "[???]" + part2
-				#TODO: Should output warning: "No closing bracket!"
-
+			else:
+				caption = ref
+			new_text += '<a class="HREF" href="%s">%s</a>%s' % (ref, caption, part2)
+				
 		if line_breaks:
 			#Parse '\n's:
 			new_text = new_text.replace("\n","<br>")
 		return new_text
 
+	current_job = ''
 
-	#data = collection.data.json
-	data = yaml.load(collection.data.full_yaml,Loader=yaml.BaseLoader)
+	try:
 
-	html = ''
+		current_job = 'loading yaml'
+		#data = collection.data.json
+		data = yaml.load(collection.data.full_yaml,Loader=yaml.BaseLoader)
 
-	#Deduce label names:
-	show_label_as = {}
-	i_label = 1
-	for header in ('Formulas','Comments'):
-		if header in data and len(data[header]) > 0:
-			for label in data[header]:
-				show_label_as[label] = '(%s)' % (i_label,)
-				i_label += 1
-	i_label = 1
-	if 'Programs' in data and len(data['Programs']) > 0:
-		for label in data['Programs']:
-			print("label:",label)
-			show_label_as[label] = '(P%s)' % (i_label,)
-			i_label += 1
-	i_label = 1
-	for header in ('References','Links'):
-		if header in data and len(data[header]) > 0:
-			for label in data[header]:
-				show_label_as[label] = '[%s]' % (i_label,)
-				i_label += 1
+		html = ''
+
+		#Deduce label names:
+		show_label_as = {}
+		i_label = 1
+		for header in ('Formulas','Comments'):
+			current_job = 'parsing label names for %s' % (header,)
+			if header in data and len(data[header]) > 0:
+				for label in data[header]:
+					show_label_as[label] = '(%s)' % (i_label,)
+					i_label += 1
+		i_label = 1
+		for header in ('Programs',):
+			current_job = 'parsing label names for %s' % (header,)
+			if header in data and len(data[header]) > 0:
+				for label in data[header]:
+					print("label:",label)
+					show_label_as[label] = '(P%s)' % (i_label,)
+					i_label += 1
+		i_label = 1
+		for header in ('References','Links'):
+			current_job = 'parsing label names for %s' % (header,)
+			if header in data and len(data[header]) > 0:
+				for label in data[header]:
+					show_label_as[label] = '[%s]' % (i_label,)
+					i_label += 1
+			
 		
-	
-	#html += '<div class="grid12">'
-	#html += '<div class="col-m-6">'
+		#html += '<div class="grid12">'
+		#html += '<div class="col-m-6">'
 
-	sections = []
-		
-	if 'Definition' in data:
-		section = {
-			'title': 'Definition',
-			'text': render_text(data['Definition']),
-		}
-		sections.append(section)
-		
-	type_names = {
-		"Z": "integer",
-		"R": "real number",
-		"C": "complex number",
-		"ZI": "integer interval",
-		"RI": "real interval",
-		"CI": "complex interval",
-		"RB": "real ball",
-		"CB": "complex ball",
-	}  
-	if 'Parameters' in data and len(data['Parameters']) > 0:
-		labeled_list = []
-		for p, info in data['Parameters'].items():
-			p_latex = info['latex-name'] if 'latex-name' in info else "$%s$" % (p,)
-
-			text = ' &mdash;&nbsp;&nbsp; '
-			if 'title' in info:
-				text += '%s' % (render_text(info['title']),)    
-			elif 'type' in info:
-			#if 'type' in info:
-				if info['type'] in type_names:
-					text += type_names[info['type']]
-				else:
-					text += "%s (Unknown type)" % (info['type'],)
-			if 'constraints' in info: 
-				text += ' (%s)' % (render_text(info['constraints']),)
-
-			if 'show-in-parameter-list' in info and info['show-in-parameter-list'].lower() == 'no':
-				#Don't show this parameter in the homepage of this collection.
-				continue
-				
-			labeled_list.append({
-				'label_id': p,
-				'label_caption': render_text(p_latex),
-				'text': text,
-			})
-		if len(labeled_list) > 0:
+		sections = []
+			
+		current_job = 'parsing definition'
+		if 'Definition' in data:
 			section = {
-				'title': 'Parameters',
-				'labeled_list': labeled_list,
+				'title': 'Definition',
+				'text': render_text(data['Definition']),
 			}
 			sections.append(section)
-
-		parameters = data['Parameters'].keys() 
-	else:
-		parameters = []
-					
-	for header in ('Formulas','Comments'):
-		if header in data and len(data[header]) > 0:
+			
+		type_names = {
+			"Z": "integer",
+			"R": "real number",
+			"C": "complex number",
+			"ZI": "integer interval",
+			"RI": "real interval",
+			"CI": "complex interval",
+			"RB": "real ball",
+			"CB": "complex ball",
+		}  
+		current_job = 'parsing parameters'
+		if 'Parameters' in data and len(data['Parameters']) > 0:
 			labeled_list = []
-			for label, text in data[header].items():
+			for p, info in data['Parameters'].items():
+				current_job = 'parsing parameter %s' % (p,)
+				p_latex = info['latex-name'] if 'latex-name' in info else "$%s$" % (p,)
+
+				text = ' &mdash;&nbsp;&nbsp; '
+				if 'title' in info:
+					text += '%s' % (render_text(info['title']),)    
+				elif 'type' in info:
+				#if 'type' in info:
+					if info['type'] in type_names:
+						text += type_names[info['type']]
+					else:
+						text += "%s (Unknown type)" % (info['type'],)
+				if 'constraints' in info: 
+					text += ' (%s)' % (render_text(info['constraints']),)
+
+				if 'show-in-parameter-list' in info and info['show-in-parameter-list'].lower() == 'no':
+					#Don't show this parameter in the homepage of this collection.
+					continue
+					
 				labeled_list.append({
-					'label_id': label,
-					'label_caption': show_label_as[label],
+					'label_id': p,
+					'label_caption': render_text(p_latex),
+					'text': text,
+				})
+			if len(labeled_list) > 0:
+				section = {
+					'title': 'Parameters',
+					'labeled_list': labeled_list,
+				}
+				sections.append(section)
+
+			parameters = data['Parameters'].keys() 
+		else:
+			parameters = []
+						
+		for header in ('Formulas','Comments'):
+			current_job = 'parsing %s' % (header,)
+			if header in data and len(data[header]) > 0:
+				labeled_list = []
+				for label, text in data[header].items():
+					current_job = 'parsing %s %s' % (header,label)
+					labeled_list.append({
+						'label_id': label,
+						'label_caption': show_label_as[label],
+						'text': render_text(text),
+					})
+				section = {
+					'title': header,
+					'labeled_list': labeled_list,
+				}
+				sections.append(section)
+		
+		highlight_language = {
+			'Sage': 'python',
+			'default': '',
+		}
+
+		#Continue i_label, as it's all interior data, not a direct reference.
+		for header in ('Programs',):
+			current_job = 'parsing %s' % (header,)
+			if header in data and len(data[header]) > 0:
+				labeled_list = []
+				for label, program in data[header].items():
+					current_job = 'Parse program %s' % (label,)
+					language = render_text(program['language'])
+					if language in highlight_language:
+						code_language = highlight_language[language]
+					else:
+						code_language = highlight_language['default']
+					text = '%s<br><pre><code class="collection-code language-%s">%s</code></pre>' % (
+						language,
+						code_language,
+						#render_text(program['code']),
+						program['code'],
+					)
+					labeled_list.append({
+						'label_id': label,
+						'label_caption': show_label_as[label],
+						'text': text,
+					})
+				section = {
+					'title': 'Programs',
+					'labeled_list': labeled_list,
+				}
+				sections.append(section)
+
+		for header in ('References','Links'):
+			current_job = 'parsing %s' % (header,)
+			if header in data and len(data[header]) > 0:
+				labeled_list = []
+				for label, reference in data[header].items():
+					current_job = 'Parse %s %s' % (header,label)
+					text = ""
+					if 'bib' in reference:
+						text += render_text(reference['bib'].rstrip('\n')) + " "
+					if 'arXiv' in reference:
+						link = reference['arXiv']
+						link = link.split("[")[0].strip(" \n")
+						link = link.split("/")[-1]
+						link = "https://www.arxiv.org/abs/%s" % (link,)
+						text += '(<a href="%s">arXiv</a>) ' % (link,)
+					if 'doi' in reference:
+						link = reference['doi'].split("doi.org/")[-1]
+						link = "https://doi.org/%s" % (link,)
+						text += '(<a href="%s">doi</a>) ' % (link,)
+					if 'url' in reference:
+						if 'title' in reference:
+							text += '<a href="%s">%s</a> ' % (reference['url'],reference['title'])
+						else:
+							text += '<a href="%s">%s</a> ' % (reference['url'],reference['url'])
+
+					labeled_list.append({
+						'label_id': label,
+						'label_caption': show_label_as[label],
+						'text': text,
+					})
+				section = {
+					'title': header,
+					'labeled_list': labeled_list,
+				}
+				sections.append(section)
+
+		property_names = {
+			'type': 'Numbers are of type',
+			'complete': 'Collection is complete',
+			'sources': 'Sources of data',
+			'relative precision': 'Relative precision',
+			'absolute precision': 'Absolute precision',
+			'reliability': 'Reliability',
+		}
+		current_job = 'parsing data properties'
+		if 'Data properties' in data and len(data['Data properties']) > 0:
+			properties = data['Data properties']
+			unlabeled_list = []
+			for key, value in properties.items():
+				current_job = 'Parse data property %s' % (key,)
+				if len(value) == 0:
+					continue
+				if key in property_names:
+					text = "%s: " % (property_names[key])
+					if key == 'type':
+						if properties['type'] in type_names:
+							text += type_names[value]
+						else:
+							text += "%s (Unknown value)" % (value,)
+					elif key == 'sources':
+						text += ", ".join(value)                
+					else:
+						text += value
+				else:
+					text = "%s: %s (Unknown key)" % (key, value)     
+				unlabeled_list.append({
 					'text': render_text(text),
 				})
 			section = {
-				'title': header,
-				'labeled_list': labeled_list,
-			}
-			sections.append(section)
-	
-	highlight_language = {
-		'Sage': 'python',
-		'default': '',
-	}
-
-	#Continue i_label, as it's all interior data, not a direct reference.
-	if 'Programs' in data and len(data['Programs']) > 0:
-		labeled_list = []
-		for label, program in data['Programs'].items():
-			language = render_text(program['language'])
-			if language in highlight_language:
-				code_language = highlight_language[language]
-			else:
-				code_language = highlight_language['default']
-			text = '%s<br><pre><code class="collection-code language-%s">%s</code></pre>' % (
-				language,
-				code_language,
-				#render_text(program['code']),
-				program['code'],
-			)
-			labeled_list.append({
-				'label_id': label,
-				'label_caption': show_label_as[label],
-				'text': text,
-			})
-		section = {
-			'title': 'Programs',
-			'labeled_list': labeled_list,
-		}
-		sections.append(section)
-
-	for header in ('References','Links'):
-		if header in data and len(data[header]) > 0:
-			labeled_list = []
-			for label, reference in data[header].items():
-				text = ""
-				if 'bib' in reference:
-					text += render_text(reference['bib'].rstrip('\n')) + " "
-				if 'arXiv' in reference:
-					link = reference['arXiv']
-					link = link.split("[")[0].strip(" \n")
-					link = link.split("/")[-1]
-					link = "https://www.arxiv.org/abs/%s" % (link,)
-					text += '(<a href="%s">arXiv</a>) ' % (link,)
-				if 'doi' in reference:
-					link = reference['doi'].split("doi.org/")[-1]
-					link = "https://doi.org/%s" % (link,)
-					text += '(<a href="%s">doi</a>) ' % (link,)
-				if 'url' in reference:
-					if 'title' in reference:
-						text += '<a href="%s">%s</a> ' % (reference['url'],reference['title'])
-					else:
-						text += '<a href="%s">%s</a> ' % (reference['url'],reference['url'])
-
-				labeled_list.append({
-					'label_id': label,
-					'label_caption': show_label_as[label],
-					'text': text,
-				})
-			section = {
-				'title': header,
-				'labeled_list': labeled_list,
+				'title': 'Data properties',
+				'unlabeled_list': unlabeled_list,
 			}
 			sections.append(section)
 
-	property_names = {
-		'type': 'Numbers are of type',
-		'complete': 'Collection is complete',
-		'sources': 'Sources of data',
-		'relative precision': 'Relative precision',
-		'absolute precision': 'Absolute precision',
-		'reliability': 'Reliability',
-	}
-	if 'Data properties' in data and len(data['Data properties']) > 0:
-		properties = data['Data properties']
-		unlabeled_list = []
-		for key, value in properties.items():
-			if len(value) == 0:
-				continue
-			if key in property_names:
-				text = "%s: " % (property_names[key])
-				if key == 'type':
-					if properties['type'] in type_names:
-						text += type_names[value]
-					else:
-						text += "%s (Unknown value)" % (value,)
-				elif key == 'sources':
-					text += ", ".join(value)                
-				else:
-					text += value
-			else:
-				text = "%s: %s (Unknown key)" % (key, value)     
-			unlabeled_list.append({
-				'text': render_text(text),
-			})
-		section = {
-			'title': 'Data properties',
-			'unlabeled_list': unlabeled_list,
-		}
-		sections.append(section)
 
-
-	if 'Display properties' in data and 'group parameters' in data['Display properties']:
-		param_groups = data['Display properties']['group parameters']
-	else:
-		param_groups = [[p] for p in parameters]
-	#print("param_groups:",param_groups)
-
-	def render_number_table(numbers, params_so_far=[], groups_left=param_groups):
-		html = ''
-
-		def wrap_in_subtable(inner_html):
-			return '<div class="collection-subtable">%s</div>' % (inner_html,)
-
-		def format_param_group(param_group):
-			result = ', '.join(p.strip(' ') for p in param_group.split(','))
-			result = result.replace(' ','&nbsp;')
-			return result
-
-		if isinstance(numbers,dict):
-			if 'number' in numbers or \
-				'numbers' in numbers or \
-				'equals' in numbers:
-				#Numbers are given with extra information at this level:
-				for key in numbers:
-					if key in ('number','numbers','param-latex'):
-						continue
-					html += '%s: %s<br>' % (key, render_text(numbers[key]))
-				if 'number' in numbers:
-					html += render_number_table(numbers['number'], params_so_far, groups_left)
-				elif 'numbers' in numbers:
-					html += render_number_table(numbers['numbers'], params_so_far, groups_left)
-				return html
-			
-		if len(groups_left) == 0:
-			#numbers is an entry for a number now, either a string or a dict:
-			if isinstance(numbers,str):
-				html += '<div class="collection-number">%s</div>' % (numbers,)
-			else:
-				#html += '<div class="collection-subtable">'
-				#html += '<div class="collection-block">'
-				#html += '<div class="collection-entry">'
-				if isinstance(numbers,list):           
-					for number in numbers:
-						html += '<div class="collection-number">%s</div>' % (number,)
-				elif isinstance(numbers,dict):  
-					for key, value in numbers.items():
-						html += '<div class="collection-number-%s">%s</div>' % (key,render_text(value),)
-				#html += '</div>'
-				#html += '</div>'
-				#html += '</div>'
-			'''
-			param = number_param_groups_to_string(params_so_far)
-			#print("param:",param)
-			if param != '':
-				html = '<div id="%s" class="anchor-id">%s</div>' % (
-					param,
-					html,
-				)
-			'''
+		current_job = 'parsing display properties'
+		if 'Display properties' in data and 'group parameters' in data['Display properties']:
+			param_groups = data['Display properties']['group parameters']
 		else:
-			if preview and isinstance(numbers,str) and numbers.startswith("INPUT"):
-				return '%s (not shown in preview)' % numbers
-			next_group = groups_left[0]
-			html += '<div class="collection-subtable">'
-			for p, numbers_p in numbers.items():
-				if len(groups_left) <= 1:
-					param = number_param_groups_to_string(params_so_far+[p])
-					id_str = 'id="%s"' % (param,) if param != '' else ''
-				else:
-					id_str = ''
-				html_p = '<div %s class="collection-block">' % (id_str,)
-				if isinstance(numbers_p,dict) and 'param-latex' in numbers_p:
-					param_html = numbers_p['param-latex']
-				else:
-					param_html = format_param_group(p)
-				html_p += '<div class="collection-param-group"><span>%s:</span></div>' % (param_html,)
-				html_inner = render_number_table(numbers_p, params_so_far+[p], groups_left[1:])
-				html_p += '<div class="collection-cell-right">%s</div>' % (wrap_in_subtable(html_inner),)
-				html_p += '</div>'
-				html += html_p
-			html += '</div>'
+			param_groups = [[p] for p in parameters]
+		#print("param_groups:",param_groups)
 
-		return html    
+		def render_number_table(numbers, params_so_far=[], groups_left=param_groups):
+			nonlocal current_job
+			current_job = 'parsing number with parameter %s' % (str(params_so_far),)
+			html = ''
 
-	#html += '</div>'
-	#html += '<div class="col-m-6">'
-			
-	if 'Numbers' in data and len(data['Numbers']) > 0:
-		numbers = data['Numbers']
-		number_section = {
-			'title': pluralize('Number',collection.number_count),
-			'text': render_number_table(numbers),
+			def wrap_in_subtable(inner_html):
+				return '<div class="collection-subtable">%s</div>' % (inner_html,)
+
+			def format_param_group(param_group):
+				result = ', '.join(p.strip(' ') for p in param_group.split(','))
+				result = result.replace(' ','&nbsp;')
+				return result
+
+			if isinstance(numbers,dict):
+				if 'number' in numbers or \
+					'numbers' in numbers or \
+					'equals' in numbers:
+					#Numbers are given with extra information at this level:
+					for key in numbers:
+						if key in ('number','numbers','param-latex'):
+							continue
+						html += '%s: %s<br>' % (key, render_text(numbers[key]))
+					if 'number' in numbers:
+						html += render_number_table(numbers['number'], params_so_far, groups_left)
+					elif 'numbers' in numbers:
+						html += render_number_table(numbers['numbers'], params_so_far, groups_left)
+					return html
+				
+			if len(groups_left) == 0:
+				#numbers is an entry for a number now, either a string or a dict:
+				if isinstance(numbers,str):
+					html += '<div class="collection-number">%s</div>' % (numbers,)
+				else:
+					#html += '<div class="collection-subtable">'
+					#html += '<div class="collection-block">'
+					#html += '<div class="collection-entry">'
+					if isinstance(numbers,list):           
+						for number in numbers:
+							html += '<div class="collection-number">%s</div>' % (number,)
+					elif isinstance(numbers,dict):  
+						for key, value in numbers.items():
+							html += '<div class="collection-number-%s">%s</div>' % (key,render_text(value),)
+					#html += '</div>'
+					#html += '</div>'
+					#html += '</div>'
+				'''
+				param = number_param_groups_to_string(params_so_far)
+				#print("param:",param)
+				if param != '':
+					html = '<div id="%s" class="anchor-id">%s</div>' % (
+						param,
+						html,
+					)
+				'''
+			else:
+				if preview and isinstance(numbers,str) and numbers.startswith("INPUT"):
+					return '%s (not shown in preview)' % numbers
+				next_group = groups_left[0]
+				html += '<div class="collection-subtable">'
+				for p, numbers_p in numbers.items():
+					if len(groups_left) <= 1:
+						param = number_param_groups_to_string(params_so_far+[p])
+						id_str = 'id="%s"' % (param,) if param != '' else ''
+					else:
+						id_str = ''
+					html_p = '<div %s class="collection-block">' % (id_str,)
+					if isinstance(numbers_p,dict) and 'param-latex' in numbers_p:
+						param_html = numbers_p['param-latex']
+					else:
+						param_html = format_param_group(p)
+					html_p += '<div class="collection-param-group"><span>%s:</span></div>' % (param_html,)
+					html_inner = render_number_table(numbers_p, params_so_far+[p], groups_left[1:])
+					html_p += '<div class="collection-cell-right">%s</div>' % (wrap_in_subtable(html_inner),)
+					html_p += '</div>'
+					html += html_p
+				html += '</div>'
+
+			return html    
+
+		#html += '</div>'
+		#html += '<div class="col-m-6">'
+				
+		current_job = 'parsing numbers'
+		if 'Numbers' in data and len(data['Numbers']) > 0:
+			numbers = data['Numbers']
+			number_section = {
+				'title': pluralize('Number',collection.number_count),
+				'text': render_number_table(numbers),
+			}
+			#sections.append(number_section)
+
+		#html += '</div>'
+		#html += '</div>'
+		
+		context = {
+			'collection': collection,
+			'sections': sections,
+			'number_section': number_section,
 		}
-		#sections.append(number_section)
+		if not preview:
+			context['tags'] = collection.tags.all()
+		else:
+			context['tags'] = []
 
-	#html += '</div>'
-	#html += '</div>'
-	
-	context = {
-		'collection': collection,
-		'sections': sections,
-		'number_section': number_section,
-	}
-	if not preview:
-		context['tags'] = collection.tags.all()
-	else:
-		context['tags'] = []
+
+	except (AttributeError, ValueError, Exception) as e: 
+		#TODO: Should remove Exception here after checking which exceptions are expected.
+		error_message = 'Error while %s: %s' % (current_job, e)
+		raise ValueError(error_message)
 	
 	return context
-
-def render_collection(request, collection):
-	context = collection_context(collection)							
-	return render(request, 'collection.html', context)
 
 def preview(request, cid=None):
 	#First try to get yaml from Textarea:
@@ -548,8 +582,11 @@ def preview(request, cid=None):
 	except (yaml.scanner.ScannerError, 
 			yaml.composer.ComposerError) as e:
 		print("e:",e)
-		messages.error(request, 'YAML format error: %s' % (
-			e.__str__().replace(' in "<unicode string>"','').replace('^','')),)
+		messages.error(
+			request, 
+			'YAML format error: %s' % \
+				(e.__str__().replace(' in "<unicode string>"','').replace('^',''),),
+		)
 		return render(request,'preview.html',context)
 	
 	
@@ -574,13 +611,25 @@ def preview(request, cid=None):
 		for tag_name in yaml_data['Tags']:
 			assert(isinstance(tag_name,str))
 			tags.append(Tag(name=tag_name))
-	
-	#print('collection_yaml:',collection_yaml)
-	context.update(collection_context(c,preview=True))
+
 	context.update({
 		'preview': True,
 		'tags': tags,
 	})
+	
+	#print('collection_yaml:',collection_yaml)
+	try:
+		c_context = collection_context(c,preview=True)
+		context.update(c_context)
+	except ValueError as e:
+		print("e:",e,type(e))
+		messages.error(
+			request, 
+			'%s' % \
+				(e.__str__(),), #.replace(' in "<unicode string>"','').replace('^','')
+		)
+		return render(request,'preview.html',context)
+		
 	print("context:",context)
 
 	return render(request,'preview.html',context)

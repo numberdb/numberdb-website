@@ -47,7 +47,9 @@
 <body>
   <div class="horizontal-container">
 
-  {% include 'includes/messaging.html' %}
+  {% block messages %}
+    {% include 'includes/messaging.html' %}
+  {% endblock %}
 
     {% block body %}
 
