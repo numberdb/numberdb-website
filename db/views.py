@@ -461,8 +461,7 @@ def collection_context(collection, preview=False):
 			if isinstance(numbers,dict):
 				if 'number' in numbers or \
 					'numbers' in numbers or \
-					'equals' in numbers or \
-					'proof' in numbers:
+					'equals' in numbers:
 					#Numbers are given with extra information at this level:
 					for key in numbers:
 						if key in ('number','numbers','param-latex'):
