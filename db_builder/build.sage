@@ -26,6 +26,12 @@ from utils.utils import to_bytes
 from utils.utils import RIFprec
 from utils.utils import RBFprec
 
+from utils.utils import parse_integer
+from utils.utils import parse_positive_integer
+from utils.utils import parse_real_interval
+from utils.utils import parse_fractional_part
+
+
 from git import Repo
 import yaml
 import os
@@ -239,6 +245,7 @@ def build_number_table():
 		x = None #just to declare x as local variable
 		
 		#TODO: Find more stable type queries:
+		'''
 		try:
 			x = ZZ(number)
 		except TypeError:
@@ -246,9 +253,22 @@ def build_number_table():
 				x == QQ(number)
 			except TypeError:
 				try:
-					x = RIFprec(number)
+					#x = RIFprec(number)
+					x = parse_real_interval(number)
+					if x == None:
+						raise TypeError()
 				except TypeError:
 						x = RBFprec('[%s]' % (number,))
+		'''
+		
+		x = parse_integer(number)
+		if x == None:
+			try:
+				x = QQ(number)
+			except TypeError:
+				x = parse_real_interval(number, RIF=RIFprec)
+				if x == None:
+					x = RBFprec('[%s]' % (number,))
 		
 		
 		p = number_param_groups_to_bytes(param)

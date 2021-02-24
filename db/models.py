@@ -12,7 +12,7 @@ import numpy as np
 from sage import *
 from sage.rings.all import *
 
-from utils.utils import my_real_interval_to_string
+from utils.utils import real_interval_to_pretty_string
 from utils.utils import to_bytes
 from utils.utils import RIFprec, RBFprec
 
@@ -323,7 +323,7 @@ class Number(models.Model):
 			return RBF(center,radius)
 
 	def str_as_real_interval(self):
-		return my_real_interval_to_string(self.to_RIF())
+		return real_interval_to_pretty_string(self.to_RIF())
 
 	def __str__(self):
 		r = self.to_sage()
@@ -334,7 +334,7 @@ class Number(models.Model):
 			return r.__str__()
 		
 		elif r.parent() == RIF:
-			return my_real_interval_to_string(r)
+			return real_interval_to_pretty_string(r)
 		
 		elif r.parent() == RBF:
 			return r.__str__().strip('[]')

@@ -3,7 +3,7 @@ import multiprocessing
 import func_timeout
 from cysignals import AlarmInterrupt
 from cysignals.alarm import alarm, cancel_alarm
-
+import re
 
 from sage import *
 from sage.rings.all import *
@@ -12,13 +12,116 @@ from sage.misc.flatten import flatten
 RIFprec = RealIntervalField(1000)
 RBFprec = RealBallField(1000)
 
+def parse_integer(s):
+	cZZ = re.compile(r'^([+-]?)(\d+)$')
+	matchZZ = cZZ.match(s)
+	if matchZZ == None:
+		return None
+	return ZZ(int(s)) #int takes care of leading zeros
+
+def parse_positive_integer(s):
+	cZZplus = re.compile(r'^\d+$')
+	matchZZplus = cZZplus.match(s)
+	if matchZZplus == None:
+		return None
+	return ZZ(int(s)) #int takes care of leading zeros
+
+def parse_real_interval(s, RIF=RIF):
+    #First sage's RIF notation:
+    cRIF = re.compile(r'^([+-]?)(\d*\??)((?:\.\d*\??)?)((?:[eE]-?\d+)?)$')
+    matchRIF = cRIF.match(s)
+    if matchRIF != None:
+        #Given searchterm is a real interval:
+        #if '?' in s:
+        #	return RIF(s)
+
+        #If no '?' in s, we will treat last given digit as possibly off by 1:
+        sign, a, b, e = matchRIF.groups()
+        if a[-1] == "?" and b != '':
+            return None #Invalid format
+        a = a.rstrip('?')
+        b = b.rstrip('?')
+        if sign != '-':
+            sign = ''
+        if b != '':
+            b = b[1:]
+        exp = ZZ(e[1:]) if e != '' else 0 
+        exp -= len(b)
+        ab = (a + b).lstrip('0')
+        
+        #Don't crop here during parsing:
+        #ab_cropped = ab[:SearchTerm.MAX_LENGTH_TERM_FOR_REAL_FRAC]
+        #print("ab,ab_cropped:",ab,ab_cropped)
+        #exp += len(ab) - len(ab_cropped)
+        
+        f = ZZ(int(sign + ab)) if ab != '' else 0			
+        r = RIF(f-1,f+1) * RIF(10)**exp
+        return r
+        
+    #Next try numberdb's p-notation:
+    cRIF_P = re.compile(r'^([+-]?)(\d*)[pP]([+-]?)([1-9]\d*)$')
+    matchRIF_P = cRIF_P.match(s)
+    if matchRIF_P != None:
+        #Given searchterm is a real interval in "p-notation":
+        signExp, exp, signFrac, frac = matchRIF_P.groups()
+        print("signExp, exp, signFrac, frac:",signExp, exp, signFrac, frac)
+        if signExp != '-':
+            signExp = ''
+        if signFrac != '-':
+            signFrac = ''
+        exp = ZZ(int(signExp + exp)) if exp != '' else 0 
+        
+        #Don't crop here during parsing:
+        #frac_cropped = frac[:SearchTerm.MAX_LENGTH_TERM_FOR_REAL_FRAC]
+        
+        exp -= len(frac)
+        f = ZZ(int(signFrac + frac))
+        r = RIF(f-1,f+1) * RIF(10)**exp
+        return r
+
+    print("s:",s)	
+    if (s[0] == '[' and s[-1] == ']') or \
+        (s[0] == '(' and s[-1] == ')'):
+        l_u = s[1:-1].split(',')
+        print("l_u:",l_u)
+        if len(l_u) == 2:
+            l, u = l_u
+            l = l.strip()
+            u = u.strip()
+            lower = parse_real_interval(l)
+            if lower != None:
+                upper = parse_real_interval(u)
+                if upper != None:
+                    r = lower.union(upper)
+                    return r
+                        
+    return None
+
+def parse_fractional_part(s):
+	f = parse_integer(s)
+	if f == None:
+		return None
+	r = RIF(f-1,f+1) * RIF(10)**(-len(s.lstrip('-+')))
+	if r < 0:
+		r += 1
+	return r
+	
+def blur_real_interval(r, blur_bits = 2):
+    #print("r:",r)
+    #print("r.lower(), r.upper():",r.lower(),r.upper())
+    #print("r.prec():",r.prec())
+    e = r.prec() - blur_bits
+    blur = RIF(1 - 2**(-e), 1 + 2**(-e))
+    return r * blur	
+
+
 def to_bytes(m):
     if isinstance(m,bytes):
         return m
     if isinstance(m,memoryview):
         return m.tobytes()
 
-def my_real_interval_to_string(r):
+def real_interval_to_pretty_string(r):
 
     if r.contains_zero():
         #Relative diameter won't make sense, 

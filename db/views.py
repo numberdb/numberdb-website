@@ -73,6 +73,12 @@ from utils.utils import to_bytes
 from utils.utils import real_interval_to_string_via_endpoints
 from utils.utils import factor_with_timeout
 from utils.utils import my_continued_fraction
+from utils.utils import parse_integer
+from utils.utils import parse_positive_integer
+from utils.utils import parse_real_interval
+from utils.utils import parse_fractional_part
+from utils.utils import blur_real_interval
+
 
 from db_builder.utils import normalize_collection_data
 
@@ -258,6 +264,7 @@ def collection_context(collection, preview=False):
 			
 		type_names = {
 			"Z": "integer",
+			"Q": "rational number",
 			"R": "real number",
 			"C": "complex number",
 			"ZI": "integer interval",
@@ -454,7 +461,8 @@ def collection_context(collection, preview=False):
 			if isinstance(numbers,dict):
 				if 'number' in numbers or \
 					'numbers' in numbers or \
-					'equals' in numbers:
+					'equals' in numbers or \
+					'proof' in numbers:
 					#Numbers are given with extra information at this level:
 					for key in numbers:
 						if key in ('number','numbers','param-latex'):
@@ -671,99 +679,6 @@ def update(request, user_id):
     profile.bio = request.POST['bio']
     profile.save()
     return HttpResponseRedirect(reverse('db:profile'))
-
-def parse_integer(s):
-	cZZ = re.compile(r'^([+-]?)(\d+)$')
-	matchZZ = cZZ.match(s)
-	if matchZZ == None:
-		return None
-	return ZZ(int(s)) #int takes care of leading zeros
-
-def parse_positive_integer(s):
-	cZZplus = re.compile(r'^\d+$')
-	matchZZplus = cZZplus.match(s)
-	if matchZZplus == None:
-		return None
-	return ZZ(int(s)) #int takes care of leading zeros
-
-def parse_real_interval(s):
-	#First sage's RIF notation:
-	cRIF = re.compile(r'^([+-]?)(\d*)((?:\.\d*)?)((?:[eE]-?\d+)?)$')
-	matchRIF = cRIF.match(s)
-	if matchRIF != None:
-		#Given searchterm is a real interval:
-		if '?' in s:
-			return RIF(s)
-
-		#If no '?' in s, we will treat last given digit as possibly off by 1:
-		sign, a, b, e = matchRIF.groups()
-		if sign != '-':
-			sign = ''
-		if b != '':
-			b = b[1:]
-		exp = ZZ(e[1:]) if e != '' else 0 
-		exp -= len(b)
-		ab = (a + b).lstrip('0')
-		
-		#Don't crop here during parsing:
-		#ab_cropped = ab[:SearchTerm.MAX_LENGTH_TERM_FOR_REAL_FRAC]
-		#print("ab,ab_cropped:",ab,ab_cropped)
-		#exp += len(ab) - len(ab_cropped)
-		
-		f = ZZ(int(sign + ab)) if ab != '' else 0			
-		r = RIF(f-1,f+1) * RIF(10)**exp
-		return r
-		
-	#Next try numberdb's p-notation:
-	cRIF_P = re.compile(r'^([+-]?)(\d*)[pP]([+-]?)([1-9]\d*)$')
-	matchRIF_P = cRIF_P.match(s)
-	if matchRIF_P != None:
-		#Given searchterm is a real interval in "p-notation":
-		signExp, exp, signFrac, frac = matchRIF_P.groups()
-		print("signExp, exp, signFrac, frac:",signExp, exp, signFrac, frac)
-		if signExp != '-':
-			signExp = ''
-		if signFrac != '-':
-			signFrac = ''
-		exp = ZZ(int(signExp + exp)) if exp != '' else 0 
-		
-		#Don't crop here during parsing:
-		#frac_cropped = frac[:SearchTerm.MAX_LENGTH_TERM_FOR_REAL_FRAC]
-		
-		exp -= len(frac)
-		f = ZZ(int(signFrac + frac))
-		r = RIF(f-1,f+1) * RIF(10)**exp
-		return r
-	
-	print("s:",s)	
-	if (s[0] == '[' and s[-1] == ']') or \
-		(s[0] == '(' and s[-1] == ')'):
-		l_u = s[1:-1].split(',')
-		print("l_u:",l_u)
-		if len(l_u) == 2:
-			l, u = l_u
-			lower = parse_real_interval(l)
-			if lower != None:
-				upper = parse_real_interval(u)
-				if upper != None:
-					r = lower.union(upper)
-					return r
-						
-	return None
-
-def parse_fractional_part(s):
-	f = parse_integer(s)
-	if f == None:
-		return None
-	r = RIF(f-1,f+1) * RIF(10)**(-len(s.lstrip('-+')))
-	if r < 0:
-		r += 1
-	return r
-	
-def blur_real_interval(r):
-	e = r.prec() - 2
-	blur = RIF(1 - 2**(-e), 1 + 2**(-e))
-	return r * blur	
 
 def suggestions(request):
 	time0 = time()
