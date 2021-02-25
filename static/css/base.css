@@ -474,3 +474,11 @@ div.navbar-outer {
   text-align: center;
 }
 
+
+pre {
+  margin-bottom: 0;
+}
+
+ol.contents > li {
+  margin-bottom: 0rem;
+}

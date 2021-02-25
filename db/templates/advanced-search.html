@@ -131,7 +131,8 @@ div#searching {
 }
 
 h1.title-search {
-  padding: 3rem 0 1rem 0;
+  padding: 0rem 0 1rem 0;
+  text-align: center;
 }
 
 </style>
@@ -159,7 +160,16 @@ textarea.search-code {
 </style>
 
 
-<h1 class="title-search">Advanced search</h1>
+<br>
+    <div id="title">
+	NumberDB<a href="{% url 'db:about'%}#work-in-progress" id="beta-title">beta</a>
+    </div>
+<!--
+    <div id="subtitle">
+    Advanced search
+    </div>
+-->
+<!--<h1 class="title-search">Advanced search</h1>-->
 
 <div id="search-messages">
 </div>

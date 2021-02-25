@@ -8,22 +8,19 @@
 {% endblock %}
 
 
-
 {% block content %}
 
 <!--------------------------------------------------------------------->
 
 <h1 class="title">Help topics</h1>
 
-<a class="contents" href="#how-to-search">How to search</a>
-<br>
-<a class="contents" href="#number-types">Number types and displayed accuracy</a>
-<br>
-<a class="contents" href="#how-to-contribute">How to contribute</a>
-<br>
-<a class="contents" href="#pipeline">Data pipeline</a>
-<br>
-<a class="contents" href="#faq">Frequently asked questions</a>
+<ol class="contents">
+<li><a href="#how-to-search">How to search</a></li>
+<li><a href="#number-types">Number types and displayed accuracy</a></li>
+<li><a href="#how-to-contribute">How to contribute</a></li>
+<li><a href="#pipeline">Data pipeline</a></li>
+<li><a href="#faq">Frequently asked questions</a></li>
+</ol>
 
 <!--------------------------------------------------------------------->
 
@@ -59,12 +56,12 @@ The interval can be given in one of the following formats:
      e.g. "3.14" represents the interval $[3.13, 3.15]$, that is, 
      the last digit may be off by at most $1$.
      Scientific notation is allowed, e.g. "12e2" represents the interval $[1100, 1300]$.
-     Note: If the decimal expansion does not contain '.' or 'e', it will be 
+     Note: If the decimal expansion does not contain "." or "e", it will be 
      understood as an <a href="#number-type-integer">exactly represented integer</a>.
  </li>
  <li>Real interval: e.g. "[2, 2.3728596]". The end-points are exactly given.
  </li> 
- <li>Real balls: e.g. "3.14 +/- 2.0e-2" represents the interval $[3.12, 3.16]$. 
+ <li>Real balls: e.g. "3.14 +/- 2e-2" represents the interval $[3.12, 3.16]$. 
      The center and radius of the real ball are exactly given.
  </li> 
  <li>NumberDB's p-notation: e.g. "1p31415" represents the interval [3.1414, 3.1416]. 

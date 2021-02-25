@@ -160,6 +160,7 @@ class CollectionSearch(models.Model):
 	collection = models.OneToOneField(
 		Collection,
 		on_delete = models.CASCADE,
+		related_name = 'search',
 	)
 
 	def __str__(self):

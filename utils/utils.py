@@ -88,13 +88,22 @@ def parse_real_interval(s, RIF=RIF):
             l, u = l_u
             l = l.strip()
             u = u.strip()
+            try:
+                l = RIF(l)
+                u = RIF(u)
+                r = l.union(u)
+                return r
+            except TypeError:
+                pass                
+                
+            '''
             lower = parse_real_interval(l)
             if lower != None:
                 upper = parse_real_interval(u)
                 if upper != None:
                     r = lower.union(upper)
                     return r
-                        
+            '''
     return None
 
 def parse_fractional_part(s):

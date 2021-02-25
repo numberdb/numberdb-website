@@ -8,16 +8,17 @@
 {% endblock %}
 
 
-
 {% block content %}
 
 <!--------------------------------------------------------------------->
 
 <h1 class="title">About NumberDB</h1>
 
-<a class="contents" href="#welcome">Welcome</a>
-<br>
-<a class="contents" href="#work-in-progress">Work in progress</a>
+<ol class="contents">
+<li><a href="#welcome">Welcome</a></li>
+<li><a href="#work-in-progress">Work in progress</a></li>
+<li><a href="#acknowledgements">Acknowledgements</a></li>
+</ol>
 
 
 <h2 id="welcome">Welcome</h2>
@@ -102,12 +103,12 @@ Users should be able to give comments, discuss collections, declare numbers as "
 NumberDB is build and runs on various open-source projects:
 <a href="https://www.djangoproject.com/">Django</a>, 
 <a href="https://www.postgresql.org/">PostgreSQL</a>, 
-<a href="https://nginx.org/en/">nginx</a>, 
-<a href="https://gunicorn.org/">Gunicorn</a>, 
-<!--<a href="https://github.com/irmen/Pyro5">Pyro5</a>,-->
 <a href="https://www.sagemath.org/">SageMath</a>,
 <a href="https://pari.math.u-bordeaux.fr/">Pari/GP</a>,
 <a href="https://arblib.org/">arb</a>,
+<a href="https://nginx.org/en/">nginx</a>, 
+<a href="https://gunicorn.org/">Gunicorn</a>, 
+<a href="https://github.com/irmen/Pyro5">Pyro5</a>,
 <a href="https://git-scm.com/">git</a>.
 NumberDB's repositories are stored on <a href="https://github.com/">GitHub</a>.
 NumberDB's server is funded by the main developer Benjamin Matschke, who in turn is supported by <a href="https://www.bu.edu/">Boston University</a> and <a href="https://simonscollab.icerm.brown.edu/">Simons Foundation grant #550023</a>.

@@ -712,9 +712,31 @@ def suggestions(request):
 	
 	entries = {}
 	i = 0
-	
 	suggested_numbers = []
 	
+	def add_suggested_numbers():
+		nonlocal suggested_numbers
+		nonlocal i
+		
+		for number in suggested_numbers:
+			collection = number.collection
+			param = number.param_str()
+			entry_i = {
+				'value': str(i),
+				'label': '',
+				'type': 'number',
+				'title': collection.title,
+				'url': '/%s#%s' % (collection.url, param),
+			}
+			if len(param) > 0: 
+				entry_i['subtitle'] = '%s (#%s)' % (number.str_as_real_interval(), param)
+			else:
+				entry_i['subtitle'] = '%s' % (number.str_as_real_interval(),)
+			entries[i] = entry_i
+			i += 1
+		suggested_numbers = []
+	
+
 	#Searching for exactly given integer:
 	query_integers = Number.objects.none()
 	n = parse_integer(term)
@@ -745,6 +767,8 @@ def suggestions(request):
 			}
 			entries[i] = entry_i
 			i += 1
+			
+	add_suggested_numbers() #Treat integers first
 
 	if i >= 10:
 		return wrap_response(entries)
@@ -795,23 +819,8 @@ def suggestions(request):
 			entries[i] = entry_i
 			i += 1
 	
-	for number in suggested_numbers:
-		collection = number.collection
-		param = number.param_str()
-		entry_i = {
-			'value': str(i),
-			'label': '',
-			'type': 'number',
-			'title': collection.title,
-			'url': '/%s#%s' % (collection.url, param),
-		}
-		if len(param) > 0: 
-			entry_i['subtitle'] = '%s (#%s)' % (number.str_as_real_interval(), param)
-		else:
-			entry_i['subtitle'] = '%s' % (number.str_as_real_interval(),)
-		entries[i] = entry_i
-		i += 1
-
+	add_suggested_numbers()
+	
 	if i >= 10:
 		return wrap_response(entries)
 	
