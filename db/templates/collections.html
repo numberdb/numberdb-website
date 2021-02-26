@@ -2,6 +2,15 @@
 
 {% block head-title %}Collections{% endblock %}
 
+{% block extra_head %}
+<style>
+td.collection-label-cid {
+  text-align: right;
+  padding-right: 0.5rem;
+}
+</style>
+{% endblock %}
+
 {% block breadcrumb %}
   <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
   <li class="breadcrumb-item active">Collections</li>
@@ -18,8 +27,13 @@
     <br>
     <br>
 
-    {% for collection in collections %}
-      {{ collection.cid }}: 
+    <table class="infinite-container">
+      {% for collection in collections %}
+        <tr class="infinite-item">
+	   <td class="collection-label-cid"> 
+	    {{ collection.cid }}:
+	   </td> 
+	    <td>
 		<a href="{% url 'db:collection' collection.cid %}">{{ collection.title }}</a>
 		
 		{% if collection.number_count == 1 %} 
@@ -27,7 +41,28 @@
 		{% else %}
 		    ({{ collection.number_count }} numbers)
 		{% endif %}
-       <br>
-    {% endfor %}
+	    </td>
+         </tr>
+      {% endfor %}
+    </table>
+    
+    {% if collections.has_next %}
+      <a class="infinite-more-link" href="?{% if sortby %}sort_by={{ sortby }}&{% endif %}page={{ collections.next_page_number }}">More</a>
+    {% endif %}
 
+    <div class="loading" style="display: none;">
+      Loading...
+    </div>
+
+    <script>
+      var infinite = new Waypoint.Infinite({
+        element: $('.infinite-container')[0],
+        onBeforePageLoad: function () {
+          $('.loading').show();
+        },
+        onAfterPageLoad: function ($items) {
+          $('.loading').hide();
+        }
+      });
+    </script>
 {% endblock %}

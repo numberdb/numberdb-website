@@ -2,6 +2,15 @@
 
 {% block head-title %}Tags{% endblock %}
 
+{% block extra_head %}
+<style>
+td.tag-name {
+  text-align: right;
+  padding-right: 0.5rem;
+}
+</style>
+{% endblock %}
+
 {% block breadcrumb %}
   <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
   <li class="breadcrumb-item active">Tags</li>
@@ -18,13 +27,38 @@
     <br>
     <br>
     
-    {% for tag in tags %}
-		<a class="tag" href="{% url 'db:tag' tag.url %}">{{ tag.name }}</a>
-		
+    <table class="infinite-container">
+      {% for tag in tags %}
+        <tr class="infinite-item">
+	   <td class="tag-name"> 
+	     <a class="tag" href="{% url 'db:tag' tag.url %}">{{ tag.name }}</a>
+	   </td> 
+	    <td>
 		({{ tag.collection_count }} collection{{ tag.collection_count|pluralize }}, 
 		 {{ tag.number_count }} number{{ tag.number_count|pluralize }})
+	    </td>
+         </tr>
+      {% endfor %}
+    </table>
 
-		<br>
-    {% endfor %}
+    {% if tags.has_next %}
+      <a class="infinite-more-link" href="?{% if sortby %}sort_by={{ sortby }}&{% endif %}page={{ tags.next_page_number }}">More</a>
+    {% endif %}
+
+    <div class="loading" style="display: none;">
+      Loading...
+    </div>
+
+    <script>
+      var infinite = new Waypoint.Infinite({
+        element: $('.infinite-container')[0],
+        onBeforePageLoad: function () {
+          $('.loading').show();
+        },
+        onAfterPageLoad: function ($items) {
+          $('.loading').hide();
+        }
+      });
+    </script>
 
 {% endblock %}

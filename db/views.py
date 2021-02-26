@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.db.models import F
 from django.template.loader import render_to_string
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 import numpy as np
 from numpy import random as random
@@ -94,32 +95,50 @@ def help(request):
     return render(request, 'help.html', {})
 
 def collections(request):
-    collections = Collection.objects.all()
-    sortby_default = 'title'
-    sortby = request.GET.get('sort_by',default=sortby_default)
-    if sortby == 'number_count':
-        collections = collections.order_by('-number_count')
-    elif sortby == 'id':
-        collections = collections.order_by('cid_int')
-    elif sortby == 'title':
-        collections = collections.order_by('title_lowercase')
-    else:
-        collections = collections.order_by(sortby_default)
-    return render(request, 'collections.html', {'collections': collections})
+	page = request.GET.get('page', 1)
+	#print("page:",page)
+	collections = Collection.objects.all()
+	sortby_default = 'title'
+	sortby = request.GET.get('sort_by',default=sortby_default)
+	if sortby == 'number_count':
+		collections = collections.order_by('-number_count')
+	elif sortby == 'id':
+		collections = collections.order_by('cid_int')
+	elif sortby == 'title':
+		collections = collections.order_by('title_lowercase')
+	else:
+		collections = collections.order_by(sortby_default)
+	paginator = Paginator(collections, 50)
+	try:
+		show_collections = paginator.page(page)
+	except PageNotAnInteger:
+		show_collections = paginator.page(1)
+	except EmptyPage:
+		show_collections = paginator.page(paginator.num_pages)
+	#print("show_collections:",show_collections)
+	return render(request, 'collections.html', {'collections': show_collections, 'sortby': sortby})
 
 def tags(request):
-    tags = Tag.objects.all()
-    sortby_default = 'number_count'
-    sortby = request.GET.get('sort_by',default=sortby_default)
-    if sortby == 'collection_count':
-        tags = tags.order_by('-collection_count')
-    elif sortby == 'number_count':
-        tags = tags.order_by('-number_count')
-    elif sortby == 'name':
-        tags = tags.order_by('name_lowercase')
-    else:
-        tags = tags.order_by(sortby_default)
-    return render(request, 'tags.html', {'tags': tags})
+	page = request.GET.get('page', 1)
+	tags = Tag.objects.all()
+	sortby_default = 'number_count'
+	sortby = request.GET.get('sort_by',default=sortby_default)
+	if sortby == 'collection_count':
+		tags = tags.order_by('-collection_count')
+	elif sortby == 'number_count':
+		tags = tags.order_by('-number_count')
+	elif sortby == 'name':
+		tags = tags.order_by('name_lowercase')
+	else:
+		tags = tags.order_by(sortby_default)
+	paginator = Paginator(tags, 50)
+	try:
+		show_tags = paginator.page(page)
+	except PageNotAnInteger:
+		show_tags = paginator.page(1)
+	except EmptyPage:
+		show_tags = paginator.page(paginator.num_pages)
+	return render(request, 'tags.html', {'tags': show_tags, 'sortby': sortby})
 
 def tag(request, tag_url):
     tag = Tag.from_url(tag_url)
