@@ -744,7 +744,12 @@ def suggestions(request):
 		try:
 			number = Number(sage_number=n)
 		except OverflowError:
-			number = None
+			#n cannot be represented as bigint.
+			#Thus try to search it as a real number:
+			
+			#TODO
+			number = None		
+			
 		if number != None:
 			query_integer = Number.objects.filter(
 				number_blob = number.number_blob_bytes(),

@@ -2,23 +2,7 @@
 
 {% block head-title %}Preview edits{% endblock %}
 
-{% block breadcrumb %}
-  <li class="breadcrumb-item active">Home</li>
-{% endblock %}
-
-
-{# Remove search bar from top: #}
-{% block top-searchbar %}
-{% endblock %}
-
-{# Remove messages from top (we put them further below) #}
-{% block messages %}
-{% endblock %}
-
-
-{% block content %}
-
-
+{% block extra_head %}
 <link rel=stylesheet href="{% static '/codemirror-5.59.2/lib/codemirror.css' %}">
 <script src="{% static '/codemirror-5.59.2/lib/codemirror.js' %}"></script>
 <script src="{% static '/codemirror-5.59.2/mode/yaml/yaml.js' %}"></script>
@@ -48,6 +32,25 @@ div#preview-header {
     color: #888;
 }
 </style>
+{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item active">Home</li>
+{% endblock %}
+
+
+{# Remove search bar from top: #}
+{% block top-searchbar %}
+{% endblock %}
+
+{# Remove messages from top (we put them further below) #}
+{% block messages %}
+{% endblock %}
+
+
+{% block content %}
+
+
 
 <div style="height:1px;"></div>
 
