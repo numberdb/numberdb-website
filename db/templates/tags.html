@@ -27,7 +27,8 @@ td.tag-name {
     <br>
     <br>
     
-    <table class="infinite-container">
+    <table>
+    <tbody class="infinite-container">
       {% for tag in tags %}
         <tr class="infinite-item">
 	   <td class="tag-name"> 
@@ -39,6 +40,7 @@ td.tag-name {
 	    </td>
          </tr>
       {% endfor %}
+    </tbody>
     </table>
 
     {% if tags.has_next %}

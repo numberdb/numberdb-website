@@ -2,7 +2,7 @@
 
 {% block head-title %}Properties of {{ number | truncatechars_html:10 }}{% endblock %}
 
-{% block extra-head %}
+{% block extra_head %}
 <style>
 
 div.property-title {
@@ -148,10 +148,10 @@ Number:
     
     
     <table>
-    <tbody>
+    <tbody class="infinite-container">
     
      {% for sequence in OEIS_sequences %}
-       <tr>
+       <tr class="infinite-item">
          <td class="oeis-a">
            <a href="https://www.oeis.org/A{{ sequence.a_number }}">A{{ sequence.a_number }}</a>
          </td>
@@ -188,7 +188,30 @@ Number:
      {% endfor %}        
 
     {% endcomment %}
+  
+    {% if OEIS_sequences.has_next %}
+      <a class="infinite-more-link" href="?oeis_page={{ OEIS_sequences.next_page_number }}">More</a>
+    {% endif %}
+
+    <div class="loading" style="display: none;">
+      Loading...
+    </div>
+
   </div>
+
+    <script>
+      var infinite = new Waypoint.Infinite({
+        element: $('.infinite-container')[0],
+        onBeforePageLoad: function () {
+          $('.loading').show();
+        },
+        onAfterPageLoad: function ($items) {
+          $('.loading').hide();
+        }
+      });
+    </script>
+
+  
 {% endif %}
 
   <script>

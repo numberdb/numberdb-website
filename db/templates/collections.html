@@ -27,7 +27,8 @@ td.collection-label-cid {
     <br>
     <br>
 
-    <table class="infinite-container">
+    <table>
+    <tbody class="infinite-container">
       {% for collection in collections %}
         <tr class="infinite-item">
 	   <td class="collection-label-cid"> 
@@ -44,6 +45,7 @@ td.collection-label-cid {
 	    </td>
          </tr>
       {% endfor %}
+    </tbody>
     </table>
     
     {% if collections.has_next %}

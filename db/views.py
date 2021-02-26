@@ -110,13 +110,13 @@ def collections(request):
 		collections = collections.order_by(sortby_default)
 	paginator = Paginator(collections, 50)
 	try:
-		show_collections = paginator.page(page)
+		shown_collections = paginator.page(page)
 	except PageNotAnInteger:
-		show_collections = paginator.page(1)
+		shown_collections = paginator.page(1)
 	except EmptyPage:
-		show_collections = paginator.page(paginator.num_pages)
-	#print("show_collections:",show_collections)
-	return render(request, 'collections.html', {'collections': show_collections, 'sortby': sortby})
+		shown_collections = paginator.page(paginator.num_pages)
+	#print("shown_collections:",shown_collections)
+	return render(request, 'collections.html', {'collections': shown_collections, 'sortby': sortby})
 
 def tags(request):
 	page = request.GET.get('page', 1)
@@ -133,12 +133,12 @@ def tags(request):
 		tags = tags.order_by(sortby_default)
 	paginator = Paginator(tags, 50)
 	try:
-		show_tags = paginator.page(page)
+		shown_tags = paginator.page(page)
 	except PageNotAnInteger:
-		show_tags = paginator.page(1)
+		shown_tags = paginator.page(1)
 	except EmptyPage:
-		show_tags = paginator.page(paginator.num_pages)
-	return render(request, 'tags.html', {'tags': show_tags, 'sortby': sortby})
+		shown_tags = paginator.page(paginator.num_pages)
+	return render(request, 'tags.html', {'tags': shown_tags, 'sortby': sortby})
 
 def tag(request, tag_url):
     tag = Tag.from_url(tag_url)
@@ -910,6 +910,34 @@ def properties(request, number):
 		print("context:",context)
 		return render(request,'properties.html',context)
 
+	def append_oeis_context(n, context, page=1):
+		context['OEIS_href'] = 'https://oeis.org/search?q=%s' % (n,)
+		try:
+			#Check whether n is small enough for database:
+			np.int64(n)
+		except OverflowError:
+			return context
+			
+		
+		#oeis_number = OeisNumber.objects.get(number=int(n))
+		oeis_sequences = OeisSequence.objects.filter(numbers__number = n).order_by('a_number')
+		
+		paginator = Paginator(oeis_sequences, 100)
+		try:
+			shown_oeis_sequences = paginator.page(page)
+		except PageNotAnInteger:
+			shown_oeis_sequences = paginator.page(1)
+		except EmptyPage:
+			shown_oeis_sequences = paginator.page(paginator.num_pages)
+		
+		#print('oeis_sequences:',oeis_sequences)
+		context['show_OEIS_sequences'] = True
+		context['OEIS_sequences'] = shown_oeis_sequences
+		context['integer'] = n
+
+		return context
+		
+
 	def append_context_for_integer(n, context):
 
 		#Prime factorization:
@@ -945,25 +973,14 @@ def properties(request, number):
 				'plain': ', '.join(special_families),
 				'latex': ', '.join(special_families),
 			})
-			
-		context['OEIS_href'] = 'https://oeis.org/search?q=%s' % (n,)
-		try:
-			#Check whether n is small enough for database:
-			np.int64(n)
-			#oeis_number = OeisNumber.objects.get(number=int(n))
-			oeis_sequences = OeisSequence.objects.filter(numbers__number = n)
-			#print('oeis_sequences:',oeis_sequences)
-			context['show_OEIS_sequences'] = True
-			context['OEIS_sequences'] = oeis_sequences
-			context['integer'] = n
-		except OverflowError:
-			pass
-			
+
 		try:
 			wiki_number = WikipediaNumber.objects.get(number=n)
 			context['Wiki_href'] = wiki_number.url
 		except WikipediaNumber.DoesNotExist:
 			pass
+			
+		context = append_oeis_context(n, context)
 			
 		return context
 	
@@ -971,6 +988,14 @@ def properties(request, number):
 		'properties': [],
 	}
 	
+	#If oeis_page is given, we are only interested in returning more oeis-sequences.
+	oeis_page = request.GET.get('oeis_page', None)
+	if oeis_page != None:
+		n = parse_integer(number)
+		if n != None:
+			context = append_oeis_context(n, context, oeis_page)
+			if 'show_OEIS_sequences' in context:
+				return wrap_response(context)	
 	
 	
 	#Case 1: given number is an integer:
