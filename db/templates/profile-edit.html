@@ -2,21 +2,25 @@
 {% load account %}
 {% load static %}
 
-{% block head-title %}Edit profile {{ user_shown.username }}{% endblock %}
+{% block head-title %}Edit profile {{ edit_user.username }}{% endblock %}
 
 
 
 {% block content %}
 
-
+<!--
 <h1>{{ question.question_text }}</h1>
+-->
 
 {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
-<form action="{% url 'db:profile-update' user.pk %}" method="post">
+<h1>About yourself:</h1>
+
+<form action="{% url 'db:profile-update' edit_user.pk %}" method="post">
 {% csrf_token %}
     <label for="bio"></label>
-    <textarea name="bio">{{ user.profile.bio }}</textarea>
+    <textarea name="bio">{{ edit_user.userprofile.bio }}</textarea>
+<br>
 <input type="submit" value="Save">
 </form>
 

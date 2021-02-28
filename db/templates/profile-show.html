@@ -4,21 +4,29 @@
 
 {% block head-title %}Profile {{ user_shown.username }}{% endblock %}
 
+{% block extra_head %}
+<style>
+a.edit-link {
+  font-size: 1rem;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 
 <h1 class="title">Profile {{ user_shown.get_full_name }}</h1>
-<ul>
-  <li>Username: {{ user_shown.username }}</li>
-  <li>Bio: {{ user_shown.userprofile.bio }}
-  {% if is_self %}
-    (<a href="{% url 'db:profile-edit' %}">edit</a>)
-  {% endif %}
-  </li>
-</ul>
 
-<br>
+<h2>Username</h2>
+{{ user_shown.username }}
+
+<h2>About{% if is_self %}
+          (<a class="edit-link" href="{% url 'db:profile-edit' %}">edit</a>)
+         {% endif %}
+</h2>
+{{ user_shown.userprofile.bio }}
 
 
+<h2>Settings</h2>
 
 {% load socialaccount %}
 

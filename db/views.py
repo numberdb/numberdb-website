@@ -684,9 +684,10 @@ def show_other_profile(request, other_user_id):
 
 def edit(request, error_message=""):
     context = {
-        'user': request.user,
+        'edit_user': request.user,
         'error_message': error_message,
     }
+    print("context:",context)
     return render(request,'profile-edit.html',context)
 
 def update(request, user_id):

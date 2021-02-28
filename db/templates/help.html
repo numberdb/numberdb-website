@@ -3,6 +3,74 @@
 
 {% block head-title %}Help topics{% endblock %}
 
+{% block extra_head %}
+<style>
+img.help-screenshot {
+  border: 0.4rem solid #bdb;
+  width: 100%;
+  max-width: 520px;
+}
+div.help-screenshot-container {
+  display: block;
+  padding: 0.3rem;
+  text-align: center;   
+}
+p.help-text {
+  display: block;
+  margin: auto;
+  max-width: calc(520px + 5rem);
+}
+div.contents {
+}
+ol.contents {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+
+div.main-content {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  /*
+  flex-wrap: nowrap;
+  justify-content: space-evenly;
+  align-items: strech;
+  
+  align-content: flex-start;   
+  */
+}
+div.sidebar {
+}
+div.headline {
+}
+div.main-column {
+}
+@media only screen and (min-width: 48rem) {
+  div.main-content {
+    flex-direction: row;
+  }
+  div.sidebar {
+    order: 1;
+    position: sticky;
+    align-self: flex-start;
+    top: 0;
+    /*overflow-y: auto;
+    */
+    flex-basis: 15rem;
+  }
+  div.headline {
+    order: 2;
+  }
+  div.main-column {
+    order: 3;
+    flex-basis: calc(100% - 15rem);
+  }
+}
+</style>
+{% endblock %}
+
 {% block breadcrumb %}
   <li class="breadcrumb-item active">Home</li>
 {% endblock %}
@@ -12,21 +80,52 @@
 
 <!--------------------------------------------------------------------->
 
-<h1 class="title">Help topics</h1>
 
+<div class="main-content">
+
+
+
+<div class="sidebar">
+
+<div class="headline">
+<h1 class="title">Help topics</h1>
+</div>
+
+<div class="contents">
+Search
 <ol class="contents">
 <li><a href="#how-to-search">How to search</a></li>
-<li><a href="#number-types">Number types and displayed accuracy</a></li>
+<li><a href="#advanced-search-guide">Advanced search guide</a></li>
+<li><a href="#number-types">Number types and accuracy</a></li>
+</ol>
+Contribute
+<ol class="contents">
 <li><a href="#how-to-contribute">How to contribute</a></li>
+<li><a href="#guide-to-edit-collections">Guide to edit collections</a></li>
+<li><a href="#guide-to-create-new-collections">Guide to create new collections</a></li>
+<li><a href="#format-of-collections">Format of collections</a></li>
 <li><a href="#pipeline">Data pipeline</a></li>
+</ol>
+FAQ
+<ol class="contents">
 <li><a href="#faq">Frequently asked questions</a></li>
 </ol>
+</div>
+</div>
+
+<div class="main-column">
 
 <!--------------------------------------------------------------------->
 
 <h2 id="how-to-search">How to search</h2>
 
 {% include 'includes/search-tips.html' %}
+
+<!--------------------------------------------------------------------->
+
+<h2 id="advanced-search-guide">Advanced search guide</h2>
+
+{% include 'includes/search-tips-advanced.html' %}
 
 <!--------------------------------------------------------------------->
 
@@ -94,21 +193,27 @@ Visit the <a href="https://github.com/bmatschke/numberdb-website/issues">GitHub 
 
 <li>
 <div class="li-header">Typos in collections, adding references, comments, etc.:</div>
+You may edit the collection's yaml file via the <a href="#guide-to-edit-collections">Guide to edit collections</a> below.
+In short:
 Edit the corresponding yaml-file in the 
 <a href="https://github.com/bmatschke/numberdb-data">numberdb-data</a> repository.
-The link can be found above the title on the collection's webpage.
+The link can be found below the title on the collection's webpage.
 </li>
 
 <li>
 <div class="li-header">Contribute new collections:</div>
-There will soon be a more complete guideline for that.
+You may contribute new collections via the <a href="#guide-to-edit-collections">Guide to create new collections</a> below.
+In short: 
 You need to create a collection.yaml in a new folder of the 
 <a href="https://github.com/bmatschke/numberdb-data">numberdb-data</a> 
 repository and submit a pull request.
+<!--
 It will be easiest to copy an existing collection.yaml 
 from another collection, and modify it.
 Keep the first line "ID: INPUT{id.yaml}", but do not copy the id.yaml, 
 as it will be added automatically by our robot zeta3.
+You may either do this on GitHub directly, or by forking or cloning the respository and creating a pull request to the main branch.
+-->
 </li>
 
 <li>
@@ -124,6 +229,145 @@ Credits for contributions are automatically given within git and on GitHub,
 as every single change is stored in a permanent history.
 In the future, contributors to collections of numbers will be 
 automatically displayed also on numberdb.org.
+
+<!--------------------------------------------------------------------->
+
+<h2 id="guide-to-edit-collections">Guide to edit collections</h2>
+
+To edit collections, you will need a <a href="https://github.com">GitHub</a> account.
+For more advanced changes, we recommend to review the <a href="#format-of-collections">Format for collections's source code</a>.
+
+<ol>
+<li>
+<div id="guide-edit-collections-preview" class="li-header">Preview for editing collections</div>
+<p class="help-text">
+In case you want to preview your edits (or simply test what's possible), 
+go to the collection's webpage and click on "preview edits":
+</p>
+<div class="help-screenshot-container">
+<img class="help-screenshot" src="{% static '/img/preview-edits-link.png' %}">
+</div>
+<p class="help-text">
+Make arbitrary modifications and click on "Show preview" to see how the changes will look like:
+</p>
+<div class="help-screenshot-container">
+<img class="help-screenshot" src="{% static '/img/show-preview.png' %}">
+</div>
+<p class="help-text">
+Once you are happy with the changes, copy the yaml code to the clipboard.
+</p>
+</li>
+
+<li>
+<div class="li-header">Edit collection on GitHub</div>
+<p class="help-text">
+At the collection's webpage click on "edit on github":
+</p>
+<div class="help-screenshot-container">
+<img class="help-screenshot" src="{% static '/img/edit-on-github-link.png' %}">
+</div>
+<p class="help-text">
+If you want to change collection.yaml, click on "Edit this file":
+</p>
+<div class="help-screenshot-container">
+<img class="help-screenshot" src="{% static '/img/github-collection-yaml-edit-link.png' %}">
+</div>
+<p class="help-text">
+Paste the yaml code from step 1 into the editor.
+</p>
+</li>
+
+<li>
+<div class="li-header">Save (commit) changes on GitHub</div>
+<p class="help-text">
+To save changes,
+scroll down, 
+give your changes a title (such as "fixed typo"),
+give a more detailed description of the changes (if necessary),
+and click on commit:
+</p>
+<div class="help-screenshot-container">
+<img class="help-screenshot" src="{% static '/img/github-collection-yaml-commit-changes.png' %}">
+</div>
+<p class="help-text">
+An editor will review your changes. Thanks!
+</p>
+</li>
+
+</ol>
+
+<!--------------------------------------------------------------------->
+
+<h2 id="guide-to-create-new-collections">Guide to create new collections</h2>
+
+To create new collections, you will need a <a href="https://github.com">GitHub</a> account.
+We recommend to review the <a href="#format-of-collections">Format for collections's source code</a>.
+
+<ol>
+<li>
+<div id="guide-to-create-new-collections-preview" class="li-header">Preview for new collections</div>
+<p class="help-text">
+We recommend that you start from the yaml code of an existing collection of your choice and adjust accordingly.
+For this, follow the <a href="#guide-edit-collections-preview">Preview step</a> in the <a href="#guide-to-edit-collections">Guide to edit collections</a>.
+</p>
+</li>
+
+<li>
+<div class="li-header">Create new collection.yaml on GitHub</div>
+<p class="help-text">
+In the <a href="https://github.com/bmatschke/numberdb-data/tree/main/data">data folder</a> of the NumberDB data repository, find a suitable folder for your collection folder.
+As an example, we create the "Golden ratio" collection in the folder "data/Basic_constants".
+Go to that folder and click on "... -> Create new file":
+</p>
+<div class="help-screenshot-container">
+<img class="help-screenshot" src="{% static '/img/github-create-collection-link.png' %}">
+</div>
+<p class="help-text">
+As filename, enter "Golden_ratio/collection.yaml".
+(Each collection has its own folder, which contains a main file "collection.yaml".
+The folder name will work as a url for the collection and should be unique without spaces.)
+Copy and past the yaml code from the <a href="#guide-to-create-new-collections-preview">Preview step</a> into the editor:
+</p>
+<div class="help-screenshot-container">
+<img class="help-screenshot" src="{% static '/img/github-create-collection.png' %}">
+</div>
+</li>
+
+<li>
+<div class="li-header">Save (commit) new collection on GitHub</div>
+<p class="help-text">
+To save the new collection,
+scroll down, 
+give your commit a short title (such as "added golden ratio collection"),
+give a more detailed description of the collection (why it should be included, if necessary),
+and click on commit:
+</p>
+<div class="help-screenshot-container">
+<img class="help-screenshot" src="{% static '/img/github-create-collection-commit.png' %}">
+</div>
+<p class="help-text">
+An editor will review your new collection. Thanks!
+</p>
+</li>
+
+</li>
+
+</ol>
+
+<!--------------------------------------------------------------------->
+
+<h2 id="format-of-collections">Format of collections's source code</h2>
+
+<p>
+The source code of each collection is written in 
+<!--<a href="https://yaml.org">YAML</a>, -->
+<a href="https://en.wikipedia.org/wiki/YAML">YAML</a>, 
+a human friendly language for data.
+</p>
+
+<p>
+More help will come later.
+</p>
 
 <!--------------------------------------------------------------------->
 
@@ -168,5 +412,8 @@ as it does not depend on the base.
 </ul>
 
 <!--------------------------------------------------------------------->
+
+</div> <!-- end main column -->
+</div> <!-- end main content -->
 
 {% endblock %}
