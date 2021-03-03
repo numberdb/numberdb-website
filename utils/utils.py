@@ -26,6 +26,21 @@ def parse_positive_integer(s):
 		return None
 	return ZZ(int(s)) #int takes care of leading zeros
 
+def parse_rational_number(s):
+    ab = s.split('/', maxsplit=1)
+    
+    if len(ab) == 1:
+        return parse_integer(s)
+    
+    elif len(ab) == 2:
+        a = parse_integer(ab[0])
+        if a != None:
+            b = parse_integer(ab[1])
+            if b != None:
+                return a/b
+    
+    return None;        
+
 def parse_real_interval(s, RIF=RIF):
     #First sage's RIF notation:
     cRIF = re.compile(r'^([+-]?)(\d*\??)((?:\.\d*\??)?)((?:[eE]-?\d+)?)$')

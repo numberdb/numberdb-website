@@ -10,6 +10,7 @@ urlpatterns = [
 
     path('suggestions', views.suggestions, name='suggestions'),
     path('properties/<str:number>', views.properties, name='properties'),
+    path('properties/<str:numerator>/<str:denominator>', views.properties_of_rational, name='properties'),
 
     path('advanced-search', views.advanced_search, name='advanced-search'),
     path('advanced-suggestions', views.advanced_suggestions, name='advanced-suggestions'),

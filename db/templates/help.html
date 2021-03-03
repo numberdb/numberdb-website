@@ -27,6 +27,23 @@ ol.contents {
   margin: 0;
   padding: 0;
 }
+hr.contents {
+  margin: 0.6rem;
+  height: 0;
+  width: 2rem;
+  margin-left: 1rem;
+}
+h2.contents {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  color: 555;
+  font-size: 1rem;
+  /*
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  */
+}
 
 
 div.main-content {
@@ -53,11 +70,11 @@ div.main-column {
   }
   div.sidebar {
     order: 1;
+    position: -webkit-sticky;
     position: sticky;
     align-self: flex-start;
     top: 0;
-    /*overflow-y: auto;
-    */
+    overflow: auto;
     flex-basis: 15rem;
   }
   div.headline {
@@ -65,7 +82,7 @@ div.main-column {
   }
   div.main-column {
     order: 3;
-    flex-basis: calc(100% - 15rem);
+    flex-basis: calc(48rem);
   }
 }
 </style>
@@ -91,14 +108,21 @@ div.main-column {
 <h1 class="title">Help topics</h1>
 </div>
 
+<ol class="contents">
+<li><a href="#welcome">Welcome</a></li>
+</ol>
 <div class="contents">
-Search
+<hr class="contents">
+
+<h2 class="contents">Search</h2>
 <ol class="contents">
 <li><a href="#how-to-search">How to search</a></li>
 <li><a href="#advanced-search-guide">Advanced search guide</a></li>
 <li><a href="#number-types">Number types and accuracy</a></li>
 </ol>
-Contribute
+<hr class="contents">
+
+<h2 class="contents">Contribute</h2>
 <ol class="contents">
 <li><a href="#how-to-contribute">How to contribute</a></li>
 <li><a href="#guide-to-edit-collections">Guide to edit collections</a></li>
@@ -106,14 +130,50 @@ Contribute
 <li><a href="#format-of-collections">Format of collections</a></li>
 <li><a href="#pipeline">Data pipeline</a></li>
 </ol>
-FAQ
+<hr class="contents">
 <ol class="contents">
 <li><a href="#faq">Frequently asked questions</a></li>
+<li><a href="#acknowledgements">Acknowledgements</a></li>
 </ol>
 </div>
 </div>
 
 <div class="main-column">
+
+<!--------------------------------------------------------------------->
+
+<h2 id="welcome">Welcome</h2>
+
+NumberDB is a collaborative database of numbers.
+
+The underlying idea is that in practise, <em>numbers are determined by their first 10 digits.</em>
+
+That makes them searchable.
+NumberDB attempts to be a tool to identify numbers, and to show known descriptions.
+Which numbers are stored depends on their simplicity and their relevance.
+<!--
+Thus, if the number you search for is not in the database, consider contributing.
+-->
+
+<div class="medskip"></div>
+
+NumberDB stores numbers in collections.
+<b>Collections</b> are families of numbers together with a description.
+Thus a number can appear in several collections: 
+For example, the number 1 is in the collection of <a href="/C2">Integers</a>, <a href="/C9">Values of the Gamma function</a>, and it has its own collection <a href="/C1">One</a> as it is a special number.
+
+<div class="medskip"></div>
+
+Collections of numbers also contain a definition, a description of parameters, and possibly formulas, comments, references, links, programs, and further more specific information.
+
+<div class="medskip"></div>
+
+Furthermore collections are given <b>tags</b>, which helps searchability and classification.
+
+
+<!--
+The aim for NumberDB is to contain around 10000 collection of around 1000 number each.
+-->
 
 <!--------------------------------------------------------------------->
 
@@ -362,7 +422,7 @@ An editor will review your new collection. Thanks!
 The source code of each collection is written in 
 <!--<a href="https://yaml.org">YAML</a>, -->
 <a href="https://en.wikipedia.org/wiki/YAML">YAML</a>, 
-a human friendly language for data.
+a human-friendly language for data.
 </p>
 
 <p>
@@ -410,6 +470,23 @@ We implemented a search by the fractional part,
 as it does not depend on the base.
 </li>
 </ul>
+
+<!--------------------------------------------------------------------->
+
+<h2 id="acknowledgements">Acknowledgements</h2>
+
+NumberDB is build and runs on various open-source projects:
+<a href="https://www.djangoproject.com/">Django</a>, 
+<a href="https://www.postgresql.org/">PostgreSQL</a>, 
+<a href="https://www.sagemath.org/">SageMath</a>,
+<a href="https://pari.math.u-bordeaux.fr/">Pari/GP</a>,
+<a href="https://arblib.org/">arb</a>,
+<a href="https://nginx.org/en/">nginx</a>, 
+<a href="https://gunicorn.org/">Gunicorn</a>, 
+<a href="https://github.com/irmen/Pyro5">Pyro5</a>,
+<a href="https://git-scm.com/">git</a>.
+NumberDB's repositories are stored on <a href="https://github.com/">GitHub</a>.
+NumberDB's server is funded by the main developer Benjamin Matschke, who in turn is supported by <a href="https://www.bu.edu/">Boston University</a> and <a href="https://simonscollab.icerm.brown.edu/">Simons Foundation grant #550023</a>.
 
 <!--------------------------------------------------------------------->
 

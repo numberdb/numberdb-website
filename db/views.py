@@ -75,6 +75,7 @@ from utils.utils import real_interval_to_string_via_endpoints
 from utils.utils import factor_with_timeout
 from utils.utils import my_continued_fraction
 from utils.utils import parse_integer
+from utils.utils import parse_rational_number
 from utils.utils import parse_positive_integer
 from utils.utils import parse_real_interval
 from utils.utils import parse_fractional_part
@@ -756,6 +757,7 @@ def suggestions(request):
 			i += 1
 		suggested_numbers = []
 	
+	exact_number_not_in_DB = None
 
 	#Searching for exactly given integer:
 	query_integers = Number.objects.none()
@@ -767,8 +769,8 @@ def suggestions(request):
 			#n cannot be represented as bigint.
 			#Thus try to search it as a real number:
 			
-			#TODO
-			number = None		
+			exact_number_not_in_DB = n
+			number = None
 			
 		if number != None:
 			query_integer = Number.objects.filter(
@@ -797,12 +799,66 @@ def suggestions(request):
 
 	if i >= 10:
 		return wrap_response(entries)
+		
+	#Searching for rational numbers that are not integers:
+	query_rationals = Number.objects.none()
+	if '/' in term:
+		n = parse_rational_number(term)
+		if n != None:
+			try:
+				number = Number(sage_number=n)
+			except OverflowError:
+				#n cannot be represented as quotient with default height bound.
+				#Thus try to search it as a real number:
+				
+				exact_number_not_in_DB = n
+				number = None		
+				
+			if number != None:
+				query_rational = Number.objects.filter(
+					number_blob = number.number_blob_bytes(),
+					#number_type = Number.NUMBER_TYPE_ZZ,
+					number_type = number.number_type,
+				)[:1]
+				print("number:",number)
+				if len(query_rational) > 0:
+					suggested_numbers.append(query_rational[0])
+				else:
+					number = None
+			if number == None:
+				entry_i = {
+					'value': str(i),
+					'label': '',
+					'type': 'link',
+					'title': 'Basic properties of',
+					'subtitle': '%s (not in database)'  % (n,),
+					'url': reverse('db:properties',kwargs={
+						'numerator': str(n.numerator()),
+						'denominator': str(n.denominator()),
+					}),
+				}
+				entries[i] = entry_i
+				i += 1
+				
+		add_suggested_numbers() #Treat rationals second
+
+		if i >= 10:
+			return wrap_response(entries)
+	
 
 	#Searching for real number up to given precision:
 	query_real_intervals = Number.objects.none()
 	r = None
-	if '.' in term or 'p' in term or 'P' in term or 'e' in term or 'E' in term:
-		r = parse_real_interval(term)
+	if exact_number_not_in_DB != None \
+		or '.' in term \
+		or 'p' in term or 'P' in term \
+		or 'e' in term or 'E' in term:
+			
+		if exact_number_not_in_DB != None:
+			r = RIF(exact_number_not_in_DB)
+		else:
+			r = parse_real_interval(term)
+		
 		if r != None:
 			r_query = blur_real_interval(r)
 			print("r_query:",r_query)
@@ -824,6 +880,7 @@ def suggestions(request):
 		)
 
 	query_real_numbers = query_integers.union(
+						query_rationals,
 						query_real_intervals,
 						query_fractional_part
 					)[:(10-i)]
@@ -904,7 +961,10 @@ def suggestions(request):
 		
 	
 	return wrap_response(entries)
-	
+
+def properties_of_rational(request, numerator, denominator):
+	return properties(request, '%s/%s' % (numerator, denominator))
+
 def properties(request, number):
 	
 	def wrap_response(context):
@@ -938,9 +998,7 @@ def properties(request, number):
 
 		return context
 		
-
-	def append_context_for_integer(n, context):
-
+	def append_factorization_to_context(n, context):
 		#Prime factorization:
 		factorization = factor_with_timeout(n)
 		if factorization != None:
@@ -956,6 +1014,10 @@ def properties(request, number):
 				'plain': timeout_message,
 				'latex': timeout_message,
 			})
+		return context
+
+	def append_context_for_integer(n, context):
+		context = append_factorization_to_context(n, context)
 			
 		special_families = []
 		if n.is_perfect_power():
@@ -984,6 +1046,11 @@ def properties(request, number):
 		context = append_oeis_context(n, context)
 			
 		return context
+		
+	def append_context_for_rational_number(n, context):
+		context = append_factorization_to_context(n, context)
+		
+		return context
 	
 	context = {
 		'properties': [],
@@ -1011,7 +1078,20 @@ def properties(request, number):
 		append_context_for_integer(n, context)
 		return wrap_response(context)
 
-	#Case 2: given number is real interval:
+	#Case 2: given number is an integer:
+	if '/' in number:
+		n = parse_rational_number(number)
+		if n != None:
+			context['number'] = n
+			context['properties'].append({
+				'title': 'Number',
+				'plain': str(n),
+				'latex': '$%s$' % (latex(n),),
+			})
+			append_context_for_rational_number(n, context)
+			return wrap_response(context)
+
+	#Case 3: given number is real interval:
 	r = parse_real_interval(number)
 	if r != None:
 		print("r:",r)

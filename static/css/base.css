@@ -442,7 +442,17 @@ div.medskip {
 div.navbar-outer {
   text-align: center;
 }
-
+/* The following doesn't go well with the help sidebar... */
+/*
+@media only screen and (min-height: 16rem) {
+  div.navbar-outer {
+    width: 100%;
+    position: sticky;
+    top: 0;
+    border: 3px solid black;
+  }
+}
+*/
 
 pre {
   margin-bottom: 0;
