@@ -754,6 +754,8 @@ def suggestions(request):
 				entry_i['subtitle'] = '%s (#%s)' % (number.str_as_real_interval(), param)
 			else:
 				entry_i['subtitle'] = '%s' % (number.str_as_real_interval(),)
+			if hasattr(number,'query_frac'):
+				entry_i['subtitle'] += ' (fractional part)'
 			entries[i] = entry_i
 			i += 1
 		suggested_numbers = []
@@ -878,7 +880,7 @@ def suggestions(request):
 		query_fractional_part = Number.objects.filter(
 			frac_lower__range = (float(f_query.lower()),float(f_query.upper())),
 			frac_upper__range = (float(f_query.lower()),float(f_query.upper())),							
-		)
+		).annotate(query_frac = F('pk'))
 
 	query_real_numbers = query_integers.union(
 						query_rationals,

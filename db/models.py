@@ -83,6 +83,7 @@ class Collection(models.Model):
 	)
 	cid_int = models.IntegerField(
 		db_index=True,
+		primary_key=True,
 		default=0,
 	)
 	url = models.CharField(

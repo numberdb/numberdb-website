@@ -209,8 +209,20 @@ def build_oeis_sequence_counter():
 	
 	i = 0
 
-	#q = OeisNumber.objects.annotate(count=models.Count('sequences')).update(sequence_count=models.F('count'))
+	#q = OeisNumber.objects.annotate(models.Count('sequences')).update(sequence_count=models.F('sequences__count'))
 	
+	'''
+	q = OeisNumber.objects.update(
+		sequence_count = models.Subquery(
+			#OeisNumber.objects.filter(pk=models.OuterRef('pk')).count
+			OeisNumber.sequences.through.objects.filter(oeisnumber_id = models.OuterRef('pk').count())
+		)
+	)
+	'''
+	
+	q = OeisNumber.objects.update(sequence_count=models.Count('sequences'))
+	
+	'''
 	numbers = []
 	
 	for n in OeisNumber.objects.iterator():
@@ -225,15 +237,16 @@ def build_oeis_sequence_counter():
 			numbers = []
 
 	OeisNumber.objects.bulk_update(numbers,['sequence_count'])
-		
+	'''
 
 #timer = MyTimer(cputime)
 timer = MyTimer(walltime)
 
 #with transaction.atomic():
-timer.run(delete_all_oeis_tables)
-timer.run(build_oeis_name_table)
-timer.run(build_oeis_number_table)
+
+#timer.run(delete_all_oeis_tables)
+#timer.run(build_oeis_name_table)
+#timer.run(build_oeis_number_table)
 timer.run(build_oeis_sequence_counter)
 
 print("Times:\n%s" % (timer,))

@@ -63,6 +63,13 @@ table.searchbox-table  td {
   width: 100%;
   padding: 0 var(--searchbox-border);
 }
+.searchbar-result-title {
+    
+}
+.searchbar-result-subtitle {
+  padding-left: 0.5rem;    
+}
+
 
 /*
 .ui-widget-content {
@@ -145,6 +152,11 @@ $(document).ready(function(){
     
     $.widget( "numberdb.searchbox", $.ui.autocomplete, {
 	_renderItem: function( ul, item ) {
+	    li = $( "<li></li>" )
+		.append(`<a href="${item.url}"><div class="searchbar-result-title">${item.title}</div><div class="searchbar-result-subtitle">${item.subtitle}</div></a>`)
+		.appendTo( ul );
+	    
+	    /*
 	    if (item['type'] == 'tag') { 
 		li = $( "<li></li>" )
 		    .append(`<a href="${item.url}">${item.title}<br>&nbsp;&nbsp;${item.subtitle}</a>`)
@@ -163,6 +175,7 @@ $(document).ready(function(){
 		    .append(`<a href="${item.url}">${item.title}<br>&nbsp;&nbsp;${item.subtitle}</a>`)
 		    .appendTo( ul );
 	    }
+	    */
 	    return li;
 	}
     });

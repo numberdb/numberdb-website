@@ -79,7 +79,7 @@ def parse_real_interval(s, RIF=RIF):
     if matchRIF_P != None:
         #Given searchterm is a real interval in "p-notation":
         signExp, exp, signFrac, frac = matchRIF_P.groups()
-        print("signExp, exp, signFrac, frac:",signExp, exp, signFrac, frac)
+        #print("signExp, exp, signFrac, frac:",signExp, exp, signFrac, frac)
         if signExp != '-':
             signExp = ''
         if signFrac != '-':
@@ -94,11 +94,11 @@ def parse_real_interval(s, RIF=RIF):
         r = RIF(f-1,f+1) * RIF(10)**exp
         return r
 
-    print("s:",s)	
+    #print("s:",s)	
     if (s[0] == '[' and s[-1] == ']') or \
         (s[0] == '(' and s[-1] == ')'):
         l_u = s[1:-1].split(',')
-        print("l_u:",l_u)
+        #print("l_u:",l_u)
         if len(l_u) == 2:
             l, u = l_u
             l = l.strip()

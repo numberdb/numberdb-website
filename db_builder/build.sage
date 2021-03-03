@@ -239,6 +239,10 @@ def build_tag_table():
 def build_number_table():
 
 	print("BUILD_NUMBER TABLE")
+	
+	exact_numbers = set() 
+	#TODO: Find a better way to remove duplicate exact numbers 
+	#when database gets bigger.
 
 	def save_number(c, number, param):
 		#print("save number,param:",number,param)
@@ -270,9 +274,16 @@ def build_number_table():
 				if x == None:
 					x = RBFprec('[%s]' % (number,))
 		
+		if x.parent() in [ZZ, QQ]:
+			if x in exact_numbers:
+				#don't save duplicate exact numbers
+				return 1 #still count it 
+			else:
+				exact_numbers.add(x)
 		
 		p = number_param_groups_to_bytes(param)
 		#print("x:",x)
+
 		
 		try:
 			n = Number(sage_number = x)
@@ -281,6 +292,7 @@ def build_number_table():
 			x = RIFprec(x)
 			n = Number(sage_number = x)
 		#n.of_type = Searchable.TYPE_NUMBER #not anymore automatic
+		
 		
 		#print("debug0")
 		n.collection = c
@@ -323,12 +335,16 @@ def build_number_table():
 
 		return count
 
-	for c_data in CollectionData.objects.all():
+	for c_data in CollectionData.objects.all().order_by('collection_id'):
 		with transaction.atomic():
 			c = c_data.collection
 			data = c_data.json
 			#print("data:",data)
 			#print("c.title:",c.title)
+
+			#reset set of exact numbers for each collection:
+			#this makes repeated numbers in each collection appear only once.
+			exact_numbers = set() 
 
 			count = 0
 			if 'Numbers' in data and len(data['Numbers']) > 0:
