@@ -29,5 +29,7 @@ urlpatterns = [
     path('profile/edit/', views.edit, name='profile-edit'),
     path('profile/update/<int:user_id>/', views.update, name='profile-update'),
 
+    path('debug', views.debug, name='debug'),
+
     re_path(r'^(?P<url>([\w-]+))$', views.collection_by_url, name='collection_by_url'),
 ]

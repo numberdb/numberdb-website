@@ -4,6 +4,12 @@
 {% block head-title %}Help topics{% endblock %}
 
 {% block extra_head %}
+
+<!--
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
 <style>
 img.help-screenshot {
   border: 0.4rem solid #bdb;
@@ -39,10 +45,6 @@ h2.contents {
   padding: 0;
   color: 555;
   font-size: 1rem;
-  /*
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  */
 }
 
 
@@ -50,13 +52,6 @@ div.main-content {
   display: flex;
   width: 100%;
   flex-direction: column;
-  /*
-  flex-wrap: nowrap;
-  justify-content: space-evenly;
-  align-items: strech;
-  
-  align-content: flex-start;   
-  */
 }
 div.sidebar {
 }
@@ -85,6 +80,20 @@ div.main-column {
     flex-basis: calc(48rem);
   }
 }
+
+.contents  a {
+}
+.contents a:hover {
+}
+.contents a.active {
+  background-color: #b0be90;
+  color: #fff;
+}
+:target {
+  #border: 2px solid #D4D4D4;
+  background-color: #e5eecc;
+}
+
 </style>
 {% endblock %}
 
@@ -102,38 +111,38 @@ div.main-column {
 
 
 
-<div class="sidebar">
+<div class="sidebar section table-of-contents">
 
 <div class="headline">
 <h1 class="title">Help topics</h1>
 </div>
 
 <ol class="contents">
-<li><a href="#welcome">Welcome</a></li>
+<li><a href="#section-welcome">Welcome</a></li>
 </ol>
 <div class="contents">
 <hr class="contents">
 
 <h2 class="contents">Search</h2>
 <ol class="contents">
-<li><a href="#how-to-search">How to search</a></li>
-<li><a href="#advanced-search-guide">Advanced search guide</a></li>
-<li><a href="#number-types">Number types and accuracy</a></li>
+<li><a href="#section-how-to-search">How to search</a></li>
+<li><a href="#section-advanced-search-guide">Advanced search guide</a></li>
+<li><a href="#section-number-types">Number types and accuracy</a></li>
 </ol>
 <hr class="contents">
 
 <h2 class="contents">Contribute</h2>
 <ol class="contents">
-<li><a href="#how-to-contribute">How to contribute</a></li>
-<li><a href="#guide-to-edit-collections">Guide to edit collections</a></li>
-<li><a href="#guide-to-create-new-collections">Guide to create new collections</a></li>
-<li><a href="#format-of-collections">Format of collections</a></li>
-<li><a href="#pipeline">Data pipeline</a></li>
+<li><a href="#section-how-to-contribute">How to contribute</a></li>
+<li><a href="#section-guide-to-edit-collections">Guide to edit collections</a></li>
+<li><a href="#section-guide-to-create-new-collections">Guide to create new collections</a></li>
+<li><a href="#section-format-of-collections">Format of collections</a></li>
+<li><a href="#section-pipeline">Data pipeline</a></li>
 </ol>
 <hr class="contents">
 <ol class="contents">
-<li><a href="#faq">Frequently asked questions</a></li>
-<li><a href="#acknowledgements">Acknowledgements</a></li>
+<li><a href="#section-faq">Frequently asked questions</a></li>
+<li><a href="#section-acknowledgements">Acknowledgements</a></li>
 </ol>
 </div>
 </div>
@@ -142,6 +151,7 @@ div.main-column {
 
 <!--------------------------------------------------------------------->
 
+<div id="section-welcome" class="section scrollspy">
 <h2 id="welcome">Welcome</h2>
 
 NumberDB is a collaborative database of numbers.
@@ -174,22 +184,28 @@ Furthermore collections are given <b>tags</b>, which helps searchability and cla
 <!--
 The aim for NumberDB is to contain around 10000 collection of around 1000 number each.
 -->
+</div>
 
 <!--------------------------------------------------------------------->
 
-<h2 id="how-to-search">How to search</h2>
+<div id="section-how-to-search" class="section scrollspy">
+<h2 id="how-to-search" class="section scrollspy">How to search</h2>
 
 {% include 'includes/search-tips.html' %}
+</div>
 
 <!--------------------------------------------------------------------->
 
-<h2 id="advanced-search-guide">Advanced search guide</h2>
+<div id="section-advanced-search-guide" class="section scrollspy">
+<h2 id="advanced-search-guide" class="section scrollspy">Advanced search guide</h2>
 
 {% include 'includes/search-tips-advanced.html' %}
+</div>
 
 <!--------------------------------------------------------------------->
 
-<h2 id="number-types">Number types and displayed accuracy</h2>
+<div id="section-number-types" class="section scrollspy">
+<h2 id="number-types" class="section scrollspy">Number types and displayed accuracy</h2>
 
 Numbers in NumberDB can be of the following types.
 
@@ -238,10 +254,12 @@ These formats apply to the collections' webpages as well as to the raw data in y
 Note that in the yaml format one has put quotation marks around square brackets, such that
 the interval does not get parsed as a list.
 -->
+</div>
 
 <!--------------------------------------------------------------------->
 
-<h2 id="how-to-contribute">How to contribute</h2>
+<div id="section-how-to-contribute" class="section scrollspy">
+<h2 id="how-to-contribute" class="section scrollspy">How to contribute</h2>
     
 Contributions are possible in a number of ways:
 
@@ -289,10 +307,12 @@ Credits for contributions are automatically given within git and on GitHub,
 as every single change is stored in a permanent history.
 In the future, contributors to collections of numbers will be 
 automatically displayed also on numberdb.org.
+</div>
 
 <!--------------------------------------------------------------------->
 
-<h2 id="guide-to-edit-collections">Guide to edit collections</h2>
+<div id="section-guide-to-edit-collections" class="section scrollspy">
+<h2 id="guide-to-edit-collections" class="section scrollspy">Guide to edit collections</h2>
 
 To edit collections, you will need a <a href="https://github.com">GitHub</a> account.
 For more advanced changes, we recommend to review the <a href="#format-of-collections">Format for collections's source code</a>.
@@ -355,10 +375,12 @@ An editor will review your changes. Thanks!
 </li>
 
 </ol>
+</div>
 
 <!--------------------------------------------------------------------->
 
-<h2 id="guide-to-create-new-collections">Guide to create new collections</h2>
+<div id="section-guide-to-create-new-collections" class="section scrollspy">
+<h2 id="guide-to-create-new-collections" class="section scrollspy">Guide to create new collections</h2>
 
 To create new collections, you will need a <a href="https://github.com">GitHub</a> account.
 We recommend to review the <a href="#format-of-collections">Format for collections's source code</a>.
@@ -413,10 +435,12 @@ An editor will review your new collection. Thanks!
 </li>
 
 </ol>
+</div>
 
 <!--------------------------------------------------------------------->
 
-<h2 id="format-of-collections">Format of collections's source code</h2>
+<div id="section-format-of-collections" class="section scrollspy">
+<h2 id="format-of-collections" class="section scrollspy">Format of collections's source code</h2>
 
 <p>
 The source code of each collection is written in 
@@ -428,10 +452,12 @@ a human-friendly language for data.
 <p>
 More help will come later.
 </p>
+</div>
 
 <!--------------------------------------------------------------------->
 
-<h2 id="pipeline">Data pipeline</h2>
+<div id="section-pipeline" class="section scrollspy">
+<h2 id="pipeline" class="section scrollspy">Data pipeline</h2>
 
 <img src="{% static '/update.png' %}" style="float: right; margin: 2rem; width: calc(7rem + 0 * var(--xlrem));">
 
@@ -453,10 +479,12 @@ During this process, a search index is created.
 That database can be accessed through <a href="http://numberdb.org">numberdb.org's searchbar</a>.
 </li>
 </ol>
+</div>
 
 <!--------------------------------------------------------------------->
 
-<h2 id="faq">Frequently asked questions</h2>
+<div id="section-faq" class="section scrollspy">
+<h2 id="faq" class="section scrollspy">Frequently asked questions</h2>
 
 <ul>
 <li>
@@ -470,10 +498,12 @@ We implemented a search by the fractional part,
 as it does not depend on the base.
 </li>
 </ul>
+</div>
 
 <!--------------------------------------------------------------------->
 
-<h2 id="acknowledgements">Acknowledgements</h2>
+<div id="section-acknowledgements" class="section scrollspy">
+<h2 id="acknowledgements" class="section scrollspy">Acknowledgements</h2>
 
 NumberDB is build and runs on various open-source projects:
 <a href="https://www.djangoproject.com/">Django</a>, 
@@ -487,10 +517,21 @@ NumberDB is build and runs on various open-source projects:
 <a href="https://git-scm.com/">git</a>.
 NumberDB's repositories are stored on <a href="https://github.com/">GitHub</a>.
 NumberDB's server is funded by the main developer Benjamin Matschke, who in turn is supported by <a href="https://www.bu.edu/">Boston University</a> and <a href="https://simonscollab.icerm.brown.edu/">Simons Foundation grant #550023</a>.
+</div>
 
 <!--------------------------------------------------------------------->
 
+<div style="height:50vh;">
+</div>
+
+
 </div> <!-- end main column -->
 </div> <!-- end main content -->
+
+<script>
+  $(document).ready(function(){
+    $('.scrollspy').scrollSpy();
+  });
+</script>
 
 {% endblock %}

@@ -9,6 +9,7 @@ from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.db.models import F
 from django.template.loader import render_to_string
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.conf import settings
 
 import numpy as np
 from numpy import random as random
@@ -1324,4 +1325,11 @@ def advanced_suggestions(request):
 	
 	return wrap_response(results,messages)
 	
+	
+
+def debug(request):
+	if settings.DEBUG:
+		context = {}
+		return render(request,'debug.html',context)
+	raise Http404()
 	
