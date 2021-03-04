@@ -205,13 +205,13 @@ def get_css_grid_classes():
     css_grid_classes['default'] = css_grid_classes['normal']
     return css_grid_classes
 
-def number_param_groups_to_bytes(param):
-    p = ",".join(flatten(param))
+def number_param_groups_to_bytes(param, separator=','):
+    p = separator.join(flatten(param))
     p = bytes(p,encoding='cp437')
     return p
 
-def number_param_groups_to_string(param):
-    return number_param_groups_to_bytes(param).decode()
+def number_param_groups_to_string(param, separator=','):
+    return number_param_groups_to_bytes(param, separator).decode()
 
 '''
 #Doesn't work in multithreaded processes:

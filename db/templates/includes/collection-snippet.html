@@ -20,6 +20,7 @@ div.collection-section-container {
 div.collection-table {
   display: table;
   width: 100%;
+  max-width: 100%;
 }
 div.collection-subtable {
   display: table;
@@ -35,20 +36,29 @@ div.collection-label {
   text-align: center;
   width: 2rem;
 }
-div.collection-param-group {
+div.collection-param-group,
+div.collection-param-group-header {
   display: table-cell;
-  padding: 0 0.5rem;
+  padding: 0 0.5rem 0 0;
   text-align: right;
-  width: 2rem;
+  width: 1rem;
   scroll-margin-top: 30vh;
   white-space: nowrap;
 }
 div.collection-cell-right,
+div.collection-cell-right-header,
 div.collection-entry {
   display: table-cell;
 }
-div.collection-number {
+div.collection-cell-right-header {
+  text-align: left; 
+}
+div.collection-param-group-header {
+  text-align: right;
+}
+.collection-number {
   word-wrap: break-word;
+  word-break: break-all;
 }
 div.collection-number-section-outer-container {
 }
@@ -138,7 +148,51 @@ function scrollTo(event, id) {
 <div class="collection-number-section-outer-container">
 <div class="collection-section-title">{{ number_section.title | safe }}</div>
 <div class="collection-number-section-container">
-  <div class="collection-text">{{ number_section.text | safe }}</div>
+  {% if number_section.text %}
+    <div class="collection-text">{{ number_section.text | safe }}</div>
+  {% elif number_section.number %}
+    <div class="collection-text">
+    <div class="collection-number">
+      {% for p in number.params_display %}
+        {{ p | safe }}
+      {% endfor %}
+      {{ number_section.number.number | safe }}
+    </div>
+    </div>
+  {% elif number_section.number_list %}
+    <div class="collection-table">
+      <div class="collection-block">
+        {% for group in number_section.param_groups %}
+          <div class="collection-param-group-header">
+            {{ group | safe }} 
+          </div>
+        {% endfor %}
+        <div class="collection-cell-right-header">
+          {% if number_section.number_header %}
+            {{ number_section.number_header | safe }}
+          {% endif %}
+        </div>
+      </div>
+      {% for n in number_section.number_list %}
+        <div {% if n.params_id %}id="{{ n.params_id }}"{% endif %} class="collection-block">
+          {% for p in n.params_display %}
+            <div class="collection-param-group">
+              {{ p | safe }}
+            </div>
+          {% endfor %}
+          <div class="collection-cell-right collection-number">
+            {% if n.number %}
+                {{ n.number | safe}}
+            {% else %}
+              {% include 'includes/number-extra-info-snippet.html' with info=n.extra_info %}
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}    
+    </div>
+  {% else %}
+    No numbers given.  
+  {% endif %}
 </div>
 </div>
 

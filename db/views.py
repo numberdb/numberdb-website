@@ -297,6 +297,7 @@ def collection_context(collection, preview=False):
 		current_job = 'parsing parameters'
 		if 'Parameters' in data and len(data['Parameters']) > 0:
 			labeled_list = []
+			parameters = {}
 			for p, info in data['Parameters'].items():
 				current_job = 'parsing parameter %s' % (p,)
 				p_latex = info['latex-name'] if 'latex-name' in info else "$%s$" % (p,)
@@ -315,7 +316,10 @@ def collection_context(collection, preview=False):
 
 				if 'show-in-parameter-list' in info and info['show-in-parameter-list'].lower() == 'no':
 					#Don't show this parameter in the homepage of this collection.
+					parameters[p] = ''
 					continue
+
+				parameters[p] = p_latex
 					
 				labeled_list.append({
 					'label_id': p,
@@ -329,7 +333,6 @@ def collection_context(collection, preview=False):
 				}
 				sections.append(section)
 
-			parameters = data['Parameters'].keys() 
 		else:
 			parameters = []
 						
@@ -431,6 +434,7 @@ def collection_context(collection, preview=False):
 		current_job = 'parsing data properties'
 		if 'Data properties' in data and len(data['Data properties']) > 0:
 			properties = data['Data properties']
+			#print("properties:",properties)
 			unlabeled_list = []
 			for key, value in properties.items():
 				current_job = 'Parse data property %s' % (key,)
@@ -457,16 +461,35 @@ def collection_context(collection, preview=False):
 				'unlabeled_list': unlabeled_list,
 			}
 			sections.append(section)
-
+		print("properties:",properties)
 
 		current_job = 'parsing display properties'
-		if 'Display properties' in data and 'group parameters' in data['Display properties']:
-			param_groups = data['Display properties']['group parameters']
-		else:
-			param_groups = [[p] for p in parameters]
+		param_groups = [[p] for p in parameters]
+		number_header = None
+		if 'Display properties' in data:
+			display_properties = data['Display properties']
+			if 'group parameters' in display_properties:
+				param_groups = display_properties['group parameters']
+			if 'number-header' in display_properties:
+				number_header = display_properties['number-header']
 		#print("param_groups:",param_groups)
 
-		def render_number_table(numbers, params_so_far=[], groups_left=param_groups):
+		param_groups_display = []
+		for group in param_groups:
+			group_display = ''
+			for p in group:
+				p_latex = parameters[p] if p in parameters else p
+				group_display += '%s%s' % (
+					',&nbsp;' if group_display != '' else '',
+					p_latex,
+				)
+			param_groups_display.append(group_display)
+		if param_groups_display != []:
+			if param_groups_display[-1] != '':
+				param_groups_display[-1] += '&nbsp' #similar to the ":" in the table body
+
+		#OLD: rendering of numbers:
+		def render_number_table_as_tree(numbers, params_so_far=[], groups_left=param_groups):
 			nonlocal current_job
 			current_job = 'parsing number with parameter %s' % (str(params_so_far),)
 			html = ''
@@ -545,6 +568,99 @@ def collection_context(collection, preview=False):
 
 			return html    
 
+		def number_table_as_list(numbers, params_id_so_far='', params_display_so_far=[], groups_left=param_groups, extra_info={}):
+			nonlocal current_job
+			current_job = 'parsing number with parameter %s' % (str(params_display_so_far),)
+
+			def format_param_group(param_group, separator=','):
+				result = separator.join(p.strip(' ') for p in param_group.split(','))
+				#result = result.replace(' ','&nbsp;')
+				return result
+
+			if isinstance(numbers,dict):
+				if 'number' in numbers or \
+					'numbers' in numbers or \
+					'equals' in numbers:
+						
+					#Numbers are given with extra information at this level:
+					extra_info = copy(extra_info)
+					for key, value in numbers.items():
+						if key in ('number','numbers','param-latex'):
+							continue
+						extra_info[key] = render_text(value)
+					if 'number' in numbers:
+						numbers = numbers['number']
+					elif 'numbers' in numbers:
+						numbers = numbers['numbers']
+					else:
+						#Just extra info is given:
+						
+						if len(params_display_so_far) > 0:
+							params_display_so_far[-1] += ':'
+						return [{
+							'params_id': params_id_so_far,
+							'params_display': params_display_so_far + ['' for g in groups_left],
+							'extra_info': extra_info,						
+						}]
+						
+					return number_table_as_list(
+						numbers, 
+						params_id_so_far, 
+						params_display_so_far, 
+						groups_left, 
+						extra_info,
+					)
+				
+			if len(groups_left) == 0:
+				#numbers is an entry for a number now, either a string or a dict:
+				
+				if isinstance(numbers,str):
+					numbers = (numbers,)
+				result = []
+				if len(params_display_so_far) > 0:
+					params_display_so_far[-1] += ':'
+				for number in numbers:
+					result.append({
+						'params_id': params_id_so_far,
+						'params_display': params_display_so_far,
+						'number': number,
+						'extra_info': extra_info,
+					})
+				return result
+				
+			else:
+				if preview and isinstance(numbers,str) and numbers.startswith("INPUT"):
+					return ({
+						'number': '%s (not shown in preview)' % numbers,
+					},)
+				result = []
+
+				next_group = groups_left[0]
+				later_groups = groups_left[1:]
+				for p, numbers_p in numbers.items():
+					if isinstance(numbers_p,dict) and 'param-latex' in numbers_p:
+						param_html = numbers_p['param-latex']
+					else:
+						param_html = format_param_group(p,', ').replace(' ','&nbsp;')
+					params_display_so_far_p = params_display_so_far + [param_html]
+					if params_id_so_far == '':
+						params_id_so_far_p = format_param_group(p)
+					else:
+						params_id_so_far_p = '%s,%s' % (
+							params_id_so_far, 
+							format_param_group(p),
+						)
+
+					result += number_table_as_list(
+						numbers_p, 
+						params_id_so_far_p,
+						params_display_so_far_p,
+						later_groups,
+						extra_info,
+					)
+
+			return result
+
 		#html += '</div>'
 		#html += '<div class="col-m-6">'
 				
@@ -553,8 +669,19 @@ def collection_context(collection, preview=False):
 			numbers = data['Numbers']
 			number_section = {
 				'title': pluralize('Number',collection.number_count),
-				'text': render_number_table(numbers),
+				'param_groups': param_groups_display,
+				'number_header': number_header,
 			}
+			number_list = number_table_as_list(numbers)
+			'''
+			if len(number_list) == 1:
+				#single numbers are displayed differently:
+				number_section['number'] = number_list[0]
+			else:
+				number_section['number_list'] = number_list
+			'''
+			number_section['number_list'] = number_list
+			#number_section['html'] = render_number_table_as_tree(numbers) #OLD
 			#sections.append(number_section)
 
 		#html += '</div>'
@@ -1327,8 +1454,6 @@ def advanced_suggestions(request):
 	
 	return wrap_response(results,messages)
 	
-	
-
 def debug(request):
 	if settings.DEBUG:
 		context = {}
