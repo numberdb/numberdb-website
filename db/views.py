@@ -74,10 +74,7 @@ from utils.utils import number_param_groups_to_string
 from utils.utils import to_bytes
 from utils.utils import real_interval_to_string_via_endpoints
 from utils.utils import factor_with_timeout
-from utils.utils import my_continued_fraction
-from utils.utils import my_continued_fraction_to_sage
-from utils.utils import my_continued_fraction_to_latex
-from utils.utils import my_continued_fraction_to_string
+from utils.utils import StableContinuedFraction
 from utils.utils import parse_integer
 from utils.utils import parse_rational_number
 from utils.utils import parse_positive_integer
@@ -1246,13 +1243,13 @@ def properties(request, number):
 		})
 		
 		#Continued fraction:
-		cf = my_continued_fraction(r)
-		cf_sage = my_continued_fraction_to_sage(cf)
+		cf = StableContinuedFraction(r)
+		cf_sage = cf.sage()
 		if len(cf_sage) > 0:
 			context['properties'].append({
 				'title': 'Continued fraction',
-				'latex': '$%s$' % (my_continued_fraction_to_latex(cf),),
-				'plain': my_continued_fraction_to_string(cf),
+				'latex': '$%s$' % (cf.latex(),),
+				'plain': str(cf),
 			})
 			
 			#Convergents:
@@ -1277,7 +1274,10 @@ def properties(request, number):
 			
 		minpolys = {}
 		for deg in range(1,10+1):
-			f = r.algdep(deg)
+			try:
+				f = r.algdep(deg)
+			except ValueError:
+				continue
 			if f.degree() == deg:
 				if f(r).contains_zero():
 					if f.is_irreducible():

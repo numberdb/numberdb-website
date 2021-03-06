@@ -288,50 +288,81 @@ def factor_with_timeout(n):
     else:
         return None
 
-def my_continued_fraction(r):
-    result = []
-    q = r
-    while True:
-        try:
-            a = q.unique_floor()
-        except ValueError:
-            result.append('?')
-            break
-        result.append(a)
-        f = q-a
-        if f == 0:
-            if result == []:
-                result = [0]
-            break
-        q = 1/f
-    return result
-    #return continued_fraction(result)
+class StableContinuedFraction:
     
-    
-def my_continued_fraction_to_sage(cf):
-    #print("cf:",cf)
-    if len(cf) == 0:
-        result = cf
-    else:
-        result = cf[:-1]
-        if cf[-1] != '?':
-            result += cf[-1]
-    return continued_fraction(result)
+    def __init__(self, r):
+        '''
+        INPUT: An element of RealIntervalField.        
+        '''
+        
+        self._coefficients = []
+        q = r
+        while True:
+            try:
+                a = q.unique_floor()
+            except ValueError:
+                self._coefficients.append('?')
+                break
+            self._coefficients.append(a)
+            f = q-a
+            if f == 0:
+                if self._coefficients == []:
+                    self._coefficients = [ZZ(0)]
+                break
+            q = 1/f
 
-def my_continued_fraction_to_latex(cf):
-    #Don't recurse in case cf is very long...
-    if len(cf) == 0:
-        return '0'
-    result = ''
-    for a in cf[:-1]:
-        result += '%s + \\frac{\\displaystyle 1}{\\displaystyle ' % (a,)
-    result += str(cf[-1])
-    result += ''.join('}' for a in range(len(cf)-1))
-    print("cf latex:",result)
-    return result
-    
-def my_continued_fraction_to_string(cf):
-    result = '[%s]' % (
-        ', '.join(str(x) for x in cf),
-    )
-    return result
+    def list(self):
+        '''
+        OUTPUT: 
+        Coefficients of the continued fraction.
+        If the represented number is not rational, the last entry will be '?'.        
+        '''
+        
+        return self._coefficients
+        
+    def sage(self):
+        '''
+        OUTPUT:
+        The corresponding ContinuedFraction_periodic instance of sage.
+
+        Warnings: 
+        - A possible last entry '?' that signifies numerical uncertainty
+          will be omitted.
+        - Sage's datastructure simplifies [..., n, 1] to [..., n+1].
+        '''
+        
+        coeffs = self._coefficients
+        if len(coeffs) == 0:
+            result = coeffs
+        else:
+            result = coeffs[:-1]
+            if coeffs[-1] != '?':
+                result.append(coeffs[-1])
+        return continued_fraction(result)
+
+    def latex(self, ellipsis='\\ldots'):
+        '''
+        OUTPUT: Latex code that represents self, without enclosing '$'.        
+        '''
+
+        #Don't recurse in case cf is very long...
+        coeffs = self._coefficients
+        if len(coeffs) == 0:
+            return '0'
+        result = ''
+        for a in coeffs[:-1]:
+            result += '%s + \\frac{\\displaystyle 1}{\\displaystyle ' % (a,)
+        result += str(coeffs[-1] if coeffs[-1] != '?' else ellipsis)
+        result += ''.join('}' for a in range(len(coeffs)-1))
+        #print("cf latex:",result)
+        return result
+        
+    def __str__(self, ellipsis='...'):
+        result = '[%s]' % (
+            ', '.join(str(x) if x != '?' else ellipsis for x in self._coefficients),
+        )
+        return result
+        
+    def __repr__(self):
+        return self.__str__()
+
