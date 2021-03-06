@@ -75,6 +75,9 @@ from utils.utils import to_bytes
 from utils.utils import real_interval_to_string_via_endpoints
 from utils.utils import factor_with_timeout
 from utils.utils import my_continued_fraction
+from utils.utils import my_continued_fraction_to_sage
+from utils.utils import my_continued_fraction_to_latex
+from utils.utils import my_continued_fraction_to_string
 from utils.utils import parse_integer
 from utils.utils import parse_rational_number
 from utils.utils import parse_positive_integer
@@ -631,7 +634,9 @@ def collection_context(collection, preview=False):
 			else:
 				if preview and isinstance(numbers,str) and numbers.startswith("INPUT"):
 					return ({
+						'params_display': params_display_so_far + ['' for g in groups_left],
 						'number': '%s (not shown in preview)' % numbers,
+						'extra_info': extra_info,						
 					},)
 				result = []
 
@@ -1242,15 +1247,16 @@ def properties(request, number):
 		
 		#Continued fraction:
 		cf = my_continued_fraction(r)
-		if cf != None:
+		cf_sage = my_continued_fraction_to_sage(cf)
+		if len(cf_sage) > 0:
 			context['properties'].append({
 				'title': 'Continued fraction',
-				'latex': '$%s$' % (latex(cf),),
-				'plain': str(cf),
+				'latex': '$%s$' % (my_continued_fraction_to_latex(cf),),
+				'plain': my_continued_fraction_to_string(cf),
 			})
 			
 			#Convergents:
-			convergents = cf.convergents()
+			convergents = cf_sage.convergents()
 			context['properties'].append({
 				'title': 'Convergents',
 				'plain': ', '.join(str(convergent) for convergent in convergents),

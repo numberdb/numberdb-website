@@ -289,17 +289,49 @@ def factor_with_timeout(n):
         return None
 
 def my_continued_fraction(r):
-	result = []
-	q = r
-	while True:
-		try:
-			a = q.unique_floor()
-		except ValueError:
-			break		
-		result.append(a)
-		f = q-a
-		q = 1/f
-	if len(result) == 0:
-		return None
-	else:
-		return continued_fraction(result)
+    result = []
+    q = r
+    while True:
+        try:
+            a = q.unique_floor()
+        except ValueError:
+            result.append('?')
+            break
+        result.append(a)
+        f = q-a
+        if f == 0:
+            if result == []:
+                result = [0]
+            break
+        q = 1/f
+    return result
+    #return continued_fraction(result)
+    
+    
+def my_continued_fraction_to_sage(cf):
+    #print("cf:",cf)
+    if len(cf) == 0:
+        result = cf
+    else:
+        result = cf[:-1]
+        if cf[-1] != '?':
+            result += cf[-1]
+    return continued_fraction(result)
+
+def my_continued_fraction_to_latex(cf):
+    #Don't recurse in case cf is very long...
+    if len(cf) == 0:
+        return '0'
+    result = ''
+    for a in cf[:-1]:
+        result += '%s + \\frac{\\displaystyle 1}{\\displaystyle ' % (a,)
+    result += str(cf[-1])
+    result += ''.join('}' for a in range(len(cf)-1))
+    print("cf latex:",result)
+    return result
+    
+def my_continued_fraction_to_string(cf):
+    result = '[%s]' % (
+        ', '.join(str(x) for x in cf),
+    )
+    return result
