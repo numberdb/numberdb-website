@@ -31,5 +31,5 @@ urlpatterns = [
 
     path('debug', views.debug, name='debug'),
 
-    re_path(r'^(?P<url>([\w-]+))$', views.collection_by_url, name='collection_by_url'),
+    re_path(r"^(?P<url>([\w'()-]+))$", views.collection_by_url, name='collection_by_url'),
 ]

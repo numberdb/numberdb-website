@@ -143,20 +143,28 @@ def tags(request):
 	return render(request, 'tags.html', {'tags': shown_tags, 'sortby': sortby})
 
 def tag(request, tag_url):
-    tag = Tag.from_url(tag_url)
-    #tag = Tag.objects.get(name=tag_name)
-    collections = tag.collections.all()
-    sortby_default = 'number_count'
-    sortby = request.GET.get('sort_by',default=sortby_default)
-    if sortby == 'number_count':
-        collections = collections.order_by('-number_count')
-    elif sortby == 'id':
-        collections = collections.order_by('cid_int')
-    elif sortby == 'title':
-        collections = collections.order_by('title_lowercase')
-    else:
-        collections = collections.order_by(sortby_default)
-    return render(request, 'tag.html', {'tag': tag, 'collections': collections})
+	page = request.GET.get('page', 1)
+	tag = Tag.from_url(tag_url)
+	#tag = Tag.objects.get(name=tag_name)
+	collections = tag.collections.all()
+	sortby_default = 'number_count'
+	sortby = request.GET.get('sort_by',default=sortby_default)
+	if sortby == 'number_count':
+		collections = collections.order_by('-number_count')
+	elif sortby == 'id':
+		collections = collections.order_by('cid_int')
+	elif sortby == 'title':
+		collections = collections.order_by('title_lowercase')
+	else:
+		collections = collections.order_by(sortby_default)
+	paginator = Paginator(collections, 50)
+	try:
+		shown_collections = paginator.page(page)
+	except PageNotAnInteger:
+		shown_collections = paginator.page(1)
+	except EmptyPage:
+		shown_collections = paginator.page(paginator.num_pages)
+	return render(request, 'tag.html', {'tag': tag, 'collections': shown_collections, 'sortby': sortby})
 
 def welcome(request):
     return render(request, 'welcome.html')
@@ -300,7 +308,7 @@ def collection_context(collection, preview=False):
 			parameters = {}
 			for p, info in data['Parameters'].items():
 				current_job = 'parsing parameter %s' % (p,)
-				p_latex = info['latex-name'] if 'latex-name' in info else "$%s$" % (p,)
+				p_latex = info['display'] if 'display' in info else "$%s$" % (p,)
 
 				text = ' &mdash;&nbsp;&nbsp; '
 				if 'title' in info:
@@ -394,23 +402,26 @@ def collection_context(collection, preview=False):
 				for label, reference in data[header].items():
 					current_job = 'Parse %s %s' % (header,label)
 					text = ""
-					if 'bib' in reference:
-						text += render_text(reference['bib'].rstrip('\n')) + " "
-					if 'arXiv' in reference:
-						link = reference['arXiv']
-						link = link.split("[")[0].strip(" \n")
-						link = link.split("/")[-1]
-						link = "https://www.arxiv.org/abs/%s" % (link,)
-						text += '(<a href="%s">arXiv</a>) ' % (link,)
-					if 'doi' in reference:
-						link = reference['doi'].split("doi.org/")[-1]
-						link = "https://doi.org/%s" % (link,)
-						text += '(<a href="%s">doi</a>) ' % (link,)
-					if 'url' in reference:
-						if 'title' in reference:
-							text += '<a href="%s">%s</a> ' % (reference['url'],reference['title'])
-						else:
-							text += '<a href="%s">%s</a> ' % (reference['url'],reference['url'])
+					if isinstance(reference, str):
+						text = render_text(reference)
+					else:
+						if 'bib' in reference:
+							text += render_text(reference['bib'].rstrip('\n')) + " "
+						if 'arXiv' in reference:
+							link = reference['arXiv']
+							link = link.split("[")[0].strip(" \n")
+							link = link.split("/")[-1]
+							link = "https://www.arxiv.org/abs/%s" % (link,)
+							text += '(<a href="%s">arXiv</a>) ' % (link,)
+						if 'doi' in reference:
+							link = reference['doi'].split("doi.org/")[-1]
+							link = "https://doi.org/%s" % (link,)
+							text += '(<a href="%s">doi</a>) ' % (link,)
+						if 'url' in reference:
+							if 'title' in reference:
+								text += '<a href="%s">%s</a> ' % (reference['url'],reference['title'])
+							else:
+								text += '<a href="%s">%s</a> ' % (reference['url'],reference['url'])
 
 					labeled_list.append({
 						'label_id': label,
@@ -430,6 +441,7 @@ def collection_context(collection, preview=False):
 			'relative precision': 'Relative precision',
 			'absolute precision': 'Absolute precision',
 			'reliability': 'Reliability',
+			#'accuracy': 'Accuracy',
 		}
 		current_job = 'parsing data properties'
 		if 'Data properties' in data and len(data['Data properties']) > 0:
@@ -461,7 +473,7 @@ def collection_context(collection, preview=False):
 				'unlabeled_list': unlabeled_list,
 			}
 			sections.append(section)
-		print("properties:",properties)
+			print("properties:",properties)
 
 		current_job = 'parsing display properties'
 		param_groups = [[p] for p in parameters]
