@@ -45,7 +45,7 @@ td.collection-label {
     </table>
 
     {% if tags.has_next %}
-      <a class="infinite-more-link" href="?{% if sortby %}sort_by={{ sortby }}&{% endif %}page={{ tags.next_page_number }}">More</a>
+      <a class="infinite-more-link" href="?{% if sortby %}sort_by={{ sortby }}&{% endif %}page={{ collections.next_page_number }}">More</a>
     {% endif %}
 
     <div class="loading" style="display: none;">

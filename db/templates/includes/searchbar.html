@@ -223,7 +223,6 @@ $(document).ready(function(){
 	);
     };
     
-    
     $( "#searchbox" ).searchbox({
     	//source: [ "c++", "java", "php", "coldfusion", "javascript", "asp", "ruby" ]
 	source: getData,
@@ -249,7 +248,11 @@ $(document).ready(function(){
 */	classes: {
 	    "ui-autocomplete": "highlight",
 	    //"ui-menu-item": "highlight"
-	}
+	},
+	open: function( event, ui ) {
+	    MathJax.typeset();
+	    //console.log("typeset called");
+	},
     });
 
     $( "#searchbox" ).focus(function () {
@@ -271,6 +274,7 @@ $(document).ready(function(){
 	}
     ); 
     
+   
 });
 </script>
 
