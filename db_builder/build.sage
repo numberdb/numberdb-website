@@ -272,7 +272,11 @@ def build_number_table():
 			except TypeError:
 				x = parse_real_interval(number, RIF=RIFprec)
 				if x == None:
-					x = RBFprec('[%s]' % (number,))
+					try:
+						x = RBFprec('[%s]' % (number,))
+					except ValueError:
+						print("unknown format (number will be ignored):", number)
+						return 0
 		
 		if x.parent() in [ZZ, QQ]:
 			if x in exact_numbers:
@@ -414,3 +418,6 @@ with transaction.atomic():
 
 print("Times:\n%s" % (timer,))
 
+print("Number count:", Number.objects.count())
+print("Collection count:", Collection.objects.count())
+print("Tag count:", Tag.objects.count())
