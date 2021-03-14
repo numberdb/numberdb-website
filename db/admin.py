@@ -5,6 +5,7 @@ from .models import UserProfile
 from .models import Collection
 from .models import CollectionData
 from .models import CollectionSearch
+from .models import CollectionCommit
 from .models import Tag
 from .models import Number
 from .models import OeisNumber
@@ -24,6 +25,12 @@ class CollectionDataInline(admin.StackedInline):
 
 class CollectionSearchInline(admin.StackedInline):
 	model = CollectionSearch
+	extra = 0
+
+class CollectionCommitInCollectionInline(admin.TabularInline):
+	model = CollectionCommit.collections.through
+	verbose_name = u"Commit"
+	verbose_name_plural = u"Commits"
 	extra = 0
 
 @admin.register(Collection)
@@ -48,6 +55,7 @@ class CollectionAdmin(admin.ModelAdmin):
 		NumberInline, 
 		CollectionDataInline,
 		CollectionSearchInline,
+		CollectionCommitInCollectionInline,
 	)
 	
 	'''
@@ -62,6 +70,7 @@ class CollectionAdmin(admin.ModelAdmin):
 	
 admin.site.register(CollectionData)
 admin.site.register(CollectionSearch)
+admin.site.register(CollectionCommit)
 admin.site.register(Tag)
 admin.site.register(Number)
 admin.site.register(OeisNumber)

@@ -167,6 +167,47 @@ class CollectionSearch(models.Model):
 	def __str__(self):
 		return 'Search vector for %s' % (self.collection,)
 
+class CollectionCommit(models.Model):
+	
+	hexsha = models.CharField(
+		max_length = 40,
+		#primary_key = True,
+		db_index = True,
+		unique = True,
+	)
+	author = models.CharField(
+		max_length = 200,
+		db_index = True
+	)
+	author_email = models.EmailField(
+		db_index = True,
+	)
+	datetime = models.DateTimeField(
+		auto_now = False,
+		auto_now_add = False,
+		db_index = True,
+	)
+	timezone = models.IntegerField(
+		default = 0,
+	)
+	summary = models.CharField(
+		max_length = 200,
+		default = '',
+	)
+	message = models.TextField(
+		default = '',
+	)
+	collections = models.ManyToManyField(
+		Collection,
+		related_name = 'commits',
+	)
+	
+	def __str__(self):
+		return 'Commit "%s" (%s on %s)' % (
+			self.summary,
+			self.author,
+			self.datetime,
+		)
 
 class Number(models.Model):
 

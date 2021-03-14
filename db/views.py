@@ -749,7 +749,8 @@ def preview(request, cid=None):
 	try:
 		yaml_data = yaml.load(collection_yaml,Loader=yaml.BaseLoader)
 	except (yaml.scanner.ScannerError, 
-			yaml.composer.ComposerError) as e:
+			yaml.composer.ComposerError,
+			yaml.parser.ParserError) as e:
 		print("e:",e)
 		messages.error(
 			request, 

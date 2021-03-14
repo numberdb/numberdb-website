@@ -18,8 +18,11 @@ django.setup()
 from db.models import Collection
 from db.models import CollectionData
 from db.models import CollectionSearch
+from db.models import CollectionCommit
 from db.models import Tag
 from db.models import Number
+
+from django.contrib.sites.models import Site
 
 from utils.utils import number_param_groups_to_bytes
 from utils.utils import to_bytes
@@ -35,6 +38,7 @@ from utils.utils import parse_fractional_part
 from git import Repo
 import yaml
 import os
+from pydriller import RepositoryMining
 
 path_data = "../numberdb-data/"
 
@@ -66,6 +70,10 @@ tree = commit.tree
 #t = c.tree
 index = repo.index
 #i = index
+
+main = head.reference
+assert(main.name == 'main') #assert that we are on main branch
+log = main.log()
 
 collection_id_prefix = "C"
 
@@ -150,6 +158,7 @@ def delete_all_tables():
 	print("DELETING ALL TABLES")
 
 	Number.objects.all().delete()
+	CollectionCommit.objects.all().delete()
 	CollectionSearch.objects.all().delete()
 	CollectionData.objects.all().delete()
 	Collection.objects.all().delete()
@@ -213,6 +222,51 @@ def build_collection_table(test_run=False):
 			#print("try saving c_data:",c_data)
 			c_data.save()
 			#print("saved c_data:",c_data)
+			
+def build_collection_commits():
+	print("BUILD COLLECTION_COMMIT_TABLE")
+	
+	#Build table of all commits:
+	collection_commits = []
+	for commit in repo.iter_commits():
+		collection_commits.append(CollectionCommit(
+			hexsha = commit.hexsha,
+			author = commit.committer.name,
+			author_email = commit.committer.email,
+			datetime = commit.committed_datetime,
+			timezone = commit.committer_tz_offset,
+			summary = commit.summary,
+			message = commit.message,			
+		))
+	#Remove 16 test commits:
+	#collection_commits = collection_commits[:0] + collection_commits[17:] 
+	
+	CollectionCommit.objects.bulk_create(collection_commits)
+	hexsha_to_pk = {
+		commit.hexsha: commit.pk
+		for commit in CollectionCommit.objects.all()
+	}
+
+	#Find commits that belong to collections:
+	g = repo.git
+	for c in Collection.objects.all():
+		main_filename = os.path.join(c.path,'collection.yaml')
+		log = g.log('--follow',main_filename)
+		print("log:",log)
+		lines = log.splitlines()
+		
+		hexshas = []
+		for l in lines:
+			if l.startswith('commit '):
+				hexshas.append(l[7:])
+
+		CollectionCommit.collections.through.objects.bulk_create(
+			CollectionCommit.collections.through(
+				collection_id = c.pk,
+				collectioncommit_id = hexsha_to_pk[hexsha],
+			) for hexsha in hexshas
+		)
+	
 
 @transaction.atomic
 def build_tag_table():
@@ -402,7 +456,16 @@ def build_search_index_for_collections():
 	search_vector += SearchVector('weight_C_text',weight='C')
 	search_vector += SearchVector('weight_D_text',weight='D')
 	CollectionSearch.objects.update(search_vector = search_vector)
-				
+
+def build_misc():
+	print("BUILD MISC TABLES")
+	
+	Site.objects.all().delete()
+	Site(
+		domain = 'numberdb.org',
+		name = 'NumberDB',
+	).save()
+	
 	
 #timer = MyTimer(cputime)
 timer = MyTimer(walltime)
@@ -411,13 +474,15 @@ with transaction.atomic():
 	timer.run(build_collection_table,test_run=True)
 	timer.run(delete_all_tables)
 	timer.run(build_collection_table)
+	timer.run(build_collection_commits)
 	timer.run(build_tag_table)	
 	timer.run(build_number_table)
-	
 	timer.run(build_search_index_for_collections)
+	timer.run(build_misc)
 
 print("Times:\n%s" % (timer,))
 
 print("Number count:", Number.objects.count())
 print("Collection count:", Collection.objects.count())
 print("Tag count:", Tag.objects.count())
+print("CollectionCommit count:", CollectionCommit.objects.count())

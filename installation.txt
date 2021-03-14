@@ -31,6 +31,8 @@ sage -pip install timeout-decorator
 sage -pip install func_timeout
 sage -pip install bs4
 sage -pip install pyro5
+#sage -pip install pydriller
+sage -pip install django-extensions
 
 Fuer server:
 sage -pip install gunicorn
@@ -85,6 +87,25 @@ Admin-Webseite:
  http://127.0.0.1:8000/admin
 
 
+---------------------------------------
+If reset of postgres numberdb database is needed:
+sudo su postgres
+psql
+drop database numberdb;
+create database numberdb with owner u_numberdb;
+\q
+exit
+#Possibly delete all migrations except for the initial one
+sage -python manage.py migrate
+sage -python manage.py createsuperuser
+
+---------------------------------------
+Circumvent email confirmation:
+sage -python manage.py shell
+from db.models import *
+e = UserProfile.objects.first().user.emailaddress_set.first()
+e.verified = True
+e.save()
 
 ########
 

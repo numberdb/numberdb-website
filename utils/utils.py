@@ -135,7 +135,7 @@ def blur_real_interval(r, blur_bits = 2):
     #print("r.lower(), r.upper():",r.lower(),r.upper())
     #print("r.prec():",r.prec())
     e = r.prec() - blur_bits
-    blur = RIF(1 - 2**(-e), 1 + 2**(-e))
+    blur = r.parent()(1 - 2**(-e), 1 + 2**(-e))
     return r * blur	
 
 
