@@ -38,7 +38,7 @@ from utils.utils import parse_fractional_part
 from git import Repo
 import yaml
 import os
-from pydriller import RepositoryMining
+#from pydriller import RepositoryMining
 
 path_data = "../numberdb-data/"
 
