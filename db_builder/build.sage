@@ -231,8 +231,8 @@ def build_collection_commits():
 	for commit in repo.iter_commits():
 		collection_commits.append(CollectionCommit(
 			hexsha = commit.hexsha,
-			author = commit.committer.name,
-			author_email = commit.committer.email,
+			author = commit.author.name,
+			author_email = commit.author.email,
 			datetime = commit.committed_datetime,
 			timezone = commit.committer_tz_offset,
 			summary = commit.summary,

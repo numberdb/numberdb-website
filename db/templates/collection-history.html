@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block head-title %}
+  {{ collection.title | truncatewords:15 }} 
+{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'db:collections' %}">Collections</a></li>
+  <li class="breadcrumb-item active">{{ collection.title }}</li>
+{% endblock %}
+
+
+{% block content %}
+
+<style>
+div.collection-section-title {
+  font-weight: 400;
+  font-size: 1.3rem;
+  margin: 1rem 0 0.2rem 0;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid #aaa;
+}
+</style>
+
+{% include 'includes/collection-header.html' with history=True%}
+
+
+<div class="collection-section-title">List of contributions</div>
+
+{% for commit in commits %}
+
+{{ commit.datetime }} 
+{{ commit.author }}
+<a href="https://github.com/bmatschke/numberdb-data/commit/{{ commit.hexsha }}">
+  {{ commit.summary }}
+</a>
+
+<br>
+
+{% endfor %}
+
+{% endblock %}
+

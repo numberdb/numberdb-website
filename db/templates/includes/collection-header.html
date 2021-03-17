@@ -1,0 +1,44 @@
+<style>
+div.collection-title {
+  font-weight: 400;
+  font-size: 2rem;
+  margin: 0.2rem 0rem;   
+}
+a.github-link,
+a.preview-link,
+a.history-link {
+  font-size: 0.8rem;
+  color: #555;
+  text-decoration: dotted underline;
+  /*float: right;*/
+}
+a.github-link:hover,
+a.preview-link:hover {
+  text-decoration: underline;   
+}
+</style>
+
+
+
+<div id="collection-title" class="collection-title">{{ collection.title }}</div>
+
+<a class="github-link" target="_blank" href="https://github.com/bmatschke/numberdb-data/tree/main/{{ collection.path }}/collection.yaml">edit on github</a>
+{% if preview %}
+{% else %}
+&middot; <a class="preview-link" href="{% url 'db:preview-collection' collection.cid %}">preview edits</a>
+&middot; 
+  {% if history %}
+    <a class="history-link" href="{% url 'db:collection' collection.cid %}">back to collection</a>
+  {% else %}
+    <a class="history-link" href="{% url 'db:collection-history' collection.cid %}">show history</a>
+  {% endif %}
+{% endif %}
+{% if tags %}
+  &middot; 
+  {% for tag in tags %}
+    <a class="tag" href="{% url 'db:tag' tag.url %}">{{ tag.name | safe }}</a>
+  {% endfor %}
+{% endif %}
+
+<div></div>
+

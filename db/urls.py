@@ -17,6 +17,8 @@ urlpatterns = [
 
     path('collections', views.collections, name='collections'),
     re_path(r'^(?P<cid>(C\d+))$', views.collection_by_cid, name='collection'),
+    
+    re_path(r'^history/(?P<cid>(C\d+))$', views.collection_history, name='collection-history'),
 
     path('tags', views.tags, name='tags'),
     path('tags/<str:tag_url>', views.tag, name='tag'),

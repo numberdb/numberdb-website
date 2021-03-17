@@ -1479,3 +1479,19 @@ def debug(request):
 		return render(request,'debug.html',context)
 	raise Http404()
 	
+def collection_history(request, cid=None):
+	print('cid:',cid)
+	#if cid != None:
+	
+	collection = Collection.objects.get(cid=cid)
+	
+	context = {
+		'collection': collection,
+		'tags': collection.tags.all(),
+		'commits': collection.commits.all(),
+	}
+			
+	print("context:",context)
+
+	return render(request,'collection-history.html',context)
+
