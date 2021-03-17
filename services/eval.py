@@ -3,7 +3,7 @@ How to run service:
 1. Run name server:
   sage -python -m Pyro5.nameserver
 2. Run eval service:
-  sage eval.sage
+  sage -python eval.py
 3. From separate project (running via sage or sage -python):
   import Pyro5.api
   E = Pyro5.api.Proxy("PYRONAME:eval")

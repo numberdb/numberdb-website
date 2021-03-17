@@ -86,6 +86,12 @@ Super user (admin) erstellen:
 Admin-Webseite: 
  http://127.0.0.1:8000/admin
 
+--------------------
+Run eval service:
+1. Run name server:
+  sage -python -m Pyro5.nameserver
+2. Run eval service:
+  sage -python eval.py
 
 ---------------------------------------
 If reset of postgres numberdb database is needed:
