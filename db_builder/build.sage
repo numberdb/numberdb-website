@@ -459,14 +459,22 @@ def build_search_index_for_collections():
 
 def build_misc():
 	print("BUILD MISC TABLES")
-	
+
+	'''
 	Site.objects.all().delete()
 	Site(
 		domain = 'numberdb.org',
 		name = 'NumberDB',
 	).save()
-	
-	
+	'''
+	site = Site.objects.first()
+	if site.domain != 'numberdb.org' or \
+		site.name != 'NumberDB':
+		
+		site.domain = 'numberdb.org'
+		site.name = 'NumberDB'
+		site.save()
+
 #timer = MyTimer(cputime)
 timer = MyTimer(walltime)
 
