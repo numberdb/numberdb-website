@@ -74,6 +74,13 @@ tr:not(:last-child) {
 tr:nth-child(even) {
   /*background: #eee; #f5f5f5;*/
 }
+div.help-wanted {
+  color: #666;
+  font-size: 0.8rem;
+  /*margin-bottom: 0.5rem;
+  */
+  text-align: right;
+}
 </style>
 {% endblock %}
 
@@ -88,6 +95,10 @@ tr:nth-child(even) {
 
 
 <h1>Properties</h1>
+
+<div class="help-wanted">
+If you think this number should be contained in this database, please consider <a href="{% url 'db:help' %}#section-guide-to-create-new-collections">adding it</a>.
+</div>
 
 Show as:
 <label class="container">
