@@ -4,6 +4,24 @@
   {{ collection.title | truncatewords:15 }} 
 {% endblock %}
 
+{% block extra_head %}
+<style>
+td.commit-date,
+td.commit-author,
+td.commit-summary {
+  text-align: left;
+  padding-right: 0.5rem;
+}
+div.collection-section-title {
+  font-weight: 400;
+  font-size: 1.3rem;
+  margin: 1rem 0 0.2rem 0;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid #aaa;
+}
+</style>
+{% endblock %}
+
 {% block breadcrumb %}
   <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
   <li class="breadcrumb-item"><a href="{% url 'db:collections' %}">Collections</a></li>
@@ -13,32 +31,60 @@
 
 {% block content %}
 
-<style>
-div.collection-section-title {
-  font-weight: 400;
-  font-size: 1.3rem;
-  margin: 1rem 0 0.2rem 0;
-  padding-bottom: 0.2rem;
-  border-bottom: 1px solid #aaa;
-}
-</style>
 
 {% include 'includes/collection-header.html' with history=True%}
 
 
 <div class="collection-section-title">List of contributions</div>
 
-{% for commit in commits %}
 
-{{ commit.datetime }} 
-{{ commit.author }}
-<a href="https://github.com/bmatschke/numberdb-data/commit/{{ commit.hexsha }}">
-  {{ commit.summary }}
-</a>
+    Sort by:
+    <a href="?sort_by=time">time</a> &middot; 
+    <a href="?sort_by=author">author</a>
+    <br>
+    <br>
+    
+    <table>
+    <tbody class="infinite-container">
+      {% for commit in commits %}
+        <tr class="infinite-item">
+           <td class="commit-date"> 
+             {{ commit.datetime }} 
+	       </td> 
+           <td class="commit-author"> 
+             {{ commit.author }} 
+           </td> 
+           <td class="commit-summary"> 
+             <a href="https://github.com/bmatschke/numberdb-data/commit/{{ commit.hexsha }}">
+               {{ commit.summary }}
+             </a>
+           </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+    </table>
 
-<br>
+    {% if commits.has_next %}
+      <a class="infinite-more-link" href="?{% if sortby %}sort_by={{ sortby }}&{% endif %}page={{ commits.next_page_number }}">More</a>
+    {% endif %}
 
-{% endfor %}
+    <div class="loading" style="display: none;">
+      Loading...
+    </div>
+
+    <script>
+      var infinite = new Waypoint.Infinite({
+        element: $('.infinite-container')[0],
+        onBeforePageLoad: function () {
+          $('.loading').show();
+        },
+        onAfterPageLoad: function ($items) {
+          $('.loading').hide();
+        }
+      });
+    </script>
+
+
 
 {% endblock %}
 

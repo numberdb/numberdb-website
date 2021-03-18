@@ -402,6 +402,16 @@ a.contents {
   margin-left: 1.5rem;   
 }
 
+a.link-below-title {
+  font-size: 0.8rem;
+  color: #555;
+  text-decoration: dotted underline;
+}
+a.link-below-title:hover {
+  text-decoration: underline;   
+}
+
+
 ul, 
 ol {
   padding-left: calc(1.2rem + 0.8 * var(--srem));

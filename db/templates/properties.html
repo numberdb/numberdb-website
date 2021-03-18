@@ -81,6 +81,15 @@ div.help-wanted {
   */
   text-align: right;
 }
+
+a.link-below-title {
+  font-size: 0.8rem;
+  color: #555;
+  text-decoration: dotted underline;
+}
+a.link-below-title:hover {
+  text-decoration: underline;   
+}
 </style>
 {% endblock %}
 
@@ -96,9 +105,15 @@ div.help-wanted {
 
 <h1>Properties</h1>
 
+<a class="link-below-title" href="{% url 'db:help' %}#section-guide-to-create-new-collections">add number to database</a>
+
+<!--
 <div class="help-wanted">
 If you think this number should be contained in this database, please consider <a href="{% url 'db:help' %}#section-guide-to-create-new-collections">adding it</a>.
 </div>
+-->
+<div></div>
+<br>
 
 Show as:
 <label class="container">

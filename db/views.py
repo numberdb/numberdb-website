@@ -1480,18 +1480,31 @@ def debug(request):
 	raise Http404()
 	
 def collection_history(request, cid=None):
+	page = request.GET.get('page', 1)
 	print('cid:',cid)
 	#if cid != None:
-	
 	collection = Collection.objects.get(cid=cid)
-	
+	commits = collection.commits.all()
+	sortby_default = 'time'
+	sortby = request.GET.get('sort_by',default=sortby_default)
+	if sortby == 'time':
+		commits = commits.order_by('-datetime')
+	elif sortby == 'author':
+		commits = commits.order_by('author')
+	else:
+		commits = commits.order_by(sortby_default)
+	paginator = Paginator(commits, 50)
+	try:
+		shown_commits = paginator.page(page)
+	except PageNotAnInteger:
+		shown_commits = paginator.page(1)
+	except EmptyPage:
+		shown_commits = paginator.page(paginator.num_pages)
 	context = {
 		'collection': collection,
 		'tags': collection.tags.all(),
-		'commits': collection.commits.all(),
+		'commits': shown_commits,
+		'sortby': sortby,
 	}
-			
-	print("context:",context)
-
-	return render(request,'collection-history.html',context)
+	return render(request, 'collection-history.html', context)
 
