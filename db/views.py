@@ -169,8 +169,8 @@ def tag(request, tag_url):
 def welcome(request):
     return render(request, 'welcome.html')
 
-def render_collection(request, collection):
-	context = collection_context(collection)							
+def render_collection(request, collection, context={}):
+	context.update(collection_context(collection))							
 	return render(request, 'collection.html', context)
 
 def collection_by_cid(request, cid):
@@ -183,14 +183,14 @@ def collection_by_cid(request, cid):
         collection = Collection.objects.get(cid=cid)
     except Collection.DoesNotExist:
         raise Http404
-    return render_collection(request, collection)
+    return render_collection(request, collection, {'requested_cid': cid})
     
 def collection_by_url(request, url):
     try:
         collection = Collection.objects.get(url=url)
     except Collection.DoesNotExist:
         raise Http404
-    return render_collection(request, collection)
+    return render_collection(request, collection, {'requested_url': url})
 
 def collection_context(collection, preview=False):
 
