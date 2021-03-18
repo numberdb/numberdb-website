@@ -32,10 +32,10 @@ a.link-below-title:hover {
     <a class="link-below-title" href="{% url 'db:collection-history' collection.cid %}">show history</a>
     {% if requested_url %}
       &middot; 
-      <a class="link-below-title" href="{% url 'db:collection' collection.cid %}">short url</a>
+      <a class="link-below-title add-current-hash" href="{% url 'db:collection' collection.cid %}">short url</a>
     {% else %}
       &middot; 
-      <a class="link-below-title" href="{% url 'db:collection_by_url' collection.url %}">long url</a>
+      <a class="link-below-title add-current-hash" href="{% url 'db:collection_by_url' collection.url %}">long url</a>
     {% endif %}
   {% endif %}
 {% endif %}
@@ -45,6 +45,15 @@ a.link-below-title:hover {
     <a class="tag" href="{% url 'db:tag' tag.url %}">{{ tag.name | safe }}</a>
   {% endfor %}
 {% endif %}
+
+<script>
+$(document).ready(function(){
+    $( ".add-current-hash" ).map(function() {
+        this.href += window.location.hash;
+        //console.log(this);
+    })
+});
+</script>
 
 <div></div>
 
