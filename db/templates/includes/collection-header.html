@@ -4,17 +4,13 @@ div.collection-title {
   font-size: 2rem;
   margin: 0.2rem 0rem;   
 }
-a.github-link,
-a.preview-link,
-a.history-link,
 a.link-below-title {
   font-size: 0.8rem;
   color: #555;
   text-decoration: dotted underline;
   /*float: right;*/
 }
-a.github-link:hover,
-a.preview-link:hover {
+a.link-below-title:hover {
   text-decoration: underline;   
 }
 </style>
@@ -23,16 +19,17 @@ a.preview-link:hover {
 
 <div id="collection-title" class="collection-title">{{ collection.title }}</div>
 
-<a class="github-link" target="_blank" href="https://github.com/bmatschke/numberdb-data/tree/main/{{ collection.path }}/collection.yaml">edit on github</a>
+<a class="link-below-title" target="_blank" href="https://github.com/bmatschke/numberdb-data/tree/main/{{ collection.path }}/collection.yaml">edit on github</a>
 {% if preview %}
 {% else %}
-  &middot; <a class="preview-link" href="{% url 'db:preview-collection' collection.cid %}">preview edits</a>
+  &middot; 
+  <a class="link-below-title" href="{% url 'db:preview-collection' collection.cid %}">preview edits</a>
   {% if history %}
     &middot; 
-    <a class="history-link" href="{% url 'db:collection' collection.cid %}">back to collection</a>
+    <a class="link-below-title" href="{% url 'db:collection' collection.cid %}">back to collection</a>
   {% else %}
     &middot; 
-    <a class="history-link" href="{% url 'db:collection-history' collection.cid %}">show history</a>
+    <a class="link-below-title" href="{% url 'db:collection-history' collection.cid %}">show history</a>
     {% if requested_url %}
       &middot; 
       <a class="link-below-title" href="{% url 'db:collection' collection.cid %}">short url</a>
