@@ -22,7 +22,7 @@ td.tag-name {
     
     Sort by:
     <a href="?sort_by=name">name</a> &middot; 
-    <a href="?sort_by=collection_count">collections</a> &middot;
+    <a href="?sort_by=table_count">tables</a> &middot;
     <a href="?sort_by=number_count">numbers</a>
     <br>
     <br>
@@ -35,7 +35,7 @@ td.tag-name {
 	     <a class="tag" href="{% url 'db:tag' tag.url %}">{{ tag.name }}</a>
 	   </td> 
 	    <td>
-		({{ tag.collection_count }} collection{{ tag.collection_count|pluralize }}, 
+		({{ tag.table_count }} table{{ tag.table_count|pluralize }}, 
 		 {{ tag.number_count }} number{{ tag.number_count|pluralize }})
 	    </td>
          </tr>

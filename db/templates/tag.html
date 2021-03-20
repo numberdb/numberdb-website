@@ -4,7 +4,7 @@
 
 {% block extra_head %}
 <style>
-td.collection-label {
+td.table-label {
   text-align: right;
   padding-right: 0.5rem;
 }
@@ -30,14 +30,14 @@ td.collection-label {
     
     <table>
     <tbody class="infinite-container">
-      {% for collection in collections %}
+      {% for table in tables %}
         <tr class="infinite-item">
-	   <td class="collection-label"> 
-            {{ collection.cid }}: 
+	   <td class="table-label"> 
+            {{ table.tid }}: 
 	   </td> 
 	    <td>
-		<a href="{% url 'db:collection' collection.cid %}">{{ collection.title }}</a>
-		({{ collection.number_count }} number{{ collection.number_count|pluralize }})
+		<a href="{% url 'db:table' table.tid %}">{{ table.title }}</a>
+		({{ table.number_count }} number{{ table.number_count|pluralize }})
 	    </td>
          </tr>
       {% endfor %}
@@ -45,7 +45,7 @@ td.collection-label {
     </table>
 
     {% if tags.has_next %}
-      <a class="infinite-more-link" href="?{% if sortby %}sort_by={{ sortby }}&{% endif %}page={{ collections.next_page_number }}">More</a>
+      <a class="infinite-more-link" href="?{% if sortby %}sort_by={{ sortby }}&{% endif %}page={{ tables.next_page_number }}">More</a>
     {% endif %}
 
     <div class="loading" style="display: none;">
