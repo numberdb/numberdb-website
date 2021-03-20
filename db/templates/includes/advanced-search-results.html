@@ -25,13 +25,13 @@ td.search-result-number {
    </td>
   
    <td class="search-result-number">
-    <a href="{{ result.collection.url }}#{{ result.number.param_str }}">{{ result.number.str_as_real_interval }}</a>
+    <a href="{% url 'db:collection_by_url' result.collection.url %}#{{ result.number.param_str }}">{{ result.number.str_as_real_interval }}</a>
    </td>
   
    <td class="search-result-collection">
-    <a href="{{ result.collection.url }}">{{ result.collection.title }}</a>
+    <a href="{% url 'db:collection_by_url' result.collection.url %}">{{ result.collection.title }}</a>
     {% if result.number.param_str %}
-      (<a href="{{ result.collection.url }}#{{ result.number.param_str }}">#{{ result.number.param_str }}</a>)
+      (<a href="{% url 'db:collection_by_url' result.collection.url %}#{{ result.number.param_str }}">#{{ result.number.param_str }}</a>)
     {% endif %}
    </td>
   
