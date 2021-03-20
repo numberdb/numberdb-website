@@ -7,9 +7,9 @@
     <!--<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">-->
 
     <!-- favicon -->
-    <link rel="apple-touch-icon" sizes="180x180" href="{% static '/apple-touch-icon.png' %}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{% static '/favicon-32x32.png' %}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{% static '/favicon-16x16.png' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static '/img/apple-touch-icon.png' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static '/img/favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static '/img/favicon-16x16.png' %}">
     <link rel="manifest" href="{% static '/site.webmanifest'%}">
 
     <script src="{% static '/js/jquery-3.5.1.min.js' %}"></script>
@@ -62,7 +62,7 @@
 <!--
       <div class="container">
         <a class="navbar-brand" href="{% url 'db:home' %}">
-          <img src="{% static 'logo3.png' %}" height="40px">
+          <img src="{% static '/img/logo3.png' %}" height="40px">
 	    </a>
       </div>
 -->
@@ -92,9 +92,9 @@
 
       {% if user.is_authenticated == False %}
         <!--<a class="navbar-field" href="{% url 'account_login' %}">Login</a>-->
-        <a class="navbar-field" href="{% url 'account_login' %}"><img class="profile" src="{% static 'profile3.png' %}" alt="Login"></a>
+        <a class="navbar-field" href="{% url 'account_login' %}"><img class="profile" src="{% static '/img/profile3.png' %}" alt="Login"></a>
       {% else %}
-        <a class="navbar-field" href="{% url 'db:profile' %}"><img class="profile" src="{% static 'profile3.png' %}">&nbsp;{% user_display user %}</a>
+        <a class="navbar-field" href="{% url 'db:profile' %}"><img class="profile" src="{% static '/img/profile3.png' %}">&nbsp;{% user_display user %}</a>
 
           <!-- The following yields a GET request, which is "unsafe" if it logs out directly.
 	     But it should be ok since we don't allow arbitrary html code etc. by users. 

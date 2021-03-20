@@ -367,7 +367,7 @@ a.right-field {
   float: right;
 }
 img.profile {
-/*  content: url("{% static 'profile.png' %}");   
+/*  content: url("{% static '/img/profile.png' %}");   
 */  width: 0.65em;
 /*  position: relative;
   top: -0.1em;
