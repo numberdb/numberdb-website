@@ -244,10 +244,10 @@ timer = MyTimer(walltime)
 
 #with transaction.atomic():
 
-#timer.run(delete_all_oeis_tables)
-#timer.run(build_oeis_name_table)
-#timer.run(build_oeis_number_table)
-timer.run(build_oeis_sequence_counter)
+timer.run(delete_all_oeis_tables)
+timer.run(build_oeis_name_table)
+timer.run(build_oeis_number_table)
+#timer.run(build_oeis_sequence_counter)
 
 print("Times:\n%s" % (timer,))
 
