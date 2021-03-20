@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block head-title %}
-  {{ collection.title | truncatewords:15 }} 
+  {{ table.title | truncatewords:15 }} 
 {% endblock %}
 
 {% block extra_head %}
@@ -12,7 +12,7 @@ td.commit-summary {
   text-align: left;
   padding-right: 0.5rem;
 }
-div.collection-section-title {
+div.table-section-title {
   font-weight: 400;
   font-size: 1.3rem;
   margin: 1rem 0 0.2rem 0;
@@ -24,18 +24,18 @@ div.collection-section-title {
 
 {% block breadcrumb %}
   <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
-  <li class="breadcrumb-item"><a href="{% url 'db:collections' %}">Collections</a></li>
-  <li class="breadcrumb-item active">{{ collection.title }}</li>
+  <li class="breadcrumb-item"><a href="{% url 'db:tables' %}">Tables</a></li>
+  <li class="breadcrumb-item active">{{ table.title }}</li>
 {% endblock %}
 
 
 {% block content %}
 
 
-{% include 'includes/collection-header.html' with history=True%}
+{% include 'includes/table-header.html' with history=True%}
 
 
-<div class="collection-section-title">List of contributions</div>
+<div class="table-section-title">List of contributions</div>
 
 
     Sort by:

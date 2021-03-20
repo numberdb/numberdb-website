@@ -45,9 +45,9 @@ def load_yaml_recursively(path_filename):
 
 
 
-def normalize_collection_data(data):
+def normalize_table_data(data):
 	'''
-	Brings the collection data into a more "canonical form".	
+	Brings the table data into a more "canonical form".	
 	'''
 	
 	header_singulars = []

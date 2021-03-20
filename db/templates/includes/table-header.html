@@ -1,5 +1,5 @@
 <style>
-div.collection-title {
+div.table-title {
   font-weight: 400;
   font-size: 2rem;
   margin: 0.2rem 0rem;   
@@ -17,25 +17,25 @@ a.link-below-title:hover {
 
 
 
-<div id="collection-title" class="collection-title">{{ collection.title }}</div>
+<div id="table-title" class="table-title">{{ table.title }}</div>
 
-<a class="link-below-title" target="_blank" href="https://github.com/bmatschke/numberdb-data/tree/main/{{ collection.path }}/collection.yaml">edit on github</a>
+<a class="link-below-title" target="_blank" href="https://github.com/bmatschke/numberdb-data/tree/main/{{ table.path }}/table.yaml">edit on github</a>
 {% if preview %}
 {% else %}
   &middot; 
-  <a class="link-below-title" href="{% url 'db:preview-collection' collection.cid %}">preview edits</a>
+  <a class="link-below-title" href="{% url 'db:preview-table' table.tid %}">preview edits</a>
   {% if history %}
     &middot; 
-    <a class="link-below-title" href="{% url 'db:collection' collection.cid %}">back to collection</a>
+    <a class="link-below-title" href="{% url 'db:table' table.tid %}">back to table</a>
   {% else %}
     &middot; 
-    <a class="link-below-title" href="{% url 'db:collection-history' collection.cid %}">show history</a>
+    <a class="link-below-title" href="{% url 'db:table-history' table.tid %}">show history</a>
     {% if requested_url %}
       &middot; 
-      <a class="link-below-title add-current-hash" href="{% url 'db:collection' collection.cid %}">short url</a>
+      <a class="link-below-title add-current-hash" href="{% url 'db:table' table.tid %}">short url</a>
     {% else %}
       &middot; 
-      <a class="link-below-title add-current-hash" href="{% url 'db:collection_by_url' collection.url %}">long url</a>
+      <a class="link-below-title add-current-hash" href="{% url 'db:table_by_url' table.url %}">long url</a>
     {% endif %}
   {% endif %}
 {% endif %}

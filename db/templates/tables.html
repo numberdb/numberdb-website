@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 
-{% block head-title %}Collections{% endblock %}
+{% block head-title %}Tables{% endblock %}
 
 {% block extra_head %}
 <style>
-td.collection-label-cid {
+td.table-label-tid {
   text-align: right;
   padding-right: 0.5rem;
 }
@@ -13,12 +13,12 @@ td.collection-label-cid {
 
 {% block breadcrumb %}
   <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
-  <li class="breadcrumb-item active">Collections</li>
+  <li class="breadcrumb-item active">Tables</li>
 {% endblock %}
 
 {% block content %}
 
-    <h1 class="title">Collections</h1>
+    <h1 class="title">List of all tables</h1>
 
     Sort by:
     <a href="?sort_by=id">id</a> &middot; 
@@ -29,18 +29,18 @@ td.collection-label-cid {
 
     <table>
     <tbody class="infinite-container">
-      {% for collection in collections %}
+      {% for table in tables %}
         <tr class="infinite-item">
-	   <td class="collection-label-cid"> 
-	    {{ collection.cid }}:
+	   <td class="table-label-tid"> 
+	    {{ table.tid }}:
 	   </td> 
 	    <td>
-		<a href="{% url 'db:collection' collection.cid %}">{{ collection.title }}</a>
+		<a href="{% url 'db:table' table.tid %}">{{ table.title }}</a>
 		
-		{% if collection.number_count == 1 %} 
+		{% if table.number_count == 1 %} 
 		    (1 number)
 		{% else %}
-		    ({{ collection.number_count }} numbers)
+		    ({{ table.number_count }} numbers)
 		{% endif %}
 	    </td>
          </tr>
@@ -48,8 +48,8 @@ td.collection-label-cid {
     </tbody>
     </table>
     
-    {% if collections.has_next %}
-      <a class="infinite-more-link" href="?{% if sortby %}sort_by={{ sortby }}&{% endif %}page={{ collections.next_page_number }}">More</a>
+    {% if tables.has_next %}
+      <a class="infinite-more-link" href="?{% if sortby %}sort_by={{ sortby }}&{% endif %}page={{ tables.next_page_number }}">More</a>
     {% endif %}
 
     <div class="loading" style="display: none;">

@@ -60,9 +60,9 @@ from sage.functions.all import *
 from mpmath import pslq
 
 from .models import UserProfile
-from .models import Collection
-from .models import CollectionData
-from .models import CollectionSearch
+from .models import Table
+from .models import TableData
+from .models import TableSearch
 from .models import Tag
 from .models import Number
 from .models import OeisNumber
@@ -83,7 +83,7 @@ from utils.utils import parse_fractional_part
 from utils.utils import blur_real_interval
 
 
-from db_builder.utils import normalize_collection_data
+from db_builder.utils import normalize_table_data
 
 def home(request):
     #messages.success(request, 'Test message for home page.')
@@ -96,37 +96,37 @@ def about(request):
 def help(request):
     return render(request, 'help.html', {})
 
-def collections(request):
+def tables(request):
 	page = request.GET.get('page', 1)
 	#print("page:",page)
-	collections = Collection.objects.all()
+	tables = Table.objects.all()
 	sortby_default = 'title'
 	sortby = request.GET.get('sort_by',default=sortby_default)
 	if sortby == 'number_count':
-		collections = collections.order_by('-number_count')
+		tables = tables.order_by('-number_count')
 	elif sortby == 'id':
-		collections = collections.order_by('cid_int')
+		tables = tables.order_by('tid_int')
 	elif sortby == 'title':
-		collections = collections.order_by('title_lowercase')
+		tables = tables.order_by('title_lowercase')
 	else:
-		collections = collections.order_by(sortby_default)
-	paginator = Paginator(collections, 50)
+		tables = tables.order_by(sortby_default)
+	paginator = Paginator(tables, 50)
 	try:
-		shown_collections = paginator.page(page)
+		shown_tables = paginator.page(page)
 	except PageNotAnInteger:
-		shown_collections = paginator.page(1)
+		shown_tables = paginator.page(1)
 	except EmptyPage:
-		shown_collections = paginator.page(paginator.num_pages)
-	#print("shown_collections:",shown_collections)
-	return render(request, 'collections.html', {'collections': shown_collections, 'sortby': sortby})
+		shown_tables = paginator.page(paginator.num_pages)
+	#print("shown_tables:",shown_tables)
+	return render(request, 'tables.html', {'tables': shown_tables, 'sortby': sortby})
 
 def tags(request):
 	page = request.GET.get('page', 1)
 	tags = Tag.objects.all()
 	sortby_default = 'number_count'
 	sortby = request.GET.get('sort_by',default=sortby_default)
-	if sortby == 'collection_count':
-		tags = tags.order_by('-collection_count')
+	if sortby == 'table_count':
+		tags = tags.order_by('-table_count')
 	elif sortby == 'number_count':
 		tags = tags.order_by('-number_count')
 	elif sortby == 'name':
@@ -146,53 +146,53 @@ def tag(request, tag_url):
 	page = request.GET.get('page', 1)
 	tag = Tag.from_url(tag_url)
 	#tag = Tag.objects.get(name=tag_name)
-	collections = tag.collections.all()
+	tables = tag.tables.all()
 	sortby_default = 'number_count'
 	sortby = request.GET.get('sort_by',default=sortby_default)
 	if sortby == 'number_count':
-		collections = collections.order_by('-number_count')
+		tables = tables.order_by('-number_count')
 	elif sortby == 'id':
-		collections = collections.order_by('cid_int')
+		tables = tables.order_by('tid_int')
 	elif sortby == 'title':
-		collections = collections.order_by('title_lowercase')
+		tables = tables.order_by('title_lowercase')
 	else:
-		collections = collections.order_by(sortby_default)
-	paginator = Paginator(collections, 50)
+		tables = tables.order_by(sortby_default)
+	paginator = Paginator(tables, 50)
 	try:
-		shown_collections = paginator.page(page)
+		shown_tables = paginator.page(page)
 	except PageNotAnInteger:
-		shown_collections = paginator.page(1)
+		shown_tables = paginator.page(1)
 	except EmptyPage:
-		shown_collections = paginator.page(paginator.num_pages)
-	return render(request, 'tag.html', {'tag': tag, 'collections': shown_collections, 'sortby': sortby})
+		shown_tables = paginator.page(paginator.num_pages)
+	return render(request, 'tag.html', {'tag': tag, 'tables': shown_tables, 'sortby': sortby})
 
 def welcome(request):
     return render(request, 'welcome.html')
 
-def render_collection(request, collection, context={}):
-	context.update(collection_context(collection))							
-	return render(request, 'collection.html', context)
+def render_table(request, table, context={}):
+	context.update(table_context(table))							
+	return render(request, 'table.html', context)
 
-def collection_by_cid(request, cid):
+def table_by_tid(request, tid):
     # do something else...
     # return some data along with the view...
     
-    #cid = "C%s" % (cid,)
+    #tid = "T%s" % (tid,)
     
     try:
-        collection = Collection.objects.get(cid=cid)
-    except Collection.DoesNotExist:
+        table = Table.objects.get(tid=tid)
+    except Table.DoesNotExist:
         raise Http404
-    return render_collection(request, collection, {'requested_cid': cid})
+    return render_table(request, table, {'requested_tid': tid})
     
-def collection_by_url(request, url):
+def table_by_url(request, url):
     try:
-        collection = Collection.objects.get(url=url)
-    except Collection.DoesNotExist:
+        table = Table.objects.get(url=url)
+    except Table.DoesNotExist:
         raise Http404
-    return render_collection(request, collection, {'requested_url': url})
+    return render_table(request, table, {'requested_url': url})
 
-def collection_context(collection, preview=False):
+def table_context(table, preview=False):
 
 	def wrap_in_div(div_class,html):
 		return '<div class="%s">%s</div>' % (div_class,html)
@@ -247,8 +247,8 @@ def collection_context(collection, preview=False):
 	try:
 
 		current_job = 'loading yaml'
-		#data = collection.data.json
-		data = yaml.load(collection.data.full_yaml,Loader=yaml.BaseLoader)
+		#data = table.data.json
+		data = yaml.load(table.data.full_yaml,Loader=yaml.BaseLoader)
 
 		html = ''
 
@@ -323,7 +323,7 @@ def collection_context(collection, preview=False):
 					text += ' (%s)' % (render_text(info['constraints']),)
 
 				if 'show-in-parameter-list' in info and info['show-in-parameter-list'].lower() == 'no':
-					#Don't show this parameter in the homepage of this collection.
+					#Don't show this parameter in the homepage of this table.
 					parameters[p] = ''
 					continue
 
@@ -378,7 +378,7 @@ def collection_context(collection, preview=False):
 						code_language = highlight_language[language]
 					else:
 						code_language = highlight_language['default']
-					text = '%s<br><pre><code class="collection-code language-%s">%s</code></pre>' % (
+					text = '%s<br><pre><code class="table-code language-%s">%s</code></pre>' % (
 						language,
 						code_language,
 						#render_text(program['code']),
@@ -436,7 +436,7 @@ def collection_context(collection, preview=False):
 
 		property_names = {
 			'type': 'Numbers are of type',
-			'complete': 'Collection is complete',
+			'complete': 'Table is complete',
 			'sources': 'Sources of data',
 			'relative precision': 'Relative precision',
 			'absolute precision': 'Absolute precision',
@@ -507,7 +507,7 @@ def collection_context(collection, preview=False):
 			html = ''
 
 			def wrap_in_subtable(inner_html):
-				return '<div class="collection-subtable">%s</div>' % (inner_html,)
+				return '<div class="table-subtable">%s</div>' % (inner_html,)
 
 			def format_param_group(param_group):
 				result = ', '.join(p.strip(' ') for p in param_group.split(','))
@@ -532,17 +532,17 @@ def collection_context(collection, preview=False):
 			if len(groups_left) == 0:
 				#numbers is an entry for a number now, either a string or a dict:
 				if isinstance(numbers,str):
-					html += '<div class="collection-number">%s</div>' % (numbers,)
+					html += '<div class="table-number">%s</div>' % (numbers,)
 				else:
-					#html += '<div class="collection-subtable">'
-					#html += '<div class="collection-block">'
-					#html += '<div class="collection-entry">'
+					#html += '<div class="table-subtable">'
+					#html += '<div class="table-block">'
+					#html += '<div class="table-entry">'
 					if isinstance(numbers,list):           
 						for number in numbers:
-							html += '<div class="collection-number">%s</div>' % (number,)
+							html += '<div class="table-number">%s</div>' % (number,)
 					elif isinstance(numbers,dict):  
 						for key, value in numbers.items():
-							html += '<div class="collection-number-%s">%s</div>' % (key,render_text(value),)
+							html += '<div class="table-number-%s">%s</div>' % (key,render_text(value),)
 					#html += '</div>'
 					#html += '</div>'
 					#html += '</div>'
@@ -559,21 +559,21 @@ def collection_context(collection, preview=False):
 				if preview and isinstance(numbers,str) and numbers.startswith("INPUT"):
 					return '%s (not shown in preview)' % numbers
 				next_group = groups_left[0]
-				html += '<div class="collection-subtable">'
+				html += '<div class="table-subtable">'
 				for p, numbers_p in numbers.items():
 					if len(groups_left) <= 1:
 						param = number_param_groups_to_string(params_so_far+[p])
 						id_str = 'id="%s"' % (param,) if param != '' else ''
 					else:
 						id_str = ''
-					html_p = '<div %s class="collection-block">' % (id_str,)
+					html_p = '<div %s class="table-block">' % (id_str,)
 					if isinstance(numbers_p,dict) and 'param-latex' in numbers_p:
 						param_html = numbers_p['param-latex']
 					else:
 						param_html = format_param_group(p)
-					html_p += '<div class="collection-param-group"><span>%s:</span></div>' % (param_html,)
+					html_p += '<div class="table-param-group"><span>%s:</span></div>' % (param_html,)
 					html_inner = render_number_table(numbers_p, params_so_far+[p], groups_left[1:])
-					html_p += '<div class="collection-cell-right">%s</div>' % (wrap_in_subtable(html_inner),)
+					html_p += '<div class="table-cell-right">%s</div>' % (wrap_in_subtable(html_inner),)
 					html_p += '</div>'
 					html += html_p
 				html += '</div>'
@@ -682,7 +682,7 @@ def collection_context(collection, preview=False):
 		if 'Numbers' in data and len(data['Numbers']) > 0:
 			numbers = data['Numbers']
 			number_section = {
-				'title': pluralize('Number',collection.number_count),
+				'title': pluralize('Number',table.number_count),
 				'param_groups': param_groups_display,
 				'number_header': number_header,
 			}
@@ -702,12 +702,12 @@ def collection_context(collection, preview=False):
 		#html += '</div>'
 		
 		context = {
-			'collection': collection,
+			'table': table,
 			'sections': sections,
 			'number_section': number_section,
 		}
 		if not preview:
-			context['tags'] = collection.tags.all()
+			context['tags'] = table.tags.all()
 		else:
 			context['tags'] = []
 
@@ -719,21 +719,21 @@ def collection_context(collection, preview=False):
 	
 	return context
 
-def preview(request, cid=None):
+def preview(request, tid=None):
 	#First try to get yaml from Textarea:
-	collection_yaml = request.GET.get('collection',default=None)
+	table_yaml = request.GET.get('table',default=None)
 	
-	#Second try to get yaml from collection if cid is give:
-	if collection_yaml == None:
-		print('cid:',cid)
-		if cid != None:
-			collection = Collection.objects.get(cid=cid)
-			if collection != None:
-				collection_yaml = collection.data.raw_yaml
+	#Second try to get yaml from table if tid is give:
+	if table_yaml == None:
+		print('tid:',tid)
+		if tid != None:
+			table = Table.objects.get(tid=tid)
+			if table != None:
+				table_yaml = table.data.raw_yaml
 	
-	#Third option is: Set collection_yaml to default:
-	if collection_yaml == None:
-		collection_yaml = \
+	#Third option is: Set table_yaml to default:
+	if table_yaml == None:
+		table_yaml = \
 			'ID: INPUT{id.yaml} #keep this and do not worry\n\n' + \
 			'Title: <title>\n\n' + \
 			'Definition: >\n' + \
@@ -742,12 +742,12 @@ def preview(request, cid=None):
 			'- 3.14\n'
 	
 	context = {
-		'collection_yaml': collection_yaml,
+		'table_yaml': table_yaml,
 	}
 			
-	c_data = CollectionData()
+	c_data = TableData()
 	try:
-		yaml_data = yaml.load(collection_yaml,Loader=yaml.BaseLoader)
+		yaml_data = yaml.load(table_yaml,Loader=yaml.BaseLoader)
 	except (yaml.scanner.ScannerError, 
 			yaml.composer.ComposerError,
 			yaml.parser.ParserError) as e:
@@ -761,18 +761,18 @@ def preview(request, cid=None):
 	
 	
 	#Not used currently:
-	#c_data.json = normalize_collection_data(yaml_data)
+	#c_data.json = normalize_table_data(yaml_data)
 	#print("c_data.json:",c_data.json)
 
-	#TODO: Should avoid dumping yaml, and reloading it in collection_context():
-	c_data.full_yaml = yaml.dump(normalize_collection_data(yaml_data),sort_keys=False)
+	#TODO: Should avoid dumping yaml, and reloading it in table_context():
+	c_data.full_yaml = yaml.dump(normalize_table_data(yaml_data),sort_keys=False)
 	
-	c = Collection()
+	c = Table()
 	c.data = c_data
 	#c.title = c_data.json['Title']
 	c.title = yaml_data['Title']
 	c.path = 'PATH-OF-COLLECTION-YAML'
-	c.cid = 'AUTOMATIC-COLLECTION-ID'
+	c.tid = 'AUTOMATIC-COLLECTION-ID'
 	
 	tags = []
 	#if 'Tags' in c_data.json:
@@ -787,9 +787,9 @@ def preview(request, cid=None):
 		'tags': tags,
 	})
 	
-	#print('collection_yaml:',collection_yaml)
+	#print('table_yaml:',table_yaml)
 	try:
-		c_context = collection_context(c,preview=True)
+		c_context = table_context(c,preview=True)
 		context.update(c_context)
 	except ValueError as e:
 		print("e:",e,type(e))
@@ -883,14 +883,14 @@ def suggestions(request):
 		nonlocal i
 		
 		for number in suggested_numbers:
-			collection = number.collection
+			table = number.table
 			param = number.param_str()
 			entry_i = {
 				'value': str(i),
 				'label': '',
 				'type': 'number',
-				'title': collection.title,
-				'url': '/%s#%s' % (collection.url, param),
+				'title': table.title,
+				'url': '/%s#%s' % (table.url, param),
 			}
 			if len(param) > 0: 
 				entry_i['subtitle'] = '%s (#%s)' % (number.str_as_real_interval(), param)
@@ -1065,9 +1065,9 @@ def suggestions(request):
 			'label': '',
 			'type': 'tag',
 			'title': '<div class="tag">%s</div>' % (tag.name,),
-			'subtitle': '%s collection%s, %s number%s' % (
-				tag.collection_count,
-				's' if tag.collection_count != 1 else '',
+			'subtitle': '%s table%s, %s number%s' % (
+				tag.table_count,
+				's' if tag.table_count != 1 else '',
 				tag.number_count,
 				's' if tag.number_count != 1 else '',
 			),
@@ -1079,27 +1079,27 @@ def suggestions(request):
 	if i >= 10:
 		return wrap_response(entries)
 		
-	#Searching for collections:
+	#Searching for tables:
 	search_query = full_text_search_query(term)
 	rank = SearchRank(F('search_vector'), search_query)
-	query_collections = CollectionSearch.objects.annotate(rank=rank).filter(rank__gte=0.01).order_by('-rank')[:(10-i)]
+	query_tables = TableSearch.objects.annotate(rank=rank).filter(rank__gte=0.01).order_by('-rank')[:(10-i)]
 	
 	#OLD: Simpler query:
-	#query_collections = CollectionSearch.objects.filter(search_vector = term)[:(10-i)]
+	#query_tables = TableSearch.objects.filter(search_vector = term)[:(10-i)]
 	
-	for c_search in query_collections:
-		collection = c_search.collection
+	for c_search in query_tables:
+		table = c_search.table
 		entry_i = {
 			'value': str(i),
 			'label': '',
-			'type': 'collection',
-			'title': collection.title,
-			'url': '/%s' % (collection.url,),
+			'type': 'table',
+			'title': table.title,
+			'url': '/%s' % (table.url,),
 		}
-		if collection.number_count != 1:
-			entry_i['subtitle'] = '%s numbers' % collection.number_count
+		if table.number_count != 1:
+			entry_i['subtitle'] = '%s numbers' % table.number_count
 		else:
-			number = collection.numbers.first()
+			number = table.numbers.first()
 			entry_i['subtitle'] = '%s' % (number.str_as_real_interval(),)
 		entries[i] = entry_i
 		i += 1
@@ -1442,7 +1442,7 @@ def advanced_suggestions(request):
 			results.append({
 				'param': param,
 				'number': number,
-				'collection': number.collection,		
+				'table': number.table,		
 			})
 			i += 1
 			if i >= max_results:
@@ -1479,12 +1479,12 @@ def debug(request):
 		return render(request,'debug.html',context)
 	raise Http404()
 	
-def collection_history(request, cid=None):
+def table_history(request, tid=None):
 	page = request.GET.get('page', 1)
-	print('cid:',cid)
-	#if cid != None:
-	collection = Collection.objects.get(cid=cid)
-	commits = collection.commits.all()
+	print('tid:',tid)
+	#if tid != None:
+	table = Table.objects.get(tid=tid)
+	commits = table.commits.all()
 	sortby_default = 'time'
 	sortby = request.GET.get('sort_by',default=sortby_default)
 	if sortby == 'time':
@@ -1501,10 +1501,10 @@ def collection_history(request, cid=None):
 	except EmptyPage:
 		shown_commits = paginator.page(paginator.num_pages)
 	context = {
-		'collection': collection,
-		'tags': collection.tags.all(),
+		'table': table,
+		'tags': table.tags.all(),
 		'commits': shown_commits,
 		'sortby': sortby,
 	}
-	return render(request, 'collection-history.html', context)
+	return render(request, 'table-history.html', context)
 

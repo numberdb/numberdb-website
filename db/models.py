@@ -51,7 +51,7 @@ class Tag(models.Model):
 		#primary_key = True,
 		db_index = True,
 	)
-	collection_count = models.IntegerField(
+	table_count = models.IntegerField(
 		default = 0,
 	)
 	number_count = models.IntegerField(
@@ -69,19 +69,19 @@ class Tag(models.Model):
 		return Tag.objects.get(name=name)
 		
 	def __str__(self):
-		return 'Tag %s (%s/%s)' % (self.name,self.collection_count,self.number_count)
+		return 'Tag %s (%s/%s)' % (self.name,self.table_count,self.number_count)
 		
 
-class Collection(models.Model):
+class Table(models.Model):
 
 	#sub_id = models.AutoField(primary_key=True)
-	cid = models.CharField(
+	tid = models.CharField(
 		max_length=10, 
 		unique=True, 
 		#primary_key=True,
 		db_index=True,
 	)
-	cid_int = models.IntegerField(
+	tid_int = models.IntegerField(
 		db_index=True,
 		primary_key=True,
 		default=0,
@@ -108,7 +108,7 @@ class Collection(models.Model):
 	)
 	tags = models.ManyToManyField(
 		Tag,
-		related_name = 'collections',
+		related_name = 'tables',
 		#db_constraint=False,
 	)
 	number_count = models.IntegerField(   
@@ -116,33 +116,33 @@ class Collection(models.Model):
 	)
 
 	def __str__(self):
-		return 'Collection %s' % (self.title,)
+		return 'Table %s' % (self.title,)
 
-class CollectionData(models.Model):
+class TableData(models.Model):
 
-	collection = models.OneToOneField(
-		Collection,
+	table = models.OneToOneField(
+		Table,
 		related_name="data", 
 		on_delete=models.CASCADE,
 		#db_constraint=False,
 	)
-	#Full collection data in json:
+	#Full table data in json:
 	json = models.JSONField(
 		default = dict,
 	)
-	#Original content of collection.yaml:
+	#Original content of table.yaml:
 	raw_yaml = models.TextField(
 		default = '',
 	)
-	#Normalized yaml of full collection:
+	#Normalized yaml of full table:
 	full_yaml = models.TextField(
 		default = '',
 	)
 	
 	def __str__(self):
-		return 'Data for %s' % (self.collection,)
+		return 'Data for %s' % (self.table,)
 
-class CollectionSearch(models.Model):
+class TableSearch(models.Model):
 	
 	weight_A_text = models.TextField(
 		default = '',
@@ -158,16 +158,16 @@ class CollectionSearch(models.Model):
 	)
 	search_vector = SearchVectorField(
 	)
-	collection = models.OneToOneField(
-		Collection,
+	table = models.OneToOneField(
+		Table,
 		on_delete = models.CASCADE,
 		related_name = 'search',
 	)
 
 	def __str__(self):
-		return 'Search vector for %s' % (self.collection,)
+		return 'Search vector for %s' % (self.table,)
 
-class CollectionCommit(models.Model):
+class TableCommit(models.Model):
 	
 	hexsha = models.CharField(
 		max_length = 40,
@@ -197,8 +197,8 @@ class CollectionCommit(models.Model):
 	message = models.TextField(
 		default = '',
 	)
-	collections = models.ManyToManyField(
-		Collection,
+	tables = models.ManyToManyField(
+		Table,
 		related_name = 'commits',
 	)
 	
@@ -246,8 +246,8 @@ class Number(models.Model):
 	frac_upper = models.FloatField(
 		db_index = True,
 	)
-	collection = models.ForeignKey(
-		Collection, 
+	table = models.ForeignKey(
+		Table, 
 		on_delete=models.CASCADE,
 		related_name="numbers"
 	)

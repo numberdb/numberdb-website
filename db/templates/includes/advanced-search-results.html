@@ -27,8 +27,8 @@ thead > tr > td {
   <td class="search-result-number">
     Number
   </td>
-  <td class="search-result-collection">
-    Collection
+  <td class="search-result-table">
+    Table
   </td>
  </tr>
 </thead>
@@ -43,13 +43,13 @@ thead > tr > td {
    </td>
   
    <td class="search-result-number">
-    <a href="{% url 'db:collection_by_url' result.collection.url %}#{{ result.number.param_str }}">{{ result.number.str_as_real_interval }}</a>
+    <a href="{% url 'db:table_by_url' result.table.url %}#{{ result.number.param_str }}">{{ result.number.str_as_real_interval }}</a>
    </td>
   
-   <td class="search-result-collection">
-    <a href="{% url 'db:collection_by_url' result.collection.url %}">{{ result.collection.title }}</a>
+   <td class="search-result-table">
+    <a href="{% url 'db:table_by_url' result.table.url %}">{{ result.table.title }}</a>
     {% if result.number.param_str %}
-      (<a href="{% url 'db:collection_by_url' result.collection.url %}#{{ result.number.param_str }}">#{{ result.number.param_str }}</a>)
+      (<a href="{% url 'db:table_by_url' result.table.url %}#{{ result.number.param_str }}">#{{ result.number.param_str }}</a>)
     {% endif %}
    </td>
   

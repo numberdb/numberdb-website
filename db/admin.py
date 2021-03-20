@@ -2,10 +2,10 @@ from django.contrib import admin
 
 
 from .models import UserProfile
-from .models import Collection
-from .models import CollectionData
-from .models import CollectionSearch
-from .models import CollectionCommit
+from .models import Table
+from .models import TableData
+from .models import TableSearch
+from .models import TableCommit
 from .models import Tag
 from .models import Number
 from .models import OeisNumber
@@ -19,23 +19,23 @@ class NumberInline(admin.TabularInline):
     model = Number
     extra = 1
     
-class CollectionDataInline(admin.StackedInline):
-	model = CollectionData
+class TableDataInline(admin.StackedInline):
+	model = TableData
 	extra = 0
 
-class CollectionSearchInline(admin.StackedInline):
-	model = CollectionSearch
+class TableSearchInline(admin.StackedInline):
+	model = TableSearch
 	extra = 0
 
-class CollectionCommitInCollectionInline(admin.TabularInline):
-	model = CollectionCommit.collections.through
+class TableCommitInTableInline(admin.TabularInline):
+	model = TableCommit.tables.through
 	verbose_name = u"Commit"
 	verbose_name_plural = u"Commits"
 	extra = 0
 
-@admin.register(Collection)
-class CollectionAdmin(admin.ModelAdmin):
-	model = Collection
+@admin.register(Table)
+class TableAdmin(admin.ModelAdmin):
+	model = Table
 	#inlines = (NumberInline,)
 
 	'''
@@ -53,9 +53,9 @@ class CollectionAdmin(admin.ModelAdmin):
 
 	inlines = (
 		NumberInline, 
-		CollectionDataInline,
-		CollectionSearchInline,
-		CollectionCommitInCollectionInline,
+		TableDataInline,
+		TableSearchInline,
+		TableCommitInTableInline,
 	)
 	
 	'''
@@ -68,9 +68,9 @@ class CollectionAdmin(admin.ModelAdmin):
 		return obj.search
 	'''
 	
-admin.site.register(CollectionData)
-admin.site.register(CollectionSearch)
-admin.site.register(CollectionCommit)
+admin.site.register(TableData)
+admin.site.register(TableSearch)
+admin.site.register(TableCommit)
 admin.site.register(Tag)
 admin.site.register(Number)
 admin.site.register(OeisNumber)

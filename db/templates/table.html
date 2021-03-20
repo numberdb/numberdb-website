@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block head-title %}
+  {{ table.title | truncatewords:15 }} 
+{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'db:tables' %}">Tables</a></li>
+  <li class="breadcrumb-item active">{{ table.title }}</li>
+{% endblock %}
+
+
+{% block content %}
+
+{% include 'includes/table-snippet.html' %}
+
+{% endblock %}
+

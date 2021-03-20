@@ -1,43 +1,43 @@
 <style>
-div.collection-title {
+div.table-title {
   font-weight: 400;
   font-size: 2rem;
   margin: 0.2rem 0rem;   
 }
-div.collection-section-title {
+div.table-section-title {
   font-weight: 400;
   font-size: 1.3rem;
   margin: 1rem 0 0.2rem 0;
   padding-bottom: 0.2rem;
   border-bottom: 1px solid #aaa;
 }
-div.collection-section-container {
+div.table-section-container {
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   height: auto;
 }
-div.collection-table {
+div.table-table {
   display: table;
   width: 100%;
   max-width: 100%;
 }
-div.collection-subtable {
+div.table-subtable {
   display: table;
   width: 100%;
 }
-div.collection-block {
+div.table-block {
   display: table-row;
   scroll-margin-top: 30vh;
 }
-div.collection-label {
+div.table-label {
   display: table-cell;
   padding: 0 0.5rem;
   text-align: center;
   width: 2rem;
 }
-div.collection-param-group,
-div.collection-param-group-header {
+div.table-param-group,
+div.table-param-group-header {
   display: table-cell;
   padding: 0 0.5rem 0 0;
   text-align: right;
@@ -45,30 +45,30 @@ div.collection-param-group-header {
   scroll-margin-top: 30vh;
   white-space: nowrap;
 }
-div.collection-cell-right,
-div.collection-cell-right-header,
-div.collection-entry {
+div.table-cell-right,
+div.table-cell-right-header,
+div.table-entry {
   display: table-cell;
 }
-div.collection-cell-right-header {
+div.table-cell-right-header {
   text-align: left; 
 }
-div.collection-param-group-header {
+div.table-param-group-header {
   text-align: right;
 }
-.collection-number {
+.table-number {
   word-wrap: break-word;
   word-break: break-all;
 }
-div.collection-number-section-outer-container {
+div.table-number-section-outer-container {
 }
-div.collection-number-section-container {
+div.table-number-section-container {
   overflow-y: auto;
   max-height: 50vh;
 }
 
 @media only screen and (min-width: 64rem) {
-  div.collection-number-section-outer-container {
+  div.table-number-section-outer-container {
     width: calc(50% + 1.5rem);
     padding-left: 3rem;
     padding-bottom: 2rem;
@@ -76,7 +76,7 @@ div.collection-number-section-container {
     float: right;
     background: #fff;
   }
-  div.collection-number-section-container {
+  div.table-number-section-container {
     overflow-y: auto;
     max-height: calc(100vh - 15rem); 70vh;
   }
@@ -105,7 +105,7 @@ a.preview-link:hover {
   scroll-margin-top: 5rem;
 }
 
-code.collection-code {
+code.table-code {
   /*white-space: nowrap;*/
   background: #fff;
   font-size: 0.9em;
@@ -131,17 +131,17 @@ function scrollTo(event, id) {
 </script>
 
 
-{% include 'includes/collection-header.html' %}
+{% include 'includes/table-header.html' %}
 
 
-<div class="collection-number-section-outer-container">
-<div class="collection-section-title">{{ number_section.title | safe }}</div>
-<div class="collection-number-section-container">
+<div class="table-number-section-outer-container">
+<div class="table-section-title">{{ number_section.title | safe }}</div>
+<div class="table-number-section-container">
   {% if number_section.text %}
-    <div class="collection-text">{{ number_section.text | safe }}</div>
+    <div class="table-text">{{ number_section.text | safe }}</div>
   {% elif number_section.number %}
-    <div class="collection-text">
-    <div class="collection-number">
+    <div class="table-text">
+    <div class="table-number">
       {% for p in number.params_display %}
         {{ p | safe }}
       {% endfor %}
@@ -149,27 +149,27 @@ function scrollTo(event, id) {
     </div>
     </div>
   {% elif number_section.number_list %}
-    <div class="collection-table">
-      <div class="collection-block">
+    <div class="table-table">
+      <div class="table-block">
         {% for group in number_section.param_groups %}
-          <div class="collection-param-group-header">
+          <div class="table-param-group-header">
             {{ group | safe }} 
           </div>
         {% endfor %}
-        <div class="collection-cell-right-header">
+        <div class="table-cell-right-header">
           {% if number_section.number_header %}
             {{ number_section.number_header | safe }}
           {% endif %}
         </div>
       </div>
       {% for n in number_section.number_list %}
-        <div {% if n.params_id %}id="{{ n.params_id }}"{% endif %} class="collection-block">
+        <div {% if n.params_id %}id="{{ n.params_id }}"{% endif %} class="table-block">
           {% for p in n.params_display %}
-            <div class="collection-param-group">
+            <div class="table-param-group">
               {{ p | safe }}
             </div>
           {% endfor %}
-          <div class="collection-cell-right collection-number">
+          <div class="table-cell-right table-number">
             {% if n.number %}
                 {{ n.number | safe}}
             {% else %}
@@ -186,26 +186,26 @@ function scrollTo(event, id) {
 </div>
 
 {% for section in sections %}
-  <div class="collection-section-title">{{ section.title | safe }}</div>
-  <div class="collection-section-container">
+  <div class="table-section-title">{{ section.title | safe }}</div>
+  <div class="table-section-container">
     {% if section.text %}
-      <div class="collection-text">{{ section.text | safe }}</div>
+      <div class="table-text">{{ section.text | safe }}</div>
     {% endif %}
     {% if section.labeled_list %}
-      <div class="collection-table">
+      <div class="table-table">
       {% for block in section.labeled_list %}
-        <div class="collection-block" id="{{ block.label_id | safe }}">
-          <div class="collection-label">{{ block.label_caption | safe }}</div>
-          <div class="collection-entry">{{ block.text | safe }}</div>			
+        <div class="table-block" id="{{ block.label_id | safe }}">
+          <div class="table-label">{{ block.label_caption | safe }}</div>
+          <div class="table-entry">{{ block.text | safe }}</div>			
         </div>
       {% endfor %}
 	  </div>
     {% endif %}
     {% if section.unlabeled_list %}
-      <div class="collection-table">
+      <div class="table-table">
       {% for block in section.unlabeled_list %}
-        <div class="collection-block">
-          <div class="collection-entry">{{ block.text | safe }}</div>			
+        <div class="table-block">
+          <div class="table-entry">{{ block.text | safe }}</div>			
         </div>
       {% endfor %}
 	  </div>
@@ -214,11 +214,11 @@ function scrollTo(event, id) {
 {% endfor %}
 
 
-{{  collection_html | safe }}
+{{  table_html | safe }}
 
 
 <!--
-<hr>Data: {{ collection.data.json }}
+<hr>Data: {{ table.data.json }}
 -->
 
 <script>

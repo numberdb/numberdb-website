@@ -17,7 +17,7 @@
 
 
 <style>
-textarea.collection-yaml {
+textarea.table-yaml {
 /*  font-family: monospace;
 */
 }
@@ -54,22 +54,22 @@ div#preview-header {
 
 <div style="height:1px;"></div>
 
-<h1 class="title">Preview for editing collections</h1>
-In this editor you can enter or edit collections in <a href="https://en.wikipedia.org/wiki/YAML">YAML format</a>, and you can get a <b>preview</b> of how numberdb would render it.
+<h1 class="title">Preview for editing tables</h1>
+In this editor you can enter or edit tables in <a href="https://en.wikipedia.org/wiki/YAML">YAML format</a>, and you can get a <b>preview</b> of how numberdb would render it.
 You <b>cannot save</b> changes here. 
 Once everything looks good, upload it to the git repository <a href="https://github.com/bmatschke/numberdb-data">numberdb-data</a>.
 
 {% include 'includes/messaging.html' %}
 
 <form style="position: relative; margin-top: 0.5em;" action="{% url 'db:preview' %}#preview-header" method="get">
-<textarea id=collection-yaml name="collection">
-{% if collection_yaml %}{{ collection_yaml }}{% endif %}
+<textarea id=table-yaml name="table">
+{% if table_yaml %}{{ table_yaml }}{% endif %}
 </textarea>
 <input type="submit" value="Show preview">
 </form>
 
   <script>
-    var editor = CodeMirror.fromTextArea(document.getElementById("collection-yaml"), {
+    var editor = CodeMirror.fromTextArea(document.getElementById("table-yaml"), {
       lineNumbers: true,
       mode: "text/x-yaml",
       matchBrackets: true,
@@ -85,8 +85,8 @@ Once everything looks good, upload it to the git repository <a href="https://git
 
 <div id="preview-header">&mdash; preview &mdash;</div>
 
-{% if collection %}
-{% include 'includes/collection-snippet.html' %}
+{% if table %}
+{% include 'includes/table-snippet.html' %}
 {% endif %}
 
     
