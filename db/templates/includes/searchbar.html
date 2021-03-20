@@ -123,7 +123,7 @@ table.searchbox-table  td {
       {% if autofocus %} autofocus {% endif %} 
       {# placeholder="Try 3.14 or L-function" #} 
       {% if searchterm %} value="{{ searchterm }}" {% endif %}
-    ><img id="searchbox-image" src="{% static 'search.png' %}"
+    ><img id="searchbox-image" src="{% static '/img/search.png' %}"
   ></div>
 -->
 
@@ -137,7 +137,7 @@ table.searchbox-table  td {
       {# placeholder="Try 3.14 or L-function" #} 
       {% if searchterm %} value="{{ searchterm }}" {% endif %}
      ></td>
-    <td><img id="searchbox-image" src="{% static 'search.png' %}"></td>
+    <td><img id="searchbox-image" src="{% static '/img/search.png' %}"></td>
    </tr>
   </tbody>
  </table>

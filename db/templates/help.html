@@ -136,8 +136,8 @@ div.main-column {
 <h2 class="contents">Contribute</h2>
 <ol class="contents">
 <li><a href="#section-how-to-contribute">How to contribute</a></li>
-<li><a href="#section-guide-to-edit-tables">Guide to edit tables</a></li>
-<li><a href="#section-guide-to-create-new-tables">Guide to create new tables</a></li>
+<li><a href="#section-guide-to-editing-tables">Guide to editing tables</a></li>
+<li><a href="#section-guide-to-creating-new-tables">Guide to creating new tables</a></li>
 <li><a href="#section-format-of-tables">Format of tables</a></li>
 <li><a href="#section-pipeline">Data pipeline</a></li>
 </ol>
@@ -273,7 +273,7 @@ Visit the <a href="https://github.com/bmatschke/numberdb-website/issues">GitHub 
 
 <li>
 <div class="li-header">Typos in tables, adding references, comments, etc.:</div>
-You may edit the table's yaml file via the <a href="#guide-to-edit-tables">Guide to edit tables</a> below.
+You may edit the table's yaml file via the <a href="#guide-to-editing-tables">Guide to editing tables</a> below.
 In short:
 Edit the corresponding yaml-file in the 
 <a href="https://github.com/bmatschke/numberdb-data">numberdb-data</a> repository.
@@ -282,7 +282,7 @@ The link can be found below the title on the table's webpage.
 
 <li>
 <div class="li-header">Contribute new tables:</div>
-You may contribute new tables via the <a href="#guide-to-edit-tables">Guide to create new tables</a> below.
+You may contribute new tables via the <a href="#guide-to-editing-tables">Guide to creating new tables</a> below.
 In short: 
 You need to create a table.yaml in a new folder of the 
 <a href="https://github.com/bmatschke/numberdb-data">numberdb-data</a> 
@@ -313,8 +313,8 @@ automatically displayed also on numberdb.org.
 
 <!--------------------------------------------------------------------->
 
-<div id="section-guide-to-edit-tables" class="section scrollspy">
-<h2 id="guide-to-edit-tables" class="section scrollspy">Guide to edit tables</h2>
+<div id="section-guide-to-editing-tables" class="section scrollspy">
+<h2 id="guide-to-editing-tables" class="section scrollspy">Guide to editing tables</h2>
 
 To edit tables, you will need a <a href="https://github.com">GitHub</a> account.
 For more advanced changes, we recommend to review the <a href="#format-of-tables">Format for tables's source code</a>.
@@ -381,18 +381,18 @@ An editor will review your changes. Thanks!
 
 <!--------------------------------------------------------------------->
 
-<div id="section-guide-to-create-new-tables" class="section scrollspy">
-<h2 id="guide-to-create-new-tables" class="section scrollspy">Guide to create new tables</h2>
+<div id="section-guide-to-creating-new-tables" class="section scrollspy">
+<h2 id="guide-to-creating-new-tables" class="section scrollspy">Guide to creating new tables</h2>
 
 To create new tables, you will need a <a href="https://github.com">GitHub</a> account.
 We recommend to review the <a href="#format-of-tables">Format for tables's source code</a>.
 
 <ol>
 <li>
-<div id="guide-to-create-new-tables-preview" class="li-header">Preview for new tables</div>
+<div id="guide-to-creating-new-tables-preview" class="li-header">Preview for new tables</div>
 <p class="help-text">
 We recommend that you start from the yaml code of an existing table of your choice and adjust accordingly.
-For this, follow the <a href="#guide-edit-tables-preview">Preview step</a> in the <a href="#guide-to-edit-tables">Guide to edit tables</a>.
+For this, follow the <a href="#guide-editing-tables-preview">Preview step</a> in the <a href="#guide-to-editing-tables">Guide to editing tables</a>.
 </p>
 </li>
 
@@ -400,17 +400,17 @@ For this, follow the <a href="#guide-edit-tables-preview">Preview step</a> in th
 <div class="li-header">Create new table.yaml on GitHub</div>
 <p class="help-text">
 In the <a href="https://github.com/bmatschke/numberdb-data/tree/main/data">data folder</a> of the NumberDB data repository, find a suitable folder for your table folder.
-As an example, we create the "Golden ratio" table in the folder "data/Basic_constants".
+As an example, we will create the "Golden ratio" table in the folder "data/Basic_constants".
 Go to that folder and click on "... -> Create new file":
 </p>
 <div class="help-screenshot-container">
 <img class="help-screenshot" src="{% static '/img/github-create-table-link.png' %}">
 </div>
 <p class="help-text">
-As filename, enter "Golden_ratio/table.yaml".
+As a filename, enter "Golden_ratio/table.yaml".
 (Each table has its own folder, which contains a main file "table.yaml".
 The folder name will work as a url for the table and should be unique without spaces.)
-Copy and paste the yaml code from the <a href="#guide-to-create-new-tables-preview">Preview step</a> into the editor:
+Copy and paste the yaml code from the <a href="#guide-to-creating-new-tables-preview">Preview step</a> into the editor:
 </p>
 <div class="help-screenshot-container">
 <img class="help-screenshot" src="{% static '/img/github-create-table.png' %}">
@@ -461,7 +461,7 @@ More help will come later.
 <div id="section-pipeline" class="section scrollspy">
 <h2 id="pipeline" class="section scrollspy">Data pipeline</h2>
 
-<img src="{% static '/update.png' %}" style="float: right; margin: 2rem; width: calc(7rem + 0 * var(--xlrem));">
+<img src="{% static '/img/update.png' %}" style="float: right; margin: 2rem; width: calc(7rem + 0 * var(--xlrem));">
 
 <ol>
 <li>
