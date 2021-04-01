@@ -6,9 +6,37 @@
 #FOR DEPLOYMENT:
 # make deploy
 
+PYTHON=sage -python
+MANAGE=sage -python manage.py
+PIP=sage -pip
+
+.PHONY: all help run static fetch_data build_db_numbers build_db_wiki build_db_oeis build_db_all update_numbers migrations update setup_postgres reset_postgres setup_gunicorn setup_nginx setup_supervisor setup_git_deploy install install_full install_packages install_sage_ubuntu20 deploy
+
+
+all: help
+
+help:
+	@echo "Usage:"
+	@echo "- For development:"
+	@echo "    make install (only needed once)"
+	@echo "    make run (run local server, after make install)"
+	@echo "- For production:"
+	@echo "    make deploy (using gunicorn and nginx)"
+
 run:
 	#RUN
-	sage -python manage.py runserver
+	$(MANAGE) runserver
+
+static:
+	#STATIC
+	$(MANAGE) collectstatic --noinput	
+
+migrations:
+	#MIGRATIONS
+	$(MANAGE) makemigrations
+	$(MANAGE) migrate
+
+update: migrations static
 
 fetch_data:
 	#FETCH DATA REPOSITORY
@@ -34,26 +62,21 @@ build_db_oeis:
 	
 build_db_all:
 	#BUILD DB ALL
-	make build_db_numbers
-	make build_db_wiki
-	make build_db_oeis
+	$(MAKE) build_db_numbers
+	$(MAKE) build_db_wiki
+	$(MAKE) build_db_oeis
 	
 update_numbers:
 	#UPDATE NUMBERS
-	make fetch_data
-	make build_db_numbers
-
-migrations:
-	#MIGRATIONS
-	sage -python manage.py makemigrations
-	sage -python manage.py migrate
+	$(MAKE) fetch_data
+	$(MAKE) build_db_numbers
 
 setup_postgres:
 	#SETUP POSTGRES
 	- sudo -u postgres createuser u_numberdb
-	sudo -u postgres psql -c "ALTER USER u_numberdb WITH PASSWORD '214312421342134213124'"	
+	sudo -u postgres psql -c "ALTER USER u_numberdb WITH PASSWORD 'password2_to_be_changed'"	
 	- sudo -u postgres createdb numberdb --owner u_numberdb
-	make migrations
+	$(MAKE) migrations
 	
 reset_postgres:
 	#RESET POSTGRES
@@ -64,36 +87,45 @@ reset_postgres:
 	#\q
 	#exit
 	- sudo -u postgres dropdb numberdb
-	make setup_postgres
+	$(MAKE) setup_postgres
 	
-install_sage_ubuntu:
+install_sage_ubuntu20:
 	#INSTALL SAGE
 	#TODO
+	cd ..
+	wget http://mirrors.mit.edu/sage/linux/64bit/sage-9.2-Ubuntu_20.04-x86_64.tar.bz2
+	tar -xjf *.tar.bz2
+	cd numberdb-website/
 	
 install_packages:
 	#INSTALL PACKAGES
 	sudo apt-get install git libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev libtk8.5 libgdm-dev libdb4o-cil-dev libpcap-dev
-	sage -pip install django
-	sage -pip install django-allauth
-	sage -pip install django-db
-	sage -pip install requests
-	sage -pip install requests-oauthlib
-	sage -pip install psycopg2-binary
-	sage -pip install python-decouple
-	sage -pip install dj-database-url
-	sage -pip install "django-anymail[mailgun]"
-	#sage -pip install django-crispy-forms
-	#sage -pip install django-bootstrap4
-	sage -pip install django-widget-tweaks
-	sage -pip install gitpython
-	sage -pip install pyyaml
-	sage -pip install timeout-decorator
-	sage -pip install func_timeout
-	sage -pip install bs4
-	sage -pip install pyro5
-	#sage -pip install pydriller
-	sage -pip install django-extensions
-	sage -python manage.py makemigrations
+	
+	#wget https://bootstrap.pypa.io/get-pip.py
+	#sudo $(PYTHON) get-pip.py
+	#sudo $(PIP) install virtualenv
+	
+	$(PIP) install django
+	$(PIP) install django-allauth
+	$(PIP) install django-db
+	$(PIP) install requests
+	$(PIP) install requests-oauthlib
+	$(PIP) install psycopg2-binary
+	$(PIP) install python-decouple
+	$(PIP) install dj-database-url
+	$(PIP) install "django-anymail[mailgun]"
+	#$(PIP) install django-crispy-forms
+	#$(PIP) install django-bootstrap4
+	$(PIP) install django-widget-tweaks
+	$(PIP) install gitpython
+	$(PIP) install pyyaml
+	$(PIP) install timeout-decorator
+	$(PIP) install func_timeout
+	$(PIP) install bs4
+	$(PIP) install pyro5
+	#$(PIP) install pydriller
+	$(PIP) install django-extensions
+	$(MANAGE) makemigrations
 
 	#Packages for deployment:
 
@@ -101,56 +133,106 @@ install_packages:
 	sudo apt-get -y install nginx
 	sudo apt-get -y install supervisor
 
+	$(PIP) install gunicorn
 	sudo apt-get install libpq-dev
-	sage -pip install psycopg2
-	sage -pip install gunicorn
+	$(PIP) install psycopg2
 
 
 install:
 	#INSTALL
-	make install_sage_ubuntu
-	make install_packages
+	#$(MAKE) install_sage_ubuntu20
+	$(MAKE) install_packages
 	
-	make setup_postgres
+	$(MAKE) setup_postgres
 	
-	make migrations	
+	$(MAKE) migrations	
 	
-	make fetch_data
+	$(MAKE) fetch_data
 	
-	#make build_db_all #takes long time
-	make build_db_numbers 
+	#$(MAKE) build_db_all #takes long time
+	$(MAKE) build_db_numbers 
 	
 install_full:
 	#INSTALL FULL
-	make install
-	make build_db_wiki
-	make build_db_oeis
+	$(MAKE) install
+	$(MAKE) build_db_wiki
+	$(MAKE) build_db_oeis
 
 
 setup_supervisor:
 	#SETUP SUPERVISOR
 	sudo systemctl enable supervisor
 	sudo systemctl start supervisor
-	#TODO
+	-sudo ln -s server-config/supervisor/conf.d/eval.conf /etc/supervisor/conf.d/eval.conf
+	-sudo ln -s server-config/supervisor/conf.d/numberdb.conf /etc/supervisor/conf.d/numberdb.conf
+	sudo supervisorctl reread
+	sudo supervisorctl update
+	sudo supervisorctl restart *
 
 setup_nginx:
 	#SETUP NGINX
-	#TODO
+	sudo cp server-config/nginx/sites-available/numberdb /etc/nginx/sites-available/numberdb
+	- sudo ln -s /etc/nginx/sites-available/numberdb /etc/nginx/sites-enabled/numberdb
+	- sudo rm /etc/nginx/sites-enabled/default
+	sudo service nginx restart
 	
 setup_gunicorn:
 	#SETUP GUNICORN
-	#TODO
+	- mkdir ../logs
+	- mkdir ../run
+	- touch ../logs/gunicorn.log
 	
 setup_git_deploy:
 	#SETUP GIT
 	git config --global user.name "zeta3"
 	git config --global user.email zeta3@numberdb.org
 	
+setup_certbot:
+	#SETUP CERTBOT
+	sudo apt-get update
+	#sudo apt-get install software-properties-common
+	#sudo add-apt-repository ppa:certbot/certbot
+	#sudo apt-get update
+	#sudo apt-get install python-certbot-nginx
+	
+	sudo apt install snapd
+	sudo snap install core
+	sudo snap refresh core
+	sudo apt-get remove certbot
+	sudo snap install --classic certbot
+	sudo ln -s /snap/bin/certbot /usr/bin/certbot
+	#sudo certbot --nginx #bad: changes nginx configuration file
+	sudo certbot certonly --nginx
+	
+	#OLD:
+	#sudo certbot --nginx
+	#sudo crontab -e #add at the end of the file: 0 4 * * * /usr/bin/certbot renew --quiet
+	
 deploy:
 	#DEPLOY
 	#TODO!!!
-	make install_full
-	make setup_git_deploy
-	make setup_gunicorn
-	make setup_supervisor
-	make setup_nginx
+
+	sudo apt-get update
+	sudo apt-get -y upgrade
+	
+	#adduser numberdb
+	#gpasswd -a numberdb sudo
+	
+	#virtualenv venv -p sage
+	#source venv/bin/activate
+	
+	
+	
+	#$(MAKE) install_full
+	#$(MAKE) static
+	#$(MANAGE) createsuperuser
+	#$(MAKE) setup_git_deploy
+	
+	$(MAKE) setup_gunicorn
+	$(MAKE) setup_supervisor
+	sleep 1
+	$(MAKE) setup_nginx
+	$(MAKE) setup_certbot
+
+status:
+	sudo supervisorctl status *

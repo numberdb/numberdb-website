@@ -9,6 +9,7 @@ The raw data comes from a separate data repository [numberdb-data](https://githu
 The following was tested in Ubuntu 20.
 It will install various packages globally, see `makefile`.
 Additionally it will install the git repository `numberdb-data` into the same parent folder.
+You need to have [SageMath](sagemath.org) installed and `sage` in your path.
 
     git clone https://github.com/bmatschke/numberdb-website.git
     cd numberdb-website
