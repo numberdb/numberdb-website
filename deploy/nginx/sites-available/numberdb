@@ -12,7 +12,7 @@ server {
     error_log $HOME/logs/nginx-error.log;
 
     location /static/ {
-        alias $HOME/numberdb/numberdb-website/staticfiles/;
+        alias $HOME/numberdb-website/staticfiles/;
     }
 
     # checks for static file, if not found proxy to app
