@@ -6,6 +6,7 @@
 #FOR DEPLOYMENT:
 # make deploy
 
+SAGE=export PYTHONPATH=./:${PYTHONPATH}; sage
 PYTHON=sage -python
 MANAGE=sage -python manage.py
 PIP=sage -pip
@@ -45,20 +46,17 @@ fetch_data:
 
 build_db_numbers:
 	#BUILD DB NUMBERS
-	export PYTHONPATH='./:${PYTHONPATH}'
+	$(SAGE) -c 'load("db_builder/build.sage")'
 	#sage db_builder/build.sage #problems loading utils.utils
-	sage -c 'load("db_builder/build.sage")'
 	
 build_db_wiki:
 	#BUILD DB WIKI
-	export PYTHONPATH='./:${PYTHONPATH}'
-	sage -c 'load("db_builder/build-wikipedia.sage")'
+	$(SAGE) -c 'load("db_builder/build-wikipedia.sage")'
 
 build_db_oeis:
 	#BUILD DB OEIS
-	export PYTHONPATH='./:${PYTHONPATH}'
 	./db_builder/update-oeis.sh
-	sage -c 'load("db_builder/build-oeis.sage")'
+	$(SAGE) -c 'load("db_builder/build-oeis.sage")'
 	
 build_db_all:
 	#BUILD DB ALL
@@ -89,17 +87,22 @@ reset_postgres:
 	- sudo -u postgres dropdb numberdb
 	$(MAKE) setup_postgres
 	
-install_sage_ubuntu20:
+../sage.tar.bz2:
+	wget -O ../sage.tar.bz2 http://mirrors.mit.edu/sage/linux/64bit/sage-9.2-Ubuntu_20.04-x86_64.tar.bz2
+	
+
+install_sage_ubuntu20: ../sage.tar.bz2
 	#INSTALL SAGE
-	#TODO
-	cd ..
-	wget http://mirrors.mit.edu/sage/linux/64bit/sage-9.2-Ubuntu_20.04-x86_64.tar.bz2
-	tar -xjf *.tar.bz2
-	cd numberdb-website/
+	tar -C ../ -xjf ../sage.tar.bz2
+	- sudo ln -s /usr/bin/python3 /usr/bin/python
+	../SageMath/sage --version #Test sage
+	- sudo ln -s /home/numberdb/SageMath/sage /usr/bin/sage
 	
 install_packages:
 	#INSTALL PACKAGES
-	sudo apt-get install git libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev libtk8.5 libgdm-dev libdb4o-cil-dev libpcap-dev
+	sudo apt-get install git libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev libtk8.6 libgdm-dev libdb4o-cil-dev libpcap-dev
+
+	export PATH='${HOME}/SageMath/:${PATH}'
 	
 	#wget https://bootstrap.pypa.io/get-pip.py
 	#sudo $(PYTHON) get-pip.py
@@ -125,7 +128,6 @@ install_packages:
 	$(PIP) install pyro5
 	#$(PIP) install pydriller
 	$(PIP) install django-extensions
-	$(MANAGE) makemigrations
 
 	#Packages for deployment:
 
@@ -140,7 +142,8 @@ install_packages:
 
 install:
 	#INSTALL
-	#$(MAKE) install_sage_ubuntu20
+	#$(MAKE) install_sage_ubuntu20 #Actually: Don't install sage here! Let user install it by themselves.
+
 	$(MAKE) install_packages
 	
 	$(MAKE) setup_postgres
