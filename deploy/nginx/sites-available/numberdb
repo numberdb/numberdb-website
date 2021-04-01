@@ -1,5 +1,5 @@
 upstream app_server {
-    server unix:/home/zeta3/run/gunicorn.sock fail_timeout=0;
+    server unix:$HOME/run/gunicorn.sock fail_timeout=0;
 }
 
 server {
@@ -8,11 +8,11 @@ server {
     keepalive_timeout 5;
     client_max_body_size 4G;
 
-    access_log /home/zeta3/logs/nginx-access.log;
-    error_log /home/zeta3/logs/nginx-error.log;
+    access_log $HOME/logs/nginx-access.log;
+    error_log $HOME/logs/nginx-error.log;
 
     location /static/ {
-        alias /home/zeta3/numberdb/numberdb-website/staticfiles/;
+        alias $HOME/numberdb/numberdb-website/staticfiles/;
     }
 
     # checks for static file, if not found proxy to app
