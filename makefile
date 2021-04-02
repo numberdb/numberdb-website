@@ -6,9 +6,10 @@
 #FOR DEPLOYMENT:
 # make deploy
 
-PYTHON=sage -python
-MANAGE=sage -python manage.py
-PIP=sage -pip
+SAGE=export PYTHONPATH=./:${PYTHONPATH}; sage
+PYTHON=$(SAGE) -python
+PIP=$(SAGE) -pip
+MANAGE=$(PYTHON) manage.py
 
 .PHONY: all help run static fetch_data build_db_numbers build_db_wiki build_db_oeis build_db_all update_numbers migrations update setup_postgres reset_postgres setup_gunicorn setup_nginx setup_supervisor setup_git_deploy install install_full install_packages install_sage_ubuntu20 deploy
 
@@ -45,20 +46,17 @@ fetch_data:
 
 build_db_numbers:
 	#BUILD DB NUMBERS
-	export PYTHONPATH='./:${PYTHONPATH}'
+	$(SAGE) -c 'load("db_builder/build.sage")'
 	#sage db_builder/build.sage #problems loading utils.utils
-	sage -c 'load("db_builder/build.sage")'
 	
 build_db_wiki:
 	#BUILD DB WIKI
-	export PYTHONPATH='./:${PYTHONPATH}'
-	sage -c 'load("db_builder/build-wikipedia.sage")'
+	$(SAGE) -c 'load("db_builder/build-wikipedia.sage")'
 
 build_db_oeis:
 	#BUILD DB OEIS
-	export PYTHONPATH='./:${PYTHONPATH}'
 	./db_builder/update-oeis.sh
-	sage -c 'load("db_builder/build-oeis.sage")'
+	$(SAGE) -c 'load("db_builder/build-oeis.sage")'
 	
 build_db_all:
 	#BUILD DB ALL
@@ -89,17 +87,24 @@ reset_postgres:
 	- sudo -u postgres dropdb numberdb
 	$(MAKE) setup_postgres
 	
-install_sage_ubuntu20:
+../sage.tar.bz2:
+	wget -O ../sage.tar.bz2 http://mirrors.mit.edu/sage/linux/64bit/sage-9.2-Ubuntu_20.04-x86_64.tar.bz2
+	
+
+install_sage_ubuntu20: ../sage.tar.bz2
 	#INSTALL SAGE
-	#TODO
-	cd ..
-	wget http://mirrors.mit.edu/sage/linux/64bit/sage-9.2-Ubuntu_20.04-x86_64.tar.bz2
-	tar -xjf *.tar.bz2
-	cd numberdb-website/
+	tar -C ../ -xjf ../sage.tar.bz2
+	- sudo ln -s /usr/bin/python3 /usr/bin/python
+	../SageMath/sage --version #Test sage
+	- sudo ln -s /home/numberdb/SageMath/sage /usr/bin/sage
 	
 install_packages:
 	#INSTALL PACKAGES
-	sudo apt-get install git libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev libtk8.5 libgdm-dev libdb4o-cil-dev libpcap-dev
+	sudo apt-get install git libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev libtk8.6 libgdm-dev libdb4o-cil-dev libpcap-dev
+
+
+install_django:
+	export PATH='${HOME}/SageMath/:${PATH}'
 	
 	#wget https://bootstrap.pypa.io/get-pip.py
 	#sudo $(PYTHON) get-pip.py
@@ -125,7 +130,6 @@ install_packages:
 	$(PIP) install pyro5
 	#$(PIP) install pydriller
 	$(PIP) install django-extensions
-	$(MANAGE) makemigrations
 
 	#Packages for deployment:
 
@@ -140,8 +144,10 @@ install_packages:
 
 install:
 	#INSTALL
-	#$(MAKE) install_sage_ubuntu20
+	#$(MAKE) install_sage_ubuntu20 #Actually: Don't install sage here! Let user install it by themselves.
+
 	$(MAKE) install_packages
+	$(MAKE) install_django
 	
 	$(MAKE) setup_postgres
 	
@@ -163,23 +169,29 @@ setup_supervisor:
 	#SETUP SUPERVISOR
 	sudo systemctl enable supervisor
 	sudo systemctl start supervisor
-	-sudo ln -s server-config/supervisor/conf.d/eval.conf /etc/supervisor/conf.d/eval.conf
-	-sudo ln -s server-config/supervisor/conf.d/numberdb.conf /etc/supervisor/conf.d/numberdb.conf
+	sudo cp deploy/supervisor/conf.d/pyro.conf /etc/supervisor/conf.d/pyro.conf
+	sudo cp deploy/supervisor/conf.d/eval.conf /etc/supervisor/conf.d/eval.conf
+	sudo cp deploy/supervisor/conf.d/numberdb.conf /etc/supervisor/conf.d/numberdb.conf
 	sudo supervisorctl reread
 	sudo supervisorctl update
-	sudo supervisorctl restart *
+	sudo supervisorctl restart pyro
+	sudo supervisorctl restart eval
+	sudo supervisorctl restart numberdb
 
 setup_nginx:
 	#SETUP NGINX
-	sudo cp server-config/nginx/sites-available/numberdb /etc/nginx/sites-available/numberdb
+	- sudo rm /etc/nginx/sites-available/numberdb
+	- sudo rm /etc/nginx/sites-enabled/numberdb
+	sudo cp deploy/nginx/sites-available/numberdb /etc/nginx/sites-available/numberdb
 	- sudo ln -s /etc/nginx/sites-available/numberdb /etc/nginx/sites-enabled/numberdb
 	- sudo rm /etc/nginx/sites-enabled/default
 	sudo service nginx restart
 	
-setup_gunicorn:
-	#SETUP GUNICORN
+setup_dirs:
+	#SETUP DIRS
 	- mkdir ../logs
 	- mkdir ../run
+	- sudo chown numberdb ../run
 	- touch ../logs/gunicorn.log
 	
 setup_git_deploy:
@@ -212,8 +224,8 @@ deploy:
 	#DEPLOY
 	#TODO!!!
 
-	sudo apt-get update
-	sudo apt-get -y upgrade
+	#sudo apt-get update
+	#sudo apt-get -y upgrade
 	
 	#adduser numberdb
 	#gpasswd -a numberdb sudo
@@ -221,18 +233,19 @@ deploy:
 	#virtualenv venv -p sage
 	#source venv/bin/activate
 	
+	#$(MAKE) install_packages
+	$(MAKE) install_sage_ubuntu20
 	
-	
-	#$(MAKE) install_full
-	#$(MAKE) static
+	$(MAKE) install_full
+	$(MAKE) static
 	#$(MANAGE) createsuperuser
-	#$(MAKE) setup_git_deploy
+	$(MAKE) setup_git_deploy
 	
-	$(MAKE) setup_gunicorn
+	$(MAKE) setup_dirs
 	$(MAKE) setup_supervisor
 	sleep 1
 	$(MAKE) setup_nginx
 	$(MAKE) setup_certbot
 
 status:
-	sudo supervisorctl status *
+	sudo supervisorctl status
