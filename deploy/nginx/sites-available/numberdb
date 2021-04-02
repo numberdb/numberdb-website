@@ -1,5 +1,5 @@
 upstream app_server {
-    server unix:$HOME/run/gunicorn.sock fail_timeout=0;
+    server unix:/home/numberdb/run/gunicorn.sock fail_timeout=0;
 }
 
 server {
@@ -8,11 +8,11 @@ server {
     keepalive_timeout 5;
     client_max_body_size 4G;
 
-    access_log $HOME/logs/nginx-access.log;
-    error_log $HOME/logs/nginx-error.log;
+    access_log /home/numberdb/logs/nginx-access.log;
+    error_log /home/numberdb/logs/nginx-error.log;
 
     location /static/ {
-        alias $HOME/numberdb-website/staticfiles/;
+        alias /home/numberdb/numberdb-website/staticfiles/;
     }
 
     # checks for static file, if not found proxy to app
@@ -27,25 +27,6 @@ server {
       proxy_pass http://app_server;
     }
 
-    listen 443 ssl; # managed by Certbot
-    ssl_certificate /etc/letsencrypt/live/www.numberdb.org/fullchain.pem; # managed by Certbot
-    ssl_certificate_key /etc/letsencrypt/live/www.numberdb.org/privkey.pem; # managed by Certbot
-    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
-
 }
 
 
-server {
-    if ($host = www.numberdb.org) {
-        return 301 https://$host$request_uri;
-    } # managed by Certbot
-    if ($host = numberdb.org) {
-        return 301 https://$host$request_uri;
-    } # managed by Certbot
-
-
-    listen 80;
-    server_name numberdb.org www.numberdb.org;
-    return 404; # managed by Certbot
-}
