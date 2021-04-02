@@ -7,9 +7,9 @@
 # make deploy
 
 SAGE=export PYTHONPATH=./:${PYTHONPATH}; sage
-PYTHON=sage -python
-MANAGE=sage -python manage.py
-PIP=sage -pip
+PYTHON=$(SAGE) -python
+PIP=$(SAGE) -pip
+MANAGE=$(PYTHON) manage.py
 
 .PHONY: all help run static fetch_data build_db_numbers build_db_wiki build_db_oeis build_db_all update_numbers migrations update setup_postgres reset_postgres setup_gunicorn setup_nginx setup_supervisor setup_git_deploy install install_full install_packages install_sage_ubuntu20 deploy
 
@@ -166,21 +166,26 @@ setup_supervisor:
 	#SETUP SUPERVISOR
 	sudo systemctl enable supervisor
 	sudo systemctl start supervisor
-	-sudo ln -s server-config/supervisor/conf.d/eval.conf /etc/supervisor/conf.d/eval.conf
-	-sudo ln -s server-config/supervisor/conf.d/numberdb.conf /etc/supervisor/conf.d/numberdb.conf
+	sudo cp deploy/supervisor/conf.d/pyro.conf /etc/supervisor/conf.d/pyro.conf
+	sudo cp deploy/supervisor/conf.d/eval.conf /etc/supervisor/conf.d/eval.conf
+	sudo cp deploy/supervisor/conf.d/numberdb.conf /etc/supervisor/conf.d/numberdb.conf
 	sudo supervisorctl reread
 	sudo supervisorctl update
-	sudo supervisorctl restart *
+	sudo supervisorctl restart pyro
+	sudo supervisorctl restart eval
+	sudo supervisorctl restart numberdb
 
 setup_nginx:
 	#SETUP NGINX
-	sudo cp server-config/nginx/sites-available/numberdb /etc/nginx/sites-available/numberdb
+	- sudo rm /etc/nginx/sites-available/numberdb
+	- sudo rm /etc/nginx/sites-enabled/numberdb
+	sudo cp deploy/nginx/sites-available/numberdb /etc/nginx/sites-available/numberdb
 	- sudo ln -s /etc/nginx/sites-available/numberdb /etc/nginx/sites-enabled/numberdb
 	- sudo rm /etc/nginx/sites-enabled/default
 	sudo service nginx restart
 	
-setup_gunicorn:
-	#SETUP GUNICORN
+setup_dirs:
+	#SETUP DIRS
 	- mkdir ../logs
 	- mkdir ../run
 	- touch ../logs/gunicorn.log
@@ -215,8 +220,8 @@ deploy:
 	#DEPLOY
 	#TODO!!!
 
-	sudo apt-get update
-	sudo apt-get -y upgrade
+	#sudo apt-get update
+	#sudo apt-get -y upgrade
 	
 	#adduser numberdb
 	#gpasswd -a numberdb sudo
@@ -226,16 +231,16 @@ deploy:
 	
 	
 	
-	#$(MAKE) install_full
-	#$(MAKE) static
+	$(MAKE) install_full
+	$(MAKE) static
 	#$(MANAGE) createsuperuser
-	#$(MAKE) setup_git_deploy
+	$(MAKE) setup_git_deploy
 	
-	$(MAKE) setup_gunicorn
+	$(MAKE) setup_dirs
 	$(MAKE) setup_supervisor
 	sleep 1
 	$(MAKE) setup_nginx
 	$(MAKE) setup_certbot
 
 status:
-	sudo supervisorctl status *
+	sudo supervisorctl status
