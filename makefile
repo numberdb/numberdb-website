@@ -102,6 +102,8 @@ install_packages:
 	#INSTALL PACKAGES
 	sudo apt-get install git libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev libtk8.6 libgdm-dev libdb4o-cil-dev libpcap-dev
 
+
+install_django:
 	export PATH='${HOME}/SageMath/:${PATH}'
 	
 	#wget https://bootstrap.pypa.io/get-pip.py
@@ -145,6 +147,7 @@ install:
 	#$(MAKE) install_sage_ubuntu20 #Actually: Don't install sage here! Let user install it by themselves.
 
 	$(MAKE) install_packages
+	$(MAKE) install_django
 	
 	$(MAKE) setup_postgres
 	
@@ -229,7 +232,8 @@ deploy:
 	#virtualenv venv -p sage
 	#source venv/bin/activate
 	
-	
+	#$(MAKE) install_packages
+	$(MAKE) install_sage_ubuntu20
 	
 	$(MAKE) install_full
 	$(MAKE) static
