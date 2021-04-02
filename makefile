@@ -191,6 +191,7 @@ setup_dirs:
 	#SETUP DIRS
 	- mkdir ../logs
 	- mkdir ../run
+	- sudo chown numberdb ../run
 	- touch ../logs/gunicorn.log
 	
 setup_git_deploy:
