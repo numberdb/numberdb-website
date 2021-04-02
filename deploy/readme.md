@@ -19,6 +19,11 @@ Clone git repository [numberdb-website](https://github.com/bmatschke/numberdb-we
 
     git clone https://github.com/bmatschke/numberdb-website.git
     cd numberdb-website
+    
+Change settings in `.env` and `makefile`, especially passwords, `DEBUG=FALSE`, and if desired add server's IP address to `ALLOWED_HOSTS`:
+
+    vim .env
+    vim makefile
 
 Run `make deploy`:
 
