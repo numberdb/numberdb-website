@@ -212,14 +212,20 @@ setup_certbot:
 	sudo snap refresh core
 	sudo apt-get remove certbot
 	sudo snap install --classic certbot
-	sudo ln -s /snap/bin/certbot /usr/bin/certbot
+	- sudo ln -s /snap/bin/certbot /usr/bin/certbot
 	#sudo certbot --nginx #bad: changes nginx configuration file
-	sudo certbot certonly --nginx
+	#sudo certbot certonly --nginx
 	
 	#OLD:
-	#sudo certbot --nginx
+	sudo certbot --nginx
 	#sudo crontab -e #add at the end of the file: 0 4 * * * /usr/bin/certbot renew --quiet
-	
+
+production_restart_server:
+	sudo supervisorctl restart pyro
+	sudo supervisorctl restart eval
+	sudo supervisorctl restart numberdb
+	sudo service nginx restart
+
 deploy:
 	#DEPLOY
 	#TODO!!!
