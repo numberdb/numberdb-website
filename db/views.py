@@ -410,7 +410,12 @@ def table_context(table, preview=False):
 						if 'arXiv' in reference:
 							link = reference['arXiv']
 							link = link.split("[")[0].strip(" \n")
-							link = link.split("/")[-1]
+							link = link.split("/abs/")[-1]
+							link = link.split("/pdf/")[-1]
+							link = link.split("/ps/")[-1]
+							link = link.split("/format/")[-1]
+							link = link.split("arXiv:")[-1]
+							link = link.split("arxiv:")[-1]
 							link = "https://www.arxiv.org/abs/%s" % (link,)
 							text += '(<a href="%s">arXiv</a>) ' % (link,)
 						if 'doi' in reference:
