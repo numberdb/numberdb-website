@@ -2,7 +2,7 @@
 
 Website and database builder for [numberdb.org](https://numberdb.org).
 
-The raw data is being imported regularly from the separate git repository [numberdb-data](https://github.com/bmatschke/numberdb-data).
+The raw data is being imported regularly from the separate git repository [numberdb-data](https://github.com/numberdb/numberdb-data).
 
 ## Installation for development
 
@@ -11,7 +11,7 @@ It will install various packages globally, see `makefile`.
 Additionally it will install the git repository `numberdb-data` into the same parent folder.
 You need to have [SageMath](sagemath.org) installed and the command `sage` in your path.
 
-    git clone https://github.com/bmatschke/numberdb-website.git
+    git clone https://github.com/numberdb/numberdb-website.git
     cd numberdb-website
     make install
 

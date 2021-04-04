@@ -41,7 +41,7 @@ update: migrations static
 
 fetch_data:
 	#FETCH DATA REPOSITORY
-	- git -C '../' clone https://github.com/bmatschke/numberdb-data.git	
+	- git -C '../' clone https://github.com/numberdb/numberdb-data.git	
 	git -C '../numberdb-data/' pull
 
 build_db_numbers:
