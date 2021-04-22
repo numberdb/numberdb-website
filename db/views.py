@@ -319,8 +319,11 @@ def table_context(table, preview=False):
 						text += type_names[info['type']]
 					else:
 						text += "%s (Unknown type)" % (info['type'],)
-				if 'constraints' in info: 
-					text += ' (%s)' % (render_text(info['constraints']),)
+				if 'constraints' in info:
+					constraints = info['constraints']
+					if isinstance(constraints,list):
+						constraints = ', '.join(constraints)
+					text += ' (%s)' % (render_text(constraints),)
 
 				if 'show-in-parameter-list' in info and info['show-in-parameter-list'].lower() == 'no':
 					#Don't show this parameter in the homepage of this table.
