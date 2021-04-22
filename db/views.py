@@ -303,6 +303,7 @@ def table_context(table, preview=False):
 			"CI": "complex interval",
 			"RB": "real ball",
 			"CB": "complex ball",
+			"*R": "hyperreal number",
 		}  
 		current_job = 'parsing parameters'
 		if 'Parameters' in data and len(data['Parameters']) > 0:
