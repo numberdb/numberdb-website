@@ -296,6 +296,8 @@ def table_context(table, preview=False):
 			"Q": "rational number",
 			"R": "real number",
 			"C": "complex number",
+			"Qp": "p-adic number",
+			"Zp": "p-adic integer",
 			"ZI": "integer interval",
 			"RI": "real interval",
 			"CI": "complex interval",
