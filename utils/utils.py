@@ -8,6 +8,7 @@ import re
 from sage import *
 from sage.rings.all import *
 from sage.misc.flatten import flatten
+from sage.repl.preparse import preparse
 
 RIFprec = RealIntervalField(1000)
 RBFprec = RealBallField(1000)
@@ -129,6 +130,25 @@ def parse_fractional_part(s):
 	if r < 0:
 		r += 1
 	return r
+	
+def parse_p_adic(s):
+	s = s.strip().replace(' ','')
+	cQp = re.compile(r'^([\+\-\*/\^\d]*)\+O\((\d+)\^(\-?\d+)\)$')
+	matchQp = cQp.match(s)
+	if matchQp != None:
+		#Given searchterm is a p-adic number:
+		a, p, e = matchQp.groups()
+		p = ZZ(p)
+		e = ZZ(e)
+		#print("a,p,e:",a,p,e)
+		#print("preparse(a):",preparse(a))
+		A = eval(preparse(a))
+		#print("A:",A)
+		prec = e + min(0,-A.valuation(p))
+		Q_p = Qp(p,prec=prec)
+		result = Q_p(A).add_bigoh(e)
+		return result
+	return None	
 	
 def blur_real_interval(r, blur_bits = 2):
     #print("r:",r)

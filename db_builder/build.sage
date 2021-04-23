@@ -33,6 +33,7 @@ from utils.utils import parse_integer
 from utils.utils import parse_positive_integer
 from utils.utils import parse_real_interval
 from utils.utils import parse_fractional_part
+from utils.utils import parse_p_adic
 
 
 from git import Repo
@@ -329,8 +330,15 @@ def build_number_table():
 					try:
 						x = RBFprec('[%s]' % (number,))
 					except ValueError:
-						print("unknown format (number will be ignored):", number)
-						return 0
+						x = parse_p_adic(number)
+						
+						if x != None:
+							print("Currently p-adic numbers are not saved in db. x =",x)
+							return 1
+						
+						if x == None:
+							print("unknown format (number will be ignored):", number)
+							return 1 #still count it, even though it's not saved in db
 		
 		if x.parent() in [ZZ, QQ]:
 			if x in exact_numbers:
@@ -361,7 +369,7 @@ def build_number_table():
 		#print("before saving number")
 		n.save()
 
-		return 1 #Count of saved numbers
+		return 1 #Count of numbers
 
 	def traverse_number_table(c, numbers, params_so_far, groups_left):
 		if isinstance(numbers,dict):
