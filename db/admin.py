@@ -8,6 +8,7 @@ from .models import TableSearch
 from .models import TableCommit
 from .models import Tag
 from .models import Number
+from .models import NumberPAdic
 from .models import OeisNumber
 from .models import OeisSequence
 from .models import WikipediaNumber
@@ -17,6 +18,10 @@ admin.site.register(UserProfile)
 
 class NumberInline(admin.TabularInline):
     model = Number
+    extra = 1
+
+class NumberPAdicInline(admin.TabularInline):
+    model = NumberPAdic
     extra = 1
     
 class TableDataInline(admin.StackedInline):
@@ -53,6 +58,7 @@ class TableAdmin(admin.ModelAdmin):
 
 	inlines = (
 		NumberInline, 
+		NumberPAdicInline, 
 		TableDataInline,
 		TableSearchInline,
 		TableCommitInTableInline,
@@ -73,6 +79,7 @@ admin.site.register(TableSearch)
 admin.site.register(TableCommit)
 admin.site.register(Tag)
 admin.site.register(Number)
+admin.site.register(NumberPAdic)
 admin.site.register(OeisNumber)
 admin.site.register(OeisSequence)
 admin.site.register(WikipediaNumber)

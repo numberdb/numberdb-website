@@ -43,7 +43,7 @@ thead > tr > td {
    </td>
   
    <td class="search-result-number">
-    <a href="{% url 'db:table_by_url' result.table.url %}#{{ result.number.param_str }}">{{ result.number.str_as_real_interval }}</a>
+    <a href="{% url 'db:table_by_url' result.table.url %}#{{ result.number.param_str }}">{{ result.number.str_short }}</a>
    </td>
   
    <td class="search-result-table">

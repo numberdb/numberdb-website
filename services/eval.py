@@ -82,6 +82,16 @@ class SafeEval(object):
 			
 		else:
 			
+			#Check whether number is p-adic:
+			try:
+				K = nested.parent()
+				if is_pAdicField(K):
+					result.append((parent_key, nested))
+					return result, params_error
+			except AttributeError:
+				pass
+			
+			#Try coercion to real interval:
 			try:
 				value = RIF(nested)
 				result.append((parent_key, value))

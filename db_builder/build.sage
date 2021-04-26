@@ -21,6 +21,7 @@ from db.models import TableSearch
 from db.models import TableCommit
 from db.models import Tag
 from db.models import Number
+from db.models import NumberPAdic
 
 from django.contrib.sites.models import Site
 
@@ -332,15 +333,15 @@ def build_number_table():
 					except ValueError:
 						x = parse_p_adic(number)
 						
-						if x != None:
-							print("Currently p-adic numbers are not saved in db. x =",x)
-							return 1
+						#if x != None:
+						#	print("Currently p-adic numbers are not saved in db. x =",x)
+						#	return 1
 						
 						if x == None:
 							print("unknown format (number will be ignored):", number)
 							return 1 #still count it, even though it's not saved in db
 		
-		if x.parent() in [ZZ, QQ]:
+		if x.parent().is_exact():
 			if x in exact_numbers:
 				#don't save duplicate exact numbers
 				return 1 #still count it 
@@ -350,14 +351,22 @@ def build_number_table():
 		p = number_param_groups_to_bytes(param)
 		#print("x:",x)
 
+		if is_pAdicField(x.parent()):
+			
+			n = NumberPAdic(sage_number = x)
+
+		else:
 		
-		try:
-			n = Number(sage_number = x)
-		except OverflowError:
-			#print("make x to real interval")
-			x = RIFprec(x)
-			n = Number(sage_number = x)
-		#n.of_type = Searchable.TYPE_NUMBER #not anymore automatic
+			#Debug:
+			#return 0
+			
+			try:
+				n = Number(sage_number = x)
+			except OverflowError:
+				#print("make x to real interval")
+				x = RIFprec(x)
+				n = Number(sage_number = x)
+			#n.of_type = Searchable.TYPE_NUMBER #not anymore automatic
 		
 		
 		#print("debug0")
@@ -401,6 +410,8 @@ def build_number_table():
 
 		return count
 
+	total_number_count = 0
+	
 	for c_data in TableData.objects.all().order_by('table_id'):
 		with transaction.atomic():
 			c = c_data.table
@@ -434,6 +445,9 @@ def build_number_table():
 			for tag in c.tags.all():
 				tag.number_count += count
 				tag.save()
+			total_number_count += count
+			
+	print(" === total_number_count:",total_number_count)
 
 def build_search_index_for_tables():
 	print("BUILD SEARCH INDEX for TABLES")
