@@ -10,6 +10,7 @@ from urllib.parse import unquote_plus
 import numpy as np
 
 from sage import *
+from sage.all import *
 from sage.rings.all import *
 
 from utils.utils import real_interval_to_pretty_string
@@ -368,6 +369,9 @@ class Number(models.Model):
 	def str_as_real_interval(self):
 		return real_interval_to_pretty_string(self.to_RIF())
 
+	def str_short(self):
+		return self.str_as_real_interval()
+
 	def __str__(self):
 		r = self.to_sage()
 		if r.parent() == ZZ:
@@ -385,6 +389,119 @@ class Number(models.Model):
 		else:
 			print("r:",r)
 			raise NotImplementedError()
+
+class NumberPAdic(models.Model):
+
+	#Format of number_string:
+	#"<prime>,<valuation>,<digits>"
+	#which represents
+	#prime^valuation * sum_i digits[i]*prime^i + O(prime^(valuation+len(digits)))
+	#Note: 0 is represented as "prime,0,0"
+	
+	NUMBER_TYPE_QP = b'p'
+	
+	number_type = models.BinaryField(
+		max_length = 1,
+		#choices = NUMBER_TYPES,
+		default = NUMBER_TYPE_QP,
+	)
+	number_string = models.TextField(
+		#max_length = 100,
+		db_index = True,
+	)
+	prime = models.IntegerField(
+		db_index = True,
+	)
+	valuation = models.IntegerField(
+		db_index = True,
+	)
+	table = models.ForeignKey(
+		Table, 
+		on_delete=models.CASCADE,
+		related_name="p_adic_numbers"
+	)
+	param = models.BinaryField(
+		max_length = 16,
+	)
+
+	def number_type_bytes(self):
+		return to_bytes(self.number_type)
+
+	def param_bytes(self):
+		return to_bytes(self.param)
+
+	def param_str(self):
+		return self.param_bytes().decode()
+
+	def __init__(self, *args, **kwargs):
+		
+		if not 'sage_number' in kwargs:
+			super(NumberPAdic, self).__init__(*args, **kwargs)
+			return
+			
+		r = kwargs.pop('sage_number')
+		super(NumberPAdic, self).__init__(*args, **kwargs)
+		
+		#print("r:",r)
+		if r == None:
+			return
+
+		elif not is_pAdicField(r.parent()):
+			raise NotImplementedError("sage_number is of non-implemented type")
+			
+		Q_p = r.parent()
+		p = Q_p.prime()
+		
+		if r == 0:
+			prec = 0
+			valuation = 0
+			expansion = [0 for i in range(Q_p.precision_cap())]
+		else:
+			prec = r.precision_absolute()
+			valuation = r.valuation()
+			unit = r.unit_part()
+			expansion = unit.expansion()
+	
+		lenp = ceil(log(p,10))
+		digits = '|'.join(
+			('%0'+str(lenp)+'d') % (digit,) for digit in expansion
+		)			
+	
+		self.prime = p
+		self.valuation = valuation
+		self.number_string = '%s,%s,%s' % (
+			p,
+			valuation,
+			digits
+		)
+		
+	def to_Qp(self):
+		s = self.number_string
+		s_prime, s_valuation, s_digits = s.split(',')
+		#prime = ZZ(s_prime)
+		#valuation = ZZ(s_valuation)
+		prime = self.prime
+		valuation = self.valuation
+		
+		digits = s_digits.split('|')
+		Q_p = Qp(prime,prec=len(digits))
+		result = Q_p(prime)**valuation * sum(
+			prime**i * ZZ(digit) for i,digit in enumerate(digits) 
+		)
+		return result
+
+	def to_sage(self):
+		return self.to_Qp()
+
+	def str_short(self):
+		r = self.to_sage()
+		r = r.add_bigoh(r.valuation() + 5)
+		return str(r)
+		
+	def __str__(self):
+		r = self.to_sage()
+		return str(r)
+
 
 class OeisNumber(models.Model):
 	

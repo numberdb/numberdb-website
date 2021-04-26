@@ -65,6 +65,7 @@ from .models import TableData
 from .models import TableSearch
 from .models import Tag
 from .models import Number
+from .models import NumberPAdic
 from .models import OeisNumber
 from .models import OeisSequence
 from .models import WikipediaNumber
@@ -1444,6 +1445,7 @@ def advanced_suggestions(request):
 	query_i = 0 
 	query_bulk_size = 1 #Apparently, bulk_size doesn't really matter, and also as is, only query_bulk_size=1 yields correct param.
 	query_real_intervals = Number.objects.none()
+	query_p_adic_numbers = NumberPAdic.objects.none()
 
 	def do_query():
 		nonlocal i
@@ -1457,20 +1459,47 @@ def advanced_suggestions(request):
 			})
 			i += 1
 			if i >= max_results:
-				break
+				return
+
+		for number in query_p_adic_numbers[:(max_results - i)]:
+			print("result:",number.number_string)
+			results.append({
+				'param': param,
+				'number': number,
+				'table': number.table,		
+			})
+			i += 1
+			if i >= max_results:
+				return
 	
 	for param, r in param_numbers:
-		#Searching for real number up to given precision:
-		r_query = blur_real_interval(r)
-		print("r_query:",r_query)
-		query_real_intervals |= Number.objects.filter(
-			lower__range = (float(r_query.lower()),float(r_query.upper())),
-			upper__range = (float(r_query.lower()),float(r_query.upper())),							
-		)
-		query_i += 1
+		
+		K = r.parent()
+		if K == RIF:
+			#Searching for real number up to given precision:
+			r_query = blur_real_interval(r)
+			print("r_query:",r_query)
+			query_real_intervals |= Number.objects.filter(
+				lower__range = (float(r_query.lower()),float(r_query.upper())),
+				upper__range = (float(r_query.lower()),float(r_query.upper())),							
+			)
+			query_i += 1
+		
+		elif is_pAdicField(K):
+			#Searching for p-adic number up to given precision:
+			#Cap precision to around 53 bits: (Numbers in DB might not be as precise as the given r.)
+			r_query = r.add_bigoh(r.valuation() + ceil(53*log(K.prime(),2)))
+			number = NumberPAdic(sage_number = r_query)
+			print("number_string:",number.number_string)
+			query_p_adic_numbers |= NumberPAdic.objects.filter(
+				number_string__startswith = number.number_string,							
+			)
+			query_i += 1
+
 		if query_i >= query_bulk_size:
 			do_query()
 			query_real_intervals = Number.objects.none()
+			query_p_adic_numbers = NumberPAdic.objects.none()
 			query_i = 0
 			
 		if i >= max_results:

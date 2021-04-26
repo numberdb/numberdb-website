@@ -5,7 +5,8 @@ from cysignals import AlarmInterrupt
 from cysignals.alarm import alarm, cancel_alarm
 import re
 
-from sage import *
+#from sage import *
+from sage.all import *
 from sage.rings.all import *
 from sage.misc.flatten import flatten
 from sage.repl.preparse import preparse
