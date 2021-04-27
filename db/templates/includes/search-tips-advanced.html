@@ -28,5 +28,22 @@ Examples:
 </li>
 </ul>
 </li>
+
+<li id="how-to-search-p-adic-numbers">
+<div class="li-header">Lists of p-adic numbers</div>
+Similarly you can search for p-adic numbers in $\mathbb{Z}_p$ and $\mathbb{Q}_p$.<br>
+Examples:
+<ul>
+<li>
+<code>Qp(2,prec=3)(5)</code> searches for $5 + O(2^3)$ = $2^0 + 2^2 + O(2^3)$, 
+that is, any $2$-adic integer with first three $2$-adic digits $1$, $0$, $1$.
+</li>
+<li>
+<code>{n: Qp(2)(n) for n in [1..10]}</code> searches $1$, ..., $10$ up to $O(2^{20})$ as $2$-adic numbers; 
+note that 20 is the standard precision for Qp in sage.
+</li>
+</ul>
+</li>
+
 </ul>
 
