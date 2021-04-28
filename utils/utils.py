@@ -192,6 +192,8 @@ def parse_p_adic(s):
 				print(i,ZZ(digits1[lenp*i:lenp*(i+1)]))
 				result += Q_p(ZZ(digits1[lenp*i:lenp*(i+1)]) * p**i)
 			result = result.add_bigoh(num_digits1)
+			if sign == '-':
+				result = -result
 			print("result:",result)
 			return result
 		

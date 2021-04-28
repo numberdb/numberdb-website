@@ -1087,7 +1087,7 @@ def suggestions(request):
 
 	
 	#Searching for tag names:
-	if ':' not in term:
+	if ':' not in term and '^' not in term:
 		search_query = full_text_search_query(term)
 		rank = SearchRank(F('search_vector'), search_query)
 		query_tags = Tag.objects.annotate(rank=rank).filter(rank__gte=0.01).order_by('-rank')[:(10-i)]
@@ -1116,7 +1116,7 @@ def suggestions(request):
 			return wrap_response(entries)
 		
 	#Searching for tables:
-	if ':' not in term:
+	if ':' not in term and '^' not in term:
 		search_query = full_text_search_query(term)
 		rank = SearchRank(F('search_vector'), search_query)
 		query_tables = TableSearch.objects.annotate(rank=rank).filter(rank__gte=0.01).order_by('-rank')[:(10-i)]
