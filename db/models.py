@@ -453,9 +453,9 @@ class NumberPAdic(models.Model):
 		p = Q_p.prime()
 		
 		if r == 0:
-			prec = 0
+			prec = Q_p.precision_cap()
 			valuation = 0
-			expansion = [0 for i in range(Q_p.precision_cap())]
+			expansion = [0 for i in range(prec)]
 		else:
 			prec = r.precision_absolute()
 			valuation = r.valuation()
@@ -485,9 +485,9 @@ class NumberPAdic(models.Model):
 		
 		digits = s_digits.split('|')
 		Q_p = Qp(prime,prec=len(digits))
-		result = Q_p(prime)**valuation * sum(
+		result = Q_p(prime)**valuation * Q_p(sum(
 			prime**i * ZZ(digit) for i,digit in enumerate(digits) 
-		)
+		)).add_bigoh(len(digits))
 		return result
 
 	def to_sage(self):
