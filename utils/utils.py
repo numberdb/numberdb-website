@@ -134,6 +134,9 @@ def parse_fractional_part(s):
 	
 def parse_p_adic(s):
 	s = s.strip().replace(' ','')
+	
+	#Try to read p-adic number as:
+	#<expression of rational number> + O(p^e)
 	cQp = re.compile(r'^([\+\-\*/\^\d]*)\+O\((\d+)\^(\-?\d+)\)$')
 	matchQp = cQp.match(s)
 	if matchQp != None:
@@ -149,6 +152,49 @@ def parse_p_adic(s):
 		Q_p = Qp(p,prec=prec)
 		result = Q_p(A).add_bigoh(e)
 		return result
+
+	#Try to read p-adic number as:
+	#O(p^e)
+	cQp = re.compile(r'^O\((\d+)\^(\-?\d+)\)$')
+	matchQp = cQp.match(s)
+	if matchQp != None:
+		#Given searchterm is a p-adic number:
+		p, e = matchQp.groups()
+		p = ZZ(p)
+		e = ZZ(e)
+		prec = e
+		Q_p = Qp(p,prec=prec)
+		result = Q_p(0).add_bigoh(e)
+		return result
+	
+	#Try to read p-adic number as:
+	#Qp:digits	
+	cQp2 = re.compile(r'^[qQzZ](\d+)[: ](\-?)((?:\d*\.)?)(\d*)$')
+	matchQp2 = cQp2.match(s)
+	if matchQp2 != None:
+		p, sign, digits0, digits1 = matchQp2.groups()
+		lenp = ZZ(len(p))
+		p = ZZ(p)
+		print("p,sign,digits0,digits1:",p,sign,digits0,digits1)
+		print("lenp:",lenp)
+		lend0 = ZZ(len(digits0))
+		lend1 = ZZ(len(digits1))
+		if lend0 % lenp == 0 and lend1 % lenp == 0:
+			num_digits0 = ZZ(lend0/lenp)
+			num_digits1 = ZZ(lend1/lenp)
+			prec = num_digits0 + num_digits1
+			Q_p = Qp(p, prec = prec)
+			result = Q_p(0)
+			for i in range(num_digits0):
+				print(i,ZZ(digits0[lenp*i:lenp*(i+1)]))
+				result += Q_p(ZZ(digits0[lenp*i:lenp*(i+1)]) * p**(i-num_digits0))
+			for i in range(num_digits1):
+				print(i,ZZ(digits1[lenp*i:lenp*(i+1)]))
+				result += Q_p(ZZ(digits1[lenp*i:lenp*(i+1)]) * p**i)
+			result = result.add_bigoh(num_digits1)
+			print("result:",result)
+			return result
+		
 	return None	
 	
 def blur_real_interval(r, blur_bits = 2):

@@ -81,6 +81,7 @@ from utils.utils import parse_rational_number
 from utils.utils import parse_positive_integer
 from utils.utils import parse_real_interval
 from utils.utils import parse_fractional_part
+from utils.utils import parse_p_adic
 from utils.utils import blur_real_interval
 
 
@@ -905,9 +906,9 @@ def suggestions(request):
 				'url': '/%s#%s' % (table.url, param),
 			}
 			if len(param) > 0: 
-				entry_i['subtitle'] = '%s (#%s)' % (number.str_as_real_interval(), param)
+				entry_i['subtitle'] = '%s (#%s)' % (number.str_short(), param)
 			else:
-				entry_i['subtitle'] = '%s' % (number.str_as_real_interval(),)
+				entry_i['subtitle'] = '%s' % (number.str_short(),)
 			if hasattr(number,'query_frac'):
 				entry_i['subtitle'] += ' (fractional part)'
 			entries[i] = entry_i
@@ -1062,61 +1063,84 @@ def suggestions(request):
 	
 	if i >= 10:
 		return wrap_response(entries)
+		
+		#Searching for rational numbers that are not integers:
+
+	#Searching for p-adic numbers:
+	query_p_adics = NumberPAdic.objects.none()
+	n = parse_p_adic(term)
+	if n != None:
+		number = NumberPAdic(sage_number=n)
+			
+		if number != None:
+			print("number:",number)
+			query_p_adics = NumberPAdic.objects.filter(
+				number_string__startswith = number.number_string,
+			)[:int(10-i)]
+			print("query_p_adics:",query_p_adics)
+			suggested_numbers += list(query_p_adics)
+			#print("suggested_numbers:",suggested_numbers)
+			add_suggested_numbers()
+
+		if i >= 10:
+			return wrap_response(entries)
+
 	
 	#Searching for tag names:
-	search_query = full_text_search_query(term)
-	rank = SearchRank(F('search_vector'), search_query)
-	query_tags = Tag.objects.annotate(rank=rank).filter(rank__gte=0.01).order_by('-rank')[:(10-i)]
-	
-	#OLD: Simpler query:
-	#query_tags = Tag.objects.filter(search_vector = term)[:(10-i)]
-	
-	for tag in query_tags:
-		entry_i = {
-			'value': str(i),
-			'label': '',
-			'type': 'tag',
-			'title': '<div class="tag">%s</div>' % (tag.name,),
-			'subtitle': '%s table%s, %s number%s' % (
-				tag.table_count,
-				's' if tag.table_count != 1 else '',
-				tag.number_count,
-				's' if tag.number_count != 1 else '',
-			),
-			'url': reverse('db:tag', kwargs={'tag_url': tag.url()}),
-		}
-		entries[i] = entry_i
-		i += 1
+	if ':' not in term:
+		search_query = full_text_search_query(term)
+		rank = SearchRank(F('search_vector'), search_query)
+		query_tags = Tag.objects.annotate(rank=rank).filter(rank__gte=0.01).order_by('-rank')[:(10-i)]
+		
+		#OLD: Simpler query:
+		#query_tags = Tag.objects.filter(search_vector = term)[:(10-i)]
+		
+		for tag in query_tags:
+			entry_i = {
+				'value': str(i),
+				'label': '',
+				'type': 'tag',
+				'title': '<div class="tag">%s</div>' % (tag.name,),
+				'subtitle': '%s table%s, %s number%s' % (
+					tag.table_count,
+					's' if tag.table_count != 1 else '',
+					tag.number_count,
+					's' if tag.number_count != 1 else '',
+				),
+				'url': reverse('db:tag', kwargs={'tag_url': tag.url()}),
+			}
+			entries[i] = entry_i
+			i += 1
 
-	if i >= 10:
-		return wrap_response(entries)
+		if i >= 10:
+			return wrap_response(entries)
 		
 	#Searching for tables:
-	search_query = full_text_search_query(term)
-	rank = SearchRank(F('search_vector'), search_query)
-	query_tables = TableSearch.objects.annotate(rank=rank).filter(rank__gte=0.01).order_by('-rank')[:(10-i)]
-	
-	#OLD: Simpler query:
-	#query_tables = TableSearch.objects.filter(search_vector = term)[:(10-i)]
-	
-	for c_search in query_tables:
-		table = c_search.table
-		entry_i = {
-			'value': str(i),
-			'label': '',
-			'type': 'table',
-			'title': table.title,
-			'url': '/%s' % (table.url,),
-		}
-		if table.number_count != 1:
-			entry_i['subtitle'] = '%s numbers' % table.number_count
-		else:
-			number = table.numbers.first()
-			entry_i['subtitle'] = '%s' % (number.str_as_real_interval(),)
-		entries[i] = entry_i
-		i += 1
+	if ':' not in term:
+		search_query = full_text_search_query(term)
+		rank = SearchRank(F('search_vector'), search_query)
+		query_tables = TableSearch.objects.annotate(rank=rank).filter(rank__gte=0.01).order_by('-rank')[:(10-i)]
 		
-	
+		#OLD: Simpler query:
+		#query_tables = TableSearch.objects.filter(search_vector = term)[:(10-i)]
+		
+		for c_search in query_tables:
+			table = c_search.table
+			entry_i = {
+				'value': str(i),
+				'label': '',
+				'type': 'table',
+				'title': table.title,
+				'url': '/%s' % (table.url,),
+			}
+			if table.number_count != 1:
+				entry_i['subtitle'] = '%s numbers' % table.number_count
+			else:
+				number = table.numbers.first()
+				entry_i['subtitle'] = '%s' % (number.str_as_real_interval(),)
+			entries[i] = entry_i
+			i += 1
+			
 	return wrap_response(entries)
 
 def properties_of_rational(request, numerator, denominator):
@@ -1482,7 +1506,7 @@ def advanced_suggestions(request):
 			query_real_intervals |= Number.objects.filter(
 				lower__range = (float(r_query.lower()),float(r_query.upper())),
 				upper__range = (float(r_query.lower()),float(r_query.upper())),							
-			)
+			) #Request maximum number of results?
 			query_i += 1
 		
 		elif is_pAdicField(K):
@@ -1493,7 +1517,7 @@ def advanced_suggestions(request):
 			print("number_string:",number.number_string)
 			query_p_adic_numbers |= NumberPAdic.objects.filter(
 				number_string__startswith = number.number_string,							
-			)
+			) #Request maximum number of results?
 			query_i += 1
 
 		if query_i >= query_bulk_size:
