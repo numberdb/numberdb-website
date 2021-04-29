@@ -249,9 +249,35 @@ The interval can be given in one of the following formats:
  </li>
  </ul>
 </li>
+
+<li>
+<div class="li-header">$p$-adic numbers:</div>
+$p$-adic numbers in $\mathbb{Q}_p$ are usually hard to represent exactly.
+Instead we store an exactly represented $p$-adic ball that contains the $p$-adic number.
+The smaller the radius of the ball, the higher the accuracy.
+The ball can be given in one of the following (equivalent) formats:
+ <ul>
+ <li id="number-type-p-adic-rational">Rational representative:
+     e.g. "3+1/2 + O(2^3)" represents the $2$-adic ball $2^{-1} + 2^0 + 2^1 + O(2^3)$.
+     The rational representative might be given as an algebraic expression involving
+     integers and the usual operations "+", "-", "*", "/", and "^".
+ </li>
+ <li id="number-type-p-adic-decimal">$p$-adic expansion:
+     e.g. "Q2:1.110" represents the $2$-adic ball $2^{-1} + 2^0 + 2^1 + O(2^3)$.
+     Note: The most significant digit stands on the left.
+     The $p$-adic digits are given as base 10 numbers with as many letters as the base 10 representation of p.
+     E.g. "Q13:01.02" represents the $13$-adic ball $13^{-1}+2\cdot 13^0 + O(13^1)$.
+     The decimal point is not necessary, 
+     e.g. "Q2:110" represents the $2$-adic ball $2^0 + 2^1 + O(2^3)$.
+     Minus signs are allowed, 
+     e.g. "Q2:-110" represents the $2$-adic ball $-(2^0 + 2^1) + O(2^3)$.
+ </li>
+ </ul>
+</li>
+
 </ul>
 
-These formats apply to the tables' webpages as well as to the raw data in yaml format.
+These formats apply to the tables' webpages, the searchbar, as well as to the raw data in yaml format.
 <!--
 Note that in the yaml format one has put quotation marks around square brackets, such that
 the interval does not get parsed as a list.
