@@ -513,6 +513,7 @@ with transaction.atomic():
 print("Times:\n%s" % (timer,))
 
 print("Number count:", Number.objects.count())
+print("NumberPAdic count:", NumberPAdic.objects.count())
 print("Table count:", Table.objects.count())
 print("Tag count:", Tag.objects.count())
 print("TableCommit count:", TableCommit.objects.count())
