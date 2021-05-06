@@ -4,7 +4,7 @@ ALLOWED_HOSTS = .numberdb.org
 
 DATABASE_URL = postgres://u_numberdb:password2_to_be_changed@localhost:5432/numberdb
 
-ACCOUNT_DEFAULT_HTTP_PROTOCOL = http
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = https
 
 SOCIALACCOUNT_GITHUB_ID = 
 SOCIALACCOUNT_GITHUB_SECRET = 
