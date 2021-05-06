@@ -1,0 +1,15 @@
+SECRET_KEY = password1_to_be_changed
+DEBUG = FALSE
+ALLOWED_HOSTS = .numberdb.org
+
+DATABASE_URL = postgres://u_numberdb:password2_to_be_changed@localhost:5432/numberdb
+
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = http
+
+SOCIALACCOUNT_GITHUB_ID = 
+SOCIALACCOUNT_GITHUB_SECRET = 
+
+#EMAIL_BACKEND = django.core.mail.backends.console.EmailBackend
+EMAIL_BACKEND = anymail.backends.mailgun.EmailBackend
+EMAIL_MG_API_KEY =
+EMAIL_MG_API_BASE_URL =
