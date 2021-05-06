@@ -149,6 +149,8 @@ install:
 	$(MAKE) install_packages
 	$(MAKE) install_django
 	
+	cp install/default-dotenv-dev .env
+	
 	$(MAKE) setup_postgres
 	
 	$(MAKE) migrations	
