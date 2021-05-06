@@ -102,6 +102,16 @@ install_packages:
 	#INSTALL PACKAGES
 	sudo apt-get install git libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev libtk8.6 libgdm-dev libdb4o-cil-dev libpcap-dev
 
+install_packages_deploy:
+	#INSTALL PACKAGES_DEPLOY: (packages needed for deployment)
+
+	sudo apt-get -y install nginx
+	sudo apt-get -y install supervisor
+
+	$(PIP) install gunicorn
+	sudo apt-get install libpq-dev
+	$(PIP) install psycopg2
+
 
 install_django:
 	export PATH='${HOME}/SageMath/:${PATH}'
@@ -131,25 +141,17 @@ install_django:
 	#$(PIP) install pydriller
 	$(PIP) install django-extensions
 
-	#Packages for deployment:
-
 	sudo apt-get -y install postgresql postgresql-contrib
-	sudo apt-get -y install nginx
-	sudo apt-get -y install supervisor
-
-	$(PIP) install gunicorn
-	sudo apt-get install libpq-dev
-	$(PIP) install psycopg2
 
 
 install:
 	#INSTALL
 	#$(MAKE) install_sage_ubuntu20 #Actually: Don't install sage here! Let user install it by themselves.
 
+	cp install/default-dotenv-dev .env
+
 	$(MAKE) install_packages
 	$(MAKE) install_django
-	
-	cp install/default-dotenv-dev .env
 	
 	$(MAKE) setup_postgres
 	
@@ -242,6 +244,7 @@ deploy:
 	#source venv/bin/activate
 	
 	#$(MAKE) install_packages
+	$(MAKE) install_packages_deploy
 	$(MAKE) install_sage_ubuntu20
 	
 	$(MAKE) install_full
