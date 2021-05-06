@@ -253,7 +253,8 @@ class Number(models.Model):
 		related_name="numbers"
 	)
 	param = models.BinaryField(
-		max_length = 16,
+		max_length = 24,
+		db_index = True
 	)
 
 	def number_type_bytes(self):
@@ -421,7 +422,8 @@ class NumberPAdic(models.Model):
 		related_name="p_adic_numbers"
 	)
 	param = models.BinaryField(
-		max_length = 16,
+		max_length = 24,
+		db_index = True,
 	)
 
 	def number_type_bytes(self):
