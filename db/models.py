@@ -253,7 +253,7 @@ class Number(models.Model):
 		related_name="numbers"
 	)
 	param = models.BinaryField(
-		max_length = 24,
+		max_length = 32,
 		db_index = True
 	)
 
@@ -422,7 +422,7 @@ class NumberPAdic(models.Model):
 		related_name="p_adic_numbers"
 	)
 	param = models.BinaryField(
-		max_length = 24,
+		max_length = 32,
 		db_index = True,
 	)
 
