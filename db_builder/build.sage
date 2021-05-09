@@ -35,6 +35,7 @@ from utils.utils import parse_positive_integer
 from utils.utils import parse_real_interval
 from utils.utils import parse_fractional_part
 from utils.utils import parse_p_adic
+from utils.utils import number_with_uncertainty_to_real_ball
 
 
 from git import Repo
@@ -331,15 +332,20 @@ def build_number_table():
 					try:
 						x = RBFprec('[%s]' % (number,))
 					except ValueError:
-						x = parse_p_adic(number)
-						
-						#if x != None:
-						#	print("Currently p-adic numbers are not saved in db. x =",x)
-						#	return 1
-						
+						#Currently we interpret numbers with uncertainty 
+						#as real balls, whose radius is 1 standard uncertainty.
+						#That is, that the actual number lies within it
+						#has probability 68%, which is not good.
+						#We do this to make the number easier searchable,
+						#which is the only current use of the Number-entry.
+						#TODO: If other things than search is done for these
+						#      numbers with uncertainty, consider their own data structure.
+						x = number_with_uncertainty_to_real_ball(number, standard_deviations=1)
 						if x == None:
-							print("unknown format (number will be ignored):", number)
-							return 1 #still count it, even though it's not saved in db
+							x = parse_p_adic(number)
+							if x == None:
+								print("unknown format (number will be ignored):", number)
+								return 1 #still count it, even though it's not saved in db
 		
 		if x.parent().is_exact():
 			if x in exact_numbers:
