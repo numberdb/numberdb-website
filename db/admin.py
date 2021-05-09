@@ -9,6 +9,7 @@ from .models import TableCommit
 from .models import Tag
 from .models import Number
 from .models import NumberPAdic
+from .models import NumberComplex
 from .models import OeisNumber
 from .models import OeisSequence
 from .models import WikipediaNumber
@@ -22,6 +23,10 @@ class NumberInline(admin.TabularInline):
 
 class NumberPAdicInline(admin.TabularInline):
     model = NumberPAdic
+    extra = 1
+
+class NumberComplexInline(admin.TabularInline):
+    model = NumberComplex
     extra = 1
     
 class TableDataInline(admin.StackedInline):
@@ -59,6 +64,7 @@ class TableAdmin(admin.ModelAdmin):
 	inlines = (
 		NumberInline, 
 		NumberPAdicInline, 
+		NumberComplexInline, 
 		TableDataInline,
 		TableSearchInline,
 		TableCommitInTableInline,
@@ -80,6 +86,7 @@ admin.site.register(TableCommit)
 admin.site.register(Tag)
 admin.site.register(Number)
 admin.site.register(NumberPAdic)
+admin.site.register(NumberComplex)
 admin.site.register(OeisNumber)
 admin.site.register(OeisSequence)
 admin.site.register(WikipediaNumber)

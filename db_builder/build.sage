@@ -22,6 +22,7 @@ from db.models import TableCommit
 from db.models import Tag
 from db.models import Number
 from db.models import NumberPAdic
+from db.models import NumberComplex
 
 from django.contrib.sites.models import Site
 
@@ -29,12 +30,15 @@ from utils.utils import number_param_groups_to_bytes
 from utils.utils import to_bytes
 from utils.utils import RIFprec
 from utils.utils import RBFprec
+from utils.utils import CIFprec
+from utils.utils import CBFprec
 
 from utils.utils import parse_integer
 from utils.utils import parse_positive_integer
 from utils.utils import parse_real_interval
 from utils.utils import parse_fractional_part
 from utils.utils import parse_p_adic
+from utils.utils import parse_complex_interval
 from utils.utils import number_with_uncertainty_to_real_ball
 
 
@@ -342,10 +346,12 @@ def build_number_table():
 						#      numbers with uncertainty, consider their own data structure.
 						x = number_with_uncertainty_to_real_ball(number, standard_deviations=1)
 						if x == None:
-							x = parse_p_adic(number)
+							x = parse_complex_interval(number, CIF=CIFprec)
 							if x == None:
-								print("unknown format (number will be ignored):", number)
-								return 1 #still count it, even though it's not saved in db
+								x = parse_p_adic(number)
+								if x == None:
+									print("unknown format (number will be ignored):", number)
+									return 1 #still count it, even though it's not saved in db
 		
 		if x.parent().is_exact():
 			if x in exact_numbers:
@@ -361,7 +367,7 @@ def build_number_table():
 			
 			n = NumberPAdic(sage_number = x)
 
-		else:
+		elif x.imag() == 0:
 		
 			#Debug:
 			#return 0
@@ -373,7 +379,15 @@ def build_number_table():
 				x = RIFprec(x)
 				n = Number(sage_number = x)
 			#n.of_type = Searchable.TYPE_NUMBER #not anymore automatic
-		
+	
+		else:
+			
+			try:
+				n = NumberComplex(sage_number = x)
+			except OverflowError:
+				#print("make x to complex interval")
+				x = CIFprec(x)
+				n = NumberComplex(sage_number = x)
 		
 		#print("debug0")
 		n.table = c
@@ -520,6 +534,7 @@ print("Times:\n%s" % (timer,))
 
 print("Number count:", Number.objects.count())
 print("NumberPAdic count:", NumberPAdic.objects.count())
+print("NumberComplex count:", NumberComplex.objects.count())
 print("Table count:", Table.objects.count())
 print("Tag count:", Tag.objects.count())
 print("TableCommit count:", TableCommit.objects.count())
