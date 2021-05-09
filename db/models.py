@@ -397,7 +397,7 @@ class NumberPAdic(models.Model):
 	#"<prime>,<valuation>,<digits>"
 	#which represents
 	#prime^valuation * sum_i digits[i]*prime^i + O(prime^(valuation+len(digits)))
-	#Note: 0 is represented as "prime,0,0"
+	#Note: 0 is represented as "prime,0,000...000"
 	
 	NUMBER_TYPE_QP = b'p'
 	
