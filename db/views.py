@@ -1070,6 +1070,18 @@ def suggestions(request):
 	query_p_adics = NumberPAdic.objects.none()
 	n = parse_p_adic(term)
 	if n != None:
+		#First cap precision of n,
+		#as high precision queries would not be fould otherwise.
+		p = n.parent().prime()
+		prec_cap = ZZ(ceil(40 * log(10,p)))
+		print("prec_cap:",prec_cap)
+		print("n before prec cap:",n)
+		if n == 0:
+			n = n.add_bigoh(prec_cap)
+		else:
+			n = n.add_bigoh(n.valuation() + prec_cap)
+		print("n after prec cap:",n)
+		
 		number = NumberPAdic(sage_number=n)
 			
 		if number != None:
