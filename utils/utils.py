@@ -13,6 +13,8 @@ from sage.repl.preparse import preparse
 
 RIFprec = RealIntervalField(1000)
 RBFprec = RealBallField(1000)
+CIFprec = ComplexIntervalField(1000)
+CBFprec = ComplexBallField(1000)
 
 def parse_integer(s):
 	cZZ = re.compile(r'^([+-]?)(\d+)$')
@@ -199,6 +201,49 @@ def parse_p_adic(s):
 		
 	return None	
 	
+def parse_complex_interval(s, CIF=CIF):
+    RIF = RealIntervalField(CIF.prec())
+    s = s.strip().lower().replace(' ','').replace('j','i')
+    cOp = re.compile(r'(\d)([\+\-])')
+    terms = cOp.split(s)
+    #print('terms:',terms)
+    coeff = None
+    result = CIF(0)
+    while len(terms) != 0:
+        if coeff == None:
+            #First loop:
+            coeff = 1
+        else:
+            #Other loops:
+            sign = terms.pop(0)
+            if sign == '+':
+                coeff = 1
+            elif sign == '-':
+                coeff = -1
+            else:
+                raise RuntimeError("Shouldn't occur")
+        summand = terms.pop(0)
+        if len(terms) != 0:
+            #The digit before the next +/- operation is still missing:
+            summand += terms.pop(0)
+        if summand == '':
+            continue
+        if summand == 'i':
+            result += coeff * I
+            continue
+        if summand.startswith('i*'):
+            coeff *= I
+            summand = summand[2:]
+        if summand.endswith('*i'):
+            coeff *= I
+            summand = summand[:-2]
+        r = parse_real_interval(summand,RIF=RIF)
+        if r == None:
+            return None
+        result += coeff * r
+    return result
+        
+    
 def blur_real_interval(r, blur_bits = 2):
     #print("r:",r)
     #print("r.lower(), r.upper():",r.lower(),r.upper())

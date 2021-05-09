@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.postgres.search import SearchVectorField
 from django.dispatch import receiver
 from django.db.models.signals import post_save
+#from django.contrib.gis.db import models as gis_models
 
 from urllib.parse import quote_plus
 from urllib.parse import unquote_plus
@@ -16,6 +17,7 @@ from sage.rings.all import *
 from utils.utils import real_interval_to_pretty_string
 from utils.utils import to_bytes
 from utils.utils import RIFprec, RBFprec
+from utils.utils import CIFprec, CBFprec
 
 class UserProfile(models.Model):
 	user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -318,12 +320,15 @@ class Number(models.Model):
 
 		else:
 			raise NotImplementedError("sage_number is of non-implemented type")
-			
-		ri = RIFprec(r)
+
+		ri_prec = RIFprec(r)
+		ri = RIF(r)
+
+		#should use ri here in order to use the correctly rounded number:
 		self.lower = ri.lower()
 		self.upper = ri.upper()
-		
-		frac = ri.frac()
+			
+		frac = ri_prec.frac()
 		if frac <= 0:
 			frac += 1
 		self.frac_lower = float(frac.lower())
@@ -504,6 +509,124 @@ class NumberPAdic(models.Model):
 		r = self.to_sage()
 		return str(r)
 
+class NumberComplex(models.Model):
+
+	NUMBER_TYPE_QP = b'c'
+	
+	number_type = models.BinaryField(
+		max_length = 1,
+		#choices = NUMBER_TYPES,
+		default = NUMBER_TYPE_QP,
+	)
+	number_searchstring = models.TextField(
+		max_length = 32,
+		db_index = True,
+	)
+	table = models.ForeignKey(
+		Table, 
+		on_delete=models.CASCADE,
+		related_name="complex_numbers"
+	)
+	param = models.BinaryField(
+		max_length = 32,
+		db_index = True,
+	)
+	re_lower = models.FloatField(
+		db_index = True,
+	)
+	re_upper = models.FloatField(
+		db_index = True,
+	)
+	im_lower = models.FloatField(
+		db_index = True,
+	)
+	im_upper = models.FloatField(
+		db_index = True,
+	)
+
+	def number_type_bytes(self):
+		return to_bytes(self.number_type)
+
+	def param_bytes(self):
+		return to_bytes(self.param)
+
+	def param_str(self):
+		return self.param_bytes().decode()
+		
+	def _generic_transformation(self, complex_interval):
+		return complex_interval * \
+				(1.342756284106146837969155436776114 + \
+				 I*1.9876592605792759329874556398424)
+
+	def __init__(self, *args, **kwargs):
+		
+		if not 'sage_number' in kwargs:
+			super(NumberComplex, self).__init__(*args, **kwargs)
+			return
+			
+		r = kwargs.pop('sage_number')
+		super(NumberComplex, self).__init__(*args, **kwargs)
+		
+		#print("r:",r)
+		if r == None:
+			return
+
+		elif r.parent() in [CBF, CBFprec, CC]:
+			r = CIF(r)
+		elif r.parent() in [CIF, CIFprec]:
+			pass
+		else:
+			raise NotImplementedError("sage_number is of non-implemented type")
+			
+		CIFr = r.parent()
+		r0 = CIF(r)
+		self.re_lower = r.real().lower()
+		self.re_upper = r.real().upper()
+		self.im_lower = r.imag().lower()
+		self.im_upper = r.imag().upper()
+		
+		t = self._generic_transformation(r0)
+		print('t:',t)
+		exponent = t.abs().log(10).upper().ceil()
+		print('exponent:',exponent)
+		t *= 10**(-exponent)
+		print('t:',t)
+		searchstring = '%s%s%s' % (
+			exponent,
+			'-' if t.real() < 0 else '+',
+			'-' if t.imag() < 0 else '+',
+		)
+		t = CIF(t.real().abs(), t.imag().abs())
+		for i in range(16):
+			t *= 10
+			try:
+				re_digit = t.real().unique_floor()
+				im_digit = t.imag().unique_floor()
+				searchstring += '%s%s' % (
+					re_digit,
+					im_digit,
+				)
+				t -= re_digit + I*im_digit
+			except ValueError:
+				break
+		self.number_searchstring = searchstring
+	
+	def to_CIF(self):
+		return CIF(
+			RIF(self.re_lower, self.re_upper),
+			RIF(self.im_lower, self.im_upper),
+		)
+
+	def to_sage(self):
+		return self.to_CIF()
+
+	def str_short(self):
+		r = self.to_sage()
+		return str(r)
+		
+	def __str__(self):
+		r = self.to_sage()
+		return str(r)
 
 class OeisNumber(models.Model):
 	
