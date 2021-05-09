@@ -438,3 +438,34 @@ class StableContinuedFraction:
     def __repr__(self):
         return self.__str__()
 
+def number_with_uncertainty_to_real_ball(N, standard_deviations = 5):
+    #Number with uncertainty:
+    cNU = re.compile(r'^([+-]?)(\d*)((?:\.\d*))((?:\(\d+\)))((?:[eE]-?\d+)?)$')
+
+    #Determine type of search term:
+
+    match = cNU.match(N)
+    if match == None:
+        return None
+    #print('match:', match)
+    #print('groups:',match.groups())
+    sign,uA,B,U,E = match.groups()
+    A = sign + uA
+    if B == '':
+        B == '.'
+    if U == '':
+        U = '(0)'
+    if E == '':
+        e = 0
+    else:
+        e = ZZ(E[1:])
+    p = len(B)-1
+    ab = ZZ(int(A + B[1:])) #first calling int strips trailing zeros
+    u = ZZ(int(U[1:-1]))
+    radius = u * standard_deviations
+    #N_center = str(ab) + E
+    #N_radius = str(radius) + E
+    #print('N_center:',N_center)
+    #print('N_radius:',N_radius)
+    r = RBF(ab,radius) * ZZ(10)**(e-p)
+    return r

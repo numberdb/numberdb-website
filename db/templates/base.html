@@ -76,7 +76,7 @@
 
     <div class="navbar-container">
 
-      <a class="navbar-field" href="{% url 'db:home' %}" style="float:left;">NumberDB$^\beta$</a>
+      <a class="navbar-field" href="{% url 'db:home' %}" style="float:left; padding-left:0;">NumberDB$^\beta$</a>
 
       {% if True or user.is_authenticated == True %}
         <a class="navbar-field" href="{% url 'db:advanced-search' %}">Advanced search</a>      
