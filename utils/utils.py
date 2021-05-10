@@ -226,17 +226,27 @@ def parse_complex_interval(s, CIF=CIF):
         if len(terms) != 0:
             #The digit before the next +/- operation is still missing:
             summand += terms.pop(0)
+        
         if summand == '':
             continue
-        if summand == 'i':
+        elif summand == 'i':
             result += coeff * I
             continue
+        elif summand == '-i':
+            result += coeff * (-I)
+            continue
+        
         if summand.startswith('i*'):
             coeff *= I
             summand = summand[2:]
+        elif summand.startswith('-i*'):
+            coeff *= -I
+            summand = summand[3:]
+        
         if summand.endswith('*i'):
             coeff *= I
             summand = summand[:-2]
+        
         r = parse_real_interval(summand,RIF=RIF)
         if r == None:
             return None

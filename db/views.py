@@ -66,6 +66,7 @@ from .models import TableSearch
 from .models import Tag
 from .models import Number
 from .models import NumberPAdic
+from .models import NumberComplex
 from .models import OeisNumber
 from .models import OeisSequence
 from .models import WikipediaNumber
@@ -82,6 +83,7 @@ from utils.utils import parse_positive_integer
 from utils.utils import parse_real_interval
 from utils.utils import parse_fractional_part
 from utils.utils import parse_p_adic
+from utils.utils import parse_complex_interval
 from utils.utils import blur_real_interval
 
 
@@ -1096,6 +1098,30 @@ def suggestions(request):
 
 		if i >= 10:
 			return wrap_response(entries)
+
+	#Searching for complex numbers:
+	if 'i' in term.lower():
+		query_complex = NumberComplex.objects.none()
+		n = parse_complex_interval(term)
+		if n != None:
+			#First cap precision of n,
+			#as high precision queries would not be fould otherwise.
+			n = CIF(n)
+			
+			number = NumberComplex(sage_number=n)
+				
+			if number != None:
+				print("number:",number)
+				query_complex = NumberComplex.objects.filter(
+					number_searchstring__startswith = number.number_searchstring,
+				)[:int(10-i)]
+				print("query_complex:",query_complex)
+				suggested_numbers += list(query_complex)
+				#print("suggested_numbers:",suggested_numbers)
+				add_suggested_numbers()
+
+			if i >= 10:
+				return wrap_response(entries)
 
 	
 	#Searching for tag names:
