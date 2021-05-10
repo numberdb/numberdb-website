@@ -519,7 +519,8 @@ class NumberComplex(models.Model):
 		default = NUMBER_TYPE_QP,
 	)
 	number_searchstring = models.TextField(
-		max_length = 32,
+		#max_length = 32,
+		max_length = 128,
 		db_index = True,
 	)
 	table = models.ForeignKey(
@@ -597,8 +598,10 @@ class NumberComplex(models.Model):
 			'-' if t.imag() < 0 else '+',
 		)
 		t = CIF(t.real().abs(), t.imag().abs())
-		for i in range(16):
-			t *= 10
+		#base, num_digits = 10, 16
+		base, num_digits = 2, 53
+		for i in range(num_digits):
+			t *= base
 			try:
 				re_digit = t.real().unique_floor()
 				im_digit = t.imag().unique_floor()
