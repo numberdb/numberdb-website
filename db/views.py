@@ -85,6 +85,7 @@ from utils.utils import parse_fractional_part
 from utils.utils import parse_p_adic
 from utils.utils import parse_complex_interval
 from utils.utils import blur_real_interval
+from utils.utils import blur_complex_interval
 
 
 from db_builder.utils import normalize_table_data
@@ -1100,7 +1101,7 @@ def suggestions(request):
 			return wrap_response(entries)
 
 	#Searching for complex numbers:
-	if 'i' in term.lower():
+	if 'i' in term.lower().replace('j','i'):
 		query_complex = NumberComplex.objects.none()
 		n = parse_complex_interval(term)
 		if n != None:
@@ -1507,6 +1508,7 @@ def advanced_suggestions(request):
 	query_i = 0 
 	query_bulk_size = 1 #Apparently, bulk_size doesn't really matter, and also as is, only query_bulk_size=1 yields correct param.
 	query_real_intervals = Number.objects.none()
+	query_complex_intervals = NumberComplex.objects.none()
 	query_p_adic_numbers = NumberPAdic.objects.none()
 
 	def do_query():
@@ -1514,6 +1516,16 @@ def advanced_suggestions(request):
 		nonlocal param
 		
 		for number in query_real_intervals[:(max_results - i)]:
+			results.append({
+				'param': param,
+				'number': number,
+				'table': number.table,		
+			})
+			i += 1
+			if i >= max_results:
+				return
+
+		for number in query_complex_intervals[:(max_results - i)]:
 			results.append({
 				'param': param,
 				'number': number,
@@ -1546,6 +1558,16 @@ def advanced_suggestions(request):
 				upper__range = (float(r_query.lower()),float(r_query.upper())),							
 			) #Request maximum number of results?
 			query_i += 1
+
+		elif K == CIF:
+			#Searching for complex number up to given precision:
+			r_query = blur_complex_interval(r)
+			print("r_query:",r_query)
+			number = NumberComplex(sage_number = r_query)
+			query_complex_intervals |= NumberComplex.objects.filter(
+				number_searchstring__startswith = number.number_searchstring,							
+			) #Request maximum number of results?
+			query_i += 1
 		
 		elif is_pAdicField(K):
 			#Searching for p-adic number up to given precision:
@@ -1561,6 +1583,7 @@ def advanced_suggestions(request):
 		if query_i >= query_bulk_size:
 			do_query()
 			query_real_intervals = Number.objects.none()
+			query_complex_intervals = NumberComplex.objects.none()
 			query_p_adic_numbers = NumberPAdic.objects.none()
 			query_i = 0
 			

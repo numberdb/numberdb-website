@@ -95,8 +95,20 @@ class SafeEval(object):
 			try:
 				value = RIF(nested)
 				result.append((parent_key, value))
+				return result, params_error
 			except (ValueError, TypeError):
-				params_error.append(parent_key)
+				pass
+				
+			#Try coercion to complex interval:
+			try:
+				value = CIF(nested)
+				result.append((parent_key, value))
+				return result, params_error
+			except (ValueError, TypeError):
+				pass
+			
+			#Could not coerce into any of the expected fields:	
+			params_error.append(parent_key)
 
 		return result, params_error
 
