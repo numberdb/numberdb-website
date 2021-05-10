@@ -262,6 +262,11 @@ def blur_real_interval(r, blur_bits = 2):
     blur = r.parent()(1 - 2**(-e), 1 + 2**(-e))
     return r * blur	
 
+def blur_complex_interval(c, blur_bits = 2):
+    return c.parent()(
+        blur_real_interval(c.real(), blur_bits),
+        blur_real_interval(c.imag(), blur_bits),
+    )
 
 def to_bytes(m):
     if isinstance(m,bytes):
