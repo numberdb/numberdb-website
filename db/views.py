@@ -893,12 +893,17 @@ def suggestions(request):
 	entries = {}
 	i = 0
 	suggested_numbers = []
+	added_suggested_number_pks =  set()
 	
 	def add_suggested_numbers():
 		nonlocal suggested_numbers
 		nonlocal i
 		
 		for number in suggested_numbers:
+			if number.pk in added_suggested_number_pks:
+				continue
+			else:
+				added_suggested_number_pks.add(number.pk)
 			table = number.table
 			param = number.param_str()
 			entry_i = {
@@ -916,6 +921,7 @@ def suggestions(request):
 				entry_i['subtitle'] += ' (fractional part)'
 			entries[i] = entry_i
 			i += 1
+			
 		suggested_numbers = []
 	
 	exact_number_not_in_DB = None
@@ -950,7 +956,7 @@ def suggestions(request):
 				'label': '',
 				'type': 'link',
 				'title': 'Basic properties of',
-				'subtitle': '%s (not in database)'  % (n,),
+				'subtitle': '%s (not in search index)'  % (n,),
 				'url': reverse('db:properties',kwargs={'number':str(n)}),
 			}
 			entries[i] = entry_i
@@ -978,7 +984,7 @@ def suggestions(request):
 			if number != None:
 				query_rational = Number.objects.filter(
 					number_blob = number.number_blob_bytes(),
-					#number_type = Number.NUMBER_TYPE_ZZ,
+					#number_type = Number.NUMBER_TYPE_QQ,
 					number_type = number.number_type,
 				)[:1]
 				print("number:",number)
@@ -992,7 +998,7 @@ def suggestions(request):
 					'label': '',
 					'type': 'link',
 					'title': 'Basic properties of',
-					'subtitle': '%s (not in database)'  % (n,),
+					'subtitle': '%s (not in search index)'  % (n,),
 					'url': reverse('db:properties',kwargs={
 						'numerator': str(n.numerator()),
 						'denominator': str(n.denominator()),
@@ -1008,25 +1014,31 @@ def suggestions(request):
 	
 
 	#Searching for real number up to given precision:
-	query_real_intervals = Number.objects.none()
-	r = None
-	if exact_number_not_in_DB != None \
-		or '.' in term \
-		or 'p' in term or 'P' in term \
-		or 'e' in term or 'E' in term:
-			
-		if exact_number_not_in_DB != None:
-			r = RIF(exact_number_not_in_DB)
-		else:
-			r = parse_real_interval(term)
+	real_number_not_in_DB = None
+	found_as_real_number = False
+	
+	if exact_number_not_in_DB != None:
+		r = RIF(exact_number_not_in_DB)
+	else:
+		r = parse_real_interval(term)
+	if r != None:
+		r_query = blur_real_interval(r)
+		print("r_query:",r_query)
+		query_real_intervals = Number.objects.filter(
+			lower__range = (float(r_query.lower()),float(r_query.upper())),
+			upper__range = (float(r_query.lower()),float(r_query.upper())),							
+		)[:(10-i)]
 		
-		if r != None:
-			r_query = blur_real_interval(r)
-			print("r_query:",r_query)
-			query_real_intervals = Number.objects.filter(
-				lower__range = (float(r_query.lower()),float(r_query.upper())),
-				upper__range = (float(r_query.lower()),float(r_query.upper())),							
-			)
+		if len(query_real_intervals) > 0:
+			found_as_real_number = True
+			suggested_numbers += list(query_real_intervals)
+			add_suggested_numbers()
+
+			if i >= 10:
+				return wrap_response(entries)
+				
+		else:
+			real_number_not_in_DB = r
 
 	#Searching for real numbers by given fractional part:
 	query_fractional_part = Number.objects.none()
@@ -1038,18 +1050,22 @@ def suggestions(request):
 		query_fractional_part = Number.objects.filter(
 			frac_lower__range = (float(f_query.lower()),float(f_query.upper())),
 			frac_upper__range = (float(f_query.lower()),float(f_query.upper())),							
-		).annotate(query_frac = F('pk'))
+		).annotate(query_frac = F('pk'))[:(10-i)]
+		
+		if len(query_fractional_part) > 0:
+			found_as_real_number = True
+			found_real_numbers = True
+			suggested_numbers += list(query_fractional_part)
+			add_suggested_numbers()
 
-	query_real_numbers = query_integers.union(
-						query_rationals,
-						query_real_intervals,
-						query_fractional_part
-					)[:(10-i)]
-	#print("query_real_numbers:",query_real_numbers)
-	if len(query_real_numbers) > 0:
-		suggested_numbers += list(query_real_numbers)
-	else:
-		number = r if r != None else f
+			if i >= 10:
+				return wrap_response(entries)
+		
+		else:
+			real_number_not_in_DB = f
+
+	if found_as_real_number == False and real_number_not_in_DB != None:
+		number = real_number_not_in_DB
 		if number != None:
 			entry_i = {
 				'value': str(i),

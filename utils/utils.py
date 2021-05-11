@@ -45,8 +45,15 @@ def parse_rational_number(s):
     
     return None;        
 
-def parse_real_interval(s, RIF=RIF):
-    #First sage's RIF notation:
+def parse_real_interval(s, RIF=RIF, allow_rationals=True):
+
+    #First try _exact_ rational numbers:
+    if allow_rationals:
+        result = parse_rational_number(s)
+        if result != None:
+            return RIF(result)
+
+    #Next sage's RIF notation:
     cRIF = re.compile(r'^([+-]?)(\d*\??)((?:\.\d*\??)?)((?:[eE]-?\d+)?)$')
     matchRIF = cRIF.match(s)
     if matchRIF != None:
@@ -123,6 +130,7 @@ def parse_real_interval(s, RIF=RIF):
                     r = lower.union(upper)
                     return r
             '''
+    
     return None
 
 def parse_fractional_part(s):
@@ -201,7 +209,7 @@ def parse_p_adic(s):
 		
 	return None	
 	
-def parse_complex_interval(s, CIF=CIF):
+def parse_complex_interval(s, CIF=CIF, allow_rationals=True):
     RIF = RealIntervalField(CIF.prec())
     s = s.strip().lower().replace(' ','').replace('j','i')
     cOp = re.compile(r'(\d)([\+\-])')
@@ -247,7 +255,7 @@ def parse_complex_interval(s, CIF=CIF):
             coeff *= I
             summand = summand[:-2]
         
-        r = parse_real_interval(summand,RIF=RIF)
+        r = parse_real_interval(summand,RIF=RIF,allow_rationals=allow_rationals)
         if r == None:
             return None
         result += coeff * r
