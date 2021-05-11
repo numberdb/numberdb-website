@@ -33,7 +33,18 @@ Enter the first few digits after the period, e.g. "1415" for pi.
 <div class="li-header">Integers:</div>
 Enter the exact integer without period, e.g. "-1".
 This works for integers with up to 127 binary digits (roughly 38 decimal digits).
-For longer integers, try to <a href="#how-to-search-real-numbers">search them as real numbers</a>.
+For longer integers,
+try to <a href="#how-to-search-real-numbers">search them as real numbers</a>.
+</li>
+
+<li>
+<div class="li-header">Complex numbers:</div>
+Enter sums or differences of the form "A" or "i*A" or "A*i", where "A" is a 
+<a href="#how-to-search-real-numbers">real number in the above format</a>
+or a rational number.
+Entering "-1/2 +  i * 0.86602" (to search for a third root of unity)  will
+search within a <i>larger square</i> around it.
+Both, real and imaginary parts need sufficient precision.
 </li>
 
 <li>
@@ -45,7 +56,7 @@ Enter "Q2:1010" to search for $2^0 + 2^2 + O(2^5)$.
 Enter "Q2:1.1010" to search for $2^{-1} + 2^0 + 2^2 + O(2^5)$. 
 For $p>10$, any $p$-adic digit needs to be given in base 10 with the same number of base 10 letters as $p$, 
 e.g. "Q13:0102" will search for $13$-adic numbers of the form $1+2\cdot 13 + O(13^2)$.
-Minus signs are also interpreted, e.g. "Q3:-220" searches for $1 + 2\cdot 3^2 + O(3^3)$.
+Minus signs are also interpreted, e.g. "Q3:-220" searches for $-(2 + 2\cdot 3^1) + O(3^3)$.
 </li>
 <li>
 Enter "3 + O(2^5)" or "2^0+2^1+O(2^5)" for numbers of the form $2^0 + 2^2 + O(2^5)$.

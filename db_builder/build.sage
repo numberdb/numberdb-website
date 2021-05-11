@@ -331,7 +331,7 @@ def build_number_table():
 			try:
 				x = QQ(number)
 			except TypeError:
-				x = parse_real_interval(number, RIF=RIFprec)
+				x = parse_real_interval(number, RIF=RIFprec, allow_rationals=False)
 				if x == None:
 					try:
 						x = RBFprec('[%s]' % (number,))
@@ -346,7 +346,7 @@ def build_number_table():
 						#      numbers with uncertainty, consider their own data structure.
 						x = number_with_uncertainty_to_real_ball(number, standard_deviations=1)
 						if x == None:
-							x = parse_complex_interval(number, CIF=CIFprec)
+							x = parse_complex_interval(number, CIF=CIFprec, allow_rationals=True)
 							if x == None:
 								x = parse_p_adic(number)
 								if x == None:
