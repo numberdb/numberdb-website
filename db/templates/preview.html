@@ -3,6 +3,10 @@
 {% block head-title %}Preview edits{% endblock %}
 
 {% block extra_head %}
+
+    <meta property="og:description" content="Shows how changes to tables will be rendered.">
+    <meta name="description" content="Shows how changes to tables will be rendered.">
+
 <link rel=stylesheet href="{% static '/codemirror-5.59.2/lib/codemirror.css' %}">
 <script src="{% static '/codemirror-5.59.2/lib/codemirror.js' %}"></script>
 <script src="{% static '/codemirror-5.59.2/mode/yaml/yaml.js' %}"></script>
