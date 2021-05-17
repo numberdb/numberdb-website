@@ -555,9 +555,10 @@ class NumberComplex(models.Model):
 		return self.param_bytes().decode()
 		
 	def _generic_transformation(self, complex_interval):
-		return complex_interval * \
-				(1.342756284106146837969155436776114 + \
-				 I*1.9876592605792759329874556398424)
+		return complex_interval * complex_interval.parent()(
+			1.342756284106146837969155436776114,
+			1.9876592605792759329874556398424
+		)
 
 	def __init__(self, *args, **kwargs):
 		
@@ -587,11 +588,11 @@ class NumberComplex(models.Model):
 		self.im_upper = r.imag().upper()
 		
 		t = self._generic_transformation(r0)
-		print('t:',t)
+		#print('t:',t)
 		exponent = t.abs().log(10).upper().ceil()
-		print('exponent:',exponent)
-		t *= 10**(-exponent)
-		print('t:',t)
+		#print('exponent:',exponent)
+		t *= CIF(10)**(-exponent)
+		#print('t:',t)
 		searchstring = '%s%s%s' % (
 			exponent,
 			'-' if t.real() < 0 else '+',

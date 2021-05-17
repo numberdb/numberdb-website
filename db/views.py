@@ -438,6 +438,10 @@ def table_context(table, preview=False):
 								text += '<a href="%s">%s</a> ' % (reference['url'],reference['title'])
 							else:
 								text += '<a href="%s">%s</a> ' % (reference['url'],reference['url'])
+						if 'github' in reference:
+							link = reference['github'].split("github.com/")[-1]
+							link = "https://github.com/%s" % (link,)
+							text += '(<a href="%s">github</a>) ' % (link,)
 
 					labeled_list.append({
 						'label_id': label,

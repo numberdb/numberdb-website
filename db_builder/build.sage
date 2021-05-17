@@ -259,7 +259,7 @@ def build_table_commits():
 	for c in Table.objects.all():
 		main_filename = os.path.join(c.path,'table.yaml')
 		log = g.log('--follow',main_filename)
-		print("log:",log)
+		#print("log:",log)
 		lines = log.splitlines()
 		
 		hexshas = []
