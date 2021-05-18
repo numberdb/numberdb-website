@@ -28,4 +28,7 @@ exec /home/numberdb/SageMath/local/bin/gunicorn ${DJANGO_WSGI_MODULE}:applicatio
   --group=$GROUP \
   --bind=$BIND \
   --log-level=$LOG_LEVEL \
-  --log-file=-
+  --log-file=- \
+  --limit-request-line 0 \
+  --limit-request-fields 100 \
+  --limit-request-field_size 65536
