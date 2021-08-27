@@ -511,12 +511,12 @@ class NumberPAdic(models.Model):
 
 class NumberComplex(models.Model):
 
-	NUMBER_TYPE_QP = b'c'
+	NUMBER_TYPE_C = b'c'
 	
 	number_type = models.BinaryField(
 		max_length = 1,
 		#choices = NUMBER_TYPES,
-		default = NUMBER_TYPE_QP,
+		default = NUMBER_TYPE_C,
 	)
 	number_searchstring = models.TextField(
 		#max_length = 32,
