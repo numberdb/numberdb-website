@@ -19,6 +19,7 @@ from db.models import Table
 from db.models import TableData
 from db.models import TableSearch
 from db.models import TableCommit
+from db.models import Contributor
 from db.models import Tag
 from db.models import Number
 from db.models import NumberPAdic
@@ -166,6 +167,7 @@ def delete_all_tables():
 
 	Number.objects.all().delete()
 	TableCommit.objects.all().delete()
+	Contributor.objects.all().delete()
 	TableSearch.objects.all().delete()
 	TableData.objects.all().delete()
 	Table.objects.all().delete()
@@ -234,12 +236,48 @@ def build_table_commits():
 	print("BUILD TABLE_COMMIT_TABLE")
 	
 	#Build table of all commits:
+	contributors = {}
 	table_commits = []
+
 	for commit in repo.iter_commits():
+		
+		#author = commit.author.name
+		#author_email = commit.author.email
+
+
+		'''
+		contributor, created = Contributor.objects.get_or_create(
+			author_and_email = '%s | %s' % (
+				commit.author.name,
+				commit.author.email,
+			),
+			defaults = {
+				'author': commit.author.name,
+				'email': commit.author.email,
+			},		
+		)
+		'''
+		
+		contributor_pk = '%s | %s' % (
+				commit.author.name,
+				commit.author.email,
+		),
+		
+		if contributor_pk not in contributors:
+			contributors[contributor_pk] = Contributor(
+				pk = contributor_pk,
+				author = commit.author.name,
+				email = commit.author.email,
+				table_commit_count = int(1),	
+			)
+		else:
+			contributors[contributor_pk].table_commit_count += int(1)
+
+		#contributors.append(
+		
 		table_commits.append(TableCommit(
 			hexsha = commit.hexsha,
-			author = commit.author.name,
-			author_email = commit.author.email,
+			contributor_id = contributor_pk,
 			datetime = commit.committed_datetime,
 			timezone = commit.committer_tz_offset,
 			summary = commit.summary,
@@ -248,6 +286,7 @@ def build_table_commits():
 	#Remove 16 test commits:
 	#table_commits = table_commits[:0] + table_commits[17:] 
 	
+	Contributor.objects.bulk_create(contributors.values())
 	TableCommit.objects.bulk_create(table_commits)
 	hexsha_to_pk = {
 		commit.hexsha: commit.pk

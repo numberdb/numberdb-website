@@ -6,6 +6,7 @@ from .models import Table
 from .models import TableData
 from .models import TableSearch
 from .models import TableCommit
+from .models import Contributor
 from .models import Tag
 from .models import Number
 from .models import NumberPAdic
@@ -79,6 +80,27 @@ class TableAdmin(admin.ModelAdmin):
 	def search(self, obj):
 		return obj.search
 	'''
+
+class TableCommitInline(admin.TabularInline):
+	model = TableCommit
+	verbose_name = u"Commit"
+	verbose_name_plural = u"Commits"
+	fields = (
+		'summary',
+	)
+	extra = 0
+
+@admin.register(Contributor)
+class ContributorAdmin(admin.ModelAdmin):
+	model = Contributor
+	fields = (
+		'author',
+		'email',
+	)
+	inlines = (
+		TableCommitInline,
+	)
+
 	
 admin.site.register(TableData)
 admin.site.register(TableSearch)

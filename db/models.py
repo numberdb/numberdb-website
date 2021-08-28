@@ -170,6 +170,26 @@ class TableSearch(models.Model):
 	def __str__(self):
 		return 'Search vector for %s' % (self.table,)
 
+class Contributor(models.Model):
+	
+	author_and_email = models.CharField(
+		max_length = 300,
+		primary_key = True,
+	)
+	author = models.CharField(
+		max_length = 200,
+		db_index = True,
+	)
+	email = models.EmailField(
+		db_index = True,
+	)
+	table_commit_count = models.IntegerField(   
+		default = 0,
+	)
+	
+	def __str__(self):
+		return '%s (%s)' % (self.author, self.email)
+
 class TableCommit(models.Model):
 	
 	hexsha = models.CharField(
@@ -178,13 +198,11 @@ class TableCommit(models.Model):
 		db_index = True,
 		unique = True,
 	)
-	author = models.CharField(
-		max_length = 200,
-		db_index = True
-	)
-	author_email = models.EmailField(
-		db_index = True,
-	)
+	contributor = models.ForeignKey(
+		Contributor,
+		on_delete=models.CASCADE,
+		related_name = "table_commits",
+	)	
 	datetime = models.DateTimeField(
 		auto_now = False,
 		auto_now_add = False,
@@ -208,7 +226,7 @@ class TableCommit(models.Model):
 	def __str__(self):
 		return 'Commit "%s" (%s on %s)' % (
 			self.summary,
-			self.author,
+			self.contributor,
 			self.datetime,
 		)
 
