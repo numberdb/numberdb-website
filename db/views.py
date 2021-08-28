@@ -63,6 +63,7 @@ from .models import UserProfile
 from .models import Table
 from .models import TableData
 from .models import TableSearch
+from .models import Contributor
 from .models import Tag
 from .models import Number
 from .models import NumberPAdic
@@ -99,7 +100,24 @@ def about(request):
     return render(request, 'about.html', {})
 
 def help(request):
-    return render(request, 'help.html', {})
+	contribution_count = {}
+	for contributor in Contributor.objects.all():
+		name = contributor.author
+		if name in contribution_count:
+			contribution_count[name] += contributor.table_commit_count
+		else:
+			contribution_count[name] = contributor.table_commit_count
+	contribution_count = [
+		{'name': name, 'count': count} 
+		for name, count in contribution_count.items()
+	]
+	contribution_count.sort(key = lambda name_count: -name_count['count'])
+	print("contribution_count:",contribution_count)
+	#contributors = Contributor.objects.all().order_by('-table_commit_count')
+	context = {
+		'contribution_count': contribution_count,
+	}
+	return render(request, 'help.html', context)
 
 def tables(request):
 	page = request.GET.get('page', 1)
@@ -309,6 +327,8 @@ def table_context(table, preview=False):
 			"RB": "real ball",
 			"CB": "complex ball",
 			"*R": "hyperreal number",
+			"Z[]": "integral polynomial",
+			"Q[]": "rational polynomial",
 		}  
 		current_job = 'parsing parameters'
 		if 'Parameters' in data and len(data['Parameters']) > 0:
@@ -454,8 +474,10 @@ def table_context(table, preview=False):
 				}
 				sections.append(section)
 
+		data_type = None #Will be set to data['Data properties']['type'].
+
 		property_names = {
-			'type': 'Numbers are of type',
+			'type': 'Entries are of type',
 			'complete': 'Table is complete',
 			'sources': 'Sources of data',
 			'relative precision': 'Relative precision',
@@ -475,6 +497,7 @@ def table_context(table, preview=False):
 				if key in property_names:
 					text = "%s: " % (property_names[key])
 					if key == 'type':
+						data_type = value
 						if properties['type'] in type_names:
 							text += type_names[value]
 						else:
@@ -537,16 +560,22 @@ def table_context(table, preview=False):
 			if isinstance(numbers,dict):
 				if 'number' in numbers or \
 					'numbers' in numbers or \
+					'datum' in numbers or \
+					'data' in numbers or \
 					'equals' in numbers:
 					#Numbers are given with extra information at this level:
 					for key in numbers:
-						if key in ('number','numbers','param-latex'):
+						if key in ('number','numbers','datum','data','param-latex'):
 							continue
 						html += '%s: %s<br>' % (key, render_text(numbers[key]))
 					if 'number' in numbers:
 						html += render_number_table(numbers['number'], params_so_far, groups_left)
 					elif 'numbers' in numbers:
 						html += render_number_table(numbers['numbers'], params_so_far, groups_left)
+					elif 'datum' in numbers:
+						html += render_number_table(numbers['datum'], params_so_far, groups_left)
+					elif 'data' in numbers:
+						html += render_number_table(numbers['data'], params_so_far, groups_left)
 					return html
 				
 			if len(groups_left) == 0:
@@ -612,6 +641,8 @@ def table_context(table, preview=False):
 			if isinstance(numbers,dict):
 				if 'number' in numbers or \
 					'numbers' in numbers or \
+					'datum' in numbers or \
+					'data' in numbers or \
 					'equals' in numbers:
 						
 					#Numbers are given with extra information at this level:
@@ -717,6 +748,24 @@ def table_context(table, preview=False):
 			number_section['number_list'] = number_list
 			#number_section['html'] = render_number_table_as_tree(numbers) #OLD
 			#sections.append(number_section)
+
+		elif 'Data' in data and len(data['Data']) > 0:
+			numbers = data['Data']
+			print('data_type:',data_type)
+			if data_type == None:
+				number_section_title = 'Data'
+			else:
+				if data_type.find('[') >= 0:
+					number_section_title = 'Polynomials'
+				else:
+					number_section_title = 'Numbers'				
+			number_section = {
+				'title': number_section_title,
+				'param_groups': param_groups_display,
+				'number_header': number_header,
+			}
+			number_list = number_table_as_list(numbers)
+			number_section['number_list'] = number_list
 
 		#html += '</div>'
 		#html += '</div>'
