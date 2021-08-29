@@ -411,7 +411,6 @@ def build_number_table():
 		#print("x:",x)
 		
 		if is_polynomial_ring(R):
-			x = polynomial_modulo_variable_names(x)
 			n = Polynomial(sage_polynomial = x)
 
 		elif is_pAdicField(R):

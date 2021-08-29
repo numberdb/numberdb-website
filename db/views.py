@@ -68,6 +68,7 @@ from .models import Tag
 from .models import Number
 from .models import NumberPAdic
 from .models import NumberComplex
+from .models import Polynomial
 from .models import OeisNumber
 from .models import OeisSequence
 from .models import WikipediaNumber
@@ -85,6 +86,7 @@ from utils.utils import parse_real_interval
 from utils.utils import parse_fractional_part
 from utils.utils import parse_p_adic
 from utils.utils import parse_complex_interval
+from utils.utils import parse_polynomial
 from utils.utils import blur_real_interval
 from utils.utils import blur_complex_interval
 
@@ -1193,6 +1195,24 @@ def suggestions(request):
 			if i >= 10:
 				return wrap_response(entries)
 
+	#Searching for polynomials:
+	query_polynomial = Polynomial.objects.none()
+	n = parse_polynomial(term)
+	if n != None:
+		polynomial = Polynomial(sage_polynomial=n)
+			
+		if polynomial != None:
+			print("polynomial:",polynomial)
+			query_polynomials = Polynomial.objects.filter(
+				number_string__startswith = polynomial.number_string,
+			)[:int(10-i)]
+			print("query_polynomials:",query_polynomials)
+			suggested_numbers += list(query_polynomials)
+			#print("suggested_numbers:",suggested_numbers)
+			add_suggested_numbers()
+
+		if i >= 10:
+			return wrap_response(entries)
 	
 	#Searching for tag names:
 	if ':' not in term and '^' not in term:
