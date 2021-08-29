@@ -140,6 +140,7 @@ install_django:
 	$(PIP) install pyro5
 	#$(PIP) install pydriller
 	$(PIP) install django-extensions
+	$(PIP) install pyhash
 
 	sudo apt-get -y install postgresql postgresql-contrib
 
