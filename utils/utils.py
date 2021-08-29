@@ -265,8 +265,10 @@ def polynomial_modulo_variable_names(p):
             im_gens.append(R_std.gen(i_var))
         else:
             im_gens.append(R_std(0))
-    hom_R_to_R_std = R.hom(im_gens = im_gens)
+    hom_R_to_R_std = R.hom(codomain = R_std, im_gens = im_gens)
     p_std = hom_R_to_R_std(p)
+    if n == 0:
+        return p_std
 
     p, R, variables = p_std, R_std, R_std.gens()
 

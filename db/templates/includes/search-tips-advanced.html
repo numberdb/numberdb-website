@@ -56,5 +56,20 @@ note that 20 is the standard precision for Qp in sage.
 </ul>
 </li>
 
+<li id="how-to-search-polynomials">
+<div class="li-header">Lists of polynomials over $\mathbb{Q}$</div>
+Similarly one can search for multivariate polynomials over $\mathbb{Q}$.
+As only expressions are accepted (mainly for safety reasons), we can define the variables as in the following example:<br>
+<ul>
+<li>
+<code>[{n: x^2 + n for n in [1..10]} for x,y in [polygens(QQ,2,'x')]]</code> 
+searches for polynomials $x^2+n$ for integers $n=1,\ldots,10$, where we allow two variables $x$ and $y$.
+</li>
+</ul>
+</li>
+
+[{n: x^2 + n for n in [1..10]} for x,y in [polygens(QQ,2,'x')]]
+
+
 </ul>
 
