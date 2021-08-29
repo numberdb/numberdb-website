@@ -31,6 +31,7 @@ import Pyro5.errors
 #from sage.rings.all import *
 #from sage.rings.all import RealIntervalField
 
+from urllib.parse import quote_plus, unquote_plus
 
 from sage.all import *
 #from sage.rings.all import *
@@ -919,6 +920,10 @@ def update(request, user_id):
 def suggestions(request):
 	time0 = time()
 	
+	R = PolynomialRing(QQ,2,'x')
+	#print('factor(x^2):',factor(R.gen(0)**2)) #debug
+	#print('12.is_squarefree():',ZZ(12).is_squarefree()) #debug: SignalError in Sage 9.3
+	
 	def wrap_response(entries):
 		data = {
 			'entries': entries,
@@ -1221,7 +1226,7 @@ def suggestions(request):
 					'title': 'Basic properties of',
 					'subtitle': '%s (not in search index)'  % (n,),
 					'url': reverse('db:properties',kwargs={
-						'number': str(n).replace(' ',''),
+						'number': quote_plus(str(n).replace(' ','')),
 					}),
 				}
 				entries[i] = entry_i
@@ -1291,6 +1296,8 @@ def properties_of_rational(request, numerator, denominator):
 	return properties(request, '%s/%s' % (numerator, denominator))
 
 def properties(request, number):
+	
+	number = unquote_plus(number)
 	
 	def wrap_response(context):
 		print("context:",context)
