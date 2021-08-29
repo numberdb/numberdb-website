@@ -170,7 +170,7 @@ class SafeEval(object):
 		elif isinstance(v, ast.ListComp) or \
 			isinstance(v, ast.SetComp) or \
 			isinstance(v, ast.GeneratorExp):
-			return self.check_Expr(v.element) and \
+			return self.check_Expr(v.elt) and \
 					all(self.check_Comprehension(gen) for gen in v.generators)
 
 		elif isinstance(v, ast.DictComp):
@@ -354,6 +354,8 @@ class SafeEval(object):
 		
 		def wrap_result(param_numbers, messages):
 			cancel_alarm()
+			#print('param_numbers:',param_numbers)
+			#print('messages:',messages)
 			result_bytes = dumps((param_numbers, messages))
 			result = str(result_bytes,'cp437')
 			return result
@@ -366,8 +368,9 @@ class SafeEval(object):
 				print("program_python:", program_python)
 				if not self.check_python_expression(program_python):
 					raise ValueError("Please don't hack the server.")				
+				print('evaluating...')
 				program_evaluated = eval(program_python, globals())
-				#print("program_evaluated:", program_evaluated, type(program_evaluated))
+				print("program_evaluated:", program_evaluated, type(program_evaluated))
 			except ValueError as e:
 				messages.append({
 					'tags': 'alert-danger',
