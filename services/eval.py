@@ -431,6 +431,45 @@ class SafeEval(object):
 			return wrap_result(None, messages)
 
 		return wrap_result(param_numbers, messages)
+		
+	def factor(self,s_cp437):
+
+		s = loads(bytes(s_cp437, encoding='cp437'))
+		print("s:",s)
+
+		messages = []
+		
+		def wrap_result(result, messages):
+			cancel_alarm()
+			wrapped_result_bytes = dumps((result, messages))
+			wrapped_result = str(result_bytes,'cp437')
+			return wrapped_result
+
+		try:
+			alarm(1)
+		
+			print('factoring...')
+			result = factor(s)
+			print('result:',result)
+
+		except AlarmInterrupt:
+			messages = []
+			messages.append({
+				'tags': 'alert-danger',
+				'text': 'Timed out (1 second).',
+			})
+			return wrap_result(None, messages)
+
+		except Exception as e:
+			#messages = []
+			messages.append({
+				'tags': 'alert-danger',
+				'text': 'Error: %s' % (e,),
+			})
+			return wrap_result(None, messages)
+
+		return wrap_result(result, messages)
+		
 
 Pyro_daemon = Pyro5.server.Daemon()         # make a Pyro daemon
 Pyro_ns = Pyro5.api.locate_ns()             # find the name server
