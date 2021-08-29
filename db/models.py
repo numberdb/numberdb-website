@@ -19,6 +19,7 @@ from utils.utils import to_bytes
 from utils.utils import RIFprec, RBFprec
 from utils.utils import CIFprec, CBFprec
 from utils.utils import is_polynomial_ring
+from utils.utils import polynomial_modulo_variable_names
 
 class UserProfile(models.Model):
 	user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -704,11 +705,12 @@ class Polynomial(models.Model):
 		if p == None:
 			return
 
-		R = p.parent()
-		if not is_polynomial_ring(R):
+		if not is_polynomial_ring(p.parent()):
 			raise NotImplementedError("sage_polynomial is of non-implemented type")
 
-		variable_count = len(R.gens())
+		p = polynomial_modulo_variable_names(p)
+
+		variable_count = len(p.variables())
 		self.variable_count = variable_count
 		
 		p_str = str(p).replace(' ','')
@@ -726,6 +728,10 @@ class Polynomial(models.Model):
 		return result
 
 	def __str__(self):
+		r = self.to_sage()
+		return str(r)
+
+	def str_short(self):
 		r = self.to_sage()
 		return str(r)
 
