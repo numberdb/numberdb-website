@@ -208,7 +208,97 @@ def parse_p_adic(s):
 			return result
 		
 	return None	
+    
+    
+def parse_polynomial(s):
+	#s = s.strip().replace(' ','')
+    
+    if '.' in s:
+        #Only exact coefficients are implemented.
+        #In the future, we might accept coefficients in RIF/CIF/RBF/CBF,
+        #but we will need to parse them as such.
+        #At the moment, floats would be transformed into rational numbers
+        #when computing SR(s).polynomial(QQ)!
+        return None
+    
+    try:
+        symbolic_expression = SR(s)
+    except TypeError:
+        return None
+    
+    #vars = symbolic_expression.variables()
 	
+    try:
+        p = symbolic_expression.polynomial(QQ)
+    except TypeError:
+        return None
+
+    R = p.parent()
+    variables = R.variable_names()
+    R2 = PolynomialRing(QQ,variables)
+    if R != R2:
+        return None
+        
+    p2 = R2(p)
+    return p2
+
+def polynomial_modulo_variable_names(p):
+    '''
+    We consider two polynomials equivalent if they are the same up
+    to a (1-to-1) relabeling of the variables.
+    The method returns a unique polynomial in the equivalence class of p.        
+    '''
+    
+    R = p.parent()
+    variables = p.variables()
+    n = len(variables)
+
+    #Change variable names to x0, x1, ...:
+    R_std = PolynomialRing(QQ,n,'x',order='degrevlex')
+    im_gens = []
+    for i, g in enumerate(R.gens()):
+        try:
+            i_var = variables.index(g)
+        except ValueError:
+            i_var = -1
+        if i_var >= 0:
+            im_gens.append(R_std.gen(i_var))
+        else:
+            im_gens.append(R_std(0))
+    hom_R_to_R_std = R.hom(im_gens = im_gens)
+    p_std = hom_R_to_R_std(p)
+
+    p, R, variables = p_std, R_std, R_std.gens()
+
+    #coeffs = {exp: coeff for exp,coeff in zip(p2.exponents(),p2.coefficients())}
+
+    Sn = SymmetricGroup(range(n))
+    
+    #Find equivalent polynomials with minimal exponent vector list:
+    p_mins = []
+    exp_min = None
+        
+    for sigma in Sn:
+        hom_sigma = R.hom(im_gens = [R.gen(sigma(i)) for i in range(n)])
+        p_sigma = hom_sigma(p)
+        exp_sigma = p_sigma.exponents()
+        if len(p_mins) == 0:
+            p_mins.append(p_sigma)
+            exp_min = exp_sigma
+        elif exp_min > exp_sigma:
+            p_mins = [p_sigma]
+        elif exp_min == exp_sigma:
+            p_mins.append(p_sigma)
+        else:
+            continue
+    
+    #Among all equivalent polynomials with minimal exponent vector list,
+    #take the polynomial with minimal coefficint list:        
+    p_mins.sort(key = lambda p_sigma: p_sigma.coefficients())
+    p_min = p_mins[0]
+    
+    return p_min
+
 def parse_complex_interval(s, CIF=CIF, allow_rationals=True):
     RIF = RealIntervalField(CIF.prec())
     s = s.strip().lower().replace(' ','').replace('j','i')
@@ -537,3 +627,7 @@ def number_with_uncertainty_to_real_ball(N, standard_deviations = 5):
     #print('N_radius:',N_radius)
     r = RBF(ab,radius) * ZZ(10)**(e-p)
     return r
+
+def is_polynomial_ring(R):
+    return str(R).startswith('Multivariate Polynomial Ring') or \
+			str(R).startswith('Univariate Polynomial Ring')
