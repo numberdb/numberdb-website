@@ -84,9 +84,9 @@ div#searchtips {
 <div class="home-searchbar-container">   
 {% include 'includes/searchbar.html' with autofocus=True %}
 <div class="searchbar-help">
-<a class="searchbar-link" href="{% url 'db:advanced-search' %}">advanced search</a>
-&middot;
 <a class="searchbar-link" href="#" onclick="toggle_visibility('searchtips','searchbar-help');">search tips</a>
+&middot;
+<a class="searchbar-link" href="{% url 'db:advanced-search' %}">advanced search</a>
 </div>
 </div> 
 
