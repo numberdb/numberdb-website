@@ -18,6 +18,7 @@ from utils.utils import real_interval_to_pretty_string
 from utils.utils import to_bytes
 from utils.utils import RIFprec, RBFprec
 from utils.utils import CIFprec, CBFprec
+from utils.utils import is_polynomial_ring
 
 class UserProfile(models.Model):
 	user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -649,6 +650,86 @@ class NumberComplex(models.Model):
 	def __str__(self):
 		r = self.to_sage()
 		return str(r)
+
+class Polynomial(models.Model):
+
+	#Format of number_string:
+	#"<#variables>,<polynomial>"
+	#which represents
+	#polynomial in #variables variables.
+	
+	NUMBER_TYPE_POLYNOMIAL = b'['
+	
+	number_type = models.BinaryField(
+		max_length = 1,
+		#choices = NUMBER_TYPES,
+		default = NUMBER_TYPE_POLYNOMIAL,
+	)
+	number_string = models.TextField(
+		#max_length = 100,
+		db_index = True,
+	)
+	variable_count = models.IntegerField(
+		db_index = True,
+	)
+	table = models.ForeignKey(
+		Table, 
+		on_delete=models.CASCADE,
+		related_name="polynomials"
+	)
+	param = models.BinaryField(
+		max_length = 32,
+		db_index = True,
+	)
+
+	def number_type_bytes(self):
+		return to_bytes(self.number_type)
+
+	def param_bytes(self):
+		return to_bytes(self.param)
+
+	def param_str(self):
+		return self.param_bytes().decode()
+
+	def __init__(self, *args, **kwargs):
+		
+		if not 'sage_polynomial' in kwargs:
+			super(Polynomial, self).__init__(*args, **kwargs)
+			return
+			
+		p = kwargs.pop('sage_polynomial')
+		super(Polynomial, self).__init__(*args, **kwargs)
+		
+		#print("p:",p)
+		if p == None:
+			return
+
+		R = p.parent()
+		if not is_polynomial_ring(R):
+			raise NotImplementedError("sage_polynomial is of non-implemented type")
+
+		variable_count = len(R.gens())
+		self.variable_count = variable_count
+		
+		p_str = str(p).replace(' ','')
+		
+		self.number_string = '%s,%s' % (
+			variable_count,
+			p_str,
+		)
+		
+	def to_sage(self):
+		s = self.number_string
+		s_variable_count, s_polynomial = s.split(',')
+		R = PolynomialRing(QQ,ZZ(s_variable_count),'x')
+		result = R(s_polynomial)
+		return result
+
+	def __str__(self):
+		r = self.to_sage()
+		return str(r)
+
+#-----------------------------------------------------------------------
 
 class OeisNumber(models.Model):
 	

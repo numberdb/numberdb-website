@@ -24,6 +24,7 @@ from db.models import Tag
 from db.models import Number
 from db.models import NumberPAdic
 from db.models import NumberComplex
+from db.models import Polynomial
 
 from django.contrib.sites.models import Site
 
@@ -40,7 +41,10 @@ from utils.utils import parse_real_interval
 from utils.utils import parse_fractional_part
 from utils.utils import parse_p_adic
 from utils.utils import parse_complex_interval
+from utils.utils import parse_polynomial
+from utils.utils import polynomial_modulo_variable_names
 from utils.utils import number_with_uncertainty_to_real_ball
+from utils.utils import is_polynomial_ring
 
 
 from git import Repo
@@ -389,10 +393,14 @@ def build_number_table():
 							if x == None:
 								x = parse_p_adic(number)
 								if x == None:
-									print("unknown format (number will be ignored):", number)
-									return 1 #still count it, even though it's not saved in db
+									x = parse_polynomial(number)
+									if x == None:
+										print("unknown format (number will be ignored):", number)
+										return 1 #still count it, even though it's not saved in db
 		
-		if x.parent().is_exact():
+		R = x.parent()
+		
+		if R.is_exact():
 			if x in exact_numbers:
 				#don't save duplicate exact numbers
 				return 1 #still count it 
@@ -401,8 +409,12 @@ def build_number_table():
 		
 		p = number_param_groups_to_bytes(param)
 		#print("x:",x)
+		
+		if is_polynomial_ring(R):
+			x = polynomial_modulo_variable_names(x)
+			n = Polynomial(sage_polynomial = x)
 
-		if is_pAdicField(x.parent()):
+		elif is_pAdicField(R):
 			
 			n = NumberPAdic(sage_number = x)
 
@@ -443,10 +455,9 @@ def build_number_table():
 		if isinstance(numbers,dict):
 			if 'equals' in numbers:
 				return 0 #not counted
-			if 'number' in numbers:
-				return traverse_number_table(c, numbers['number'], params_so_far, groups_left)
-			if 'numbers' in numbers:
-				return traverse_number_table(c, numbers['numbers'], params_so_far, groups_left)
+			for key in ['number','numbers','polynomial','polynomials']:
+				if key in numbers:
+					return traverse_number_table(c, numbers[key], params_so_far, groups_left)
 
 		count = 0  
 		if len(groups_left) == 0:
@@ -460,7 +471,7 @@ def build_number_table():
 				if 'equals' not in numbers:
 					for key, value in numbers.items():
 						#print("key,value:",key,value)
-						if key == 'number':
+						if key in ['number','polynomial']:
 							count += save_number(c, value, params_so_far)
 		else:
 			next_group = groups_left[0]
@@ -483,8 +494,14 @@ def build_number_table():
 			exact_numbers = set() 
 
 			count = 0
-			if 'Numbers' in data and len(data['Numbers']) > 0:
-				numbers = data['Numbers']
+			if ('Numbers' in data and len(data['Numbers']) > 0) or \
+				('Data' in data and len(data['Data']) > 0):
+				
+				if 'Numbers' in data:
+					numbers = data['Numbers']
+				elif 'Data' in data:
+					numbers = data['Data']
+				
 
 				if 'Parameters' in data and len(data['Parameters']) > 0:
 					parameters = data['Parameters'].keys() 
@@ -574,6 +591,7 @@ print("Times:\n%s" % (timer,))
 print("Number count:", Number.objects.count())
 print("NumberPAdic count:", NumberPAdic.objects.count())
 print("NumberComplex count:", NumberComplex.objects.count())
+print("Polynomial count:", Polynomial.objects.count())
 print("Table count:", Table.objects.count())
 print("Tag count:", Tag.objects.count())
 print("TableCommit count:", TableCommit.objects.count())

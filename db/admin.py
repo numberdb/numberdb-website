@@ -11,6 +11,7 @@ from .models import Tag
 from .models import Number
 from .models import NumberPAdic
 from .models import NumberComplex
+from .models import Polynomial
 from .models import OeisNumber
 from .models import OeisSequence
 from .models import WikipediaNumber
@@ -109,6 +110,7 @@ admin.site.register(Tag)
 admin.site.register(Number)
 admin.site.register(NumberPAdic)
 admin.site.register(NumberComplex)
+admin.site.register(Polynomial)
 admin.site.register(OeisNumber)
 admin.site.register(OeisSequence)
 admin.site.register(WikipediaNumber)
