@@ -1205,7 +1205,7 @@ def suggestions(request):
 		if polynomial != None:
 			print("polynomial:",polynomial)
 			query_polynomials = Polynomial.objects.filter(
-				number_string__startswith = polynomial.number_string,
+				number_string = polynomial.number_string,
 			)[:int(10-i)]
 			print("query_polynomials:",query_polynomials)
 			suggested_numbers += list(query_polynomials)
