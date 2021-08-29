@@ -8,6 +8,7 @@ from django.db.models.signals import post_save
 from urllib.parse import quote_plus
 from urllib.parse import unquote_plus
 
+import pyhash 
 import numpy as np
 
 from sage import *
@@ -668,6 +669,9 @@ class Polynomial(models.Model):
 	)
 	number_string = models.TextField(
 		#max_length = 100,
+		db_index = False, #use number_string_hash to search!
+	)
+	number_string_hash = models.BigIntegerField(
 		db_index = True,
 	)
 	variable_count = models.IntegerField(
@@ -719,6 +723,14 @@ class Polynomial(models.Model):
 			variable_count,
 			p_str,
 		)
+		
+		#Python's hash()-function uses seeds that are randomly chosen during each session,
+		#thus the following does not work:
+		#self.number_string_hash = hash(self.number_string)
+		#
+		#We rather use pyhash:
+		self.number_string_hash = pyhash.fnv1_64()(self.number_string)-9223372036854775808
+		
 		
 	def to_sage(self):
 		s = self.number_string

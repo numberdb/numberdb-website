@@ -1210,7 +1210,10 @@ def suggestions(request):
 			
 		if polynomial != None:
 			print("polynomial:",polynomial)
+			print("number_string:",polynomial.number_string)
+			print("hash:",polynomial.number_string_hash)
 			query_polynomials = Polynomial.objects.filter(
+				number_string_hash = polynomial.number_string_hash,							
 				number_string = polynomial.number_string,
 			)[:int(10-i)]
 			print("query_polynomials:",query_polynomials)
@@ -1524,6 +1527,7 @@ def properties(request, number):
 	
 		#Factorization:
 		f = None
+		f = factor(r)
 		try:
 			#f = r.factor()
 			f = factor(r)
@@ -1750,6 +1754,7 @@ def advanced_suggestions(request):
 			polynomial = Polynomial(sage_polynomial = r_query)
 			print("number_string:",polynomial.number_string)
 			query_polynomials |= Polynomial.objects.filter(
+				number_string_hash = polynomial.number_string_hash,							
 				number_string = polynomial.number_string,							
 			) #Request maximum number of results?
 			query_i += 1
