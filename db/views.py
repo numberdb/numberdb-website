@@ -19,6 +19,7 @@ from time import time
 import yaml
 from cysignals import AlarmInterrupt
 from cysignals.alarm import alarm, cancel_alarm
+from cysignals.signals import SignalError
 
 import Pyro5.api
 import Pyro5.errors
@@ -1208,9 +1209,23 @@ def suggestions(request):
 				number_string = polynomial.number_string,
 			)[:int(10-i)]
 			print("query_polynomials:",query_polynomials)
-			suggested_numbers += list(query_polynomials)
-			#print("suggested_numbers:",suggested_numbers)
-			add_suggested_numbers()
+			if len(query_polynomials) > 0:
+				suggested_numbers += list(query_polynomials)
+				#print("suggested_numbers:",suggested_numbers)
+				add_suggested_numbers()
+			elif polynomial.variable_count > 0:
+				entry_i = {
+					'value': str(i),
+					'label': '',
+					'type': 'link',
+					'title': 'Basic properties of',
+					'subtitle': '%s (not in search index)'  % (n,),
+					'url': reverse('db:properties',kwargs={
+						'number': str(n).replace(' ',''),
+					}),
+				}
+				entries[i] = entry_i
+				i += 1
 
 		if i >= 10:
 			return wrap_response(entries)
@@ -1388,7 +1403,7 @@ def properties(request, number):
 		append_context_for_integer(n, context)
 		return wrap_response(context)
 
-	#Case 2: given number is an integer:
+	#Case 2: given number is a rational number:
 	if '/' in number:
 		n = parse_rational_number(number)
 		if n != None:
@@ -1486,6 +1501,47 @@ def properties(request, number):
 			append_context_for_integer(n, context)			
 		except ValueError:
 			pass
+		
+		return wrap_response(context)
+
+	#Case 4: given number is actually a polynomial over Q:
+	r = parse_polynomial(number)
+	if r != None:
+		print("r:",r)
+		context['polynomial'] = r
+		context['properties'].append({
+			'title': 'Polynomial',
+			'plain': str(r),
+			'latex': '$%s$' % (latex(r),),
+		})
+	
+		#Factorization:
+		f = None
+		try:
+			#f = r.factor()
+			f = factor(r)
+		except SignalError:
+			pass
+			
+			'''
+			print('Signal error during factorization.')
+			try:
+				E = Pyro5.api.Proxy("PYRONAME:safe_eval")
+				#print("E:",E)
+				r_cp437 = str(dumps(r),'cp437')
+				f, messages_factor = loads(bytes(E.factor(r_cp437), encoding='cp437'))
+				print("messages_factor:",messages_factor)
+			
+			except (Pyro5.errors.NamingError,Pyro5.errors.CommunicationError) as e:
+				print("e:",e, type(e))
+			'''
+			
+		if f != None:
+			context['properties'].append({
+				'title': 'Factorization',
+				'plain': str(f),
+				'latex': '$%s$' % (latex(f),),
+			})
 		
 		return wrap_response(context)
 

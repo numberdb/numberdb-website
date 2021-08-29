@@ -5,6 +5,9 @@ from cysignals import AlarmInterrupt
 from cysignals.alarm import alarm, cancel_alarm
 import re
 
+import Pyro5.api
+import Pyro5.errors
+
 #from sage import *
 from sage.all import *
 from sage.rings.all import *
@@ -515,10 +518,24 @@ def factor_with_timeout(n):
 
 #Work-around: (TODO: Need proper time-out)
 def factor_with_timeout(n):
-    if n.abs() <= 10**50:
+    if (n not in QQ) or n.abs() <= 10**50:
+        #Do computation locally:
         return n.factor()
     else:
         return None
+        
+        #Perhaps in the future:
+        try:
+            E = Pyro5.api.Proxy("PYRONAME:safe_eval")
+            #print("E:",E)
+            n_cp437 = str(dumps(n),'cp437')
+            f, messages_factor = loads(bytes(E.factor(n_cp437), encoding='cp437'))
+            #print("messages_factor:",messages_factor)
+            return f
+        
+        except (Pyro5.errors.NamingError,Pyro5.errors.CommunicationError) as e:
+            #print("e:",e, type(e))
+            return None
 
 class StableContinuedFraction:
     
