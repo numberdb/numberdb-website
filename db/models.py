@@ -736,7 +736,7 @@ class Polynomial(models.Model):
 		blake = hashlib.blake2s(
 			#data = bytes(self.number_string,encoding='cp437'),
 			digest_size = 8,
-			usedforsecurity = False,
+			#usedforsecurity = False, #is not always supported!
 		)
 		blake.update(bytes(self.number_string,encoding='cp437'))
 		polynomial_hash = int.from_bytes(
