@@ -42,7 +42,6 @@ from utils.utils import parse_fractional_part
 from utils.utils import parse_p_adic
 from utils.utils import parse_complex_interval
 from utils.utils import parse_polynomial
-from utils.utils import polynomial_modulo_variable_names
 from utils.utils import number_with_uncertainty_to_real_ball
 from utils.utils import is_polynomial_ring
 

@@ -16,6 +16,7 @@ from sage.all import *
 #from sage.rings.all import *
 import json
 import ast
+#from utils.utils import is_polynomial_ring
 
 def pluralize(string, count, singular_ending="", plural_ending="s"):
 
@@ -23,6 +24,10 @@ def pluralize(string, count, singular_ending="", plural_ending="s"):
         return string + singular_ending
     else:
         return string + plural_ending
+
+def is_polynomial_ring(R):
+    return str(R).startswith('Multivariate Polynomial Ring') or \
+			str(R).startswith('Univariate Polynomial Ring')
 
 @Pyro5.api.expose
 class SafeEval(object):
@@ -86,6 +91,15 @@ class SafeEval(object):
 			try:
 				K = nested.parent()
 				if is_pAdicField(K):
+					result.append((parent_key, nested))
+					return result, params_error
+			except AttributeError:
+				pass
+
+			#Check whether number is polynomial:
+			try:
+				K = nested.parent()
+				if is_polynomial_ring(K):
 					result.append((parent_key, nested))
 					return result, params_error
 			except AttributeError:

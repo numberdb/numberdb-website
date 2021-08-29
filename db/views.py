@@ -89,6 +89,7 @@ from utils.utils import parse_complex_interval
 from utils.utils import parse_polynomial
 from utils.utils import blur_real_interval
 from utils.utils import blur_complex_interval
+from utils.utils import is_polynomial_ring
 
 
 from db_builder.utils import normalize_table_data
@@ -1599,6 +1600,7 @@ def advanced_suggestions(request):
 	query_real_intervals = Number.objects.none()
 	query_complex_intervals = NumberComplex.objects.none()
 	query_p_adic_numbers = NumberPAdic.objects.none()
+	query_polynomials = Polynomial.objects.none()
 
 	def do_query():
 		nonlocal i
@@ -1630,6 +1632,17 @@ def advanced_suggestions(request):
 				'param': param,
 				'number': number,
 				'table': number.table,		
+			})
+			i += 1
+			if i >= max_results:
+				return
+
+		for polynomial in query_polynomials[:(max_results - i)]:
+			print("result:",polynomial.number_string)
+			results.append({
+				'param': param,
+				'number': polynomial,
+				'table': polynomial.table,		
 			})
 			i += 1
 			if i >= max_results:
@@ -1669,11 +1682,21 @@ def advanced_suggestions(request):
 			) #Request maximum number of results?
 			query_i += 1
 
+		elif is_polynomial_ring(K):
+			r_query = r
+			polynomial = Polynomial(sage_polynomial = r_query)
+			print("number_string:",polynomial.number_string)
+			query_polynomials |= Polynomial.objects.filter(
+				number_string = polynomial.number_string,							
+			) #Request maximum number of results?
+			query_i += 1
+
 		if query_i >= query_bulk_size:
 			do_query()
 			query_real_intervals = Number.objects.none()
 			query_complex_intervals = NumberComplex.objects.none()
 			query_p_adic_numbers = NumberPAdic.objects.none()
+			query_polynomials = Polynomial.objects.none()
 			query_i = 0
 			
 		if i >= max_results:
