@@ -8,8 +8,9 @@ from django.db.models.signals import post_save
 from urllib.parse import quote_plus
 from urllib.parse import unquote_plus
 
-import pyhash 
 import numpy as np
+#import pyhash 
+import hashlib
 
 from sage import *
 from sage.all import *
@@ -728,9 +729,23 @@ class Polynomial(models.Model):
 		#thus the following does not work:
 		#self.number_string_hash = hash(self.number_string)
 		#
-		#We rather use pyhash:
-		self.number_string_hash = pyhash.fnv1_64()(self.number_string)-9223372036854775808
-		
+		#We'd rather use pyhash, however it's currently not maintained:
+		#self.number_string_hash = pyhash.fnv1_64()(self.number_string)-9223372036854775808
+		#
+		#Thus we use hashlib:
+		blake = hashlib.blake2s(
+			#data = bytes(self.number_string,encoding='cp437'),
+			digest_size = 8,
+			usedforsecurity = False,
+		)
+		blake.update(bytes(self.number_string,encoding='cp437'))
+		polynomial_hash = int.from_bytes(
+			blake.digest(),
+			byteorder = 'big',
+			signed = True,
+		)
+		#print('hash:',h)
+		self.number_string_hash = polynomial_hash
 		
 	def to_sage(self):
 		s = self.number_string
