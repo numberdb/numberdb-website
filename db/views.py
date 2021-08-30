@@ -1205,7 +1205,7 @@ def suggestions(request):
 	#Searching for polynomials:
 	query_polynomial = Polynomial.objects.none()
 	n = parse_polynomial(term)
-	if n != None:
+	if n != None and n.number_of_terms() >= 2:
 		polynomial = Polynomial(sage_polynomial=n)
 			
 		if polynomial != None:
