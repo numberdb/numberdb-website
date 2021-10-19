@@ -1,6 +1,6 @@
 {% extends 'base.html' %}{% load static %}
 
-{% block head-title %}Advanced search{% endblock %}
+{% block head-title %}Advanced search{% if program %}: {{ program | truncatewords:10 }}{% endif %}{% endblock %}
 
 {% block extra_head %}
 
@@ -177,6 +177,7 @@ textarea.search-code {
 <!--<h1 class="title-search">Advanced search</h1>-->
 
 <div id="search-messages">
+{% if search_results %}{{ search_results.messages_html }}{% endif %}
 </div>
 
 <div class="advanced-searchbar-container">   
@@ -199,14 +200,15 @@ textarea.search-code {
 </div>
 -->
 
-<textarea id="advanced-searchbox" name="table">
-{% if program %}{{ program }}{% endif %}
-</textarea>
-<!--<input type="submit" value="Search">-->
-</form>
+<form name="advanced-search-form" action="/advanced-search" method="get">
+<textarea id="advanced-searchbox" name="expression">{% if program %}{{ program }}{% endif %}</textarea>
+<!--<input type="submit" value="Search via GET">-->
 
- <span style="display:none" id="msg-no-entry">No match in database</span>
-
+ {% if search_results %} 
+   {% if search_results.result_html == '' %}
+     <span id="msg-no-entry">No match in database</span>
+   {% endif %}
+ {% endif %}
 
  <div class="searchbar-help">
  <button id="button-advanced-search">Search <img id="searchbox-image" src="{% static '/img/search.png' %}"></button>
@@ -214,6 +216,7 @@ textarea.search-code {
  
  <a id="searchbar-help" href="#" onclick="toggle_visibility('searchtips','searchbar-help');">search tips</a>
  </div>
+</form>
 </div> 
 
 
@@ -233,7 +236,10 @@ textarea.search-code {
     });
 
 $(document).ready(function(){
+  
     $('#button-advanced-search').on("click", function(e){ 
+        document.forms["advanced-search-form"].submit();
+        /*
         //var program = $('#advanced-searchbox').val().trim();
         var program = editor.getValue();
         console.log('program:',program);
@@ -243,7 +249,7 @@ $(document).ready(function(){
         }
         $('#searching').css({'display':'inline-block'});
         var api_url = "{% url 'db:advanced-suggestions' %}";
-        $.getJSON(api_url, { 'program': program },     
+        $.getJSON(api_url, { 'expression': program },     
             function (data) {
                 //console.log(data);
                 console.log(data['time_request']);
@@ -265,12 +271,12 @@ $(document).ready(function(){
                 MathJax.typeset();
             }
         );
+        */
     });
     
     //Debug:
     //$('#button-advanced-search').trigger("click");
 });    
-    
   </script>
 
 
@@ -296,6 +302,7 @@ $(document).ready(function(){
 </script>
 
 <div id="search-results">
+{% if search_results %}{{ search_results.result_html }}{% endif %}
 </div>
     
 {% endblock %}

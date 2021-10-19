@@ -1578,6 +1578,28 @@ def advanced_search(request):
 		'''
 		messages.error(request, 'Error: The advanced search server is currently not running and has to be restarted. We apologize.')
 		#return HttpResponseRedirect(reverse('db:home'))
+
+
+	#default_program = 'x = 3.14159265\nnumbers = {n: sin(x/n) for n in [1..10]}\n'
+	default_program = '{n: sin(pi/n) for n in [1..10]}\n'
+	#default_program = '{n: sin(pi*n/2)\n  for n in [1..10000]\n}\n'
+	#default_program = '{n: sin(pi*n/2)\n  for n in [1..10]\n}\n'
+	#default_program = '{n: sin(1/n) for n in [1..10]}\n'
+	
+	program = request.GET.get('expression',default=None)
+
+	context = {}
+	
+	if program == None:
+		program = default_program
+	else:
+		#TODO:
+		#Shall we automatically compile advanced_suggestions?
+		#pass
+		search_results = advanced_suggestions(request,return_type='dict')
+		context['search_results'] = search_results
+
+	context['program'] = program
 	
 	'''	
 	if not request.user.is_authenticated:	
@@ -1585,17 +1607,9 @@ def advanced_search(request):
 		messages.error(request, 'You need to be logged in to use advanced search.')
 	'''
 	
-	context = {
-		#'program': 'x = 3.14159265\nnumbers = {n: sin(x/n) for n in [1..10]}\n', 
-		#'program': '{n: sin(pi/n) for n in [1..10]}\n',
-		#'program': '{n: sin(pi*n/2)\n  for n in [1..10000]\n}\n',
-		'program': '{n: sin(pi*n/2)\n  for n in [1..10]\n}\n',
-		#'program': '{n: sin(1/n) for n in [1..10]}\n', 
-	}
-	
 	return render(request, 'advanced-search.html', context)
 
-def advanced_suggestions(request):
+def advanced_suggestions(request, return_type='json'):
 	time0 = time()
 	
 	def wrap_response(results, messages = None):
@@ -1617,8 +1631,12 @@ def advanced_suggestions(request):
 			'time_request': "{:.3f}s".format(time()-time0),
 		}
 		#print("data:",data)
-		return JsonResponse(data,safe=True)
-
+		if return_type == 'json':
+			return JsonResponse(data,safe=True)
+		elif return_type == 'dict':
+			return data
+		else:
+			raise ValueError('Unknown return_type "%s".' % (return_type,))
 		
 	messages = []
 
@@ -1632,7 +1650,7 @@ def advanced_suggestions(request):
 		return wrap_response(None, messages)
 	'''
 
-	program = request.GET.get('program',default=None)
+	program = request.GET.get('expression',default=None)
 	if program == None:
 		return wrap_response(None, messages)
 	print('program:',program)
