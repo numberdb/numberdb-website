@@ -27,6 +27,14 @@ help:
 run:
 	#RUN
 	$(MANAGE) runserver
+	
+run_nameserver:
+	#RUN NAMESERVER
+	$(PYTHON) -m Pyro5.nameserver
+
+run_eval:
+	#RUN NAMESERVER
+	$(PYTHON) services/eval.py
 
 static:
 	#STATIC
