@@ -11,19 +11,19 @@ The numbers might be given via formulas involving standard functions such as sin
 Examples:
 <ul>
 <li>
-<a href="{% url 'db:advanced-search' %}?expression=-2%2C+pi%2C+e"><code>-2, pi, e</code></a> 
+<a href="{% url 'db:advanced-search' %}?expression=-2%2C+pi%2C+e&results=false"><code>-2, pi, e</code></a> 
 searches for certain constants.
 </li>
 <li>
-<a href="{% url 'db:advanced-search' %}?expression={n%3A+2^n+for+n+in+[1..10]}"><code>{n: 2^n for n in [1..10]}</code></a> 
+<a href="{% url 'db:advanced-search' %}?expression={n%3A+2^n+for+n+in+[1..10]}&results=false"><code>{n: 2^n for n in [1..10]}</code></a> 
 searches for $2^1$, ..., $2^{10}$.
 </li>
 <li>
-<a href="{% url 'db:advanced-search' %}?expression=RIF(10,11)"><code>RIF(10,11)</code></a> 
+<a href="{% url 'db:advanced-search' %}?expression=RIF(10,11)&results=false"><code>RIF(10,11)</code></a> 
 searches for all numbers contained in the interval $[10,11]$.
 </li>
 <li>
-<a href="{% url 'db:advanced-search' %}?expression={a%3A+%0D%0A++{b%3A+a%2Fb+%0D%0A++++for+b+in+[1..5]+if+gcd(a%2Cb)+%3D%3D+1%0D%0A++}+%0D%0A++for+a+in+[-5..5]+%0D%0A}"><code>{a: {b: a/b for b in [1..5] if gcd(a,b) == 1} for a in [-5..5]}</code></a> 
+<a href="{% url 'db:advanced-search' %}?expression={a%3A+%0D%0A++{b%3A+a%2Fb+%0D%0A++++for+b+in+[1..5]+if+gcd(a%2Cb)+%3D%3D+1%0D%0A++}+%0D%0A++for+a+in+[-5..5]+%0D%0A}&results=false"><code>{a: {b: a/b for b in [1..5] if gcd(a,b) == 1} for a in [-5..5]}</code></a> 
 searches certain small rational numbers.
 </li>
 </ul>
@@ -46,12 +46,12 @@ Similarly one can search for p-adic numbers in $\mathbb{Z}_p$ and $\mathbb{Q}_p$
 Examples:
 <ul>
 <li>
-<a href="{% url 'db:advanced-search' %}?expression=Qp(2%2Cprec%3D4)(5)"><code>Qp(2,prec=4)(5)</code></a> 
+<a href="{% url 'db:advanced-search' %}?expression=Qp(2%2Cprec%3D4)(5)&results=false"><code>Qp(2,prec=4)(5)</code></a> 
 searches for $5 + O(2^4)$ = $2^0 + 2^2 + O(2^4)$, 
 that is, any $2$-adic integer with first four $2$-adic digits $1$, $0$, $1$, $0$.
 </li>
 <li>
-<a href="{% url 'db:advanced-search' %}?expression={n%3A+Qp(2)(n)+for+n+in+[1..10]}"><code>{n: Qp(2)(n) for n in [1..10]}</code></a> 
+<a href="{% url 'db:advanced-search' %}?expression={n%3A+Qp(2)(n)+for+n+in+[1..10]}&results=false"><code>{n: Qp(2)(n) for n in [1..10]}</code></a> 
 searches $1$, ..., $10$ up to $O(2^{20})$ as $2$-adic numbers; 
 note that 20 is the standard precision for Qp in sage.
 </li>
@@ -64,7 +64,7 @@ Similarly one can search for multivariate polynomials over $\mathbb{Q}$.
 As only expressions are accepted (mainly for safety reasons), we can define the variables as in the following example:<br>
 <ul>
 <li>
-<a href="{% url 'db:advanced-search' %}?expression=[%0D%0A++{n%3A+x^2+%2B+n+for+n+in+[1..10]}%0D%0A++for+x%2Cy+in+[polygens(QQ%2C2%2C'x')]%0D%0A]"><code>[{n: x^2 + n for n in [1..10]} for x,y in [polygens(QQ,2,'x')]]</code></a> 
+<a href="{% url 'db:advanced-search' %}?expression=[%0D%0A++{n%3A+x^2+%2B+n+for+n+in+[1..10]}%0D%0A++for+x%2Cy+in+[polygens(QQ%2C2%2C'x')]%0D%0A]&results=false"><code>[{n: x^2 + n for n in [1..10]} for x,y in [polygens(QQ,2,'x')]]</code></a> 
 searches for polynomials $x^2+n$ for integers $n=1,\ldots,10$, where we allow two variables $x$ and $y$.
 </li>
 </ul>

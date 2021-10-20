@@ -1587,17 +1587,16 @@ def advanced_search(request):
 	#default_program = '{n: sin(1/n) for n in [1..10]}\n'
 	
 	program = request.GET.get('expression',default=None)
+	show_results = request.GET.get('results',default='true')
 
 	context = {}
 	
 	if program == None:
 		program = default_program
 	else:
-		#TODO:
-		#Shall we automatically compile advanced_suggestions?
-		#pass
-		search_results = advanced_suggestions(request,return_type='dict')
-		context['search_results'] = search_results
+		if show_results == 'true':
+			search_results = advanced_suggestions(request,return_type='dict')
+			context['search_results'] = search_results
 
 	context['program'] = program
 	
