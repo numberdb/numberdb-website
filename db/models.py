@@ -11,6 +11,7 @@ from urllib.parse import unquote_plus
 import numpy as np
 #import pyhash 
 import hashlib
+import json
 
 from sage import *
 from sage.all import *
@@ -124,6 +125,16 @@ class Table(models.Model):
 
 	def __str__(self):
 		return 'Table %s' % (self.title,)
+		
+	def to_serializable_dict(self):
+		return {
+			'tid': self.tid,
+			'tid_int': self.tid_int,
+			'url': self.url,
+			'path': self.path,
+			'title': self.title,
+			'number_count': self.number_count,
+		}
 
 class TableData(models.Model):
 
@@ -418,6 +429,15 @@ class Number(models.Model):
 			print("r:",r)
 			raise NotImplementedError()
 
+	def to_serializable_dict(self):
+		return {
+			'type': self.number_type_bytes().decode(),
+			'param': self.param_str(),
+			'sage': self.to_sage().dumps().decode('cp437'),
+			'str_short': self.str_short(),
+			'table_id': self.table.tid,
+		}
+
 class NumberPAdic(models.Model):
 
 	#Format of number_string:
@@ -530,6 +550,16 @@ class NumberPAdic(models.Model):
 	def __str__(self):
 		r = self.to_sage()
 		return str(r)
+		
+	def to_serializable_dict(self):
+		return {
+			'type': self.number_type_bytes().decode(),
+			'param': self.param_str(),
+			'sage': self.to_sage().dumps().decode('cp437'),
+			'str_short': self.str_short(),
+			'table_id': self.table.tid,
+		}
+
 
 class NumberComplex(models.Model):
 
@@ -653,6 +683,15 @@ class NumberComplex(models.Model):
 	def __str__(self):
 		r = self.to_sage()
 		return str(r)
+		
+	def to_serializable_dict(self):
+		return {
+			'type': self.number_type_bytes().decode(),
+			'param': self.param_str(),
+			'sage': self.to_sage().dumps().decode('cp437'),
+			'str_short': self.str_short(),
+			'table_id': self.table.tid,
+		}
 
 class Polynomial(models.Model):
 
@@ -761,6 +800,15 @@ class Polynomial(models.Model):
 	def str_short(self):
 		r = self.to_sage()
 		return str(r)
+		
+	def to_serializable_dict(self):
+		return {
+			'type': self.number_type_bytes().decode(),
+			'param': self.param_str(),
+			'sage': self.to_sage().dumps().decode('cp437'),
+			'str_short': self.str_short(),
+			'table_id': self.table.tid,
+		}
 
 #-----------------------------------------------------------------------
 
