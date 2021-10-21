@@ -9,8 +9,8 @@ from urllib.parse import quote_plus
 from sage.all import *
 from sage.rings.all import *
 
-_domain = 'https://numberdb.org/'
-#_domain = 'http://localhost:8000/'
+#_domain = 'https://numberdb.org/'
+_domain = 'http://localhost:8000/'
 
 
 def search(expression):
@@ -32,11 +32,12 @@ def search(expression):
     
     '''
     
-    url = _domain + 'advanced-search-results?expression=%s' % (
+    url = _domain + 'api/search?expression=%s' % (
         quote_plus(expression),
     )
-    r = requests.get(url, allow_redirects=True)
-    context = r.json()
+    response = requests.get(url, allow_redirects=True)
+    #print('response.text:',response.text)
+    context = response.json()
     
     results = context['results']
     messages = context['messages']
@@ -55,3 +56,40 @@ def search(expression):
     ]
     
     return results, messages
+
+def table(table_id):
+    '''
+    Returns NumberDB's table (in essentially raw format) with given table_id.
+    
+    INPUT:
+    table_id - either a non-negative integer, or a string of the form
+                'Tx', where x is this non-negative integer
+                
+    OUTPUT:
+    the table as a dictionary 
+    '''
+    
+    url = _domain + 'api/table?id=%s' % (table_id,)
+    response = requests.get(url, allow_redirects=True)
+    #print('response.text:',response.text)
+    result = response.json()
+    
+    return result
+
+def tag(tag_url):
+    '''
+    Returns NumberDB's tag with given tag url.
+    
+    INPUT:
+    tag_url - a string
+                
+    OUTPUT:
+    the list of tables tagged by the tag 
+    '''
+    
+    url = _domain + 'api/tag?url=%s' % (tag_url,)
+    response = requests.get(url, allow_redirects=True)
+    #print('response.text:',response.text)
+    result = response.json()
+    
+    return result

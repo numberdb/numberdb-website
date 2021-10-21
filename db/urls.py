@@ -1,6 +1,7 @@
 from django.urls import path, re_path
 
 from . import views
+from . import api
 
 app_name = 'db'
 urlpatterns = [
@@ -8,12 +9,15 @@ urlpatterns = [
     path('about', views.about, name='about'),
     path('help', views.help, name='help'),
 
+    path('api/search', api.advanced_search_results, name='api-search'),
+    path('api/table', api.table, name='api-table'),
+    path('api/tag', api.tag, name='api-tag'),
+    
     path('suggestions', views.suggestions, name='suggestions'),
     path('properties/<str:number>', views.properties, name='properties'),
     path('properties/<str:numerator>/<str:denominator>', views.properties_of_rational, name='properties'),
 
     path('advanced-search', views.advanced_search, name='advanced-search'),
-    path('advanced-search-results', views.advanced_search_results, name='advanced-search-results'),
 
     path('tables', views.tables, name='tables'),
     re_path(r'^(?P<tid>(T\d+))$', views.table_by_tid, name='table'),

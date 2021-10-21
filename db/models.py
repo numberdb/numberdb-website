@@ -79,6 +79,17 @@ class Tag(models.Model):
 	def __str__(self):
 		return 'Tag %s (%s/%s)' % (self.name,self.table_count,self.number_count)
 		
+	def to_serializable_dict(self,order_tables_by='-number_count'):
+		return {
+			'name': self.name,
+			'table_count': self.table_count,
+			'number_count': self.number_count,
+			'tables': [
+				table.to_serializable_dict()
+				for table in self.tables.all().order_by(order_tables_by)
+			],
+		}
+
 
 class Table(models.Model):
 
