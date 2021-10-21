@@ -260,8 +260,6 @@ class SafeEval(object):
 		else:
 			raise ValueError('Unknown expression type')
 		
-
-
 	def check_Expr_Context(self,ctx):
 		#Disallow ast.Del
 		if isinstance(ctx, ast.Load) or \

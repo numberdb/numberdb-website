@@ -131,7 +131,6 @@ Show as:
 Look up number at <a href="{{ ISC_href }}">ISC</a>.
 {% endif %}
 
-
 {% if OEIS_href %}
 <!--
 <br>
@@ -143,13 +142,6 @@ Look up number at <a href="{{ OEIS_href }}">OEIS</a>.
 <br>
 Look up number at <a href="{{ Wiki_href }}">Wikipedia</a>.
 {% endif %}
-
-<!--
-<div class="property">
-Number: 
-{{ number }}
-</div>
--->
 
 
 {% for property in properties %}
@@ -225,7 +217,7 @@ Number:
 
   </div>
 
-    <script>
+<script>
       var infinite = new Waypoint.Infinite({
         element: $('.infinite-container')[0],
         onBeforePageLoad: function () {
@@ -236,15 +228,12 @@ Number:
           //MathJax.typeset(); //not used as OEIS sequence titles are better shown as raw text
         }
       });
-    </script>
+</script>
 
   
 {% endif %}
 
-  <script>
-      
-  
-  
+<script>
   $( function() {
     $( "#show-select" ).selectable({
       stop: function() {
@@ -264,8 +253,7 @@ Number:
         });
       }
     });
-  } );
-
+  });
 
   $(function() {
     $("input[type='radio']").on('click', function(e) {
@@ -281,6 +269,6 @@ Number:
        }
     });
   });
-  </script>    
+</script>    
 
 {% endblock %}
