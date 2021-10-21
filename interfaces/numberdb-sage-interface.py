@@ -1,5 +1,5 @@
 '''
-Attepmt to communicate with NumberDB within SageMath.
+Attempt to communicate with NumberDB within SageMath.
 '''
 
 import requests
@@ -76,18 +76,20 @@ def table(table_id):
     
     return result
 
-def tag(tag_url):
+def tag(name):
     '''
     Returns NumberDB's tag with given tag url.
     
     INPUT:
-    tag_url - a string
+    name - name of the tag (string)
                 
     OUTPUT:
     the list of tables tagged by the tag 
     '''
     
-    url = _domain + 'api/tag?url=%s' % (tag_url,)
+    url = _domain + 'api/tag?url=%s' % (
+        quote_plus(name),
+    )
     response = requests.get(url, allow_redirects=True)
     #print('response.text:',response.text)
     result = response.json()
