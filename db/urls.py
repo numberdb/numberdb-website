@@ -13,7 +13,7 @@ urlpatterns = [
     path('properties/<str:numerator>/<str:denominator>', views.properties_of_rational, name='properties'),
 
     path('advanced-search', views.advanced_search, name='advanced-search'),
-    path('advanced-suggestions', views.advanced_suggestions, name='advanced-suggestions'),
+    path('advanced-search-results', views.advanced_search_results, name='advanced-search-results'),
 
     path('tables', views.tables, name='tables'),
     re_path(r'^(?P<tid>(T\d+))$', views.table_by_tid, name='table'),

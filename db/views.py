@@ -1595,9 +1595,21 @@ def advanced_search(request):
 		program = default_program
 	else:
 		if show_results == 'true':
-			search_results = advanced_suggestions(request,return_type='dict')
-			context['search_results'] = search_results
-
+			search_results_context = advanced_search_results(request,return_type='dict')
+			print('search_results_context:',search_results_context)
+			messages_html = render_to_string(
+				'includes/messaging.html',
+				context = search_results_context,
+			)
+			result_html = render_to_string(
+				'includes/advanced-search-results.html', 
+				context = search_results_context,
+			)
+			context['search_results'] = {
+				'messages_html': messages_html,
+				'result_html': result_html,
+				'time_request': search_results_context['time_request'],
+			}
 	context['program'] = program
 	
 	'''	
@@ -1608,14 +1620,16 @@ def advanced_search(request):
 	
 	return render(request, 'advanced-search.html', context)
 
-def advanced_suggestions(request, return_type='json'):
+def advanced_search_results(request, return_type='json'):
 	time0 = time()
 	
 	def wrap_response(results, messages = None):
 		context = {
 			'results': results,
 			'messages': messages,
+			'time_request': "{:.3f}s".format(time()-time0),
 		}
+		'''
 		messages_html = render_to_string(
 			'includes/messaging.html',
 			context = context,
@@ -1630,10 +1644,24 @@ def advanced_suggestions(request, return_type='json'):
 			'time_request': "{:.3f}s".format(time()-time0),
 		}
 		#print("data:",data)
+		'''
+		print('context:',context)
 		if return_type == 'json':
-			return JsonResponse(data,safe=True)
+			serializable_context = {
+				'results': [
+						{
+							'index': result['param'],
+							'number': result['number'].to_serializable_dict(),				
+							'table': result['table'].to_serializable_dict(),
+						}
+						for result in context['results']
+					],
+				'messages': context['messages'],
+				'time_request': context['time_request'],			
+			}
+			return JsonResponse(serializable_context,safe=True)
 		elif return_type == 'dict':
-			return data
+			return context
 		else:
 			raise ValueError('Unknown return_type "%s".' % (return_type,))
 		
