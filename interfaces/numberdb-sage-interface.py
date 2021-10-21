@@ -4,12 +4,13 @@ Attepmt to communicate with NumberDB within SageMath.
 
 import requests
 import json
+from urllib.parse import quote_plus
 
 from sage.all import *
 from sage.rings.all import *
 
-#domain = 'https://numberdb.org/'
-domain = 'http://localhost:8000/'
+_domain = 'https://numberdb.org/'
+#_domain = 'http://localhost:8000/'
 
 
 def search(expression):
@@ -31,7 +32,9 @@ def search(expression):
     
     '''
     
-    url = _domain + 'advanced-search-results?expression=%s' % (expression,)
+    url = _domain + 'advanced-search-results?expression=%s' % (
+        quote_plus(expression),
+    )
     r = requests.get(url, allow_redirects=True)
     context = r.json()
     
