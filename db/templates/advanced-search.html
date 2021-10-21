@@ -181,103 +181,49 @@ textarea.search-code {
 </div>
 
 <div class="advanced-searchbar-container">   
+ <form name="advanced-search-form" action="/advanced-search" method="get">
+  <textarea id="advanced-searchbox" name="expression">{% if program %}{{ program }}{% endif %}</textarea>
+  <!--<input type="submit" value="Search via GET">-->
+  {% if search_results %} 
+    {% if search_results.result_html == '' %}
+      <span id="msg-no-entry">No match in database</span>
+    {% endif %}
+  {% endif %}
 
-<!--
-<div id="advanced-searchbox-component">
- <table class="advanced-searchbox-table" width="100%" style="border-spacing:0;">
-  <tbody>
-   <tr>
-    <td 
-     ><textarea id="advanced-searchbox" 
-      {% if autofocus %} autofocus {% endif %} 
-      {# placeholder="Try 3.14 or L-function" #} 
-      {% if searchterm %} value="{{ searchterm }}" {% endif %}
-     ></textarea></td>
-   </tr>
-  </tbody>
- </table>
- <span style="display:none" id="msg-no-entry">No match in database</span>
-</div>
--->
-
-<form name="advanced-search-form" action="/advanced-search" method="get">
-<textarea id="advanced-searchbox" name="expression">{% if program %}{{ program }}{% endif %}</textarea>
-<!--<input type="submit" value="Search via GET">-->
-
- {% if search_results %} 
-   {% if search_results.result_html == '' %}
-     <span id="msg-no-entry">No match in database</span>
-   {% endif %}
- {% endif %}
-
- <div class="searchbar-help">
- <button id="button-advanced-search">Search <img id="searchbox-image" src="{% static '/img/search.png' %}"></button>
- <div id="searching">(searching...)</div>
- 
- <a id="searchbar-help" href="#" onclick="toggle_visibility('searchtips','searchbar-help');">search tips</a>
- </div>
-</form>
+  <div class="searchbar-help">
+   <button id="button-advanced-search">Search <img id="searchbox-image" src="{% static '/img/search.png' %}"></button>
+   <div id="searching">(searching...)</div>
+   <a id="searchbar-help" href="#" onclick="toggle_visibility('searchtips','searchbar-help');">search tips</a>
+  </div>
+ </form>
 </div> 
 
 
 
-  <script>
-    var editor = CodeMirror.fromTextArea(document.getElementById("advanced-searchbox"), {
+<script>
+  var editor = CodeMirror.fromTextArea(document.getElementById("advanced-searchbox"), {
       lineNumbers: true,
       mode: "text/x-python",
       matchBrackets: true,
       spellcheck: true,
       viewportMargin: 1,
-    });
-    $('.CodeMirror').resizable({
+  });
+  $('.CodeMirror').resizable({
       resize: function() {
         editor.setSize("100%", $(this).height());
       }
-    });
+  });
 
-$(document).ready(function(){
+  $(document).ready(function(){
   
     $('#button-advanced-search').on("click", function(e){ 
         document.forms["advanced-search-form"].submit();
-        /*
-        //var program = $('#advanced-searchbox').val().trim();
-        var program = editor.getValue();
-        console.log('program:',program);
-        if (program == '') {
-                $('#msg-no-entry').hide();
-            return;
-        }
-        $('#searching').css({'display':'inline-block'});
-        var api_url = "{% url 'db:advanced-search-results' %}";
-        $.getJSON(api_url, { 'expression': program },     
-            function (data) {
-                //console.log(data);
-                console.log(data['time_request']);
-                messages_html = data['messages_html'];
-                result_html = data['result_html'];
-                if (result_html == '') {
-                        $('#msg-no-entry').show();
-                } else {
-                        $('#msg-no-entry').hide();
-                }
-                //console.log(result);
-                $('#search-messages').html(messages_html);
-                $('#search-results').html(result_html);
-                $('#searching').css({'display':'none'});
-                
-                $('#searchtips').css({'display':'none'});
-                $('#searchbar-help').text('search tips');
-                
-                MathJax.typeset();
-            }
-        );
-        */
     });
     
     //Debug:
     //$('#button-advanced-search').trigger("click");
-});    
-  </script>
+  });    
+</script>
 
 
 

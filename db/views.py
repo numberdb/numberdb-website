@@ -36,29 +36,6 @@ from urllib.parse import quote_plus, unquote_plus
 from sage.all import *
 #from sage.rings.all import *
 
-'''
-from sage.all import ceil
-from sage.rings.complex_number import ComplexNumber
-from sage.rings.complex_field import ComplexField
-from sage.rings.real_mpfr import RealLiteral, RealField, RealNumber
-from sage.rings.integer import Integer
-from sage.rings.rational import Rational
-from sage.rings.integer_ring import ZZ
-from sage.rings.rational_field import QQ
-from sage.rings.infinity import infinity
-'''
-'''
-#from sage.repl.rich_output.pretty_print import pretty_print
-from sage.misc.latex import latex
-from sage.misc.misc import is_iterator
-
-from sage.repl.preparse import preparse
-from sage.arith.srange import ellipsis_range
-from sage.functions.trig import *
-from sage.symbolic.constants import *
-from sage.functions.all import *
-'''
-
 from mpmath import pslq
 
 from .models import UserProfile
@@ -204,11 +181,6 @@ def render_table(request, table, context={}):
 	return render(request, 'table.html', context)
 
 def table_by_tid(request, tid):
-    # do something else...
-    # return some data along with the view...
-    
-    #tid = "T%s" % (tid,)
-    
     try:
         table = Table.objects.get(tid=tid)
     except Table.DoesNotExist:
@@ -307,10 +279,6 @@ def table_context(table, preview=False):
 					show_label_as[label] = '[%s]' % (i_label,)
 					i_label += 1
 			
-		
-		#html += '<div class="grid12">'
-		#html += '<div class="col-m-6">'
-
 		sections = []
 			
 		current_job = 'parsing definition'
@@ -590,27 +558,13 @@ def table_context(table, preview=False):
 				if isinstance(numbers,str):
 					html += '<div class="table-number">%s</div>' % (numbers,)
 				else:
-					#html += '<div class="table-subtable">'
-					#html += '<div class="table-block">'
-					#html += '<div class="table-entry">'
 					if isinstance(numbers,list):           
 						for number in numbers:
 							html += '<div class="table-number">%s</div>' % (number,)
 					elif isinstance(numbers,dict):  
 						for key, value in numbers.items():
 							html += '<div class="table-number-%s">%s</div>' % (key,render_text(value),)
-					#html += '</div>'
-					#html += '</div>'
-					#html += '</div>'
-				'''
-				param = number_param_groups_to_string(params_so_far)
-				#print("param:",param)
-				if param != '':
-					html = '<div id="%s" class="anchor-id">%s</div>' % (
-						param,
-						html,
-					)
-				'''
+
 			else:
 				if preview and isinstance(numbers,str) and numbers.startswith("INPUT"):
 					return '%s (not shown in preview)' % numbers
@@ -881,14 +835,6 @@ def preview(request, tid=None):
 	return render(request,'preview.html',context)
 
 def show_own_profile(request):
-    #latest_question_list = Question.objects.order_by('-pub_date')[:5]
-    #context = {
-    #    'blub': 0,
-    #}
-    #print("request:",request.user.__dir__())
-    #template = loader.get_template('polls/index.html')
-    #return HttpResponse(template.render(context, request))
-    #return render(request,'profile/show.html',context)
     return show_profile_of_user(request, request.user)
 
 def show_profile_of_user(request, user):
@@ -935,9 +881,6 @@ def suggestions(request):
 		return JsonResponse(data,safe=True)
 
 	def full_text_search_query(term):
-		#OLD:
-		#return SearchQuery(term, search_type='plain')
-		
 		terms = term.split(' ')
 		term1 = ' & '.join("'%s'" % (t,) for t in terms[:-1])
 		term2 = '%s:*' % (terms[-1][:6],)

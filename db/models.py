@@ -90,7 +90,6 @@ class Tag(models.Model):
 			],
 		}
 
-
 class Table(models.Model):
 
 	#sub_id = models.AutoField(primary_key=True)
@@ -571,7 +570,6 @@ class NumberPAdic(models.Model):
 			'table_id': self.table.tid,
 		}
 
-
 class NumberComplex(models.Model):
 
 	NUMBER_TYPE_C = b'c'
@@ -821,7 +819,7 @@ class Polynomial(models.Model):
 			'table_id': self.table.tid,
 		}
 
-#-----------------------------------------------------------------------
+#--- External data -----------------------------------------------------
 
 class OeisNumber(models.Model):
 	
