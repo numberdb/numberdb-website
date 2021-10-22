@@ -9,8 +9,8 @@ from urllib.parse import quote_plus
 from sage.all import *
 from sage.rings.all import *
 
-#_domain = 'https://numberdb.org/'
-_domain = 'http://localhost:8000/'
+_domain = 'https://numberdb.org/'
+#_domain = 'http://localhost:8000/' #only for development
 
 
 def search(expression):
@@ -78,7 +78,7 @@ def table(table_id):
 
 def tag(name):
     '''
-    Returns NumberDB's tag with given tag url.
+    Returns NumberDB's tag information for given tag name.
     
     INPUT:
     name - name of the tag (string)
