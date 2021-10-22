@@ -288,14 +288,15 @@ the interval does not get parsed as a list.
 <h2 id="sage-interface" class="section scrollspy">Sage interface</h2>
 
 Users of <a href="https://www.sagemath.org">SageMath</a> can perform an advanced search from within sage as follows.
-First download <a href="https://github.com/numberdb/numberdb-website/raw/main/interfaces/numberdb-sage-interface.py">numberdb-sage-interface.py</a>.
-Then, run sage from the same folder and type
-<code>
-<pre><code class="table-code language-python">sage: load('numberdb-sage-interface.py')
+<!--First download <a href="https://github.com/numberdb/numberdb-website/raw/main/interfaces/numberdb-sage-interface.py">numberdb-sage-interface.py</a>.
+Then, run sage from the same folder and type-->
+<div style="padding: 0.2em 0 0.2em 1em;">
+<code class="table-code language-python">
+sage: load('https://github.com/numberdb/numberdb-website/raw/main/interfaces/numberdb-sage-interface.py')<br>
 sage: search('{n: pi^n for n in [1..5]}')
-</code></pre>
 </code>
-Search queries can be any strings that represent expressions as in the <a href="#section-advanced-search-guide">advanced search guide</a>.
+</div>
+Search queries can be any string that represents an expression as in the <a href="#section-advanced-search-guide">advanced search guide</a>.
 
 </div>
 
