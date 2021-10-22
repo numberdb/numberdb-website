@@ -133,6 +133,7 @@ div.main-column {
 <li><a href="#section-how-to-search">How to search</a></li>
 <li><a href="#section-advanced-search-guide">Advanced search guide</a></li>
 <li><a href="#section-number-types">Number types and accuracy</a></li>
+<li><a href="#section-sage-interface">Sage interface</a></li>
 </ol>
 <hr class="contents">
 
@@ -279,6 +280,23 @@ These formats apply to the tables' webpages, the searchbar, as well as to the ra
 Note that in the yaml format one has put quotation marks around square brackets, such that
 the interval does not get parsed as a list.
 -->
+</div>
+
+<!--------------------------------------------------------------------->
+
+<div id="section-sage-interface" class="section scrollspy">
+<h2 id="sage-interface" class="section scrollspy">Sage interface</h2>
+
+Users of <a href="https://www.sagemath.org">SageMath</a> can perform an advanced search from within sage as follows.
+First download <a href="https://github.com/numberdb/numberdb-website/raw/main/interfaces/numberdb-sage-interface.py">numberdb-sage-interface.py</a>.
+Then, run sage from the same folder and type
+<code>
+<pre><code class="table-code language-python">sage: load('numberdb-sage-interface.py')
+sage: search('{n: pi^n for n in [1..5]}')
+</code></pre>
+</code>
+Search queries can be any strings that represent expressions as in the <a href="#section-advanced-search-guide">advanced search guide</a>.
+
 </div>
 
 <!--------------------------------------------------------------------->
