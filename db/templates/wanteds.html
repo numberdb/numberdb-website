@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block head-title %}Wanted{% endblock %}
+
+{% block extra_head %}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rye&display=swap" rel="stylesheet"> 
+
+<style>
+h1.wanted { 
+  font-family: 'Rye', 'Arial';
+  font-size: 2rem;
+  color: #555;
+}
+td.table-label {
+  text-align: right;
+  padding-right: 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'db:tags' %}">Tags</a></li>
+  <li class="breadcrumb-item active">{{ tag.name }}</li>
+{% endblock %}
+
+{% block content %}
+
+    <h1 class="wanted">~&nbsp;&nbsp;WANTED&nbsp;&nbsp;~</h1>
+
+    Sort by:
+    <a href="?sort_by=date">date</a> &middot; 
+    <a href="?sort_by=title">title</a>
+    <br>
+    <br>
+    
+    <table>
+    <tbody class="infinite-container">
+      {% for wanted in wanteds %}
+        <tr class="infinite-item">
+	   <td class=""> 
+            {{ wanted.title }}: 
+	   </td> 
+        </tr>
+      {% endfor %}
+    </tbody>
+    </table>
+
+    {% if tags.has_next %}
+      <a class="infinite-more-link" href="?{% if sortby %}sort_by={{ sortby }}&{% endif %}page={{ wanteds.next_page_number }}">More</a>
+    {% endif %}
+
+    <div class="loading" style="display: none;">
+      Loading...
+    </div>
+
+    <script>
+      var infinite = new Waypoint.Infinite({
+        element: $('.infinite-container')[0],
+        onBeforePageLoad: function () {
+          $('.loading').show();
+        },
+        onAfterPageLoad: function ($items) {
+          $('.loading').hide();
+        }
+      });
+    </script>
+
+{% endblock %}

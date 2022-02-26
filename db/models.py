@@ -24,8 +24,14 @@ from utils.utils import CIFprec, CBFprec
 from utils.utils import is_polynomial_ring
 from utils.utils import polynomial_modulo_variable_names
 
+#--- User data ---------------------------------------------------------
+
 class UserProfile(models.Model):
-	user = models.OneToOneField(User, on_delete=models.CASCADE)
+	user = models.OneToOneField(
+		User, 
+		on_delete = models.CASCADE,
+		related_name = 'profile',
+	)
 	bio = models.TextField(max_length=500, blank=True)
 
 	date_updated = models.DateTimeField(auto_now=True)
@@ -44,6 +50,36 @@ def save_user_profile(sender, instance, **kwargs):
 	if hasattr(instance,"profile"):
 		instance.profile.save()
     
+class Wanted(models.Model):
+	user = models.ForeignKey(
+		User,
+		on_delete = models.CASCADE,
+		related_name = 'wanteds',
+	)
+	title = models.CharField(
+		unique = True,
+		max_length = 256,
+		db_index = True,
+	)
+	description = models.TextField(
+		db_index = False,
+	)
+	search_vector = SearchVectorField(
+	)
+	date_updated = models.DateTimeField(auto_now=True)
+	date_created = models.DateTimeField(auto_now_add=True)
+
+	def url(self):
+		return quote_plus(self.title)
+		
+	def from_url(url):
+		title = unquote_plus(url)
+		return Tag.objects.get(title=title)
+		
+	def __str__(self):
+		return 'Wanted entry %s' % (self.title)
+
+#--- Database of numbers etc. ------------------------------------------
 
 class Tag(models.Model):
 
