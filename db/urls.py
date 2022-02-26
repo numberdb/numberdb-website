@@ -35,6 +35,8 @@ urlpatterns = [
     path('profile/edit/', views.edit, name='profile-edit'),
     path('profile/update/<int:user_id>/', views.update, name='profile-update'),
 
+    path('wanted', views.wanteds, name='wanteds'), #note: for the url we use the singular
+
     path('debug', views.debug, name='debug'),
 
     re_path(r"^(?P<url>([\w'()-]+))$", views.table_by_url, name='table_by_url'),

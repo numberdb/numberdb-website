@@ -39,6 +39,8 @@ from sage.all import *
 from mpmath import pslq
 
 from .models import UserProfile
+from .models import Wanted
+
 from .models import Table
 from .models import TableData
 from .models import TableSearch
@@ -48,6 +50,7 @@ from .models import Number
 from .models import NumberPAdic
 from .models import NumberComplex
 from .models import Polynomial
+
 from .models import OeisNumber
 from .models import OeisSequence
 from .models import WikipediaNumber
@@ -172,6 +175,26 @@ def tag(request, tag_url):
 	except EmptyPage:
 		shown_tables = paginator.page(paginator.num_pages)
 	return render(request, 'tag.html', {'tag': tag, 'tables': shown_tables, 'sortby': sortby})
+
+def wanteds(request):
+	page = request.GET.get('page', 1)
+	wanteds = Wanted.objects.all()
+	sortby_default = 'date'
+	sortby = request.GET.get('sort_by',default=sortby_default)
+	if sortby == 'date':
+		wanteds = wanteds.order_by('date_created')
+	elif sortby == 'title':
+		wanteds = wanteds.order_by('title')
+	else:
+		wanteds = wanteds.order_by(sortby_default)
+	paginator = Paginator(wanteds, 50)
+	try:
+		shown_wanteds = paginator.page(page)
+	except PageNotAnInteger:
+		shown_wanteds = paginator.page(1)
+	except EmptyPage:
+		shown_wanteds = paginator.page(paginator.num_pages)
+	return render(request, 'wanteds.html', {'wanteds': shown_wanteds, 'sortby': sortby})
 
 def welcome(request):
     return render(request, 'welcome.html')

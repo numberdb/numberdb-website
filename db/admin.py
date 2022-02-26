@@ -2,6 +2,8 @@ from django.contrib import admin
 
 
 from .models import UserProfile
+from .models import Wanted
+
 from .models import Table
 from .models import TableData
 from .models import TableSearch
@@ -12,11 +14,13 @@ from .models import Number
 from .models import NumberPAdic
 from .models import NumberComplex
 from .models import Polynomial
+
 from .models import OeisNumber
 from .models import OeisSequence
 from .models import WikipediaNumber
 
 admin.site.register(UserProfile)
+admin.site.register(Wanted)
 
 
 class NumberInline(admin.TabularInline):
@@ -111,6 +115,7 @@ admin.site.register(Number)
 admin.site.register(NumberPAdic)
 admin.site.register(NumberComplex)
 admin.site.register(Polynomial)
+
 admin.site.register(OeisNumber)
 admin.site.register(OeisSequence)
 admin.site.register(WikipediaNumber)
