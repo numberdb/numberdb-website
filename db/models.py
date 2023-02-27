@@ -13,7 +13,7 @@ import numpy as np
 import hashlib
 import json
 
-from sage.all import infinity, ceil, log
+from sage.all import infinity, ceil, log, I
 from sage.rings.all import ZZ, QQ, RR, CC, RIF, CIF, RBF, CBF, Qp
 from sage.rings.all import RealField, RealIntervalField, RealBallField
 from sage.rings.all import ComplexField, ComplexIntervalField, ComplexBallField

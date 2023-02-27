@@ -1,6 +1,6 @@
 # Deploy numberdb
 
-Start from fresh Ubuntu 20.04 LTS distribution. 
+Start from fresh Ubuntu 22.04 LTS distribution. 
 (Set custom password for root.)
 
 Update distribution:
@@ -15,20 +15,20 @@ Add user `numberdb`:
     gpasswd -a numberdb sudo
     sudo su - numberdb
     
-Clone git repository [numberdb-website](https://github.com/bmatschke/numberdb-website):
+Clone git repository [numberdb-website](https://github.com/numberdb/numberdb-website):
 
-    git clone https://github.com/bmatschke/numberdb-website.git
+    git clone https://github.com/numberdb/numberdb-website.git
     cd numberdb-website
 
-Make local copy of `.env`:
+Create default `.env`:
 
-    cp deploy/default-dotenv-deploy .env
+    make .env
 
-Change settings in `.env` and `makefile`, especially passwords, `DEBUG=FALSE`, and if desired: add server's IP address to `ALLOWED_HOSTS`, and add github social auth and mailgun credentials:
+Change settings in `.env` and `makefile`, especially passwords and paths, `DEBUG=FALSE`, and if desired: add server's IP address to `ALLOWED_HOSTS`, and add github social auth and mailgun credentials:
 
     vim .env
     vim makefile
-    
+
 Run `make deploy`:
 
     make deploy
@@ -39,3 +39,4 @@ If the last step `setup_certbot` fails, this might be because the DNS records fo
 After setting these, run the following to setup HTTPS certificates:
     
     sudo certbot --nginx
+
