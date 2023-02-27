@@ -14,14 +14,14 @@ cd $DIR
 #Don't use venv, rather use gunicorn that is installed in sage.
 #source ../../venv/bin/activate
 
-alias python="/home/numberdb/SageMath/local/bin/sage-python"
-alias python3="/home/numberdb/SageMath/local/bin/sage-python"
-alias python3.8="/home/numberdb/SageMath/local/bin/sage-python"
+#alias python="/home/numberdb/SageMath/local/bin/sage-python"
+#alias python3="/home/numberdb/SageMath/local/bin/sage-python"
+#alias python3.8="/home/numberdb/SageMath/local/bin/sage-python"
 
 export DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE
 export PYTHONPATH=$DIR:$PYTHONPATH
 
-exec /home/numberdb/SageMath/local/bin/gunicorn ${DJANGO_WSGI_MODULE}:application \
+exec /home/numberdb/.sage/local/bin/gunicorn ${DJANGO_WSGI_MODULE}:application \
   --name $NAME \
   --workers $WORKERS \
   --user=$USER \
@@ -31,4 +31,5 @@ exec /home/numberdb/SageMath/local/bin/gunicorn ${DJANGO_WSGI_MODULE}:applicatio
   --log-file=- \
   --limit-request-line 0 \
   --limit-request-fields 100 \
-  --limit-request-field_size 65536
+  --limit-request-field_size 65536 \
+  -m 007

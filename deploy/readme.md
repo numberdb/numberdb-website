@@ -24,11 +24,11 @@ Make local copy of `.env`:
 
     cp deploy/default-dotenv-deploy .env
 
-Change settings in `.env` and `makefile`, especially passwords, `DEBUG=FALSE`, and if desired add server's IP address to `ALLOWED_HOSTS`:
+Change settings in `.env` and `makefile`, especially passwords, `DEBUG=FALSE`, and if desired: add server's IP address to `ALLOWED_HOSTS`, and add github social auth and mailgun credentials:
 
     vim .env
     vim makefile
-
+    
 Run `make deploy`:
 
     make deploy
