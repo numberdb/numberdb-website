@@ -1,4 +1,5 @@
 #FOR DEVELOPMENT:
+# adjust PYTHON and PIP path below 
 # make install #only needed the first time
 # make run
 #Instead of `make install`, one may also run `make install_full`.
@@ -6,9 +7,17 @@
 #FOR DEPLOYMENT:
 # make deploy
 
+include .env
+
 SAGE=export PYTHONPATH=./:${PYTHONPATH}; sage
+
 PYTHON=$(SAGE) -python
 PIP=$(SAGE) -pip
+
+#Use the following paths for python and pip if sage is importable within the system's python:
+#PYTHON=python
+#PIP=pip
+
 MANAGE=$(PYTHON) manage.py
 
 .PHONY: all help run static fetch_data build_db_numbers build_db_wiki build_db_oeis build_db_all update_numbers migrations update setup_postgres reset_postgres setup_gunicorn setup_nginx setup_supervisor setup_git_deploy install install_full install_packages install_sage_ubuntu20 deploy
@@ -80,7 +89,7 @@ update_numbers:
 setup_postgres:
 	#SETUP POSTGRES
 	- sudo -u postgres createuser u_numberdb
-	sudo -u postgres psql -c "ALTER USER u_numberdb WITH PASSWORD 'password2_to_be_changed'"	
+	sudo -u postgres psql -c "ALTER USER u_numberdb WITH PASSWORD '${POSTGRES_KEY}'"	
 	- sudo -u postgres createdb numberdb --owner u_numberdb
 	$(MAKE) migrations
 	
@@ -146,12 +155,12 @@ install_django:
 
 	sudo apt-get -y install postgresql postgresql-contrib
 
+.env:
+	cp install/default-dotenv-dev .env
 
-install:
+install: .env
 	#INSTALL
 	#$(MAKE) install_sage_ubuntu20 #Actually: Don't install sage here! Let user install it by themselves.
-
-	cp install/default-dotenv-dev .env
 
 	$(MAKE) install_packages
 	$(MAKE) install_django

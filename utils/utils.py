@@ -9,7 +9,7 @@ import Pyro5.api
 import Pyro5.errors
 
 #from sage import *
-from sage.all import infinity, SR, SymmetricGroup
+from sage.all import infinity, SR, SymmetricGroup, I
 from sage.rings.all import ZZ, QQ, RR, CC, RIF, CIF, RBF, CBF, Qp
 from sage.rings.all import RealField, RealIntervalField, RealBallField
 from sage.rings.all import ComplexField, ComplexIntervalField, ComplexBallField

@@ -1,0 +1,15 @@
+SECRET_KEY=password1_to_be_changed
+POSTGRES_KEY=password2_to_be_changed
+DEBUG=TRUE
+ALLOWED_HOSTS=.localhost,127.0.0.1,.numberdb.org,172.104.29.29
+
+DATABASE_URL=postgres://u_numberdb:password2_to_be_changed@localhost:5432/numberdb
+#DATABASE_URL=sqlite:///db.sqlite3 #For debug purposes
+
+
+SOCIALACCOUNT_GITHUB_ID=
+SOCIALACCOUNT_GITHUB_SECRET=
+
+ACCOUNT_DEFAULT_HTTP_PROTOCOL=http
+
+EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
