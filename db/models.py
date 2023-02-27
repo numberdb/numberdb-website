@@ -13,9 +13,12 @@ import numpy as np
 import hashlib
 import json
 
-from sage import *
-from sage.all import *
-from sage.rings.all import *
+from sage.all import infinity, ceil, log
+from sage.rings.all import ZZ, QQ, RR, CC, RIF, CIF, RBF, CBF, Qp
+from sage.rings.all import RealField, RealIntervalField, RealBallField
+from sage.rings.all import ComplexField, ComplexIntervalField, ComplexBallField
+from sage.rings.all import PolynomialRing
+from sage.rings.all import is_pAdicField
 
 from utils.utils import real_interval_to_pretty_string
 from utils.utils import to_bytes

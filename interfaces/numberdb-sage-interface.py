@@ -6,8 +6,10 @@ import requests
 import json
 from urllib.parse import quote_plus
 
-from sage.all import *
-from sage.rings.all import *
+from sage.all import infinity
+from sage.rings.all import ZZ, QQ, RR, CC, RIF, CIF
+from sage.rings.all import RealField, RealIntervalField, RealBallField
+from sage.rings.all import ComplexField, ComplexIntervalField, ComplexBallField
 
 _domain = 'https://numberdb.org/'
 #_domain = 'http://localhost:8000/' #only for development
