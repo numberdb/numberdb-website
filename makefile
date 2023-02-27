@@ -95,16 +95,10 @@ reset_postgres:
 	- sudo -u postgres dropdb numberdb
 	$(MAKE) setup_postgres
 	
-../sage.tar.bz2:
-	wget -O ../sage.tar.bz2 http://mirrors.mit.edu/sage/linux/64bit/sage-9.2-Ubuntu_20.04-x86_64.tar.bz2
-	
 
-install_sage_ubuntu20: ../sage.tar.bz2
+install_sage_ubuntu:
 	#INSTALL SAGE
-	tar -C ../ -xjf ../sage.tar.bz2
-	- sudo ln -s /usr/bin/python3 /usr/bin/python
-	../SageMath/sage --version #Test sage
-	- sudo ln -s /home/numberdb/SageMath/sage /usr/bin/sage
+	sudo apt-get install  sagemath sagemath-doc sagemath-jupyter
 	
 install_packages:
 	#INSTALL PACKAGES
@@ -198,6 +192,7 @@ setup_nginx:
 	sudo cp deploy/nginx/sites-available/numberdb /etc/nginx/sites-available/numberdb
 	- sudo ln -s /etc/nginx/sites-available/numberdb /etc/nginx/sites-enabled/numberdb
 	- sudo rm /etc/nginx/sites-enabled/default
+	sudo sed -i 's/www-data/numberdb/g' /etc/nginx/nginx.conf
 	sudo service nginx restart
 	
 setup_dirs:
@@ -254,7 +249,7 @@ deploy:
 	
 	#$(MAKE) install_packages
 	$(MAKE) install_packages_deploy
-	$(MAKE) install_sage_ubuntu20
+	$(MAKE) install_sage_ubuntu
 	
 	$(MAKE) install_full
 	$(MAKE) static

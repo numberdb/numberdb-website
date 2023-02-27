@@ -1,6 +1,6 @@
 import timeout_decorator
 import multiprocessing
-import func_timeout
+#import func_timeout
 from cysignals import AlarmInterrupt
 from cysignals.alarm import alarm, cancel_alarm
 import re
