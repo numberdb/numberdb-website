@@ -24,17 +24,14 @@ from cysignals.signals import SignalError
 import Pyro5.api
 import Pyro5.errors
 
-#from sage import *
-#from sage.all import *
-#from sage.arith.all import *
-#from sage.rings.complex_number import *
-#from sage.rings.all import *
-#from sage.rings.all import RealIntervalField
+from sage.all import infinity, copy, ceil, log, latex, factor
+from sage.rings.all import ZZ, QQ, RR, CC, RIF, CIF
+from sage.rings.all import RealField, RealIntervalField, RealBallField
+from sage.rings.all import ComplexField, ComplexIntervalField, ComplexBallField
+from sage.rings.all import is_pAdicField
+from sage.rings.all import PolynomialRing
 
 from urllib.parse import quote_plus, unquote_plus
-
-from sage.all import *
-#from sage.rings.all import *
 
 from mpmath import pslq
 
@@ -1329,8 +1326,11 @@ def properties(request, number):
 			special_families.append('prime')
 		if n.is_prime_power():
 			special_families.append('prime power')
-		if n.is_squarefree():
-			special_families.append('squarefree')
+		try:
+			if n.is_squarefree():
+				special_families.append('squarefree')
+		except SignalError:
+			pass
 		if n.is_square():
 			special_families.append('square')
 		if len(special_families) > 0:
@@ -1495,11 +1495,12 @@ def properties(request, number):
 	
 		#Factorization:
 		f = None
-		f = factor(r)
+		#f = factor(r)
 		try:
-			#f = r.factor()
-			f = factor(r)
+			f = r.factor()
+			#f = factor(r)
 		except SignalError:
+			print('Signal error during factorization.')
 			pass
 			
 			'''

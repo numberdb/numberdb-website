@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
-from sage import *
+#from sage import *
 
 class DbConfig(AppConfig):
     name = 'db'

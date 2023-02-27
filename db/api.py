@@ -26,7 +26,11 @@ import Pyro5.errors
 
 from urllib.parse import quote_plus, unquote_plus
 
-from sage.all import *
+from sage.all import infinity
+from sage.rings.all import ZZ, QQ, RR, CC, RIF, CIF
+from sage.rings.all import RealField, RealIntervalField, RealBallField
+from sage.rings.all import ComplexField, ComplexIntervalField, ComplexBallField
+from sage.rings.all import is_pAdicField
 
 from mpmath import pslq
 

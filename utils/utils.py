@@ -9,8 +9,11 @@ import Pyro5.api
 import Pyro5.errors
 
 #from sage import *
-from sage.all import *
-from sage.rings.all import *
+from sage.all import infinity, SR, SymmetricGroup
+from sage.rings.all import ZZ, QQ, RR, CC, RIF, CIF, RBF, CBF, Qp
+from sage.rings.all import RealField, RealIntervalField, RealBallField
+from sage.rings.all import ComplexField, ComplexIntervalField, ComplexBallField
+from sage.rings.all import PolynomialRing
 from sage.misc.flatten import flatten
 from sage.repl.preparse import preparse
 
