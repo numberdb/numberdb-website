@@ -79,6 +79,7 @@ setup_postgres:
 	#SETUP POSTGRES
 	- sudo -u postgres createuser u_numberdb
 	sudo -u postgres psql -c "ALTER USER u_numberdb WITH PASSWORD '${POSTGRES_KEY}'"	
+	sudo -u postgres psql -c "ALTER USER u_numberdb CREATEDB;"	
 	- sudo -u postgres createdb numberdb --owner u_numberdb
 	$(MAKE) migrations
 	
