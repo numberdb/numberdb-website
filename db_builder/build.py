@@ -1,12 +1,9 @@
 #Needs to be run within numberdb-website/ as follows:
-#sage 
-#load('db_builder.sage')
-#exit
+#sage -python db/builder.sage
 
+#numberdb-data/ must lie in the same parent folder as numberdb-website/
 
-#numberdb-data must have same 
-
-#Assume we are in numberdb-data working directory.
+import sys
 
 
 import os
