@@ -24,7 +24,7 @@ Create default `.env`:
 
     make .env
 
-Change settings in `.env` and `makefile`, especially passwords and paths, `DEBUG=FALSE`, and if desired: add server's IP address to `ALLOWED_HOSTS`, and add github social auth and mailgun credentials:
+Change settings in `.env`, especially passwords and paths, `DEBUG=FALSE`, and if desired: add server's IP address to `ALLOWED_HOSTS`, and add github social auth and mailgun credentials:
 
     vim .env
     vim makefile
