@@ -170,6 +170,9 @@ SOCIALACCOUNT_STORE_TOKENS = False
 
 LOGIN_REDIRECT_URL = '/'
 
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS=7
+ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 5
+ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 86400 # 1 day in seconds
 
 #See warning in 
 # https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-SECURE_PROXY_SSL_HEADER
@@ -259,3 +262,5 @@ except Exception as e:
   print(e.__class__)
   print(e)
 '''
+
+CSRF_TRUSTED_ORIGINS = ['127.0.0.1:8000', 'localhost:8000', 'https://numberdb.org', 'https://www.numberdb.org']
