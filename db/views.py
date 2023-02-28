@@ -880,7 +880,7 @@ def update(request, user_id):
     #TODO
 
     user = get_object_or_404(User, pk=user_id)
-    profile = user.userprofile
+    profile = user.profile
     profile.bio = request.POST['bio']
     profile.save()
     return HttpResponseRedirect(reverse('db:profile'))

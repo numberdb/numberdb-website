@@ -145,8 +145,8 @@ SOCIALACCOUNT_PROVIDERS = {
 
 #### allauth ####
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_EMAIL_REQUIRED = False
+ACCOUNT_EMAIL_VERIFICATION = 'optional' #"mandatory"
 ACCOUNT_CONFIRM_EMAIL_ON_GET = True #email providers commonly use GET 
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = config('ACCOUNT_DEFAULT_HTTP_PROTOCOL')
 ACCOUNT_EMAIL_SUBJECT_PREFIX = "[NumberDB]"
@@ -263,4 +263,5 @@ except Exception as e:
   print(e)
 '''
 
-CSRF_TRUSTED_ORIGINS = ['127.0.0.1:8000', 'localhost:8000', 'https://numberdb.org', 'https://www.numberdb.org']
+CSRF_TRUSTED_ORIGINS = [#'127.0.0.1:8000', 'localhost:8000', 
+'https://numberdb.org', 'https://www.numberdb.org']
