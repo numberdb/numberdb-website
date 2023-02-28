@@ -9,17 +9,6 @@
 
 include .env
 
-SAGE=export PYTHONPATH=./:${PYTHONPATH}; sage
-
-PYTHON=$(SAGE) -python
-PIP=$(SAGE) -pip
-
-#Use the following paths for python and pip if sage is importable within the system's python:
-#PYTHON=python
-#PIP=pip
-
-MANAGE=$(PYTHON) manage.py
-
 .PHONY: all help run static fetch_data build_db_numbers build_db_wiki build_db_oeis build_db_all update_numbers migrations update setup_postgres reset_postgres setup_gunicorn setup_nginx setup_supervisor setup_git_deploy install install_full install_packages install_sage_ubuntu20 deploy
 
 
@@ -273,3 +262,6 @@ deploy:
 
 status:
 	sudo supervisorctl status
+
+test:
+	$(MANAGE) test
