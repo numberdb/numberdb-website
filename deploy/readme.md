@@ -33,6 +33,21 @@ Run `make deploy`:
 
     make deploy
 
+## Setting up domain
+
+- DNS records:
+
+    Type: A record, Host: @, Value: (the IP address), TLL: Automatic
+    Type: A record, Host: www, Value: (the IP address), TLL: Automatic
+    or: 
+    Type: CNAME record, Host: www, Value: @, TLL: Automatic
+
+- email forwarding
+
+## Setting up social auth via GitHub
+
+
+
 ## Trouble shooting
 
 If the last step `setup_certbot` fails, this might be because the DNS records for `numberdb.org` and/or `www.numberdb.org` are not yet set to the server's IP address yet.
