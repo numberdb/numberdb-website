@@ -52,6 +52,8 @@ from .models import OeisNumber
 from .models import OeisSequence
 from .models import WikipediaNumber
 
+from .common import type_names
+
 from .api import advanced_search_results
 
 from utils.utils import pluralize
@@ -109,7 +111,7 @@ def tables(request):
 	tables = Table.objects.all()
 	sortby_default = 'title'
 	sortby = request.GET.get('sort_by',default=sortby_default)
-	if sortby == 'number_count':
+	if sortby == 'entry_count':
 		tables = tables.order_by('-number_count')
 	elif sortby == 'id':
 		tables = tables.order_by('tid_int')
@@ -130,11 +132,11 @@ def tables(request):
 def tags(request):
 	page = request.GET.get('page', 1)
 	tags = Tag.objects.all()
-	sortby_default = 'number_count'
+	sortby_default = 'entry_count'
 	sortby = request.GET.get('sort_by',default=sortby_default)
 	if sortby == 'table_count':
 		tags = tags.order_by('-table_count')
-	elif sortby == 'number_count':
+	elif sortby == 'entry_count':
 		tags = tags.order_by('-number_count')
 	elif sortby == 'name':
 		tags = tags.order_by('name_lowercase')
@@ -154,9 +156,9 @@ def tag(request, tag_url):
 	tag = Tag.from_url(tag_url)
 	#tag = Tag.objects.get(name=tag_name)
 	tables = tag.tables.all()
-	sortby_default = 'number_count'
+	sortby_default = 'entry_count'
 	sortby = request.GET.get('sort_by',default=sortby_default)
-	if sortby == 'number_count':
+	if sortby == 'entry_count':
 		tables = tables.order_by('-number_count')
 	elif sortby == 'id':
 		tables = tables.order_by('tid_int')
@@ -309,22 +311,6 @@ def table_context(table, preview=False):
 			}
 			sections.append(section)
 			
-		type_names = {
-			"Z": "integer",
-			"Q": "rational number",
-			"R": "real number",
-			"C": "complex number",
-			"Qp": "p-adic number",
-			"Zp": "p-adic integer",
-			"ZI": "integer interval",
-			"RI": "real interval",
-			"CI": "complex interval",
-			"RB": "real ball",
-			"CB": "complex ball",
-			"*R": "hyperreal number",
-			"Z[]": "integral polynomial",
-			"Q[]": "rational polynomial",
-		}  
 		current_job = 'parsing parameters'
 		if 'Parameters' in data and len(data['Parameters']) > 0:
 			labeled_list = []

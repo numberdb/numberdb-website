@@ -27,7 +27,7 @@ td.tag-name {
     Sort by:
     <a href="?sort_by=name">name</a> &middot; 
     <a href="?sort_by=table_count">tables</a> &middot;
-    <a href="?sort_by=number_count">numbers</a>
+    <a href="?sort_by=entry_count">entries</a>
     <br>
     <br>
     
@@ -40,7 +40,7 @@ td.tag-name {
 	   </td> 
 	    <td>
 		({{ tag.table_count }} table{{ tag.table_count|pluralize }}, 
-		 {{ tag.number_count }} number{{ tag.number_count|pluralize }})
+		 {{ tag.number_count }} entr{{ tag.number_count|pluralize:'y,ies'}})
 	    </td>
          </tr>
       {% endfor %}

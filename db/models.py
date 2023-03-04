@@ -20,6 +20,8 @@ from sage.rings.all import ComplexField, ComplexIntervalField, ComplexBallField
 from sage.rings.all import PolynomialRing
 from sage.rings.all import is_pAdicField
 
+from .common import type_names
+
 from utils.utils import real_interval_to_pretty_string
 from utils.utils import to_bytes
 from utils.utils import RIFprec, RBFprec
@@ -184,6 +186,18 @@ class Table(models.Model):
 			'title': self.title,
 			'number_count': self.number_count,
 		}
+		
+	def type_str(self, long_form = True):
+		j = self.data.json
+		if 'Data properties' in j:
+			properties = j['Data properties']
+			if 'type' in properties:
+				t = properties['type']
+				if long_form and t in type_names:
+					return type_names[t]
+				else:
+					return t
+		return None
 
 class TableData(models.Model):
 
