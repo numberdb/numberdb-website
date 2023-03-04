@@ -24,7 +24,7 @@ td.table-label {
     Sort by:
     <a href="?sort_by=id">id</a> &middot; 
     <a href="?sort_by=title">title</a> &middot;
-    <a href="?sort_by=number_count">numbers</a>
+    <a href="?sort_by=entry_count">entries</a>
     <br>
     <br>
     
@@ -37,7 +37,7 @@ td.table-label {
 	   </td> 
 	    <td>
 		<a href="{% url 'db:table' table.tid %}">{{ table.title }}</a>
-		({{ table.number_count }} number{{ table.number_count|pluralize }})
+		({{ table.number_count }} {{ table.type_str }}{{ table.number_count|pluralize }})
 	    </td>
          </tr>
       {% endfor %}
