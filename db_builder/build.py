@@ -1,13 +1,12 @@
 #Needs to be run within numberdb-website/ as follows:
-#sage 
-#load('db_builder.sage')
-#exit
+#sage -python db/builder.sage
 
+#numberdb-data/ must lie in the same parent folder as numberdb-website/
 
-#numberdb-data must have same 
+import sys
+from pathlib import Path
 
-#Assume we are in numberdb-data working directory.
-
+sys.path = [str(Path.cwd())] + sys.path #add path of current working directory
 
 import os
 import django
@@ -27,6 +26,10 @@ from db.models import NumberComplex
 from db.models import Polynomial
 
 from django.contrib.sites.models import Site
+
+from sage.all import walltime, Integer
+from sage.rings.all import ZZ, QQ
+from sage.all import is_pAdicField
 
 from utils.utils import number_param_groups_to_bytes
 from utils.utils import to_bytes
