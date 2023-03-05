@@ -3,6 +3,10 @@
 #Needs to be run within numberdb-website/
 #Assumed that update-oeis.sh was executed beforehand 
 
+import sys
+from pathlib import Path
+
+sys.path = [str(Path.cwd())] + sys.path #add path of current working directory
 
 import os
 import django
@@ -15,6 +19,8 @@ from db.models import OeisNumber
 from db.models import OeisSequence
 
 import numpy as np
+
+from sage.all import walltime
 
 path_oeis_data = "db_builder/oeis-data/"
 
