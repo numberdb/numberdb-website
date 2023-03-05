@@ -2,6 +2,10 @@
 
 #Needs to be run within numberdb-website/
 
+import sys
+from pathlib import Path
+
+sys.path = [str(Path.cwd())] + sys.path #add path of current working directory
 
 import os
 import django
@@ -16,6 +20,8 @@ import numpy as np
 import urllib
 from bs4 import BeautifulSoup 
 import re
+
+from sage.all import walltime
 
 #path_oeis_data = "db_builder/oeis-data/"
 

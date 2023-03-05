@@ -52,17 +52,16 @@ fetch_data:
 
 build_db_numbers:
 	#BUILD DB NUMBERS
-	$(SAGE) -c 'load("db_builder/build.sage")'
-	#sage db_builder/build.sage #problems loading utils.utils
+	$(PYTHON) db_builder/build.py
 	
 build_db_wiki:
 	#BUILD DB WIKI
-	$(SAGE) -c 'load("db_builder/build-wikipedia.sage")'
+	$(PYTHON) db_builder/build-wikipedia.py
 
 build_db_oeis:
 	#BUILD DB OEIS
 	./db_builder/update-oeis.sh
-	$(SAGE) -c 'load("db_builder/build-oeis.sage")'
+	$(PYTHON) db_builder/build-oeis.py
 	
 build_db_all:
 	#BUILD DB ALL
