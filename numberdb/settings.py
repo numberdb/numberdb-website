@@ -30,6 +30,7 @@ DATABASES = {
         default=config('DATABASE_URL')
     )
 }
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # Application definition

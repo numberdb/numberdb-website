@@ -24,6 +24,8 @@ from db.models import Number
 from db.models import NumberPAdic
 from db.models import NumberComplex
 from db.models import Polynomial
+from db.common import table_id_prefix, path_numberdb_data
+from db.common import test_table_ids
 
 from django.contrib.sites.models import Site
 
@@ -48,95 +50,32 @@ from utils.utils import parse_polynomial
 from utils.utils import number_with_uncertainty_to_real_ball
 from utils.utils import is_polynomial_ring
 
+from utils.my_timer import MyTimer
 
 from git import Repo
 import yaml
 import os
 #from pydriller import RepositoryMining
 
-path_data = "../numberdb-data/"
-
 from db_builder.utils import normalize_table_data
 from db_builder.utils import load_yaml_recursively
 
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 
+def numberdb_data_repository(assert_branch = None):
+	repo = Repo(str(path_numberdb_data)) #numberdb-data repository
+	if assert_branch is not None:
+		branch_name = repo.head.reference.name
+		assert(branch_name == assert_branch)
+	return repo
 
-repo = Repo(path_data) #numberdb-data repository
-if repo.bare:
-	raise ValueError("repository is bare")
-#if repo.is_dirty():
-#	raise ValueError("repository is dirty")  # check the dirty state
-#repo.untracked_files             # retrieve a list of untracked files
-
-
-reader = repo.config_reader()             # get a config reader for read-only access
-#with repo.config_writer():       # get a config writer to change configuration
-#    pass                         # call release() to be sure changes are written and locks are released
-
-head = repo.head
-commit = head.commit
-tree = commit.tree
-
-#r = repo
-#h = repo.head
-#c = h.commit
-#t = c.tree
-index = repo.index
-#i = index
-
-main = head.reference
-assert(main.name == 'main') #assert that we are on main branch
-log = main.log()
-
-table_id_prefix = "T"
-
-
-class MyTimer:
-	'''
-	A simple class that keeps track of several running times.
-	Call startTimer("X") and later endTimer("X"), then this class saves
-	how long the process "X" took.
-	'''
-
-	def __init__(self, get_time=walltime):
-		self.get_time = get_time
-		self.timers = {};
-		self.startTimer("CPU time at start");
+def numberdb_data_repository_tree():
+	repo = numberdb_data_repository()
 	
-	def startTimer(self,timerName):
-		self.timers[timerName] = self.get_time();
+	tree = repo.head.commit.tree
+	return tree
 
-	def endTimer(self,timerName,verbose = True):
-		self.timers[timerName] = self.get_time(self.timers[timerName]);
-		if verbose:
-			print("Time taken for "+timerName+":",self.timers[timerName]);
-		return self.timers[timerName];
 
-	def totalTime(self):
-		return self.get_time(self.timers["CPU time at start"]);
-
-	def toString(self,linePrefix = ""):
-		result = "";
-		for timerName, t in self.timers.items():
-			if timerName != "CPU time at start":
-				result += linePrefix+timerName+": "+str(t)+"\n";
-		result += linePrefix+"Total time: "+str(self.totalTime());
-		return result;
-		
-	def __str__(self):
-		return self.toString()
-		
-	def __repr__(self):
-		return self.__str__()
-		
-	def run(self,function,*args,**kwargs):
-		timer_name = 'Function %s' % (function.__name__,)
-		timer_name += '(%s)' % (', '.join('%s=%s' % (key,kwargs[key]) for key in kwargs),) 
-		self.startTimer(timer_name)
-		function(*args,**kwargs)
-		self.endTimer(timer_name)
-		
 def id_to_int(id):
 	return int(id[1:])
 
@@ -180,9 +119,11 @@ def delete_all_tables():
 	Tag.objects.all().delete()
 
 @transaction.atomic
-def build_table_table(test_run=False):
+def build_table_table(data_repo, test_run=False, test_data=False):
 
 	print("BUILDING TABLE TABLE")
+	
+	tree = data_repo.head.commit.tree
 	
 	for item in tree.traverse():
 		if item.type != 'blob':
@@ -193,7 +134,7 @@ def build_table_table(test_run=False):
 
 		#print("path:",path)
 
-		path_filename = os.path.join(path_data,item.path)
+		path_filename = path_numberdb_data / item.path
 		table_data = load_yaml_recursively(path_filename)
 		
 		#print("y:",y)
@@ -201,6 +142,11 @@ def build_table_table(test_run=False):
 			raise ValueError('No ID in table %s.' % (path,))
 		id = table_data['ID']
 		#print("id:",id)
+		
+		if test_data:
+			if id not in test_table_ids:
+				continue			
+		
 		#print("path:",path)
 		url = os.path.split(path)[-1]
 		
@@ -238,14 +184,18 @@ def build_table_table(test_run=False):
 			c_data.save()
 			#print("saved c_data:",c_data)
 			
-def build_table_commits():
+def build_table_commits(data_repo, test_data=False):
 	print("BUILD TABLE_COMMIT_TABLE")
 	
 	#Build table of all commits:
 	contributors = {}
 	table_commits = []
+	
 
-	for commit in repo.iter_commits():
+	for i_commit, commit in enumerate(data_repo.iter_commits()):
+		
+		if test_data and i_commit >= 100:
+			break
 		
 		#author = commit.author.name
 		#author_email = commit.author.email
@@ -300,7 +250,7 @@ def build_table_commits():
 	}
 
 	#Find commits that belong to tables:
-	g = repo.git
+	g = data_repo.git
 	for c in Table.objects.all():
 		main_filename = os.path.join(c.path,'table.yaml')
 		log = g.log('--follow',main_filename)
@@ -316,7 +266,7 @@ def build_table_commits():
 			TableCommit.tables.through(
 				table_id = c.pk,
 				tablecommit_id = hexsha_to_pk[hexsha],
-			) for hexsha in hexshas
+			) for hexsha in hexshas if hexsha in hexsha_to_pk
 		)
 	
 
@@ -574,25 +524,34 @@ def build_misc():
 		site.name = 'NumberDB'
 		site.save()
 
-#timer = MyTimer(cputime)
-timer = MyTimer(walltime)
-
-with transaction.atomic():
-	timer.run(build_table_table,test_run=True)
-	timer.run(delete_all_tables)
-	timer.run(build_table_table)
-	timer.run(build_table_commits)
+def build_numberdb_data(data_repo, test_data=False, timer=None):
+	if timer == None:
+		timer = MyTimer(walltime)
+	timer.run(build_table_table,data_repo=data_repo,test_data=test_data)
+	timer.run(build_table_commits,data_repo=data_repo,test_data=test_data)
 	timer.run(build_tag_table)	
 	timer.run(build_number_table)
 	timer.run(build_search_index_for_tables)
-	timer.run(build_misc)
 
-print("Times:\n%s" % (timer,))
+if __name__ == '__main__':
 
-print("Number count:", Number.objects.count())
-print("NumberPAdic count:", NumberPAdic.objects.count())
-print("NumberComplex count:", NumberComplex.objects.count())
-print("Polynomial count:", Polynomial.objects.count())
-print("Table count:", Table.objects.count())
-print("Tag count:", Tag.objects.count())
-print("TableCommit count:", TableCommit.objects.count())
+	#timer = MyTimer(cputime)
+	timer = MyTimer(walltime)
+	
+	data_repo = numberdb_data_repository(assert_branch = 'main')
+
+	with transaction.atomic():
+		timer.run(build_table_table,data_repo=data_repo,test_run=True)
+		timer.run(delete_all_tables)
+		build_numberdb_data(data_repo, test_data=False, timer=timer)
+		timer.run(build_misc)
+
+	print("Times:\n%s" % (timer,))
+
+	print("Number count:", Number.objects.count())
+	print("NumberPAdic count:", NumberPAdic.objects.count())
+	print("NumberComplex count:", NumberComplex.objects.count())
+	print("Polynomial count:", Polynomial.objects.count())
+	print("Table count:", Table.objects.count())
+	print("Tag count:", Tag.objects.count())
+	print("TableCommit count:", TableCommit.objects.count())
