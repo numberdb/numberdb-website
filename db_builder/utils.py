@@ -19,7 +19,7 @@ def load_yaml_recursively(path_filename):
 	by the content of the yaml file <other-filename>.
 	'''
 	
-	path, filename = os.path.split(path_filename)
+	path, filename = os.path.split(str(path_filename))
 		
 	def load_recursively(y):
 		if isinstance(y,str):
