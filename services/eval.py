@@ -13,6 +13,7 @@ How to run service:
 
 import os
 import Pyro5.api
+from utils.utils import is_pAdicField as _is_pAdicField
 from sage.all import *
 #from sage.rings.all import *
 import json
@@ -91,7 +92,7 @@ class SafeEval(object):
 			#Check whether number is p-adic:
 			try:
 				K = nested.parent()
-				if is_pAdicField(K):
+				if _is_pAdicField(K):
 					result.append((parent_key, nested))
 					return result, params_error
 			except AttributeError:
