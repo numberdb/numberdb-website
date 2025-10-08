@@ -86,9 +86,9 @@ services:
     command: "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h; done"
 
   data-fetcher:
-    image: alpine/git:latest
+    image: alpine:3.20
     entrypoint: ["/bin/sh","-c"]
-    command: "git -C /numberdb-data pull || git clone --depth 1 https://github.com/numberdb/numberdb-data.git /numberdb-data"
+    command: "apk add --no-cache git && (git -C /numberdb-data pull || git clone --depth 1 https://github.com/numberdb/numberdb-data.git /numberdb-data)"
     volumes:
       - numberdb-data:/numberdb-data
     restart: "no"
