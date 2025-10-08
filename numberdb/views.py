@@ -8,3 +8,6 @@ def maintenance_in_progress(request):
 
 def in_development(request):
     return HttpResponse("This database is currently in development.")
+
+def healthz(request):
+    return HttpResponse('ok')

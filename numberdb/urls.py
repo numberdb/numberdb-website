@@ -26,8 +26,8 @@ urlpatterns = [
     #path('' if DEBUG else 'db', include('db.urls')),
 
     #path('', views.maintenance_in_progress, name='maintenance-in-progress')
-    path('', views.in_development, name='in_development')
+    path('', views.in_development, name='in_development'),
+    path('healthz', views.healthz, name='healthz')
 
     #path('profile/', include('userprofile.urls',namespace='profile')),
 ]
-
