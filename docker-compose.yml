@@ -25,13 +25,21 @@ services:
 
   nginx:
     image: nginx:alpine
-    ports:
-      - "80:80"
     depends_on:
       - web
+    entrypoint: ["/bin/sh", "/docker/entrypoint.nginx.sh"]
+    environment:
+      - SERVER_NAME=${SERVER_NAME}
+    ports:
+      - "80:80"
+      - "443:443"
     volumes:
-      - ./deploy/nginx/numberdb.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/entrypoint.nginx.sh:/docker/entrypoint.nginx.sh:ro
+      - ./deploy/nginx/default.conf.http.template:/etc/nginx/templates/default.conf.http.template:ro
+      - ./deploy/nginx/default.conf.tls.template:/etc/nginx/templates/default.conf.tls.template:ro
       - staticfiles:/staticfiles:ro
+      - certbot-www:/var/www/certbot
+      - letsencrypt:/etc/letsencrypt
 
   db:
     image: postgres:14-alpine
@@ -59,6 +67,26 @@ services:
     depends_on:
       - pyro-ns
 
+  # One-shot issuance (run manually):
+  # docker compose run --rm certbot certonly --webroot -w /var/www/certbot -d ${SERVER_NAME} --email ${LETSENCRYPT_EMAIL} --agree-tos --no-eff-email
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - certbot-www:/var/www/certbot
+      - letsencrypt:/etc/letsencrypt
+    entrypoint: ["/bin/sh", "-c"]
+    command: "echo 'Run certbot commands manually as needed'"
+
+  # Background renewer
+  certbot-renew:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    volumes:
+      - certbot-www:/var/www/certbot
+      - letsencrypt:/etc/letsencrypt
+    entrypoint: ["/bin/sh", "-c"]
+    command: "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h; done"
+
   data-fetcher:
     image: alpine/git:latest
     command: sh -c "git -C /numberdb-data pull || git clone --depth 1 https://github.com/numberdb/numberdb-data.git /numberdb-data"
@@ -70,3 +98,5 @@ volumes:
   staticfiles:
   pgdata:
   numberdb-data:
+  certbot-www:
+  letsencrypt:
