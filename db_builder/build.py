@@ -31,7 +31,7 @@ from django.contrib.sites.models import Site
 
 from sage.all import walltime, Integer
 from sage.rings.all import ZZ, QQ
-from sage.all import is_pAdicField
+from utils.utils import is_pAdicField
 
 from utils.utils import number_param_groups_to_bytes
 from utils.utils import to_bytes
