@@ -26,7 +26,8 @@ COPY . .
 RUN chmod +x docker/entrypoint.web.sh
 RUN chown -R sage:sage /app
 
-USER sage
+# Run container as root; entrypoint downgrades to 'sage' for app commands
+USER root
 
 EXPOSE 8000
 
