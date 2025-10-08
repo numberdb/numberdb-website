@@ -1,7 +1,3 @@
-upstream web {
-    server web:8000;
-}
-
 server {
     listen 80;
     server_name ${SERVER_NAME};
@@ -21,6 +17,10 @@ server {
 server {
     listen 443 ssl http2;
     server_name ${SERVER_NAME};
+
+    # Resolve Docker DNS for service names at runtime to avoid stale IPs
+    resolver 127.0.0.11 ipv6=off valid=10s;
+    set $upstream http://web:8000;
 
     ssl_certificate /etc/letsencrypt/live/${SERVER_NAME}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${SERVER_NAME}/privkey.pem;
@@ -46,8 +46,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_pass http://web;
+        proxy_pass $upstream;
         proxy_read_timeout 300;
     }
 }
-
