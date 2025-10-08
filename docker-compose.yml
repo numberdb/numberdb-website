@@ -4,7 +4,7 @@ services:
   web:
     build: .
     image: numberdb/web:latest
-    command: gunicorn numberdb.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    command: ["sage","-python","-m","gunicorn","numberdb.wsgi:application","--bind","0.0.0.0:8000","--workers","3"]
     entrypoint: ["/app/docker/entrypoint.web.sh"]
     env_file:
       - .env
