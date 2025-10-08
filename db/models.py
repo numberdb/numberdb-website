@@ -18,7 +18,7 @@ from sage.rings.all import ZZ, QQ, RR, CC, RIF, CIF, RBF, CBF, Qp
 from sage.rings.all import RealField, RealIntervalField, RealBallField
 from sage.rings.all import ComplexField, ComplexIntervalField, ComplexBallField
 from sage.rings.all import PolynomialRing
-from sage.rings.all import is_pAdicField
+from sage.all import is_pAdicField
 
 from .common import type_names
 
