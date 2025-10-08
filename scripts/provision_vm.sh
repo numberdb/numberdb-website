@@ -4,7 +4,7 @@ set -euo pipefail
 # Provision a fresh Ubuntu LTS VM (no DNS) and deploy this app over HTTP.
 #
 # Usage:
-#   scripts/provision_vm.sh [--force-secrets] user@host [/remote/path]
+#   scripts/provision_vm.sh [--force-secrets] [--no-build] [--no-wiki] [--no-oeis] user@host [/remote/path]
 #
 # What it does:
 # - Installs Docker Engine + Compose plugin on the remote host
@@ -16,10 +16,19 @@ set -euo pipefail
 # - Creates an admin user with a generated password (printed locally)
 
 FORCE_SECRETS=0
-if [[ "${1:-}" == "--force-secrets" ]]; then
-  FORCE_SECRETS=1
+BUILD_DATA=1
+WITH_WIKI=1
+WITH_OEIS=1
+while [[ "${1:-}" == --* ]]; do
+  case "$1" in
+    --force-secrets) FORCE_SECRETS=1 ;;
+    --no-build) BUILD_DATA=0 ;;
+    --no-wiki) WITH_WIKI=0 ;;
+    --no-oeis) WITH_OEIS=0 ;;
+    *) echo "Unknown flag: $1" >&2; exit 2 ;;
+  esac
   shift
-fi
+done
 
 REMOTE=${1:-}
 REMOTE_PATH=${2:-/opt/numberdb-website}
@@ -79,6 +88,16 @@ ALLOWED_HOSTS=.localhost,127.0.0.1,$REMOTE_HOST
 # Compose overrides this for the web container to point to 'db'
 DATABASE_URL=postgres://u_numberdb:$POSTGRES_KEY@db:5432/numberdb
 
+# Postgres performance tuning (safe defaults for small VMs)
+PG_SHARED_BUFFERS=256MB
+PG_WORK_MEM=64MB
+PG_MAINTENANCE_WORK_MEM=256MB
+PG_EFFECTIVE_CACHE_SIZE=1GB
+PG_WAL_COMPRESSION=on
+PG_SYNCHRONOUS_COMMIT=off
+PG_MAX_WAL_SIZE=1GB
+PG_CHECKPOINT_TIMEOUT=10min
+
 SOCIALACCOUNT_GITHUB_ID=
 SOCIALACCOUNT_GITHUB_SECRET=
 
@@ -98,6 +117,16 @@ ALLOWED_HOSTS=.localhost,127.0.0.1,$REMOTE_HOST
 
 # Compose overrides this for the web container to point to 'db'
 DATABASE_URL=postgres://u_numberdb:$POSTGRES_KEY@db:5432/numberdb
+
+# Postgres performance tuning (safe defaults for small VMs)
+PG_SHARED_BUFFERS=256MB
+PG_WORK_MEM=64MB
+PG_MAINTENANCE_WORK_MEM=256MB
+PG_EFFECTIVE_CACHE_SIZE=1GB
+PG_WAL_COMPRESSION=on
+PG_SYNCHRONOUS_COMMIT=off
+PG_MAX_WAL_SIZE=1GB
+PG_CHECKPOINT_TIMEOUT=10min
 
 SOCIALACCOUNT_GITHUB_ID=
 SOCIALACCOUNT_GITHUB_SECRET=
@@ -149,3 +178,33 @@ echo "    Admin credentials: admin / $ADMIN_PASSWORD"
 echo "    When DNS points to the server, obtain TLS with:"
 echo "      ssh $REMOTE 'cd $REMOTE_PATH && docker compose run --rm certbot certonly --webroot -w /var/www/certbot -d \$SERVER_NAME --email \$LETSENCRYPT_EMAIL --agree-tos --no-eff-email && docker compose restart nginx'"
 
+# Optional dataset builds
+if [[ "$BUILD_DATA" -eq 1 ]]; then
+  echo "==> Building NumberDB data (tables, tags, numbers, search)"
+  ssh "$REMOTE" bash -lc "\
+    set -e; cd '$REMOTE_PATH'; \
+    docker compose run --rm web sage -python db_builder/build.py; \
+  "
+else
+  echo "==> Skipping NumberDB core build (requested)"
+fi
+
+if [[ "$WITH_WIKI" -eq 1 ]]; then
+  echo "==> Building Wikipedia tables"
+  ssh "$REMOTE" bash -lc "\
+    set -e; cd '$REMOTE_PATH'; \
+    docker compose run --rm web sage -python db_builder/build-wikipedia.py; \
+  "
+else
+  echo "==> Skipping Wikipedia build (requested)"
+fi
+
+if [[ "$WITH_OEIS" -eq 1 ]]; then
+  echo "==> Building OEIS tables (downloads stripped/names)"
+  ssh "$REMOTE" bash -lc "\
+    set -e; cd '$REMOTE_PATH'; \
+    docker compose run --rm web sh -lc './db_builder/update-oeis.sh && sage -python db_builder/build-oeis.py'; \
+  "
+else
+  echo "==> Skipping OEIS build (requested)"
+fi

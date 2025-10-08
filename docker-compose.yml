@@ -2,7 +2,7 @@ services:
   web:
     build: .
     image: numberdb/web:latest
-    command: ["sage","-python","-m","gunicorn","numberdb.wsgi:application","--bind","0.0.0.0:8000","--workers","3"]
+    command: ["sage","-python","-m","gunicorn","numberdb.wsgi:application","--bind","0.0.0.0:8000","--workers","${GUNICORN_WORKERS:-2}"]
     entrypoint: ["/app/docker/entrypoint.web.sh"]
     env_file:
       - .env
@@ -50,6 +50,24 @@ services:
       - POSTGRES_DB=numberdb
       - POSTGRES_USER=u_numberdb
       - POSTGRES_PASSWORD=${POSTGRES_KEY:-password2_to_be_changed}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${PG_SHARED_BUFFERS:-256MB}
+      - -c
+      - work_mem=${PG_WORK_MEM:-64MB}
+      - -c
+      - maintenance_work_mem=${PG_MAINTENANCE_WORK_MEM:-256MB}
+      - -c
+      - effective_cache_size=${PG_EFFECTIVE_CACHE_SIZE:-1GB}
+      - -c
+      - wal_compression=${PG_WAL_COMPRESSION:-on}
+      - -c
+      - synchronous_commit=${PG_SYNCHRONOUS_COMMIT:-off}
+      - -c
+      - max_wal_size=${PG_MAX_WAL_SIZE:-1GB}
+      - -c
+      - checkpoint_timeout=${PG_CHECKPOINT_TIMEOUT:-10min}
     volumes:
       - pgdata:/var/lib/postgresql/data
 
