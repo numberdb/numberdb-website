@@ -7,6 +7,18 @@ from decouple import config, Csv
 import dj_database_url
 import os
 from django.contrib.messages import constants as messages
+try:
+    # Make Pyro5 Name Server configurable in containerized setups
+    import Pyro5.config as _pyro_config
+    _ns_host = os.getenv('PYRO_NS_HOST')
+    _ns_port = os.getenv('PYRO_NS_PORT')
+    if _ns_host:
+        _pyro_config.NS_HOST = _ns_host
+    if _ns_port:
+        _pyro_config.NS_PORT = int(_ns_port)
+except Exception:
+    # Pyro5 may not be installed during certain operations (e.g., minimal envs)
+    pass
 
 
 MESSAGE_TAGS = {

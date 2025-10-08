@@ -5,6 +5,7 @@ os.environ["DJANGO_SETTINGS_MODULE"] = 'numberdb.settings'
 django.setup()
 
 from django.test import TestCase
+from django.urls import reverse
 
 #print("INSTALLED_APPS:", INSTALLED_APPS)
 
@@ -26,9 +27,11 @@ from .models import OeisNumber
 from .models import OeisSequence
 from .models import WikipediaNumber
 
+from .common import test_table_ids
+
 from db_builder.build import numberdb_data_repository, build_numberdb_data
 
-class NumberDBTestCase(TestCase):
+class DataBuildTest(TestCase):
     def setUp(self):
         
         print(" --- SETTING UP TEST DATABASE ---")
@@ -37,10 +40,17 @@ class NumberDBTestCase(TestCase):
         build_numberdb_data(data_repo, test_data=True)        
 
         print(" --- DONE: SETUP OF TEST DATABASE ---")
-        
-    def test_animals_can_speak(self):
-        #lion = Animal.objects.get(name="lion")
-        #cat = Animal.objects.get(name="cat")
-        #self.assertEqual(lion.speak(), 'The lion says "roar"')
-        #self.assertEqual(cat.speak(), 'The cat says "meow"')
-        pass
+   
+    def test_db_tables(self):
+        tables = Table.objects.all()
+        self.assertEqual(len(tables), len(test_table_ids))
+    
+    def test_table_view(self):
+        tid0 = test_table_ids[0]
+        table0 = Table.objects.get(tid=tid0)
+        url = reverse('db:table', kwargs={'tid': tid0})
+        resp = self.client.get(url)
+        #print('resp:', resp)
+        self.assertEqual(resp.status_code, 200)
+        #print('resp.content:', resp.content)
+        self.assertIn(table0.title, str(resp.content))

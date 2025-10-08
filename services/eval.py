@@ -11,6 +11,7 @@ How to run service:
   result = loads(bytes(response,encoding='cp437'))
 '''
 
+import os
 import Pyro5.api
 from sage.all import *
 #from sage.rings.all import *
@@ -470,11 +471,23 @@ class SafeEval(object):
 		
 
 Pyro_daemon = Pyro5.server.Daemon()         # make a Pyro daemon
-Pyro_ns = Pyro5.api.locate_ns()             # find the name server
+# find the name server (configurable via environment variables)
+_ns_host = os.getenv('PYRO_NS_HOST')
+_ns_port = os.getenv('PYRO_NS_PORT')
+if _ns_port is not None:
+    try:
+        _ns_port = int(_ns_port)
+    except ValueError:
+        _ns_port = None
+if _ns_host and _ns_port:
+    Pyro_ns = Pyro5.api.locate_ns(host=_ns_host, port=_ns_port)
+elif _ns_host:
+    Pyro_ns = Pyro5.api.locate_ns(host=_ns_host)
+else:
+    Pyro_ns = Pyro5.api.locate_ns()
 SafeEval_uri = Pyro_daemon.register(SafeEval)   # register SaveEval as a Pyro object
 Pyro_ns.register("safe_eval", SafeEval_uri)   # register the object with a name in the name server
 
 if __name__ == "__main__":
 	print("Ready.")
 	Pyro_daemon.requestLoop()
-
