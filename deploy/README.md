@@ -69,8 +69,14 @@ TLS terminates at the `nginx` container using Let’s Encrypt certificates store
      git clone <your-fork-url>.git numberdb-website && cd numberdb-website
      git checkout docker-deploy
 
-3) Create the environment file on the server (`.env` in repo root):
-   - Required keys (example):
+3) Option A: One‑shot provision (HTTP, no DNS yet)
+   - From your laptop, run:
+     scripts/provision_vm.sh [--force-secrets] user@host [/remote/path]
+   - This installs Docker, copies the repo (excluding local env files), creates `.env.prod` on the server (only if missing unless forced), brings up the stack, fetches data, applies migrations, and creates an admin user.
+   - Use `--force-secrets` to overwrite `.env.prod`/`.env` if you need to rotate secrets.
+
+   Option B: Manual `.env` creation
+   - Create `.env` on the server (example keys):
      SECRET_KEY=change_me
      POSTGRES_KEY=strong_db_password
      DEBUG=False
@@ -79,7 +85,7 @@ TLS terminates at the `nginx` container using Let’s Encrypt certificates store
      SERVER_NAME=example.org
      LETSENCRYPT_EMAIL=admin@example.org
 
-4) First bring-up:
+4) First bring-up (if using Option B):
    - Build images and start core services:
      docker compose up -d --build db pyro-ns eval web nginx
    - Initialize data repo:
