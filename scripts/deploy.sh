@@ -120,14 +120,51 @@ case "$ACTION" in
     ssh "$REMOTE" bash -lc "cd '$RPATH' && docker compose ps && echo && echo 'App URL (HTTP if staging):' && (grep -E '^SERVER_NAME=' .env 2>/dev/null || true)"
     ;;
 
+  quickstage)
+    # One-shot: provision (no background builds), bind to localhost:8080, open tunnel, run core build synchronously, print ready URL
+    FORCE=0; NO_TUNNEL=0
+    while [[ "${1:-}" == --* ]]; do
+      case "$1" in
+        --force-secrets) FORCE=1 ;;
+        --no-tunnel) NO_TUNNEL=1 ;;
+        *) die "Unknown flag: $1" ;;
+      esac; shift
+    done
+    REMOTE=${1:-}; RPATH=${2:-$REMOTE_PATH_DEFAULT}
+    [[ -z "$REMOTE" ]] && die "Usage: scripts/deploy.sh quickstage [--force-secrets] user@host [/remote/path] [--no-tunnel]"
+
+    ensure_remote_path "$REMOTE" "$RPATH"
+
+    PROV_FLAGS=(--no-build --no-wiki --no-oeis)
+    [[ $FORCE -eq 1 ]] && PROV_FLAGS+=(--force-secrets)
+    scripts/provision_vm.sh ${PROV_FLAGS[@]} "$REMOTE" "$RPATH"
+
+    # Local-only bind and start nginx
+    write_override_localbind "$REMOTE" "$RPATH" 8080
+    ssh "$REMOTE" bash -lc "cd '$RPATH' && docker compose up -d nginx"
+
+    # Open tunnel unless suppressed
+    if [[ $NO_TUNNEL -eq 0 ]]; then
+      open_tunnel_bg "$REMOTE" 8080 8080
+      READY_URL="http://localhost:8080"
+    else
+      echo "No tunnel requested; Nginx is bound to 127.0.0.1:8080 on the server."
+      READY_URL="http://127.0.0.1:8080 (on the server via SSH)"
+    fi
+
+    echo "Running core data build (this can take a while)..."
+    ssh "$REMOTE" bash -lc "cd '$RPATH' && docker compose run --rm web sage -python db_builder/build.py"
+    echo "Core build finished. Ready at: $READY_URL"
+    ;;
+
   *)
     cat <<USAGE
 Usage:
   scripts/deploy.sh stage [--force-secrets] [--no-build] [--no-wiki] [--no-oeis] user@host [/remote/path] [--open-tunnel]
   scripts/deploy.sh live user@host example.org admin@example.org [/remote/path]
   scripts/deploy.sh status user@host [/remote/path]
+  scripts/deploy.sh quickstage [--force-secrets] user@host [/remote/path] [--no-tunnel]
 USAGE
     exit 1
     ;;
 esac
-
