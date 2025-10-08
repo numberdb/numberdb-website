@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Provision a fresh Ubuntu LTS VM (no DNS) and deploy this app over HTTP.
+#
+# Usage:
+#   scripts/provision_vm.sh root@69.164.213.246 [/opt/numberdb-website]
+#
+# What it does:
+# - Installs Docker Engine + Compose plugin on the remote host
+# - Copies this repository to the remote path (default: /opt/numberdb-website)
+# - Generates repo-root .env.prod with strong secrets and HTTP config (no DNS)
+# - Copies .env.prod to .env (Compose uses .env)
+# - Builds images and starts: db, pyro-ns, eval, web, nginx (HTTP), certbot-renew
+# - Fetches numberdb-data, runs migrations
+# - Creates an admin user with a generated password (printed locally)
+
+REMOTE=${1:-}
+REMOTE_PATH=${2:-/opt/numberdb-website}
+
+if [[ -z "$REMOTE" ]]; then
+  echo "Usage: $0 user@host [/remote/path]" >&2
+  exit 1
+fi
+
+# Extract IP/host for ALLOWED_HOSTS/SERVER_NAME (best effort)
+REMOTE_HOST=${REMOTE#*@}
+
+# Generate secrets locally
+rand_hex() { openssl rand -hex "$1"; }
+rand_pw()  { openssl rand -base64 24 | tr -dc 'A-Za-z0-9' | head -c 24; }
+
+SECRET_KEY=$(rand_hex 32)
+POSTGRES_KEY=$(rand_hex 16)
+ADMIN_PASSWORD=$(rand_pw)
+LETSENCRYPT_EMAIL="admin@example.invalid"
+
+echo "==> Installing Docker on remote host ($REMOTE)"
+ssh -o StrictHostKeyChecking=accept-new "$REMOTE" bash -lc "\
+  set -euo pipefail; \
+  export DEBIAN_FRONTEND=noninteractive; \
+  apt-get update; \
+  apt-get install -y ca-certificates curl gnupg lsb-release; \
+  install -m 0755 -d /etc/apt/keyrings; \
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg; \
+  chmod a+r /etc/apt/keyrings/docker.gpg; \
+  echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \$(. /etc/os-release && echo \$VERSION_CODENAME) stable\" > /etc/apt/sources.list.d/docker.list; \
+  apt-get update; \
+  apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin git; \
+  systemctl enable --now docker || true; \
+  mkdir -p $REMOTE_PATH; \
+"
+
+echo "==> Copying repository to $REMOTE:$REMOTE_PATH (excluding .git, caches)"
+REPO_ROOT=$(pwd)
+tar cz \
+  --exclude='.git' \
+  --exclude='__pycache__' \
+  --exclude='staticfiles' \
+  --exclude='db_builder/oeis-data' \
+  -C "$REPO_ROOT" . | ssh "$REMOTE" "tar xz -C '$REMOTE_PATH'"
+
+echo "==> Writing .env.prod on remote (and syncing to .env)"
+ssh "$REMOTE" bash -lc "\
+  set -e; cd '$REMOTE_PATH'; \
+  cat > .env.prod << 'EOFENV'\nSECRET_KEY=$SECRET_KEY\nPOSTGRES_KEY=$POSTGRES_KEY\nDEBUG=False\nALLOWED_HOSTS=.localhost,127.0.0.1,$REMOTE_HOST\n\n# Compose overrides this for the web container to point to 'db'\nDATABASE_URL=postgres://u_numberdb:$POSTGRES_KEY@db:5432/numberdb\n\nSOCIALACCOUNT_GITHUB_ID=\nSOCIALACCOUNT_GITHUB_SECRET=\n\nACCOUNT_DEFAULT_HTTP_PROTOCOL=http\nEMAIL_BACKEND=django.core.mail.backends.console.EmailBackend\n\n# TLS vars (not used until DNS is set)\nSERVER_NAME=$REMOTE_HOST\nLETSENCRYPT_EMAIL=$LETSENCRYPT_EMAIL\nEOFENV\n  cp .env.prod .env\n"
+
+echo "==> Building and starting containers (HTTP only; no DNS)"
+ssh "$REMOTE" bash -lc "\
+  set -e; cd '$REMOTE_PATH'; \
+  docker compose up -d --build db pyro-ns eval web nginx certbot-renew; \
+"
+
+echo "==> Fetching numberdb-data"
+ssh "$REMOTE" bash -lc "\
+  set -e; cd '$REMOTE_PATH'; \
+  docker compose run --rm data-fetcher || true; \
+"
+
+echo "==> Applying database migrations"
+ssh "$REMOTE" bash -lc "\
+  set -e; cd '$REMOTE_PATH'; \
+  docker compose run --rm web sage -python manage.py migrate; \
+"
+
+echo "==> Creating admin user (username: admin)"
+ssh "$REMOTE" bash -lc "\
+  set -e; cd '$REMOTE_PATH'; \
+  docker compose run --rm web bash -lc \"set -e; cat > /tmp/create_admin.py << 'PY'\\nfrom django.contrib.auth import get_user_model\\nUser = get_user_model()\\nif not User.objects.filter(username='admin').exists():\\n    User.objects.create_superuser('admin','admin@example.org','${ADMIN_PASSWORD}')\\n    print('Created admin user.')\\nelse:\\n    print('Admin user already exists.')\\nPY\\n  ; sage -python manage.py shell < /tmp/create_admin.py\"; \
+"
+
+echo "==> Done. App is up over HTTP at: http://$REMOTE_HOST"
+echo "    Admin credentials: admin / $ADMIN_PASSWORD"
+echo "    When DNS points to the server, obtain TLS with:"
+echo "      ssh $REMOTE 'cd $REMOTE_PATH && docker compose run --rm certbot certonly --webroot -w /var/www/certbot -d \$SERVER_NAME --email \$LETSENCRYPT_EMAIL --agree-tos --no-eff-email && docker compose restart nginx'"
+
