@@ -24,19 +24,17 @@ services:
       - "8000"
 
   nginx:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: deploy/nginx/Dockerfile
     depends_on:
       - web
-    entrypoint: ["/bin/sh", "/docker/entrypoint.nginx.sh"]
     environment:
       - SERVER_NAME=${SERVER_NAME}
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./docker/entrypoint.nginx.sh:/docker/entrypoint.nginx.sh:ro
-      - ./deploy/nginx/default.conf.http.template:/etc/nginx/templates/default.conf.http.template:ro
-      - ./deploy/nginx/default.conf.tls.template:/etc/nginx/templates/default.conf.tls.template:ro
       - staticfiles:/staticfiles:ro
       - certbot-www:/var/www/certbot
       - letsencrypt:/etc/letsencrypt
