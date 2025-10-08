@@ -61,9 +61,28 @@ tar cz \
   -C "$REPO_ROOT" . | ssh "$REMOTE" "tar xz -C '$REMOTE_PATH'"
 
 echo "==> Writing .env.prod on remote (and syncing to .env)"
-ssh "$REMOTE" bash -lc "\
-  set -e; cd '$REMOTE_PATH'; \
-  cat > .env.prod << 'EOFENV'\nSECRET_KEY=$SECRET_KEY\nPOSTGRES_KEY=$POSTGRES_KEY\nDEBUG=False\nALLOWED_HOSTS=.localhost,127.0.0.1,$REMOTE_HOST\n\n# Compose overrides this for the web container to point to 'db'\nDATABASE_URL=postgres://u_numberdb:$POSTGRES_KEY@db:5432/numberdb\n\nSOCIALACCOUNT_GITHUB_ID=\nSOCIALACCOUNT_GITHUB_SECRET=\n\nACCOUNT_DEFAULT_HTTP_PROTOCOL=http\nEMAIL_BACKEND=django.core.mail.backends.console.EmailBackend\n\n# TLS vars (not used until DNS is set)\nSERVER_NAME=$REMOTE_HOST\nLETSENCRYPT_EMAIL=$LETSENCRYPT_EMAIL\nEOFENV\n  cp .env.prod .env\n"
+# Send the file content via stdin to avoid complex remote heredoc quoting
+ssh "$REMOTE" "bash -lc 'set -e; cd "$REMOTE_PATH"; cat > .env.prod'" << EOFENV
+SECRET_KEY=$SECRET_KEY
+POSTGRES_KEY=$POSTGRES_KEY
+DEBUG=False
+ALLOWED_HOSTS=.localhost,127.0.0.1,$REMOTE_HOST
+
+# Compose overrides this for the web container to point to 'db'
+DATABASE_URL=postgres://u_numberdb:$POSTGRES_KEY@db:5432/numberdb
+
+SOCIALACCOUNT_GITHUB_ID=
+SOCIALACCOUNT_GITHUB_SECRET=
+
+ACCOUNT_DEFAULT_HTTP_PROTOCOL=http
+EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+
+# TLS vars (not used until DNS is set)
+SERVER_NAME=$REMOTE_HOST
+LETSENCRYPT_EMAIL=$LETSENCRYPT_EMAIL
+EOFENV
+
+ssh "$REMOTE" bash -lc "set -e; cd '$REMOTE_PATH'; cp .env.prod .env"
 
 echo "==> Building and starting containers (HTTP only; no DNS)"
 ssh "$REMOTE" bash -lc "\
@@ -93,4 +112,3 @@ echo "==> Done. App is up over HTTP at: http://$REMOTE_HOST"
 echo "    Admin credentials: admin / $ADMIN_PASSWORD"
 echo "    When DNS points to the server, obtain TLS with:"
 echo "      ssh $REMOTE 'cd $REMOTE_PATH && docker compose run --rm certbot certonly --webroot -w /var/www/certbot -d \$SERVER_NAME --email \$LETSENCRYPT_EMAIL --agree-tos --no-eff-email && docker compose restart nginx'"
-
