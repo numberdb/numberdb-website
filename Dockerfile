@@ -12,20 +12,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Ensure working dir writable by 'sage'
-RUN mkdir -p /app && chown -R sage:sage /app
-
-USER sage
 WORKDIR /app
 
+# Install Python deps as 'sage' user for correct environment
 COPY requirements.txt ./
+RUN chown sage:sage requirements.txt
+USER sage
 RUN sage -pip install --no-cache-dir -r requirements.txt
 
-# Copy project
+USER root
+# Copy project sources and ensure scripts are executable
 COPY . .
+RUN chmod +x docker/entrypoint.web.sh
+RUN chown -R sage:sage /app
 
-# Entrypoint script for web service
-RUN chmod +x docker/entrypoint.web.sh || true
+USER sage
 
 EXPOSE 8000
 
