@@ -18,6 +18,9 @@ from db.models import WikipediaNumber
 
 import numpy as np
 import urllib
+import hashlib
+import time
+import requests
 from bs4 import BeautifulSoup 
 import re
 
@@ -73,8 +76,45 @@ def build_wikipedia_number_table():
 		print('n0:',n0)
 		
 		url_n0 = wiki_url(n0)
-		page = urllib.request.urlopen(url_n0)
-		bs = BeautifulSoup(page.read())
+
+		# Cache setup
+		cache_dir = Path('/app/.cache/wiki')
+		cache_dir.mkdir(parents=True, exist_ok=True)
+		fname = cache_dir / (hashlib.sha256(url_n0.encode('utf-8')).hexdigest() + '.html')
+
+		def fetch_with_retry(url):
+			s = requests.Session()
+			s.headers.update({
+				'User-Agent': 'Mozilla/5.0 (compatible; NumberDB/1.0; +https://numberdb.org)'
+			})
+			backoff = 2
+			for i in range(6):
+				try:
+					r = s.get(url, timeout=20)
+					if r.status_code == 200:
+						return r.text
+					elif r.status_code in (403, 429):
+						time.sleep(backoff)
+						backoff = min(backoff * 2, 60)
+					else:
+						time.sleep(2)
+				except requests.RequestException:
+					time.sleep(backoff)
+					backoff = min(backoff * 2, 60)
+			return None
+
+		if fname.exists():
+			with open(fname, 'r', encoding='utf-8') as f:
+				html = f.read()
+		else:
+			html = fetch_with_retry(url_n0)
+			if html is None:
+				print(f"Failed to fetch {url_n0}, skipping this batch.")
+				continue
+			with open(fname, 'w', encoding='utf-8') as f:
+				f.write(html)
+
+		bs = BeautifulSoup(html, features='html.parser')
 	
 		#for h3 in bs.find_all('h3'):
 		#	for 
@@ -165,4 +205,3 @@ if __name__ == '__main__':
 	timer.run(build_wikipedia_number_table)
 
 	print("Times:\n%s" % (timer,))
-

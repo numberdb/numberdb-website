@@ -88,14 +88,17 @@ ALLOWED_HOSTS=.localhost,127.0.0.1,$REMOTE_HOST
 # Compose overrides this for the web container to point to 'db'
 DATABASE_URL=postgres://u_numberdb:$POSTGRES_KEY@db:5432/numberdb
 
-# Postgres performance tuning (safe defaults for small VMs)
-PG_SHARED_BUFFERS=256MB
-PG_WORK_MEM=64MB
-PG_MAINTENANCE_WORK_MEM=256MB
-PG_EFFECTIVE_CACHE_SIZE=1GB
+# Web server tuning
+GUNICORN_WORKERS=1
+
+# Postgres performance tuning (low-RAM profile)
+PG_SHARED_BUFFERS=128MB
+PG_WORK_MEM=16MB
+PG_MAINTENANCE_WORK_MEM=128MB
+PG_EFFECTIVE_CACHE_SIZE=512MB
 PG_WAL_COMPRESSION=on
 PG_SYNCHRONOUS_COMMIT=off
-PG_MAX_WAL_SIZE=1GB
+PG_MAX_WAL_SIZE=512MB
 PG_CHECKPOINT_TIMEOUT=10min
 
 SOCIALACCOUNT_GITHUB_ID=
@@ -118,14 +121,17 @@ ALLOWED_HOSTS=.localhost,127.0.0.1,$REMOTE_HOST
 # Compose overrides this for the web container to point to 'db'
 DATABASE_URL=postgres://u_numberdb:$POSTGRES_KEY@db:5432/numberdb
 
-# Postgres performance tuning (safe defaults for small VMs)
-PG_SHARED_BUFFERS=256MB
-PG_WORK_MEM=64MB
-PG_MAINTENANCE_WORK_MEM=256MB
-PG_EFFECTIVE_CACHE_SIZE=1GB
+# Web server tuning
+GUNICORN_WORKERS=1
+
+# Postgres performance tuning (low-RAM profile)
+PG_SHARED_BUFFERS=128MB
+PG_WORK_MEM=16MB
+PG_MAINTENANCE_WORK_MEM=128MB
+PG_EFFECTIVE_CACHE_SIZE=512MB
 PG_WAL_COMPRESSION=on
 PG_SYNCHRONOUS_COMMIT=off
-PG_MAX_WAL_SIZE=1GB
+PG_MAX_WAL_SIZE=512MB
 PG_CHECKPOINT_TIMEOUT=10min
 
 SOCIALACCOUNT_GITHUB_ID=
@@ -180,31 +186,36 @@ echo "      ssh $REMOTE 'cd $REMOTE_PATH && docker compose run --rm certbot cert
 
 # Optional dataset builds
 if [[ "$BUILD_DATA" -eq 1 ]]; then
-  echo "==> Building NumberDB data (tables, tags, numbers, search)"
+  echo "==> Building NumberDB data in background (tables, numbers, search). Logs: logs/build_core.log"
   ssh "$REMOTE" bash -lc "\
-    set -e; cd '$REMOTE_PATH'; \
-    docker compose run --rm web sage -python db_builder/build.py; \
+    set -e; cd '$REMOTE_PATH'; mkdir -p logs; \
+    nohup sh -lc 'docker compose run -T --rm web sage -python db_builder/build.py > logs/build_core.log 2>&1' >/dev/null 2>&1 & \
   "
 else
   echo "==> Skipping NumberDB core build (requested)"
 fi
 
 if [[ "$WITH_WIKI" -eq 1 ]]; then
-  echo "==> Building Wikipedia tables"
+  echo "==> Building Wikipedia tables in background. Logs: logs/build_wikipedia.log"
   ssh "$REMOTE" bash -lc "\
-    set -e; cd '$REMOTE_PATH'; \
-    docker compose run --rm web sage -python db_builder/build-wikipedia.py; \
+    set -e; cd '$REMOTE_PATH'; mkdir -p logs; \
+    nohup sh -lc 'docker compose run -T --rm web sage -python db_builder/build-wikipedia.py > logs/build_wikipedia.log 2>&1' >/dev/null 2>&1 & \
   "
 else
   echo "==> Skipping Wikipedia build (requested)"
 fi
 
 if [[ "$WITH_OEIS" -eq 1 ]]; then
-  echo "==> Building OEIS tables (downloads stripped/names)"
+  echo "==> Building OEIS tables in background. Logs: logs/build_oeis.log"
   ssh "$REMOTE" bash -lc "\
-    set -e; cd '$REMOTE_PATH'; \
-    docker compose run --rm web sh -lc './db_builder/update-oeis.sh && sage -python db_builder/build-oeis.py'; \
+    set -e; cd '$REMOTE_PATH'; mkdir -p logs; \
+    nohup sh -lc 'docker compose run -T --rm web sh -lc \''./db_builder/update-oeis.sh && sage -python db_builder/build-oeis.py'\'' > logs/build_oeis.log 2>&1' >/dev/null 2>&1 & \
   "
 else
   echo "==> Skipping OEIS build (requested)"
 fi
+
+echo "==> To monitor builds on the server:"
+echo "    tail -f /opt/numberdb-website/logs/build_core.log"
+echo "    tail -f /opt/numberdb-website/logs/build_wikipedia.log"
+echo "    tail -f /opt/numberdb-website/logs/build_oeis.log"
