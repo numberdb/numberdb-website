@@ -30,7 +30,7 @@ from sage.all import infinity, loads
 from sage.rings.all import ZZ, QQ, RR, CC, RIF, CIF
 from sage.rings.all import RealField, RealIntervalField, RealBallField
 from sage.rings.all import ComplexField, ComplexIntervalField, ComplexBallField
-from sage.all import is_pAdicField
+from utils.utils import is_pAdicField
 
 from mpmath import pslq
 
