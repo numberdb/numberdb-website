@@ -1,0 +1,17 @@
+.git
+.gitignore
+__pycache__
+*.py[cod]
+*.log
+*.sqlite3
+staticfiles
+env
+.env
+venv
+.venv
+node_modules
+*.egg-info
+dist
+build
+db_builder/oeis-data
+__pycache__
