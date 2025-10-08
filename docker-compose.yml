@@ -87,7 +87,8 @@ services:
 
   data-fetcher:
     image: alpine/git:latest
-    command: sh -c "git -C /numberdb-data pull || git clone --depth 1 https://github.com/numberdb/numberdb-data.git /numberdb-data"
+    entrypoint: ["/bin/sh","-c"]
+    command: "git -C /numberdb-data pull || git clone --depth 1 https://github.com/numberdb/numberdb-data.git /numberdb-data"
     volumes:
       - numberdb-data:/numberdb-data
     restart: "no"
