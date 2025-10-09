@@ -11,7 +11,7 @@
 - `.env` local settings (seeded from `env/.env.dev.example`).
 
 ## Build, Test, and Development Commands
-- Prerequisites: SageMath installed (`sage` on PATH). Default DB is Postgres via `DATABASE_URL` in `.env` (SQLite is supported for local dev).
+- Prerequisites: SageMath installed (`sage` on PATH). Default DB is Postgres via `DATABASE_URL` in `.env`. SQLite is discouraged even for local development.
 - `make install` — install deps, set up Postgres, run migrations, clone `../numberdb-data`, build core tables.
 - `make run` — start the dev server at http://localhost:8000.
 - `make test` — run Django tests.
@@ -43,5 +43,5 @@
 
 ## Security & Configuration Tips
 - Never commit real secrets. Create `.env` from `env/.env.dev.example` and adjust locally.
-- For quick local setup, you may set `DATABASE_URL=sqlite:///db.sqlite3` (local development only; not recommended for production).
+- Prefer Postgres locally and in production; avoid SQLite.
 - Deployment config lives in `deploy/`. `make deploy` is server‑side and modifies system packages; do not run on a dev machine.
