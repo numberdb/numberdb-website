@@ -14,18 +14,20 @@ from django.db import transaction
 
 os.environ["DJANGO_SETTINGS_MODULE"] = 'numberdb.settings'
 django.setup()
-from db.models import Table
-from db.models import TableData
-from db.models import TableSearch
-from db.models import TableCommit
-from db.models import Contributor
-from db.models import Tag
-from db.models import Number
-from db.models import NumberPAdic
-from db.models import NumberComplex
-from db.models import Polynomial
-from db.common import table_id_prefix, path_numberdb_data
-from db.common import test_table_ids
+from numberdb_app.models import (
+    Table,
+    TableData,
+    TableSearch,
+    TableCommit,
+    Contributor,
+    Tag,
+    Number,
+    NumberPAdic,
+    NumberComplex,
+    Polynomial,
+)
+from numberdb_app.common import table_id_prefix, path_numberdb_data
+from numberdb_app.common import test_table_ids
 
 from django.contrib.sites.models import Site
 

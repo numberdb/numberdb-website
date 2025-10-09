@@ -11,11 +11,12 @@ Core data is imported from the companion repository numberdb-data (cloned next t
 
 ## Repository Layout
 - `numberdb/` Django project settings, URLs, WSGI/ASGI
-- `db/` Main app (models, views, templates, tests)
-- `db_builder/` Data import/build scripts (SageMath; OEIS/Wikipedia helpers)
-- `services/` Pyro5 evaluation service used by the app
+- `numberdb_app/` Main Django app (models, views, templates, tests)
+- `data_pipeline/` Data import/build scripts (SageMath; OEIS/Wikipedia helpers)
+- `workers/` Pyro5 evaluation service used by the app
 - `templates/`, `static/` source assets; `staticfiles/` is collected output
 - `deploy/` Deployment assets (Docker Compose, Nginx snippets)
+- `clients/` Client interfaces (e.g., Sage helper under `clients/sage`)
 - `tests/` Additional Sage-based tests; `manage.py` project entry
 - `.env` local settings (see `env/.env.dev.example`)
 
@@ -45,13 +46,13 @@ Notes
 - Build core tables:
   - `make build_db_numbers` (core) or `make build_db_all` (extended)
 
-The data builder lives under `db_builder/` and uses SageMath.
+The data builder lives under `data_pipeline/` and uses SageMath.
 
 ## Sage Interface
 From a Sage session you can query NumberDB directly:
 
 ```
-sage: load('https://raw.githubusercontent.com/numberdb/numberdb-website/main/interfaces/numberdb-sage-interface.py')
+sage: load('https://raw.githubusercontent.com/numberdb/numberdb-website/main/clients/sage/numberdb-sage-interface.py')
 sage: search('{n: pi^n for n in [1..5]}')
 ```
 
@@ -71,7 +72,7 @@ This setup runs the Django app (with SageMath), Nginx, Postgres, and the Pyro5 s
   - Ports: internal only (no host mapping by default)
 - `pyro-ns`: Pyro5 name server
   - Ports: `9090` (exposed)
-- `eval`: SafeEval worker (`services/eval.py`)
+- `eval`: SafeEval worker (`workers/eval.py`)
   - Connects to `pyro-ns`
 - `data-fetcher`: one-shot helper to clone/pull `numberdb-data`
 - `certbot`/`certbot-renew`: certificate issuance and renewal
@@ -143,11 +144,11 @@ Then run `make deploy_quickstage`, `make deploy_stage`, or `make deploy_live` wi
 
 ### Optional Data Builds (heavy)
 - Core build:
-  - `docker compose run --rm web sage -python db_builder/build.py`
+  - `docker compose run --rm web sage -python data_pipeline/build.py`
 - OEIS build:
-  - `docker compose run --rm web sh -lc './db_builder/update-oeis.sh && sage -python db_builder/build-oeis.py'`
+  - `docker compose run --rm web sh -lc './data_pipeline/update-oeis.sh && sage -python data_pipeline/build-oeis.py'`
 - Wikipedia build (detached):
-  - `docker compose exec -T web sh -lc 'nohup sage -python db_builder/build-wikipedia.py > /app/build_wiki.log 2>&1 &'`
+  - `docker compose exec -T web sh -lc 'nohup sage -python data_pipeline/build-wikipedia.py > /app/build_wiki.log 2>&1 &'`
 
 ## Configuration and Security
 - Never commit real secrets. Create `.env` from `env/.env.dev.example` and adjust locally; on servers manage secrets out-of-repo.

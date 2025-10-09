@@ -7,7 +7,7 @@ from django.urls import path, include
 from django.contrib.auth.decorators import login_required
 
 from . import views
-from db import views as db_views
+from numberdb_app import views as db_views
 from django.conf import settings
 
 DEBUG = settings.DEBUG
@@ -21,7 +21,7 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
     path('welcome/', db_views.welcome, name='welcome'),
 
-    path('', include('db.urls',namespace='db')),
+    path('', include('numberdb_app.urls',namespace='db')),
     #path('' if DEBUG else 'db/', include('db.urls',namespace='db')),
     #path('' if DEBUG else 'db', include('db.urls')),
 

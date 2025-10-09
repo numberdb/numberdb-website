@@ -153,7 +153,7 @@ case "$ACTION" in
     fi
 
     echo "Running core data build (this can take a while)..."
-    ssh "$REMOTE" bash -lc "cd '$RPATH' && docker compose run --rm web sage -python db_builder/build.py"
+    ssh "$REMOTE" bash -lc "cd '$RPATH' && docker compose run --rm web sage -python data_pipeline/build.py"
     echo "Core build finished. Ready at: $READY_URL"
     ;;
 

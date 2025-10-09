@@ -66,7 +66,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.github',
     'anymail',
     #'userprofile.apps.UserProfileConfig',
-    'db.apps.DbConfig',
+    'numberdb_app.apps.NumberdbAppConfig',
     #'db',
     #'crispy_forms',
     #'bootstrap4',
@@ -95,7 +95,7 @@ TEMPLATES = [
         'DIRS': [
             BASE_DIR / 'templates',
             BASE_DIR / 'numberdb' / 'templates',
-            BASE_DIR / 'db' / 'templates',
+            BASE_DIR / 'numberdb_app' / 'templates',
             BASE_DIR / 'userprofile' / 'templates',
         ],
         'APP_DIRS': True,
@@ -209,4 +209,3 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'), ]
-

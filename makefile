@@ -66,8 +66,8 @@ run_nameserver:
 	$(PYTHON) -m Pyro5.nameserver
 
 run_eval:
-	#RUN NAMESERVER
-	$(PYTHON) services/eval.py
+    #RUN EVAL WORKER
+    $(PYTHON) workers/eval.py
 
 static:
 	#STATIC
@@ -86,17 +86,17 @@ fetch_data:
 	git -C '../numberdb-data/' pull
 
 build_db_numbers:
-	#BUILD DB NUMBERS
-	$(PYTHON) db_builder/build.py
+    #BUILD DB NUMBERS
+    $(PYTHON) data_pipeline/build.py
 	
 build_db_wiki:
-	#BUILD DB WIKI
-	$(PYTHON) db_builder/build-wikipedia.py
+    #BUILD DB WIKI
+    $(PYTHON) data_pipeline/build-wikipedia.py
 
 build_db_oeis:
-	#BUILD DB OEIS
-	./db_builder/update-oeis.sh
-	$(PYTHON) db_builder/build-oeis.py
+    #BUILD DB OEIS
+    ./data_pipeline/update-oeis.sh
+    $(PYTHON) data_pipeline/build-oeis.py
 	
 build_db_all:
 	#BUILD DB ALL

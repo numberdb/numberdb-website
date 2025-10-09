@@ -13,5 +13,5 @@ node_modules
 *.egg-info
 dist
 build
-db_builder/oeis-data
+data_pipeline/oeis-data
 __pycache__
