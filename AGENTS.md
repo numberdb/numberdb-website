@@ -8,7 +8,7 @@
 - `templates/`, `static/` source assets; `staticfiles/` is the collected output.
 - `deploy/` Docker Compose, Nginx templates, and related server configs.
 - `tests/` Additional Sage-based tests; `manage.py` project entry.
-- `.env` local settings (seeded from `install/env.dev.example`).
+- `.env` local settings (seeded from `env/.env.dev.example`).
 
 ## Build, Test, and Development Commands
 - Prerequisites: SageMath installed (`sage` on PATH). Default DB is Postgres via `DATABASE_URL` in `.env` (SQLite is supported for local dev).
@@ -42,6 +42,6 @@
 - Never commit real secrets; `.env` remains untracked and generated from templates.
 
 ## Security & Configuration Tips
-- Never commit real secrets. Create `.env` from `install/env.dev.example` and adjust locally.
+- Never commit real secrets. Create `.env` from `env/.env.dev.example` and adjust locally.
 - For quick local setup, you may set `DATABASE_URL=sqlite:///db.sqlite3`.
 - Deployment config lives in `deploy/`. `make deploy` is server‑side and modifies system packages; do not run on a dev machine.

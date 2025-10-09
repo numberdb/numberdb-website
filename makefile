@@ -169,7 +169,7 @@ install_django:
 	sudo apt-get -y install postgresql postgresql-contrib
 
 .env:
-	cp install/env.dev.example .env
+	cp env/.env.dev.example .env
 
 install: .env
 	#INSTALL

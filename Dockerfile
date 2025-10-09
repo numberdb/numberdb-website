@@ -4,7 +4,7 @@ FROM sagemath/sagemath:latest
 ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     POETRY_VIRTUALENVS_CREATE=false \
-    DJANGO_SETTINGS_MODULE=numberdb.settings
+    DJANGO_SETTINGS_MODULE=numberdb.settings.prod
 
 USER root
 # System deps minimal; sagemath image already includes python + build tools

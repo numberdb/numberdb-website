@@ -7,7 +7,7 @@ Core data is imported from the companion repository numberdb-data (cloned next t
 ## Prerequisites
 - SageMath installed (`sage` on PATH)
 - Python 3; Postgres (default) or SQLite for local dev
-- `.env` file at repo root (seeded from `install/env.dev.example`)
+- `.env` file at repo root (seeded from `env/.env.dev.example`)
 
 ## Repository Layout
 - `numberdb/` Django project settings, URLs, WSGI/ASGI
@@ -17,7 +17,7 @@ Core data is imported from the companion repository numberdb-data (cloned next t
 - `templates/`, `static/` source assets; `staticfiles/` is collected output
 - `deploy/` Deployment assets (Docker Compose, Nginx snippets)
 - `tests/` Additional Sage-based tests; `manage.py` project entry
-- `.env` local settings (see `install/env.dev.example`)
+- `.env` local settings (see `env/.env.dev.example`)
 
 ## Local Development
 - Install deps and set up data/DB:
@@ -75,6 +75,10 @@ This setup runs the Django app (with SageMath), Nginx, Postgres, and the Pyro5 s
   - Connects to `pyro-ns`
 - `data-fetcher`: one-shot helper to clone/pull `numberdb-data`
 - `certbot`/`certbot-renew`: certificate issuance and renewal
+
+### Settings Split
+- Use `numberdb.settings.dev` for local development (default in `manage.py`).
+- Use `numberdb.settings.prod` for production (default in Docker environment).
 
 ### Data Volumes
 - `staticfiles` — collected Django static assets served by Nginx
@@ -141,7 +145,7 @@ Then run `make deploy_quickstage`, `make deploy_stage`, or `make deploy_live` wi
   - `docker compose exec -T web sh -lc 'nohup sage -python db_builder/build-wikipedia.py > /app/build_wiki.log 2>&1 &'`
 
 ## Configuration and Security
-- Never commit real secrets. Create `.env` from `install/env.dev.example` and adjust locally; on servers manage secrets out-of-repo.
+- Never commit real secrets. Create `.env` from `env/.env.dev.example` and adjust locally; on servers manage secrets out-of-repo.
 - Set `ALLOWED_HOSTS`, `DEBUG=False` in production.
 - Email backend and social logins (e.g., GitHub) are configured via `.env`.
 
