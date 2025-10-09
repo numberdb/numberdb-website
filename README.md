@@ -129,8 +129,8 @@ Backups: snapshot `pgdata` and, if needed, `letsencrypt`. `numberdb-data` is re-
 - The command sets `SERVER_NAME` and `LETSENCRYPT_EMAIL`, removes local-only port binding, issues a TLS cert via Certbot, and restarts Nginx.
 
 Tip: To avoid passing arguments, set these in `.env` (used by Makefile wrappers):
-- `DEPLOY_REMOTE`, `DEPLOY_RPATH`, `DEPLOY_DOMAIN`, `DEPLOY_EMAIL`, `DEPLOY_FLAGS`
-Then run `make deploy_quickstage`, `make deploy_stage`, or `make deploy_live` without extra flags.
+- `DEPLOY_REMOTE`, `DEPLOY_RPATH`, `DEPLOY_DOMAIN`, `DEPLOY_EMAIL`
+Then run `make deploy_quickstage`, `make deploy_stage`, or `make deploy_live` without extra flags. For ad‑hoc options during staging, pass `FLAGS=...` on the command line, e.g. `make deploy_stage FLAGS="--no-build --no-wiki"`.
 
 ### Optional Data Builds (heavy)
 - Core build:
