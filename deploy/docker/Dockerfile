@@ -23,7 +23,9 @@ RUN sage -pip install --no-cache-dir -r requirements.txt
 USER root
 # Copy project sources and ensure scripts are executable
 COPY . .
-RUN chmod +x docker/entrypoint.web.sh
+RUN mkdir -p /app/docker \
+    && cp deploy/docker/entrypoint.web.sh /app/docker/entrypoint.web.sh \
+    && chmod +x /app/docker/entrypoint.web.sh
 RUN chown -R sage:sage /app
 
 # Run container as root; entrypoint downgrades to 'sage' for app commands
@@ -33,3 +35,4 @@ EXPOSE 8000
 
 # Default command (overridden in compose)
 CMD ["gunicorn", "numberdb.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+

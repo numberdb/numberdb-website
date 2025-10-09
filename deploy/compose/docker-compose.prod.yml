@@ -1,0 +1,17 @@
+services:
+  web:
+    restart: unless-stopped
+    environment:
+      - AUTO_MIGRATE=1
+      - GUNICORN_WORKERS=${GUNICORN_WORKERS:-2}
+  nginx:
+    restart: unless-stopped
+  db:
+    restart: unless-stopped
+  pyro-ns:
+    restart: unless-stopped
+  eval:
+    restart: unless-stopped
+  certbot-renew:
+    restart: unless-stopped
+
