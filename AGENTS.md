@@ -2,12 +2,13 @@
 
 ## Project Structure & Module Organization
 - `numberdb/` Django project settings, URLs, and WSGI/ASGI.
-- `db/` Main app (models, views, templates, tests).
-- `db_builder/` Data import/build scripts (uses SageMath; OEIS/data helpers).
-- `services/` Pyro5 evaluation service used by the app.
+- `numberdb_app/` Main app (models, views, templates, tests).
+- `data_pipeline/` Data import/build scripts (uses SageMath; OEIS/data helpers).
+- `workers/` Pyro5 evaluation service used by the app.
 - `templates/`, `static/` source assets; `staticfiles/` is the collected output.
 - `deploy/` Docker Compose, Nginx templates, and related server configs.
 - `tests/` Additional Sage-based tests; `manage.py` project entry.
+- `clients/` Client interfaces (e.g., Sage helper under `clients/sage`).
 - `.env` local settings (seeded from `env/.env.dev.example`).
 
 ## Build, Test, and Development Commands

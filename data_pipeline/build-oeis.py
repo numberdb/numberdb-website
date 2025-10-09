@@ -15,8 +15,8 @@ from django.db import transaction
 
 os.environ["DJANGO_SETTINGS_MODULE"] = 'numberdb.settings'
 django.setup()
-from db.models import OeisNumber
-from db.models import OeisSequence
+from numberdb_app.models import OeisNumber
+from numberdb_app.models import OeisSequence
 
 from utils.my_timer import MyTimer
 
@@ -24,7 +24,7 @@ import numpy as np
 
 from sage.all import walltime
 
-path_oeis_data = "db_builder/oeis-data/"
+path_oeis_data = "data_pipeline/oeis-data/"
 
 
 transaction.atomic
@@ -215,4 +215,3 @@ if __name__ == '__main__':
 	#timer.run(build_oeis_sequence_counter)
 
 	print("Times:\n%s" % (timer,))
-

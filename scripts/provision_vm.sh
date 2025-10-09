@@ -72,7 +72,7 @@ tar cz \
   --exclude='.git' \
   --exclude='__pycache__' \
   --exclude='staticfiles' \
-  --exclude='db_builder/oeis-data' \
+  --exclude='data_pipeline/oeis-data' \
   --exclude='.env' \
   --exclude='.env.prod' \
   -C "$REPO_ROOT" . | ssh "$REMOTE" "tar xz -C '$REMOTE_PATH'"
@@ -189,7 +189,7 @@ if [[ "$BUILD_DATA" -eq 1 ]]; then
   echo "==> Building NumberDB data in background (tables, numbers, search). Logs: logs/build_core.log"
   ssh "$REMOTE" bash -lc "\
     set -e; cd '$REMOTE_PATH'; mkdir -p logs; \
-    nohup sh -lc 'docker compose run -T --rm web sage -python db_builder/build.py > logs/build_core.log 2>&1' >/dev/null 2>&1 & \
+    nohup sh -lc 'docker compose run -T --rm web sage -python data_pipeline/build.py > logs/build_core.log 2>&1' >/dev/null 2>&1 & \
   "
 else
   echo "==> Skipping NumberDB core build (requested)"
@@ -199,7 +199,7 @@ if [[ "$WITH_WIKI" -eq 1 ]]; then
   echo "==> Building Wikipedia tables in background. Logs: logs/build_wikipedia.log"
   ssh "$REMOTE" bash -lc "\
     set -e; cd '$REMOTE_PATH'; mkdir -p logs; \
-    nohup sh -lc 'docker compose run -T --rm web sage -python db_builder/build-wikipedia.py > logs/build_wikipedia.log 2>&1' >/dev/null 2>&1 & \
+    nohup sh -lc 'docker compose run -T --rm web sage -python data_pipeline/build-wikipedia.py > logs/build_wikipedia.log 2>&1' >/dev/null 2>&1 & \
   "
 else
   echo "==> Skipping Wikipedia build (requested)"
@@ -209,7 +209,7 @@ if [[ "$WITH_OEIS" -eq 1 ]]; then
   echo "==> Building OEIS tables in background. Logs: logs/build_oeis.log"
   ssh "$REMOTE" bash -lc "\
     set -e; cd '$REMOTE_PATH'; mkdir -p logs; \
-    nohup sh -lc 'docker compose run -T --rm web sh -lc \''./db_builder/update-oeis.sh && sage -python db_builder/build-oeis.py'\'' > logs/build_oeis.log 2>&1' >/dev/null 2>&1 & \
+    nohup sh -lc 'docker compose run -T --rm web sh -lc \''./data_pipeline/update-oeis.sh && sage -python data_pipeline/build-oeis.py'\'' > logs/build_oeis.log 2>&1' >/dev/null 2>&1 & \
   "
 else
   echo "==> Skipping OEIS build (requested)"

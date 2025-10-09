@@ -87,7 +87,7 @@ services:
       context: .
       dockerfile: deploy/docker/Dockerfile
     image: numberdb/web:latest
-    command: ["sage", "-python", "services/eval.py"]
+    command: ["sage", "-python", "workers/eval.py"]
     environment:
       - PYRO_NS_HOST=pyro-ns
       - PYRO_NS_PORT=9090

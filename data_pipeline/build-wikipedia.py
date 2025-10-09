@@ -14,7 +14,7 @@ from django.db import transaction
 
 os.environ["DJANGO_SETTINGS_MODULE"] = 'numberdb.settings'
 django.setup()
-from db.models import WikipediaNumber
+from numberdb_app.models import WikipediaNumber
 
 import numpy as np
 import urllib
@@ -28,7 +28,7 @@ from sage.all import walltime
 
 from utils.my_timer import MyTimer
 
-#path_oeis_data = "db_builder/oeis-data/"
+#path_oeis_data = "data_pipeline/oeis-data/"
 
 
 transaction.atomic

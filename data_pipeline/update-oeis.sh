@@ -1,7 +1,7 @@
 #Needs to be run from numberdb-website/
-#Afterwards run sage db_builder/build-oeis.sage
+#Afterwards run: sage -python data_pipeline/build-oeis.py
 
-cd db_builder
+cd data_pipeline
 mkdir oeis-data
 cd oeis-data
 
