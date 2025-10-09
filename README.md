@@ -6,7 +6,7 @@ Core data is imported from the companion repository numberdb-data (cloned next t
 
 ## Prerequisites
 - SageMath installed (`sage` on PATH)
-- Python 3; Postgres (default) or SQLite for local dev
+- Python 3; Postgres database (required)
 - `.env` file at repo root (seeded from `env/.env.dev.example`)
 
 ## Repository Layout
@@ -28,7 +28,7 @@ Core data is imported from the companion repository numberdb-data (cloned next t
   - `make test`
 
 Notes
-- Default DB is Postgres via `DATABASE_URL` in `.env`. You may use SQLite for quick local setup only: `DATABASE_URL=sqlite:///db.sqlite3` (not recommended beyond local development due to limitations in features and performance).
+- Default DB is Postgres via `DATABASE_URL` in `.env`. SQLite is discouraged even for local development due to missing features and different behavior; prefer a local Postgres instance.
 - `.env` defines `PYTHON`, `PIP`, and `MANAGE` (typically `sage -python manage.py`).
 
 ### Common Make Targets
