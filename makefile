@@ -234,34 +234,7 @@ deploy_live:
 	scripts/deploy.sh live $(REMOTE) $(DOMAIN) $(EMAIL) $(if $(RPATH),$(RPATH),)
 
 deploy_status:
-	@if [ -z "$(REMOTE)" ]; then \
-		echo "Set REMOTE or DEPLOY_REMOTE in .env"; exit 2; \
-	fi
-	scripts/deploy.sh status $(REMOTE) $(if $(RPATH),$(RPATH),)
-	
-	#adduser numberdb
-	#gpasswd -a numberdb sudo
-	
-	#virtualenv venv -p sage
-	#source venv/bin/activate
-	
-	#$(MAKE) install_packages
-	$(MAKE) install_packages_deploy
-	$(MAKE) install_sage_ubuntu
-	
-	$(MAKE) install_full
-	$(MAKE) static
-	#$(MANAGE) createsuperuser
-	$(MAKE) setup_git_deploy
-	
-	$(MAKE) setup_dirs
-	$(MAKE) setup_supervisor
-	sleep 1
-	$(MAKE) setup_nginx
-	$(MAKE) setup_certbot
-
-status:
-	sudo supervisorctl status
-
-test:
-	$(MANAGE) test
+    @if [ -z "$(REMOTE)" ]; then \
+        echo "Set REMOTE or DEPLOY_REMOTE in .env"; exit 2; \
+    fi
+    scripts/deploy.sh status $(REMOTE) $(if $(RPATH),$(RPATH),)

@@ -6,7 +6,7 @@
 - `db_builder/` Data import/build scripts (uses SageMath; OEIS/data helpers).
 - `services/` Pyro5 evaluation service used by the app.
 - `templates/`, `static/` source assets; `staticfiles/` is the collected output.
-- `deploy/` Nginx, Supervisor, and related server configs.
+- `deploy/` Docker Compose, Nginx templates, and related server configs.
 - `tests/` Additional Sage-based tests; `manage.py` project entry.
 - `.env` local settings (seeded from `install/env.dev.example`).
 
