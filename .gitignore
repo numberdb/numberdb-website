@@ -111,9 +111,10 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env*
+# Ignore only root .env files; keep tracked env examples under env/
+/.env
+/.env.*
 .venv
-env/
 venv/
 ENV/
 env.bak/

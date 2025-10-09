@@ -43,5 +43,5 @@
 
 ## Security & Configuration Tips
 - Never commit real secrets. Create `.env` from `env/.env.dev.example` and adjust locally.
-- For quick local setup, you may set `DATABASE_URL=sqlite:///db.sqlite3`.
+- For quick local setup, you may set `DATABASE_URL=sqlite:///db.sqlite3` (local development only; not recommended for production).
 - Deployment config lives in `deploy/`. `make deploy` is server‑side and modifies system packages; do not run on a dev machine.

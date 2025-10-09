@@ -28,7 +28,7 @@ Core data is imported from the companion repository numberdb-data (cloned next t
   - `make test`
 
 Notes
-- Default DB is Postgres via `DATABASE_URL` in `.env`. For quick local setup you can use SQLite: `DATABASE_URL=sqlite:///db.sqlite3`.
+- Default DB is Postgres via `DATABASE_URL` in `.env`. You may use SQLite for quick local setup only: `DATABASE_URL=sqlite:///db.sqlite3` (not recommended beyond local development due to limitations in features and performance).
 - `.env` defines `PYTHON`, `PIP`, and `MANAGE` (typically `sage -python manage.py`).
 
 ### Common Make Targets
