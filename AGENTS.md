@@ -8,7 +8,7 @@
 - `templates/`, `static/` source assets; `staticfiles/` is the collected output.
 - `deploy/` Nginx, Supervisor, and related server configs.
 - `tests/` Additional Sage-based tests; `manage.py` project entry.
-- `.env` local settings (seeded from `install/default-dotenv-dev`).
+- `.env` local settings (seeded from `install/env.dev.example`).
 
 ## Build, Test, and Development Commands
 - Prerequisites: SageMath installed (`sage` on PATH). Default DB is Postgres via `DATABASE_URL` in `.env` (SQLite is supported for local dev).
@@ -34,8 +34,14 @@
 - Commit style follows short, imperative messages (e.g., "add", "fix", "refactor"). Example: `fix: handle empty tags`.
 - PRs should include: clear description, linked issues, test instructions, and screenshots for UI changes. Avoid committing secrets.
 
+## Agent Commit Policy
+- Commit regularly in small, logical chunks.
+- Group related changes together (e.g., docs vs. config), avoid mixing unrelated changes.
+- Use clear, conventional commit messages (e.g., `docs:`, `chore:`, `feat:`, `fix:`).
+- After major edits (docs consolidation, config refactors), commit before proceeding to the next area.
+- Never commit real secrets; `.env` remains untracked and generated from templates.
+
 ## Security & Configuration Tips
-- Never commit real secrets. Create `.env` from `install/default-dotenv-dev` and adjust locally.
+- Never commit real secrets. Create `.env` from `install/env.dev.example` and adjust locally.
 - For quick local setup, you may set `DATABASE_URL=sqlite:///db.sqlite3`.
 - Deployment config lives in `deploy/`. `make deploy` is server‑side and modifies system packages; do not run on a dev machine.
-
