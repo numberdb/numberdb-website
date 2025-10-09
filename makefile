@@ -145,7 +145,7 @@ install_django:
 	sudo apt-get -y install postgresql postgresql-contrib
 
 .env:
-	cp install/default-dotenv-dev .env
+	cp install/env.dev.example .env
 
 install: .env
 	#INSTALL
