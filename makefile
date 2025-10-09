@@ -1,30 +1,65 @@
-#FOR DEVELOPMENT:
-# adjust PYTHON and PIP path below 
-# make install #only needed the first time
-# make run
-#Instead of `make install`, one may also run `make install_full`.
+###############################
+# Development & Deployment Makefile
+# - Dev runs natively with Sage (`$(MANAGE)`)
+# - Deployment uses Docker Compose and scripts in ./scripts
+###############################
 
-#FOR DEPLOYMENT:
-# make deploy
+# FOR DEVELOPMENT:
+#   make install        # first-time local setup
+#   make run            # start Django dev server
+#   make test           # run Django tests
+#   make build_db_all   # build data tables (long)
+
+# FOR DEPLOYMENT (Docker Compose):
+#   make compose_up           # build and start containers
+#   make compose_migrate      # run DB migrations in container
+#   make compose_fetch_data   # fetch numberdb-data volume
+#   make compose_logs         # tail logs
+#
+# Convenience wrappers around scripts/:
+#   make deploy_quickstage REMOTE=user@host
+#   make deploy_stage REMOTE=user@host [FLAGS="--no-build --no-wiki"]
+#   make deploy_live REMOTE=user@host DOMAIN=example.org EMAIL=admin@example.org
 
 include .env
 
-.PHONY: all help run static fetch_data build_db_numbers build_db_wiki build_db_oeis build_db_all update_numbers migrations update setup_postgres reset_postgres setup_gunicorn setup_nginx setup_supervisor setup_git_deploy install install_full install_packages install_sage_ubuntu20 deploy
+.DEFAULT_GOAL := help
+
+# Deploy convenience variables (can be set in .env as DEPLOY_*)
+REMOTE ?= $(DEPLOY_REMOTE)
+RPATH  ?= $(DEPLOY_RPATH)
+DOMAIN ?= $(DEPLOY_DOMAIN)
+EMAIL  ?= $(DEPLOY_EMAIL)
+
+.PHONY: all help run test static fetch_data build_db_numbers build_db_wiki build_db_oeis build_db_all update_numbers migrations update setup_postgres reset_postgres install install_full install_packages install_sage_ubuntu compose_up compose_down compose_logs compose_migrate compose_fetch_data deploy_quickstage deploy_stage deploy_live deploy_status
 
 
 all: help
 
 help:
 	@echo "Usage:"
-	@echo "- For development:"
-	@echo "    make install (only needed once)"
-	@echo "    make run (run local server, after make install)"
-	@echo "- For production:"
-	@echo "    make deploy (using gunicorn and nginx)"
+	@echo "- Development:"
+	@echo "    make install           # first-time setup"
+	@echo "    make run               # Django dev server"
+	@echo "    make test              # run Django tests"
+	@echo "    make build_db_all      # build all data tables"
+	@echo "- Docker Compose (local/server):"
+	@echo "    make compose_up        # build and start containers"
+	@echo "    make compose_migrate   # run migrations in container"
+	@echo "    make compose_fetch_data# fetch numberdb-data"
+	@echo "    make compose_logs      # tail logs"
+	@echo "- Deploy scripts:"
+	@echo "    make deploy_quickstage [REMOTE]            # uses DEPLOY_* from .env if set"
+	@echo "    make deploy_stage [REMOTE FLAGS]           # uses DEPLOY_* from .env if set"
+	@echo "    make deploy_live [REMOTE DOMAIN EMAIL]     # uses DEPLOY_* from .env if set"
 
 run:
 	#RUN
 	$(MANAGE) runserver
+
+test:
+	#TEST
+	$(MANAGE) test
 	
 run_nameserver:
 	#RUN NAMESERVER
@@ -102,17 +137,6 @@ install_packages:
 	#INSTALL PACKAGES
 	sudo apt-get install git libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev libtk8.6 libgdm-dev libdb4o-cil-dev libpcap-dev
 
-install_packages_deploy:
-	#INSTALL PACKAGES_DEPLOY: (packages needed for deployment)
-
-	sudo apt-get -y install nginx
-	sudo apt-get -y install supervisor
-
-	$(PIP) install gunicorn
-	sudo apt-get install libpq-dev
-	$(PIP) install psycopg2
-
-
 install_django:
 	export PATH='${HOME}/SageMath/:${PATH}'
 	
@@ -145,7 +169,7 @@ install_django:
 	sudo apt-get -y install postgresql postgresql-contrib
 
 .env:
-	cp install/default-dotenv-dev .env
+	cp install/env.dev.example .env
 
 install: .env
 	#INSTALL
@@ -169,99 +193,48 @@ install_full:
 	$(MAKE) build_db_wiki
 	$(MAKE) build_db_oeis
 
+# ---- Docker Compose convenience ----
+compose_up:
+	# Build and start containers
+	docker compose up -d --build
 
-setup_supervisor:
-	#SETUP SUPERVISOR
-	sudo systemctl enable supervisor
-	sudo systemctl start supervisor
-	sudo cp deploy/supervisor/conf.d/pyro.conf /etc/supervisor/conf.d/pyro.conf
-	sudo cp deploy/supervisor/conf.d/eval.conf /etc/supervisor/conf.d/eval.conf
-	sudo cp deploy/supervisor/conf.d/numberdb.conf /etc/supervisor/conf.d/numberdb.conf
-	sudo supervisorctl reread
-	sudo supervisorctl update
-	sudo supervisorctl restart pyro
-	sudo supervisorctl restart eval
-	sudo supervisorctl restart numberdb
+compose_down:
+	# Stop containers
+	docker compose down
 
-setup_nginx:
-	#SETUP NGINX
-	- sudo rm /etc/nginx/sites-available/numberdb
-	- sudo rm /etc/nginx/sites-enabled/numberdb
-	sudo cp deploy/nginx/sites-available/numberdb /etc/nginx/sites-available/numberdb
-	- sudo ln -s /etc/nginx/sites-available/numberdb /etc/nginx/sites-enabled/numberdb
-	- sudo rm /etc/nginx/sites-enabled/default
-	sudo sed -i 's/www-data/numberdb/g' /etc/nginx/nginx.conf
-	sudo service nginx restart
-	
-setup_dirs:
-	#SETUP DIRS
-	- mkdir ../logs
-	- mkdir ../run
-	- sudo chown numberdb ../run
-	- touch ../logs/gunicorn.log
-	
-setup_git_deploy:
-	#SETUP GIT
-	git config --global user.name "zeta3"
-	git config --global user.email zeta3@numberdb.org
-	
-setup_certbot:
-	#SETUP CERTBOT
-	sudo apt-get update
-	#sudo apt-get install software-properties-common
-	#sudo add-apt-repository ppa:certbot/certbot
-	#sudo apt-get update
-	#sudo apt-get install python-certbot-nginx
-	
-	sudo apt install snapd
-	sudo snap install core
-	sudo snap refresh core
-	sudo apt-get remove certbot
-	sudo snap install --classic certbot
-	- sudo ln -s /snap/bin/certbot /usr/bin/certbot
-	#sudo certbot --nginx #bad: changes nginx configuration file
-	#sudo certbot certonly --nginx
-	
-	#OLD:
-	sudo certbot --nginx
-	#sudo crontab -e #add at the end of the file: 0 4 * * * /usr/bin/certbot renew --quiet
+compose_logs:
+	# Tail logs
+	docker compose logs -f
 
-production_restart_server:
-	sudo supervisorctl restart pyro
-	sudo supervisorctl restart eval
-	sudo supervisorctl restart numberdb
-	sudo service nginx restart
+compose_migrate:
+	# Run DB migrations inside container
+	docker compose run --rm web sage -python manage.py migrate
 
-deploy:
-	#DEPLOY
-	#TODO!!!
+compose_fetch_data:
+	# Fetch/update numberdb-data into shared volume
+	docker compose run --rm data-fetcher
 
-	#sudo apt-get update
-	#sudo apt-get -y upgrade
-	
-	#adduser numberdb
-	#gpasswd -a numberdb sudo
-	
-	#virtualenv venv -p sage
-	#source venv/bin/activate
-	
-	#$(MAKE) install_packages
-	$(MAKE) install_packages_deploy
-	$(MAKE) install_sage_ubuntu
-	
-	$(MAKE) install_full
-	$(MAKE) static
-	#$(MANAGE) createsuperuser
-	$(MAKE) setup_git_deploy
-	
-	$(MAKE) setup_dirs
-	$(MAKE) setup_supervisor
-	sleep 1
-	$(MAKE) setup_nginx
-	$(MAKE) setup_certbot
+# ---- Deployment wrappers (use scripts/) ----
+deploy_quickstage:
+	@if [ -z "$(REMOTE)" ]; then \
+		echo "Set REMOTE or DEPLOY_REMOTE in .env"; exit 2; \
+	fi
+	scripts/deploy.sh quickstage $(REMOTE) $(if $(RPATH),$(RPATH),)
 
-status:
-	sudo supervisorctl status
+deploy_stage:
+	@if [ -z "$(REMOTE)" ]; then \
+		echo "Set REMOTE or DEPLOY_REMOTE in .env"; exit 2; \
+	fi
+	scripts/deploy.sh stage $(FLAGS) $(REMOTE) $(if $(RPATH),$(RPATH),)
 
-test:
-	$(MANAGE) test
+deploy_live:
+	@if [ -z "$(REMOTE)" ] || [ -z "$(DOMAIN)" ] || [ -z "$(EMAIL)" ]; then \
+		echo "Set REMOTE/DOMAIN/EMAIL or DEPLOY_* in .env"; exit 2; \
+	fi
+	scripts/deploy.sh live $(REMOTE) $(DOMAIN) $(EMAIL) $(if $(RPATH),$(RPATH),)
+
+deploy_status:
+    @if [ -z "$(REMOTE)" ]; then \
+        echo "Set REMOTE or DEPLOY_REMOTE in .env"; exit 2; \
+    fi
+    scripts/deploy.sh status $(REMOTE) $(if $(RPATH),$(RPATH),)

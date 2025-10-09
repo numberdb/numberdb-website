@@ -653,3 +653,21 @@ def number_with_uncertainty_to_real_ball(N, standard_deviations = 5):
 def is_polynomial_ring(R):
     return str(R).startswith('Multivariate Polynomial Ring') or \
 			str(R).startswith('Univariate Polynomial Ring')
+
+def is_pAdicField(K):
+    """Best-effort check for p-adic fields across Sage versions.
+
+    Tries method presence first, then falls back to string heuristics.
+    """
+    try:
+        method = getattr(K, 'is_pAdicField', None)
+        if callable(method):
+            return bool(method())
+    except Exception:
+        pass
+    try:
+        s = str(K)
+    except Exception:
+        return False
+    s_lower = s.lower()
+    return ('p-adic' in s_lower) and ('field' in s_lower)
