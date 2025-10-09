@@ -129,3 +129,10 @@ services:
 ## Troubleshooting
 - Certificate issuance fails: ensure DNS for `SERVER_NAME` points to your server and rerun the Certbot command above, then `docker compose restart nginx`.
 - Low‑RAM servers: reduce Postgres and Gunicorn settings via env (e.g., `PG*`, `GUNICORN_WORKERS`).
+
+## Scripts
+- `docker/entrypoint.web.sh` — container entrypoint for the app. Optionally runs migrations (`AUTO_MIGRATE=1`), collects static, and launches Gunicorn as the `sage` user.
+- `docker/entrypoint.nginx.sh` — container entrypoint for Nginx. Chooses HTTP vs. HTTPS config based on presence of Let’s Encrypt certs for `SERVER_NAME`.
+- `scripts/provision_vm.sh` — one-shot VM bootstrap and deploy over HTTP (installs Docker remotely, copies repo, generates `.env`, starts stack, seeds data/admin). Flags: `--force-secrets`, `--no-build`, `--no-wiki`, `--no-oeis`.
+- `scripts/deploy.sh` — convenience wrapper for staging and go-live: `stage`, `live`, `status`, `quickstage`. Can bind Nginx to localhost and open an SSH tunnel.
+- `scripts/deploy_ssh.sh` — deploy via Docker context over SSH to an existing remote host; attempts initial TLS issuance.
