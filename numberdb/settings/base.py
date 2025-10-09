@@ -1,5 +1,7 @@
 """
-Django settings for numberdb project.
+Base Django settings for NumberDB.
+
+Environment-specific overrides live in `dev.py` and `prod.py`.
 """
 
 from pathlib import Path
@@ -7,6 +9,7 @@ from decouple import config, Csv
 import dj_database_url
 import os
 from django.contrib.messages import constants as messages
+
 try:
     # Make Pyro5 Name Server configurable in containerized setups
     import Pyro5.config as _pyro_config
@@ -28,8 +31,8 @@ MESSAGE_TAGS = {
     messages.WARNING: 'alert-warning',
     messages.ERROR: 'alert-danger',
 }
- 
- 
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
 
@@ -90,7 +93,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            BASE_DIR / 'templates', 
+            BASE_DIR / 'templates',
             BASE_DIR / 'numberdb' / 'templates',
             BASE_DIR / 'db' / 'templates',
             BASE_DIR / 'userprofile' / 'templates',
@@ -110,8 +113,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'numberdb.wsgi.application'
 ASGI_APPLICATION = 'numberdb.asgi.application'
-
-
 
 
 # Password validation
@@ -143,7 +144,7 @@ AUTHENTICATION_BACKENDS = [
 
 SITE_ID = 1
 
-#allauth:
+# allauth:
 SOCIALACCOUNT_PROVIDERS = {
     'github': {
         'APP': {
@@ -154,14 +155,14 @@ SOCIALACCOUNT_PROVIDERS = {
         #'SCOPE': [
         #    'user',
         #],
-    },    
+    },
 }
 
 #### allauth ####
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 ACCOUNT_EMAIL_REQUIRED = False
 ACCOUNT_EMAIL_VERIFICATION = 'optional' #"mandatory"
-ACCOUNT_CONFIRM_EMAIL_ON_GET = True #email providers commonly use GET 
+ACCOUNT_CONFIRM_EMAIL_ON_GET = True #email providers commonly use GET
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = config('ACCOUNT_DEFAULT_HTTP_PROTOCOL')
 ACCOUNT_EMAIL_SUBJECT_PREFIX = "[NumberDB]"
 #ACCOUNT_FORMS #Perhaps adjust in the future
@@ -188,15 +189,6 @@ ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS=7
 ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 5
 ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 86400 # 1 day in seconds
 
-#See warning in 
-# https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-SECURE_PROXY_SSL_HEADER
-#SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-#SECURE_SSL_REDIRECT = True
-#SESSION_COOKIE_SECURE = True
-#CSRF_COOKIE_SECURE = True
-#TODO: Consider last item of
-# https://docs.djangoproject.com/en/3.1/topics/security/#ssl-https
-
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
 
@@ -214,68 +206,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
-
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'), ]
 
-'''
-#Mailgun via SMTP:
-EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
-EMAIL_HOST = config('EMAIL_HOST', default='')
-EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-EMAIL_USE_SSL = False
-
-DEFAULT_FROM_EMAIL = 'Number Database <info@numberdb.org>'
-EMAIL_SUBJECT_PREFIX = '[NumberDB] '
-'''
-
-EMAIL_BACKEND = config('EMAIL_BACKEND')
-
-if EMAIL_BACKEND == "anymail.backends.mailgun.EmailBackend":
-    #Mailgun via their API:
-    ANYMAIL = {
-        # (exact settings here depend on your ESP...)
-        "MAILGUN_API_KEY": config('EMAIL_MG_API_KEY'),
-        "MAILGUN_SENDER_DOMAIN": 'mg.numberdb.org',
-    }
-    EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"  # or sendgrid.EmailBackend, or...
-    DEFAULT_FROM_EMAIL = "info@numberdb.org"  # if you don't already have this in settings
-    SERVER_EMAIL = "zeta3@numberdb.org"  # ditto (default from-email for Django errors)
-
-
-
-#elif EMAIL_BACKEND == "django.core.mail.backends.console.EmailBackend"
-#    pass
-#
-#else:
-#    raise NotImplementedError("EMAIL_BACKEND not supported")
-
-
-from datetime import date
-from datetime import datetime
-
-today = date.today()
-now = datetime.now()
-
-print("Loaded settings.py.",now)
-
-'''
-from django.core.mail import send_mail
-
-print("test email:")
-
-try:
-  send_mail('Subject here','Here is the message.',DEFAULT_FROM_EMAIL,['benjaminmatschke@googlemail.com'],fail_silently=False)
-  print("email sent!")
-except Exception as e:
-  print("exception during sending message")
-  print(e.__class__)
-  print(e)
-'''
-
-CSRF_TRUSTED_ORIGINS = [#'127.0.0.1:8000', 'localhost:8000', 
-'https://numberdb.org', 'https://www.numberdb.org']

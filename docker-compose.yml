@@ -9,7 +9,7 @@ services:
     environment:
       - PYRO_NS_HOST=pyro-ns
       - PYRO_NS_PORT=9090
-      - DJANGO_SETTINGS_MODULE=numberdb.settings
+      - DJANGO_SETTINGS_MODULE=numberdb.settings.prod
       - AUTO_MIGRATE=0
       - DATABASE_URL=postgres://u_numberdb:${POSTGRES_KEY:-password2_to_be_changed}@db:5432/numberdb
     depends_on:
