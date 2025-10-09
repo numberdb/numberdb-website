@@ -28,7 +28,7 @@ from sage.all import infinity, copy, ceil, log, latex, factor
 from sage.rings.all import ZZ, QQ, RR, CC, RIF, CIF
 from sage.rings.all import RealField, RealIntervalField, RealBallField
 from sage.rings.all import ComplexField, ComplexIntervalField, ComplexBallField
-from sage.rings.all import is_pAdicField
+from utils.utils import is_pAdicField
 from sage.rings.all import PolynomialRing
 
 from urllib.parse import quote_plus, unquote_plus
@@ -1610,4 +1610,3 @@ def table_history(request, tid=None):
 		'sortby': sortby,
 	}
 	return render(request, 'table-history.html', context)
-

@@ -1,0 +1,52 @@
+server {
+    listen 80;
+    server_name ${SERVER_NAME};
+
+    # ACME challenge location
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+        default_type "text/plain";
+    }
+
+    # Redirect everything else to HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name ${SERVER_NAME};
+
+    # Resolve Docker DNS for service names at runtime to avoid stale IPs
+    resolver 127.0.0.11 ipv6=off valid=10s;
+    set $upstream http://web:8000;
+
+    ssl_certificate /etc/letsencrypt/live/${SERVER_NAME}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${SERVER_NAME}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    # ACME challenge must still be reachable
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+        default_type "text/plain";
+    }
+
+    # Static assets
+    location /static/ {
+        alias /staticfiles/;
+        access_log off;
+        expires 7d;
+    }
+
+    # App proxy
+    location / {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass $upstream;
+        proxy_read_timeout 300;
+    }
+}

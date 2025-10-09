@@ -33,3 +33,6 @@ test_table_ids = [
     'T101', #Legendre polynomials (rational polynomials)
     'T107', #Equations satisfied by Igusa invariants of split Jacobians (integral polynomials)
 ]
+
+
+#test_table_ids = ['T0']
