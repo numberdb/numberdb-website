@@ -30,7 +30,6 @@ REMOTE ?= $(DEPLOY_REMOTE)
 RPATH  ?= $(DEPLOY_RPATH)
 DOMAIN ?= $(DEPLOY_DOMAIN)
 EMAIL  ?= $(DEPLOY_EMAIL)
-FLAGS  ?= $(DEPLOY_FLAGS)
 
 .PHONY: all help run test static fetch_data build_db_numbers build_db_wiki build_db_oeis build_db_all update_numbers migrations update setup_postgres reset_postgres install install_full install_packages install_sage_ubuntu compose_up compose_down compose_logs compose_migrate compose_fetch_data deploy_quickstage deploy_stage deploy_live deploy_status
 
