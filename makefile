@@ -46,6 +46,7 @@ help:
 	@echo "- Docker Compose (local/server):"
 	@echo "    make compose_up        # build and start containers"
 	@echo "    make compose_migrate   # run migrations in container"
+	@echo "    make compose_up_prod   # up with prod overrides (restart, auto-migrate)"
 	@echo "    make compose_fetch_data# fetch numberdb-data"
 	@echo "    make compose_logs      # tail logs"
 	@echo "- Deploy scripts:"
@@ -213,6 +214,10 @@ compose_migrate:
 compose_fetch_data:
 	# Fetch/update numberdb-data into shared volume
 	docker compose run --rm data-fetcher
+
+compose_up_prod:
+	# Build and start containers with production overrides
+	docker compose -f docker-compose.yml -f deploy/compose/docker-compose.prod.yml up -d --build
 
 # ---- Deployment wrappers (use scripts/) ----
 deploy_quickstage:
