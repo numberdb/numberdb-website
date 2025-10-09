@@ -1,6 +1,8 @@
 services:
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile
     image: numberdb/web:latest
     command: ["sage","-python","-m","gunicorn","numberdb.wsgi:application","--bind","0.0.0.0:8000","--workers","${GUNICORN_WORKERS:-1}"]
     entrypoint: ["/app/docker/entrypoint.web.sh"]
@@ -72,14 +74,18 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   pyro-ns:
-    build: .
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile
     image: numberdb/web:latest
     command: ["sage", "-python", "-m", "Pyro5.nameserver", "--host", "0.0.0.0", "--port", "9090"]
     ports:
       - "9090:9090"
 
   eval:
-    build: .
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile
     image: numberdb/web:latest
     command: ["sage", "-python", "services/eval.py"]
     environment:

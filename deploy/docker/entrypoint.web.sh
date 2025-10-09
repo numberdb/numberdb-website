@@ -20,3 +20,4 @@ su -s /bin/sh -c "sage -python manage.py collectstatic --noinput" sage
 
 echo "Starting web server as 'sage': $*"
 exec su -s /bin/sh -c "$*" sage
+

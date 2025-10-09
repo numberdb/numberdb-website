@@ -114,6 +114,11 @@ Backups: snapshot `pgdata` and, if needed, `letsencrypt`. `numberdb-data` is re-
 - `docker compose run --rm web sage -python manage.py migrate`
 - `docker compose run --rm data-fetcher`
 
+### Production Overrides
+- You can layer production overrides using the provided file at `deploy/compose/docker-compose.prod.yml`:
+  - `docker compose -f docker-compose.yml -f deploy/compose/docker-compose.prod.yml up -d --build`
+- This enables `restart: unless-stopped` and runs DB migrations automatically on start (`AUTO_MIGRATE=1`).
+
 ## Staging and Go Live
 ### Quick Staging (recommended)
 - One command to provision a fresh VM, bind Nginx to localhost, open a tunnel, and build core data:
