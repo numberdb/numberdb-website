@@ -23,6 +23,15 @@
 
 include .env
 
+.DEFAULT_GOAL := help
+
+# Deploy convenience variables (can be set in .env as DEPLOY_*)
+REMOTE ?= $(DEPLOY_REMOTE)
+RPATH  ?= $(DEPLOY_RPATH)
+DOMAIN ?= $(DEPLOY_DOMAIN)
+EMAIL  ?= $(DEPLOY_EMAIL)
+FLAGS  ?= $(DEPLOY_FLAGS)
+
 .PHONY: all help run test static fetch_data build_db_numbers build_db_wiki build_db_oeis build_db_all update_numbers migrations update setup_postgres reset_postgres install install_full install_packages install_sage_ubuntu compose_up compose_down compose_logs compose_migrate compose_fetch_data deploy_quickstage deploy_stage deploy_live deploy_status
 
 
@@ -41,9 +50,9 @@ help:
 	@echo "    make compose_fetch_data# fetch numberdb-data"
 	@echo "    make compose_logs      # tail logs"
 	@echo "- Deploy scripts:"
-	@echo "    make deploy_quickstage REMOTE=user@host"
-	@echo "    make deploy_stage REMOTE=user@host [FLAGS=\"--no-build\"]"
-	@echo "    make deploy_live REMOTE=user@host DOMAIN=example.org EMAIL=admin@example.org"
+	@echo "    make deploy_quickstage [REMOTE]            # uses DEPLOY_* from .env if set"
+	@echo "    make deploy_stage [REMOTE FLAGS]           # uses DEPLOY_* from .env if set"
+	@echo "    make deploy_live [REMOTE DOMAIN EMAIL]     # uses DEPLOY_* from .env if set"
 
 run:
 	#RUN
@@ -208,28 +217,28 @@ compose_fetch_data:
 
 # ---- Deployment wrappers (use scripts/) ----
 deploy_quickstage:
-	@if [ -z "$$REMOTE" ]; then \
-		echo "Usage: make deploy_quickstage REMOTE=user@host"; exit 2; \
+	@if [ -z "$(REMOTE)" ]; then \
+		echo "Set REMOTE or DEPLOY_REMOTE in .env"; exit 2; \
 	fi
-	scripts/deploy.sh quickstage $$REMOTE $$RPATH
+	scripts/deploy.sh quickstage $(REMOTE) $(if $(RPATH),$(RPATH),)
 
 deploy_stage:
-	@if [ -z "$$REMOTE" ]; then \
-		echo "Usage: make deploy_stage REMOTE=user@host [RPATH=/opt/numberdb-website] [FLAGS=\"--no-build\"]"; exit 2; \
+	@if [ -z "$(REMOTE)" ]; then \
+		echo "Set REMOTE or DEPLOY_REMOTE in .env"; exit 2; \
 	fi
-	scripts/deploy.sh stage $$FLAGS $$REMOTE $$RPATH $$EXTRA
+	scripts/deploy.sh stage $(FLAGS) $(REMOTE) $(if $(RPATH),$(RPATH),)
 
 deploy_live:
-	@if [ -z "$$REMOTE" ] || [ -z "$$DOMAIN" ] || [ -z "$$EMAIL" ]; then \
-		echo "Usage: make deploy_live REMOTE=user@host DOMAIN=example.org EMAIL=admin@example.org [RPATH=/opt/numberdb-website]"; exit 2; \
+	@if [ -z "$(REMOTE)" ] || [ -z "$(DOMAIN)" ] || [ -z "$(EMAIL)" ]; then \
+		echo "Set REMOTE/DOMAIN/EMAIL or DEPLOY_* in .env"; exit 2; \
 	fi
-	scripts/deploy.sh live $$REMOTE $$DOMAIN $$EMAIL $$RPATH
+	scripts/deploy.sh live $(REMOTE) $(DOMAIN) $(EMAIL) $(if $(RPATH),$(RPATH),)
 
 deploy_status:
-	@if [ -z "$$REMOTE" ]; then \
-		echo "Usage: make deploy_status REMOTE=user@host [RPATH=/opt/numberdb-website]"; exit 2; \
+	@if [ -z "$(REMOTE)" ]; then \
+		echo "Set REMOTE or DEPLOY_REMOTE in .env"; exit 2; \
 	fi
-	scripts/deploy.sh status $$REMOTE $$RPATH
+	scripts/deploy.sh status $(REMOTE) $(if $(RPATH),$(RPATH),)
 	
 	#adduser numberdb
 	#gpasswd -a numberdb sudo

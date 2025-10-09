@@ -128,6 +128,10 @@ Backups: snapshot `pgdata` and, if needed, `letsencrypt`. `numberdb-data` is re-
   - `scripts/deploy.sh live user@host example.org admin@example.org`
 - The command sets `SERVER_NAME` and `LETSENCRYPT_EMAIL`, removes local-only port binding, issues a TLS cert via Certbot, and restarts Nginx.
 
+Tip: To avoid passing arguments, set these in `.env` (used by Makefile wrappers):
+- `DEPLOY_REMOTE`, `DEPLOY_RPATH`, `DEPLOY_DOMAIN`, `DEPLOY_EMAIL`, `DEPLOY_FLAGS`
+Then run `make deploy_quickstage`, `make deploy_stage`, or `make deploy_live` without extra flags.
+
 ### Optional Data Builds (heavy)
 - Core build:
   - `docker compose run --rm web sage -python db_builder/build.py`
