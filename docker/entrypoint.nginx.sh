@@ -1,4 +1,8 @@
 #!/usr/bin/env sh
+# Entrypoint for the Nginx container.
+# - Requires SERVER_NAME (domain)
+# - If Let’s Encrypt certs exist for SERVER_NAME, render TLS template; otherwise HTTP-only
+# - Starts Nginx in the foreground
 set -e
 
 TEMPLATE_HTTP="/etc/nginx/templates/default.conf.http.template"
@@ -25,4 +29,3 @@ fi
 
 echo "Starting Nginx..."
 exec nginx -g 'daemon off;'
-
