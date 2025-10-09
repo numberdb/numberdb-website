@@ -61,13 +61,29 @@ Query syntax matches the Advanced Search guide on https://www.numberdb.org/help#
 This setup runs the Django app (with SageMath), Nginx, Postgres, and the Pyro5 services in containers. TLS is provided via Let’s Encrypt using the webroot challenge.
 
 ### Services
-- `web`: Django + Gunicorn (internal port 8000)
-- `nginx`: reverse proxy on `:80` and `:443`, serves `/static` and ACME challenges
+- `web`: Django + Gunicorn
+  - Ports: internal `8000` (not exposed publicly)
+  - Healthcheck: TCP connect to `127.0.0.1:8000` inside the container
+- `nginx`: reverse proxy and static serving
+  - Ports: `80` (HTTP), `443` (HTTPS)
+  - TLS: serves via Let’s Encrypt certs in the `letsencrypt` volume
 - `db`: Postgres
-- `pyro-ns`: Pyro5 name server (port 9090)
+  - Ports: internal only (no host mapping by default)
+- `pyro-ns`: Pyro5 name server
+  - Ports: `9090` (exposed)
 - `eval`: SafeEval worker (`services/eval.py`)
+  - Connects to `pyro-ns`
 - `data-fetcher`: one-shot helper to clone/pull `numberdb-data`
 - `certbot`/`certbot-renew`: certificate issuance and renewal
+
+### Data Volumes
+- `staticfiles` — collected Django static assets served by Nginx
+- `pgdata` — Postgres data directory (persistent)
+- `numberdb-data` — checked-out copy of the numberdb-data repo (shared)
+- `certbot-www` — ACME webroot for challenges
+- `letsencrypt` — issued TLS certificates and renewal state
+
+Backups: snapshot `pgdata` and, if needed, `letsencrypt`. `numberdb-data` is re-fetchable; `staticfiles` is reproducible via collectstatic.
 
 ### First Run
 1) Build and start:
@@ -95,23 +111,22 @@ This setup runs the Django app (with SageMath), Nginx, Postgres, and the Pyro5 s
 - `docker compose run --rm data-fetcher`
 
 ## Staging and Go Live
-### Private Staging (no DNS)
-- Bind Nginx to localhost with `docker-compose.override.yml` in repo root:
+### Quick Staging (recommended)
+- One command to provision a fresh VM, bind Nginx to localhost, open a tunnel, and build core data:
+  - `scripts/deploy.sh quickstage user@host`
+- When done, browse: `http://localhost:8080`
 
-```
-services:
-  nginx:
-    ports:
-      - "127.0.0.1:8080:80"
-```
-
-- Start Nginx: `docker compose up -d nginx`
-- SSH tunnel from your machine: `ssh -N -L 8080:127.0.0.1:8080 user@host`
-- Browse: `http://localhost:8080`
+### Staging (customizable)
+- Stage with options (no background builds, or keep wiki/OEIS off):
+  - `scripts/deploy.sh stage [--force-secrets] [--no-build] [--no-wiki] [--no-oeis] user@host [/remote/path] [--open-tunnel]`
+- This uses `scripts/provision_vm.sh` under the hood to install Docker, copy the repo, create `.env`/`.env.prod`, start the stack (HTTP), and seed data/admin.
+- To open a tunnel later: `ssh -N -L 8080:127.0.0.1:8080 user@host`
 
 ### Going Live (DNS + HTTPS)
-- Point DNS A/AAAA to the VM and set `SERVER_NAME`, `LETSENCRYPT_EMAIL` in `.env`.
-- Expose `80:80` and `443:443` for `nginx` (remove local bind), obtain the certificate as above, then restart Nginx.
+- Point DNS A/AAAA to your VM.
+- Promote the staged setup to HTTPS with a single command:
+  - `scripts/deploy.sh live user@host example.org admin@example.org`
+- The command sets `SERVER_NAME` and `LETSENCRYPT_EMAIL`, removes local-only port binding, issues a TLS cert via Certbot, and restarts Nginx.
 
 ### Optional Data Builds (heavy)
 - Core build:
@@ -131,7 +146,7 @@ services:
 - Low‑RAM servers: reduce Postgres and Gunicorn settings via env (e.g., `PG*`, `GUNICORN_WORKERS`).
 
 ## Scripts
-- `docker/entrypoint.web.sh` — container entrypoint for the app. Optionally runs migrations (`AUTO_MIGRATE=1`), collects static, and launches Gunicorn as the `sage` user.
+- `docker/entrypoint.web.sh` — container entrypoint for the app. Optionally runs migrations (`AUTO_MIGRATE=1|true`), collects static, and launches Gunicorn as the `sage` user.
 - `docker/entrypoint.nginx.sh` — container entrypoint for Nginx. Chooses HTTP vs. HTTPS config based on presence of Let’s Encrypt certs for `SERVER_NAME`.
 - `scripts/provision_vm.sh` — one-shot VM bootstrap and deploy over HTTP (installs Docker remotely, copies repo, generates `.env`, starts stack, seeds data/admin). Flags: `--force-secrets`, `--no-build`, `--no-wiki`, `--no-oeis`.
 - `scripts/deploy.sh` — convenience wrapper for staging and go-live: `stage`, `live`, `status`, `quickstage`. Can bind Nginx to localhost and open an SSH tunnel.
