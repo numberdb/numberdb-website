@@ -31,7 +31,7 @@ from numberdb_app.common import test_table_ids
 
 from django.contrib.sites.models import Site
 
-from sage.all import walltime, Integer
+from sage.all import walltime, Integer, infinity
 from sage.rings.all import ZZ, QQ
 from utils.utils import is_pAdicField
 
@@ -325,10 +325,10 @@ def build_number_table():
 		
 		x = parse_integer(number)
 		if x == None:
-			try:
-				x = QQ(number)
-			except TypeError:
-				x = parse_real_interval(number, RIF=RIFprec, allow_rationals=False)
+				try:
+					x = QQ(number)
+				except (TypeError, ValueError):
+					x = parse_real_interval(number, RIF=RIFprec, allow_rationals=False)
 				if x == None:
 					try:
 						x = RBFprec('[%s]' % (number,))
@@ -368,30 +368,58 @@ def build_number_table():
 			n = Polynomial(sage_polynomial = x)
 
 		elif is_pAdicField(R):
-			
+			# p-adic field element (Qp)
 			n = NumberPAdic(sage_number = x)
 
-		elif x.imag() == 0:
-		
-			#Debug:
-			#return 0
-			
+		elif 'p-adic' in str(R).lower():
+			# Likely a p-adic integer ring (Zp). Coerce into Qp and store.
+			try:
+				p = R.prime()
+			except Exception:
+				p = None
+			if p is not None:
+				prec = None
+				try:
+					prec = x.precision_absolute()
+				except Exception:
+					pass
+				if prec in (None, infinity):
+					try:
+						prec = R.precision_cap()
+					except Exception:
+						prec = None
+				try:
+					from sage.rings.all import Qp as _Qp
+					Q_p = _Qp(p, prec=prec) if prec is not None else _Qp(p)
+					x = Q_p(x)
+					n = NumberPAdic(sage_number = x)
+				except Exception:
+					# If coercion fails for any reason, fall through to real/complex handling below
+					pass
+
+		elif hasattr(x, 'imag'):
+			# Numbers that support imaginary part (real/complex)
+			if x.imag() == 0:
+				try:
+					n = Number(sage_number = x)
+				except OverflowError:
+					# Convert to real interval on overflow
+					x = RIFprec(x)
+					n = Number(sage_number = x)
+			else:
+				try:
+					n = NumberComplex(sage_number = x)
+				except OverflowError:
+					# Convert to complex interval on overflow
+					x = CIFprec(x)
+					n = NumberComplex(sage_number = x)
+		else:
+			# Fallback: treat as real number without imag attribute
 			try:
 				n = Number(sage_number = x)
 			except OverflowError:
-				#print("make x to real interval")
 				x = RIFprec(x)
 				n = Number(sage_number = x)
-			#n.of_type = Searchable.TYPE_NUMBER #not anymore automatic
-	
-		else:
-			
-			try:
-				n = NumberComplex(sage_number = x)
-			except OverflowError:
-				#print("make x to complex interval")
-				x = CIFprec(x)
-				n = NumberComplex(sage_number = x)
 		
 		#print("debug0")
 		n.table = c
