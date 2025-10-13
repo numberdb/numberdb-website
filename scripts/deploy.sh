@@ -108,7 +108,7 @@ case "$ACTION" in
     [[ $NO_OEIS -eq 1 ]] && PROV_FLAGS+=(--no-oeis)
 
     # Run provisioner
-    scripts/provision_vm.sh ${PROV_FLAGS[@]} "$REMOTE" "$RPATH"
+    bash scripts/provision_vm.sh ${PROV_FLAGS[@]} "$REMOTE" "$RPATH"
 
     # Bind Nginx to localhost:8080 on server
     write_override_localbind "$REMOTE" "$RPATH" 8080
@@ -169,7 +169,7 @@ case "$ACTION" in
 
     PROV_FLAGS=(--no-build --no-wiki --no-oeis)
     [[ $FORCE -eq 1 ]] && PROV_FLAGS+=(--force-secrets)
-    scripts/provision_vm.sh ${PROV_FLAGS[@]} "$REMOTE" "$RPATH"
+    bash scripts/provision_vm.sh ${PROV_FLAGS[@]} "$REMOTE" "$RPATH"
 
     # Local-only bind and start nginx
     write_override_localbind "$REMOTE" "$RPATH" 8080
