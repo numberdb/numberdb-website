@@ -74,19 +74,25 @@ open_tunnel_bg() {
 case "$ACTION" in
   stage)
     FORCE=0; NO_BUILD=0; NO_WIKI=0; NO_OEIS=0; OPEN_TUNNEL=0
-    while [[ "${1:-}" == --* ]]; do
+    # Parse flags anywhere; collect non-flags as positionals
+    POS=()
+    while [[ $# -gt 0 ]]; do
       case "$1" in
         --force-secrets) FORCE=1 ;;
         --no-build) NO_BUILD=1 ;;
         --no-wiki) NO_WIKI=1 ;;
         --no-oeis) NO_OEIS=1 ;;
         --open-tunnel) OPEN_TUNNEL=1 ;;
-        *) die "Unknown flag: $1" ;;
-      esac; shift
+        --*) die "Unknown flag: $1" ;;
+        *) POS+=("$1") ;;
+      esac
+      shift
     done
-    REMOTE=${1:-}; RPATH=$(resolve_rpath "${2:-}")
+    REMOTE=${POS[0]:-}
+    RPATH=$(resolve_rpath "${POS[1]:-}")
     [[ -z "$REMOTE" ]] && die "Usage: scripts/deploy.sh stage [--flags] user@host [/remote/path] [--open-tunnel]"
 
+    echo "INFO: remote=$REMOTE rpath=$RPATH" >&2
     ensure_remote_path "$REMOTE" "$RPATH"
 
     # Build provision flags
@@ -115,6 +121,7 @@ case "$ACTION" in
     REMOTE=${1:-}; DOMAIN=${2:-}; EMAIL=${3:-}; RPATH=$(resolve_rpath "${4:-}")
     [[ -z "$REMOTE" || -z "$DOMAIN" || -z "$EMAIL" ]] && die "Usage: scripts/deploy.sh live user@host example.org admin@example.org [/remote/path]"
 
+    echo "INFO: remote=$REMOTE rpath=$RPATH" >&2
     ensure_remote_path "$REMOTE" "$RPATH"
     # Set env keys
     set_env_kv "$REMOTE" "$RPATH" SERVER_NAME "$DOMAIN"
@@ -138,14 +145,19 @@ case "$ACTION" in
   quickstage)
     # One-shot: provision (no background builds), bind to localhost:8080, open tunnel, run core build synchronously, print ready URL
     FORCE=0; NO_TUNNEL=0
-    while [[ "${1:-}" == --* ]]; do
+    # Parse flags anywhere; collect non-flags as positionals
+    POS=()
+    while [[ $# -gt 0 ]]; do
       case "$1" in
         --force-secrets) FORCE=1 ;;
         --no-tunnel) NO_TUNNEL=1 ;;
-        *) die "Unknown flag: $1" ;;
-      esac; shift
+        --*) die "Unknown flag: $1" ;;
+        *) POS+=("$1") ;;
+      esac
+      shift
     done
-    REMOTE=${1:-}; RPATH=$(resolve_rpath "${2:-}")
+    REMOTE=${POS[0]:-}
+    RPATH=$(resolve_rpath "${POS[1]:-}")
     [[ -z "$REMOTE" ]] && die "Usage: scripts/deploy.sh quickstage [--force-secrets] user@host [/remote/path] [--no-tunnel]"
 
     ensure_remote_path "$REMOTE" "$RPATH"
