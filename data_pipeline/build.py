@@ -402,22 +402,22 @@ def build_number_table():
 			if x.imag() == 0:
 				try:
 					n = Number(sage_number = x)
-				except OverflowError:
-					# Convert to real interval on overflow
+				except (OverflowError, NotImplementedError, TypeError, ValueError):
+					# Convert to real interval if plain real types are not supported directly
 					x = RIFprec(x)
 					n = Number(sage_number = x)
 			else:
 				try:
 					n = NumberComplex(sage_number = x)
-				except OverflowError:
-					# Convert to complex interval on overflow
+				except (OverflowError, NotImplementedError, TypeError, ValueError):
+					# Convert to complex interval if needed
 					x = CIFprec(x)
 					n = NumberComplex(sage_number = x)
 		else:
 			# Fallback: treat as real number without imag attribute
 			try:
 				n = Number(sage_number = x)
-			except OverflowError:
+			except (OverflowError, NotImplementedError, TypeError, ValueError):
 				x = RIFprec(x)
 				n = Number(sage_number = x)
 		
@@ -428,7 +428,27 @@ def build_number_table():
 		n.param = p
 	
 		#print("before saving number")
-		n.save()
+		try:
+			n.save()
+		except Exception as e:
+			# Provide a helpful error with context to locate the culprit
+			try:
+				parent_str = str(R)
+			except Exception:
+				parent_str = '<unprintable parent>'
+			print('Error saving number:', {
+				'table_tid': getattr(c, 'tid', None),
+				'table_title': getattr(c, 'title', None),
+				'raw_number': number,
+				'parsed_repr': str(x),
+				'parent': parent_str,
+				'params': param,
+				'is_pAdicField_parent': is_pAdicField(R),
+				'is_polynomial_ring_parent': is_polynomial_ring(R),
+				'has_imag': hasattr(x, 'imag'),
+				'exception': repr(e),
+			})
+			raise
 
 		return 1 #Count of numbers
 
