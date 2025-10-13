@@ -37,6 +37,10 @@ if [[ -z "$REMOTE" ]]; then
   echo "Usage: $0 [--force-secrets] user@host [/remote/path]" >&2
   exit 1
 fi
+if [[ -z "$REMOTE_PATH" ]]; then
+  echo "Error: REMOTE_PATH resolved empty. Pass it explicitly as the second positional arg." >&2
+  exit 2
+fi
 
 # Extract IP/host for ALLOWED_HOSTS/SERVER_NAME (best effort)
 REMOTE_HOST=${REMOTE#*@}
@@ -63,7 +67,7 @@ ssh -o StrictHostKeyChecking=accept-new "$REMOTE" bash -lc "\
   apt-get update; \
   apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin git; \
   systemctl enable --now docker || true; \
-  mkdir -p $REMOTE_PATH; \
+  mkdir -p '$REMOTE_PATH'; \
 "
 
 echo "==> Copying repository to $REMOTE:$REMOTE_PATH (excluding .git, caches, local envs)"

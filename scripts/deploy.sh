@@ -22,7 +22,22 @@ die() { echo "Error: $*" >&2; exit 2; }
 
 ensure_remote_path() {
   local remote="$1"; local rpath="$2";
-  ssh -o StrictHostKeyChecking=accept-new "$remote" bash -lc "mkdir -p '$rpath'"
+  if [[ -z "$remote" ]]; then
+    die "REMOTE is empty in ensure_remote_path"
+  fi
+  if [[ -z "$rpath" ]]; then
+    die "RPATH resolved empty; pass remote path explicitly or fix .env"
+  fi
+  ssh -o StrictHostKeyChecking=accept-new "$remote" bash -lc "mkdir -p -- '$rpath'"
+}
+
+resolve_rpath() {
+  local candidate="$1"
+  if [[ -n "$candidate" ]]; then
+    echo "$candidate"
+  else
+    echo "$REMOTE_PATH_DEFAULT"
+  fi
 }
 
 write_override_localbind() {
@@ -69,7 +84,7 @@ case "$ACTION" in
         *) die "Unknown flag: $1" ;;
       esac; shift
     done
-    REMOTE=${1:-}; RPATH=${2:-$REMOTE_PATH_DEFAULT}
+    REMOTE=${1:-}; RPATH=$(resolve_rpath "${2:-}")
     [[ -z "$REMOTE" ]] && die "Usage: scripts/deploy.sh stage [--flags] user@host [/remote/path] [--open-tunnel]"
 
     ensure_remote_path "$REMOTE" "$RPATH"
@@ -97,7 +112,7 @@ case "$ACTION" in
     ;;
 
   live)
-    REMOTE=${1:-}; DOMAIN=${2:-}; EMAIL=${3:-}; RPATH=${4:-$REMOTE_PATH_DEFAULT}
+    REMOTE=${1:-}; DOMAIN=${2:-}; EMAIL=${3:-}; RPATH=$(resolve_rpath "${4:-}")
     [[ -z "$REMOTE" || -z "$DOMAIN" || -z "$EMAIL" ]] && die "Usage: scripts/deploy.sh live user@host example.org admin@example.org [/remote/path]"
 
     ensure_remote_path "$REMOTE" "$RPATH"
@@ -115,7 +130,7 @@ case "$ACTION" in
     ;;
 
   status)
-    REMOTE=${1:-}; RPATH=${2:-$REMOTE_PATH_DEFAULT}
+    REMOTE=${1:-}; RPATH=$(resolve_rpath "${2:-}")
     [[ -z "$REMOTE" ]] && die "Usage: scripts/deploy.sh status user@host [/remote/path]"
     ssh "$REMOTE" bash -lc "cd '$RPATH' && docker compose ps && echo && echo 'App URL (HTTP if staging):' && (grep -E '^SERVER_NAME=' .env 2>/dev/null || true)"
     ;;
@@ -130,7 +145,7 @@ case "$ACTION" in
         *) die "Unknown flag: $1" ;;
       esac; shift
     done
-    REMOTE=${1:-}; RPATH=${2:-$REMOTE_PATH_DEFAULT}
+    REMOTE=${1:-}; RPATH=$(resolve_rpath "${2:-}")
     [[ -z "$REMOTE" ]] && die "Usage: scripts/deploy.sh quickstage [--force-secrets] user@host [/remote/path] [--no-tunnel]"
 
     ensure_remote_path "$REMOTE" "$RPATH"
