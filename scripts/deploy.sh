@@ -28,7 +28,12 @@ ensure_remote_path() {
   if [[ -z "$rpath" ]]; then
     die "RPATH resolved empty; pass remote path explicitly or fix .env"
   fi
-  ssh -o StrictHostKeyChecking=accept-new "$remote" bash -lc "mkdir -p -- '$rpath'"
+  echo "INFO: creating remote path via direct SSH: $remote :: $rpath" >&2
+  if ! ssh -o StrictHostKeyChecking=accept-new "$remote" "mkdir -p -- \"$rpath\""; then
+    echo "WARN: direct SSH mkdir failed, retrying with POSIX shell on remote" >&2
+    # Fallback: use a non-login POSIX shell on remote and single-quote the path
+    ssh -o StrictHostKeyChecking=accept-new "$remote" sh -lc "mkdir -p -- '"$rpath"'"
+  fi
 }
 
 resolve_rpath() {
