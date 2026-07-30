@@ -395,23 +395,58 @@ def to_bytes(m):
         return m.tobytes()
 
 def real_interval_to_pretty_string(r):
+    '''
+    Render a real interval in one of the formats documented to users
+    (help.html "Number types and displayed accuracy", and the front-page tips
+    in templates/includes/search-tips.html).
+
+    Sage's '?' notation is deliberately removed. The documented convention
+    already carries that information positionally: a value containing '.' or
+    'e' *is* an interval whose last digit may be off by one, and a value with
+    neither is an exact integer. So "3.14" already means [3.13, 3.15], and
+    "3.14?" would say the same thing twice -- in a notation that appears in
+    neither user-facing document, leaving a reader to guess.
+
+    A useful consequence: every string produced here is valid input. A number
+    can be copied out of a result and pasted straight back into the search bar,
+    which was not true while '?' was attached.
+
+    Soundness is preserved in the direction that matters. Dropping '?' never
+    narrows the interval a reader would infer: "1.0000001?e21" becomes
+    "1.0000001e21", which denotes [1.0000000e21, 1.0000002e21] and still
+    contains the original. Displayed intervals may be wider than stored ones,
+    never narrower -- see docs/design/number-representation.md.
+    '''
 
     if r.contains_zero():
-        #Relative diameter won't make sense, 
+        #Relative diameter won't make sense,
         #so just print it normally:
-        return r.__str__()
+        return r.__str__().replace('?', '')
 
     if r.relative_diameter() < 0.001:
         #Enough relative precision,
         #thus print the number normally:
-        return r.__str__()
+        return r.__str__().replace('?', '')
 
     else:
-        #Not enough relative precision, 
+        #Not enough relative precision,
         #thus rather print the number as an interval:
         Rup = RealField(15,rnd='RNDU')
         Rdown = RealField(15,rnd='RNDD')
         return '[%s,%s]' % (Rdown(r.lower()),Rup(r.upper()))
+
+
+def complex_interval_to_pretty_string(c):
+    '''
+    Render a complex interval as "A + B*I" / "A - B*I", the form documented on
+    the front page for entering complex numbers.
+
+    Complex numbers previously had no pretty-printer at all -- NumberComplex
+    rendered straight from str(CIF) -- so they carried '?' even after the real
+    printer stopped doing so.
+    '''
+
+    return str(c).replace('?', '')
         
 def real_interval_to_string_via_endpoints(r):
     return '[%s,%s]' % (r.lower(),r.upper(),)

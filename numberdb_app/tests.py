@@ -247,6 +247,92 @@ class DocumentedNumberFormatsTestCase(TestCase):
                     % (source, response.status_code))
 
 
+class CanonicalRenderingTestCase(TestCase):
+    '''
+    Displayed numbers must be written in the documented formats, with no
+    notation the user-facing documents do not define.
+
+    Sage's '?' is redundant under that convention: '.' or 'e' already means
+    "interval, last digit may be off by one", and neither means "exact
+    integer". Showing '3.14?' says it twice, in a notation appearing in no
+    document.
+    '''
+
+    #Endpoints chosen to hit every branch of the pretty printer: exact,
+    #contains zero, high relative precision, low relative precision (bracket
+    #fallback), and scientific notation.
+    SAMPLE_INTERVALS = [
+        (3.13, 3.15),
+        (5.4, 5.6),
+        (1100.0, 1300.0),
+        (2.0, 2.3728596),
+        (3.0, 3.0),
+        (-0.1, 0.1),
+        (0.0, 0.0),
+        (1e21, 1.0000001e21),
+        (-2.5, -2.4999999),
+    ]
+
+    def test_no_rendering_contains_a_question_mark(self):
+        from sage.rings.all import RIF, CIF
+        from utils.utils import (complex_interval_to_pretty_string,
+                                 real_interval_to_pretty_string)
+
+        for low, high in self.SAMPLE_INTERVALS:
+            with self.subTest(interval=(low, high)):
+                rendered = real_interval_to_pretty_string(RIF(low, high))
+                self.assertNotIn('?', rendered)
+
+        rendered = complex_interval_to_pretty_string(
+            CIF(RIF(3.13, 3.15), RIF(2.71, 2.73)))
+        self.assertNotIn('?', rendered)
+
+    def test_displayed_reals_parse_back_to_a_containing_interval(self):
+        #The property that makes the rendering canonical: what is shown can be
+        #pasted into the search bar, and reading it back never claims more
+        #precision than was stored. Wider is sound; narrower would be a lie.
+        from sage.rings.all import RIF
+        from utils.utils import parse_real_interval, real_interval_to_pretty_string
+
+        for low, high in self.SAMPLE_INTERVALS:
+            with self.subTest(interval=(low, high)):
+                original = RIF(low, high)
+                rendered = real_interval_to_pretty_string(original)
+
+                reparsed = parse_real_interval(rendered)
+                self.assertIsNotNone(
+                    reparsed, 'displayed %r does not parse back' % (rendered,))
+                self.assertLessEqual(
+                    reparsed.lower(), original.lower(),
+                    'displayed %r excludes part of the stored interval' % (rendered,))
+                self.assertGreaterEqual(
+                    reparsed.upper(), original.upper(),
+                    'displayed %r excludes part of the stored interval' % (rendered,))
+
+    def test_exact_integers_render_without_a_period(self):
+        #Documented: "If the decimal expansion does not contain '.' or 'e', it
+        #will instead denote an exactly represented integer." So the period is
+        #what distinguishes an interval from an exact value, and it must not
+        #appear on exact ones.
+        from sage.rings.all import RIF
+        from utils.utils import real_interval_to_pretty_string
+
+        for exact in (3, 0, -1729):
+            with self.subTest(exact=exact):
+                rendered = real_interval_to_pretty_string(RIF(exact, exact))
+                self.assertNotIn('.', rendered)
+                self.assertNotIn('e', rendered)
+
+    def test_stored_complex_numbers_render_in_the_documented_form(self):
+        from numberdb_app.models import NumberComplex
+        from sage.rings.all import CIF, RIF
+
+        number = NumberComplex(sage_number=CIF(RIF(-1.05, -1.04), RIF(0.52, 0.53)))
+        rendered = number.str_short()
+        self.assertNotIn('?', rendered)
+        self.assertIn('*I', rendered)
+
+
 class TableHistoryViewTestCase(TestCase):
     '''
     TableCommit has no 'author' field -- it was dropped in migration 0011 in
