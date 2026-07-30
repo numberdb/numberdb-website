@@ -88,6 +88,45 @@ class DocumentedFormats(unittest.TestCase):
                     parse_real(text)
 
 
+class StandardUncertainty(unittest.TestCase):
+    """`1.89115(13)` -- used by numberdb-data, documented to nobody.
+
+    The physical constants use this form. It appears in neither help.html nor
+    the front-page tips, so a contributor cannot discover it.
+    """
+
+    def test_parenthesised_digits_are_the_uncertainty_in_the_last_place(self):
+        value = parse_real('1.89115(13)')
+        low, high = value.bounds()
+        self.assertEqual(low, Fraction(189115, 100000) - Fraction(13, 100000))
+        self.assertEqual(high, Fraction(189115, 100000) + Fraction(13, 100000))
+
+    def test_exponent_scales_value_and_uncertainty_together(self):
+        value = parse_real('2.724437107462(96)e-4')
+        low, high = value.bounds()
+        centre = Fraction(2724437107462, 10 ** 12) / 10 ** 4
+        radius = Fraction(96, 10 ** 12) / 10 ** 4
+        self.assertEqual(low, centre - radius)
+        self.assertEqual(high, centre + radius)
+
+    def test_renders_back_in_the_form_it_was_written(self):
+        for text in ['1.89115(13)', '0.30701220939(79)',
+                     '2.724437107462(96)e-4', '-4.664345551(12)e-4']:
+            with self.subTest(text=text):
+                rendered, dots = parse_real(text).render()
+                self.assertEqual(rendered, text)
+                #The parentheses already state the uncertainty; a dotted digit
+                #as well would say it twice.
+                self.assertEqual(dots, ())
+
+    def test_bounds_are_one_standard_uncertainty_not_a_guarantee(self):
+        #Unlike every other notation, these bounds are a statistical interval:
+        #one sigma holds the true value only about 68% of the time. The factor
+        #is explicit so it can be revisited without touching stored data.
+        from utils.numbers.real import _DecimalUncertainty
+        self.assertEqual(_DecimalUncertainty.COVERAGE_FACTOR, 1)
+
+
 class SignificanceIsPreserved(unittest.TestCase):
     """Trailing zeros are load-bearing; Fraction alone would discard them."""
 

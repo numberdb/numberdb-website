@@ -100,6 +100,15 @@ class Grammar(unittest.TestCase):
         self.assertEqual((im_low, im_high), (1, 1))
         self.assertEqual(parse_complex('i').bounds(), value.bounds())
 
+    def test_bare_and_negated_imaginary_unit(self):
+        #"-i" occurs in numberdb-data. Stripping the unit leaves a bare sign,
+        #which is not a number, so it needs handling of its own.
+        for source, expected in [('i', 1), ('-i', -1), ('-I', -1), ('+i', 1)]:
+            with self.subTest(source=source):
+                (_, _), (im_low, im_high) = parse_complex(source).bounds()
+                self.assertEqual(im_low, expected)
+                self.assertEqual(im_high, expected)
+
     def test_interval_components_in_both_positions(self):
         value = parse_complex('[1/3,1/2]+[0.1,0.2]*I')
         (re_low, re_high), (im_low, im_high) = value.bounds()
