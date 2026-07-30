@@ -137,9 +137,11 @@ def _split_terms(text):
 
 
 def _strip_imaginary_unit(term):
-    """(is_imaginary, remaining_text). Accepts `i*A`, `A*i`, `Ai` and bare `i`."""
+    """(is_imaginary, remaining_text). Accepts `i*A`, `A*i`, `Ai`, `i` and `-i`."""
     if term in ('i', 'I'):
         return (True, '1')
+    if term in ('-i', '-I'):
+        return (True, '-1')
     lowered = term.lower()
     if lowered.startswith('i*'):
         return (True, term[2:])
@@ -173,8 +175,11 @@ def parse_complex(text):
         if not term:
             continue
         is_imaginary, remaining = _strip_imaginary_unit(term)
-        if not remaining:
+        #A bare unit leaves nothing, or only a sign, behind.
+        if remaining in ('', '+'):
             remaining = '1'
+        elif remaining == '-':
+            remaining = '-1'
 
         value = parse_real(remaining)
         if sign < 0:

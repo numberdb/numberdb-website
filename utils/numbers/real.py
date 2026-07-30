@@ -225,6 +225,70 @@ class _DecimalBall:
                                _render_exact(self.radius)), ())
 
 
+class _DecimalUncertainty:
+    """`1.89115(13)`, `2.724437107462(96)e-4`. Physics-style uncertainty.
+
+    The parenthesised digits are the *standard* uncertainty in units of the
+    last place of the mantissa, so `1.89115(13)` records 1.89115 with a
+    standard uncertainty of 0.00013.
+
+    Two things make this its own notation rather than a ball.
+
+    First, faithfulness: a contributor wrote `1.89115(13)` and physicists read
+    that form, so it should render back unchanged rather than as
+    `1.89115 +/- 0.00013`.
+
+    Second, and more important, a standard uncertainty is **not** a containment
+    interval. One sigma holds the true value only about 68% of the time, so
+    ``bounds()`` here is not the guarantee it is for every other notation. The
+    coverage factor below makes that explicit and adjustable instead of baked
+    into stored data -- which is what data_pipeline/build.py asked for:
+
+        "Currently we interpret numbers with uncertainty as real balls, whose
+         radius is 1 standard uncertainty ... which is not good ... TODO: if
+         other things than search is done for these numbers with uncertainty,
+         consider their own data structure."
+
+    ``COVERAGE_FACTOR`` is 1 to preserve exactly the behaviour the importer has
+    today. Raising it widens these intervals -- more honest, less selective --
+    and is a decision about the data, not about this module.
+    """
+
+    #Multiples of the standard uncertainty used for bounds(). See above.
+    COVERAGE_FACTOR = 1
+
+    __slots__ = ('mantissa', 'exponent', 'uncertainty')
+
+    def __init__(self, mantissa, exponent, uncertainty):
+        self.mantissa = mantissa          # Decimal, as written, without the e-part
+        self.exponent = exponent          # int, the e-part
+        self.uncertainty = uncertainty    # int, digits in the parentheses
+
+    def _value(self):
+        return Fraction(self.mantissa.scaleb(self.exponent))
+
+    def _radius(self):
+        place = self.mantissa.as_tuple().exponent + self.exponent
+        return (Fraction(self.uncertainty) * Fraction(10) ** place
+                * self.COVERAGE_FACTOR)
+
+    def bounds(self):
+        value = self._value()
+        radius = self._radius()
+        return (value - radius, value + radius)
+
+    def negated(self):
+        return _DecimalUncertainty(-self.mantissa, self.exponent, self.uncertainty)
+
+    def render(self):
+        text = '%s(%d)' % (_format_decimal_exact(self.mantissa), self.uncertainty)
+        if self.exponent:
+            text += 'e%d' % (self.exponent,)
+        #No dotted digit: the parentheses already state the uncertainty, so
+        #marking a digit as well would say it twice.
+        return (text, ())
+
+
 # --------------------------------------------------------------------------
 # the wrapper
 # --------------------------------------------------------------------------
@@ -260,6 +324,11 @@ class ExactReal:
     @classmethod
     def from_ball(cls, centre, radius):
         return cls(_DecimalBall(centre, radius))
+
+    @classmethod
+    def from_uncertainty(cls, mantissa, exponent, uncertainty):
+        return cls(_DecimalUncertainty(Decimal(mantissa), int(exponent),
+                                       int(uncertainty)))
 
     # -- the three layers ---------------------------------------------------
 
@@ -346,6 +415,7 @@ _DECIMAL = re.compile(r'^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$')
 _P_NOTATION = re.compile(r'^([+-]?\d*)[pP]([+-]?\d+)$')
 _INTERVAL = re.compile(r'^\[\s*([^,\]]+?)\s*,\s*([^,\]]+?)\s*\]$')
 _BALL = re.compile(r'^(.+?)\s*\+/-\s*(.+)$')
+_UNCERTAINTY = re.compile(r'^([+-]?(?:\d+\.?\d*|\.\d+))\((\d+)\)(?:[eE]([+-]?\d+))?$')
 
 
 def _parse_exact_component(text):
@@ -370,6 +440,12 @@ def parse_real(text):
         1p31415          NumberDB p-notation (normalised to an expansion)
         [2, 2.3728596]   interval, endpoints exact
         3.14 +/- 2e-2    ball, centre and radius exact
+        1.89115(13)      standard uncertainty in the last digits
+
+    The last of these appears in numberdb-data -- the physical constants use it
+    -- but in neither user-facing document, so it is undocumented to
+    contributors. See _DecimalUncertainty for what its bounds do and do not
+    promise.
     """
     if not isinstance(text, str):
         raise ParseError('expected text')
@@ -388,6 +464,11 @@ def parse_real(text):
         return ExactReal.from_ball(
             _parse_exact_component(ball.group(1)),
             _parse_exact_component(ball.group(2)))
+
+    uncertainty = _UNCERTAINTY.match(text)
+    if uncertainty:
+        mantissa, digits, exponent = uncertainty.groups()
+        return ExactReal.from_uncertainty(mantissa, exponent or 0, digits)
 
     rational = _RATIONAL.match(text)
     if rational:
