@@ -9,8 +9,9 @@ ENV PYTHONUNBUFFERED=1 \
 USER root
 # System deps minimal; sagemath image already includes python + build tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git wget ca-certificates \
+    git wget ca-certificates gosu \
     && rm -rf /var/lib/apt/lists/*
+RUN git config --system --add safe.directory /numberdb-data
 
 WORKDIR /app
 
@@ -28,6 +29,11 @@ RUN mkdir -p /app/docker \
     && chmod +x /app/docker/entrypoint.web.sh
 RUN chown -R sage:sage /app
 
+# Socket directory for the sandboxed evaluator. Created here (rather than left
+# to Docker) so the named volume inherits sage ownership on first mount -- the
+# evaluator runs unprivileged and must be able to create the socket.
+RUN mkdir -p /run/eval && chown sage:sage /run/eval
+
 # Run container as root; entrypoint downgrades to 'sage' for app commands
 USER root
 
@@ -35,4 +41,3 @@ EXPOSE 8000
 
 # Default command (overridden in compose)
 CMD ["gunicorn", "numberdb.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
-

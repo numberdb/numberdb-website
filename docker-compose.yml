@@ -89,7 +89,14 @@ services:
     # its own iptables chain and bypasses ufw entirely.
     network_mode: none
     read_only: true
-    user: "65534:65534"
+    # The image's own unprivileged user. Not 65534: /home/sage is
+    # drwxr-x--- sage:sage, so any other uid cannot even traverse it to reach
+    # the sage launcher.
+    user: "1001:1001"
+    environment:
+      # Root filesystem is read-only, so point Sage's scratch at the tmpfs.
+      - HOME=/tmp
+      - DOT_SAGE=/tmp/sage
     cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
@@ -99,7 +106,9 @@ services:
     mem_limit: 1g
     cpus: 1.0
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=64m
+      # Sage writes compiled artefacts under DOT_SAGE, so this cannot be
+      # noexec. nosuid and nodev still apply.
+      - /tmp:rw,nosuid,nodev,size=256m
     volumes:
       # The only shared surface. No source, no secrets, no .env.
       - eval-sock:/run/eval
