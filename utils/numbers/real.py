@@ -149,8 +149,11 @@ class _ExactRational:
     def bounds(self):
         return (self.value, self.value)
 
+    def negated(self):
+        return _ExactRational(-self.value)
+
     def render(self):
-        return (str(self.value), None)
+        return (str(self.value), ())
 
 
 class _DecimalExpansion:
@@ -169,9 +172,14 @@ class _DecimalExpansion:
         ulp = self._ulp()
         return (centre - ulp, centre + ulp)
 
+    def negated(self):
+        #Unary minus on a Decimal is a sign flip, not arithmetic: exact.
+        return _DecimalExpansion(-self.value)
+
     def render(self):
         text = _format_decimal_preserving_significance(self.value)
-        return (text, _last_mantissa_digit_index(text))
+        index = _last_mantissa_digit_index(text)
+        return (text, () if index is None else (index,))
 
 
 class _DecimalInterval:
@@ -186,9 +194,13 @@ class _DecimalInterval:
     def bounds(self):
         return (Fraction(self.lower), Fraction(self.upper))
 
+    def negated(self):
+        #Negating an interval reverses it, so the endpoints swap.
+        return _DecimalInterval(-self.upper, -self.lower)
+
     def render(self):
         return ('[%s, %s]' % (_render_exact(self.lower),
-                              _render_exact(self.upper)), None)
+                              _render_exact(self.upper)), ())
 
 
 class _DecimalBall:
@@ -205,9 +217,12 @@ class _DecimalBall:
         radius = abs(Fraction(self.radius))
         return (centre - radius, centre + radius)
 
+    def negated(self):
+        return _DecimalBall(-self.centre, self.radius)
+
     def render(self):
         return ('%s +/- %s' % (_render_exact(self.centre),
-                               _render_exact(self.radius)), None)
+                               _render_exact(self.radius)), ())
 
 
 # --------------------------------------------------------------------------
@@ -253,14 +268,21 @@ class ExactReal:
         return self._notation.bounds()
 
     def render(self):
-        """(text, dotted_index).
+        """(text, dotted_indices).
 
-        ``dotted_index`` is the position of the digit that may be off by one,
-        or None. It is present *exactly* for decimal expansions, so absence of
-        a dot means the value is exact -- which is what makes the notation
-        self-describing.
+        ``dotted_indices`` holds the positions of digits that may be off by
+        one. A tuple rather than a single index because a complex number has a
+        component on each axis and either may be uncertain; keeping one shape
+        for both avoids two spellings of the same concept.
+
+        For a real it is empty or holds exactly one index, and it is non-empty
+        *exactly* for decimal expansions -- so absence of a dot means the value
+        is exact, which is what makes the notation self-describing.
         """
         return self._notation.render()
+
+    def __neg__(self):
+        return ExactReal(self._notation.negated())
 
     def search_bounds(self):
         """Outward-rounded float bounds for the index.

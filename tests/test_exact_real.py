@@ -167,19 +167,19 @@ class DottedDigit(unittest.TestCase):
         for text, expected_digit in [('3.14', '4'), ('12e2', '2'),
                                      ('0.001', '1'), ('-1.5e-3', '5')]:
             with self.subTest(text=text):
-                rendered, index = parse_real(text).render()
-                self.assertIsNotNone(index, '%r should mark a digit' % (text,))
-                self.assertEqual(rendered[index], expected_digit)
+                rendered, indices = parse_real(text).render()
+                self.assertEqual(len(indices), 1, '%r should mark one digit' % (text,))
+                self.assertEqual(rendered[indices[0]], expected_digit)
 
     def test_the_marked_digit_is_in_the_mantissa_not_the_exponent(self):
-        rendered, index = parse_real('12e2').render()
-        self.assertLess(index, rendered.index('e'))
+        rendered, indices = parse_real('12e2').render()
+        self.assertLess(indices[0], rendered.index('e'))
 
     def test_exact_values_mark_nothing(self):
         for text in ['42', '-3/2', '5/6', '[2, 2.3728596]', '3.14 +/- 2e-2']:
             with self.subTest(text=text):
-                _, index = parse_real(text).render()
-                self.assertIsNone(index, '%r must not mark a digit' % (text,))
+                _, indices = parse_real(text).render()
+                self.assertEqual(indices, (), '%r must not mark a digit' % (text,))
 
 
 class SearchBoundsAreSound(unittest.TestCase):
@@ -222,9 +222,9 @@ class ValueSemantics(unittest.TestCase):
         #Its own documentation defines it by translation, so it is not kept as
         #a notation of its own.
         self.assertEqual(parse_real('1p31415'), parse_real('3.1415'))
-        rendered, index = parse_real('1p31415').render()
+        rendered, indices = parse_real('1p31415').render()
         self.assertEqual(rendered, '3.1415')
-        self.assertIsNotNone(index)
+        self.assertEqual(len(indices), 1)
 
     def test_overlap_and_containment(self):
         loose = parse_real('3.14')            # [3.13, 3.15]
