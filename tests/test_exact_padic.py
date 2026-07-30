@@ -81,6 +81,48 @@ class DocumentedFormats(unittest.TestCase):
                     parse_p_adic(text)
 
 
+class TheDocumentationsOwnEquivalence(unittest.TestCase):
+    """help.html declares two forms equivalent; that pins the convention.
+
+        "3+1/2 + O(2^3)" represents the 2-adic ball 2^-1 + 2^0 + 2^1 + O(2^3)
+        "Q2:1.110"       represents the 2-adic ball 2^-1 + 2^0 + 2^1 + O(2^3)
+
+    3 + 1/2 = 7/2 = 2^-1 * 7, so the valuation is -1 and the stated precision is
+    absolute. The digit form carries one digit before the point and three after
+    -- four significant digits, at 2^-1 through 2^2. The two agree only if
+    O(p^k) means "known modulo p^k" regardless of valuation, which is also the
+    standard meaning of big-O in p-adic analysis.
+
+    The Sage path fails this: it yields O(2^2) for the rational form and O(2^3)
+    for the digit form, so the two documented-as-equivalent spellings come out
+    at different precisions.
+    """
+
+    def test_the_two_documented_spellings_agree(self):
+        rational = parse_p_adic('3+1/2 + O(2^3)')
+        digits = parse_p_adic('Q2:1.110')
+        self.assertEqual(rational, digits)
+        self.assertEqual(rational.precision(), 3)
+        self.assertEqual(digits.precision(), 3)
+
+    def test_the_stated_value(self):
+        value = parse_p_adic('3+1/2 + O(2^3)')
+        self.assertEqual(value.representative(), Fraction(7, 2))
+        self.assertEqual(value.valuation(), -1)
+        #2^-1 + 2^0 + 2^1
+        self.assertEqual(value.representative(),
+                         Fraction(1, 2) + 1 + 2)
+
+    def test_precision_is_absolute_not_relative(self):
+        #Same value, precision stated three ways: the number of significant
+        #digits changes with the valuation, the absolute precision does not.
+        for text, expected_precision in [('3+1/2 + O(2^3)', 3),
+                                         ('7 + O(2^3)', 3),
+                                         ('2^-5 * 7 + O(2^3)', 3)]:
+            with self.subTest(text=text):
+                self.assertEqual(parse_p_adic(text).precision(), expected_precision)
+
+
 class CorpusShapes(unittest.TestCase):
     """The four forms numberdb-data actually uses."""
 
