@@ -23,6 +23,7 @@ from utils.utils import is_pAdicField
 from .common import type_names
 
 from utils.utils import real_interval_to_pretty_string
+from utils.utils import complex_interval_to_pretty_string
 from utils.utils import to_bytes
 from utils.utils import RIFprec, RBFprec
 from utils.utils import CIFprec, CBFprec
@@ -739,13 +740,11 @@ class NumberComplex(models.Model):
 		return self.to_CIF()
 
 	def str_short(self):
-		r = self.to_sage()
-		return str(r)
-		
+		return complex_interval_to_pretty_string(self.to_sage())
+
 	def __str__(self):
-		r = self.to_sage()
-		return str(r)
-		
+		return complex_interval_to_pretty_string(self.to_sage())
+
 	def to_serializable_dict(self):
 		return {
 			'type': self.number_type_bytes().decode(),
