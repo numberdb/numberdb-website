@@ -127,6 +127,19 @@ def _last_mantissa_digit_index(text):
     return None
 
 
+def _negate_exact(value):
+    """Negate without rounding.
+
+    ``-Decimal(x)`` is *arithmetic*: the spec defines it as ``0 - x``, so it
+    rounds to the context precision. On a 99-digit value with the default
+    precision of 28 that silently discards 71 digits. ``copy_negate`` is the
+    true sign flip.
+    """
+    if isinstance(value, Decimal):
+        return value.copy_negate()
+    return -value
+
+
 def _render_exact(value):
     """An exact component: Decimal without a forced exponent, or a Fraction."""
     if isinstance(value, Decimal):
@@ -173,8 +186,7 @@ class _DecimalExpansion:
         return (centre - ulp, centre + ulp)
 
     def negated(self):
-        #Unary minus on a Decimal is a sign flip, not arithmetic: exact.
-        return _DecimalExpansion(-self.value)
+        return _DecimalExpansion(_negate_exact(self.value))
 
     def render(self):
         text = _format_decimal_preserving_significance(self.value)
@@ -196,7 +208,8 @@ class _DecimalInterval:
 
     def negated(self):
         #Negating an interval reverses it, so the endpoints swap.
-        return _DecimalInterval(-self.upper, -self.lower)
+        return _DecimalInterval(_negate_exact(self.upper),
+                                _negate_exact(self.lower))
 
     def render(self):
         return ('[%s, %s]' % (_render_exact(self.lower),
@@ -218,7 +231,7 @@ class _DecimalBall:
         return (centre - radius, centre + radius)
 
     def negated(self):
-        return _DecimalBall(-self.centre, self.radius)
+        return _DecimalBall(_negate_exact(self.centre), self.radius)
 
     def render(self):
         return ('%s +/- %s' % (_render_exact(self.centre),
@@ -278,7 +291,8 @@ class _DecimalUncertainty:
         return (value - radius, value + radius)
 
     def negated(self):
-        return _DecimalUncertainty(-self.mantissa, self.exponent, self.uncertainty)
+        return _DecimalUncertainty(_negate_exact(self.mantissa),
+                                   self.exponent, self.uncertainty)
 
     def render(self):
         text = '%s(%d)' % (_format_decimal_exact(self.mantissa), self.uncertainty)
