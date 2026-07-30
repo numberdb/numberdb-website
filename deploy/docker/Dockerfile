@@ -1,5 +1,23 @@
 # syntax=docker/dockerfile:1
-FROM sagemath/sagemath:latest
+
+# Pinned by digest, not by tag.
+#
+# This was `sagemath/sagemath:latest`, and on 2026-07-30 that tag moved from
+# Sage 10.8 to 10.9. The cached base disappeared, the build failed at apt-get,
+# and a routine rebuild would otherwise have swapped the Sage version silently
+# -- during an outage, that is the last thing you want to discover.
+#
+# The tag is kept alongside the digest for readability; the digest is what
+# actually resolves, so the tag moving cannot affect us.
+#
+# To upgrade deliberately:
+#   1. docker pull sagemath/sagemath:<new-version>
+#   2. docker inspect --format '{{index .RepoDigests 0}}' sagemath/sagemath:<new-version>
+#   3. update both the tag and the digest below
+#   4. rebuild, then run the test suite before deploying
+#
+# Sage 10.9, released 2026-05-04 (image published 2026-05-15).
+FROM sagemath/sagemath:10.9@sha256:e068670ae5863b54b2550e72437ec637b0283acb0dc712c8584c124dbf44e667
 
 ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
