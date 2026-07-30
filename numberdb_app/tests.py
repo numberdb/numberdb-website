@@ -1,11 +1,12 @@
 import os
 import django
 
-os.environ["DJANGO_SETTINGS_MODULE"] = 'numberdb.settings'
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "numberdb.settings.dev")
 django.setup()
 
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 #print("INSTALLED_APPS:", INSTALLED_APPS)
 
@@ -54,3 +55,52 @@ class DataBuildTest(TestCase):
         self.assertEqual(resp.status_code, 200)
         #print('resp.content:', resp.content)
         self.assertIn(table0.title, str(resp.content))
+
+
+class TableHistoryViewTestCase(TestCase):
+    '''
+    TableCommit has no 'author' field -- it was dropped in migration 0011 in
+    favour of the Contributor foreign key -- so sorting the history by author
+    has to go through 'contributor__author'.
+    '''
+
+    def setUp(self):
+        self.contributor = Contributor.objects.create(
+            author_and_email='Alice <alice@example.com>',
+            author='Alice',
+            email='alice@example.com',
+        )
+        self.table = Table.objects.create(
+            tid='T1',
+            tid_int=1,
+            url='table-1',
+            path='table-1',
+            title='Table 1',
+        )
+        self.commit = TableCommit.objects.create(
+            hexsha='1' * 40,
+            contributor=self.contributor,
+            datetime=timezone.now(),
+            timezone=0,
+            summary='Initial commit',
+            message='Initial commit',
+        )
+        self.commit.tables.add(self.table)
+
+    def test_history_page_sorts_by_author(self):
+        response = self.client.get(
+            reverse('db:table-history', kwargs={'tid': self.table.tid}),
+            {'sort_by': 'author'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['sortby'], 'author')
+
+    def test_history_page_falls_back_for_unknown_sort(self):
+        response = self.client.get(
+            reverse('db:table-history', kwargs={'tid': self.table.tid}),
+            {'sort_by': 'unknown'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['sortby'], 'time')

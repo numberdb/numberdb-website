@@ -1590,12 +1590,13 @@ def table_history(request, tid=None):
 	commits = table.commits.all()
 	sortby_default = 'time'
 	sortby = request.GET.get('sort_by',default=sortby_default)
-	if sortby == 'time':
-		commits = commits.order_by('-datetime')
-	elif sortby == 'author':
-		commits = commits.order_by('author')
-	else:
-		commits = commits.order_by(sortby_default)
+	order_by_map = {
+		'time': ['-datetime'],
+		'author': ['contributor__author', '-datetime'],
+	}
+	if sortby not in order_by_map:
+		sortby = sortby_default
+	commits = commits.order_by(*order_by_map[sortby])
 	paginator = Paginator(commits, 50)
 	try:
 		shown_commits = paginator.page(page)
