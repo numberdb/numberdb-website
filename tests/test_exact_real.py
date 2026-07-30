@@ -104,12 +104,27 @@ class SignificanceIsPreserved(unittest.TestCase):
         self.assertEqual(Fraction(Decimal('3.14')), Fraction(Decimal('3.1400')))
         self.assertNotEqual(parse_real('3.14'), parse_real('3.1400'))
 
-    def test_scientific_notation_does_not_gain_precision(self):
-        #12e2 means [1100, 1300]. Rendering it as "1200" would mean
-        #[1199, 1201] -- a hundredfold false gain in precision.
+    def test_scientific_notation_is_not_rendered_as_a_bare_integer(self):
+        #12e2 denotes [1100, 1300]. A value with neither '.' nor 'e' denotes an
+        #exactly represented integer, so rendering it as "1200" would not
+        #merely overstate the precision -- it would assert the value is exactly
+        #1200.
         rendered, _ = parse_real('12e2').render()
         self.assertNotEqual(rendered, '1200')
         self.assertEqual(parse_real(rendered).bounds(), parse_real('12e2').bounds())
+
+    def test_a_bare_integer_is_exact_however_many_trailing_zeros(self):
+        for text in ['1200', '-1729', '0', '100000']:
+            with self.subTest(text=text):
+                value = parse_real(text)
+                self.assertTrue(value.is_exact(),
+                                '%r has no period or exponent, so it is exact' % (text,))
+                self.assertEqual(value.width(), 0)
+
+    def test_bare_integer_and_scientific_notation_are_different_numbers(self):
+        self.assertNotEqual(parse_real('1200'), parse_real('12e2'))
+        self.assertEqual(parse_real('1200').width(), 0)
+        self.assertEqual(parse_real('12e2').width(), 200)
 
 
 class RoundTripIsAFixedPoint(unittest.TestCase):
