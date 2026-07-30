@@ -8,9 +8,7 @@ services:
     restart: unless-stopped
   db:
     restart: unless-stopped
-  pyro-ns:
-    restart: unless-stopped
-  eval:
+  evaluator:
     restart: unless-stopped
   certbot-renew:
     restart: unless-stopped

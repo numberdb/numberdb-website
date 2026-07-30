@@ -4,7 +4,7 @@
 - `numberdb/` Django project settings, URLs, and WSGI/ASGI.
 - `numberdb_app/` Main app (models, views, templates, tests).
 - `data_pipeline/` Data import/build scripts (uses SageMath; OEIS/data helpers).
-- `workers/` Pyro5 evaluation service used by the app.
+- `workers/` sandboxed evaluator used by the app (see docs/design/eval-sandbox.md).
 - `templates/`, `static/` source assets; `staticfiles/` is the collected output.
 - `deploy/` Docker Compose, Nginx templates, and related server configs.
 - `tests/` Additional Sage-based tests; `manage.py` project entry.

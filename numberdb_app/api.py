@@ -21,16 +21,15 @@ from cysignals import AlarmInterrupt
 from cysignals.alarm import alarm, cancel_alarm
 from cysignals.signals import SignalError
 
-import Pyro5.api
-import Pyro5.errors
-
 from urllib.parse import quote_plus, unquote_plus
 
-from sage.all import infinity, loads
+from sage.all import infinity
 from sage.rings.all import ZZ, QQ, RR, CC, RIF, CIF
 from sage.rings.all import RealField, RealIntervalField, RealBallField
 from sage.rings.all import ComplexField, ComplexIntervalField, ComplexBallField
 from utils.utils import is_pAdicField
+
+from .eval_client import evaluate_search_program
 
 from mpmath import pslq
 
@@ -96,14 +95,17 @@ def advanced_search_results(request, return_type='json'):
 		'''
 		print('context:',context)
 		if return_type == 'json':
+			#`results` is None on every error path (no expression given,
+			#evaluator unreachable, ...). Iterating it raised TypeError, so those
+			#paths returned 500 instead of a JSON error carrying `messages`.
 			serializable_context = {
 				'results': [
 						{
 							'index': result['param'],
-							'number': result['number'].to_serializable_dict(),				
+							'number': result['number'].to_serializable_dict(),
 							'table': result['table'].to_serializable_dict(),
 						}
-						for result in context['results']
+						for result in (context['results'] or [])
 					],
 				'messages': context['messages'],
 				'time_request': context['time_request'],			
@@ -132,25 +134,16 @@ def advanced_search_results(request, return_type='json'):
 	print('program:',program)
 	
 	
-	try:
-		E = Pyro5.api.Proxy("PYRONAME:safe_eval")
-		#print("E:",E)
-		param_numbers, messages_eval = loads(bytes(E.eval_search_program(program), encoding='cp437'))
-		print("messages_eval:",messages_eval)
-	
-	except (Pyro5.errors.NamingError,Pyro5.errors.CommunicationError) as e:
-		print("e:",e, type(e))
-		#print("error:",error)
-		messages.append({
-			'tags': 'alert-danger',
-			'text': 'Error: The advanced search server is currently not running and has to be restarted. We apologize.',
-		})
-		return wrap_response(None, messages)
-				
+	#Evaluated in the sandboxed evaluator (see docs/design/eval-sandbox.md).
+	#Numbers arrive as JSON records and are rebuilt through a fixed dispatch
+	#table -- nothing from the evaluator is unpickled here.
+	param_numbers, messages_eval = evaluate_search_program(program)
 
-	if param_numbers == None:
-		param_numbers = []
 	messages += messages_eval
+	if param_numbers == None:
+		#Evaluator unreachable, or the expression was rejected/timed out.
+		#messages_eval already explains it to the user.
+		return wrap_response(None, messages)
 
 	results = [];
 	

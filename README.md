@@ -13,7 +13,7 @@ Core data is imported from the companion repository numberdb-data (cloned next t
 - `numberdb/` Django project settings, URLs, WSGI/ASGI
 - `numberdb_app/` Main Django app (models, views, templates, tests)
 - `data_pipeline/` Data import/build scripts (SageMath; OEIS/Wikipedia helpers)
-- `workers/` Pyro5 evaluation service used by the app
+- `workers/` sandboxed evaluator used by the app (see docs/design/eval-sandbox.md)
 - `templates/`, `static/` source assets; `staticfiles/` is collected output
 - `deploy/` Deployment assets (Docker Compose, Nginx snippets)
 - `clients/` Client interfaces (e.g., Sage helper under `clients/sage`)
@@ -59,7 +59,7 @@ sage: search('{n: pi^n for n in [1..5]}')
 Query syntax matches the Advanced Search guide on https://www.numberdb.org/help#section-advanced-search-guide.
 
 ## Deployment (Docker Compose)
-This setup runs the Django app (with SageMath), Nginx, Postgres, and the Pyro5 services in containers. TLS is provided via Let’s Encrypt using the webroot challenge.
+This setup runs the Django app (with SageMath), Nginx, Postgres, and the sandboxed evaluator in containers. TLS is provided via Let’s Encrypt using the webroot challenge.
 
 ### Services
 - `web`: Django + Gunicorn
@@ -70,18 +70,11 @@ This setup runs the Django app (with SageMath), Nginx, Postgres, and the Pyro5 s
   - TLS: serves via Let’s Encrypt certs in the `letsencrypt` volume
 - `db`: Postgres
   - Ports: internal only (no host mapping by default)
-- `pyro-ns`: Pyro5 name server
-  - Ports: internal only — **must not be published to the host**. Pyro's name
-    server accepts `register()` unauthenticated, so a published port lets anyone
-    rebind `safe_eval` to a URI they control, and the site pickle-loads the reply
-    via Sage's `loads()`. `web` and `eval` reach it as `pyro-ns:9090` over the
-    compose network; nothing outside needs it.
-- `eval`: SafeEval worker (`workers/eval.py`)
-  - Connects to `pyro-ns`
-  - Note: `Pyro5.server.Daemon()` binds to `localhost` by default, so the worker
-    currently advertises an unreachable URI and the callers fall back via their
-    `NamingError`/`CommunicationError` handlers. Being replaced by a sandboxed
-    evaluator; do not "fix" by widening the bind without that sandbox.
+- `evaluator`: sandboxed evaluator for advanced-search expressions
+  - Ports: **none** -- runs with `network_mode: none`, no interfaces at all
+  - Reached only over a Unix socket on the `eval-sock` volume
+  - Each expression runs in a forked child that handles one request and exits
+  - See `docs/design/eval-sandbox.md`
 - `data-fetcher`: one-shot helper to clone/pull `numberdb-data`
 - `certbot`/`certbot-renew`: certificate issuance and renewal
 
@@ -112,7 +105,7 @@ Backups: snapshot `pgdata` and, if needed, `letsencrypt`. `numberdb-data` is re-
   - `SERVER_NAME=example.org`
   - `LETSENCRYPT_EMAIL=admin@example.org`
 - Start HTTP-only stack:
-  - `docker compose up -d nginx web db pyro-ns eval`
+  - `docker compose up -d nginx web db evaluator`
 - Issue certificate (webroot):
   - `docker compose run --rm -e CERTBOT_EMAIL=${LETSENCRYPT_EMAIL} certbot certonly --webroot -w /var/www/certbot -d ${SERVER_NAME} --email ${LETSENCRYPT_EMAIL} --agree-tos --no-eff-email`
 - Reload Nginx:

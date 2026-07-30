@@ -13,7 +13,6 @@ pyyaml
 timeout-decorator
 func-timeout
 beautifulsoup4
-Pyro5
 django-extensions
 gunicorn
 numpy

@@ -10,20 +10,6 @@ import dj_database_url
 import os
 from django.contrib.messages import constants as messages
 
-try:
-    # Make Pyro5 Name Server configurable in containerized setups
-    import Pyro5.config as _pyro_config
-    _ns_host = os.getenv('PYRO_NS_HOST')
-    _ns_port = os.getenv('PYRO_NS_PORT')
-    if _ns_host:
-        _pyro_config.NS_HOST = _ns_host
-    if _ns_port:
-        _pyro_config.NS_PORT = int(_ns_port)
-except Exception:
-    # Pyro5 may not be installed during certain operations (e.g., minimal envs)
-    pass
-
-
 MESSAGE_TAGS = {
     messages.DEBUG: 'alert-secondary',
     messages.INFO: 'alert-info',
@@ -34,7 +20,9 @@ MESSAGE_TAGS = {
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
+# This settings module lives at `numberdb/settings/`, so the repository root is
+# three levels up: `numberdb/settings/base.py` -> `numberdb/settings` -> `numberdb` -> repo root.
+BASE_DIR = Path(__file__).resolve(strict=True).parents[2]
 
 
 SECRET_KEY = config('SECRET_KEY')
@@ -57,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.postgres',
     'django.contrib.sites',
     'allauth',
     'allauth.account',
