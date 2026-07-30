@@ -43,7 +43,13 @@ if [[ -z "$REMOTE_PATH" ]]; then
 fi
 
 # Extract IP/host for ALLOWED_HOSTS/SERVER_NAME (best effort)
-REMOTE_HOST=${REMOTE#*@}
+REMOTE_ALIAS=${REMOTE#*@}
+REMOTE_HOST=$(
+  ssh -G "$REMOTE" 2>/dev/null | awk '/^hostname /{print $2; exit}'
+)
+if [[ -z "$REMOTE_HOST" ]]; then
+  REMOTE_HOST="$REMOTE_ALIAS"
+fi
 
 # Generate secrets locally (used only on first create or when forcing)
 rand_hex() { openssl rand -hex "$1"; }
@@ -54,8 +60,10 @@ POSTGRES_KEY=$(rand_hex 16)
 ADMIN_PASSWORD=$(rand_pw)
 LETSENCRYPT_EMAIL="admin@example.invalid"
 
+SSH_OPTS=(-o ExitOnForwardFailure=no -o StrictHostKeyChecking=accept-new)
+
 echo "==> Installing Docker on remote host ($REMOTE)"
-ssh -o StrictHostKeyChecking=accept-new "$REMOTE" bash -lc "\
+ssh "${SSH_OPTS[@]}" "$REMOTE" bash -lc "\
   set -euo pipefail; \
   export DEBIAN_FRONTEND=noninteractive; \
   apt-get update; \
@@ -70,6 +78,36 @@ ssh -o StrictHostKeyChecking=accept-new "$REMOTE" bash -lc "\
   mkdir -p '$REMOTE_PATH'; \
 "
 
+echo "==> Hardening SSH on remote host"
+# A fresh VM is on the public internet with no firewall, and sshd is the only
+# service on it that accepts credentials. Note that a firewall would not
+# substitute for binding container ports to loopback: Docker publishes ports
+# through its own iptables chain and bypasses ufw rules entirely.
+#
+# Guarded on authorized_keys existing -- disabling password auth on a VM the
+# operator reaches *by password* would lock them out of their own box.
+ssh "${SSH_OPTS[@]}" "$REMOTE" bash -s <<'EOS'
+set -euo pipefail
+if [ -s "$HOME/.ssh/authorized_keys" ]; then
+  install -d -m 0755 /etc/ssh/sshd_config.d
+  cat > /etc/ssh/sshd_config.d/99-hardening.conf <<'CONF'
+# Written by scripts/provision_vm.sh
+PermitRootLogin prohibit-password
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+CONF
+  if sshd -t; then
+    systemctl reload ssh 2>/dev/null || systemctl reload sshd 2>/dev/null || true
+    echo "    SSH hardened: password auth disabled, root key-only"
+  else
+    rm -f /etc/ssh/sshd_config.d/99-hardening.conf
+    echo "    WARN: sshd config invalid, hardening skipped" >&2
+  fi
+else
+  echo "    WARN: no authorized_keys found; leaving password auth enabled to avoid lockout" >&2
+fi
+EOS
+
 echo "==> Copying repository to $REMOTE:$REMOTE_PATH (excluding .git, caches, local envs)"
 REPO_ROOT=$(pwd)
 tar cz \
@@ -79,15 +117,15 @@ tar cz \
   --exclude='data_pipeline/oeis-data' \
   --exclude='.env' \
   --exclude='.env.prod' \
-  -C "$REPO_ROOT" . | ssh "$REMOTE" "tar xz -C '$REMOTE_PATH'"
+  -C "$REPO_ROOT" . | ssh "${SSH_OPTS[@]}" "$REMOTE" "tar xz -C '$REMOTE_PATH'"
 
 echo "==> Writing .env.prod on remote (force: $FORCE_SECRETS); syncing to .env if missing"
 if [[ "$FORCE_SECRETS" -eq 1 ]]; then
-  ssh "$REMOTE" "bash -lc 'set -e; cd \"$REMOTE_PATH\"; cat > .env.prod'" << EOFENV
+  ssh "${SSH_OPTS[@]}" "$REMOTE" "bash -lc 'set -e; cd \"$REMOTE_PATH\"; cat > .env.prod'" << EOFENV
 SECRET_KEY=$SECRET_KEY
 POSTGRES_KEY=$POSTGRES_KEY
 DEBUG=False
-ALLOWED_HOSTS=.localhost,127.0.0.1,$REMOTE_HOST
+ALLOWED_HOSTS=.localhost,127.0.0.1,$REMOTE_HOST,$REMOTE_ALIAS
 
 # Compose overrides this for the web container to point to 'db'
 DATABASE_URL=postgres://u_numberdb:$POSTGRES_KEY@db:5432/numberdb
@@ -116,11 +154,11 @@ SERVER_NAME=$REMOTE_HOST
 LETSENCRYPT_EMAIL=$LETSENCRYPT_EMAIL
 EOFENV
 else
-  ssh "$REMOTE" "bash -lc 'set -e; cd \"$REMOTE_PATH\"; test -f .env.prod || cat > .env.prod'" << EOFENV
+  ssh "${SSH_OPTS[@]}" "$REMOTE" "bash -lc 'set -e; cd \"$REMOTE_PATH\"; test -f .env.prod || cat > .env.prod'" << EOFENV
 SECRET_KEY=$SECRET_KEY
 POSTGRES_KEY=$POSTGRES_KEY
 DEBUG=False
-ALLOWED_HOSTS=.localhost,127.0.0.1,$REMOTE_HOST
+ALLOWED_HOSTS=.localhost,127.0.0.1,$REMOTE_HOST,$REMOTE_ALIAS
 
 # Compose overrides this for the web container to point to 'db'
 DATABASE_URL=postgres://u_numberdb:$POSTGRES_KEY@db:5432/numberdb
@@ -152,19 +190,19 @@ fi
 
 # Only copy .env if missing (or we're forcing)
 if [[ "$FORCE_SECRETS" -eq 1 ]]; then
-  ssh "$REMOTE" bash -lc "set -e; cd '$REMOTE_PATH'; cp .env.prod .env"
+  ssh "${SSH_OPTS[@]}" "$REMOTE" bash -lc "set -e; cd '$REMOTE_PATH'; cp .env.prod .env"
 else
-  ssh "$REMOTE" bash -lc "set -e; cd '$REMOTE_PATH'; [ -f .env ] || cp .env.prod .env"
+  ssh "${SSH_OPTS[@]}" "$REMOTE" bash -lc "set -e; cd '$REMOTE_PATH'; [ -f .env ] || cp .env.prod .env"
 fi
 
 echo "==> Building and starting containers (HTTP only; no DNS)"
-ssh "$REMOTE" bash -lc "\
+ssh "${SSH_OPTS[@]}" "$REMOTE" bash -lc "\
   set -e; cd '$REMOTE_PATH'; \
   docker compose up -d --build db pyro-ns eval web nginx certbot-renew; \
 "
 
 echo "==> Fetching numberdb-data"
-ssh "$REMOTE" bash -lc "\
+ssh "${SSH_OPTS[@]}" "$REMOTE" bash -lc "\
   set -e; cd '$REMOTE_PATH'; \
   docker compose run --rm data-fetcher || \
     docker run --rm -v numberdb-website_numberdb-data:/numberdb-data alpine/git:latest clone --depth 1 https://github.com/numberdb/numberdb-data.git /numberdb-data || \
@@ -172,13 +210,13 @@ ssh "$REMOTE" bash -lc "\
 "
 
 echo "==> Applying database migrations"
-ssh "$REMOTE" bash -lc "\
+ssh "${SSH_OPTS[@]}" "$REMOTE" bash -lc "\
   set -e; cd '$REMOTE_PATH'; \
   docker compose run --rm web sage -python manage.py migrate; \
 "
 
 echo "==> Creating admin user (username: admin)"
-ssh "$REMOTE" bash -lc "\
+ssh "${SSH_OPTS[@]}" "$REMOTE" bash -lc "\
   set -e; cd '$REMOTE_PATH'; \
   docker compose run --rm web bash -lc \"set -e; cat > /tmp/create_admin.py << 'PY'\\nfrom django.contrib.auth import get_user_model\\nUser = get_user_model()\\nif not User.objects.filter(username='admin').exists():\\n    User.objects.create_superuser('admin','admin@example.org','${ADMIN_PASSWORD}')\\n    print('Created admin user.')\\nelse:\\n    print('Admin user already exists.')\\nPY\\n  ; sage -python manage.py shell < /tmp/create_admin.py\"; \
 "
@@ -191,7 +229,7 @@ echo "      ssh $REMOTE 'cd $REMOTE_PATH && docker compose run --rm certbot cert
 # Optional dataset builds
 if [[ "$BUILD_DATA" -eq 1 ]]; then
   echo "==> Building NumberDB data in background (tables, numbers, search). Logs: logs/build_core.log"
-  ssh "$REMOTE" bash -lc "\
+  ssh "${SSH_OPTS[@]}" "$REMOTE" bash -lc "\
     set -e; cd '$REMOTE_PATH'; mkdir -p logs; \
     nohup sh -lc 'docker compose run -T --rm web sage -python data_pipeline/build.py > logs/build_core.log 2>&1' >/dev/null 2>&1 & \
   "
@@ -201,7 +239,7 @@ fi
 
 if [[ "$WITH_WIKI" -eq 1 ]]; then
   echo "==> Building Wikipedia tables in background. Logs: logs/build_wikipedia.log"
-  ssh "$REMOTE" bash -lc "\
+  ssh "${SSH_OPTS[@]}" "$REMOTE" bash -lc "\
     set -e; cd '$REMOTE_PATH'; mkdir -p logs; \
     nohup sh -lc 'docker compose run -T --rm web sage -python data_pipeline/build-wikipedia.py > logs/build_wikipedia.log 2>&1' >/dev/null 2>&1 & \
   "
@@ -211,7 +249,7 @@ fi
 
 if [[ "$WITH_OEIS" -eq 1 ]]; then
   echo "==> Building OEIS tables in background. Logs: logs/build_oeis.log"
-  ssh "$REMOTE" bash -lc "\
+  ssh "${SSH_OPTS[@]}" "$REMOTE" bash -lc "\
     set -e; cd '$REMOTE_PATH'; mkdir -p logs; \
     nohup sh -lc 'docker compose run -T --rm web sh -lc \''./data_pipeline/update-oeis.sh && sage -python data_pipeline/build-oeis.py'\'' > logs/build_oeis.log 2>&1' >/dev/null 2>&1 & \
   "
