@@ -321,32 +321,45 @@ def polynomial_modulo_variable_names(p):
     
     return p_min
 
+def _split_complex_terms(s):
+    '''
+    Split a complex expression into (sign, term) pairs at top-level '+'/'-'.
+
+    Separators inside brackets are ignored, so a component may itself be an
+    interval: "[0.833,0.834]+[5.399,5.601]*i" splits into two terms, not five.
+    The previous regex split on (digit)(+|-), which meant a '+' following a ']'
+    was not a separator at all -- so bracket components parsed in the imaginary
+    position but not the real one.
+
+    Requiring a digit or a closing bracket before the sign is what keeps
+    exponents intact: the '-' in "1e-5" follows 'e' and is not a separator.
+    '''
+
+    terms = []
+    depth = 0
+    start = 0
+    sign = 1
+    for index, character in enumerate(s):
+        if character in '[(':
+            depth += 1
+        elif character in '])':
+            depth -= 1
+        elif (character in '+-' and depth == 0 and index > 0
+              and (s[index - 1].isdigit() or s[index - 1] in ')].')):
+            terms.append((sign, s[start:index]))
+            sign = 1 if character == '+' else -1
+            start = index + 1
+    terms.append((sign, s[start:]))
+    return terms
+
+
 def parse_complex_interval(s, CIF=CIF, allow_rationals=True):
     RIF = RealIntervalField(CIF.prec())
     s = s.strip().lower().replace(' ','').replace('j','i')
-    cOp = re.compile(r'(\d)([\+\-])')
-    terms = cOp.split(s)
-    #print('terms:',terms)
-    coeff = None
     result = CIF(0)
-    while len(terms) != 0:
-        if coeff == None:
-            #First loop:
-            coeff = 1
-        else:
-            #Other loops:
-            sign = terms.pop(0)
-            if sign == '+':
-                coeff = 1
-            elif sign == '-':
-                coeff = -1
-            else:
-                raise RuntimeError("Shouldn't occur")
-        summand = terms.pop(0)
-        if len(terms) != 0:
-            #The digit before the next +/- operation is still missing:
-            summand += terms.pop(0)
-        
+    for term_sign, summand in _split_complex_terms(s):
+        coeff = term_sign
+
         if summand == '':
             continue
         elif summand == 'i':
@@ -366,7 +379,12 @@ def parse_complex_interval(s, CIF=CIF, allow_rationals=True):
         if summand.endswith('*i'):
             coeff *= I
             summand = summand[:-2]
-        
+        elif summand.endswith('i'):
+            #"5.5i" as well as "5.5*i". No real-number format ends in 'i', so
+            #this is unambiguous, and it is what people actually type.
+            coeff *= I
+            summand = summand[:-1]
+
         r = parse_real_interval(summand,RIF=RIF,allow_rationals=allow_rationals)
         if r == None:
             return None
@@ -418,10 +436,24 @@ def real_interval_to_pretty_string(r):
     never narrower -- see docs/design/number-representation.md.
     '''
 
-    if r.contains_zero():
-        #Relative diameter won't make sense,
-        #so just print it normally:
+    def as_bracketed_interval(r):
+        #Endpoints rounded outward, so the shown interval always contains the
+        #stored one.
+        Rup = RealField(15,rnd='RNDU')
+        Rdown = RealField(15,rnd='RNDD')
+        return '[%s,%s]' % (Rdown(r.lower()),Rup(r.upper()))
+
+    if r.lower() == r.upper():
+        #Exact. Renders without '.' or 'e', which is precisely what marks it as
+        #exact rather than as an interval.
         return r.__str__().replace('?', '')
+
+    if r.contains_zero():
+        #Relative diameter is meaningless here, and the decimal form degrades
+        #badly: [-0.1, 0.1] used to print as "0.", which denotes [-1, 1] --
+        #sound, but a decimal digit poorer for no reason. The bracket form
+        #keeps the endpoints.
+        return as_bracketed_interval(r)
 
     if r.relative_diameter() < 0.001:
         #Enough relative precision,
@@ -431,22 +463,44 @@ def real_interval_to_pretty_string(r):
     else:
         #Not enough relative precision,
         #thus rather print the number as an interval:
-        Rup = RealField(15,rnd='RNDU')
-        Rdown = RealField(15,rnd='RNDD')
-        return '[%s,%s]' % (Rdown(r.lower()),Rup(r.upper()))
+        return as_bracketed_interval(r)
 
 
 def complex_interval_to_pretty_string(c):
     '''
-    Render a complex interval as "A + B*I" / "A - B*I", the form documented on
-    the front page for entering complex numbers.
+    Render a complex interval as "A + B*I" / "A - B*I", where each component is
+    rendered by real_interval_to_pretty_string -- so both parts use the formats
+    documented on the front page for entering complex numbers.
 
-    Complex numbers previously had no pretty-printer at all -- NumberComplex
-    rendered straight from str(CIF) -- so they carried '?' even after the real
-    printer stopped doing so.
+    Complex numbers previously had no pretty-printer at all: NumberComplex
+    rendered straight from str(CIF), which bypassed the real printer's bracket
+    fallback and so threw away a digit whenever relative precision was poor.
+    An imaginary part of [5.4, 5.6] -- what "5.5" denotes -- displayed as "6.",
+    which means [5, 7]. Sound, in that it still contains the value, but a
+    reader who typed 5.5 saw 6.
+
+    The tight decimal form is genuinely unreachable here, and it is worth
+    recording why. "5.5" denotes exactly [5.4, 5.6], which would be perfect --
+    but the stored interval is [5.39999999999999, 5.60000000000001], very
+    slightly wider because converting exact decimal bounds to binary must round
+    outward. So "5.5" no longer contains what is stored, and rendering it would
+    claim precision that is not there. The bracket form "[5.399,5.601]" is the
+    honest tight answer. See docs/design/number-representation.md.
     '''
 
-    return str(c).replace('?', '')
+    real_part = real_interval_to_pretty_string(c.real())
+    imaginary = c.imag()
+
+    #Fold a wholly negative imaginary part into the joining sign, so results
+    #read "a - b*I" rather than "a + -b*I".
+    if imaginary.upper() < 0:
+        joiner = ' - '
+        imaginary_part = real_interval_to_pretty_string(-imaginary)
+    else:
+        joiner = ' + '
+        imaginary_part = real_interval_to_pretty_string(imaginary)
+
+    return '%s%s%s*I' % (real_part, joiner, imaginary_part)
         
 def real_interval_to_string_via_endpoints(r):
     return '[%s,%s]' % (r.lower(),r.upper(),)

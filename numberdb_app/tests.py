@@ -323,6 +323,79 @@ class CanonicalRenderingTestCase(TestCase):
                 self.assertNotIn('.', rendered)
                 self.assertNotIn('e', rendered)
 
+    COMPLEX_SAMPLES = [
+        (0.8333, 0.8334, 5.4, 5.6),
+        (3.13, 3.15, 2.71, 2.73),
+        (-1.05, -1.04, -0.11, -0.10),
+        (0.0, 0.0, 1.0, 1.0),
+        (-0.1, 0.1, -0.1, 0.1),
+    ]
+
+    def test_imaginary_part_does_not_lose_a_digit(self):
+        #Regression: an imaginary part of [5.4, 5.6] -- what "5.5" denotes --
+        #rendered as "6.", which means [5, 7]. Sound but a digit poorer, and a
+        #reader who typed 5.5 saw 6. The complex printer bypassed the real
+        #printer's bracket fallback.
+        from sage.rings.all import CIF, RIF
+        from utils.utils import complex_interval_to_pretty_string
+
+        rendered = complex_interval_to_pretty_string(
+            CIF(RIF(0.8333, 0.8334), RIF(5.4, 5.6)))
+        self.assertNotIn('6.*I', rendered)
+        self.assertIn('[5.', rendered)
+
+    def test_displayed_complex_numbers_parse_back_to_a_containing_box(self):
+        from sage.rings.all import CIF, RIF
+        from utils.utils import (complex_interval_to_pretty_string,
+                                 parse_complex_interval)
+
+        for re_low, re_high, im_low, im_high in self.COMPLEX_SAMPLES:
+            with self.subTest(box=(re_low, re_high, im_low, im_high)):
+                original = CIF(RIF(re_low, re_high), RIF(im_low, im_high))
+                rendered = complex_interval_to_pretty_string(original)
+
+                reparsed = parse_complex_interval(rendered)
+                self.assertIsNotNone(
+                    reparsed, 'displayed %r does not parse back' % (rendered,))
+                for part in ('real', 'imag'):
+                    shown = getattr(reparsed, part)()
+                    stored = getattr(original, part)()
+                    self.assertLessEqual(shown.lower(), stored.lower())
+                    self.assertGreaterEqual(shown.upper(), stored.upper())
+
+    def test_interval_components_parse_in_both_positions(self):
+        #The term splitter used to look for (digit)(+|-), so a '+' after a ']'
+        #was not a separator: intervals parsed in the imaginary position but
+        #not the real one.
+        from utils.utils import parse_complex_interval
+
+        self.assertIsNotNone(parse_complex_interval('[0.833,0.834]+[5.399,5.601]*I'))
+        self.assertIsNotNone(parse_complex_interval('0.8333+[5.399,5.601]*I'))
+        self.assertIsNotNone(parse_complex_interval('[0.833,0.834]+5.5*I'))
+
+    def test_imaginary_unit_without_an_asterisk(self):
+        from utils.utils import parse_complex_interval
+
+        #Compare endpoints: Sage interval equality is not structural, so two
+        #identical-looking intervals need not compare equal.
+        without_star = parse_complex_interval('5/6+5.5I')
+        with_star = parse_complex_interval('5/6+5.5*I')
+        self.assertIsNotNone(without_star)
+        for part in ('real', 'imag'):
+            self.assertEqual(getattr(without_star, part)().lower(),
+                             getattr(with_star, part)().lower())
+            self.assertEqual(getattr(without_star, part)().upper(),
+                             getattr(with_star, part)().upper())
+
+    def test_exponents_are_not_split_as_signs(self):
+        #The separator rule requires a digit or ')' / ']' before the sign, so
+        #the '-' in "1e-5" stays part of the number.
+        from utils.utils import parse_complex_interval
+
+        parsed = parse_complex_interval('1e-5+2e-5*I')
+        self.assertIsNotNone(parsed)
+        self.assertLess(abs(float(parsed.real().center()) - 1e-5), 1e-6)
+
     def test_stored_complex_numbers_render_in_the_documented_form(self):
         from numberdb_app.models import NumberComplex
         from sage.rings.all import CIF, RIF
