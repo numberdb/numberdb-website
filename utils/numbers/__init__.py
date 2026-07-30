@@ -8,6 +8,8 @@ on a bare interpreter.
 from .real import ExactReal, ParseError, parse_real
 from .complex import ExactComplex, parse_complex
 from .padic import ExactPAdic, parse_p_adic
+from .polynomial import ExactPolynomial, parse_polynomial
 
-__all__ = ['ExactReal', 'ExactComplex', 'ExactPAdic', 'ParseError',
-           'parse_real', 'parse_complex', 'parse_p_adic']
+__all__ = ['ExactReal', 'ExactComplex', 'ExactPAdic', 'ExactPolynomial',
+           'ParseError', 'parse_real', 'parse_complex', 'parse_p_adic',
+           'parse_polynomial']
