@@ -127,6 +127,58 @@ class DocumentedNumberFormatsTestCase(TestCase):
                     '%r is documented but search returns %s'
                     % (source, response.status_code))
 
+    #Documented on the front page (templates/includes/search-tips.html).
+    #All contain '+', which is what makes them a regression test.
+    DOCUMENTED_P_ADICS = ['3 + O(2^5)', '2^0+2^1+O(2^5)', 'Q2:1010']
+
+    def test_path_segments_are_not_decoded_twice(self):
+        #properties() used to call unquote_plus on a segment Django had already
+        #decoded. unquote_plus maps '+' to a space, so every documented format
+        #containing a plus was corrupted before it ever reached a parser.
+        from utils.utils import parse_p_adic, parse_real_interval
+
+        self.assertIsNotNone(parse_real_interval('3.14 +/- 2e-2'))
+        for source in ['3 + O(2^5)', '2^0+2^1+O(2^5)']:
+            with self.subTest(source=source):
+                self.assertIsNotNone(
+                    parse_p_adic(source),
+                    '%r is documented but does not parse' % (source,))
+
+    def test_every_documented_p_adic_format_parses(self):
+        from utils.utils import parse_p_adic
+
+        for source in self.DOCUMENTED_P_ADICS:
+            with self.subTest(source=source):
+                #Must not raise, and must not silently return None.
+                self.assertIsNotNone(
+                    parse_p_adic(source),
+                    '%r is documented but does not parse' % (source,))
+
+    def test_p_adic_with_decimal_point_does_not_crash(self):
+        #Regression: 'Q2:1.1010' is documented on the front page, and raised
+        #TypeError: unable to convert '.' to an integer. The regex group
+        #(?:\d*\.)? captures the separator, so '.' was counted as a digit and
+        #then evaluated as one.
+        from utils.utils import parse_p_adic
+
+        with_point = parse_p_adic('Q2:1.1010')
+        self.assertIsNotNone(with_point)
+        #Documented meaning: 2^-1 + 2^0 + 2^2 + O(2^5), so it has a negative
+        #valuation, unlike the same digits without a point.
+        self.assertLess(with_point.valuation(), 0)
+        self.assertGreaterEqual(parse_p_adic('Q2:1010').valuation(), 0)
+
+    def test_search_accepts_every_documented_p_adic(self):
+        #p-adics are searchable. They have no properties page -- properties()
+        #dispatches only to integer, rational, real-interval and polynomial
+        #parsers -- which is a feature gap, not a regression, so it is asserted
+        #here as current behaviour rather than as a bug.
+        for source in self.DOCUMENTED_P_ADICS:
+            with self.subTest(source=source):
+                response = self.client.get(
+                    reverse('db:suggestions'), {'term': source})
+                self.assertEqual(response.status_code, 200)
+
     def test_properties_page_serves_documented_formats(self):
         #Regression: /properties/12e2 returned 500 with "continued fraction can
         #not represent infinity", because the view asked Sage for the empty
