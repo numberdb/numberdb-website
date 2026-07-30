@@ -23,7 +23,7 @@ services:
     expose:
       - "8000"
     healthcheck:
-      test: ["CMD-SHELL", "python3 -c 'import socket; s=socket.create_connection((\"127.0.0.1\",8000),3); s.close()'"]
+      test: ["CMD-SHELL", "sage -python -c 'import socket; s=socket.create_connection((\"127.0.0.1\",8000),3); s.close()'"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -74,18 +74,18 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   pyro-ns:
-    build:
-      context: .
-      dockerfile: deploy/docker/Dockerfile
     image: numberdb/web:latest
     command: ["sage", "-python", "-m", "Pyro5.nameserver", "--host", "0.0.0.0", "--port", "9090"]
-    ports:
-      - "9090:9090"
+    # Deliberately NOT published to the host. `web` and `eval` reach the
+    # nameserver over the compose network as pyro-ns:9090, so nothing outside
+    # needs it. Publishing it put an unauthenticated Pyro nameserver on the
+    # public internet: anyone reaching it can rebind the name `safe_eval` to a
+    # URI they control, and the site pickle-loads the reply (Sage `loads`) in
+    # utils/utils.py, numberdb_app/api.py and numberdb_app/views.py.
+    # The --host 0.0.0.0 above is for the container network only. Do not re-add
+    # a ports: entry here.
 
   eval:
-    build:
-      context: .
-      dockerfile: deploy/docker/Dockerfile
     image: numberdb/web:latest
     command: ["sage", "-python", "workers/eval.py"]
     environment:
@@ -101,8 +101,7 @@ services:
     volumes:
       - certbot-www:/var/www/certbot
       - letsencrypt:/etc/letsencrypt
-    entrypoint: ["/bin/sh", "-c"]
-    command: "echo 'Run certbot commands manually as needed'"
+    command: ["--help"]
 
   # Background renewer
   certbot-renew:
@@ -112,12 +111,25 @@ services:
       - certbot-www:/var/www/certbot
       - letsencrypt:/etc/letsencrypt
     entrypoint: ["/bin/sh", "-c"]
-    command: "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h; done"
+    command: ["trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h; done"]
 
   data-fetcher:
     image: alpine/git:latest
     entrypoint: ["/bin/sh","-c"]
-    command: "git -C /numberdb-data pull || git clone --depth 1 https://github.com/numberdb/numberdb-data.git /numberdb-data"
+    command:
+      - |
+        set -e
+        if [ -d /numberdb-data/.git ]; then
+          git -C /numberdb-data pull
+          exit 0
+        fi
+
+        if [ -n "$(ls -A /numberdb-data 2>/dev/null)" ]; then
+          echo "WARN: /numberdb-data exists but is not a git repo; wiping and recloning." >&2
+          rm -rf /numberdb-data/* /numberdb-data/.[!.]* /numberdb-data/..?* 2>/dev/null || true
+        fi
+
+        git clone --depth 1 https://github.com/numberdb/numberdb-data.git /numberdb-data
     volumes:
       - numberdb-data:/numberdb-data
     restart: "no"
