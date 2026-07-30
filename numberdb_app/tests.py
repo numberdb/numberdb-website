@@ -144,6 +144,52 @@ class DocumentedNumberFormatsTestCase(TestCase):
                     parse_p_adic(source),
                     '%r is documented but does not parse' % (source,))
 
+    #Every worked example from the two user-facing documents, as
+    #(input, prime, exponents present, exponent in the O-term).
+    #search-tips.html for the first block, help.html for the second.
+    DOCUMENTED_P_ADIC_EXAMPLES = [
+        ('Q2:1010',        2, [0, 2],     4),
+        ('Q2:1.1010',      2, [-1, 0, 2], 4),
+        ('3 + O(2^5)',     2, [0, 1],     5),
+        ('2^0+2^1+O(2^5)', 2, [0, 1],     5),
+        ('Q2:110',         2, [0, 1],     3),
+        ('Q2:1.110',       2, [-1, 0, 1], 3),
+        ('Q13:01.02',     13, [-1],       1),   # plus 2*13^0, checked separately
+    ]
+
+    def test_documented_examples_mean_what_the_docs_say(self):
+        #The documentation is the specification, so its worked examples belong
+        #in the test suite. Two of these were wrong before: search-tips.html
+        #claimed O(2^5) for Q2:1010 and Q2:1.1010, where the precision is the
+        #number of digits after the point, i.e. O(2^4).
+        from sage.rings.all import Qp
+        from utils.utils import parse_p_adic
+
+        for source, prime, exponents, big_oh in self.DOCUMENTED_P_ADIC_EXAMPLES:
+            if source == 'Q13:01.02':
+                continue    # has a coefficient of 2; covered below
+            with self.subTest(source=source):
+                parsed = parse_p_adic(source)
+                self.assertIsNotNone(parsed)
+                field = Qp(prime, prec=big_oh - min(exponents) + 2)
+                expected = sum(field(prime) ** e for e in exponents)
+                self.assertEqual(parsed, expected.add_bigoh(big_oh),
+                                 '%r does not match the documentation' % (source,))
+                self.assertEqual(
+                    parsed.precision_absolute(), big_oh,
+                    '%r: documentation says O(%d^%d)'
+                    % (source, prime, big_oh))
+
+    def test_documented_example_with_multi_digit_prime(self):
+        #help.html: "Q13:01.02" represents 13^-1 + 2*13^0 + O(13^1), i.e. digits
+        #are written in base 10 with as many characters as the prime.
+        from sage.rings.all import Qp
+        from utils.utils import parse_p_adic
+
+        field = Qp(13, prec=5)
+        expected = (field(13) ** -1 + 2 * field(1)).add_bigoh(1)
+        self.assertEqual(parse_p_adic('Q13:01.02'), expected)
+
     def test_every_documented_p_adic_format_parses(self):
         from utils.utils import parse_p_adic
 
