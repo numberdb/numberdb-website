@@ -1250,8 +1250,19 @@ def properties_of_rational(request, numerator, denominator):
 	return properties(request, '%s/%s' % (numerator, denominator))
 
 def properties(request, number):
-	
-	number = unquote_plus(number)
+
+	#Deliberately NOT unquote_plus(number): Django has already percent-decoded
+	#the path segment, so decoding again is a second pass over decoded text.
+	#unquote_plus additionally maps '+' to a space -- form-encoding semantics,
+	#wrong for a path -- which silently corrupted every documented format
+	#containing a plus:
+	#
+	#  '3.14 +/- 2e-2'  -> '3.14  /- 2e-2'     (real ball)
+	#  '3 + O(2^5)'     -> '3   O(2^5)'        (p-adic)
+	#  '2^0+2^1+O(2^5)' -> '2^0 2^1 O(2^5)'    (p-adic)
+	#
+	#all of which then failed to parse and 404'd. Nothing in the app builds
+	#/properties/ URLs, so there is no producer relying on '+' meaning space.
 	
 	def wrap_response(context):
 		print("context:",context)

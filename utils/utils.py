@@ -202,10 +202,14 @@ def parse_p_adic(s):
 	matchQp2 = cQp2.match(s)
 	if matchQp2 != None:
 		p, sign, digits0, digits1 = matchQp2.groups()
+		#The group is (?:\d*\.)? so it captures the separator as well. Leaving
+		#it in counts '.' as a digit, and the loop below then evaluates ZZ('.')
+		#-- which is why the documented "Q2:1.1010" raised
+		#TypeError: unable to convert '.' to an integer.
+		if digits0.endswith('.'):
+			digits0 = digits0[:-1]
 		lenp = ZZ(len(p))
 		p = ZZ(p)
-		print("p,sign,digits0,digits1:",p,sign,digits0,digits1)
-		print("lenp:",lenp)
 		lend0 = ZZ(len(digits0))
 		lend1 = ZZ(len(digits1))
 		if lend0 % lenp == 0 and lend1 % lenp == 0:
@@ -215,15 +219,12 @@ def parse_p_adic(s):
 			Q_p = Qp(p, prec = prec)
 			result = Q_p(0)
 			for i in range(num_digits0):
-				print(i,ZZ(digits0[lenp*i:lenp*(i+1)]))
 				result += Q_p(ZZ(digits0[lenp*i:lenp*(i+1)]) * p**(i-num_digits0))
 			for i in range(num_digits1):
-				print(i,ZZ(digits1[lenp*i:lenp*(i+1)]))
 				result += Q_p(ZZ(digits1[lenp*i:lenp*(i+1)]) * p**i)
 			result = result.add_bigoh(num_digits1)
 			if sign == '-':
 				result = -result
-			print("result:",result)
 			return result
 		
 	return None	
