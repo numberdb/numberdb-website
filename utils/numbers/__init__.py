@@ -6,5 +6,7 @@ on a bare interpreter.
 """
 
 from .real import ExactReal, ParseError, parse_real
+from .complex import ExactComplex, parse_complex
 
-__all__ = ['ExactReal', 'ParseError', 'parse_real']
+__all__ = ['ExactReal', 'ExactComplex', 'ParseError',
+           'parse_real', 'parse_complex']
