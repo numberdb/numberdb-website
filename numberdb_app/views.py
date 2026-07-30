@@ -1400,9 +1400,14 @@ def properties(request, number):
 		})
 		
 		#Continued fraction:
+		#Check first whether anything is determined: an interval wide enough to
+		#contain several integers (e.g. "12e2" = [1100, 1300]) pins down no
+		#partial quotient at all, and asking Sage for the empty continued
+		#fraction raises. The 'Insufficient precision.' branch below was always
+		#the intended answer; it was simply unreachable.
 		cf = StableContinuedFraction(r)
-		cf_sage = cf.sage()
-		if len(cf_sage) > 0:
+		cf_sage = cf.sage() if cf.determined_coefficients() else None
+		if cf_sage is not None and len(cf_sage) > 0:
 			context['properties'].append({
 				'title': 'Continued fraction',
 				'latex': '$%s$' % (cf.latex(),),

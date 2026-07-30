@@ -134,7 +134,22 @@ def parse_real_interval(s, RIF=RIF, allow_rationals=True):
                     r = lower.union(upper)
                     return r
             '''
-    
+
+    #Real balls, e.g. "3.14 +/- 2e-2", which help.html documents as a supported
+    #format and which numberdb-data actually uses -- the Riemann zeta zeros and
+    #the physical constants are all stored this way.
+    #
+    #Arb parses this natively once wrapped in brackets. Deliberately the same
+    #route data_pipeline/build.py takes when importing, so that a value which
+    #imports cleanly is also searchable; before this, the two paths disagreed
+    #and the search side returned None, leaving callers to fail on
+    #'NoneType' has no attribute 'lower'.
+    if '+/-' in s:
+        try:
+            return RIF(RBFprec('[%s]' % (s,)))
+        except (TypeError, ValueError):
+            pass
+
     return None
 
 def parse_fractional_part(s):
@@ -559,17 +574,38 @@ class StableContinuedFraction:
         
         return self._coefficients
         
+    def determined_coefficients(self):
+        '''
+        OUTPUT:
+        The coefficients that are actually pinned down by the interval, i.e.
+        without a trailing '?'.
+
+        This is empty when the interval is too wide to determine even the first
+        partial quotient -- e.g. "12e2" denotes [1100, 1300], which contains
+        many integers, so no floor is unique and nothing at all is known about
+        the continued fraction. Callers should check this before calling
+        sage().
+        '''
+
+        return [a for a in self._coefficients if a != '?']
+
     def sage(self):
         '''
         OUTPUT:
         The corresponding ContinuedFraction_periodic instance of sage.
 
-        Warnings: 
+        Warnings:
         - A possible last entry '?' that signifies numerical uncertainty
           will be omitted.
         - Sage's datastructure simplifies [..., n, 1] to [..., n+1].
+
+        Raises ValueError if no coefficient is determined, because Sage cannot
+        represent the empty continued fraction -- it reports it as "continued
+        fraction can not represent infinity", which is accurate but says
+        nothing useful about the input. Use determined_coefficients() to check
+        first.
         '''
-        
+
         coeffs = self._coefficients
         if len(coeffs) == 0:
             result = coeffs
@@ -577,6 +613,10 @@ class StableContinuedFraction:
             result = coeffs[:-1]
             if coeffs[-1] != '?':
                 result.append(coeffs[-1])
+        if len(result) == 0:
+            raise ValueError(
+                'interval is too wide to determine any partial quotient'
+            )
         return continued_fraction(result)
 
     def latex(self, ellipsis='\\ldots'):
