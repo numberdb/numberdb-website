@@ -9,17 +9,17 @@ services:
     env_file:
       - .env
     environment:
-      - PYRO_NS_HOST=pyro-ns
-      - PYRO_NS_PORT=9090
+      - EVALUATOR_SOCKET=/run/eval/evaluator.sock
       - DJANGO_SETTINGS_MODULE=numberdb.settings.prod
       - AUTO_MIGRATE=0
       - DATABASE_URL=postgres://u_numberdb:${POSTGRES_KEY:-password2_to_be_changed}@db:5432/numberdb
     depends_on:
       - db
-      - pyro-ns
+      - evaluator
     volumes:
       - staticfiles:/app/staticfiles
       - numberdb-data:/numberdb-data
+      - eval-sock:/run/eval
     expose:
       - "8000"
     healthcheck:
@@ -73,26 +73,36 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  pyro-ns:
+  # Sandboxed evaluator for advanced-search expressions.
+  # See docs/design/eval-sandbox.md. Replaces the Pyro5 name server + SafeEval
+  # worker, which is why there is no pyro-ns service any more.
+  evaluator:
     image: numberdb/web:latest
-    command: ["sage", "-python", "-m", "Pyro5.nameserver", "--host", "0.0.0.0", "--port", "9090"]
-    # Deliberately NOT published to the host. `web` and `eval` reach the
-    # nameserver over the compose network as pyro-ns:9090, so nothing outside
-    # needs it. Publishing it put an unauthenticated Pyro nameserver on the
-    # public internet: anyone reaching it can rebind the name `safe_eval` to a
-    # URI they control, and the site pickle-loads the reply (Sage `loads`) in
-    # utils/utils.py, numberdb_app/api.py and numberdb_app/views.py.
-    # The --host 0.0.0.0 above is for the container network only. Do not re-add
-    # a ports: entry here.
-
-  eval:
-    image: numberdb/web:latest
-    command: ["sage", "-python", "workers/eval.py"]
-    environment:
-      - PYRO_NS_HOST=pyro-ns
-      - PYRO_NS_PORT=9090
-    depends_on:
-      - pyro-ns
+    command: ["sage", "-python", "workers/evaluator.py"]
+    restart: unless-stopped
+    # No network interfaces at all. User expressions are assumed to reach
+    # arbitrary code execution, so the container must not be able to touch
+    # Postgres, the Docker API, the internet or Tailscale peers even then. The
+    # Unix socket below is the only channel in or out.
+    #
+    # Note a firewall would NOT be equivalent: Docker publishes ports through
+    # its own iptables chain and bypasses ufw entirely.
+    network_mode: none
+    read_only: true
+    user: "65534:65534"
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    # Per-container process cap. Preferred over RLIMIT_NPROC, which is per-UID
+    # and counts pre-existing processes -- see workers/sandbox.py.
+    pids_limit: 128
+    mem_limit: 1g
+    cpus: 1.0
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    volumes:
+      # The only shared surface. No source, no secrets, no .env.
+      - eval-sock:/run/eval
 
   # One-shot issuance (run manually):
   # docker compose run --rm certbot certonly --webroot -w /var/www/certbot -d ${SERVER_NAME} --email ${LETSENCRYPT_EMAIL} --agree-tos --no-eff-email
@@ -135,6 +145,7 @@ services:
     restart: "no"
 
 volumes:
+  eval-sock:
   staticfiles:
   pgdata:
   numberdb-data:

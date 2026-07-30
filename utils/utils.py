@@ -5,8 +5,6 @@ from cysignals import AlarmInterrupt
 from cysignals.alarm import alarm, cancel_alarm
 import re
 
-import Pyro5.api
-import Pyro5.errors
 
 #from sage import *
 from sage.all import infinity, SR, SymmetricGroup, I, continued_fraction, Integer
@@ -525,20 +523,9 @@ def factor_with_timeout(n):
         #Do computation locally:
         return n.factor()
     else:
+        #Larger values are not factored here; the sandboxed evaluator
+        #(docs/design/eval-sandbox.md) is the place for expensive work.
         return None
-        
-        #Perhaps in the future:
-        try:
-            E = Pyro5.api.Proxy("PYRONAME:safe_eval")
-            #print("E:",E)
-            n_cp437 = str(dumps(n),'cp437')
-            f, messages_factor = loads(bytes(E.factor(n_cp437), encoding='cp437'))
-            #print("messages_factor:",messages_factor)
-            return f
-        
-        except (Pyro5.errors.NamingError,Pyro5.errors.CommunicationError) as e:
-            #print("e:",e, type(e))
-            return None
 
 class StableContinuedFraction:
     
@@ -670,4 +657,6 @@ def is_pAdicField(K):
     except Exception:
         return False
     s_lower = s.lower()
-    return ('p-adic' in s_lower) and ('field' in s_lower)
+    # Sage typically formats as "p-adic Field ..." or "<p>-adic Field ...".
+    is_adic = ('p-adic' in s_lower) or (re.search(r"\b\d+-adic\b", s_lower) is not None)
+    return is_adic and ('field' in s_lower)

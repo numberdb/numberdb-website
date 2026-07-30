@@ -21,14 +21,14 @@ from cysignals import AlarmInterrupt
 from cysignals.alarm import alarm, cancel_alarm
 from cysignals.signals import SignalError
 
-import Pyro5.api
-import Pyro5.errors
 
 from sage.all import infinity, copy, ceil, log, latex, factor
 from sage.rings.all import ZZ, QQ, RR, CC, RIF, CIF
 from sage.rings.all import RealField, RealIntervalField, RealBallField
 from sage.rings.all import ComplexField, ComplexIntervalField, ComplexBallField
 from utils.utils import is_pAdicField
+
+from .eval_client import ping as evaluator_is_available
 from sage.rings.all import PolynomialRing
 
 from urllib.parse import quote_plus, unquote_plus
@@ -1489,19 +1489,6 @@ def properties(request, number):
 			print('Signal error during factorization.')
 			pass
 			
-			'''
-			print('Signal error during factorization.')
-			try:
-				E = Pyro5.api.Proxy("PYRONAME:safe_eval")
-				#print("E:",E)
-				r_cp437 = str(dumps(r),'cp437')
-				f, messages_factor = loads(bytes(E.factor(r_cp437), encoding='cp437'))
-				print("messages_factor:",messages_factor)
-			
-			except (Pyro5.errors.NamingError,Pyro5.errors.CommunicationError) as e:
-				print("e:",e, type(e))
-			'''
-			
 		if f != None:
 			context['properties'].append({
 				'title': 'Factorization',
@@ -1515,24 +1502,10 @@ def properties(request, number):
 
 def advanced_search(request):
 
-	try:
-		E = Pyro5.api.Proxy("PYRONAME:safe_eval")
-		#print("E:",E)
-		ping_back = E.ping(b'test')
-		print("ping_back:",ping_back)
-	
-	except (Pyro5.errors.NamingError,Pyro5.errors.CommunicationError) as e:
-		print("e:",e, type(e))
-		'''
-		#print("error:",error)
-		messages.append({
-			'tags': 'alert-danger',
-			'text': 'Error: The advanced search server is currently not running and has to be restarted. We apologize.',
-		})
-		return wrap_response(None, messages)
-		'''
+	#Warn up front if the sandboxed evaluator is down, rather than letting the
+	#user compose an expression and only then discover it cannot be run.
+	if not evaluator_is_available():
 		messages.error(request, 'Error: The advanced search server is currently not running and has to be restarted. We apologize.')
-		#return HttpResponseRedirect(reverse('db:home'))
 
 
 	#default_program = 'x = 3.14159265\nnumbers = {n: sin(x/n) for n in [1..10]}\n'

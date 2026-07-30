@@ -62,10 +62,6 @@ test:
 	#TEST
 	$(MANAGE) test
 	
-run_nameserver:
-	#RUN NAMESERVER
-	$(PYTHON) -m Pyro5.nameserver
-
 run_eval:
     #RUN EVAL WORKER
     $(PYTHON) workers/eval.py
@@ -162,7 +158,6 @@ install_django:
 	$(PIP) install timeout-decorator
 	$(PIP) install func_timeout
 	$(PIP) install bs4
-	$(PIP) install pyro5
 	#$(PIP) install pydriller
 	$(PIP) install django-extensions
 	#$(PIP) install pyhash
