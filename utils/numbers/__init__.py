@@ -7,6 +7,7 @@ on a bare interpreter.
 
 from .real import ExactReal, ParseError, parse_real
 from .complex import ExactComplex, parse_complex
+from .padic import ExactPAdic, parse_p_adic
 
-__all__ = ['ExactReal', 'ExactComplex', 'ParseError',
-           'parse_real', 'parse_complex']
+__all__ = ['ExactReal', 'ExactComplex', 'ExactPAdic', 'ParseError',
+           'parse_real', 'parse_complex', 'parse_p_adic']
