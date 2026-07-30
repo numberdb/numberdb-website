@@ -82,12 +82,17 @@ def _format_decimal_preserving_significance(value):
 
     ``str(Decimal)`` cannot be used: it renders ``Decimal('12e2')`` as
     ``1.2E+3``, and -- worse -- a naive expansion to ``1200`` would be *wrong*.
-    Trailing zeros are significant under our convention, so ``1200`` denotes
-    [1199, 1201] whereas ``12e2`` denotes [1100, 1300].
 
-    Hence: a non-negative exponent always keeps an explicit ``e``, which also
-    keeps ``42e0`` distinguishable from the exact integer ``42`` (a value with
-    neither '.' nor 'e' is exact, by definition).
+    A value containing neither '.' nor 'e' denotes an **exactly represented
+    integer** (help.html: "If the decimal expansion does not contain '.' or
+    'e', it will instead denote an exactly represented integer"; the front-page
+    tips: "Enter the exact integer without period"). So writing ``12e2`` as
+    ``1200`` would not merely overstate its precision -- it would assert the
+    value is *exactly* 1200, when it denotes [1100, 1300].
+
+    Hence: a non-negative exponent always keeps an explicit ``e``, which is
+    also what keeps ``42e0`` (the interval [41, 43]) distinguishable from the
+    exact integer ``42``.
     """
     sign, digits, exponent = value.as_tuple()
     text = ''.join(str(d) for d in digits)
