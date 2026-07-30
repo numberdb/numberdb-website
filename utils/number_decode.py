@@ -10,6 +10,21 @@ The stored format is fortunately Sage-independent already -- integers via
 ``int.to_bytes`` and interval endpoints via ``numpy.float64.tobytes`` -- so the
 bytes on disk do not change. Only the layer that interprets them does.
 
+What this module is decoding
+----------------------------
+The bytes here are the **search index**, not the canonical value. The number as
+the contributor wrote it lives in ``TableData`` as text; these floats are a
+deliberately widened working copy, because a written interval like ``5.5?`` has
+exact decimal bounds that binary floating point cannot represent, so conversion
+must round outward. See ``docs/design/number-representation.md``.
+
+That matters for what "correct" means here. The goal is to reproduce the
+existing rendering of the working copy byte-for-byte. It is **not** to recover
+the contributor's string: text -> interval -> text is not a fixed point (Sage
+turns ``3.14159?`` into ``3.1416?`` and then ``3.142?``), so a decoder that
+appeared to "improve" precision would be wrong, and one that round-tripped
+through this path back into ``TableData`` would corrupt data.
+
 Correctness is pinned by ``tests/golden/number_decoding.json``, captured from
 real production rows using the Sage implementation. Anything claimed in
 ``SUPPORTED_TYPES`` must reproduce Sage byte-for-byte, and the golden test
