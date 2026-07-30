@@ -116,6 +116,35 @@ with its child.
 The supervisor must treat every child as hostile: it owns the timeout, it reads
 a bounded reply, and it kills the whole child process group on expiry.
 
+### Validated against real Sage
+
+Prefork rests on an assumption worth checking rather than believing: that Sage
+survives `fork()`. Run inside the production image, with `sage.all` imported in
+the parent and each expression evaluated in a forked child:
+
+| expression | result |
+|---|---|
+| `2^10` | `1024` |
+| `{n: 2^n for n in [1..5]}` | `{1: 2, 2: 4, 3: 8, 4: 16, 5: 32}` |
+| `RIF(10,11)` | `11.?` |
+| `sqrt(2)` | `sqrt(2)` |
+| infinite loop | killed, `error=timeout` |
+| `__import__("os").system("id")` | rejected by the validator |
+
+So the warm-parent/forked-child model holds for this workload.
+
+### A note on RLIMIT_NPROC
+
+`RLIMIT_NPROC` looks like the natural way to stop fork bombs, and it is the
+wrong tool here: it is per **UID** and counts processes that already exist, so a
+small value fails instantly whenever the UID is shared. Setting 64 on a
+developer machine already running ~170 processes makes the very first `fork`
+raise `BlockingIOError` — found by a test, not by reasoning.
+
+Use the container's `pids_limit` instead: per-container, counting only that
+container's processes. `workers/sandbox.py` therefore leaves `RLIMIT_NPROC`
+unset by default while keeping it configurable.
+
 ### Isolation
 
 The key decision: **`network_mode: none`**. The evaluator needs no network
