@@ -76,6 +76,10 @@ class _Expression:
         self.position += 1
         return token
 
+    @staticmethod
+    def _negate(value):
+        return -value
+
     def parse(self):
         value = self.sum()
         if self.position != len(self.tokens):
@@ -91,10 +95,10 @@ class _Expression:
         return value
 
     def product(self):
-        value = self.power()
+        value = self.unary()
         while self.peek() in ('*', '/'):
             operator = self.take()
-            right = self.power()
+            right = self.unary()
             if operator == '/':
                 if right == 0:
                     raise ParseError('division by zero')
@@ -103,11 +107,27 @@ class _Expression:
                 value = value * right
         return value
 
+    def unary(self):
+        """Unary sign, binding looser than '^'.
+
+        `-x^4` is `-(x^4)`, not `(-x)^4`. Handling the sign inside atom() made
+        it bind tighter, which silently squared away the minus on any term with
+        an even exponent.
+        """
+        token = self.peek()
+        if token == '-':
+            self.take()
+            return self._negate(self.unary())
+        if token == '+':
+            self.take()
+            return self.unary()
+        return self.power()
+
     def power(self):
         base = self.atom()
         if self.peek() == '^':
             self.take()
-            exponent = self.power()          # right associative
+            exponent = self.unary()          # right associative
             if exponent.denominator != 1:
                 raise ParseError('fractional exponent')
             return base ** int(exponent)
@@ -117,10 +137,6 @@ class _Expression:
         token = self.take()
         if token is None:
             raise ParseError('unexpected end of expression')
-        if token == '-':
-            return -self.atom()
-        if token == '+':
-            return self.atom()
         if token == '(':
             value = self.sum()
             if self.take() != ')':

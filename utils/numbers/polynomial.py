@@ -70,7 +70,10 @@ def _scale(polynomial, factor):
 # parsing
 # --------------------------------------------------------------------------
 
-_TOKEN = re.compile(r'\s*(\d+|[A-Za-z]\w*|[-+*/^()])')
+#A variable is a letter with optional digits -- x, y, a, x0, x1 -- matching
+#both mathematical convention and every name in the corpus. Allowing arbitrary
+#words would make prose like "yes" a valid polynomial in one variable.
+_TOKEN = re.compile(r'\s*(\d+|[A-Za-z][0-9]*|[-+*/^()])')
 
 
 def _tokenize(text):
@@ -107,6 +110,10 @@ class _Parser:
         self.position += 1
         return token
 
+    @staticmethod
+    def _negate(value):
+        return _scale(value, -1)
+
     def parse(self):
         value = self.sum()
         if self.position != len(self.tokens):
@@ -121,10 +128,10 @@ class _Parser:
         return value
 
     def product(self):
-        value = self.power()
+        value = self.unary()
         while self.peek() in ('*', '/'):
             operator = self.take()
-            right = self.power()
+            right = self.unary()
             if operator == '*':
                 value = _multiply(value, right)
             else:
@@ -139,11 +146,27 @@ class _Parser:
                 value = _scale(value, Fraction(1, 1) / divisor)
         return value
 
+    def unary(self):
+        """Unary sign, binding looser than '^'.
+
+        `-x^4` is `-(x^4)`, not `(-x)^4`. Handling the sign inside atom() made
+        it bind tighter, which silently squared away the minus on any term with
+        an even exponent.
+        """
+        token = self.peek()
+        if token == '-':
+            self.take()
+            return self._negate(self.unary())
+        if token == '+':
+            self.take()
+            return self.unary()
+        return self.power()
+
     def power(self):
         base = self.atom()
         if self.peek() == '^':
             self.take()
-            exponent = self.atom()
+            exponent = self.unary()
             if list(exponent.keys()) != [()] or exponent[()].denominator != 1:
                 raise ParseError('exponent must be an integer')
             count = int(exponent[()])
@@ -159,10 +182,6 @@ class _Parser:
         token = self.take()
         if token is None:
             raise ParseError('unexpected end of expression')
-        if token == '-':
-            return _scale(self.atom(), -1)
-        if token == '+':
-            return self.atom()
         if token == '(':
             value = self.sum()
             if self.take() != ')':
