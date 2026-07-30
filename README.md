@@ -71,9 +71,17 @@ This setup runs the Django app (with SageMath), Nginx, Postgres, and the Pyro5 s
 - `db`: Postgres
   - Ports: internal only (no host mapping by default)
 - `pyro-ns`: Pyro5 name server
-  - Ports: `9090` (exposed)
+  - Ports: internal only — **must not be published to the host**. Pyro's name
+    server accepts `register()` unauthenticated, so a published port lets anyone
+    rebind `safe_eval` to a URI they control, and the site pickle-loads the reply
+    via Sage's `loads()`. `web` and `eval` reach it as `pyro-ns:9090` over the
+    compose network; nothing outside needs it.
 - `eval`: SafeEval worker (`workers/eval.py`)
   - Connects to `pyro-ns`
+  - Note: `Pyro5.server.Daemon()` binds to `localhost` by default, so the worker
+    currently advertises an unreachable URI and the callers fall back via their
+    `NamingError`/`CommunicationError` handlers. Being replaced by a sandboxed
+    evaluator; do not "fix" by widening the bind without that sandbox.
 - `data-fetcher`: one-shot helper to clone/pull `numberdb-data`
 - `certbot`/`certbot-renew`: certificate issuance and renewal
 
