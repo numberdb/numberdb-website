@@ -207,11 +207,13 @@ ssh "${SSH_OPTS[@]}" "$REMOTE" bash -lc "\
   docker compose up -d --build db pyro-ns eval web nginx certbot-renew; \
 "
 
+# Full history, not --depth 1: the builder derives contributors and table
+# histories from the commit log, and a shallow clone has exactly one commit.
 echo "==> Fetching numberdb-data"
 ssh "${SSH_OPTS[@]}" "$REMOTE" bash -lc "\
   set -e; cd '$REMOTE_PATH'; \
   docker compose run --rm data-fetcher || \
-    docker run --rm -v numberdb-website_numberdb-data:/numberdb-data alpine/git:latest clone --depth 1 https://github.com/numberdb/numberdb-data.git /numberdb-data || \
+    docker run --rm -v numberdb-website_numberdb-data:/numberdb-data alpine/git:latest clone https://github.com/numberdb/numberdb-data.git /numberdb-data || \
     docker run --rm -v numberdb-website_numberdb-data:/numberdb-data alpine/git:latest -C /numberdb-data pull; \
 "
 
