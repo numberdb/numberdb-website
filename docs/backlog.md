@@ -106,6 +106,31 @@ search now resolves reals, complex values and p-adics in plain Python and SQL.
 What still imports Sage: `numberdb_app/models.py`, `views.py`, `api.py`, and
 `utils/utils.py`. The evaluator sandbox keeps full Sage either way.
 
+## The two search entry points disagree about precision
+
+The same text means different things to `/suggestions` and `/api/search`:
+
+    3.14159265358979
+      search bar   parse_real_interval -> blurred width 3.86e-14 -> finds pi
+      /api/search  RIF("...")          -> blurred width 4e-15    -> finds nothing
+
+Both are defensible -- the search bar reads a typed decimal as uncertain in its
+last digit, advanced search reads an expression at face value, and pi really
+does differ from that decimal at the fifteenth digit. But a user who tries the
+same string in both places gets results in one and silence in the other, with
+nothing explaining why. At minimum advanced search should say that it searched
+and found nothing at the precision given.
+
+## The API still ships Sage pickles to clients
+
+`/api/search` returns each number twice: as structured fields, and as a `sage`
+key holding a pickle for the shipped client to load. Unpickling is arbitrary
+code execution, so this asks every consumer to trust the server completely --
+the same class of problem as the Pyro transport that was removed.
+
+It also ties the wire format to Sage, so it blocks the passagemath move: the
+pickles are Sage objects, and a client without Sage cannot read them.
+
 ## Cleanups
 
 - Delete `utils/number_decode.py`. Obsolete since the exact layer landed, and
