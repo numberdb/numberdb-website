@@ -508,3 +508,28 @@ class InPlaceUpdate(TestCase):
 	def test_the_container_is_present_even_with_no_search(self):
 		"""It must exist to be replaced, and its absence means 'no panel here'."""
 		self.assertContains(self.client.get('/'), 'search-results-container')
+
+
+class SearchTipsToggle(TestCase):
+	"""The tips close when a search is submitted, and the link is addressable.
+
+	The toggle was passed 'searchbar-help', which is a class and matches no
+	element. getElementById returned null and the label assignment threw, after
+	the panel had already been shown or hidden -- so the tips toggled and the
+	link never changed its text.
+	"""
+
+	def test_the_toggle_link_has_the_id_it_is_passed(self):
+		page = self.client.get('/').content.decode()
+		self.assertIn('id="searchtips-toggle"', page)
+		self.assertIn("toggle_visibility('searchtips','searchtips-toggle')", page)
+
+	def test_the_old_class_name_is_no_longer_used_as_an_id(self):
+		page = self.client.get('/').content.decode()
+		self.assertNotIn("toggle_visibility('searchtips','searchbar-help')", page)
+
+	def test_submitting_closes_the_tips(self):
+		page = self.client.get('/').content.decode()
+		self.assertIn('close_searchtips', page)
+		submit = page.index("form.on('submit'")
+		self.assertIn('close_searchtips()', page[submit:submit + 400])
