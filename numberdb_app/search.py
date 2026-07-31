@@ -30,6 +30,7 @@ collapses to string prefixes.
 from decimal import Decimal
 
 from django.db.backends.postgresql.psycopg_any import NumericRange
+from django.db.models import Q
 from django.db.models.expressions import RawSQL
 
 from .models import Number, NumberComplex, NumberPAdic, searchable_range
@@ -67,27 +68,36 @@ _SCORE_SQL = _SCORE_SQL_TEMPLATE
 _FRAC_SCORE_SQL = _SCORE_SQL_TEMPLATE.replace('value_range', 'frac_range')
 
 
-#Numeric search answers one question: someone has a number from an experiment
-#and wants to know whether it is already known. An entry earns a place only if
-#matching it says *which* number they have.
-#
-#A few stored values cannot do that, because nothing better about them is
-#known: the exponent of matrix multiplication is somewhere in [2, 2.3728596],
-#a diagonal Ramsey number somewhere in [43, 48]. Matching one of those does not
-#identify anything -- it reports that a wide range overlaps another wide range,
-#and it would do so for every experimental value in that range.
-#
-#They are recognised without a threshold, because the data already draws this
-#line: exact_text renders a value as a decimal expansion when it is known to
-#its last digit, and as "[a,b]" when it is not. Eleven of 45832 rows are
-#written as intervals, and they are exactly the Ramsey numbers and the matrix
-#multiplication exponent.
-#
-#This removes them from search *by number* only. They remain reachable by name
-#and by tag, which is the way to ask about them: "matrix multiplication", not
-#"2.3".
+#: How weakly a value may be known and still be worth returning for a number.
+#: A value known to worse than this cannot identify anything: matching it says
+#: a wide range overlaps another wide range, and it would say that for every
+#: experimental value in the range.
+#:
+#: The corpus is insensitive to the exact figure -- 1e-4 and 1e-5 both exclude
+#: the same 16 rows of 45832 -- so this is not a knife edge. What it decides is
+#: which side the measured physical constants fall on:
+#:
+#:     1e-3   excludes the 7 merely-bounded values only
+#:            (Ramsey numbers, the matrix multiplication exponent)
+#:     1e-5   also excludes the 9 mass ratios, e.g. 0.88153(17)
+MAX_RELATIVE_WIDTH = 1e-5
+
+
 def _identifiable(queryset):
-	return queryset.exclude(exact_text__startswith = '[')
+	"""Drop values known too weakly to identify the number being asked about.
+
+	Numeric search exists for one question: someone has a number from an
+	experiment and wants to know whether it is already known. Values that are
+	merely bounded answer it with noise.
+
+	A null width means exact_text could not be parsed, which is no reason to
+	hide the row; those are kept.
+	"""
+	return queryset.filter(
+		Q(exact_relative_width__lte = MAX_RELATIVE_WIDTH)
+		| Q(exact_relative_width__isnull = True)
+	)
+
 
 def real_query_range(r_query):
 	"""A Sage real interval as the numrange to search with."""
