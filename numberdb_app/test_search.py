@@ -23,7 +23,8 @@ from sage.rings.all import CIF, RIF, Qp
 
 from .models import Number, NumberComplex, NumberPAdic, Table
 from .search import (_coarser_ball_strings, search_complex_numbers,
-                     search_p_adic_numbers, search_real_numbers)
+                     search_fractional_parts, search_p_adic_numbers,
+                     search_real_numbers)
 
 
 def _table():
@@ -199,3 +200,69 @@ class PAdicSearch(TestCase):
 	def test_the_query_itself_is_left_to_the_containment_lookup(self):
 		query = self.query_string(Qp(5, 20)(1 + 5))
 		self.assertNotIn(query, _coarser_ball_strings(query))
+
+
+class FractionalPartSearch(TestCase):
+	"""The last search that still asked for containment."""
+
+	@classmethod
+	def setUpTestData(cls):
+		cls.table = _table()
+
+	def store(self, sage_number, param=b'x'):
+		number = Number(sage_number=sage_number)
+		number.table = self.table
+		number.param = param
+		number.save()
+		return number
+
+	def test_a_coarser_stored_fraction_matches_a_precise_query(self):
+		"""The bug: it cannot sit inside the query, but it may be it."""
+		stored = self.store(RIF(3.14, 3.15))
+		found = search_fractional_parts(RIF(0.14159, 0.14160), 100)
+		self.assertIn(stored.id, [n.id for n in found])
+
+	def test_a_precise_stored_fraction_matches_a_coarse_query(self):
+		stored = self.store(RIF(3.14159, 3.14160))
+		found = search_fractional_parts(RIF(0.14, 0.15), 100)
+		self.assertIn(stored.id, [n.id for n in found])
+
+	def test_exactly_known_fractions_are_findable(self):
+		stored = self.store(RIF(3.5))
+		found = search_fractional_parts(RIF(0.4, 0.6), 100)
+		self.assertIn(stored.id, [n.id for n in found])
+
+	def test_a_negative_number_is_searched_by_its_positive_fraction(self):
+		stored = self.store(RIF(-2.3))
+		found = search_fractional_parts(RIF(0.69, 0.71), 100)
+		self.assertIn(stored.id, [n.id for n in found])
+
+	def test_a_wholly_unknown_fraction_is_not_returned(self):
+		"""Straddling an integer, frac() gives [0,1]: no measurement at all.
+
+		It overlaps every query, so admitting it would bury the real matches --
+		715 such rows against 5 informative ones for a precise query.
+		"""
+		unknown = self.store(RIF(3.9, 4.1), param=b'unk')
+		known = self.store(RIF(3.7), param=b'known')
+		self.assertEqual((float(unknown.frac_range.lower),
+		                  float(unknown.frac_range.upper)), (0.0, 1.0))
+
+		ids = [n.id for n in search_fractional_parts(RIF(0.69, 0.71), 100)]
+		self.assertIn(known.id, ids)
+		self.assertNotIn(unknown.id, ids)
+
+	def test_a_merely_coarse_fraction_is_still_returned(self):
+		"""Wide but measured, so unlike [0,1] it is demoted rather than dropped."""
+		coarse = self.store(RIF(3.6, 3.8), param=b'coarse')
+		ids = [n.id for n in search_fractional_parts(RIF(0.69, 0.71), 100)]
+		self.assertIn(coarse.id, ids)
+
+	def test_a_disjoint_fraction_is_not_returned(self):
+		self.store(RIF(3.2))
+		self.assertEqual(search_fractional_parts(RIF(0.8, 0.9), 100), [])
+
+	def test_a_full_page_of_contained_fractions_ends_the_search(self):
+		for i in range(12):
+			self.store(RIF(3 + (i + 1) / 1000.0), param=bytes([i]))
+		self.assertEqual(len(search_fractional_parts(RIF(0.0, 0.5), 10)), 10)

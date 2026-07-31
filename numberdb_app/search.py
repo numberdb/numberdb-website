@@ -27,12 +27,16 @@ in an ultrametric space balls nest instead of overlapping and the question
 collapses to string prefixes.
 """
 
+from decimal import Decimal
+
+from django.db.backends.postgresql.psycopg_any import NumericRange
 from django.db.models.expressions import RawSQL
 
 from .models import Number, NumberComplex, NumberPAdic, searchable_range
 
-__all__ = ['search_real_numbers', 'search_complex_numbers',
-           'search_p_adic_numbers', 'real_query_range']
+__all__ = ['search_real_numbers', 'search_fractional_parts',
+           'search_complex_numbers', 'search_p_adic_numbers',
+           'real_query_range']
 
 #Scored in SQL so that ordering can happen before LIMIT; scoring in Python
 #would mean fetching every overlapping row first.
@@ -46,7 +50,7 @@ __all__ = ['search_real_numbers', 'search_complex_numbers',
 #  - a saturated value has an unbounded end and infinite width, so no finite
 #    query can account for a meaningful share of it. It scores 0 and sorts
 #    last, which keeps it findable without letting it displace real answers.
-_SCORE_SQL = """
+_SCORE_SQL_TEMPLATE = """
 CASE
 	WHEN lower_inf("db_number"."value_range")
 	  OR upper_inf("db_number"."value_range") THEN 0
@@ -58,6 +62,9 @@ CASE
 	    - lower("db_number"."value_range"))
 END
 """
+
+_SCORE_SQL = _SCORE_SQL_TEMPLATE
+_FRAC_SCORE_SQL = _SCORE_SQL_TEMPLATE.replace('value_range', 'frac_range')
 
 
 def real_query_range(r_query):
@@ -213,3 +220,42 @@ def search_p_adic_numbers(number_string, limit):
 	)
 	coarser.sort(key = lambda number: -len(number.number_string))
 	return (inside + coarser)[:limit]
+
+
+def search_fractional_parts(f_query, limit):
+	"""Stored values whose fractional part could be ``f_query``, best first.
+
+	The real search, applied to the other range column. It was the last place
+	still asking for containment, and it had the same consequence: a fractional
+	part known to three digits cannot sit inside a query given to ten, so a
+	precise query never returned it. 39344 of the 45832 stored fractional parts
+	are interval-valued.
+
+	Values whose fractional part is entirely unknown are excluded. When a
+	number's own interval straddles an integer, frac() gives [0,1] -- 715 rows
+	say only "somewhere in the unit interval". Those overlap every query, so
+	admitting them turns a precise search into 720 results of which 715 carry no
+	information about the fractional part at all, burying the 5 that do.
+
+	This is the one place where overlap needs qualifying. Elsewhere a wide
+	stored interval is a weak match and the score demotes it; here it is not a
+	weak match but the absence of a measurement, and the two should not be
+	ranked on the same scale. The saturated reals do not have this problem: an
+	unbounded range sits out at 1e308 and does not reach an ordinary query.
+	"""
+	query = real_query_range(f_query)
+	unknown = NumericRange(Decimal(0), Decimal(1), '[]')
+
+	contained = list(
+		Number.objects.filter(frac_range__contained_by = query)[:limit]
+	)
+	if len(contained) >= limit:
+		return contained
+
+	return list(
+		Number.objects
+			.filter(frac_range__overlap = query)
+			.exclude(frac_range__contains = unknown)
+			.annotate(overlap_score = RawSQL(_FRAC_SCORE_SQL, (query, query)))
+			.order_by('-overlap_score')[:limit]
+	)
