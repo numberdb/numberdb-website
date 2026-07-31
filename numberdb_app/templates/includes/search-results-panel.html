@@ -50,8 +50,10 @@ have meant either.
       No match for <span class="search-results-term">{{ searchterm }}</span>.
     </div>
     <div class="search-results-none">
-      {# The commonest reason a number is absent is that it is not in the
-         database, but not the only one, and the other two are actionable. #}
+      {% comment %}
+      The commonest reason a number is absent is that it is not in the
+      database, but not the only one, and the other two are actionable.
+      {% endcomment %}
       A number is found by its digits, so a value given to too few of them may
       match nothing. Numbers known too imprecisely to identify anything are
       left out of search by number and marked in the tables &mdash;
