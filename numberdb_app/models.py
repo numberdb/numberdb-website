@@ -493,6 +493,20 @@ class Number(models.Model):
 		return real_interval_to_pretty_string(self.to_RIF())
 
 	def str_short(self):
+		'''The uniform search-result view: every kind on the same real line.
+
+		Rendered from exact_text in plain Python, so a page of results no
+		longer needs Sage. Falls back to the old path only if exact_text is
+		missing, which a rebuilt database does not produce.
+		'''
+		if self.exact_text:
+			try:
+				from utils.numbers import parse_real
+				from utils.numbers.display import uniform_real_text
+				low, high = parse_real(self.exact_text).bounds()
+				return uniform_real_text(low, high)
+			except Exception:
+				pass
 		return self.str_as_real_interval()
 
 	def __str__(self):
@@ -645,8 +659,10 @@ class NumberPAdic(models.Model):
 		return self.to_Qp()
 
 	def str_short(self):
+		#exact_text is already the documented rendering for this kind.
+		if self.exact_text:
+			return self.exact_text
 		r = self.to_sage()
-		r = r.add_bigoh(r.valuation() + 5)
 		return str(r)
 		
 	def __str__(self):
@@ -797,6 +813,21 @@ class NumberComplex(models.Model):
 		return self.to_CIF()
 
 	def str_short(self):
+		'''The uniform view, capped the same way as reals.
+
+		Not exact_text: stored complex values carry up to a hundred digits per
+		component, which is right for the faithful value and unreadable in a
+		column of results.
+		'''
+		if self.exact_text:
+			try:
+				from utils.numbers import parse_complex
+				from utils.numbers.display import uniform_complex_text
+				value = parse_complex(self.exact_text)
+				return uniform_complex_text(value.real().bounds(),
+				                            value.imag().bounds())
+			except Exception:
+				pass
 		return complex_interval_to_pretty_string(self.to_sage())
 
 	def __str__(self):
@@ -935,6 +966,9 @@ class Polynomial(models.Model):
 		return str(r)
 
 	def str_short(self):
+		#exact_text is already the documented rendering for this kind.
+		if self.exact_text:
+			return self.exact_text
 		r = self.to_sage()
 		return str(r)
 		
