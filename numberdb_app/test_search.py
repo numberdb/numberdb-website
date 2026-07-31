@@ -419,3 +419,33 @@ class SearchPanel(TestCase):
 		self.assertEqual(search_by_term('zzzznotanumber'), [])
 		self.assertEqual(search_by_term(''), [])
 		self.assertEqual(search_by_term(None), [])
+
+
+class TemplatesRenderCleanly(TestCase):
+	"""No template syntax may reach the page.
+
+	{# #} is a single-line comment in Django. Spanning lines with it does not
+	comment anything out -- the text is rendered, and a four-line note about
+	why the search form uses GET appeared on the front page. Nothing failed:
+	the page returned 200 with the explanation printed above the search box.
+	"""
+
+	MARKERS = ['{#', '#}', '{% comment', '{% endcomment']
+
+	def assert_clean(self, url, data=None):
+		page = self.client.get(url, data or {}).content.decode('utf8', 'replace')
+		for marker in self.MARKERS:
+			self.assertNotIn(marker, page,
+			                 '%s leaked %r into the page' % (url, marker))
+
+	def test_the_front_page_is_clean(self):
+		self.assert_clean('/')
+
+	def test_the_results_panel_is_clean(self):
+		self.assert_clean('/', {'q': '3.14159265358979'})
+
+	def test_the_empty_results_panel_is_clean(self):
+		self.assert_clean('/', {'q': 'zzzznotanumber'})
+
+	def test_the_help_page_is_clean(self):
+		self.assert_clean('/help')

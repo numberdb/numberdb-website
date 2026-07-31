@@ -135,10 +135,14 @@ table.searchbox-table  td {
   ></div>
 -->
 
-{# A real form, so Enter and the magnifier submit and a search gets a URL.
-   Method GET on purpose: the query belongs in the address bar, where it can be
-   linked, bookmarked and reached again with the back button. The dropdown is
-   unaffected -- it still answers as you type, from its own request. #}
+{% comment %}
+A real form, so Enter and the magnifier submit and a search gets a URL.
+Method GET on purpose: the query belongs in the address bar, where it can be
+linked, bookmarked and reached again with the back button. The dropdown is
+unaffected -- it still answers as you type, from its own request.
+
+{# #} is single-line only; spanning lines with it renders the text on the page.
+{% endcomment %}
 <form id="searchbox-form" method="get" action="{% url 'db:home' %}">
 <div id="searchbox-component">
  <table class="searchbox-table" width="100%" style="border-spacing:0;">
