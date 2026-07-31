@@ -139,6 +139,15 @@ services:
       - |
         set -e
         if [ -d /numberdb-data/.git ]; then
+          # A --depth 1 clone holds exactly one commit, so the builder sees one
+          # commit by one author and the site's contributor list and table
+          # histories silently collapse to that. `git pull` leaves a shallow
+          # clone shallow, so existing ones are repaired here rather than only
+          # fixed for new deployments.
+          if [ "$(git -C /numberdb-data rev-parse --is-shallow-repository)" = "true" ]; then
+            echo "Repairing shallow clone: fetching full history." >&2
+            git -C /numberdb-data fetch --unshallow
+          fi
           git -C /numberdb-data pull
           exit 0
         fi
@@ -148,7 +157,8 @@ services:
           rm -rf /numberdb-data/* /numberdb-data/.[!.]* /numberdb-data/..?* 2>/dev/null || true
         fi
 
-        git clone --depth 1 https://github.com/numberdb/numberdb-data.git /numberdb-data
+        # Full history: the builder reads commits and authors from it.
+        git clone https://github.com/numberdb/numberdb-data.git /numberdb-data
     volumes:
       - numberdb-data:/numberdb-data
     restart: "no"
