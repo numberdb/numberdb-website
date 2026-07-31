@@ -1134,21 +1134,22 @@ def suggestions(request):
 		query_complex = NumberComplex.objects.none()
 		n = parse_complex_interval(term)
 		if n != None:
-			#First cap precision of n,
-			#as high precision queries would not be fould otherwise.
-			n = CIF(n)
-			
-			number = NumberComplex(sage_number=n)
-				
-			if number != None:
-				print("number:",number)
-				query_complex = NumberComplex.objects.filter(
-					number_searchstring__startswith = number.number_searchstring,
-				)[:int(10-i)]
-				print("query_complex:",query_complex)
-				suggested_numbers += list(query_complex)
-				#print("suggested_numbers:",suggested_numbers)
-				add_suggested_numbers()
+			#The query's precision is no longer capped here. It had to be,
+			#because the Z-order prefix search could only find cells inside the
+			#query: a precise query produced a long searchstring that no
+			#shorter stored string could start with, so nothing matched. Box
+			#overlap is symmetric, so a precise query finds coarser stored
+			#values on its own and the query keeps its precision.
+			query_complex = NumberComplex.objects.filter(
+				re_lower__lte = float(n.real().upper()),
+				re_upper__gte = float(n.real().lower()),
+				im_lower__lte = float(n.imag().upper()),
+				im_upper__gte = float(n.imag().lower()),
+			)[:int(10-i)]
+			print("query_complex:",query_complex)
+			suggested_numbers += list(query_complex)
+			#print("suggested_numbers:",suggested_numbers)
+			add_suggested_numbers()
 
 			if i >= 10:
 				return wrap_response(entries)
