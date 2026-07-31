@@ -35,6 +35,7 @@ from urllib.parse import quote_plus, unquote_plus
 
 from mpmath import pslq
 
+from .models import findable_by_number
 from .models import UserProfile
 from .models import Wanted
 
@@ -75,6 +76,7 @@ from utils.utils import blur_complex_interval
 from utils.utils import is_polynomial_ring
 
 
+from .search import max_relative_width
 from .search import (search_complex_numbers, search_fractional_parts,
                      search_p_adic_numbers, search_real_numbers)
 
@@ -105,6 +107,9 @@ def help(request):
 	#contributors = Contributor.objects.all().order_by('-table_commit_count')
 	context = {
 		'contribution_count': contribution_count,
+		#Documented from the setting, so the help text cannot drift from the
+		#cutoff search actually applies.
+		'max_relative_width': max_relative_width(),
 	}
 	return render(request, 'help.html', context)
 
@@ -657,6 +662,10 @@ def table_context(table, preview=False):
 						'params_id': params_id_so_far,
 						'params_display': params_display_so_far,
 						'number': number,
+						#Marked in the table so a reader who cannot find this
+						#number in the search can see why.
+						'not_findable': not findable_by_number(number)
+							if isinstance(number, str) else False,
 						'extra_info': extra_info,
 					})
 				return result

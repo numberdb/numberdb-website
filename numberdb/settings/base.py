@@ -198,3 +198,16 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'), ]
+
+
+# Search by number answers "I measured this, is it known?", so a value known
+# too weakly to identify anything is left out of it -- see
+# numberdb_app/search.py. This is the relative precision required: 1e-5 is
+# about five significant digits.
+#
+# Applied at query time against a stored measurement, so it can be changed
+# freely without rebuilding anything; only which rows are returned changes.
+# Values excluded by it are marked in the tables, so a reader can see why a
+# number cannot be found.
+NUMBERDB_MAX_RELATIVE_WIDTH = float(
+    os.environ.get('NUMBERDB_MAX_RELATIVE_WIDTH', '1e-5'))

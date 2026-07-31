@@ -320,3 +320,45 @@ class IdentifiabilityByNumber(TestCase):
 		ramsey = self.store(RIF(43, 48), '[43, 48]')
 		found = search_fractional_parts(RIF(0.4, 0.6), 100)
 		self.assertNotIn(ramsey.id, [n.id for n in found])
+
+
+class ThresholdIsConfigurable(TestCase):
+	"""The cutoff is a setting, and the tables must agree with it.
+
+	Search reads a stored measurement and the tables re-derive it from the
+	text, so the two could drift apart and tell a reader that a number is
+	findable when it is not.
+	"""
+
+	@classmethod
+	def setUpTestData(cls):
+		cls.table = _table()
+
+	def store(self, sage_number, exact_text):
+		from .models import exact_relative_width
+		number = Number(sage_number=sage_number)
+		number.table = self.table
+		number.param = b'x'
+		number.exact_text = exact_text
+		number.exact_relative_width = exact_relative_width(exact_text)
+		number.save()
+		return number
+
+	def test_a_looser_setting_admits_the_mass_ratios(self):
+		from django.test import override_settings
+		ratio = self.store(RIF(0.88136, 0.88170), '0.88153(17)')
+		with override_settings(NUMBERDB_MAX_RELATIVE_WIDTH=1e-3):
+			found = search_real_numbers(RIF(0.8815, 0.8816), 100)
+			self.assertIn(ratio.id, [n.id for n in found])
+		with override_settings(NUMBERDB_MAX_RELATIVE_WIDTH=1e-5):
+			found = search_real_numbers(RIF(0.8815, 0.8816), 100)
+			self.assertNotIn(ratio.id, [n.id for n in found])
+
+	def test_the_table_mark_tracks_the_same_setting(self):
+		from django.test import override_settings
+		from .models import findable_by_number
+		with override_settings(NUMBERDB_MAX_RELATIVE_WIDTH=1e-3):
+			self.assertTrue(findable_by_number('0.88153(17)'))
+			self.assertFalse(findable_by_number('[2, 2.3728596]'))
+		with override_settings(NUMBERDB_MAX_RELATIVE_WIDTH=1e-5):
+			self.assertFalse(findable_by_number('0.88153(17)'))

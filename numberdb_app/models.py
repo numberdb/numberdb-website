@@ -341,6 +341,21 @@ def exact_relative_width(exact_text):
 	return float((high - low) / magnitude)
 
 
+def findable_by_number(exact_text):
+	"""Whether search by number would return a value written like this.
+
+	The tables call this to mark the values it excludes, so that a reader who
+	cannot find a number in the search can see why, rather than concluding the
+	database does not have it. Search itself uses the stored measurement --
+	SQL cannot parse exact_text -- so both must read the same threshold.
+	"""
+	from django.conf import settings
+	width = exact_relative_width(exact_text)
+	if width is None:
+		return True
+	return width <= getattr(settings, 'NUMBERDB_MAX_RELATIVE_WIDTH', 1e-5)
+
+
 def searchable_range(lower, upper):
 	"""The float bounds as one range, for the GiST index to answer overlap on.
 

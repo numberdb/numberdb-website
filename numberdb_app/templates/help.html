@@ -133,6 +133,7 @@ div.main-column {
 <li><a href="#section-how-to-search">How to search</a></li>
 <li><a href="#section-advanced-search-guide">Advanced search guide</a></li>
 <li><a href="#section-number-types">Number types and accuracy</a></li>
+<li><a href="#section-search-precision">Numbers not found by search</a></li>
 <li><a href="#section-sage-interface">Sage interface</a></li>
 </ol>
 <hr class="contents">
@@ -280,6 +281,46 @@ These formats apply to the tables' webpages, the searchbar, as well as to the ra
 Note that in the yaml format one has put quotation marks around square brackets, such that
 the interval does not get parsed as a list.
 -->
+</div>
+
+<!--------------------------------------------------------------------->
+
+<div id="section-search-precision" class="section scrollspy">
+<h2 id="search-precision" class="section scrollspy">Numbers not found by search</h2>
+
+Searching by number answers one question: you have a number &mdash; from an
+experiment, a computation, a paper &mdash; and you want to know whether it is
+already known, and where else it appears.
+
+<p>
+A few numbers here cannot answer that question, because nobody knows them
+precisely enough. The exponent of matrix multiplication is only known to lie
+somewhere in [2,&nbsp;2.3728596], and the diagonal Ramsey number
+<i>R</i>(5,5) somewhere in [43,&nbsp;48]. If searching for 2.3 returned the
+matrix multiplication exponent, that would not tell you that your number
+<i>is</i> that exponent &mdash; only that a wide range happens to contain your
+number, which is equally true of every value in it.
+
+<p>
+So such numbers are left out of search by number. They are marked in the tables
+with a dagger, like&nbsp;<span class="not-findable-mark">&dagger;</span>, and
+you can still find them by name or by tag &mdash; searching for
+&ldquo;matrix multiplication&rdquo; finds the exponent, and that is the useful
+way to ask about it.
+
+<p>
+The cutoff is a <i>relative</i> precision of
+{{ max_relative_width|stringformat:".0e" }}: a value counts as identifiable
+when it is known to roughly that fraction of its own size, which is about five
+significant digits. Relative rather than absolute, because a number near
+10<sup>12</sup> known to within 0.0001 is pinned down far more sharply than a
+number near 1 known to within the same amount.
+
+<p>
+The precision that counts is what is actually known about the number, not how
+it happens to be displayed. A value stored as an exact fraction is known
+perfectly however it is rounded for display, and a measured value such as
+0.88153(17) is known only to the digits its error bars allow.
 </div>
 
 <!--------------------------------------------------------------------->

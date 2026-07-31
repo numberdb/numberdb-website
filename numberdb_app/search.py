@@ -80,7 +80,13 @@ _FRAC_SCORE_SQL = _SCORE_SQL_TEMPLATE.replace('value_range', 'frac_range')
 #:     1e-3   excludes the 7 merely-bounded values only
 #:            (Ramsey numbers, the matrix multiplication exponent)
 #:     1e-5   also excludes the 9 mass ratios, e.g. 0.88153(17)
-MAX_RELATIVE_WIDTH = 1e-5
+#:
+#: Read from settings so it can be moved without a code change, and without a
+#: rebuild: it is applied to a stored measurement at query time. Whatever it is
+#: set to, the tables mark the values it excludes.
+def max_relative_width():
+	from django.conf import settings
+	return getattr(settings, 'NUMBERDB_MAX_RELATIVE_WIDTH', 1e-5)
 
 
 def _identifiable(queryset):
@@ -94,7 +100,7 @@ def _identifiable(queryset):
 	hide the row; those are kept.
 	"""
 	return queryset.filter(
-		Q(exact_relative_width__lte = MAX_RELATIVE_WIDTH)
+		Q(exact_relative_width__lte = max_relative_width())
 		| Q(exact_relative_width__isnull = True)
 	)
 
