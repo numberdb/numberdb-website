@@ -171,7 +171,7 @@ function scrollTo(event, id) {
           {% endfor %}
           <div class="table-cell-right table-number">
             {% if n.number %}
-                {{ n.number | safe}}
+                {{ n.number | safe}}{% if n.not_findable %}{% include 'includes/not-findable-mark.html' %}{% endif %}
             {% else %}
               {% include 'includes/number-extra-info-snippet.html' with info=n.extra_info %}
             {% endif %}

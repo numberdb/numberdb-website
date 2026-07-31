@@ -1,0 +1,13 @@
+{% comment %}
+Marks a value that search by number will not return, because it is not known
+precisely enough to identify anything -- the exponent of matrix multiplication
+is somewhere in [2, 2.3728596], and matching that would tell an asker nothing.
+
+Without the mark the table and the search contradict each other: the number is
+plainly here, yet searching for it finds nothing, and a reader has no way to
+tell that this is deliberate. The dagger is a link rather than a bare tooltip
+so the explanation is reachable by click as well as hover, and by keyboard.
+{% endcomment %}
+<a class="not-findable-mark"
+   href="{% url 'db:help' %}#search-precision"
+   title="This number will not be found in the search. Click for why.">&dagger;</a>

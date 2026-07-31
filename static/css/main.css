@@ -1,1 +1,18 @@
 
+
+/* Marks a number that search will not return -- see
+   includes/not-findable-mark.html. Dotted underline to match the notation for
+   an uncertain digit: both say "there is less here than meets the eye". Kept
+   quiet, since it annotates a number rather than competing with it. */
+.not-findable-mark {
+  font-size: 0.85em;
+  vertical-align: super;
+  margin-left: 0.15em;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.15em;
+  color: #888;
+}
+.not-findable-mark:hover,
+.not-findable-mark:focus {
+  color: #333;
+}
