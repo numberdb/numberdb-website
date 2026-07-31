@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.postgres.search import SearchVectorField
+from django.contrib.postgres.indexes import HashIndex
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 #from django.contrib.gis.db import models as gis_models
@@ -334,6 +335,19 @@ class Number(models.Model):
 		max_length = 2 * HALF_BLOB_LENGTH,
 		db_index = True, #Should rather have a constrained postgres hash index for integers!
 	)
+	#The faithful value: canonical text in a documented format, as defined by
+	#utils/numbers. This is the definition of the number; lower/upper and the
+	#other columns below are a lossy projection used only to find candidates.
+	#See docs/design/number-datastructures.md.
+	exact_text = models.TextField(
+		default = '',
+		#Deliberately no db_index: a btree index row is capped at about 2704
+		#bytes and the Igusa polynomials are longer, so building one fails
+		#outright. This column is looked up by equality, so it carries a hash
+		#index instead (see Meta below), which hashes the value and has no
+		#length limit.
+	)
+
 	lower = models.FloatField(
 		db_index = True,
 	)
@@ -355,6 +369,12 @@ class Number(models.Model):
 		max_length = 32,
 		db_index = True
 	)
+
+	class Meta:
+		indexes = [
+			HashIndex(fields=['exact_text'],
+			          name='number_exact_hash'),
+		]
 
 	def number_type_bytes(self):
 		return to_bytes(self.number_type)
@@ -521,6 +541,18 @@ class NumberPAdic(models.Model):
 		#max_length = 100,
 		db_index = True,
 	)
+	#The faithful value: canonical text in a documented format, as defined by
+	#utils/numbers. This is the definition of the number; lower/upper and the
+	#other columns below are a lossy projection used only to find candidates.
+	#See docs/design/number-datastructures.md.
+	exact_text = models.TextField(
+		default = '',
+		#Deliberately no db_index: a btree index row is capped at about 2704
+		#bytes and the Igusa polynomials are longer, so building one fails
+		#outright. This column is looked up by equality, so it carries a hash
+		#index instead (see Meta below), which hashes the value and has no
+		#length limit.
+	)
 	prime = models.IntegerField(
 		db_index = True,
 	)
@@ -536,6 +568,12 @@ class NumberPAdic(models.Model):
 		max_length = 32,
 		db_index = True,
 	)
+
+	class Meta:
+		indexes = [
+			HashIndex(fields=['exact_text'],
+			          name='numberpadic_exact_hash'),
+		]
 
 	def number_type_bytes(self):
 		return to_bytes(self.number_type)
@@ -638,6 +676,19 @@ class NumberComplex(models.Model):
 		max_length = 128,
 		db_index = True,
 	)
+	#The faithful value: canonical text in a documented format, as defined by
+	#utils/numbers. This is the definition of the number; lower/upper and the
+	#other columns below are a lossy projection used only to find candidates.
+	#See docs/design/number-datastructures.md.
+	exact_text = models.TextField(
+		default = '',
+		#Deliberately no db_index: a btree index row is capped at about 2704
+		#bytes and the Igusa polynomials are longer, so building one fails
+		#outright. This column is looked up by equality, so it carries a hash
+		#index instead (see Meta below), which hashes the value and has no
+		#length limit.
+	)
+
 	table = models.ForeignKey(
 		Table, 
 		on_delete=models.CASCADE,
@@ -659,6 +710,12 @@ class NumberComplex(models.Model):
 	im_upper = models.FloatField(
 		db_index = True,
 	)
+
+	class Meta:
+		indexes = [
+			HashIndex(fields=['exact_text'],
+			          name='numbercomplex_exact_hash'),
+		]
 
 	def number_type_bytes(self):
 		return to_bytes(self.number_type)
@@ -775,6 +832,19 @@ class Polynomial(models.Model):
 	number_string_hash = models.BigIntegerField(
 		db_index = True,
 	)
+	#The faithful value: canonical text in a documented format, as defined by
+	#utils/numbers. This is the definition of the number; lower/upper and the
+	#other columns below are a lossy projection used only to find candidates.
+	#See docs/design/number-datastructures.md.
+	exact_text = models.TextField(
+		default = '',
+		#Deliberately no db_index: a btree index row is capped at about 2704
+		#bytes and the Igusa polynomials are longer, so building one fails
+		#outright. This column is looked up by equality, so it carries a hash
+		#index instead (see Meta below), which hashes the value and has no
+		#length limit.
+	)
+
 	variable_count = models.IntegerField(
 		db_index = True,
 	)
@@ -787,6 +857,12 @@ class Polynomial(models.Model):
 		max_length = 32,
 		db_index = True,
 	)
+
+	class Meta:
+		indexes = [
+			HashIndex(fields=['exact_text'],
+			          name='polynomial_exact_hash'),
+		]
 
 	def number_type_bytes(self):
 		return to_bytes(self.number_type)

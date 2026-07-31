@@ -12,7 +12,7 @@ import os
 import django
 from django.db import transaction
 
-os.environ["DJANGO_SETTINGS_MODULE"] = 'numberdb.settings'
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "numberdb.settings.dev")
 django.setup()
 from numberdb_app.models import (
     Table,
@@ -50,6 +50,11 @@ from utils.utils import parse_p_adic
 from utils.utils import parse_complex_interval
 from utils.utils import parse_polynomial
 from utils.utils import number_with_uncertainty_to_real_ball
+
+#The exact layer: plain Python, no Sage. Supplies the faithful text stored
+#beside the search columns. See docs/design/number-datastructures.md.
+from utils.numbers import ParseError as ExactParseError
+from utils.numbers import canonical_text as exact_canonical_text
 from utils.utils import is_polynomial_ring
 
 from utils.my_timer import MyTimer
@@ -294,6 +299,12 @@ def build_tag_table():
 	Tag.objects.update(search_vector = SearchVector('name', weight='A'))
 		
 
+#Source texts the exact layer could not parse during a build. Reported at the
+#end rather than raised: a rebuild should complete and tell you what it could
+#not represent.
+unparsed_by_exact_layer = []
+
+
 def build_number_table():
 
 	print("BUILD_NUMBER TABLE")
@@ -426,7 +437,19 @@ def build_number_table():
 		
 		#print("debug1")
 		n.param = p
-	
+
+		#The faithful value, parsed from the source text rather than from the
+		#Sage object: going through Sage would already have rounded a decimal
+		#into binary and dropped the notation the contributor chose. Stored
+		#beside the search columns, which stay a lossy projection.
+		try:
+			n.exact_text = exact_canonical_text(number)
+		except ExactParseError:
+			#Not a documented format. Counted below so a rebuild reports how
+			#many rows lack a faithful value rather than failing silently.
+			n.exact_text = ''
+			unparsed_by_exact_layer.append((getattr(c, 'tid', None), number))
+
 		#print("before saving number")
 		try:
 			n.save()
@@ -581,6 +604,17 @@ def build_numberdb_data(data_repo, test_data=False, timer=None):
 	timer.run(build_table_commits,data_repo=data_repo,test_data=test_data)
 	timer.run(build_tag_table)	
 	timer.run(build_number_table)
+
+	#Report what the exact layer could not represent, rather than failing a
+	#whole rebuild over a handful of values that are not numbers.
+	if unparsed_by_exact_layer:
+		print('exact layer could not parse %d source values:'
+			% (len(unparsed_by_exact_layer),))
+		for tid, text in unparsed_by_exact_layer[:20]:
+			print('   %-6s %s' % (tid, str(text)[:70]))
+		if len(unparsed_by_exact_layer) > 20:
+			print('   ... and %d more' % (len(unparsed_by_exact_layer) - 20,))
+
 	timer.run(build_search_index_for_tables)
 
 if __name__ == '__main__':
