@@ -45,6 +45,63 @@ a.searchbar-link:hover {
 div.searchbar-help {
   text-align: right;
 }
+div.search-results {
+  width: calc(23rem + 30 * var(--lrem));
+  max-width: 100%;
+  margin: 1.5rem auto 0 auto;
+}
+div.search-results-summary {
+  color: #555;
+  font-size: 0.9rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid #ddd;
+}
+span.search-results-term {
+  font-family: monospace;
+  color: #000;
+}
+span.search-results-capped {
+  color: #888;
+}
+div.search-results-none {
+  color: #666;
+  font-size: 0.9rem;
+  padding-top: 0.6rem;
+  line-height: 1.5;
+}
+div.search-results-group-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 1rem 0 0.3rem 0;
+}
+div.search-result {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+div.search-result-value {
+  font-family: monospace;
+  font-size: 1.05rem;
+}
+div.search-result-value a {
+  color: #000;
+  text-decoration: none;
+}
+div.search-result-value a:hover {
+  text-decoration: underline;
+}
+div.search-result-where {
+  font-size: 0.85rem;
+  color: #666;
+}
+a.search-result-table {
+  color: #555;
+}
+span.search-result-param {
+  color: #999;
+  font-family: monospace;
+}
 div#searchtips {
   display: none;
   width: calc(23rem + 30 * var(--lrem));
@@ -91,6 +148,10 @@ div#searchtips {
 <div id="searchtips">
 {% include 'includes/search-tips.html' %}
 </div>
+
+{% if searched %}
+  {% include 'includes/search-results-panel.html' %}
+{% endif %}
 
 <script type="text/javascript">
 <!--

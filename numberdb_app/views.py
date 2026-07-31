@@ -76,16 +76,25 @@ from utils.utils import blur_complex_interval
 from utils.utils import is_polynomial_ring
 
 
-from .search import max_relative_width
+from .search import max_relative_width, search_by_term, PAGE_SIZE
 from .search import (search_complex_numbers, search_fractional_parts,
                      search_p_adic_numbers, search_real_numbers)
 
 from db_builder.utils import normalize_table_data
 
 def home(request):
-    #messages.success(request, 'Test message for home page.')
-    #return HttpResponse('Hello, World!')
-    return render(request, 'home.html', {})
+	#The search bar submits here, so the query lives in the URL and a search can
+	#be linked, bookmarked and returned to. Without a query this is the plain
+	#front page, exactly as before.
+	term = request.GET.get('q', '').strip()
+	context = {'searchterm': term}
+	if term:
+		groups = search_by_term(term)
+		context['result_groups'] = groups
+		context['result_count'] = sum(len(g['numbers']) for g in groups)
+		context['result_page_size'] = PAGE_SIZE
+		context['searched'] = True
+	return render(request, 'home.html', context)
 
 def about(request):
     return render(request, 'about.html', {})

@@ -22,9 +22,9 @@ from django.test import TestCase
 from sage.rings.all import CIF, RIF, Qp
 
 from .models import Number, NumberComplex, NumberPAdic, Table
-from .search import (_coarser_ball_strings, search_complex_numbers,
-                     search_fractional_parts, search_p_adic_numbers,
-                     search_real_numbers)
+from .search import (_coarser_ball_strings, search_by_term,
+                     search_complex_numbers, search_fractional_parts,
+                     search_p_adic_numbers, search_real_numbers)
 
 
 def _table():
@@ -362,3 +362,60 @@ class ThresholdIsConfigurable(TestCase):
 			self.assertFalse(findable_by_number('[2, 2.3728596]'))
 		with override_settings(NUMBERDB_MAX_RELATIVE_WIDTH=1e-5):
 			self.assertFalse(findable_by_number('0.88153(17)'))
+
+
+class SearchPanel(TestCase):
+	"""Enter and the magnifier submit a search that has its own URL."""
+
+	@classmethod
+	def setUpTestData(cls):
+		cls.table = _table()
+		from .models import exact_relative_width
+		number = Number(sage_number=RIF(3.14159265358979))
+		number.table = cls.table
+		number.param = b'pi'
+		number.exact_text = '3.14159265358979323846'
+		number.exact_relative_width = exact_relative_width(number.exact_text)
+		number.save()
+		cls.pi = number
+
+	def test_the_front_page_still_works_without_a_query(self):
+		response = self.client.get('/')
+		self.assertEqual(response.status_code, 200)
+		self.assertNotContains(response, 'id="search-results"')
+
+	def test_a_query_in_the_url_returns_results(self):
+		"""The point of the form: a search is a URL that can be shared."""
+		response = self.client.get('/', {'q': '3.14159265358979'})
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'id="search-results"')
+		self.assertContains(response, 'Real numbers')
+
+	def test_the_term_is_put_back_in_the_box(self):
+		response = self.client.get('/', {'q': '3.14159265358979'})
+		self.assertContains(response, 'value="3.14159265358979"')
+
+	def test_a_term_matching_nothing_says_so_and_explains(self):
+		response = self.client.get('/', {'q': 'zzzznotanumber'})
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'No match for')
+		self.assertContains(response, '#search-precision')
+
+	def test_whitespace_only_is_not_a_search(self):
+		response = self.client.get('/', {'q': '   '})
+		self.assertNotContains(response, 'id="search-results"')
+
+	def test_the_form_submits_to_the_home_page_by_get(self):
+		response = self.client.get('/')
+		self.assertContains(response, 'id="searchbox-form"')
+		self.assertContains(response, 'method="get"')
+		self.assertContains(response, 'name="q"')
+
+	def test_results_are_grouped_by_how_the_term_was_read(self):
+		groups = search_by_term('3.14159265358979')
+		self.assertEqual([g['kind'] for g in groups], ['real'])
+
+	def test_an_unparsable_term_yields_no_groups_rather_than_raising(self):
+		self.assertEqual(search_by_term('zzzznotanumber'), [])
+		self.assertEqual(search_by_term(''), [])
+		self.assertEqual(search_by_term(None), [])

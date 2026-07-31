@@ -45,6 +45,14 @@ a.ui-menu-item-wrapper {
   width: 100%; calc(var(--searchbox-width) - 1.8rem - 3px);
   border-radius: var(--searchbox-border);
 }
+#searchbox-submit {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  line-height: 0;
+}
 #searchbox-image {
   width: calc(1rem);
   margin: 0 0.8rem;
@@ -127,22 +135,30 @@ table.searchbox-table  td {
   ></div>
 -->
 
+{# A real form, so Enter and the magnifier submit and a search gets a URL.
+   Method GET on purpose: the query belongs in the address bar, where it can be
+   linked, bookmarked and reached again with the back button. The dropdown is
+   unaffected -- it still answers as you type, from its own request. #}
+<form id="searchbox-form" method="get" action="{% url 'db:home' %}">
 <div id="searchbox-component">
  <table class="searchbox-table" width="100%" style="border-spacing:0;">
   <tbody>
    <tr>
     <td 
-     ><input id="searchbox" 
+     ><input id="searchbox" name="q" autocomplete="off"
       {% if autofocus %} autofocus {% endif %} 
       {# placeholder="Try 3.14 or L-function" #} 
       {% if searchterm %} value="{{ searchterm }}" {% endif %}
      ></td>
-    <td><img id="searchbox-image" src="{% static '/img/search.png' %}"></td>
+    <td><button type="submit" id="searchbox-submit" title="Search"
+       ><img id="searchbox-image" src="{% static '/img/search.png' %}"
+     ></button></td>
    </tr>
   </tbody>
  </table>
  <span style="display:none" id="msg-no-entry">No match in database</span>
 </div>
+</form>
  
 
  
@@ -223,6 +239,18 @@ $(document).ready(function(){
 	);
     };
     
+    //With no dropdown item selected, Enter must reach the form. jQuery UI
+    //otherwise treats Enter as "accept the active item" and prevents default,
+    //which is right when something is highlighted and wrong when nothing is.
+    $( "#searchbox" ).on("keydown", function(event) {
+	if (event.keyCode === $.ui.keyCode.ENTER) {
+	    var menu = $(this).data("numberdb-searchbox");
+	    if (!menu || !menu.menu.active) {
+		$("#searchbox-form").submit();
+	    }
+	}
+    });
+
     $( "#searchbox" ).searchbox({
     	//source: [ "c++", "java", "php", "coldfusion", "javascript", "asp", "ruby" ]
 	source: getData,
@@ -264,9 +292,14 @@ $(document).ready(function(){
 	return true;
     });
     
-    $( "#searchbox-image, #searchbox-component").bind( 
+    //Clicking the surround still focuses the box, but the magnifier is a
+    //submit button now and must be left alone to submit.
+    $( "#searchbox-component").bind( 
 	"click", 
-	function() {
+	function(event) {
+	    if ($(event.target).closest("#searchbox-submit").length) {
+		return;
+	    }
 	    var sb = document.getElementById("searchbox");
 	    if (sb !== document.activeElement) {
 		sb.focus();

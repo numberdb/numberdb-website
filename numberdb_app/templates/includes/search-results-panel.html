@@ -1,0 +1,63 @@
+{% comment %}
+Results for a submitted search, under the search bar.
+
+This is the other half of the dropdown, not a replacement for it. The dropdown
+answers "did you mean one of these" while you type and can only show a handful;
+this answers "here is what matched" once you commit, and says how much matched
+and how well -- which is the part a dropdown cannot express.
+
+Grouped by what the term was read as, because a term is often several questions
+at once: "0.5" is a real number and also a fractional part, and the asker may
+have meant either.
+{% endcomment %}
+
+<div id="search-results" class="search-results">
+
+  {% if result_count %}
+    <div class="search-results-summary">
+      {{ result_count }} result{{ result_count|pluralize }} for
+      <span class="search-results-term">{{ searchterm }}</span>
+      {% if result_count >= result_page_size %}
+        <span class="search-results-capped"
+          >&mdash; showing the first {{ result_page_size }}, best first</span>
+      {% endif %}
+    </div>
+
+    {% for group in result_groups %}
+      <div class="search-results-group">
+        <div class="search-results-group-title">{{ group.label }}</div>
+        {% for number in group.numbers %}
+          <div class="search-result">
+            <div class="search-result-value">
+              <a href="{% url 'db:table_by_url' number.table.url %}#{{ number.param_str }}"
+                >{{ number.str_short }}</a>
+            </div>
+            <div class="search-result-where">
+              <a class="search-result-table"
+                 href="{% url 'db:table_by_url' number.table.url %}"
+                >{{ number.table.title|safe }}</a>
+              {% if number.param_str %}
+                <span class="search-result-param">#{{ number.param_str }}</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+
+  {% else %}
+    <div class="search-results-summary">
+      No match for <span class="search-results-term">{{ searchterm }}</span>.
+    </div>
+    <div class="search-results-none">
+      {# The commonest reason a number is absent is that it is not in the
+         database, but not the only one, and the other two are actionable. #}
+      A number is found by its digits, so a value given to too few of them may
+      match nothing. Numbers known too imprecisely to identify anything are
+      left out of search by number and marked in the tables &mdash;
+      <a href="{% url 'db:help' %}#search-precision">why</a>.
+      You can also search by name or tag.
+    </div>
+  {% endif %}
+
+</div>
