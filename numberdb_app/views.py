@@ -94,6 +94,15 @@ def home(request):
 		context['result_count'] = sum(len(g['numbers']) for g in groups)
 		context['result_page_size'] = PAGE_SIZE
 		context['searched'] = True
+
+	#The page asks for just the panel when it is updating in place, so a search
+	#does not rebuild the whole document. The full response is still what a
+	#plain GET returns, which is what makes the URL work when shared, and what
+	#happens if the request never runs.
+	if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+		if not term:
+			return HttpResponse('')
+		return render(request, 'includes/search-results-panel.html', context)
 	return render(request, 'home.html', context)
 
 def about(request):
