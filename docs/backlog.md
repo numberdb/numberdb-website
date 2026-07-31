@@ -85,6 +85,19 @@ What still imports Sage: `numberdb_app/models.py`, `views.py`, `api.py`, and
 
 - **A GiST box index for complex search.** 1849 rows, 0.2 ms sequential; worth
   doing if that table grows by orders of magnitude.
+- **The Z-order searchstring is dead, and crashes at zero.** `NumberComplex`
+  still builds `number_searchstring` (`models.py`), but nothing searches it any
+  more -- complex search matches by box overlap, and the only remaining reader
+  is `tests/golden/generate_golden.py`. It also cannot represent zero:
+
+      exponent = t.abs().log(10).upper().ceil()
+      ValueError: Calling ceil() on infinity or NaN
+
+  so constructing a complex value at 0 raises. No such value is in the corpus,
+  which is why this has never been hit. Dropping the field removes both the
+  dead weight and the crash, but needs a migration and a golden-file update, so
+  it is not a drive-by.
+
 - **Degenerate p-adic balls.** `_coarser_ball_strings` does not emit the ball
   around zero, reached when precision drops to or below the valuation, which is
   written `"p,0,000..."` rather than as a prefix. Such matches are too coarse to
