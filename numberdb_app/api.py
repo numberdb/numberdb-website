@@ -30,6 +30,7 @@ from sage.rings.all import ComplexField, ComplexIntervalField, ComplexBallField
 from utils.utils import is_pAdicField
 
 from .eval_client import evaluate_search_program
+from .search import search_real_numbers
 
 from mpmath import pslq
 
@@ -151,7 +152,7 @@ def advanced_search_results(request, return_type='json'):
 	max_results = 100
 	query_i = 0 
 	query_bulk_size = 1 #Apparently, bulk_size doesn't really matter, and also as is, only query_bulk_size=1 yields correct param.
-	query_real_intervals = Number.objects.none()
+	query_real_intervals = []
 	query_complex_intervals = NumberComplex.objects.none()
 	query_p_adic_numbers = NumberPAdic.objects.none()
 	query_polynomials = Polynomial.objects.none()
@@ -206,13 +207,16 @@ def advanced_search_results(request, return_type='json'):
 		
 		K = r.parent()
 		if K == RIF:
-			#Searching for real number up to given precision:
+			#Searching for real number up to given precision.
+			#
+			#Overlap, not containment: a stored value known to fewer digits
+			#than the query can never sit inside it, so containment silently
+			#missed exactly the numbers a precise query most wants. Ranked by
+			#how much of each stored interval the query accounts for, and
+			#short-circuited once a full page scores 1 -- see search.py.
 			r_query = blur_real_interval(r)
 			print("r_query:",r_query)
-			query_real_intervals |= Number.objects.filter(
-				lower__range = (float(r_query.lower()),float(r_query.upper())),
-				upper__range = (float(r_query.lower()),float(r_query.upper())),							
-			) #Request maximum number of results?
+			query_real_intervals += search_real_numbers(r_query, max_results)
 			query_i += 1
 
 		elif K == CIF:
@@ -261,7 +265,7 @@ def advanced_search_results(request, return_type='json'):
 
 		if query_i >= query_bulk_size:
 			do_query()
-			query_real_intervals = Number.objects.none()
+			query_real_intervals = []
 			query_complex_intervals = NumberComplex.objects.none()
 			query_p_adic_numbers = NumberPAdic.objects.none()
 			query_polynomials = Polynomial.objects.none()

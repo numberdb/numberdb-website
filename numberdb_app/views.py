@@ -75,6 +75,8 @@ from utils.utils import blur_complex_interval
 from utils.utils import is_polynomial_ring
 
 
+from .search import search_real_numbers
+
 from db_builder.utils import normalize_table_data
 
 def home(request):
@@ -1037,10 +1039,9 @@ def suggestions(request):
 	if r != None:
 		r_query = blur_real_interval(r)
 		print("r_query:",r_query)
-		query_real_intervals = Number.objects.filter(
-			lower__range = (float(r_query.lower()),float(r_query.upper())),
-			upper__range = (float(r_query.lower()),float(r_query.upper())),							
-		)[:(10-i)]
+		#Overlap rather than containment, ranked by how much of each stored
+		#interval the query accounts for -- see search.py.
+		query_real_intervals = search_real_numbers(r_query, 10-i)
 		
 		if len(query_real_intervals) > 0:
 			found_as_real_number = True
