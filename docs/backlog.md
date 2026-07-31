@@ -17,17 +17,21 @@ $( "#searchbox-image, #searchbox-component").bind("click", function() {
 });
 ```
 
-Enter and the magnifier should both run the search. What they should land on is
-the open question, and it decides the size of the job:
+Enter and the magnifier should both run the search, and the results should
+appear **under the search bar on the front page**, in more detail than the
+dropdown shows. The dropdown stays as it is, for immediate results as you type.
 
-- **the best match** -- cheap, no new page; but silently discards the rest, and
-  "best" is only well defined now that results are scored
-- **a full results page** -- the honest answer for a query matching thousands,
-  and the natural home for the hundred-result cap and the score ordering, but
-  no such page exists yet (`/advanced-search` is a different thing)
+The two are different views of the same query, not alternatives: the dropdown
+answers "did you mean one of these" while you type, the panel answers "here is
+what matched" once you commit. The panel is also where the parts of search that
+a dropdown cannot express belong -- the hundred-result cap, the score ordering,
+and how many matched in total.
 
-The second is the better fit for how search now works: broad queries routinely
-match tens of thousands of values, and a dropdown cannot represent that.
+The payoff beyond presentation is that **a search gets a URL**. It becomes
+linkable, bookmarkable, and survives the back button, and it gives the search
+behaviour something addressable to test against and to cite in a bug report.
+That argues for a plain GET form whose query string is the search, with the
+results rendered server-side, rather than state held only in JavaScript.
 
 ## Fractional-part search still asks the wrong question
 
