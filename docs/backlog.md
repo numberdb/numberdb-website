@@ -64,6 +64,39 @@ That last one is the dangerous gap. `NumericRange(x, x)` defaults to `[x, x)`,
 which Postgres reads as *empty*, so getting it wrong removes every exactly
 known value -- 4426 of them -- from search with no error anywhere.
 
+## Real users, editing content on the site
+
+The priority ahead of any further ingestion. Today a contribution means a pull
+request against the `numberdb-data` repository, which limits contributors to
+people comfortable with git and GitHub -- a small fraction of the people who
+know these numbers.
+
+Wanted: accounts that can add and modify content through the website, and
+probably review each other's changes before they go live. Editing and review
+are separable, and editing alone is already worth having.
+
+This is the change that makes the data no longer merely a mirror of a git
+repository, so it decides several things currently taken for granted:
+
+- **Deletion and privacy.** So far nothing needed deleting: the data comes from
+  the data repo, a Wikipedia crawl and an OEIS artifact. User-submitted content
+  changes that.
+- **Provenance.** `Contributor` and `TableCommit` presently model git history.
+  They would need to record edits made on the site instead.
+- **Rebuilds.** The builder currently treats the repo as the source of truth and
+  rebuilds from it. Once content originates on the site, a rebuild that starts
+  from the repo would destroy it.
+
+## Ingest the data repo's issue page, and pages like it
+
+Numbers and polynomials submitted as GitHub issues on the data repo should be
+brought in automatically, driven by Codex or Claude, and further pages added
+the same semi-automatic way.
+
+Deliberately later: worth doing only once the site itself has moved on
+considerably, and after the editing story above, since that decides where
+ingested content should land in the first place.
+
 ## Move the web app to passagemath
 
 The stated goal, and the case has only strengthened. The web image is 4.9 GB of
