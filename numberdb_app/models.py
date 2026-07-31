@@ -314,6 +314,33 @@ class TableCommit(models.Model):
 			self.datetime,
 		)
 
+def exact_relative_width(exact_text):
+	"""How well the stored value is known, relative to its own size.
+
+	Measured on the exact value rather than the float projection, because the
+	two come apart in both directions: 101471818419863/165 is an exact rational
+	whose projection spans 1.2e-4, and the subnormal entries are known in full
+	while their projection keeps about one bit. The projection measures the
+	projection; this measures the knowledge.
+
+	Zero for an exactly-known value. None when the text cannot be parsed, which
+	is treated downstream as "no reason to hide it" rather than as a defect.
+	"""
+	if not exact_text:
+		return None
+	try:
+		from utils.numbers import parse_real
+		low, high = parse_real(exact_text).bounds()
+	except Exception:
+		return None
+	if high == low:
+		return 0.0
+	magnitude = max(abs(low), abs(high))
+	if magnitude == 0:
+		return float('inf')
+	return float((high - low) / magnitude)
+
+
 def searchable_range(lower, upper):
 	"""The float bounds as one range, for the GiST index to answer overlap on.
 
@@ -416,6 +443,18 @@ class Number(models.Model):
 	frac_range = DecimalRangeField(
 		null = True,
 		blank = True,
+	)
+	#How well this value is known, relative to its size -- see
+	#exact_relative_width. Stored because it cannot be recomputed per query:
+	#it needs exact_text parsed, which SQL cannot do.
+	#
+	#Search by number excludes values known too weakly to identify anything.
+	#Kept as the measured quantity rather than a boolean so the cutoff stays a
+	#constant in search.py, tunable without a rebuild.
+	exact_relative_width = models.FloatField(
+		null = True,
+		blank = True,
+		db_index = True,
 	)
 	table = models.ForeignKey(
 		Table, 

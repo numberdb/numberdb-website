@@ -282,10 +282,12 @@ class IdentifiabilityByNumber(TestCase):
 		cls.table = _table()
 
 	def store(self, sage_number, exact_text, param=b'x'):
+		from .models import exact_relative_width
 		number = Number(sage_number=sage_number)
 		number.table = self.table
 		number.param = param
 		number.exact_text = exact_text
+		number.exact_relative_width = exact_relative_width(exact_text)
 		number.save()
 		return number
 
@@ -295,11 +297,24 @@ class IdentifiabilityByNumber(TestCase):
 		found = search_real_numbers(RIF(2.2, 2.3), 100)
 		self.assertNotIn(omega.id, [n.id for n in found])
 
-	def test_a_known_value_of_the_same_width_is_still_returned(self):
-		"""The rule is what the data claims to know, not how wide it is."""
-		wide = self.store(RIF(2, 2.3728596), '2.2')
+	def test_a_measured_value_is_judged_on_what_is_known_not_its_projection(self):
+		"""101471818419863/165 projects to a span of 1.2e-4 but is exact."""
+		wide = self.store(RIF(2, 2.3728596), '2.20000000000000000')
 		found = search_real_numbers(RIF(2.2, 2.3), 100)
 		self.assertIn(wide.id, [n.id for n in found])
+
+	def test_a_weakly_measured_value_is_excluded(self):
+		"""0.88153(17): a real constant, but not to five significant digits."""
+		ratio = self.store(RIF(0.88136, 0.88170), '0.88153(17)')
+		found = search_real_numbers(RIF(0.8815, 0.8816), 100)
+		self.assertNotIn(ratio.id, [n.id for n in found])
+
+	def test_an_unparsable_value_is_kept(self):
+		"""A null width is missing information, not a reason to hide a row."""
+		odd = self.store(RIF(2.2, 2.3), '')
+		self.assertIsNone(odd.exact_relative_width)
+		found = search_real_numbers(RIF(2.2, 2.3), 100)
+		self.assertIn(odd.id, [n.id for n in found])
 
 	def test_bounded_values_are_excluded_from_fractional_part_search_too(self):
 		ramsey = self.store(RIF(43, 48), '[43, 48]')

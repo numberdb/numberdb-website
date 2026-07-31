@@ -15,6 +15,7 @@ from django.db import transaction
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "numberdb.settings.dev")
 django.setup()
 from numberdb_app.models import (
+    exact_relative_width,
     Table,
     TableData,
     TableSearch,
@@ -444,10 +445,14 @@ def build_number_table():
 		#beside the search columns, which stay a lossy projection.
 		try:
 			n.exact_text = exact_canonical_text(number)
+			#Search by number hides values known too weakly to identify
+			#anything; this is the measurement that decides it.
+			n.exact_relative_width = exact_relative_width(n.exact_text)
 		except ExactParseError:
 			#Not a documented format. Counted below so a rebuild reports how
 			#many rows lack a faithful value rather than failing silently.
 			n.exact_text = ''
+			n.exact_relative_width = None
 			unparsed_by_exact_layer.append((getattr(c, 'tid', None), number))
 
 		#print("before saving number")
