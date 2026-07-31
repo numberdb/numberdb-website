@@ -266,3 +266,42 @@ class FractionalPartSearch(TestCase):
 		for i in range(12):
 			self.store(RIF(3 + (i + 1) / 1000.0), param=bytes([i]))
 		self.assertEqual(len(search_fractional_parts(RIF(0.0, 0.5), 10)), 10)
+
+
+class IdentifiabilityByNumber(TestCase):
+	"""Numeric search answers "is my experimental number known?".
+
+	A value that is only bounded -- the exponent of matrix multiplication, a
+	diagonal Ramsey number -- cannot answer it: matching one says a wide range
+	overlaps another, for every value in that range. Such entries stay
+	reachable by name and tag, which is how to ask about them.
+	"""
+
+	@classmethod
+	def setUpTestData(cls):
+		cls.table = _table()
+
+	def store(self, sage_number, exact_text, param=b'x'):
+		number = Number(sage_number=sage_number)
+		number.table = self.table
+		number.param = param
+		number.exact_text = exact_text
+		number.save()
+		return number
+
+	def test_a_merely_bounded_value_is_not_a_numeric_search_result(self):
+		#The exponent of matrix multiplication, as actually stored.
+		omega = self.store(RIF(2, 2.3728596), '[2, 2.3728596]')
+		found = search_real_numbers(RIF(2.2, 2.3), 100)
+		self.assertNotIn(omega.id, [n.id for n in found])
+
+	def test_a_known_value_of_the_same_width_is_still_returned(self):
+		"""The rule is what the data claims to know, not how wide it is."""
+		wide = self.store(RIF(2, 2.3728596), '2.2')
+		found = search_real_numbers(RIF(2.2, 2.3), 100)
+		self.assertIn(wide.id, [n.id for n in found])
+
+	def test_bounded_values_are_excluded_from_fractional_part_search_too(self):
+		ramsey = self.store(RIF(43, 48), '[43, 48]')
+		found = search_fractional_parts(RIF(0.4, 0.6), 100)
+		self.assertNotIn(ramsey.id, [n.id for n in found])
