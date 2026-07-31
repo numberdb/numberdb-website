@@ -149,9 +149,73 @@ div#searchtips {
 {% include 'includes/search-tips.html' %}
 </div>
 
+{% comment %}
+Always present, even when empty: the in-place update replaces its contents, and
+it must exist to be replaced. Its absence is also how the script tells that a
+page has no panel -- on every other page the search bar simply navigates here.
+{% endcomment %}
+<div id="search-results-container">
 {% if searched %}
   {% include 'includes/search-results-panel.html' %}
 {% endif %}
+</div>
+
+<script type="text/javascript">
+//Update the results in place, and put the query in the address bar.
+//
+//The form still works with this script absent or broken: submitting reloads the
+//page and renders the same panel server-side. This only removes the reload, so
+//the page does not rebuild itself -- and the URL is pushed rather than left
+//behind, because a search that cannot be linked or bookmarked is not a search
+//result anyone can share.
+$(function () {
+    var container = document.getElementById('search-results-container');
+    if (!container) {
+        //Every other page carries the same search bar but no panel; there the
+        //form navigates here, which is what should happen.
+        return;
+    }
+    var form = $('#searchbox-form');
+    var box = $('#searchbox');
+
+    function render(term, push) {
+        $.ajax({
+            url: form.attr('action'),
+            data: { q: term },
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        }).done(function (html) {
+            container.innerHTML = html;
+            //Table titles carry LaTeX, and injected HTML is not typeset.
+            if (window.MathJax && MathJax.typeset) {
+                MathJax.typeset();
+            }
+            if (push) {
+                var action = form.attr('action');
+                history.pushState({ q: term }, '',
+                    term ? action + '?q=' + encodeURIComponent(term) : action);
+            }
+        }).fail(function () {
+            //Fall back to a real navigation rather than leaving stale results.
+            window.location.href = form.attr('action')
+                + '?q=' + encodeURIComponent(term);
+        });
+    }
+
+    form.on('submit', function (event) {
+        event.preventDefault();
+        try { box.searchbox('close'); } catch (e) { /* widget not ready */ }
+        render(box.val().trim(), true);
+    });
+
+    //Back and forward must return to the results that URL stands for.
+    window.addEventListener('popstate', function () {
+        var term = new URLSearchParams(window.location.search).get('q') || '';
+        box.val(term);
+        render(term, false);
+    });
+});
+//-->
+</script>
 
 <script type="text/javascript">
 <!--

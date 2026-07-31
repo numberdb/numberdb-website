@@ -449,3 +449,62 @@ class TemplatesRenderCleanly(TestCase):
 
 	def test_the_help_page_is_clean(self):
 		self.assert_clean('/help')
+
+
+class InPlaceUpdate(TestCase):
+	"""The panel updates without rebuilding the page, and the URL follows.
+
+	The full response stays the definition of what a search URL means: it is
+	what a shared link renders, what a search engine sees, and what happens if
+	the script never runs. The fragment only spares the page a reload.
+	"""
+
+	AJAX = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+
+	@classmethod
+	def setUpTestData(cls):
+		cls.table = _table()
+		from .models import exact_relative_width
+		number = Number(sage_number=RIF(3.14159265358979))
+		number.table = cls.table
+		number.param = b'pi'
+		number.exact_text = '3.14159265358979323846'
+		number.exact_relative_width = exact_relative_width(number.exact_text)
+		number.save()
+
+	def test_the_fragment_is_only_the_panel(self):
+		response = self.client.get('/', {'q': '3.14159265358979'}, **self.AJAX)
+		page = response.content.decode()
+		self.assertIn('id="search-results"', page)
+		for chrome in ['<html', '<head', 'navbar', 'searchbox-form']:
+			self.assertNotIn(chrome, page,
+			                 'fragment should not carry %r' % (chrome,))
+
+	def test_the_fragment_and_the_full_page_agree(self):
+		"""The two must not drift: one is what a visitor sees, the other what
+		a shared link renders."""
+		import re
+		full = self.client.get('/', {'q': '3.14159265358979'}).content.decode()
+		fragment = self.client.get('/', {'q': '3.14159265358979'},
+		                           **self.AJAX).content.decode()
+		panel = re.search(r'<div id="search-results".*</div>', full, re.S)
+		self.assertIsNotNone(panel)
+		summary = lambda page: ' '.join(
+			re.search(r'search-results-summary">(.*?)</div>',
+			          page, re.S).group(1).split())
+		self.assertEqual(summary(full), summary(fragment))
+		self.assertIn('1 result', summary(fragment))
+
+	def test_an_empty_term_clears_the_panel(self):
+		response = self.client.get('/', {'q': ''}, **self.AJAX)
+		self.assertEqual(response.content.decode().strip(), '')
+
+	def test_the_full_page_still_renders_the_panel_without_the_script(self):
+		"""What a shared link must show."""
+		response = self.client.get('/', {'q': '3.14159265358979'})
+		self.assertContains(response, 'id="search-results"')
+		self.assertContains(response, 'search-results-container')
+
+	def test_the_container_is_present_even_with_no_search(self):
+		"""It must exist to be replaced, and its absence means 'no panel here'."""
+		self.assertContains(self.client.get('/'), 'search-results-container')
