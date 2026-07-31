@@ -216,12 +216,25 @@ def advanced_search_results(request, return_type='json'):
 			query_i += 1
 
 		elif K == CIF:
-			#Searching for complex number up to given precision:
+			#Searching for complex number up to given precision.
+			#
+			#Box overlap rather than a prefix of the Z-order searchstring. The
+			#Z-order index only ever found cells *inside* the query, so a value
+			#stored less precisely than the query -- an ancestor cell -- was
+			#never returned, and two numbers a thousandth apart could share no
+			#prefix at all when they straddled a cell boundary. Overlap is
+			#symmetric and has no cells, so both go away.
+			#
+			#Costs about 0.2ms against 0.04ms for the prefix scan on 1849 rows;
+			#a sequential scan, so if this table grows by orders of magnitude
+			#it wants a GiST index on a box column.
 			r_query = blur_complex_interval(r)
 			print("r_query:",r_query)
-			number = NumberComplex(sage_number = r_query)
 			query_complex_intervals |= NumberComplex.objects.filter(
-				number_searchstring__startswith = number.number_searchstring,							
+				re_lower__lte = float(r_query.real().upper()),
+				re_upper__gte = float(r_query.real().lower()),
+				im_lower__lte = float(r_query.imag().upper()),
+				im_upper__gte = float(r_query.imag().lower()),
 			) #Request maximum number of results?
 			query_i += 1
 		
