@@ -75,7 +75,8 @@ from utils.utils import blur_complex_interval
 from utils.utils import is_polynomial_ring
 
 
-from .search import search_real_numbers
+from .search import (search_complex_numbers, search_p_adic_numbers,
+                     search_real_numbers)
 
 from db_builder.utils import normalize_table_data
 
@@ -1103,25 +1104,20 @@ def suggestions(request):
 	query_p_adics = NumberPAdic.objects.none()
 	n = parse_p_adic(term)
 	if n != None:
-		#First cap precision of n,
-		#as high precision queries would not be fould otherwise.
-		p = n.parent().prime()
-		prec_cap = ZZ(ceil(40 * log(10,p)))
-		print("prec_cap:",prec_cap)
-		print("n before prec cap:",n)
-		if n == 0:
-			n = n.add_bigoh(prec_cap)
-		else:
-			n = n.add_bigoh(n.valuation() + prec_cap)
-		print("n after prec cap:",n)
-		
+		#The query's precision is no longer capped. The cap was a workaround for
+		#the search finding only stored values *inside* the query: a precise
+		#query produced a long string that no shorter stored string could start
+		#with, so it had to be blunted until it was coarser than everything
+		#stored. That masked the asymmetry rather than fixing it, and it held
+		#only as long as every stored value stayed more precise than the cap.
+		#Coarser stored values are now found directly, so the query keeps the
+		#precision the user gave it.
 		number = NumberPAdic(sage_number=n)
 			
 		if number != None:
 			print("number:",number)
-			query_p_adics = NumberPAdic.objects.filter(
-				number_string__startswith = number.number_string,
-			)[:int(10-i)]
+			query_p_adics = search_p_adic_numbers(
+				number.number_string, int(10-i))
 			print("query_p_adics:",query_p_adics)
 			suggested_numbers += list(query_p_adics)
 			#print("suggested_numbers:",suggested_numbers)
@@ -1141,12 +1137,7 @@ def suggestions(request):
 			#shorter stored string could start with, so nothing matched. Box
 			#overlap is symmetric, so a precise query finds coarser stored
 			#values on its own and the query keeps its precision.
-			query_complex = NumberComplex.objects.filter(
-				re_lower__lte = float(n.real().upper()),
-				re_upper__gte = float(n.real().lower()),
-				im_lower__lte = float(n.imag().upper()),
-				im_upper__gte = float(n.imag().lower()),
-			)[:int(10-i)]
+			query_complex = search_complex_numbers(n, int(10-i))
 			print("query_complex:",query_complex)
 			suggested_numbers += list(query_complex)
 			#print("suggested_numbers:",suggested_numbers)

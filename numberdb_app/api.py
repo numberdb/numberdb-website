@@ -30,7 +30,8 @@ from sage.rings.all import ComplexField, ComplexIntervalField, ComplexBallField
 from utils.utils import is_pAdicField
 
 from .eval_client import evaluate_search_program
-from .search import search_real_numbers
+from .search import (search_complex_numbers, search_p_adic_numbers,
+                     search_real_numbers)
 
 from mpmath import pslq
 
@@ -153,8 +154,8 @@ def advanced_search_results(request, return_type='json'):
 	query_i = 0 
 	query_bulk_size = 1 #Apparently, bulk_size doesn't really matter, and also as is, only query_bulk_size=1 yields correct param.
 	query_real_intervals = []
-	query_complex_intervals = NumberComplex.objects.none()
-	query_p_adic_numbers = NumberPAdic.objects.none()
+	query_complex_intervals = []
+	query_p_adic_numbers = []
 	query_polynomials = Polynomial.objects.none()
 
 	def do_query():
@@ -234,23 +235,25 @@ def advanced_search_results(request, return_type='json'):
 			#it wants a GiST index on a box column.
 			r_query = blur_complex_interval(r)
 			print("r_query:",r_query)
-			query_complex_intervals |= NumberComplex.objects.filter(
-				re_lower__lte = float(r_query.real().upper()),
-				re_upper__gte = float(r_query.real().lower()),
-				im_lower__lte = float(r_query.imag().upper()),
-				im_upper__gte = float(r_query.imag().lower()),
-			) #Request maximum number of results?
+			query_complex_intervals += search_complex_numbers(r_query, max_results)
 			query_i += 1
 		
 		elif is_pAdicField(K):
-			#Searching for p-adic number up to given precision:
-			#Cap precision to around 53 bits: (Numbers in DB might not be as precise as the given r.)
-			r_query = r.add_bigoh(r.valuation() + ceil(53*log(K.prime(),2)))
-			number = NumberPAdic(sage_number = r_query)
+			#Searching for a p-adic number.
+			#
+			#The query's precision is no longer capped. The cap existed because
+			#only stored values *inside* the query were found, so a query more
+			#precise than the stored value matched nothing and had to be blunted
+			#first. It also ran the wrong way -- ceil(53*log(p,2)) grows with p,
+			#allowing 123 digits at p=5 to express the 23 digits that 53 bits
+			#actually need -- and it called ceil and log, which this module never
+			#imported, so this branch raised NameError before it could search.
+			#Coarser stored values are now found directly, so the query keeps the
+			#precision the user gave it.
+			number = NumberPAdic(sage_number = r)
 			print("number_string:",number.number_string)
-			query_p_adic_numbers |= NumberPAdic.objects.filter(
-				number_string__startswith = number.number_string,							
-			) #Request maximum number of results?
+			query_p_adic_numbers += search_p_adic_numbers(
+				number.number_string, max_results)
 			query_i += 1
 
 		elif is_polynomial_ring(K):
@@ -266,8 +269,8 @@ def advanced_search_results(request, return_type='json'):
 		if query_i >= query_bulk_size:
 			do_query()
 			query_real_intervals = []
-			query_complex_intervals = NumberComplex.objects.none()
-			query_p_adic_numbers = NumberPAdic.objects.none()
+			query_complex_intervals = []
+			query_p_adic_numbers = []
 			query_polynomials = Polynomial.objects.none()
 			query_i = 0
 			

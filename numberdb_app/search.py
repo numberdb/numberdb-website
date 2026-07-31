@@ -1,6 +1,6 @@
-"""Real-number search: which stored values could be the one being looked for.
+"""Number search: which stored values could be the one being looked for.
 
-Two questions are easy to confuse. The stored value is an exact real that is
+Two questions are easy to confuse. The stored value is an exact number that is
 only *known* to lie in an interval, so a hit means "the query interval and the
 stored interval could describe the same number" -- they overlap. The previous
 query asked instead whether the stored interval sat *inside* the query, which
@@ -18,13 +18,21 @@ Results are ranked by how much of the stored interval the query accounts for,
 
 so a value pinned down inside the query outranks one that merely brushes it.
 The score is capped at 1, which is what makes the fast path below sound.
+
+All three kinds share that shape -- ask the symmetric question, rank by the
+same score, stop once a page of perfect matches exists -- but need different
+machinery to answer it. Reals need a stored range and a GiST index; complex
+boxes are four indexed comparisons; p-adics need no index work at all, because
+in an ultrametric space balls nest instead of overlapping and the question
+collapses to string prefixes.
 """
 
 from django.db.models.expressions import RawSQL
 
-from .models import Number, searchable_range
+from .models import Number, NumberComplex, NumberPAdic, searchable_range
 
-__all__ = ['search_real_numbers', 'real_query_range']
+__all__ = ['search_real_numbers', 'search_complex_numbers',
+           'search_p_adic_numbers', 'real_query_range']
 
 #Scored in SQL so that ordering can happen before LIMIT; scoring in Python
 #would mean fetching every overlapping row first.
@@ -94,3 +102,114 @@ def search_real_numbers(r_query, limit):
 			.annotate(overlap_score = RawSQL(_SCORE_SQL, (query, query)))
 			.order_by('-overlap_score')[:limit]
 	)
+
+
+#Per axis rather than by area, so that a value exact in one component and
+#interval-valued in the other still scores. A zero-width axis contributes 1:
+#it is a point, and the row is only here because it overlaps, so the query
+#accounts for all of that axis. A saturated axis has infinite width and
+#divides to 0, which sorts it last without dropping it.
+_COMPLEX_SCORE_SQL = """
+(CASE WHEN "db_numbercomplex"."re_upper" = "db_numbercomplex"."re_lower" THEN 1
+      ELSE greatest(0, least("db_numbercomplex"."re_upper", %s)
+                     - greatest("db_numbercomplex"."re_lower", %s))
+         / ("db_numbercomplex"."re_upper" - "db_numbercomplex"."re_lower") END)
+*
+(CASE WHEN "db_numbercomplex"."im_upper" = "db_numbercomplex"."im_lower" THEN 1
+      ELSE greatest(0, least("db_numbercomplex"."im_upper", %s)
+                     - greatest("db_numbercomplex"."im_lower", %s))
+         / ("db_numbercomplex"."im_upper" - "db_numbercomplex"."im_lower") END)
+"""
+
+
+def search_complex_numbers(n_query, limit):
+	"""Stored complex values that could be ``n_query``, best first.
+
+	The same shape as the real case, one dimension up: a stored box lying
+	entirely inside the query box is as good a match as can exist, so once
+	``limit`` of them are found the ranking cannot be improved and the rest of
+	the table need not be looked at.
+
+	Containment is four comparisons on the four indexed float columns, which
+	Postgres combines into a BitmapAnd, so the fast path does not need the
+	box-and-GiST treatment the reals got. At 1849 rows even the scored fallback
+	is a sequential scan costing a fifth of a millisecond; if this table grows
+	by orders of magnitude, that fallback is what to index.
+	"""
+	re_low, re_high = float(n_query.real().lower()), float(n_query.real().upper())
+	im_low, im_high = float(n_query.imag().lower()), float(n_query.imag().upper())
+
+	contained = list(
+		NumberComplex.objects.filter(
+			re_lower__gte = re_low, re_upper__lte = re_high,
+			im_lower__gte = im_low, im_upper__lte = im_high,
+		)[:limit]
+	)
+	if len(contained) >= limit:
+		return contained
+
+	return list(
+		NumberComplex.objects
+			.filter(
+				re_lower__lte = re_high, re_upper__gte = re_low,
+				im_lower__lte = im_high, im_upper__gte = im_low,
+			)
+			.annotate(overlap_score = RawSQL(
+				_COMPLEX_SCORE_SQL, (re_high, re_low, im_high, im_low)))
+			.order_by('-overlap_score')[:limit]
+	)
+
+
+def _coarser_ball_strings(number_string):
+	"""The stored strings whose ball would contain this query's ball.
+
+	Q_p is ultrametric, so two balls are either disjoint or one contains the
+	other -- they cannot partially overlap the way real intervals do. A ball is
+	written "<prime>,<valuation>,<d0>|<d1>|..." with the digits least
+	significant first, so dropping trailing digits widens the ball and every
+	ball containing this one is a prefix of this string. That makes the set
+	finite and small: at most one entry per digit, which is where the whole
+	problem collapses to a list of equality lookups on an index that already
+	exists, with no range type and no GiST.
+
+	Cut only at '|' boundaries. Digits are zero-padded to a fixed width, so for
+	p >= 11 they are multi-character and a careless prefix would split one.
+
+	The full string is excluded: those are the values at least as precise as the
+	query, which the containment query already finds.
+	"""
+	prime, valuation, digits = number_string.split(',', 2)
+	places = digits.split('|')
+	return ['%s,%s,%s' % (prime, valuation, '|'.join(places[:count]))
+	        for count in range(1, len(places))]
+
+
+def search_p_adic_numbers(number_string, limit):
+	"""Stored p-adic values that could be the query, best first.
+
+	Both directions, where before only one was asked. A stored value more
+	precise than the query lies inside it and its string starts with the
+	query's; a stored value *less* precise contains the query and its string is
+	a prefix of the query's. Only the first was searched, so a query more
+	precise than the stored value found nothing -- the same asymmetry the reals
+	had, and the reason the callers used to have to blunt the query's precision
+	before searching.
+
+	Ranking needs no SQL here. For nested balls the score reduces to
+	p**-(query precision - stored precision), which is monotonic in the stored
+	precision, so ordering by score is ordering by string length: exact matches
+	and finer values first, then the coarser ones, widest last.
+	"""
+	inside = list(
+		NumberPAdic.objects.filter(
+			number_string__startswith = number_string)[:limit]
+	)
+	if len(inside) >= limit:
+		return inside
+
+	coarser = list(
+		NumberPAdic.objects.filter(
+			number_string__in = _coarser_ball_strings(number_string))
+	)
+	coarser.sort(key = lambda number: -len(number.number_string))
+	return (inside + coarser)[:limit]
