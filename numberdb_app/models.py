@@ -1,7 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.postgres.search import SearchVectorField
-from django.contrib.postgres.indexes import HashIndex
+from django.contrib.postgres.indexes import GistIndex, HashIndex
+from django.contrib.postgres.fields import DecimalRangeField
+from django.db.backends.postgresql.psycopg_any import NumericRange
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 #from django.contrib.gis.db import models as gis_models
@@ -13,6 +15,8 @@ import numpy as np
 #import pyhash 
 import hashlib
 import json
+import math
+from decimal import Decimal
 
 from sage.all import infinity, ceil, log, I
 from sage.rings.all import ZZ, QQ, RR, CC, RIF, CIF, RBF, CBF, Qp
@@ -310,6 +314,31 @@ class TableCommit(models.Model):
 			self.datetime,
 		)
 
+def searchable_range(lower, upper):
+	"""The float bounds as one range, for the GiST index to answer overlap on.
+
+	Bounds are inclusive. This is not a detail: psycopg2 does not canonicalise
+	client side, so NumericRange(x, x) is built as ``[x, x)`` and reports
+	isempty False, while Postgres reads that same range as *empty*. Every
+	exactly-known value has lower == upper, so defaulting the bounds would
+	silently exclude every integer and rational in the table from search.
+
+	An end is left unbounded where the float projection saturated. 310 stored
+	values are past what a double holds, so the projection gives +-inf, which
+	is not a numeric and cannot be a numrange bound; unbounded is both what
+	Postgres accepts and what is actually known -- the value lies beyond here.
+	"""
+	def bound(value):
+		number = float(value)
+		if math.isinf(number) or math.isnan(number):
+			return None
+		#Decimal(float) is the exact binary value, so the range never narrows
+		#what the projection said and containment stays sound.
+		return Decimal(number)
+
+	return NumericRange(bound(lower), bound(upper), '[]')
+
+
 class Number(models.Model):
 
 	NUMBER_TYPE_ZZ = b'z'
@@ -360,6 +389,22 @@ class Number(models.Model):
 	frac_upper = models.FloatField(
 		db_index = True,
 	)
+	#The searchable projection as a single range, so overlap can be indexed.
+	#
+	#lower/upper are kept: they are what the range is built from, and other
+	#code still reads them. This column exists because a *conjunction* of two
+	#btree ranges can only answer containment efficiently -- "stored interval
+	#inside the query" -- which misses a coarsely stored value that contains
+	#the query. Overlap needs one indexable object, hence a range with GiST.
+	#
+	#A bound is NULL where the float projection saturated: 310 values exceed
+	#what a double can hold, and an unbounded range is the honest
+	#representation of "we know it is beyond here". They are indexed normally
+	#and score lowest, rather than being dropped from search entirely.
+	value_range = DecimalRangeField(
+		null = True,
+		blank = True,
+	)
 	table = models.ForeignKey(
 		Table, 
 		on_delete=models.CASCADE,
@@ -374,6 +419,8 @@ class Number(models.Model):
 		indexes = [
 			HashIndex(fields=['exact_text'],
 			          name='number_exact_hash'),
+			GistIndex(fields=['value_range'],
+			          name='number_range_gist'),
 		]
 
 	def number_type_bytes(self):
@@ -444,6 +491,7 @@ class Number(models.Model):
 		#should use ri here in order to use the correctly rounded number:
 		self.lower = ri.lower()
 		self.upper = ri.upper()
+		self.value_range = searchable_range(self.lower, self.upper)
 			
 		frac = ri_prec.frac()
 		if frac <= 0:
