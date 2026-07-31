@@ -299,3 +299,86 @@ def search_fractional_parts(f_query, limit):
 			.annotate(overlap_score = RawSQL(_FRAC_SCORE_SQL, (query, query)))
 			.order_by('-overlap_score')[:limit]
 	)
+
+
+#: Results shown on one page of the panel. The searches themselves cap here
+#: too, so a query matching twenty thousand values costs the same as one
+#: matching ten -- see search_real_numbers.
+PAGE_SIZE = 100
+
+
+def search_by_term(term, limit = PAGE_SIZE):
+	"""Everything matching a typed search term, best first.
+
+	The panel under the search bar renders this. It asks the same questions the
+	dropdown does, but keeps the answers rather than the first ten, because a
+	query can match thousands and a dropdown cannot say so.
+
+	A term is offered to every parser that might accept it, and each that does
+	contributes its matches: "0.5" is a real, and also a fractional part, and
+	the asker may have meant either. Results are grouped by what the term was
+	read as, so the page can say which question it answered.
+
+	Returns a list of {kind, label, numbers} groups. Empty groups are dropped,
+	so an empty list means nothing matched anything.
+	"""
+	from utils.utils import (blur_complex_interval, blur_real_interval,
+	                         parse_complex_interval, parse_fractional_part,
+	                         parse_p_adic, parse_polynomial,
+	                         parse_real_interval)
+	from .models import NumberPAdic, Polynomial
+
+	term = (term or '').strip()
+	if not term:
+		return []
+
+	groups = []
+
+	def add(kind, label, numbers):
+		if numbers:
+			groups.append({'kind': kind, 'label': label, 'numbers': list(numbers)})
+
+	#Each parser is tried independently and may raise on input meant for
+	#another: parse_polynomial on "3.14" and parse_p_adic on a decimal both
+	#reject rather than return None in some cases.
+	def attempt(parse, search):
+		try:
+			parsed = parse(term)
+		except Exception:
+			return None
+		if parsed is None:
+			return None
+		try:
+			return search(parsed)
+		except Exception:
+			return None
+
+	add('real', 'Real numbers',
+	    attempt(parse_real_interval,
+	            lambda r: search_real_numbers(blur_real_interval(r), limit)))
+
+	add('complex', 'Complex numbers',
+	    attempt(parse_complex_interval,
+	            lambda n: search_complex_numbers(blur_complex_interval(n), limit))
+	    if 'i' in term.lower().replace('j', 'i') else None)
+
+	add('p-adic', 'p-adic numbers',
+	    attempt(parse_p_adic,
+	            lambda n: search_p_adic_numbers(
+	                NumberPAdic(sage_number=n).number_string, limit)))
+
+	add('fractional-part', 'Numbers with this fractional part',
+	    attempt(parse_fractional_part,
+	            lambda f: search_fractional_parts(blur_real_interval(f), limit)))
+
+	def _polynomials(p):
+		if p.number_of_terms() < 2:
+			return None
+		polynomial = Polynomial(sage_polynomial=p)
+		return Polynomial.objects.filter(
+			number_string_hash=polynomial.number_string_hash,
+			number_string=polynomial.number_string)[:limit]
+
+	add('polynomial', 'Polynomials', attempt(parse_polynomial, _polynomials))
+
+	return groups
