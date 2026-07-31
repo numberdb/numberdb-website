@@ -108,6 +108,11 @@ else
 fi
 EOS
 
+# docker-compose.override.yml is excluded deliberately, not merely as noise.
+# Compose loads it automatically, so shipping a developer's copy would silently
+# reconfigure production -- the local one runs Django's dev server with DEBUG on
+# and publishes nothing but 127.0.0.1. It is also the filename this script's own
+# staging step writes on the remote, so a copied file would fight with it.
 echo "==> Copying repository to $REMOTE:$REMOTE_PATH (excluding .git, caches, local envs)"
 REPO_ROOT=$(pwd)
 tar cz \
@@ -117,6 +122,7 @@ tar cz \
   --exclude='data_pipeline/oeis-data' \
   --exclude='.env' \
   --exclude='.env.prod' \
+  --exclude='docker-compose.override.yml' \
   -C "$REPO_ROOT" . | ssh "${SSH_OPTS[@]}" "$REMOTE" "tar xz -C '$REMOTE_PATH'"
 
 echo "==> Writing .env.prod on remote (force: $FORCE_SECRETS); syncing to .env if missing"
