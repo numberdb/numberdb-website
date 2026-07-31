@@ -106,6 +106,26 @@ search now resolves reals, complex values and p-adics in plain Python and SQL.
 What still imports Sage: `numberdb_app/models.py`, `views.py`, `api.py`, and
 `utils/utils.py`. The evaluator sandbox keeps full Sage either way.
 
+## Refine matches against exact_text
+
+Search filters on the float projection and returns the survivors directly. The
+design was filter-and-refine -- the index gives a sound over-approximation,
+then the exact value settles it -- but the refine step was never written, so
+anything the projection cannot represent produces false positives.
+
+The clearest case is underflow, the mirror of the saturation handled by
+unbounded ranges. Several stored values are tiny enough to land in the
+subnormal doubles:
+
+    Volume of the d-dimensional unit ball   float range [5e-324, 1e-323]
+                                            exact_text  0.0000000000...
+
+so the projection keeps about one bit while the stored value is known to full
+precision. Those rows match anything in the subnormal range.
+
+Refining in Python against `exact_text` -- which every row now has -- would
+drop them, and is cheap: it runs on at most a hundred survivors.
+
 ## The two search entry points disagree about precision
 
 The same text means different things to `/suggestions` and `/api/search`:

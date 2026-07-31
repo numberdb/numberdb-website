@@ -67,6 +67,28 @@ _SCORE_SQL = _SCORE_SQL_TEMPLATE
 _FRAC_SCORE_SQL = _SCORE_SQL_TEMPLATE.replace('value_range', 'frac_range')
 
 
+#Numeric search answers one question: someone has a number from an experiment
+#and wants to know whether it is already known. An entry earns a place only if
+#matching it says *which* number they have.
+#
+#A few stored values cannot do that, because nothing better about them is
+#known: the exponent of matrix multiplication is somewhere in [2, 2.3728596],
+#a diagonal Ramsey number somewhere in [43, 48]. Matching one of those does not
+#identify anything -- it reports that a wide range overlaps another wide range,
+#and it would do so for every experimental value in that range.
+#
+#They are recognised without a threshold, because the data already draws this
+#line: exact_text renders a value as a decimal expansion when it is known to
+#its last digit, and as "[a,b]" when it is not. Eleven of 45832 rows are
+#written as intervals, and they are exactly the Ramsey numbers and the matrix
+#multiplication exponent.
+#
+#This removes them from search *by number* only. They remain reachable by name
+#and by tag, which is the way to ask about them: "matrix multiplication", not
+#"2.3".
+def _identifiable(queryset):
+	return queryset.exclude(exact_text__startswith = '[')
+
 def real_query_range(r_query):
 	"""A Sage real interval as the numrange to search with."""
 	return searchable_range(r_query.lower(), r_query.upper())
@@ -95,7 +117,8 @@ def search_real_numbers(r_query, limit):
 	query = real_query_range(r_query)
 
 	contained = list(
-		Number.objects.filter(value_range__contained_by = query)[:limit]
+		_identifiable(Number.objects)
+			.filter(value_range__contained_by = query)[:limit]
 	)
 	if len(contained) >= limit:
 		return contained
@@ -104,7 +127,7 @@ def search_real_numbers(r_query, limit):
 	#have to be ranked in. This re-finds the contained ones -- they overlap
 	#too -- and sorts the union, so the result is a superset of the above.
 	return list(
-		Number.objects
+		_identifiable(Number.objects)
 			.filter(value_range__overlap = query)
 			.annotate(overlap_score = RawSQL(_SCORE_SQL, (query, query)))
 			.order_by('-overlap_score')[:limit]
@@ -247,13 +270,14 @@ def search_fractional_parts(f_query, limit):
 	unknown = NumericRange(Decimal(0), Decimal(1), '[]')
 
 	contained = list(
-		Number.objects.filter(frac_range__contained_by = query)[:limit]
+		_identifiable(Number.objects)
+			.filter(frac_range__contained_by = query)[:limit]
 	)
 	if len(contained) >= limit:
 		return contained
 
 	return list(
-		Number.objects
+		_identifiable(Number.objects)
 			.filter(frac_range__overlap = query)
 			.exclude(frac_range__contains = unknown)
 			.annotate(overlap_score = RawSQL(_FRAC_SCORE_SQL, (query, query)))
