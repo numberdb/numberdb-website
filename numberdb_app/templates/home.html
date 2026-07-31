@@ -139,7 +139,7 @@ div#searchtips {
 <div class="home-searchbar-container">   
 {% include 'includes/searchbar.html' with autofocus=True %}
 <div class="searchbar-help">
-<a class="searchbar-link" href="#" onclick="toggle_visibility('searchtips','searchbar-help');">search tips</a>
+<a class="searchbar-link" id="searchtips-toggle" href="#" onclick="toggle_visibility('searchtips','searchtips-toggle'); return false;">search tips</a>
 &middot;
 <a class="searchbar-link" href="{% url 'db:advanced-search' %}">advanced search</a>
 </div>
@@ -204,6 +204,7 @@ $(function () {
     form.on('submit', function (event) {
         event.preventDefault();
         try { box.searchbox('close'); } catch (e) { /* widget not ready */ }
+        close_searchtips();
         render(box.val().trim(), true);
     });
 
@@ -219,15 +220,28 @@ $(function () {
 
 <script type="text/javascript">
 <!--
+    //The link is addressed by id. It used to be passed 'searchbar-help', which
+    //is a class and matches no element, so getElementById returned null and the
+    //assignment below threw -- after the panel had already been shown or
+    //hidden. The tips toggled and the link never changed its label.
     function toggle_visibility(id_content, id_link) {
        var content = document.getElementById(id_content);
        var a = document.getElementById(id_link);
        if(content.style.display == 'block') {
           content.style.display = 'none';
-          a.text = 'search tips';
+          if (a) { a.text = 'search tips'; }
        } else {
           content.style.display = 'block';
-          a.text = 'close search tips';
+          if (a) { a.text = 'close search tips'; }
+       }
+    }
+
+    //Submitting a search answers the question the tips were opened to help with,
+    //so they get out of the way of the results.
+    function close_searchtips() {
+       var tips = document.getElementById('searchtips');
+       if (tips && tips.style.display == 'block') {
+          toggle_visibility('searchtips', 'searchtips-toggle');
        }
     }
 //-->
