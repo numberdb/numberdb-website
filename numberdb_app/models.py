@@ -405,6 +405,18 @@ class Number(models.Model):
 		null = True,
 		blank = True,
 	)
+	#The same treatment for the fractional part, which is searched separately
+	#and had the same asymmetry: a fractional part known coarsely cannot sit
+	#inside a precise query, so it was never returned.
+	#
+	#No wrap-around case to handle. Sage's frac() widens an interval straddling
+	#an integer to [0,1] rather than splitting it, so the range stays a single
+	#interval; those values are simply ones whose fractional part is unknown,
+	#and they score last instead of being excluded.
+	frac_range = DecimalRangeField(
+		null = True,
+		blank = True,
+	)
 	table = models.ForeignKey(
 		Table, 
 		on_delete=models.CASCADE,
@@ -421,6 +433,8 @@ class Number(models.Model):
 			          name='number_exact_hash'),
 			GistIndex(fields=['value_range'],
 			          name='number_range_gist'),
+			GistIndex(fields=['frac_range'],
+			          name='number_frac_range_gist'),
 		]
 
 	def number_type_bytes(self):
@@ -498,6 +512,7 @@ class Number(models.Model):
 			frac += 1
 		self.frac_lower = float(frac.lower())
 		self.frac_upper = float(frac.upper())
+		self.frac_range = searchable_range(self.frac_lower, self.frac_upper)
 
 
 	def to_RIF(self):

@@ -75,8 +75,8 @@ from utils.utils import blur_complex_interval
 from utils.utils import is_polynomial_ring
 
 
-from .search import (search_complex_numbers, search_p_adic_numbers,
-                     search_real_numbers)
+from .search import (search_complex_numbers, search_fractional_parts,
+                     search_p_adic_numbers, search_real_numbers)
 
 from db_builder.utils import normalize_table_data
 
@@ -1062,10 +1062,12 @@ def suggestions(request):
 		print("f:",f)
 		f_query = blur_real_interval(f)
 		print("f_query:",f_query)
-		query_fractional_part = Number.objects.filter(
-			frac_lower__range = (float(f_query.lower()),float(f_query.upper())),
-			frac_upper__range = (float(f_query.lower()),float(f_query.upper())),							
-		).annotate(query_frac = F('pk'))[:(10-i)]
+		#Overlap rather than containment, ranked -- see search.py.
+		query_fractional_part = search_fractional_parts(f_query, 10-i)
+		for _number in query_fractional_part:
+			#Preserved from the annotate() this replaced: the template uses it
+			#to mark a hit as matched on the fractional part.
+			_number.query_frac = _number.pk
 		
 		if len(query_fractional_part) > 0:
 			found_as_real_number = True
