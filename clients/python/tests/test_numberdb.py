@@ -700,11 +700,21 @@ class TypedSearches(unittest.TestCase):
         self.assertEqual(sent['precision'], 19)
         self.assertEqual(sent['valuation'], -1)
 
-    def test_text_and_polynomials_go_by_the_websites_grammar(self):
+    def test_text_goes_by_the_websites_grammar(self):
         self.assertEqual(self._sent(numberdb.search_text, '3.14')['text'],
                          ['3.14'])
-        self.assertEqual(
-            self._sent(numberdb.search_polynomial, 'x^2-2')['text'], ['x^2-2'])
+
+    def test_a_polynomial_is_not_merely_a_search_term(self):
+        """Different questions, so different parameters.
+
+        A search term is ambiguous -- it might be a title or a tag -- and
+        because polynomials are canonicalised under renaming of variables, a
+        single-term one would match any word at all. The search bar ignores
+        those on purpose. Saying "this is a polynomial" removes the ambiguity.
+        """
+        sent = self._sent(numberdb.search_polynomial, 'x^2-2')
+        self.assertEqual(sent['polynomial'], ['x^2-2'])
+        self.assertNotIn('text', sent)
 
     def test_an_expression_is_the_only_one_that_asks_the_server_to_compute(self):
         client = _client({'results': [], 'messages': []})
@@ -750,3 +760,78 @@ class TheContainer(unittest.TestCase):
     def test_something_unsearchable_is_refused_by_name(self):
         with self.assertRaises(TypeError):
             numberdb.search(object())
+
+
+class SageModuleStaysComplete(unittest.TestCase):
+    """The Sage module lists its functions explicitly, so tooling can see them.
+
+    Generating them in a loop kept the modules from drifting but made them
+    invisible: a checker reported "Module has no attribute search_integer" and
+    editors offered no completion, for exactly the audience the module serves.
+    This test buys the same guarantee the loop did, without the cost.
+    """
+
+    def _module(self):
+        try:
+            import numberdb.sage as flavoured
+        except ImportError as error:
+            self.skipTest(str(error)[:50])
+        return flavoured
+
+    def test_it_mirrors_every_search_function(self):
+        flavoured = self._module()
+        expected = [n for n in numberdb.__all__ if n.startswith('search')]
+        for name in expected:
+            with self.subTest(name=name):
+                self.assertIn(name, flavoured.__all__)
+                self.assertTrue(callable(getattr(flavoured, name)))
+
+    def test_the_signatures_match_the_plain_ones(self):
+        """Minus the client, which the Sage module supplies itself."""
+        import inspect
+        flavoured = self._module()
+        for name in [n for n in numberdb.__all__ if n.startswith('search')]:
+            with self.subTest(name=name):
+                plain = list(inspect.signature(
+                    getattr(numberdb, name)).parameters)
+                sage = list(inspect.signature(
+                    getattr(flavoured, name)).parameters)
+                self.assertEqual(plain, sage)
+
+    def test_each_carries_the_plain_documentation_plus_a_note(self):
+        flavoured = self._module()
+        for name in [n for n in numberdb.__all__ if n.startswith('search')]:
+            with self.subTest(name=name):
+                text = getattr(flavoured, name).__doc__ or ''
+                self.assertIn('Sage objects', text)
+                self.assertGreater(len(text), 120, name)
+
+
+class NoFlavourFlagInSignatures(unittest.TestCase):
+    """as_sage is configuration and belongs on the Client.
+
+    Exposed on every search function it meant two ways to ask for Sage values,
+    and a parameter on eleven signatures that almost no caller should touch.
+    """
+
+    def test_no_search_function_exposes_it(self):
+        import inspect
+        for name in [n for n in numberdb.__all__ if n.startswith('search')]:
+            with self.subTest(name=name):
+                self.assertNotIn(
+                    'as_sage',
+                    str(inspect.signature(getattr(numberdb, name))))
+
+    def test_the_client_carries_it(self):
+        self.assertFalse(numberdb.Client().as_sage)
+        self.assertTrue(numberdb.Client(as_sage=True).as_sage)
+
+    def test_for_sage_keeps_the_rest_of_the_configuration(self):
+        original = numberdb.Client(api_key='k', base_url='https://x.test',
+                                   timeout=5)
+        twin = original.for_sage()
+        self.assertTrue(twin.as_sage)
+        self.assertEqual(twin.api_key, 'k')
+        self.assertEqual(twin.base_url, 'https://x.test/')
+        self.assertEqual(twin.timeout, 5)
+        self.assertFalse(original.as_sage)

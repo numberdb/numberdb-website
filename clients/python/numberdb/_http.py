@@ -42,11 +42,24 @@ class Client:
     def __init__(self, api_key: Optional[str] = None,
                  base_url: Optional[str] = None,
                  timeout: Optional[float] = None,
-                 opener: Optional[Callable] = None) -> None:
+                 opener: Optional[Callable] = None,
+                 as_sage: bool = False) -> None:
         self._api_key = api_key
         self._base_url = base_url
         self._timeout = timeout
         self._opener = opener or urllib.request.urlopen
+        #Which flavour of value results carry. Configuration, so it lives here
+        #rather than as a parameter on every search function -- numberdb.sage
+        #sets it once and the eleven signatures stay about numbers.
+        self.as_sage = as_sage
+
+    def for_sage(self) -> 'Client':
+        """The same connection, returning Sage objects."""
+        if self.as_sage:
+            return self
+        twin = Client(self._api_key, self._base_url, self._timeout,
+                      self._opener, as_sage=True)
+        return twin
 
     @property
     def base_url(self) -> str:

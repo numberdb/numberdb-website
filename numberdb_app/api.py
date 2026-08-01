@@ -386,6 +386,7 @@ def lookup(request):
 		}, safe=True)
 
 	number_json = request.GET.get('number')
+	polynomial = request.GET.get('polynomial')
 	text = request.GET.get('text')
 
 	if number_json:
@@ -407,6 +408,29 @@ def lookup(request):
 		except ValueError as error:
 			return JsonResponse({'error': str(error)}, safe=True)
 
+	if polynomial:
+		#Its own parameter rather than going through text=, because the two
+		#are asking different questions.
+		#
+		#A typed search term is ambiguous: it might be a number, a table
+		#title, a tag. Since polynomials are canonicalised under renaming of
+		#variables, a single-term polynomial would match any word at all --
+		#every search for "prime" would return the polynomial x. The search
+		#bar therefore ignores polynomials of fewer than two terms, on
+		#purpose.
+		#
+		#Here the caller has said the text *is* a polynomial, so there is no
+		#ambiguity to guard against and single terms are searched.
+		from utils.utils import parse_polynomial
+		try:
+			parsed = parse_polynomial(polynomial)
+		except Exception:
+			parsed = None
+		if parsed is None:
+			return JsonResponse(
+				{'error': 'could not read that polynomial.'}, safe=True)
+		return wrap(search_number(parsed), [])
+
 	if text:
 		groups = search_by_term(text)
 		found = [number for group in groups for number in group['numbers']]
@@ -419,5 +443,5 @@ def lookup(request):
 		return wrap(found[:PAGE_SIZE], messages)
 
 	return JsonResponse(
-		{'error': 'Give either number=<json record> or text=<search term>.'},
-		safe=True)
+		{'error': 'Give number=<json record>, polynomial=<text>, or '
+		          'text=<search term>.'}, safe=True)

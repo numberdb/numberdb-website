@@ -194,49 +194,50 @@ def tag(name: str, client: Optional[Client] = None) -> Dict[str, Any]:
     return (client or _default_client).request('api/tag', {'url': name})
 
 
-def _lookup(parameters, client, as_sage):
-    payload = (client or _default_client).request('api/lookup', parameters)
+def _lookup(parameters: Dict[str, Any],
+            client: Optional[Client]) -> 'SearchResults':
+    used = client or _default_client
+    payload = used.request('api/lookup', parameters)
     records = payload.get('results') or []
     messages = [message.get('text', '') for message in
                 (payload.get('messages') or []) if isinstance(message, dict)]
-    return SearchResults([Result(record, as_sage) for record in records],
-                         messages)
+    return SearchResults([Result(record, used.as_sage)
+                          for record in records], messages)
 
 
-def _by_number(record, client, as_sage):
-    return _lookup({'number': json.dumps(record)}, client, as_sage)
+def _by_number(record: Dict[str, Any],
+               client: Optional[Client]) -> 'SearchResults':
+    return _lookup({'number': json.dumps(record)}, client)
 
 
-def search_integer(value: Scalar, client: Optional[Client] = None,
-                   as_sage: bool = False) -> 'SearchResults':
+def search_integer(value: Scalar, client: Optional[Client] = None) -> 'SearchResults':
     """Search for an exact integer.
 
-    Exact values are matched by equality on an indexed column, not by a range
-    query, so this is a different question from search_real_interval and not
-    merely a convenience over it.
+    The server searches an exact value as a point interval on the real line, so
+    the result is what search_real_interval(n, n) would give. This exists to
+    say what you mean, and to refuse a value that is not an integer, rather
+    than because it asks a mechanically different question.
     """
     exact = to_exact(value, 'value')
     if exact.denominator != 1:
         raise ValueError('%s is not an integer; use search_rational' % (exact,))
     return _by_number({'kind': 'ZZ', 'value': str(exact.numerator)},
-                      client, as_sage)
+                      client)
 
 
 def search_rational(numerator: Scalar, denominator: Scalar = 1,
-                    client: Optional[Client] = None,
-                    as_sage: bool = False) -> 'SearchResults':
+                    client: Optional[Client] = None) -> 'SearchResults':
     """Search for an exact rational ``numerator / denominator``.
 
     The denominator defaults to 1, so a Fraction can be passed on its own.
     """
     exact = to_exact(numerator, 'numerator') / to_exact(denominator,
                                                         'denominator')
-    return _by_number({'kind': 'QQ', 'value': str(exact)}, client, as_sage)
+    return _by_number({'kind': 'QQ', 'value': str(exact)}, client)
 
 
 def search_real_interval(lower: Scalar, upper: Scalar,
-                         client: Optional[Client] = None,
-                         as_sage: bool = False) -> 'SearchResults':
+                         client: Optional[Client] = None) -> 'SearchResults':
     """Search for a real known to lie between ``lower`` and ``upper``.
 
     Endpoints are converted exactly before anything else touches them, so the
@@ -246,12 +247,11 @@ def search_real_interval(lower: Scalar, upper: Scalar,
     if low > high:
         low, high = high, low
     return _by_number({'kind': 'RIF', 'lower': str(low), 'upper': str(high)},
-                      client, as_sage)
+                      client)
 
 
 def search_real_ball(center: Scalar, radius: Scalar,
-                     client: Optional[Client] = None,
-                     as_sage: bool = False) -> 'SearchResults':
+                     client: Optional[Client] = None) -> 'SearchResults':
     """Search for a real known as ``center`` give or take ``radius``.
 
     The form to use for an experimental value: state the uncertainty you
@@ -259,13 +259,12 @@ def search_real_ball(center: Scalar, radius: Scalar,
     """
     middle, spread = to_exact(center, 'center'), abs(to_exact(radius, 'radius'))
     return search_real_interval(middle - spread, middle + spread,
-                                client=client, as_sage=as_sage)
+                                client=client)
 
 
 def search_complex_interval(re_lower: Scalar, re_upper: Scalar,
                             im_lower: Scalar, im_upper: Scalar,
-                            client: Optional[Client] = None,
-                            as_sage: bool = False) -> 'SearchResults':
+                            client: Optional[Client] = None) -> 'SearchResults':
     """Search for a complex number known to lie in a rectangle."""
     real = sorted([to_exact(re_lower, 're_lower'), to_exact(re_upper, 're_upper')])
     imaginary = sorted([to_exact(im_lower, 'im_lower'),
@@ -273,12 +272,11 @@ def search_complex_interval(re_lower: Scalar, re_upper: Scalar,
     return _by_number({'kind': 'CIF',
                        're_lower': str(real[0]), 're_upper': str(real[1]),
                        'im_lower': str(imaginary[0]),
-                       'im_upper': str(imaginary[1])}, client, as_sage)
+                       'im_upper': str(imaginary[1])}, client)
 
 
 def search_complex_ball(re_center: Scalar, im_center: Scalar, radius: Scalar,
-                        client: Optional[Client] = None,
-                        as_sage: bool = False) -> 'SearchResults':
+                        client: Optional[Client] = None) -> 'SearchResults':
     """Search for a complex number known to within ``radius`` of a centre.
 
     The disc is widened to the square that contains it: the database stores
@@ -289,14 +287,13 @@ def search_complex_ball(re_center: Scalar, im_center: Scalar, radius: Scalar,
     imaginary = to_exact(im_center, 'im_center')
     return search_complex_interval(real - spread, real + spread,
                                    imaginary - spread, imaginary + spread,
-                                   client=client, as_sage=as_sage)
+                                   client=client)
 
 
 def search_p_adic(prime: int, order: int, unit: int,
                   absolute_precision: Optional[int] = None,
                   relative_precision: Optional[int] = None,
-                  client: Optional[Client] = None,
-                  as_sage: bool = False) -> 'SearchResults':
+                  client: Optional[Client] = None) -> 'SearchResults':
     """Search for ``prime**order * unit``, known to the given precision.
 
     ``unit`` must be coprime to ``prime``. Exactly one precision must be
@@ -318,26 +315,34 @@ def search_p_adic(prime: int, order: int, unit: int,
     return _by_number({'kind': 'Qp', 'prime': value.prime,
                        'valuation': value.valuation, 'unit': str(value.unit),
                        'precision': value.precision_absolute},
-                      client, as_sage)
+                      client)
 
 
 def search_polynomial(polynomial: Union[str, Polynomial],
-                      client: Optional[Client] = None,
-                      as_sage: bool = False) -> 'SearchResults':
+                      client: Optional[Client] = None) -> 'SearchResults':
     """Search for a polynomial over the rationals, written as text.
 
-    Variable names do not matter: the database canonicalises under renaming,
-    so 'x^2-2' and 'y^2-2' find each other.
+    Variable names do not matter: the database canonicalises under renaming, so
+    'x^2-2' and 'y^2-2' find each other.
+
+    Not the same as passing the text to search_text. A search term might be a
+    title or a tag, and because variables are canonicalised away, a single-term
+    polynomial would match any word -- so the search bar ignores those. Saying
+    "this is a polynomial" removes the ambiguity, and 'x' is searched here
+    where it would not be there.
     """
     text = polynomial.text if isinstance(polynomial, Polynomial) \
         else str(polynomial)
-    #Sent as text: the server parses it with the same grammar the website
-    #uses, rather than this package growing a second polynomial parser.
-    return _lookup({'text': text}, client, as_sage)
+    #Its own parameter, not text=. Search terms are ambiguous -- a word might
+    #be a title or a tag -- and polynomials are canonicalised under renaming of
+    #variables, so a single-term polynomial would match any word at all. The
+    #search bar ignores those on purpose. Here the caller has said this is a
+    #polynomial, so single terms are searched too. Parsing still happens on the
+    #server, so this package does not grow a second polynomial parser.
+    return _lookup({'polynomial': text}, client)
 
 
-def search_text(text: str, client: Optional[Client] = None,
-                as_sage: bool = False) -> 'SearchResults':
+def search_text(text: str, client: Optional[Client] = None) -> 'SearchResults':
     """Search exactly as the box on the website does.
 
     The documented human formats: '3.14159' for a real, '1415' for a
@@ -348,11 +353,10 @@ def search_text(text: str, client: Optional[Client] = None,
     uncertain -- which is why text is a sound way to search and a bare float
     is not.
     """
-    return _lookup({'text': text}, client, as_sage)
+    return _lookup({'text': text}, client)
 
 
-def search_by_expression(expression: str, client: Optional[Client] = None,
-                         as_sage: bool = False) -> 'SearchResults':
+def search_by_expression(expression: str, client: Optional[Client] = None) -> 'SearchResults':
     """Have the server evaluate a Sage expression, and search for the results.
 
     The only call that runs code on the server: it forks a sandboxed Sage
@@ -361,17 +365,18 @@ def search_by_expression(expression: str, client: Optional[Client] = None,
     something -- '{n: pi^n for n in [1..5]}' -- not to look up a number you
     already have.
     """
-    return _expression(expression, client, as_sage)
+    return _expression(expression, client)
 
 
-def _expression(expression, client, as_sage):
-    payload = (client or _default_client).request(
-        'api/search', {'expression': expression})
+def _expression(expression: str,
+                client: Optional[Client]) -> 'SearchResults':
+    used = client or _default_client
+    payload = used.request('api/search', {'expression': expression})
     records = payload.get('results') or []
     messages = [message.get('text', '') for message in
                 (payload.get('messages') or []) if isinstance(message, dict)]
-    return SearchResults([Result(record, as_sage) for record in records],
-                         messages)
+    return SearchResults([Result(record, used.as_sage)
+                          for record in records], messages)
 
 
 #: Anything search() accepts. Sage values are matched structurally, by
@@ -415,8 +420,7 @@ def _sage_parent_kind(value: Any) -> Optional[str]:
     return described
 
 
-def search(value: 'Searchable', client: Optional[Client] = None,
-           as_sage: bool = False) -> 'SearchResults':
+def search(value: 'Searchable', client: Optional[Client] = None) -> 'SearchResults':
     """Search for a number you already have.
 
     Accepts a Python ``int`` or ``Fraction``, one of this package's own types
@@ -435,24 +439,24 @@ def search(value: 'Searchable', client: Optional[Client] = None,
 
     if isinstance(value, RealInterval):
         return search_real_interval(value.lower, value.upper,
-                                    client=client, as_sage=as_sage)
+                                    client=client)
     if isinstance(value, ComplexInterval):
         return search_complex_interval(
             value.real.lower, value.real.upper,
-            value.imag.lower, value.imag.upper, client=client, as_sage=as_sage)
+            value.imag.lower, value.imag.upper, client=client)
     if isinstance(value, PAdic):
         return search_p_adic(value.prime, value.valuation, value.unit,
                              absolute_precision=value.precision_absolute,
-                             client=client, as_sage=as_sage)
+                             client=client)
     if isinstance(value, Polynomial):
-        return search_polynomial(value, client=client, as_sage=as_sage)
+        return search_polynomial(value, client=client)
 
     if isinstance(value, int):
-        return search_integer(value, client=client, as_sage=as_sage)
+        return search_integer(value, client=client)
     if isinstance(value, Fraction):
-        return search_rational(value, client=client, as_sage=as_sage)
+        return search_rational(value, client=client)
     if isinstance(value, str):
-        return search_text(value, client=client, as_sage=as_sage)
+        return search_text(value, client=client)
 
     if isinstance(value, float):
         raise TypeError(
@@ -466,32 +470,32 @@ def search(value: 'Searchable', client: Optional[Client] = None,
     #the type system cannot see. Named as Any rather than pretended about.
     sage_value: Any = value
     if kind == 'integer':
-        return search_integer(sage_value, client=client, as_sage=as_sage)
+        return search_integer(sage_value, client=client)
     if kind == 'rational':
-        return search_rational(sage_value, client=client, as_sage=as_sage)
+        return search_rational(sage_value, client=client)
     if kind == 'real interval':
         return search_real_interval(sage_value.lower(), sage_value.upper(),
-                                    client=client, as_sage=as_sage)
+                                    client=client)
     if kind == 'complex interval':
         return search_complex_interval(
             sage_value.real().lower(), sage_value.real().upper(),
             sage_value.imag().lower(), sage_value.imag().upper(),
-            client=client, as_sage=as_sage)
+            client=client)
     if kind == 'p-adic':
         if sage_value == 0:
             absolute = int(sage_value.precision_absolute())
             return search_p_adic(int(sage_value.parent().prime()), absolute, 0,
                                  absolute_precision=absolute,
-                                 client=client, as_sage=as_sage)
+                                 client=client)
         return search_p_adic(int(sage_value.parent().prime()),
                              int(sage_value.valuation()),
                              int(sage_value.unit_part().lift()),
                              absolute_precision=int(
                                  sage_value.precision_absolute()),
-                             client=client, as_sage=as_sage)
+                             client=client)
     if kind == 'polynomial':
         return search_polynomial(str(sage_value).replace(' ', ''),
-                                 client=client, as_sage=as_sage)
+                                 client=client)
 
     raise TypeError(
         'no search for %s. Give an int, a Fraction, a string, one of this '
