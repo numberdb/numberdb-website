@@ -482,3 +482,50 @@ class NoSageExtra(unittest.TestCase):
                                  if not line.lstrip().startswith('#'))
         self.assertNotIn('optional-dependencies', declared)
         self.assertNotIn('numberdb[sage]', declared)
+
+
+class BaseUrlJoining(unittest.TestCase):
+    """A configured base URL must reach the server it names.
+
+    urljoin replaces a final path segment that has no trailing slash, so
+    'https://example.org/numberdb' would send requests to
+    'https://example.org/api/search' -- the prefix silently dropped, and
+    possibly a different application answering.
+    """
+
+    def setUp(self):
+        os.environ.pop('NUMBERDB_URL', None)
+
+    tearDown = setUp
+
+    def test_the_default_is_numberdb_org(self):
+        self.assertEqual(numberdb.Client().base_url, 'https://numberdb.org/')
+
+    def test_every_reasonable_spelling_reaches_the_right_path(self):
+        cases = [
+            ('https://numberdb.org/', 'https://numberdb.org/api/search'),
+            ('https://numberdb.org', 'https://numberdb.org/api/search'),
+            ('http://localhost:8000', 'http://localhost:8000/api/search'),
+            ('https://example.org/numberdb',
+             'https://example.org/numberdb/api/search'),
+            ('https://example.org/numberdb/',
+             'https://example.org/numberdb/api/search'),
+        ]
+        for configured, expected in cases:
+            with self.subTest(base_url=configured):
+                client = _client({'results': [], 'messages': []},
+                                 base_url=configured)
+                numberdb.search('pi', client=client)
+                self.assertTrue(
+                    client.opener.request.full_url.startswith(expected),
+                    '%s -> %s' % (configured,
+                                  client.opener.request.full_url))
+
+    def test_the_environment_can_set_it(self):
+        os.environ['NUMBERDB_URL'] = 'http://localhost:8000'
+        self.assertEqual(numberdb.Client().base_url, 'http://localhost:8000/')
+
+    def test_an_explicit_url_beats_the_environment(self):
+        os.environ['NUMBERDB_URL'] = 'http://localhost:8000'
+        self.assertEqual(numberdb.Client(base_url='https://elsewhere.test').base_url,
+                         'https://elsewhere.test/')
