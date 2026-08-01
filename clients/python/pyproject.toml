@@ -12,10 +12,13 @@ license = {text = "MIT"}
 authors = [{name = "Benjamin Matschke"}]
 keywords = ["mathematics", "number theory", "constants", "sagemath", "numberdb"]
 classifiers = [
+    "Development Status :: 4 - Beta",
     "License :: OSI Approved :: MIT License",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Mathematics",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Typing :: Typed",
 ]
 
 # No runtime dependencies on purpose. The package uses urllib from the standard
@@ -31,3 +34,7 @@ Issues = "https://github.com/numberdb/numberdb-website/issues"
 
 [tool.setuptools.packages.find]
 include = ["numberdb*"]
+
+[tool.setuptools.package-data]
+# Marks the package as carrying inline type information (PEP 561).
+numberdb = ["py.typed"]
