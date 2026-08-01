@@ -146,3 +146,8 @@ cython_debug/
 
 # Local-only compose tweaks (ports, dev settings)
 docker-compose.override.yml
+
+# Built client package artifacts
+clients/python/dist/
+clients/python/build/
+clients/python/*.egg-info/
