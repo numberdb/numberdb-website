@@ -46,8 +46,18 @@ class Client:
 
     @property
     def base_url(self):
-        return self._base_url or os.environ.get('NUMBERDB_URL',
-                                                DEFAULT_BASE_URL)
+        """Always ending in a slash, which is not cosmetic.
+
+        urljoin treats a final segment without a trailing slash as a file to be
+        replaced, so a base of 'https://example.org/numberdb' would send
+        requests to 'https://example.org/api/search' -- the path prefix
+        silently dropped, and quite possibly a different application answering.
+        Anyone hosting NumberDB under a sub-path behind a proxy would hit this,
+        and would see a 404 rather than anything pointing at the cause.
+        """
+        configured = self._base_url or os.environ.get('NUMBERDB_URL',
+                                                      DEFAULT_BASE_URL)
+        return configured if configured.endswith('/') else configured + '/'
 
     @property
     def api_key(self):

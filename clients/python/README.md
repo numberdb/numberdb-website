@@ -129,6 +129,23 @@ For more than one server or key in a process, use a client directly:
 Exceeding the limit raises `numberdb.RateLimited`, which carries `.retry_after`
 in seconds when the server supplies it.
 
+## Pointing it somewhere else
+
+The default is `https://numberdb.org`. Override it for a development server, or
+a private instance:
+
+```console
+$ export NUMBERDB_URL=http://localhost:8000
+```
+
+```python
+>>> client = numberdb.Client(base_url='https://example.org/numberdb')
+>>> numberdb.search('pi', client=client)
+```
+
+A trailing slash is optional — a base URL with a path prefix keeps it either
+way.
+
 ## Other calls
 
 ```python
