@@ -42,7 +42,7 @@ starts instantly in a plain interpreter.
 
 | | |
 |---|---|
-| `.value` | the number in plain Python |
+| `.value` | the number in plain Python (decoded on demand) |
 | `.exact_text` | how the database writes it — the form to quote or paste back into a search |
 | `.str_short` | a short form, comparable across results |
 | `.table` | where it lives (`.tid`, `.title`, `.url`) |
@@ -50,15 +50,15 @@ starts instantly in a plain interpreter.
 | `.sage()` | the number as a Sage object |
 | `.url()` | where to read about it |
 
-`.value` is one of `int`, `Fraction`, `Interval`, `Box`, `PAdic` or
-`Polynomial`. Exact values stay exact: integers are Python `int` (unbounded —
+`.value` is one of `int`, `Fraction`, `RealInterval`, `ComplexInterval`,
+`PAdic` or `Polynomial`. Exact values stay exact: integers are Python `int` (unbounded —
 the database holds integers of over a thousand digits), rationals are
 `Fraction`, and interval endpoints are exact `Fraction`s rather than rounded
 floats. Converting to `float` is your decision, never an accident of transport.
 
 ```python
 >>> result.value
-Interval(884279719003555/281474976710656, 7074237752028441/2251799813685248)
+RealInterval(884279719003555/281474976710656, 7074237752028441/2251799813685248)
 >>> float(result.value)          # the midpoint, explicitly lossy
 3.141592653589793
 ```
@@ -68,23 +68,49 @@ of the expression was rejected:
 
 ```python
 >>> results = numberdb.search('...')
->>> results.warnings
+>>> results.messages
 ['We only show the first 100 results.']
 ```
+
+### When the server is newer than the package
+
+NumberDB will learn new kinds of number. An older package still returns every
+result: values are decoded when you ask for them, so an unfamiliar one costs
+you that value and nothing else, and its `exact_text` is there regardless.
+
+```python
+>>> for result in numberdb.search('...'):
+...     if result.is_readable:
+...         use(result.value)
+...     else:
+...         print(result.exact_text)   # still perfectly readable
+```
+
+`results.unreadable` lists them, and every exception the package raises derives
+from `numberdb.NumberDBError`, so one `except` covers it.
 
 ## Rate limits and API keys
 
 Anonymous use is rate limited. A key raises the limit:
 
-```python
->>> numberdb.api_key = '...'
-```
-
-or, better, keep it out of your worksheet — a shared notebook should not carry
-its author's key:
+Keep it out of your worksheet — a shared notebook should not carry its
+author's key:
 
 ```console
 $ export NUMBERDB_API_KEY=...
+```
+
+or, if you must set it in code:
+
+```python
+>>> numberdb.configure(api_key='...')
+```
+
+For more than one server or key in a process, use a client directly:
+
+```python
+>>> client = numberdb.Client(api_key='...', base_url='http://localhost:8000/')
+>>> numberdb.search('pi', client=client)
 ```
 
 Exceeding the limit raises `numberdb.RateLimited`, which carries `.retry_after`

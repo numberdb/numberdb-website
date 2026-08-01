@@ -25,15 +25,25 @@ PACKAGE_PATH = '/app/clients/python'
 
 
 def _client():
-	"""The decoder from the published package.
+	"""The published package, loaded from the source tree it ships from.
 
-	Loaded by path rather than by name: this repository's Django project is
-	also called ``numberdb`` and is already imported, so ``import numberdb``
-	here would find the server, not the client. Users never have both.
+	Loaded by path under an alias rather than by name: this repository's Django
+	project is also called ``numberdb`` and is already imported, so ``import
+	numberdb`` here would find the server, not the client. Users never have
+	both, so the collision is ours alone.
+
+	Loaded as a package, with submodule_search_locations set, so the relative
+	imports inside it resolve -- importing a single module out of it would
+	break on ``from ._errors import ...``.
 	"""
+	import sys
+	if 'numberdb_client' in sys.modules:
+		return sys.modules['numberdb_client']
 	spec = importlib.util.spec_from_file_location(
-		'numberdb_client_wire', '%s/numberdb/_wire.py' % (PACKAGE_PATH,))
+		'numberdb_client', '%s/numberdb/__init__.py' % (PACKAGE_PATH,),
+		submodule_search_locations=['%s/numberdb' % (PACKAGE_PATH,)])
 	module = importlib.util.module_from_spec(spec)
+	sys.modules['numberdb_client'] = module
 	spec.loader.exec_module(module)
 	return module
 
