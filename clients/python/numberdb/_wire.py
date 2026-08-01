@@ -77,34 +77,38 @@ class RealInterval:
 class ComplexInterval:
     """A complex number known to lie in a rectangle.
 
+    ``real`` and ``imag`` are each a ``RealInterval``. Named as Python's own
+    ``complex`` names them, and as Sage does, so the abbreviation is the one
+    already in the reader's fingers.
+
     The same shape as Sage's complex interval -- a real interval for each
     component -- but a record rather than an arithmetic type, with exact
     rational corners instead of floats at a fixed precision.
     """
 
-    __slots__ = ('real', 'imaginary')
+    __slots__ = ('real', 'imag')
 
-    def __init__(self, real, imaginary):
+    def __init__(self, real, imag):
         self.real = real
-        self.imaginary = imaginary
+        self.imag = imag
 
     def __repr__(self):
-        return 'ComplexInterval(%r, %r)' % (self.real, self.imaginary)
+        return 'ComplexInterval(%r, %r)' % (self.real, self.imag)
 
     def __eq__(self, other):
         return (isinstance(other, ComplexInterval) and self.real == other.real
-                and self.imaginary == other.imaginary)
+                and self.imag == other.imag)
 
     def __hash__(self):
-        return hash((ComplexInterval, self.real, self.imaginary))
+        return hash((ComplexInterval, self.real, self.imag))
 
     def __complex__(self):
         """The centre. Lossy, as for a real interval."""
-        return complex(float(self.real), float(self.imaginary))
+        return complex(float(self.real), float(self.imag))
 
     @property
     def is_exact(self):
-        return self.real.is_exact and self.imaginary.is_exact
+        return self.real.is_exact and self.imag.is_exact
 
 
 class PAdic:
@@ -282,7 +286,7 @@ def to_sage(value):
         return RIF(QQ(value.lower), QQ(value.upper))
     if isinstance(value, ComplexInterval):
         return CIF(RIF(QQ(value.real.lower), QQ(value.real.upper)),
-                   RIF(QQ(value.imaginary.lower), QQ(value.imaginary.upper)))
+                   RIF(QQ(value.imag.lower), QQ(value.imag.upper)))
     if isinstance(value, PAdic):
         return Qp(value.prime, prec=max(value.precision, 1))(ZZ(value.lift))
     if isinstance(value, Polynomial):
