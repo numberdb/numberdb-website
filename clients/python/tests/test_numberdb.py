@@ -13,6 +13,7 @@ import os
 import sys
 import unittest
 import urllib.error
+import urllib.parse
 from fractions import Fraction
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -511,13 +512,13 @@ class BaseUrlJoining(unittest.TestCase):
 
     def test_every_reasonable_spelling_reaches_the_right_path(self):
         cases = [
-            ('https://numberdb.org/', 'https://numberdb.org/api/search'),
-            ('https://numberdb.org', 'https://numberdb.org/api/search'),
-            ('http://localhost:8000', 'http://localhost:8000/api/search'),
+            ('https://numberdb.org/', 'https://numberdb.org/api/'),
+            ('https://numberdb.org', 'https://numberdb.org/api/'),
+            ('http://localhost:8000', 'http://localhost:8000/api/'),
             ('https://example.org/numberdb',
-             'https://example.org/numberdb/api/search'),
+             'https://example.org/numberdb/api/'),
             ('https://example.org/numberdb/',
-             'https://example.org/numberdb/api/search'),
+             'https://example.org/numberdb/api/'),
         ]
         for configured, expected in cases:
             with self.subTest(base_url=configured):
@@ -638,3 +639,114 @@ class ExactConversionOfSageValues(unittest.TestCase):
         from numberdb._convert import to_exact
         with self.assertRaises(TypeError):
             to_exact(Qp(5, 20)(6))
+
+
+class TypedSearches(unittest.TestCase):
+    """Each takes basic arguments, so nothing has to be constructed first."""
+
+    def _sent(self, call, *args, **keywords):
+        client = _client({'results': [], 'messages': []})
+        call(*args, client=client, **keywords)
+        query = urllib.parse.parse_qs(
+            urllib.parse.urlparse(client.opener.request.full_url).query)
+        return query
+
+    def test_an_integer_is_sent_as_an_exact_value(self):
+        sent = self._sent(numberdb.search_integer, 7)
+        self.assertEqual(json.loads(sent['number'][0]),
+                         {'kind': 'ZZ', 'value': '7'})
+
+    def test_a_rational_takes_numerator_and_denominator(self):
+        self.assertEqual(json.loads(self._sent(
+            numberdb.search_rational, 2, 3)['number'][0]),
+            {'kind': 'QQ', 'value': '2/3'})
+        #The denominator defaults, so a Fraction may be passed alone.
+        self.assertEqual(json.loads(self._sent(
+            numberdb.search_rational, Fraction(2, 3))['number'][0]),
+            {'kind': 'QQ', 'value': '2/3'})
+
+    def test_a_non_integer_is_refused_by_search_integer(self):
+        with self.assertRaises(ValueError):
+            numberdb.search_integer(Fraction(1, 2))
+
+    def test_a_ball_becomes_an_exact_interval(self):
+        """Converted before the arithmetic, so the width is exactly 2r."""
+        sent = json.loads(self._sent(
+            numberdb.search_real_ball, '1/2', '1/8')['number'][0])
+        self.assertEqual(Fraction(sent['lower']), Fraction(3, 8))
+        self.assertEqual(Fraction(sent['upper']), Fraction(5, 8))
+
+    def test_endpoints_given_the_wrong_way_round_are_sorted(self):
+        sent = json.loads(self._sent(
+            numberdb.search_real_interval, 2, 1)['number'][0])
+        self.assertEqual((sent['lower'], sent['upper']), ('1', '2'))
+
+    def test_a_complex_ball_widens_to_the_square_that_contains_it(self):
+        sent = json.loads(self._sent(
+            numberdb.search_complex_ball, 0, 0, '1/4')['number'][0])
+        self.assertEqual(Fraction(sent['re_lower']), Fraction(-1, 4))
+        self.assertEqual(Fraction(sent['im_upper']), Fraction(1, 4))
+
+    def test_a_p_adic_needs_its_precision_named(self):
+        with self.assertRaises(TypeError):
+            numberdb.search_p_adic(5, 0, 1)
+        with self.assertRaises(TypeError):
+            numberdb.search_p_adic(5, 0, 1, absolute_precision=3,
+                                   relative_precision=3)
+
+    def test_relative_precision_is_converted_to_absolute(self):
+        sent = json.loads(self._sent(
+            numberdb.search_p_adic, 5, -1, 1, relative_precision=20)['number'][0])
+        self.assertEqual(sent['precision'], 19)
+        self.assertEqual(sent['valuation'], -1)
+
+    def test_text_and_polynomials_go_by_the_websites_grammar(self):
+        self.assertEqual(self._sent(numberdb.search_text, '3.14')['text'],
+                         ['3.14'])
+        self.assertEqual(
+            self._sent(numberdb.search_polynomial, 'x^2-2')['text'], ['x^2-2'])
+
+    def test_an_expression_is_the_only_one_that_asks_the_server_to_compute(self):
+        client = _client({'results': [], 'messages': []})
+        numberdb.search_by_expression('pi', client=client)
+        self.assertIn('/api/search', client.opener.request.full_url)
+        client = _client({'results': [], 'messages': []})
+        numberdb.search_integer(7, client=client)
+        self.assertIn('/api/lookup', client.opener.request.full_url)
+
+
+class TheContainer(unittest.TestCase):
+    """search() takes an object; the search_* functions take components."""
+
+    def _kind(self, value):
+        client = _client({'results': [], 'messages': []})
+        numberdb.search(value, client=client)
+        query = urllib.parse.parse_qs(
+            urllib.parse.urlparse(client.opener.request.full_url).query)
+        if 'text' in query:
+            return 'text'
+        return json.loads(query['number'][0])['kind']
+
+    def test_python_and_package_types_are_dispatched(self):
+        cases = [(7, 'ZZ'), (Fraction(2, 3), 'QQ'), ('3.14', 'text'),
+                 (numberdb.RealInterval(Fraction(1), Fraction(2)), 'RIF'),
+                 (numberdb.PAdic(5, -1, 1, 19), 'Qp'),
+                 (numberdb.ComplexInterval(
+                     numberdb.RealInterval(Fraction(0), Fraction(1)),
+                     numberdb.RealInterval(Fraction(2), Fraction(3))), 'CIF')]
+        for value, expected in cases:
+            with self.subTest(value=repr(value)[:30]):
+                self.assertEqual(self._kind(value), expected)
+
+    def test_a_bare_float_is_refused_and_says_what_to_do(self):
+        with self.assertRaises(TypeError) as caught:
+            numberdb.search(3.14159)
+        self.assertIn('search_real_ball', str(caught.exception))
+
+    def test_a_bool_is_not_a_number(self):
+        with self.assertRaises(TypeError):
+            numberdb.search(True)
+
+    def test_something_unsearchable_is_refused_by_name(self):
+        with self.assertRaises(TypeError):
+            numberdb.search(object())

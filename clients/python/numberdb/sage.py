@@ -29,15 +29,15 @@ package wholesale.
 
 import importlib.util
 
-from . import (Client, NumberDBError, RateLimited, Result, SearchResults,
-               Table, TransportError, Unauthorized, UnsupportedNumber,
-               __version__, configure, table, tag)
-from . import search as _search
+import functools
 
-__all__ = ['search', 'table', 'tag', 'configure', 'Client',
-           'Result', 'Table', 'SearchResults',
-           'NumberDBError', 'TransportError', 'RateLimited', 'Unauthorized',
-           'UnsupportedNumber', '__version__']
+from . import (Client, ComplexInterval, NumberDBError, PAdic, Polynomial,
+               RateLimited, RealInterval, Result, SearchResults, Table,
+               TransportError, Unauthorized, UnsupportedNumber, __version__,
+               configure, table, tag)
+from . import __all__ as _plain_names
+
+__all__ = list(_plain_names)
 
 #Checked by specification rather than by importing: Sage takes seconds to load,
 #and the point of failing here is to say plainly that this module needs it,
@@ -51,14 +51,29 @@ if importlib.util.find_spec('sage') is None:
         'an existing Sage, where it would overwrite the installation.')
 
 
-def search(expression, client=None):
-    """Search for numbers matching ``expression``, as Sage objects.
+def _flavoured(function):
+    """The same call, with results carrying Sage objects.
 
-    Identical to ``numberdb.search`` except that ``result.value`` is a Sage
-    object rather than a plain Python one.
-
-    The conversion is a faithful container, not a byte-identical round trip: a
-    ball comes back as an interval, and an endpoint Sage cannot represent
-    exactly is widened to one it can. It always contains the stored number.
+    Wrapped rather than reimplemented, so the two modules cannot drift: adding
+    a search function to the package adds it here with no further work.
     """
-    return _search(expression, client=client, as_sage=True)
+    @functools.wraps(function)
+    def call(*args, **keywords):
+        keywords.setdefault('as_sage', True)
+        return function(*args, **keywords)
+
+    call.__doc__ = (function.__doc__ or '') + (
+        '\n\n    Results carry Sage objects. The conversion is a faithful\n'
+        '    container, not a byte-identical round trip: a ball comes back as\n'
+        '    an interval, and an endpoint Sage cannot represent exactly is\n'
+        '    widened to one it can. It always contains the stored number.\n')
+    return call
+
+
+#Every search function, in Sage flavour. Anything else -- table, tag, Client,
+#the exceptions -- is re-exported unchanged above.
+_plain = __import__('numberdb', fromlist=['*'])
+for _name in _plain_names:
+    if _name.startswith('search'):
+        globals()[_name] = _flavoured(getattr(_plain, _name))
+del _name
