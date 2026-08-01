@@ -136,3 +136,54 @@ class RoundTrip(TestCase):
 		for value in [ZZ(10) ** 40 + 1, QQ(355) / 113]:
 			with self.subTest(value=str(value)):
 				self.assertEqual(decode_number(encode_number(value)), value)
+
+
+class ExactValuesAreSearchable(TestCase):
+	"""Advanced search must not drop exactly-known values.
+
+	The dispatch keys on the parent of what the sandbox returns. Integers and
+	rationals used to arrive as RIF, because the wire format could not carry
+	them and they were coerced; once ZZ and QQ crossed intact they matched no
+	branch and every integer search returned nothing, with no error to show for
+	it. Regression caught in production, not by a test.
+	"""
+
+	@classmethod
+	def setUpTestData(cls):
+		cls.table = Table.objects.create(tid='T1', tid_int=1, url='t1',
+		                                 path='t1', title='Table 1')
+
+	def store(self, value, param=b'x'):
+		from .models import exact_relative_width
+		number = Number(sage_number=value)
+		number.table = self.table
+		number.param = param
+		number.exact_text = str(value)
+		number.exact_relative_width = exact_relative_width(number.exact_text)
+		number.save()
+		return number
+
+	def search(self, value):
+		"""The dispatch in api.py, exercised through its own entry point."""
+		from .api import advanced_search_results
+		from django.test import RequestFactory
+		from unittest.mock import patch
+		request = RequestFactory().get('/api/search', {'expression': 'unused'})
+		with patch('numberdb_app.api.evaluate_search_program',
+		           return_value=([('', value)], [])):
+			return advanced_search_results(request, return_type='dict')
+
+	def test_an_integer_finds_the_stored_integer(self):
+		stored = self.store(ZZ(7))
+		results = self.search(ZZ(7))['results']
+		self.assertIn(stored.id, [r['number'].id for r in results])
+
+	def test_a_rational_finds_the_stored_rational(self):
+		stored = self.store(QQ(2) / 3, param=b'r')
+		results = self.search(QQ(2) / 3)['results']
+		self.assertIn(stored.id, [r['number'].id for r in results])
+
+	def test_a_real_still_works(self):
+		stored = self.store(RIF(3.25), param=b's')
+		results = self.search(RIF(3.25))['results']
+		self.assertIn(stored.id, [r['number'].id for r in results])

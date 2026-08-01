@@ -207,6 +207,16 @@ def advanced_search_results(request, return_type='json'):
 	for param, r in param_numbers:
 		
 		K = r.parent()
+
+		#Exactly-known values are searched on the real line, as a point
+		#interval. They used to arrive as RIF because the wire format had no
+		#representation for them and the sandbox coerced them; now that ZZ and
+		#QQ survive the crossing, the dispatch below has to recognise them or
+		#every integer search silently returns nothing.
+		if K == ZZ or K == QQ:
+			r = RIF(r)
+			K = r.parent()
+
 		if K == RIF:
 			#Searching for real number up to given precision.
 			#
