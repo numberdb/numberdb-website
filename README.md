@@ -166,3 +166,19 @@ Then run `make deploy_quickstage`, `make deploy_stage`, or `make deploy_live` wi
 - `scripts/provision_vm.sh` — one-shot VM bootstrap and deploy over HTTP (installs Docker remotely, copies repo, generates `.env`, starts stack, seeds data/admin). Flags: `--force-secrets`, `--no-build`, `--no-wiki`, `--no-oeis`.
 - `scripts/deploy.sh` — convenience wrapper for staging and go-live: `stage`, `live`, `status`, `quickstage`. Can bind Nginx to localhost and open an SSH tunnel.
 - `scripts/deploy_ssh.sh` — deploy via Docker context over SSH to an existing remote host; attempts initial TLS issuance.
+
+## Licence
+
+Three parts, three licences, for reasons rather than taste:
+
+| | Licence | Why |
+|---|---|---|
+| This repository (the website) | **GPL-3.0-or-later** | It imports SageMath, which is GPL-3.0-or-later, so the combined work must be too. |
+| `clients/python` (the `numberdb` package) | **MIT** | A client library exists to be depended on, and it has no Sage dependency -- Sage is imported only if the user asks for a Sage object. |
+| [numberdb-data](https://github.com/numberdb/numberdb-data) (the data) | **CC BY-SA 4.0** | Matches both upstream sources, Wikipedia and the OEIS, and keeps improvements to the database in the commons. |
+
+Contributions to the data are covered by the [Contributor's Licence
+Agreement](https://github.com/numberdb/numberdb-data/blob/main/CONTRIBUTING.md).
+
+Sequence names shown from the On-Line Encyclopedia of Integer Sequences are
+(c) the OEIS Foundation Inc., licensed CC BY-SA 4.0.
