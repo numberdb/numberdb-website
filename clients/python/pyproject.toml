@@ -8,10 +8,11 @@ version = "0.1.0"
 description = "Look a number up in NumberDB and find out whether it is already known"
 readme = "README.md"
 requires-python = ">=3.8"
-license = {text = "GPL-3.0-or-later"}
+license = {text = "MIT"}
 authors = [{name = "Benjamin Matschke"}]
 keywords = ["mathematics", "number theory", "constants", "sagemath", "numberdb"]
 classifiers = [
+    "License :: OSI Approved :: MIT License",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Mathematics",
     "Programming Language :: Python :: 3",
