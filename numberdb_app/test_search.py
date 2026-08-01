@@ -21,7 +21,8 @@ Run inside the web container, which has Sage:
 from django.test import TestCase
 from sage.rings.all import CIF, RIF, Qp
 
-from .models import Number, NumberComplex, NumberPAdic, Table
+from .models import (Number, NumberComplex, NumberPAdic, Polynomial,
+                     Table)
 from .search import (_coarser_ball_strings, search_by_term,
                      search_complex_numbers, search_fractional_parts,
                      search_p_adic_numbers, search_real_numbers)
@@ -533,3 +534,61 @@ class SearchTipsToggle(TestCase):
 		self.assertIn('close_searchtips', page)
 		submit = page.index("form.on('submit'")
 		self.assertIn('close_searchtips()', page[submit:submit + 400])
+
+
+class SearchByValue(TestCase):
+	"""Searching for a number the caller already has.
+
+	The cheap path: a parse and an indexed query, where the expression endpoint
+	forks a sandboxed Sage process to compute a number the caller was holding
+	all along.
+	"""
+
+	@classmethod
+	def setUpTestData(cls):
+		cls.table = _table()
+
+	def store(self, model, value, exact_text='', param=b'x'):
+		from .models import exact_relative_width
+		if model is Polynomial:
+			obj = model(sage_polynomial=value)
+		else:
+			obj = model(sage_number=value)
+		obj.table = self.table
+		obj.param = param
+		obj.exact_text = exact_text
+		if hasattr(obj, 'exact_relative_width'):
+			obj.exact_relative_width = exact_relative_width(exact_text)
+		obj.save()
+		return obj
+
+	def test_each_kind_of_value_is_dispatched_on_its_parent(self):
+		"""Not on its attributes: Sage polynomials and p-adics both expose
+		numerator() and denominator(), so sniffing for those would take them
+		for rationals."""
+		from sage.rings.all import CIF, QQ, RIF, ZZ, Qp
+		from .search import search_number
+		ring = QQ['x']
+		cases = [
+			#'13/4', not '3.25': a decimal expansion claims an uncertain last
+			#digit, which is too weak to be searchable by number at all.
+			(Number, RIF(3.25), '13/4', RIF(3.25)),
+			(Number, ZZ(7), '7', ZZ(7)),
+			(Number, QQ(2) / 3, '2/3', QQ(2) / 3),
+			(NumberComplex, CIF(RIF(0.5), RIF(1.5)), '0.5 + 1.5*I',
+			 CIF(RIF(0.5), RIF(1.5))),
+			(NumberPAdic, Qp(5, 20)(1 + 5), '1 + O(5^20)', Qp(5, 20)(1 + 5)),
+			(Polynomial, ring([-1, 1]), 'x - 1', ring([-1, 1])),
+		]
+		for index, (model, stored, text, query) in enumerate(cases):
+			with self.subTest(model=model.__name__):
+				kept = self.store(model, stored, text, param=bytes([index]))
+				found = search_number(query)
+				self.assertIn(kept.id, [n.id for n in found],
+				              '%s not found by value' % (model.__name__,))
+
+	def test_an_unsupported_parent_is_refused_by_name(self):
+		from sage.all import SR
+		from .search import search_number
+		with self.assertRaises(ValueError):
+			search_number(SR('x + 1'))

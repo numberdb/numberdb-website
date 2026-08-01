@@ -382,3 +382,51 @@ def search_by_term(term, limit = PAGE_SIZE):
 	add('polynomial', 'Polynomials', attempt(parse_polynomial, _polynomials))
 
 	return groups
+
+
+def search_number(value, limit = PAGE_SIZE):
+	"""Search for a number the caller already has.
+
+	The counterpart to search_by_term, one level lower: the caller supplies a
+	value rather than text to be parsed, or an expression to be evaluated. It
+	is the cheap path and should be the usual one -- searching this way costs a
+	parse and an indexed query, where /api/search forks a sandboxed Sage
+	process to compute a number the caller was already holding.
+
+	``value`` is a Sage object. Dispatch is on its parent, never on whatever
+	attributes it happens to expose: Sage polynomials and p-adics both carry
+	numerator() and denominator(), so anything that sniffed for those would
+	take them for rationals.
+	"""
+	from sage.rings.all import RIF, CIF, ZZ, QQ
+	from utils.utils import (blur_complex_interval, blur_real_interval,
+	                         is_pAdicField, is_polynomial_ring)
+	from .models import NumberPAdic, Polynomial
+
+	parent = value.parent()
+
+	if is_pAdicField(parent):
+		return search_p_adic_numbers(
+			NumberPAdic(sage_number = value).number_string, limit)
+
+	if is_polynomial_ring(parent):
+		#No identifiability filter: a polynomial is exact, so there is no
+		#question of it being known too weakly to identify anything.
+		polynomial = Polynomial(sage_polynomial = value)
+		return list(Polynomial.objects.filter(
+			number_string_hash = polynomial.number_string_hash,
+			number_string = polynomial.number_string)[:limit])
+
+	if parent is CIF or parent == CIF:
+		return search_complex_numbers(blur_complex_interval(value), limit)
+
+	#Exact values are searched as point intervals on the real line, which is
+	#what the evaluator path does with them too.
+	if parent in (ZZ, QQ):
+		value = RIF(value)
+		parent = value.parent()
+
+	if parent is RIF or parent == RIF:
+		return search_real_numbers(blur_real_interval(value), limit)
+
+	raise ValueError('no search for values of %s' % (parent,))
