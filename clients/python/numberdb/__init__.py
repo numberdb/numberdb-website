@@ -22,6 +22,9 @@ to the format is a version bump and a clear message rather than an exception in
 the middle of your session.
 """
 
+from typing import Any, Dict, List, Optional
+
+from ._convert import Scalar, to_exact
 from ._errors import (NumberDBError, RateLimited, TransportError,
                       Unauthorized, UnsupportedNumber)
 from ._http import Client
@@ -45,7 +48,9 @@ except Exception:  # pragma: no cover - running from a source tree
 _default_client = Client()
 
 
-def configure(api_key=None, base_url=None, timeout=None):
+def configure(api_key: Optional[str] = None,
+              base_url: Optional[str] = None,
+              timeout: Optional[float] = None) -> Client:
     """Set what the module-level functions use.
 
     For a single key in a single process. Anything more -- two servers, two
@@ -116,7 +121,7 @@ class Result:
         return self._value
 
     @property
-    def is_readable(self):
+    def is_readable(self) -> bool:
         """Whether ``value`` will decode, without having to try it."""
         return self.kind in KINDS
 
@@ -132,7 +137,7 @@ class Result:
             return self.value
         return to_sage(self.value)
 
-    def url(self):
+    def url(self) -> Optional[str]:
         """Where to read about it on the site."""
         if not self.table.url:
             return None
@@ -163,7 +168,8 @@ class SearchResults(list):
         return [result for result in self if not result.is_readable]
 
 
-def search(expression, client=None, as_sage=False):
+def search(expression: str, client: Optional[Client] = None,
+           as_sage: bool = False) -> 'SearchResults':
     """Search for numbers matching ``expression``.
 
     The expression is evaluated by the server, in the language documented at
@@ -181,7 +187,7 @@ def search(expression, client=None, as_sage=False):
                          messages)
 
 
-def table(table_id, client=None):
+def table(table_id, client: Optional[Client] = None) -> Dict[str, Any]:
     """A whole table, as stored. ``table_id`` may be 12 or ``'T12'``.
 
     Returned as the server sends it, a plain dict. Deliberately not wrapped in
@@ -192,6 +198,6 @@ def table(table_id, client=None):
     return (client or _default_client).request('api/table', {'id': table_id})
 
 
-def tag(name, client=None):
+def tag(name: str, client: Optional[Client] = None) -> Dict[str, Any]:
     """The tables carrying a tag. A plain dict, as for ``table``."""
     return (client or _default_client).request('api/tag', {'url': name})
