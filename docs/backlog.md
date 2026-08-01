@@ -73,8 +73,12 @@ instances -- `sage.rings.complex_interval_field` and `sage.rings.complex_mpfr`
 hold the *constructors* (`ComplexIntervalField`, `ComplexField`), not the
 instances. There is no circular-import problem and no required import order.
 
-The one Sage feature with no passagemath home is **`SymmetricGroup`**, which
-needs libgap. It is used in exactly one place -- `polynomial_modulo_variable_names`
+The one Sage feature that did not work under passagemath is **`SymmetricGroup`**,
+which needs libgap: `from sage.libs.gap.libgap import libgap` failed in two
+trials, once alongside the other distributions and once with `passagemath-gap`
+alone. That is not proof that no combination works -- a companion distribution
+may be missing -- but it does not matter, for the reason below. It is used in
+exactly one place -- `polynomial_modulo_variable_names`
 in `utils/utils.py`, called from `numberdb_app/models.py` to build a
 polynomial's search key, which canonicalises it under renaming of variables.
 
