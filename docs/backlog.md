@@ -141,16 +141,6 @@ same string in both places gets results in one and silence in the other, with
 nothing explaining why. At minimum advanced search should say that it searched
 and found nothing at the precision given.
 
-## The API still ships Sage pickles to clients
-
-`/api/search` returns each number twice: as structured fields, and as a `sage`
-key holding a pickle for the shipped client to load. Unpickling is arbitrary
-code execution, so this asks every consumer to trust the server completely --
-the same class of problem as the Pyro transport that was removed.
-
-It also ties the wire format to Sage, so it blocks the passagemath move: the
-pickles are Sage objects, and a client without Sage cannot read them.
-
 ## Cleanups
 
 - Delete `utils/number_decode.py`. Obsolete since the exact layer landed, and
