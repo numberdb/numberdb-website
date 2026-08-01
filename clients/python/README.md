@@ -17,24 +17,34 @@ $ pip install numberdb
 
 ## In SageMath
 
-The same package. Install it into Sage's Python and ask a result for its Sage
-form:
+The same package, with one import line:
 
 ```console
 $ sage -pip install numberdb
 ```
 
 ```python
-sage: import numberdb
-sage: results = numberdb.search('{n: pi^n for n in [1..5]}')
-sage: results[0].sage()
+sage: import numberdb.sage as numberdb
+sage: numberdb.search('{n: pi^n for n in [1..5]}')[0].value
 3.141592653589794?
-sage: results[0].sage().parent()
-Real Interval Field with 53 bits of precision
 ```
 
-Sage is optional and is not imported until `.sage()` is called, so the package
-starts instantly in a plain interpreter.
+Everything below that line reads exactly as it would in plain Python — there is
+no mode to set and nothing to pass at each call. `numberdb.sage` re-exports the
+whole package, so it can stand in for it wholesale.
+
+It uses the SageMath you already have and installs nothing. **There is no
+`numberdb[sage]` extra, deliberately**: inside a full SageMath it would install
+passagemath over the top, and the passagemath-flint wheel writes 383 files
+under `sage/`, 349 of which already exist there — including compiled
+extensions. pip reports no conflict, because Sage's own files belong to no pip
+distribution.
+
+If you have no Sage and still want Sage objects, install passagemath into a
+*fresh* environment, never into an existing Sage.
+
+Plain `import numberdb` never imports Sage at all, so it starts instantly; the
+conversion is available per result as `.sage()` when you want it.
 
 ## What you get back
 

@@ -89,13 +89,16 @@ class Result:
     """
 
     __slots__ = ('exact_text', 'str_short', 'param', 'table', 'kind',
-                 '_wire', '_value', '_decoded')
+                 '_wire', '_value', '_decoded', '_as_sage')
 
-    def __init__(self, record):
+    def __init__(self, record, as_sage=False):
         number = record.get('number') or {}
         self._wire = number.get('number')
         self._value = None
         self._decoded = False
+        #Set by numberdb.sage, so that a Sage session gets Sage objects without
+        #a flag at every call site.
+        self._as_sage = as_sage
         self.kind = (self._wire or {}).get('kind')
         self.exact_text = number.get('exact_text') or ''
         self.str_short = number.get('str_short') or ''
@@ -107,7 +110,8 @@ class Result:
         """The number. Raises ``UnsupportedNumber`` if this version cannot
         read its kind -- ``exact_text`` still holds it either way."""
         if not self._decoded:
-            self._value = decode(self._wire) if self._wire else None
+            value = decode(self._wire) if self._wire else None
+            self._value = to_sage(value) if (self._as_sage and value is not None) else value
             self._decoded = True
         return self._value
 
@@ -117,7 +121,15 @@ class Result:
         return self.kind in KINDS
 
     def sage(self):
-        """The number as a Sage object. Requires SageMath."""
+        """The number as a Sage object. Requires SageMath.
+
+        A conversion, not the stored value: a ball comes back as an interval,
+        and an endpoint Sage cannot represent exactly is widened to one it can.
+        It always contains the stored number -- verified across the database --
+        but it is a faithful container, not a byte-identical round trip.
+        """
+        if self._as_sage:
+            return self.value
         return to_sage(self.value)
 
     def url(self):
@@ -151,7 +163,7 @@ class SearchResults(list):
         return [result for result in self if not result.is_readable]
 
 
-def search(expression, client=None):
+def search(expression, client=None, as_sage=False):
     """Search for numbers matching ``expression``.
 
     The expression is evaluated by the server, in the language documented at
@@ -165,7 +177,8 @@ def search(expression, client=None):
     #the website's business and has no place in a library's contract.
     messages = [message.get('text', '') for message in
                 (payload.get('messages') or []) if isinstance(message, dict)]
-    return SearchResults([Result(record) for record in records], messages)
+    return SearchResults([Result(record, as_sage) for record in records],
+                         messages)
 
 
 def table(table_id, client=None):

@@ -6,6 +6,7 @@ run anywhere, including in a plain interpreter without Sage.
     python3 -m unittest discover -s clients/python/tests -v
 """
 
+import importlib.util
 import io
 import json
 import os
@@ -404,3 +405,80 @@ class PrecisionIsAbsolute(unittest.TestCase):
                 converted = _wire.to_sage(
                     _wire.PAdic(prime, absolute, representative))
                 self.assertEqual(int(converted.precision_absolute()), absolute)
+
+
+class SageFlavour(unittest.TestCase):
+    """numberdb.sage returns Sage objects, with no mode to remember.
+
+    An extra cannot do this -- pip extras install dependencies, and the code is
+    identical either way -- and sniffing for Sage would make the same program
+    behave differently in different environments. The import line says which
+    world you are in, once.
+    """
+
+    def _sage_module(self):
+        try:
+            import numberdb.sage as flavoured
+        except ImportError as error:
+            self.skipTest(str(error)[:60])
+        return flavoured
+
+    def test_it_refuses_to_import_without_sage_and_says_why(self):
+        if importlib.util.find_spec('sage') is not None:
+            self.skipTest('Sage is installed')
+        with self.assertRaises(ImportError) as caught:
+            import numberdb.sage  # noqa: F401
+        self.assertIn('numberdb', str(caught.exception))
+
+    def test_values_come_back_as_sage_objects(self):
+        flavoured = self._sage_module()
+        client = _client({'results': [
+            _record({'kind': 'RIF', 'lower': '1/3', 'upper': '1/2'})],
+            'messages': []})
+        value = flavoured.search('x', client=client)[0].value
+        self.assertTrue(hasattr(value, 'parent'), repr(value))
+        self.assertIn('Interval', str(value.parent()))
+
+    def test_the_plain_module_is_unaffected(self):
+        """Importing the Sage flavour must not change plain numberdb."""
+        self._sage_module()
+        client = _client({'results': [
+            _record({'kind': 'ZZ', 'value': '7'})], 'messages': []})
+        self.assertIsInstance(numberdb.search('x', client=client)[0].value, int)
+
+    def test_it_stands_in_for_the_package(self):
+        """So `import numberdb.sage as numberdb` works wholesale."""
+        flavoured = self._sage_module()
+        for name in ['search', 'table', 'tag', 'configure', 'Client',
+                     'NumberDBError', 'RateLimited', 'UnsupportedNumber']:
+            with self.subTest(name=name):
+                self.assertTrue(hasattr(flavoured, name), name)
+
+    def test_a_submodule_named_sage_does_not_shadow_real_sage(self):
+        flavoured = self._sage_module()
+        self.assertEqual(flavoured.__name__, 'numberdb.sage')
+        import sage
+        self.assertEqual(sage.__name__, 'sage')
+
+
+class NoSageExtra(unittest.TestCase):
+    """There must be no [sage] extra.
+
+    It would be typed by the people it can hurt. Inside a full SageMath,
+    `sage -pip install numberdb[sage]` installs passagemath over the top: the
+    passagemath-flint wheel writes 383 files under sage/, 349 of which already
+    exist there, including compiled .so extensions. pip reports no conflict,
+    because Sage's own files belong to no pip distribution and so cannot be
+    seen to clash.
+    """
+
+    def test_the_package_declares_no_sage_extra(self):
+        path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            'pyproject.toml')
+        with open(path) as handle:
+            #Comments explain why there is no extra and name it while doing so.
+            declared = '\n'.join(line for line in handle
+                                 if not line.lstrip().startswith('#'))
+        self.assertNotIn('optional-dependencies', declared)
+        self.assertNotIn('numberdb[sage]', declared)
