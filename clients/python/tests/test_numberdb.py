@@ -311,3 +311,29 @@ class Metadata(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class UnboundedValues(unittest.TestCase):
+    """The database holds numbers past what a float can bound.
+
+    310 stored values are beyond a double, and the server sends that end as
+    '-infinity' or 'infinity'. QQ has no infinite element, so converting such a
+    value to Sage used to raise "cannot convert NaN or infinity to rational
+    number" -- .sage() was simply broken for them.
+    """
+
+    RECORD = {'kind': 'RIF', 'lower': '-infinity',
+              'upper': '-17976931348623157081452742373'}
+
+    def test_an_infinite_endpoint_decodes(self):
+        value = _wire.decode(self.RECORD)
+        self.assertEqual(value.lower, float('-inf'))
+        self.assertIsInstance(value.upper, Fraction)
+
+    def test_such_a_value_still_reaches_sage(self):
+        try:
+            import sage  # noqa: F401
+        except ImportError:
+            self.skipTest('needs SageMath')
+        interval = _wire.to_sage(_wire.decode(self.RECORD))
+        self.assertTrue(interval.lower().is_infinity())
