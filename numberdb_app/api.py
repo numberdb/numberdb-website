@@ -30,6 +30,7 @@ from sage.rings.all import ComplexField, ComplexIntervalField, ComplexBallField
 from utils.utils import is_pAdicField
 
 from .eval_client import evaluate_search_program
+from .throttle import rate_limited
 from .search import (search_complex_numbers, search_p_adic_numbers,
                      search_real_numbers)
 
@@ -70,6 +71,7 @@ from utils.utils import is_polynomial_ring
 from db_builder.utils import normalize_table_data
 
 
+@rate_limited
 def advanced_search_results(request, return_type='json'):
 	time0 = time()
 	
@@ -295,6 +297,7 @@ def advanced_search_results(request, return_type='json'):
 	
 	return wrap_response(results,messages)
 	
+@rate_limited
 def table(request):
 	tid = request.GET.get('id',default=None)
 	url = request.GET.get('url',default=None)
@@ -317,6 +320,7 @@ def table(request):
 
 	return JsonResponse(result,safe=True)
     
+@rate_limited
 def tag(request):
 	url = request.GET.get('url',default=None)
 	if url != None:

@@ -134,7 +134,8 @@ div.main-column {
 <li><a href="#section-advanced-search-guide">Advanced search guide</a></li>
 <li><a href="#section-number-types">Number types and accuracy</a></li>
 <li><a href="#section-search-precision">Numbers not found by search</a></li>
-<li><a href="#section-sage-interface">Sage interface</a></li>
+<li><a href="#section-sage-interface">Python and Sage interface</a></li>
+<li><a href="#section-api">API access and rate limits</a></li>
 </ol>
 <hr class="contents">
 
@@ -326,19 +327,82 @@ perfectly however it is rounded for display, and a measured value such as
 <!--------------------------------------------------------------------->
 
 <div id="section-sage-interface" class="section scrollspy">
-<h2 id="sage-interface" class="section scrollspy">Sage interface</h2>
+<h2 id="sage-interface" class="section scrollspy">Python and Sage interface</h2>
 
-Users of <a href="https://www.sagemath.org">SageMath</a> can perform an advanced search from within sage as in the following example.
-<!--First download <a href="https://github.com/numberdb/numberdb-website/raw/main/clients/sage/numberdb-sage-interface.py">numberdb-sage-interface.py</a>.
-Then, run sage from the same folder and type-->
+NumberDB can be searched from Python, and from
+<a href="https://www.sagemath.org">SageMath</a>, with the
+<code class="table-code">numberdb</code> package.
+
 <div style="padding: 0.2em 0 0.2em 1em;">
 <code class="table-code language-python">
-sage: load('https://github.com/numberdb/numberdb-website/raw/main/clients/sage/numberdb-sage-interface.py')<br>
-sage: search('{n: pi^n for n in [1..5]}')
+pip install numberdb<br>
+<br>
+&gt;&gt;&gt; import numberdb<br>
+&gt;&gt;&gt; for result in numberdb.search('{n: pi^n for n in [1..5]}'):<br>
+&gt;&gt;&gt; &nbsp;&nbsp;&nbsp;&nbsp;print(result.exact_text, result.table.title)
 </code>
 </div>
-Search queries can be any string that represents an expression as in the <a href="#section-advanced-search-guide">advanced search guide</a>.
 
+Search queries can be any string that represents an expression as in the
+<a href="#section-advanced-search-guide">advanced search guide</a>.
+
+<p>
+The same package serves Sage. Install it into Sage's Python with
+<code class="table-code">sage -pip install numberdb</code>, and ask a result
+for <code class="table-code">.sage()</code> to get the number as a Sage object.
+Sage is optional: without it you still get exact values as Python
+<code class="table-code">int</code>, <code class="table-code">Fraction</code>
+and interval endpoints.
+
+<p>
+Anonymous use is rate limited. See <a href="#section-api">API access</a>.
+</div>
+
+<!--------------------------------------------------------------------->
+
+<div id="section-api" class="section scrollspy">
+<h2 id="api" class="section scrollspy">API access and rate limits</h2>
+
+NumberDB has a small JSON API:
+<code class="table-code">/api/search</code>,
+<code class="table-code">/api/table</code> and
+<code class="table-code">/api/tag</code>.
+The <a href="#section-sage-interface">numberdb package</a> is the supported way
+to use it; it handles the response format, so you do not have to.
+
+<p>
+Anonymous use is limited to {{ anonymous_rate_limit }} requests per hour.
+Searching runs your expression on our machine, and NumberDB is a small
+volunteer project on a small server &mdash; the limit is there so that one
+script in a loop cannot make the site unusable for everyone else.
+
+<p>
+An API key raises the limit to {{ identified_rate_limit }} requests per hour.
+Being logged in on the website counts as identified too. Set the key in the
+environment rather than in your worksheet, so a notebook you share does not
+carry it:
+
+<div style="padding: 0.2em 0 0.2em 1em;">
+<code class="table-code language-bash">
+export NUMBERDB_API_KEY=...
+</code>
+</div>
+
+Exceeding the limit returns HTTP 429 with a
+<code class="table-code">Retry-After</code> header; the package raises
+<code class="table-code">numberdb.RateLimited</code>, carrying the same number
+of seconds.
+
+<p>
+Keys are not yet self-service &mdash; write to info@numberdb.org and we will
+issue one. A key is shown once when it is created and stored only as a hash, so
+it cannot be looked up later; if you lose it, ask for another and we will
+revoke the old one.
+
+<p>
+If you need more than this &mdash; a bulk download, or a systematic study
+&mdash; please get in touch rather than working around the limit. We would
+rather help.
 </div>
 
 <!--------------------------------------------------------------------->

@@ -137,6 +137,92 @@ class Tag(models.Model):
 			],
 		}
 
+
+class ApiKey(models.Model):
+	"""A token that raises a caller's API rate limit.
+
+	Only a hash is stored. A key is shown once, when it is issued, and cannot
+	be recovered afterwards -- a leaked database should not hand out working
+	credentials, and there is no reason for the server to be able to read one
+	back. Lookup is by ``prefix``, which is the first characters of the token
+	and safe to display, so a user can tell their keys apart and revoke the
+	right one.
+
+	Revoked rather than deleted, so a key that turns up in a log or a shared
+	notebook can be traced to when it was issued and last used.
+	"""
+
+	user = models.ForeignKey(
+		User,
+		on_delete = models.CASCADE,
+		related_name = 'api_keys',
+	)
+	label = models.CharField(
+		max_length = 64,
+		blank = True,
+		default = '',
+	)
+	prefix = models.CharField(
+		max_length = 12,
+		db_index = True,
+	)
+	hashed_key = models.CharField(
+		max_length = 64,
+	)
+	created = models.DateTimeField(
+		auto_now_add = True,
+	)
+	last_used = models.DateTimeField(
+		null = True,
+		blank = True,
+	)
+	revoked = models.BooleanField(
+		default = False,
+	)
+
+	class Meta:
+		ordering = ['-created']
+
+	def __str__(self):
+		return '%s (%s...)' % (self.label or 'API key', self.prefix)
+
+	@staticmethod
+	def hash_token(token):
+		import hashlib
+		return hashlib.sha256(token.encode('utf8')).hexdigest()
+
+	@classmethod
+	def issue(cls, user, label=''):
+		"""Create a key. Returns (record, token); the token is shown once.
+
+		The token is 256 bits from `secrets`, so it needs no slow hashing --
+		there is nothing to guess and nothing to brute force. sha256 keeps the
+		lookup cheap enough to do on every API request.
+		"""
+		import secrets
+		token = secrets.token_urlsafe(32)
+		record = cls.objects.create(
+			user = user,
+			label = label,
+			prefix = token[:12],
+			hashed_key = cls.hash_token(token),
+		)
+		return record, token
+
+	@classmethod
+	def authenticate(cls, token):
+		"""The key this token belongs to, or None."""
+		import secrets
+		if not token or len(token) < 12:
+			return None
+		expected = cls.hash_token(token)
+		for candidate in cls.objects.filter(prefix=token[:12], revoked=False):
+			#Compared in constant time: the prefix narrows it to one row, and
+			#a timing difference here would leak the stored hash byte by byte.
+			if secrets.compare_digest(candidate.hashed_key, expected):
+				return candidate
+		return None
+
 class Table(models.Model):
 
 	#sub_id = models.AutoField(primary_key=True)

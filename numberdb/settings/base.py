@@ -211,3 +211,17 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'), ]
 # number cannot be found.
 NUMBERDB_MAX_RELATIVE_WIDTH = float(
     os.environ.get('NUMBERDB_MAX_RELATIVE_WIDTH', '1e-5'))
+
+
+# API rate limits, per caller per window. Anonymous callers are limited so that
+# one script cannot monopolise the sandboxed evaluator, which is the most
+# expensive thing the server does; an API key raises the limit and makes the
+# caller identifiable, which is the point of having one.
+#
+# Only /api/* is limited: the site's own pages never call it.
+NUMBERDB_ANONYMOUS_RATE_LIMIT = int(
+    os.environ.get('NUMBERDB_ANONYMOUS_RATE_LIMIT', '60'))
+NUMBERDB_IDENTIFIED_RATE_LIMIT = int(
+    os.environ.get('NUMBERDB_IDENTIFIED_RATE_LIMIT', '1000'))
+NUMBERDB_RATE_LIMIT_WINDOW = int(
+    os.environ.get('NUMBERDB_RATE_LIMIT_WINDOW', '3600'))
