@@ -19,6 +19,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numberdb  # noqa: E402
 from numberdb import _wire  # noqa: E402
 
+#Recorded at import, not inside a test: other tests convert values to Sage,
+#which puts it in sys.modules, and a later check would then measure test order
+#rather than what importing the package costs.
+SAGE_IMPORTED_BY_THE_PACKAGE = 'sage' in sys.modules
+
 
 def _client(payload, status=200, headers=None, **kwargs):
     """A Client whose opener answers with ``payload``, so no server is needed."""
@@ -87,8 +92,9 @@ class Decoding(unittest.TestCase):
                             'im_lower': '2', 'im_upper': '3'})
         self.assertEqual(complex(box), complex(0.5, 2.5))
         padic = _wire.decode({'kind': 'Qp', 'prime': '5', 'precision': '20',
-                              'lift': '6'})
-        self.assertEqual((padic.prime, padic.precision, padic.lift), (5, 20, 6))
+                              'value': '6'})
+        self.assertEqual((padic.prime, padic.precision, padic.value),
+                         (5, 20, Fraction(6)))
         self.assertEqual(str(padic), '6 + O(5^20)')
 
     def test_values_can_be_put_in_a_set(self):
@@ -96,7 +102,7 @@ class Decoding(unittest.TestCase):
         one = _wire.decode({'kind': 'RIF', 'lower': '1', 'upper': '2'})
         same = _wire.decode({'kind': 'RIF', 'lower': '1', 'upper': '2'})
         other = _wire.decode({'kind': 'Qp', 'prime': '5', 'precision': '2',
-                              'lift': '3'})
+                              'value': '3'})
         self.assertEqual(len({one, same, other}), 2)
 
     def test_an_unknown_kind_is_refused_by_name(self):
@@ -278,7 +284,8 @@ class WithoutSage(unittest.TestCase):
     """The package must work in a plain interpreter."""
 
     def test_importing_does_not_pull_in_sage(self):
-        self.assertNotIn('sage', sys.modules,
+        """Sage costs seconds to import; most uses never need it."""
+        self.assertFalse(SAGE_IMPORTED_BY_THE_PACKAGE,
                          'importing numberdb must not import Sage')
 
     def test_asking_for_a_sage_object_explains_what_is_missing(self):
@@ -337,3 +344,63 @@ class UnboundedValues(unittest.TestCase):
             self.skipTest('needs SageMath')
         interval = _wire.to_sage(_wire.decode(self.RECORD))
         self.assertTrue(interval.lower().is_infinity())
+
+
+class PAdicRationals(unittest.TestCase):
+    """Q_p is not Z_p.
+
+    The record used to carry an integer lift, which cannot express a value of
+    negative valuation -- 1/5 in Q_5, 1/2 in Q_2. A thousand of the 6712 stored
+    p-adics have one, and every single one failed to round-trip.
+    """
+
+    def test_a_value_off_the_integers_decodes(self):
+        value = _wire.decode({'kind': 'Qp', 'prime': '5', 'precision': '19',
+                              'value': '1/5'})
+        self.assertEqual(value.value, Fraction(1, 5))
+        self.assertEqual(value.valuation, -1)
+
+    def test_valuation_is_reported_for_both_signs(self):
+        cases = [('1/25', 5, -2), ('6', 5, 0), ('10', 5, 1), ('1/2', 2, -1)]
+        for text, prime, expected in cases:
+            with self.subTest(value=text):
+                value = _wire.PAdic(prime, 20, Fraction(text))
+                self.assertEqual(value.valuation, expected)
+
+    def test_zero_has_no_valuation_rather_than_a_wrong_one(self):
+        self.assertIsNone(_wire.PAdic(5, 20, 0).valuation)
+
+    def test_such_a_value_reaches_sage(self):
+        try:
+            import sage  # noqa: F401
+        except ImportError:
+            self.skipTest('needs SageMath')
+        from sage.rings.all import Qp, QQ
+        value = _wire.PAdic(5, 19, Fraction(1, 5))
+        self.assertEqual(_wire.to_sage(value), Qp(5, 20)(QQ(1) / 5))
+
+
+class PrecisionIsAbsolute(unittest.TestCase):
+    """Absolute, not relative -- they differ off valuation zero.
+
+    Sage's relation is absolute = valuation + relative, so a value known to
+    twenty 5-adic digits carries precision 19 one power below the integers.
+    Reading the field as relative would place a ball in the wrong position.
+    """
+
+    def test_the_string_form_states_absolute_precision(self):
+        value = _wire.PAdic(5, 19, Fraction(1, 5))
+        self.assertEqual(str(value), '1/5 + O(5^19)')
+
+    def test_sage_receives_it_as_absolute(self):
+        try:
+            import sage  # noqa: F401
+        except ImportError:
+            self.skipTest('needs SageMath')
+        for representative, prime, absolute in [(Fraction(1, 5), 5, 19),
+                                                (Fraction(6), 5, 20),
+                                                (Fraction(25), 5, 22)]:
+            with self.subTest(value=representative):
+                converted = _wire.to_sage(
+                    _wire.PAdic(prime, absolute, representative))
+                self.assertEqual(int(converted.precision_absolute()), absolute)

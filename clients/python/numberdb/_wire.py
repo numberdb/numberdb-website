@@ -113,28 +113,63 @@ class ComplexInterval:
 
 
 class PAdic:
-    """A p-adic number, known as the ball ``lift + O(prime**precision)``."""
+    """A p-adic number, known as the ball ``value + O(prime**precision)``.
 
-    __slots__ = ('prime', 'precision', 'lift')
+    ``value`` is a ``Fraction``, not an integer, because Q_p is not Z_p: 1/5 in
+    Q_5 and 1/2 in Q_2 have negative valuation and no integer representative.
+    A thousand of the p-adics in the database are of that kind.
 
-    def __init__(self, prime, precision, lift):
+    ``precision`` is **absolute**, not relative: the ball is everything
+    congruent to ``value`` modulo ``prime**precision``, which is what the
+    ``O(p^k)`` in the string form means.
+
+    The distinction only shows itself off valuation zero, which is why it is
+    worth stating. In Sage's terms, ``absolute = valuation + relative``::
+
+        6 in Q_5      valuation  0   relative 20   precision 20
+        1/5 in Q_5    valuation -1   relative 20   precision 19
+        25 in Q_5     valuation  2   relative 20   precision 22
+
+    So a value known to twenty significant 5-adic digits carries precision 19
+    when it sits one power below the integers, not 20. ``valuation`` is
+    available as a property if you need to convert.
+    """
+
+    __slots__ = ('prime', 'precision', 'value')
+
+    def __init__(self, prime, precision, value):
         self.prime = prime
         self.precision = precision
-        self.lift = lift
+        self.value = Fraction(value)
 
     def __repr__(self):
-        return 'PAdic(%d, %d, %d)' % (self.prime, self.precision, self.lift)
+        return 'PAdic(%d, %d, %s)' % (self.prime, self.precision, self.value)
 
     def __str__(self):
-        return '%d + O(%d^%d)' % (self.lift, self.prime, self.precision)
+        return '%s + O(%d^%d)' % (self.value, self.prime, self.precision)
+
+    @property
+    def valuation(self):
+        """The power of ``prime`` dividing the value; negative off Z_p."""
+        if self.value == 0:
+            return None
+        valuation = 0
+        numerator, denominator = self.value.numerator, self.value.denominator
+        while numerator % self.prime == 0:
+            numerator //= self.prime
+            valuation += 1
+        while denominator % self.prime == 0:
+            denominator //= self.prime
+            valuation -= 1
+        return valuation
 
     def __eq__(self, other):
         return (isinstance(other, PAdic) and self.prime == other.prime
                 and self.precision == other.precision
-                and self.lift == other.lift)
+                and self.value == other.value)
 
     def __hash__(self):
-        return hash((PAdic, self.prime, self.precision, self.lift))
+        return hash((PAdic, self.prime, self.precision, self.value))
 
 
 class Polynomial:
@@ -195,7 +230,7 @@ def _decode_rational(record):
 
 def _decode_p_adic(record):
     return PAdic(int(record['prime']), int(record['precision']),
-                 int(record['lift']))
+                 Fraction(record['value']))
 
 
 def _decode_polynomial(record):
@@ -304,7 +339,11 @@ def to_sage(value):
     if isinstance(value, ComplexInterval):
         return CIF(interval(value.real), interval(value.imag))
     if isinstance(value, PAdic):
-        return Qp(value.prime, prec=max(value.precision, 1))(ZZ(value.lift))
+        field = Qp(value.prime, prec=max(abs(value.precision) + 1, 1))
+        #add_bigoh sets absolute precision, which is what the record means;
+        #Qp's own prec is a relative cap and would not reproduce it.
+        return field(QQ(value.value.numerator) /
+                     QQ(value.value.denominator)).add_bigoh(value.precision)
     if isinstance(value, Polynomial):
         return PolynomialRing(QQ, max(value.variable_count, 1),
                               'x')(value.text)
