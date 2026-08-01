@@ -16,6 +16,7 @@ from numpy import random as random
 import re
 from time import time
 #import os
+import json
 import yaml
 from cysignals import AlarmInterrupt
 from cysignals.alarm import alarm, cancel_alarm
@@ -31,6 +32,7 @@ from utils.utils import is_pAdicField
 
 from .eval_client import evaluate_search_program
 from .throttle import rate_limited
+from .search import PAGE_SIZE, search_by_term, search_number
 from .search import (search_complex_numbers, search_p_adic_numbers,
                      search_real_numbers)
 
@@ -345,3 +347,77 @@ def tag(request):
 
 	return JsonResponse(result,safe=True)
     
+
+
+@rate_limited
+def lookup(request):
+	"""Search for a number the caller already has.
+
+	The counterpart to /api/search, which evaluates a Sage expression in the
+	sandbox -- forking a process from a Sage-loaded parent, applying rlimits and
+	validating an AST -- to compute a number the caller was holding all along.
+	This one parses and queries, and is what a client should use unless it
+	genuinely wants the server to compute something.
+
+	Two ways to say what you are looking for:
+
+	  ?number=<json>  a number record, as /api/search returns them. The client
+	                  builds it from a value it already has.
+	  ?text=<term>    the search bar's grammar: "3.14159", "1415", "Q5:1010",
+	                  "1 + O(5^20)", "x^2-2".
+
+	The response has the same shape as /api/search, so a client parses one
+	format for both.
+	"""
+	time0 = time()
+
+	def wrap(results, messages):
+		return JsonResponse({
+			'results': [
+				{
+					'index': number.param_str(),
+					'number': number.to_serializable_dict(),
+					'table': number.table.to_serializable_dict(),
+				}
+				for number in results
+			],
+			'messages': messages,
+			'time_request': '{:.3f}s'.format(time() - time0),
+		}, safe=True)
+
+	number_json = request.GET.get('number')
+	text = request.GET.get('text')
+
+	if number_json:
+		try:
+			record = json.loads(number_json)
+		except ValueError:
+			return JsonResponse({'error': 'number is not valid JSON.'},
+			                    safe=True)
+		try:
+			from utils.number_json import decode_number, UnsupportedNumber
+			value = decode_number(record)
+		except UnsupportedNumber as error:
+			return JsonResponse({'error': str(error)}, safe=True)
+		except (TypeError, ValueError, ArithmeticError) as error:
+			return JsonResponse({'error': 'could not read that number: %s'
+			                              % (error,)}, safe=True)
+		try:
+			return wrap(search_number(value), [])
+		except ValueError as error:
+			return JsonResponse({'error': str(error)}, safe=True)
+
+	if text:
+		groups = search_by_term(text)
+		found = [number for group in groups for number in group['numbers']]
+		messages = []
+		if len(found) >= PAGE_SIZE:
+			messages.append({
+				'tags': 'alert-warning',
+				'text': 'We only show the first %s results.' % (PAGE_SIZE,),
+			})
+		return wrap(found[:PAGE_SIZE], messages)
+
+	return JsonResponse(
+		{'error': 'Give either number=<json record> or text=<search term>.'},
+		safe=True)
