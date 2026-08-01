@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "numberdb"
+version = "0.1.0"
+description = "Look a number up in NumberDB and find out whether it is already known"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "GPL-3.0-or-later"}
+authors = [{name = "Benjamin Matschke"}]
+keywords = ["mathematics", "number theory", "constants", "sagemath", "numberdb"]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Programming Language :: Python :: 3",
+]
+
+# No runtime dependencies on purpose. The package uses urllib from the standard
+# library rather than requests, so that installing it into a SageMath
+# environment cannot disturb what is already there. Sage itself is optional and
+# imported only when a Sage object is asked for.
+dependencies = []
+
+[project.urls]
+Homepage = "https://numberdb.org"
+Source = "https://github.com/numberdb/numberdb-website"
+Issues = "https://github.com/numberdb/numberdb-website/issues"
+
+[tool.setuptools.packages.find]
+include = ["numberdb*"]

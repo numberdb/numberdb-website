@@ -128,6 +128,10 @@ def help(request):
 		#Documented from the setting, so the help text cannot drift from the
 		#cutoff search actually applies.
 		'max_relative_width': max_relative_width(),
+		#Documented from the settings in force, so the help cannot promise a
+		#limit the server does not apply.
+		'anonymous_rate_limit': getattr(settings, 'NUMBERDB_ANONYMOUS_RATE_LIMIT', 60),
+		'identified_rate_limit': getattr(settings, 'NUMBERDB_IDENTIFIED_RATE_LIMIT', 1000),
 	}
 	return render(request, 'help.html', context)
 

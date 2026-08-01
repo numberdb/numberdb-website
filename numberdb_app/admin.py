@@ -122,3 +122,23 @@ admin.site.register(WikipediaNumber)
 
 
 
+
+
+from .models import ApiKey
+
+
+@admin.register(ApiKey)
+class ApiKeyAdmin(admin.ModelAdmin):
+	"""Issue and revoke API keys until there is a page for users to do it.
+
+	The token itself is not here, and cannot be: only its hash is stored. Use
+	``ApiKey.issue(user)`` from the shell, which returns the token once, and
+	hand that to its owner. Revoking is done here, by ticking `revoked` --
+	deleting the row would lose the record of when the key was used.
+	"""
+
+	list_display = ('label', 'prefix', 'user', 'created', 'last_used',
+	                'revoked')
+	list_filter = ('revoked',)
+	search_fields = ('prefix', 'label', 'user__username')
+	readonly_fields = ('prefix', 'hashed_key', 'created', 'last_used')

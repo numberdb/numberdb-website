@@ -20,12 +20,19 @@ from sage.rings.all import CIF, QQ, RBF, RIF, ZZ, Qp
 from .models import Number, NumberComplex, NumberPAdic, Polynomial, Table
 from utils.number_json import decode_number, encode_number
 
-CLIENT_PATH = '/app/clients/sage/numberdb-sage-interface.py'
+#The package users install; tested from the source tree it ships from.
+PACKAGE_PATH = '/app/clients/python'
 
 
 def _client():
-	"""The shipped client, loaded from the file users actually get."""
-	spec = importlib.util.spec_from_file_location('nbclient', CLIENT_PATH)
+	"""The decoder from the published package.
+
+	Loaded by path rather than by name: this repository's Django project is
+	also called ``numberdb`` and is already imported, so ``import numberdb``
+	here would find the server, not the client. Users never have both.
+	"""
+	spec = importlib.util.spec_from_file_location(
+		'numberdb_client_wire', '%s/numberdb/_wire.py' % (PACKAGE_PATH,))
 	module = importlib.util.module_from_spec(spec)
 	spec.loader.exec_module(module)
 	return module
@@ -66,11 +73,19 @@ class WireFormat(TestCase):
 				self.assertIn('exact_text', payload)
 
 	def test_the_shipped_client_no_longer_unpickles(self):
-		source = open(CLIENT_PATH).read()
-		code = '\n'.join(line for line in source.split('\n')
-		                 if not line.strip().startswith('#'))
-		self.assertNotIn('loads(bytes(', code)
-		self.assertNotIn('cp437', code)
+		"""No file users install may turn a response into code."""
+		import glob
+		for path in glob.glob('%s/numberdb/*.py' % (PACKAGE_PATH,)):
+			source = open(path).read()
+			code = '\n'.join(line for line in source.split('\n')
+			                 if not line.strip().startswith('#'))
+			with self.subTest(module=path):
+				#The operation, not the word: the module documents at length
+				#why it does not unpickle, and should go on saying so.
+				for forbidden in ['import pickle', 'pickle.loads', 'cPickle',
+				                  'loads(bytes(', 'cp437', 'eval(', 'exec(']:
+					self.assertNotIn(forbidden, code,
+					                 '%s uses %s' % (path, forbidden))
 
 	def test_the_client_rebuilds_every_kind_the_server_sends(self):
 		cases = [
@@ -86,16 +101,16 @@ class WireFormat(TestCase):
 		for model, value in cases:
 			with self.subTest(value=str(value)):
 				payload = self.store(model, value).to_serializable_dict()
-				rebuilt = client.decode_number(payload['number'])
+				rebuilt = client.decode(payload['number'])
 				self.assertIsNotNone(rebuilt)
 
 	def test_the_client_refuses_a_kind_it_does_not_know(self):
 		"""Dispatch is a fixed table, so a reply cannot name its own decoder."""
 		client = _client()
 		with self.assertRaises(client.UnsupportedNumber):
-			client.decode_number({'kind': 'os.system', 'value': 'rm -rf /'})
+			client.decode({'kind': 'os.system', 'value': 'rm -rf /'})
 		with self.assertRaises(client.UnsupportedNumber):
-			client.decode_number('not even an object')
+			client.decode('not even an object')
 
 	def test_the_payload_is_json(self):
 		"""It has to survive JsonResponse; a pickle only did via cp437."""
