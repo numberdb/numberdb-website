@@ -59,17 +59,37 @@ and every module here imports through them:
     from sage.all import infinity, ceil, log, I      ->  ModuleNotFoundError
     from sage.rings.all import ZZ, QQ, RIF, CIF      ->  ModuleNotFoundError
 
-Each symbol has to name its own module (`sage.rings.integer_ring`,
-`sage.rings.real_mpfi`, `sage.rings.padics.factory`, ...). Two are not
-importable at all and are constructed instead: `CIF` is `ComplexIntervalField()`
-and `CC` is `ComplexField()`. Import order matters -- touching
-`sage.rings.integer_ring` first hits a circular import, while importing the
-group together works.
+Each symbol names its own module instead. Verified working under passagemath:
 
-One genuine gap: **`SymmetricGroup` needs libgap**, which `passagemath-gap` did
-not supply in the trial. It is used only by the properties page
-(`numberdb_app/views.py`). Either find the right distribution, or decide that
-page can do without it, before committing to the switch.
+    ZZ   sage.rings.integer_ring        RBF  sage.rings.real_arb
+    QQ   sage.rings.rational_field      CBF  sage.rings.complex_arb
+    RIF  sage.rings.real_mpfi           CIF  sage.rings.cif
+    RR   sage.rings.real_mpfr           CC   sage.rings.cc
+    Qp   sage.rings.padics.factory      PolynomialRing
+                                             sage.rings.polynomial.polynomial_ring_constructor
+
+Note `CIF` and `CC` live in their own small modules holding the default
+instances -- `sage.rings.complex_interval_field` and `sage.rings.complex_mpfr`
+hold the *constructors* (`ComplexIntervalField`, `ComplexField`), not the
+instances. There is no circular-import problem and no required import order.
+
+The one Sage feature with no passagemath home is **`SymmetricGroup`**, which
+needs libgap. It is used in exactly one place -- `polynomial_modulo_variable_names`
+in `utils/utils.py`, called from `numberdb_app/models.py` to build a
+polynomial's search key, which canonicalises it under renaming of variables.
+
+It does not need solving, because it is already solved:
+`utils/numbers/polynomial.py` has `canonical_under_renaming()`, which does the
+same job with `itertools.permutations` and no Sage. It parses the whole stored
+corpus without error. Switching to it removes the last group-theory dependency
+entirely, so **passagemath-gap is not needed**.
+
+The catch: the two produce different key *formats* -- Sage yields the string
+`1,15360*x^7-16128*x^5+...`, the Python version a nested tuple -- so they are
+not drop-in interchangeable. `Polynomial.number_string` and
+`number_string_hash` are stored and searched on, so the switch means rebuilding
+those keys for the 1038 stored polynomials. Bounded, and it can be done before
+the passagemath move rather than during it.
 
 Files importing Sage, in the order they matter:
 `numberdb_app/models.py`, `views.py`, `api.py`, `utils/utils.py`,
