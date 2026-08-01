@@ -30,6 +30,7 @@ package wholesale.
 import importlib.util
 
 import functools
+from typing import Any
 
 from . import (Client, ComplexInterval, NumberDBError, PAdic, Polynomial,
                RateLimited, RealInterval, Result, SearchResults, Table,
@@ -51,14 +52,14 @@ if importlib.util.find_spec('sage') is None:
         'an existing Sage, where it would overwrite the installation.')
 
 
-def _flavoured(function):
+def _flavoured(function: Any) -> Any:
     """The same call, with results carrying Sage objects.
 
     Wrapped rather than reimplemented, so the two modules cannot drift: adding
     a search function to the package adds it here with no further work.
     """
     @functools.wraps(function)
-    def call(*args, **keywords):
+    def call(*args: Any, **keywords: Any) -> Any:
         keywords.setdefault('as_sage', True)
         return function(*args, **keywords)
 

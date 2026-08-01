@@ -28,18 +28,49 @@ rational. Every extraction is checked to have produced integers.
 """
 
 from fractions import Fraction
-from typing import Any, Union
+from typing import Any, Protocol, Union, runtime_checkable
 
-__all__ = ['to_exact', 'Scalar']
+__all__ = ['to_exact', 'Scalar', 'SupportsExactRational',
+           'SupportsRationalParts', 'SupportsParent']
+
+
+@runtime_checkable
+class SupportsExactRational(Protocol):
+    """Sage's reals, which can state themselves as an exact rational."""
+
+    def exact_rational(self) -> Any:
+        ...
+
+
+@runtime_checkable
+class SupportsParent(Protocol):
+    """Any Sage value: it belongs to a parent, which is what it is classified
+    by. Never by its attributes -- Sage polynomials and p-adics both answer
+    numerator() with objects of their own type."""
+
+    def parent(self) -> Any:
+        ...
+
+
+@runtime_checkable
+class SupportsRationalParts(Protocol):
+    """Sage's Integer and Rational, whose parts are methods, not attributes."""
+
+    def numerator(self) -> Any:
+        ...
+
+    def denominator(self) -> Any:
+        ...
+
 
 #: What a scalar argument may be.
 #:
-#: ``Any`` stands for Sage's numbers, which cannot be named without importing
-#: Sage -- something this package will not do, since it must work without it.
-#: They are matched by behaviour instead: a Sage Integer, Rational, or any real
-#: that answers ``exact_rational()``. The union is written out so a reader sees
-#: what is meant even though a checker can only enforce part of it.
-Scalar = Union[int, float, str, Fraction, Any]
+#: Sage's types are matched structurally rather than by name, because naming
+#: them would mean importing Sage and this package must work without it. The
+#: protocols are not decoration: writing ``Any`` here instead would collapse
+#: the whole union to ``Any``, and a checker would then accept anything at all.
+Scalar = Union[int, float, str, Fraction,
+               SupportsExactRational, SupportsRationalParts]
 
 
 def _integer(value: Any, description: str) -> int:
