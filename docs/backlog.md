@@ -38,12 +38,57 @@ ingested content should land in the first place.
 
 ## Move the web app to passagemath
 
-The stated goal, and the case has only strengthened. The web image is 4.9 GB of
-Sage on a 961 MB VM already at ~707 MB used with swap nearly full. The exact
-number layer under `utils/numbers/` is already Sage-free and a test enforces it;
-search now resolves reals, complex values and p-adics in plain Python and SQL.
-What still imports Sage: `numberdb_app/models.py`, `views.py`, `api.py`, and
-`utils/utils.py`. The evaluator sandbox keeps full Sage either way.
+The web image is 4.9 GB of Sage on a 961 MB VM already at ~700 MB used with
+swap nearly full. Measured on passagemath 10.8.7, the replacement is **2.0 GB**
+of site-packages -- worth doing, but less than half, not a tenth.
+
+Feasible: every number type the app uses works.
+
+    passagemath-flint      ZZ QQ RR RIF RBF CBF PolynomialRing infinity Integer
+    passagemath-pari       Qp
+    passagemath-symbolics  SR I latex factor continued_fraction ceil log
+    passagemath-repl       sage.repl.preparse (used by utils/preparse.py)
+
+Verified arithmetic under that set: interval endpoints, p-adic lifts, complex
+boxes, ball radii and exact rationals all behave.
+
+The work is import rewriting, not redesign. **passagemath has no `sage.all` or
+`sage.rings.all`** -- those monolithic namespaces come from sagemath-standard,
+and every module here imports through them:
+
+    from sage.all import infinity, ceil, log, I      ->  ModuleNotFoundError
+    from sage.rings.all import ZZ, QQ, RIF, CIF      ->  ModuleNotFoundError
+
+Each symbol has to name its own module (`sage.rings.integer_ring`,
+`sage.rings.real_mpfi`, `sage.rings.padics.factory`, ...). Two are not
+importable at all and are constructed instead: `CIF` is `ComplexIntervalField()`
+and `CC` is `ComplexField()`. Import order matters -- touching
+`sage.rings.integer_ring` first hits a circular import, while importing the
+group together works.
+
+One genuine gap: **`SymmetricGroup` needs libgap**, which `passagemath-gap` did
+not supply in the trial. It is used only by the properties page
+(`numberdb_app/views.py`). Either find the right distribution, or decide that
+page can do without it, before committing to the switch.
+
+Files importing Sage, in the order they matter:
+`numberdb_app/models.py`, `views.py`, `api.py`, `utils/utils.py`,
+`utils/preparse.py`, `utils/my_timer.py`, `utils/number_json.py`,
+`utils/numbers/sage_adapter.py`, `data_pipeline/build*.py`.
+
+The evaluator sandbox keeps full Sage either way -- it runs arbitrary user
+expressions, which is exactly what the trimmed distributions cannot promise.
+
+## Issue API keys from the website
+
+Keys exist and work (`ApiKey`, `numberdb_app/throttle.py`), but are minted
+through the Django admin and the help page tells users to write in for one. A
+logged-in user should be able to create a key, label it, see when it was last
+used, and revoke it. The token is shown once and stored only as a hash, so the
+page has to make that clear at the moment of issue.
+
+Blocked on nothing; it is small, and it is the last step that makes the rate
+limit self-service rather than a mailbox.
 
 ## Refine matches against exact_text
 
