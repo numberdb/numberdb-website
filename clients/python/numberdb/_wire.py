@@ -28,7 +28,7 @@ import math
 from fractions import Fraction
 from typing import Any, Dict, FrozenSet, Optional, Union
 
-from ._convert import Scalar
+from ._convert import Scalar, to_exact
 from ._errors import UnsupportedNumber
 
 __all__ = ['decode', 'to_sage', 'KINDS', 'RealInterval', 'ComplexInterval',
@@ -46,8 +46,11 @@ class RealInterval:
     __slots__ = ('lower', 'upper')
 
     def __init__(self, lower: Scalar, upper: Scalar) -> None:
-        self.lower = lower
-        self.upper = upper
+        #Converted here, not merely annotated. The type checker found this:
+        #the signature promised a Scalar and the class assumed a Fraction, so
+        #RealInterval('1/3', '1/2') held strings and broke on arithmetic.
+        self.lower = _endpoint(lower)
+        self.upper = _endpoint(upper)
 
     def __repr__(self):
         if self.lower == self.upper:
@@ -68,11 +71,12 @@ class RealInterval:
         """The midpoint. Lossy by definition, which is why it is explicit."""
         return float(self.midpoint())
 
-    def midpoint(self) -> Fraction:
+    def midpoint(self) -> Union[Fraction, float]:
+        """Undefined for an unbounded interval, where it is an infinity."""
         return self.lower + (self.upper - self.lower) / 2
 
     @property
-    def is_exact(self):
+    def is_exact(self) -> bool:
         """True when the interval is a single point, so nothing is unknown."""
         return self.lower == self.upper
 
@@ -110,7 +114,7 @@ class ComplexInterval:
         return complex(float(self.real), float(self.imag))
 
     @property
-    def is_exact(self):
+    def is_exact(self) -> bool:
         return self.real.is_exact and self.imag.is_exact
 
 
@@ -215,6 +219,17 @@ class Polynomial:
         return hash((Polynomial, self.text))
 
 
+def _endpoint(value: Scalar) -> Union[Fraction, float]:
+    """An endpoint as an exact rational, or an infinity.
+
+    Infinities are the one thing a Fraction cannot hold, and the database has
+    them: values past what a float can bound arrive with one end unbounded.
+    """
+    if isinstance(value, float) and math.isinf(value):
+        return value
+    return to_exact(value, 'endpoint')
+
+
 def _rational(text):
     """An endpoint, sent as exact ``p/q`` and kept exact."""
     text = str(text)
@@ -281,7 +296,7 @@ def decode(record: Dict[str, Any]) -> Any:
         raise UnsupportedNumber('number record must be an object, got %s'
                                 % (type(record).__name__,))
     kind = record.get('kind')
-    decoder = _DECODERS.get(kind)
+    decoder = _DECODERS.get(kind) if isinstance(kind, str) else None
     if decoder is None:
         raise UnsupportedNumber(
             'this version of numberdb cannot read %r; the server may be newer '
@@ -336,7 +351,7 @@ def to_sage(value: Any) -> Any:
     """
     ZZ, QQ, RIF, CIF, Qp, PolynomialRing = _sage_rings()
 
-    def endpoint(bound):
+    def endpoint(bound: Any) -> Any:
         """An endpoint as Sage wants it, infinities included.
 
         The database holds values past what a float can bound -- an
@@ -349,7 +364,7 @@ def to_sage(value: Any) -> Any:
             return bound
         return QQ(bound)
 
-    def interval(real_interval):
+    def interval(real_interval: 'RealInterval') -> Any:
         return RIF(endpoint(real_interval.lower), endpoint(real_interval.upper))
 
     if isinstance(value, RealInterval):

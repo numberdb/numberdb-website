@@ -24,9 +24,9 @@ the middle of your session.
 
 import json
 from fractions import Fraction
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
-from ._convert import Scalar, to_exact
+from ._convert import Scalar, SupportsParent, to_exact
 from ._errors import (NumberDBError, RateLimited, TransportError,
                       Unauthorized, UnsupportedNumber)
 from ._http import Client
@@ -74,7 +74,7 @@ class Table:
 
     __slots__ = ('tid', 'title', 'url')
 
-    def __init__(self, record):
+    def __init__(self, record: Optional[Dict[str, Any]]) -> None:
         record = record or {}
         self.tid = record.get('tid')
         self.title = record.get('title')
@@ -103,7 +103,8 @@ class Result:
     __slots__ = ('exact_text', 'str_short', 'param', 'table', 'kind',
                  '_wire', '_value', '_decoded', '_as_sage')
 
-    def __init__(self, record, as_sage=False):
+    def __init__(self, record: Dict[str, Any],
+                 as_sage: bool = False) -> None:
         number = record.get('number') or {}
         self._wire = number.get('number')
         self._value = None
@@ -118,7 +119,7 @@ class Result:
         self.table = Table(record.get('table'))
 
     @property
-    def value(self):
+    def value(self) -> Any:
         """The number. Raises ``UnsupportedNumber`` if this version cannot
         read its kind -- ``exact_text`` still holds it either way."""
         if not self._decoded:
@@ -132,7 +133,7 @@ class Result:
         """Whether ``value`` will decode, without having to try it."""
         return self.kind in KINDS
 
-    def sage(self):
+    def sage(self) -> Any:
         """The number as a Sage object. Requires SageMath.
 
         A conversion, not the stored value: a ball comes back as an interval,
@@ -165,17 +166,19 @@ class SearchResults(list):
     strings, kept rather than printed: the caller decides how to report them.
     """
 
-    def __init__(self, results, messages):
+    def __init__(self, results: List['Result'],
+                 messages: List[str]) -> None:
         super().__init__(results)
         self.messages = messages
 
     @property
-    def unreadable(self):
+    def unreadable(self) -> List['Result']:
         """Results this version cannot decode, if the server is newer."""
         return [result for result in self if not result.is_readable]
 
 
-def table(table_id, client: Optional[Client] = None) -> Dict[str, Any]:
+def table(table_id: Union[int, str],
+          client: Optional[Client] = None) -> Dict[str, Any]:
     """A whole table, as stored. ``table_id`` may be 12 or ``'T12'``.
 
     Returned as the server sends it, a plain dict. Deliberately not wrapped in
@@ -305,6 +308,9 @@ def search_p_adic(prime: int, order: int, unit: int,
         raise TypeError('give exactly one of absolute_precision or '
                         'relative_precision')
     if absolute_precision is None:
+        #Narrowed for the reader as much as the checker: exactly one of the two
+        #is given, so relative_precision is not None on this branch.
+        assert relative_precision is not None
         absolute_precision = int(relative_precision) + int(order)
     #Constructed rather than assembled by hand, so the coprimality check and
     #the reduction of the unit happen here too.
@@ -315,7 +321,8 @@ def search_p_adic(prime: int, order: int, unit: int,
                       client, as_sage)
 
 
-def search_polynomial(polynomial, client: Optional[Client] = None,
+def search_polynomial(polynomial: Union[str, Polynomial],
+                      client: Optional[Client] = None,
                       as_sage: bool = False) -> 'SearchResults':
     """Search for a polynomial over the rationals, written as text.
 
@@ -367,7 +374,14 @@ def _expression(expression, client, as_sage):
                          messages)
 
 
-def _sage_parent_kind(value):
+#: Anything search() accepts. Sage values are matched structurally, by
+#: having a parent -- never by the attributes they expose, since Sage
+#: polynomials and p-adics both answer numerator().
+Searchable = Union[int, Fraction, str, RealInterval, ComplexInterval,
+                   PAdic, Polynomial, SupportsParent]
+
+
+def _sage_parent_kind(value: Any) -> Optional[str]:
     """What a Sage value is, judged by its parent.
 
     Never by the attributes it exposes: Sage polynomials and p-adics both carry
@@ -401,7 +415,7 @@ def _sage_parent_kind(value):
     return described
 
 
-def search(value, client: Optional[Client] = None,
+def search(value: 'Searchable', client: Optional[Client] = None,
            as_sage: bool = False) -> 'SearchResults':
     """Search for a number you already have.
 
@@ -448,31 +462,35 @@ def search(value, client: Optional[Client] = None,
             'own precision.')
 
     kind = _sage_parent_kind(value)
+    #Classified by parent, so from here it is a Sage object whose interface
+    #the type system cannot see. Named as Any rather than pretended about.
+    sage_value: Any = value
     if kind == 'integer':
-        return search_integer(value, client=client, as_sage=as_sage)
+        return search_integer(sage_value, client=client, as_sage=as_sage)
     if kind == 'rational':
-        return search_rational(value, client=client, as_sage=as_sage)
+        return search_rational(sage_value, client=client, as_sage=as_sage)
     if kind == 'real interval':
-        return search_real_interval(value.lower(), value.upper(),
+        return search_real_interval(sage_value.lower(), sage_value.upper(),
                                     client=client, as_sage=as_sage)
     if kind == 'complex interval':
         return search_complex_interval(
-            value.real().lower(), value.real().upper(),
-            value.imag().lower(), value.imag().upper(),
+            sage_value.real().lower(), sage_value.real().upper(),
+            sage_value.imag().lower(), sage_value.imag().upper(),
             client=client, as_sage=as_sage)
     if kind == 'p-adic':
-        if value == 0:
-            absolute = int(value.precision_absolute())
-            return search_p_adic(int(value.parent().prime()), absolute, 0,
+        if sage_value == 0:
+            absolute = int(sage_value.precision_absolute())
+            return search_p_adic(int(sage_value.parent().prime()), absolute, 0,
                                  absolute_precision=absolute,
                                  client=client, as_sage=as_sage)
-        return search_p_adic(int(value.parent().prime()),
-                             int(value.valuation()),
-                             int(value.unit_part().lift()),
-                             absolute_precision=int(value.precision_absolute()),
+        return search_p_adic(int(sage_value.parent().prime()),
+                             int(sage_value.valuation()),
+                             int(sage_value.unit_part().lift()),
+                             absolute_precision=int(
+                                 sage_value.precision_absolute()),
                              client=client, as_sage=as_sage)
     if kind == 'polynomial':
-        return search_polynomial(str(value).replace(' ', ''),
+        return search_polynomial(str(sage_value).replace(' ', ''),
                                  client=client, as_sage=as_sage)
 
     raise TypeError(
