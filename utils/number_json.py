@@ -66,14 +66,21 @@ def encode_number(value):
             precision = int(value.precision_absolute())
         except (AttributeError, TypeError):
             precision = int(parent.precision_cap())
-        # A p-adic is carried as prime, precision and an integer lift; that is
-        # enough for Qp(prime, precision)(lift) to reproduce it.
-        try:
-            lift = int(value.lift())
-        except (AttributeError, TypeError, ValueError):
-            lift = int(ZZ(value.residue(precision))) if precision > 0 else 0
+        # A rational representative, not an integer lift. An integer spans only
+        # Z_p, so every value of negative valuation -- 1/5 in Q_5, 1/2 in Q_2 --
+        # was unrepresentable, and 1000 of the 6712 stored p-adics have one.
+        #
+        # Built from valuation and unit part rather than by coercing to QQ:
+        # the unit is always a p-adic integer, so its lift is an honest integer,
+        # and p**valuation carries the rest exactly.
+        if value == 0:
+            representative = QQ(0)
+        else:
+            valuation = int(value.valuation())
+            unit = int(value.unit_part().lift())
+            representative = QQ(prime) ** valuation * QQ(unit)
         return {'kind': 'Qp', 'prime': prime, 'precision': precision,
-                'lift': str(lift)}
+                'value': str(representative)}
 
     if _is_polynomial_ring(parent):
         return {'kind': 'polynomial',
@@ -139,8 +146,11 @@ def _decode_CIF(record):
 
 def _decode_Qp(record):
     precision = int(record['precision'])
-    field = Qp(int(record['prime']), prec=max(precision, 1))
-    return field(ZZ(record['lift']))
+    prime = int(record['prime'])
+    field = Qp(prime, prec=max(abs(precision) + 1, 1))
+    # add_bigoh sets *absolute* precision, which is what the record carries;
+    # Qp's own prec argument is a relative cap and would not reproduce it.
+    return field(QQ(record['value'])).add_bigoh(precision)
 
 
 def _decode_ZZ(record):

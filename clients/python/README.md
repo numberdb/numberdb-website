@@ -51,7 +51,10 @@ starts instantly in a plain interpreter.
 | `.url()` | where to read about it |
 
 `.value` is one of `int`, `Fraction`, `RealInterval`, `ComplexInterval`,
-`PAdic` or `Polynomial`. Exact values stay exact: integers are Python `int` (unbounded —
+`PAdic` or `Polynomial`. A `PAdic` carries a `Fraction` — Q_p is not Z_p, so a
+value of negative valuation such as 1/5 in Q_5 has no integer form — and its
+`precision` is **absolute**: the ball is everything congruent to `value` modulo
+`prime ** precision`, matching the `O(p^k)` in its string form. Exact values stay exact: integers are Python `int` (unbounded —
 the database holds integers of over a thousand digits), rationals are
 `Fraction`, and interval endpoints are exact `Fraction`s rather than rounded
 floats. Converting to `float` is your decision, never an accident of transport.
