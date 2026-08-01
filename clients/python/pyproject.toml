@@ -27,6 +27,15 @@ classifiers = [
 # imported only when a Sage object is asked for.
 dependencies = []
 
+# Deliberately no [sage] extra. It would be typed by exactly the people it can
+# hurt: `sage -pip install numberdb[sage]` inside a full SageMath installs
+# passagemath over the top of it. The passagemath-flint wheel writes 383 files
+# under sage/, 349 of which already exist in a full Sage -- including compiled
+# .so extensions -- and pip reports no conflict, because Sage's own files
+# belong to no pip distribution and so cannot be detected as clashing.
+#
+# numberdb.sage needs no extra: it uses whatever Sage is already there.
+
 [project.urls]
 Homepage = "https://numberdb.org"
 Source = "https://github.com/numberdb/numberdb-website"
