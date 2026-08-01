@@ -24,6 +24,7 @@ can share a name with Sage's notion without pretending to be it: the region is
 the same shape, the behaviour is not.
 """
 
+import math
 from fractions import Fraction
 
 from ._errors import UnsupportedNumber
@@ -282,11 +283,26 @@ def to_sage(value):
     """
     ZZ, QQ, RIF, CIF, Qp, PolynomialRing = _sage_rings()
 
+    def endpoint(bound):
+        """An endpoint as Sage wants it, infinities included.
+
+        The database holds values past what a float can bound -- an
+        integer of 400 digits, say -- and the server sends that end as
+        '-infinity'. QQ has no such element and raises on one, so the float is
+        passed through: RIF accepts it and yields a genuinely unbounded
+        interval, which is what the value means.
+        """
+        if isinstance(bound, float) and math.isinf(bound):
+            return bound
+        return QQ(bound)
+
+    def interval(real_interval):
+        return RIF(endpoint(real_interval.lower), endpoint(real_interval.upper))
+
     if isinstance(value, RealInterval):
-        return RIF(QQ(value.lower), QQ(value.upper))
+        return interval(value)
     if isinstance(value, ComplexInterval):
-        return CIF(RIF(QQ(value.real.lower), QQ(value.real.upper)),
-                   RIF(QQ(value.imag.lower), QQ(value.imag.upper)))
+        return CIF(interval(value.real), interval(value.imag))
     if isinstance(value, PAdic):
         return Qp(value.prime, prec=max(value.precision, 1))(ZZ(value.lift))
     if isinstance(value, Polynomial):
