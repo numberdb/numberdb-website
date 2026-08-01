@@ -14,6 +14,7 @@ import os
 import urllib.error
 import urllib.parse
 import urllib.request
+from typing import Any, Callable, Dict, Optional
 
 from ._errors import NumberDBError, RateLimited, TransportError, Unauthorized
 
@@ -38,14 +39,17 @@ class Client:
     is what lets the package be pointed at a development server.
     """
 
-    def __init__(self, api_key=None, base_url=None, timeout=None, opener=None):
+    def __init__(self, api_key: Optional[str] = None,
+                 base_url: Optional[str] = None,
+                 timeout: Optional[float] = None,
+                 opener: Optional[Callable] = None) -> None:
         self._api_key = api_key
         self._base_url = base_url
         self._timeout = timeout
         self._opener = opener or urllib.request.urlopen
 
     @property
-    def base_url(self):
+    def base_url(self) -> str:
         """Always ending in a slash, which is not cosmetic.
 
         urljoin treats a final segment without a trailing slash as a file to be
@@ -60,18 +64,18 @@ class Client:
         return configured if configured.endswith('/') else configured + '/'
 
     @property
-    def api_key(self):
+    def api_key(self) -> Optional[str]:
         return self._api_key or os.environ.get('NUMBERDB_API_KEY') or None
 
     @property
-    def timeout(self):
+    def timeout(self) -> float:
         return self._timeout if self._timeout is not None else DEFAULT_TIMEOUT
 
     def __repr__(self):
         return 'Client(base_url=%r, api_key=%s)' % (
             self.base_url, 'set' if self.api_key else None)
 
-    def request(self, path, parameters):
+    def request(self, path: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """GET ``path`` with ``parameters``, returning parsed JSON."""
         url = urllib.parse.urljoin(self.base_url, path)
         query = urllib.parse.urlencode(

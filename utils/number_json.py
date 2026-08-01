@@ -63,24 +63,28 @@ def encode_number(value):
     if _is_p_adic(parent):
         prime = int(parent.prime())
         try:
-            precision = int(value.precision_absolute())
+            absolute = int(value.precision_absolute())
         except (AttributeError, TypeError):
-            precision = int(parent.precision_cap())
-        # A rational representative, not an integer lift. An integer spans only
-        # Z_p, so every value of negative valuation -- 1/5 in Q_5, 1/2 in Q_2 --
-        # was unrepresentable, and 1000 of the 6712 stored p-adics have one.
+            absolute = int(parent.precision_cap())
+
+        # Normalised: prime, order, and a unit coprime to the prime. Carrying a
+        # bare representative instead would not be canonical -- 1 and 1 + p^k
+        # denote the same ball at precision k -- so equality and hashing would
+        # be wrong for two spellings of one number.
         #
-        # Built from valuation and unit part rather than by coercing to QQ:
-        # the unit is always a p-adic integer, so its lift is an honest integer,
-        # and p**valuation carries the rest exactly.
+        # An integer lift alone would be worse still: it spans Z_p only, and
+        # 1000 of the 6712 stored p-adics have negative order.
         if value == 0:
-            representative = QQ(0)
+            # No order and no unit. O(p^k) is a ball about zero.
+            valuation, unit = absolute, 0
         else:
             valuation = int(value.valuation())
+            relative = max(absolute - valuation, 0)
             unit = int(value.unit_part().lift())
-            representative = QQ(prime) ** valuation * QQ(unit)
-        return {'kind': 'Qp', 'prime': prime, 'precision': precision,
-                'value': str(representative)}
+            if relative > 0:
+                unit %= prime ** relative
+        return {'kind': 'Qp', 'prime': prime, 'valuation': valuation,
+                'unit': str(unit), 'precision': absolute}
 
     if _is_polynomial_ring(parent):
         return {'kind': 'polynomial',
@@ -145,12 +149,14 @@ def _decode_CIF(record):
 
 
 def _decode_Qp(record):
-    precision = int(record['precision'])
+    absolute = int(record['precision'])
     prime = int(record['prime'])
-    field = Qp(prime, prec=max(abs(precision) + 1, 1))
+    valuation = int(record['valuation'])
+    unit = ZZ(record['unit'])
+    field = Qp(prime, prec=max(abs(absolute) + abs(valuation) + 1, 1))
     # add_bigoh sets *absolute* precision, which is what the record carries;
     # Qp's own prec argument is a relative cap and would not reproduce it.
-    return field(QQ(record['value'])).add_bigoh(precision)
+    return field(QQ(prime) ** valuation * QQ(unit)).add_bigoh(absolute)
 
 
 def _decode_ZZ(record):

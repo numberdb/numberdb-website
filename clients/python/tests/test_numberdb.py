@@ -92,18 +92,18 @@ class Decoding(unittest.TestCase):
         box = _wire.decode({'kind': 'CIF', 're_lower': '0', 're_upper': '1',
                             'im_lower': '2', 'im_upper': '3'})
         self.assertEqual(complex(box), complex(0.5, 2.5))
-        padic = _wire.decode({'kind': 'Qp', 'prime': '5', 'precision': '20',
-                              'value': '6'})
-        self.assertEqual((padic.prime, padic.precision, padic.value),
-                         (5, 20, Fraction(6)))
+        padic = _wire.decode({'kind': 'Qp', 'prime': '5', 'valuation': '0',
+                              'unit': '6', 'precision': '20'})
+        self.assertEqual((padic.prime, padic.valuation, padic.unit,
+                          padic.precision_absolute), (5, 0, 6, 20))
         self.assertEqual(str(padic), '6 + O(5^20)')
 
     def test_values_can_be_put_in_a_set(self):
         """Defining __eq__ drops __hash__, and numbers belong in sets."""
         one = _wire.decode({'kind': 'RIF', 'lower': '1', 'upper': '2'})
         same = _wire.decode({'kind': 'RIF', 'lower': '1', 'upper': '2'})
-        other = _wire.decode({'kind': 'Qp', 'prime': '5', 'precision': '2',
-                              'value': '3'})
+        other = _wire.decode({'kind': 'Qp', 'prime': '5', 'valuation': '0',
+                              'unit': '3', 'precision': '2'})
         self.assertEqual(len({one, same, other}), 2)
 
     def test_an_unknown_kind_is_refused_by_name(self):
@@ -347,29 +347,38 @@ class UnboundedValues(unittest.TestCase):
         self.assertTrue(interval.lower().is_infinity())
 
 
-class PAdicRationals(unittest.TestCase):
-    """Q_p is not Z_p.
+class PAdicNormalForm(unittest.TestCase):
+    """Q_p is not Z_p, and a ball has exactly one spelling.
 
-    The record used to carry an integer lift, which cannot express a value of
-    negative valuation -- 1/5 in Q_5, 1/2 in Q_2. A thousand of the 6712 stored
-    p-adics have one, and every single one failed to round-trip.
+    An integer lift spans Z_p only, so every value of negative order -- 1/5 in
+    Q_5 -- was unrepresentable; 1000 of the 6712 stored p-adics have one. A bare
+    representative fixed that but was not canonical: 1 and 1 + p**k denote the
+    same ball at precision k and compared unequal.
     """
 
-    def test_a_value_off_the_integers_decodes(self):
-        value = _wire.decode({'kind': 'Qp', 'prime': '5', 'precision': '19',
-                              'value': '1/5'})
-        self.assertEqual(value.value, Fraction(1, 5))
+    def test_a_value_off_the_integers(self):
+        value = _wire.decode({'kind': 'Qp', 'prime': '5', 'valuation': '-1',
+                              'unit': '1', 'precision': '19'})
         self.assertEqual(value.valuation, -1)
+        self.assertEqual(value.value, Fraction(1, 5))
+        self.assertEqual(value.precision_relative, 20)
 
-    def test_valuation_is_reported_for_both_signs(self):
-        cases = [('1/25', 5, -2), ('6', 5, 0), ('10', 5, 1), ('1/2', 2, -1)]
-        for text, prime, expected in cases:
-            with self.subTest(value=text):
-                value = _wire.PAdic(prime, 20, Fraction(text))
-                self.assertEqual(value.valuation, expected)
+    def test_congruent_spellings_are_one_ball(self):
+        """1 and 126 = 1 + 5**3 at precision 3. Sage agrees they are equal."""
+        one = _wire.PAdic(5, 0, 1, 3)
+        other = _wire.PAdic(5, 0, 126, 3)
+        self.assertEqual(one, other)
+        self.assertEqual(len({one, other}), 1)
 
-    def test_zero_has_no_valuation_rather_than_a_wrong_one(self):
-        self.assertIsNone(_wire.PAdic(5, 20, 0).valuation)
+    def test_a_unit_divisible_by_the_prime_is_refused(self):
+        """Normalised means normalised; 5 is not a unit in Q_5."""
+        with self.assertRaises(ValueError):
+            _wire.PAdic(5, 0, 5, 3)
+
+    def test_zero_has_no_order_and_no_unit(self):
+        zero = _wire.PAdic(5, 20, 0, 20)
+        self.assertEqual(zero.unit, 0)
+        self.assertEqual(zero.value, 0)
 
     def test_such_a_value_reaches_sage(self):
         try:
@@ -377,33 +386,32 @@ class PAdicRationals(unittest.TestCase):
         except ImportError:
             self.skipTest('needs SageMath')
         from sage.rings.all import Qp, QQ
-        value = _wire.PAdic(5, 19, Fraction(1, 5))
-        self.assertEqual(_wire.to_sage(value), Qp(5, 20)(QQ(1) / 5))
+        self.assertEqual(_wire.to_sage(_wire.PAdic(5, -1, 1, 19)),
+                         Qp(5, 20)(QQ(1) / 5))
 
 
-class PrecisionIsAbsolute(unittest.TestCase):
-    """Absolute, not relative -- they differ off valuation zero.
+class BothPrecisionsAreNamed(unittest.TestCase):
+    """Absolute and relative coincide at valuation zero and diverge elsewhere,
+    so neither may be a bare ``precision`` a reader has to resolve."""
 
-    Sage's relation is absolute = valuation + relative, so a value known to
-    twenty 5-adic digits carries precision 19 one power below the integers.
-    Reading the field as relative would place a ball in the wrong position.
-    """
+    def test_relative_follows_from_absolute_and_the_order(self):
+        for valuation, absolute, relative in [(0, 20, 20), (-1, 19, 20),
+                                              (2, 22, 20)]:
+            with self.subTest(valuation=valuation):
+                value = _wire.PAdic(5, valuation, 1, absolute)
+                self.assertEqual(value.precision_relative, relative)
 
-    def test_the_string_form_states_absolute_precision(self):
-        value = _wire.PAdic(5, 19, Fraction(1, 5))
-        self.assertEqual(str(value), '1/5 + O(5^19)')
+    def test_the_string_form_states_the_absolute_one(self):
+        self.assertEqual(str(_wire.PAdic(5, -1, 1, 19)), '1/5 + O(5^19)')
 
-    def test_sage_receives_it_as_absolute(self):
+    def test_sage_receives_the_absolute_one(self):
         try:
             import sage  # noqa: F401
         except ImportError:
             self.skipTest('needs SageMath')
-        for representative, prime, absolute in [(Fraction(1, 5), 5, 19),
-                                                (Fraction(6), 5, 20),
-                                                (Fraction(25), 5, 22)]:
-            with self.subTest(value=representative):
-                converted = _wire.to_sage(
-                    _wire.PAdic(prime, absolute, representative))
+        for valuation, absolute in [(-1, 19), (0, 20), (2, 22)]:
+            with self.subTest(valuation=valuation):
+                converted = _wire.to_sage(_wire.PAdic(5, valuation, 1, absolute))
                 self.assertEqual(int(converted.precision_absolute()), absolute)
 
 
@@ -529,3 +537,104 @@ class BaseUrlJoining(unittest.TestCase):
         os.environ['NUMBERDB_URL'] = 'http://localhost:8000'
         self.assertEqual(numberdb.Client(base_url='https://elsewhere.test').base_url,
                          'https://elsewhere.test/')
+
+
+class ExactConversion(unittest.TestCase):
+    """Scalars become exact rationals, so interval arithmetic cannot narrow.
+
+    Rounding an endpoint inward is a silent false negative: the number is in
+    the database and the search does not find it. Converting first and doing
+    the arithmetic in Fraction removes the possibility rather than managing it.
+    """
+
+    def test_python_scalars_convert_exactly(self):
+        from numberdb._convert import to_exact
+        cases = [(7, Fraction(7)), (Fraction(2, 3), Fraction(2, 3)),
+                 ('1/3', Fraction(1, 3)), ('0.1', Fraction(1, 10)),
+                 (0.5, Fraction(1, 2))]
+        for value, expected in cases:
+            with self.subTest(value=value):
+                self.assertEqual(to_exact(value), expected)
+
+    def test_a_float_converts_to_its_own_value_not_a_prettier_one(self):
+        """0.1 and '0.1' are different numbers; each converts to itself."""
+        from numberdb._convert import to_exact
+        self.assertEqual(to_exact('0.1'), Fraction(1, 10))
+        self.assertNotEqual(to_exact(0.1), Fraction(1, 10))
+        self.assertEqual(to_exact(0.1), Fraction(0.1))
+
+    def test_ball_arithmetic_does_not_narrow(self):
+        """The case floats would have broken: center - radius rounding inward."""
+        from numberdb._convert import to_exact
+        center, radius = 3.14159266, 1e-8
+        lower = to_exact(center) - to_exact(radius)
+        upper = to_exact(center) + to_exact(radius)
+        #Exact, so the endpoints bracket every float in the ball.
+        self.assertLessEqual(lower, to_exact(center - radius))
+        self.assertGreaterEqual(upper, to_exact(center + radius))
+        self.assertEqual(upper - lower, 2 * to_exact(radius))
+
+    def test_a_bool_is_not_a_number(self):
+        from numberdb._convert import to_exact
+        for value in [True, False]:
+            with self.subTest(value=value):
+                with self.assertRaises(TypeError):
+                    to_exact(value)
+
+    def test_things_that_cannot_state_themselves_exactly_are_refused(self):
+        from numberdb._convert import to_exact
+        for value in [None, [1], object(), 'not a number', complex(1, 2)]:
+            with self.subTest(value=value):
+                with self.assertRaises(TypeError):
+                    to_exact(value)
+
+    def test_an_object_with_numerator_that_is_not_a_rational_is_refused(self):
+        """Sage polynomials and p-adics both have numerator() and
+        denominator(), returning objects of their own type."""
+        from numberdb._convert import to_exact
+
+        class NotARational:
+            def numerator(self):
+                return self          # a polynomial returns a polynomial
+
+            def denominator(self):
+                return 1
+
+        with self.assertRaises(TypeError):
+            to_exact(NotARational())
+
+
+class ExactConversionOfSageValues(unittest.TestCase):
+    """The same contract for Sage's numbers."""
+
+    def setUp(self):
+        try:
+            import sage  # noqa: F401
+        except ImportError:
+            self.skipTest('needs SageMath')
+
+    def test_sage_scalars_convert_exactly(self):
+        from sage.rings.all import QQ, RR, ZZ
+        from numberdb._convert import to_exact
+        self.assertEqual(to_exact(ZZ(7)), Fraction(7))
+        self.assertEqual(to_exact(QQ(2) / 3), Fraction(2, 3))
+        self.assertEqual(to_exact(RR(0.5)), Fraction(1, 2))
+
+    def test_a_sage_rational_is_not_mangled_the_way_fraction_mangles_it(self):
+        """Fraction(QQ(1)/3) does not raise -- it stores the bound methods."""
+        from sage.rings.all import QQ
+        from numberdb._convert import to_exact
+        self.assertEqual(to_exact(QQ(1) / 3), Fraction(1, 3))
+
+    def test_a_sage_polynomial_is_refused_despite_having_a_numerator(self):
+        from sage.rings.all import QQ
+        from numberdb._convert import to_exact
+        ring = QQ['x']
+        with self.assertRaises(TypeError):
+            to_exact(ring([-1, 1]))
+
+    def test_a_sage_p_adic_is_refused_despite_having_a_numerator(self):
+        from sage.rings.all import Qp
+        from numberdb._convert import to_exact
+        with self.assertRaises(TypeError):
+            to_exact(Qp(5, 20)(6))

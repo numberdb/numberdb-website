@@ -26,7 +26,9 @@ the same shape, the behaviour is not.
 
 import math
 from fractions import Fraction
+from typing import Any, Dict, FrozenSet, Optional, Union
 
+from ._convert import Scalar
 from ._errors import UnsupportedNumber
 
 __all__ = ['decode', 'to_sage', 'KINDS', 'RealInterval', 'ComplexInterval',
@@ -43,7 +45,7 @@ class RealInterval:
 
     __slots__ = ('lower', 'upper')
 
-    def __init__(self, lower, upper):
+    def __init__(self, lower: Scalar, upper: Scalar) -> None:
         self.lower = lower
         self.upper = upper
 
@@ -66,7 +68,7 @@ class RealInterval:
         """The midpoint. Lossy by definition, which is why it is explicit."""
         return float(self.midpoint())
 
-    def midpoint(self):
+    def midpoint(self) -> Fraction:
         return self.lower + (self.upper - self.lower) / 2
 
     @property
@@ -89,7 +91,7 @@ class ComplexInterval:
 
     __slots__ = ('real', 'imag')
 
-    def __init__(self, real, imag):
+    def __init__(self, real: 'RealInterval', imag: 'RealInterval') -> None:
         self.real = real
         self.imag = imag
 
@@ -113,63 +115,79 @@ class ComplexInterval:
 
 
 class PAdic:
-    """A p-adic number, known as the ball ``value + O(prime**precision)``.
+    """A p-adic number, as the ball ``prime**valuation * unit + O(prime**k)``.
 
-    ``value`` is a ``Fraction``, not an integer, because Q_p is not Z_p: 1/5 in
-    Q_5 and 1/2 in Q_2 have negative valuation and no integer representative.
-    A thousand of the p-adics in the database are of that kind.
+    Normalised, which is what makes equality mean anything: ``unit`` is coprime
+    to ``prime`` and reduced modulo ``prime**precision_relative``, so a ball has
+    exactly one representation. A bare representative would not -- 1 and
+    1 + p**k denote the same ball at precision k, and would have compared
+    unequal and hashed apart.
 
-    ``precision`` is **absolute**, not relative: the ball is everything
-    congruent to ``value`` modulo ``prime**precision``, which is what the
-    ``O(p^k)`` in the string form means.
+    ``valuation`` is the order, and is negative off Z_p: 1/5 in Q_5 has
+    valuation -1. A thousand of the p-adics in the database do.
 
-    The distinction only shows itself off valuation zero, which is why it is
-    worth stating. In Sage's terms, ``absolute = valuation + relative``::
+    Both precisions are named, never a bare ``precision``. They coincide at
+    valuation zero and diverge silently elsewhere::
 
-        6 in Q_5      valuation  0   relative 20   precision 20
-        1/5 in Q_5    valuation -1   relative 20   precision 19
-        25 in Q_5     valuation  2   relative 20   precision 22
+        precision_absolute = valuation + precision_relative
 
-    So a value known to twenty significant 5-adic digits carries precision 19
-    when it sits one power below the integers, not 20. ``valuation`` is
-    available as a property if you need to convert.
+        6 in Q_5     valuation  0   relative 20   absolute 20
+        1/5 in Q_5   valuation -1   relative 20   absolute 19
+        25 in Q_5    valuation  2   relative 20   absolute 22
+
+    ``O(p^k)`` in the string form is the absolute one.
+
+    Zero has no order and no unit: it is written with ``unit`` zero and
+    ``valuation`` equal to the absolute precision, the ball about zero.
     """
 
-    __slots__ = ('prime', 'precision', 'value')
+    __slots__ = ('prime', 'valuation', 'unit', 'precision_absolute')
 
-    def __init__(self, prime, precision, value):
+    def __init__(self, prime: int, valuation: int, unit: int,
+                 precision_absolute: int) -> None:
+        prime = int(prime)
+        unit = int(unit)
+        relative = int(precision_absolute) - int(valuation)
+        if unit and relative > 0:
+            if unit % prime == 0:
+                raise ValueError(
+                    'unit %d is divisible by %d; a p-adic is normalised as '
+                    'prime**valuation * unit with the unit coprime to the '
+                    'prime' % (unit, prime))
+            #Reduced so that one ball has one representation.
+            unit %= prime ** relative
         self.prime = prime
-        self.precision = precision
-        self.value = Fraction(value)
-
-    def __repr__(self):
-        return 'PAdic(%d, %d, %s)' % (self.prime, self.precision, self.value)
-
-    def __str__(self):
-        return '%s + O(%d^%d)' % (self.value, self.prime, self.precision)
+        self.valuation = int(valuation)
+        self.unit = unit
+        self.precision_absolute = int(precision_absolute)
 
     @property
-    def valuation(self):
-        """The power of ``prime`` dividing the value; negative off Z_p."""
-        if self.value == 0:
-            return None
-        valuation = 0
-        numerator, denominator = self.value.numerator, self.value.denominator
-        while numerator % self.prime == 0:
-            numerator //= self.prime
-            valuation += 1
-        while denominator % self.prime == 0:
-            denominator //= self.prime
-            valuation -= 1
-        return valuation
+    def precision_relative(self) -> int:
+        """Digits of the unit that are known."""
+        return self.precision_absolute - self.valuation
+
+    @property
+    def value(self) -> Fraction:
+        """The representative ``prime**valuation * unit``, as a Fraction."""
+        return Fraction(self.prime) ** self.valuation * Fraction(self.unit)
+
+    def __repr__(self):
+        return 'PAdic(%d, %d, %d, %d)' % (self.prime, self.valuation,
+                                          self.unit, self.precision_absolute)
+
+    def __str__(self):
+        return '%s + O(%d^%d)' % (self.value, self.prime,
+                                  self.precision_absolute)
 
     def __eq__(self, other):
         return (isinstance(other, PAdic) and self.prime == other.prime
-                and self.precision == other.precision
-                and self.value == other.value)
+                and self.valuation == other.valuation
+                and self.unit == other.unit
+                and self.precision_absolute == other.precision_absolute)
 
     def __hash__(self):
-        return hash((PAdic, self.prime, self.precision, self.value))
+        return hash((PAdic, self.prime, self.valuation, self.unit,
+                     self.precision_absolute))
 
 
 class Polynomial:
@@ -180,7 +198,7 @@ class Polynomial:
 
     __slots__ = ('variable_count', 'text')
 
-    def __init__(self, variable_count, text):
+    def __init__(self, variable_count: int, text: str) -> None:
         self.variable_count = variable_count
         self.text = text
 
@@ -229,8 +247,8 @@ def _decode_rational(record):
 
 
 def _decode_p_adic(record):
-    return PAdic(int(record['prime']), int(record['precision']),
-                 Fraction(record['value']))
+    return PAdic(int(record['prime']), int(record['valuation']),
+                 int(record['unit']), int(record['precision']))
 
 
 def _decode_polynomial(record):
@@ -257,7 +275,7 @@ _DECODERS = {
 KINDS = frozenset(_DECODERS)
 
 
-def decode(record):
+def decode(record: Dict[str, Any]) -> Any:
     """A number from its JSON record."""
     if not isinstance(record, dict):
         raise UnsupportedNumber('number record must be an object, got %s'
@@ -309,7 +327,7 @@ def _sage_rings():
             '.value and .exact_text')
 
 
-def to_sage(value):
+def to_sage(value: Any) -> Any:
     """The same number as a Sage object.
 
     Kept apart from decoding so the package works without Sage. Importing Sage
@@ -339,11 +357,13 @@ def to_sage(value):
     if isinstance(value, ComplexInterval):
         return CIF(interval(value.real), interval(value.imag))
     if isinstance(value, PAdic):
-        field = Qp(value.prime, prec=max(abs(value.precision) + 1, 1))
-        #add_bigoh sets absolute precision, which is what the record means;
+        field = Qp(value.prime,
+                   prec=max(abs(value.precision_absolute)
+                            + abs(value.valuation) + 1, 1))
+        #add_bigoh sets absolute precision, which is what the type carries;
         #Qp's own prec is a relative cap and would not reproduce it.
-        return field(QQ(value.value.numerator) /
-                     QQ(value.value.denominator)).add_bigoh(value.precision)
+        return field(QQ(value.prime) ** value.valuation
+                     * QQ(value.unit)).add_bigoh(value.precision_absolute)
     if isinstance(value, Polynomial):
         return PolynomialRing(QQ, max(value.variable_count, 1),
                               'x')(value.text)
