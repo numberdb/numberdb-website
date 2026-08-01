@@ -16,7 +16,7 @@ widening or narrowing. ``api.py`` blurs intervals before searching anyway, but
 that is its decision to make, not a rounding artefact of transport.
 """
 
-from sage.rings.all import ZZ, QQ, RIF, CIF, Qp, PolynomialRing
+from sage.rings.all import ZZ, QQ, RIF, CIF, Qp, PolynomialRing, RBF
 
 __all__ = ['encode_number', 'decode_number', 'UnsupportedNumber']
 
@@ -93,6 +93,30 @@ def encode_number(value):
                 'lower': _exact_rational_string(value.lower()),
                 'upper': _exact_rational_string(value.upper())}
 
+    # Exactly-known values. Carried as text rather than JSON numbers: the
+    # database holds integers of over a thousand digits, and a JSON number is
+    # a double to most parsers, which would silently round them.
+    if parent is ZZ or parent == ZZ:
+        return {'kind': 'ZZ', 'value': str(ZZ(value))}
+
+    if parent is QQ or parent == QQ:
+        return {'kind': 'QQ', 'value': str(QQ(value))}
+
+    # A ball, carried by its endpoints as exact rationals -- the same treatment
+    # as an interval, and for the same reason.
+    #
+    # Centre and radius would be the natural encoding and are wrong here: the
+    # radius has no exact rational form, so it serialises through str() and
+    # rounds. Rounding it *down* yields a ball narrower than the one stored,
+    # which no longer contains the number it describes. Measured on the 73 ball
+    # values in the database, 28 came back too narrow. Endpoints round outward
+    # by construction, so the ball can only ever widen.
+    if parent is RBF or parent == RBF:
+        interval = RIF(value)
+        return {'kind': 'RBF',
+                'lower': _exact_rational_string(interval.lower()),
+                'upper': _exact_rational_string(interval.upper())}
+
     raise UnsupportedNumber('no wire representation for parent %s' % (parent,))
 
 
@@ -119,6 +143,20 @@ def _decode_Qp(record):
     return field(ZZ(record['lift']))
 
 
+def _decode_ZZ(record):
+    return ZZ(record['value'])
+
+
+def _decode_QQ(record):
+    return QQ(record['value'])
+
+
+def _decode_RBF(record):
+    # Via an interval, so the ball contains the endpoints rather than being
+    # fitted to them.
+    return RBF(RIF(_rational(record['lower']), _rational(record['upper'])))
+
+
 def _decode_polynomial(record):
     variables = max(int(record['variables']), 1)
     ring = PolynomialRing(QQ, variables, 'x')
@@ -129,6 +167,9 @@ def _decode_polynomial(record):
 _DECODERS = {
     'RIF': _decode_RIF,
     'CIF': _decode_CIF,
+    'ZZ': _decode_ZZ,
+    'QQ': _decode_QQ,
+    'RBF': _decode_RBF,
     'Qp': _decode_Qp,
     'polynomial': _decode_polynomial,
 }

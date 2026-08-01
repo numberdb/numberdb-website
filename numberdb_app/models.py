@@ -314,6 +314,29 @@ class TableCommit(models.Model):
 			self.datetime,
 		)
 
+def wire_number(value):
+	"""A number as JSON the client rebuilds by dispatch, never by unpickling.
+
+	This used to be ``value.dumps()`` -- a Sage pickle, carried as a cp437
+	string. Loading it is arbitrary code execution, so every consumer of the
+	API had to trust the server completely, and anyone able to answer in its
+	place owned the client. It also tied the wire format to Sage: the bytes are
+	Sage objects, so no client without Sage could read a number, and the server
+	could not stop producing them.
+
+	The encoding is the one the sandbox already speaks (utils/number_json.py),
+	so there is one format on both boundaries rather than two.
+
+	None if the value has no wire form. exact_text carries the number in that
+	case, and it is the more useful field for anything but Sage.
+	"""
+	try:
+		from utils.number_json import encode_number
+		return encode_number(value)
+	except Exception:
+		return None
+
+
 def exact_relative_width(exact_text):
 	"""How well the stored value is known, relative to its own size.
 
@@ -648,7 +671,8 @@ class Number(models.Model):
 		return {
 			'type': self.number_type_bytes().decode(),
 			'param': self.param_str(),
-			'sage': self.to_sage().dumps().decode('cp437'),
+			'number': wire_number(self.to_sage()),
+			'exact_text': self.exact_text,
 			'str_short': self.str_short(),
 			'table_id': self.table.tid,
 		}
@@ -790,7 +814,8 @@ class NumberPAdic(models.Model):
 		return {
 			'type': self.number_type_bytes().decode(),
 			'param': self.param_str(),
-			'sage': self.to_sage().dumps().decode('cp437'),
+			'number': wire_number(self.to_sage()),
+			'exact_text': self.exact_text,
 			'str_short': self.str_short(),
 			'table_id': self.table.tid,
 		}
@@ -954,7 +979,8 @@ class NumberComplex(models.Model):
 		return {
 			'type': self.number_type_bytes().decode(),
 			'param': self.param_str(),
-			'sage': self.to_sage().dumps().decode('cp437'),
+			'number': wire_number(self.to_sage()),
+			'exact_text': self.exact_text,
 			'str_short': self.str_short(),
 			'table_id': self.table.tid,
 		}
@@ -1093,7 +1119,8 @@ class Polynomial(models.Model):
 		return {
 			'type': self.number_type_bytes().decode(),
 			'param': self.param_str(),
-			'sage': self.to_sage().dumps().decode('cp437'),
+			'number': wire_number(self.to_sage()),
+			'exact_text': self.exact_text,
 			'str_short': self.str_short(),
 			'table_id': self.table.tid,
 		}
