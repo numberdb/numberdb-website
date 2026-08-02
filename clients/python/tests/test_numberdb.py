@@ -1024,3 +1024,56 @@ class Batching(unittest.TestCase):
         """A batch carries numbers; text and expressions are other questions."""
         with self.assertRaises(TypeError):
             numberdb.search_many(['3.14'])
+
+
+class WideningIsRefined(unittest.TestCase):
+    """A widened query is sound but brings back extras; the client drops them.
+
+    Filter and refine: the coarse interval goes to the server, which cannot
+    miss with it, and the exact one is applied here, where the original bounds
+    are still known. Without this a caller asking to 500 digits would be
+    answered to 100 and told nothing about the difference.
+    """
+
+    def _client_returning(self, *intervals):
+        results = []
+        for lower, upper in intervals:
+            results.append(_record({'kind': 'RIF', 'lower': lower,
+                                    'upper': upper}))
+        return _client({'results': results, 'messages': []})
+
+    def test_a_result_outside_the_original_query_is_dropped(self):
+        #Query to 300 digits; the server, asked to 100, also returns a value
+        #that only matches the widening.
+        lower = Fraction(1, 3)
+        upper = Fraction(1, 3) + Fraction(1, 10 ** 300)
+        client = self._client_returning(
+            ('1/3', '1/3'),                     # inside the original
+            ('1/2', '1/2'))                     # only inside the widened one
+        found = numberdb.search_real_interval(lower, upper, client=client)
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0].value, numberdb.RealInterval(
+            Fraction(1, 3), Fraction(1, 3)))
+
+    def test_nothing_is_dropped_when_the_query_was_not_widened(self):
+        client = self._client_returning(('1/2', '1/2'), ('3', '4'))
+        found = numberdb.search_real_interval(0, 10, client=client)
+        self.assertEqual(len(found), 2)
+
+    def test_a_result_that_cannot_be_decoded_is_kept(self):
+        """It might be the answer, and dropping it unexamined is worse."""
+        lower = Fraction(1, 3)
+        upper = Fraction(1, 3) + Fraction(1, 10 ** 300)
+        client = _client({'results': [
+            _record({'kind': 'SomeFutureKind', 'value': '?'})], 'messages': []})
+        found = numberdb.search_real_interval(lower, upper, client=client)
+        self.assertEqual(len(found), 1)
+
+    def test_the_messages_survive_refinement(self):
+        lower = Fraction(1, 3)
+        upper = Fraction(1, 3) + Fraction(1, 10 ** 300)
+        client = _client({'results': [], 'messages': [
+            {'text': 'We only show the first 100 results.'}]})
+        found = numberdb.search_real_interval(lower, upper, client=client)
+        self.assertEqual(found.messages,
+                         ['We only show the first 100 results.'])
