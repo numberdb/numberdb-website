@@ -174,9 +174,20 @@ def _decode_RBF(record):
 
 
 def _decode_polynomial(record):
-    variables = max(int(record['variables']), 1)
-    ring = PolynomialRing(QQ, variables, 'x')
-    return ring(record['value'])
+    """Rebuilt in a ring named as the text names its variables.
+
+    Not in a ring of x0, x1, ...: the text says "x^2+y", and Sage cannot map
+    that into a ring whose generators are called something else. It raises
+    "Could not find a mapping of the passed element to this ring", so every
+    multivariate polynomial -- 87 of the 1038 stored -- was undecodable.
+
+    The count in the record is kept for compatibility but is not what builds
+    the ring; the names are read from the polynomial itself.
+    """
+    text = str(record['value'])
+    from utils.numbers.polynomial import parse_polynomial
+    names = parse_polynomial(text).variables() or ['x']
+    return PolynomialRing(QQ, len(names), names)(text)
 
 
 #: Fixed dispatch table. Decoding never resolves a name from the payload.
