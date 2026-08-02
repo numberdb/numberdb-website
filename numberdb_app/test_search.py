@@ -681,9 +681,15 @@ class MetadataSearch(TestCase):
 		self.assertIsNone(full_text_query(''))
 
 	def test_a_quote_in_a_term_cannot_be_read_as_query_syntax(self):
-		"""The old spelling interpolated words bare into raw tsquery."""
-		query = full_text_query("d'Alembert constant")
-		self.assertIsNotNone(query)
+		"""The old spelling interpolated words bare into raw tsquery.
+
+		Executed rather than merely built: a malformed raw tsquery is a
+		database error at execution, so constructing one proves nothing.
+		"""
+		for term in ["d'Alembert constant", "constant d'Alem", "l'Hopital",
+		             "it's", "a & b", "x | y", "!not"]:
+			with self.subTest(term=term):
+				self.assertEqual(search_metadata(term), ([], []))
 
 	def test_metadata_search_runs_against_the_database(self):
 		"""Empty test database, so this checks the query executes, not hits."""
