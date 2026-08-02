@@ -1014,6 +1014,32 @@ class Batching(unittest.TestCase):
         self.assertEqual({k: len(v) for k, v in grouped.items()}, {0: 2, 1: 1})
         self.assertIn('numbers', client.opener.request.full_url)
 
+    def test_a_position_that_matched_nothing_is_an_empty_list_not_a_gap(self):
+        """The keys are the caller's indices, whatever the server answered.
+
+        A missing key would make results[i] raise on exactly the case worth
+        asking about -- that the number is not in the database -- and would be
+        indistinguishable from an answer the server dropped.
+        """
+        client = _client({'results': [
+            dict(_record({'kind': 'QQ', 'value': '1/3'}), index='1'),
+        ], 'messages': []})
+        grouped = numberdb.search_many([3, Fraction(1, 3), 7], client=client)
+        self.assertEqual(sorted(grouped), [0, 1, 2])
+        self.assertEqual(grouped[0], [])
+        self.assertEqual(len(grouped[1]), 1)
+        self.assertEqual(grouped[2], [])
+
+    def test_an_index_outside_the_batch_is_kept_rather_than_dropped(self):
+        """A server answering about a position nobody asked about is visible."""
+        client = _client({'results': [
+            dict(_record({'kind': 'ZZ', 'value': '3'}), index='7'),
+        ], 'messages': []})
+        grouped = numberdb.search_many([3], client=client)
+        self.assertEqual(sorted(grouped), [0, 7])
+        self.assertEqual(grouped[0], [])
+        self.assertEqual(len(grouped[7]), 1)
+
     def test_the_batch_size_is_capped(self):
         from numberdb._limits import MAX_BATCH
         with self.assertRaises(ValueError) as caught:

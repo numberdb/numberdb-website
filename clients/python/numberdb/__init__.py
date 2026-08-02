@@ -617,9 +617,13 @@ def search_many(values, client: Optional[Client] = None
     so a hundred numbers cost fifty-one units rather than a hundred.
 
     Returns a dict from position in ``values`` to the results for that number,
-    so a caller can tell which answer belongs to which question. Numbers that
-    matched nothing are absent; numbers the server could not read appear in the
-    messages of every returned group rather than silently vanishing.
+    so a caller can tell which answer belongs to which question. Every position
+    is present: one that matched nothing maps to an empty ``SearchResults``,
+    not to a missing key. Absence would be indistinguishable from a number the
+    server dropped, and would make the obvious ``results[i]`` raise on the one
+    case a caller most wants to see -- that their number is not known. Numbers
+    the server could not read appear in the messages of every group rather than
+    silently vanishing.
 
     At most ``MAX_BATCH`` numbers, because one caller should not be able to
     make the server do unbounded work in a single round trip.
@@ -636,12 +640,17 @@ def search_many(values, client: Optional[Client] = None
                 (payload.get('messages') or []) if isinstance(message, dict)]
 
     used = client or _default_client
-    grouped = {}  # type: Dict[int, SearchResults]
+    #Seeded with every position asked about, so the caller's indices and the
+    #dict's keys agree whatever the server sent back.
+    grouped = {index: SearchResults([], messages)
+               for index in range(len(values))}  # type: Dict[int, SearchResults]
     for record in payload.get('results') or []:
         try:
             index = int(record.get('index', -1))
         except (TypeError, ValueError):
             continue
+        #setdefault rather than indexing: an index outside the range asked
+        #about should not be dropped on the floor, it should be visible.
         grouped.setdefault(index, SearchResults([], messages)).append(
             Result(record, used.as_sage))
     return grouped
