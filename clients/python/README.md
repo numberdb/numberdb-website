@@ -181,7 +181,7 @@ sage: len(numberdb.search_rational(1, 3))
 2
 sage: len(numberdb.search_real_ball(3.14159265, 1e-8))
 3
-sage: len(numberdb.search_real_interval(RIF(3.1415).lower(), RIF(3.1416).upper()))
+sage: len(numberdb.search_real_interval(3.1415, 3.1416))
 3
 sage: len(numberdb.search_p_adic(2, 0, 1, absolute_precision=167))
 6
