@@ -1,4 +1,4 @@
-"""NumberDB — look a number up and find out whether it is already known.
+"""NumberDB: look a number up and find out whether it is already known.
 
     >>> import numberdb
     >>> for result in numberdb.search('pi'):
