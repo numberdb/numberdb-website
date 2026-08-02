@@ -387,6 +387,7 @@ def lookup(request):
 
 	number_json = request.GET.get('number')
 	polynomial = request.GET.get('polynomial')
+	polynomial_hash = request.GET.get('polynomial_hash')
 	text = request.GET.get('text')
 
 	if number_json:
@@ -407,6 +408,20 @@ def lookup(request):
 			return wrap(search_number(value), [])
 		except ValueError as error:
 			return JsonResponse({'error': str(error)}, safe=True)
+
+	if polynomial_hash:
+		#A polynomial can be tens of thousands of characters -- the longest
+		#stored is 58866 -- and nginx rejects a URL past 8k, so the largest
+		#entries in the database could not be asked about at all. The client
+		#computes the same canonical key and sends a digest of it.
+		#
+		#Sound only because one canonicalisation defines the key, in plain
+		#Python, shipped to both sides. 128 bits, because unlike the server's
+		#own query this has no full key to cross-check against.
+		from .models import Polynomial
+		found = list(Polynomial.objects.filter(
+			canonical_hash=polynomial_hash.strip().lower())[:PAGE_SIZE])
+		return wrap(found, [])
 
 	if polynomial:
 		#Its own parameter rather than going through text=, because the two
@@ -443,5 +458,6 @@ def lookup(request):
 		return wrap(found[:PAGE_SIZE], messages)
 
 	return JsonResponse(
-		{'error': 'Give number=<json record>, polynomial=<text>, or '
-		          'text=<search term>.'}, safe=True)
+		{'error': 'Give number=<json record>, polynomial=<text>, '
+		          'polynomial_hash=<digest>, or text=<search term>.'},
+		safe=True)

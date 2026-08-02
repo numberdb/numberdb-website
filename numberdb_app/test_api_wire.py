@@ -63,7 +63,10 @@ class WireFormat(TestCase):
 			obj = model(sage_number=sage_number)
 		obj.table = self.table
 		obj.param = param
-		obj.exact_text = exact_text
+		#Only when given: the constructor fills in a faithful default, and
+		#clearing it would leave a row that cannot be read back.
+		if exact_text:
+			obj.exact_text = exact_text
 		obj.save()
 		return obj
 
