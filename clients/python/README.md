@@ -106,6 +106,15 @@ since they are signposts and not numbers:
 1
 ```
 
+Note the `0`: the list holds numbers, and this term matched none, so `len()`
+and `if not found:` speak only for the numbers. To ask whether the term
+matched anything at all, say so:
+
+```python
+>>> if not (found or found.tables or found.tags):
+...     print('nothing at all')
+```
+
 Both are asked, because a term is often both questions: `'0.5'` is a number,
 `'matrix multiplication'` is words, and `'Pi'` is honestly each. A term
 containing `:` or `^` is machinery written for a parser, and is not offered to
