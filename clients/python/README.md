@@ -16,7 +16,7 @@ $ pip install numberdb
 3.1415926535897932384626 -- Best Sobolev constant for $W^{1,p}(\mathbb{R}^n)$
 ```
 
-One number, three places it is known to appear — which is the question this
+One number, three places it is known to appear; that is the question this
 package exists to answer.
 
 ## In Python
@@ -40,8 +40,8 @@ works out what it is:
 6
 ```
 
-`RealInterval` takes any scalar for its endpoints — `int`, `Fraction`, a
-decimal string, a float, or a Sage number — and keeps it exactly, as a
+`RealInterval` takes any scalar for its endpoints (`int`, `Fraction`, a
+decimal string, a float, or a Sage number), and keeps it exactly, as a
 `Fraction`. `PAdic` takes four integers, and its precision is absolute:
 `PAdic(2, 0, 1, 167)` is `1 + O(2^167)`.
 
@@ -79,7 +79,7 @@ this one in `x`, and asking in `y` finds it:
 ```
 
 **Text, in the search bar's grammar.** This reads the string as a *number* in
-any of the written forms the website accepts — `'3.14159'` for a real,
+any of the written forms the website accepts: `'3.14159'` for a real,
 `'1415'` for a fractional part, `'Q5:1010'` or `'1 + O(5^20)'` for a p-adic,
 `'1/2 + i*0.866'` for a complex number, `'x^2-2'` for a polynomial. A string
 states its own precision, which is why text is a sound way to search and a bare
@@ -119,8 +119,8 @@ lists.
 3
 ```
 
-**Several numbers in one request.** Cheaper than one call each — one round trip
-and a reduced rate-limit cost — and the result is keyed by position in the
+**Several numbers in one request.** Cheaper than one call each (one round trip
+and a reduced rate-limit cost), and the result is keyed by position in the
 list:
 
 ```python
@@ -208,7 +208,7 @@ two additional attributes.
 | `.tags` | `list[Tag]` | tags whose name matched, likewise |
 
 A `Table` carries `.tid`, `.title`, `.url` and `.number_count`; a `Tag` carries
-`.name`, `.url`, `.table_count` and `.number_count`. Both are signposts —
+`.name`, `.url`, `.table_count` and `.number_count`. Both are signposts;
 `numberdb.table(tid)` and `numberdb.tag(url)` fetch the contents.
 
 Each `Result` carries:
@@ -236,8 +236,8 @@ The type of `.value` depends on which module you imported:
 | `Qp` | `PAdic(prime, valuation, unit, precision_absolute)` | element of `Qp(prime)` |
 | `polynomial` | `Polynomial(variable_count, text)` | element of a polynomial ring over `QQ` |
 
-Exact values stay exact. Integers are Python `int`, which is unbounded — the
-database holds integers of over a thousand digits — rationals are `Fraction`,
+Exact values stay exact. Integers are Python `int`, which is unbounded (the
+database holds integers of over a thousand digits); rationals are `Fraction`,
 and interval endpoints are exact `Fraction`s rather than rounded floats.
 Conversion to `float` is therefore explicit, never an accident of transport:
 
@@ -251,7 +251,7 @@ RealInterval(884279719003555/281474976710656, 7074237752028441/2251799813685248)
 
 A `PAdic` carries its unit as an integer together with a valuation, because
 Q_p is not Z_p: a value of negative valuation such as 1/5 in Q_5 has no integer
-form. Its precision is **absolute** — the ball is everything congruent to the
+form. Its precision is **absolute**: the ball is everything congruent to the
 value modulo `prime ** precision_absolute`, matching the `O(p^k)` in the
 printed form.
 
@@ -277,7 +277,7 @@ specific cases.
 ## Rate limits and API keys
 
 Anonymous use is rate limited; a key raises the limit. Keep it out of your
-worksheet — a shared notebook should not carry its author's key:
+worksheet; a shared notebook should not carry its author's key:
 
 ```console
 $ export NUMBERDB_API_KEY=...
