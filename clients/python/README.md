@@ -105,7 +105,9 @@ list:
 {0: 2, 1: 2, 2: 6}
 ```
 
-At most 100 numbers per call. Positions that matched nothing are omitted.
+At most 100 numbers per call. Every position asked about is present in the
+result, so `results[i]` always answers for `values[i]`; a number that matched
+nothing maps to an empty list.
 
 **Tables and tags**, fetched whole:
 
