@@ -85,8 +85,27 @@ float is not:
 3
 ```
 
-It is not a keyword search: NumberDB does not currently index table titles or
-tags for text, so `search_text('matrix multiplication')` returns nothing.
+The same term is also read as **words**, against table titles and tag names.
+Those matches arrive as `.tables` and `.tags` rather than in the list itself,
+since they are signposts and not numbers:
+
+```python
+>>> found = numberdb.search_text('matrix multiplication')
+>>> len(found)
+0
+>>> [table.title for table in found.tables]
+['Exponent of matrix multiplication complexity']
+>>> [tag.name for tag in found.tags]
+['matrix multiplication']
+>>> numberdb.tag(found.tags[0].url)['table_count']
+1
+```
+
+Both are asked, because a term is often both questions: `'0.5'` is a number,
+`'matrix multiplication'` is words, and `'Pi'` is honestly each. A term
+containing `:` or `^` is machinery written for a parser, and is not offered to
+the word search. Every other search fills `.tables` and `.tags` with empty
+lists.
 
 **An expression**, evaluated by SageMath on the server:
 
@@ -180,6 +199,12 @@ two additional attributes.
 |---|---|---|
 | `.messages` | `list[str]` | remarks from the server about the search itself, if it had any |
 | `.unreadable` | `list[Result]` | results whose value this version of the package cannot decode |
+| `.tables` | `list[Table]` | tables whose title matched, filled in by `search_text` alone |
+| `.tags` | `list[Tag]` | tags whose name matched, likewise |
+
+A `Table` carries `.tid`, `.title`, `.url` and `.number_count`; a `Tag` carries
+`.name`, `.url`, `.table_count` and `.number_count`. Both are signposts —
+`numberdb.table(tid)` and `numberdb.tag(url)` fetch the contents.
 
 Each `Result` carries:
 
