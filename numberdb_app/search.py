@@ -460,13 +460,17 @@ def full_text_query(term):
 	words = [word for word in (term or '').split(' ') if word]
 	if not words:
 		return None
-	prefix = SearchQuery('%s:*' % (words[-1][:6],), search_type='raw')
+
+	#Every word quoted, and a quote inside one doubled, so that a term cannot
+	#be read as tsquery syntax. The old spelling interpolated words bare, which
+	#made "d'Alembert" a raw query with an unbalanced quote in it.
+	def quoted(word):
+		return "'%s'" % (word.replace("'", "''"),)
+
+	prefix = SearchQuery('%s:*' % (quoted(words[-1][:6]),), search_type='raw')
 	if len(words) == 1:
 		return prefix
-	#Quoted, so a word carrying an apostrophe or an operator cannot be read as
-	#tsquery syntax. The old spelling interpolated the words bare.
-	earlier = ' & '.join("'%s'" % (word.replace("'", "''"),)
-	                     for word in words[:-1])
+	earlier = ' & '.join(quoted(word) for word in words[:-1])
 	return SearchQuery(earlier, search_type='raw') & prefix
 
 
