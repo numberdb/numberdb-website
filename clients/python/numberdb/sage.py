@@ -38,6 +38,7 @@ from . import (Client, ComplexInterval, NumberDBError, PAdic, Polynomial,
                SearchResults, Table, TransportError, Unauthorized,
                UnsupportedNumber, __version__, configure, table, tag)
 from . import search as _search
+from . import search_many as _search_many
 from . import search_by_expression as _search_by_expression
 from . import search_complex_ball as _search_complex_ball
 from . import search_complex_interval as _search_complex_interval
@@ -49,7 +50,8 @@ from . import search_real_ball as _search_real_ball
 from . import search_real_interval as _search_real_interval
 from . import search_text as _search_text
 
-__all__ = ['search', 'search_text', 'search_by_expression',
+__all__ = ['search', 'search_many', 'search_text',
+           'search_by_expression',
            'search_integer', 'search_rational',
            'search_real_interval', 'search_real_ball',
            'search_complex_interval', 'search_complex_ball',
@@ -90,6 +92,10 @@ def _flavoured(client: Optional[Client]) -> Client:
 def search(value: Searchable,
            client: Optional[Client] = None) -> SearchResults:
     return _search(value, client=_flavoured(client))
+
+
+def search_many(values, client: Optional[Client] = None):
+    return _search_many(values, client=_flavoured(client))
 
 
 def search_text(text: str, client: Optional[Client] = None) -> SearchResults:

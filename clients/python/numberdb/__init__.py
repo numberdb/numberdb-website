@@ -27,13 +27,16 @@ from fractions import Fraction
 from typing import Any, Dict, List, Optional, Union
 
 from ._convert import Scalar, SupportsParent, to_exact
+from ._limits import (MAX_BATCH, SIGNIFICANT_DIGITS, bound_interval,
+                      p_adic_digits)
 from ._errors import (NumberDBError, RateLimited, TransportError,
                       Unauthorized, UnsupportedNumber)
 from ._http import Client
 from ._wire import (KINDS, ComplexInterval, PAdic, Polynomial, RealInterval,
                     decode, to_sage)
 
-__all__ = ['search', 'search_text', 'search_by_expression',
+__all__ = ['search', 'search_many', 'search_text',
+           'search_by_expression',
            'search_integer', 'search_rational',
            'search_real_interval', 'search_real_ball',
            'search_complex_interval', 'search_complex_ball',
@@ -225,6 +228,11 @@ def search_integer(value: Scalar, client: Optional[Client] = None) -> 'SearchRes
     exact = to_exact(value, 'value')
     if exact.denominator != 1:
         raise ValueError('%s is not an integer; use search_rational' % (exact,))
+    if len(str(abs(exact.numerator))) > SIGNIFICANT_DIGITS:
+        #Too long to send exactly, so sent as the range it lies in. The server
+        #searches an exact value as a point interval anyway, so this loses
+        #nothing that was being used.
+        return search_real_interval(exact, exact, client=client)
     return _by_number({'kind': 'ZZ', 'value': str(exact.numerator)},
                       client)
 
@@ -237,6 +245,8 @@ def search_rational(numerator: Scalar, denominator: Scalar = 1,
     """
     exact = to_exact(numerator, 'numerator') / to_exact(denominator,
                                                         'denominator')
+    if len(str(exact)) > 2 * SIGNIFICANT_DIGITS:
+        return search_real_interval(exact, exact, client=client)
     return _by_number({'kind': 'QQ', 'value': str(exact)}, client)
 
 
@@ -247,9 +257,10 @@ def search_real_interval(lower: Scalar, upper: Scalar,
     Endpoints are converted exactly before anything else touches them, so the
     interval searched is the interval given -- never a rounding of it.
     """
-    low, high = to_exact(lower, 'lower'), to_exact(upper, 'upper')
-    if low > high:
-        low, high = high, low
+    low, high = bound_interval(to_exact(lower, 'lower'),
+                               to_exact(upper, 'upper'))
+    #Trimmed outward, so the interval sent contains the one meant. Trimming
+    #inward would hide the number the caller is looking for.
     return _by_number({'kind': 'RIF', 'lower': str(low), 'upper': str(high)},
                       client)
 
@@ -270,9 +281,12 @@ def search_complex_interval(re_lower: Scalar, re_upper: Scalar,
                             im_lower: Scalar, im_upper: Scalar,
                             client: Optional[Client] = None) -> 'SearchResults':
     """Search for a complex number known to lie in a rectangle."""
-    real = sorted([to_exact(re_lower, 're_lower'), to_exact(re_upper, 're_upper')])
-    imaginary = sorted([to_exact(im_lower, 'im_lower'),
-                        to_exact(im_upper, 'im_upper')])
+    #Each coordinate bounded on its own, so a large real part cannot cost the
+    #imaginary one its precision.
+    real = list(bound_interval(to_exact(re_lower, 're_lower'),
+                               to_exact(re_upper, 're_upper')))
+    imaginary = list(bound_interval(to_exact(im_lower, 'im_lower'),
+                                    to_exact(im_upper, 'im_upper')))
     return _by_number({'kind': 'CIF',
                        're_lower': str(real[0]), 're_upper': str(real[1]),
                        'im_lower': str(imaginary[0]),
@@ -313,6 +327,12 @@ def search_p_adic(prime: int, order: int, unit: int,
         #is given, so relative_precision is not None on this branch.
         assert relative_precision is not None
         absolute_precision = int(relative_precision) + int(order)
+    #Counted in p-adic digits: a hundred decimal digits is worth
+    #100*log(10)/log(p) of them, 333 for p=2 and two for a very large prime.
+    allowed = p_adic_digits(int(prime))
+    if absolute_precision - int(order) > allowed:
+        absolute_precision = int(order) + allowed
+
     #Constructed rather than assembled by hand, so the coprimality check and
     #the reduction of the unit happen here too.
     value = PAdic(prime, order, unit, absolute_precision)
@@ -519,3 +539,68 @@ def search(value: 'Searchable', client: Optional[Client] = None) -> 'SearchResul
     raise TypeError(
         'no search for %s. Give an int, a Fraction, a string, one of this '
         "package's types, or a Sage number." % (kind or type(value).__name__,))
+
+
+def _record_for(value) -> Dict[str, Any]:
+    """The wire record for a value, as the typed functions would send it."""
+    if isinstance(value, RealInterval):
+        low, high = bound_interval(value.lower, value.upper)
+        return {'kind': 'RIF', 'lower': str(low), 'upper': str(high)}
+    if isinstance(value, ComplexInterval):
+        real = bound_interval(value.real.lower, value.real.upper)
+        imaginary = bound_interval(value.imag.lower, value.imag.upper)
+        return {'kind': 'CIF', 're_lower': str(real[0]),
+                're_upper': str(real[1]), 'im_lower': str(imaginary[0]),
+                'im_upper': str(imaginary[1])}
+    if isinstance(value, PAdic):
+        return {'kind': 'Qp', 'prime': value.prime,
+                'valuation': value.valuation, 'unit': str(value.unit),
+                'precision': value.precision_absolute}
+    if isinstance(value, bool):
+        raise TypeError('a bool is not a number')
+    if isinstance(value, int):
+        return {'kind': 'ZZ', 'value': str(value)}
+    if isinstance(value, Fraction):
+        return {'kind': 'QQ', 'value': str(value)}
+    raise TypeError('cannot batch %s; batches carry numbers, not text or '
+                    'expressions' % (type(value).__name__,))
+
+
+def search_many(values, client: Optional[Client] = None
+                ) -> Dict[int, 'SearchResults']:
+    """Look up many numbers in one request.
+
+    One round trip instead of many, which matters more than it sounds: a TLS
+    handshake costs about twice what an answered request does, and the rate
+    limit counts requests. A batch is priced at one unit plus half per number,
+    so a hundred numbers cost fifty-one units rather than a hundred.
+
+    Returns a dict from position in ``values`` to the results for that number,
+    so a caller can tell which answer belongs to which question. Numbers that
+    matched nothing are absent; numbers the server could not read appear in the
+    messages of every returned group rather than silently vanishing.
+
+    At most ``MAX_BATCH`` numbers, because one caller should not be able to
+    make the server do unbounded work in a single round trip.
+    """
+    values = list(values)
+    if len(values) > MAX_BATCH:
+        raise ValueError('at most %d numbers in one batch; %d given. Split it.'
+                         % (MAX_BATCH, len(values)))
+
+    records = [_record_for(value) for value in values]
+    payload = (client or _default_client).request(
+        'api/lookup', {'numbers': json.dumps(records)})
+    messages = [message.get('text', '') for message in
+                (payload.get('messages') or []) if isinstance(message, dict)]
+
+    used = client or _default_client
+    grouped = {}  # type: Dict[int, SearchResults]
+    for record in payload.get('results') or []:
+        try:
+            index = int(record.get('index', -1))
+        except (TypeError, ValueError):
+            continue
+        grouped.setdefault(index, SearchResults([], messages)).append(
+            Result(record, used.as_sage))
+    return grouped

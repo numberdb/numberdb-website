@@ -941,3 +941,86 @@ class ConnectionReuse(unittest.TestCase):
         twin = original.for_sage()
         self.assertIsNot(twin, original)
         self.assertIsNone(twin._connection)
+
+
+class QueriesAreBounded(unittest.TestCase):
+    """A query is trimmed to a hundred significant digits, always outward.
+
+    Rounding an endpoint inward would hide the number the caller is looking
+    for. Rounding outward can only return more than was strictly needed.
+    """
+
+    def _sent(self, call, *args, **keywords):
+        client = _client({'results': [], 'messages': []})
+        call(*args, client=client, **keywords)
+        query = urllib.parse.parse_qs(
+            urllib.parse.urlparse(client.opener.request.full_url).query)
+        return json.loads(query['number'][0])
+
+    def test_a_long_interval_is_trimmed_outward(self):
+        from numberdb._limits import SIGNIFICANT_DIGITS
+        lower = Fraction(1, 3)
+        upper = Fraction(1, 3) + Fraction(1, 10 ** 300)
+        sent = self._sent(numberdb.search_real_interval, lower, upper)
+        self.assertLessEqual(Fraction(sent['lower']), lower)
+        self.assertGreaterEqual(Fraction(sent['upper']), upper)
+        self.assertLess(len(sent['lower']), 4 * SIGNIFICANT_DIGITS)
+
+    def test_a_short_query_is_left_alone(self):
+        sent = self._sent(numberdb.search_real_interval, '3.1415', '3.1416')
+        self.assertEqual(Fraction(sent['lower']), Fraction('3.1415'))
+        self.assertEqual(Fraction(sent['upper']), Fraction('3.1416'))
+
+    def test_a_huge_integer_becomes_an_interval_containing_it(self):
+        """It cannot be conveyed in a hundred digits, so it is conveyed as the
+        range it lies in."""
+        huge = 10 ** 500 + 7
+        sent = self._sent(numberdb.search_integer, huge)
+        self.assertEqual(sent['kind'], 'RIF')
+        self.assertLessEqual(Fraction(sent['lower']), huge)
+        self.assertGreaterEqual(Fraction(sent['upper']), huge)
+
+    def test_a_short_integer_stays_exact(self):
+        self.assertEqual(self._sent(numberdb.search_integer, 7),
+                         {'kind': 'ZZ', 'value': '7'})
+
+    def test_each_complex_coordinate_is_bounded_on_its_own(self):
+        """A large real part must not cost the imaginary one its precision."""
+        sent = self._sent(numberdb.search_complex_interval,
+                          10 ** 200, 10 ** 200, Fraction(1, 3), Fraction(1, 3))
+        self.assertLessEqual(Fraction(sent['im_lower']), Fraction(1, 3))
+        self.assertGreaterEqual(Fraction(sent['im_upper']), Fraction(1, 3))
+
+    def test_p_adic_precision_is_counted_in_its_own_digits(self):
+        from numberdb._limits import p_adic_digits
+        self.assertEqual(p_adic_digits(2), 333)     # 100 * log(10)/log(2)
+        self.assertEqual(p_adic_digits(5), 144)
+        self.assertEqual(p_adic_digits(10 ** 60), 2)   # the floor
+        sent = self._sent(numberdb.search_p_adic, 2, 0, 1,
+                          relative_precision=10 ** 4)
+        self.assertLessEqual(sent['precision'], 333)
+
+
+class Batching(unittest.TestCase):
+    """Many numbers in one request, each answer saying which it answers."""
+
+    def test_a_batch_sends_one_request_and_groups_the_answers(self):
+        client = _client({'results': [
+            dict(_record({'kind': 'ZZ', 'value': '3'}), index='0'),
+            dict(_record({'kind': 'ZZ', 'value': '3'}), index='0'),
+            dict(_record({'kind': 'QQ', 'value': '1/3'}), index='1'),
+        ], 'messages': []})
+        grouped = numberdb.search_many([3, Fraction(1, 3)], client=client)
+        self.assertEqual({k: len(v) for k, v in grouped.items()}, {0: 2, 1: 1})
+        self.assertIn('numbers', client.opener.request.full_url)
+
+    def test_the_batch_size_is_capped(self):
+        from numberdb._limits import MAX_BATCH
+        with self.assertRaises(ValueError) as caught:
+            numberdb.search_many([1] * (MAX_BATCH + 1))
+        self.assertIn('Split it', str(caught.exception))
+
+    def test_text_cannot_be_batched(self):
+        """A batch carries numbers; text and expressions are other questions."""
+        with self.assertRaises(TypeError):
+            numberdb.search_many(['3.14'])
