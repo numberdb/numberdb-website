@@ -273,6 +273,49 @@ class ExactPolynomial:
                 best = renamed
         return best
 
+    def canonical_text(self):
+        """The renaming-invariant key as text, for hashing and storage.
+
+        Defined here rather than left to a printer, because both sides of the
+        network have to produce the same bytes. Monomial order and spelling are
+        ours: the tuple returned by canonical_under_renaming() is already
+        sorted, so this only has to write it down without room for a variant.
+
+        Grammar, chosen to be unambiguous rather than pretty::
+
+            <variables>;<term>|<term>|...
+            term   := <numerator>/<denominator>:<power>,<power>,...
+            power  := <variable index>^<exponent>
+
+        A constant term has no powers. Coefficients are exact rationals with an
+        explicit denominator, so 2 and 2/1 cannot be written differently.
+        """
+        terms = []
+        for monomial, coefficient in self.canonical_under_renaming():
+            powers = ','.join('%s^%d' % (name, exponent)
+                              for name, exponent in monomial)
+            terms.append('%d/%d:%s' % (coefficient.numerator,
+                                       coefficient.denominator, powers))
+        return '%d;%s' % (len(self.variables()), '|'.join(terms))
+
+    def canonical_hash(self, digest_size=16):
+        """A digest of ``canonical_text``, so a lookup need not send the whole
+        polynomial.
+
+        blake2s from the standard library: stable across processes and
+        platforms, unlike Python's hash(), and needing no dependency -- the
+        note in models.py records that the alternative once tried, pyhash, went
+        unmaintained.
+
+        128 bits by default, not the 64 the database column holds. A hash-only
+        lookup cannot be cross-checked against the full text the way the
+        server's own query is, so it has to be wide enough that a collision is
+        not merely unlikely but infeasible to construct.
+        """
+        import hashlib
+        return hashlib.blake2s(self.canonical_text().encode('utf8'),
+                               digest_size=digest_size).hexdigest()
+
     def render(self):
         """(text, dotted_indices).
 

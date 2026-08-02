@@ -592,3 +592,59 @@ class SearchByValue(TestCase):
 		from .search import search_number
 		with self.assertRaises(ValueError):
 			search_number(SR('x + 1'))
+
+
+class CanonicalisationsAgree(TestCase):
+	"""The pure-Python polynomial key must partition exactly as the Sage one.
+
+	Two canonicalisations exist because a migration was left half-finished:
+	polynomial_modulo_variable_names, in Sage, builds the stored key, while
+	canonical_under_renaming, in plain Python, was written to replace it and
+	never adopted -- the formats differ, so swapping means rebuilding the key
+	for every stored polynomial.
+
+	What matters is not that the keys look alike, which they do not, but that
+	they group the same polynomials together. If they do, the stored key can be
+	replaced without changing which polynomials find each other, and the plain
+	Python one can be shipped to clients so a lookup need send only a hash.
+	"""
+
+	def test_the_same_polynomials_are_identified(self):
+		from collections import defaultdict
+		from utils.numbers.polynomial import parse_polynomial
+
+		by_sage, by_python, unparsed = defaultdict(set), defaultdict(set), 0
+		for row in Polynomial.objects.all().iterator(chunk_size=300):
+			try:
+				key = parse_polynomial(row.exact_text).canonical_text()
+			except Exception:
+				unparsed += 1
+				continue
+			by_sage[row.number_string].add(row.pk)
+			by_python[key].add(row.pk)
+
+		if not by_sage:
+			self.skipTest('no polynomials in this database')
+		self.assertEqual(unparsed, 0, 'the Python parser must read them all')
+		self.assertEqual({frozenset(v) for v in by_sage.values()},
+		                 {frozenset(v) for v in by_python.values()},
+		                 'the two canonicalisations group differently')
+
+	def test_renaming_does_not_change_the_key(self):
+		from utils.numbers.polynomial import parse_polynomial
+		for one, other in [('x^2-2', 'y^2-2'), ('x^2*y', 'y^2*x'),
+		                   ('x', 'y'), ('2', '2/1')]:
+			with self.subTest(pair=(one, other)):
+				self.assertEqual(parse_polynomial(one).canonical_text(),
+				                 parse_polynomial(other).canonical_text())
+
+	def test_different_polynomials_keep_different_keys(self):
+		from utils.numbers.polynomial import parse_polynomial
+		self.assertNotEqual(parse_polynomial('x^2+1').canonical_text(),
+		                    parse_polynomial('x^3+1').canonical_text())
+
+	def test_the_hash_is_wide_enough_to_stand_alone(self):
+		"""A hash-only lookup cannot be cross-checked against the full text."""
+		from utils.numbers.polynomial import parse_polynomial
+		digest = parse_polynomial('x^2-2').canonical_hash()
+		self.assertEqual(len(digest), 32)          # 128 bits, hex
