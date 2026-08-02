@@ -217,6 +217,39 @@ def _by_number(record: Dict[str, Any],
     return _lookup({'number': json.dumps(record)}, client)
 
 
+def _overlaps(value, low, high) -> bool:
+    """Whether a returned value could still be the number originally asked for.
+
+    A widened query is sound -- it cannot miss -- but it can bring back numbers
+    that only matched the widening. The check is filter-and-refine: the coarse
+    interval goes to the server, and the exact one is applied here, where the
+    original bounds are still known.
+
+    A value this version cannot decode is kept. It might be the answer, and
+    dropping something unexamined is worse than showing it.
+    """
+    if isinstance(value, RealInterval):
+        return value.lower <= high and value.upper >= low
+    if isinstance(value, (int, Fraction)):
+        return low <= Fraction(value) <= high
+    return True
+
+
+def _refine(results: 'SearchResults', low, high) -> 'SearchResults':
+    """Drop results that only matched the widened query."""
+    kept = []
+    for result in results:
+        if not result.is_readable:
+            kept.append(result)
+            continue
+        try:
+            if _overlaps(result.value, low, high):
+                kept.append(result)
+        except UnsupportedNumber:
+            kept.append(result)
+    return SearchResults(kept, results.messages)
+
+
 def search_integer(value: Scalar, client: Optional[Client] = None) -> 'SearchResults':
     """Search for an exact integer.
 
@@ -257,12 +290,20 @@ def search_real_interval(lower: Scalar, upper: Scalar,
     Endpoints are converted exactly before anything else touches them, so the
     interval searched is the interval given -- never a rounding of it.
     """
-    low, high = bound_interval(to_exact(lower, 'lower'),
-                               to_exact(upper, 'upper'))
+    exact_low, exact_high = to_exact(lower, 'lower'), to_exact(upper, 'upper')
+    if exact_low > exact_high:
+        exact_low, exact_high = exact_high, exact_low
+
     #Trimmed outward, so the interval sent contains the one meant. Trimming
     #inward would hide the number the caller is looking for.
-    return _by_number({'kind': 'RIF', 'lower': str(low), 'upper': str(high)},
-                      client)
+    low, high = bound_interval(exact_low, exact_high)
+
+    found = _by_number({'kind': 'RIF', 'lower': str(low), 'upper': str(high)},
+                       client)
+    if (low, high) == (exact_low, exact_high):
+        return found
+    #Widened, so some of what came back may only have matched the widening.
+    return _refine(found, exact_low, exact_high)
 
 
 def search_real_ball(center: Scalar, radius: Scalar,
