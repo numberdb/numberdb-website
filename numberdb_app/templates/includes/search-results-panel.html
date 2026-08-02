@@ -13,15 +13,57 @@ have meant either.
 
 <div id="search-results" class="search-results">
 
-  {% if result_count %}
+  {% if result_count or result_meta_count %}
     <div class="search-results-summary">
-      {{ result_count }} result{{ result_count|pluralize }} for
+      {{ result_total }} result{{ result_total|pluralize }} for
       <span class="search-results-term">{{ searchterm }}</span>
       {% if result_count >= result_page_size %}
         <span class="search-results-capped"
           >&mdash; showing the first {{ result_page_size }}, best first</span>
       {% endif %}
     </div>
+
+    {% comment %}
+    Tables and tags first when the term matched no number at all: the asker
+    typed words, and the words are the answer. Below the numbers otherwise,
+    where they read as "and here is where this sort of number lives".
+    {% endcomment %}
+    {% if result_tags %}
+      <div class="search-results-group">
+        <div class="search-results-group-title">Tags</div>
+        {% for tag in result_tags %}
+          <div class="search-result">
+            <div class="search-result-value">
+              <a href="{% url 'db:tag' tag.url %}"
+                >{{ tag.name }}</a>
+            </div>
+            <div class="search-result-where">
+              {{ tag.table_count }} table{{ tag.table_count|pluralize }},
+              {{ tag.number_count }} number{{ tag.number_count|pluralize }}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if result_tables %}
+      <div class="search-results-group">
+        <div class="search-results-group-title">Tables</div>
+        {% for table in result_tables %}
+          <div class="search-result">
+            <div class="search-result-value">
+              <a href="{% url 'db:table_by_url' table.url %}"
+                >{{ table.title|safe }}</a>
+            </div>
+            <div class="search-result-where">
+              <span class="search-result-param">{{ table.tid }}</span>
+              &mdash; {{ table.number_count }}
+              number{{ table.number_count|pluralize }}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
 
     {% for group in result_groups %}
       <div class="search-results-group">
@@ -58,7 +100,8 @@ have meant either.
       match nothing. Numbers known too imprecisely to identify anything are
       left out of search by number and marked in the tables &mdash;
       <a href="{% url 'db:help' %}#search-precision">why</a>.
-      You can also search by name or tag.
+      Table titles and tags are searched too, so a name or a subject is worth
+      trying when a value finds nothing.
     </div>
   {% endif %}
 

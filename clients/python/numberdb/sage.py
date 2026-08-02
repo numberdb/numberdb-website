@@ -35,7 +35,7 @@ from typing import Optional, Union
 
 from . import (Client, ComplexInterval, NumberDBError, PAdic, Polynomial,
                RateLimited, RealInterval, Result, Scalar, Searchable,
-               SearchResults, Table, TransportError, Unauthorized,
+               SearchResults, Table, Tag, TransportError, Unauthorized,
                UnsupportedNumber, __version__, configure, table, tag)
 from . import search as _search
 from . import search_many as _search_many
@@ -58,6 +58,7 @@ __all__ = ['search', 'search_many', 'search_text',
            'search_p_adic', 'search_polynomial',
            'table', 'tag', 'configure', 'Client',
            'Result', 'Table', 'SearchResults',
+           'Tag',
            'RealInterval', 'ComplexInterval', 'PAdic', 'Polynomial',
            'NumberDBError', 'TransportError', 'RateLimited', 'Unauthorized',
            'UnsupportedNumber', '__version__']

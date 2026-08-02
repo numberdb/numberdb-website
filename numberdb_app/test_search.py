@@ -23,7 +23,8 @@ from sage.rings.all import CIF, RIF, Qp
 
 from .models import (Number, NumberComplex, NumberPAdic, Polynomial,
                      Table)
-from .search import (_coarser_ball_strings, search_by_term,
+from .search import (_coarser_ball_strings, full_text_query, search_by_term,
+                     search_metadata,
                      search_complex_numbers, search_fractional_parts,
                      search_p_adic_numbers, search_real_numbers)
 
@@ -648,3 +649,43 @@ class CanonicalisationsAgree(TestCase):
 		from utils.numbers.polynomial import parse_polynomial
 		digest = parse_polynomial('x^2-2').canonical_hash()
 		self.assertEqual(len(digest), 32)          # 128 bits, hex
+
+
+class MetadataSearch(TestCase):
+	"""Words, as opposed to digits.
+
+	The dropdown has always searched table titles and tags; the submitted
+	search and the API did not, because the query lived inside the dropdown's
+	view. Typing "matrix multiplication" offered the table, and pressing Enter
+	then found nothing -- results vanished by committing to the search. These
+	pin the shared implementation both now use.
+	"""
+
+	def test_a_term_of_machinery_is_not_offered_to_the_word_search(self):
+		"""No query is run for something plainly written for a parser."""
+		self.assertEqual(search_metadata('Q5:1010'), ([], []))
+		self.assertEqual(search_metadata('x^2-2'), ([], []))
+
+	def test_an_empty_term_asks_nothing(self):
+		self.assertEqual(search_metadata(''), ([], []))
+		self.assertEqual(search_metadata('   '), ([], []))
+		self.assertEqual(search_metadata(None), ([], []))
+
+	def test_the_last_word_is_a_prefix_so_typing_finds_things_early(self):
+		"""'multiplicat' must already match 'multiplication'."""
+		self.assertIsNotNone(full_text_query('multiplicat'))
+		self.assertIsNotNone(full_text_query('matrix multiplication'))
+
+	def test_a_term_of_only_spaces_has_no_query(self):
+		self.assertIsNone(full_text_query('   '))
+		self.assertIsNone(full_text_query(''))
+
+	def test_a_quote_in_a_term_cannot_be_read_as_query_syntax(self):
+		"""The old spelling interpolated words bare into raw tsquery."""
+		query = full_text_query("d'Alembert constant")
+		self.assertIsNotNone(query)
+
+	def test_metadata_search_runs_against_the_database(self):
+		"""Empty test database, so this checks the query executes, not hits."""
+		tags, tables = search_metadata('matrix multiplication')
+		self.assertEqual((list(tags), list(tables)), ([], []))
