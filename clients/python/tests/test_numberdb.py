@@ -835,3 +835,59 @@ class NoFlavourFlagInSignatures(unittest.TestCase):
         self.assertEqual(twin.base_url, 'https://x.test/')
         self.assertEqual(twin.timeout, 5)
         self.assertFalse(original.as_sage)
+
+
+class VendoredCanonicalisation(unittest.TestCase):
+    """The client and the server must produce the same polynomial key.
+
+    A lookup sends a digest of the key rather than the polynomial, because the
+    longest stored one is 58866 characters and a URL is rejected past 8k. That
+    only works while one canonicalisation defines the key, so the module is
+    copied here byte for byte rather than reimplemented -- and this test is
+    what stops the copy drifting.
+    """
+
+    ORIGINAL = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))))),
+        'utils', 'numbers', 'polynomial.py')
+
+    def test_the_copy_is_byte_identical(self):
+        if not os.path.exists(self.ORIGINAL):
+            self.skipTest('not inside the numberdb-website repository')
+        vendored = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            'numberdb', '_polynomial.py')
+        with open(self.ORIGINAL, 'rb') as handle:
+            original_bytes = handle.read()
+        with open(vendored, 'rb') as handle:
+            vendored_bytes = handle.read()
+        self.assertEqual(original_bytes, vendored_bytes,
+                         'the vendored copy has drifted from the original; '
+                         'copy utils/numbers/polynomial.py across')
+
+    def test_the_key_is_invariant_under_renaming(self):
+        from numberdb._polynomial import parse_polynomial
+        for one, other in [('x^2-2', 'y^2-2'), ('x^2*y', 'y^2*x')]:
+            with self.subTest(pair=(one, other)):
+                self.assertEqual(parse_polynomial(one).canonical_hash(),
+                                 parse_polynomial(other).canonical_hash())
+
+    def test_a_long_polynomial_is_sent_as_a_digest(self):
+        long_one = '+'.join('%d*x^%d' % (n, n) for n in range(1, 400))
+        self.assertGreater(len(long_one), 1500)
+        client = _client({'results': [], 'messages': []})
+        numberdb.search_polynomial(long_one, client=client)
+        query = urllib.parse.parse_qs(
+            urllib.parse.urlparse(client.opener.request.full_url).query)
+        self.assertIn('polynomial_hash', query)
+        self.assertNotIn('polynomial', query)
+        self.assertLess(len(client.opener.request.full_url), 300)
+
+    def test_a_short_one_is_sent_whole(self):
+        """Readable in a log, and the server can say what it made of it."""
+        client = _client({'results': [], 'messages': []})
+        numberdb.search_polynomial('x^2-2', client=client)
+        query = urllib.parse.parse_qs(
+            urllib.parse.urlparse(client.opener.request.full_url).query)
+        self.assertEqual(query['polynomial'], ['x^2-2'])

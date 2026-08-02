@@ -52,6 +52,10 @@ try:
 except Exception:  # pragma: no cover - running from a source tree
     __version__ = '0.0.0+unknown'
 
+#: Polynomials longer than this are looked up by a digest of their canonical
+#: key rather than sent whole. Comfortably under the 8k a URL survives.
+_HASH_ABOVE = 1500
+
 _default_client = Client()
 
 
@@ -333,6 +337,21 @@ def search_polynomial(polynomial: Union[str, Polynomial],
     """
     text = polynomial.text if isinstance(polynomial, Polynomial) \
         else str(polynomial)
+
+    #Sent as a digest of the canonical key when the polynomial is long. The
+    #longest stored one is 58866 characters and a URL is rejected past 8k, so
+    #the largest entries could not be asked about at all. Sound because one
+    #canonicalisation defines the key and this package carries a byte-identical
+    #copy of it; a test asserts the two files never diverge.
+    if len(text) > _HASH_ABOVE:
+        try:
+            from ._polynomial import parse_polynomial as _parse
+            return _lookup({'polynomial_hash': _parse(
+                text.replace(' ', '')).canonical_hash()}, client)
+        except Exception:
+            #Unreadable here but perhaps readable by the server, which has the
+            #richer parser. Falling back costs a long request, not an answer.
+            pass
     #Its own parameter, not text=. Search terms are ambiguous -- a word might
     #be a title or a tag -- and polynomials are canonicalised under renaming of
     #variables, so a single-term polynomial would match any word at all. The

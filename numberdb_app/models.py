@@ -1089,6 +1089,13 @@ class Polynomial(models.Model):
 		#max_length = 100,
 		db_index = False, #use number_string_hash to search!
 	)
+	#128 bits, hex. Wide enough for a lookup that sends only a hash: the
+	#server's own query filters on the full key as well, and a client's cannot.
+	canonical_hash = models.CharField(
+		max_length = 32,
+		db_index = True,
+		default = '',
+	)
 	number_string_hash = models.BigIntegerField(
 		db_index = True,
 	)
@@ -1149,17 +1156,27 @@ class Polynomial(models.Model):
 		if not is_polynomial_ring(p.parent()):
 			raise NotImplementedError("sage_polynomial is of non-implemented type")
 
-		p = polynomial_modulo_variable_names(p)
+		self.variable_count = len(p.variables())
 
-		variable_count = len(p.variables())
-		self.variable_count = variable_count
-		
-		p_str = str(p).replace(' ','')
-		
-		self.number_string = '%s,%s' % (
-			variable_count,
-			p_str,
-		)
+		#One canonicalisation, in plain Python, because a client has to be able
+		#to compute this key too -- a polynomial of 58866 characters cannot be
+		#sent in a URL, so a lookup sends a hash of the key instead, and both
+		#sides must produce the same bytes.
+		#
+		#It replaces the Sage polynomial_modulo_variable_names, which grouped
+		#polynomials identically across the whole corpus but wrote the key in a
+		#format only Sage could reproduce. See the canonical-keys management
+		#command, which checks the grouping against the real database.
+		from utils.numbers.polynomial import parse_polynomial
+		written = str(p).replace(' ', '')
+		self.number_string = parse_polynomial(written).canonical_text()
+
+		#The faithful value, so the object can be read back without depending
+		#on another field having been filled in elsewhere. The builder
+		#overwrites this with the documented rendering; until it does, this is
+		#what the polynomial actually is.
+		if not self.exact_text:
+			self.exact_text = written
 		
 		#Python's hash()-function uses seeds that are randomly chosen during each session,
 		#thus the following does not work:
@@ -1174,6 +1191,8 @@ class Polynomial(models.Model):
 			digest_size = 8,
 			#usedforsecurity = False, #is not always supported!
 		)
+		self.canonical_hash = hashlib.blake2s(
+			self.number_string.encode('utf8'), digest_size=16).hexdigest()
 		blake.update(bytes(self.number_string,encoding='cp437'))
 		polynomial_hash = int.from_bytes(
 			blake.digest(),
@@ -1184,11 +1203,21 @@ class Polynomial(models.Model):
 		self.number_string_hash = polynomial_hash
 		
 	def to_sage(self):
-		s = self.number_string
-		s_variable_count, s_polynomial = s.split(',')
-		R = PolynomialRing(QQ,ZZ(s_variable_count),'x')
-		result = R(s_polynomial)
-		return result
+		"""The polynomial itself, rebuilt from exact_text.
+
+		Not from number_string, which is the *search key*: canonicalised under
+		renaming of variables, so it identifies an equivalence class rather
+		than this polynomial. It used to be read back this way, which quietly
+		coupled the key's spelling to the ability to reconstruct a value --
+		changing the key format broke reconstruction, which is how this came to
+		light. exact_text is the faithful form and keeps the names the author
+		wrote.
+		"""
+		from utils.numbers.polynomial import parse_polynomial
+		text = self.exact_text.replace(' ', '')
+		names = parse_polynomial(text).variables() or ['x']
+		R = PolynomialRing(QQ, len(names), names)
+		return R(text)
 
 	def __str__(self):
 		r = self.to_sage()
