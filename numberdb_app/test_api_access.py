@@ -5,6 +5,8 @@ the sandboxed evaluator -- and it runs on a machine with no headroom to absorb
 a script in a loop.
 """
 
+import json
+
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.test import TestCase, override_settings
@@ -103,3 +105,59 @@ class Throttling(TestCase):
 		"""Ordinary browsing must not consume an API allowance."""
 		for _ in range(6):
 			self.assertEqual(self.client.get('/').status_code, 200)
+
+
+@override_settings(NUMBERDB_ANONYMOUS_RATE_LIMIT=60,
+                   NUMBERDB_IDENTIFIED_RATE_LIMIT=1000,
+                   NUMBERDB_RATE_LIMIT_WINDOW=3600)
+class BatchCost(TestCase):
+	"""A batch is worth more than one request, and less than its size.
+
+	One unit for the request and half per number, so batching is worth doing --
+	it saves a handshake and a round trip -- without letting a caller fetch a
+	thousand numbers for the price of one.
+	"""
+
+	def setUp(self):
+		cache.clear()
+
+	def test_the_price_grows_with_the_batch(self):
+		from .throttle import batch_cost
+		self.assertEqual([batch_cost(n) for n in (0, 1, 2, 10, 100)],
+		                 [1, 2, 2, 6, 51])
+
+	def test_a_batch_costs_more_than_a_single_lookup(self):
+		from .throttle import batch_cost
+		self.assertGreater(batch_cost(100), batch_cost(1))
+		self.assertLess(batch_cost(100), 100)
+
+	def test_a_batch_is_charged_against_the_allowance(self):
+		numbers = json.dumps([{'kind': 'ZZ', 'value': '1'}] * 20)
+		before = self.client.get('/api/lookup', {'text': '3.14'})
+		self.assertNotEqual(before.status_code, 429)
+		#A batch of twenty costs eleven units; a handful of them exhausts an
+		#allowance that single lookups would barely dent.
+		for _ in range(6):
+			self.client.get('/api/lookup', {'numbers': numbers})
+		self.assertEqual(
+			self.client.get('/api/lookup', {'text': '3.14'}).status_code, 429)
+
+	def test_an_oversized_batch_is_refused_rather_than_truncated(self):
+		numbers = json.dumps([{'kind': 'ZZ', 'value': '1'}] * 101)
+		response = self.client.get('/api/lookup', {'numbers': numbers})
+		self.assertIn('at most 100', response.json()['error'])
+
+	def test_results_say_which_number_they_answer(self):
+		numbers = json.dumps([{'kind': 'ZZ', 'value': '3'},
+		                      {'kind': 'QQ', 'value': '1/3'}])
+		payload = self.client.get('/api/lookup', {'numbers': numbers}).json()
+		for record in payload.get('results') or []:
+			self.assertIn(record['index'], {'0', '1'})
+
+	def test_a_number_that_cannot_be_read_does_not_spoil_the_batch(self):
+		numbers = json.dumps([{'kind': 'ZZ', 'value': '3'},
+		                      {'kind': 'NoSuchKind'}])
+		payload = self.client.get('/api/lookup', {'numbers': numbers}).json()
+		self.assertNotIn('error', payload)
+		self.assertTrue(any('could not be read' in m['text']
+		                    for m in payload['messages']))

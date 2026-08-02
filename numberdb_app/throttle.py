@@ -24,13 +24,24 @@ be acceptable for billing.
 """
 
 import functools
+import math
 import time
 
 from django.conf import settings
 from django.core.cache import cache
 from django.http import JsonResponse
 
-__all__ = ['rate_limited', 'requester_of']
+__all__ = ['rate_limited', 'requester_of', 'charge', 'batch_cost']
+
+
+def batch_cost(size):
+    """What a batch of ``size`` numbers is worth, in units.
+
+    One for the request and half for each number: a batch of a hundred costs
+    fifty-one rather than a hundred, so batching is worth doing, but it is not
+    free either -- the server still parses and queries each one.
+    """
+    return int(math.ceil(1 + 0.5 * max(size, 0)))
 
 #: Requests per window for a caller who has not identified themselves.
 ANONYMOUS_LIMIT = 60
@@ -101,8 +112,13 @@ def requester_of(request):
     return 'ip:%s' % (_client_ip(request),), anonymous_limit, None
 
 
-def _consume(scope, limit, window):
-    """Count this request. Returns (allowed, retry_after)."""
+def _consume(scope, limit, window, cost=1):
+    """Count this request. Returns (allowed, retry_after).
+
+    ``cost`` is what the request is worth. A batch counts for more than one, so
+    that batching saves handshakes and server work without turning the limit
+    into a formality.
+    """
     now = int(time.time())
     window_start = now - (now % window)
     cache_key = 'numberdb-throttle:%s:%d' % (scope, window_start)
@@ -111,19 +127,44 @@ def _consume(scope, limit, window):
     #within it. Doing it the other way round would lose the expiry.
     cache.add(cache_key, 0, window)
     try:
-        used = cache.incr(cache_key)
+        used = cache.incr(cache_key, cost)
     except ValueError:
         #The entry expired between add and incr.
-        cache.set(cache_key, 1, window)
-        used = 1
+        cache.set(cache_key, cost, window)
+        used = cost
 
     if used > limit:
         return False, window_start + window - now
     return True, None
 
 
+def charge(request, extra):
+    """Bill a caller for work the decorator could not have foreseen.
+
+    A batch is worth more than a single lookup, and how much more is only
+    known once it has been parsed. The base unit was taken on the way in; this
+    adds the rest.
+
+    Deliberately does not refuse the request in hand -- it has already been
+    done, and refusing after the fact would waste the work rather than save it.
+    The charge lands on the window, so the next request is what pays.
+    """
+    if extra <= 0:
+        return
+    scope, limit, _ = requester_of(request)
+    if scope is None:
+        return
+    _, _, window = _limits()
+    _consume(scope, limit, window, int(extra))
+
+
 def rate_limited(view):
-    """Limit an API view by caller."""
+    """Limit an API view by caller.
+
+    Every request costs one unit up front. A view that turns out to be worth
+    more calls ``charge`` once it knows -- a batch cannot be priced before it
+    has been read, and the decorator runs first.
+    """
 
     @functools.wraps(view)
     def guarded(request, *args, **kwargs):

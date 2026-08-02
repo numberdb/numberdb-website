@@ -31,8 +31,12 @@ from sage.rings.all import ComplexField, ComplexIntervalField, ComplexBallField
 from utils.utils import is_pAdicField
 
 from .eval_client import evaluate_search_program
-from .throttle import rate_limited
+from .throttle import batch_cost, charge, rate_limited
 from .search import PAGE_SIZE, search_by_term, search_number
+
+#: Numbers in one batched request. Bounded so that one caller cannot make the
+#: server do unbounded work in a single round trip.
+MAX_BATCH = 100
 from .search import (search_complex_numbers, search_p_adic_numbers,
                      search_real_numbers)
 
@@ -371,6 +375,21 @@ def lookup(request):
 	"""
 	time0 = time()
 
+	def wrap_indexed(indexed, messages):
+		"""Results that each say which of the asked numbers they answer."""
+		return JsonResponse({
+			'results': [
+				{
+					'index': index,
+					'number': number.to_serializable_dict(),
+					'table': number.table.to_serializable_dict(),
+				}
+				for index, number in indexed
+			],
+			'messages': messages,
+			'time_request': '{:.3f}s'.format(time() - time0),
+		}, safe=True)
+
 	def wrap(results, messages):
 		return JsonResponse({
 			'results': [
@@ -385,10 +404,48 @@ def lookup(request):
 			'time_request': '{:.3f}s'.format(time() - time0),
 		}, safe=True)
 
+	numbers_json = request.GET.get('numbers')
 	number_json = request.GET.get('number')
 	polynomial = request.GET.get('polynomial')
 	polynomial_hash = request.GET.get('polynomial_hash')
 	text = request.GET.get('text')
+
+	if numbers_json:
+		#A batch. Results are tagged with the index of the number they answer,
+		#the same contract advanced search already uses for an expression that
+		#produces several numbers -- so a client parses one shape for both.
+		try:
+			records = json.loads(numbers_json)
+		except ValueError:
+			return JsonResponse({'error': 'numbers is not valid JSON.'},
+			                    safe=True)
+		if not isinstance(records, list):
+			return JsonResponse(
+				{'error': 'numbers must be a list of number records.'},
+				safe=True)
+		if len(records) > MAX_BATCH:
+			return JsonResponse(
+				{'error': 'a batch may hold at most %d numbers; %d given.'
+				          % (MAX_BATCH, len(records))}, safe=True)
+
+		#Priced once the size is known: one unit for the request and half for
+		#each number. The decorator has already taken the first.
+		charge(request, batch_cost(len(records)) - 1)
+
+		from utils.number_json import decode_number, UnsupportedNumber
+		results, messages = [], []
+		for index, record in enumerate(records):
+			try:
+				found = search_number(decode_number(record))
+			except (UnsupportedNumber, TypeError, ValueError,
+			        ArithmeticError) as error:
+				messages.append({
+					'tags': 'alert-warning',
+					'text': 'number %d could not be read: %s' % (index, error),
+				})
+				continue
+			results.extend((str(index), number) for number in found)
+		return wrap_indexed(results[:PAGE_SIZE], messages)
 
 	if number_json:
 		try:
@@ -458,6 +515,7 @@ def lookup(request):
 		return wrap(found[:PAGE_SIZE], messages)
 
 	return JsonResponse(
-		{'error': 'Give number=<json record>, polynomial=<text>, '
-		          'polynomial_hash=<digest>, or text=<search term>.'},
+		{'error': 'Give number=<json record>, numbers=<json list>, '
+		          'polynomial=<text>, polynomial_hash=<digest>, or '
+		          'text=<search term>.'},
 		safe=True)
