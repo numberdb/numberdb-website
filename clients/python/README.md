@@ -9,15 +9,116 @@ $ pip install numberdb
 
 ```python
 >>> import numberdb
->>> for result in numberdb.search('pi'):
-...     print(result.exact_text, '--', result.table.title)
-3.14159265358979323846264338327950288419716939937510582097494 -- Pi
-3.14159265358979323846264338327950288419716939937510582097494 -- Complete elliptic integral ...
+>>> for result in numberdb.search_real_ball(3.14159265, 1e-8):
+...     print(result.exact_text[:24], '--', result.table.title)
+3.1415926535897932384626 -- Pi
+3.1415926535897932384626 -- Complete elliptic integral of the third kind $\Pi(n,m)$
+3.1415926535897932384626 -- Best Sobolev constant for $W^{1,p}(\mathbb{R}^n)$
+```
+
+One number, three places it is known to appear — which is the question this
+package exists to answer.
+
+## In Python
+
+Every call below is a complete example. Each returns a list of results, and the
+counts shown are what numberdb.org answers today.
+
+**A number you have, of whatever type.** `search` accepts a single value and
+works out what it is:
+
+```python
+>>> len(numberdb.search(10))                                  # int
+2
+>>> len(numberdb.search(Fraction(1, 3)))                      # fractions.Fraction
+2
+>>> len(numberdb.search('3.14159265358979'))                  # decimal string
+3
+>>> len(numberdb.search(numberdb.RealInterval('3.1415', '3.1416')))
+3
+>>> len(numberdb.search(numberdb.PAdic(2, 0, 1, 167)))
+6
+```
+
+**A number whose type you want to state.** These take the number's components
+directly, so nothing has to be spelled as a string first:
+
+```python
+>>> len(numberdb.search_integer(10))
+2
+>>> len(numberdb.search_rational(1, 3))                       # numerator, denominator
+2
+>>> len(numberdb.search_real_interval('3.1415', '3.1416'))    # lower, upper
+3
+>>> len(numberdb.search_real_ball(3.14159265, 1e-8))          # centre, radius
+3
+>>> len(numberdb.search_complex_interval(0, 1, 0, 1))         # re_lower, re_upper, im_lower, im_upper
+100
+>>> len(numberdb.search_complex_ball(0, 1, '1/1000'))         # re_centre, im_centre, radius
+2
+>>> len(numberdb.search_p_adic(2, 0, 1, absolute_precision=167))   # prime, valuation, unit
+6
+```
+
+`search_p_adic` takes `absolute_precision` or `relative_precision`; give
+exactly one.
+
+**Polynomials**, matched up to renaming of the variables. The database stores
+this one in `x`, and asking in `y` finds it:
+
+```python
+>>> numberdb.search_polynomial('x^20 + x^15 + x^10 + x^5 + 1')[0].table.title
+'Cyclotomic polynomials'
+>>> numberdb.search_polynomial('y^20 + y^15 + y^10 + y^5 + 1')[0].exact_text
+'x^20 + x^15 + x^10 + x^5 + 1'
+```
+
+**Text, in the search bar's grammar.** This reads the string as a *number* in
+any of the written forms the website accepts — `'3.14159'` for a real,
+`'1415'` for a fractional part, `'Q5:1010'` or `'1 + O(5^20)'` for a p-adic,
+`'1/2 + i*0.866'` for a complex number, `'x^2-2'` for a polynomial. A string
+states its own precision, which is why text is a sound way to search and a bare
+float is not:
+
+```python
+>>> len(numberdb.search_text('3.14159265358979'))
+3
+```
+
+It is not a keyword search: NumberDB does not currently index table titles or
+tags for text, so `search_text('matrix multiplication')` returns nothing.
+
+**An expression**, evaluated by SageMath on the server:
+
+```python
+>>> len(numberdb.search_by_expression('pi'))
+3
+```
+
+**Several numbers in one request.** Cheaper than one call each — one round trip
+and a reduced rate-limit cost — and the result is keyed by position in the
+list:
+
+```python
+>>> results = numberdb.search_many([10, Fraction(1, 3), numberdb.PAdic(2, 0, 1, 167)])
+>>> {index: len(found) for index, found in sorted(results.items())}
+{0: 2, 1: 2, 2: 6}
+```
+
+At most 100 numbers per call. Positions that matched nothing are omitted.
+
+**Tables and tags**, fetched whole:
+
+```python
+>>> sorted(numberdb.table('T12'))[:6]
+['Comments', 'Data properties', 'Definition', 'Display properties', 'Formulas', 'ID']
+>>> sorted(numberdb.tag('matrix+multiplication'))
+['name', 'number_count', 'table_count', 'tables']
 ```
 
 ## In SageMath
 
-The same package, with one import line:
+The same package, installed into Sage's own Python, with one import line:
 
 ```console
 $ sage -pip install numberdb
@@ -25,89 +126,126 @@ $ sage -pip install numberdb
 
 ```python
 sage: import numberdb.sage as numberdb
-sage: numberdb.search('{n: pi^n for n in [1..5]}')[0].value
-3.141592653589794?
 ```
 
-Everything below that line reads exactly as it would in plain Python — there is
-no mode to set and nothing to pass at each call. `numberdb.sage` re-exports the
-whole package, so it can stand in for it wholesale.
+Every function above is present under the same name and signature. Two things
+change: Sage's own types are accepted as arguments, and `.value` comes back as
+a Sage object in the natural parent.
 
-It uses the SageMath you already have and installs nothing. **There is no
-`numberdb[sage]` extra, deliberately**: inside a full SageMath it would install
-passagemath over the top, and the passagemath-flint wheel writes 383 files
-under `sage/`, 349 of which already exist there — including compiled
-extensions. pip reports no conflict, because Sage's own files belong to no pip
-distribution.
+```python
+sage: numberdb.search(10)[0].value.parent()
+Integer Ring
+sage: numberdb.search(1/3)[0].value.parent()
+Rational Field
+sage: numberdb.search(RIF(3.1415, 3.1416))[0].value
+3.141592653589794?
+sage: numberdb.search(RIF(3.1415, 3.1416))[0].value.parent()
+Real Interval Field with 53 bits of precision
+sage: numberdb.search(Qp(2)(1, 167))[0].value
+1 + O(2^167)
+sage: R.<x> = QQ[]
+sage: numberdb.search(x^20 + x^15 + x^10 + x^5 + 1)[0].value
+x^20 + x^15 + x^10 + x^5 + 1
+```
 
-If you have no Sage and still want Sage objects, install passagemath into a
-*fresh* environment, never into an existing Sage.
+The component-wise calls behave identically and also accept Sage scalars:
 
-Plain `import numberdb` never imports Sage at all, so it starts instantly; the
-conversion is available per result as `.sage()` when you want it.
+```python
+sage: len(numberdb.search_rational(1, 3))
+2
+sage: len(numberdb.search_real_ball(3.14159265, 1e-8))
+3
+sage: len(numberdb.search_real_interval(RIF(3.1415).lower(), RIF(3.1416).upper()))
+3
+sage: len(numberdb.search_p_adic(2, 0, 1, absolute_precision=167))
+6
+sage: len(numberdb.search_by_expression('pi'))
+3
+sage: numberdb.search_polynomial('y^20 + y^15 + y^10 + y^5 + 1')[0].value
+x^20 + x^15 + x^10 + x^5 + 1
+```
+
+`numberdb.sage` uses the SageMath you already have and installs nothing. Plain
+`import numberdb` never imports Sage, so it starts instantly; a single result
+can be converted on demand with `.sage()` either way.
 
 ## What you get back
 
-`search()` returns a list of results, each carrying:
+A search returns a `SearchResults`, which is a `list` of `Result` objects with
+two additional attributes.
 
-| | |
-|---|---|
-| `.value` | the number in plain Python (decoded on demand) |
-| `.exact_text` | how the database writes it — the form to quote or paste back into a search |
-| `.str_short` | a short form, comparable across results |
-| `.table` | where it lives (`.tid`, `.title`, `.url`) |
-| `.param` | which entry of that table it is |
-| `.sage()` | the number as a Sage object |
-| `.url()` | where to read about it |
+| Attribute | Type | Meaning |
+|---|---|---|
+| `.messages` | `list[str]` | remarks from the server about the search itself, if it had any |
+| `.unreadable` | `list[Result]` | results whose value this version of the package cannot decode |
 
-`.value` is one of `int`, `Fraction`, `RealInterval`, `ComplexInterval`,
-`PAdic` or `Polynomial`. A `PAdic` carries a `Fraction` — Q_p is not Z_p, so a
-value of negative valuation such as 1/5 in Q_5 has no integer form — and its
-`precision` is **absolute**: the ball is everything congruent to `value` modulo
-`prime ** precision`, matching the `O(p^k)` in its string form. Exact values stay exact: integers are Python `int` (unbounded —
-the database holds integers of over a thousand digits), rationals are
-`Fraction`, and interval endpoints are exact `Fraction`s rather than rounded
-floats. Converting to `float` is your decision, never an accident of transport.
+Each `Result` carries:
+
+| Attribute | Type | Meaning |
+|---|---|---|
+| `.value` | see below | the number itself, decoded on first access |
+| `.exact_text` | `str` | the database's own spelling; the form to quote, or to paste back into a search |
+| `.str_short` | `str` | an abbreviated form, comparable across results |
+| `.kind` | `str` | one of `ZZ`, `QQ`, `RIF`, `RBF`, `CIF`, `Qp`, `polynomial` |
+| `.param` | `str` | which entry of its table this is |
+| `.table` | `Table` | where it lives, with `.tid`, `.title` and `.url` |
+| `.is_readable` | `bool` | whether `.value` can be decoded by this version |
+| `.url()` | `str` | the page describing it |
+| `.sage()` | Sage object | the value converted to Sage, on request |
+
+The type of `.value` depends on which module you imported:
+
+| `.kind` | plain `numberdb` | `numberdb.sage` |
+|---|---|---|
+| `ZZ` | `int` (unbounded) | `Integer` |
+| `QQ` | `fractions.Fraction` | `Rational` |
+| `RIF`, `RBF` | `RealInterval`, endpoints exact `Fraction`s | element of `RealIntervalField` |
+| `CIF` | `ComplexInterval` of two `RealInterval`s | element of `ComplexIntervalField` |
+| `Qp` | `PAdic(prime, valuation, unit, precision_absolute)` | element of `Qp(prime)` |
+| `polynomial` | `Polynomial(variable_count, text)` | element of a polynomial ring over `QQ` |
+
+Exact values stay exact. Integers are Python `int`, which is unbounded — the
+database holds integers of over a thousand digits — rationals are `Fraction`,
+and interval endpoints are exact `Fraction`s rather than rounded floats.
+Conversion to `float` is therefore explicit, never an accident of transport:
 
 ```python
+>>> result = numberdb.search_real_ball(3.14159265, 1e-8)[0]
 >>> result.value
 RealInterval(884279719003555/281474976710656, 7074237752028441/2251799813685248)
 >>> float(result.value)          # the midpoint, explicitly lossy
 3.141592653589793
 ```
 
-The search itself may have something to say — that it was capped, or that part
-of the expression was rejected:
-
-```python
->>> results = numberdb.search('...')
->>> results.messages
-['We only show the first 100 results.']
-```
+A `PAdic` carries its unit as an integer together with a valuation, because
+Q_p is not Z_p: a value of negative valuation such as 1/5 in Q_5 has no integer
+form. Its precision is **absolute** — the ball is everything congruent to the
+value modulo `prime ** precision_absolute`, matching the `O(p^k)` in the
+printed form.
 
 ### When the server is newer than the package
 
 NumberDB will learn new kinds of number. An older package still returns every
-result: values are decoded when you ask for them, so an unfamiliar one costs
-you that value and nothing else, and its `exact_text` is there regardless.
+result: values are decoded only when asked for, so an unfamiliar one costs you
+that value and nothing else, and its `.exact_text` is there regardless.
 
 ```python
->>> for result in numberdb.search('...'):
+>>> for result in numberdb.search_text('3.14159'):
 ...     if result.is_readable:
 ...         use(result.value)
 ...     else:
 ...         print(result.exact_text)   # still perfectly readable
 ```
 
-`results.unreadable` lists them, and every exception the package raises derives
-from `numberdb.NumberDBError`, so one `except` covers it.
+`results.unreadable` lists them. Every exception the package raises derives
+from `numberdb.NumberDBError`, so a single `except` covers it;
+`TransportError`, `RateLimited`, `Unauthorized` and `UnsupportedNumber` are the
+specific cases.
 
 ## Rate limits and API keys
 
-Anonymous use is rate limited. A key raises the limit:
-
-Keep it out of your worksheet — a shared notebook should not carry its
-author's key:
+Anonymous use is rate limited; a key raises the limit. Keep it out of your
+worksheet — a shared notebook should not carry its author's key:
 
 ```console
 $ export NUMBERDB_API_KEY=...
@@ -122,8 +260,8 @@ or, if you must set it in code:
 For more than one server or key in a process, use a client directly:
 
 ```python
->>> client = numberdb.Client(api_key='...', base_url='http://localhost:8000/')
->>> numberdb.search('pi', client=client)
+>>> client = numberdb.Client(api_key='...')
+>>> numberdb.search_text('3.14159', client=client)
 ```
 
 Exceeding the limit raises `numberdb.RateLimited`, which carries `.retry_after`
@@ -140,31 +278,12 @@ $ export NUMBERDB_URL=http://localhost:8000
 
 ```python
 >>> client = numberdb.Client(base_url='https://example.org/numberdb')
->>> numberdb.search('pi', client=client)
+>>> numberdb.search_text('3.14159', client=client)
 ```
 
-A trailing slash is optional — a base URL with a path prefix keeps it either
+A trailing slash is optional, and a base URL with a path prefix keeps it either
 way.
-
-## Other calls
-
-```python
->>> numberdb.table('T12')       # a whole table, as stored
->>> numberdb.tag('Irrational')  # the tables carrying a tag
-```
-
-## Why a package and not a file to copy
-
-The API sends JSON, and turning it into numbers has to happen somewhere. Doing
-it by hand is how the previous example client came to call `loads()` on
-server-supplied bytes — which executes whatever those bytes say, handing code
-execution to anyone able to answer the request. In this package decoding is a
-fixed table: a response can select one of seven decoders and nothing else.
-
-Being a package also means it is versioned. When the wire format changes, that
-is a version bump and a clear error telling you to upgrade, rather than an
-exception in the middle of your session.
 
 ## Licence
 
-GPL-3.0-or-later, matching NumberDB.
+MIT.
