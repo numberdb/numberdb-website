@@ -34,11 +34,16 @@ works out what it is:
 2
 >>> len(numberdb.search('3.14159265358979'))                  # decimal string
 3
->>> len(numberdb.search(numberdb.RealInterval('3.1415', '3.1416')))
+>>> len(numberdb.search(numberdb.RealInterval('3.1415', '3.1416')))  # lower, upper
 3
->>> len(numberdb.search(numberdb.PAdic(2, 0, 1, 167)))
+>>> len(numberdb.search(numberdb.PAdic(2, 0, 1, 167)))  # prime, valuation, unit, precision
 6
 ```
+
+`RealInterval` takes any scalar for its endpoints — `int`, `Fraction`, a
+decimal string, a float, or a Sage number — and keeps it exactly, as a
+`Fraction`. `PAdic` takes four integers, and its precision is absolute:
+`PAdic(2, 0, 1, 167)` is `1 + O(2^167)`.
 
 **A number whose type you want to state.** These take the number's components
 directly, so nothing has to be spelled as a string first:
