@@ -9,8 +9,10 @@ The opener is injectable for the same reason -- it lets the package be tested
 without a network or a server, which is why these tests run anywhere.
 """
 
+import http.client
 import json
 import os
+import threading
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -47,7 +49,14 @@ class Client:
         self._api_key = api_key
         self._base_url = base_url
         self._timeout = timeout
-        self._opener = opener or urllib.request.urlopen
+        self._opener = opener
+        #One connection, reused. Setting up TLS costs about 0.28s from Europe
+        #to the server, against 0.16s for an answered request, so a script
+        #doing a hundred lookups spent most of its time shaking hands. Held
+        #here because the Client is the unit of configuration and therefore the
+        #natural thing to own a socket.
+        self._connection = None  # type: Optional[http.client.HTTPConnection]
+        self._lock = threading.Lock()
         #Which flavour of value results carry. Configuration, so it lives here
         #rather than as a parameter on every search function -- numberdb.sage
         #sets it once and the eleven signatures stay about numbers.
@@ -59,6 +68,7 @@ class Client:
             return self
         twin = Client(self._api_key, self._base_url, self._timeout,
                       self._opener, as_sage=True)
+        #Its own connection: two clients sharing one socket would interleave.
         return twin
 
     @property
@@ -88,6 +98,63 @@ class Client:
         return 'Client(base_url=%r, api_key=%s)' % (
             self.base_url, 'set' if self.api_key else None)
 
+    def close(self) -> None:
+        """Release the connection. Reopened on the next request."""
+        with self._lock:
+            if self._connection is not None:
+                try:
+                    self._connection.close()
+                finally:
+                    self._connection = None
+
+    def __enter__(self) -> 'Client':
+        return self
+
+    def __exit__(self, *exception: Any) -> None:
+        self.close()
+
+    def _send(self, url: str, headers: Dict[str, str]) -> bytes:
+        """Fetch ``url``, reusing the connection when there is one.
+
+        Retried once on a dropped connection. A server or a proxy may close an
+        idle keep-alive connection at any time, and the client finds out by
+        trying to use it -- so a stale socket must cost a reconnection, not an
+        error the caller has to understand.
+        """
+        parts = urllib.parse.urlsplit(url)
+        for attempt in (1, 2):
+            with self._lock:
+                connection = self._connection
+                if connection is None:
+                    opener = (http.client.HTTPSConnection
+                              if parts.scheme == 'https'
+                              else http.client.HTTPConnection)
+                    connection = opener(parts.netloc, timeout=self.timeout)
+                    self._connection = connection
+                try:
+                    target = parts.path or '/'
+                    if parts.query:
+                        target = '%s?%s' % (target, parts.query)
+                    connection.request('GET', target, headers=headers)
+                    response = connection.getresponse()
+                    body = response.read()
+                except (http.client.HTTPException, OSError) as error:
+                    self._connection = None
+                    try:
+                        connection.close()
+                    except Exception:
+                        pass
+                    if attempt == 2:
+                        raise TransportError('could not reach %s: %s'
+                                             % (url, error))
+                    continue
+            if response.status >= 400:
+                raise self._from_status(urllib.error.HTTPError(
+                    url, response.status, response.reason,
+                    response.headers, None))
+            return body
+        raise TransportError('could not reach %s' % (url,))
+
     def request(self, path: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """GET ``path`` with ``parameters``, returning parsed JSON."""
         url = urllib.parse.urljoin(self.base_url, path)
@@ -100,16 +167,21 @@ class Client:
         if key:
             headers['Authorization'] = 'Bearer %s' % (key,)
 
-        http_request = urllib.request.Request('%s?%s' % (url, query),
-                                              headers=headers)
-        try:
-            with self._opener(http_request, timeout=self.timeout) as response:
-                body = response.read()
-        except urllib.error.HTTPError as error:
-            raise self._from_status(error)
-        except urllib.error.URLError as error:
-            raise TransportError('could not reach %s: %s'
-                                 % (url, error.reason))
+        if self._opener is not None:
+            #An injected opener is the test seam, and connectionless.
+            http_request = urllib.request.Request('%s?%s' % (url, query),
+                                                  headers=headers)
+            try:
+                with self._opener(http_request,
+                                  timeout=self.timeout) as response:
+                    body = response.read()
+            except urllib.error.HTTPError as error:
+                raise self._from_status(error)
+            except urllib.error.URLError as error:
+                raise TransportError('could not reach %s: %s'
+                                     % (url, error.reason))
+        else:
+            body = self._send('%s?%s' % (url, query), headers)
 
         try:
             payload = json.loads(body.decode('utf8'))
