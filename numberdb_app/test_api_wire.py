@@ -215,3 +215,40 @@ class ExactValuesAreSearchable(TestCase):
 		stored = self.store(RIF(3.25), param=b's')
 		results = self.search(RIF(3.25))['results']
 		self.assertIn(stored.id, [r['number'].id for r in results])
+
+
+class MultivariatePolynomials(TestCase):
+	"""A polynomial must come back in a ring that can hold it.
+
+	The decoder built a ring of x0, x1, ... and handed it text saying "x^2+y".
+	Sage cannot map that -- "Could not find a mapping of the passed element to
+	this ring" -- so every multivariate polynomial was undecodable: 87 of the
+	1038 stored. Caught by round-tripping the real database rather than the two
+	single-variable examples the tests had.
+	"""
+
+	def test_variables_are_named_as_the_text_names_them(self):
+		from sage.rings.all import QQ, PolynomialRing
+		ring = PolynomialRing(QQ, 2, ['x', 'y'])
+		x, y = ring.gens()
+		for polynomial in [x ** 2 + y, x * y - 1, x ** 2 * y - 2 * y + 1]:
+			with self.subTest(polynomial=str(polynomial)):
+				rebuilt = decode_number(encode_number(polynomial))
+				self.assertEqual(str(rebuilt).replace(' ', ''),
+				                 str(polynomial).replace(' ', ''))
+
+	def test_three_variables_survive_too(self):
+		from sage.rings.all import QQ, PolynomialRing
+		ring = PolynomialRing(QQ, 3, ['x', 'y', 'z'])
+		x, y, z = ring.gens()
+		polynomial = x * y * z - x + 1
+		self.assertEqual(
+			str(decode_number(encode_number(polynomial))).replace(' ', ''),
+			str(polynomial).replace(' ', ''))
+
+	def test_a_single_variable_is_unaffected(self):
+		from sage.rings.all import QQ
+		polynomial = QQ['x']([-1, 1])
+		self.assertEqual(
+			str(decode_number(encode_number(polynomial))).replace(' ', ''),
+			str(polynomial).replace(' ', ''))

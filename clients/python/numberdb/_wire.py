@@ -380,8 +380,12 @@ def to_sage(value: Any) -> Any:
         return field(QQ(value.prime) ** value.valuation
                      * QQ(value.unit)).add_bigoh(value.precision_absolute)
     if isinstance(value, Polynomial):
-        return PolynomialRing(QQ, max(value.variable_count, 1),
-                              'x')(value.text)
+        #Named as the text names them. A ring of x0, x1, ... cannot accept
+        #"x^2+y": Sage reports that it cannot map the element into the ring,
+        #which made every multivariate polynomial undecodable.
+        from ._polynomial import parse_polynomial
+        names = parse_polynomial(value.text).variables() or ['x']
+        return PolynomialRing(QQ, len(names), names)(value.text)
     if isinstance(value, bool):
         #bool is an int subclass; reaching ZZ(True) would be a silent absurdity.
         raise UnsupportedNumber('no Sage form for a boolean')
