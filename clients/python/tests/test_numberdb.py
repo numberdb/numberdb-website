@@ -1001,6 +1001,41 @@ class QueriesAreBounded(unittest.TestCase):
         self.assertLessEqual(sent['precision'], 333)
 
 
+class TextFindsWordsAsWellAsNumbers(unittest.TestCase):
+    """A term is two questions, and the answers must not be confused."""
+
+    def test_tables_and_tags_arrive_beside_the_numbers_not_among_them(self):
+        client = _client({
+            'results': [_record({'kind': 'ZZ', 'value': '3'})],
+            'tables': [{'tid': 'T7', 'title': 'Pi', 'url': 'Pi',
+                        'number_count': 4}],
+            'tags': [{'name': 'transcendental', 'url': 'transcendental',
+                      'table_count': 2, 'number_count': 2}],
+            'messages': [],
+        })
+        found = numberdb.search_text('Pi', client=client)
+        #The list is numbers only: iterating a search must never hand back a
+        #table where a value was expected.
+        self.assertEqual(len(found), 1)
+        self.assertEqual([t.title for t in found.tables], ['Pi'])
+        self.assertEqual([t.name for t in found.tags], ['transcendental'])
+        self.assertEqual(found.tables[0].number_count, 4)
+        self.assertEqual(found.tags[0].table_count, 2)
+
+    def test_a_server_that_sends_neither_is_not_an_error(self):
+        """An older server, or any number search, simply has no such keys."""
+        client = _client({'results': [], 'messages': []})
+        found = numberdb.search_text('3.14159', client=client)
+        self.assertEqual(found.tables, [])
+        self.assertEqual(found.tags, [])
+
+    def test_number_searches_expose_the_same_empty_attributes(self):
+        client = _client({'results': [], 'messages': []})
+        found = numberdb.search_integer(3, client=client)
+        self.assertEqual(found.tables, [])
+        self.assertEqual(found.tags, [])
+
+
 class Batching(unittest.TestCase):
     """Many numbers in one request, each answer saying which it answers."""
 

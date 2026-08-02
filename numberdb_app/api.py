@@ -5,7 +5,6 @@ from django.contrib.auth.models import User
 from django.views import generic
 from django.http import JsonResponse
 from django.contrib import messages
-from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.db.models import F
 from django.template.loader import render_to_string
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -32,7 +31,7 @@ from utils.utils import is_pAdicField
 
 from .eval_client import evaluate_search_program
 from .throttle import batch_cost, charge, rate_limited
-from .search import PAGE_SIZE, search_by_term, search_number
+from .search import PAGE_SIZE, search_by_term, search_metadata, search_number
 
 #: Numbers in one batched request. Bounded so that one caller cannot make the
 #: server do unbounded work in a single round trip.
@@ -390,7 +389,10 @@ def lookup(request):
 			'time_request': '{:.3f}s'.format(time() - time0),
 		}, safe=True)
 
-	def wrap(results, messages):
+	def wrap(results, messages, tags=(), tables=()):
+		#Tags and tables are described briefly rather than serialised whole: a
+		#search result is a signpost, and a client that wants the contents can
+		#ask /api/table or /api/tag for them.
 		return JsonResponse({
 			'results': [
 				{
@@ -399,6 +401,24 @@ def lookup(request):
 					'table': number.table.to_serializable_dict(),
 				}
 				for number in results
+			],
+			'tags': [
+				{
+					'name': tag.name,
+					'url': tag.url(),
+					'table_count': tag.table_count,
+					'number_count': tag.number_count,
+				}
+				for tag in tags
+			],
+			'tables': [
+				{
+					'tid': table.tid,
+					'title': table.title,
+					'url': table.url,
+					'number_count': table.number_count,
+				}
+				for table in tables
 			],
 			'messages': messages,
 			'time_request': '{:.3f}s'.format(time() - time0),
@@ -512,7 +532,11 @@ def lookup(request):
 				'tags': 'alert-warning',
 				'text': 'We only show the first %s results.' % (PAGE_SIZE,),
 			})
-		return wrap(found[:PAGE_SIZE], messages)
+		#Words as well as digits, which is what the search bar has always done
+		#and this endpoint did not: a term naming a subject found nothing here
+		#while the dropdown over the same box found the table.
+		tags, tables = search_metadata(text)
+		return wrap(found[:PAGE_SIZE], messages, tags, tables)
 
 	return JsonResponse(
 		{'error': 'Give number=<json record>, numbers=<json list>, '

@@ -76,7 +76,8 @@ from utils.utils import blur_complex_interval
 from utils.utils import is_polynomial_ring
 
 
-from .search import max_relative_width, search_by_term, PAGE_SIZE
+from .search import (PAGE_SIZE, full_text_query, max_relative_width,
+                     search_by_term, search_metadata)
 from .search import (search_complex_numbers, search_fractional_parts,
                      search_p_adic_numbers, search_real_numbers)
 
@@ -90,8 +91,17 @@ def home(request):
 	context = {'searchterm': term}
 	if term:
 		groups = search_by_term(term)
+		#Asked as well as the numbers, not instead: "0.5" is a number, and
+		#"matrix multiplication" is words, but a term like "Pi" is honestly
+		#both, and which was meant is not knowable here.
+		tags, tables = search_metadata(term)
 		context['result_groups'] = groups
+		context['result_tags'] = tags
+		context['result_tables'] = tables
 		context['result_count'] = sum(len(g['numbers']) for g in groups)
+		context['result_meta_count'] = len(tags) + len(tables)
+		context['result_total'] = (context['result_count']
+		                           + context['result_meta_count'])
 		context['result_page_size'] = PAGE_SIZE
 		context['searched'] = True
 
@@ -920,18 +930,11 @@ def suggestions(request):
 		#print("data:",data)
 		return JsonResponse(data,safe=True)
 
-	def full_text_search_query(term):
-		terms = term.split(' ')
-		term1 = ' & '.join("'%s'" % (t,) for t in terms[:-1])
-		term2 = '%s:*' % (terms[-1][:6],)
-		q1 = SearchQuery(term1, search_type='raw')
-		q2 = SearchQuery(term2, search_type='raw')
-		#print('term1, term2:', term1, term2)
-		if term1 != '':
-			return q1 & q2
-		else:
-			return q2
-	
+	#Was defined here, and only here, which is why a submitted search found no
+	#tables while the dropdown above the same box found them. Now shared with
+	#search_by_term via search.py, so both ask the question the same way.
+	full_text_search_query = full_text_query
+
 	term_entered = request.GET['term']
 	term = term_entered.strip(" \n")
 	if term == '':

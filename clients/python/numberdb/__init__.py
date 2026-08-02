@@ -42,7 +42,7 @@ __all__ = ['search', 'search_many', 'search_text',
            'search_complex_interval', 'search_complex_ball',
            'search_p_adic', 'search_polynomial',
            'table', 'tag', 'configure', 'Client',
-           'Result', 'Table', 'SearchResults',
+           'Result', 'Table', 'Tag', 'SearchResults',
            'RealInterval', 'ComplexInterval', 'PAdic', 'Polynomial', 'KINDS',
            'NumberDBError', 'TransportError', 'RateLimited', 'Unauthorized',
            'UnsupportedNumber', '__version__']
@@ -77,18 +77,41 @@ def configure(api_key: Optional[str] = None,
 
 
 class Table:
-    """The table a number was found in."""
+    """The table a number was found in, or that a word matched."""
 
-    __slots__ = ('tid', 'title', 'url')
+    __slots__ = ('tid', 'title', 'url', 'number_count')
 
     def __init__(self, record: Optional[Dict[str, Any]]) -> None:
         record = record or {}
         self.tid = record.get('tid')
         self.title = record.get('title')
         self.url = record.get('url')
+        #Present when the table was found by a text search, absent when it
+        #arrived as the home of a number.
+        self.number_count = record.get('number_count')
 
     def __repr__(self):
         return 'Table(%r, %r)' % (self.tid, self.title)
+
+
+class Tag:
+    """A subject heading that a search term matched.
+
+    A signpost rather than contents: ``numberdb.tag(tag.url)`` fetches the
+    tables under it.
+    """
+
+    __slots__ = ('name', 'url', 'table_count', 'number_count')
+
+    def __init__(self, record: Optional[Dict[str, Any]]) -> None:
+        record = record or {}
+        self.name = record.get('name')
+        self.url = record.get('url')
+        self.table_count = record.get('table_count')
+        self.number_count = record.get('number_count')
+
+    def __repr__(self):
+        return 'Tag(%r)' % (self.name,)
 
 
 class Result:
@@ -171,12 +194,21 @@ class SearchResults(list):
     A list, so it can simply be iterated. ``messages`` holds notes -- that the
     results were capped, that part of the expression was rejected -- as plain
     strings, kept rather than printed: the caller decides how to report them.
+
+    ``tables`` and ``tags`` are what the term matched as *words* rather than as
+    a number, and are filled in by :func:`search_text` alone. They stay
+    separate from the list itself because they are not numbers: iterating a
+    search must not hand back a table where a value was expected.
     """
 
     def __init__(self, results: List['Result'],
-                 messages: List[str]) -> None:
+                 messages: List[str],
+                 tables: Optional[List['Table']] = None,
+                 tags: Optional[List['Tag']] = None) -> None:
         super().__init__(results)
         self.messages = messages
+        self.tables = tables if tables is not None else []
+        self.tags = tags if tags is not None else []
 
     @property
     def unreadable(self) -> List['Result']:
@@ -208,8 +240,13 @@ def _lookup(parameters: Dict[str, Any],
     records = payload.get('results') or []
     messages = [message.get('text', '') for message in
                 (payload.get('messages') or []) if isinstance(message, dict)]
+    #Absent from every response an older server sends, and from the number
+    #searches on any server, so the default is an empty list rather than an
+    #error.
+    tables = [Table(record) for record in (payload.get('tables') or [])]
+    tags = [Tag(record) for record in (payload.get('tags') or [])]
     return SearchResults([Result(record, used.as_sage)
-                          for record in records], messages)
+                          for record in records], messages, tables, tags)
 
 
 def _by_number(record: Dict[str, Any],
@@ -425,13 +462,25 @@ def search_polynomial(polynomial: Union[str, Polynomial],
 def search_text(text: str, client: Optional[Client] = None) -> 'SearchResults':
     """Search exactly as the box on the website does.
 
-    The documented human formats: '3.14159' for a real, '1415' for a
-    fractional part, 'Q5:1010' or '1 + O(5^20)' for a p-adic, '1/2 + i*0.866'
-    for a complex number, 'x^2-2' for a polynomial.
+    The term is read two ways, because a term is often two questions.
 
-    A string states its own precision -- '3.14' means the last digit is
-    uncertain -- which is why text is a sound way to search and a bare float
-    is not.
+    As a *number*, in the documented human formats: '3.14159' for a real,
+    '1415' for a fractional part, 'Q5:1010' or '1 + O(5^20)' for a p-adic,
+    '1/2 + i*0.866' for a complex number, 'x^2-2' for a polynomial. These are
+    the results in the list itself. A string states its own precision --
+    '3.14' means the last digit is uncertain -- which is why text is a sound
+    way to search and a bare float is not.
+
+    As *words*, against the table titles and tag names. Those matches arrive
+    as ``.tables`` and ``.tags`` rather than in the list, since they are
+    signposts and not numbers::
+
+        >>> found = numberdb.search_text('matrix multiplication')
+        >>> [table.title for table in found.tables]
+        ['Exponent of matrix multiplication complexity']
+
+    A term that is plainly machinery -- one containing ':' or '^' -- is not
+    offered to the word search, which would only cost a query.
     """
     return _lookup({'text': text}, client)
 

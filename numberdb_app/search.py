@@ -29,15 +29,17 @@ collapses to string prefixes.
 
 from decimal import Decimal
 
+from django.contrib.postgres.search import SearchQuery, SearchRank
 from django.db.backends.postgresql.psycopg_any import NumericRange
-from django.db.models import Q
+from django.db.models import F, Q
 from django.db.models.expressions import RawSQL
 
 from .models import Number, NumberComplex, NumberPAdic, searchable_range
 
 __all__ = ['search_real_numbers', 'search_fractional_parts',
            'search_complex_numbers', 'search_p_adic_numbers',
-           'real_query_range']
+           'real_query_range', 'full_text_query', 'search_metadata',
+           'METADATA_LIMIT', 'MIN_RANK']
 
 #Scored in SQL so that ordering can happen before LIMIT; scoring in Python
 #would mean fetching every overlapping row first.
@@ -430,3 +432,82 @@ def search_number(value, limit = PAGE_SIZE):
 		return search_real_numbers(blur_real_interval(value), limit)
 
 	raise ValueError('no search for values of %s' % (parent,))
+
+
+#: Tables or tags returned for one term. The dropdown asks for fewer, because
+#: it shares ten rows with the numbers; a submitted search has room to show
+#: what matched.
+METADATA_LIMIT = 20
+
+#: Below this rank a match is noise -- a term sharing a stem with a word buried
+#: in a table's comments. Kept identical to what the dropdown has always used,
+#: so the two agree about what counts as a match.
+MIN_RANK = 0.01
+
+
+def full_text_query(term):
+	"""A term as a Postgres query: earlier words in full, the last as a prefix.
+
+	The last word is a prefix because the dropdown runs while the user is
+	typing and "multiplicat" should already find "multiplication". A submitted
+	search inherits it, which costs nothing -- a complete word is a prefix of
+	itself -- and keeps one implementation rather than two that drift.
+
+	Truncated to six characters for the same reason it always was: a prefix
+	index is only selective for so long, and beyond that the query grows
+	without matching anything more.
+	"""
+	words = [word for word in (term or '').split(' ') if word]
+	if not words:
+		return None
+	prefix = SearchQuery('%s:*' % (words[-1][:6],), search_type='raw')
+	if len(words) == 1:
+		return prefix
+	#Quoted, so a word carrying an apostrophe or an operator cannot be read as
+	#tsquery syntax. The old spelling interpolated the words bare.
+	earlier = ' & '.join("'%s'" % (word.replace("'", "''"),)
+	                     for word in words[:-1])
+	return SearchQuery(earlier, search_type='raw') & prefix
+
+
+def _looks_like_a_number(term):
+	"""Whether a term is machinery rather than words.
+
+	"Q5:1010" and "x^2-2" are numbers written for a parser; ranking them as
+	prose finds nothing and costs a query. This is the dropdown's own test,
+	kept so both callers skip the same terms.
+	"""
+	return ':' in term or '^' in term
+
+
+def search_metadata(term, limit=METADATA_LIMIT):
+	"""Tags and tables whose text matches the term, best first.
+
+	The counterpart to :func:`search_by_term`, which reads a term as a number.
+	This reads it as words, against the ``search_vector`` maintained on tags
+	and on ``TableSearch``. Both questions are legitimate for the same term,
+	and which one the asker meant is not knowable, so both are asked.
+
+	Returns ``(tags, tables)``. Either may be empty; a term that is plainly
+	machinery gets neither, without a query being run.
+	"""
+	from .models import Tag, TableSearch
+
+	term = (term or '').strip()
+	if not term or _looks_like_a_number(term):
+		return [], []
+
+	query = full_text_query(term)
+	if query is None:
+		return [], []
+
+	rank = SearchRank(F('search_vector'), query)
+
+	def best(manager):
+		return list(manager.annotate(rank=rank)
+		            .filter(rank__gte=MIN_RANK).order_by('-rank')[:limit])
+
+	tags = best(Tag.objects)
+	tables = [row.table for row in best(
+		TableSearch.objects.select_related('table'))]
+	return tags, tables
