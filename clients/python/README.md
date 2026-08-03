@@ -208,8 +208,8 @@ can be converted on demand with `.sage()` either way.
 
 ## What you get back
 
-A search returns a `SearchResults`, which is a `list` of `Result` objects with
-two additional attributes.
+A search returns a `SearchResults`: a `list` of `Result` objects, which also
+carries
 
 | Attribute | Type | Meaning |
 |---|---|---|
