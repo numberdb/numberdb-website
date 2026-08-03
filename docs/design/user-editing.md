@@ -1,0 +1,309 @@
+# Design: users editing content on the website
+
+Status: proposed
+Supersedes: the GitHub round trip documented in `help.html`
+(preview on site → copy YAML → paste into GitHub → commit → an editor reviews)
+
+## Summary
+
+Move the store of record from the `numberdb-data` git repository into the
+database, and let people create and edit tables on numberdb.org.
+
+Every edit is a **complete table snapshot**, committed with a parent and a
+base, and **published immediately** in the manner of Wikipedia. Review happens
+after the fact and does not gate visibility. It gates one thing only: whether
+a value is allowed into **search by number**.
+
+That single asymmetry is what makes immediate publication safe here. A reader
+who lands on a page can see that it is unreviewed and judge accordingly. A
+person typing a number into the search bar cannot: a wrong fortieth digit
+looks exactly like a right one, and the whole purpose of the site is that
+finding a number there means something.
+
+The data repository does not disappear. It becomes a generated export, so the
+corpus stays citable, forkable and downloadable, and so nothing about this is
+irreversible.
+
+## What is actually there today
+
+Worth stating precisely, because more of this exists than it first appears.
+
+**The corpus is uniform.** All 109 tables carry the same fourteen top-level
+keys in the same order, then either `Numbers` (99 tables) or `Data` (10, all
+polynomial tables via `INPUT{polynomials.yaml}`). Entries nest one to three
+levels, one level per parameter, over roughly 50000 leaf values. That
+uniformity is the reason a form-based interface is plausible at all.
+
+**Half the editor already exists.** `views.preview` accepts YAML in a
+textarea, validates it, and renders the table exactly as it will appear —
+including error messages for malformed YAML. It is stateless and anonymous:
+what is missing is identity, persistence, history and review, not rendering.
+
+**The database already holds the source.** `TableData` stores `raw_yaml` (the
+original `table.yaml`), `full_yaml` (normalised, `INPUT{}` resolved) and
+`json`. The editable text is already in Postgres; today nothing may write it.
+
+**Identity is already stable.** `id.yaml` carries a permanent `T`-number
+("Automatically created file. Do NOT edit"), and `/T7` and `/Pi` both resolve,
+with `#<params_id>` anchoring a single entry. This is the same arrangement as
+an OEIS A-number, and it is the right foundation.
+
+**Mail has never worked.** Production runs
+`django.core.mail.backends.console.EmailBackend`: every verification message
+is printed into the container log and delivered to nobody. `anymail` is in
+`INSTALLED_APPS` with no configuration block and no provider key on the
+server. `ACCOUNT_EMAIL_REQUIRED` is `False` and `ACCOUNT_EMAIL_VERIFICATION`
+is `'optional'`. All three must change before accounts can own content.
+
+**Cross-references degrade gracefully.** `HREF{}` is a plain string
+substitution into an anchor (`views.py:288`); there are 125 internal
+references across 22 targets. A reference to a table that does not exist
+renders as a dead link rather than an error, which is what makes partial
+acceptance of a bulk proposal tolerable.
+
+## Identity and trust
+
+Three tiers, deliberately not two:
+
+| Tier | How | May do |
+|---|---|---|
+| Account | email (verified), Google, GitHub | edit; edits publish immediately, marked unreviewed |
+| Verified identity | ORCID, later MediaWiki | as above, plus higher submission limits and a visible marker |
+| Board | granted by Benjamin, who may delegate | mark revisions reviewed; own edits are reviewed on save |
+
+**ORCID confers identity, not standing.** An ORCID iD is free and
+self-registered, with no institutional check, so treating it as automatic
+trust would be a very thin gate on exactly the failure that matters — a wrong
+digit entering the index unreviewed. It is worth having because it is a
+persistent, publicly staked identity that a throwaway account is not. It makes
+someone *eligible*; it does not make them trusted.
+
+Board membership starts as one person and is delegable. Nothing in the model
+depends on the board being large; it depends on the review pointer described
+below, which degrades honestly when nobody has looked at something yet.
+
+## The commit model
+
+Borrowed from git, because the semantics are already understood by everyone
+who will work on this, and because "what did this table look like last March"
+must have an answer.
+
+A **commit** is a complete snapshot of one table — the metadata document and
+its entries — together with:
+
+- `parent`: the commit it was applied to. Normally `HEAD` at the time.
+- `base`: the commit the author actually edited from.
+- `author`, `time`, `message`, and, when applicable, the tool that produced it.
+
+`parent` and `base` differ exactly when someone else committed while an edit
+was being written, and that difference is what makes a stale write detectable
+instead of a silent clobber.
+
+Snapshots are stored content-addressed and deduplicated; diffs are computed
+for display rather than stored. The largest `numbers.yaml` in the corpus is
+98 KB, so even hundreds of revisions per table costs nothing worth optimising.
+
+### Merging
+
+History is linear whenever one person is editing, which is nearly always. When
+two people edit concurrently, the second commit is merged against the first,
+and **the merge is itself a commit** with two parents.
+
+The merge is **structural**, over the parsed tree, not textual over lines.
+This matters more than it sounds: line-based merging of YAML conflicts on
+reflowed text, reordered keys and changed indentation — none of which are
+changes to the data. Merging the tree instead gives:
+
+- edits to different entries (`n=5` and `n=17`): disjoint keys, merged
+  automatically, deterministically;
+- edits to the same entry, or to the same metadata field: a real conflict,
+  presented side by side for a human to resolve;
+- no conflict ever caused by formatting.
+
+So the unit of record is the whole table, as decided, and concurrent edits to
+different entries still cost nobody anything.
+
+## Review, and what it gates
+
+Every commit is **live on save**. There is no draft state and no queue holding
+content back from readers.
+
+Each table carries a `reviewed_at_commit` pointer. Everything between that
+pointer and `HEAD` is unreviewed. A board member moves the pointer forward; a
+board member's own commit moves it forward on save.
+
+**The set of unreviewed values is the diff** between `reviewed_at_commit` and
+`HEAD`. This is precise rather than table-wide: correcting one comment does
+not cast doubt on 10000 untouched entries.
+
+Those values are:
+
+- **shown**, on the table page as usual;
+- **marked**, with the existing dagger-and-tooltip mechanism, which already
+  exists for numbers too imprecise to identify anything and already links to
+  an explanation in the help page;
+- **excluded from search by number**, until reviewed.
+
+Text and metadata search are not gated. Finding a table by its title is not a
+claim about the correctness of its digits.
+
+A table that has never been reviewed has no pointer, so all of it is
+unreviewed. That is the honest default, and it gives review an obvious
+purpose: an entry is not findable by value until someone has confirmed it.
+
+### Why this is safe without a queue
+
+The Wikipedia bet is that immediate publication plus easy reversion beats
+gatekeeping, because vandalism is obvious and cheap to undo. That bet fails
+for numeric data, where an error is invisible. Gating the index rather than
+the page keeps the bet intact where it works and declines it where it does
+not.
+
+Supporting machinery, none of it novel: one-click revert (which is itself a
+commit), notification to the board on any edit to a watched table, and rate
+limits per account.
+
+## Bulk and machine-authored proposals
+
+Same queue, same commit model. A bulk submission of N tables is **N
+independent commits sharing a label**; the label exists for triage and
+attribution, not as an atomic unit. Accepting a subset is therefore the
+ordinary operation rather than a special case.
+
+Two consequences worth designing for:
+
+**Dangling references are tolerable but should be surfaced.** Accepting a
+commit that references a table not yet accepted yields a dead link, not an
+error. Warn the reviewer; do not block.
+
+**Review effort is the real constraint.** Two hundred generated tables take
+minutes to produce and days to review honestly. Effort spent on making triage
+cheap — grouping similar proposals, compact diffs, one decision covering a
+uniform batch — is worth more than effort spent on the generation side. A cap
+on outstanding proposals per account keeps one enthusiastic run from creating
+a year of backlog.
+
+**Machine-written commits are attributed as such**, naming the tool or model
+and the person who submitted them. Reviewers triage differently when they know
+something was generated, and readers are entitled to know. This is why
+Wikipedia flags bot edits.
+
+## Making the corpus machine-writable
+
+Designed early rather than late: if a program can only drive the site by
+pretending to be a browser, the interface is wrong.
+
+1. **A published JSON Schema** for the table document, generated from one
+   definition shared by the forms, the validator and the API. A model writes
+   far better YAML against a schema it can fetch than against prose and 109
+   examples.
+2. **A validate endpoint** — post a candidate, receive errors, warnings and
+   the rendered result, writing nothing. This is `views.preview` with a JSON
+   response, and it lets a generator close its own loop.
+3. **Addressable, idempotent writes**, keyed by `T`-number and parameter
+   tuple, so "add the fortieth coefficient" is well defined and safely
+   retryable.
+4. **Everything lands as a commit**, subject to the same publication and
+   review rules as a human edit. No privileged path.
+5. **Volume controls**: per-account rate limits and a bulk object a reviewer
+   can accept or reject wholesale.
+
+The client package is the natural home for the write side: it already handles
+authentication, batching and the wire format, and `numberdb.propose(...)`
+beside `numberdb.search(...)` is coherent. An MCP server on top of a good HTTP
+API is a small wrapper; an MCP server *instead of* one is a trap.
+
+## Schema normalisation, first
+
+Small, and it removes a special case from every form, importer and validator
+written afterwards.
+
+**`complete` is not a boolean.** Measured across all 109 tables:
+
+| value | tables |
+|---|---|
+| `False` | 73 |
+| absent | 23 |
+| `True` | 6 |
+| `'unknown'` | 5 |
+| `'yes, assuming GRH'` | 1 |
+| `'unknown (presumably not)'` | 1 |
+
+Three-valued, with an optional qualifier, and with absence meaning "not
+stated" — six states in all. The proposal is `complete: yes | no | unknown`
+plus an optional free-text `complete-note` (`"assuming GRH"`, `"presumably
+not"`), which preserves every existing state and makes it checkable. The point
+is to write down the richness, not to flatten it.
+
+**One concept, one spelling.** `arXiv` (14) and `arxiv` (4); `MR` (7) and
+`mr` (2); `Numbers` (99) and `Data` (10).
+
+**Leave `reliability` alone.** It is genuinely free prose with citations,
+sometimes several sentences, and it is mathematical hedging rather than
+metadata.
+
+**Say generated-or-curated explicitly.** It is currently conveyed only by
+whether a `generate.sage` happens to sit in the folder.
+
+## Generator scripts
+
+The 82 `generate.sage` files produced values that were then copied into the
+YAML by hand. So the YAML is already the truth and the scripts are
+*provenance*, not a pipeline: there is no regeneration step for hand edits to
+collide with.
+
+Keep them as attached artifacts — displayed, citable, downloadable — and never
+executed by the server. Running a contributor's Sage on submission is a far
+larger exposure than evaluating a search expression, and the sandbox was not
+built for it.
+
+## Mail
+
+Required before any of this works, and independent of the rest.
+
+Use Resend through Anymail, which is already installed: simpler setup than
+Mailgun, a real free tier at this volume, and better debugging when a message
+does not arrive. Mailgun's advantages — EU residency, mailing lists, inbound
+routing — are not needed here. The choice is close to reversible: a settings
+block and one environment variable.
+
+The provider is not the hard part. Deliverability for a new sending domain is,
+and that work is the same either way: SPF, DKIM and DMARC on `numberdb.org`,
+sending from a subdomain such as `mail.numberdb.org` so a deliverability
+problem never threatens the apex domain's reputation.
+
+## URLs
+
+`T`-numbers become canonical. Slugs remain, semi-stable, and redirect to the
+canonical URL; renaming a table is therefore allowed and costs a redirect.
+Emit the canonical link in pages and in API responses from the start, so
+citations made from today point at something permanent.
+
+## Open questions
+
+1. Is trust earned automatically after N accepted edits, or granted only by a
+   board member? The model works either way; the difference is how much
+   attention the board must pay as the site grows.
+2. Does the YAML source view remain permanently as a power-user escape hatch?
+   Recommended: yes. It already exists, and it is the pressure valve for the
+   handful of tables — `layout: nested lists`, `group parameters`, `Set` and
+   `*R` types — that no form will anticipate.
+3. Where do discussions attach? Per table is clearly needed. Per entry is what
+   OEIS lacks and would suit a corpus whose entries already carry `comment`,
+   `proof` and `equals`.
+
+## Risks
+
+**Immediate publication with a small board.** With one reviewer, the
+unreviewed set grows without bound, and the numeric search index quietly stops
+covering new material. Mitigation: the marking makes this visible rather than
+silent, and it is the honest state of affairs. It is also the strongest
+argument for delegating early.
+
+**Structural merge is subtle.** It must be tested hard, especially around
+deletions and reordering, because a merge that silently drops an entry is
+worse than a conflict.
+
+**One-way export can drift.** If the git mirror is ever edited directly, the
+two diverge with no reconciliation path. The export should be plainly marked
+as generated, and the data repository's write access restricted accordingly.
