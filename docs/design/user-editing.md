@@ -281,22 +281,30 @@ API is a small wrapper; an MCP server *instead of* one is a trap.
 Small, and it removes a special case from every form, importer and validator
 written afterwards.
 
-**`complete` is not a boolean.** Measured across all 109 tables:
+**`complete` already has a vocabulary; two entries escape it.** Read with
+`yaml.BaseLoader`, which is what every reader in this codebase uses, the
+corpus says:
 
 | value | tables |
 |---|---|
-| `False` | 73 |
+| `no` | 73 |
 | absent | 23 |
-| `True` | 6 |
-| `'unknown'` | 5 |
-| `'yes, assuming GRH'` | 1 |
-| `'unknown (presumably not)'` | 1 |
+| `yes` | 6 |
+| `unknown` | 5 |
+| `yes, assuming GRH` | 1 |
+| `unknown (presumably not)` | 1 |
 
-Three-valued, with an optional qualifier, and with absence meaning "not
-stated": six states in all. The proposal is `complete: yes | no | unknown`
-plus an optional free-text `complete-note` (`"assuming GRH"`, `"presumably
-not"`), which preserves every existing state and makes it checkable. The point
-is to write down the richness, not to flatten it.
+An earlier draft of this document reported 73 booleans, having surveyed the
+files with `yaml.safe_load`. That was measuring the loader rather than the
+data: YAML 1.1 turns `yes` and `no` into booleans, and no file has ever
+contained `True` or `False`. The codebase is not affected, because every reader
+uses `BaseLoader` and sees the strings, but it is a good illustration of why
+the survey and the code should agree about how a file is read.
+
+So the field is already three-valued. What is missing is somewhere to put the
+qualifier, which two tables append into the value itself and no dropdown can
+represent. The proposal is therefore small: keep `yes | no | unknown`, and add
+an optional `complete-note` carrying `assuming GRH` or `presumably not`.
 
 **One concept, one spelling.** `arXiv` (14) and `arxiv` (4); `MR` (7) and
 `mr` (2); `Numbers` (99) and `Data` (10). The renderer now matches reference
