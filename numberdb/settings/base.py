@@ -180,7 +180,8 @@ MAILGUN_API_URL = (config('EMAIL_MG_API_BASE_URL', default='')
                    or 'https://api.mailgun.net/v3')
 #The verified sending domain, which is not necessarily the site's domain.
 MAILGUN_SENDER_DOMAIN = (config('EMAIL_MG_SENDER_DOMAIN', default='')
-                         or config('MAILGUN_SENDER_DOMAIN', default=''))
+                         or config('MAILGUN_SENDER_DOMAIN', default='')
+                         or 'numberdb.org')
 
 RESEND_API_KEY = config('RESEND_API_KEY', default='')
 
@@ -202,11 +203,13 @@ else:
 
 EMAIL_BACKEND = config('EMAIL_BACKEND', default=_default_email_backend)
 
-#Sent from the verified sending domain. A subdomain is preferable to the apex,
-#so that a deliverability problem cannot damage the reputation of the domain
-#the website itself is served from.
+#Sent from the domain the site is known by, now that numberdb.org is verified
+#at Mailgun in its own right with its own SPF and DKIM. A subdomain would keep
+#any deliverability trouble away from the apex's reputation, which is the usual
+#argument for one, but an address people recognise matters more for mail that
+#asks somebody to click a link.
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL',
-                            default='NumberDB <noreply@mg.numberdb.org>')
+                            default='NumberDB <noreply@numberdb.org>')
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 #### allauth ####
