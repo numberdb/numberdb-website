@@ -306,9 +306,22 @@ def build_tag_table():
 unparsed_by_exact_layer = []
 
 
-def build_number_table():
+def build_number_table(only_table=None):
+	"""Build the number rows from the table data.
 
-	print("BUILD_NUMBER TABLE")
+	``only_table`` rebuilds one table rather than all of them, which is what
+	committing an edit needs: the rows have to follow the revision that was
+	just written, and rebuilding forty-five thousand numbers to change one is
+	not a thing anybody can wait for.
+
+	The full build assumes it is starting from nothing, because
+	delete_all_tables() has run and every counter is zero. Rebuilding a single
+	table cannot assume that, so it removes that table's rows first and moves
+	the tag counters by the difference rather than adding to them.
+	"""
+
+	print("BUILD_NUMBER TABLE" if only_table is None
+	      else "REBUILD NUMBERS for %s" % (only_table,))
 	
 	exact_numbers = set() 
 	#TODO: Find a better way to remove duplicate exact numbers 
@@ -511,7 +524,11 @@ def build_number_table():
 
 	total_number_count = 0
 	
-	for c_data in TableData.objects.all().order_by('table_id'):
+	table_data = TableData.objects.all().order_by('table_id')
+	if only_table is not None:
+		table_data = table_data.filter(table=only_table)
+
+	for c_data in table_data:
 		with transaction.atomic():
 			c = c_data.table
 			data = c_data.json
@@ -521,6 +538,18 @@ def build_number_table():
 			#reset set of exact numbers for each table:
 			#this makes repeated numbers in each table appear only once.
 			exact_numbers = set() 
+
+			#Rebuilding one table starts from whatever is already there, so the
+			#old rows go before the new ones are written and the tag counters
+			#move by the difference. previous_count is 0 for a full build,
+			#where nothing exists yet and the counters are already zero.
+			previous_count = 0
+			if only_table is not None:
+				previous_count = c.number_count or 0
+				Number.objects.filter(table=c).delete()
+				NumberComplex.objects.filter(table=c).delete()
+				NumberPAdic.objects.filter(table=c).delete()
+				Polynomial.objects.filter(table=c).delete()
 
 			count = 0
 			if ('Numbers' in data and len(data['Numbers']) > 0) or \
@@ -548,7 +577,7 @@ def build_number_table():
 			c.number_count = count
 			c.save()
 			for tag in c.tags.all():
-				tag.number_count += count
+				tag.number_count += count - previous_count
 				tag.save()
 			total_number_count += count
 			

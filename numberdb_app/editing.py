@@ -151,4 +151,42 @@ def _write(table, tree, author, message, parent, base, produced_by,
 	#decision belongs to the caller, which knows who the author is, so this
 	#only advances head.
 	table.save(update_fields=['head_revision'])
+	apply_revision(table, revision)
 	return CommitOutcome(revision, merged=merged)
+
+
+def apply_revision(table, revision=None):
+	"""Make the stored rows and the page match a revision.
+
+	A revision on its own changes nothing anybody can see: the page renders
+	from ``TableData`` and search reads the number rows, both of which are
+	built by the data pipeline. Without this step an edit would be recorded
+	and invisible, which is worse than an edit that fails.
+
+	Three things happen, in this order, because each depends on the last:
+	the table's stored document is replaced, its number rows are rebuilt from
+	that document, and the review flags are recomputed so the newly written
+	rows carry the right state rather than the default.
+	"""
+	from data_pipeline.build import build_number_table
+	from db_builder.utils import normalize_table_data
+	from .models import TableData
+	from .review import sync_review_flags
+
+	revision = revision or table.head_revision
+	if revision is None:
+		return
+
+	tree = tree_of(revision)
+	normalised = normalize_table_data(tree)
+
+	data, _ = TableData.objects.get_or_create(table=table)
+	data.json = normalised
+	data.full_yaml = yaml.dump(normalised, sort_keys=False, allow_unicode=True)
+	data.raw_yaml = revision.content
+	data.save()
+
+	build_number_table(only_table=table)
+	#After the rebuild, not before: the rows it writes take the model default,
+	#which is reviewed, and this is what corrects them.
+	return sync_review_flags(table)
