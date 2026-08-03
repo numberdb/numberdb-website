@@ -547,6 +547,11 @@ def table_context(table, preview=False):
 				current_job = 'Parse data property %s' % (key,)
 				if len(value) == 0:
 					continue
+				#Rendered as part of 'complete' rather than on a line of its own,
+				#since "Table is complete: yes (assuming GRH)" is the sentence a
+				#reader wants. Skipped here so it does not also appear alone.
+				if key == 'complete-note':
+					continue
 				if key in property_names:
 					text = "%s: " % (property_names[key])
 					if key == 'type':
@@ -557,6 +562,11 @@ def table_context(table, preview=False):
 							text += "%s (Unknown value)" % (value,)
 					elif key == 'sources':
 						text += ", ".join(value)                
+					elif key == 'complete':
+						text += value
+						note = properties.get('complete-note')
+						if note:
+							text += " (%s)" % (note,)
 					else:
 						text += value
 				else:
