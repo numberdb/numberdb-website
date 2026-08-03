@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.postgres.search import SearchVectorField
@@ -1272,3 +1273,183 @@ class WikipediaNumber(models.Model):
 	url = models.URLField(
 		default = '',
 	)
+
+
+class TableRevision(models.Model):
+	"""One complete snapshot of a table, and how it came to be.
+
+	Complete rather than a diff, because the question "what did this table look
+	like in March" must have an answer that does not depend on replaying every
+	edit since. Diffs are computed for display; the largest numbers.yaml in the
+	corpus is 98 KB, so storing whole snapshots costs nothing worth optimising.
+
+	``parent`` is what this was applied to, normally the table's head at the
+	time. ``base`` is what the author actually edited from, which differs
+	exactly when somebody else committed while the edit was being written. That
+	difference is what makes a stale write detectable rather than a silent
+	overwrite, and it is what the three-way merge needs.
+	"""
+
+	table = models.ForeignKey(
+		Table,
+		on_delete = models.CASCADE,
+		related_name = 'revisions',
+	)
+
+	#: The normalised YAML of the whole table at this revision.
+	content = models.TextField()
+
+	#: sha256 of `content`. Two revisions with identical content share a digest,
+	#: which makes "did this edit change anything" a comparison rather than a
+	#: diff, and gives the export a stable name to write under.
+	digest = models.CharField(
+		max_length = 64,
+		db_index = True,
+	)
+
+	parent = models.ForeignKey(
+		'self',
+		null = True,
+		blank = True,
+		on_delete = models.PROTECT,
+		related_name = 'children',
+	)
+	#: Null when this is a merge of two histories; `merged_from` holds the other
+	#: side. Kept separate from `parent` so the first parent is always the
+	#: mainline and history reads linearly.
+	merged_from = models.ForeignKey(
+		'self',
+		null = True,
+		blank = True,
+		on_delete = models.PROTECT,
+		related_name = 'merges',
+	)
+	base = models.ForeignKey(
+		'self',
+		null = True,
+		blank = True,
+		on_delete = models.PROTECT,
+		related_name = 'edits_from_here',
+	)
+
+	author = models.ForeignKey(
+		settings.AUTH_USER_MODEL,
+		null = True,
+		blank = True,
+		on_delete = models.SET_NULL,
+		related_name = 'table_revisions',
+	)
+	#: What produced this, when it was not typed by a person: a model name, a
+	#: script, an importer. Reviewers triage generated edits differently, and
+	#: readers are entitled to know, which is why Wikipedia flags bot edits.
+	produced_by = models.CharField(
+		max_length = 100,
+		blank = True,
+		default = '',
+	)
+	message = models.CharField(
+		max_length = 300,
+		blank = True,
+		default = '',
+	)
+	created = models.DateTimeField(
+		auto_now_add = True,
+		db_index = True,
+	)
+
+	class Meta:
+		ordering = ['-created']
+		indexes = [
+			models.Index(fields=['table', '-created']),
+		]
+
+	def __str__(self):
+		return 'Revision %s of %s' % (self.digest[:8], self.table)
+
+	@staticmethod
+	def digest_of(content):
+		"""The content address of a revision body."""
+		return hashlib.sha256(content.encode('utf8')).hexdigest()
+
+	def save(self, *args, **kwargs):
+		#Derived rather than supplied, so a caller cannot store a digest that
+		#does not describe the content beside it.
+		self.digest = self.digest_of(self.content)
+		return super().save(*args, **kwargs)
+
+
+class TableThread(models.Model):
+	"""A discussion attached to a table or a tag.
+
+	One thread per object rather than per entry. An entry-specific point is
+	made here and linked precisely, since every entry already has a permanent
+	anchor of the form /T7#<params_id>; giving each of some ten thousand
+	entries its own watchable, moderatable thread buys little and costs a great
+	deal.
+	"""
+
+	table = models.ForeignKey(
+		Table,
+		null = True,
+		blank = True,
+		on_delete = models.CASCADE,
+		related_name = 'threads',
+	)
+	tag = models.ForeignKey(
+		Tag,
+		null = True,
+		blank = True,
+		on_delete = models.CASCADE,
+		related_name = 'threads',
+	)
+
+	class Meta:
+		constraints = [
+			#Exactly one target. A thread attached to both would appear in two
+			#places and be moderated in neither.
+			models.CheckConstraint(
+				condition = (
+					models.Q(table__isnull=False, tag__isnull=True)
+					| models.Q(table__isnull=True, tag__isnull=False)
+				),
+				name = 'thread_has_exactly_one_target',
+			),
+		]
+
+	def __str__(self):
+		return 'Discussion of %s' % (self.table or self.tag,)
+
+
+class Comment(models.Model):
+	"""One message in a thread."""
+
+	thread = models.ForeignKey(
+		TableThread,
+		on_delete = models.CASCADE,
+		related_name = 'comments',
+	)
+	author = models.ForeignKey(
+		settings.AUTH_USER_MODEL,
+		null = True,
+		on_delete = models.SET_NULL,
+		related_name = 'comments',
+	)
+	body = models.TextField()
+	#: The entry this comment is about, as its params_id, so a thread can be
+	#: filtered to one value without the discussion living there.
+	about_param = models.CharField(
+		max_length = 200,
+		blank = True,
+		default = '',
+	)
+	created = models.DateTimeField(auto_now_add=True, db_index=True)
+	edited = models.DateTimeField(null=True, blank=True)
+	#: Hidden rather than deleted, so a thread keeps its shape and moderation
+	#: is reversible.
+	hidden = models.BooleanField(default=False)
+
+	class Meta:
+		ordering = ['created']
+
+	def __str__(self):
+		return 'Comment by %s' % (self.author or 'deleted user',)

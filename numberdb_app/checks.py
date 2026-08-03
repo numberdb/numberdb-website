@@ -60,8 +60,12 @@ def check_email_can_be_delivered(app_configs, **kwargs):
 	"""
 	problems = []
 	backend = getattr(settings, 'EMAIL_BACKEND', '')
+	#locmem is deliberately excluded: Django's test runner substitutes it for
+	#every run, and warning about it means the suite prints a configuration
+	#complaint that is neither true nor actionable. console and dummy are
+	#different -- those are chosen, and production was running console.
 	delivers = not backend.endswith(
-		('console.EmailBackend', 'locmem.EmailBackend', 'dummy.EmailBackend'))
+		('console.EmailBackend', 'dummy.EmailBackend'))
 	verification = getattr(settings, 'ACCOUNT_EMAIL_VERIFICATION', 'optional')
 
 	if not delivers and not settings.DEBUG:
