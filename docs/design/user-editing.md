@@ -35,7 +35,7 @@ levels, one level per parameter, over roughly 50000 leaf values. That
 uniformity is the reason a form-based interface is plausible at all.
 
 **Half the editor already exists.** `views.preview` accepts YAML in a
-textarea, validates it, and renders the table exactly as it will appear —
+textarea, validates it, and renders the table exactly as it will appear,
 including error messages for malformed YAML. It is stateless and anonymous:
 what is missing is identity, persistence, history and review, not rendering.
 
@@ -73,7 +73,7 @@ Three tiers, deliberately not two:
 
 **ORCID confers identity, not standing.** An ORCID iD is free and
 self-registered, with no institutional check, so treating it as automatic
-trust would be a very thin gate on exactly the failure that matters — a wrong
+trust would be a very thin gate on exactly the failure that matters: a wrong
 digit entering the index unreviewed. It is worth having because it is a
 persistent, publicly staked identity that a throwaway account is not. It makes
 someone *eligible*; it does not make them trusted.
@@ -88,8 +88,8 @@ Borrowed from git, because the semantics are already understood by everyone
 who will work on this, and because "what did this table look like last March"
 must have an answer.
 
-A **commit** is a complete snapshot of one table — the metadata document and
-its entries — together with:
+A **commit** is a complete snapshot of one table (the metadata document and
+its entries), together with:
 
 - `parent`: the commit it was applied to. Normally `HEAD` at the time.
 - `base`: the commit the author actually edited from.
@@ -111,7 +111,7 @@ and **the merge is itself a commit** with two parents.
 
 The merge is **structural**, over the parsed tree, not textual over lines.
 This matters more than it sounds: line-based merging of YAML conflicts on
-reflowed text, reordered keys and changed indentation — none of which are
+reflowed text, reordered keys and changed indentation, none of which are
 changes to the data. Merging the tree instead gives:
 
 - edits to different entries (`n=5` and `n=17`): disjoint keys, merged
@@ -178,8 +178,8 @@ error. Warn the reviewer; do not block.
 
 **Review effort is the real constraint.** Two hundred generated tables take
 minutes to produce and days to review honestly. Effort spent on making triage
-cheap — grouping similar proposals, compact diffs, one decision covering a
-uniform batch — is worth more than effort spent on the generation side. A cap
+cheap (grouping similar proposals, compact diffs, one decision covering a
+uniform batch) is worth more than effort spent on the generation side. A cap
 on outstanding proposals per account keeps one enthusiastic run from creating
 a year of backlog.
 
@@ -197,7 +197,7 @@ pretending to be a browser, the interface is wrong.
    definition shared by the forms, the validator and the API. A model writes
    far better YAML against a schema it can fetch than against prose and 109
    examples.
-2. **A validate endpoint** — post a candidate, receive errors, warnings and
+2. **A validate endpoint**: post a candidate, receive errors, warnings and
    the rendered result, writing nothing. This is `views.preview` with a JSON
    response, and it lets a generator close its own loop.
 3. **Addressable, idempotent writes**, keyed by `T`-number and parameter
@@ -230,7 +230,7 @@ written afterwards.
 | `'unknown (presumably not)'` | 1 |
 
 Three-valued, with an optional qualifier, and with absence meaning "not
-stated" — six states in all. The proposal is `complete: yes | no | unknown`
+stated": six states in all. The proposal is `complete: yes | no | unknown`
 plus an optional free-text `complete-note` (`"assuming GRH"`, `"presumably
 not"`), which preserves every existing state and makes it checkable. The point
 is to write down the richness, not to flatten it.
@@ -252,8 +252,8 @@ YAML by hand. So the YAML is already the truth and the scripts are
 *provenance*, not a pipeline: there is no regeneration step for hand edits to
 collide with.
 
-Keep them as attached artifacts — displayed, citable, downloadable — and never
-executed by the server. Running a contributor's Sage on submission is a far
+Keep them as attached artifacts, displayed, citable and downloadable, but
+never executed by the server. Running a contributor's Sage on submission is a far
 larger exposure than evaluating a search expression, and the sandbox was not
 built for it.
 
@@ -263,8 +263,8 @@ Required before any of this works, and independent of the rest.
 
 Use Resend through Anymail, which is already installed: simpler setup than
 Mailgun, a real free tier at this volume, and better debugging when a message
-does not arrive. Mailgun's advantages — EU residency, mailing lists, inbound
-routing — are not needed here. The choice is close to reversible: a settings
+does not arrive. Mailgun's advantages (EU residency, mailing lists, inbound
+routing) are not needed here. The choice is close to reversible: a settings
 block and one environment variable.
 
 The provider is not the hard part. Deliverability for a new sending domain is,
@@ -286,8 +286,8 @@ citations made from today point at something permanent.
    attention the board must pay as the site grows.
 2. Does the YAML source view remain permanently as a power-user escape hatch?
    Recommended: yes. It already exists, and it is the pressure valve for the
-   handful of tables — `layout: nested lists`, `group parameters`, `Set` and
-   `*R` types — that no form will anticipate.
+   handful of tables (`layout: nested lists`, `group parameters`, `Set` and
+   `*R` types) that no form will anticipate.
 3. Where do discussions attach? Per table is clearly needed. Per entry is what
    OEIS lacks and would suit a corpus whose entries already carry `comment`,
    `proof` and `equals`.
