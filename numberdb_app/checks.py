@@ -67,10 +67,10 @@ def check_email_can_be_delivered(app_configs, **kwargs):
 	if not delivers and not settings.DEBUG:
 		problems.append(Warning(
 			'EMAIL_BACKEND is %r, so no mail leaves this server.' % (backend,),
-			hint=('Set RESEND_API_KEY in the environment. Note that an explicit '
-			      'EMAIL_BACKEND in .env overrides the key, which is how '
-			      'production came to run the console backend with account '
-			      'email switched on.'),
+			hint=('Set EMAIL_MG_API_KEY in the environment (numberdb.org sends '
+			      'through Mailgun). Note that an explicit EMAIL_BACKEND in '
+			      '.env overrides the key, which is how production came to run '
+			      'the console backend with account email switched on.'),
 			id='numberdb.W002',
 		))
 

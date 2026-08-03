@@ -324,16 +324,26 @@ built for it.
 
 Required before any of this works, and independent of the rest.
 
-Use Resend through Anymail, which is already installed: simpler setup than
-Mailgun, a real free tier at this volume, and better debugging when a message
-does not arrive. Mailgun's advantages (EU residency, mailing lists, inbound
-routing) are not needed here. The choice is close to reversible: a settings
-block and one environment variable.
+Use Mailgun through Anymail, which is already installed. An earlier draft of
+this document recommended Resend on the grounds of simpler setup and a free
+tier; that was written without knowing that numberdb.org's sending domain was
+already verified at Mailgun. Since domain verification and sending reputation
+are the actual work, and both are already done, switching would cost real
+effort and money to gain almost nothing. The provider is selected by whichever
+API key is present, so the decision stays reversible.
 
 The provider is not the hard part. Deliverability for a new sending domain is,
-and that work is the same either way: SPF, DKIM and DMARC on `numberdb.org`,
-sending from a subdomain such as `mail.numberdb.org` so a deliverability
-problem never threatens the apex domain's reputation.
+which is the whole reason to stay where the domain is already verified. Send
+from a subdomain such as `mail.numberdb.org` rather than the apex, so that a
+deliverability problem never threatens the reputation of the domain the site
+itself is served from.
+
+Three things had to be wrong at once for mail to be as dead as it was, and all
+three were: `anymail` installed with no configuration block, an explicit
+console `EMAIL_BACKEND` in the server environment that would have overridden
+any key, and `EMAIL_MG_API_KEY` documented in `env/.env.prod.example` but read
+by no code at all. Setting the key is now the entire configuration, and a
+system check reports it when mail goes nowhere.
 
 ## URLs
 
