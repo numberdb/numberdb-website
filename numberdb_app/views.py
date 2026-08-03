@@ -457,10 +457,16 @@ def table_context(table, preview=False):
 					if isinstance(reference, str):
 						text = render_text(reference)
 					else:
-						if 'bib' in reference:
-							text += render_text(reference['bib'].rstrip('\n')) + " "
-						if 'arXiv' in reference:
-							link = reference['arXiv']
+						#Matched case-insensitively. The corpus spells arXiv 14
+						#times and arxiv 4, MR 7 times and mr twice, and an exact
+						#lookup silently rendered the reference without its link:
+						#no error, no warning, just a citation missing the thing
+						#a reader wants to click.
+						fields = {k.lower(): v for k, v in reference.items()}
+						if 'bib' in fields:
+							text += render_text(fields['bib'].rstrip('\n')) + " "
+						if 'arxiv' in fields:
+							link = fields['arxiv']
 							link = link.split("[")[0].strip(" \n")
 							link = link.split("/abs/")[-1]
 							link = link.split("/pdf/")[-1]
@@ -470,17 +476,25 @@ def table_context(table, preview=False):
 							link = link.split("arxiv:")[-1]
 							link = "https://www.arxiv.org/abs/%s" % (link,)
 							text += '(<a href="%s">arXiv</a>) ' % (link,)
-						if 'doi' in reference:
-							link = reference['doi'].split("doi.org/")[-1]
+						if 'doi' in fields:
+							link = fields['doi'].split("doi.org/")[-1]
 							link = "https://doi.org/%s" % (link,)
 							text += '(<a href="%s">doi</a>) ' % (link,)
-						if 'url' in reference:
-							if 'title' in reference:
-								text += '<a href="%s">%s</a> ' % (reference['url'],reference['title'])
+						#Never rendered at all before: there was no branch for it,
+						#so nine Mathematical Reviews numbers sat in the data
+						#doing nothing.
+						if 'mr' in fields:
+							link = str(fields['mr']).strip()
+							link = link.split("mr=")[-1].lstrip("MRmr")
+							text += ('(<a href="https://mathscinet.ams.org/'
+							         'mathscinet-getitem?mr=%s">MR</a>) ' % (link,))
+						if 'url' in fields:
+							if 'title' in fields:
+								text += '<a href="%s">%s</a> ' % (fields['url'],fields['title'])
 							else:
-								text += '<a href="%s">%s</a> ' % (reference['url'],reference['url'])
-						if 'github' in reference:
-							link = reference['github'].split("github.com/")[-1]
+								text += '<a href="%s">%s</a> ' % (fields['url'],fields['url'])
+						if 'github' in fields:
+							link = fields['github'].split("github.com/")[-1]
 							link = "https://github.com/%s" % (link,)
 							text += '(<a href="%s">github</a>) ' % (link,)
 

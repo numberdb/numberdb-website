@@ -352,11 +352,31 @@ canonical URL; renaming a table is therefore allowed and costs a redirect.
 Emit the canonical link in pages and in API responses from the start, so
 citations made from today point at something permanent.
 
-## Open questions
+## Discussions
 
-1. Where do discussions attach? Per table is clearly needed. Per entry is what
-   OEIS lacks and would suit a corpus whose entries already carry `comment`,
-   `proof` and `equals`.
+One thread per table, in the manner of a Wikipedia talk page, and one per tag.
+
+Per entry was considered and rejected as the starting point. It would suit a
+corpus whose entries already carry `comment`, `proof` and `equals`, and it is
+the thing OEIS lacks, but it multiplies the number of objects that can be
+watched, notified and moderated by roughly ten thousand, for conversations that
+are usually about the table anyway. An entry-specific point is made in the
+table's thread, and the entry is already addressable: every one has a permanent
+anchor of the form `/T7#<params_id>`, so a comment can link precisely to the
+value it is about without the discussion itself having to live there.
+
+Referring to a single entry has to be effortless, or the distinction collapses
+into "discussions are about tables". Each row in the table should offer its own
+link, and the comment box should turn a pasted `#<params_id>` into the value it
+names, so a thread reads as a conversation about numbers rather than about
+anchors.
+
+Tags get threads because a tag is where a question of scope belongs. "Should
+this table be tagged transcendental" has no natural home on any single table.
+
+Nothing here forecloses per-entry threads later: a thread already has to record
+what it is attached to, and adding a second kind of anchor is a migration
+rather than a redesign.
 
 ## Risks
 
