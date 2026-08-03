@@ -154,3 +154,42 @@ def unreviewed_params(table):
 
 	return changed_params(tree_of(table.reviewed_at_revision),
 	                      tree_of(table.head_revision))
+
+
+def sync_review_flags(table):
+	"""Set the ``reviewed`` flag on every row of ``table`` from its history.
+
+	Returns the number of rows now marked unreviewed.
+
+	Called after a commit and after a review, so the flag always describes the
+	table's current head rather than whatever was true when the row was built.
+	Cheap enough to do wholesale: it is two updates per number kind, and the
+	tables that get edited are the ones somebody is looking at.
+	"""
+	from .models import Number, NumberComplex, NumberPAdic, Polynomial
+
+	outstanding = unreviewed_params(table)
+	kinds = (Number, NumberComplex, NumberPAdic, Polynomial)
+
+	if outstanding is ALL_UNREVIEWED:
+		return sum(model.objects.filter(table=table).update(reviewed=False)
+		           for model in kinds)
+
+	marked = 0
+	for model in kinds:
+		rows = list(model.objects.filter(table=table).only('id', 'param'))
+		if not rows:
+			continue
+		#Compared in Python rather than in SQL because `param` is a binary
+		#column and the identities are text; pushing this into the query would
+		#mean encoding every identity the same way the builder did, which is
+		#exactly the mismatch that made the first version of this gate apply to
+		#nothing at all.
+		unreviewed_ids = [r.id for r in rows if r.param_str() in outstanding]
+		reviewed_ids = [r.id for r in rows if r.param_str() not in outstanding]
+		if unreviewed_ids:
+			marked += model.objects.filter(id__in=unreviewed_ids).update(
+				reviewed=False)
+		if reviewed_ids:
+			model.objects.filter(id__in=reviewed_ids).update(reviewed=True)
+	return marked

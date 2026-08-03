@@ -168,3 +168,77 @@ class UnreviewedParams(TestCase):
 		self.commit({'Numbers': {'1': 'a'}}, base=second)
 		self.table.refresh_from_db()
 		self.assertEqual(unreviewed_params(self.table), set())
+
+
+class TheGateBites(TestCase):
+	"""An unreviewed value must actually vanish from search by number.
+
+	Asserted against the real search functions rather than by inspecting the
+	flag, because a gate that is set but never consulted is the failure this
+	is guarding against.
+	"""
+
+	def setUp(self):
+		from sage.rings.all import RIF
+		from numberdb_app.models import Number
+		self.RIF = RIF
+		self.table = Table.objects.create(tid='T902', tid_int=902,
+		                                  title='Gate probe', url='Gate902')
+		#A number precise enough to be identifiable, so the only thing that can
+		#exclude it is the review flag.
+		self.number = Number(sage_number=RIF('3.14159265358979323846'))
+		self.number.table = self.table
+		self.number.param = b'1'
+		self.number.save()
+
+	def _search(self):
+		from numberdb_app.search import search_real_numbers
+		from utils.utils import blur_real_interval
+		#Deliberately the same digits as the stored value. A shorter query
+		#produces an interval that does not reach it: blurring '3.14159' gives
+		#a range ending below pi's stored lower bound, so it would find nothing
+		#whatever the review flag said, and the test would pass for the wrong
+		#reason in one direction and fail for the wrong reason in the other.
+		query = blur_real_interval(self.RIF('3.1415926535897932'))
+		return [n.pk for n in search_real_numbers(query, 20)]
+
+	def test_a_reviewed_value_is_found(self):
+		self.assertIn(self.number.pk, self._search())
+
+	def test_an_unreviewed_value_is_not_found(self):
+		from numberdb_app.models import Number
+		Number.objects.filter(pk=self.number.pk).update(reviewed=False)
+		self.assertNotIn(self.number.pk, self._search())
+
+	def test_the_row_still_exists_and_is_still_shown(self):
+		"""Excluded from search, not hidden: the page must still show it."""
+		from numberdb_app.models import Number
+		Number.objects.filter(pk=self.number.pk).update(reviewed=False)
+		self.assertTrue(Number.objects.filter(pk=self.number.pk).exists())
+
+	def test_sync_marks_only_what_changed(self):
+		from numberdb_app.models import Number
+		from .review import sync_review_flags
+		second = Number(sage_number=self.RIF('2.71828182845904523536'))
+		second.table = self.table
+		second.param = b'2'
+		second.save()
+
+		first = commit_table(self.table,
+		                     {'Numbers': {'1': '3.14159265358979323846',
+		                                  '2': '2.71828182845904523536'}},
+		                     author=User.objects.create(username='gate_probe'))
+		self.table.reviewed_at_revision = first.revision
+		self.table.save(update_fields=['reviewed_at_revision'])
+		commit_table(self.table,
+		             {'Numbers': {'1': '3.14159265358979323846',
+		                          '2': 'CHANGED'}},
+		             base=first.revision)
+		self.table.refresh_from_db()
+
+		marked = sync_review_flags(self.table)
+		self.assertEqual(marked, 1)
+		self.assertTrue(Number.objects.get(pk=self.number.pk).reviewed)
+		self.assertFalse(Number.objects.get(pk=second.pk).reviewed)
+		#And the untouched one is still findable.
+		self.assertIn(self.number.pk, self._search())
