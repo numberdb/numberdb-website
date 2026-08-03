@@ -147,10 +147,56 @@ SOCIALACCOUNT_PROVIDERS = {
     },
 }
 
+#### email ####
+#
+# Anymail was installed but never configured, and production ran the console
+# backend: every verification message was printed into the container log and
+# delivered to nobody. Mail has therefore never worked, which is why email
+# signup could not be relied on.
+#
+# The provider is chosen by which key is present. Setting RESEND_API_KEY is the
+# whole configuration; with no key, mail goes to the console, which is right
+# for development and honest about delivering nothing. EMAIL_BACKEND still
+# overrides, but note that an explicit console backend in .env will silently
+# win over a key that is set -- which is exactly the trap production was in.
+RESEND_API_KEY = config('RESEND_API_KEY', default='')
+ANYMAIL = {
+    'RESEND_API_KEY': RESEND_API_KEY,
+}
+EMAIL_BACKEND = config(
+    'EMAIL_BACKEND',
+    default=('anymail.backends.resend.EmailBackend' if RESEND_API_KEY
+             else 'django.core.mail.backends.console.EmailBackend'),
+)
+#Sent from a subdomain so that a deliverability problem never damages the
+#reputation of the apex domain the website itself is served from.
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL',
+                            default='NumberDB <noreply@mail.numberdb.org>')
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
 #### allauth ####
-ACCOUNT_AUTHENTICATION_METHOD = "username_email"
-ACCOUNT_EMAIL_REQUIRED = False
-ACCOUNT_EMAIL_VERIFICATION = 'optional' #"mandatory"
+#Spelled in the modern settings; the older ACCOUNT_AUTHENTICATION_METHOD,
+#ACCOUNT_EMAIL_REQUIRED, ACCOUNT_SIGNUP_EMAIL_ENTER_TWICE and
+#ACCOUNT_LOGIN_ATTEMPTS_* are deprecated in allauth 65 and were each raising a
+#warning on every start.
+ACCOUNT_LOGIN_METHODS = {'username', 'email'}
+
+#: Whether an address must be confirmed before the account can be used.
+#: Read from the environment so it can be turned on the moment mail is known to
+#: be delivering, and not a moment before: making it mandatory while mail is
+#: broken locks every new user out of the account they just created.
+ACCOUNT_EMAIL_VERIFICATION = config('ACCOUNT_EMAIL_VERIFICATION',
+                                    default='optional')
+
+#: An address is collected at signup but not required, matching the previous
+#: behaviour. The trailing '*' marks a field required; add one to 'email' when
+#: accounts start owning content.
+ACCOUNT_SIGNUP_FIELDS = ['email', 'username*', 'password1*', 'password2*']
+
+#Not named ACCOUNT_EMAIL_REQUIRED: allauth warns on that name even when the
+#value agrees with ACCOUNT_SIGNUP_FIELDS. Kept as a plain local because the
+#social settings below are derived from it.
+_email_required = 'email*' in ACCOUNT_SIGNUP_FIELDS
 ACCOUNT_CONFIRM_EMAIL_ON_GET = True #email providers commonly use GET
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = config('ACCOUNT_DEFAULT_HTTP_PROTOCOL')
 ACCOUNT_EMAIL_SUBJECT_PREFIX = "[NumberDB]"
@@ -161,22 +207,23 @@ ACCOUNT_LOGOUT_REDIRECT_URL ='/'
 ACCOUNT_USERNAME_MAX_LENGTH = 20
 ACCOUNT_SESSION_REMEMBER = True #Always remember session
 #ACCOUNT_SIGNUP_FORM_CLASS #Perhaps in future, for additional input fields
-ACCOUNT_SIGNUP_EMAIL_ENTER_TWICE = False
 #ACCOUNT_SIGNUP_REDIRECT_URL = "welcome/"
 #ACCOUNT_USER_DISPLAY #Perhaps in future
 ACCOUNT_USERNAME_MIN_LENGTH = 1
 
-SOCIALACCOUNT_AUTO_SIGNUP = ACCOUNT_EMAIL_REQUIRED
+SOCIALACCOUNT_AUTO_SIGNUP = _email_required
 SOCIALACCOUNT_EMAIL_VERIFICATION = False #No need, as we trust that github already did thta
 #SOCIALACCOUNT_FORMS #Perhaps later
-SOCIALACCOUNT_QUERY_EMAIL = ACCOUNT_EMAIL_REQUIRED
+SOCIALACCOUNT_QUERY_EMAIL = _email_required
 SOCIALACCOUNT_STORE_TOKENS = False
 
 LOGIN_REDIRECT_URL = '/'
 
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS=7
-ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 5
-ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 86400 # 1 day in seconds
+#Five failures per day per account, as before, in the modern spelling.
+ACCOUNT_RATE_LIMITS = {
+    'login_failed': '5/24h',
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
