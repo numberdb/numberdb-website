@@ -299,7 +299,16 @@ not"`), which preserves every existing state and makes it checkable. The point
 is to write down the richness, not to flatten it.
 
 **One concept, one spelling.** `arXiv` (14) and `arxiv` (4); `MR` (7) and
-`mr` (2); `Numbers` (99) and `Data` (10).
+`mr` (2); `Numbers` (99) and `Data` (10). The renderer now matches reference
+keys case-insensitively, which is the tolerance a contributor typing into a
+form will need anyway, so this is tidiness rather than a bug.
+
+**Prefer zbMATH to MathSciNet in new references.** Both are supported and an
+`MR` number is real information worth keeping, but zbMATH Open serves its
+records to anybody, while an anonymous MathSciNet request returns a JavaScript
+shell and a subscription behind it. Checked rather than assumed, in August
+2026. A form should offer `zbl` first and `doi` above both, since a DOI needs
+no index at all.
 
 **Leave `reliability` alone.** It is genuinely free prose with citations,
 sometimes several sentences, and it is mathematical hedging rather than
