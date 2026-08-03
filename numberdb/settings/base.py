@@ -206,7 +206,7 @@ EMAIL_BACKEND = config('EMAIL_BACKEND', default=_default_email_backend)
 #so that a deliverability problem cannot damage the reputation of the domain
 #the website itself is served from.
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL',
-                            default='NumberDB <noreply@mail.numberdb.org>')
+                            default='NumberDB <noreply@mg.numberdb.org>')
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 #### allauth ####
