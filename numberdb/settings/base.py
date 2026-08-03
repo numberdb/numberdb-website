@@ -223,10 +223,9 @@ ACCOUNT_LOGIN_METHODS = {'username', 'email'}
 ACCOUNT_EMAIL_VERIFICATION = config('ACCOUNT_EMAIL_VERIFICATION',
                                     default='optional')
 
-#: An address is collected at signup but not required, matching the previous
-#: behaviour. The trailing '*' marks a field required; add one to 'email' when
-#: accounts start owning content.
-ACCOUNT_SIGNUP_FIELDS = ['email', 'username*', 'password1*', 'password2*']
+#: The trailing '*' marks a field required. Email is required now that accounts
+#: own content and are the thing an edit is attributed to.
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 
 #Not named ACCOUNT_EMAIL_REQUIRED: allauth warns on that name even when the
 #value agrees with ACCOUNT_SIGNUP_FIELDS. Kept as a plain local because the
@@ -254,10 +253,26 @@ ACCOUNT_SESSION_REMEMBER = True #Always remember session
 #ACCOUNT_USER_DISPLAY #Perhaps in future
 ACCOUNT_USERNAME_MIN_LENGTH = 1
 
-SOCIALACCOUNT_AUTO_SIGNUP = _email_required
-SOCIALACCOUNT_EMAIL_VERIFICATION = False #No need, as we trust that github already did thta
+#: Verification is for people who typed an address into our form. Someone
+#: arriving from GitHub or Google has already proved that address to a provider
+#: that checked it, and asking again is a second confirmation email for no
+#: additional evidence.
+#:
+#: Spelled 'none' rather than False: allauth expects one of 'mandatory',
+#: 'optional' or 'none', and False merely happened to be falsy.
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+
+#: Ask the provider for the address. This was False, derived from email being
+#: optional at signup, and the consequence was invisible: allauth then requests
+#: no scopes at all from GitHub, GitHub returns only a public profile email
+#: (usually null), and a GitHub signup produced an account with no address on
+#: it. Nothing reported this, because nobody had ever completed a GitHub login.
+SOCIALACCOUNT_QUERY_EMAIL = True
+
+#: With an address in hand there is nothing left to ask, so skip the extra
+#: signup form rather than showing a half-filled one.
+SOCIALACCOUNT_AUTO_SIGNUP = True
 #SOCIALACCOUNT_FORMS #Perhaps later
-SOCIALACCOUNT_QUERY_EMAIL = _email_required
 SOCIALACCOUNT_STORE_TOKENS = False
 
 LOGIN_REDIRECT_URL = '/'
