@@ -272,6 +272,25 @@ SOCIALACCOUNT_QUERY_EMAIL = True
 #: With an address in hand there is nothing left to ask, so skip the extra
 #: signup form rather than showing a half-filled one.
 SOCIALACCOUNT_AUTO_SIGNUP = True
+
+#: Let a provider log somebody into the account that already holds the same
+#: address, and link the two so it works directly next time.
+#:
+#: Without this, anyone who signed up by email and later clicks "sign in with
+#: GitHub" is told an account already exists and is stuck: the provider will
+#: not create a second account for the address, and it will not open the first.
+#:
+#: Safe because of two guards in allauth, both checked rather than assumed:
+#:
+#:   * only addresses the provider itself marked verified are matched
+#:     (`authenticate_by_email` filters on `e.verified`), so a provider that
+#:     lets anyone claim any address cannot be used to walk into an account;
+#:   * if the local address was never verified, the local password is wiped
+#:     on the way in. That covers the case where an attacker signed up with a
+#:     victim's address and waited: the victim arrives via the provider, and
+#:     the attacker's password stops working. A verified address is untouched.
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 #SOCIALACCOUNT_FORMS #Perhaps later
 SOCIALACCOUNT_STORE_TOKENS = False
 
