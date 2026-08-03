@@ -219,26 +219,33 @@ class TheGateBites(TestCase):
 	def test_sync_marks_only_what_changed(self):
 		from numberdb_app.models import Number
 		from .review import sync_review_flags
-		second = Number(sage_number=self.RIF('2.71828182845904523536'))
-		second.table = self.table
-		second.param = b'2'
-		second.save()
+		#Parameters must be declared, or the builder treats the whole Numbers
+		#mapping as a single entry and produces no rows at all. Committing
+		#rebuilds the rows from this document, so the hand-made ones above are
+		#replaced.
+		def document(second_value):
+			return {
+				'Parameters': {'n': {'type': 'Z'}},
+				'Numbers': {'1': '3.14159265358979323846',
+				            '2': second_value},
+			}
 
-		first = commit_table(self.table,
-		                     {'Numbers': {'1': '3.14159265358979323846',
-		                                  '2': '2.71828182845904523536'}},
+		first = commit_table(self.table, document('2.71828182845904523536'),
 		                     author=User.objects.create(username='gate_probe'))
 		self.table.reviewed_at_revision = first.revision
 		self.table.save(update_fields=['reviewed_at_revision'])
-		commit_table(self.table,
-		             {'Numbers': {'1': '3.14159265358979323846',
-		                          '2': 'CHANGED'}},
+		self.table.refresh_from_db()
+		self.assertEqual(Number.objects.filter(table=self.table).count(), 2)
+
+		commit_table(self.table, document('1.41421356237309504880'),
 		             base=first.revision)
 		self.table.refresh_from_db()
 
-		marked = sync_review_flags(self.table)
-		self.assertEqual(marked, 1)
-		self.assertTrue(Number.objects.get(pk=self.number.pk).reviewed)
-		self.assertFalse(Number.objects.get(pk=second.pk).reviewed)
-		#And the untouched one is still findable.
-		self.assertIn(self.number.pk, self._search())
+		rows = {n.param_str(): n for n in Number.objects.filter(table=self.table)}
+		self.assertEqual(set(rows), {'1', '2'})
+		self.assertTrue(rows['1'].reviewed)
+		self.assertFalse(rows['2'].reviewed)
+		#The untouched value is still findable; the changed one is not.
+		found = self._search()
+		self.assertIn(rows['1'].pk, found)
+		self.assertNotIn(rows['2'].pk, found)
