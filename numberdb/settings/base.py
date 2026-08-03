@@ -149,27 +149,62 @@ SOCIALACCOUNT_PROVIDERS = {
 
 #### email ####
 #
-# Anymail was installed but never configured, and production ran the console
-# backend: every verification message was printed into the container log and
-# delivered to nobody. Mail has therefore never worked, which is why email
-# signup could not be relied on.
+# Three separate things had to be wrong at once for mail to be as broken as it
+# was, and all three were:
 #
-# The provider is chosen by which key is present. Setting RESEND_API_KEY is the
-# whole configuration; with no key, mail goes to the console, which is right
-# for development and honest about delivering nothing. EMAIL_BACKEND still
-# overrides, but note that an explicit console backend in .env will silently
-# win over a key that is set -- which is exactly the trap production was in.
+#   * anymail was installed with no configuration block and no key;
+#   * production set EMAIL_BACKEND to the console backend explicitly, which
+#     would have overridden a key even if one had been present;
+#   * env/.env.prod.example documented EMAIL_MG_API_KEY, which no code has ever
+#     read, so filling it in would have changed nothing.
+#
+# The provider is now chosen by which key is present, so setting the key is the
+# whole configuration. Mailgun is preferred because numberdb.org's sending
+# domain is already verified there; Resend works identically if it is ever
+# swapped. With neither key, mail goes to the console, which is correct in
+# development and honest about delivering nothing.
+#
+# EMAIL_BACKEND still overrides everything, which is a footgun worth knowing
+# about rather than removing: it is what a developer needs to silence mail
+# locally, and it is exactly how production came to deliver nothing.
+
+#EMAIL_MG_* is the spelling env/.env.prod.example has always used; the
+#MAILGUN_* names are accepted too, since that is what Anymail's own
+#documentation says and the difference is otherwise a puzzle.
+MAILGUN_API_KEY = (config('EMAIL_MG_API_KEY', default='')
+                   or config('MAILGUN_API_KEY', default=''))
+#Only needed for the EU region, where the host is api.eu.mailgun.net. Sending
+#to the wrong region fails authentication with a message that does not say so.
+MAILGUN_API_URL = (config('EMAIL_MG_API_BASE_URL', default='')
+                   or config('MAILGUN_API_URL', default='')
+                   or 'https://api.mailgun.net/v3')
+#The verified sending domain, which is not necessarily the site's domain.
+MAILGUN_SENDER_DOMAIN = (config('EMAIL_MG_SENDER_DOMAIN', default='')
+                         or config('MAILGUN_SENDER_DOMAIN', default=''))
+
 RESEND_API_KEY = config('RESEND_API_KEY', default='')
-ANYMAIL = {
-    'RESEND_API_KEY': RESEND_API_KEY,
-}
-EMAIL_BACKEND = config(
-    'EMAIL_BACKEND',
-    default=('anymail.backends.resend.EmailBackend' if RESEND_API_KEY
-             else 'django.core.mail.backends.console.EmailBackend'),
-)
-#Sent from a subdomain so that a deliverability problem never damages the
-#reputation of the apex domain the website itself is served from.
+
+ANYMAIL = {}
+if MAILGUN_API_KEY:
+    ANYMAIL['MAILGUN_API_KEY'] = MAILGUN_API_KEY
+    ANYMAIL['MAILGUN_API_URL'] = MAILGUN_API_URL
+    if MAILGUN_SENDER_DOMAIN:
+        ANYMAIL['MAILGUN_SENDER_DOMAIN'] = MAILGUN_SENDER_DOMAIN
+if RESEND_API_KEY:
+    ANYMAIL['RESEND_API_KEY'] = RESEND_API_KEY
+
+if MAILGUN_API_KEY:
+    _default_email_backend = 'anymail.backends.mailgun.EmailBackend'
+elif RESEND_API_KEY:
+    _default_email_backend = 'anymail.backends.resend.EmailBackend'
+else:
+    _default_email_backend = 'django.core.mail.backends.console.EmailBackend'
+
+EMAIL_BACKEND = config('EMAIL_BACKEND', default=_default_email_backend)
+
+#Sent from the verified sending domain. A subdomain is preferable to the apex,
+#so that a deliverability problem cannot damage the reputation of the domain
+#the website itself is served from.
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL',
                             default='NumberDB <noreply@mail.numberdb.org>')
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
