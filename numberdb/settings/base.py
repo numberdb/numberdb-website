@@ -234,7 +234,15 @@ ACCOUNT_SIGNUP_FIELDS = ['email', 'username*', 'password1*', 'password2*']
 _email_required = 'email*' in ACCOUNT_SIGNUP_FIELDS
 ACCOUNT_CONFIRM_EMAIL_ON_GET = True #email providers commonly use GET
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = config('ACCOUNT_DEFAULT_HTTP_PROTOCOL')
-ACCOUNT_EMAIL_SUBJECT_PREFIX = "[NumberDB]"
+#Trailing space intentional: allauth concatenates this with the subject, so
+#without it every message reads "[NumberDB]Please Confirm...".
+ACCOUNT_EMAIL_SUBJECT_PREFIX = "[NumberDB] "
+
+#: Where replies to account email go. The From address is on the verified
+#: sending domain, which DKIM requires and which nobody reads; a reply without
+#: this header goes to mg.numberdb.org and is discarded in silence.
+ACCOUNT_REPLY_TO = config('ACCOUNT_REPLY_TO', default='info@numberdb.org')
+ACCOUNT_ADAPTER = 'numberdb_app.adapters.AccountAdapter'
 #ACCOUNT_FORMS #Perhaps adjust in the future
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False #Don't need to login if user immediately confirms their email address
 ACCOUNT_LOGOUT_ON_GET = False #Not fully safe, as users may get logged out by trolls in certain ways, but it should be fine.
