@@ -1,0 +1,156 @@
+"""Which values in a table are unreviewed.
+
+Every commit is live the moment it is made, so review does not gate whether
+something is published. It gates one thing: whether a value is allowed into
+search by number.
+
+That asymmetry is what makes immediate publication safe here. A reader who
+lands on a page can see the entry is unreviewed and judge it. A person typing a
+number into the search bar cannot, because a wrong fortieth digit looks exactly
+like a right one, and the whole point of the site is that finding a number in
+it means something.
+
+The unreviewed set is the *difference* between the last reviewed revision and
+head, not the whole table. Correcting one comment must not cast doubt on ten
+thousand untouched entries, or the gate becomes so coarse that reviewing stops
+being worth anybody's time.
+
+A table nobody has reviewed has no reviewed revision, and then everything in it
+is unreviewed. That is the honest default for something newly created, and it
+gives review an obvious purpose: an entry is not findable by value until
+somebody has confirmed it.
+"""
+
+from __future__ import annotations
+
+__all__ = ['changed_params', 'unreviewed_params', 'flatten_entries',
+           'ALL_UNREVIEWED']
+
+
+#: A dict carrying any of these is an entry, not another level of parameter.
+#: Taken from the renderer, so the two agree about where the parameters stop:
+#: a table whose parameter happened to be called "number" would otherwise be
+#: flattened differently by each.
+ENTRY_MARKERS = frozenset(('number', 'numbers', 'datum', 'data', 'equals'))
+
+#: Returned when a table has never been reviewed at all. Distinct from the
+#: empty set, which means "reviewed, and nothing has changed since".
+ALL_UNREVIEWED = object()
+
+
+def flatten_entries(numbers):
+	"""Map every entry to its parameter identity.
+
+	The identity is the comma-joined parameter values, which is what
+	``Number.param_str()`` produces and what the page anchors on, so a caller
+	can match these against stored rows without a translation step.
+
+	The descent mirrors the renderer, because the two must agree about where
+	the parameters stop. In particular a dict carrying ``number`` or ``numbers``
+	is *not* the end of the walk: it holds a value or a further container at
+	the **same** parameter depth, alongside things like ``param-latex``. Taking
+	it as terminal collapses a table such as T33, which is shaped
+
+	    Numbers -> a_n -> {param-latex, numbers -> {0, 1, 2, ...}}
+
+	from five hundred entries down to two.
+	"""
+	flat = {}
+
+	def walk(node, prefix):
+		if isinstance(node, dict):
+			if set(node) & ENTRY_MARKERS:
+				#`numbers` holds further entries at the same parameter depth,
+				#beside metadata such as param-latex, so the walk continues
+				#into it. T33 is shaped
+				#    Numbers -> a_n -> {param-latex, numbers -> {0, 1, ...}}
+				#and treating that dict as terminal collapses five hundred
+				#entries into two.
+				if 'numbers' in node and isinstance(node['numbers'], dict):
+					walk(node['numbers'], prefix)
+					return
+				#Otherwise this dict *is* the entry, and it is recorded whole
+				#rather than reduced to node['number']: a changed comment or
+				#proof is a change to the entry, and comparing only the value
+				#would let it pass unreviewed.
+				flat[','.join(prefix)] = node
+				return
+			for key, value in node.items():
+				walk(value, prefix + (_normalise_param(key),))
+			return
+		flat[','.join(prefix)] = node
+
+	walk(numbers if numbers is not None else {}, ())
+	return flat
+
+
+def _normalise_param(key):
+	"""A parameter key as the stored rows spell it.
+
+	A key holding several values is written `64, 296` in the YAML and stored as
+	`64,296`, because the renderer strips the spaces when it builds the anchor.
+	Without the same normalisation here, every identity in the ten tables that
+	group parameters this way fails to match its own row, and the review gate
+	would silently apply to nothing.
+	"""
+	return ','.join(part.strip() for part in str(key).split(','))
+
+
+def _entries_of(tree):
+	"""The entry section of a table, under whichever key it uses."""
+	if not isinstance(tree, dict):
+		return {}
+	#`Data` is the old spelling; the corpus was normalised to `Numbers`, but a
+	#revision committed before that still says Data and must still diff.
+	section = tree.get('Numbers')
+	if section is None:
+		section = tree.get('Data')
+	return section if isinstance(section, (dict, list)) else {}
+
+
+def changed_params(before_tree, after_tree):
+	"""Parameter identities whose value differs between two trees.
+
+	Includes entries added and entries removed: a removal is a change to what
+	the table asserts, and a search that kept returning a value somebody had
+	deleted would be worse than one that briefly forgot it.
+	"""
+	before = flatten_entries(_entries_of(before_tree))
+	after = flatten_entries(_entries_of(after_tree))
+	changed = set()
+	for key in set(before) | set(after):
+		if before.get(key, _ABSENT) != after.get(key, _ABSENT):
+			changed.add(key)
+	return changed
+
+
+class _Absent:
+	def __repr__(self):
+		return '<absent>'
+
+
+_ABSENT = _Absent()
+
+
+def unreviewed_params(table):
+	"""Which of ``table``'s entries have not been reviewed.
+
+	Returns :data:`ALL_UNREVIEWED` when nobody has reviewed the table, a set of
+	parameter identities otherwise, and an empty set when review is current.
+	"""
+	from .editing import tree_of
+
+	if table.head_revision_id is None:
+		#Nothing has been committed through the editing path, so the table is
+		#whatever the data repository built. That corpus is reviewed by
+		#construction: it arrived through pull requests.
+		return set()
+
+	if table.reviewed_at_revision_id is None:
+		return ALL_UNREVIEWED
+
+	if table.reviewed_at_revision_id == table.head_revision_id:
+		return set()
+
+	return changed_params(tree_of(table.reviewed_at_revision),
+	                      tree_of(table.head_revision))
