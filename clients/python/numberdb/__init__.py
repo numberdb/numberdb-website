@@ -215,6 +215,22 @@ class SearchResults(list):
         """Results this version cannot decode, if the server is newer."""
         return [result for result in self if not result.is_readable]
 
+    @property
+    def total(self) -> int:
+        """Everything the term matched: numbers, tables and tags together.
+
+        ``len()`` counts the numbers alone, because this is a list of numbers
+        and a list must not lie about its length. That makes the obvious
+        ``if not results:`` wrong for a text search, which can match a table
+        while matching no number -- 'matrix multiplication' finds the table and
+        nothing numeric. ``if not results.total:`` is the question that was
+        meant.
+
+        Overriding ``__bool__`` instead would have made a sequence of length
+        zero come out true, which no reader of Python expects.
+        """
+        return len(self) + len(self.tables) + len(self.tags)
+
 
 def table(table_id: Union[int, str],
           client: Optional[Client] = None) -> Dict[str, Any]:
