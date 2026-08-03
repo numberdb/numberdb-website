@@ -47,7 +47,11 @@ echo "[$(date -Iseconds)] backing up $REMOTE:$RPATH -> $out"
 
 #-T because there is no terminal; without it docker allocates a TTY and
 #corrupts the dump with carriage returns that psql later refuses to read.
-ssh -o BatchMode=yes "$REMOTE" \
+#ClearAllForwardings: the linode host in ~/.ssh/config carries a RemoteForward
+#with ExitOnForwardFailure, so a second connection aborts rather than sharing
+#the port. A backup that fails because a terminal is open is a backup that
+#fails on exactly the busy days.
+ssh -o BatchMode=yes -o ClearAllForwardings=yes "$REMOTE" \
 	"cd $RPATH && docker compose exec -T db pg_dump -U u_numberdb --clean --if-exists numberdb" \
 	| gzip -9 > "$out"
 

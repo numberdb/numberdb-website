@@ -56,7 +56,11 @@ esac
 bw sync >/dev/null
 
 echo "Reading $REMOTE:$RPATH/.env"
-content=$(ssh -o BatchMode=yes "$REMOTE" "cat $RPATH/.env")
+#ClearAllForwardings because ~/.ssh/config gives the linode host a
+#RemoteForward with ExitOnForwardFailure: a second connection cannot bind the
+#same port and aborts, so this would fail whenever a session is already open.
+#Nothing here needs a forwarded port.
+content=$(ssh -o BatchMode=yes -o ClearAllForwardings=yes "$REMOTE" "cat $RPATH/.env")
 if [ -z "$content" ]; then
 	echo "FAILED: the file came back empty; refusing to overwrite the note." >&2
 	exit 1
