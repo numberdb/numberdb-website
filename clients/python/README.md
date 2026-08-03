@@ -107,11 +107,13 @@ since they are signposts and not numbers:
 ```
 
 Note the `0`: the list holds numbers, and this term matched none, so `len()`
-and `if not found:` speak only for the numbers. To ask whether the term
-matched anything at all, say so:
+and `if not found:` speak only for the numbers. `total` counts everything the
+term matched, and is the question usually meant:
 
 ```python
->>> if not (found or found.tables or found.tags):
+>>> found.total
+2
+>>> if not found.total:
 ...     print('nothing at all')
 ```
 
@@ -215,6 +217,7 @@ two additional attributes.
 | `.unreadable` | `list[Result]` | results whose value this version of the package cannot decode |
 | `.tables` | `list[Table]` | tables whose title matched, filled in by `search_text` alone |
 | `.tags` | `list[Tag]` | tags whose name matched, likewise |
+| `.total` | `int` | everything matched: numbers, tables and tags together. `len()` counts the numbers alone |
 
 A `Table` carries `.tid`, `.title`, `.url` and `.number_count`; a `Tag` carries
 `.name`, `.url`, `.table_count` and `.number_count`. Both are signposts;

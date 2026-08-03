@@ -1022,6 +1022,34 @@ class TextFindsWordsAsWellAsNumbers(unittest.TestCase):
         self.assertEqual(found.tables[0].number_count, 4)
         self.assertEqual(found.tags[0].table_count, 2)
 
+    def test_total_counts_everything_the_term_matched(self):
+        """len() speaks for the numbers; total speaks for the search."""
+        client = _client({
+            'results': [],
+            'tables': [{'tid': 'T5', 'title': 'Exponent of matrix'
+                        ' multiplication complexity', 'url': 'Matrix',
+                        'number_count': 1}],
+            'tags': [{'name': 'matrix multiplication',
+                      'url': 'matrix+multiplication',
+                      'table_count': 1, 'number_count': 1}],
+            'messages': [],
+        })
+        found = numberdb.search_text('matrix multiplication', client=client)
+        self.assertEqual(len(found), 0)
+        self.assertEqual(found.total, 2)
+        #The list must not lie about its length, so this stays false.
+        self.assertFalse(bool(found))
+
+    def test_total_equals_len_when_only_numbers_matched(self):
+        client = _client({'results': [
+            _record({'kind': 'ZZ', 'value': '3'})], 'messages': []})
+        found = numberdb.search_text('3', client=client)
+        self.assertEqual(found.total, len(found), 1)
+
+    def test_total_is_zero_when_nothing_matched(self):
+        client = _client({'results': [], 'messages': []})
+        self.assertEqual(numberdb.search_text('zzz', client=client).total, 0)
+
     def test_a_server_that_sends_neither_is_not_an_error(self):
         """An older server, or any number search, simply has no such keys."""
         client = _client({'results': [], 'messages': []})
