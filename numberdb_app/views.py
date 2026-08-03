@@ -480,9 +480,27 @@ def table_context(table, preview=False):
 							link = fields['doi'].split("doi.org/")[-1]
 							link = "https://doi.org/%s" % (link,)
 							text += '(<a href="%s">doi</a>) ' % (link,)
+						#zbMATH before MathSciNet, because zbMATH Open serves the
+						#document to anybody: an anonymous request returns the
+						#record, while MathSciNet returns a JavaScript shell and,
+						#behind it, a subscription. A reader without an
+						#institution can follow one of these links and not the
+						#other, so the open one goes first.
+						#
+						#Accepts 'zbl' and 'zbmath', and tolerates a value written
+						#either as a bare Zbl number or with the prefix.
+						if 'zbl' in fields or 'zbmath' in fields:
+							link = str(fields.get('zbl') or fields.get('zbmath')).strip()
+							link = link.split("an:")[-1].strip()
+							if link.lower().startswith('zbl'):
+								link = link[3:].strip()
+							text += ('(<a href="https://zbmath.org/?q=an%%3A%s">zbMATH</a>) '
+							         % (link,))
 						#Never rendered at all before: there was no branch for it,
 						#so nine Mathematical Reviews numbers sat in the data
-						#doing nothing.
+						#doing nothing. Kept despite the paywall, because the
+						#number is real information and is useful to anyone who
+						#does have access.
 						if 'mr' in fields:
 							link = str(fields['mr']).strip()
 							link = link.split("mr=")[-1].lstrip("MRmr")
