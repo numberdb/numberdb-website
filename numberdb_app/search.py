@@ -91,12 +91,27 @@ def max_relative_width():
 	return getattr(settings, 'NUMBERDB_MAX_RELATIVE_WIDTH', 1e-5)
 
 
-def _identifiable(queryset):
-	"""Drop values known too weakly to identify the number being asked about.
+def _reviewed(queryset):
+	"""Only values whose current content has been reviewed.
 
-	Numeric search exists for one question: someone has a number from an
-	experiment and wants to know whether it is already known. Values that are
-	merely bounded answer it with noise.
+	Separate from :func:`_identifiable` because the other three kinds have no
+	relative width to judge: a p-adic ball, a complex box and a polynomial are
+	either right or wrong, not imprecise. The review gate applies to all four.
+	"""
+	return queryset.filter(reviewed = True)
+
+
+def _identifiable(queryset):
+	"""Drop values that cannot answer the question search by number asks.
+
+	Two reasons, and both are about the same asymmetry. A reader looking at a
+	table page can see that an entry is imprecise or unreviewed and weigh it;
+	somebody typing digits into the search box cannot, and a wrong fortieth
+	digit looks exactly like a right one.
+
+	So this excludes values known too weakly to identify anything, and values
+	whose current content nobody has reviewed. Both stay visible on their table
+	and both are marked there.
 
 	A null width means exact_text could not be parsed, which is no reason to
 	hide the row; those are kept.
@@ -104,7 +119,7 @@ def _identifiable(queryset):
 	return queryset.filter(
 		Q(exact_relative_width__lte = max_relative_width())
 		| Q(exact_relative_width__isnull = True)
-	)
+	).filter(reviewed = True)
 
 
 def real_query_range(r_query):
@@ -188,7 +203,7 @@ def search_complex_numbers(n_query, limit):
 	im_low, im_high = float(n_query.imag().lower()), float(n_query.imag().upper())
 
 	contained = list(
-		NumberComplex.objects.filter(
+		_reviewed(NumberComplex.objects).filter(
 			re_lower__gte = re_low, re_upper__lte = re_high,
 			im_lower__gte = im_low, im_upper__lte = im_high,
 		)[:limit]
@@ -197,7 +212,7 @@ def search_complex_numbers(n_query, limit):
 		return contained
 
 	return list(
-		NumberComplex.objects
+		_reviewed(NumberComplex.objects)
 			.filter(
 				re_lower__lte = re_high, re_upper__gte = re_low,
 				im_lower__lte = im_high, im_upper__gte = im_low,
@@ -249,14 +264,14 @@ def search_p_adic_numbers(number_string, limit):
 	and finer values first, then the coarser ones, widest last.
 	"""
 	inside = list(
-		NumberPAdic.objects.filter(
+		_reviewed(NumberPAdic.objects).filter(
 			number_string__startswith = number_string)[:limit]
 	)
 	if len(inside) >= limit:
 		return inside
 
 	coarser = list(
-		NumberPAdic.objects.filter(
+		_reviewed(NumberPAdic.objects).filter(
 			number_string__in = _coarser_ball_strings(number_string))
 	)
 	coarser.sort(key = lambda number: -len(number.number_string))
@@ -377,7 +392,7 @@ def search_by_term(term, limit = PAGE_SIZE):
 		if p.number_of_terms() < 2:
 			return None
 		polynomial = Polynomial(sage_polynomial=p)
-		return Polynomial.objects.filter(
+		return _reviewed(Polynomial.objects).filter(
 			number_string_hash=polynomial.number_string_hash,
 			number_string=polynomial.number_string)[:limit]
 
@@ -415,7 +430,7 @@ def search_number(value, limit = PAGE_SIZE):
 		#No identifiability filter: a polynomial is exact, so there is no
 		#question of it being known too weakly to identify anything.
 		polynomial = Polynomial(sage_polynomial = value)
-		return list(Polynomial.objects.filter(
+		return list(_reviewed(Polynomial.objects).filter(
 			number_string_hash = polynomial.number_string_hash,
 			number_string = polynomial.number_string)[:limit])
 

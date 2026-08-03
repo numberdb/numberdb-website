@@ -517,6 +517,19 @@ def searchable_range(lower, upper):
 
 class Number(models.Model):
 
+	#: Whether this value has been reviewed at its current content. Set from
+	#: the difference between a table's reviewed revision and its head; see
+	#: review.py. Unreviewed values stay visible and marked on the page and are
+	#: held out of search by number, because a reader can judge a flagged entry
+	#: and a person typing digits into a search box cannot.
+	#:
+	#: Defaults True: everything already here arrived through the data
+	#: repository's pull requests, which is a review.
+	reviewed = models.BooleanField(
+		default = True,
+		db_index = True,
+	)
+
 	NUMBER_TYPE_ZZ = b'z'
 	NUMBER_TYPE_QQ = b'q'
 	NUMBER_TYPE_RIF = b'r'
@@ -790,6 +803,19 @@ class Number(models.Model):
 
 class NumberPAdic(models.Model):
 
+	#: Whether this value has been reviewed at its current content. Set from
+	#: the difference between a table's reviewed revision and its head; see
+	#: review.py. Unreviewed values stay visible and marked on the page and are
+	#: held out of search by number, because a reader can judge a flagged entry
+	#: and a person typing digits into a search box cannot.
+	#:
+	#: Defaults True: everything already here arrived through the data
+	#: repository's pull requests, which is a review.
+	reviewed = models.BooleanField(
+		default = True,
+		db_index = True,
+	)
+
 	#Format of number_string:
 	#"<prime>,<valuation>,<digits>"
 	#which represents
@@ -932,6 +958,19 @@ class NumberPAdic(models.Model):
 		}
 
 class NumberComplex(models.Model):
+
+	#: Whether this value has been reviewed at its current content. Set from
+	#: the difference between a table's reviewed revision and its head; see
+	#: review.py. Unreviewed values stay visible and marked on the page and are
+	#: held out of search by number, because a reader can judge a flagged entry
+	#: and a person typing digits into a search box cannot.
+	#:
+	#: Defaults True: everything already here arrived through the data
+	#: repository's pull requests, which is a review.
+	reviewed = models.BooleanField(
+		default = True,
+		db_index = True,
+	)
 
 	NUMBER_TYPE_C = b'c'
 	
@@ -1097,6 +1136,19 @@ class NumberComplex(models.Model):
 		}
 
 class Polynomial(models.Model):
+
+	#: Whether this value has been reviewed at its current content. Set from
+	#: the difference between a table's reviewed revision and its head; see
+	#: review.py. Unreviewed values stay visible and marked on the page and are
+	#: held out of search by number, because a reader can judge a flagged entry
+	#: and a person typing digits into a search box cannot.
+	#:
+	#: Defaults True: everything already here arrived through the data
+	#: repository's pull requests, which is a review.
+	reviewed = models.BooleanField(
+		default = True,
+		db_index = True,
+	)
 
 	#Format of number_string:
 	#"<#variables>,<polynomial>"
