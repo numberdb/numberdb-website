@@ -267,6 +267,30 @@ class Table(models.Model):
 		default = 0,
 	)
 
+	#: The current revision. Held explicitly rather than derived from the newest
+	#: timestamp, because two revisions created in the same instant would make
+	#: "which is head" a question about clock resolution.
+	head_revision = models.ForeignKey(
+		'TableRevision',
+		null = True,
+		blank = True,
+		on_delete = models.SET_NULL,
+		related_name = 'head_of',
+	)
+
+	#: The last revision a board member has looked at. Everything between this
+	#: and head is unreviewed: visible, marked, and held out of search by
+	#: number until somebody confirms it. Null means nobody has reviewed this
+	#: table at all, which is the honest default for a new one.
+	reviewed_at_revision = models.ForeignKey(
+		'TableRevision',
+		null = True,
+		blank = True,
+		on_delete = models.SET_NULL,
+		related_name = 'reviewed_head_of',
+	)
+
+
 	def __str__(self):
 		return 'Table %s' % (self.title,)
 		
