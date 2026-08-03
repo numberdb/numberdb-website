@@ -82,6 +82,40 @@ Board membership starts as one person and is delegable. Nothing in the model
 depends on the board being large; it depends on the review pointer described
 below, which degrades honestly when nobody has looked at something yet.
 
+### Earning trust
+
+Trust is granted by a board member, or automatically after **N reviewed edits**
+that have not been reverted, where N defaults to 5 and is read from settings so
+it can be tuned without a rebuild (the pattern `NUMBERDB_MAX_RELATIVE_WIDTH`
+already uses).
+
+Measured against the contributors the project actually has, auto-promotion will
+rarely fire: of the four contributors to date, two made 3 and 1 table commits
+respectively, and would never reach any threshold worth having. Manual grant is
+therefore the mechanism that matters now; auto-promotion is a valve for a
+busier future, not the main path.
+
+Three conditions beyond the count, all cheap and all guarding against the way
+edit-count gates are usually defeated:
+
+- the qualifying edits must be **reviewed and not reverted**;
+- they must span **at least two tables**, so five typo fixes to one page do not
+  qualify;
+- the account must be **at least a few days old**, which is what stops a burst
+  of trivial edits from converting straight into trust.
+
+At least one qualifying edit should have **touched a numeric value**. Trust
+grants auto-review, and auto-review puts digits into the search index without
+anyone checking them; edits to comments are no evidence at all about that.
+
+Trust is revocable, and revoking it should return that author's
+self-reviewed commits to unreviewed.
+
+**Identities must be merged before counts mean anything.** The current corpus
+already shows one person as two contributors (243 and 39 commits under two git
+identities). A per-identity edit count silently splits in that situation.
+
+
 ## The commit model
 
 Borrowed from git, because the semantics are already understood by everyone
@@ -162,6 +196,35 @@ not.
 Supporting machinery, none of it novel: one-click revert (which is itself a
 commit), notification to the board on any edit to a watched table, and rate
 limits per account.
+
+## Editing surfaces
+
+The source view stays permanently, and forms are added beside it. They are two
+views of **one document**, never two documents, and the user may switch at any
+point without loss.
+
+Three surfaces, because the content is genuinely of three kinds:
+
+1. **Prose carrying LaTeX and macros** (`Definition`, `Comments`, `Formulas`,
+   `reliability`): a source pane with live preview beside it, rather than true
+   WYSIWYG. The renderer already exists, and WYSIWYG for LaTeX tends to fight
+   the author.
+2. **Structured metadata** (`Parameters`, `Data properties`, `Display
+   properties`, `Tags`, `References`, `Links`): ordinary forms, with choices
+   populated from the vocabulary actually in use: 7 parameter types, 8 data
+   types, the three states of `complete`, repeatable rows for references.
+3. **The entries**: a spreadsheet-like grid of parameter columns, value and
+   comment, accepting paste from a spreadsheet or a Sage session. Nearly all
+   the volume lives here (10828 entries, 9288 comments), and for a database of
+   numbers the natural direct-manipulation editor is a grid rather than a
+   document editor. It maps exactly onto per-entry structural merge.
+
+**Forms must round-trip what they do not understand.** If editing a title
+through a form silently drops `layout: nested lists`, `group parameters`, or a
+`Set`-typed parameter because no widget exists for it, the UI has destroyed
+data while appearing safe. Unknown keys are preserved verbatim, and shown
+read-only with a pointer to the source view.
+
 
 ## Bulk and machine-authored proposals
 
@@ -281,14 +344,7 @@ citations made from today point at something permanent.
 
 ## Open questions
 
-1. Is trust earned automatically after N accepted edits, or granted only by a
-   board member? The model works either way; the difference is how much
-   attention the board must pay as the site grows.
-2. Does the YAML source view remain permanently as a power-user escape hatch?
-   Recommended: yes. It already exists, and it is the pressure valve for the
-   handful of tables (`layout: nested lists`, `group parameters`, `Set` and
-   `*R` types) that no form will anticipate.
-3. Where do discussions attach? Per table is clearly needed. Per entry is what
+1. Where do discussions attach? Per table is clearly needed. Per entry is what
    OEIS lacks and would suit a corpus whose entries already carry `comment`,
    `proof` and `equals`.
 
