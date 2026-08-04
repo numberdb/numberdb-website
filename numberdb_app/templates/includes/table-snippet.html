@@ -1,4 +1,7 @@
 <style>
+.table-block-focused { background: #e5eecc; outline: 2px solid #b0be90; }
+</style>
+<style>
 div.table-title {
   font-weight: 400;
   font-size: 2rem;
@@ -163,7 +166,13 @@ function scrollTo(event, id) {
         </div>
       </div>
       {% for n in number_section.number_list %}
-        <div {% if n.params_id %}id="{{ n.params_id }}"{% endif %} class="table-block">
+        {% comment %}
+        The row carries both forms of its address: the id, so the browser can
+        scroll to it, and a link the server can resolve, so a citation can be
+        checked rather than failing silently.
+        {% endcomment %}
+        <div {% if n.params_id %}id="{{ n.params_id }}"{% endif %}
+             class="table-block{% if entry_found and n.params_id == entry %} table-block-focused{% endif %}">
           {% for p in n.params_display %}
             <div class="table-param-group">
               {{ p | safe }}

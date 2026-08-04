@@ -129,14 +129,58 @@ pointing at a file whose first line says "Do NOT edit". It belongs to the
 table, is allocated on creation, and is neither shown nor accepted from an
 editor.
 
-## What this does not decide
 
-**Whether entries should be flattened.** A mapping three levels deep could be
-stored as a list of records with explicit parameter tuples, which would suit a
-grid editor and a database better than nested mappings. It would also make the
-files less readable, and reading them is a stated purpose of the repository.
-Worth deciding before the grid is built, not before the schema is written: the
-schema describes what a table *means*, and both layouts mean the same thing.
+## Addressing a single value
+
+A value's address was `/Best_Sobolev_constant#6,18/11,9/4`. A fragment is never
+sent to the server, by the definition of HTTP, so nothing could render one
+entry, confirm that it exists, or tell a reader that a citation had gone stale:
+the page loaded and the browser scrolled nowhere. For a database whose worth is
+that a number has a permanent address, silence is the wrong way to fail.
+
+It now also travels in the query string, which the server does see:
+
+    /T92?entry=6,18/11,9/4     resolvable, validated, citable
+    /T92#6,18/11,9/4           kept, so the browser still scrolls
+
+The query string rather than a path segment because 6736 of the identities
+contain a "/" -- the parameters are rationals such as 18/11 -- and a
+percent-encoded slash inside a path segment is rewritten or rejected by a good
+deal of software between here and the reader. Identities are short: the longest
+in the corpus is 22 characters.
+
+Canonical on the `T`-number, which is permanent, rather than the slug, which is
+not. An entry that no longer exists now says so and still shows the table,
+rather than leaving the reader to wonder whether they misread the citation.
+
+## Decisions taken here
+
+**Entries become flat records, with parameters named.** Decided.
+
+    Numbers:
+    - params: {p: 2, s: -50}
+      number: '2^-1 * 18438155738610754'
+      comment: ...
+
+The argument is not flexibility, it is that the nested form is *ambiguous*:
+"is this mapping another parameter level, or is it the entry?" is a question
+the code answers by sniffing for key names, and getting it wrong has already
+produced two bugs in this work -- three tables collapsed from five hundred
+entries to two, and a review gate that matched nothing across ten tables. A
+record has no such question.
+
+Measured on the corpus: 55493 entries, 7.4 MB nested, 8.6 MB flat with
+positional parameters (+16%), 9.0 MB with named ones (+22%).
+
+Named rather than positional, for the extra 6%: it survives somebody reordering
+the `Parameters` section, it reads without cross-referencing another part of the
+document, and it hands a grid its column headers directly. Positional records
+stay correct until the day the parameter list is edited.
+
+One thing the flattening must not lose: a `numbers` container currently lets a
+group of entries share metadata, `param-latex` for the whole group. Flattened,
+that either repeats on every record or moves up into `Parameters`, where it
+arguably belongs, being a property of the parameter rather than of each value.
 
 **Whether `both signs` should be structural.** It is an assertion about the
 values rather than prose about them: it says the negatives are there too. No
