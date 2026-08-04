@@ -80,10 +80,14 @@ class StaleEdit(Exception):
 class CommitOutcome:
 	"""What happened, for the caller to report."""
 
-	__slots__ = ('revision', 'merged', 'unchanged')
+	__slots__ = ('revision', 'merged', 'unchanged', 'breaches')
 
-	def __init__(self, revision, merged=False, unchanged=False):
+	def __init__(self, revision, merged=False, unchanged=False, breaches=()):
 		self.revision = revision
+		#: Soft size limits this table is over without saying why. It was
+		#: committed regardless, because the author may have a good reason and
+		#: the review queue is where reasons are judged.
+		self.breaches = list(breaches)
 		#: True when somebody else had committed and the two edits were
 		#: combined. Worth telling the author, since the result contains
 		#: changes they have not seen.
@@ -123,7 +127,7 @@ def dump_tree(tree):
 
 
 def commit_table(table, tree, author=None, message='', base=None,
-                 produced_by='', allow_parameter_change=False):
+                 produced_by='', allow_parameter_change=False, strict=False):
 	"""Put ``tree`` on ``table``'s history and return a :class:`CommitOutcome`.
 
 	``base`` is the revision the author started from. Passing None means "this
@@ -133,12 +137,23 @@ def commit_table(table, tree, author=None, message='', base=None,
 	Raises :class:`StaleEdit` when the edit cannot be reconciled. Nothing is
 	written in that case, so a caller may show the conflicts and let the author
 	try again without having half-committed anything.
+
+	``strict`` refuses a table that is over a soft size limit without saying
+	why, instead of committing it and reporting the breach. It is for writers
+	that cannot be warned -- the API, and bulk machine proposals -- since a
+	warning shown to nobody is not a limit at all.
+
+	Soft breaches that were committed anyway come back on the outcome, for the
+	caller to show and the review queue to raise.
 	"""
+	from .limits import enforce
 	from .models import TableRevision
 
 	head = table.head_revision
 
-	#Checked before any of the paths below, because all of them write.
+	#Both checks run before any of the paths below, because all of them write.
+	breaches = enforce(tree, strict=strict)
+
 	if head is not None and not allow_parameter_change:
 		before = parameters_of(tree_of(head))
 		after = parameters_of(tree)
@@ -147,15 +162,15 @@ def commit_table(table, tree, author=None, message='', base=None,
 
 	if head is None:
 		return _write(table, tree, author, message, parent=None, base=None,
-		              produced_by=produced_by)
+		              produced_by=produced_by, breaches=breaches)
 
 	if base is None or base.pk == head.pk:
 		#Nobody moved. The ordinary case, and the fast one.
 		content = dump_tree(tree)
 		if TableRevision.digest_of(content) == head.digest:
-			return CommitOutcome(head, unchanged=True)
+			return CommitOutcome(head, unchanged=True, breaches=breaches)
 		return _write(table, tree, author, message, parent=head, base=head,
-		              produced_by=produced_by)
+		              produced_by=produced_by, breaches=breaches)
 
 	#Somebody committed while this edit was being written.
 	result = merge(tree_of(base), tree, tree_of(head))
@@ -165,14 +180,14 @@ def commit_table(table, tree, author=None, message='', base=None,
 	content = dump_tree(result.tree)
 	if TableRevision.digest_of(content) == head.digest:
 		#The edit was already contained in what the other person committed.
-		return CommitOutcome(head, unchanged=True)
+		return CommitOutcome(head, unchanged=True, breaches=breaches)
 
 	return _write(table, result.tree, author, message, parent=head, base=base,
-	              produced_by=produced_by, merged=True)
+	              produced_by=produced_by, merged=True, breaches=breaches)
 
 
 def _write(table, tree, author, message, parent, base, produced_by,
-           merged=False):
+           merged=False, breaches=()):
 	from .models import TableRevision
 
 	revision = TableRevision.objects.create(
@@ -190,7 +205,7 @@ def _write(table, tree, author, message, parent, base, produced_by,
 	#only advances head.
 	table.save(update_fields=['head_revision'])
 	apply_revision(table, revision)
-	return CommitOutcome(revision, merged=merged)
+	return CommitOutcome(revision, merged=merged, breaches=breaches)
 
 
 def apply_revision(table, revision=None):

@@ -1858,6 +1858,7 @@ def edit_table(request, tid):
 	review: unless they are on the board, the entries they changed are marked
 	and held out of search by number until somebody confirms them.
 	"""
+	from .limits import EXCEPTION_KEY, TooBig
 	from .editing import (ParametersChanged, StaleEdit, commit_table,
 	                      tree_of)
 	from .permissions import is_board_member
@@ -1931,6 +1932,15 @@ def edit_table(request, tid):
 			context = _edit_context(request, table, table_yaml, stale.head)
 			context['conflicts'] = stale.conflicts
 			return render(request, 'edit.html', context)
+		except TooBig as big:
+			messages.error(request, (
+				'Nothing has been saved. %s. These are the limits past which '
+				'the editor and the diff stop working, so no reason makes it '
+				'workable; a table this large wants to be several tables, or '
+				'a program.'
+				% ('; '.join(b.message for b in big.breaches).capitalize(),)))
+			return render(request, 'edit.html', _edit_context(
+				request, table, table_yaml, base))
 
 		if outcome.unchanged:
 			messages.info(request, 'No changes to save.')
@@ -1940,6 +1950,14 @@ def edit_table(request, tid):
 				'were editing. The table now contains both.'))
 		else:
 			messages.success(request, 'Saved.')
+
+		#Saved either way: the author may well have a good reason, and the
+		#review queue is a better place to weigh one than a form that refuses.
+		for breach in outcome.breaches:
+			messages.warning(request, (
+				'Saved, but %s. If that is deliberate, please say why in a '
+				'"%s" line under Data properties; a reviewer will otherwise '
+				'have to guess.' % (breach.message, EXCEPTION_KEY)))
 
 		#A board member's edit is reviewed by the act of making it: requiring
 		#them to review their own work would be a queue of one person's edits
