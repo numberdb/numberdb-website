@@ -5,6 +5,7 @@ neither should have to import the other to share a base class.
 """
 
 __all__ = ['NumberDBError', 'TransportError', 'RateLimited', 'Unauthorized',
+           'Conflict', 'TooBig',
            'UnsupportedNumber']
 
 
@@ -47,4 +48,27 @@ class UnsupportedNumber(NumberDBError):
     Reaching this does not spoil a whole search. Results are decoded on demand,
     so an unknown kind costs you that one value and nothing else -- the rest of
     the results, and that result's own ``exact_text``, remain usable.
+    """
+
+
+class Conflict(NumberDBError):
+    """Somebody changed the table while you were writing it.
+
+    Carries the conflicting entries when the server names them, so a script can
+    report which values two people disagreed about rather than only that they
+    did.
+    """
+
+    def __init__(self, message, conflicts=None, head=None):
+        super().__init__(message)
+        self.conflicts = list(conflicts or [])
+        self.head = head
+
+
+class TooBig(NumberDBError):
+    """The table is over a size limit and nothing was written.
+
+    A program is refused where a person would be warned and allowed to
+    continue: a warning shown to nobody is not a limit. State the reason in a
+    "Size exception" line under Data properties if the size is deliberate.
     """
