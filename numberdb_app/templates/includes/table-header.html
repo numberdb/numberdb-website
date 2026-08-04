@@ -40,6 +40,12 @@ differently-named link that does something else.
 {% else %}
   <a class="link-below-title" href="{% url 'db:edit-table' table.tid %}">edit here</a>
   {% comment %}
+  Beside the edit link rather than tucked away, because "what did the last edit
+  do, and can I undo it" is the first question an open edit button raises.
+  {% endcomment %}
+  &middot;
+  <a class="link-below-title" href="{% url 'db:revision-history' table.tid %}">history</a>
+  {% comment %}
   Only for tables that came from the repository. One created here has no file
   there until the export exists, and a link to a page that is not there reads
   as a broken site rather than as a missing feature.

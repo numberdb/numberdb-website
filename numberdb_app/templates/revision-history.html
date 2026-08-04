@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load numberdb_urls %}
+
+{% comment %}
+Every version this table has had, newest first.
+
+Publishing an edit immediately is only defensible if undoing one is easy, so
+the two radio columns pick any pair to compare and every row offers to restore.
+Restoring commits the old content forward as a new revision rather than
+deleting anything: the history stays honest about what happened.
+{% endcomment %}
+
+{% block head-title %}History of {{ table.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+pre.revision-diff { background: #f7f7f7; border: 1px solid #ddd; padding: 0.6rem;
+                    overflow-x: auto; font-size: 0.9em; white-space: pre; }
+table.revision-list td, table.revision-list th { padding: 0.3rem 0.6rem;
+                    vertical-align: top; }
+table.revision-list tr.is-head { background: #f2f8ff; }
+.revision-when { white-space: nowrap; }
+.revision-note { color: #666; font-size: 0.9em; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'db:table_by_url' table.url %}">{{ table.title|safe }}</a></li>
+  <li class="breadcrumb-item active">History</li>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">History of {{ table.title|safe }}</h1>
+
+<p>
+  <a href="{% url 'db:table_by_url' table.url %}">See the table</a>
+  &middot;
+  <a href="{% url 'db:edit-table' table.tid %}">Edit it</a>
+  {% if table.commits.exists %}
+    &middot;
+    <a href="{% url 'db:table-history' table.tid %}">How it arrived from the data repository</a>
+  {% endif %}
+</p>
+
+{% if not revisions %}
+  <p>This table has not been edited on the site yet, so it has no revisions
+  here. Everything it says came in from the data repository.</p>
+{% else %}
+
+  <form method="get" action="">
+    <table class="revision-list">
+      <tr>
+        <th colspan="2">compare</th>
+        <th>when</th>
+        <th>who</th>
+        <th>what</th>
+        <th></th>
+      </tr>
+      {% for revision in revisions %}
+        <tr {% if revision.pk == head.pk %}class="is-head"{% endif %}>
+          <td><input type="radio" name="from" value="{{ revision.pk }}"
+                {% if revision.pk == from_revision.pk %}checked{% endif %}></td>
+          <td><input type="radio" name="to" value="{{ revision.pk }}"
+                {% if revision.pk == to_revision.pk %}checked{% endif %}></td>
+          <td class="revision-when">{{ revision.created|date:"Y-m-d H:i" }}</td>
+          <td>
+            {% if revision.author %}{{ revision.author.username }}
+            {% else %}{{ revision.produced_by|default:"unknown" }}{% endif %}
+          </td>
+          <td>
+            {{ revision.message|default:"(no message)" }}
+            {% if revision.merged_from_id %}
+              <span class="revision-note">&mdash; a merge</span>
+            {% endif %}
+          </td>
+          <td class="revision-note">
+            {% if revision.pk == head.pk %}current{% endif %}
+            {% if revision.pk == reviewed_at.pk %}reviewed{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+    <p><button type="submit">Compare the two selected</button></p>
+  </form>
+
+  {% if to_revision %}
+    <h2>
+      {% if from_revision %}
+        What changed between {{ from_revision.created|date:"Y-m-d H:i" }}
+        and {{ to_revision.created|date:"Y-m-d H:i" }}
+      {% else %}
+        The first version, {{ to_revision.created|date:"Y-m-d H:i" }}
+      {% endif %}
+    </h2>
+
+    {% if diff %}
+      <pre class="revision-diff">{{ diff }}</pre>
+    {% else %}
+      <p>Nothing differs between these two versions.</p>
+    {% endif %}
+
+    {% if may_edit and to_revision.pk != head.pk %}
+      <form method="post" action="">
+        {% csrf_token %}
+        <input type="hidden" name="restore" value="{{ to_revision.pk }}">
+        <button type="submit">Restore the version from
+          {{ to_revision.created|date:"Y-m-d H:i" }}</button>
+        <span class="revision-note">
+          This adds a new revision holding that content. Nothing is erased, and
+          the restore can itself be undone from this page.
+        </span>
+      </form>
+    {% elif not may_edit %}
+      <p class="revision-note">
+        <a href="{% url 'account_login' %}?next={{ request.path }}">Sign in</a>
+        to restore an earlier version.
+      </p>
+    {% endif %}
+  {% endif %}
+
+{% endif %}
+{% endblock %}

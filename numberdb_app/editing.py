@@ -380,3 +380,29 @@ def with_managed_keys(tree, table):
 		if k not in MANAGED_KEYS:
 			restored[k] = v
 	return restored
+
+
+def restore_revision(table, revision, author=None, message=''):
+	"""Put a table back to an earlier revision.
+
+	Committed forward rather than rewound: the old content becomes a new
+	revision, so the history says what happened and when, and the mistake stays
+	visible instead of being quietly removed. That is what makes the whole
+	publish-immediately arrangement bearable -- an edit can be undone by
+	anybody, at once, and undoing it is itself an ordinary, reviewable act.
+
+	Parameters are exempt from the usual freeze here. If an edit changed them,
+	refusing to restore would leave the table stuck in exactly the state the
+	freeze exists to prevent.
+	"""
+	if revision.table_id != table.pk:
+		raise ValueError('that revision belongs to another table')
+
+	return commit_table(
+		table, tree_of(revision),
+		author=author,
+		message=message or ('restored the version from %s'
+		                    % (revision.created.strftime('%Y-%m-%d %H:%M'),)),
+		base=table.head_revision,
+		allow_parameter_change=True,
+	)
