@@ -1,3 +1,4 @@
+{% load numberdb_urls %}
 <style>
 td.search-result-param {
   text-align: right;
@@ -43,13 +44,13 @@ thead > tr > td {
    </td>
   
    <td class="search-result-number">
-    <a href="{% url 'db:table_by_url' result.table.url %}#{{ result.number.param_str }}">{{ result.number.str_short }}</a>
+    <a href="{% url 'db:table_by_url' result.table.url %}{{ result.number.param_str|entry_suffix }}">{{ result.number.str_short }}</a>
    </td>
   
    <td class="search-result-table">
     <a href="{% url 'db:table_by_url' result.table.url %}">{{ result.table.title }}</a>
     {% if result.number.param_str %}
-      (<a href="{% url 'db:table_by_url' result.table.url %}#{{ result.number.param_str }}">#{{ result.number.param_str }}</a>)
+      (<a href="{% url 'db:table_by_url' result.table.url %}{{ result.number.param_str|entry_suffix }}">#{{ result.number.param_str }}</a>)
     {% endif %}
    </td>
   
