@@ -70,7 +70,12 @@
       <!--
       <a class="navbar-field" href="{% url 'db:about' %}">About</a>
       -->
-      <a class="navbar-field" href="{% url 'db:help' %}#section-guide-to-creating-new-tables">Add numbers</a>
+      {% comment %}
+      Points at the editing guide rather than the table-creation one: adding
+      numbers to a table that exists is now done on the site, and only creating
+      a new table still goes through the data repository.
+      {% endcomment %}
+      <a class="navbar-field" href="{% url 'db:help' %}#section-guide-to-editing-tables">Add numbers</a>
       <a class="navbar-field" href="{% url 'db:help' %}">Help</a>
 
       {% if user.is_authenticated == False %}

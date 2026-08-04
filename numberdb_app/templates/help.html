@@ -465,67 +465,59 @@ automatically displayed also on numberdb.org.
 <div id="section-guide-to-editing-tables" class="section scrollspy">
 <h2 id="guide-to-editing-tables" class="section scrollspy">Guide to editing tables</h2>
 
-To edit tables, you will need a <a href="https://github.com">GitHub</a> account.
-For more advanced changes, we recommend to review the <a href="#format-of-tables">Format for tables's source code</a>.
+{% comment %}
+Rewritten when editing moved onto the site. The GitHub round trip is kept
+below rather than deleted: it is still how a new table is created, and some
+contributors would rather send a pull request than hold an account here.
+{% endcomment %}
 
-<ol>
-<li>
-<div id="guide-editing-tables-preview" class="li-header">Preview for editing tables</div>
 <p class="help-text">
-In case you want to preview your edits (or simply test what's possible), 
-go to the table's webpage and click on "preview edits":
+Sign in and click <b>edit here</b> under any table's title. You get the
+table's source in an editor, with a preview of how the page will look.
+Nothing is saved until you press Save.
 </p>
-<div class="help-screenshot-container">
-<img class="help-screenshot" src="{% static '/img/preview-edits-link.png' %}">
-</div>
-<p class="help-text">
-Make arbitrary modifications and click on "Show preview" to see how the changes will look like:
-</p>
-<div class="help-screenshot-container">
-<img class="help-screenshot" src="{% static '/img/show-preview.png' %}">
-</div>
-<p class="help-text">
-Once you are happy with the changes, copy the yaml code to the clipboard.
-</p>
-</li>
 
-<li>
-<div class="li-header">Edit table on GitHub</div>
-<p class="help-text">
-At the table's webpage click on "edit on github":
-</p>
-<div class="help-screenshot-container">
-<img class="help-screenshot" src="{% static '/img/edit-on-github-link.png' %}">
-</div>
-<p class="help-text">
-If you want to change table.yaml, click on "Edit this file":
-</p>
-<div class="help-screenshot-container">
-<img class="help-screenshot" src="{% static '/img/github-table-yaml-edit-link.png' %}">
-</div>
-<p class="help-text">
-Paste the yaml code from step 1 into the editor.
-</p>
-</li>
+<ul>
+<li><b>Show preview</b> renders your version exactly as the table page will
+render it, so you can see the result before committing to it.</li>
+<li><b>Show changes</b> lists what you have actually altered, which is the
+only practical way to check an edit to a table of a thousand entries.</li>
+<li><b>Save</b> publishes immediately.</li>
+</ul>
 
-<li>
-<div class="li-header">Save (commit) changes on GitHub</div>
 <p class="help-text">
-To save changes,
-scroll down, 
-give your changes a title (such as "fixed typo"),
-give a more detailed description of the changes (if necessary),
-and click on commit:
+Your change is live as soon as you save it. The entries you changed are marked
+as needing review and are left out of
+<a href="#section-search">search by number</a> until a reviewer confirms them;
+everything else in the table is unaffected, and the entries themselves stay
+visible on the page throughout. This is deliberate: a reader looking at a table
+can see that an entry is unconfirmed and weigh it, while somebody typing digits
+into the search box cannot, because a wrong fortieth digit looks exactly like a
+right one.
 </p>
-<div class="help-screenshot-container">
-<img class="help-screenshot" src="{% static '/img/github-table-yaml-commit-changes.png' %}">
-</div>
-<p class="help-text">
-An editor will review your changes. Thanks!
-</p>
-</li>
 
-</ol>
+<p class="help-text">
+If two people edit at once, edits to different entries are combined
+automatically. Edits to the <em>same</em> entry are not guessed at: you are
+shown both versions and nothing is saved until you decide.
+</p>
+
+<p class="help-text">
+For more advanced changes, it is worth reading the
+<a href="#format-of-tables">format for tables</a>. You can also try the
+<a href="{% url 'db:preview' %}">preview page</a> without an account, which
+renders any table source without saving anything.
+</p>
+
+<div id="guide-editing-tables-github" class="li-header">Editing through GitHub instead</div>
+<p class="help-text">
+Editing on the site is the shorter path, but the data repository
+<a href="https://github.com/numberdb/numberdb-data">numberdb-data</a> still
+accepts pull requests, and creating a <em>new</em> table is still done there;
+see <a href="#section-guide-to-creating-new-tables">the guide below</a>. From a
+table's page, <b>edit on github</b> opens the file directly.
+</p>
+
 </div>
 
 <!--------------------------------------------------------------------->
