@@ -71,6 +71,21 @@ def to_text(value: Any, digits: int = DIGITS) -> str:
         return (str(value.numerator) if value.denominator == 1
                 else '%d/%d' % (value.numerator, value.denominator))
 
+    #The package's own value types. It could read all of these back and not
+    #write any of them, which made a round trip -- fetch a table, recompute,
+    #resubmit -- impossible in the one library that ought to make it easy.
+    from ._wire import ComplexInterval, PAdic, Polynomial, RealInterval
+
+    if isinstance(value, RealInterval):
+        return _interval_text(value, digits)
+    if isinstance(value, ComplexInterval):
+        return '%s + %s*I' % (_interval_text(value.real, digits),
+                              _interval_text(value.imag, digits))
+    if isinstance(value, PAdic):
+        return str(value)
+    if isinstance(value, Polynomial):
+        return str(value)
+
     if isinstance(value, float):
         raise TypeError(
             'a float does not say how precise it is, so it cannot be stored '
@@ -78,6 +93,33 @@ def to_text(value: Any, digits: int = DIGITS) -> str:
             'or say the precision: to_text(value, digits=15)')
 
     raise TypeError('cannot write %s as a number' % (type(value).__name__,))
+
+
+def _interval_text(interval, digits):
+    """A real interval as the `3.14159?` form, or exactly when it is exact.
+
+    An interval whose endpoints coincide is a rational that happens to have
+    arrived as an interval; writing it with a `?` would claim an uncertainty
+    that is not there.
+    """
+    from fractions import Fraction
+
+    if interval.lower == interval.upper:
+        return to_text(Fraction(interval.lower))
+
+    #The digits the two endpoints agree on are the digits that are known; one
+    #more would be asserting something the interval does not say.
+    low, high = interval.lower, interval.upper
+    for places in range(digits + 1):
+        scale = Fraction(10) ** places
+        if int(low * scale) != int(high * scale):
+            places = max(places - 1, 0)
+            break
+    scale = Fraction(10) ** places
+    truncated = Fraction(int(low * scale), 1) / scale
+    text = ('%%.%df' % (places,)) % (float(truncated),) if places else str(
+        int(truncated))
+    return text + '?'
 
 
 def _sage_text(value, digits):
