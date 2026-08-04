@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% comment %}
+The files a table carries beside its numbers.
+
+82 of the 109 tables ship a generate.sage that no reader could see until now.
+Shown per revision rather than per table, so citing the code that produced a
+set of values means citing the version of it that was there at the time.
+{% endcomment %}
+
+{% block head-title %}Files of {{ table.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+table.file-list td, table.file-list th { padding: 0.3rem 0.8rem; }
+.file-note { color: #666; font-size: 0.9em; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'db:table_by_url' table.url %}">{{ table.title|safe }}</a></li>
+  <li class="breadcrumb-item active">Files</li>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">Files of {{ table.title|safe }}</h1>
+
+<p>
+  <a href="{% url 'db:table_by_url' table.url %}">See the table</a>
+  &middot;
+  <a href="{% url 'db:revision-history' table.tid %}">History</a>
+</p>
+
+{% if not is_current and revision %}
+  <p class="file-note">
+    As of the version from {{ revision.created|date:"Y-m-d H:i" }}, which is not
+    the current one.
+    <a href="{% url 'db:table-files' table.tid %}">Show the current files</a>.
+  </p>
+{% endif %}
+
+{% if not files %}
+  <p>This table carries no files.</p>
+{% else %}
+  <table class="file-list">
+    <tr><th>name</th><th>size</th><th></th></tr>
+    {% for file in files %}
+      <tr>
+        <td>
+          <a href="{% url 'db:table-file' table.tid file.name %}{% if not is_current %}?rev={{ revision.pk }}{% endif %}"
+            >{{ file.name }}</a>
+        </td>
+        <td class="file-note">{{ file.blob.size }} bytes</td>
+        <td class="file-note">
+          {% if not file.is_source %}not shown as text{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  {% comment %}
+  Said plainly, because a page full of scripts invites the assumption that
+  pressing something will run one.
+  {% endcomment %}
+  <p class="file-note">
+    These are recorded, not executed. Several of them take hours or days to
+    run, and nothing on this site runs them.
+  </p>
+{% endif %}
+{% endblock %}

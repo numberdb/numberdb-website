@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block head-title %}{{ attachment.name }} - {{ table.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+pre.file-source { background: #f7f7f7; border: 1px solid #ddd; padding: 0.6rem;
+                  overflow-x: auto; font-size: 0.9em; white-space: pre; }
+.file-note { color: #666; font-size: 0.9em; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'db:table_by_url' table.url %}">{{ table.title|safe }}</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'db:table-files' table.tid %}">Files</a></li>
+  <li class="breadcrumb-item active">{{ attachment.name }}</li>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">{{ attachment.name }}</h1>
+
+<p>
+  <a href="{% url 'db:table-files' table.tid %}{% if not is_current %}?rev={{ revision.pk }}{% endif %}">All files</a>
+  &middot;
+  <a href="{% url 'db:table-file' table.tid attachment.name %}?raw=1{% if not is_current %}&amp;rev={{ revision.pk }}{% endif %}">Download</a>
+</p>
+
+<p class="file-note">
+  {{ attachment.blob.size }} bytes, as of the version from
+  {{ revision.created|date:"Y-m-d H:i" }}{% if is_current %} (current){% endif %}.
+  Recorded here, not run.
+</p>
+
+<pre class="file-source">{{ text }}</pre>
+{% endblock %}

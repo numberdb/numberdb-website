@@ -1461,6 +1461,110 @@ class TableRevision(models.Model):
 		return super().save(*args, **kwargs)
 
 
+class Blob(models.Model):
+	"""One file's bytes, stored once and named by their hash.
+
+	This is git's good idea without git's repository. An attachment that does
+	not change between revisions is stored once no matter how many revisions
+	mention it, so a 477 KB Sage object carried through fifty edits costs
+	477 KB rather than 23 MB.
+
+	Bytes rather than text because the corpus is not all text: alongside 93
+	Sage scripts there are `.sobj` pickles and rendered HTML. What can be shown
+	as source and what can only be offered as a download is decided by
+	`Attachment.is_source`, not here.
+	"""
+
+	digest = models.CharField(
+		max_length = 64,
+		unique = True,
+		db_index = True,
+	)
+	content = models.BinaryField()
+	size = models.PositiveIntegerField(default=0)
+	created = models.DateTimeField(auto_now_add=True)
+
+	def __str__(self):
+		return '%s (%s bytes)' % (self.digest[:8], self.size)
+
+	@staticmethod
+	def digest_of(data):
+		return hashlib.sha256(data).hexdigest()
+
+	@classmethod
+	def store(cls, data):
+		"""Return the blob holding these bytes, creating it only if new."""
+		if isinstance(data, str):
+			data = data.encode('utf8')
+		digest = cls.digest_of(data)
+		blob, _ = cls.objects.get_or_create(
+			digest = digest,
+			defaults = {'content': data, 'size': len(data)},
+		)
+		return blob
+
+	def text(self):
+		"""The content as text, or None if it is not text at all."""
+		raw = bytes(self.content)
+		try:
+			return raw.decode('utf8')
+		except UnicodeDecodeError:
+			return None
+
+
+class Attachment(models.Model):
+	"""One named file, as of one revision.
+
+	The manifest is complete at every revision rather than incremental: a
+	revision lists every file the table has, not the ones it changed. That is
+	the same choice `TableRevision.content` makes and for the same reason.
+	"answer which generate.sage this revision means" then requires reading that
+	revision alone.
+
+	The alternative -- walk back through parents to the most recent version of
+	a name -- is ambiguous exactly where it matters. A merge has two parents,
+	so "the latest one in the history before this" is not single-valued, and
+	two readers can disagree about which file a revision refers to without
+	either being wrong.
+	"""
+
+	revision = models.ForeignKey(
+		TableRevision,
+		on_delete = models.CASCADE,
+		related_name = 'attachments',
+	)
+	#: Path relative to the table's directory, as it appears in the data
+	#: repository: `generate.sage`, `data/phi_j_3.txt`.
+	name = models.CharField(max_length=255)
+	blob = models.ForeignKey(
+		Blob,
+		on_delete = models.PROTECT,
+		related_name = 'attachments',
+	)
+
+	class Meta:
+		ordering = ['name']
+		constraints = [
+			models.UniqueConstraint(fields=['revision', 'name'],
+			                        name='one_blob_per_name_per_revision'),
+		]
+
+	#: Suffixes shown as source. Everything else is offered as a download and
+	#: never diffed: a diff view asked to render a pickle produces noise, and
+	#: the three `.sobj` files in the corpus are computed output rather than
+	#: something anybody wrote.
+	SOURCE_SUFFIXES = ('.sage', '.py', '.txt', '.yaml', '.yml', '.md', '.json',
+	                   '.c', '.cpp', '.h', '.gp', '.m', '.magma', '.new')
+
+	def __str__(self):
+		return '%s @ %s' % (self.name, self.revision.digest[:8])
+
+	@property
+	def is_source(self):
+		lowered = self.name.lower()
+		return any(lowered.endswith(s) for s in self.SOURCE_SUFFIXES)
+
+
 class TableThread(models.Model):
 	"""A discussion attached to a table or a tag.
 
