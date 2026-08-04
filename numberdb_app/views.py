@@ -84,6 +84,7 @@ from .search import (search_complex_numbers, search_fractional_parts,
                      search_p_adic_numbers, search_real_numbers)
 
 from db_builder.utils import normalize_table_data
+from .templatetags.numberdb_urls import entry_suffix
 
 def home(request):
 	#The search bar submits here, so the query lives in the URL and a search can
@@ -1099,7 +1100,9 @@ def suggestions(request):
 				'label': '',
 				'type': 'number',
 				'title': table.title,
-				'url': '/%s#%s' % (table.url, param),
+				#Both forms: the query so the server can confirm the entry,
+				#the fragment so the browser scrolls. See entry_suffix.
+				'url': '/%s%s' % (table.url, entry_suffix(param)),
 			}
 			if len(param) > 0: 
 				entry_i['subtitle'] = '%s (#%s)' % (number.str_short(), param)

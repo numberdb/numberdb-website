@@ -171,7 +171,10 @@ class Searching(unittest.TestCase):
         self.assertEqual(results[0].exact_text, '3.14')
         self.assertEqual(results[0].table.title, 'Pi')
         self.assertEqual(results[0].kind, 'RIF')
-        self.assertIn('Pi#n=1', results[0].url())
+        #Both forms: the query the server can resolve, and the fragment the
+        #browser scrolls to.
+        self.assertIn('?entry=n%3D1', results[0].url())
+        self.assertTrue(results[0].url().endswith('#n=1'), results[0].url())
 
     def test_messages_are_text_not_the_websites_css_classes(self):
         client = _client({'results': [], 'messages': [

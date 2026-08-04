@@ -176,12 +176,24 @@ class Result:
         return to_sage(self.value)
 
     def url(self) -> Optional[str]:
-        """Where to read about it on the site."""
+        """Where to read about this value on the site.
+
+        Carries the entry twice on purpose. `?entry=` is seen by the server, so
+        following the link confirms the value is still there and says so if it
+        is not; `#` is seen only by the browser, and scrolls to it. A link with
+        the fragment alone -- which is what this returned before -- fails
+        silently when an entry has been renumbered: the page loads, nothing
+        scrolls, and the reader has no way to tell a stale citation from a
+        value they simply cannot see.
+        """
         if not self.table.url:
             return None
         import urllib.parse
         page = urllib.parse.urljoin(_default_client.base_url, self.table.url)
-        return '%s#%s' % (page, self.param) if self.param else page
+        if not self.param:
+            return page
+        return '%s?entry=%s#%s' % (
+            page, urllib.parse.quote(self.param, safe=''), self.param)
 
     def __repr__(self):
         return 'Result(%r, table=%r)' % (self.exact_text or self.str_short,

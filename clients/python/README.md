@@ -234,7 +234,7 @@ Each `Result` carries:
 | `.param` | `str` | which entry of its table this is |
 | `.table` | `Table` | where it lives, with `.tid`, `.title` and `.url` |
 | `.is_readable` | `bool` | whether `.value` can be decoded by this version |
-| `.url()` | `str` | the page describing it |
+| `.url()` | `str` | the address of this value, e.g. `.../Pi?entry=n%3D1#n=1` |
 | `.sage()` | Sage object | the value converted to Sage, on request |
 
 The type of `.value` depends on which module you imported:

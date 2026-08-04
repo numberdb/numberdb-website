@@ -1,3 +1,4 @@
+{% load numberdb_urls %}
 {% comment %}
 Results for a submitted search, under the search bar.
 
@@ -71,7 +72,7 @@ have meant either.
         {% for number in group.numbers %}
           <div class="search-result">
             <div class="search-result-value">
-              <a href="{% url 'db:table_by_url' number.table.url %}#{{ number.param_str }}"
+              <a href="{% url 'db:table_by_url' number.table.url %}{{ number.param_str|entry_suffix }}"
                 >{{ number.str_short }}</a>
             </div>
             <div class="search-result-where">

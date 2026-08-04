@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load numberdb_urls %}
 
 {% block head-title %}Review {{ table_being_reviewed.title }}{% endblock %}
 
@@ -34,7 +35,7 @@ pre.review-diff { background: #f7f7f7; border: 1px solid #ddd; padding: 0.6rem;
      {% if since %}the last review{% else %}the beginning{% endif %}:</p>
   <p class="review-entries">
     {% for p in outstanding %}
-      <code><a href="{% url 'db:table_by_url' table_being_reviewed.url %}#{{ p }}">{{ p|default:"(no parameter)" }}</a></code>
+      <code><a href="{% url 'db:table_by_url' table_being_reviewed.url %}{{ p|entry_suffix }}">{{ p|default:"(no parameter)" }}</a></code>
     {% endfor %}
   </p>
 {% endif %}
