@@ -1974,7 +1974,8 @@ def edit_table(request, tid):
 	              _edit_context(request, table, source, base))
 
 
-def _diff_against(base, table_yaml):
+def _diff_against(base, table_yaml, before_label='saved version',
+                  after_label='your version'):
 	"""A unified diff between the stored revision and what is in the box.
 
 	Shown on request rather than always: for a table of a thousand entries the
@@ -1988,7 +1989,7 @@ def _diff_against(base, table_yaml):
 	after = table_yaml.splitlines(keepends=True)
 	lines = list(difflib.unified_diff(
 		before, after,
-		fromfile='saved version', tofile='your version', n=2))
+		fromfile=before_label, tofile=after_label, n=2))
 	#The first two lines are the ---/+++ headers, which say nothing a reader
 	#does not already know from the surrounding page.
 	return ''.join(lines[2:]) if lines else ''
@@ -2185,3 +2186,100 @@ def _new_table_context(request, table_yaml):
 	except ValueError as e:
 		messages.error(request, str(e))
 	return context
+
+
+def revision_history(request, tid):
+	"""Every version of a table, with a way to compare and to go back.
+
+	The history the site keeps and the history the data repository keeps are
+	different things -- the repository's commits are how a table arrived, the
+	revisions are what has happened to it since -- so both are shown, the
+	revisions first because they are the ones that can be acted on.
+	"""
+	from .editing import restore_revision
+	from .permissions import may_edit
+
+	table = get_object_or_404(Table, tid=tid)
+	revisions = list(table.revisions.select_related('author').all()[:200])
+
+	if request.method == 'POST':
+		if not may_edit(request.user):
+			return HttpResponseRedirect(
+				'%s?next=%s' % (reverse('account_login'), request.path))
+		#By row rather than by digest: the digest is content-addressed, so a
+		#restore produces a revision whose digest already exists, and "restore
+		#the one with this content" would then be an ambiguous request.
+		revision = table.revisions.filter(
+			pk=_as_int(request.POST.get('restore'))).first()
+		if revision is None:
+			messages.error(request, 'No such revision.')
+		elif revision.pk == table.head_revision_id:
+			messages.info(request, 'That is already the current version.')
+		else:
+			restore_revision(table, revision, author=request.user)
+			messages.success(request, (
+				'Restored the version from %s. This is a new revision rather '
+				'than an erasure: what happened in between is still here.'
+				% (revision.created.strftime('%Y-%m-%d %H:%M'),)))
+			from .permissions import is_board_member
+			if is_board_member(request.user):
+				table.refresh_from_db()
+				table.reviewed_at_revision = table.head_revision
+				table.save(update_fields=['reviewed_at_revision'])
+				from .review import sync_review_flags
+				sync_review_flags(table)
+		return HttpResponseRedirect(reverse('db:revision-history',
+		                                    kwargs={'tid': table.tid}))
+
+	#Comparing two versions. Defaults to "this one against the one before it",
+	#which is the question somebody looking at a history almost always has.
+	by_id = {r.pk: r for r in revisions}
+	to_revision = by_id.get(_as_int(request.GET.get('to')))
+	if to_revision is None and revisions:
+		to_revision = revisions[0]
+	asked_from = _as_int(request.GET.get('from'))
+	if asked_from is not None:
+		from_revision = by_id.get(asked_from)
+	elif to_revision is not None:
+		later = [r for r in revisions if r.created < to_revision.created]
+		from_revision = later[0] if later else None
+	else:
+		from_revision = None
+
+	diff = ''
+	if to_revision is not None:
+		diff = _diff_against(
+			from_revision, to_revision.content,
+			before_label=(_revision_label(from_revision)
+			              if from_revision is not None else 'nothing'),
+			after_label=_revision_label(to_revision))
+
+	return render(request, 'revision-history.html', {
+		'table': table,
+		'revisions': revisions,
+		'head': table.head_revision,
+		'reviewed_at': table.reviewed_at_revision,
+		'from_revision': from_revision,
+		'to_revision': to_revision,
+		'diff': diff,
+		'may_edit': may_edit(request.user),
+	})
+
+
+def _revision_label(revision):
+	"""How a revision is named to a reader: when, and by whom."""
+	who = revision.author.username if revision.author_id else (
+		revision.produced_by or 'unknown')
+	return '%s by %s' % (revision.created.strftime('%Y-%m-%d %H:%M'), who)
+
+
+def _as_int(text):
+	"""A query parameter read as a row id, or None if it is not one.
+
+	Anything can arrive in a query string, and a `ValueError` from `int()`
+	would be a 500 for what is really just a malformed link.
+	"""
+	try:
+		return int(text)
+	except (TypeError, ValueError):
+		return None
