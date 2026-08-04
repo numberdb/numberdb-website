@@ -9,6 +9,10 @@ from django.db.models import F
 from django.template.loader import render_to_string
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.conf import settings
+#Key-authenticated writes carry no cookie, so there is no session for a
+#third-party page to ride on; the CSRF check has nothing to protect here
+#and would only reject every program that is doing the right thing.
+from django.views.decorators.csrf import csrf_exempt
 
 import numpy as np
 from numpy import random as random
@@ -543,3 +547,209 @@ def lookup(request):
 		          'polynomial=<text>, polynomial_hash=<digest>, or '
 		          'text=<search term>.'},
 		safe=True)
+
+
+#-- Writing ------------------------------------------------------------------
+#
+#Editing through a program is deliberately harder than editing through the
+#site. A person editing a table exercises judgement about that table; a script
+#exercises none, and writes faster than any reviewer can follow. So a caller
+#needs a key, the key's owner needs a track record of edits people have
+#actually confirmed, and the size limits are enforced rather than warned about.
+
+def _writer_of(request):
+	"""The account behind this request, or a JsonResponse explaining why not.
+
+	Keys only. A session cookie would make every write endpoint reachable from
+	any page a logged-in user visits, which is what CSRF is; a key is sent
+	deliberately by a program that means to write.
+	"""
+	from .models import ApiKey
+	from .permissions import (TRUSTED_AFTER, accepted_edit_count,
+	                          may_write_through_api)
+	from .throttle import _bearer_token
+
+	token = _bearer_token(request)
+	if not token:
+		return None, JsonResponse(
+			{'error': 'Writing needs an API key.',
+			 'help': '/help#section-api'}, status=401)
+
+	key = ApiKey.authenticate(token)
+	if key is None:
+		return None, JsonResponse({'error': 'Invalid API key.'}, status=403)
+
+	user = key.user
+	if not may_write_through_api(user):
+		return None, JsonResponse(
+			{'error': 'This account may not write through the API yet.',
+			 'detail': ('Writing opens after %d edits have been reviewed and '
+			            'accepted; this account has %d. Edits made on the site '
+			            'count towards it.'
+			            % (TRUSTED_AFTER, accepted_edit_count(user))),
+			 'help': '/help#section-api'}, status=403)
+	return user, None
+
+
+def _document_of(request):
+	"""The table document a write request carries, or an error response.
+
+	YAML or JSON, since JSON is a subset and a caller that has one is spared
+	acquiring the other. Read with BaseLoader like everything else here: YAML
+	1.1 turns `no` into False, and this corpus writes `complete: no` meaning
+	the word.
+	"""
+	body = request.body.decode('utf8', 'replace')
+	if not body.strip():
+		return None, JsonResponse({'error': 'No document sent.'}, status=400)
+	try:
+		tree = yaml.load(body, Loader=yaml.BaseLoader)
+	except yaml.YAMLError as e:
+		return None, JsonResponse(
+			{'error': 'Could not parse the document.',
+			 'detail': str(e).replace(' in "<unicode string>"', '')},
+			status=400)
+	if not isinstance(tree, dict):
+		return None, JsonResponse(
+			{'error': 'A table must be a mapping of sections.'}, status=400)
+	if 'Title' not in tree:
+		return None, JsonResponse({'error': 'The table has no Title.'},
+		                          status=400)
+	return tree, None
+
+
+def _produced_by(request, user):
+	"""What to record as the maker of this revision.
+
+	Readers are entitled to know that a revision came out of a program, which
+	is why Wikipedia flags bot edits; a caller may name the program, and gets
+	a truthful default if it does not.
+	"""
+	named = (request.headers.get('X-Produced-By')
+	         or request.GET.get('produced_by') or '').strip()
+	return (named or 'api')[:100]
+
+
+@csrf_exempt
+@rate_limited
+def write_table(request, tid):
+	"""Replace a table's document. POST or PUT, key required."""
+	from .editing import (ParametersChanged, StaleEdit, commit_table,
+	                      without_managed_keys)
+	from .limits import TooBig
+	from .permissions import edits_are_reviewed
+
+	if request.method not in ('POST', 'PUT'):
+		return JsonResponse({'error': 'Use POST or PUT.'}, status=405)
+
+	user, refusal = _writer_of(request)
+	if refusal is not None:
+		return refusal
+	tree, refusal = _document_of(request)
+	if refusal is not None:
+		return refusal
+
+	try:
+		table = Table.objects.get(tid_int=int(str(tid).lstrip('tT')))
+	except (Table.DoesNotExist, ValueError):
+		return JsonResponse({'error': "No table '%s'." % (tid,)}, status=404)
+
+	#The revision the caller says they edited from, so a concurrent change is
+	#refused rather than silently overwritten. Absent means "from whatever is
+	#current", which is the honest reading of a caller that did not look.
+	base = table.head_revision
+	wanted = (request.headers.get('X-Base-Revision')
+	          or request.GET.get('base') or '').strip()
+	if wanted:
+		base = table.revisions.filter(digest=wanted).first()
+		if base is None:
+			return JsonResponse(
+				{'error': 'Unknown base revision.', 'base': wanted},
+				status=409)
+
+	try:
+		outcome = commit_table(
+			table, without_managed_keys(tree),
+			author=user, base=base, strict=True,
+			produced_by=_produced_by(request, user),
+			message=(request.headers.get('X-Edit-Message') or '')[:300])
+	except TooBig as big:
+		return JsonResponse(
+			{'error': 'The table is over a size limit.',
+			 'detail': [b.message for b in big.breaches],
+			 'help': ('State the reason in a "Size exception" line under Data '
+			          'properties if it is deliberate.')}, status=413)
+	except ParametersChanged as changed:
+		return JsonResponse(
+			{'error': 'This edit changes the table parameters.',
+			 'detail': ('Every entry is identified by its parameter values, so '
+			            'changing them reassigns every identity in the table: '
+			            'existing citations would still resolve and point at '
+			            'different numbers.'),
+			 'before': list(changed.before), 'after': list(changed.after)},
+			status=409)
+	except StaleEdit as stale:
+		return JsonResponse(
+			{'error': 'Somebody changed this table while you were writing.',
+			 'conflicts': [str(c) for c in stale.conflicts],
+			 'head': stale.head.digest if stale.head else None}, status=409)
+
+	if outcome.revision and edits_are_reviewed(user):
+		table.reviewed_at_revision = outcome.revision
+		table.save(update_fields=['reviewed_at_revision'])
+		from .review import sync_review_flags
+		sync_review_flags(table)
+
+	return JsonResponse({
+		'tid': table.tid,
+		'url': table.url,
+		'revision': outcome.revision.digest if outcome.revision else None,
+		'unchanged': outcome.unchanged,
+		'merged': outcome.merged,
+		'reviewed': edits_are_reviewed(user),
+	})
+
+
+@csrf_exempt
+@rate_limited
+def create_table(request):
+	"""Add a table. POST, key required."""
+	from .editing import create_table as make_table
+	from .limits import TooBig
+	from .permissions import edits_are_reviewed
+
+	if request.method != 'POST':
+		return JsonResponse({'error': 'Use POST.'}, status=405)
+
+	user, refusal = _writer_of(request)
+	if refusal is not None:
+		return refusal
+	tree, refusal = _document_of(request)
+	if refusal is not None:
+		return refusal
+
+	try:
+		table = make_table(
+			tree, author=user,
+			produced_by=_produced_by(request, user),
+			message=(request.headers.get('X-Edit-Message') or '')[:300],
+			strict=True)
+	except TooBig as big:
+		return JsonResponse(
+			{'error': 'The table is over a size limit.',
+			 'detail': [b.message for b in big.breaches]}, status=413)
+	except ValueError as e:
+		return JsonResponse({'error': str(e)}, status=400)
+
+	if table.head_revision and edits_are_reviewed(user):
+		table.reviewed_at_revision = table.head_revision
+		table.save(update_fields=['reviewed_at_revision'])
+		from .review import sync_review_flags
+		sync_review_flags(table)
+
+	return JsonResponse({
+		'tid': table.tid,
+		'url': table.url,
+		'revision': table.head_revision.digest if table.head_revision else None,
+		'reviewed': edits_are_reviewed(user),
+	}, status=201)

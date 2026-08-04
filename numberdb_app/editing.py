@@ -378,7 +378,7 @@ def slug_for(title, taken=None):
 	raise ValueError('could not find a free url for %r' % (title,))
 
 
-def create_table(tree, author=None, message='', produced_by=''):
+def create_table(tree, author=None, message='', produced_by='', strict=False):
 	"""Create a table from a document and return it.
 
 	The T-number is allocated here rather than in the data repository, which is
@@ -408,6 +408,9 @@ def create_table(tree, author=None, message='', produced_by=''):
 			'distinguishes it, or edit the existing table instead.'
 			% (title, existing.tid))
 
+	#One transaction around the number and the first revision both, so a
+	#document refused for being over a hard limit leaves no half-made table
+	#holding a T-number that will never be used again.
 	with transaction.atomic():
 		highest = (Table.objects.select_for_update()
 		           .aggregate(Max('tid_int'))['tid_int__max'] or 0)
@@ -427,9 +430,9 @@ def create_table(tree, author=None, message='', produced_by=''):
 		TableData.objects.create(table=table, raw_yaml='', full_yaml='',
 		                         json={})
 
-	commit_table(table, tree, author=author,
-	             message=message or 'created this table',
-	             produced_by=produced_by)
+		commit_table(table, tree, author=author,
+		             message=message or 'created this table',
+		             produced_by=produced_by, strict=strict)
 	table.refresh_from_db()
 	return table
 

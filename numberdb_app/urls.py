@@ -12,6 +12,8 @@ urlpatterns = [
     path('api/search', api.advanced_search_results, name='api-search'),
     path('api/lookup', api.lookup, name='api-lookup'),
     path('api/table', api.table, name='api-table'),
+    path('api/tables', api.create_table, name='api-create-table'),
+    re_path(r'^api/table/(?P<tid>[Tt]?\d+)$', api.write_table, name='api-write-table'),
     path('api/tag', api.tag, name='api-tag'),
     
     path('suggestions', views.suggestions, name='suggestions'),
