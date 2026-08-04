@@ -294,8 +294,13 @@ class WithoutSage(unittest.TestCase):
                          'importing numberdb must not import Sage')
 
     def test_asking_for_a_sage_object_explains_what_is_missing(self):
-        if 'sage' in sys.modules:
-            self.skipTest('running inside Sage')
+        #Whether Sage can be imported, not whether it has been. Under
+        #`sage -python` it is available but not yet in sys.modules, so the old
+        #guard let this run in the one environment where it cannot hold.
+        import importlib.util
+
+        if importlib.util.find_spec('sage') is not None:
+            self.skipTest('Sage is installed here')
         result = numberdb.search('pi', client=_client({'results': [
             _record({'kind': 'ZZ', 'value': '7'})], 'messages': []}))[0]
         self.assertEqual(result.value, 7)

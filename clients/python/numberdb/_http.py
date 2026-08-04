@@ -18,7 +18,8 @@ import urllib.parse
 import urllib.request
 from typing import Any, Callable, Dict, Optional
 
-from ._errors import NumberDBError, RateLimited, TransportError, Unauthorized
+from ._errors import (Conflict, NumberDBError, RateLimited, TooBig,
+                      TransportError, Unauthorized)
 
 __all__ = ['Client', 'DEFAULT_BASE_URL', 'DEFAULT_TIMEOUT']
 
@@ -194,6 +195,85 @@ class Client:
         if 'error' in payload:
             raise NumberDBError(str(payload['error']))
         return payload
+
+    def submit(self, path: str, document: str,
+               headers: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+        """POST ``document`` to ``path``, returning parsed JSON.
+
+        Writing needs a key, so this refuses before reaching the network when
+        there is none: a script that has forgotten its key should be told that,
+        not handed a 401 it has to interpret.
+
+        Errors here arrive as HTTP status rather than as an ``error`` field, so
+        the body is read on failure too -- the server explains what was wrong
+        with the document, and losing that in favour of "HTTP 413" would make
+        every refusal a guessing game.
+        """
+        key = self.api_key
+        if not key:
+            raise Unauthorized(
+                'writing needs an API key; set NUMBERDB_API_KEY or pass '
+                'api_key= to Client')
+
+        url = urllib.parse.urljoin(self.base_url, path)
+        body = document.encode('utf8')
+        sending = {'Accept': 'application/json',
+                   'Content-Type': 'application/yaml; charset=utf-8',
+                   'User-Agent': _user_agent(),
+                   'X-NumberDB-API-Version': API_VERSION,
+                   'Authorization': 'Bearer %s' % (key,)}
+        sending.update(headers or {})
+
+        request = urllib.request.Request(url, data=body, headers=sending,
+                                         method='POST')
+        opener = self._opener or urllib.request.urlopen
+        try:
+            with opener(request, timeout=self.timeout) as response:
+                raw = response.read()
+        except urllib.error.HTTPError as error:
+            raw = b''
+            try:
+                raw = error.read()
+            except Exception:
+                pass
+            raise self._refusal(error, raw)
+        except urllib.error.URLError as error:
+            raise TransportError('could not reach %s: %s' % (url, error.reason))
+
+        try:
+            payload = json.loads(raw.decode('utf8'))
+        except (UnicodeDecodeError, ValueError):
+            raise TransportError('%s did not return JSON' % (url,))
+        if isinstance(payload, dict) and 'error' in payload:
+            raise NumberDBError(str(payload['error']))
+        return payload
+
+    def _refusal(self, error, raw):
+        """Turn a failed write into an exception that says what to fix."""
+        detail = ''
+        try:
+            payload = json.loads(raw.decode('utf8'))
+            if isinstance(payload, dict):
+                detail = str(payload.get('error') or '')
+                extra = payload.get('detail')
+                if isinstance(extra, list):
+                    detail = '%s %s' % (detail, '; '.join(str(x) for x in extra))
+                elif extra:
+                    detail = '%s %s' % (detail, extra)
+        except Exception:
+            pass
+        detail = detail.strip()
+
+        if error.code in (401, 403):
+            return Unauthorized(detail or 'the server refused the API key')
+        if error.code == 409:
+            return Conflict(detail or 'the table changed while you were writing')
+        if error.code == 413:
+            return TooBig(detail or 'the table is over a size limit')
+        if error.code == 429:
+            return self._from_status(error)
+        return NumberDBError(detail or ('HTTP %d from %s'
+                                        % (error.code, error.url)))
 
     def _from_status(self, error):
         if error.code == 429:
