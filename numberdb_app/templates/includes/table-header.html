@@ -20,21 +20,25 @@ a.link-below-title:hover {
 <div id="table-title" class="table-title">{{ table.title }}</div>
 
 {% comment %}
-Editing is one link now, not three. "edit here" is the way to change a table:
-it publishes at once and previews inside the editor, which is what "preview
-edits" used to be for on its own. The GitHub link stays because pull requests
-are still accepted and creating a new table still goes through the repository,
-but it is the fallback rather than the path, so it comes second.
+One place to edit, one place to read the source.
 
-Signed out, "edit here" leads to the login page, which is a better answer than
-a link that quietly does something different.
+The GitHub link used to say "edit on github", and following it produced a
+change in the data repository that this site would not see until the next
+rebuild -- and a rebuild would in turn overwrite anything edited here. Two
+places to write the same table is the problem, not the convenience: whichever
+was written second silently won, and nothing recorded that the other had
+happened.
+
+So it is a link to view the source, not to change it. Editing is "edit here".
+Signed out, that leads to the login page, which is a more honest answer than a
+differently-named link that does something else.
 {% endcomment %}
 {% if preview %}
-  <a class="link-below-title" target="_blank" href="https://github.com/numberdb/numberdb-data/tree/main/{{ table.path }}/table.yaml">edit on github</a>
+  <a class="link-below-title" target="_blank" href="https://github.com/numberdb/numberdb-data/tree/main/{{ table.path }}/table.yaml">source on github</a>
 {% else %}
   <a class="link-below-title" href="{% url 'db:edit-table' table.tid %}">edit here</a>
   &middot;
-  <a class="link-below-title" target="_blank" href="https://github.com/numberdb/numberdb-data/tree/main/{{ table.path }}/table.yaml">edit on github</a>
+  <a class="link-below-title" target="_blank" href="https://github.com/numberdb/numberdb-data/tree/main/{{ table.path }}/table.yaml">source on github</a>
   {% if history %}
     &middot; 
     <a class="link-below-title" href="{% url 'db:table' table.tid %}">back to table</a>
