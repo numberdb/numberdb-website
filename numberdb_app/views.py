@@ -240,9 +240,62 @@ def wanteds(request):
 def welcome(request):
     return render(request, 'welcome.html')
 
-def render_table(request, table, context={}):
-	context.update(table_context(table))							
+def render_table(request, table, context=None):
+	context = dict(context or {})
+	context.update(table_context(table))
+	context.update(_entry_address(request, table, context))
 	return render(request, 'table.html', context)
+
+
+def _entry_address(request, table, context):
+	"""Resolve ?entry=<parameters>, which the server can actually see.
+
+	A single value has always had an address of the form
+
+	    /Best_Sobolev_constant#6,18/11,9/4
+
+	but a fragment is never sent to the server. So nothing could render one
+	entry, validate that it exists, or tell a reader that a citation had gone
+	stale: the page simply loaded and the browser found nothing to scroll to.
+	For a database whose worth is that a number has a permanent address, that
+	is the wrong way to fail.
+
+	It travels in the query string rather than the path because 6736 of the
+	identities contain a "/" -- parameters are rationals like 18/11 -- and a
+	percent-encoded slash inside a path segment is rewritten or rejected by a
+	good deal of software between here and the reader.
+
+	The fragment stays, so the browser still scrolls. The query is what makes
+	the address resolvable.
+	"""
+	requested = (request.GET.get('entry') or '').strip()
+	if not requested:
+		return {}
+
+	#Normalised the same way the anchors are, so that a citation written with
+	#the spaces a person naturally types still finds its entry.
+	from .review import _normalise_param
+	wanted = ','.join(_normalise_param(part)
+	                  for part in [requested]) if requested else ''
+
+	known = set()
+	section = context.get('number_section') or {}
+	for row in (section.get('number_list') or []):
+		known.add(row.get('params_id') or '')
+
+	if wanted in known:
+		return {'entry': wanted, 'entry_found': True,
+		        'canonical_entry_url': '%s?entry=%s' % (
+			        reverse('db:table', kwargs={'tid': table.tid}),
+			        quote_plus(wanted))}
+
+	#Said out loud rather than ignored. A citation that has stopped working is
+	#worth knowing about, and the reader is the only person in a position to
+	#notice.
+	messages.warning(request, (
+		'This table has no entry %s. It may have been renumbered or removed; '
+		'the table itself is shown below.' % (requested,)))
+	return {'entry': wanted, 'entry_found': False}
 
 def table_by_tid(request, tid):
     try:

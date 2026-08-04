@@ -586,3 +586,69 @@ class MacrosAreResolvedBeforeEditing(TestCase):
 		numbers = tree_of(self.table.head_revision)['Numbers']
 		self.assertEqual(set(numbers), {'1', '2'})
 		self.assertEqual(Number.objects.filter(table=self.table).count(), 2)
+
+
+class EntryAddresses(TestCase):
+	"""A single value has to have an address the server can resolve.
+
+	The fragment form is invisible to the server by the definition of HTTP, so
+	a stale citation used to load the page and quietly scroll nowhere.
+	"""
+
+	def setUp(self):
+		from .models import TableData
+		self.table = Table.objects.create(tid='T914', tid_int=914,
+		                                  title='Address probe', url='Addr914')
+		doc = ("Title: Address probe\n"
+		       "Parameters:\n  n:\n    type: Z\n"
+		       "Numbers:\n"
+		       "  '6': 3.14159265358979323846\n"
+		       "  '7': 2.71828182845904523536\n")
+		TableData.objects.create(table=self.table, raw_yaml=doc, full_yaml=doc)
+
+	@staticmethod
+	def _focused(response):
+		"""Rows carrying the focus class, ignoring the stylesheet that defines
+		it -- which appears on every page and made assertNotContains useless."""
+		import re
+		return re.findall(r'class="table-block table-block-focused"',
+		                  response.content.decode())
+
+	def test_a_known_entry_is_marked(self):
+		r = self.client.get('/%s?entry=6' % self.table.url)
+		self.assertEqual(r.status_code, 200)
+		self.assertEqual(len(self._focused(r)), 1)
+
+	def test_an_unknown_entry_says_so_instead_of_failing_silently(self):
+		r = self.client.get('/%s?entry=999' % self.table.url)
+		self.assertEqual(r.status_code, 200)
+		self.assertContains(r, 'no entry')
+		self.assertEqual(self._focused(r), [])
+
+	def test_the_table_is_still_shown_when_the_entry_is_gone(self):
+		"""A broken citation should not cost the reader the page."""
+		r = self.client.get('/%s?entry=999' % self.table.url)
+		self.assertContains(r, 'Address probe')
+
+	def test_no_entry_asked_for_changes_nothing(self):
+		r = self.client.get('/%s' % self.table.url)
+		self.assertEqual(r.status_code, 200)
+		self.assertEqual(self._focused(r), [])
+
+	def test_it_works_by_identifier_as_well_as_slug(self):
+		r = self.client.get('/%s?entry=6' % self.table.tid)
+		self.assertEqual(r.status_code, 200)
+		self.assertEqual(len(self._focused(r)), 1)
+
+	def test_a_slash_in_the_identity_survives_the_query_string(self):
+		"""6736 identities contain one, because parameters are rationals."""
+		from .models import TableData
+		doc = ("Title: Rational probe\n"
+		       "Parameters:\n  q:\n    type: Q\n"
+		       "Numbers:\n  '18/11': 1.63636363636363636364\n")
+		t = Table.objects.create(tid='T915', tid_int=915,
+		                         title='Rational probe', url='Rat915')
+		TableData.objects.create(table=t, raw_yaml=doc, full_yaml=doc)
+		r = self.client.get('/%s?entry=18/11' % t.url)
+		self.assertEqual(r.status_code, 200)
+		self.assertEqual(len(self._focused(r)), 1)
