@@ -20,7 +20,8 @@ import os
 import yaml
 from django.core.management.base import BaseCommand
 
-from numberdb_app.editing import commit_table, manifest_of
+from numberdb_app.editing import (commit_table, manifest_of,
+                                  without_managed_keys)
 from numberdb_app.models import Table
 
 #Names that are the table itself rather than something it carries. `id.yaml` is
@@ -80,7 +81,11 @@ class Command(BaseCommand):
 			if head is None:
 				#Genesis: the document as it stands, so that history starts
 				#where the import did rather than at the first edit.
-				tree = yaml.load(table.data.full_yaml, Loader=yaml.BaseLoader)
+				#Without managed keys, because `ID` belongs to the table
+				#rather than the document; storing it in a revision makes the
+				#revision disagree with what the editor would have saved.
+				tree = without_managed_keys(
+					yaml.load(table.data.full_yaml, Loader=yaml.BaseLoader))
 				commit_table(table, tree, author=None,
 				             message='imported from the data repository',
 				             produced_by='data-repository import',
