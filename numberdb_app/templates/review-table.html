@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block head-title %}Review {{ table_being_reviewed.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+pre.review-diff { background: #f7f7f7; border: 1px solid #ddd; padding: 0.6rem;
+                  overflow-x: auto; font-size: 0.9em; white-space: pre; }
+.review-entries code { margin-right: 0.5rem; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'db:review-queue' %}">Review</a></li>
+  <li class="breadcrumb-item active">{{ table_being_reviewed.title|safe }}</li>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">Review: {{ table_being_reviewed.title|safe }}</h1>
+
+<p>
+  <a href="{% url 'db:table_by_url' table_being_reviewed.url %}">See the table as readers do</a>
+  &middot;
+  <a href="{% url 'db:edit-table' table_being_reviewed.tid %}">Edit it</a>
+</p>
+
+{% if whole_table %}
+  <p><b>This table has never been reviewed</b>, so all of it is held out of
+  search by number.</p>
+{% else %}
+  <p>{{ outstanding|length }} entr{{ outstanding|length|pluralize:"y,ies" }}
+     changed since
+     {% if since %}the last review{% else %}the beginning{% endif %}:</p>
+  <p class="review-entries">
+    {% for p in outstanding %}
+      <code><a href="{% url 'db:table_by_url' table_being_reviewed.url %}#{{ p }}">{{ p|default:"(no parameter)" }}</a></code>
+    {% endfor %}
+  </p>
+{% endif %}
+
+{% if diff %}
+  <h2>What changed</h2>
+  <pre class="review-diff">{{ diff }}</pre>
+{% endif %}
+
+<form method="post" action="">
+  {% csrf_token %}
+  {% comment %}
+  The revision on screen travels with the confirmation, so a change arriving
+  mid-review cannot be approved by somebody who never saw it.
+  {% endcomment %}
+  <input type="hidden" name="head" value="{{ head.digest }}">
+  <button type="submit"><b>Confirm these changes</b></button>
+  <a href="{% url 'db:review-queue' %}">Back to the queue</a>
+</form>
+
+<p><small>Confirming means somebody competent looked, not that every digit has
+been recomputed. It admits these values back into search by number.</small></p>
+
+<h2>Recent revisions</h2>
+<ul>
+  {% for r in history %}
+    <li>{{ r.created }} &mdash;
+      {% if r.author %}{{ r.author }}{% else %}unknown{% endif %}
+      {% if r.produced_by %}<em>({{ r.produced_by }})</em>{% endif %}
+      {% if r.message %}: {{ r.message }}{% endif %}
+      {% if r.id == head.id %}<b>(current)</b>{% endif %}
+    </li>
+  {% endfor %}
+</ul>
+{% endblock %}

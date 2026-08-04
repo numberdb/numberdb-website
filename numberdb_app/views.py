@@ -1855,3 +1855,98 @@ def _edit_context(request, table, table_yaml, base):
 	except Exception as e:                            # pragma: no cover
 		messages.error(request, 'Could not render a preview: %s' % (e,))
 	return context
+
+
+@login_required
+def review_queue(request):
+	"""Tables carrying changes nobody has confirmed.
+
+	The queue exists because publication and indexing are separate here: an
+	unreviewed edit is already on its page, and what it is waiting for is
+	admission to search by number. So this is not a gate somebody is stuck
+	behind, and the cost of a long queue is a search that quietly covers less
+	than it could, which is exactly the sort of decay that needs to be visible
+	somewhere.
+	"""
+	from .permissions import is_board_member
+	from .review import ALL_UNREVIEWED, unreviewed_params
+
+	if not is_board_member(request.user):
+		raise Http404()
+
+	waiting = []
+	for table in (Table.objects.exclude(head_revision=None)
+	                           .select_related('head_revision',
+	                                           'reviewed_at_revision')):
+		outstanding = unreviewed_params(table)
+		if outstanding is ALL_UNREVIEWED:
+			count, whole = table.number_count, True
+		elif outstanding:
+			count, whole = len(outstanding), False
+		else:
+			continue
+		waiting.append({
+			'table': table,
+			'count': count,
+			'whole_table': whole,
+			'head': table.head_revision,
+			'since': table.reviewed_at_revision,
+		})
+
+	waiting.sort(key=lambda w: w['head'].created, reverse=True)
+	return render(request, 'review-queue.html', {'waiting': waiting})
+
+
+@login_required
+def review_table(request, tid):
+	"""Look at what changed in one table, and confirm it.
+
+	Confirming moves the reviewed pointer to the current head, which is what
+	admits the changed values back into search by number. It deliberately does
+	not mean "these numbers are correct": it means somebody competent looked.
+	The distinction matters when deciding who to add to the board.
+	"""
+	from .editing import tree_of
+	from .permissions import is_board_member
+	from .review import ALL_UNREVIEWED, sync_review_flags, unreviewed_params
+
+	if not is_board_member(request.user):
+		raise Http404()
+
+	table = get_object_or_404(Table, tid=tid)
+	head = table.head_revision
+	if head is None:
+		raise Http404('This table has no revisions to review.')
+
+	if request.method == 'POST':
+		#Confirming is recorded against the revision that was on screen, not
+		#against whatever head has become: approving work nobody looked at is
+		#the one thing a review queue must not do.
+		seen = request.POST.get('head', '')
+		if seen and seen != head.digest:
+			messages.error(request, (
+				'This table changed again while you were looking at it. '
+				'Nothing was confirmed; the newer changes are shown now.'))
+			return HttpResponseRedirect(reverse('db:review-table',
+			                                    kwargs={'tid': table.tid}))
+		table.reviewed_at_revision = head
+		table.save(update_fields=['reviewed_at_revision'])
+		marked = sync_review_flags(table)
+		messages.success(request, (
+			'Confirmed. %s'
+			% ('Nothing is now waiting on this table.' if not marked
+			   else '%d entries are still marked.' % (marked,))))
+		return HttpResponseRedirect(reverse('db:review-queue'))
+
+	outstanding = unreviewed_params(table)
+	before = tree_of(table.reviewed_at_revision)
+	after = tree_of(head)
+	return render(request, 'review-table.html', {
+		'table_being_reviewed': table,
+		'head': head,
+		'since': table.reviewed_at_revision,
+		'whole_table': outstanding is ALL_UNREVIEWED,
+		'outstanding': sorted(outstanding) if outstanding is not ALL_UNREVIEWED else [],
+		'diff': _diff_against(table.reviewed_at_revision, head.content),
+		'history': table.revisions.all()[:20],
+	})

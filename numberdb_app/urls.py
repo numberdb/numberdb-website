@@ -30,6 +30,8 @@ urlpatterns = [
 
     path('preview', views.preview, name='preview'),
     re_path(r'^edit/(?P<tid>(T\d+))$', views.edit_table, name='edit-table'),
+    path('review', views.review_queue, name='review-queue'),
+    re_path(r'^review/(?P<tid>(T\d+))$', views.review_table, name='review-table'),
     re_path(r'^preview/(?P<tid>(T\d+))$', views.preview, name='preview-table'),
 
     path('profile', views.show_own_profile, name='profile'),
