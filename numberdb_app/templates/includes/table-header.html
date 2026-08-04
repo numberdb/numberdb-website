@@ -23,6 +23,15 @@ a.link-below-title:hover {
 {% if preview %}
 {% else %}
   &middot; 
+  {% comment %}
+  Offered to anybody signed in, because editing here is now the ordinary
+  way to change a table: it publishes at once, and the round trip through
+  a pull request is the fallback rather than the path.
+  {% endcomment %}
+  {% if user.is_authenticated %}
+    <a class="link-below-title" href="{% url 'db:edit-table' table.tid %}">edit here</a>
+    &middot;
+  {% endif %}
   <a class="link-below-title" href="{% url 'db:preview-table' table.tid %}">preview edits</a>
   {% if history %}
     &middot; 

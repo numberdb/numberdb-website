@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block head-title %}Review queue{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
+  <li class="breadcrumb-item active">Review</li>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">Review queue</h1>
+
+{% comment %}
+Says what confirming is for. A reviewer who thinks they are gatekeeping
+publication will review differently, and more anxiously, than one who knows the
+edit is already public and is waiting only to be findable by its digits.
+{% endcomment %}
+<p>
+  Changes here are already published and visible on their tables. What they are
+  waiting for is admission to
+  <a href="{% url 'db:help' %}#section-search">search by number</a>, which is
+  held back until somebody has looked, because a wrong digit is invisible to
+  anyone searching for it.
+</p>
+
+{% if waiting %}
+  <table class="review-queue">
+    <tr><th>Table</th><th>Waiting</th><th>Last change</th><th></th></tr>
+    {% for w in waiting %}
+      <tr>
+        <td><a href="{% url 'db:table_by_url' w.table.url %}">{{ w.table.title|safe }}</a></td>
+        <td>
+          {% if w.whole_table %}
+            the whole table, never reviewed
+          {% else %}
+            {{ w.count }} entr{{ w.count|pluralize:"y,ies" }}
+          {% endif %}
+        </td>
+        <td>{{ w.head.created }}{% if w.head.author %} by {{ w.head.author }}{% endif %}
+            {% if w.head.produced_by %}<em>({{ w.head.produced_by }})</em>{% endif %}</td>
+        <td><a href="{% url 'db:review-table' w.table.tid %}">Review</a></td>
+      </tr>
+    {% endfor %}
+  </table>
+{% else %}
+  <p>Nothing is waiting. Every change made here has been looked at.</p>
+{% endif %}
+{% endblock %}

@@ -77,6 +77,9 @@
         <!--<a class="navbar-field" href="{% url 'account_login' %}">Login</a>-->
         <a class="navbar-field" href="{% url 'account_login' %}"><img class="profile" src="{% static '/img/profile3.png' %}" alt="Login"></a>
       {% else %}
+        {% if is_board_member %}
+          <a class="navbar-field" href="{% url 'db:review-queue' %}">Review</a>
+        {% endif %}
         <a class="navbar-field" href="{% url 'db:profile' %}"><img class="profile" src="{% static '/img/profile3.png' %}">&nbsp;{% user_display user %}</a>
 
           <!-- The following yields a GET request, which is "unsafe" if it logs out directly.

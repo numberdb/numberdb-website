@@ -353,3 +353,99 @@ class PreviewBeforeSaving(TestCase):
 		self.assertContains(r, 'YAML format error')
 		self.table.refresh_from_db()
 		self.assertIsNone(self.table.head_revision)
+
+
+class ReviewInterface(TestCase):
+	"""Confirming is what admits changed values back into search by number."""
+
+	def setUp(self):
+		from django.contrib.auth.models import Group
+		from .models import TableData
+		from .permissions import BOARD_GROUP
+		self.table = Table.objects.create(tid='T912', tid_int=912,
+		                                  title='Review probe', url='Review912')
+		TableData.objects.create(table=self.table, raw_yaml='')
+		self.author = User.objects.create_user('author_r', password='pw-123456')
+		self.chair = User.objects.create_user('chair_r', password='pw-123456')
+		self.chair.groups.add(Group.objects.get_or_create(name=BOARD_GROUP)[0])
+
+	DOC = {'Title': 'Review probe',
+	       'Parameters': {'n': {'type': 'Z'}},
+	       'Numbers': {'1': '3.14159265358979323846',
+	                   '2': '2.71828182845904523536'}}
+
+	def seed(self):
+		first = commit_table(self.table, self.DOC, author=self.author)
+		self.table.refresh_from_db()
+		self.table.reviewed_at_revision = first.revision
+		self.table.save(update_fields=['reviewed_at_revision'])
+		changed = {'Title': 'Review probe',
+		           'Parameters': {'n': {'type': 'Z'}},
+		           'Numbers': {'1': '3.14159265358979323846',
+		                       '2': '1.41421356237309504880'}}
+		commit_table(self.table, changed, author=self.author,
+		             base=first.revision)
+		self.table.refresh_from_db()
+
+	def test_the_queue_is_not_visible_to_ordinary_accounts(self):
+		self.client.login(username='author_r', password='pw-123456')
+		self.assertEqual(self.client.get('/review').status_code, 404)
+
+	def test_the_queue_lists_a_table_with_outstanding_changes(self):
+		self.seed()
+		self.client.login(username='chair_r', password='pw-123456')
+		r = self.client.get('/review')
+		self.assertEqual(r.status_code, 200)
+		self.assertContains(r, 'Review probe')
+		self.assertContains(r, '1 entry')
+
+	def test_the_queue_is_empty_when_nothing_is_waiting(self):
+		self.client.login(username='chair_r', password='pw-123456')
+		r = self.client.get('/review')
+		self.assertContains(r, 'Nothing is waiting')
+
+	def test_the_review_page_names_the_changed_entries(self):
+		self.seed()
+		self.client.login(username='chair_r', password='pw-123456')
+		r = self.client.get('/review/%s' % self.table.tid)
+		self.assertEqual(r.status_code, 200)
+		self.assertContains(r, 'What changed')
+		self.assertContains(r, '1.41421356237309504880')
+
+	def test_confirming_admits_the_values_back_into_search(self):
+		from .models import Number
+		self.seed()
+		changed = Number.objects.get(table=self.table, param=b'2')
+		self.assertFalse(changed.reviewed)
+
+		self.client.login(username='chair_r', password='pw-123456')
+		self.table.refresh_from_db()
+		r = self.client.post('/review/%s' % self.table.tid,
+		                     {'head': self.table.head_revision.digest})
+		self.assertEqual(r.status_code, 302)
+		self.table.refresh_from_db()
+		self.assertEqual(self.table.reviewed_at_revision_id,
+		                 self.table.head_revision_id)
+		changed.refresh_from_db()
+		self.assertTrue(changed.reviewed)
+
+	def test_a_change_arriving_mid_review_is_not_approved_unseen(self):
+		self.seed()
+		self.client.login(username='chair_r', password='pw-123456')
+		self.table.refresh_from_db()
+		stale_digest = self.table.head_revision.digest
+
+		#Somebody edits again while the reviewer is reading.
+		commit_table(self.table,
+		             {'Title': 'Review probe',
+		              'Parameters': {'n': {'type': 'Z'}},
+		              'Numbers': {'1': '9.99', '2': '1.41421356237309504880'}},
+		             author=self.author)
+		self.table.refresh_from_db()
+
+		r = self.client.post('/review/%s' % self.table.tid,
+		                     {'head': stale_digest}, follow=True)
+		self.assertContains(r, 'changed again while you were looking')
+		self.table.refresh_from_db()
+		self.assertNotEqual(self.table.reviewed_at_revision_id,
+		                    self.table.head_revision_id)
