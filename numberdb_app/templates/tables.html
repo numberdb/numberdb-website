@@ -24,6 +24,11 @@ td.table-label-tid {
 
     <h1 class="title">List of tables</h1>
 
+{% if user.is_authenticated %}
+  <p><a href="{% url 'db:new-table' %}">Create a new table</a></p>
+{% endif %}
+
+
     Sort by:
     <a href="?sort_by=id">id</a> &middot; 
     <a href="?sort_by=title">title</a> &middot; 

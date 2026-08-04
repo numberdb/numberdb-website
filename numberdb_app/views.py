@@ -1771,6 +1771,9 @@ def edit_table(request, tid):
 					messages.info(request, 'No changes yet.')
 			return render(request, 'edit.html', context)
 
+		from .editing import with_managed_keys
+		tree = with_managed_keys(tree, table)
+
 		try:
 			outcome = commit_table(
 				table, tree,
@@ -1808,8 +1811,23 @@ def edit_table(request, tid):
 		return HttpResponseRedirect(reverse('db:table_by_url',
 		                                    kwargs={'url': table.url}))
 
+	#full_yaml, not raw_yaml. The raw file is what a contributor wrote for the
+	#data repository, and for 30 tables that means `Numbers: INPUT{numbers.yaml}`
+	#-- a macro pointing at a sibling file. Seeding the editor from it would show
+	#somebody a macro instead of their numbers, and saving would store the macro
+	#as literal text: T92 would go from 1024 values to one entry whose value is
+	#the string "INPUT{numbers.yaml}". full_yaml is the same document with those
+	#references already resolved, which is what the site renders and what the
+	#revision should record.
 	source = (base.content if base is not None
-	          else (table.data.raw_yaml if hasattr(table, 'data') else ''))
+	          else (table.data.full_yaml if hasattr(table, 'data') else ''))
+	#The identifier is the site's, not the author's, so it is not shown.
+	try:
+		from .editing import dump_tree, without_managed_keys
+		source = dump_tree(without_managed_keys(
+			yaml.load(source, Loader=yaml.BaseLoader) or {}))
+	except yaml.YAMLError:
+		pass
 	return render(request, 'edit.html',
 	              _edit_context(request, table, source, base))
 
@@ -1950,3 +1968,78 @@ def review_table(request, tid):
 		'diff': _diff_against(table.reviewed_at_revision, head.content),
 		'history': table.revisions.all()[:20],
 	})
+
+
+@login_required
+def new_table(request):
+	"""Create a table here rather than in the data repository.
+
+	This is the last thing that made the repository a source of truth: as long
+	as tables could only come into existence there, the import had to keep the
+	authority to create them, and "the database is the store of record" was
+	true of edits but not of existence.
+
+	The T-number is allocated by the database now. It used to come from
+	`next_ids.yaml`, a file the repository maintained and whose first line told
+	everybody not to edit it -- which is a fair sign that it wanted to be a
+	sequence in a database rather than a file in git.
+	"""
+	from .editing import NEW_TABLE_TEMPLATE, create_table
+
+	if request.method == 'POST':
+		table_yaml = request.POST.get('table', '')
+		try:
+			tree = yaml.load(table_yaml, Loader=yaml.BaseLoader)
+		except yaml.YAMLError as e:
+			messages.error(request, 'YAML format error: %s' % (
+				str(e).replace(' in "<unicode string>"', ''),))
+			return render(request, 'new-table.html',
+			              _new_table_context(request, table_yaml))
+
+		action = request.POST.get('action', 'save')
+		if action == 'preview' or not isinstance(tree, dict):
+			if not isinstance(tree, dict):
+				messages.error(request, 'A table must be a mapping of sections.')
+			return render(request, 'new-table.html',
+			              _new_table_context(request, table_yaml))
+
+		try:
+			table = create_table(tree, author=request.user,
+			                     message=request.POST.get('message', '').strip())
+		except ValueError as e:
+			messages.error(request, str(e))
+			return render(request, 'new-table.html',
+			              _new_table_context(request, table_yaml))
+
+		from .permissions import is_board_member
+		if is_board_member(request.user):
+			table.reviewed_at_revision = table.head_revision
+			table.save(update_fields=['reviewed_at_revision'])
+			from .review import sync_review_flags
+			sync_review_flags(table)
+
+		messages.success(request, (
+			'Created %s. Its identifier is %s, which is permanent; the address '
+			'below can change if the title does.'
+			% (table.title, table.tid)))
+		return HttpResponseRedirect(reverse('db:table_by_url',
+		                                    kwargs={'url': table.url}))
+
+	return render(request, 'new-table.html',
+	              _new_table_context(request, NEW_TABLE_TEMPLATE.format(
+		              title='A short, descriptive title')))
+
+
+def _new_table_context(request, table_yaml):
+	from .permissions import is_board_member
+
+	context = {
+		'table_yaml': table_yaml,
+		'is_board_member': is_board_member(request.user),
+		'preview': True,
+	}
+	try:
+		context.update(build_preview_context(table_yaml))
+	except ValueError as e:
+		messages.error(request, str(e))
+	return context

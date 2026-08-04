@@ -1,0 +1,73 @@
+{% extends 'base.html' %}{% load static %}
+
+{% block head-title %}New table{% endblock %}
+
+{% block extra_head %}
+<link rel=stylesheet href="{% static '/codemirror-5.59.2/lib/codemirror.css' %}">
+<script src="{% static '/codemirror-5.59.2/lib/codemirror.js' %}"></script>
+<script src="{% static '/codemirror-5.59.2/mode/yaml/yaml.js' %}"></script>
+<style>
+.CodeMirror { height: calc(100vh - 6rem - 16 * var(--lrem)); border: 1px solid #ddd; }
+.edit-note { background: #ffc; padding: 0.6rem; border: 1px solid #e6d800; margin: 0.6rem 0; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'db:tables' %}">Tables</a></li>
+  <li class="breadcrumb-item active">New table</li>
+{% endblock %}
+
+{% block top-searchbar %}{% endblock %}
+{% block messages %}{% endblock %}
+
+{% block content %}
+
+<h1 class="title">A new table</h1>
+
+<p>
+  A table is a family of numbers with a description: what they are, what the
+  parameters mean, where they come from. Fill in the skeleton below; the
+  <a href="{% url 'db:help' %}#section-format-of-tables">format guide</a>
+  describes every section.
+</p>
+
+<div class="edit-note">
+  {% if is_board_member %}
+    The table is created and published as soon as you save, and counts as
+    reviewed because you are on the board.
+  {% else %}
+    The table is created and published as soon as you save. Its numbers are
+    marked as needing review and stay out of
+    <a href="{% url 'db:help' %}#section-search">search by number</a> until a
+    reviewer confirms them; the page itself is visible immediately.
+  {% endif %}
+</div>
+
+{% include 'includes/messaging.html' %}
+
+<form method="post" action="">
+  {% csrf_token %}
+  <textarea id="table-yaml" name="table">{{ table_yaml }}</textarea>
+  <p>
+    <label>What is this table?
+      <input type="text" name="message" maxlength="300" size="60"
+             placeholder="e.g. zeros of the Airy function">
+    </label>
+  </p>
+  <button type="submit" name="action" value="preview">Show preview</button>
+  <button type="submit" name="action" value="save"><b>Create table</b></button>
+  <a href="{% url 'db:tables' %}">Cancel</a>
+</form>
+
+<script>
+  var editor = CodeMirror.fromTextArea(document.getElementById("table-yaml"), {
+    lineNumbers: true, mode: "text/x-yaml", matchBrackets: true,
+    spellcheck: true, viewportMargin: 1,
+  });
+</script>
+
+<div id="preview-header">&mdash; preview, as the table will look &mdash;</div>
+{% if table %}{% include 'includes/table-snippet.html' %}{% endif %}
+
+{% endblock %}
