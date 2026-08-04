@@ -286,7 +286,7 @@ def _reference_href(ref):
 	if not sep or not entry:
 		#A whole table, or an in-page anchor that names no entry.
 		return ref
-	suffix = '?entry=%s#%s' % (quote(entry, safe=''), entry)
+	suffix = '?entry=%s' % (quote(entry, safe=',:'),)
 	if not table_part:
 		return suffix                       # same table
 	return '%s%s' % (table_part, suffix)

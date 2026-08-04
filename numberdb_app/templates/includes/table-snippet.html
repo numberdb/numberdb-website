@@ -1,6 +1,28 @@
 <style>
 .table-block-focused { background: #e5eecc; outline: 2px solid #b0be90; }
 </style>
+
+{% if entry_found %}
+<span id="requested-entry" data-entry="{{ entry }}" hidden></span>
+{% comment %}
+Links carry ?entry= and no fragment, so the browser has nothing to scroll to on
+its own. Doing it here keeps a citation to one line instead of repeating the
+identity twice, and it also works for the entries whose identity contains a "/",
+which a fragment handles awkwardly.
+
+Fragments still work when somebody follows an older link: the browser does that
+without help, and this only runs when the server was asked for an entry.
+{% endcomment %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var holder = document.getElementById('requested-entry');
+    var target = holder && document.getElementById(holder.dataset.entry);
+    if (target && target.scrollIntoView) {
+      target.scrollIntoView({block: 'center'});
+    }
+  });
+</script>
+{% endif %}
 <style>
 div.table-title {
   font-weight: 400;

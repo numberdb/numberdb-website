@@ -179,6 +179,37 @@ This is the same argument that decided named records above, arrived at from the
 other end: an identity that depends on position is only as stable as the
 ordering nobody promised to keep.
 
+## Grouped parameters make a display property load-bearing
+
+Eleven tables declare `Display properties: group parameters`, for instance
+`[['N'], ['c4', 'c6']]`, and their entries nest like this:
+
+    Numbers:
+      '389':
+        '112, -856': ...
+
+One key holds two parameter values. Nothing in the entries says so: the only
+way to know that `112, -856` is `c4 = 112, c6 = -856` rather than a single
+parameter whose value contains a comma is to read the display properties. A
+property that says how a table should *look* decides how its entries are
+*parsed*, which means a reader that ignores presentation gets the structure
+wrong.
+
+It also explains a bug found earlier: the key is written `112, -856` with a
+space and the identity is `112,-856` without one, so anything comparing the two
+has to normalise, and the review gate that did not silently matched nothing
+across exactly these tables.
+
+Flattening with named parameters removes this entirely:
+
+    - params: {N: 389, c4: 112, c6: -856}
+
+Every parameter is named where it is used, nothing has to be split, and
+grouping goes back to being what it claims to be: a statement about how to
+arrange the columns. That is a second, independent argument for the named form,
+and it is the reason grouping should not survive into the schema as anything
+structural.
+
 ## The parameter list is fixed once a table exists
 
 Every entry's identity is its parameter values, so changing the set or the order
