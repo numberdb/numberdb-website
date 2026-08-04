@@ -8,17 +8,26 @@ before the conversion, with nothing anywhere saying which is current.
 
 Two deliberate differences from what the repository used to contain:
 
-**No macros.** 30 tables kept their entries in a sibling `numbers.yaml`
-referenced by `INPUT{numbers.yaml}`, and every table pulled its identifier from
-`id.yaml` -- a file whose first line said "Do NOT edit". Splitting a document
-across files was how a person kept a hand-written table manageable. Generated
-files have no such problem, and a reader who has to resolve macros to see the
-numbers is worse off than one who does not.
+**The identifier is inlined.** Every table pulled it from `id.yaml` through a
+macro, a file whose first line said "Do NOT edit". Nothing generates that file
+and nothing reads it but the macro, so it is written out directly.
 
-**The identifier is written out.** It is not part of the document the site
-stores, because it belongs to the table rather than to the text and must never
-be typed by an author. But an exported file that does not say which table it is
-cannot be read on its own, so the export puts it back at the top.
+**The entries macro is NOT dropped, and must not be.** 80 tables keep their
+entries in a sibling `numbers.yaml` or `polynomials.yaml` behind
+`INPUT{numbers.yaml}`, and that split is not a convenience for reading large
+files -- it is the interface between the part a person writes and the part a
+program writes. Of the 82 tables with a `generate.sage`, 78 have exactly this
+shape, and not one script in the repository writes `table.yaml`: 67 write
+`numbers.yaml` and 11 write `polynomials.yaml`. Inlining the entries would
+leave those scripts writing a file nothing reads.
+
+That is not yet implemented here -- this export writes a single file -- which
+is why it must not be pointed at the real repository until it is.
+
+The identifier is not part of the document the site stores, because it belongs
+to the table rather than to the text and must never be typed by an author. But
+an exported file that does not say which table it is cannot be read on its own,
+so the export puts it back at the top.
 
 Nothing is committed or pushed. What to tell the world is a decision for a
 person, and a command that quietly rewrote a public repository would be exactly
