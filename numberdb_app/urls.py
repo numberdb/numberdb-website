@@ -29,6 +29,7 @@ urlpatterns = [
     path('tags/<str:tag_url>', views.tag, name='tag'),
 
     path('preview', views.preview, name='preview'),
+    re_path(r'^edit/(?P<tid>(T\d+))$', views.edit_table, name='edit-table'),
     re_path(r'^preview/(?P<tid>(T\d+))$', views.preview, name='preview-table'),
 
     path('profile', views.show_own_profile, name='profile'),

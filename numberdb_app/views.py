@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.urls import reverse
 from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
 from django.views import generic
 from django.http import JsonResponse
 from django.contrib import messages
@@ -41,6 +42,7 @@ from .models import Wanted
 
 from .models import Table
 from .models import TableData
+from .models import TableRevision
 from .models import TableSearch
 from .models import Contributor
 from .models import Tag
@@ -840,6 +842,47 @@ def table_context(table, preview=False):
 		raise ValueError(error_message)
 	
 	return context
+
+def build_preview_context(table_yaml):
+	"""Render a table document the way the site will render it.
+
+	Extracted from `preview` so the editor and the preview page cannot drift:
+	an editor that previews through different code from the page is worse than
+	no preview, because the author trusts it.
+
+	Raises ValueError with a readable message when the document cannot be
+	rendered, rather than returning a half-built context.
+	"""
+	try:
+		yaml_data = yaml.load(table_yaml, Loader=yaml.BaseLoader)
+	except (yaml.scanner.ScannerError, yaml.composer.ComposerError,
+	        yaml.parser.ParserError) as e:
+		raise ValueError('YAML format error: %s' % (
+			str(e).replace(' in "<unicode string>"', '').replace('^', ''),))
+
+	if not isinstance(yaml_data, dict):
+		raise ValueError('A table must be a mapping of sections.')
+	if 'Title' not in yaml_data:
+		raise ValueError('The table has no Title.')
+
+	c_data = TableData()
+	c_data.full_yaml = yaml.dump(normalize_table_data(yaml_data),
+	                             sort_keys=False)
+	c = Table()
+	c.data = c_data
+	c.title = yaml_data['Title']
+	c.path = 'PATH-OF-COLLECTION-YAML'
+	c.tid = 'AUTOMATIC-COLLECTION-ID'
+
+	tags = []
+	for tag_name in (yaml_data.get('Tags') or []):
+		if isinstance(tag_name, str):
+			tags.append(Tag(name=tag_name))
+
+	context = {'preview': True, 'tags': tags}
+	context.update(table_context(c, preview=True))
+	return context
+
 
 def preview(request, tid=None):
 	#First try to get yaml from Textarea:
@@ -1671,3 +1714,111 @@ def table_history(request, tid=None):
 		'sortby': sortby,
 	}
 	return render(request, 'table-history.html', context)
+
+
+@login_required
+def edit_table(request, tid):
+	"""Edit a table's source and save it as a new revision.
+
+	Built on the preview machinery rather than beside it, so what an author
+	sees before saving is produced by the same code that renders the table
+	afterwards. A preview that renders differently from the page is worse than
+	no preview, because it is trusted.
+
+	Saving publishes immediately. What the author does not get automatically is
+	review: unless they are on the board, the entries they changed are marked
+	and held out of search by number until somebody confirms them.
+	"""
+	from .editing import StaleEdit, commit_table, tree_of
+	from .permissions import is_board_member
+
+	table = get_object_or_404(Table, tid=tid)
+	base = table.head_revision
+
+	if request.method == 'POST':
+		table_yaml = request.POST.get('table', '')
+		base_digest = request.POST.get('base', '')
+		#The revision the author actually saw, carried through the form. Without
+		#it a save would silently apply to whatever head had become, which is
+		#the stale write this whole design exists to prevent.
+		if base_digest:
+			base = TableRevision.objects.filter(
+				table=table, digest=base_digest).first() or base
+
+		try:
+			tree = yaml.load(table_yaml, Loader=yaml.BaseLoader)
+		except yaml.YAMLError as e:
+			messages.error(request, 'YAML format error: %s' % (
+				str(e).replace(' in "<unicode string>"', ''),))
+			return render(request, 'edit.html', _edit_context(
+				request, table, table_yaml, base))
+
+		if not isinstance(tree, dict):
+			messages.error(request, 'A table must be a mapping of sections.')
+			return render(request, 'edit.html', _edit_context(
+				request, table, table_yaml, base))
+
+		try:
+			outcome = commit_table(
+				table, tree,
+				author=request.user,
+				message=request.POST.get('message', '').strip(),
+				base=base,
+			)
+		except StaleEdit as stale:
+			messages.error(request, (
+				'Somebody else changed this table while you were editing, and '
+				'your changes overlap theirs in %d place(s). Nothing has been '
+				'saved.' % (len(stale.conflicts),)))
+			context = _edit_context(request, table, table_yaml, stale.head)
+			context['conflicts'] = stale.conflicts
+			return render(request, 'edit.html', context)
+
+		if outcome.unchanged:
+			messages.info(request, 'No changes to save.')
+		elif outcome.merged:
+			messages.success(request, (
+				'Saved, and merged with a change somebody else made while you '
+				'were editing. The table now contains both.'))
+		else:
+			messages.success(request, 'Saved.')
+
+		#A board member's edit is reviewed by the act of making it: requiring
+		#them to review their own work would be a queue of one person's edits
+		#waiting for that same person.
+		if outcome.revision and is_board_member(request.user):
+			table.reviewed_at_revision = outcome.revision
+			table.save(update_fields=['reviewed_at_revision'])
+			from .review import sync_review_flags
+			sync_review_flags(table)
+
+		return HttpResponseRedirect(reverse('db:table_by_url',
+		                                    kwargs={'url': table.url}))
+
+	source = (base.content if base is not None
+	          else (table.data.raw_yaml if hasattr(table, 'data') else ''))
+	return render(request, 'edit.html',
+	              _edit_context(request, table, source, base))
+
+
+def _edit_context(request, table, table_yaml, base):
+	"""The editor, plus a preview rendered from what is in the box."""
+	from .permissions import is_board_member
+
+	context = {
+		'table_being_edited': table,
+		'table_yaml': table_yaml,
+		'base_digest': base.digest if base is not None else '',
+		'is_board_member': is_board_member(request.user),
+		'preview': True,
+	}
+	#Rendered through the same path as /preview, so a document that cannot be
+	#rendered is reported while it is being written rather than after it has
+	#been saved.
+	try:
+		context.update(build_preview_context(table_yaml))
+	except ValueError as e:
+		messages.error(request, str(e))
+	except Exception as e:                            # pragma: no cover
+		messages.error(request, 'Could not render a preview: %s' % (e,))
+	return context

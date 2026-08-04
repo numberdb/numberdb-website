@@ -1,0 +1,86 @@
+{% extends 'base.html' %}{% load static %}
+
+{% block head-title %}Edit {{ table_being_edited.title }}{% endblock %}
+
+{% block extra_head %}
+<link rel=stylesheet href="{% static '/codemirror-5.59.2/lib/codemirror.css' %}">
+<script src="{% static '/codemirror-5.59.2/lib/codemirror.js' %}"></script>
+<script src="{% static '/codemirror-5.59.2/mode/yaml/yaml.js' %}"></script>
+<style>
+.CodeMirror { height: calc(100vh - 6rem - 14 * var(--lrem)); border: 1px solid #ddd; }
+.edit-note { background: #ffc; padding: 0.6rem; border: 1px solid #e6d800; margin: 0.6rem 0; }
+.conflict { background: #fee; border: 1px solid #e88; padding: 0.6rem; margin: 0.4rem 0; }
+.conflict code { display: block; white-space: pre-wrap; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'db:tables' %}">Tables</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'db:table_by_url' table_being_edited.url %}">{{ table_being_edited.title|safe }}</a></li>
+  <li class="breadcrumb-item active">Edit</li>
+{% endblock %}
+
+{% block top-searchbar %}{% endblock %}
+{% block messages %}{% endblock %}
+
+{% block content %}
+
+<h1 class="title">Editing {{ table_being_edited.title|safe }}</h1>
+
+{% comment %}
+Said before the box rather than after saving, because it changes what somebody
+chooses to write. An author who does not know their edit is published at once
+would reasonably expect a draft.
+{% endcomment %}
+<div class="edit-note">
+  {% if is_board_member %}
+    Your changes are published immediately, and count as reviewed because you
+    are on the board.
+  {% else %}
+    Your changes are published immediately. The entries you change are marked
+    as needing review and are left out of
+    <a href="{% url 'db:help' %}#section-search">search by number</a> until a
+    reviewer confirms them. Everything else about the table is unaffected.
+  {% endif %}
+</div>
+
+{% include 'includes/messaging.html' %}
+
+{% if conflicts %}
+  <div class="conflict">
+    <b>Nothing was saved.</b> Somebody changed the same {{ conflicts|length }}
+    place{{ conflicts|pluralize }} while you were editing:
+    {% for c in conflicts %}
+      <code>{{ c.path|join:" &rsaquo; " }}</code>
+    {% endfor %}
+    Their version is now in the box below the editor; reapply your change on
+    top of it and save again.
+  </div>
+{% endif %}
+
+<form method="post" action="">
+  {% csrf_token %}
+  <input type="hidden" name="base" value="{{ base_digest }}">
+  <textarea id="table-yaml" name="table">{{ table_yaml }}</textarea>
+  <p>
+    <label>What did you change?
+      <input type="text" name="message" maxlength="300" size="60"
+             placeholder="e.g. corrected the 40th digit">
+    </label>
+  </p>
+  <input type="submit" value="Save">
+  <a href="{% url 'db:table_by_url' table_being_edited.url %}">Cancel</a>
+</form>
+
+<script>
+  var editor = CodeMirror.fromTextArea(document.getElementById("table-yaml"), {
+    lineNumbers: true, mode: "text/x-yaml", matchBrackets: true,
+    spellcheck: true, viewportMargin: 1,
+  });
+</script>
+
+<div id="preview-header">&mdash; preview &mdash;</div>
+{% if table %}{% include 'includes/table-snippet.html' %}{% endif %}
+
+{% endblock %}
