@@ -15,20 +15,26 @@ register = template.Library()
 def entry_suffix(param):
 	"""The part of a link that identifies one entry.
 
-	Both forms, deliberately:
+	    ?entry=6,18/11
 
-	    ?entry=6,18/11   the server sees this, so it can confirm the entry is
-	                     really there and say so when it is not
-	    #6,18/11         the browser sees this, and scrolls
+	The query rather than a fragment, because a fragment is never sent to the
+	server: a citation to an entry that has since been renumbered would load the
+	page and scroll nowhere, with nothing to tell the reader anything was wrong.
+	The server can confirm the entry is there, and say so when it is not.
 
-	A link with only the fragment is what the site had, and it fails silently:
-	a citation to an entry that has since been renumbered loads the page and
-	scrolls nowhere, with nothing to tell the reader that anything is wrong.
+	No fragment beside it. Carrying both said the same thing twice and made a
+	citation twice as long as it needed to be; the page scrolls to the entry
+	itself when asked for one. Fragments are still understood, because every
+	link written before today is one.
 
-	Percent-encoded in the query and raw in the fragment, because the fragment
-	has to match the element's id exactly, and 6736 of the identities contain a
-	"/" that would otherwise end the query value early.
+	Commas are left as they are, being legal in a query string, so that the
+	result reads as a citation rather than as 1611%2C432%2C-17496. The "/" in
+	6736 of the identities is still encoded, since it would otherwise end the
+	value early.
 	"""
 	if not param:
 		return ''
-	return '?entry=%s#%s' % (quote(str(param), safe=''), param)
+	#Only "/" and the handful of characters that would end the value early are
+	#encoded. A comma is legal unencoded in a query string, and encoding it
+	#turned a readable citation into 1611%2C432%2C-17496.
+	return '?entry=%s' % (quote(str(param), safe=',:'),)
