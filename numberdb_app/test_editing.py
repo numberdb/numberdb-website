@@ -652,3 +652,59 @@ class EntryAddresses(TestCase):
 		r = self.client.get('/%s?entry=18/11' % t.url)
 		self.assertEqual(r.status_code, 200)
 		self.assertEqual(len(self._focused(r)), 1)
+
+
+class NamedEntryAddresses(TestCase):
+	"""A positional identity can silently come to mean a different number.
+
+	With parameters a and b nested one way, entry 1,2 is (a=1, b=2). Nest them
+	the other way and 1,2 still exists and is (a=2, b=1): the citation does not
+	break, it lies. Naming the parameters removes the ambiguity.
+	"""
+
+	def setUp(self):
+		from .models import TableData
+		doc = ("Title: Named probe\n"
+		       "Parameters:\n"
+		       "  a:\n    type: Z\n"
+		       "  b:\n    type: Z\n"
+		       "Numbers:\n"
+		       "  '1':\n    '2': 3.14159265358979323846\n"
+		       "  '2':\n    '1': 2.71828182845904523536\n")
+		self.table = Table.objects.create(tid='T916', tid_int=916,
+		                                  title='Named probe', url='Named916')
+		TableData.objects.create(table=self.table, raw_yaml=doc, full_yaml=doc)
+
+	@staticmethod
+	def _focused(response):
+		import re
+		return re.findall(r'class="table-block table-block-focused"',
+		                  response.content.decode())
+
+	def test_a_named_citation_resolves(self):
+		r = self.client.get('/%s?entry=a=1,b=2' % self.table.url)
+		self.assertEqual(len(self._focused(r)), 1)
+
+	def test_the_order_written_does_not_matter(self):
+		"""Which is the entire point: order is what positional identity leaks."""
+		r = self.client.get('/%s?entry=b=2,a=1' % self.table.url)
+		self.assertEqual(len(self._focused(r)), 1)
+
+	def test_a_positional_citation_still_resolves(self):
+		"""Everything written before today is in this form."""
+		r = self.client.get('/%s?entry=1,2' % self.table.url)
+		self.assertEqual(len(self._focused(r)), 1)
+
+	def test_an_unknown_parameter_name_is_refused(self):
+		r = self.client.get('/%s?entry=a=1,zzz=2' % self.table.url)
+		self.assertEqual(self._focused(r), [])
+		self.assertContains(r, 'no parameter')
+
+	def test_naming_distinguishes_entries_that_positional_confuses(self):
+		a1b2 = self.client.get('/%s?entry=a=1,b=2' % self.table.url)
+		a2b1 = self.client.get('/%s?entry=a=2,b=1' % self.table.url)
+		self.assertEqual(len(self._focused(a1b2)), 1)
+		self.assertEqual(len(self._focused(a2b1)), 1)
+		#Different entries, and the citations say which is which.
+		self.assertIn('3.14159265358979323846', a1b2.content.decode())
+		self.assertIn('2.71828182845904523536', a2b1.content.decode())

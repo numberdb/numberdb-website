@@ -153,6 +153,32 @@ Canonical on the `T`-number, which is permanent, rather than the slug, which is
 not. An entry that no longer exists now says so and still shows the table,
 rather than leaving the reader to wonder whether they misread the citation.
 
+## Why the identity has to carry the parameter names
+
+An entry's identity is its parameter values joined by commas, in the order they
+nest: `37,48,-216`. Nothing in that says which value is which.
+
+Reordering the `Parameters` declaration is harmless, because the identity
+follows the data's nesting rather than the declaration. Restructuring the
+nesting is not. With parameters `a` and `b` nested one way, entry `1,2` is
+(a=1, b=2); nested the other way, `1,2` still exists and is (a=2, b=1).
+
+    before : {'1,2': value-for-a1-b2, '2,1': value-for-a2-b1}
+    after  : {'2,1': value-for-a1-b2, '1,2': value-for-a2-b1}
+
+So the citation does not break. It resolves, reports success, and points at a
+different number. That is worse than breaking, and no amount of validation
+catches it, because there is nothing invalid to catch.
+
+`a=1,b=2` cannot be confused with `a=2,b=1`. So the named form is the one to
+write down, and `?entry=` accepts it now -- in any order, which is the point --
+while continuing to accept the positional form, since everything written before
+today is in it. An unknown parameter name is refused rather than guessed at.
+
+This is the same argument that decided named records above, arrived at from the
+other end: an identity that depends on position is only as stable as the
+ordering nobody promised to keep.
+
 ## Decisions taken here
 
 **Entries become flat records, with parameters named.** Decided.

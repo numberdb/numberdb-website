@@ -248,6 +248,21 @@ def render_table(request, table, context=None):
 	return render(request, 'table.html', context)
 
 
+def _parameter_order(table):
+	"""The table's parameter names, in the order the entries nest.
+
+	Read from the document rather than stored, because it is the document that
+	decides: the identity of an entry is its parameter values in nesting order,
+	and the Parameters section is what names them.
+	"""
+	import yaml as _yaml
+	try:
+		tree = _yaml.load(table.data.full_yaml, Loader=_yaml.BaseLoader) or {}
+	except Exception:
+		return []
+	return list((tree.get('Parameters') or {}).keys())
+
+
 def _entry_address(request, table, context):
 	"""Resolve ?entry=<parameters>, which the server can actually see.
 
@@ -276,8 +291,31 @@ def _entry_address(request, table, context):
 	#Normalised the same way the anchors are, so that a citation written with
 	#the spaces a person naturally types still finds its entry.
 	from .review import _normalise_param
-	wanted = ','.join(_normalise_param(part)
-	                  for part in [requested]) if requested else ''
+	wanted = _normalise_param(requested)
+
+	#A named citation, "n=6,p=18/11", is resolved against the table's declared
+	#parameters and turned into the positional form the anchors still use.
+	#
+	#Named is the form worth writing down. A positional identity says 1,2 and
+	#nothing about what 1 and 2 are, so if the parameters are ever nested the
+	#other way round, 1,2 still exists and quietly means a different number:
+	#the link does not break, it lies. a=1,b=2 cannot be confused with a=2,b=1.
+	if '=' in wanted:
+		named = {}
+		for part in wanted.split(','):
+			if '=' not in part:
+				named = None
+				break
+			name, _, value = part.partition('=')
+			named[name.strip()] = value.strip()
+		order = _parameter_order(table)
+		if named is not None and order and set(named) <= set(order):
+			wanted = ','.join(named[name] for name in order if name in named)
+		elif named is not None:
+			messages.warning(request, (
+				'This table has no parameter %s.'
+				% (', '.join(sorted(set(named) - set(order))) or 'of that name',)))
+			return {'entry': requested, 'entry_found': False}
 
 	known = set()
 	section = context.get('number_section') or {}
