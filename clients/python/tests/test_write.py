@@ -296,3 +296,133 @@ class TestSubmittingEntriesOnly:
         with pytest.raises(numberdb.Unauthorized):
             numberdb.submit_entries('T1', self.entries(),
                                     client=sent.client(api_key=''))
+
+
+class Zeta(numberdb.Generator):
+    """A generator small enough to check by eye."""
+
+    parameters = ('n',)
+    type = 'Q'
+    tid = 'T7'
+
+    def enumerate(self, limit=5):
+        for n in range(1, limit + 1):
+            yield {'n': n}
+
+    def value(self, params, digits):
+        return Fraction(1, params['n'])
+
+
+class TestGenerator:
+
+    def test_generating_walks_the_enumeration(self):
+        entries = numberdb.generate(Zeta(), limit=3)
+        assert [r['number'] for r in entries] == ['1', '1/2', '1/3']
+
+    def test_parameters_are_named_in_the_records(self):
+        entries = numberdb.generate(Zeta(), limit=2)
+        assert entries.as_list()[1]['params'] == {'n': '2'}
+
+    def test_extending_is_the_same_call_with_a_larger_bound(self):
+        assert len(numberdb.generate(Zeta(), limit=9)) == 9
+
+    def test_a_generator_may_return_annotations_with_the_value(self):
+        class WithComment(Zeta):
+            def value(self, params, digits):
+                return {'number': Fraction(1, params['n']),
+                        'comment': 'reciprocal'}
+
+        record = numberdb.generate(WithComment(), limit=1).as_list()[0]
+        assert record['comment'] == 'reciprocal'
+
+    def test_a_generator_with_neither_method_says_so(self):
+        class Empty(numberdb.Generator):
+            parameters = ('n',)
+
+        with pytest.raises(NotImplementedError):
+            numberdb.generate(Empty())
+
+    def test_a_bulk_generator_needs_no_per_entry_value(self):
+        """For tables whose values only come all at once."""
+        class Bulk(numberdb.Generator):
+            parameters = ('n',)
+
+            def all_entries(self, digits=None, **bounds):
+                entries = numberdb.Entries('n')
+                entries.add(n=1, number='3.14')
+                return entries
+
+        assert len(numberdb.generate(Bulk())) == 1
+
+    def test_the_environment_is_recorded(self):
+        """A mismatch later is only useful if something said what ran first."""
+        assert 'python' in Zeta().environment()
+
+
+class TestVerify:
+
+    def stored(self, entries):
+        """A client whose table() call answers with these stored entries."""
+        return Sent(payload={'Title': 'Probe', 'Numbers': entries}).client()
+
+    def test_a_matching_table_verifies(self):
+        client = self.stored([{'params': {'n': '1'}, 'number': '1'},
+                              {'params': {'n': '2'}, 'number': '1/2'}])
+        report = numberdb.verify(Zeta(), client=client, limit=2, sample=None)
+        assert report.ok
+        assert report.matched == 2
+
+    def test_a_changed_value_is_reported_with_both_forms(self):
+        """'T7 disagrees' is not actionable; naming the entry is."""
+        client = self.stored([{'params': {'n': '1'}, 'number': '1'},
+                              {'params': {'n': '2'}, 'number': '0.5'}])
+        report = numberdb.verify(Zeta(), client=client, limit=2, sample=None)
+        assert not report.ok
+        assert report.differing == [('2', '0.5', '1/2')]
+
+    def test_an_entry_the_table_lacks_is_reported_as_missing(self):
+        client = self.stored([{'params': {'n': '1'}, 'number': '1'}])
+        report = numberdb.verify(Zeta(), client=client, limit=2, sample=None)
+        assert report.missing == ['2']
+
+    def test_sampling_checks_only_some_of_them(self):
+        """Why a per-entry value matters: seconds instead of days."""
+        client = self.stored([{'params': {'n': str(n)},
+                               'number': '1' if n == 1 else '1/%d' % n}
+                              for n in range(1, 101)])
+        report = numberdb.verify(Zeta(), client=client, limit=100, sample=5)
+        assert report.checked == 5
+
+    def test_sampling_spreads_through_the_table(self):
+        """Not just the cheap end, which is where a sweep would stop.
+
+        The stored values are written the way `to_text` writes them -- `1`
+        rather than `1/1` -- because a table storing the other spelling really
+        would differ, and this test is about which entries get checked.
+        """
+        client = self.stored([{'params': {'n': str(n)},
+                               'number': '1' if n == 1 else '1/%d' % n}
+                              for n in range(1, 101)])
+        report = numberdb.verify(Zeta(), client=client, limit=100, sample=4)
+        assert report.matched == 4
+        assert report.checked == 4
+
+    def test_the_nested_stored_form_is_understood_too(self):
+        """Both forms coexist, so verification must read either."""
+        client = Sent(payload={'Title': 'Probe',
+                               'Numbers': {'1': '1', '2': '1/2'}}).client()
+        report = numberdb.verify(Zeta(), client=client, limit=2, sample=None)
+        assert report.ok
+
+    def test_verification_writes_nothing(self):
+        sent = Sent(payload={'Title': 'Probe',
+                             'Numbers': {'1': '1', '2': '1/2'}})
+        numberdb.verify(Zeta(), client=sent.client(), limit=2, sample=None)
+        assert sent.request.get_method() == 'GET'
+
+    def test_it_needs_to_know_which_table(self):
+        class Untied(Zeta):
+            tid = None
+
+        with pytest.raises(ValueError):
+            numberdb.verify(Untied(), client=self.stored([]))

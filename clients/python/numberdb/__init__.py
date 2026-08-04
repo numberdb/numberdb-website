@@ -37,6 +37,7 @@ from ._http import Client
 #call time rather than at import time.
 from ._write import (Entries, create, document, submit,
                      submit_entries, to_text)
+from ._generate import Generator, Report, generate, publish, verify
 from ._wire import (KINDS, ComplexInterval, PAdic, Polynomial, RealInterval,
                     decode, to_sage)
 
@@ -52,7 +53,7 @@ __all__ = ['search', 'search_many', 'search_text',
            'NumberDBError', 'TransportError', 'RateLimited', 'Unauthorized',
            'UnsupportedNumber', 'Conflict', 'TooBig',
            'Entries', 'document', 'to_text', 'submit', 'submit_entries',
-           'create',
+           'create', 'Generator', 'Report', 'generate', 'verify', 'publish',
            '__version__']
 
 try:
