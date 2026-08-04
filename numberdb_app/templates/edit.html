@@ -11,6 +11,9 @@
 .edit-note { background: #ffc; padding: 0.6rem; border: 1px solid #e6d800; margin: 0.6rem 0; }
 .conflict { background: #fee; border: 1px solid #e88; padding: 0.6rem; margin: 0.4rem 0; }
 .conflict code { display: block; white-space: pre-wrap; }
+pre.edit-diff { background: #f7f7f7; border: 1px solid #ddd; padding: 0.6rem;
+                overflow-x: auto; font-size: 0.9em; }
+pre.edit-diff { white-space: pre; }
 </style>
 {% endblock %}
 
@@ -69,9 +72,22 @@ would reasonably expect a draft.
              placeholder="e.g. corrected the 40th digit">
     </label>
   </p>
-  <input type="submit" value="Save">
+  {% comment %}
+  Preview first, and named so it reads as the ordinary thing to do. Saving is
+  a separate deliberate press, because an edit here is published the moment it
+  lands and a table is mostly digits: the difference between a correct edit and
+  a damaging one is often one character that only shows up once it is drawn.
+  {% endcomment %}
+  <button type="submit" name="action" value="preview">Show preview</button>
+  <button type="submit" name="action" value="diff">Show changes</button>
+  <button type="submit" name="action" value="save"><b>Save</b></button>
   <a href="{% url 'db:table_by_url' table_being_edited.url %}">Cancel</a>
 </form>
+
+{% if diff %}
+  <h2>Your changes</h2>
+  <pre class="edit-diff">{{ diff }}</pre>
+{% endif %}
 
 <script>
   var editor = CodeMirror.fromTextArea(document.getElementById("table-yaml"), {
@@ -80,7 +96,7 @@ would reasonably expect a draft.
   });
 </script>
 
-<div id="preview-header">&mdash; preview &mdash;</div>
+<div id="preview-header">&mdash; preview, as the table will look &mdash;</div>
 {% if table %}{% include 'includes/table-snippet.html' %}{% endif %}
 
 {% endblock %}

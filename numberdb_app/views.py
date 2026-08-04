@@ -1758,6 +1758,19 @@ def edit_table(request, tid):
 			return render(request, 'edit.html', _edit_context(
 				request, table, table_yaml, base))
 
+		#Nothing is written until the author has asked for it. Rendering first
+		#is not a nicety here: a table is mostly numbers, and the difference
+		#between a correct edit and a damaging one is often a single character
+		#that only becomes visible once the page is drawn.
+		action = request.POST.get('action', 'save')
+		if action in ('preview', 'diff'):
+			context = _edit_context(request, table, table_yaml, base)
+			if action == 'diff':
+				context['diff'] = _diff_against(base, table_yaml)
+				if not context['diff']:
+					messages.info(request, 'No changes yet.')
+			return render(request, 'edit.html', context)
+
 		try:
 			outcome = commit_table(
 				table, tree,
@@ -1799,6 +1812,26 @@ def edit_table(request, tid):
 	          else (table.data.raw_yaml if hasattr(table, 'data') else ''))
 	return render(request, 'edit.html',
 	              _edit_context(request, table, source, base))
+
+
+def _diff_against(base, table_yaml):
+	"""A unified diff between the stored revision and what is in the box.
+
+	Shown on request rather than always: for a table of a thousand entries the
+	diff is the only practical way to see what an edit did, and the rendered
+	preview is the only practical way to see whether it is right. They answer
+	different questions, so Wikipedia offers both and so does this.
+	"""
+	import difflib
+
+	before = (base.content if base is not None else '').splitlines(keepends=True)
+	after = table_yaml.splitlines(keepends=True)
+	lines = list(difflib.unified_diff(
+		before, after,
+		fromfile='saved version', tofile='your version', n=2))
+	#The first two lines are the ---/+++ headers, which say nothing a reader
+	#does not already know from the surrounding page.
+	return ''.join(lines[2:]) if lines else ''
 
 
 def _edit_context(request, table, table_yaml, base):
