@@ -1430,6 +1430,20 @@ class TableRevision(models.Model):
 		blank = True,
 		default = '',
 	)
+	#: Who wrote it, when that person has no account here. The data repository's
+	#: history has four authors and only one of them has ever logged in, so
+	#: without this an imported revision either claims nobody wrote it or
+	#: invents an account for somebody who never asked for one.
+	#:
+	#: `author` stays the stronger claim: it means a person who is here. Where
+	#: both are set, they are the same person matched to their account.
+	contributor = models.ForeignKey(
+		'Contributor',
+		null = True,
+		blank = True,
+		on_delete = models.SET_NULL,
+		related_name = 'revisions',
+	)
 	message = models.CharField(
 		max_length = 300,
 		blank = True,
