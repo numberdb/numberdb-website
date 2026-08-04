@@ -395,6 +395,29 @@ Nothing here forecloses per-entry threads later: a thread already has to record
 what it is attached to, and adding a second kind of anchor is a migration
 rather than a redesign.
 
+## The export is what closes the loop
+
+Until it exists there are two places to change the same table, and the site is
+running with the second one disabled by hand rather than by design:
+
+* editing through GitHub is no longer offered. The link reads "source on
+  github" and is for reading, citing and forking.
+* `delete_all_tables()` refuses to run once any table has been edited here,
+  because `Table` cascades to `TableRevision` and a full rebuild would delete
+  every site edit and its history without a word, then rebuild rows from the
+  repository so that the result looked entirely normal.
+
+Both are stopgaps. The database is the store of record, so the repository has
+to become a **generated export**: a job that writes each table's head revision
+back out as YAML and commits it. That restores the repository's purpose (a
+citable, forkable, downloadable corpus) without it being a second place to
+write, and it retires the guard, which currently prevents a rebuild that will
+one day be wanted.
+
+Creating a new table still goes through the repository, so the import path
+cannot simply be removed; it needs to become "import tables that do not exist
+here yet" rather than "delete everything and rebuild".
+
 ## Risks
 
 **Immediate publication with a small board.** With one reviewer, the

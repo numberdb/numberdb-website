@@ -15,6 +15,7 @@ from django.db import transaction
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "numberdb.settings.dev")
 django.setup()
 from numberdb_app.models import (
+    TableRevision,
     exact_relative_width,
     Table,
     TableData,
@@ -115,7 +116,38 @@ def iter_tables_bulk(weight="number_count", bulk_size=10000):
 		yield cs_bulk
 
 @transaction.atomic
-def delete_all_tables():
+def delete_all_tables(force=False):
+	"""Empty the database before a full rebuild from the data repository.
+
+	Refuses to run once anybody has edited on the site, because Table rows
+	cascade to TableRevision: a rebuild would delete every revision, every
+	edit made here, and the whole history of who changed what, and it would do
+	it without a word. The rows would then be rebuilt from the repository and
+	the result would look entirely normal.
+
+	That is not a hypothetical ordering problem. The repository is still where
+	new tables come from, so the import path has to keep working, and the
+	export that would carry site edits back into git does not exist yet. Until
+	it does, these are two sources of truth for the same tables and a full
+	rebuild silently resolves the conflict in favour of the older one.
+
+	Pass force=True, or set NUMBERDB_ALLOW_DESTRUCTIVE_REBUILD=1, only when the
+	site edits are genuinely expendable.
+	"""
+	import os
+
+	edited = Table.objects.exclude(head_revision=None).count()
+	allowed = force or os.environ.get(
+		'NUMBERDB_ALLOW_DESTRUCTIVE_REBUILD', '') in ('1', 'true', 'True')
+	if edited and not allowed:
+		revisions = TableRevision.objects.count()
+		raise RuntimeError(
+			"Refusing to delete everything: %d table(s) have been edited on "
+			"the site, carrying %d revision(s), and all of it would be lost "
+			"with no trace. Export those edits to the data repository first, "
+			"or set NUMBERDB_ALLOW_DESTRUCTIVE_REBUILD=1 if they really are "
+			"expendable." % (edited, revisions))
+
 	print("DELETING ALL TABLES")
 
 	Number.objects.all().delete()
