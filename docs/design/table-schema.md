@@ -275,3 +275,189 @@ implied. If it turns out the flag stands in for values that are *not* stored,
 those numbers are unfindable by search and the flag has to become structural,
 moving into the closed set. If the negatives are always written out, the flag
 is documentation and belongs where it is.
+
+## How big a table may be
+
+Implemented in `numberdb_app/limits.py`, August 2026.
+
+A table is a reference, not a dump. A number found among a million
+machine-generated values says nothing about itself, because so does every other
+real number in the same equally-spaced grid; one found among forty-five thousand
+curated values at a hundred digits is an identification. The limits exist to
+protect that, not to save disk, which is why they are editorial and why they
+can be argued with.
+
+**Two levels, because one number cannot do both jobs.** The house style is 1000
+entries and 100 digits, and enforcing exactly that would flag 26 and 31 of the
+107 tables respectively -- every one of them deliberate. A threshold that fires
+on a quarter of the corpus teaches everybody to click past it. So the house
+style stays advice, and what is enforced sits where the tail actually begins:
+
+| | recommended | needs a reason | refused |
+|---|---|---|---|
+| entries | 1000 | 1200 | 50000 |
+| digits in a value | 100 | 500 | 10000 |
+| entries block | -- | 256 KB | 4 MB |
+
+1024 entries and 128 digits are both natural things to reach for -- a table
+parametrised in powers of two, a precision chosen to match a machine format --
+and both pass with nothing to explain. That gap is the point of having two
+levels rather than one.
+
+**Why a hundred digits is the recommendation.** Not storage: digits that are
+cheap to compute carry no information. Anybody who wants the thousandth digit of
+a value that evaluates in a second can have it, and writing it here adds nothing
+a reader could not produce. A hundred is far more than enough to identify a
+number, which is what this database is for. Extra digits earn their place when
+they were expensive to obtain, and that is exactly what a table is asked to say
+when it goes over.
+
+**The third limit is the balance between the first two.** Few numbers known
+deeply is as legitimate as many numbers known to a hundred digits; both at once
+is not. 1000 entries at 100 digits is about 100 KB, 200 entries at 1000 digits
+about 200 KB, and both together a megabyte. 256 KB admits either and refuses the
+pair. Nothing in the corpus exceeds it: the largest block is 236 KB.
+
+**Completeness exempts the entry count, with no reason required.** Truncating a
+complete table does not make it smaller, it makes it wrong, and a reader told a
+table is complete who finds it cut off at a round number has been misled about
+the mathematics. Six tables claim completeness today. It does not exempt the
+digits or the block, because which rows exist is mathematics while how much is
+written per row is a choice.
+
+**Exact types are exempt from the digit limit entirely.** T96 writes 54342
+digits in a single entry. Those are the coefficients of a modular polynomial for
+the j-invariant, and writing fewer would not round the value, it would produce a
+different polynomial. `Z`, `Q`, `Z[]` and `Q[]` therefore skip the digit check;
+`R`, `C` and `Qp` do not, a p-adic having a precision like anything else.
+
+What still governs an exact table is the block limit, and it does the editorial
+work by itself. A very long polynomial is usually not interesting enough to
+record, which is why T96 holds twelve of them and not two hundred; at 129 KB it
+has room for one or two more before the next one has to argue for its size. That
+is a better rule than "polynomials must be short", because it lets a table grow
+freely while its entries are small and pushes back precisely when they are not.
+
+**Hard limits are a different kind of statement.** A soft limit is a judgement
+about what makes a good table and can be overridden by somebody who explains
+themselves. A hard limit is not a judgement: it is where a paste went wrong, or
+where the editor and the diff stop working, and no reason makes that workable. A
+table that large wants to be several tables, or a program.
+
+**Machine writers do not get the warning, they get the refusal.** A person over a
+soft limit is told and their edit is saved, because they have judgement to
+exercise and the review queue is where reasons get weighed. The API and bulk
+proposals pass `strict=True`, which refuses an unexplained breach instead: a
+warning shown to nobody is not a limit, and a script has no judgement to
+exercise. This is the main thing standing between programmatic editing and a
+corpus full of unconsidered rows.
+
+## A parameter whose values are names
+
+25 tables have entry identities that are not numbers, and the split matters:
+
+| kind | tables | examples |
+|---|---|---|
+| values select which quantity is meant | 15 | `a_n` vs `a_n/n!` (T15, T33); `phi` vs `phi_inv` (T32); `unit-R`, `unit-r`, `unit-s` (T17); `S`, `eps`, `1/eps` (T41); `c4`, `c6` (T87) |
+| values are names from a finite set | 8 | `Co1`, `M11` (sporadic groups, T77); `Z2xZ2` (torsion subgroups, T91); `cube`, `icosahedron` (T85/T86); `koch-curve` (T100); `m_W`, `m_Z` (T76) |
+| values are free symbols | 2 | `a`, `b` for α and β (T105, T106) |
+
+The schema already has a name for the first two: `type: Symbolic`, declared 27
+times. So this is not a gap to fill with a new type, it is an existing type left
+under-specified -- `Symbolic` says only "not a number", and a reader cannot tell
+`Co1` (a member of a fixed list) from `a_n/n!` (a normalisation of the entry
+above) from `a` (a free variable standing for infinitely many values).
+
+The proposal is to make `Symbolic` carry its values:
+
+    Parameters:
+      G:
+        type: Symbolic
+        values: [M11, M12, Co1, Co2, Co3, B, ...]
+
+An enumeration is checkable, gives a grid its dropdown, gives search something
+to match, and turns a typo into an error instead of a new entry. Where the
+values genuinely cannot be listed -- the free symbols of T105 and T106 -- that
+should be said outright rather than inferred from the absence of a list.
+
+**One wart to fix while here.** T63 has identities like `26.212618669873*`: a
+merit value with a marker glued to it. Whatever the star means, it is a footnote
+living inside an identity, so it is part of every citation and every anchor, and
+it will be there forever. It belongs on the entry as an annotation key.
+
+## A row that is a family, not a number
+
+T106 (Jacobi polynomials) is the case that shows what flattening is for. Its
+parameters are (α, β, n) and its α keys are `a`, `-1/2`, `0`, `1/2`, `1`, `3/2`
+-- a free symbol sitting in the same slot as numbers. Under `a/a` there is an
+entry whose entire content is
+
+    equals: HREF{Gegenbauer_polynomials}
+
+with no value at all. The actual mathematics -- α=β gives the Gegenbauer
+polynomials with parameter α+1/2 -- is stated in a prose comment, while T105
+(Gegenbauer), T101 (Legendre) and T98/T99 (Chebyshev) all exist as their own
+tables.
+
+Flattening does not create a problem here, it surfaces one. Flattened, that row
+is a record with parameters and no number, which is exactly the signal that it
+does not belong in the entries block. There are **7** such rows in the whole
+corpus, out of 55504, so this is a cleanup and not a migration.
+
+**A family relation is a map between parameter spaces, not a pointer.** `equals`
+points at one entry; it cannot express "for every α, this table's (α,α,n) is
+that table's (α+1/2,n)", which covers infinitely many special cases. That wants
+to be declared once at table level:
+
+    Related tables:
+    - table: T105
+      when:  {alpha: t, beta: t}
+      gives: {lambda: t + 1/2}
+      proof: CITE{...}
+
+One statement, in principle checkable by evaluating both sides at a few values,
+and it frees the entries block to hold only values -- which is what makes the
+flattened form unambiguous in the first place. The prose comments stay; they are
+how a reader understands it, and this is how a machine does.
+
+## Attachments: the code and files a table came with
+
+85 of the 109 tables carry files the website has never shown: 82 `generate.sage`
+scripts, plus `.txt`, `.new`, `.html` and three `.sobj`. 159 files, 1.2 MB, the
+largest 477 KB. Four fifths of the corpus has provenance that no reader can see.
+
+**Not a git repository.** Git's good idea is the content-addressed blob, and
+`TableRevision` already has that. What git adds beyond it is a *repository*, and
+that is where it stops fitting: our unit of change is one table and git's is the
+whole tree, so a shared commit welds unrelated edits together and a
+commit-per-table makes a repo lock that every editor contends for. It would also
+reintroduce a second thing that could claim to be the truth, which is the
+decision this whole design turns on. Efficiency is not the objection -- 11 MB of
+data against an 11 MB `.git`, git would cope easily. Authority is.
+
+**A manifest per revision, complete rather than incremental.** Each revision
+names the full set of `{filename: blob digest}`, exactly as `content` is a whole
+snapshot rather than a diff. Then "which `generate.sage` does this revision
+mean?" is answered by reading that revision alone. The alternative -- walking
+back through parents for the most recent version of a name -- is ambiguous
+precisely where it matters, because a merge has two parents and "the latest in
+the non-future history" is not single-valued across them.
+
+Blobs are shared by digest, so an unchanged 477 KB `.sobj` across fifty
+revisions costs 477 KB once, and an older revision's attachments stay reachable
+for as long as the revision does. `?rev=` gives a permanently citable address
+for the exact file that produced the numbers.
+
+Merging manifests reuses `merge.py` unchanged: both sides touched a name, that
+is a conflict; one side did, take it; a name deleted on one side and modified on
+the other is a conflict, as everywhere else.
+
+**Code is shown, payload is not diffed.** The `.sage` files are source and want
+highlighting and diffs. The `.sobj` files are computed binary and want a
+download link and nothing else; a diff view that tries to render a pickle is a
+bug waiting to happen.
+
+**Nothing is executed.** Displaying `generate.sage` is safe, running it is
+arbitrary code execution, and several of the existing scripts run for hours or
+days regardless. The evaluator sandbox exists for short expressions and is not
+the same feature.
