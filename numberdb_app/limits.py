@@ -136,13 +136,30 @@ def _values_of(entry):
 	return []
 
 
+#: What the entries section may be called. `Numbers` in 97 tables and `Data` in
+#: 10; the normalisation to a single spelling has been done in the data
+#: repository but not everywhere in the database, and a measurement that looked
+#: only for `Numbers` would score those ten as empty and never check them.
+ENTRIES_SECTIONS = ('Numbers', 'Data')
+
+
+def entries_block(tree):
+	"""The section holding the entries, whichever of its names it goes by."""
+	if not isinstance(tree, dict):
+		return None
+	for name in ENTRIES_SECTIONS:
+		if name in tree:
+			return tree[name]
+	return None
+
+
 def measure(tree):
 	"""The three numbers a table is judged on."""
 	import yaml
 
 	from .review import flatten_entries
 
-	block = tree.get('Numbers') if isinstance(tree, dict) else None
+	block = entries_block(tree)
 	if block is None:
 		return {'entries': 0, 'digits': 0, 'bytes': 0}
 

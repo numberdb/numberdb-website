@@ -272,3 +272,14 @@ class TheUserFacingRulesOfThumb(SimpleTestCase):
 	def test_128_digits_needs_no_explanation(self):
 		tree = {'Numbers': {str(i): '0.' + '1' * 128 for i in range(500)}}
 		self.assertEqual(limits.check(tree), [])
+
+
+class EitherNameForTheEntriesSection(SimpleTestCase):
+	"""Ten tables still call it `Data`. Looking only for `Numbers` scores
+	them empty, so they would pass every limit without being checked."""
+
+	def test_data_is_measured_like_numbers(self):
+		for name in ('Numbers', 'Data'):
+			tree = {name: _entries(limits.SOFT_ENTRY_COUNT + 1)}
+			self.assertEqual([b.kind for b in limits.check(tree)], ['entries'],
+			                 name)
