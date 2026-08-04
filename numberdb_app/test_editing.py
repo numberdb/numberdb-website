@@ -280,3 +280,76 @@ class EditView(TestCase):
 		#Both survive.
 		self.assertEqual(numbers['1'], '3.15')
 		self.assertEqual(numbers['2'], '9.99')
+
+
+class PreviewBeforeSaving(TestCase):
+	"""Nothing is written until the author asks for it."""
+
+	def setUp(self):
+		from .models import TableData
+		self.table = Table.objects.create(tid='T911', tid_int=911,
+		                                  title='Draft probe', url='Draft911')
+		TableData.objects.create(table=self.table, raw_yaml='Title: Draft probe\n')
+		self.user = User.objects.create_user('drafter', password='pw-123456')
+		self.client.login(username='drafter', password='pw-123456')
+
+	DOC = ('Title: Draft probe\n'
+	       'Parameters:\n'
+	       '  n:\n'
+	       '    type: Z\n'
+	       'Numbers:\n'
+	       "  '1': 3.14159265358979323846\n")
+
+	def url(self):
+		return '/edit/%s' % (self.table.tid,)
+
+	def test_previewing_saves_nothing(self):
+		r = self.client.post(self.url(), {'table': self.DOC,
+		                                  'action': 'preview'})
+		self.assertEqual(r.status_code, 200)
+		self.table.refresh_from_db()
+		self.assertIsNone(self.table.head_revision)
+		self.assertEqual(TableRevision.objects.filter(table=self.table).count(), 0)
+
+	def test_the_preview_shows_the_edited_content_not_the_saved_one(self):
+		self.client.post(self.url(), {'table': self.DOC, 'action': 'save'})
+		edited = self.DOC.replace('Draft probe', 'A different title')
+		r = self.client.post(self.url(), {'table': edited, 'action': 'preview'})
+		self.assertContains(r, 'A different title')
+
+	def test_showing_changes_saves_nothing_and_reports_the_difference(self):
+		self.client.post(self.url(), {'table': self.DOC, 'action': 'save'})
+		self.table.refresh_from_db()
+		head = self.table.head_revision
+		edited = self.DOC.replace('3.14159265358979323846', '3.14159')
+		r = self.client.post(self.url(), {'table': edited, 'action': 'diff',
+		                                  'base': head.digest})
+		self.assertEqual(r.status_code, 200)
+		self.assertContains(r, 'Your changes')
+		self.assertContains(r, '3.14159265358979323846')
+		self.table.refresh_from_db()
+		self.assertEqual(self.table.head_revision_id, head.pk)
+
+	def test_showing_changes_when_nothing_changed(self):
+		self.client.post(self.url(), {'table': self.DOC, 'action': 'save'})
+		self.table.refresh_from_db()
+		r = self.client.post(self.url(),
+		                     {'table': self.table.head_revision.content,
+		                      'action': 'diff',
+		                      'base': self.table.head_revision.digest})
+		self.assertContains(r, 'No changes yet')
+
+	def test_saving_still_saves(self):
+		"""The default action, so a plain enter in a text field still works."""
+		r = self.client.post(self.url(), {'table': self.DOC})
+		self.assertEqual(r.status_code, 302)
+		self.table.refresh_from_db()
+		self.assertIsNotNone(self.table.head_revision)
+
+	def test_a_malformed_document_previews_the_error_without_saving(self):
+		r = self.client.post(self.url(), {'table': 'Title: [oops\n',
+		                                  'action': 'preview'})
+		self.assertEqual(r.status_code, 200)
+		self.assertContains(r, 'YAML format error')
+		self.table.refresh_from_db()
+		self.assertIsNone(self.table.head_revision)
