@@ -19,20 +19,22 @@ a.link-below-title:hover {
 
 <div id="table-title" class="table-title">{{ table.title }}</div>
 
-<a class="link-below-title" target="_blank" href="https://github.com/numberdb/numberdb-data/tree/main/{{ table.path }}/table.yaml">edit on github</a>
+{% comment %}
+Editing is one link now, not three. "edit here" is the way to change a table:
+it publishes at once and previews inside the editor, which is what "preview
+edits" used to be for on its own. The GitHub link stays because pull requests
+are still accepted and creating a new table still goes through the repository,
+but it is the fallback rather than the path, so it comes second.
+
+Signed out, "edit here" leads to the login page, which is a better answer than
+a link that quietly does something different.
+{% endcomment %}
 {% if preview %}
+  <a class="link-below-title" target="_blank" href="https://github.com/numberdb/numberdb-data/tree/main/{{ table.path }}/table.yaml">edit on github</a>
 {% else %}
-  &middot; 
-  {% comment %}
-  Offered to anybody signed in, because editing here is now the ordinary
-  way to change a table: it publishes at once, and the round trip through
-  a pull request is the fallback rather than the path.
-  {% endcomment %}
-  {% if user.is_authenticated %}
-    <a class="link-below-title" href="{% url 'db:edit-table' table.tid %}">edit here</a>
-    &middot;
-  {% endif %}
-  <a class="link-below-title" href="{% url 'db:preview-table' table.tid %}">preview edits</a>
+  <a class="link-below-title" href="{% url 'db:edit-table' table.tid %}">edit here</a>
+  &middot;
+  <a class="link-below-title" target="_blank" href="https://github.com/numberdb/numberdb-data/tree/main/{{ table.path }}/table.yaml">edit on github</a>
   {% if history %}
     &middot; 
     <a class="link-below-title" href="{% url 'db:table' table.tid %}">back to table</a>
