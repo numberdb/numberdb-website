@@ -306,3 +306,102 @@ class CreatingThroughTheApi(WriteBase):
 		r = self.create(body, token=self.key_for(self.chair))
 		self.assertEqual(r.status_code, 413)
 		self.assertEqual(Table.objects.count(), before)
+
+
+class EntriesOnly(WriteBase):
+	"""The seam numbers.yaml used to be.
+
+	A generator computes values. It has no opinion about the definition, the
+	references or the tags, and under the old arrangement it could not touch
+	them because it wrote its own file. Sending a whole document throws that
+	away silently.
+	"""
+
+	def setUp(self):
+		super().setUp()
+		commit_table(self.table, {
+			'Title': 'API probe',
+			'Definition': 'A carefully written definition.',
+			'Comments': {'comment-1': 'years of prose'},
+			'References': {'reference-1': 'CITE{Someone}'},
+			'Parameters': {'n': {'type': 'Z'}},
+			'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}],
+		}, author=self.chair, base=self.table.head_revision)
+		self.table.refresh_from_db()
+
+	def post(self, body, token=None, tid=None):
+		kwargs = {'content_type': 'application/yaml'}
+		if token:
+			kwargs['HTTP_AUTHORIZATION'] = 'Bearer %s' % (token,)
+		return self.client.post('/api/table/%s/entries'
+		                        % (tid or self.table.tid,), body, **kwargs)
+
+	def entries(self, value='2.71828'):
+		return yaml.dump([{'params': {'n': '1'}, 'number': value}],
+		                 sort_keys=False)
+
+	def tree(self):
+		self.table.refresh_from_db()
+		return tree_of(self.table.head_revision)
+
+	def test_the_entries_are_replaced(self):
+		r = self.post(self.entries(), token=self.key_for(self.chair))
+		self.assertEqual(r.status_code, 200)
+		self.assertEqual(self.tree()['Numbers'][0]['number'], '2.71828')
+
+	def test_the_prose_survives(self):
+		"""The whole reason this endpoint exists."""
+		self.post(self.entries(), token=self.key_for(self.chair))
+		tree = self.tree()
+		self.assertEqual(tree['Definition'], 'A carefully written definition.')
+		self.assertEqual(tree['Comments'], {'comment-1': 'years of prose'})
+		self.assertEqual(tree['References'], {'reference-1': 'CITE{Someone}'})
+		self.assertEqual(tree['Parameters'], {'n': {'type': 'Z'}})
+
+	def test_a_whole_document_sent_to_write_table_does_not(self):
+		"""The contrast, so the difference cannot be lost by accident."""
+		body = yaml.dump({'Title': 'API probe',
+		                  'Parameters': {'n': {'type': 'Z'}},
+		                  'Numbers': [{'params': {'n': '1'},
+		                               'number': '2.71828'}]},
+		                 sort_keys=False)
+		self.send(body, token=self.key_for(self.chair))
+		self.assertNotIn('Definition', self.tree())
+
+	def test_an_untrusted_key_may_not_write_entries_either(self):
+		r = self.post(self.entries(), token=self.key_for(self.newcomer))
+		self.assertEqual(r.status_code, 403)
+		self.assertEqual(self.tree()['Numbers'][0]['number'], '3.14')
+
+	def test_no_key_is_refused(self):
+		r = self.post(self.entries())
+		self.assertEqual(r.status_code, 401)
+
+	def test_the_nested_form_is_accepted_too(self):
+		"""Both forms coexist by design, so both may be sent."""
+		r = self.post(yaml.dump({'1': '1.61803'}, sort_keys=False),
+		              token=self.key_for(self.chair))
+		self.assertEqual(r.status_code, 200)
+
+	def test_sending_the_same_entries_changes_nothing(self):
+		before = TableRevision.objects.count()
+		r = self.post(self.entries('3.14'), token=self.key_for(self.chair))
+		self.assertTrue(json.loads(r.content)['unchanged'])
+		self.assertEqual(TableRevision.objects.count(), before)
+
+	def test_entries_over_a_limit_are_refused(self):
+		body = yaml.dump([{'params': {'n': '1'},
+		                   'number': '0.' + '1' * (limits.SOFT_DIGITS + 1)}],
+		                 sort_keys=False)
+		r = self.post(body, token=self.key_for(self.chair))
+		self.assertEqual(r.status_code, 413)
+		self.assertEqual(self.tree()['Numbers'][0]['number'], '3.14')
+
+	def test_nonsense_is_refused(self):
+		r = self.post('[unclosed', token=self.key_for(self.chair))
+		self.assertEqual(r.status_code, 400)
+
+	def test_an_unknown_table_is_a_404(self):
+		r = self.post(self.entries(), token=self.key_for(self.chair),
+		              tid='T99999')
+		self.assertEqual(r.status_code, 404)

@@ -23,7 +23,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Union
 
-__all__ = ['Entries', 'document', 'to_text', 'submit', 'create']
+__all__ = ['Entries', 'document', 'to_text', 'submit', 'submit_entries',
+           'create']
 
 #: How many digits a value is written to when nothing says otherwise. The
 #: house style, and the reason for it is not storage: digits that are cheap to
@@ -215,7 +216,7 @@ def _section_name(key: str) -> str:
     return words[:1].upper() + words[1:]
 
 
-def _as_yaml(tree: Mapping[str, Any]) -> str:
+def _as_yaml(tree: Any) -> str:
     try:
         import yaml
     except ImportError:
@@ -231,6 +232,10 @@ def submit(tid: str, tree: Mapping[str, Any], message: str = '',
            produced_by: str = '', base: str = '',
            client: Any = None) -> Dict[str, Any]:
     """Replace table ``tid`` with ``tree``. Returns what the server recorded.
+
+    The **whole** document, so anything ``tree`` omits is removed. A generator
+    that computes values wants `submit_entries` instead; this is for a caller
+    that holds the entire table and means to replace it.
 
     ``produced_by`` names the program. It defaults to something truthful rather
     than to nothing, because a reader is entitled to know that a revision came
@@ -249,6 +254,36 @@ def submit(tid: str, tree: Mapping[str, Any], message: str = '',
         headers['X-Base-Revision'] = base
     return client.submit('/api/table/%s' % (str(tid).lstrip('tT'),),
                          _as_yaml(tree), headers)
+
+
+def submit_entries(tid: str, entries: Union[Entries, Sequence[Mapping[str, Any]]],
+                   message: str = '', produced_by: str = '',
+                   client: Any = None) -> Dict[str, Any]:
+    """Replace only the entries of table ``tid``. This is what a generator wants.
+
+    `submit` replaces the whole document, so a generator that assembles one
+    from what it knows -- a title, the parameters, the numbers it computed --
+    deletes the definition, the comments, the references and the tags, and the
+    result looks perfectly ordinary afterwards. That was impossible under the
+    old arrangement, where a script wrote its own `numbers.yaml` and could not
+    reach the prose. This restores that boundary: only entries are sent, and
+    the server sets them into the current document.
+
+        entries = numberdb.Entries('n')
+        for n in range(1, 100):
+            entries.add(n=n, number=zeta(n))
+        numberdb.submit_entries('T42', entries, produced_by='zeta-generator')
+    """
+    from . import _default_client
+
+    client = client or _default_client
+    headers = {'X-Produced-By': produced_by or 'numberdb-python'}
+    if message:
+        headers['X-Edit-Message'] = message
+    records = (entries.as_list() if isinstance(entries, Entries)
+               else [dict(r) for r in entries])
+    return client.submit('/api/table/%s/entries' % (str(tid).lstrip('tT'),),
+                         _as_yaml(records), headers)
 
 
 def create(tree: Mapping[str, Any], message: str = '', produced_by: str = '',

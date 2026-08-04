@@ -753,3 +753,90 @@ def create_table(request):
 		'revision': table.head_revision.digest if table.head_revision else None,
 		'reviewed': edits_are_reviewed(user),
 	}, status=201)
+
+
+@csrf_exempt
+@rate_limited
+def write_entries(request, tid):
+	"""Replace only a table's entries, leaving everything else untouched.
+
+	This is the seam that `numbers.yaml` used to be. A generator computes
+	values; it does not have opinions about the definition, the references or
+	the tags, and under the old arrangement it could not touch them because it
+	wrote its own file. Sending a whole document through `write_table` throws
+	that away: a script that assembles a document from what it knows -- title,
+	parameters, numbers -- deletes every section it does not know about, and
+	nothing about the result looks wrong afterwards.
+
+	So the entries arrive alone and are set into the current document here. The
+	script cannot express "change the definition", which is a stronger
+	guarantee than asking it not to.
+	"""
+	from .editing import commit_table, tree_of
+	from .limits import TooBig
+	from .permissions import edits_are_reviewed
+
+	if request.method not in ('POST', 'PUT'):
+		return JsonResponse({'error': 'Use POST or PUT.'}, status=405)
+
+	user, refusal = _writer_of(request)
+	if refusal is not None:
+		return refusal
+
+	try:
+		table = Table.objects.get(tid_int=int(str(tid).lstrip('tT')))
+	except (Table.DoesNotExist, ValueError):
+		return JsonResponse({'error': "No table '%s'." % (tid,)}, status=404)
+	if table.head_revision is None:
+		return JsonResponse(
+			{'error': 'This table has no revisions to add entries to.'},
+			status=409)
+
+	body = request.body.decode('utf8', 'replace')
+	if not body.strip():
+		return JsonResponse({'error': 'No entries sent.'}, status=400)
+	try:
+		entries = yaml.load(body, Loader=yaml.BaseLoader)
+	except yaml.YAMLError as e:
+		return JsonResponse(
+			{'error': 'Could not parse the entries.',
+			 'detail': str(e).replace(' in "<unicode string>"', '')},
+			status=400)
+	#A mapping is the nested form and a list is records; both are read, since
+	#the two forms coexist by design.
+	if not isinstance(entries, (list, dict)):
+		return JsonResponse(
+			{'error': 'Entries must be a list of records or a mapping.'},
+			status=400)
+
+	tree = tree_of(table.head_revision)
+	#Whichever name this table's entries section already goes by, so replacing
+	#them does not quietly rename the section as a side effect.
+	section = 'Data' if 'Data' in tree and 'Numbers' not in tree else 'Numbers'
+	tree = dict(tree)
+	tree[section] = entries
+
+	try:
+		outcome = commit_table(
+			table, tree, author=user, base=table.head_revision, strict=True,
+			produced_by=_produced_by(request, user),
+			message=(request.headers.get('X-Edit-Message')
+			         or 'regenerated the entries')[:300])
+	except TooBig as big:
+		return JsonResponse(
+			{'error': 'The entries are over a size limit.',
+			 'detail': [b.message for b in big.breaches]}, status=413)
+
+	if outcome.revision and edits_are_reviewed(user):
+		table.reviewed_at_revision = outcome.revision
+		table.save(update_fields=['reviewed_at_revision'])
+		from .review import sync_review_flags
+		sync_review_flags(table)
+
+	return JsonResponse({
+		'tid': table.tid,
+		'url': table.url,
+		'revision': outcome.revision.digest if outcome.revision else None,
+		'unchanged': outcome.unchanged,
+		'reviewed': edits_are_reviewed(user),
+	})

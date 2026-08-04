@@ -255,3 +255,44 @@ class TestRefusals:
         with pytest.raises(numberdb.NumberDBError) as raised:
             numberdb.submit('T1', self.doc(), client=client)
         assert 'no Title' in str(raised.value)
+
+
+class TestSubmittingEntriesOnly:
+    """A generator computes values; it must not be able to delete prose."""
+
+    def entries(self):
+        e = numberdb.Entries('n')
+        e.add(n=1, number='3.14159')
+        return e
+
+    def test_it_posts_to_the_entries_of_the_table(self):
+        sent = Sent()
+        numberdb.submit_entries('T42', self.entries(), client=sent.client())
+        assert sent.request.full_url.endswith('/api/table/42/entries')
+
+    def test_only_the_records_are_sent(self):
+        """No Title, no Parameters: nothing that could overwrite a section."""
+        sent = Sent()
+        numberdb.submit_entries('T42', self.entries(), client=sent.client())
+        body = sent.request.data.decode('utf8')
+        assert 'params' in body
+        assert 'Title' not in body
+        assert 'Parameters' not in body
+
+    def test_plain_records_are_accepted(self):
+        sent = Sent()
+        numberdb.submit_entries('T1', [{'params': {'n': '1'}, 'number': '2'}],
+                                client=sent.client())
+        assert 'number' in sent.request.data.decode('utf8')
+
+    def test_the_program_is_named(self):
+        sent = Sent()
+        numberdb.submit_entries('T1', self.entries(), produced_by='zeta-gen',
+                                client=sent.client())
+        assert sent.request.headers['X-produced-by'] == 'zeta-gen'
+
+    def test_a_key_is_still_required(self):
+        sent = Sent()
+        with pytest.raises(numberdb.Unauthorized):
+            numberdb.submit_entries('T1', self.entries(),
+                                    client=sent.client(api_key=''))
