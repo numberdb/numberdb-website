@@ -263,6 +263,35 @@ def _parameter_order(table):
 	return list((tree.get('Parameters') or {}).keys())
 
 
+def _reference_href(ref):
+	"""Turn an HREF{} target into a link that a server can resolve.
+
+	    Factorial#0        ->  /Factorial?entry=0#0
+	    #CL                ->  ?entry=CL#CL          (same table)
+	    Factorial          ->  /Factorial            (no entry named)
+	    https://...        ->  unchanged
+
+	Left as a bare fragment, these are citations that keep working while
+	meaning something else, which is the failure this addressing exists to
+	remove. They are data rather than markup, so they are rewritten as they are
+	rendered rather than migrated in place.
+	"""
+	from urllib.parse import quote
+
+	ref = (ref or '').strip()
+	if not ref or ref.startswith(('http://', 'https://', 'mailto:')):
+		return ref
+
+	table_part, sep, entry = ref.partition('#')
+	if not sep or not entry:
+		#A whole table, or an in-page anchor that names no entry.
+		return ref
+	suffix = '?entry=%s#%s' % (quote(entry, safe=''), entry)
+	if not table_part:
+		return suffix                       # same table
+	return '%s%s' % (table_part, suffix)
+
+
 def _entry_address(request, table, context):
 	"""Resolve ?entry=<parameters>, which the server can actually see.
 
@@ -393,7 +422,13 @@ def table_context(table, preview=False):
 					caption = ref
 			else:
 				caption = ref
-			new_text += '<a class="HREF" href="%s">%s</a>%s' % (ref, caption, part2)
+			#A reference such as HREF{Factorial#0} names an entry, and until now
+			#it produced a fragment-only link: exactly the form that resolves to
+			#the wrong number if a table is ever renested, without breaking. 98
+			#references in the corpus carry an entry this way, so they are given
+			#the query form as well.
+			new_text += '<a class="HREF" href="%s">%s</a>%s' % (
+				_reference_href(ref), caption, part2)
 				
 		if line_breaks:
 			#Parse '\n's:
@@ -1823,7 +1858,8 @@ def edit_table(request, tid):
 	review: unless they are on the board, the entries they changed are marked
 	and held out of search by number until somebody confirms them.
 	"""
-	from .editing import StaleEdit, commit_table, tree_of
+	from .editing import (ParametersChanged, StaleEdit, commit_table,
+	                      tree_of)
 	from .permissions import is_board_member
 
 	table = get_object_or_404(Table, tid=tid)
@@ -1875,6 +1911,18 @@ def edit_table(request, tid):
 				message=request.POST.get('message', '').strip(),
 				base=base,
 			)
+		except ParametersChanged as changed:
+			messages.error(request, (
+				'This edit changes the table\'s parameters, from %s to %s. '
+				'Nothing has been saved. Every entry is identified by its '
+				'parameter values, so changing them silently reassigns every '
+				'identity in the table: existing links and references would '
+				'still work and would point at different numbers. If the table '
+				'really needs different parameters, that is a separate '
+				'operation, not an edit.'
+				% (', '.join(changed.before), ', '.join(changed.after) or 'none')))
+			return render(request, 'edit.html', _edit_context(
+				request, table, table_yaml, base))
 		except StaleEdit as stale:
 			messages.error(request, (
 				'Somebody else changed this table while you were editing, and '

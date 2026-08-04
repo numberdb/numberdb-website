@@ -708,3 +708,74 @@ class NamedEntryAddresses(TestCase):
 		#Different entries, and the citations say which is which.
 		self.assertIn('3.14159265358979323846', a1b2.content.decode())
 		self.assertIn('2.71828182845904523536', a2b1.content.decode())
+
+
+class ParametersAreFixedAfterCreation(TestCase):
+	"""Changing the parameters reassigns every identity in the table."""
+
+	def setUp(self):
+		from .models import TableData
+		self.table = Table.objects.create(tid='T917', tid_int=917,
+		                                  title='Param probe', url='Param917')
+		TableData.objects.create(table=self.table, raw_yaml='', full_yaml='')
+		self.user = User.objects.create_user('param_user', password='pw-123456')
+		self.client.login(username='param_user', password='pw-123456')
+		self.doc = {'Title': 'Param probe',
+		            'Parameters': {'a': {'type': 'Z'}, 'b': {'type': 'Z'}},
+		            'Numbers': {'1': {'2': '3.14159265358979323846'}}}
+		commit_table(self.table, self.doc, author=self.user)
+		self.table.refresh_from_db()
+
+	def test_an_edit_that_reorders_them_is_refused(self):
+		from .editing import ParametersChanged
+		reordered = dict(self.doc)
+		reordered['Parameters'] = {'b': {'type': 'Z'}, 'a': {'type': 'Z'}}
+		with self.assertRaises(ParametersChanged):
+			commit_table(self.table, reordered, author=self.user,
+			             base=self.table.head_revision)
+
+	def test_an_edit_that_adds_one_is_refused(self):
+		from .editing import ParametersChanged
+		added = dict(self.doc)
+		added['Parameters'] = dict(self.doc['Parameters'], c={'type': 'Z'})
+		with self.assertRaises(ParametersChanged):
+			commit_table(self.table, added, author=self.user,
+			             base=self.table.head_revision)
+
+	def test_nothing_is_written_when_it_is_refused(self):
+		from .editing import ParametersChanged
+		before = TableRevision.objects.filter(table=self.table).count()
+		reordered = dict(self.doc)
+		reordered['Parameters'] = {'b': {'type': 'Z'}, 'a': {'type': 'Z'}}
+		with self.assertRaises(ParametersChanged):
+			commit_table(self.table, reordered, author=self.user,
+			             base=self.table.head_revision)
+		self.assertEqual(TableRevision.objects.filter(table=self.table).count(),
+		                 before)
+
+	def test_editing_the_numbers_is_unaffected(self):
+		changed = {'Title': 'Param probe',
+		           'Parameters': {'a': {'type': 'Z'}, 'b': {'type': 'Z'}},
+		           'Numbers': {'1': {'2': '2.71828182845904523536'}}}
+		out = commit_table(self.table, changed, author=self.user,
+		                   base=self.table.head_revision)
+		self.assertIsNotNone(out.revision)
+
+	def test_the_editor_explains_rather_than_failing(self):
+		import yaml as y
+		reordered = dict(self.doc)
+		reordered['Parameters'] = {'b': {'type': 'Z'}, 'a': {'type': 'Z'}}
+		r = self.client.post('/edit/%s' % self.table.tid,
+		                     {'table': y.dump(reordered, sort_keys=False)})
+		self.assertEqual(r.status_code, 200)
+		self.assertContains(r, 'changes the table')
+		self.assertContains(r, 'point at different numbers')
+
+	def test_it_can_be_done_deliberately(self):
+		"""A table that genuinely needs different parameters is not stuck."""
+		reordered = dict(self.doc)
+		reordered['Parameters'] = {'b': {'type': 'Z'}, 'a': {'type': 'Z'}}
+		out = commit_table(self.table, reordered, author=self.user,
+		                   base=self.table.head_revision,
+		                   allow_parameter_change=True)
+		self.assertIsNotNone(out.revision)

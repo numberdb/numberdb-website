@@ -32,6 +32,35 @@ from .merge import merge
 __all__ = ['commit_table', 'CommitOutcome', 'StaleEdit', 'tree_of', 'dump_tree']
 
 
+
+class ParametersChanged(Exception):
+	"""The edit alters the table's parameters, which no ordinary edit may do.
+
+	Every entry's identity is its parameter values, so changing the set or the
+	order of parameters silently reassigns every identity in the table. Old
+	citations do not break: `1,2` still exists and now means a different
+	number. Anchors, search results, cross-references from other tables and the
+	review diff all follow suit, and nothing anywhere reports a problem.
+
+	Renaming is not the same as reordering and is not refused here, since the
+	identity is built from the values; but it does invalidate any citation
+	written in the named form, which is why it is worth saying out loud too.
+	"""
+
+	def __init__(self, before, after):
+		self.before = before
+		self.after = after
+		super().__init__('parameters would change from %s to %s'
+		                 % (list(before), list(after)))
+
+
+def parameters_of(tree):
+	"""The parameter names a document declares, in order."""
+	if not isinstance(tree, dict):
+		return []
+	return list((tree.get('Parameters') or {}).keys())
+
+
 class StaleEdit(Exception):
 	"""The edit was written against a revision that has since been superseded,
 	and the two changes cannot be reconciled without a person.
@@ -94,7 +123,7 @@ def dump_tree(tree):
 
 
 def commit_table(table, tree, author=None, message='', base=None,
-                 produced_by=''):
+                 produced_by='', allow_parameter_change=False):
 	"""Put ``tree`` on ``table``'s history and return a :class:`CommitOutcome`.
 
 	``base`` is the revision the author started from. Passing None means "this
@@ -108,6 +137,13 @@ def commit_table(table, tree, author=None, message='', base=None,
 	from .models import TableRevision
 
 	head = table.head_revision
+
+	#Checked before any of the paths below, because all of them write.
+	if head is not None and not allow_parameter_change:
+		before = parameters_of(tree_of(head))
+		after = parameters_of(tree)
+		if before and before != after:
+			raise ParametersChanged(before, after)
 
 	if head is None:
 		return _write(table, tree, author, message, parent=None, base=None,
