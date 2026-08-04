@@ -449,3 +449,140 @@ class ReviewInterface(TestCase):
 		self.table.refresh_from_db()
 		self.assertNotEqual(self.table.reviewed_at_revision_id,
 		                    self.table.head_revision_id)
+
+
+class CreatingTables(TestCase):
+	"""Tables come into existence here, not in the data repository."""
+
+	def setUp(self):
+		self.user = User.objects.create_user('creator', password='pw-123456')
+		self.client.login(username='creator', password='pw-123456')
+
+	DOC = ('Title: Zeros of the Airy function\n'
+	       'Definition: >\n'
+	       '  The zeros.\n'
+	       'Parameters:\n'
+	       '  n:\n'
+	       '    type: Z\n'
+	       'Data properties:\n'
+	       '  type: R\n'
+	       'Numbers:\n'
+	       "  '1': -2.33810741045976703849\n")
+
+	def test_the_form_offers_a_skeleton(self):
+		r = self.client.get('/new')
+		self.assertEqual(r.status_code, 200)
+		self.assertContains(r, 'Data properties')
+		self.assertContains(r, 'Display properties')
+
+	def test_creating_allocates_the_next_identifier(self):
+		from .models import Table
+		highest = max(t.tid_int for t in Table.objects.all()) if Table.objects.exists() else 0
+		r = self.client.post('/new', {'table': self.DOC})
+		self.assertEqual(r.status_code, 302)
+		table = Table.objects.get(title='Zeros of the Airy function')
+		self.assertEqual(table.tid_int, highest + 1)
+		self.assertEqual(table.tid, 'T%d' % (highest + 1,))
+
+	def test_the_slug_comes_from_the_title(self):
+		from .models import Table
+		self.client.post('/new', {'table': self.DOC})
+		table = Table.objects.get(title='Zeros of the Airy function')
+		self.assertEqual(table.url, 'Zeros_of_the_Airy_function')
+
+	def test_a_second_table_of_the_same_name_is_refused_readably(self):
+		"""Titles are unique, so this must be a message and not a 500."""
+		from .models import Table
+		self.client.post('/new', {'table': self.DOC})
+		before = Table.objects.count()
+		r = self.client.post('/new', {'table': self.DOC})
+		self.assertEqual(r.status_code, 200)
+		self.assertContains(r, 'already exists')
+		self.assertEqual(Table.objects.count(), before)
+
+	def test_titles_that_differ_only_in_punctuation_get_distinct_addresses(self):
+		from .models import Table
+		self.client.post('/new', {'table': self.DOC})
+		other = self.DOC.replace('Zeros of the Airy function',
+		                         'Zeros of the Airy function!')
+		self.client.post('/new', {'table': other})
+		urls = sorted(Table.objects.filter(title__startswith='Zeros of the Airy')
+		              .values_list('url', flat=True))
+		self.assertEqual(urls, ['Zeros_of_the_Airy_function',
+		                        'Zeros_of_the_Airy_function_2'])
+
+	def test_the_first_revision_records_who_made_it(self):
+		from .models import Table
+		self.client.post('/new', {'table': self.DOC, 'message': 'first'})
+		table = Table.objects.get(title='Zeros of the Airy function')
+		self.assertIsNotNone(table.head_revision)
+		self.assertEqual(table.head_revision.author_id, self.user.pk)
+		self.assertEqual(table.head_revision.message, 'first')
+
+	def test_the_numbers_are_built_and_left_unreviewed(self):
+		from .models import Number, Table
+		self.client.post('/new', {'table': self.DOC})
+		table = Table.objects.get(title='Zeros of the Airy function')
+		rows = Number.objects.filter(table=table)
+		self.assertEqual(rows.count(), 1)
+		self.assertFalse(rows.first().reviewed)
+
+	def test_a_table_without_a_title_is_refused(self):
+		from .models import Table
+		before = Table.objects.count()
+		r = self.client.post('/new', {'table': 'Definition: no title here\n'})
+		self.assertEqual(r.status_code, 200)
+		self.assertContains(r, 'needs a Title')
+		self.assertEqual(Table.objects.count(), before)
+
+	def test_previewing_creates_nothing(self):
+		from .models import Table
+		before = Table.objects.count()
+		r = self.client.post('/new', {'table': self.DOC, 'action': 'preview'})
+		self.assertEqual(r.status_code, 200)
+		self.assertEqual(Table.objects.count(), before)
+
+	def test_anonymous_cannot_create(self):
+		self.client.logout()
+		r = self.client.post('/new', {'table': self.DOC})
+		self.assertEqual(r.status_code, 302)
+		self.assertIn('/accounts/login/', r['Location'])
+
+
+class MacrosAreResolvedBeforeEditing(TestCase):
+	"""Thirty tables keep their numbers in a sibling file, referenced by a
+	macro. The editor must never show that macro, because saving it would
+	replace every value in the table with the text of the reference."""
+
+	def setUp(self):
+		from .models import TableData
+		self.table = Table.objects.create(tid='T913', tid_int=913,
+		                                  title='Macro probe', url='Macro913')
+		TableData.objects.create(
+			table=self.table,
+			#What the repository file says.
+			raw_yaml='Title: Macro probe\nNumbers: INPUT{numbers.yaml}\n',
+			#What it means, once resolved. This is what the site renders.
+			full_yaml=("Title: Macro probe\n"
+			           "Parameters:\n  n:\n    type: Z\n"
+			           "Numbers:\n  '1': 3.14159265358979323846\n"
+			           "  '2': 2.71828182845904523536\n"))
+		self.user = User.objects.create_user('macro_user', password='pw-123456')
+		self.client.login(username='macro_user', password='pw-123456')
+
+	def test_the_editor_shows_the_numbers_not_the_reference(self):
+		r = self.client.get('/edit/%s' % self.table.tid)
+		self.assertEqual(r.status_code, 200)
+		self.assertNotContains(r, 'INPUT{numbers.yaml}')
+		self.assertContains(r, '3.14159265358979323846')
+
+	def test_saving_what_the_editor_offered_keeps_every_value(self):
+		from .editing import tree_of
+		from .models import Number
+		r = self.client.get('/edit/%s' % self.table.tid)
+		offered = r.context['table_yaml']
+		self.client.post('/edit/%s' % self.table.tid, {'table': offered})
+		self.table.refresh_from_db()
+		numbers = tree_of(self.table.head_revision)['Numbers']
+		self.assertEqual(set(numbers), {'1', '2'})
+		self.assertEqual(Number.objects.filter(table=self.table).count(), 2)

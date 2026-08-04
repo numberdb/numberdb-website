@@ -243,10 +243,17 @@ class Table(models.Model):
 		unique=True,
 		db_index=True,
 	)
+	#: Where this table's file lives in the data repository, or null for a table
+	#: created here, which has no file there. Empty string would not do: the
+	#: column is unique, so the second such table would collide with the first.
+	#: Postgres allows any number of nulls in a unique column, which is exactly
+	#: the meaning wanted -- "no path" is not a value two tables can share.
 	path = models.CharField(
 		max_length=512, 
 		unique=True,
 		db_index=True,
+		null=True,
+		blank=True,
 	)
 	title = models.CharField(
 		max_length=256, 

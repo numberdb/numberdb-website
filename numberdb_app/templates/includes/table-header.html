@@ -34,11 +34,20 @@ Signed out, that leads to the login page, which is a more honest answer than a
 differently-named link that does something else.
 {% endcomment %}
 {% if preview %}
-  <a class="link-below-title" target="_blank" href="https://github.com/numberdb/numberdb-data/tree/main/{{ table.path }}/table.yaml">source on github</a>
+  {% if table.path %}
+    <a class="link-below-title" target="_blank" href="https://github.com/numberdb/numberdb-data/tree/main/{{ table.path }}/table.yaml">source on github</a>
+  {% endif %}
 {% else %}
   <a class="link-below-title" href="{% url 'db:edit-table' table.tid %}">edit here</a>
-  &middot;
-  <a class="link-below-title" target="_blank" href="https://github.com/numberdb/numberdb-data/tree/main/{{ table.path }}/table.yaml">source on github</a>
+  {% comment %}
+  Only for tables that came from the repository. One created here has no file
+  there until the export exists, and a link to a page that is not there reads
+  as a broken site rather than as a missing feature.
+  {% endcomment %}
+  {% if table.path %}
+    &middot;
+    <a class="link-below-title" target="_blank" href="https://github.com/numberdb/numberdb-data/tree/main/{{ table.path }}/table.yaml">source on github</a>
+  {% endif %}
   {% if history %}
     &middot; 
     <a class="link-below-title" href="{% url 'db:table' table.tid %}">back to table</a>

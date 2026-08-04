@@ -23,6 +23,8 @@ sees the indentation to disagree about.
 
 from __future__ import annotations
 
+import re
+
 import yaml
 
 from .merge import merge
@@ -190,3 +192,155 @@ def apply_revision(table, revision=None):
 	#After the rebuild, not before: the rows it writes take the model default,
 	#which is reviewed, and this is what corrects them.
 	return sync_review_flags(table)
+
+
+#The template a new table starts from. Every key the corpus uses, in the order
+#it uses them, so a new table looks like the others from its first save and a
+#contributor can see what is expected rather than having to find an example.
+NEW_TABLE_TEMPLATE = """\
+Title: {title}
+
+Definition: >
+  What these numbers are. One or two sentences, LaTeX allowed.
+
+Parameters:
+
+Comments:
+
+Formulas:
+
+Programs:
+
+References:
+
+Links:
+
+Similar tables:
+
+Keywords:
+
+Tags:
+
+Data properties:
+  type: R
+  complete: no
+
+Display properties:
+
+Numbers:
+- 3.14159
+"""
+
+
+def slug_for(title, taken=None):
+	"""A URL for a new table, derived from its title.
+
+	The URL pattern accepts word characters, apostrophes, parentheses and
+	hyphens, so everything else becomes an underscore. Existing tables are
+	named this way (`Rational_multiples_of_pi`), and matching them matters
+	because the slug is what people paste into papers.
+
+	A number is appended only on collision, so the common case reads cleanly.
+	"""
+	from .models import Table
+
+	base = re.sub(r"[^\w'()-]+", '_', (title or '').strip()).strip('_')
+	base = re.sub(r'_+', '_', base) or 'table'
+	base = base[:90]
+
+	taken = taken if taken is not None else set(
+		Table.objects.values_list('url', flat=True))
+	if base not in taken:
+		return base
+	for n in range(2, 1000):
+		candidate = '%s_%d' % (base, n)
+		if candidate not in taken:
+			return candidate
+	raise ValueError('could not find a free url for %r' % (title,))
+
+
+def create_table(tree, author=None, message='', produced_by=''):
+	"""Create a table from a document and return it.
+
+	The T-number is allocated here rather than in the data repository, which is
+	what makes this site the place tables come into existence. It was
+	previously handed out by `next_ids.yaml`, a file the repository maintained
+	and the note at its head told everybody not to edit.
+
+	Allocation takes the next integer above the highest in use, inside the same
+	transaction as the row that claims it, so two people creating a table at
+	once cannot receive the same number.
+	"""
+	from django.db import transaction
+	from django.db.models import Max
+
+	from .models import Table, TableData
+
+	title = (tree.get('Title') or '').strip() if isinstance(tree, dict) else ''
+	if not title:
+		raise ValueError('A new table needs a Title.')
+
+	#Titles are unique in the schema, so this would otherwise surface as a
+	#database error page after the author had written the whole document.
+	existing = Table.objects.filter(title=title).first()
+	if existing is not None:
+		raise ValueError(
+			'A table called %r already exists (%s). Give this one a title that '
+			'distinguishes it, or edit the existing table instead.'
+			% (title, existing.tid))
+
+	with transaction.atomic():
+		highest = (Table.objects.select_for_update()
+		           .aggregate(Max('tid_int'))['tid_int__max'] or 0)
+		number = highest + 1
+		table = Table.objects.create(
+			tid='T%d' % (number,),
+			tid_int=number,
+			url=slug_for(title),
+			#Null, not empty: a table created here has no file in the
+			#repository, and the column is unique, so the second such table
+			#would collide with the first.
+			path=None,
+			title=title,
+			title_lowercase=title.lower(),
+			number_count=0,
+		)
+		TableData.objects.create(table=table, raw_yaml='', full_yaml='',
+		                         json={})
+
+	commit_table(table, tree, author=author,
+	             message=message or 'created this table',
+	             produced_by=produced_by)
+	table.refresh_from_db()
+	return table
+
+
+#: Keys the site owns, which a person editing a table should neither see nor be
+#: able to change. `ID` is the table's permanent identifier: it lives in the
+#: Table row, it was never meant to be typed, and in the repository it was
+#: filled in by a macro pointing at a file whose first line reads "Automatically
+#: created file. Do NOT edit."
+MANAGED_KEYS = ('ID',)
+
+
+def without_managed_keys(tree):
+	"""A document as the author should see it."""
+	if not isinstance(tree, dict):
+		return tree
+	return {k: v for k, v in tree.items() if k not in MANAGED_KEYS}
+
+
+def with_managed_keys(tree, table):
+	"""A document as it is stored, with the site's own keys restored.
+
+	Put back rather than trusted from the form: whatever the author typed for
+	ID is ignored, so an identifier cannot be changed by editing text, and a
+	table cannot be given somebody else's.
+	"""
+	if not isinstance(tree, dict):
+		return tree
+	restored = {'ID': table.tid}
+	for k, v in tree.items():
+		if k not in MANAGED_KEYS:
+			restored[k] = v
+	return restored
