@@ -64,8 +64,14 @@ table.revision-list tr.is-head { background: #f2f8ff; }
           <td><input type="radio" name="to" value="{{ revision.pk }}"
                 {% if revision.pk == to_revision.pk %}checked{% endif %}></td>
           <td class="revision-when">{{ revision.created|date:"Y-m-d H:i" }}</td>
+          {% comment %}
+          Three ways a revision can be credited, in order of how strong the
+          claim is: an account here, a person who wrote it in the data
+          repository without ever having an account, and a machine.
+          {% endcomment %}
           <td>
             {% if revision.author %}{{ revision.author.username }}
+            {% elif revision.contributor %}{{ revision.contributor.author }}
             {% else %}{{ revision.produced_by|default:"unknown" }}{% endif %}
           </td>
           <td>

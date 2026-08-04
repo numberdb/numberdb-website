@@ -2218,7 +2218,8 @@ def revision_history(request, tid):
 	from .permissions import may_edit
 
 	table = get_object_or_404(Table, tid=tid)
-	revisions = list(table.revisions.select_related('author').all()[:200])
+	revisions = list(
+		table.revisions.select_related('author', 'contributor').all()[:200])
 
 	if request.method == 'POST':
 		if not may_edit(request.user):
@@ -2286,8 +2287,12 @@ def revision_history(request, tid):
 
 def _revision_label(revision):
 	"""How a revision is named to a reader: when, and by whom."""
-	who = revision.author.username if revision.author_id else (
-		revision.produced_by or 'unknown')
+	if revision.author_id:
+		who = revision.author.username
+	elif revision.contributor_id:
+		who = revision.contributor.author
+	else:
+		who = revision.produced_by or 'unknown'
 	return '%s by %s' % (revision.created.strftime('%Y-%m-%d %H:%M'), who)
 
 
