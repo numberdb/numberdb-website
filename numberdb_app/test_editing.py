@@ -162,3 +162,121 @@ class Attribution(CommitBase):
 		                   base=out.revision, produced_by='some-model/1.0')
 		self.assertEqual(out.revision.produced_by, 'some-model/1.0')
 		self.assertEqual(out.revision.author_id, self.alice.pk)
+
+
+class EditView(TestCase):
+	"""The editor, end to end through HTTP."""
+
+	def setUp(self):
+		from django.contrib.auth.models import Group
+		from .permissions import BOARD_GROUP
+		self.table = Table.objects.create(tid='T910', tid_int=910,
+		                                  title='View probe', url='View910')
+		from .models import TableData
+		TableData.objects.create(table=self.table, raw_yaml='Title: View probe\n')
+		self.alice = User.objects.create_user('alice_v', password='pw-123456')
+		self.chair = User.objects.create_user('chair_v', password='pw-123456')
+		self.chair.groups.add(Group.objects.get_or_create(name=BOARD_GROUP)[0])
+
+	DOC = ('Title: View probe\n'
+	       'Parameters:\n'
+	       '  n:\n'
+	       '    type: Z\n'
+	       'Numbers:\n'
+	       "  '1': 3.14159265358979323846\n")
+
+	def url(self):
+		return '/edit/%s' % (self.table.tid,)
+
+	def test_anonymous_is_sent_to_the_login_page(self):
+		r = self.client.get(self.url())
+		self.assertEqual(r.status_code, 302)
+		self.assertIn('/accounts/login/', r['Location'])
+
+	def test_an_account_sees_the_editor(self):
+		self.client.login(username='alice_v', password='pw-123456')
+		r = self.client.get(self.url())
+		self.assertEqual(r.status_code, 200)
+		self.assertContains(r, 'Editing')
+		self.assertContains(r, 'What did you change?')
+
+	def test_saving_creates_a_revision_and_redirects_to_the_table(self):
+		self.client.login(username='alice_v', password='pw-123456')
+		r = self.client.post(self.url(), {'table': self.DOC,
+		                                  'message': 'first version'})
+		self.assertEqual(r.status_code, 302)
+		self.assertIn(self.table.url, r['Location'])
+		self.table.refresh_from_db()
+		self.assertIsNotNone(self.table.head_revision)
+		self.assertEqual(self.table.head_revision.author_id, self.alice.pk)
+		self.assertEqual(self.table.head_revision.message, 'first version')
+
+	def test_an_ordinary_edit_does_not_count_as_reviewed(self):
+		self.client.login(username='alice_v', password='pw-123456')
+		self.client.post(self.url(), {'table': self.DOC})
+		self.table.refresh_from_db()
+		self.assertIsNone(self.table.reviewed_at_revision)
+
+	def test_a_board_members_edit_is_reviewed_on_save(self):
+		"""Otherwise the queue is one person's edits waiting for that person."""
+		self.client.login(username='chair_v', password='pw-123456')
+		self.client.post(self.url(), {'table': self.DOC})
+		self.table.refresh_from_db()
+		self.assertEqual(self.table.reviewed_at_revision_id,
+		                 self.table.head_revision_id)
+
+	def test_malformed_yaml_saves_nothing_and_says_so(self):
+		self.client.login(username='alice_v', password='pw-123456')
+		r = self.client.post(self.url(), {'table': 'Title: [unclosed\n'})
+		self.assertEqual(r.status_code, 200)
+		self.assertContains(r, 'YAML format error')
+		self.table.refresh_from_db()
+		self.assertIsNone(self.table.head_revision)
+
+	def test_a_conflicting_save_writes_nothing(self):
+		self.client.login(username='alice_v', password='pw-123456')
+		self.client.post(self.url(), {'table': self.DOC})
+		self.table.refresh_from_db()
+		start = self.table.head_revision
+
+		#Somebody else changes the same entry.
+		commit_table(self.table,
+		             {'Title': 'View probe',
+		              'Parameters': {'n': {'type': 'Z'}},
+		              'Numbers': {'1': '2.0'}},
+		             author=self.chair, base=start)
+		self.table.refresh_from_db()
+		theirs = self.table.head_revision
+
+		mine = self.DOC.replace('3.14159265358979323846', '9.0')
+		r = self.client.post(self.url(), {'table': mine,
+		                                  'base': start.digest})
+		self.assertEqual(r.status_code, 200)
+		self.assertContains(r, 'Nothing was saved')
+		self.table.refresh_from_db()
+		self.assertEqual(self.table.head_revision_id, theirs.pk)
+
+	def test_a_disjoint_save_merges_and_says_so(self):
+		self.client.login(username='alice_v', password='pw-123456')
+		doc = self.DOC + "  '2': 2.71828182845904523536\n"
+		self.client.post(self.url(), {'table': doc})
+		self.table.refresh_from_db()
+		start = self.table.head_revision
+
+		commit_table(self.table,
+		             {'Title': 'View probe',
+		              'Parameters': {'n': {'type': 'Z'}},
+		              'Numbers': {'1': '3.14159265358979323846',
+		                          '2': '9.99'}},
+		             author=self.chair, base=start)
+
+		mine = doc.replace('3.14159265358979323846', '3.15')
+		r = self.client.post(self.url(), {'table': mine,
+		                                  'base': start.digest}, follow=True)
+		self.assertEqual(r.status_code, 200)
+		self.table.refresh_from_db()
+		from .editing import tree_of
+		numbers = tree_of(self.table.head_revision)['Numbers']
+		#Both survive.
+		self.assertEqual(numbers['1'], '3.15')
+		self.assertEqual(numbers['2'], '9.99')
