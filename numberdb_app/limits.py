@@ -36,12 +36,20 @@ more than the hundred digits that identify it, because a reader who wants more
 can compute them; a value that took CPU-months is worth recording to whatever
 precision was reached, since nobody else will be repeating the calculation.
 
+The block limit is a threshold on a *serialisation*, so it moves when the
+serialisation does. Flat records with named parameters cost about 27% more than
+the nested form -- 6.8 MB against 8.7 MB across the corpus -- and leaving the
+limit at the 256 KB that fitted the nested form would have flagged T66, T69,
+T70 and T74 for growing, when not one of them had changed. 320 KB restores the
+property the number is chosen for: nothing that exists today is over it, the
+largest flat block being 271 KB.
+
 Three limits rather than two, because the first two trade off against each
 other. Few numbers known to great precision is as legitimate as many numbers
 known to a hundred digits -- what is not legitimate is both at once, and only a
 limit on the whole block can say that. 1000 entries at 100 digits is about
 100 KB; 200 entries at 1000 digits is about 200 KB; both together would be a
-megabyte, and 256 KB admits either one and refuses the pair.
+megabyte, and the block limit admits either one and refuses the pair.
 
 Hard limits sit far above and mean something different. A soft limit is a
 judgement about what makes a good table and can be overridden by someone who
@@ -72,7 +80,7 @@ RECOMMENDED_DIGITS = 100
 #: rather than routine -- see the module docstring.
 SOFT_ENTRY_COUNT = 1200
 SOFT_DIGITS = 500
-SOFT_BLOCK_BYTES = 256 * 1024
+SOFT_BLOCK_BYTES = 320 * 1024
 
 #: What no table may exceed, reason or not.
 HARD_ENTRY_COUNT = 50_000

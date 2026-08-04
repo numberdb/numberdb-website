@@ -50,6 +50,14 @@ def normalize_table_data(data):
 	Brings the table data into a more "canonical form".	
 	'''
 	
+	#Entries written as flat records are nested here, once, so that everything
+	#downstream -- the renderer, the number build, search, the review gate --
+	#goes on seeing a single shape while the corpus moves table by table. The
+	#form is detected from the document rather than from a flag, so a converted
+	#table is readable the moment it is written.
+	from numberdb_app.flatten import as_nested
+	data = as_nested(data)
+	
 	header_singulars = []
 	#header_singulars.append(("Definition","definition"))
 	header_singulars.append(("Formulas","formula"))

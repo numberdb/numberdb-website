@@ -283,3 +283,21 @@ class EitherNameForTheEntriesSection(SimpleTestCase):
 			tree = {name: _entries(limits.SOFT_ENTRY_COUNT + 1)}
 			self.assertEqual([b.kind for b in limits.check(tree)], ['entries'],
 			                 name)
+
+
+class TheBlockLimitFollowsTheSerialisation(SimpleTestCase):
+	"""Records cost about 27% more than nesting for identical content.
+
+	A limit measured in bytes of a particular encoding has to move when the
+	encoding changes, or converting a table -- which alters not one value --
+	makes it look as though the table grew.
+	"""
+
+	def test_the_largest_real_table_fits_in_either_form(self):
+		#T69 flattened measures 271 KB; the limit must clear it.
+		self.assertGreater(limits.SOFT_BLOCK_BYTES, 271 * 1024)
+
+	def test_the_limit_still_refuses_many_entries_at_high_precision(self):
+		"""What the block limit is actually for."""
+		tree = {'Numbers': _entries(1100, digits=400)}
+		self.assertEqual([b.kind for b in limits.check(tree)], ['bytes'])

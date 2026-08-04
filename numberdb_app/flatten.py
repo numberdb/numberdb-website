@@ -221,3 +221,38 @@ def named_identity_of(record, groups):
 			if params.get(name) is not None:
 				parts.append('%s=%s' % (name, params[name]))
 	return ','.join(parts)
+
+
+def is_flat(block):
+	"""Whether an entries block is written as records rather than nested.
+
+	Decided by shape rather than by a flag on the table. A document that says
+	what it is cannot disagree with a flag stored elsewhere, and a table being
+	converted is then readable the moment it is written, with no second thing
+	to keep in step.
+
+	A parameterless table is also a list, so a list of plain values is not
+	flat -- only a list whose items carry `params`.
+	"""
+	if not isinstance(block, list) or not block:
+		return False
+	return any(isinstance(item, dict) and PARAMS_KEY in item
+	           for item in block)
+
+
+def as_nested(tree):
+	"""The tree with its entries nested, whichever form they arrived in.
+
+	Applied where documents are loaded, so everything downstream -- the
+	renderer, the number build, search, the review gate -- keeps working
+	against one shape while the corpus moves table by table.
+	"""
+	if not isinstance(tree, dict):
+		return tree
+	for name in ('Numbers', 'Data'):
+		block = tree.get(name)
+		if is_flat(block):
+			out = dict(tree)
+			out[name] = to_nested(block, parameter_groups(tree))
+			return out
+	return tree
