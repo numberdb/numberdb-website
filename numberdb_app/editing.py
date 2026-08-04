@@ -127,7 +127,8 @@ def dump_tree(tree):
 
 
 def commit_table(table, tree, author=None, message='', base=None,
-                 produced_by='', allow_parameter_change=False, strict=False):
+                 produced_by='', allow_parameter_change=False, strict=False,
+                 files=None):
 	"""Put ``tree`` on ``table``'s history and return a :class:`CommitOutcome`.
 
 	``base`` is the revision the author started from. Passing None means "this
@@ -145,6 +146,10 @@ def commit_table(table, tree, author=None, message='', base=None,
 
 	Soft breaches that were committed anyway come back on the outcome, for the
 	caller to show and the review queue to raise.
+
+	``files`` maps a name to bytes, or to None to delete it. Anything not
+	mentioned is carried forward from the base, so an edit to the YAML alone
+	keeps the table's scripts without saying anything about them.
 	"""
 	from .limits import enforce
 	from .models import TableRevision
@@ -162,32 +167,70 @@ def commit_table(table, tree, author=None, message='', base=None,
 
 	if head is None:
 		return _write(table, tree, author, message, parent=None, base=None,
-		              produced_by=produced_by, breaches=breaches)
+		              produced_by=produced_by, breaches=breaches, files=files)
 
 	if base is None or base.pk == head.pk:
 		#Nobody moved. The ordinary case, and the fast one.
 		content = dump_tree(tree)
-		if TableRevision.digest_of(content) == head.digest:
+		if (TableRevision.digest_of(content) == head.digest
+		    and not _files_change(head, files)):
 			return CommitOutcome(head, unchanged=True, breaches=breaches)
 		return _write(table, tree, author, message, parent=head, base=head,
-		              produced_by=produced_by, breaches=breaches)
+		              produced_by=produced_by, breaches=breaches, files=files)
 
 	#Somebody committed while this edit was being written.
 	result = merge(tree_of(base), tree, tree_of(head))
 	if result.conflicts:
 		raise StaleEdit(result.conflicts, result.tree, head)
 
+	#Files merge on the same three-way rules, and a clash in them is as much a
+	#reason to stop as a clash in the document: overwriting somebody's script
+	#is no better than overwriting their numbers.
+	merged_files, file_conflicts = merge_manifests(
+		manifest_of(base), _wanted_manifest(base, files), manifest_of(head))
+	if file_conflicts:
+		raise StaleEdit([('file: %s' % (name,)) for name in file_conflicts],
+		                result.tree, head)
+
 	content = dump_tree(result.tree)
-	if TableRevision.digest_of(content) == head.digest:
+	if (TableRevision.digest_of(content) == head.digest
+	    and merged_files == manifest_of(head)):
 		#The edit was already contained in what the other person committed.
 		return CommitOutcome(head, unchanged=True, breaches=breaches)
 
 	return _write(table, result.tree, author, message, parent=head, base=base,
-	              produced_by=produced_by, merged=True, breaches=breaches)
+	              produced_by=produced_by, merged=True, breaches=breaches,
+	              manifest=merged_files)
+
+
+def _files_change(revision, files):
+	"""Whether ``files`` would alter what ``revision`` already carries."""
+	return _wanted_manifest(revision, files) != manifest_of(revision)
+
+
+def _wanted_manifest(revision, files):
+	"""The manifest ``files`` asks for, on top of what ``revision`` has.
+
+	The bytes are stored as they are named. Computing a digest without storing
+	the blob it describes produces a manifest pointing at nothing, and the
+	failure is silent: the revision is written, the attachment is missing, and
+	the only symptom is a file that quietly disappeared during a merge.
+	"""
+	from .models import Blob
+
+	wanted = dict(manifest_of(revision))
+	for name, data in (files or {}).items():
+		if data is None:
+			wanted.pop(name, None)
+		elif isinstance(data, Blob):
+			wanted[name] = data.digest
+		else:
+			wanted[name] = Blob.store(data).digest
+	return wanted
 
 
 def _write(table, tree, author, message, parent, base, produced_by,
-           merged=False, breaches=()):
+           merged=False, breaches=(), files=None, manifest=None):
 	from .models import TableRevision
 
 	revision = TableRevision.objects.create(
@@ -199,6 +242,13 @@ def _write(table, tree, author, message, parent, base, produced_by,
 		message = message,
 		produced_by = produced_by,
 	)
+	#Before head moves, so a revision is never briefly visible without the
+	#files it was committed with.
+	if manifest is not None:
+		_attach_manifest(revision, manifest)
+	else:
+		attach_files(revision, files, carry_from=parent)
+
 	table.head_revision = revision
 	#A board member's own edit is reviewed by the act of making it; that
 	#decision belongs to the caller, which knows who the author is, so this
@@ -206,6 +256,24 @@ def _write(table, tree, author, message, parent, base, produced_by,
 	table.save(update_fields=['head_revision'])
 	apply_revision(table, revision)
 	return CommitOutcome(revision, merged=merged, breaches=breaches)
+
+
+def _attach_manifest(revision, manifest):
+	"""Record an already-resolved {name: digest} manifest on a revision."""
+	from .models import Attachment, Blob
+
+	blobs = {b.digest: b for b in
+	         Blob.objects.filter(digest__in=set(manifest.values()))}
+	missing = sorted(n for n, d in manifest.items() if d not in blobs)
+	if missing:
+		#Loudly, because the alternative is a revision that silently lost a
+		#file and looks perfectly normal afterwards.
+		raise ValueError('manifest names blobs that are not stored: %s'
+		                 % (', '.join(missing),))
+	Attachment.objects.bulk_create([
+		Attachment(revision=revision, name=name, blob=blobs[digest])
+		for name, digest in sorted(manifest.items())
+	])
 
 
 def apply_revision(table, revision=None):
@@ -413,6 +481,14 @@ def restore_revision(table, revision, author=None, message=''):
 	if revision.table_id != table.pk:
 		raise ValueError('that revision belongs to another table')
 
+	#Files as well as numbers. Restoring the document alone would leave the
+	#table describing one set of values with the script that produced a
+	#different set sitting beside it, which is worse than either version.
+	then = {a.name: a.blob for a in revision.attachments.select_related('blob')}
+	files = dict(then)
+	for name in manifest_of(table.head_revision):
+		files.setdefault(name, None)
+
 	return commit_table(
 		table, tree_of(revision),
 		author=author,
@@ -420,4 +496,87 @@ def restore_revision(table, revision, author=None, message=''):
 		                    % (revision.created.strftime('%Y-%m-%d %H:%M'),)),
 		base=table.head_revision,
 		allow_parameter_change=True,
+		files=files,
 	)
+
+
+def manifest_of(revision):
+	"""The complete set of files a revision has, as {name: blob digest}."""
+	if revision is None:
+		return {}
+	return {a.name: a.blob.digest
+	        for a in revision.attachments.select_related('blob')}
+
+
+def attach_files(revision, files, carry_from=None):
+	"""Record this revision's complete file manifest.
+
+	``files`` maps a name to bytes, to a :class:`Blob`, or to None to say the
+	file is gone as of this revision. Everything in ``carry_from`` that is not
+	mentioned is carried forward unchanged, which is what makes an ordinary
+	edit -- one that touches only the YAML -- keep the table's scripts without
+	the caller having to say so.
+
+	Carrying forward is a copy of the *manifest row*, never of the bytes: both
+	revisions point at the same blob, so an unchanged 477 KB attachment costs
+	nothing on the second revision.
+	"""
+	from .models import Attachment, Blob
+
+	wanted = dict(manifest_of(carry_from))
+	blobs = {}
+	for name, data in (files or {}).items():
+		if data is None:
+			wanted.pop(name, None)
+			continue
+		blob = data if isinstance(data, Blob) else Blob.store(data)
+		blobs[blob.digest] = blob
+		wanted[name] = blob.digest
+
+	missing = [d for d in wanted.values() if d not in blobs]
+	if missing:
+		blobs.update({b.digest: b for b in Blob.objects.filter(digest__in=missing)})
+
+	absent = sorted(n for n, d in wanted.items() if d not in blobs)
+	if absent:
+		raise ValueError('manifest names blobs that are not stored: %s'
+		                 % (', '.join(absent),))
+
+	Attachment.objects.bulk_create([
+		Attachment(revision=revision, name=name, blob=blobs[digest])
+		for name, digest in sorted(wanted.items())
+	])
+	return wanted
+
+
+def merge_manifests(base, mine, theirs):
+	"""Three-way merge of two file manifests.
+
+	Deliberately the same rules as the document merge, since the surprises are
+	the same ones: a file both sides changed is a conflict, a file one side
+	changed is taken, and a file deleted on one side and changed on the other
+	is a conflict rather than a silent choice between losing the change and
+	resurrecting the file.
+	"""
+	conflicts = []
+	result = dict(theirs)
+
+	for name in set(base) | set(mine) | set(theirs):
+		was = base.get(name)
+		ours = mine.get(name)
+		yours = theirs.get(name)
+		if ours == yours:
+			continue
+		if was == ours:
+			#We did not touch it; whatever they did stands.
+			continue
+		if was == yours:
+			#They did not touch it; our change applies.
+			if ours is None:
+				result.pop(name, None)
+			else:
+				result[name] = ours
+			continue
+		conflicts.append(name)
+
+	return result, conflicts

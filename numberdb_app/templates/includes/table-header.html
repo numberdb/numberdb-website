@@ -45,6 +45,10 @@ differently-named link that does something else.
   {% endcomment %}
   &middot;
   <a class="link-below-title" href="{% url 'db:revision-history' table.tid %}">history</a>
+  {% if table.head_revision.attachments.exists %}
+    &middot;
+    <a class="link-below-title" href="{% url 'db:table-files' table.tid %}">files</a>
+  {% endif %}
   {% comment %}
   Only for tables that came from the repository. One created here has no file
   there until the export exists, and a link to a page that is not there reads

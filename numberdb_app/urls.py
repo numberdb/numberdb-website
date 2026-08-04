@@ -25,6 +25,8 @@ urlpatterns = [
     
     re_path(r'^history/(?P<tid>(T\d+))$', views.table_history, name='table-history'),
     re_path(r'^revisions/(?P<tid>(T\d+))$', views.revision_history, name='revision-history'),
+    re_path(r'^files/(?P<tid>(T\d+))$', views.table_files, name='table-files'),
+    re_path(r'^files/(?P<tid>(T\d+))/(?P<name>[-\w./]+)$', views.table_file, name='table-file'),
 
     path('tags', views.tags, name='tags'),
     path('tags/<str:tag_url>', views.tag, name='tag'),

@@ -2301,3 +2301,74 @@ def _as_int(text):
 		return int(text)
 	except (TypeError, ValueError):
 		return None
+
+
+def table_files(request, tid):
+	"""The files a table carries, as of one revision.
+
+	Defaults to the current one; `?rev=` names any other, which is what makes a
+	citation of "the code that produced these numbers" mean something. An older
+	revision keeps its own manifest, so the address stays honest after the
+	script is rewritten.
+	"""
+	from .editing import manifest_of
+
+	table = get_object_or_404(Table, tid=tid)
+	revision = None
+	asked = _as_int(request.GET.get('rev'))
+	if asked is not None:
+		revision = table.revisions.filter(pk=asked).first()
+	if revision is None:
+		revision = table.head_revision
+
+	files = []
+	if revision is not None:
+		files = list(revision.attachments.select_related('blob').all())
+
+	return render(request, 'table-files.html', {
+		'table': table,
+		'revision': revision,
+		'is_current': revision is not None
+		              and revision.pk == table.head_revision_id,
+		'files': files,
+	})
+
+
+def table_file(request, tid, name):
+	"""One file, shown as source or handed over as a download."""
+	from django.http import HttpResponse
+
+	table = get_object_or_404(Table, tid=tid)
+	revision = None
+	asked = _as_int(request.GET.get('rev'))
+	if asked is not None:
+		revision = table.revisions.filter(pk=asked).first()
+	if revision is None:
+		revision = table.head_revision
+	if revision is None:
+		raise Http404('this table has no revisions')
+
+	attachment = revision.attachments.select_related('blob').filter(
+		name=name).first()
+	if attachment is None:
+		raise Http404('no such file on this revision')
+
+	text = attachment.blob.text() if attachment.is_source else None
+	if request.GET.get('raw') or text is None:
+		#Never text/html or anything else a browser will execute: these bytes
+		#were uploaded by a contributor, and the site must not become a way to
+		#serve a script from numberdb.org's own origin.
+		response = HttpResponse(bytes(attachment.blob.content),
+		                        content_type='application/octet-stream')
+		response['Content-Disposition'] = (
+			'attachment; filename="%s"' % (name.rsplit('/', 1)[-1],))
+		response['X-Content-Type-Options'] = 'nosniff'
+		return response
+
+	return render(request, 'table-file.html', {
+		'table': table,
+		'revision': revision,
+		'is_current': revision.pk == table.head_revision_id,
+		'attachment': attachment,
+		'text': text,
+	})
