@@ -179,6 +179,30 @@ This is the same argument that decided named records above, arrived at from the
 other end: an identity that depends on position is only as stable as the
 ordering nobody promised to keep.
 
+## The parameter list is fixed once a table exists
+
+Every entry's identity is its parameter values, so changing the set or the order
+of parameters reassigns every identity in the table at once. Nothing breaks
+visibly: the anchors still resolve, the cross-references still resolve, the
+search results still resolve, and they all point at different numbers.
+
+So an ordinary edit may not do it. `commit_table` refuses, names both lists,
+and writes nothing; the editor explains why rather than showing a failure. A
+table that genuinely needs different parameters is not stuck -- the refusal can
+be overridden deliberately -- but it is an operation, not an edit, and one that
+should eventually rewrite the identities and leave redirects behind.
+
+Renaming a parameter is not refused, because the identity is built from the
+values rather than the names. It does invalidate citations written in the named
+form, which is a smaller and more visible loss: those fail rather than lie.
+
+**98 cross-references name an entry**, across 22 targets, mostly
+`Rational_multiples_of_pi` (50) and `Factorial` (30), with five pointing inside
+their own table. They were plain fragments, so they had the same defect, and
+they are data rather than markup: they are rewritten to the resolvable form as
+they render, so no migration of the corpus is needed for them to become
+checkable.
+
 ## Decisions taken here
 
 **Entries become flat records, with parameters named.** Decided.
