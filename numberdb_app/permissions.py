@@ -20,7 +20,14 @@ can confirm a digit is not thereby somebody who should be able to delete a user.
 
 from django.contrib.auth.models import Group
 
-__all__ = ['BOARD_GROUP', 'is_board_member', 'may_edit', 'board_group']
+__all__ = ['BOARD_GROUP', 'is_board_member', 'may_edit', 'board_group',
+           'TRUSTED_AFTER', 'accepted_edit_count', 'is_trusted',
+           'edits_are_reviewed', 'may_write_through_api']
+
+#: Accepted edits after which an account is trusted. Five is enough to have
+#: made and had confirmed a handful of real corrections, and few enough that
+#: somebody working steadily reaches it in a week rather than a year.
+TRUSTED_AFTER = 5
 
 #: The group whose members may review.
 BOARD_GROUP = 'board'
@@ -53,3 +60,65 @@ def may_edit(user):
 	kept from making them.
 	"""
 	return bool(getattr(user, 'is_authenticated', False))
+
+
+def accepted_edit_count(user):
+	"""How many of ``user``'s revisions a reviewer has since confirmed.
+
+	Counted from review rather than from thumbs-up. A review is a statement
+	about whether the digits are right, which is the thing trust here is
+	about; approval is a statement about whether people liked the edit, and a
+	script can farm it. It is also data the review queue already produces.
+
+	A revision counts as accepted once its table has been reviewed at or after
+	it, which is what `reviewed_at_revision` advancing means.
+	"""
+	from django.db.models import F
+
+	from .models import TableRevision
+
+	if not getattr(user, 'is_authenticated', False):
+		return 0
+	return TableRevision.objects.filter(
+		author=user,
+		table__reviewed_at_revision__isnull=False,
+		created__lte=F('table__reviewed_at_revision__created'),
+	).count()
+
+
+def is_trusted(user):
+	"""Whether ``user`` has a track record here.
+
+	Board members are trusted by definition; they are the ones doing the
+	confirming.
+	"""
+	if not getattr(user, 'is_authenticated', False):
+		return False
+	if is_board_member(user):
+		return True
+	return accepted_edit_count(user) >= TRUSTED_AFTER
+
+
+def edits_are_reviewed(user):
+	"""Whether this account's edits are published as already reviewed.
+
+	Requiring a board member to review their own work would make a queue of
+	one person's edits waiting for that same person; requiring it of somebody
+	with a confirmed track record turns review into a formality that trains
+	reviewers to click through. Everybody else waits, which is what keeps
+	unchecked digits out of search by number.
+	"""
+	return is_trusted(user)
+
+
+def may_write_through_api(user):
+	"""Whether ``user`` may change tables with a program.
+
+	Deliberately higher than `may_edit`. A person editing a table exercises
+	judgement about one table; a script does not exercise judgement at all, and
+	it writes at a speed no reviewer can follow. Requiring a track record first
+	means a bulk writer is somebody whose individual edits have already been
+	checked by a person -- and that track record is measured in accepted
+	reviews, which is the one signal a script cannot manufacture for itself.
+	"""
+	return is_trusted(user)

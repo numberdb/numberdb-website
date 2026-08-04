@@ -1959,10 +1959,13 @@ def edit_table(request, tid):
 				'"%s" line under Data properties; a reviewer will otherwise '
 				'have to guess.' % (breach.message, EXCEPTION_KEY)))
 
-		#A board member's edit is reviewed by the act of making it: requiring
-		#them to review their own work would be a queue of one person's edits
-		#waiting for that same person.
-		if outcome.revision and is_board_member(request.user):
+		#An edit by somebody with a confirmed track record publishes as
+		#reviewed. Requiring a board member to review their own work would be a
+		#queue of one person's edits waiting for that same person, and
+		#requiring it of a trusted account turns review into a formality that
+		#teaches reviewers to click through. Everybody else waits.
+		from .permissions import edits_are_reviewed
+		if outcome.revision and edits_are_reviewed(request.user):
 			table.reviewed_at_revision = outcome.revision
 			table.save(update_fields=['reviewed_at_revision'])
 			from .review import sync_review_flags
@@ -2172,8 +2175,8 @@ def new_table(request):
 			return render(request, 'new-table.html',
 			              _new_table_context(request, table_yaml))
 
-		from .permissions import is_board_member
-		if is_board_member(request.user):
+		from .permissions import edits_are_reviewed
+		if edits_are_reviewed(request.user):
 			table.reviewed_at_revision = table.head_revision
 			table.save(update_fields=['reviewed_at_revision'])
 			from .review import sync_review_flags
@@ -2240,8 +2243,8 @@ def revision_history(request, tid):
 				'Restored the version from %s. This is a new revision rather '
 				'than an erasure: what happened in between is still here.'
 				% (revision.created.strftime('%Y-%m-%d %H:%M'),)))
-			from .permissions import is_board_member
-			if is_board_member(request.user):
+			from .permissions import edits_are_reviewed
+			if edits_are_reviewed(request.user):
 				table.refresh_from_db()
 				table.reviewed_at_revision = table.head_revision
 				table.save(update_fields=['reviewed_at_revision'])
