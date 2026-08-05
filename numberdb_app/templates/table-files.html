@@ -15,6 +15,11 @@ set of values means citing the version of it that was there at the time.
 table.file-list td, table.file-list th { padding: 0.3rem 0.8rem; }
 .file-note { color: #666; font-size: 0.9em; }
 tr.file-changed-here td { background: #e6ffed; }
+td.file-versions { padding-top: 0; }
+td.file-versions summary { cursor: pointer; color: #555; font-size: 0.9em; }
+table.file-version-list { margin: 0.3rem 0 0.6rem 1.2rem; font-size: 0.9em; }
+table.file-version-list td { padding: 0.15rem 0.6rem; }
+.revision-when { white-space: nowrap; }
 </style>
 {% endblock %}
 
@@ -84,6 +89,47 @@ which will assume the code shown produced the numbers shown.
           {% if not file.attachment.is_source %}not shown as text{% endif %}
         </td>
       </tr>
+      {% comment %}
+      Every version of this file, folded away. Only the revisions where its
+      content actually changed: a file carried through fifty edits appears in
+      fifty manifests and has two versions, and listing the fifty would bury
+      the two. <details> rather than a script, so it works before anything
+      loads and when nothing does.
+      {% endcomment %}
+      {% if file.version_count > 1 %}
+        <tr>
+          <td colspan="4" class="file-versions">
+            <details>
+              <summary>{{ file.version_count }} versions of this file</summary>
+              <table class="file-version-list">
+                {% for version in file.versions %}
+                  <tr>
+                    <td class="revision-when">
+                      {{ version.revision.created|date:"Y-m-d H:i" }}
+                    </td>
+                    <td>
+                      {% if version.revision.author %}{{ version.revision.author.username }}
+                      {% elif version.revision.contributor %}{{ version.revision.contributor.author }}
+                      {% else %}{{ version.revision.produced_by|default:"unknown" }}{% endif %}
+                    </td>
+                    <td class="file-note">{{ version.blob.size }} bytes</td>
+                    <td>
+                      <a href="{% url 'db:table-file' table.tid file.name %}?rev={{ version.revision.pk }}"
+                        >view</a>
+                      &middot;
+                      <a href="{% url 'db:revision-history' table.tid %}?to={{ version.revision.pk }}"
+                        >what changed</a>
+                      {% if version.is_first %}
+                        <span class="file-note">&mdash; first recorded</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </table>
+            </details>
+          </td>
+        </tr>
+      {% endif %}
     {% endfor %}
   </table>
 
