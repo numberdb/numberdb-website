@@ -20,25 +20,24 @@ a.link-below-title:hover {
 <div id="table-title" class="table-title">{{ table.title }}</div>
 
 {% comment %}
-One place to edit, one place to read the source.
+One place to edit, one place to read the history.
 
-The GitHub link used to say "edit on github", and following it produced a
-change in the data repository that this site would not see until the next
-rebuild -- and a rebuild would in turn overwrite anything edited here. Two
-places to write the same table is the problem, not the convenience: whichever
-was written second silently won, and nothing recorded that the other had
-happened.
+There were two of each. Editing was "edit here" beside a "source on github"
+link, which is where editing used to happen: a change made there would not
+reach this site until the next rebuild, and a rebuild would overwrite anything
+edited here. Two places to write the same table is the problem, not the
+convenience -- whichever was written second silently won and nothing recorded
+that the other had happened. The repository is a mirror now, so the link
+pointed at a copy that is behind, which is worse than not offering it.
 
-So it is a link to view the source, not to change it. Editing is "edit here".
-Signed out, that leads to the login page, which is a more honest answer than a
-differently-named link that does something else.
+History was doubled the same way: "show history" listed the data repository's
+commits and "history" lists the table's revisions. Since the revisions now
+carry that history -- imported, dated and attributed -- one link is the whole
+answer.
 {% endcomment %}
 {% if preview %}
-  {% if table.path %}
-    <a class="link-below-title" target="_blank" href="https://github.com/numberdb/numberdb-data/tree/main/{{ table.path }}/table.yaml">source on github</a>
-  {% endif %}
 {% else %}
-  <a class="link-below-title" href="{% url 'db:edit-table' table.tid %}">edit here</a>
+  <a class="link-below-title" href="{% url 'db:edit-table' table.tid %}">edit</a>
   {% comment %}
   Beside the edit link rather than tucked away, because "what did the last edit
   do, and can I undo it" is the first question an open edit button raises.
@@ -49,21 +48,10 @@ differently-named link that does something else.
     &middot;
     <a class="link-below-title" href="{% url 'db:table-files' table.tid %}">files</a>
   {% endif %}
-  {% comment %}
-  Only for tables that came from the repository. One created here has no file
-  there until the export exists, and a link to a page that is not there reads
-  as a broken site rather than as a missing feature.
-  {% endcomment %}
-  {% if table.path %}
-    &middot;
-    <a class="link-below-title" target="_blank" href="https://github.com/numberdb/numberdb-data/tree/main/{{ table.path }}/table.yaml">source on github</a>
-  {% endif %}
   {% if history %}
-    &middot; 
+    &middot;
     <a class="link-below-title" href="{% url 'db:table' table.tid %}">back to table</a>
   {% else %}
-    &middot; 
-    <a class="link-below-title" href="{% url 'db:table-history' table.tid %}">show history</a>
     {% if requested_url %}
       &middot; 
       <a class="link-below-title add-current-hash" href="{% url 'db:table' table.tid %}">short url</a>
