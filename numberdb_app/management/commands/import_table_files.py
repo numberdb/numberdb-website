@@ -98,6 +98,18 @@ class Command(BaseCommand):
 				             message='attached the files from the data repository',
 				             produced_by='data-repository import',
 				             files=files)
+
+			#As in import_table_history: what came from the repository is the
+			#published corpus, not a pile of unchecked proposals. Left
+			#unreviewed it is held out of search by number, and the site then
+			#answers "no match" for values it plainly contains.
+			table.refresh_from_db()
+			if table.head_revision is not None:
+				table.reviewed_at_revision = table.head_revision
+				table.save(update_fields=['reviewed_at_revision'])
+				from numberdb_app.review import sync_review_flags
+				sync_review_flags(table)
+
 			attached += 1
 
 		self.stdout.write(self.style.SUCCESS(

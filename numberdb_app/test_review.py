@@ -249,3 +249,50 @@ class TheGateBites(TestCase):
 		found = self._search()
 		self.assertIn(rows['1'].pk, found)
 		self.assertNotIn(rows['2'].pk, found)
+
+
+class ImportedContentIsNotAProposal(TestCase):
+	"""What comes in from the data repository is the published corpus.
+
+	Marked unreviewed it is held out of search by number, and since the import
+	is the whole database that means every value: the site answers "no match"
+	for numbers it plainly contains, with nothing logged and nothing looking
+	wrong. This happened, and searching for 5.5 returned nothing across 45832
+	values.
+	"""
+
+	def setUp(self):
+		from .models import Table
+
+		self.table = Table.objects.create(tid='T970', tid_int=970,
+		                                  title='Import probe',
+		                                  url='Import970')
+
+	def test_a_table_whose_head_is_reviewed_lets_its_numbers_be_found(self):
+		from .editing import commit_table
+		from .models import Number
+		from .review import sync_review_flags
+
+		commit_table(self.table, {'Title': 'Import probe',
+		                          'Parameters': {'n': {'type': 'R'}},
+		                          'Numbers': {'1': '5.5'}}, author=None)
+		self.table.refresh_from_db()
+		self.table.reviewed_at_revision = self.table.head_revision
+		self.table.save(update_fields=['reviewed_at_revision'])
+		sync_review_flags(self.table)
+		self.assertEqual(
+			Number.objects.filter(table=self.table, reviewed=False).count(), 0)
+
+	def test_leaving_it_unreviewed_hides_every_value(self):
+		"""The state the site was actually left in, asserted so it is visible."""
+		from .editing import commit_table
+		from .models import Number
+		from .review import sync_review_flags
+
+		commit_table(self.table, {'Title': 'Import probe',
+		                          'Parameters': {'n': {'type': 'R'}},
+		                          'Numbers': {'1': '5.5'}}, author=None)
+		self.table.refresh_from_db()
+		sync_review_flags(self.table)
+		self.assertGreater(
+			Number.objects.filter(table=self.table, reviewed=False).count(), 0)
