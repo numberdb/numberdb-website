@@ -79,8 +79,8 @@ def to_text(value: Any, digits: int = DIGITS) -> str:
     if isinstance(value, RealInterval):
         return _interval_text(value, digits)
     if isinstance(value, ComplexInterval):
-        return '%s + %s*I' % (_interval_text(value.real, digits),
-                              _interval_text(value.imag, digits))
+        return _complex_text(_interval_text(value.real, digits),
+                             _interval_text(value.imag, digits))
     if isinstance(value, PAdic):
         return str(value)
     if isinstance(value, Polynomial):
@@ -135,11 +135,8 @@ def _sage_text(value, digits):
 
     if 'Interval' in name or 'Ball' in name:
         if 'Complex' in name:
-            #`a + b*I`, which is how all 300 complex values in the database are
-            #spelt. Sage's own repr agrees, but is built here so the real and
-            #imaginary parts get truncated separately.
-            return '%s + %s*I' % (_truncate(str(value.real()), digits),
-                                  _truncate(str(value.imag()), digits))
+            return _complex_text(_truncate(str(value.real()), digits),
+                                 _truncate(str(value.imag()), digits))
         return _truncate(str(value), digits)
 
     #Integers, rationals, polynomials and p-adics print exactly as they are
@@ -166,6 +163,18 @@ _NUMERIC_PARENTS = ('Integer Ring', 'Rational Field', 'Real Field',
                     #`2-adic Field ...`, so the prime is part of the name.
                     '-adic',
                     'Number Field', 'Algebraic')
+
+
+def _complex_text(real, imag):
+    """A complex value as the corpus spells it: `a + i * b`.
+
+    1847 values are written this way and not one uses `a + b*I`, which is
+    Sage's repr and what the derived column in the database holds. A generator
+    emitting the other form would differ from every neighbour it sits beside --
+    and, worse, would differ from the stored value on every verification run
+    while naming the same number.
+    """
+    return '%s + i * %s' % (real, imag)
 
 
 def _truncate(text, digits):
