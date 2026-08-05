@@ -95,14 +95,19 @@ class StaleEdit(Exception):
 class CommitOutcome:
 	"""What happened, for the caller to report."""
 
-	__slots__ = ('revision', 'merged', 'unchanged', 'breaches')
+	__slots__ = ('revision', 'merged', 'unchanged', 'breaches', 'problems')
 
-	def __init__(self, revision, merged=False, unchanged=False, breaches=()):
+	def __init__(self, revision, merged=False, unchanged=False, breaches=(),
+	             problems=()):
 		self.revision = revision
 		#: Soft size limits this table is over without saying why. It was
 		#: committed regardless, because the author may have a good reason and
 		#: the review queue is where reasons are judged.
 		self.breaches = list(breaches)
+		#: Things wrong with the document that are not worth refusing over --
+		#: a probable misspelling, an entry that names a family rather than a
+		#: value. Saved anyway, and reported.
+		self.problems = list(problems)
 		#: True when somebody else had committed and the two edits were
 		#: combined. Worth telling the author, since the result contains
 		#: changes they have not seen.
@@ -168,10 +173,14 @@ def commit_table(table, tree, author=None, message='', base=None,
 	"""
 	from .limits import enforce
 	from .models import TableRevision
+	from .validate import check as check_schema
 
 	head = table.head_revision
 
-	#Both checks run before any of the paths below, because all of them write.
+	#All three checks run before any of the paths below, because all of them
+	#write. Schema first: a document that is not a table cannot be usefully
+	#measured or merged.
+	problems = check_schema(tree)
 	breaches = enforce(tree, strict=strict)
 
 	if head is not None and not allow_parameter_change:
@@ -182,16 +191,19 @@ def commit_table(table, tree, author=None, message='', base=None,
 
 	if head is None:
 		return _write(table, tree, author, message, parent=None, base=None,
-		              produced_by=produced_by, breaches=breaches, files=files)
+		              produced_by=produced_by, breaches=breaches, files=files,
+		              problems=problems)
 
 	if base is None or base.pk == head.pk:
 		#Nobody moved. The ordinary case, and the fast one.
 		content = dump_tree(tree)
 		if (TableRevision.digest_of(content) == head.digest
 		    and not _files_change(head, files)):
-			return CommitOutcome(head, unchanged=True, breaches=breaches)
+			return CommitOutcome(head, unchanged=True, breaches=breaches,
+		                     problems=problems)
 		return _write(table, tree, author, message, parent=head, base=head,
-		              produced_by=produced_by, breaches=breaches, files=files)
+		              produced_by=produced_by, breaches=breaches, files=files,
+		              problems=problems)
 
 	#Somebody committed while this edit was being written.
 	result = merge(tree_of(base), tree, tree_of(head))
@@ -211,11 +223,12 @@ def commit_table(table, tree, author=None, message='', base=None,
 	if (TableRevision.digest_of(content) == head.digest
 	    and merged_files == manifest_of(head)):
 		#The edit was already contained in what the other person committed.
-		return CommitOutcome(head, unchanged=True, breaches=breaches)
+		return CommitOutcome(head, unchanged=True, breaches=breaches,
+		                     problems=problems)
 
 	return _write(table, result.tree, author, message, parent=head, base=base,
 	              produced_by=produced_by, merged=True, breaches=breaches,
-	              manifest=merged_files)
+	              manifest=merged_files, problems=problems)
 
 
 def _files_change(revision, files):
@@ -245,7 +258,7 @@ def _wanted_manifest(revision, files):
 
 
 def _write(table, tree, author, message, parent, base, produced_by,
-           merged=False, breaches=(), files=None, manifest=None):
+           merged=False, breaches=(), files=None, manifest=None, problems=()):
 	from django.db import transaction
 
 	from .models import TableRevision
@@ -260,11 +273,12 @@ def _write(table, tree, author, message, parent, base, produced_by,
 	#and forgotten.
 	with transaction.atomic():
 		return _write_inside(table, tree, author, message, parent, base,
-		                     produced_by, merged, breaches, files, manifest)
+		                     produced_by, merged, breaches, files, manifest,
+		                     problems)
 
 
 def _write_inside(table, tree, author, message, parent, base, produced_by,
-                  merged, breaches, files, manifest):
+                  merged, breaches, files, manifest, problems=()):
 	from .models import TableRevision
 
 	revision = TableRevision.objects.create(
@@ -298,7 +312,8 @@ def _write_inside(table, tree, author, message, parent, base, produced_by,
 		#Sage parse error on an error page, which tells an author nothing about
 		#which of their values is wrong.
 		raise InvalidDocument(e)
-	return CommitOutcome(revision, merged=merged, breaches=breaches)
+	return CommitOutcome(revision, merged=merged, breaches=breaches,
+	                     problems=problems)
 
 
 def _attach_manifest(revision, manifest):
