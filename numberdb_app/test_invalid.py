@@ -111,7 +111,7 @@ class TheEditorSaysWhatIsWrong(TestCase):
 				sort_keys=False),
 			 'action': 'save', 'base': self.table.head_revision.digest})
 		self.assertEqual(response.status_code, 200)
-		self.assertContains(response, 'cannot be read as a number')
+		self.assertContains(response, 'cannot be made into a table')
 
 	def test_unparseable_yaml_never_reaches_the_write_path(self):
 		self.client.login(username='invalid_editor', password='pw-123456')

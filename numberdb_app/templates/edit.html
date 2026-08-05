@@ -9,6 +9,8 @@
 <style>
 .CodeMirror { height: calc(100vh - 6rem - 14 * var(--lrem)); border: 1px solid #ddd; }
 .edit-note { background: #ffc; padding: 0.6rem; border: 1px solid #e6d800; margin: 0.6rem 0; }
+.mode-switch { margin: 0.4rem 0 1rem 0; font-size: 0.9em; }
+.mode-switch .hint { color: #666; display: block; margin-top: 0.15rem; }
 .conflict { background: #fee; border: 1px solid #e88; padding: 0.6rem; margin: 0.4rem 0; }
 .conflict code { display: block; white-space: pre-wrap; }
 pre.edit-diff { background: #f7f7f7; border: 1px solid #ddd; padding: 0.6rem;
@@ -36,6 +38,14 @@ Said before the box rather than after saving, because it changes what somebody
 chooses to write. An author who does not know their edit is published at once
 would reasonably expect a draft.
 {% endcomment %}
+<div class="mode-switch">
+  <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=1">Form</a>
+  &middot;
+  <b>Source</b>
+  <span class="hint">The form covers the settings with fixed choices, where a
+  value cannot be misspelt because it is picked from a list.</span>
+</div>
+
 <div class="edit-note">
   {% if is_board_member %}
     Your changes are published immediately, and count as reviewed because you

@@ -175,3 +175,117 @@ class AgainstTheCorpus(TestCase):
 						= parameter[field]
 			self.assertEqual(metadata_form.apply_to(tree, submitted), tree,
 			                 str(td.table))
+
+
+class ThroughThePage(TestCase):
+	"""The form end to end, including that saving through it is an ordinary edit.
+
+	It takes the same path as the source editor -- same stale-write check, same
+	limits, same schema validation, same review rules -- because those are
+	properties of editing rather than of a particular form, and two copies would
+	drift until they disagreed about somebody's edit.
+	"""
+
+	def setUp(self):
+		from django.contrib.auth.models import User
+
+		from .editing import create_table
+
+		self.user = User.objects.create_user('form_user', password='pw-123456')
+		self.table = create_table(
+			{'Title': 'Form probe',
+			 'Definition': 'Prose the form never touches.',
+			 'Data properties': {'type': 'R', 'sources': ['CITE{X}']},
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14159'}]},
+			author=self.user)
+		self.client.login(username='form_user', password='pw-123456')
+
+	def url(self):
+		return '/edit/%s' % (self.table.tid,)
+
+	def head(self):
+		from .editing import tree_of
+
+		self.table.refresh_from_db()
+		return tree_of(self.table.head_revision)
+
+	def submit(self, **fields):
+		data = {'action': 'save-metadata',
+		        'base': self.table.head_revision.digest,
+		        'title': 'Form probe', 'data_type': 'R', 'complete': '',
+		        'complete_condition': '', 'layout': '',
+		        'parameter.n.type': 'Z', 'parameter.n.constraints': '',
+		        'parameter.n.display': ''}
+		data.update(fields)
+		return self.client.post(self.url(), data)
+
+	def test_the_form_is_reachable(self):
+		response = self.client.get('%s?form=1' % (self.url(),))
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'data_type')
+
+	def test_it_offers_only_valid_types(self):
+		"""A select cannot hold `Wombat`, so that error stops existing."""
+		response = self.client.get('%s?form=1' % (self.url(),))
+		self.assertContains(response, '<option value="Qp"')
+		self.assertNotContains(response, 'Wombat')
+
+	def test_changing_the_type_saves(self):
+		self.submit(data_type='Q')
+		self.assertEqual(self.head()['Data properties']['type'], 'Q')
+
+	def test_the_prose_it_never_shows_is_untouched(self):
+		"""The property the whole module is arranged around."""
+		self.submit(data_type='Q')
+		head = self.head()
+		self.assertEqual(head['Definition'], 'Prose the form never touches.')
+		self.assertEqual(head['Data properties']['sources'], ['CITE{X}'])
+
+	def test_the_entries_are_untouched(self):
+		self.submit(data_type='Q')
+		self.assertEqual(self.head()['Numbers'][0]['number'], '3.14159')
+
+	def test_completeness_and_its_condition_are_stored_together(self):
+		self.submit(complete='yes', complete_condition='assuming GRH')
+		self.assertEqual(self.head()['Data properties']['complete'],
+		                 'yes, assuming GRH')
+
+	def test_a_saved_condition_is_read_back_into_two_fields(self):
+		self.submit(complete='yes', complete_condition='assuming GRH')
+		response = self.client.get('%s?form=1' % (self.url(),))
+		self.assertContains(response, 'value="assuming GRH"')
+
+	def test_saving_without_changes_writes_nothing(self):
+		from .models import TableRevision
+
+		before = TableRevision.objects.filter(table=self.table).count()
+		self.submit()
+		self.assertEqual(
+			TableRevision.objects.filter(table=self.table).count(), before)
+
+	def test_a_stale_base_is_refused_here_too(self):
+		from .editing import commit_table
+		from .models import TableRevision
+
+		stale = self.table.head_revision.digest
+		commit_table(self.table,
+		             {'Title': 'Form probe',
+		              'Definition': 'Prose the form never touches.',
+		              'Data properties': {'type': 'R', 'sources': ['CITE{X}']},
+		              'Parameters': {'n': {'type': 'Z'}},
+		              'Numbers': [{'params': {'n': '1'}, 'number': '9.99'}]},
+		             author=self.user, base=self.table.head_revision)
+		self.table.refresh_from_db()
+		response = self.client.post(self.url(), {
+			'action': 'save-metadata', 'base': stale, 'title': 'Form probe',
+			'data_type': 'Q', 'parameter.n.type': 'Z'})
+		self.assertEqual(response.status_code, 302)
+		#The other edit survives: a form save is a merge, not an overwrite.
+		self.assertEqual(self.head()['Numbers'][0]['number'], '9.99')
+
+	def test_a_signed_out_reader_cannot_save_through_it(self):
+		self.client.logout()
+		response = self.submit(data_type='Q')
+		self.assertIn(response.status_code, (302, 403))
+		self.assertEqual(self.head()['Data properties']['type'], 'R')

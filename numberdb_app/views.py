@@ -1883,6 +1883,17 @@ def edit_table(request, tid):
 	table = get_object_or_404(Table, tid=tid)
 	base = table.head_revision
 
+	#Two ways in and one way through. The form produces the same YAML the
+	#source editor would have produced, and then takes the identical path:
+	#the same stale-write check, size limits, schema validation, review rules
+	#and messages. A second save path would drift from this one, and the drift
+	#would be invisible until the two disagreed about somebody's edit.
+	if request.method == 'POST' and request.POST.get('action') == 'save-metadata':
+		return _save_metadata_form(request, table, base)
+
+	if request.method == 'GET' and request.GET.get('form'):
+		return _metadata_form_page(request, table, base)
+
 	if request.method == 'POST':
 		table_yaml = _submitted_yaml(request)
 		base_digest = request.POST.get('base', '')
@@ -1919,96 +1930,8 @@ def edit_table(request, tid):
 					messages.info(request, 'No changes yet.')
 			return render(request, 'edit.html', context)
 
-		#Stripped, not restored. The identifier belongs to the table rather
-		#than to the text, and every other write path -- create, both
-		#importers, the API -- stores the document without it. The editor put
-		#it back, so the first save of any table recorded a change nobody made:
-		#one line added, a revision written, and the table's history claiming an
-		#edit that was somebody pressing Save.
-		#
-		#Whatever an author typed for ID is still ignored, which was the point.
-		from .editing import without_managed_keys
-		tree = without_managed_keys(tree)
-
-		try:
-			outcome = commit_table(
-				table, tree,
-				author=request.user,
-				message=request.POST.get('message', '').strip(),
-				base=base,
-			)
-		except ParametersChanged as changed:
-			messages.error(request, (
-				'This edit changes the table\'s parameters, from %s to %s. '
-				'Nothing has been saved. Every entry is identified by its '
-				'parameter values, so changing them silently reassigns every '
-				'identity in the table: existing links and references would '
-				'still work and would point at different numbers. If the table '
-				'really needs different parameters, that is a separate '
-				'operation, not an edit.'
-				% (', '.join(changed.before), ', '.join(changed.after) or 'none')))
-			return render(request, 'edit.html', _edit_context(
-				request, table, table_yaml, base))
-		except StaleEdit as stale:
-			messages.error(request, (
-				'Somebody else changed this table while you were editing, and '
-				'your changes overlap theirs in %d place(s). Nothing has been '
-				'saved.' % (len(stale.conflicts),)))
-			context = _edit_context(request, table, table_yaml, stale.head)
-			context['conflicts'] = stale.conflicts
-			return render(request, 'edit.html', context)
-		except InvalidDocument as bad:
-			messages.error(request, (
-				'Nothing has been saved. The document is valid YAML but one of '
-				'its values cannot be read as a number: %s. Check the entry it '
-				'names, and remember that a value is text -- 3.14, not a '
-				'quoted sentence.' % (bad,)))
-			return render(request, 'edit.html', _edit_context(
-				request, table, table_yaml, base))
-		except TooBig as big:
-			messages.error(request, (
-				'Nothing has been saved. %s. These are the limits past which '
-				'the editor and the diff stop working, so no reason makes it '
-				'workable; a table this large wants to be several tables, or '
-				'a program.'
-				% ('; '.join(b.message for b in big.breaches).capitalize(),)))
-			return render(request, 'edit.html', _edit_context(
-				request, table, table_yaml, base))
-
-		if outcome.unchanged:
-			messages.info(request, 'No changes to save.')
-		elif outcome.merged:
-			messages.success(request, (
-				'Saved, and merged with a change somebody else made while you '
-				'were editing. The table now contains both.'))
-		else:
-			messages.success(request, 'Saved.')
-
-		#Saved either way: the author may well have a good reason, and the
-		#review queue is a better place to weigh one than a form that refuses.
-		for problem in outcome.problems:
-			messages.warning(request, 'Saved, but %s' % (problem,))
-
-		for breach in outcome.breaches:
-			messages.warning(request, (
-				'Saved, but %s. If that is deliberate, please say why in a '
-				'"%s" line under Data properties; a reviewer will otherwise '
-				'have to guess.' % (breach.message, EXCEPTION_KEY)))
-
-		#An edit by somebody with a confirmed track record publishes as
-		#reviewed. Requiring a board member to review their own work would be a
-		#queue of one person's edits waiting for that same person, and
-		#requiring it of a trusted account turns review into a formality that
-		#teaches reviewers to click through. Everybody else waits.
-		from .permissions import edits_are_reviewed
-		if outcome.revision and edits_are_reviewed(request.user):
-			table.reviewed_at_revision = outcome.revision
-			table.save(update_fields=['reviewed_at_revision'])
-			from .review import sync_review_flags
-			sync_review_flags(table)
-
-		return HttpResponseRedirect(reverse('db:table_by_url',
-		                                    kwargs={'url': table.url}))
+		return _save_edited_tree(request, table, base, tree,
+		                         source=table_yaml)
 
 	#full_yaml, not raw_yaml. The raw file is what a contributor wrote for the
 	#data repository, and for 30 tables that means `Numbers: INPUT{numbers.yaml}`
@@ -2524,3 +2447,147 @@ def _diff_blocks(diff_text):
 			kind = 'context'
 		current['lines'].append({'kind': kind, 'text': line[1:] if line else ''})
 	return blocks
+
+
+def _save_edited_tree(request, table, base, tree, source=None, back_to=None):
+	"""Commit an edited document and report what happened.
+
+	One function for both ways in, because the rules an edit has to satisfy --
+	the stale-write check, the size limits, the schema, who gets review -- are
+	properties of editing rather than of a particular form. Two copies would
+	drift, and the drift would only show when they disagreed about somebody's
+	edit.
+
+	``source`` is the YAML the author typed, kept so a refusal can put them
+	back in front of it. The form has none, and is sent back to itself.
+	"""
+	from .limits import EXCEPTION_KEY, TooBig
+	from .editing import (InvalidDocument, ParametersChanged, StaleEdit,
+	                      commit_table, without_managed_keys)
+	from .permissions import edits_are_reviewed
+
+	def refuse():
+		if back_to:
+			return HttpResponseRedirect(back_to)
+		return render(request, 'edit.html',
+		              _edit_context(request, table, source or '', base))
+
+	tree = without_managed_keys(tree)
+
+	try:
+		outcome = commit_table(
+			table, tree,
+			author=request.user,
+			message=request.POST.get('message', '').strip(),
+			base=base,
+		)
+	except ParametersChanged as changed:
+		messages.error(request, (
+			'This edit changes the table\'s parameters, from %s to %s. '
+			'Nothing has been saved. Every entry is identified by its '
+			'parameter values, so changing them silently reassigns every '
+			'identity in the table: existing links and references would '
+			'still work and would point at different numbers. If the table '
+			'really needs different parameters, that is a separate '
+			'operation, not an edit.'
+			% (', '.join(changed.before), ', '.join(changed.after) or 'none')))
+		return refuse()
+	except InvalidDocument as bad:
+		messages.error(request, (
+			'Nothing has been saved. The document is valid YAML but part of it '
+			'cannot be made into a table: %s. A value has to be a number the '
+			'database can read -- 3.14, not a sentence -- and an entry has to '
+			'name the parameters the table declares.' % (bad,)))
+		return refuse()
+	except StaleEdit as stale:
+		messages.error(request, (
+			'Somebody else changed this table while you were editing, and '
+			'your changes overlap theirs in %d place(s). Nothing has been '
+			'saved.' % (len(stale.conflicts),)))
+		if back_to:
+			return HttpResponseRedirect(back_to)
+		context = _edit_context(request, table, source or '', stale.head)
+		context['conflicts'] = stale.conflicts
+		return render(request, 'edit.html', context)
+	except TooBig as big:
+		messages.error(request, (
+			'Nothing has been saved. %s. These are the limits past which '
+			'the editor and the diff stop working, so no reason makes it '
+			'workable; a table this large wants to be several tables, or '
+			'a program.'
+			% ('; '.join(b.message for b in big.breaches).capitalize(),)))
+		return refuse()
+
+	if outcome.unchanged:
+		messages.info(request, 'No changes to save.')
+	elif outcome.merged:
+		messages.success(request, (
+			'Saved, and merged with a change somebody else made while you '
+			'were editing. The table now contains both.'))
+	else:
+		messages.success(request, 'Saved.')
+
+	for problem in outcome.problems:
+		messages.warning(request, 'Saved, but %s' % (problem,))
+
+	for breach in outcome.breaches:
+		messages.warning(request, (
+			'Saved, but %s. If that is deliberate, please say why in a '
+			'"%s" line under Data properties; a reviewer will otherwise '
+			'have to guess.' % (breach.message, EXCEPTION_KEY)))
+
+	if outcome.revision and edits_are_reviewed(request.user):
+		table.reviewed_at_revision = outcome.revision
+		table.save(update_fields=['reviewed_at_revision'])
+		from .review import sync_review_flags
+		sync_review_flags(table)
+
+	if back_to:
+		return HttpResponseRedirect(back_to)
+	return HttpResponseRedirect(reverse('db:table_by_url',
+	                                    kwargs={'url': table.url}))
+
+
+
+def _metadata_form_page(request, table, base):
+	"""The form view of a table's metadata."""
+	from .editing import may_see, tree_of
+	from .metadata_form import fields_from
+	from .permissions import may_edit
+
+	if not may_see(table, request.user):
+		raise Http404
+	tree = tree_of(base) if base is not None else {}
+	context = {
+		'table_being_edited': table,
+		'base_digest': base.digest if base is not None else '',
+		'may_edit': may_edit(request.user),
+		'is_draft': not table.published,
+	}
+	context.update(fields_from(tree))
+	return render(request, 'edit-metadata.html', context)
+
+
+def _save_metadata_form(request, table, base):
+	"""Apply the form to the stored document and save it the ordinary way.
+
+	The form never sees the whole document, only its own fields, so the
+	document it edits is the stored one rather than anything a browser sent
+	back. That is what keeps a form incapable of deleting what it does not
+	display, and it is why the base revision matters here as much as it does in
+	the source editor: the patch is applied to the version the author was
+	looking at.
+	"""
+	from .editing import commit_table, tree_of
+	from .metadata_form import apply_to
+
+	base_digest = request.POST.get('base', '')
+	if base_digest:
+		base = TableRevision.objects.filter(
+			table=table, digest=base_digest).first() or base
+
+	tree = apply_to(tree_of(base) if base is not None else {}, request.POST)
+	return _save_edited_tree(request, table, base, tree,
+	                         back_to='%s?form=1' % (
+		                         reverse('db:edit-table',
+		                                 kwargs={'tid': table.tid}),))
