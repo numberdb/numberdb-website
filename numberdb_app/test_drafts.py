@@ -169,3 +169,63 @@ class ADraftDoesNotAnswerASearch(DraftBase):
 		publish_table(self.draft)
 		_tags, tables = search_metadata('Hidden constant')
 		self.assertIn(self.draft.tid, {t.tid for t in tables})
+
+
+class ParametersAreSettledWhileDrafting(DraftBase):
+	"""The freeze protects citations, and a draft has none.
+
+	Choosing the parameters is most of what setting a table up consists of, so
+	refusing to change them before anybody can see the table would make drafts
+	nearly useless -- and the protection would be protecting nothing.
+	"""
+
+	def setUp(self):
+		super().setUp()
+		self.draft = create_table(
+			{'Title': 'Settling down',
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}]},
+			author=self.author, published=False)
+
+	def edit(self, tree):
+		return commit_table(self.draft, tree, author=self.author,
+		                    base=self.draft.head_revision)
+
+	def test_a_parameter_may_be_renamed(self):
+		self.edit({'Title': 'Settling down',
+		           'Parameters': {'m': {'type': 'Z'}},
+		           'Numbers': [{'params': {'m': '1'}, 'number': '3.14'}]})
+		self.draft.refresh_from_db()
+		self.assertEqual(list(tree_of(self.draft.head_revision)['Parameters']),
+		                 ['m'])
+
+	def test_a_parameter_may_be_added(self):
+		self.edit({'Title': 'Settling down',
+		           'Parameters': {'n': {'type': 'Z'}, 'k': {'type': 'Z'}},
+		           'Numbers': [{'params': {'n': '1', 'k': '2'},
+		                        'number': '3.14'}]})
+		self.draft.refresh_from_db()
+		self.assertEqual(list(tree_of(self.draft.head_revision)['Parameters']),
+		                 ['n', 'k'])
+
+	def test_once_published_the_names_are_fixed(self):
+		from .editing import ParametersChanged
+
+		publish_table(self.draft)
+		self.draft.refresh_from_db()
+		with self.assertRaises(ParametersChanged):
+			self.edit({'Title': 'Settling down',
+			           'Parameters': {'m': {'type': 'Z'}},
+			           'Numbers': [{'params': {'m': '1'}, 'number': '3.14'}]})
+
+	def test_but_constraints_and_type_stay_editable(self):
+		"""Neither enters an identity, so neither can move a citation."""
+		publish_table(self.draft)
+		self.draft.refresh_from_db()
+		self.edit({'Title': 'Settling down',
+		           'Parameters': {'n': {'type': 'R', 'constraints': '$n > 0$'}},
+		           'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}]})
+		self.draft.refresh_from_db()
+		spec = tree_of(self.draft.head_revision)['Parameters']['n']
+		self.assertEqual(spec['type'], 'R')
+		self.assertEqual(spec['constraints'], '$n > 0$')
