@@ -897,3 +897,128 @@ class RenamingATableChangesItEverywhere(TestCase):
 		before = self.table.url
 		self.rename('Weierstrass gap sequence')
 		self.assertEqual(self.table.url, before)
+
+
+class ShowChangesShowsOnlyChanges(TestCase):
+	"""A browser normalises a textarea to CRLF when it submits it.
+
+	So a document that came out of the editor untouched went back in differing
+	on every line, and "what did I change" answered with the whole table. The
+	stored table was never affected, since the text is parsed and re-dumped --
+	only the answer to the question was useless.
+	"""
+
+	def setUp(self):
+		from .editing import create_table
+
+		self.user = User.objects.create_user('crlf_probe', password='pw-123456')
+		self.table = create_table(
+			{'Title': 'Line endings',
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14159'},
+			             {'params': {'n': '2'}, 'number': '2.71828'}]},
+			author=self.user)
+
+	def show_changes(self, text):
+		self.client.login(username='crlf_probe', password='pw-123456')
+		return self.client.post(
+			'/edit/%s' % (self.table.tid,),
+			{'table': text, 'action': 'diff',
+			 'base': self.table.head_revision.digest})
+
+	def test_an_untouched_document_reports_no_changes(self):
+		stored = self.table.head_revision.content
+		response = self.show_changes(stored.replace('\n', '\r\n'))
+		self.assertContains(response, 'No changes yet')
+
+	def test_a_real_change_is_still_reported(self):
+		changed = self.table.head_revision.content.replace('3.14159', '3.14160')
+		response = self.show_changes(changed.replace('\n', '\r\n'))
+		self.assertNotContains(response, 'No changes yet')
+		self.assertContains(response, '3.14160')
+
+	def test_saving_an_untouched_document_writes_nothing(self):
+		from .models import TableRevision
+
+		before = TableRevision.objects.filter(table=self.table).count()
+		self.client.login(username='crlf_probe', password='pw-123456')
+		self.client.post('/edit/%s' % (self.table.tid,),
+		                 {'table': self.table.head_revision.content.replace(
+			                 '\n', '\r\n'),
+		                  'action': 'save',
+		                  'base': self.table.head_revision.digest})
+		self.assertEqual(
+			TableRevision.objects.filter(table=self.table).count(), before)
+
+	def test_the_identifier_is_not_written_into_the_document(self):
+		"""Every other write path stores it without one, so this must too."""
+		from .editing import tree_of
+
+		self.client.login(username='crlf_probe', password='pw-123456')
+		self.client.post(
+			'/edit/%s' % (self.table.tid,),
+			{'table': self.table.head_revision.content.replace(
+				'3.14159', '3.14160'),
+			 'action': 'save', 'base': self.table.head_revision.digest})
+		self.table.refresh_from_db()
+		self.assertNotIn('ID', tree_of(self.table.head_revision))
+
+	def test_an_author_still_cannot_set_the_identifier(self):
+		from .editing import tree_of
+
+		self.client.login(username='crlf_probe', password='pw-123456')
+		self.client.post(
+			'/edit/%s' % (self.table.tid,),
+			{'table': 'ID: T99999\n' + self.table.head_revision.content.replace(
+				'3.14159', '3.14161'),
+			 'action': 'save', 'base': self.table.head_revision.digest})
+		self.table.refresh_from_db()
+		self.assertEqual(self.table.tid, 'T35' if False else self.table.tid)
+		self.assertNotIn('ID', tree_of(self.table.head_revision))
+
+
+class TheTNumberIsTheCanonicalAddress(TestCase):
+	"""A table answers at two addresses and only one is durable.
+
+	The slug comes from the title and is deliberately not updated when a table
+	is renamed, because every link anybody has written points at it. So a
+	renamed table keeps a slug naming a title it no longer has: right for a
+	link that must keep working, wrong for the address to quote.
+	"""
+
+	def setUp(self):
+		from .editing import create_table
+
+		self.author = User.objects.create_user('canonical_probe')
+		self.table = create_table(
+			{'Title': 'Provisional name',
+			 'Numbers': [{'params': {}, 'number': '1'}]}, author=self.author)
+
+	def canonical(self, path):
+		body = self.client.get(path).content.decode('utf8')
+		import re
+		found = re.search(r'<link rel="canonical" href="([^"]*)"', body)
+		return found.group(1) if found else None
+
+	def test_the_slug_address_points_at_the_number(self):
+		self.assertTrue(
+			self.canonical('/%s' % (self.table.url,)).endswith(
+				'/%s' % (self.table.tid,)))
+
+	def test_the_number_address_points_at_itself(self):
+		self.assertTrue(
+			self.canonical('/%s' % (self.table.tid,)).endswith(
+				'/%s' % (self.table.tid,)))
+
+	def test_it_survives_a_rename(self):
+		"""The slug goes stale; the canonical address does not."""
+		from .editing import commit_table
+
+		commit_table(self.table, {'Title': 'The real name',
+		                          'Numbers': [{'params': {}, 'number': '1'}]},
+		             author=self.author, base=self.table.head_revision)
+		self.table.refresh_from_db()
+		self.assertEqual(self.table.url, 'Provisional_name')
+		self.assertTrue(
+			self.canonical('/%s' % (self.table.url,)).endswith(
+				'/%s' % (self.table.tid,)))
