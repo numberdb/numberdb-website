@@ -14,6 +14,7 @@ set of values means citing the version of it that was there at the time.
 <style>
 table.file-list td, table.file-list th { padding: 0.3rem 0.8rem; }
 .file-note { color: #666; font-size: 0.9em; }
+tr.file-changed-here td { background: #e6ffed; }
 </style>
 {% endblock %}
 
@@ -32,11 +33,25 @@ table.file-list td, table.file-list th { padding: 0.3rem 0.8rem; }
   <a href="{% url 'db:revision-history' table.tid %}">History</a>
 </p>
 
-{% if not is_current and revision %}
+{% comment %}
+Which revision these files belong to, always -- not only when looking at an old
+one. The manifest is complete at every revision, so "generate.sage" is not one
+thing the table has; it is one thing per version, and a reader who is not told
+which will assume the code shown produced the numbers shown.
+{% endcomment %}
+{% if revision %}
   <p class="file-note">
-    As of the version from {{ revision.created|date:"Y-m-d H:i" }}, which is not
-    the current one.
-    <a href="{% url 'db:table-files' table.tid %}">Show the current files</a>.
+    {% if is_current %}
+      As of the current version,
+      {{ revision.created|date:"Y-m-d H:i" }}{% if revision.message %},
+      &ldquo;{{ revision.message }}&rdquo;{% endif %}.
+      <a href="{% url 'db:revision-history' table.tid %}">See the history</a>
+      to look at the files of an earlier one.
+    {% else %}
+      As of the version from {{ revision.created|date:"Y-m-d H:i" }}, which is
+      <b>not</b> the current one.
+      <a href="{% url 'db:table-files' table.tid %}">Show the current files</a>.
+    {% endif %}
   </p>
 {% endif %}
 
@@ -44,16 +59,29 @@ table.file-list td, table.file-list th { padding: 0.3rem 0.8rem; }
   <p>This table carries no files.</p>
 {% else %}
   <table class="file-list">
-    <tr><th>name</th><th>size</th><th></th></tr>
+    <tr><th>name</th><th>size</th><th>last changed</th><th></th></tr>
     {% for file in files %}
-      <tr>
+      <tr{% if file.changed_here %} class="file-changed-here"{% endif %}>
         <td>
           <a href="{% url 'db:table-file' table.tid file.name %}{% if not is_current %}?rev={{ revision.pk }}{% endif %}"
             >{{ file.name }}</a>
         </td>
         <td class="file-note">{{ file.blob.size }} bytes</td>
         <td class="file-note">
-          {% if not file.is_source %}not shown as text{% endif %}
+          {% if file.since %}
+            <a href="{% url 'db:revision-history' table.tid %}?to={{ file.since.pk }}"
+              >{{ file.since.created|date:"Y-m-d" }}</a>
+            {% if file.is_original %}
+              &mdash; as first recorded
+            {% elif file.changed_here %}
+              &mdash; in this version
+            {% endif %}
+          {% else %}
+            &mdash;
+          {% endif %}
+        </td>
+        <td class="file-note">
+          {% if not file.attachment.is_source %}not shown as text{% endif %}
         </td>
       </tr>
     {% endfor %}

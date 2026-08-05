@@ -14,8 +14,17 @@ deleting anything: the history stays honest about what happened.
 
 {% block extra_head %}
 <style>
-pre.revision-diff { background: #f7f7f7; border: 1px solid #ddd; padding: 0.6rem;
-                    overflow-x: auto; font-size: 0.9em; white-space: pre; }
+.revision-hunk { border: 1px solid #ddd; border-radius: 3px; margin: 0.8rem 0;
+                 overflow-x: auto; font-size: 0.9em; background: #fff; }
+.revision-hunk-header { background: #eef2f7; color: #3b5a80; padding: 0.3rem 0.6rem;
+                 font-family: monospace; border-bottom: 1px solid #ddd; }
+.revision-hunk pre { margin: 0; padding: 0.3rem 0; white-space: pre; }
+.revision-hunk .line { padding: 0 0.6rem; display: block; }
+/* Colour and the leading sign both, so the diff still reads when printed,
+   copied as text, or seen by somebody who cannot distinguish the two. */
+.revision-hunk .added   { background: #e6ffed; color: #14532d; }
+.revision-hunk .removed { background: #ffeef0; color: #7f1d1d; }
+.revision-hunk .context { color: #444; }
 table.revision-list td, table.revision-list th { padding: 0.3rem 0.6rem;
                     vertical-align: top; }
 table.revision-list tr.is-head { background: #f2f8ff; }
@@ -96,8 +105,19 @@ table.revision-list tr.is-head { background: #f2f8ff; }
       {% endif %}
     </h2>
 
-    {% if diff %}
-      <pre class="revision-diff">{{ diff }}</pre>
+    {% if diff_blocks %}
+      {% comment %}
+      One box per hunk. A table's diff is usually a few changes scattered
+      through a thousand entries, and one long block makes a reader find the
+      boundaries for themselves.
+      {% endcomment %}
+      {% for block in diff_blocks %}
+        <div class="revision-hunk">
+          <div class="revision-hunk-header">{{ block.header }}</div>
+          <pre>{% for line in block.lines %}<span class="line {{ line.kind }}">{% if line.kind == 'added' %}+{% elif line.kind == 'removed' %}-{% else %} {% endif %}{{ line.text }}</span>
+{% endfor %}</pre>
+        </div>
+      {% endfor %}
     {% else %}
       <p>Nothing differs between these two versions.</p>
     {% endif %}

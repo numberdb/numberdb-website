@@ -2305,6 +2305,7 @@ def revision_history(request, tid):
 			after_label=_revision_label(to_revision))
 
 	return render(request, 'revision-history.html', {
+		'diff_blocks': _diff_blocks(diff),
 		'table': table,
 		'revisions': revisions,
 		'head': table.head_revision,
@@ -2359,7 +2360,7 @@ def table_files(request, tid):
 
 	files = []
 	if revision is not None:
-		files = list(revision.attachments.select_related('blob').all())
+		files = _files_with_history(table, revision)
 
 	return render(request, 'table-files.html', {
 		'table': table,
@@ -2368,6 +2369,53 @@ def table_files(request, tid):
 		              and revision.pk == table.head_revision_id,
 		'files': files,
 	})
+
+
+def _files_with_history(table, revision):
+	"""This revision's files, each with the revision that last changed it.
+
+	A file belongs to a revision, not to a table: the manifest is complete at
+	every revision, so "generate.sage as of March" is a different thing from
+	"generate.sage now". Showing the list without saying which revision it
+	belongs to, or when each file last moved, leaves a reader assuming these
+	are simply the table's files -- and quietly wrong about which code produced
+	which numbers.
+	"""
+	from .models import Attachment
+
+	shown = list(revision.attachments.select_related('blob').all())
+	if not shown:
+		return []
+
+	#Every version of these names up to and including this revision, oldest
+	#first, so the last change to each can be found by walking forward.
+	history = (Attachment.objects
+	           .filter(revision__table=table,
+	                   revision__created__lte=revision.created,
+	                   name__in=[a.name for a in shown])
+	           .select_related('revision', 'blob')
+	           .order_by('revision__created'))
+
+	introduced = {}
+	previous = {}
+	for row in history:
+		if previous.get(row.name) != row.blob.digest:
+			introduced[row.name] = row.revision
+			previous[row.name] = row.blob.digest
+
+	out = []
+	for attachment in shown:
+		since = introduced.get(attachment.name)
+		out.append({
+			'attachment': attachment,
+			'name': attachment.name,
+			'blob': attachment.blob,
+			'since': since,
+			#A file first seen with the table is not "changed", it is original.
+			'is_original': since is not None and since.parent_id is None,
+			'changed_here': since is not None and since.pk == revision.pk,
+		})
+	return out
 
 
 def table_file(request, tid, name):
@@ -2408,3 +2456,37 @@ def table_file(request, tid, name):
 		'attachment': attachment,
 		'text': text,
 	})
+
+
+def _diff_blocks(diff_text):
+	"""A unified diff as hunks of tagged lines, for rendering rather than reading.
+
+	One block per hunk, because a diff of a table is usually a handful of
+	changes scattered through a thousand entries, and running them together in
+	one grey wall makes the reader find the boundaries themselves.
+
+	Each line carries what it is -- added, removed or context -- so the page
+	can colour it instead of asking somebody to scan for leading + and -.
+	"""
+	blocks = []
+	current = None
+	for line in (diff_text or '').split('\n'):
+		if line.startswith('@@'):
+			current = {'header': line, 'lines': []}
+			blocks.append(current)
+			continue
+		if current is None:
+			#Anything before the first hunk header: file headers, which say
+			#nothing a reader does not already know from the page.
+			continue
+		if line.startswith('+'):
+			kind = 'added'
+		elif line.startswith('-'):
+			kind = 'removed'
+		elif line.startswith('\\'):
+			#"\ No newline at end of file" is about the file, not the table.
+			continue
+		else:
+			kind = 'context'
+		current['lines'].append({'kind': kind, 'text': line[1:] if line else ''})
+	return blocks
