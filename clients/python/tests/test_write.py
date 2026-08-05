@@ -482,3 +482,29 @@ class TestSageValues:
         sage = self.sage()
         with pytest.raises(Exception):
             numberdb.to_text(sage.Words('ab'))
+
+
+class TestComplexSpelling:
+    """`i` before the digits, so a truncated value still says which part it is."""
+
+    def value(self):
+        from fractions import Fraction
+        return numberdb.ComplexInterval(
+            numberdb.RealInterval(Fraction(1, 2), Fraction(1, 2)),
+            numberdb.RealInterval(Fraction(-3, 4), Fraction(-3, 4)))
+
+    def test_the_marker_comes_before_the_imaginary_digits(self):
+        text = numberdb.to_text(self.value())
+        assert ' + i * ' in text
+        #Whatever follows the marker is the imaginary part, so an abbreviated
+        #value still identifies itself.
+        assert text.index(' + i * ') < text.index('-3/4')
+
+    def test_sage_s_own_spelling_is_not_produced(self):
+        assert '*I' not in numberdb.to_text(self.value())
+
+    def test_a_negative_imaginary_part_keeps_its_sign_in_place(self):
+        """`a + i * -b`, never `a - i * b`: the separator is always plus."""
+        text = numberdb.to_text(self.value())
+        assert ' - i ' not in text
+        assert '-3/4' in text

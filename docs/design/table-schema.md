@@ -352,6 +352,28 @@ warning shown to nobody is not a limit, and a script has no judgement to
 exercise. This is the main thing standing between programmatic editing and a
 corpus full of unconsidered rows.
 
+## How a complex value is written
+
+`a + i * b`, with the `i` before the digits. All 1847 complex values in the
+corpus are written this way; Sage's own `b*I` appears in none of them.
+
+The order is the substantive part. An imaginary part can run to a hundred
+digits or more, so anywhere a value is shown abbreviated -- a search result, a
+table cell, a wrapped line -- a reader sees its beginning and not its end. With
+`i` in front, the beginning says which part this is. Written `b*I`, the marker
+is the one character guaranteed to be cut off, and a long real part and a long
+imaginary part become indistinguishable.
+
+A negative imaginary part keeps its sign in `b`: `2 + i * -1`, never
+`2 - i * 1`. The separator is therefore always `+`, and nothing has to be read
+twice to establish what is being subtracted. There is no `- i * ` anywhere in
+the corpus.
+
+Worth stating because the derived column in the database holds Sage's spelling,
+so anybody checking the convention against `NumberComplex.exact_text` rather
+than against the documents will conclude the opposite -- as happened while this
+was being written.
+
 ## A parameter whose values are names
 
 25 tables have entry identities that are not numbers, and the split matters:

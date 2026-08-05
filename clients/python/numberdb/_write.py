@@ -166,13 +166,22 @@ _NUMERIC_PARENTS = ('Integer Ring', 'Rational Field', 'Real Field',
 
 
 def _complex_text(real, imag):
-    """A complex value as the corpus spells it: `a + i * b`.
+    """A complex value as NumberDB writes it: `a + i * b`.
 
-    1847 values are written this way and not one uses `a + b*I`, which is
-    Sage's repr and what the derived column in the database holds. A generator
-    emitting the other form would differ from every neighbour it sits beside --
-    and, worse, would differ from the stored value on every verification run
-    while naming the same number.
+    The `i` goes **before** the digits, and that is the substantive part of the
+    convention rather than a matter of taste. An imaginary part can run to a
+    hundred digits or more, so anywhere it is shown abbreviated -- a search
+    result, a table cell, a truncated line -- a reader sees the beginning and
+    not the end. With `i` in front, the beginning says which part this is.
+    Written Sage's way, as `b*I`, the marker is the one character certain to be
+    cut off, and a long real part and a long imaginary part look identical.
+
+    Spaces around the `*` because that is how all 1847 complex values in the
+    corpus are written; `i*b` appears in none of them.
+
+    A negative imaginary part keeps its sign in `b` -- `2 + i * -1`, never
+    `2 - i * 1` -- so the separator is always `+` and nothing has to be read
+    twice to work out what is being subtracted.
     """
     return '%s + i * %s' % (real, imag)
 
