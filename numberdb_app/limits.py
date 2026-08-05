@@ -247,7 +247,39 @@ def claims_completeness(tree):
 	value = props.get('complete')
 	#The corpus writes `no`/`yes` as words, read with BaseLoader, so this is a
 	#string comparison rather than a truth test.
-	return str(value).strip().lower() in ('yes', 'true', 'complete')
+	#
+	#And it reads only the leading word, because two tables qualify the answer
+	#in the same field: `yes, assuming GRH` and `unknown (presumably not)`. The
+	#qualifier is real mathematics and belongs somewhere, but welded to the
+	#value it made a table that asserts completeness look like one that says
+	#nothing -- so a conditionally complete table would be refused the
+	#exemption and asked to justify its size.
+	return _leading_word(value) in ('yes', 'true', 'complete')
+
+
+def completeness_qualifier(tree):
+	"""Whatever a table adds after its yes or no, if anything.
+
+	`assuming GRH` is a condition on the claim, not decoration, and a reader is
+	entitled to it. Separated here so a form can offer the answer and the
+	condition as two fields and stop them being welded together again.
+	"""
+	props = tree.get('Data properties') if isinstance(tree, dict) else None
+	if not isinstance(props, dict):
+		return ''
+	text = str(props.get('complete', '')).strip()
+	word = _leading_word(text)
+	rest = text[len(word):].lstrip() if word else text
+	return rest.lstrip(',;:').strip()
+
+
+def _leading_word(value):
+	"""The first bare word of a value, lowercased."""
+	text = str(value or '').strip().lower()
+	for separator in (',', ';', '(', ' '):
+		if separator in text:
+			text = text.split(separator, 1)[0]
+	return text.strip()
 
 
 def check(tree):
