@@ -325,6 +325,12 @@ def table(request):
 	else:
 		return JsonResponse({'error':'No id or url given.'},safe=True)
 		
+	#A draft answers nothing here either; the API is as public as the site.
+	if not table.published:
+		return JsonResponse(
+			{'error': "Table with id '%s' does not exist." % (table.tid,)},
+			safe=True)
+
 	result = table.data.json
 
 	return JsonResponse(result,safe=True)
@@ -643,8 +649,8 @@ def _produced_by(request, user):
 @rate_limited
 def write_table(request, tid):
 	"""Replace a table's document. POST or PUT, key required."""
-	from .editing import (ParametersChanged, StaleEdit, commit_table,
-	                      without_managed_keys)
+	from .editing import (InvalidDocument, ParametersChanged, StaleEdit,
+	                      commit_table, without_managed_keys)
 	from .limits import TooBig
 	from .permissions import edits_are_reviewed
 
@@ -697,6 +703,10 @@ def write_table(request, tid):
 			            'different numbers.'),
 			 'before': list(changed.before), 'after': list(changed.after)},
 			status=409)
+	except InvalidDocument as bad:
+		return JsonResponse(
+			{'error': 'A value in this document cannot be read as a number.',
+			 'detail': str(bad)}, status=400)
 	except StaleEdit as stale:
 		return JsonResponse(
 			{'error': 'Somebody changed this table while you were writing.',
@@ -781,7 +791,7 @@ def write_entries(request, tid):
 	script cannot express "change the definition", which is a stronger
 	guarantee than asking it not to.
 	"""
-	from .editing import commit_table, tree_of
+	from .editing import InvalidDocument, commit_table, tree_of
 	from .limits import TooBig
 	from .permissions import edits_are_reviewed
 
@@ -831,6 +841,10 @@ def write_entries(request, tid):
 			produced_by=_produced_by(request, user),
 			message=(request.headers.get('X-Edit-Message')
 			         or 'regenerated the entries')[:300])
+	except InvalidDocument as bad:
+		return JsonResponse(
+			{'error': 'A value in these entries cannot be read as a number.',
+			 'detail': str(bad)}, status=400)
 	except TooBig as big:
 		return JsonResponse(
 			{'error': 'The entries are over a size limit.',

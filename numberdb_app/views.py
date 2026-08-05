@@ -151,7 +151,8 @@ def help(request):
 def tables(request):
 	page = request.GET.get('page', 1)
 	#print("page:",page)
-	tables = Table.objects.all()
+	#Drafts belong to their authors until published; the listing is public.
+	tables = Table.objects.filter(published=True)
 	sortby_default = 'title'
 	sortby = request.GET.get('sort_by',default=sortby_default)
 	if sortby == 'entry_count':
@@ -370,6 +371,7 @@ def table_by_tid(request, tid):
         table = Table.objects.get(tid=tid)
     except Table.DoesNotExist:
         raise Http404
+    _refuse_a_draft(request, table)
     return render_table(request, table, {'requested_tid': tid})
     
 def table_by_url(request, url):
@@ -377,7 +379,21 @@ def table_by_url(request, url):
         table = Table.objects.get(url=url)
     except Table.DoesNotExist:
         raise Http404
+    _refuse_a_draft(request, table)
     return render_table(request, table, {'requested_url': url})
+
+
+def _refuse_a_draft(request, table):
+    """A draft is not found, rather than forbidden, to anybody else.
+
+    Answering "you may not see this" would confirm that a table with that name
+    or that number exists, which is the one thing a private draft should not
+    tell a stranger.
+    """
+    from .editing import may_see
+
+    if not may_see(table, getattr(request, 'user', None)):
+        raise Http404
 
 def table_context(table, preview=False):
 
@@ -1859,7 +1875,8 @@ def edit_table(request, tid):
 	and held out of search by number until somebody confirms them.
 	"""
 	from .limits import EXCEPTION_KEY, TooBig
-	from .editing import (ParametersChanged, StaleEdit, commit_table,
+	from .editing import (InvalidDocument, ParametersChanged, StaleEdit,
+	                      commit_table,
 	                      tree_of)
 	from .permissions import is_board_member
 
@@ -1932,6 +1949,14 @@ def edit_table(request, tid):
 			context = _edit_context(request, table, table_yaml, stale.head)
 			context['conflicts'] = stale.conflicts
 			return render(request, 'edit.html', context)
+		except InvalidDocument as bad:
+			messages.error(request, (
+				'Nothing has been saved. The document is valid YAML but one of '
+				'its values cannot be read as a number: %s. Check the entry it '
+				'names, and remember that a value is text -- 3.14, not a '
+				'quoted sentence.' % (bad,)))
+			return render(request, 'edit.html', _edit_context(
+				request, table, table_yaml, base))
 		except TooBig as big:
 			messages.error(request, (
 				'Nothing has been saved. %s. These are the limits past which '

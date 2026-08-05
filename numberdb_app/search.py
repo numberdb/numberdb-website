@@ -92,13 +92,17 @@ def max_relative_width():
 
 
 def _reviewed(queryset):
-	"""Only values whose current content has been reviewed.
+	"""Only values whose current content has been reviewed, on a public table.
+
+	A draft's values are excluded here rather than by never indexing them, so
+	that publishing is one flag and not a rebuild.
+	
 
 	Separate from :func:`_identifiable` because the other three kinds have no
 	relative width to judge: a p-adic ball, a complex box and a polynomial are
 	either right or wrong, not imprecise. The review gate applies to all four.
 	"""
-	return queryset.filter(reviewed = True)
+	return queryset.filter(reviewed = True, table__published = True)
 
 
 def _identifiable(queryset):
@@ -119,7 +123,7 @@ def _identifiable(queryset):
 	return queryset.filter(
 		Q(exact_relative_width__lte = max_relative_width())
 		| Q(exact_relative_width__isnull = True)
-	).filter(reviewed = True)
+	).filter(reviewed = True, table__published = True)
 
 
 def real_query_range(r_query):
@@ -527,6 +531,9 @@ def search_metadata(term, limit=METADATA_LIMIT):
 		            .filter(rank__gte=MIN_RANK).order_by('-rank')[:limit])
 
 	tags = best(Tag.objects)
+	#Drafts are their author's until published, so they do not answer a search
+	#by name any more than they answer one by number.
 	tables = [row.table for row in best(
-		TableSearch.objects.select_related('table'))]
+		TableSearch.objects.select_related('table').filter(
+			table__published=True))]
 	return tags, tables
