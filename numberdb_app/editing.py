@@ -399,6 +399,14 @@ def create_table(tree, author=None, message='', produced_by='', strict=False):
 	if not title:
 		raise ValueError('A new table needs a Title.')
 
+	if not has_entries(tree):
+		raise ValueError(
+			'A new table needs at least one entry. A table with no numbers in '
+			'it is a draft, and a draft published here is indistinguishable '
+			'from a table somebody abandoned: it holds a permanent T-number, '
+			'appears in the listings and answers nothing. Enter one value by '
+			'hand -- a program can add the rest afterwards.')
+
 	#Titles are unique in the schema, so this would otherwise surface as a
 	#database error page after the author had written the whole document.
 	existing = Table.objects.filter(title=title).first()
@@ -443,6 +451,26 @@ def create_table(tree, author=None, message='', produced_by='', strict=False):
 #: filled in by a macro pointing at a file whose first line reads "Automatically
 #: created file. Do NOT edit."
 MANAGED_KEYS = ('ID',)
+
+
+def has_entries(tree):
+	"""Whether a document actually holds a number.
+
+	A table is a place numbers live, so one with none is not a small table, it
+	is a different kind of thing -- a draft. Drafts are not published here: a
+	public draft holds a permanent T-number and looks exactly like a table
+	somebody gave up on, and if it is later abandoned that number is either
+	burnt or becomes a citation to nothing.
+
+	A draft, when there is one, will carry an identifier of its own that turns
+	into a T-number only when it is published.
+	"""
+	from .flatten import entries_block
+
+	block = entries_block(tree)
+	if block is None:
+		return False
+	return len(block) > 0
 
 
 def without_managed_keys(tree):
