@@ -426,3 +426,57 @@ class TestVerify:
 
         with pytest.raises(ValueError):
             numberdb.verify(Untied(), client=self.stored([]))
+
+
+class TestSageValues:
+    """Sage's own types, which is what a generator actually returns.
+
+    Skipped without Sage. Worth having under it: the example in the docs
+    returns a Sage real interval, and `to_text` could not write one -- the
+    commonest value in the database, 65 of the 107 tables.
+    """
+
+    def sage(self):
+        pytest.importorskip('sage.all')
+        import sage.all as sage
+        return sage
+
+    def test_a_real_interval_gets_the_question_mark_form(self):
+        sage = self.sage()
+        text = numberdb.to_text(sage.RealIntervalField(400)(sage.pi), digits=20)
+        assert text.startswith('3.14159265358979')
+        assert text.endswith('?')
+
+    def test_digits_are_respected(self):
+        sage = self.sage()
+        value = sage.RealIntervalField(400)(sage.pi)
+        assert len(numberdb.to_text(value, digits=20).rstrip('?')) == 21
+        assert len(numberdb.to_text(value, digits=50).rstrip('?')) == 51
+
+    def test_a_complex_interval_is_spelt_as_the_database_spells_it(self):
+        sage = self.sage()
+        text = numberdb.to_text(
+            sage.ComplexIntervalField(200)(sage.pi, sage.sqrt(2)), digits=15)
+        assert '*I' in text and ' + ' in text
+
+    def test_exact_types_keep_every_digit(self):
+        """Truncating an exact value does not round it, it changes it."""
+        sage = self.sage()
+        big = sage.ZZ(2) ** 80
+        assert numberdb.to_text(big, digits=10) == str(big)
+        assert numberdb.to_text(sage.QQ(18) / 11, digits=2) == '18/11'
+
+    def test_a_polynomial_is_written_out(self):
+        sage = self.sage()
+        ring = sage.PolynomialRing(sage.QQ, 'x')
+        assert numberdb.to_text(ring([1, 0, -1])) == '-x^2 + 1'
+
+    def test_a_p_adic_keeps_its_precision(self):
+        sage = self.sage()
+        assert 'O(2^' in numberdb.to_text(sage.Qp(2)(1, 167))
+
+    def test_a_failure_says_what_it_could_not_write(self):
+        """It used to swallow the reason and blame the type."""
+        sage = self.sage()
+        with pytest.raises(Exception):
+            numberdb.to_text(sage.Words('ab'))

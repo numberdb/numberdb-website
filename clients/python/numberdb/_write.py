@@ -51,14 +51,14 @@ def to_text(value: Any, digits: int = DIGITS) -> str:
     if isinstance(value, str):
         return value
 
-    #Sage objects, when the caller has Sage. Tested by behaviour rather than by
-    #importing Sage, so this module stays importable without it.
-    parent = getattr(value, 'parent', None)
-    if parent is not None:
-        try:
-            return _sage_text(value, digits)
-        except Exception:
-            pass
+    #Sage objects, when the caller has Sage. Recognised by behaviour rather
+    #than by importing Sage, so this module stays importable without it.
+    #
+    #Errors are NOT swallowed here. They were, and it hid the fact that this
+    #could not write a Sage real interval at all -- the commonest value in the
+    #database, 65 of 107 tables -- behind a generic "cannot write that".
+    if callable(getattr(value, 'parent', None)):
+        return _sage_text(value, digits)
 
     if isinstance(value, bool):
         #Before int, which bool is a subclass of, and never a number here.
@@ -123,24 +123,68 @@ def _interval_text(interval, digits):
 
 
 def _sage_text(value, digits):
-    """The string form of a Sage object."""
-    parent = value.parent()
-    name = str(parent)
+    """The string form of a Sage object.
+
+    Real and complex intervals become the `3.14159?` form the database stores,
+    where the `?` says the last digit is uncertain. Sage prints every digit it
+    holds, which is a property of the field the caller happened to build rather
+    than a statement about the number, so the value is truncated to ``digits``
+    the way the corpus has always been written.
+    """
+    name = str(value.parent())
 
     if 'Interval' in name or 'Ball' in name:
-        #`?` marks the last digit as uncertain, which is how the site records
-        #that this is a ball rather than an exact decimal.
-        text = value.str(digits=digits, style='question')
-        return text.replace('?', '?') if '?' in text else text + '?'
-    if 'Integer Ring' in name or 'Rational Field' in name:
+        if 'Complex' in name:
+            #`a + b*I`, which is how all 300 complex values in the database are
+            #spelt. Sage's own repr agrees, but is built here so the real and
+            #imaginary parts get truncated separately.
+            return '%s + %s*I' % (_truncate(str(value.real()), digits),
+                                  _truncate(str(value.imag()), digits))
+        return _truncate(str(value), digits)
+
+    #Integers, rationals, polynomials and p-adics print exactly as they are
+    #stored, and each is exact, so there is nothing to truncate: fewer digits
+    #of an exact value is a different value.
+    if any(mark in name for mark in _NUMERIC_PARENTS):
         return str(value)
-    if 'Polynomial' in name:
-        return str(value)
-    if 'p-adic' in name or name.startswith('Q_') or 'Qp' in name:
-        return str(value)
-    #A plain real or complex field: no interval, so the caller has chosen a
-    #precision and the digits are what they are.
-    return str(value)
+
+    #Anything else is refused rather than stringified. Sage will happily give
+    #a printable form for a group, a graph or a parent, and storing that would
+    #put a sentence where a number belongs -- with nothing afterwards looking
+    #wrong. A generator that returns the wrong object should hear about it.
+    raise TypeError(
+        'cannot write a value from %s as a number; return an integer, a '
+        'rational, a real or complex interval, a p-adic or a polynomial'
+        % (name,))
+
+
+#: Substrings of the printed name of a parent whose elements are numbers this
+#: database stores. Matched on the name because importing Sage to compare
+#: types would make this module cost seconds to import for everybody.
+_NUMERIC_PARENTS = ('Integer Ring', 'Rational Field', 'Real Field',
+                    'Complex Field', 'Polynomial Ring',
+                    #`2-adic Field ...`, so the prime is part of the name.
+                    '-adic',
+                    'Number Field', 'Algebraic')
+
+
+def _truncate(text, digits):
+    """Cut a Sage interval's printed form down to ``digits`` significant ones.
+
+    The same rule the data repository has used since the corpus was built, so
+    a value regenerated through this package is spelt as its neighbours are.
+    A form without a `?` is exact and left alone.
+    """
+    if '?' not in text:
+        return text
+    mantissa, exponent = text.split('?', 1)
+    if '.' not in mantissa:
+        return text
+    whole, fraction = mantissa.split('.', 1)
+    room = digits - len(whole.lstrip('-'))
+    if len(fraction) <= room:
+        return text
+    return '%s.%s?%s' % (whole, fraction[:max(room, 0)], exponent)
 
 
 class Entries:
