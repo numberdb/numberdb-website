@@ -37,10 +37,6 @@ table.revision-list tr.is-head { background: #f2f8ff; }
   <a href="{% url 'db:table_by_url' table.url %}">See the table</a>
   &middot;
   <a href="{% url 'db:edit-table' table.tid %}">Edit it</a>
-  {% if table.commits.exists %}
-    &middot;
-    <a href="{% url 'db:table-history' table.tid %}">How it arrived from the data repository</a>
-  {% endif %}
 </p>
 
 {% if not revisions %}
