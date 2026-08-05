@@ -301,3 +301,38 @@ class TheBlockLimitFollowsTheSerialisation(SimpleTestCase):
 		"""What the block limit is actually for."""
 		tree = {'Numbers': _entries(1100, digits=400)}
 		self.assertEqual([b.kind for b in limits.check(tree)], ['bytes'])
+
+
+class CompletenessMayBeQualified(SimpleTestCase):
+	"""Two tables answer with a condition attached, and the condition matters.
+
+	`yes, assuming GRH` is a statement about the mathematics. Read as a whole
+	string it matched nothing, so a table asserting conditional completeness
+	looked like one asserting nothing and would have been asked to justify its
+	size.
+	"""
+
+	def tree(self, value):
+		return {'Data properties': {'complete': value}, 'Numbers': {}}
+
+	def test_a_plain_yes_still_counts(self):
+		self.assertTrue(limits.claims_completeness(self.tree('yes')))
+
+	def test_a_qualified_yes_counts(self):
+		self.assertTrue(limits.claims_completeness(
+			self.tree('yes, assuming GRH')))
+
+	def test_a_qualified_unknown_does_not(self):
+		self.assertFalse(limits.claims_completeness(
+			self.tree('unknown (presumably not)')))
+
+	def test_no_still_does_not(self):
+		self.assertFalse(limits.claims_completeness(self.tree('no')))
+
+	def test_the_condition_is_kept_and_can_be_read(self):
+		self.assertEqual(
+			limits.completeness_qualifier(self.tree('yes, assuming GRH')),
+			'assuming GRH')
+
+	def test_an_unqualified_answer_has_no_condition(self):
+		self.assertEqual(limits.completeness_qualifier(self.tree('yes')), '')
