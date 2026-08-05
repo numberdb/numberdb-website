@@ -1978,6 +1978,9 @@ def edit_table(request, tid):
 
 		#Saved either way: the author may well have a good reason, and the
 		#review queue is a better place to weigh one than a form that refuses.
+		for problem in outcome.problems:
+			messages.warning(request, 'Saved, but %s' % (problem,))
+
 		for breach in outcome.breaches:
 			messages.warning(request, (
 				'Saved, but %s. If that is deliberate, please say why in a '
