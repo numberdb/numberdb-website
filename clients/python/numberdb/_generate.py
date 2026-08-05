@@ -23,6 +23,11 @@ that entry's value**, plus a way to enumerate the parameters.
                 yield {'n': n}
 
         def value(self, params, digits):
+            #Sage's RealIntervalField, not numberdb.RealInterval. Both are
+            #accepted and the names collide; a generator running under Sage
+            #will normally have the Sage one to hand. Build the field wider
+            #than the digits asked for -- `digits` is how many are written,
+            #not how many to compute with -- and `to_text` truncates.
             return RealIntervalField(4 * digits)(zeta(params['n']))
 
 Generating is iterating; extending is iterating further; more precision is a
