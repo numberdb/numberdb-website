@@ -454,10 +454,12 @@ class TestSageValues:
         assert len(numberdb.to_text(value, digits=50).rstrip('?')) == 51
 
     def test_a_complex_interval_is_spelt_as_the_database_spells_it(self):
+        """`a + i * b`: 1847 values use it and none uses Sage's `a + b*I`."""
         sage = self.sage()
         text = numberdb.to_text(
             sage.ComplexIntervalField(200)(sage.pi, sage.sqrt(2)), digits=15)
-        assert '*I' in text and ' + ' in text
+        assert ' + i * ' in text
+        assert '*I' not in text
 
     def test_exact_types_keep_every_digit(self):
         """Truncating an exact value does not round it, it changes it."""
