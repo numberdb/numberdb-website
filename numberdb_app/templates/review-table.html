@@ -5,6 +5,14 @@
 
 {% block extra_head %}
 <style>
+a.link-below-title {
+  font-size: 0.8rem;
+  color: #555;
+  text-decoration: dotted underline;
+}
+a.link-below-title:hover { text-decoration: underline; }
+.link-below-title-current { font-size: 0.8rem; color: #999; }
+
 pre.review-diff { background: #f7f7f7; border: 1px solid #ddd; padding: 0.6rem;
                   overflow-x: auto; font-size: 0.9em; white-space: pre; }
 .review-entries code { margin-right: 0.5rem; }
@@ -20,11 +28,7 @@ pre.review-diff { background: #f7f7f7; border: 1px solid #ddd; padding: 0.6rem;
 {% block content %}
 <h1 class="title">Review: {{ table_being_reviewed.title|safe }}</h1>
 
-<p>
-  <a href="{% url 'db:table_by_url' table_being_reviewed.url %}">See the table as readers do</a>
-  &middot;
-  <a href="{% url 'db:edit-table' table_being_reviewed.tid %}">Edit it</a>
-</p>
+<p>{% include "includes/table-links.html" with table=table_being_reviewed current="review" %}</p>
 
 {% if whole_table %}
   <p><b>This table has never been reviewed</b>, so all of it is held out of

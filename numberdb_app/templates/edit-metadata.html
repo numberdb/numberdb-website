@@ -18,6 +18,14 @@ exists to permit.
 
 {% block extra_head %}
 <style>
+a.link-below-title {
+  font-size: 0.8rem;
+  color: #555;
+  text-decoration: dotted underline;
+}
+a.link-below-title:hover { text-decoration: underline; }
+.link-below-title-current { font-size: 0.8rem; color: #999; }
+
 .form-row { margin: 0.9rem 0; }
 .form-row label { display: block; font-weight: 400; margin-bottom: 0.2rem; }
 .form-row .hint { color: #666; font-size: 0.85em; display: block;
@@ -46,6 +54,8 @@ table.parameter-table th { font-weight: 400; color: #555; font-size: 0.9em; }
 
 {% block content %}
 <h1 class="title">Editing {{ table_being_edited.title|safe }}</h1>
+
+<p>{% include "includes/table-links.html" with table=table_being_edited current="edit" %}</p>
 
 <div class="mode-switch">
   <b>Form</b>

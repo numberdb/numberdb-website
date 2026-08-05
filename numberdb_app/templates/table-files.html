@@ -12,6 +12,14 @@ set of values means citing the version of it that was there at the time.
 
 {% block extra_head %}
 <style>
+a.link-below-title {
+  font-size: 0.8rem;
+  color: #555;
+  text-decoration: dotted underline;
+}
+a.link-below-title:hover { text-decoration: underline; }
+.link-below-title-current { font-size: 0.8rem; color: #999; }
+
 table.file-list td, table.file-list th { padding: 0.3rem 0.8rem; }
 .file-note { color: #666; font-size: 0.9em; }
 tr.file-changed-here td { background: #e6ffed; }
@@ -32,11 +40,7 @@ table.file-version-list td { padding: 0.15rem 0.6rem; }
 {% block content %}
 <h1 class="title">Files of {{ table.title|safe }}</h1>
 
-<p>
-  <a href="{% url 'db:table_by_url' table.url %}">See the table</a>
-  &middot;
-  <a href="{% url 'db:revision-history' table.tid %}">History</a>
-</p>
+<p>{% include "includes/table-links.html" with current="files" %}</p>
 
 {% comment %}
 Which revision these files belong to, always -- not only when looking at an old
