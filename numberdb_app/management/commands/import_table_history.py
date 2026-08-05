@@ -355,4 +355,15 @@ class Command(BaseCommand):
 				head.base = parent
 				head.save(update_fields=['parent', 'base'])
 
+		#Imported content is the corpus as it was already published, not a pile
+		#of unchecked proposals. Leaving it unreviewed holds every number in the
+		#table out of search by number -- which is the whole database -- and the
+		#site then answers "no match" for values it plainly contains.
+		table.refresh_from_db()
+		if table.head_revision is not None:
+			table.reviewed_at_revision = table.head_revision
+			table.save(update_fields=['reviewed_at_revision'])
+			from numberdb_app.review import sync_review_flags
+			sync_review_flags(table)
+
 		return written, skipped
