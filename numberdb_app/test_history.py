@@ -204,3 +204,88 @@ class RestoreThroughTheView(RestoreBase):
 		self.client.login(username='alice_h', password='pw-123456')
 		self.client.post(self.url(), {'restore': theirs.pk})
 		self.assertEqual(self.head_numbers(), {'1': '2.71828'})
+
+
+class DiffsAreReadable(TestCase):
+	"""A diff of a table is a few changes scattered through a thousand entries.
+
+	Run together in one block, the reader has to find the boundaries; without
+	colour, they have to scan for leading signs. Both are work the page can do.
+	"""
+
+	def setUp(self):
+		from .views import _diff_blocks
+
+		self.blocks = _diff_blocks(
+			'--- a\n+++ b\n'
+			'@@ -1,3 +1,3 @@\n Title: X\n-  a: 1\n+  a: 2\n'
+			'@@ -40,2 +40,2 @@\n-  z: 8\n+  z: 9\n')
+
+	def test_one_block_per_hunk(self):
+		self.assertEqual(len(self.blocks), 2)
+
+	def test_each_block_keeps_its_header(self):
+		self.assertTrue(self.blocks[0]['header'].startswith('@@'))
+
+	def test_lines_say_what_they_are(self):
+		kinds = [line['kind'] for line in self.blocks[0]['lines']]
+		self.assertEqual(kinds, ['context', 'removed', 'added'])
+
+	def test_the_sign_is_stripped_from_the_text(self):
+		"""It is put back by the template, so colour is not the only signal."""
+		added = [l for l in self.blocks[0]['lines'] if l['kind'] == 'added']
+		self.assertEqual(added[0]['text'], '  a: 2')
+
+	def test_file_headers_are_dropped(self):
+		self.assertNotIn('---', str(self.blocks))
+
+	def test_an_empty_diff_gives_no_blocks(self):
+		from .views import _diff_blocks
+
+		self.assertEqual(_diff_blocks(''), [])
+
+
+class FilesBelongToARevision(RestoreBase):
+	"""The manifest is complete at every revision, so a file is not one thing
+	the table has -- it is one thing per version. A reader not told which will
+	assume the code shown produced the numbers shown."""
+
+	def setUp(self):
+		super().setUp()
+		self.first = commit_table(
+			self.table, {'Title': 'H', 'Numbers': {'1': '3.14'}},
+			author=self.alice,
+			files={'generate.sage': 'v1', 'notes.txt': 'unchanged'}).revision
+		self.second = commit_table(
+			self.table, {'Title': 'H', 'Numbers': {'1': '3.15'}},
+			author=self.alice, base=self.first,
+			files={'generate.sage': 'v2'}).revision
+
+	def files_at(self, revision):
+		from .views import _files_with_history
+
+		return {f['name']: f for f in _files_with_history(self.table, revision)}
+
+	def test_a_changed_file_is_dated_to_the_revision_that_changed_it(self):
+		shown = self.files_at(self.second)
+		self.assertEqual(shown['generate.sage']['since'].pk, self.second.pk)
+		self.assertTrue(shown['generate.sage']['changed_here'])
+
+	def test_an_untouched_file_keeps_its_older_date(self):
+		"""The point: notes.txt is carried, not rewritten, by the second edit."""
+		shown = self.files_at(self.second)
+		self.assertEqual(shown['notes.txt']['since'].pk, self.first.pk)
+		self.assertFalse(shown['notes.txt']['changed_here'])
+
+	def test_the_first_version_of_a_file_is_marked_as_original(self):
+		shown = self.files_at(self.first)
+		self.assertTrue(shown['generate.sage']['is_original'])
+
+	def test_an_older_revision_shows_the_file_it_had(self):
+		shown = self.files_at(self.first)
+		self.assertEqual(shown['generate.sage']['blob'].text(), 'v1')
+
+	def test_a_later_change_does_not_leak_backwards(self):
+		"""Looking at March must not date a file to a change made in April."""
+		shown = self.files_at(self.first)
+		self.assertEqual(shown['generate.sage']['since'].pk, self.first.pk)
