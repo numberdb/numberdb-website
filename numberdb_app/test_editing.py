@@ -779,3 +779,48 @@ class ParametersAreFixedAfterCreation(TestCase):
 		                   base=self.table.head_revision,
 		                   allow_parameter_change=True)
 		self.assertIsNotNone(out.revision)
+
+
+class ANewTableNeedsANumberInIt(TestCase):
+	"""A table with no entries is a draft, and drafts are not published here.
+
+	A public draft holds a permanent T-number, appears in the listings, and
+	answers nothing -- indistinguishable from a table somebody gave up on. The
+	workflow this supports is: a person writes the prose and enters one value
+	by hand, and a program adds the rest.
+	"""
+
+	def setUp(self):
+		self.author = User.objects.create_user('draft_probe')
+
+	def make(self, tree):
+		from .editing import create_table
+
+		return create_table(tree, author=self.author)
+
+	def test_a_table_with_one_entry_is_fine(self):
+		table = self.make({'Title': 'Just the one',
+		                   'Numbers': [{'params': {}, 'number': '3.14'}]})
+		self.assertTrue(table.tid.startswith('T'))
+
+	def test_a_table_with_no_entries_section_is_refused(self):
+		with self.assertRaises(ValueError) as raised:
+			self.make({'Title': 'Nothing here'})
+		self.assertIn('at least one entry', str(raised.exception))
+
+	def test_a_table_with_an_empty_entries_section_is_refused(self):
+		with self.assertRaises(ValueError):
+			self.make({'Title': 'Nothing here', 'Numbers': []})
+
+	def test_nothing_is_left_behind_when_it_is_refused(self):
+		"""No half-made table, and no T-number spent on one."""
+		before = Table.objects.count()
+		with self.assertRaises(ValueError):
+			self.make({'Title': 'Nothing here', 'Numbers': []})
+		self.assertEqual(Table.objects.count(), before)
+
+	def test_the_nested_form_counts_too(self):
+		table = self.make({'Title': 'Nested and small',
+		                   'Parameters': {'n': {'type': 'Z'}},
+		                   'Numbers': {'1': '2.5'}})
+		self.assertTrue(table.tid.startswith('T'))

@@ -88,3 +88,54 @@ The third is legitimate and should be recorded as a fact about the table rather
 than left looking like an omission. The first is the one worth aiming at, and
 worth checking: a generator that no longer reproduces its table has found
 either a bug or a correction, and either way somebody should look.
+
+## A new table must contain a number
+
+Decided, August 2026.
+
+Creating a table requires at least one entry — one is enough, more is fine. A
+table with none is not a small table, it is a different kind of thing: a draft.
+
+The workflow this settles is the one the generator interface implies. A person
+writes the prose on the site — title, definition, parameters, references, tags
+— and enters **one value by hand**; the program adds the rest. So the ordering
+that makes sense (prose by a person, numbers by a program) survives, and the
+step that worried us — "what if the script never runs?" — leaves a small, true,
+publishable table rather than an empty shell holding a permanent identifier.
+
+Public drafts are not allowed. A published draft carries a T-number, appears in
+the listings and answers nothing, and is indistinguishable from a table
+somebody abandoned.
+
+## Open: do drafts share the T-number space?
+
+Private drafts are wanted eventually. The question is whether a draft carries an
+identifier of its own that becomes a T-number on publication, or whether there
+is one permanent identifier from the moment anything is created.
+
+**Recommendation: one permanent identifier, allocated at creation.** A draft is
+then a table that is not published yet, and publishing changes a flag rather
+than a name.
+
+The argument is the workflow above. A generator carries the identifier of the
+table it fills — `tid = 'T93'` — and it is written while the table is still
+being set up. If publication renumbers, every such script has to be edited at
+exactly the moment somebody is thinking about something else, and a script that
+is not edited goes on writing to an identifier that no longer means what it did.
+That is the class of failure this project keeps finding: not a crash, a quiet
+wrong target.
+
+What the separate-space argument buys is density — every T-number would name a
+table that really was published, with no gaps left by abandoned drafts. That is
+worth less than it sounds. Numbers are not scarce, a gap is an honest record
+that something was started and not finished, and no citation is harmed by one.
+Renumbering, by contrast, can only be got wrong.
+
+The cost to accept: a T-number may exist privately for a while, so a citation
+written early resolves to nothing until the table is published. That is the
+same as citing a table that does not exist yet, and it becomes correct rather
+than becoming wrong.
+
+Nothing decided here is binding yet — with public drafts disallowed and an
+entry required, drafts do not exist at all — so this can be settled when they
+are built.

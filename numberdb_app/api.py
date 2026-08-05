@@ -615,6 +615,15 @@ def _document_of(request):
 	if 'Title' not in tree:
 		return None, JsonResponse({'error': 'The table has no Title.'},
 		                          status=400)
+
+	from .editing import has_entries
+	if not has_entries(tree):
+		return None, JsonResponse(
+			{'error': 'A table needs at least one entry.',
+			 'detail': ('A table with no numbers is a draft, and drafts are '
+			            'not published here: one holds a permanent T-number '
+			            'and is indistinguishable from a table somebody '
+			            'abandoned.')}, status=400)
 	return tree, None
 
 
