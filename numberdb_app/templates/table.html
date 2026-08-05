@@ -4,6 +4,23 @@
   {{ table.title | truncatewords:15 }} 
 {% endblock %}
 
+{% comment %}
+Which of a table's two addresses is the real one.
+
+A table answers at both /T35 and /Zeros_of_Dirichlet_L_functions, and until now
+nothing said which -- so search engines saw duplicate pages and a person citing
+one had no way to tell whether it was the durable one.
+
+The T-number is. It is allocated once and never changes; the slug is derived
+from the title and is deliberately *not* updated when a table is renamed,
+because every link anybody has written points at it. The consequence is that a
+renamed table keeps a slug naming a title it no longer has, which is fine for a
+link that must keep working and wrong for the address to quote.
+{% endcomment %}
+{% block extra_head %}
+  <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{% url 'db:table' table.tid %}">
+{% endblock %}
+
 {% block breadcrumb %}
   <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
   <li class="breadcrumb-item"><a href="{% url 'db:tables' %}">Tables</a></li>

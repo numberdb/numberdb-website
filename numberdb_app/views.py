@@ -1884,7 +1884,7 @@ def edit_table(request, tid):
 	base = table.head_revision
 
 	if request.method == 'POST':
-		table_yaml = request.POST.get('table', '')
+		table_yaml = _submitted_yaml(request)
 		base_digest = request.POST.get('base', '')
 		#The revision the author actually saw, carried through the form. Without
 		#it a save would silently apply to whatever head had become, which is
@@ -1919,8 +1919,16 @@ def edit_table(request, tid):
 					messages.info(request, 'No changes yet.')
 			return render(request, 'edit.html', context)
 
-		from .editing import with_managed_keys
-		tree = with_managed_keys(tree, table)
+		#Stripped, not restored. The identifier belongs to the table rather
+		#than to the text, and every other write path -- create, both
+		#importers, the API -- stores the document without it. The editor put
+		#it back, so the first save of any table recorded a change nobody made:
+		#one line added, a revision written, and the table's history claiming an
+		#edit that was somebody pressing Save.
+		#
+		#Whatever an author typed for ID is still ignored, which was the point.
+		from .editing import without_managed_keys
+		tree = without_managed_keys(tree)
 
 		try:
 			outcome = commit_table(
@@ -2021,6 +2029,19 @@ def edit_table(request, tid):
 		pass
 	return render(request, 'edit.html',
 	              _edit_context(request, table, source, base))
+
+
+def _submitted_yaml(request):
+	"""The YAML a browser sent, with its line endings put back.
+
+	HTML says a textarea's content is normalised to CRLF on submission, so the
+	document that comes back differs from the one that went out on every single
+	line. The stored table was never affected -- the text is parsed to a tree
+	and re-dumped, so the endings never reach the database -- but "show
+	changes" answered a request to see what you had altered with the entire
+	table, which is the same as not answering.
+	"""
+	return request.POST.get('table', '').replace('\r\n', '\n').replace('\r', '\n')
 
 
 def _diff_against(base, table_yaml, before_label='saved version',
@@ -2179,7 +2200,7 @@ def new_table(request):
 	from .editing import NEW_TABLE_TEMPLATE, create_table
 
 	if request.method == 'POST':
-		table_yaml = request.POST.get('table', '')
+		table_yaml = _submitted_yaml(request)
 		try:
 			tree = yaml.load(table_yaml, Loader=yaml.BaseLoader)
 		except yaml.YAMLError as e:
