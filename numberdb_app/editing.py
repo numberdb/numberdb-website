@@ -60,6 +60,12 @@ class ParametersChanged(Exception):
 	Renaming is not the same as reordering and is not refused here, since the
 	identity is built from the values; but it does invalidate any citation
 	written in the named form, which is why it is worth saying out loud too.
+
+	What is frozen is the *set and order of the names*. Everything else about a
+	parameter -- its type, its constraints, how it is displayed -- may be
+	edited at any time, because none of it enters an identity. And nothing at
+	all is frozen while a table is a draft, since there are no citations yet to
+	protect and choosing the parameters is most of what setting one up is.
 	"""
 
 	def __init__(self, before, after):
@@ -183,7 +189,12 @@ def commit_table(table, tree, author=None, message='', base=None,
 	problems = check_schema(tree)
 	breaches = enforce(tree, strict=strict)
 
-	if head is not None and not allow_parameter_change:
+	#The freeze protects citations, and a draft has none: it is not publicly
+	#reachable, nothing outside can point at its identities, and settling the
+	#parameters is most of what setting a table up consists of. So it applies
+	#to published tables only.
+	frozen = getattr(table, 'published', True)
+	if head is not None and frozen and not allow_parameter_change:
 		before = parameters_of(tree_of(head))
 		after = parameters_of(tree)
 		if before and before != after:
