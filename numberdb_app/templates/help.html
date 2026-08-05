@@ -29,6 +29,17 @@ p.help-text {
   margin: auto;
   max-width: calc(520px + 5rem);
 }
+.help-code {
+  background: #f7f7f7; border: 1px solid #ddd; padding: 0.6rem;
+  overflow-x: auto; font-size: 0.85em; white-space: pre; margin: 0.6rem 0;
+}
+.help-table { border-collapse: collapse; margin: 0.6rem 0; }
+.help-table th, .help-table td {
+  padding: 0.3rem 0.7rem; border-bottom: 1px solid #eee;
+  text-align: left; vertical-align: top; font-weight: 400;
+}
+.help-table th { color: #555; white-space: nowrap; }
+
 div.contents {
 }
 ol.contents {
@@ -520,7 +531,7 @@ anything edited on the site in the meantime. Two places to change the same
 table means whichever was written second quietly wins, so there is one.
 </p>
 <p class="help-text">
-Creating a <em>new</em> table is still done in the repository for now; see
+Creating a new table is done here too; see
 <a href="#section-guide-to-creating-new-tables">the guide below</a>.
 </p>
 
@@ -531,76 +542,209 @@ Creating a <em>new</em> table is still done in the repository for now; see
 <div id="section-guide-to-creating-new-tables" class="section scrollspy">
 <h2 id="guide-to-creating-new-tables" class="section scrollspy">Guide to creating new tables</h2>
 
-To create new tables, you will need a <a href="https://github.com">GitHub</a> account.
-We recommend to review the <a href="#format-of-tables">Format for tables's source code</a>.
-
-<ol>
-<li>
-<div id="guide-to-creating-new-tables-preview" class="li-header">Preview for new tables</div>
 <p class="help-text">
-We recommend that you start from the yaml code of an existing table of your choice and adjust accordingly.
-For this, follow the <a href="#guide-editing-tables-preview">Preview step</a> in the <a href="#guide-to-editing-tables">Guide to editing tables</a>.
+Sign in and use <a href="{% url 'db:new-table' %}">new table</a>. You are given
+a template with every section a table normally has, in the order they usually
+appear, so you can see what is expected rather than having to find an example.
 </p>
-</li>
 
-<li>
-<div class="li-header">Create new table.yaml on GitHub</div>
 <p class="help-text">
-In the <a href="https://github.com/numberdb/numberdb-data/tree/main/data">data folder</a> of the NumberDB data repository, find a suitable folder for your table folder.
-As an example, we will create the "Golden ratio" table in the folder "data/Basic_constants".
-Go to that folder and click on "... -> Create new file":
+A new table needs a <b>title</b> and <b>at least one number</b>. One is enough.
+A table with none is a draft, and a published draft holds a permanent
+identifier, appears in the listings and answers nothing &mdash; there is no way
+for a reader to tell it apart from a table somebody gave up on. So write the
+prose, enter one value by hand, and let a program add the rest if there are
+more.
 </p>
-<div class="help-screenshot-container">
-<img class="help-screenshot" src="{% static '/img/github-create-table-link.png' %}">
-</div>
-<p class="help-text">
-As a filename, enter "Golden_ratio/table.yaml".
-(Each table has its own folder, which contains a main file "table.yaml".
-The folder name will work as a url for the table and should be unique without spaces.)
-Copy and paste the yaml code from the <a href="#guide-to-creating-new-tables-preview">Preview step</a> into the editor:
-</p>
-<div class="help-screenshot-container">
-<img class="help-screenshot" src="{% static '/img/github-create-table.png' %}">
-</div>
-</li>
 
-<li>
-<div class="li-header">Save (commit) new table on GitHub</div>
 <p class="help-text">
-To save the new table,
-scroll down, 
-give your commit a short title (such as "added golden ratio table"),
-give a more detailed description of the table (why it should be included, if necessary),
-and click on commit:
+The table is given a <b>T-number</b> when it is created, and keeps it for good.
+Its web address is built from the title, but the T-number is the address to
+quote: renaming a table deliberately does <em>not</em> change the first one,
+because every link anybody has already written points at it.
 </p>
-<div class="help-screenshot-container">
-<img class="help-screenshot" src="{% static '/img/github-create-table-commit.png' %}">
-</div>
+
+<div id="guide-creating-tables-parameters" class="li-header">Choose the parameters carefully</div>
 <p class="help-text">
-An editor will review your new table. Thanks!
+An entry's identity &mdash; the thing a citation, an anchor and a search result
+all point at &mdash; is its parameter values. So the set of parameters and their
+order are fixed once the table is published: changing them afterwards would not
+break existing citations, it would leave them resolving successfully and
+pointing at <em>different</em> numbers, which no amount of checking can catch.
+Their types, constraints and display can be changed at any time, since none of
+those enters an identity.
 </p>
-</li>
 
-</li>
+<div id="guide-creating-tables-generated" class="li-header">When a program computes the numbers</div>
+<p class="help-text">
+Most tables should have code that can recompute their entries; it is the
+difference between a number a reader can check and one they have to take on
+faith. Install the <a href="https://pypi.org/project/numberdb/">numberdb</a>
+package, write a generator, and send its results with an API key:
+</p>
 
-</ol>
+<pre class="help-code">
+import numberdb
+
+class Zeta(numberdb.Generator):
+    parameters = ('n',)
+    type = 'R'
+    tid = 'T42'
+
+    def enumerate(self, limit=1000):
+        for n in range(2, limit + 1):
+            yield {'n': n}
+
+    def value(self, params, digits):
+        return RealIntervalField(4 * digits)(zeta(params['n']))
+
+numberdb.verify(Zeta(), sample=10)   # does it still produce the table?
+numberdb.publish(Zeta())             # send the entries
+</pre>
+
+<p class="help-text">
+Writing it as a function of one entry's parameters, rather than as a script
+that computes everything, is what makes the other three things possible:
+extending the table is the same call with a larger bound, recomputing it to
+greater precision is a larger <code>digits</code>, and <em>checking</em> it can
+sample ten entries instead of regenerating a table that may take days. A check
+that takes seconds is a check that gets run.
+</p>
+
+<p class="help-text">
+Writing through the API needs a track record: a few edits that reviewers have
+accepted. A person editing one table exercises judgement about it; a program
+does not, and writes faster than anyone can read.
+</p>
+
 </div>
 
 <!--------------------------------------------------------------------->
 
 <div id="section-format-of-tables" class="section scrollspy">
-<h2 id="format-of-tables" class="section scrollspy">Format of tables's source code</h2>
+<h2 id="format-of-tables" class="section scrollspy">Format of a table</h2>
 
-<p>
-The source code of each table is written in 
-<!--<a href="https://yaml.org">YAML</a>, -->
-<a href="https://en.wikipedia.org/wiki/YAML">YAML</a>, 
-a human-friendly language for data.
+<p class="help-text">
+A table is written in <a href="https://en.wikipedia.org/wiki/YAML">YAML</a>, as
+a set of named sections. Only <b>Title</b> and the entries are required;
+everything else is there when it has something to say.
 </p>
 
-<p>
-More help will come later.
+<pre class="help-code">
+Title: Zeros of the Riemann zeta function
+
+Definition: &gt;
+  The imaginary parts of the nontrivial zeros of $\zeta(s)$.
+
+Parameters:
+  n:
+    type: Z
+    constraints: $n \geq 1$
+    display: $n$
+
+Data properties:
+  type: R
+  complete: no
+  sources:
+  - CITE{Odlyzko}
+
+Numbers:
+- params: {n: '1'}
+  number: 14.134725141734693790457251983562470270784257115699243175685567460149?
+  comment: the first zero
+- params: {n: '2'}
+  number: 21.022039638771554992628479593896902777334340524902781754629520403587?
+</pre>
+
+<div id="format-entries" class="li-header">The entries</div>
+<p class="help-text">
+Each entry is a record: <code>params</code> saying which entry it is, a
+<code>number</code>, and anything else you want to say about it. The parameters
+are <b>named</b> in every entry, which is what makes a citation stable &mdash;
+an identity that depended on the order they happen to appear in would still
+resolve after somebody reordered them, and would point at a different number.
 </p>
+
+<p class="help-text">
+A value is always <b>text</b>, never a bare decimal. YAML would read
+<code>3.14</code> as a floating-point number and hand back whatever the nearest
+one is, which is a different number from the one you wrote. The same rule is
+why <code>complete: no</code> means the word "no": YAML 1.1 would read it as
+false.
+</p>
+
+<p class="help-text">
+Real numbers are written with a <code>?</code> on the end, marking the last
+digit as uncertain: <code>3.14159?</code> is a value known to lie in that range,
+not a claim that it stops there. Complex numbers are written
+<code>a + i * b</code>, with the <code>i</code> first &mdash; an imaginary part
+can run to a hundred digits, and wherever a value is shown abbreviated the
+beginning is what a reader sees, so that is where the marker belongs. Exact
+values &mdash; integers, fractions, polynomials &mdash; are written out in full.
+</p>
+
+<div id="format-sections" class="li-header">The sections</div>
+<table class="help-table">
+<tr><th>Title</th><td>Required. Renaming a table does not change its address.</td></tr>
+<tr><th>Definition</th><td>What these numbers are, in a sentence or two. LaTeX is allowed anywhere prose is.</td></tr>
+<tr><th>Parameters</th><td>The names, <em>in the order the entries use them</em>, each with a <code>type</code>, optional <code>constraints</code> and how it is <code>display</code>ed.</td></tr>
+<tr><th>Numbers</th><td>The entries. Called <code>Data</code> in a few older tables; both are read.</td></tr>
+<tr><th>Data properties</th><td><code>type</code>, <code>complete</code>, <code>sources</code>, <code>reliability</code>.</td></tr>
+<tr><th>Display properties</th><td>How the table is laid out &mdash; <code>number-header</code>, <code>group parameters</code>.</td></tr>
+<tr><th>Comments, Formulas, References, Links, Keywords, Tags, Similar tables</th><td>Prose and pointers. <code>CITE{key}</code> refers to a reference, <code>HREF{Table_name}</code> to another table.</td></tr>
+</table>
+
+<div id="format-types" class="li-header">Types</div>
+<p class="help-text">
+<code>Data properties: type</code> says what the values are:
+</p>
+<table class="help-table">
+<tr><th>Z, Q</th><td>integers and rationals &mdash; exact, written in full</td></tr>
+<tr><th>R, C</th><td>real and complex numbers, to a chosen precision</td></tr>
+<tr><th>Qp</th><td>p-adic numbers, carrying their precision as <code>O(p^k)</code></td></tr>
+<tr><th>Z[], Q[]</th><td>polynomials &mdash; exact</td></tr>
+</table>
+<p class="help-text">
+A parameter's type may also be <code>Symbolic</code>, for one whose values are
+names rather than numbers: <code>Co1</code>, <code>unit-s</code>,
+<code>a_n/n!</code>.
+</p>
+
+<div id="format-how-much" class="li-header">How much to record</div>
+<p class="help-text">
+A hundred significant digits, and up to about a thousand entries, is what a
+typical table holds. Neither is a hard rule, and going over is fine when there
+is a reason &mdash; a complete family that happens to be larger, or digits that
+were expensive to compute. Say the reason in a <code>Size exception</code> line
+under <code>Data properties</code> and nothing more is asked.
+</p>
+<p class="help-text">
+A hundred digits is the suggestion because cheap digits carry no information:
+anybody who wants the thousandth digit of a value that evaluates in a second can
+compute it themselves, and a hundred is far more than enough to identify a
+number, which is what this database is for. Digits earn their place when they
+were hard to get. A table that says it is <code>complete</code> is never asked
+to justify its size, since truncating a complete table does not make it smaller,
+it makes it wrong.
+</p>
+
+<div id="format-not-yours" class="li-header">What the site owns</div>
+<p class="help-text">
+The <code>ID</code> is not part of the document. It belongs to the table, is
+allocated when the table is created, and is ignored if you type one. You will
+see it at the top of the exported file, where it is put back so the file can be
+read on its own.
+</p>
+
+<p class="help-text">
+Unknown keys on an entry are kept and shown, so the format can carry something
+new without waiting for anybody to permit it &mdash; that is how
+<code>proof</code>, <code>url</code> and <code>both signs</code> came to exist.
+A key that is nearly a known one, like <code>numbr</code>, is refused instead,
+because a misspelt <code>number</code> is not a note about the entry, it is a
+value that would silently vanish.
+</p>
+
 </div>
 
 <!--------------------------------------------------------------------->

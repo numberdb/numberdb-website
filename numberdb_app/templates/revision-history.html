@@ -14,6 +14,14 @@ deleting anything: the history stays honest about what happened.
 
 {% block extra_head %}
 <style>
+a.link-below-title {
+  font-size: 0.8rem;
+  color: #555;
+  text-decoration: dotted underline;
+}
+a.link-below-title:hover { text-decoration: underline; }
+.link-below-title-current { font-size: 0.8rem; color: #999; }
+
 .revision-hunk { border: 1px solid #ddd; border-radius: 3px; margin: 0.8rem 0;
                  overflow-x: auto; font-size: 0.9em; background: #fff; }
 .revision-hunk-header { background: #eef2f7; color: #3b5a80; padding: 0.3rem 0.6rem;
@@ -42,11 +50,7 @@ table.revision-list tr.is-head { background: #f2f8ff; }
 {% block content %}
 <h1 class="title">History of {{ table.title|safe }}</h1>
 
-<p>
-  <a href="{% url 'db:table_by_url' table.url %}">See the table</a>
-  &middot;
-  <a href="{% url 'db:edit-table' table.tid %}">Edit it</a>
-</p>
+<p>{% include "includes/table-links.html" with current="history" %}</p>
 
 {% if not revisions %}
   <p>This table has not been edited on the site yet, so it has no revisions
@@ -114,8 +118,11 @@ table.revision-list tr.is-head { background: #f2f8ff; }
       {% for block in diff_blocks %}
         <div class="revision-hunk">
           <div class="revision-hunk-header">{{ block.header }}</div>
-          <pre>{% for line in block.lines %}<span class="line {{ line.kind }}">{% if line.kind == 'added' %}+{% elif line.kind == 'removed' %}-{% else %} {% endif %}{{ line.text }}</span>
-{% endfor %}</pre>
+          {% comment %}
+          No newline between the spans: each is display:block and supplies its
+          own break, so a literal one doubles the spacing.
+          {% endcomment %}
+          <pre>{% for line in block.lines %}<span class="line {{ line.kind }}">{% if line.kind == 'added' %}+{% elif line.kind == 'removed' %}-{% else %} {% endif %}{{ line.text }}</span>{% endfor %}</pre>
         </div>
       {% endfor %}
     {% else %}

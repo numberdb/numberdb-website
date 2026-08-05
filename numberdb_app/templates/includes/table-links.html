@@ -1,0 +1,31 @@
+{% comment %}
+The small links under a title, in one place.
+
+They were written out again on each page that has them, so they drifted: the
+table said "edit", the history said "Edit it", the files page said "See the
+table", and each had its own styling. A reader moving between them saw three
+vocabularies for the same three destinations.
+
+`current` names the page being shown, so it is not offered as a link to itself.
+{% endcomment %}
+{% if current != 'table' %}
+  <a class="link-below-title" href="{% url 'db:table_by_url' table.url %}">back to table</a>
+  &middot;
+{% endif %}
+{% if current != 'edit' %}
+  <a class="link-below-title" href="{% url 'db:edit-table' table.tid %}">edit</a>
+  &middot;
+{% endif %}
+{% if current != 'history' %}
+  <a class="link-below-title" href="{% url 'db:revision-history' table.tid %}">history</a>
+{% else %}
+  <span class="link-below-title-current">history</span>
+{% endif %}
+{% if table.head_revision.attachments.exists %}
+  &middot;
+  {% if current != 'files' %}
+    <a class="link-below-title" href="{% url 'db:table-files' table.tid %}">files</a>
+  {% else %}
+    <span class="link-below-title-current">files</span>
+  {% endif %}
+{% endif %}
