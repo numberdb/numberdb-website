@@ -29,8 +29,23 @@ import yaml
 
 from .merge import merge
 
-__all__ = ['commit_table', 'CommitOutcome', 'StaleEdit', 'tree_of', 'dump_tree']
+__all__ = ['commit_table', 'CommitOutcome', 'StaleEdit', 'InvalidDocument',
+           'tree_of', 'dump_tree']
 
+
+
+class InvalidDocument(Exception):
+	"""The document is well-formed YAML and still cannot be made into a table.
+
+	A value that is not a number, a structural key misspelt so that an entry
+	becomes a mapping where a string belongs. Nothing is written: the whole
+	commit is one transaction, so a table is never left rendering one document
+	while search answers from another.
+	"""
+
+	def __init__(self, cause):
+		self.cause = cause
+		super().__init__(str(cause))
 
 
 class ParametersChanged(Exception):
@@ -231,6 +246,25 @@ def _wanted_manifest(revision, files):
 
 def _write(table, tree, author, message, parent, base, produced_by,
            merged=False, breaches=(), files=None, manifest=None):
+	from django.db import transaction
+
+	from .models import TableRevision
+
+	#One transaction around the revision, the head and the rebuild.
+	#
+	#Without it a document the rebuild cannot read -- a value that is not a
+	#number, a misspelt structural key -- left the revision written and the
+	#head advanced while the number rows still held the previous values. The
+	#page then rendered the new document, search answered with the old values,
+	#and the two disagreed permanently, with the failure long since reported
+	#and forgotten.
+	with transaction.atomic():
+		return _write_inside(table, tree, author, message, parent, base,
+		                     produced_by, merged, breaches, files, manifest)
+
+
+def _write_inside(table, tree, author, message, parent, base, produced_by,
+                  merged, breaches, files, manifest):
 	from .models import TableRevision
 
 	revision = TableRevision.objects.create(
@@ -254,7 +288,16 @@ def _write(table, tree, author, message, parent, base, produced_by,
 	#decision belongs to the caller, which knows who the author is, so this
 	#only advances head.
 	table.save(update_fields=['head_revision'])
-	apply_revision(table, revision)
+	try:
+		apply_revision(table, revision)
+	except (StaleEdit, ParametersChanged):
+		raise
+	except Exception as e:
+		#The document parsed as YAML and still cannot be turned into numbers.
+		#Raised as something a caller can show, because the alternative is a
+		#Sage parse error on an error page, which tells an author nothing about
+		#which of their values is wrong.
+		raise InvalidDocument(e)
 	return CommitOutcome(revision, merged=merged, breaches=breaches)
 
 
@@ -307,10 +350,71 @@ def apply_revision(table, revision=None):
 	data.raw_yaml = revision.content
 	data.save()
 
+	_sync_title(table, normalised)
 	build_number_table(only_table=table)
+	reindex_for_search(table, normalised)
 	#After the rebuild, not before: the rows it writes take the model default,
 	#which is reviewed, and this is what corrects them.
 	return sync_review_flags(table)
+
+
+def _sync_title(table, document):
+	"""Keep the table row's title in step with the document's.
+
+	The title lives in two places: in the document, which the page renders
+	from, and on the table row, which the listings, the search results and the
+	breadcrumbs read. Only the document was being updated, so renaming a table
+	changed its page and nothing else -- and the two disagreed indefinitely,
+	each looking right on its own.
+
+	The slug is deliberately left alone. It is semi-stable by design: every
+	link anybody has written points at it, and a title is edited far more often
+	than a table wants a new address.
+	"""
+	title = (document.get('Title') or '').strip() if isinstance(document, dict) \
+		else ''
+	if not title or title == table.title:
+		return
+	table.title = title
+	table.title_lowercase = title.lower().replace('$', '')
+	table.save(update_fields=['title', 'title_lowercase'])
+
+
+def reindex_for_search(table, document):
+	"""Keep the table findable by its words, not only by its numbers.
+
+	The full-text index was written by the data pipeline alone, so a table
+	created here was never in it and a retitled one kept its old text. Nothing
+	failed: the table simply did not come back from a search for its own name,
+	which is indistinguishable from it not existing.
+
+	The same four weights the pipeline uses -- title and keywords first, tags,
+	then the definition and the comments -- so a table indexed here ranks
+	against tables indexed there rather than beside them.
+	"""
+	from django.contrib.postgres.search import SearchVector
+
+	from .models import TableSearch
+
+	def joined(value):
+		if isinstance(value, dict):
+			return ' '.join(str(v) for v in value.values())
+		if isinstance(value, (list, tuple)):
+			return ' '.join(str(v) for v in value)
+		return str(value or '')
+
+	row, _ = TableSearch.objects.get_or_create(table=table)
+	row.weight_A_text = '%s %s' % (table.title, joined(document.get('Keywords')))
+	row.weight_B_text = joined(document.get('Tags'))
+	row.weight_C_text = joined(document.get('Definition'))
+	row.weight_D_text = joined(document.get('Comments'))
+	row.save()
+
+	TableSearch.objects.filter(pk=row.pk).update(
+		search_vector=(SearchVector('weight_A_text', weight='A')
+		               + SearchVector('weight_B_text', weight='B')
+		               + SearchVector('weight_C_text', weight='C')
+		               + SearchVector('weight_D_text', weight='D')))
 
 
 #The template a new table starts from. Every key the corpus uses, in the order
@@ -378,7 +482,8 @@ def slug_for(title, taken=None):
 	raise ValueError('could not find a free url for %r' % (title,))
 
 
-def create_table(tree, author=None, message='', produced_by='', strict=False):
+def create_table(tree, author=None, message='', produced_by='', strict=False,
+                 published=True):
 	"""Create a table from a document and return it.
 
 	The T-number is allocated here rather than in the data repository, which is
@@ -399,7 +504,9 @@ def create_table(tree, author=None, message='', produced_by='', strict=False):
 	if not title:
 		raise ValueError('A new table needs a Title.')
 
-	if not has_entries(tree):
+	#A draft is exactly the thing that may not have a number in it yet, so the
+	#rule applies when a table becomes public rather than when it is made.
+	if published and not has_entries(tree):
 		raise ValueError(
 			'A new table needs at least one entry. A table with no numbers in '
 			'it is a draft, and a draft published here is indistinguishable '
@@ -434,6 +541,8 @@ def create_table(tree, author=None, message='', produced_by='', strict=False):
 			title=title,
 			title_lowercase=title.lower(),
 			number_count=0,
+			published=published,
+			created_by=author,
 		)
 		TableData.objects.create(table=table, raw_yaml='', full_yaml='',
 		                         json={})
@@ -611,3 +720,41 @@ def merge_manifests(base, mine, theirs):
 		conflicts.append(name)
 
 	return result, conflicts
+
+
+def publish_table(table):
+	"""Make a draft public. Returns the table.
+
+	The T-number does not change, because it never was a draft number: a table
+	created here is given its permanent identifier at once and this only
+	settles whether anybody else may see it. Publishing is therefore a flag,
+	not a rename, and the generator somebody wrote against `tid` while setting
+	the table up keeps working.
+	"""
+	if table.published:
+		return table
+	if not has_entries(tree_of(table.head_revision) if table.head_revision
+	                  else {}):
+		raise ValueError(
+			'This table has no entries yet, so there is nothing to publish. '
+			'Add at least one value; a program can add the rest afterwards.')
+	table.published = True
+	table.save(update_fields=['published'])
+	return table
+
+
+def may_see(table, user):
+	"""Whether ``user`` may see ``table`` at all.
+
+	A published table is public. A draft is its author's, and the board's,
+	since somebody has to be able to find one that was abandoned.
+	"""
+	if table.published:
+		return True
+	if not getattr(user, 'is_authenticated', False):
+		return False
+	if table.created_by_id and table.created_by_id == user.pk:
+		return True
+	from .permissions import is_board_member
+
+	return is_board_member(user)

@@ -297,6 +297,31 @@ class Table(models.Model):
 		related_name = 'reviewed_head_of',
 	)
 
+	#: Whether anybody but its author may see this table.
+	#:
+	#: A draft is a table that is not published yet, and it keeps the T-number
+	#: it was given at creation: publishing changes this flag and nothing else.
+	#: Renumbering on publication was the alternative and it is the one that
+	#: can go wrong -- a generator carries the identifier of the table it
+	#: fills, written while the table is still being set up, so renaming would
+	#: silently repoint every script nobody remembered to edit.
+	#:
+	#: The cost accepted is a gap in the numbering when a draft is abandoned,
+	#: which is an honest record that something was started and not finished.
+	published = models.BooleanField(
+		default = True,
+		db_index = True,
+	)
+
+	#: Who made it, so a draft can be shown to them and to nobody else.
+	created_by = models.ForeignKey(
+		settings.AUTH_USER_MODEL,
+		null = True,
+		blank = True,
+		on_delete = models.SET_NULL,
+		related_name = 'tables_created',
+	)
+
 
 	def __str__(self):
 		return 'Table %s' % (self.title,)

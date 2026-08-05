@@ -824,3 +824,76 @@ class ANewTableNeedsANumberInIt(TestCase):
 		                   'Parameters': {'n': {'type': 'Z'}},
 		                   'Numbers': {'1': '2.5'}})
 		self.assertTrue(table.tid.startswith('T'))
+
+
+class ATableEditedHereStaysFindableByItsWords(TestCase):
+	"""The full-text index was the pipeline's alone.
+
+	So a table created on the site was never in it, and a retitled one kept its
+	old text. Nothing failed -- the table simply did not come back from a
+	search for its own name, which looks exactly like it not existing.
+	"""
+
+	def setUp(self):
+		self.author = User.objects.create_user('indexer')
+
+	def test_a_new_table_can_be_found_by_its_title(self):
+		from .editing import create_table
+		from .search import search_metadata
+
+		table = create_table(
+			{'Title': 'Klein quartic invariants',
+			 'Definition': 'Invariants of the Klein quartic curve.',
+			 'Numbers': [{'params': {}, 'number': '168'}]},
+			author=self.author)
+		_tags, tables = search_metadata('Klein quartic')
+		self.assertIn(table.tid, {t.tid for t in tables})
+
+	def test_a_retitled_table_is_found_by_the_new_title(self):
+		from .editing import commit_table, create_table
+		from .search import search_metadata
+
+		table = create_table({'Title': 'Provisional name',
+		                      'Numbers': [{'params': {}, 'number': '1'}]},
+		                     author=self.author)
+		commit_table(table, {'Title': 'Weierstrass gap sequence',
+		                     'Numbers': [{'params': {}, 'number': '1'}]},
+		             author=self.author, base=table.head_revision)
+		_tags, tables = search_metadata('Weierstrass gap')
+		self.assertIn(table.tid, {t.tid for t in tables})
+
+
+class RenamingATableChangesItEverywhere(TestCase):
+	"""The title lives on the row and in the document, and both are read.
+
+	The page renders from the document; the listings, the search results and
+	the breadcrumbs read the row. Updating only one leaves them disagreeing
+	indefinitely, each looking right on its own.
+	"""
+
+	def setUp(self):
+		from .editing import create_table
+
+		self.author = User.objects.create_user('renamer')
+		self.table = create_table(
+			{'Title': 'Provisional name',
+			 'Numbers': [{'params': {}, 'number': '1'}]}, author=self.author)
+
+	def rename(self, title):
+		from .editing import commit_table
+
+		commit_table(self.table,
+		             {'Title': title,
+		              'Numbers': [{'params': {}, 'number': '1'}]},
+		             author=self.author, base=self.table.head_revision)
+		self.table.refresh_from_db()
+
+	def test_the_row_follows_the_document(self):
+		self.rename('Weierstrass gap sequence')
+		self.assertEqual(self.table.title, 'Weierstrass gap sequence')
+
+	def test_the_slug_does_not_change(self):
+		"""Every link anybody has written points at it."""
+		before = self.table.url
+		self.rename('Weierstrass gap sequence')
+		self.assertEqual(self.table.url, before)
