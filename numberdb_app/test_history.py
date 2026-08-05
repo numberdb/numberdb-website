@@ -289,3 +289,22 @@ class FilesBelongToARevision(RestoreBase):
 		"""Looking at March must not date a file to a change made in April."""
 		shown = self.files_at(self.first)
 		self.assertEqual(shown['generate.sage']['since'].pk, self.first.pk)
+
+	def test_every_changed_version_is_listed_newest_first(self):
+		shown = self.files_at(self.second)
+		versions = shown['generate.sage']['versions']
+		self.assertEqual([v['blob'].text() for v in versions], ['v2', 'v1'])
+
+	def test_a_file_carried_unchanged_has_one_version(self):
+		"""Fifty manifests, one version. Listing the fifty would bury it."""
+		commit_table(self.table, {'Title': 'H', 'Numbers': {'1': '3.16'}},
+		             author=self.alice, base=self.second)
+		self.table.refresh_from_db()
+		shown = self.files_at(self.table.head_revision)
+		self.assertEqual(shown['notes.txt']['version_count'], 1)
+		self.assertEqual(shown['generate.sage']['version_count'], 2)
+
+	def test_the_oldest_version_is_marked_as_the_first(self):
+		versions = self.files_at(self.second)['generate.sage']['versions']
+		self.assertTrue(versions[-1]['is_first'])
+		self.assertFalse(versions[0]['is_first'])

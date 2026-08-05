@@ -2396,16 +2396,26 @@ def _files_with_history(table, revision):
 	           .select_related('revision', 'blob')
 	           .order_by('revision__created'))
 
+	#Only the revisions where the content actually changed. A file carried
+	#through fifty edits appears in fifty manifests and has two versions, and
+	#listing the fifty would bury the two.
 	introduced = {}
 	previous = {}
+	versions = {}
 	for row in history:
 		if previous.get(row.name) != row.blob.digest:
 			introduced[row.name] = row.revision
 			previous[row.name] = row.blob.digest
+			versions.setdefault(row.name, []).append({
+				'revision': row.revision,
+				'blob': row.blob,
+				'is_first': not versions.get(row.name),
+			})
 
 	out = []
 	for attachment in shown:
 		since = introduced.get(attachment.name)
+		earlier = list(reversed(versions.get(attachment.name, [])))
 		out.append({
 			'attachment': attachment,
 			'name': attachment.name,
@@ -2414,6 +2424,9 @@ def _files_with_history(table, revision):
 			#A file first seen with the table is not "changed", it is original.
 			'is_original': since is not None and since.parent_id is None,
 			'changed_here': since is not None and since.pk == revision.pk,
+			#Newest first, and only where it changed.
+			'versions': earlier,
+			'version_count': len(earlier),
 		})
 	return out
 
