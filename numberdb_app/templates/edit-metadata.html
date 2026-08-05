@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% comment %}
+The form view of a table's metadata.
+
+Only the parts whose vocabulary is closed. A select cannot hold `type: Wombat`,
+so that error stops existing rather than being caught after the fact — which is
+the whole reason this exists beside a perfectly good text editor.
+
+Everything else stays in the source view, and the form never writes a field it
+does not show. A form that regenerated the document would delete every section
+it had not been taught about, and the schema is deliberately open at the
+annotation level, so it would quietly remove exactly the extensions the format
+exists to permit.
+{% endcomment %}
+
+{% block head-title %}Edit {{ table_being_edited.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.form-row { margin: 0.9rem 0; }
+.form-row label { display: block; font-weight: 400; margin-bottom: 0.2rem; }
+.form-row .hint { color: #666; font-size: 0.85em; display: block;
+                  margin-top: 0.15rem; }
+.form-row select, .form-row input[type=text] { padding: 0.3rem; font-size: 1rem; }
+.form-row input.wide { width: min(34rem, 90%); }
+table.parameter-table { border-collapse: collapse; margin-top: 0.4rem; }
+table.parameter-table th, table.parameter-table td {
+  padding: 0.3rem 0.6rem; border-bottom: 1px solid #eee; text-align: left;
+  vertical-align: top; }
+table.parameter-table th { font-weight: 400; color: #555; font-size: 0.9em; }
+.edit-note { background: #ffc; padding: 0.6rem; border: 1px solid #e6d800;
+             margin: 0.6rem 0; }
+.odd-value { background: #fcf8e3; border: 1px solid #faebcc; padding: 0.5rem;
+             margin: 0.3rem 0; font-size: 0.9em; }
+.mode-switch { margin: 0.4rem 0 1rem 0; font-size: 0.9em; }
+.frozen { color: #666; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'db:table_by_url' table_being_edited.url %}">{{ table_being_edited.title|safe }}</a></li>
+  <li class="breadcrumb-item active">Edit</li>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">Editing {{ table_being_edited.title|safe }}</h1>
+
+<div class="mode-switch">
+  <b>Form</b>
+  &middot;
+  <a href="{% url 'db:edit-table' table_being_edited.tid %}">Source</a>
+  <span class="hint">
+    The form covers the settings with fixed choices. Everything else &mdash; the
+    definition, the comments, the references and the numbers themselves &mdash;
+    is edited in the source view.
+  </span>
+</div>
+
+<div class="edit-note">
+  {% if is_draft %}
+    This table is a draft. Nobody else can see it, and its parameters can still
+    be changed; both stop when you publish it.
+  {% else %}
+    Your changes are published immediately. The entries you change are marked
+    as needing review and are left out of
+    <a href="{% url 'db:help' %}#section-search">search by number</a> until a
+    reviewer confirms them.
+  {% endif %}
+</div>
+
+{% if not may_edit %}
+  <p><a href="{% url 'account_login' %}?next={{ request.path }}?form=1">Sign in</a>
+  to change anything here.</p>
+{% endif %}
+
+<form method="post" action="">
+  {% csrf_token %}
+  <input type="hidden" name="base" value="{{ base_digest }}">
+
+  <div class="form-row">
+    <label for="title">Title</label>
+    <input class="wide" type="text" id="title" name="title" value="{{ title }}">
+    <span class="hint">
+      The table's address does not change when you rename it: every link
+      anybody has written points at the old one. {{ table_being_edited.tid }}
+      is the permanent address either way.
+    </span>
+  </div>
+
+  <div class="form-row">
+    <label for="data_type">What the values are</label>
+    <select id="data_type" name="data_type">
+      <option value="">(not stated)</option>
+      {% for option in data_types %}
+        <option value="{{ option }}" {% if option == data_type %}selected{% endif %}>{{ option }}</option>
+      {% endfor %}
+    </select>
+    <span class="hint">
+      Exact types &mdash; Z, Q, Z[], Q[] &mdash; are written out in full and are
+      not judged on their number of digits, since writing fewer digits of an
+      exact value makes it a different value rather than a rounder one.
+    </span>
+  </div>
+
+  {% comment %}
+  Two fields, because two tables answer with a condition attached and the
+  condition is mathematics. A text box welds it to the value where no code can
+  read it; a bare dropdown throws it away.
+  {% endcomment %}
+  <div class="form-row">
+    <label for="complete">Does the table hold every value of its family?</label>
+    <select id="complete" name="complete">
+      <option value="">(not stated)</option>
+      {% for option in complete_answers %}
+        <option value="{{ option }}" {% if option == complete %}selected{% endif %}>{{ option }}</option>
+      {% endfor %}
+    </select>
+    <input class="wide" type="text" name="complete_condition"
+           value="{{ complete_condition }}"
+           placeholder="under what condition, if any &mdash; e.g. assuming GRH">
+    <span class="hint">
+      A complete table is never asked to justify its size: truncating one does
+      not make it smaller, it makes it wrong.
+    </span>
+    {% if complete_is_odd %}
+      <div class="odd-value">
+        This table's answer is not one the form can show, so it is left exactly
+        as it is unless you choose one above. Edit it in the source view to keep
+        the original wording.
+      </div>
+    {% endif %}
+  </div>
+
+  {% if parameters %}
+    <div class="form-row">
+      <label>Parameters</label>
+      <span class="hint">
+        {% if is_draft %}
+          Names and their order are still open while this is a draft. Once it is
+          published they are fixed, because every entry's identity is its
+          parameter values: changing them would leave existing citations
+          resolving to different numbers.
+        {% else %}
+          Names and their order are fixed. Every entry's identity is its
+          parameter values, so changing them would leave existing citations
+          resolving successfully and pointing at different numbers. Everything
+          else here can be edited freely.
+        {% endif %}
+      </span>
+      <table class="parameter-table">
+        <tr><th>name</th><th>type</th><th>constraints</th><th>shown as</th></tr>
+        {% for parameter in parameters %}
+          <tr>
+            <td class="frozen"><code>{{ parameter.name }}</code></td>
+            <td>
+              <select name="parameter.{{ parameter.name }}.type">
+                <option value="">(not stated)</option>
+                {% for option in parameter_types %}
+                  <option value="{{ option }}" {% if option == parameter.type %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td>
+              <input type="text" name="parameter.{{ parameter.name }}.constraints"
+                     value="{{ parameter.constraints }}" size="22">
+            </td>
+            <td>
+              <input type="text" name="parameter.{{ parameter.name }}.display"
+                     value="{{ parameter.display }}" size="12">
+            </td>
+          </tr>
+        {% endfor %}
+      </table>
+      <span class="hint">
+        <code>Symbolic</code> is for a parameter whose values are names rather
+        than numbers &mdash; <code>Co1</code>, <code>unit-s</code>,
+        <code>a_n/n!</code>.
+      </span>
+    </div>
+  {% endif %}
+
+  <div class="form-row">
+    <label for="message">What did you change?</label>
+    <input class="wide" type="text" id="message" name="message" maxlength="300"
+           placeholder="e.g. said which values these are">
+  </div>
+
+  <button type="submit" name="action" value="save-metadata"><b>Save</b></button>
+  <a href="{% url 'db:table_by_url' table_being_edited.url %}">Cancel</a>
+</form>
+{% endblock %}
