@@ -308,3 +308,38 @@ class FilesBelongToARevision(RestoreBase):
 		versions = self.files_at(self.second)['generate.sage']['versions']
 		self.assertTrue(versions[-1]['is_first'])
 		self.assertFalse(versions[0]['is_first'])
+
+
+class HunkHeadersAreReadable(TestCase):
+	"""`@@ -13,4 +13,8 @@` is an instruction to a patch program.
+
+	It is on a page whose readers are being asked whether a number is right.
+	What they need from it is where in the table they are and whether this part
+	grew or shrank.
+	"""
+
+	def words(self, header):
+		from .views import _hunk_in_words
+
+		return _hunk_in_words(header)
+
+	def test_it_says_where(self):
+		self.assertIn('from line 13', self.words('@@ -13,4 +13,8 @@'))
+
+	def test_it_says_how_much_was_added(self):
+		self.assertIn('4 more than before', self.words('@@ -13,4 +13,8 @@'))
+
+	def test_it_says_how_much_was_removed(self):
+		self.assertIn('4 fewer than before', self.words('@@ -13,8 +13,4 @@'))
+
+	def test_an_unchanged_length_says_only_the_size(self):
+		said = self.words('@@ -13,4 +13,4 @@')
+		self.assertIn('4 lines', said)
+		self.assertNotIn('than before', said)
+
+	def test_a_single_line_is_singular(self):
+		self.assertIn('1 line)', self.words('@@ -13 +13 @@'))
+
+	def test_something_unexpected_falls_back_to_nothing(self):
+		"""The template then shows the raw header rather than a wrong sentence."""
+		self.assertEqual(self.words('not a hunk header'), '')

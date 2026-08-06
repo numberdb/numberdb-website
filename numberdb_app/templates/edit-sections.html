@@ -56,6 +56,8 @@ a.link-below-title:hover { text-decoration: underline; }
 .insert-bar .insert-group { margin-right: 0.9rem; white-space: nowrap; }
 .insert-bar button { cursor: pointer; }
 .field-active { outline: 2px solid #b9d3ee; }
+.picked-row { border-top: none; padding: 0.15rem 0; }
+.picked-row button { font-size: 0.85em; padding: 0.1rem 0.4rem; cursor: pointer; }
 textarea.section-text { width: min(38rem, 90%); min-height: 5rem; padding: 0.4rem;
                         font-family: inherit; }
 </style>
@@ -155,6 +157,87 @@ the labels live in a different section of the same long document.
                     >{% for item in section.items %}{{ item }}
 {% endfor %}</textarea>
           <div class="note">One per line.</div>
+
+        {% elif section.shape == 'picked-list' %}
+          {% comment %}
+          Tags are picked, not typed. 65 exist and a table joining a subject
+          should join the page that subject already has rather than starting a
+          second one a letter away -- "elliptic curve" and "elliptic curves"
+          are two pages and one subject.
+          {% endcomment %}
+          <input type="hidden" name="section.{{ section.name }}.present" value="1">
+          <div class="rows picked-rows">
+            {% for item in section.items %}
+              <div class="row-item picked-row">
+                <input type="text" size="26" list="known-tags"
+                       name="section.{{ section.name }}.items.{{ forloop.counter0 }}"
+                       value="{{ item }}">
+                <button type="button" data-move="up">&uarr;</button>
+                <button type="button" data-move="down">&darr;</button>
+                <button type="button" data-remove="1">remove</button>
+              </div>
+            {% endfor %}
+          </div>
+          <template class="row-template">
+            <div class="row-item picked-row">
+              <input type="text" size="26" list="known-tags"
+                     name="section.{{ section.name }}.items.__INDEX__"
+                     placeholder="an existing tag, or a new one">
+              <button type="button" data-move="up">&uarr;</button>
+              <button type="button" data-move="down">&darr;</button>
+              <button type="button" data-remove="1">remove</button>
+            </div>
+          </template>
+          <datalist id="known-tags">
+            {% for name in known_tags %}<option value="{{ name }}">{% endfor %}
+          </datalist>
+          <p><button type="button" data-add="{{ section.name }}">add tag</button></p>
+
+        {% elif section.shape == 'list-record' %}
+          <input type="hidden" name="section.{{ section.name }}.present" value="1">
+          <div class="rows">
+            {% for item in section.items %}
+              <div class="row-item">
+                <input type="hidden"
+                       name="section.{{ section.name }}.{{ forloop.counter0 }}.row" value="1">
+                {% for field in section.fields %}
+                  <div class="row-fields">
+                    <label>{{ field }}</label>
+                    <input type="text" size="34"
+                           {% if field == 'table' %}list="linkable-tables"{% endif %}
+                           name="section.{{ section.name }}.{{ forloop.parentloop.counter0 }}.{{ field }}"
+                           value="{{ item.values|get:field }}">
+                  </div>
+                {% endfor %}
+                <div class="row-actions">
+                  <button type="button" data-move="up">&uarr;</button>
+                  <button type="button" data-move="down">&darr;</button>
+                  <button type="button" data-remove="1">remove</button>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          <template class="row-template">
+            <div class="row-item">
+              <input type="hidden"
+                     name="section.{{ section.name }}.__INDEX__.row" value="1">
+              {% for field in section.fields %}
+                <div class="row-fields">
+                  <label>{{ field }}</label>
+                  <input type="text" size="34"
+                         {% if field == 'table' %}list="linkable-tables"{% endif %}
+                         name="section.{{ section.name }}.__INDEX__.{{ field }}"
+                         placeholder="{% if field == 'table' %}a table{% else %}how they are related{% endif %}">
+                </div>
+              {% endfor %}
+              <div class="row-actions">
+                <button type="button" data-move="up">&uarr;</button>
+                <button type="button" data-move="down">&darr;</button>
+                <button type="button" data-remove="1">remove</button>
+              </div>
+            </div>
+          </template>
+          <p><button type="button" data-add="{{ section.name }}">add table</button></p>
 
         {% else %}
           <input type="hidden" name="section.{{ section.name }}.present" value="1">

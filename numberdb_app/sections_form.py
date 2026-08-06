@@ -65,8 +65,18 @@ SECTIONS = (
 	('Links', 'labelled-record',
 	 'Pages elsewhere about these numbers.'),
 	('Keywords', 'list', 'Words a reader might search for.'),
-	('Similar tables', 'list', 'Related tables, by name.'),
+	('Tags', 'picked-list',
+	 'Subjects this table belongs to. Pick existing tags where they fit, so a '
+	 'reader following one finds everything about that subject.'),
+	('Similar tables', 'list-record',
+	 'Related tables, and how they are related.'),
 )
+
+#: The fields of a `list-record` section, and which of them is picked from a
+#: list of somewhere else's names.
+LIST_RECORD_FIELDS = {
+	'Similar tables': ('relation', 'table'),
+}
 
 SHAPES = {name: shape for name, shape, _note in SECTIONS}
 
@@ -92,13 +102,25 @@ def sections_from(tree):
 		if shape == 'text':
 			entry['text'] = value if isinstance(value, str) else ''
 			entry['unshowable'] = value is not None and not isinstance(value, str)
-		elif shape == 'list':
+		elif shape == 'list-record':
+			#Three tables use this, each as {relation, table}. Read as plain
+			#names it comes out empty and saving would delete it, so it gets
+			#its own shape rather than being flattened into one.
+			entry['fields'] = LIST_RECORD_FIELDS.get(name, ())
+			entry['items'] = _list_records(value, entry['fields'])
+			#Empty is empty, whichever empty it is. Most tables write this
+			#section as `''`, and calling that unshowable put a warning on 104
+			#tables that simply have no related tables to name.
+			entry['unshowable'] = bool(value) and not isinstance(
+				value, (list, str))
+		elif shape in ('list', 'picked-list'):
 			entry['items'] = _as_list(value)
 			#Three tables write `Similar tables` as a list of records --
 			#{relation: contained in, table: HREF{...}} -- rather than names.
 			#Read as a list of names it comes out empty, and saving would have
 			#deleted it. Flagged and left alone instead.
 			entry['unshowable'] = _has_non_strings(value)
+			entry['picked'] = shape == 'picked-list'
 		else:
 			entry['items'] = _labelled(value, shape, RECORD_FIELDS.get(name, ()))
 			#A section holding something the form cannot render is left alone
@@ -186,6 +208,13 @@ def apply_sections(tree, data):
 		if shape == 'text':
 			text = (data.get('section.%s.text' % (name,)) or '').strip()
 			_put(out, name, text)
+		elif shape == 'list-record':
+			_put(out, name, _rebuild_list_records(
+				name, data, LIST_RECORD_FIELDS.get(name, ())))
+		elif shape == 'picked-list':
+			#One field per item rather than a block of text, so a row can be
+			#moved and removed and so each can be picked from a list.
+			_put(out, name, _rebuild_picked(name, data))
 		elif shape == 'list':
 			if _has_non_strings(out.get(name)):
 				#Guarded here as well as in the template, because a section
@@ -337,3 +366,61 @@ def _put(tree, name, value):
 		#Empty of the same kind: '' stays '', {} stays {}, [] stays [].
 		existing = tree[name]
 		tree[name] = type(existing)() if existing is not None else existing
+
+
+def _list_records(value, fields):
+	"""A list-of-records section, as rows."""
+	if isinstance(value, str):
+		#A bare name, which is how this section would be written by somebody
+		#who did not know it could carry a relation.
+		value = [value] if value.strip() else []
+	if not isinstance(value, list):
+		return []
+	rows = []
+	for item in value:
+		if isinstance(item, dict):
+			rows.append({'values': {f: str(item.get(f, '')) for f in fields},
+			             'extra': {k: v for k, v in item.items()
+			                       if k not in fields}})
+		elif isinstance(item, str):
+			#A bare name, which is what this section would hold if anybody
+			#wrote it the simple way.
+			rows.append({'values': {fields[-1] if fields else 'table': item},
+			             'extra': {}})
+	return rows
+
+
+def _rebuild_list_records(name, data, fields):
+	"""A list-of-records section, from the rows the form sent."""
+	prefix = 'section.%s.' % (name,)
+	seen = []
+	for key in data:
+		if key.startswith(prefix) and key.endswith('.row'):
+			index = key[len(prefix):-len('.row')]
+			if index not in seen:
+				seen.append(index)
+
+	built = []
+	for index in seen:
+		record = {}
+		for field in fields:
+			value = (data.get('%s%s.%s' % (prefix, index, field))
+			         or '').strip()
+			if value:
+				record[field] = value
+		if record:
+			built.append(record)
+	return built
+
+
+def _rebuild_picked(name, data):
+	"""A picked list, from its rows, in the order they arrive."""
+	prefix = 'section.%s.items.' % (name,)
+	items = []
+	for key in data:
+		if not key.startswith(prefix):
+			continue
+		value = (data.get(key) or '').strip()
+		if value and value not in items:
+			items.append(value)
+	return items
