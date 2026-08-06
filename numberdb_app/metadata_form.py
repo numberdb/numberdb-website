@@ -32,9 +32,14 @@ Which fields, decided by what the corpus actually contains:
 
 from __future__ import annotations
 
-from .validate import DATA_TYPES, PARAMETER_TYPES
+from .validate import (OTHER_TYPES, PARAMETER_TYPES, SEARCHABLE_TYPES,
+                       TYPE_NAME_KEY)
 
-__all__ = ['fields_from', 'apply_to', 'COMPLETENESS_ANSWERS']
+__all__ = ['fields_from', 'apply_to', 'COMPLETENESS_ANSWERS', 'OTHER',
+           'known_other_types']
+
+#: The value the select carries for "something else".
+OTHER = '__other__'
 
 #: What `complete` may answer, before any condition.
 COMPLETENESS_ANSWERS = ('yes', 'no', 'unknown')
@@ -61,10 +66,23 @@ def fields_from(tree):
 	display = display if isinstance(display, dict) else {}
 
 	answer = _leading_word(properties.get('complete'))
+	declared = str(properties.get('type') or '')
+	is_other = bool(declared) and declared not in SEARCHABLE_TYPES
 	return {
 		'title': str(tree.get('Title') or ''),
-		'data_type': str(properties.get('type') or ''),
-		'data_types': sorted(DATA_TYPES),
+		'data_type': '' if is_other else declared,
+		'data_types': sorted(SEARCHABLE_TYPES),
+		#The escape hatch, and what is already behind it. NumberDB was always
+		#meant to be able to hold a kind of number it cannot parse; such values
+		#are shown and cited and do not answer a search by their digits.
+		'is_other_type': is_other,
+		'other_type': declared if is_other else '',
+		'other_type_name': (str(properties.get(TYPE_NAME_KEY) or '')
+		                    or OTHER_TYPES.get(declared, '')) if is_other else '',
+		#Not filled in here: reading the corpus is a query, and this function
+		#is otherwise pure -- it is handed a document and answers about that
+		#document. The view supplies the list.
+		'known_other_types': [],
 		'complete': answer if answer in COMPLETENESS_ANSWERS else '',
 		'complete_answers': COMPLETENESS_ANSWERS,
 		'complete_condition': completeness_qualifier(tree),
@@ -114,7 +132,21 @@ def apply_to(tree, data):
 	#it never displayed -- which is the destructive behaviour this whole module
 	#is arranged to avoid.
 	if 'data_type' in data:
-		_set(properties, 'type', (data.get('data_type') or '').strip())
+		chosen = (data.get('data_type') or '').strip()
+		if chosen == OTHER:
+			#Two parts, deliberately. A symbol on its own is a typo; a symbol
+			#with a name beside it is somebody deciding that this database now
+			#holds a kind of number it did not before.
+			symbol = (data.get('other_type') or '').strip()
+			name = (data.get('other_type_name') or '').strip()
+			_set(properties, 'type', symbol)
+			_set(properties, TYPE_NAME_KEY, name)
+		else:
+			_set(properties, 'type', chosen)
+			if chosen in SEARCHABLE_TYPES:
+				#A searchable type needs no name, and leaving a stale one
+				#behind would describe the table as something it is not.
+				properties.pop(TYPE_NAME_KEY, None)
 
 	if 'complete' in data:
 		answer = (data.get('complete') or '').strip()
@@ -182,3 +214,33 @@ def _leading_word(value):
 	from .limits import _leading_word as leading
 
 	return leading(value)
+
+
+def known_other_types():
+	"""Types outside the searchable set that some table already declares.
+
+	Read from the corpus rather than from a list in the code, so recording a
+	new kind of number does not need a release: the next person choosing
+	"something else" is offered what the last one entered.
+	"""
+	import yaml
+
+	from .models import Table
+
+	found = dict(OTHER_TYPES)
+	rows = (Table.objects.exclude(head_revision=None)
+	        .select_related('head_revision').only('head_revision'))
+	for table in rows:
+		try:
+			tree = yaml.load(table.head_revision.content,
+			                 Loader=yaml.BaseLoader) or {}
+		except Exception:
+			continue
+		properties = tree.get('Data properties')
+		if not isinstance(properties, dict):
+			continue
+		symbol = str(properties.get('type') or '').strip()
+		if symbol and symbol not in SEARCHABLE_TYPES:
+			found.setdefault(
+				symbol, str(properties.get(TYPE_NAME_KEY) or '').strip())
+	return [{'symbol': k, 'name': v} for k, v in sorted(found.items())]

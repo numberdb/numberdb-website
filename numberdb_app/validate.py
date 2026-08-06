@@ -28,11 +28,28 @@ from __future__ import annotations
 
 import difflib
 
-__all__ = ['Problem', 'problems', 'check', 'DATA_TYPES', 'PARAMETER_TYPES']
+__all__ = ['Problem', 'problems', 'check', 'DATA_TYPES', 'PARAMETER_TYPES',
+           'SEARCHABLE_TYPES', 'OTHER_TYPES', 'TYPE_NAME_KEY']
 
-#: What a table may say its values are. Every type in the corpus: 65 tables of
-#: R, 16 of Z, 8 of Z[], 6 of Qp, 4 each of C and Q[], 3 of Q, and one `*R`.
-DATA_TYPES = frozenset(['Z', 'Q', 'R', 'C', 'Qp', 'Z[]', 'Q[]', '*R'])
+#: The types the database can search. A value of one of these is parsed,
+#: indexed and findable by its digits.
+SEARCHABLE_TYPES = frozenset(['Z', 'Q', 'R', 'C', 'Qp', 'Z[]', 'Q[]'])
+
+#: Types that are recorded but not searched, by symbol and name. NumberDB was
+#: meant from the start to be able to hold any kind of number, on the
+#: understanding that one it cannot parse is shown and cited but not found by
+#: its digits -- T41's four hyperreals are displayed and index nothing.
+#:
+#: A table may declare a type that is not here, and must then also give it a
+#: name (see `TYPE_NAME_KEY`). That keeps the list open without letting a
+#: misspelling in: `Wombat` alone is a typo, `Wombat` with "wombat numbers"
+#: beside it is somebody deciding something.
+OTHER_TYPES = {'*R': 'hyperreals'}
+
+#: Where a type outside the searchable set says what it is called.
+TYPE_NAME_KEY = 'type name'
+
+DATA_TYPES = frozenset(SEARCHABLE_TYPES | set(OTHER_TYPES))
 
 #: What a parameter may be. `Symbolic` is the second commonest, 27 declarations:
 #: its values are names rather than numbers -- `Co1`, `unit-s`, `a_n/n!`.
@@ -103,12 +120,26 @@ def _check_types(tree):
 	properties = tree.get('Data properties')
 	if isinstance(properties, dict):
 		declared = str(properties.get('type', '')).strip()
+		named = str(properties.get(TYPE_NAME_KEY, '')).strip()
 		if declared and declared not in DATA_TYPES:
-			yield Problem(
-				'%r is not a type this database knows. Use one of %s%s'
-				% (declared, ', '.join(sorted(DATA_TYPES)),
-				   _did_you_mean(declared, DATA_TYPES)),
-				where='Data properties: type')
+			if named:
+				#Declared deliberately, with a name. Allowed, and said out loud:
+				#the database cannot parse it, so its values will be shown and
+				#cited but will not answer a search by their digits.
+				yield Problem(
+					'%r is not a type this database can parse, so these values '
+					'will be shown and citable but will not be found by search. '
+					'That is allowed; the table says it means %r.'
+					% (declared, named), fatal=False,
+					where='Data properties: type')
+			else:
+				yield Problem(
+					'%r is not a type this database knows. Use one of %s, or '
+					'give it a name in a %r line if it really is a new kind of '
+					'number%s'
+					% (declared, ', '.join(sorted(DATA_TYPES)), TYPE_NAME_KEY,
+					   _did_you_mean(declared, DATA_TYPES)),
+					where='Data properties: type')
 
 	parameters = tree.get('Parameters')
 	if isinstance(parameters, dict):

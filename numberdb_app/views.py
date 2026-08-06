@@ -2565,6 +2565,10 @@ def _metadata_form_page(request, table, base):
 		'is_draft': not table.published,
 	}
 	context.update(fields_from(tree))
+	#Supplied here rather than by fields_from, which answers about a document
+	#and should not also be querying the corpus.
+	from .metadata_form import known_other_types
+	context['known_other_types'] = known_other_types()
 	return render(request, 'edit-metadata.html', context)
 
 
