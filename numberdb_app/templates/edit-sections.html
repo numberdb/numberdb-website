@@ -160,65 +160,17 @@ the labels live in a different section of the same long document.
           <input type="hidden" name="section.{{ section.name }}.present" value="1">
           <div class="rows">
             {% for item in section.items %}
-              <div class="row-item">
-                <div class="row-actions">
-                  <button type="button" data-move="up">&uarr;</button>
-                  <button type="button" data-move="down">&darr;</button>
-                  <button type="button" data-remove="1">remove</button>
-                </div>
-                <div class="row-fields">
-                  <label>label</label>
-                  <input class="row-label" type="text" size="18"
-                         name="section.{{ section.name }}.{{ forloop.counter0 }}.label"
-                         value="{{ item.label }}">
-                  {% comment %}
-                  What this row was called when the page was drawn, so renaming
-                  it can take its citations along. A CITE{} left pointing at a
-                  label that no longer exists renders as nothing: the sentence
-                  still reads and the reference has gone.
-                  {% endcomment %}
-                  <input type="hidden"
-                         name="section.{{ section.name }}.{{ forloop.counter0 }}.was"
-                         value="{{ item.original }}">
-                  {% if item.was_plain %}
-                    <input type="hidden"
-                           name="section.{{ section.name }}.{{ forloop.counter0 }}.plain"
-                           value="1">
-                  {% endif %}
-                  {% if item.extra %}
-                    {% comment %}
-                    Fields this form has no box for travel back untouched, which
-                    is how `github` survived before it had one.
-                    {% endcomment %}
-                    <input type="hidden"
-                           name="section.{{ section.name }}.{{ forloop.counter0 }}.extra"
-                           value="{{ item.extra_json }}">
-                  {% endif %}
-                </div>
-                {% if section.shape == 'labelled-text' %}
-                  <div class="row-fields">
-                    <label>text</label>
-                    <textarea name="section.{{ section.name }}.{{ forloop.counter0 }}.text"
-                              >{{ item.text }}</textarea>
-                  </div>
-                {% else %}
-                  {% for field in section.fields %}
-                    <div class="row-fields">
-                      <label>{{ field }}</label>
-                      {% if field in section.long_fields %}
-                        <textarea name="section.{{ section.name }}.{{ forloop.parentloop.counter0 }}.{{ field }}"
-                                  >{{ item.values|get:field }}</textarea>
-                      {% else %}
-                        <input type="text"
-                               name="section.{{ section.name }}.{{ forloop.parentloop.counter0 }}.{{ field }}"
-                               value="{{ item.values|get:field }}">
-                      {% endif %}
-                    </div>
-                  {% endfor %}
-                {% endif %}
-              </div>
+              {% include "includes/section-row.html" with index=forloop.counter0 %}
             {% endfor %}
           </div>
+          {% comment %}
+          The blank row the add button copies. A template rather than a clone of
+          the last row, because a section with none -- and most tables have
+          several -- could otherwise never get its first.
+          {% endcomment %}
+          <template class="row-template">
+            {% include "includes/section-row.html" with index="__INDEX__" item=None %}
+          </template>
           <p>
             <button type="button" data-add="{{ section.name }}">add {{ section.name|lower|slice:":-1" }}</button>
           </p>
@@ -331,19 +283,9 @@ the labels live in a different section of the same long document.
       }
     } else if (button.hasAttribute('data-add')) {
       var rows = block.querySelector('.rows');
-      var last = rows.querySelector('.row-item:last-child');
-      var fresh;
-      if (last) {
-        fresh = last.cloneNode(true);
-        fresh.querySelectorAll('input[type=text], textarea').forEach(function (f) {
-          f.value = '';
-        });
-        fresh.querySelectorAll('input[type=hidden]').forEach(function (f) {
-          f.remove();
-        });
-      } else {
-        return;   //Nothing to copy the shape from; the source view can start it.
-      }
+      var template = block.querySelector('.row-template');
+      if (!rows || !template) { return; }
+      var fresh = template.content.firstElementChild.cloneNode(true);
       rows.appendChild(fresh);
       renumber(block);
       var first = fresh.querySelector('input[type=text]');

@@ -497,6 +497,18 @@ def table_context(table, preview=False):
 			sections.append(section)
 			
 		current_job = 'parsing parameters'
+		#How a parameter's values are written when they are shown.
+		#
+		#An entry's identity is its plain value -- `v: b`, which is what a
+		#citation resolves on -- and `$b$` is how that value is displayed.
+		#Both are needed and they are not the same thing. What is not needed is
+		#a copy of the display on every record: it is a property of the value,
+		#so it belongs on the parameter, stated once.
+		value_display = {}
+		for _name, _info in (data.get('Parameters') or {}).items():
+			if isinstance(_info, dict) and isinstance(_info.get('values'), dict):
+				value_display[_name] = _info['values']
+
 		if 'Parameters' in data and len(data['Parameters']) > 0:
 			labeled_list = []
 			parameters = {}
@@ -812,6 +824,8 @@ def table_context(table, preview=False):
 					html_p = '<div %s class="table-block">' % (id_str,)
 					if isinstance(numbers_p,dict) and 'param-latex' in numbers_p:
 						param_html = numbers_p['param-latex']
+					elif _shown_as(value_display, groups_left, p) is not None:
+						param_html = _shown_as(value_display, groups_left, p)
 					else:
 						param_html = format_param_group(p)
 					html_p += '<div class="table-param-group"><span>%s:</span></div>' % (param_html,)
@@ -903,6 +917,8 @@ def table_context(table, preview=False):
 				for p, numbers_p in numbers.items():
 					if isinstance(numbers_p,dict) and 'param-latex' in numbers_p:
 						param_html = numbers_p['param-latex']
+					elif _shown_as(value_display, groups_left, p) is not None:
+						param_html = _shown_as(value_display, groups_left, p)
 					else:
 						param_html = format_param_group(p,', ').replace(' ','&nbsp;')
 					params_display_so_far_p = params_display_so_far + [param_html]
@@ -2643,3 +2659,19 @@ def _save_sections_form(request, table, base):
 	                         back_to='%s?form=sections' % (
 		                         reverse('db:edit-table',
 		                                 kwargs={'tid': table.tid}),))
+
+
+def _shown_as(value_display, groups_left, value):
+	"""How this parameter value is written, when its parameter says.
+
+	Only for a level holding one parameter: a grouped level such as
+	`['c4', 'c6']` has a key holding two values at once, and a display for the
+	pair is a different thing from a display for a value.
+	"""
+	if not value_display or not groups_left:
+		return None
+	group = groups_left[0]
+	names = group if isinstance(group, (list, tuple)) else [group]
+	if len(names) != 1:
+		return None
+	return (value_display.get(names[0]) or {}).get(str(value))

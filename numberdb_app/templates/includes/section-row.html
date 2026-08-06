@@ -1,0 +1,67 @@
+{% load numberdb_urls %}
+{% comment %}
+One row of a labelled section, used both for the rows a table has and for the
+blank one the "add" button copies. Rendered from one place so an added row
+cannot drift from an existing one -- and so a section with no rows at all can
+still get its first, which cloning the last row cannot do.
+
+`index` is a number for a real row and the placeholder `__INDEX__` for the
+template, which the script replaces when it adds one.
+{% endcomment %}
+<div class="row-item">
+  <div class="row-actions">
+    <button type="button" data-move="up">&uarr;</button>
+    <button type="button" data-move="down">&darr;</button>
+    <button type="button" data-remove="1">remove</button>
+  </div>
+  <div class="row-fields">
+    <label>label</label>
+    <input class="row-label" type="text" size="18"
+           name="section.{{ section.name }}.{{ index }}.label"
+           value="{{ item.label|default:'' }}">
+    {% if item.was_plain %}
+      <input type="hidden"
+             name="section.{{ section.name }}.{{ index }}.plain" value="1">
+    {% endif %}
+    {% comment %}
+    What this row was called when the page was drawn, so renaming it can take
+    its citations along. A CITE{} left pointing at a label that no longer
+    exists renders as nothing: the sentence still reads, the reference is gone.
+    {% endcomment %}
+    {% if item.original %}
+      <input type="hidden"
+             name="section.{{ section.name }}.{{ index }}.was"
+             value="{{ item.original }}">
+    {% endif %}
+    {% if item.extra %}
+      {% comment %}
+      Fields this form has no box for travel back untouched, which is how
+      `github` survived before it had one.
+      {% endcomment %}
+      <input type="hidden"
+             name="section.{{ section.name }}.{{ index }}.extra"
+             value="{{ item.extra_json }}">
+    {% endif %}
+  </div>
+  {% if section.shape == 'labelled-text' %}
+    <div class="row-fields">
+      <label>text</label>
+      <textarea name="section.{{ section.name }}.{{ index }}.text"
+                >{{ item.text|default:'' }}</textarea>
+    </div>
+  {% else %}
+    {% for field in section.fields %}
+      <div class="row-fields">
+        <label>{{ field }}</label>
+        {% if field in section.long_fields %}
+          <textarea name="section.{{ section.name }}.{{ index }}.{{ field }}"
+                    >{{ item.values|get:field }}</textarea>
+        {% else %}
+          <input type="text"
+                 name="section.{{ section.name }}.{{ index }}.{{ field }}"
+                 value="{{ item.values|get:field }}">
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>

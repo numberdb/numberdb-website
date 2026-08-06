@@ -164,13 +164,18 @@ def _check_entries(tree):
 		return
 
 	declared = [name for group in parameter_groups(tree) for name in group]
+	#A parameter that lists how its values are written has said what they are.
+	declared_values = {}
+	for name, spec in (tree.get('Parameters') or {}).items():
+		if isinstance(spec, dict) and isinstance(spec.get('values'), dict):
+			declared_values[name] = set(spec['values'])
 
 	if is_flat(block):
 		for index, record in enumerate(block):
 			if not isinstance(record, dict):
 				yield Problem('entry %d is not a record.' % (index,))
 				continue
-			yield from _check_record(record, index, declared)
+			yield from _check_record(record, index, declared, declared_values)
 		return
 
 	#The nested form: the parameters are the nesting, so there is nothing to
@@ -180,8 +185,9 @@ def _check_entries(tree):
 			yield from _check_keys(entry, 'entry %s' % (path,))
 
 
-def _check_record(record, index, declared):
+def _check_record(record, index, declared, declared_values=None):
 	where = 'entry %d' % (index,)
+	declared_values = declared_values or {}
 	params = record.get('params')
 
 	if params is None:
@@ -201,6 +207,19 @@ def _check_record(record, index, declared):
 				% (where, extra, ', '.join(declared),
 				   _did_you_mean(extra, expected)),
 				where=where)
+		for name in sorted(named & expected):
+			allowed = declared_values.get(name)
+			if allowed and str(params.get(name)) not in allowed:
+				#A parameter that says how its values are written has thereby
+				#said what they are. A value outside that list is a typo, and a
+				#typo here does not fail -- it creates an entry nobody meant,
+				#under an identity nobody will cite.
+				yield Problem(
+					'%s gives %r as %r, which is not one of its values: %s'
+					% (where, name, params.get(name),
+					   ', '.join(sorted(allowed))),
+					where=where)
+
 		for missing in sorted(expected - named):
 			#A warning, not a refusal. Seven entries in the corpus are like
 			#this and every one is a statement about a *family* rather than a

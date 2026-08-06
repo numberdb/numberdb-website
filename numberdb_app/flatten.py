@@ -90,6 +90,13 @@ def to_records(tree):
 	if block is None:
 		return []
 
+	#Already records: hand them back rather than walking them as though the
+	#list were a value. Documents are stored flat now, so a caller reaching for
+	#this is as likely to have one as not, and the nested walk would quietly
+	#turn a whole table into a single entry.
+	if is_flat(block):
+		return [dict(record) for record in block if isinstance(record, dict)]
+
 	groups = parameter_groups(tree)
 	records = []
 
