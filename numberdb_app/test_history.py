@@ -343,3 +343,64 @@ class HunkHeadersAreReadable(TestCase):
 	def test_something_unexpected_falls_back_to_nothing(self):
 		"""The template then shows the raw header rather than a wrong sentence."""
 		self.assertEqual(self.words('not a hunk header'), '')
+
+
+class WhereAnEntryCameFrom(RestoreBase):
+	"""Blame, computed from the revisions rather than stored beside the entries.
+
+	Each revision holds a complete document, so walking them in order says
+	exactly when a value last changed. A stored pointer would be faster and
+	could disagree with the history, and a cache that disagrees with the truth
+	is the failure this project keeps finding.
+	"""
+
+	def setUp(self):
+		super().setUp()
+		self.first = commit_table(
+			self.table,
+			{'Title': 'H', 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '1.1'},
+			             {'params': {'n': '2'}, 'number': '2.2'}]},
+			author=self.alice).revision
+		self.second = commit_table(
+			self.table,
+			{'Title': 'H', 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '1.1'},
+			             {'params': {'n': '2'}, 'number': '9.9'}]},
+			author=self.chair, base=self.first).revision
+
+	def blame(self):
+		from .views import entry_blame
+
+		response = self.client.get('/blame/%s' % (self.table.tid,))
+		return response
+
+	def test_the_page_renders(self):
+		self.assertEqual(self.blame().status_code, 200)
+
+	def test_an_untouched_entry_keeps_its_original_revision(self):
+		"""The point: only what changed is attributed to the later edit."""
+		body = self.blame().content.decode('utf8')
+		self.assertIn(self.alice.username, body)
+
+	def test_a_changed_entry_is_attributed_to_the_change(self):
+		body = self.blame().content.decode('utf8')
+		self.assertIn(self.chair.username, body)
+
+	def test_a_machine_run_is_named(self):
+		commit_table(
+			self.table,
+			{'Title': 'H', 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '1.1'},
+			             {'params': {'n': '2'}, 'number': '9.9'},
+			             {'params': {'n': '3'}, 'number': '3.3'}]},
+			author=None, base=self.second, produced_by='zeta-generator',
+			run='run-77')
+		body = self.blame().content.decode('utf8')
+		self.assertIn('zeta-generator', body)
+		self.assertIn('run-77', body)
+
+	def test_a_draft_is_not_blameable_by_a_stranger(self):
+		self.table.published = False
+		self.table.save(update_fields=['published'])
+		self.assertEqual(self.blame().status_code, 404)

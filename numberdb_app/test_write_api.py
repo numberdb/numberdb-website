@@ -405,3 +405,86 @@ class EntriesOnly(WriteBase):
 		r = self.post(self.entries(), token=self.key_for(self.chair),
 		              tid='T99999')
 		self.assertEqual(r.status_code, 404)
+
+
+class SendingEntriesOneAtATime(WriteBase):
+	"""What a generator computing expensive values needs.
+
+	Without it a script must compute everything before sending anything, so a
+	crash at entry 900 loses all 900 -- and a revision per entry would be
+	unreadable as history and ruinous as storage, since every revision holds
+	the whole document.
+	"""
+
+	def setUp(self):
+		super().setUp()
+		commit_table(self.table, {
+			'Title': 'API probe',
+			'Parameters': {'n': {'type': 'Z'}},
+			'Numbers': [{'params': {'n': '1'}, 'number': '1.1'}],
+		}, author=self.chair, base=self.table.head_revision)
+		self.table.refresh_from_db()
+		self.token = self.key_for(self.chair)
+
+	def send(self, entries, mode='upsert', run='run-1'):
+		headers = {'HTTP_AUTHORIZATION': 'Bearer %s' % (self.token,),
+		           'HTTP_X_ENTRIES_MODE': mode}
+		if run:
+			headers['HTTP_X_RUN_ID'] = run
+		return self.client.post('/api/table/%s/entries' % (self.table.tid,),
+		                        yaml.dump(entries, sort_keys=False),
+		                        content_type='application/yaml', **headers)
+
+	def entries(self):
+		self.table.refresh_from_db()
+		return tree_of(self.table.head_revision)['Numbers']
+
+	def test_one_entry_is_added_without_replacing_the_rest(self):
+		self.send([{'params': {'n': '2'}, 'number': '2.2'}])
+		self.assertEqual([e['params']['n'] for e in self.entries()], ['1', '2'])
+
+	def test_sending_the_same_identity_updates_it(self):
+		self.send([{'params': {'n': '1'}, 'number': '9.9'}])
+		self.assertEqual(self.entries()[0]['number'], '9.9')
+		self.assertEqual(len(self.entries()), 1)
+
+	def test_the_response_says_what_happened(self):
+		body = json.loads(self.send(
+			[{'params': {'n': '2'}, 'number': '2.2'},
+			 {'params': {'n': '1'}, 'number': '1.9'}]).content)
+		self.assertEqual(body['added'], 1)
+		self.assertEqual(body['updated'], 1)
+
+	def test_a_run_grows_one_revision_rather_than_adding_many(self):
+		"""A thousand entries would otherwise be a thousand whole documents."""
+		before = TableRevision.objects.filter(table=self.table).count()
+		for n in range(2, 8):
+			self.send([{'params': {'n': str(n)}, 'number': '%d.1' % (n,)}])
+		after = TableRevision.objects.filter(table=self.table).count()
+		self.assertEqual(after - before, 1)
+		self.assertEqual(len(self.entries()), 7)
+
+	def test_a_different_run_starts_a_new_revision(self):
+		self.send([{'params': {'n': '2'}, 'number': '2.2'}], run='run-1')
+		before = TableRevision.objects.filter(table=self.table).count()
+		self.send([{'params': {'n': '3'}, 'number': '3.3'}], run='run-2')
+		self.assertEqual(
+			TableRevision.objects.filter(table=self.table).count(), before + 1)
+
+	def test_without_a_run_every_submission_is_its_own_revision(self):
+		before = TableRevision.objects.filter(table=self.table).count()
+		self.send([{'params': {'n': '2'}, 'number': '2.2'}], run='')
+		self.send([{'params': {'n': '3'}, 'number': '3.3'}], run='')
+		self.assertEqual(
+			TableRevision.objects.filter(table=self.table).count(), before + 2)
+
+	def test_replace_is_still_the_default(self):
+		"""Upsert and replace are each wrong as a default for the other."""
+		self.send([{'params': {'n': '5'}, 'number': '5.5'}], mode='replace')
+		self.assertEqual([e['params']['n'] for e in self.entries()], ['5'])
+
+	def test_what_was_sent_earlier_in_a_run_survives_a_later_failure(self):
+		"""The crash-safety this exists for."""
+		self.send([{'params': {'n': '2'}, 'number': '2.2'}])
+		self.send([{'params': {'n': '3'}, 'number': 'not a number'}])
+		self.assertEqual([e['params']['n'] for e in self.entries()], ['1', '2'])

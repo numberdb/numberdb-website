@@ -21,6 +21,13 @@ vocabularies for the same three destinations.
 {% else %}
   <span class="link-below-title-current">history</span>
 {% endif %}
+{% if current != 'blame' %}
+  &middot;
+  <a class="link-below-title" href="{% url 'db:entry-blame' table.tid %}">where entries came from</a>
+{% else %}
+  &middot;
+  <span class="link-below-title-current">where entries came from</span>
+{% endif %}
 {% if table.head_revision.attachments.exists %}
   &middot;
   {% if current != 'files' %}

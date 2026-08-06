@@ -508,3 +508,89 @@ class TestComplexSpelling:
         text = numberdb.to_text(self.value())
         assert ' - i ' not in text
         assert '-3/4' in text
+
+
+class TestStreamingEntries:
+    """Sending values as they are computed, rather than all at the end.
+
+    A generator of expensive values that must finish before it sends anything
+    loses everything when it dies at entry 900. The batches of one run land in
+    a single revision, so the history shows one act of regeneration.
+    """
+
+    def gen(self):
+        class Slow(numberdb.Generator):
+            parameters = ('n',)
+            type = 'Q'
+            tid = 'T7'
+
+            def enumerate(self, limit=6):
+                for n in range(1, limit + 1):
+                    yield {'n': n}
+
+            def value(self, params, digits):
+                return Fraction(1, params['n'])
+
+        return Slow()
+
+    def test_upsert_and_run_are_sent(self):
+        sent = Sent()
+        numberdb.submit_entries('T7', numberdb.Entries('n'), upsert=True,
+                                run='run-1', client=sent.client())
+        assert sent.request.headers['X-entries-mode'] == 'upsert'
+        assert sent.request.headers['X-run-id'] == 'run-1'
+
+    def test_neither_is_sent_by_default(self):
+        """Replacing is what a full regeneration means."""
+        sent = Sent()
+        entries = numberdb.Entries('n')
+        entries.add(n=1, number='1')
+        numberdb.submit_entries('T7', entries, client=sent.client())
+        assert 'X-entries-mode' not in sent.request.headers
+
+    def test_publishing_in_batches_sends_several_times(self):
+        posts = []
+
+        class Recording(Sent):
+            def opener(self, request, timeout=None):
+                posts.append(request)
+                return _Readable(json.dumps({'tid': 'T7'}).encode('utf8'))
+
+        recorder = Recording()
+        result = numberdb.publish(self.gen(), batch=2, limit=6,
+                                  client=recorder.client())
+        assert len(posts) == 3
+        assert result['entries'] == 6
+        assert result['batches'] == 3
+
+    def test_every_batch_carries_the_same_run(self):
+        """Otherwise each becomes its own revision of the whole document."""
+        posts = []
+
+        class Recording(Sent):
+            def opener(self, request, timeout=None):
+                posts.append(request)
+                return _Readable(json.dumps({'tid': 'T7'}).encode('utf8'))
+
+        numberdb.publish(self.gen(), batch=2, limit=6,
+                         client=Recording().client())
+        runs = {r.headers['X-run-id'] for r in posts}
+        assert len(runs) == 1
+
+    def test_batches_are_upserts(self):
+        """Each sends what it has; replacing would delete the earlier ones."""
+        posts = []
+
+        class Recording(Sent):
+            def opener(self, request, timeout=None):
+                posts.append(request)
+                return _Readable(json.dumps({'tid': 'T7'}).encode('utf8'))
+
+        numberdb.publish(self.gen(), batch=2, limit=6,
+                         client=Recording().client())
+        assert all(r.headers['X-entries-mode'] == 'upsert' for r in posts)
+
+    def test_without_a_batch_it_sends_once(self):
+        sent = Sent()
+        numberdb.publish(self.gen(), limit=4, client=sent.client())
+        assert sent.request.headers.get('X-entries-mode') is None

@@ -101,10 +101,11 @@ class StaleEdit(Exception):
 class CommitOutcome:
 	"""What happened, for the caller to report."""
 
-	__slots__ = ('revision', 'merged', 'unchanged', 'breaches', 'problems')
+	__slots__ = ('revision', 'merged', 'unchanged', 'breaches', 'problems',
+	             'amended')
 
 	def __init__(self, revision, merged=False, unchanged=False, breaches=(),
-	             problems=()):
+	             problems=(), amended=False):
 		self.revision = revision
 		#: Soft size limits this table is over without saying why. It was
 		#: committed regardless, because the author may have a good reason and
@@ -114,6 +115,9 @@ class CommitOutcome:
 		#: a probable misspelling, an entry that names a family rather than a
 		#: value. Saved anyway, and reported.
 		self.problems = list(problems)
+		#: True when this grew an existing revision rather than adding one,
+		#: which is how a run of a generator arrives.
+		self.amended = amended
 		#: True when somebody else had committed and the two edits were
 		#: combined. Worth telling the author, since the result contains
 		#: changes they have not seen.
@@ -154,7 +158,7 @@ def dump_tree(tree):
 
 def commit_table(table, tree, author=None, message='', base=None,
                  produced_by='', allow_parameter_change=False, strict=False,
-                 files=None):
+                 files=None, run=''):
 	"""Put ``tree`` on ``table``'s history and return a :class:`CommitOutcome`.
 
 	``base`` is the revision the author started from. Passing None means "this
@@ -203,7 +207,7 @@ def commit_table(table, tree, author=None, message='', base=None,
 	if head is None:
 		return _write(table, tree, author, message, parent=None, base=None,
 		              produced_by=produced_by, breaches=breaches, files=files,
-		              problems=problems)
+		              problems=problems, run=run)
 
 	if base is None or base.pk == head.pk:
 		#Nobody moved. The ordinary case, and the fast one.
@@ -212,9 +216,17 @@ def commit_table(table, tree, author=None, message='', base=None,
 		    and not _files_change(head, files)):
 			return CommitOutcome(head, unchanged=True, breaches=breaches,
 		                     problems=problems)
+		#The same run, continuing: amend rather than add. A generator sending a
+		#thousand expensive values one at a time would otherwise produce a
+		#thousand revisions of the whole document -- 230 MB for the largest table,
+		#and a history nobody can read.
+		if run and head.run == run and head.author_id == (
+				author.pk if author is not None else None):
+			return _amend(table, head, tree, message, breaches, problems)
+
 		return _write(table, tree, author, message, parent=head, base=head,
 		              produced_by=produced_by, breaches=breaches, files=files,
-		              problems=problems)
+		              problems=problems, run=run)
 
 	#Somebody committed while this edit was being written.
 	result = merge(tree_of(base), tree, tree_of(head))
@@ -239,7 +251,7 @@ def commit_table(table, tree, author=None, message='', base=None,
 
 	return _write(table, result.tree, author, message, parent=head, base=base,
 	              produced_by=produced_by, merged=True, breaches=breaches,
-	              manifest=merged_files, problems=problems)
+	              manifest=merged_files, problems=problems, run=run)
 
 
 def _files_change(revision, files):
@@ -269,7 +281,8 @@ def _wanted_manifest(revision, files):
 
 
 def _write(table, tree, author, message, parent, base, produced_by,
-           merged=False, breaches=(), files=None, manifest=None, problems=()):
+           merged=False, breaches=(), files=None, manifest=None, problems=(),
+           run=''):
 	from django.db import transaction
 
 	from .models import TableRevision
@@ -285,11 +298,11 @@ def _write(table, tree, author, message, parent, base, produced_by,
 	with transaction.atomic():
 		return _write_inside(table, tree, author, message, parent, base,
 		                     produced_by, merged, breaches, files, manifest,
-		                     problems)
+		                     problems, run)
 
 
 def _write_inside(table, tree, author, message, parent, base, produced_by,
-                  merged, breaches, files, manifest, problems=()):
+                  merged, breaches, files, manifest, problems=(), run=''):
 	from .models import TableRevision
 
 	revision = TableRevision.objects.create(
@@ -300,6 +313,7 @@ def _write_inside(table, tree, author, message, parent, base, produced_by,
 		author = author,
 		message = message,
 		produced_by = produced_by,
+		run = run,
 	)
 	#Before head moves, so a revision is never briefly visible without the
 	#files it was committed with.
@@ -784,3 +798,35 @@ def may_see(table, user):
 	from .permissions import is_board_member
 
 	return is_board_member(user)
+
+
+def _amend(table, head, tree, message, breaches, problems):
+	"""Grow the run's revision instead of writing another one.
+
+	The revision keeps its place in the history and its parent; its content,
+	its digest and the rows built from it move on. That is what a run *is* --
+	one act of regenerating a table, which happens to arrive in pieces because
+	the values are expensive and a crash must not cost the ones already found.
+
+	The date is left alone: it says when the run started, which is the more
+	useful of the two answers and the one the history is sorted by.
+	"""
+	from django.db import transaction
+
+	from .models import TableRevision
+
+	with transaction.atomic():
+		head.content = dump_tree(tree)
+		if message:
+			head.message = message
+		#save() derives the digest from the content, so it follows.
+		head.save(update_fields=['content', 'digest', 'message'])
+		try:
+			apply_revision(table, head)
+		except (StaleEdit, ParametersChanged):
+			raise
+		except Exception as e:
+			raise InvalidDocument(e)
+
+	return CommitOutcome(head, breaches=breaches, problems=problems,
+	                     amended=True)

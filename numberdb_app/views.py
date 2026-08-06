@@ -2710,3 +2710,83 @@ def _hunk_in_words(header):
 			where, after, '' if after == 1 else 's', after - before)
 	return '%s (%d line%s, %d fewer than before)' % (
 		where, after, '' if after == 1 else 's', before - after)
+
+
+def entry_blame(request, tid):
+	"""Where each of a table's entries came from.
+
+	The revisions already hold the answer -- each is a complete document, so
+	walking them in order says exactly when an entry's value last changed --
+	and it is computed rather than stored. A stored pointer would be faster and
+	could disagree with the revisions, which is the failure this project keeps
+	finding; the revisions are the truth.
+
+	Only for one page of entries at a time, since answering for a table of a
+	thousand means reading its whole history.
+	"""
+	from .editing import may_see, tree_of
+	from .entries_form import PAGE_SIZE, columns_of, identity_of
+	from .flatten import entries_block
+
+	table = get_object_or_404(Table, tid=tid)
+	if not may_see(table, request.user):
+		raise Http404
+	if table.head_revision is None:
+		raise Http404('this table has no revisions')
+
+	head = tree_of(table.head_revision)
+	columns = columns_of(head)
+	records = entries_block(head) or []
+	if not isinstance(records, list):
+		records = []
+
+	page = _as_int(request.GET.get('page')) or 1
+	pages = max(1, (len(records) + PAGE_SIZE - 1) // PAGE_SIZE)
+	page = max(1, min(page, pages))
+	start = (page - 1) * PAGE_SIZE
+	shown = records[start:start + PAGE_SIZE]
+	wanted = {identity_of(r.get('params') or {}, columns): r
+	          for r in shown if isinstance(r, dict)}
+
+	#Oldest first, so the last revision to write a given value wins.
+	came_from = {}
+	previous = {}
+	for revision in table.revisions.select_related(
+			'author', 'contributor').order_by('created'):
+		try:
+			entries = entries_block(tree_of(revision)) or []
+		except Exception:
+			continue
+		if not isinstance(entries, list):
+			continue
+		for record in entries:
+			if not isinstance(record, dict):
+				continue
+			identity = identity_of(record.get('params') or {}, columns)
+			if identity not in wanted:
+				continue
+			value = record.get('number')
+			if previous.get(identity) != value:
+				previous[identity] = value
+				came_from[identity] = revision
+
+	rows = []
+	for record in shown:
+		if not isinstance(record, dict):
+			continue
+		identity = identity_of(record.get('params') or {}, columns)
+		rows.append({
+			'identity': identity,
+			'params': record.get('params') or {},
+			'number': record.get('number'),
+			'revision': came_from.get(identity),
+		})
+
+	return render(request, 'entry-blame.html', {
+		'table': table,
+		'columns': columns,
+		'rows': rows,
+		'page': page,
+		'pages': pages,
+		'total': len(records),
+	})
