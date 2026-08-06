@@ -166,3 +166,32 @@ class TheCorpusPasses(TestCase):
 		for td in data:
 			tree = yaml.load(td.full_yaml, Loader=yaml.BaseLoader) or {}
 			self.assertEqual(fatal(tree), [], str(td.table))
+
+
+class ADeclaredValueList(SimpleTestCase):
+	"""A parameter that says how its values are written has said what they are.
+
+	`values: {a: $a$, b: $b$}` is both the display and the vocabulary, so a
+	third value is a typo -- and a typo here does not fail. It creates an entry
+	nobody meant, under an identity nobody will ever cite.
+	"""
+
+	def tree(self, value):
+		return {'Title': 'x',
+		        'Parameters': {'v': {'type': 'Symbolic',
+		                             'values': {'a': '$a$', 'b': '$b$'}}},
+		        'Numbers': [{'params': {'v': value}, 'number': '1'}]}
+
+	def test_a_declared_value_is_fine(self):
+		self.assertEqual(fatal(self.tree('a')), [])
+
+	def test_a_value_outside_the_list_is_refused(self):
+		problems = fatal(self.tree('z'))
+		self.assertEqual(len(problems), 1)
+		self.assertIn("not one of its values", str(problems[0]))
+
+	def test_a_parameter_without_a_list_accepts_anything(self):
+		tree = {'Title': 'x',
+		        'Parameters': {'v': {'type': 'Symbolic'}},
+		        'Numbers': [{'params': {'v': 'anything'}, 'number': '1'}]}
+		self.assertEqual(fatal(tree), [])

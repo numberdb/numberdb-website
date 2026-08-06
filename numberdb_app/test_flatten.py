@@ -183,3 +183,43 @@ class TheWholeCorpus(TestCase):
 			rebuilt.pop('Data', None)
 			rebuilt['Numbers'] = flatten.to_nested(first, groups)
 			self.assertEqual(first, flatten.to_records(rebuilt), tid)
+
+
+class ParameterLabelsLiveOnTheParameter(SimpleTestCase):
+	"""`v: b` is the identity and `$b$` is how it is shown.
+
+	Both are needed and they are different things. What is not needed is a copy
+	of the display on every record: it is a property of the value, so it is
+	stated once on the parameter. All 5178 records in the corpus that carried
+	one had it determined entirely by a single parameter value.
+	"""
+
+	def test_the_identity_is_the_plain_value(self):
+		tree = {'Parameters': {'q': {'type': 'R'},
+		                       'v': {'type': 'Symbolic',
+		                             'values': {'b': '$b$'}}},
+		        'Numbers': [{'params': {'q': '1.62', 'v': 'b'},
+		                     'number': '6436341'}]}
+		groups = flatten.parameter_groups(tree)
+		record = flatten.to_records(tree)[0]
+		self.assertEqual(flatten.identity_of(record, groups), '1.62,b')
+		self.assertEqual(flatten.named_identity_of(record, groups),
+		                 'q=1.62,v=b')
+
+
+class RecordsGoInAndOutUnchanged(SimpleTestCase):
+	"""Documents are stored flat, so a caller is as likely to hand over records
+	as nested entries. Walked as though the list were a value, a whole table
+	became one entry."""
+
+	def test_a_flat_block_is_returned_as_records(self):
+		tree = {'Parameters': {'n': {}},
+		        'Numbers': [{'params': {'n': '1'}, 'number': '3.14'},
+		                    {'params': {'n': '2'}, 'number': '2.71'}]}
+		self.assertEqual(flatten.to_records(tree), tree['Numbers'])
+
+	def test_converting_twice_changes_nothing(self):
+		tree = {'Parameters': {'n': {}}, 'Numbers': {'1': '3.14'}}
+		once = flatten.to_records(tree)
+		twice = flatten.to_records({'Parameters': {'n': {}}, 'Numbers': once})
+		self.assertEqual(once, twice)
