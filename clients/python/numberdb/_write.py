@@ -24,7 +24,7 @@ from __future__ import annotations
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Union
 
 __all__ = ['Entries', 'document', 'to_text', 'submit', 'submit_entries',
-           'create']
+           'create', 'check_writable']
 
 #: How many digits a value is written to when nothing says otherwise. The
 #: house style, and the reason for it is not storage: digits that are cheap to
@@ -416,3 +416,25 @@ def create(tree: Mapping[str, Any], message: str = '', produced_by: str = '',
     if message:
         headers['X-Edit-Message'] = message
     return client.submit('/api/tables', _as_yaml(tree), headers)
+
+
+def check_writable(tid: str, client: Any = None) -> Dict[str, Any]:
+    """Find out now whether this table can be written to.
+
+    A generator may run for hours. Discovering at the end that no key was set,
+    or that this account may not write yet, or that the table does not exist,
+    costs whatever the computation cost -- and it is exactly the sort of thing
+    that is known before any of it starts.
+
+    Sends an empty upsert, which merges nothing and writes nothing, rather than
+    asking a separate endpoint whether writing would work. A question answered
+    by a different code path from the one that does the work is a question that
+    can be answered wrongly; this exercises the key, the account's permission,
+    the table's existence and the lock, and leaves the table untouched.
+
+    Returns what the server said. Raises the same exceptions a real write
+    would: `Unauthorized` without a usable key, `NumberDBError` for an unknown
+    table.
+    """
+    return submit_entries(tid, [], upsert=True, client=client,
+                          message='checking that this table can be written to')

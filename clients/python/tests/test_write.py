@@ -558,7 +558,7 @@ class TestStreamingEntries:
 
         recorder = Recording()
         result = numberdb.publish(self.gen(), batch=2, limit=6,
-                                  client=recorder.client())
+                                  preflight=False, client=recorder.client())
         assert len(posts) == 3
         assert result['entries'] == 6
         assert result['batches'] == 3
@@ -572,7 +572,7 @@ class TestStreamingEntries:
                 posts.append(request)
                 return _Readable(json.dumps({'tid': 'T7'}).encode('utf8'))
 
-        numberdb.publish(self.gen(), batch=2, limit=6,
+        numberdb.publish(self.gen(), batch=2, limit=6, preflight=False,
                          client=Recording().client())
         runs = {r.headers['X-run-id'] for r in posts}
         assert len(runs) == 1
@@ -586,11 +586,116 @@ class TestStreamingEntries:
                 posts.append(request)
                 return _Readable(json.dumps({'tid': 'T7'}).encode('utf8'))
 
-        numberdb.publish(self.gen(), batch=2, limit=6,
+        numberdb.publish(self.gen(), batch=2, limit=6, preflight=False,
                          client=Recording().client())
         assert all(r.headers['X-entries-mode'] == 'upsert' for r in posts)
 
     def test_without_a_batch_it_sends_once(self):
         sent = Sent()
-        numberdb.publish(self.gen(), limit=4, client=sent.client())
+        numberdb.publish(self.gen(), limit=4, preflight=False,
+                         client=sent.client())
         assert sent.request.headers.get('X-entries-mode') is None
+
+
+class TestRetryingABusyTable:
+    """Writes to one table are serialised, so a batch can be told to wait.
+
+    For a run of hours that is a normal event: the values are computed and
+    resending costs nothing, while losing them costs whatever they took.
+    """
+
+    def gen(self):
+        class Slow(numberdb.Generator):
+            parameters = ('n',)
+            type = 'Q'
+            tid = 'T7'
+
+            def enumerate(self, limit=2):
+                for n in range(1, limit + 1):
+                    yield {'n': n}
+
+            def value(self, params, digits):
+                return Fraction(1, params['n'])
+
+        return Slow()
+
+    def test_a_busy_answer_is_tried_again(self):
+        calls = []
+
+        class Busy(Sent):
+            def opener(self, request, timeout=None):
+                calls.append(request)
+                if len(calls) == 1:
+                    raise urllib.error.HTTPError(
+                        'http://x/', 429, 'busy', {'Retry-After': '0'},
+                        _Readable(b'{"error": "busy"}'))
+                return _Readable(json.dumps({'tid': 'T7'}).encode('utf8'))
+
+        numberdb.publish(self.gen(), batch=2, limit=2, preflight=False,
+                         client=Busy().client())
+        assert len(calls) == 2
+
+    def test_a_refused_document_is_not_tried_again(self):
+        """Repeating it will not make it true."""
+        calls = []
+
+        class Refusing(Sent):
+            def opener(self, request, timeout=None):
+                calls.append(request)
+                raise urllib.error.HTTPError(
+                    'http://x/', 413, 'too big', {},
+                    _Readable(b'{"error": "over a size limit"}'))
+
+        with pytest.raises(numberdb.TooBig):
+            numberdb.publish(self.gen(), batch=2, limit=2, preflight=False,
+                             client=Refusing().client())
+        assert len(calls) == 1
+
+
+class TestCheckingBeforeComputing:
+    """A generator may run for hours; "no API key was set" is knowable at once."""
+
+    def gen(self, counter):
+        class Counted(numberdb.Generator):
+            parameters = ('n',)
+            type = 'Q'
+            tid = 'T7'
+
+            def enumerate(self, limit=3):
+                for n in range(1, limit + 1):
+                    yield {'n': n}
+
+            def value(self, params, digits):
+                counter.append(params['n'])
+                return Fraction(1, params['n'])
+
+        return Counted()
+
+    def test_a_missing_key_is_found_before_anything_is_computed(self):
+        computed = []
+        sent = Sent()
+        with pytest.raises(numberdb.Unauthorized):
+            numberdb.publish(self.gen(computed), client=sent.client(api_key=''))
+        assert computed == []
+
+    def test_a_refusal_is_found_before_anything_is_computed(self):
+        computed = []
+        sent = Sent(status=403,
+                    body=b'{"error": "not yet", "detail": "opens after 5"}')
+        with pytest.raises(numberdb.Unauthorized):
+            numberdb.publish(self.gen(computed), client=sent.client())
+        assert computed == []
+
+    def test_the_check_sends_no_entries(self):
+        sent = Sent()
+        numberdb.check_writable('T7', client=sent.client())
+        body = sent.request.data.decode('utf8')
+        assert body.strip() in ('[]', '[]\n')
+        assert sent.request.headers['X-entries-mode'] == 'upsert'
+
+    def test_it_can_be_turned_off(self):
+        computed = []
+        sent = Sent()
+        numberdb.publish(self.gen(computed), preflight=False,
+                         client=sent.client())
+        assert computed == [1, 2, 3]
