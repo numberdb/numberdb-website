@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load numberdb_urls %}
+
+{% comment %}
+Where each entry came from.
+
+Computed from the revisions rather than stored beside the entries. Each
+revision holds a complete document, so walking them in order says exactly when
+a value last changed; a stored pointer would be faster and could disagree with
+the history, and a cache that disagrees with the truth is the failure this
+project keeps finding.
+{% endcomment %}
+
+{% block head-title %}Where {{ table.title }} came from{% endblock %}
+
+{% block extra_head %}
+<style>
+a.link-below-title { font-size: 0.8rem; color: #555; text-decoration: dotted underline; }
+a.link-below-title:hover { text-decoration: underline; }
+.link-below-title-current { font-size: 0.8rem; color: #999; }
+table.blame { border-collapse: collapse; font-size: 0.9em; width: 100%; }
+table.blame th, table.blame td { padding: 0.25rem 0.6rem;
+  border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
+table.blame th { color: #555; font-weight: 400; }
+td.blame-number { font-family: monospace; word-break: break-all;
+  max-width: 26rem; }
+td.blame-from { white-space: nowrap; }
+.blame-machine { color: #7a5c00; }
+.pager { margin: 0.8rem 0; font-size: 0.9em; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'db:table_by_url' table.url %}">{{ table.title|safe }}</a></li>
+  <li class="breadcrumb-item active">Where each entry came from</li>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">Where each entry of {{ table.title|safe }} came from</h1>
+
+<p>{% include "includes/table-links.html" with current="blame" %}</p>
+
+<p class="pager">
+  {{ total }} entr{{ total|pluralize:"y,ies" }}{% if pages > 1 %},
+  page {{ page }} of {{ pages }}{% endif %}.
+  {% if page > 1 %}
+    <a href="?page={{ page|add:'-1' }}">previous</a>
+  {% endif %}
+  {% if page < pages %}
+    <a href="?page={{ page|add:'1' }}">next</a>
+  {% endif %}
+</p>
+
+<table class="blame">
+  <tr>
+    {% for column in columns %}<th>{{ column }}</th>{% endfor %}
+    <th>value</th>
+    <th>last changed by</th>
+  </tr>
+  {% for row in rows %}
+    <tr>
+      {% for column in columns %}
+        <td><code>{{ row.params|get:column }}</code></td>
+      {% endfor %}
+      <td class="blame-number">{{ row.number|truncatechars:70 }}</td>
+      <td class="blame-from">
+        {% if row.revision %}
+          <a href="{% url 'db:revision-history' table.tid %}?to={{ row.revision.pk }}"
+            >{{ row.revision.created|date:"Y-m-d" }}</a>
+          &mdash;
+          {% if row.revision.author %}{{ row.revision.author.username }}
+          {% elif row.revision.contributor %}{{ row.revision.contributor.author }}
+          {% else %}<span class="blame-machine">{{ row.revision.produced_by|default:"unknown" }}</span>{% endif %}
+          {% if row.revision.run %}
+            <span class="blame-machine">(run {{ row.revision.run }})</span>
+          {% endif %}
+        {% else %}
+          &mdash;
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+</table>
+{% endblock %}

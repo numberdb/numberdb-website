@@ -833,14 +833,34 @@ def write_entries(request, tid):
 	#them does not quietly rename the section as a side effect.
 	section = 'Data' if 'Data' in tree and 'Numbers' not in tree else 'Numbers'
 	tree = dict(tree)
-	tree[section] = entries
+
+	#Upsert is what a generator computing expensive values needs: it sends each
+	#as it is found, so a crash at entry 900 costs one entry rather than 900.
+	#Replacing is what a regeneration needs. Neither is a sensible default for
+	#the other, so it is asked for.
+	mode = (request.headers.get('X-Entries-Mode')
+	        or request.GET.get('mode') or 'replace').strip().lower()
+	if mode == 'upsert':
+		merged, added, updated = _upsert_entries(tree.get(section), entries,
+		                                         tree)
+		tree[section] = merged
+	else:
+		added = updated = None
+		tree[section] = entries
+
+	#A run's submissions grow one revision instead of adding one each, so
+	#sending a thousand values one at a time leaves one entry in the history
+	#rather than a thousand -- and one stored document rather than a thousand
+	#copies of the whole table.
+	run = (request.headers.get('X-Run-Id') or request.GET.get('run') or '')[:64]
 
 	try:
 		outcome = commit_table(
 			table, tree, author=user, base=table.head_revision, strict=True,
-			produced_by=_produced_by(request, user),
+			produced_by=_produced_by(request, user), run=run,
 			message=(request.headers.get('X-Edit-Message')
-			         or 'regenerated the entries')[:300])
+			         or ('regenerated the entries' if mode != 'upsert'
+			             else 'added entries as they were computed'))[:300])
 	except InvalidDocument as bad:
 		return JsonResponse(
 			{'error': 'A value in these entries cannot be read as a number.',
@@ -856,10 +876,52 @@ def write_entries(request, tid):
 		from .review import sync_review_flags
 		sync_review_flags(table)
 
-	return JsonResponse({
+	answer = {
 		'tid': table.tid,
 		'url': table.url,
 		'revision': outcome.revision.digest if outcome.revision else None,
 		'unchanged': outcome.unchanged,
 		'reviewed': edits_are_reviewed(user),
-	})
+		'amended': outcome.amended,
+		'entries': len(tree.get(section) or []),
+	}
+	if added is not None:
+		answer['added'] = added
+		answer['updated'] = updated
+	return JsonResponse(answer)
+
+
+def _upsert_entries(existing, arriving, tree):
+	"""Merge arriving entries into the ones already stored, by identity.
+
+	An entry's identity is its parameter values, so that is what decides
+	whether this is the same entry arriving again or a new one. Anything not
+	mentioned is left exactly as it was, which is the whole point: a generator
+	sends what it has computed and does not have to hold the rest.
+	"""
+	from .flatten import identity_of, parameter_groups
+
+	groups = parameter_groups(tree)
+	if isinstance(existing, dict) or isinstance(arriving, dict):
+		#The nested form has no records to key on. Replacing is the honest
+		#answer rather than guessing at a merge.
+		return arriving, None, None
+
+	kept = [dict(record) for record in (existing or [])
+	        if isinstance(record, dict)]
+	index = {identity_of(record, groups): position
+	         for position, record in enumerate(kept)}
+
+	added = updated = 0
+	for record in (arriving or []):
+		if not isinstance(record, dict):
+			continue
+		identity = identity_of(record, groups)
+		if identity in index:
+			kept[index[identity]] = record
+			updated += 1
+		else:
+			index[identity] = len(kept)
+			kept.append(record)
+			added += 1
+	return kept, added, updated

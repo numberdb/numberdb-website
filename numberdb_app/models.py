@@ -1455,6 +1455,25 @@ class TableRevision(models.Model):
 		blank = True,
 		default = '',
 	)
+	#: The run that produced this, when a program submitted its results a few
+	#: at a time.
+	#:
+	#: A generator that computes expensive values must be able to send each as
+	#: it is found -- otherwise a crash at entry 900 loses all 900 -- and a
+	#: revision per entry would be unreadable as history and ruinous as
+	#: storage, since every revision holds the whole document: a thousand
+	#: entries of the largest table would be 230 MB and a thousand diffs of one
+	#: line each.
+	#:
+	#: So submissions carrying the same run amend the same revision instead.
+	#: The history shows one entry that grows, which is what happened.
+	run = models.CharField(
+		max_length = 64,
+		blank = True,
+		default = '',
+		db_index = True,
+	)
+
 	#: Who wrote it, when that person has no account here. The data repository's
 	#: history has four authors and only one of them has ever logged in, so
 	#: without this an imported revision either claims nobody wrote it or

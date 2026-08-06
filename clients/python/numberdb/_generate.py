@@ -303,18 +303,70 @@ def _value_of(record):
 
 def publish(generator: Generator, tid: Optional[str] = None,
             digits: Optional[int] = None, message: str = '',
+            batch: Optional[int] = None, run: str = '',
             client: Any = None, **bounds: Any) -> Dict[str, Any]:
     """Send a generator's entries to its table.
 
     Entries only: the definition, the references and the tags are somebody's
     prose and a generator has no opinion about them.
+
+    ``batch`` sends them as they are computed, in groups of that size, instead
+    of computing everything and sending it at the end. That is what a generator
+    of expensive values wants: a run that dies at entry 900 has already stored
+    the first 899, and a rerun continues rather than starting again.
+
+    All the batches of one run land in a single revision, so the history shows
+    one act of regeneration rather than a thousand -- which is also what keeps
+    the stored size sane, since every revision holds the whole document.
     """
     from ._write import submit_entries
 
     tid = tid or generator.tid
     if not tid:
         raise ValueError('which table? pass tid= or set it on the generator')
-    entries = generate(generator, digits=digits, **bounds)
-    return submit_entries(tid, entries, message=message,
-                          produced_by=type(generator).__name__,
-                          client=client)
+
+    if not batch:
+        entries = generate(generator, digits=digits, **bounds)
+        return submit_entries(tid, entries, message=message,
+                              produced_by=type(generator).__name__,
+                              run=run, client=client)
+
+    digits = generator.digits if digits is None else digits
+    run = run or _run_name(generator)
+    pending = Entries(*generator.parameters)
+    sent = {'entries': 0, 'batches': 0}
+    answer = {}
+
+    def flush():
+        nonlocal pending
+        if not len(pending):
+            return
+        result = submit_entries(tid, pending, message=message,
+                                produced_by=type(generator).__name__,
+                                upsert=True, run=run, client=client)
+        sent['entries'] += len(pending)
+        sent['batches'] += 1
+        answer.update(result)
+        pending = Entries(*generator.parameters)
+
+    for params in generator.enumerate(**bounds):
+        pending.add(**dict(params), **generator._entry(params, digits))
+        if len(pending) >= batch:
+            flush()
+    flush()
+
+    answer.update(sent)
+    answer['run'] = run
+    return answer
+
+
+def _run_name(generator):
+    """A name for one run of this generator.
+
+    Derived from the generator and the moment it started, so two runs of the
+    same script do not amend each other's revision and one run's batches all
+    find their own.
+    """
+    import time
+
+    return '%s-%d' % (type(generator).__name__[:40], int(time.time()))

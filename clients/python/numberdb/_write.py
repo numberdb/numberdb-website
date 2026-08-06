@@ -362,6 +362,7 @@ def submit(tid: str, tree: Mapping[str, Any], message: str = '',
 
 def submit_entries(tid: str, entries: Union[Entries, Sequence[Mapping[str, Any]]],
                    message: str = '', produced_by: str = '',
+                   upsert: bool = False, run: str = '',
                    client: Any = None) -> Dict[str, Any]:
     """Replace only the entries of table ``tid``. This is what a generator wants.
 
@@ -377,6 +378,17 @@ def submit_entries(tid: str, entries: Union[Entries, Sequence[Mapping[str, Any]]
         for n in range(1, 100):
             entries.add(n=n, number=zeta(n))
         numberdb.submit_entries('T42', entries, produced_by='zeta-generator')
+
+    ``upsert`` sends *these* entries and leaves the rest of the table alone,
+    which is what a generator computing expensive values needs: it can send
+    each as it is found, so a crash at entry 900 costs one entry rather than
+    900. Without it the entries are replaced, which is what a full
+    regeneration means.
+
+    ``run`` names one such run. Submissions carrying the same run grow one
+    revision instead of adding one each, so a thousand values sent one at a
+    time leave one entry in the history rather than a thousand -- and one
+    stored document rather than a thousand copies of the whole table.
     """
     from . import _default_client
 
@@ -384,6 +396,10 @@ def submit_entries(tid: str, entries: Union[Entries, Sequence[Mapping[str, Any]]
     headers = {'X-Produced-By': produced_by or 'numberdb-python'}
     if message:
         headers['X-Edit-Message'] = message
+    if upsert:
+        headers['X-Entries-Mode'] = 'upsert'
+    if run:
+        headers['X-Run-Id'] = run
     records = (entries.as_list() if isinstance(entries, Entries)
                else [dict(r) for r in entries])
     return client.submit('/api/table/%s/entries' % (str(tid).lstrip('tT'),),
