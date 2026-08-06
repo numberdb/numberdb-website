@@ -43,6 +43,10 @@ table.parameter-table th { font-weight: 400; color: #555; font-size: 0.9em; }
              margin: 0.3rem 0; font-size: 0.9em; }
 .mode-switch { margin: 0.4rem 0 1rem 0; font-size: 0.9em; }
 .frozen { color: #666; }
+.other-type { margin: 0.5rem 0 0 1rem; padding: 0.5rem 0.8rem;
+              border-left: 3px solid #ddd; }
+.other-type label { display: inline-block; margin: 0.3rem 0.4rem 0.3rem 0;
+                    font-size: 0.9em; color: #555; }
 </style>
 {% endblock %}
 
@@ -106,12 +110,48 @@ table.parameter-table th { font-weight: 400; color: #555; font-size: 0.9em; }
       {% for option in data_types %}
         <option value="{{ option }}" {% if option == data_type %}selected{% endif %}>{{ option }}</option>
       {% endfor %}
+      <option value="__other__" {% if is_other_type %}selected{% endif %}>something else&hellip;</option>
     </select>
     <span class="hint">
       Exact types &mdash; Z, Q, Z[], Q[] &mdash; are written out in full and are
       not judged on their number of digits, since writing fewer digits of an
       exact value makes it a different value rather than a rounder one.
     </span>
+
+    {% comment %}
+    The escape hatch. NumberDB was meant from the start to be able to hold any
+    kind of number, on the understanding that one it cannot parse is shown and
+    cited but not found by its digits -- which is what the four hyperreals in
+    T41 do today. Two fields rather than one: a symbol on its own is
+    indistinguishable from a typo, and a symbol with a name beside it is
+    somebody deciding something.
+    {% endcomment %}
+    <div class="other-type" {% if not is_other_type %}hidden{% endif %}>
+      <p class="hint">
+        A kind of number this database cannot parse. Its values will be shown,
+        linked and citable like any others, and they will <b>not</b> be found by
+        searching for their digits. That is the intended trade, not a
+        limitation to work around.
+      </p>
+      <label for="other_type">Symbol</label>
+      <input type="text" id="other_type" name="other_type" size="10"
+             value="{{ other_type }}" list="known-other-types"
+             placeholder="e.g. *R">
+      <datalist id="known-other-types">
+        {% for known in known_other_types %}
+          <option value="{{ known.symbol }}">{{ known.name }}</option>
+        {% endfor %}
+      </datalist>
+      <label for="other_type_name">What it is called</label>
+      <input type="text" id="other_type_name" name="other_type_name" size="26"
+             value="{{ other_type_name }}" placeholder="e.g. hyperreals">
+      {% if known_other_types %}
+        <span class="hint">
+          Already in use:
+          {% for known in known_other_types %}<code>{{ known.symbol }}</code>{% if known.name %} ({{ known.name }}){% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}.
+        </span>
+      {% endif %}
+    </div>
   </div>
 
   {% comment %}
@@ -200,4 +240,16 @@ table.parameter-table th { font-weight: 400; color: #555; font-size: 0.9em; }
   <button type="submit" name="action" value="save-metadata"><b>Save</b></button>
   <a href="{% url 'db:table_by_url' table_being_edited.url %}">Cancel</a>
 </form>
+<script>
+  //Reveal the two "something else" fields only when it is chosen. Without
+  //script they are simply always visible, which is workable rather than broken.
+  (function () {
+    var select = document.getElementById('data_type');
+    var box = document.querySelector('.other-type');
+    if (!select || !box) { return; }
+    function sync() { box.hidden = select.value !== '__other__'; }
+    select.addEventListener('change', sync);
+    sync();
+  })();
+</script>
 {% endblock %}

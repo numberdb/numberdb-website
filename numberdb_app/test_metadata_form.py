@@ -289,3 +289,96 @@ class ThroughThePage(TestCase):
 		response = self.submit(data_type='Q')
 		self.assertIn(response.status_code, (302, 403))
 		self.assertEqual(self.head()['Data properties']['type'], 'R')
+
+
+class ATypeTheDatabaseCannotParse(TestCase):
+	"""NumberDB was meant to be able to hold any kind of number.
+
+	One it cannot parse is shown, linked and citable, and does not answer a
+	search by its digits -- T41's four hyperreals index nothing. So the list of
+	types is closed for the ones that can be searched and open, deliberately,
+	beyond them.
+	"""
+
+	def setUp(self):
+		from django.contrib.auth.models import User
+
+		from .editing import create_table
+
+		self.user = User.objects.create_user('other_type', password='pw-123456')
+		self.table = create_table(
+			{'Title': 'Odd numbers indeed',
+			 'Data properties': {'type': 'R'},
+			 'Numbers': [{'params': {}, 'number': '3.14'}]},
+			author=self.user)
+		self.client.login(username='other_type', password='pw-123456')
+
+	def head(self):
+		from .editing import tree_of
+
+		self.table.refresh_from_db()
+		return tree_of(self.table.head_revision)
+
+	def submit(self, **fields):
+		data = {'action': 'save-metadata',
+		        'base': self.table.head_revision.digest,
+		        'title': 'Odd numbers indeed'}
+		data.update(fields)
+		return self.client.post('/edit/%s' % (self.table.tid,), data)
+
+	def test_choosing_something_else_stores_the_symbol_and_the_name(self):
+		self.submit(data_type=metadata_form.OTHER, other_type='*Q',
+		            other_type_name='hyperrationals')
+		properties = self.head()['Data properties']
+		self.assertEqual(properties['type'], '*Q')
+		self.assertEqual(properties['type name'], 'hyperrationals')
+
+	def test_a_symbol_without_a_name_is_refused(self):
+		"""A symbol alone is indistinguishable from a typo."""
+		from .editing import InvalidDocument
+		from .validate import problems
+
+		tree = {'Title': 'x', 'Data properties': {'type': 'Wombat'},
+		        'Numbers': [{'params': {}, 'number': '1'}]}
+		self.assertTrue([p for p in problems(tree) if p.fatal])
+
+	def test_a_symbol_with_a_name_is_allowed_and_noted(self):
+		tree = {'Title': 'x',
+		        'Data properties': {'type': 'Wombat',
+		                            'type name': 'wombat numbers'},
+		        'Numbers': [{'params': {}, 'number': '1'}]}
+		found = validate_problems(tree)
+		self.assertEqual([p.fatal for p in found], [False])
+		self.assertIn('not be found by search', str(found[0]))
+
+	def test_going_back_to_a_searchable_type_drops_the_name(self):
+		"""A stale name would describe the table as something it is not."""
+		self.submit(data_type=metadata_form.OTHER, other_type='*Q',
+		            other_type_name='hyperrationals')
+		self.table.refresh_from_db()
+		self.submit(data_type='R', base=self.table.head_revision.digest)
+		properties = self.head()['Data properties']
+		self.assertEqual(properties['type'], 'R')
+		self.assertNotIn('type name', properties)
+
+	def test_the_form_reads_an_other_type_back_into_its_two_fields(self):
+		self.submit(data_type=metadata_form.OTHER, other_type='*Q',
+		            other_type_name='hyperrationals')
+		self.table.refresh_from_db()
+		response = self.client.get('/edit/%s?form=1' % (self.table.tid,))
+		self.assertContains(response, 'value="*Q"')
+		self.assertContains(response, 'value="hyperrationals"')
+
+	def test_the_existing_ones_are_offered(self):
+		"""Read from the corpus, so a new one needs no release to appear."""
+		self.submit(data_type=metadata_form.OTHER, other_type='*Q',
+		            other_type_name='hyperrationals')
+		offered = {row['symbol'] for row in metadata_form.known_other_types()}
+		self.assertIn('*R', offered)
+		self.assertIn('*Q', offered)
+
+
+def validate_problems(tree):
+	from .validate import problems
+
+	return problems(tree)
