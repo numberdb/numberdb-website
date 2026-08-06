@@ -49,6 +49,13 @@ a.link-below-title:hover { text-decoration: underline; }
 .unshowable { background: #fcf8e3; border: 1px solid #faebcc; padding: 0.5rem;
               font-size: 0.9em; }
 .cite-picker { font-size: 0.85em; color: #555; }
+.insert-bar { background: #f6f7f9; border: 1px solid #e2e2e2; border-radius: 3px;
+              padding: 0.5rem 0.7rem; margin: 0.8rem 0; font-size: 0.9em;
+              position: sticky; top: 0; z-index: 5; }
+.insert-bar .insert-what { color: #666; margin-right: 0.5rem; }
+.insert-bar .insert-group { margin-right: 0.9rem; white-space: nowrap; }
+.insert-bar button { cursor: pointer; }
+.field-active { outline: 2px solid #b9d3ee; }
 textarea.section-text { width: min(38rem, 90%); min-height: 5rem; padding: 0.4rem;
                         font-family: inherit; }
 </style>
@@ -83,6 +90,34 @@ textarea.section-text { width: min(38rem, 90%); min-height: 5rem; padding: 0.4re
   {% else %}
     Your changes are published immediately.
   {% endif %}
+</div>
+
+{% comment %}
+Inserting a reference or a link, rather than typing one from memory.
+
+A mistyped CITE{} renders as nothing and a mistyped HREF{} points at a table
+that is not there -- neither fails loudly, and both are easy to get wrong when
+the labels live in a different section of the same long document.
+{% endcomment %}
+<div class="insert-bar">
+  <span class="insert-what">Insert into the last field you were typing in:</span>
+  {% if citable %}
+    <span class="insert-group">
+      <select id="cite-pick">
+        {% for label in citable %}<option value="{{ label }}">{{ label }}</option>{% endfor %}
+      </select>
+      <button type="button" id="cite-insert">cite</button>
+    </span>
+  {% endif %}
+  <span class="insert-group">
+    <input id="href-pick" list="linkable-tables" size="26"
+           placeholder="a table, or a URL">
+    <datalist id="linkable-tables">
+      {% for row in linkable %}<option value="{{ row.url }}">{{ row.title|striptags }}</option>{% endfor %}
+    </datalist>
+    <input id="href-text" size="14" placeholder="shown as">
+    <button type="button" id="href-insert">link</button>
+  </span>
 </div>
 
 <form method="post" action="">
@@ -136,6 +171,15 @@ textarea.section-text { width: min(38rem, 90%); min-height: 5rem; padding: 0.4re
                   <input class="row-label" type="text" size="18"
                          name="section.{{ section.name }}.{{ forloop.counter0 }}.label"
                          value="{{ item.label }}">
+                  {% comment %}
+                  What this row was called when the page was drawn, so renaming
+                  it can take its citations along. A CITE{} left pointing at a
+                  label that no longer exists renders as nothing: the sentence
+                  still reads and the reference has gone.
+                  {% endcomment %}
+                  <input type="hidden"
+                         name="section.{{ section.name }}.{{ forloop.counter0 }}.was"
+                         value="{{ item.original }}">
                   {% if item.was_plain %}
                     <input type="hidden"
                            name="section.{{ section.name }}.{{ forloop.counter0 }}.plain"
@@ -194,15 +238,63 @@ textarea.section-text { width: min(38rem, 90%); min-height: 5rem; padding: 0.4re
   <a href="{% url 'db:table_by_url' table_being_edited.url %}">Cancel</a>
 </form>
 
-{% if citable %}
-  <p class="cite-picker">
-    Cite one of this table's references by writing
-    {% for label in citable %}<code>CITE&#123;{{ label }}&#125;</code>{% if not forloop.last %}, {% endif %}{% endfor %}
-    in any text above.
-  </p>
-{% endif %}
+<p class="cite-picker">
+  Written out, a citation is <code>CITE&#123;label&#125;</code> and a link is
+  <code>HREF&#123;Table_name&#125;[shown as]</code>. A link may name an entry:
+  <code>HREF&#123;Factorial#5&#125;[5!]</code>.
+</p>
 
 <script>
+//Insert at the cursor of whichever field was last used. Remembering the field
+//rather than acting on document.activeElement is what makes the buttons usable
+//at all: clicking one takes the focus away from the field being edited.
+(function () {
+  var last = null;
+
+  document.addEventListener('focusin', function (event) {
+    var field = event.target;
+    if (field.matches('textarea, input[type=text]')
+        && field.closest('form')) {
+      if (last) { last.classList.remove('field-active'); }
+      last = field;
+      field.classList.add('field-active');
+    }
+  });
+
+  function insert(text) {
+    if (!last) { return; }
+    var start = last.selectionStart, end = last.selectionEnd;
+    if (start === undefined || start === null) {
+      last.value += text;
+    } else {
+      last.value = last.value.slice(0, start) + text + last.value.slice(end);
+      last.selectionStart = last.selectionEnd = start + text.length;
+    }
+    last.focus();
+  }
+
+  var citeButton = document.getElementById('cite-insert');
+  if (citeButton) {
+    citeButton.addEventListener('click', function () {
+      var label = document.getElementById('cite-pick').value;
+      if (label) { insert('CITE{' + label + '}'); }
+    });
+  }
+
+  var hrefButton = document.getElementById('href-insert');
+  if (hrefButton) {
+    hrefButton.addEventListener('click', function () {
+      var target = document.getElementById('href-pick').value.trim();
+      if (!target) { return; }
+      var shown = document.getElementById('href-text').value.trim();
+      //9351 links in the corpus carry their own text and 85 do not, so the
+      //caption is the normal form rather than an extra.
+      insert(shown ? 'HREF{' + target + '}[' + shown + ']'
+                   : 'HREF{' + target + '}');
+    });
+  }
+})();
+
 //Rows are added, removed and moved in the page; the document order of the
 //fields is the order they are saved in, so nothing has to be renumbered and
 //the form works the same whether or not this ran.

@@ -33,6 +33,7 @@ def submitted(tree, only=None):
 		else:
 			for index, item in enumerate(section['items']):
 				data['section.%s.%d.label' % (name, index)] = item['label']
+				data['section.%s.%d.was' % (name, index)] = item['original']
 				if section['shape'] == 'labelled-text':
 					data['section.%s.%d.text' % (name, index)] = item['text']
 				else:
@@ -369,3 +370,62 @@ class ThroughThePage(TestCase):
 		data['action'] = 'save-sections'
 		self.client.post(self.url(), data)
 		self.assertEqual(self.head()['Comments'], {'comment-1': 'a remark'})
+
+
+class RenamingALabelTakesItsCitationsAlong(SimpleTestCase):
+	"""A label is what CITE{} points at.
+
+	205 citations across the corpus point into Links, References, Formulas and
+	Comments, and not one points at nothing. Renaming a label without moving
+	them leaves the citation rendering as nothing at all: the sentence still
+	reads and the reference has gone.
+	"""
+
+	TREE = {
+		'Definition': 'Computed as in CITE{Pla15}.',
+		'Comments': {'why': 'See CITE{Pla15} and CITE{Pla15b}.'},
+		'References': {'Pla15': {'bib': 'Platt'},
+		               'Pla15b': {'bib': 'Platt again'}},
+		'Data properties': {'reliability': 'per CITE{Pla15}'},
+	}
+
+	def rename(self, section, index, old, new):
+		data = submitted(self.TREE)
+		data['section.%s.%d.was' % (section, index)] = old
+		data['section.%s.%d.label' % (section, index)] = new
+		return sections_form.apply_sections(self.TREE, data)
+
+	def test_the_label_changes(self):
+		out = self.rename('References', 0, 'Pla15', 'Platt2015')
+		self.assertIn('Platt2015', out['References'])
+		self.assertNotIn('Pla15', out['References'])
+
+	def test_citations_in_other_sections_follow(self):
+		out = self.rename('References', 0, 'Pla15', 'Platt2015')
+		self.assertEqual(out['Definition'], 'Computed as in CITE{Platt2015}.')
+
+	def test_citations_in_a_nested_section_follow(self):
+		out = self.rename('References', 0, 'Pla15', 'Platt2015')
+		self.assertIn('CITE{Platt2015}', out['Comments']['why'])
+		self.assertIn('CITE{Platt2015}', out['Data properties']['reliability'])
+
+	def test_a_longer_label_that_starts_the_same_is_untouched(self):
+		"""Renaming `Pla15` must not touch a citation to `Pla15b`."""
+		out = self.rename('References', 0, 'Pla15', 'Platt2015')
+		self.assertIn('CITE{Pla15b}', out['Comments']['why'])
+		self.assertIn('Pla15b', out['References'])
+
+	def test_nothing_moves_when_nothing_is_renamed(self):
+		out = sections_form.apply_sections(self.TREE, submitted(self.TREE))
+		self.assertEqual(out, self.TREE)
+
+	def test_a_comment_label_can_be_renamed_too(self):
+		"""Six citations point at comments, so they are labels like any other."""
+		tree = {'Comments': {'why': 'because'},
+		        'Definition': 'See CITE{why}.'}
+		data = submitted(tree)
+		data['section.Comments.0.was'] = 'why'
+		data['section.Comments.0.label'] = 'reason'
+		out = sections_form.apply_sections(tree, data)
+		self.assertEqual(out['Comments'], {'reason': 'because'})
+		self.assertEqual(out['Definition'], 'See CITE{reason}.')
