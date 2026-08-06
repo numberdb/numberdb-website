@@ -1891,6 +1891,9 @@ def edit_table(request, tid):
 	if request.method == 'POST' and request.POST.get('action') == 'save-metadata':
 		return _save_metadata_form(request, table, base)
 
+	if request.method == 'POST' and request.POST.get('action') == 'save-sections':
+		return _save_sections_form(request, table, base)
+
 	if request.method == 'GET' and request.GET.get('form'):
 		return _metadata_form_page(request, table, base)
 
@@ -2550,14 +2553,34 @@ def _save_edited_tree(request, table, base, tree, source=None, back_to=None):
 
 
 def _metadata_form_page(request, table, base):
-	"""The form view of a table's metadata."""
+	"""The form view: the settings, or the prose sections.
+
+	Two pages rather than one long one. They edit different things and are
+	reached for at different moments -- the settings once when a table is set
+	up, the prose whenever there is something to say.
+	"""
 	from .editing import may_see, tree_of
 	from .metadata_form import fields_from
 	from .permissions import may_edit
+	from .sections_form import sections_from
 
 	if not may_see(table, request.user):
 		raise Http404
 	tree = tree_of(base) if base is not None else {}
+
+	if request.GET.get('form') == 'sections':
+		return render(request, 'edit-sections.html', {
+			'table_being_edited': table,
+			'base_digest': base.digest if base is not None else '',
+			'may_edit': may_edit(request.user),
+			'is_draft': not table.published,
+			'sections': sections_from(tree),
+			#What CITE{} may point at, so a citation can be inserted rather
+			#than typed from memory and misspelt.
+			'citable': sorted((tree.get('References') or {}).keys())
+			           if isinstance(tree.get('References'), dict) else [],
+		})
+
 	context = {
 		'table_being_edited': table,
 		'base_digest': base.digest if base is not None else '',
@@ -2593,5 +2616,23 @@ def _save_metadata_form(request, table, base):
 	tree = apply_to(tree_of(base) if base is not None else {}, request.POST)
 	return _save_edited_tree(request, table, base, tree,
 	                         back_to='%s?form=1' % (
+		                         reverse('db:edit-table',
+		                                 kwargs={'tid': table.tid}),))
+
+
+def _save_sections_form(request, table, base):
+	"""Apply the sections form and save it the ordinary way."""
+	from .editing import tree_of
+	from .sections_form import apply_sections
+
+	base_digest = request.POST.get('base', '')
+	if base_digest:
+		base = TableRevision.objects.filter(
+			table=table, digest=base_digest).first() or base
+
+	tree = apply_sections(tree_of(base) if base is not None else {},
+	                      request.POST)
+	return _save_edited_tree(request, table, base, tree,
+	                         back_to='%s?form=sections' % (
 		                         reverse('db:edit-table',
 		                                 kwargs={'tid': table.tid}),))
