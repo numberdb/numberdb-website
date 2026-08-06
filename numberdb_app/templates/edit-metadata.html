@@ -43,6 +43,10 @@ table.parameter-table th { font-weight: 400; color: #555; font-size: 0.9em; }
              margin: 0.3rem 0; font-size: 0.9em; }
 .mode-switch { margin: 0.4rem 0 1rem 0; font-size: 0.9em; }
 .frozen { color: #666; }
+.values-cell { background: #fafbfc; }
+.values-head { color: #555; font-size: 0.85em; margin-bottom: 0.2rem; }
+.value-row { margin: 0.15rem 0; font-size: 0.9em; color: #666; }
+.value-row input[readonly] { background: #f0f0f0; color: #444; }
 .other-type { margin: 0.5rem 0 0 1rem; padding: 0.5rem 0.8rem;
               border-left: 3px solid #ddd; }
 .other-type label { display: inline-block; margin: 0.3rem 0.4rem 0.3rem 0;
@@ -223,6 +227,62 @@ table.parameter-table th { font-weight: 400; color: #555; font-size: 0.9em; }
                      value="{{ parameter.display }}" size="12">
             </td>
           </tr>
+          {% comment %}
+          The values a symbolic parameter may take, and how each is written.
+
+          A value is part of the identity of every entry using it -- `v: b` is
+          what makes `1.629911,b` -- so an existing one is shown and not
+          editable: renaming it would renumber those entries, and their
+          citations would resolve and point at different numbers. Adding one is
+          always safe, which is what a table needs when it grows a new case.
+          {% endcomment %}
+          {% if parameter.has_values or parameter.type == 'Symbolic' %}
+            <tr>
+              <td colspan="4" class="values-cell">
+                <input type="hidden"
+                       name="parameter.{{ parameter.name }}.values.present" value="1">
+                <div class="values-list" data-parameter="{{ parameter.name }}">
+                  <div class="values-head">
+                    values <code>{{ parameter.name }}</code> may take
+                  </div>
+                  {% for row in parameter.values %}
+                    <div class="value-row">
+                      <input type="text" size="14" value="{{ row.value }}"
+                             name="parameter.{{ parameter.name }}.values.{{ forloop.counter0 }}.key"
+                             {% if not is_draft %}readonly title="A value cannot be renamed once entries use it: it is part of their identity."{% endif %}>
+                      <input type="hidden"
+                             name="parameter.{{ parameter.name }}.values.{{ forloop.counter0 }}.was"
+                             value="{{ row.value }}">
+                      shown as
+                      <input type="text" size="14" value="{{ row.display }}"
+                             name="parameter.{{ parameter.name }}.values.{{ forloop.counter0 }}.display">
+                    </div>
+                  {% endfor %}
+                </div>
+                <template class="value-template">
+                  <div class="value-row">
+                    <input type="text" size="14" placeholder="value"
+                           name="parameter.{{ parameter.name }}.values.__INDEX__.key">
+                    shown as
+                    <input type="text" size="14" placeholder="$x$"
+                           name="parameter.{{ parameter.name }}.values.__INDEX__.display">
+                  </div>
+                </template>
+                <button type="button" data-add-value="{{ parameter.name }}">add value</button>
+                <span class="hint">
+                  {% if is_draft %}
+                    While this is a draft, a value may still be renamed. Once
+                    published it cannot: entries are identified by it.
+                  {% else %}
+                    Existing values cannot be renamed &mdash; entries are
+                    identified by them, so renaming would leave citations
+                    resolving to different numbers. How a value is written can
+                    be changed freely, and new values can be added.
+                  {% endif %}
+                </span>
+              </td>
+            </tr>
+          {% endif %}
         {% endfor %}
       </table>
       <span class="hint">
@@ -243,6 +303,26 @@ table.parameter-table th { font-weight: 400; color: #555; font-size: 0.9em; }
   <a href="{% url 'db:table_by_url' table_being_edited.url %}">Cancel</a>
 </form>
 <script>
+  //Adding a value to a symbolic parameter. New rows only: an existing value
+  //cannot be renamed, so there is nothing to rewrite.
+  (function () {
+    document.addEventListener('click', function (event) {
+      var button = event.target.closest('button[data-add-value]');
+      if (!button) { return; }
+      var cell = button.closest('.values-cell');
+      var list = cell.querySelector('.values-list');
+      var template = cell.querySelector('.value-template');
+      if (!list || !template) { return; }
+      var fresh = template.content.firstElementChild.cloneNode(true);
+      var index = 'new' + list.querySelectorAll('.value-row').length;
+      fresh.querySelectorAll('[name]').forEach(function (field) {
+        field.name = field.name.replace('__INDEX__', index);
+      });
+      list.appendChild(fresh);
+      fresh.querySelector('input').focus();
+    });
+  })();
+
   //Reveal the two "something else" fields only when it is chosen. Without
   //script they are simply always visible, which is workable rather than broken.
   (function () {

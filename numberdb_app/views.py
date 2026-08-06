@@ -2636,7 +2636,10 @@ def _save_metadata_form(request, table, base):
 		base = TableRevision.objects.filter(
 			table=table, digest=base_digest).first() or base
 
-	tree = apply_to(tree_of(base) if base is not None else {}, request.POST)
+	#A draft's identities are not pointed at from anywhere yet, so its value
+	#keys may still be renamed; a published table's may not.
+	tree = apply_to(tree_of(base) if base is not None else {}, request.POST,
+	                allow_key_changes=not table.published)
 	return _save_edited_tree(request, table, base, tree,
 	                         back_to='%s?form=1' % (
 		                         reverse('db:edit-table',
