@@ -2448,7 +2448,8 @@ def _diff_blocks(diff_text):
 	current = None
 	for line in (diff_text or '').split('\n'):
 		if line.startswith('@@'):
-			current = {'header': line, 'lines': []}
+			current = {'header': line, 'where': _hunk_in_words(line),
+			           'lines': []}
 			blocks.append(current)
 			continue
 		if current is None:
@@ -2602,6 +2603,10 @@ def _metadata_form_page(request, table, base):
 			'linkable': list(Table.objects.filter(published=True)
 			                 .order_by('title')
 			                 .values('url', 'title', 'tid')),
+			#Existing tags, so a table joins a subject that already has a page
+			#rather than starting a second one a letter apart.
+			'known_tags': list(Tag.objects.order_by('name')
+			                   .values_list('name', flat=True)),
 		})
 
 	context = {
@@ -2678,3 +2683,30 @@ def _shown_as(value_display, groups_left, value):
 	if len(names) != 1:
 		return None
 	return (value_display.get(names[0]) or {}).get(str(value))
+
+
+def _hunk_in_words(header):
+	"""`@@ -13,4 +13,8 @@` said in words.
+
+	That notation is a instruction to a program -- where to apply a patch and
+	how many lines it covers -- and it is on a page whose readers are being
+	asked whether a number is right. What they need from it is where in the
+	table they are, and whether this part grew or shrank.
+	"""
+	import re
+
+	found = re.match(r'@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@', header)
+	if not found:
+		return ''
+	before_start, before_count, after_start, after_count = found.groups()
+	before = int(before_count) if before_count is not None else 1
+	after = int(after_count) if after_count is not None else 1
+
+	where = 'from line %s' % (after_start,)
+	if before == after:
+		return '%s (%d line%s)' % (where, after, '' if after == 1 else 's')
+	if after > before:
+		return '%s (%d line%s, %d more than before)' % (
+			where, after, '' if after == 1 else 's', after - before)
+	return '%s (%d line%s, %d fewer than before)' % (
+		where, after, '' if after == 1 else 's', before - after)

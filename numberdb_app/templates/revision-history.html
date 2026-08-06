@@ -25,7 +25,9 @@ a.link-below-title:hover { text-decoration: underline; }
 .revision-hunk { border: 1px solid #ddd; border-radius: 3px; margin: 0.8rem 0;
                  overflow-x: auto; font-size: 0.9em; background: #fff; }
 .revision-hunk-header { background: #eef2f7; color: #3b5a80; padding: 0.3rem 0.6rem;
-                 font-family: monospace; border-bottom: 1px solid #ddd; }
+                 border-bottom: 1px solid #ddd; }
+.hunk-raw { font-family: monospace; color: #8aa0bb; font-size: 0.85em;
+            float: right; }
 .revision-hunk pre { margin: 0; padding: 0.3rem 0; white-space: pre; }
 .revision-hunk .line { padding: 0 0.6rem; display: block; }
 /* Colour and the leading sign both, so the diff still reads when printed,
@@ -117,7 +119,10 @@ table.revision-list tr.is-head { background: #f2f8ff; }
       {% endcomment %}
       {% for block in diff_blocks %}
         <div class="revision-hunk">
-          <div class="revision-hunk-header">{{ block.header }}</div>
+          <div class="revision-hunk-header">
+            {{ block.where|default:block.header }}
+            <span class="hunk-raw" title="the same thing, as a patch program writes it">{{ block.header }}</span>
+          </div>
           {% comment %}
           No newline between the spans: each is display:block and supplies its
           own break, so a literal one doubles the spacing.

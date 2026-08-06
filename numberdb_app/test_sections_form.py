@@ -30,6 +30,14 @@ def submitted(tree, only=None):
 			data['section.%s.text' % (name,)] = section['text']
 		elif section['shape'] == 'list':
 			data['section.%s.items' % (name,)] = '\n'.join(section['items'])
+		elif section['shape'] == 'picked-list':
+			for index, item in enumerate(section['items']):
+				data['section.%s.items.%d' % (name, index)] = item
+		elif section['shape'] == 'list-record':
+			for index, item in enumerate(section['items']):
+				data['section.%s.%d.row' % (name, index)] = '1'
+				for field, value in item['values'].items():
+					data['section.%s.%d.%s' % (name, index, field)] = value
 		else:
 			for index, item in enumerate(section['items']):
 				data['section.%s.%d.label' % (name, index)] = item['label']
@@ -226,16 +234,20 @@ class ShapesTheCorpusActuallyUses(SimpleTestCase):
 		out = sections_form.apply_sections(tree, data)
 		self.assertEqual(out['Keywords'], ['analysis', 'zeta'])
 
-	def test_a_list_of_records_is_left_completely_alone(self):
-		"""Read as names it comes out empty, and saving would delete it."""
+	def test_a_list_of_records_survives_a_round_trip(self):
 		tree = {'Similar tables': [{'relation': 'contained in',
 		                            'table': 'HREF{Integers#0}[integers]'}]}
 		self.assertEqual(self.round_trip(tree), tree)
 
-	def test_and_it_says_it_cannot_show_it(self):
+	def test_a_list_of_records_now_has_its_own_shape(self):
+		"""It used to be flagged unshowable, which was honest and unhelpful:
+		three tables could only edit it as YAML."""
 		found = {s['name']: s for s in sections_form.sections_from(
-			{'Similar tables': [{'relation': 'contained in'}]})}
-		self.assertTrue(found['Similar tables']['unshowable'])
+			{'Similar tables': [{'relation': 'contained in',
+			                     'table': 'HREF{Integers}[integers]'}]})}
+		self.assertFalse(found['Similar tables']['unshowable'])
+		self.assertEqual(found['Similar tables']['items'][0]['values']['relation'],
+		                 'contained in')
 
 
 class AgainstTheCorpus(TestCase):
@@ -429,3 +441,52 @@ class RenamingALabelTakesItsCitationsAlong(SimpleTestCase):
 		out = sections_form.apply_sections(tree, data)
 		self.assertEqual(out['Comments'], {'reason': 'because'})
 		self.assertEqual(out['Definition'], 'See CITE{reason}.')
+
+
+class TagsArePicked(SimpleTestCase):
+	"""65 tags exist, and a table joining a subject should join the page that
+	subject already has: "elliptic curve" and "elliptic curves" are two pages
+	and one subject."""
+
+	def test_tags_are_a_section_the_form_shows(self):
+		names = [s['name'] for s in sections_form.sections_from({})]
+		self.assertIn('Tags', names)
+
+	def test_they_come_back_as_a_list(self):
+		out = sections_form.apply_sections({'Title': 'x'}, {
+			'section.Tags.present': '1',
+			'section.Tags.items.0': 'number theory',
+			'section.Tags.items.1': 'elliptic curves'})
+		self.assertEqual(out['Tags'], ['number theory', 'elliptic curves'])
+
+	def test_a_removed_tag_is_gone(self):
+		out = sections_form.apply_sections({'Tags': ['a', 'b']}, {
+			'section.Tags.present': '1', 'section.Tags.items.0': 'a'})
+		self.assertEqual(out['Tags'], ['a'])
+
+
+class SimilarTablesCarryARelation(SimpleTestCase):
+	"""Three tables use this, each as {relation, table}. Read as plain names it
+	came out empty and saving would have deleted it."""
+
+	def test_a_relation_row_is_read(self):
+		found = {s['name']: s for s in sections_form.sections_from(
+			{'Similar tables': [{'relation': 'contained in',
+			                     'table': 'HREF{Integers#0}[integers]'}]})}
+		row = found['Similar tables']['items'][0]
+		self.assertEqual(row['values']['relation'], 'contained in')
+
+	def test_an_empty_section_is_not_called_unshowable(self):
+		"""104 tables write it as '' and have nothing to report."""
+		found = {s['name']: s for s in sections_form.sections_from(
+			{'Similar tables': ''})}
+		self.assertFalse(found['Similar tables']['unshowable'])
+
+	def test_rows_come_back_as_records(self):
+		out = sections_form.apply_sections({'Title': 'x'}, {
+			'section.Similar tables.present': '1',
+			'section.Similar tables.0.row': '1',
+			'section.Similar tables.0.relation': 'contained in',
+			'section.Similar tables.0.table': 'Integers'})
+		self.assertEqual(out['Similar tables'],
+		                 [{'relation': 'contained in', 'table': 'Integers'}])
