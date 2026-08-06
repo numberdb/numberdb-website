@@ -2579,6 +2579,13 @@ def _metadata_form_page(request, table, base):
 			#than typed from memory and misspelt.
 			'citable': sorted((tree.get('References') or {}).keys())
 			           if isinstance(tree.get('References'), dict) else [],
+			#And what HREF{} may point at. A table's slug is what the target
+			#is written as, so the picker offers slugs and shows titles: a
+			#link typed from memory is a link that resolves to nothing, or
+			#worse, to something else.
+			'linkable': list(Table.objects.filter(published=True)
+			                 .order_by('title')
+			                 .values('url', 'title', 'tid')),
 		})
 
 	context = {

@@ -135,8 +135,8 @@ def _labelled(value, shape, fields):
 		return []
 	items = []
 	for label, item in value.items():
-		row = {'label': label, 'text': '', 'values': {}, 'extra': {},
-		       'extra_json': '', 'was_plain': False}
+		row = {'label': label, 'original': label, 'text': '', 'values': {},
+		       'extra': {}, 'extra_json': '', 'was_plain': False}
 		if shape == 'labelled-text':
 			row['text'] = item if isinstance(item, str) else ''
 			row['unshowable'] = not isinstance(item, str)
@@ -177,10 +177,12 @@ def apply_sections(tree, data):
 
 	out = copy.deepcopy(tree) if isinstance(tree, dict) else {}
 
+	renames = []
 	for name, shape, _note in SECTIONS:
 		marker = 'section.%s.present' % (name,)
 		if marker not in data:
 			continue
+		renames.extend(_renames(name, data))
 		if shape == 'text':
 			text = (data.get('section.%s.text' % (name,)) or '').strip()
 			_put(out, name, text)
@@ -202,7 +204,51 @@ def apply_sections(tree, data):
 		else:
 			_put(out, name, _rebuild(name, shape, data,
 			                         RECORD_FIELDS.get(name, ())))
+
+	#Citations follow their target. A label is what CITE{} points at -- 205 of
+	#them across the corpus, into Links, References, Formulas and Comments, and
+	#not one pointing at nothing today. Renaming a label without moving them
+	#would leave the citation rendering as nothing at all, which is the quiet
+	#kind of breakage: the sentence still reads, the reference has gone.
+	for old_label, new_label in renames:
+		out = _rewrite_citations(out, old_label, new_label)
 	return out
+
+
+def _renames(name, data):
+	"""(old, new) for every row of this section whose label changed."""
+	prefix = 'section.%s.' % (name,)
+	found = []
+	for key in list(data):
+		if not key.startswith(prefix) or not key.endswith('.was'):
+			continue
+		index = key[len(prefix):-len('.was')]
+		was = (data.get(key) or '').strip()
+		now = (data.get('%s%s.label' % (prefix, index)) or '').strip()
+		if was and now and was != now:
+			found.append((was, now))
+	return found
+
+
+def _rewrite_citations(node, old_label, new_label):
+	"""Point every CITE{old} at new, throughout the document.
+
+	Text only, and only an exact whole label: a citation to `Pla15` must not be
+	touched by renaming `Pla`.
+	"""
+	import re
+
+	pattern = re.compile(r'CITE\{%s\}' % (re.escape(old_label),))
+	replacement = 'CITE{%s}' % (new_label,)
+
+	if isinstance(node, str):
+		return pattern.sub(replacement, node)
+	if isinstance(node, list):
+		return [_rewrite_citations(item, old_label, new_label) for item in node]
+	if isinstance(node, dict):
+		return {key: _rewrite_citations(value, old_label, new_label)
+		        for key, value in node.items()}
+	return node
 
 
 def _rebuild(name, shape, data, fields):
