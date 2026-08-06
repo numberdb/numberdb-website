@@ -353,3 +353,13 @@ NUMBERDB_IDENTIFIED_RATE_LIMIT = int(
     os.environ.get('NUMBERDB_IDENTIFIED_RATE_LIMIT', '1000'))
 NUMBERDB_RATE_LIMIT_WINDOW = int(
     os.environ.get('NUMBERDB_RATE_LIMIT_WINDOW', '3600'))
+
+
+#: How long an API write waits for another write to the same table.
+#:
+#: It covers the write alone -- a generator's own computation happens before it
+#: sends anything, and holds nothing. What it must cover is one rebuild of the
+#: table's rows, which takes about 3 seconds for the largest table in the
+#: corpus and grows with the table. Past it the caller is told to try again
+#: rather than left holding a connection open.
+NUMBERDB_WRITE_LOCK_WAIT = os.environ.get('NUMBERDB_WRITE_LOCK_WAIT', '15s')

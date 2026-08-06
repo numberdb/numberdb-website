@@ -139,3 +139,57 @@ than becoming wrong.
 Nothing decided here is binding yet — with public drafts disallowed and an
 entry required, drafts do not exist at all — so this can be settled when they
 are built.
+
+
+## Sending values as they are computed
+
+A generator of expensive values must be able to send each as it is found. One
+that computes everything first loses everything when it dies at entry 900, and
+some of these tables take hours per entry.
+
+Two things make that work without wrecking the history.
+
+**Upsert.** Entries arriving are merged into the stored ones by identity, so a
+submission of one entry leaves the other thousand alone. Replacing stays the
+default: one means "here is the table", the other "here is another value", and
+each is wrong as a default for the other.
+
+**A run is one revision that grows.** Every revision holds the complete
+document, so a revision per entry would be a thousand copies of a table that is
+236 KB at its largest — 230 MB and a thousand one-line diffs for a single
+regeneration. Submissions carrying the same run amend their revision instead:
+content, digest and rows move on; date and position in the history stay.
+
+### What the lock covers, and what it does not
+
+Writes to one table are serialised, because two submissions adding *different*
+entries are not in conflict and the document merge — which compares the entries
+list whole — could not tell. Before the lock, one of them was refused; in the
+variant where a request merged against one moment and passed a base from
+another, the earlier entry was silently overwritten.
+
+The lock covers the **write**, never a caller's computation. A generator that
+spends three hours on one entry holds nothing during those hours; it takes the
+lock only to store the result. What the deadline has to cover is one rebuild of
+the table's rows:
+
+| table | entries | one write |
+|---|---|---|
+| T62 | 723 | 1.8s |
+| T69 | 1124 | 3.0s |
+| T94 | 1135 | 2.5s |
+
+`NUMBERDB_WRITE_LOCK_WAIT` is 15 seconds by default. Past it a writer is told
+to come back rather than left holding a connection, and a run resending one
+entry costs nothing.
+
+### The cost that does scale
+
+Each submission rebuilds the whole table's rows, so streaming N entries one at
+a time costs O(N²): about 16 minutes of rebuild for a thousand entries, and
+proportionally more for a table of long values.
+
+For a generator that takes hours per entry this is noise. For a fast one it is
+the dominant cost, and the answer today is `batch=` — send a hundred at a time
+and pay a hundredth of it. The real fix is to rebuild only the rows that
+changed, which is worth doing when a fast generator needs it and not before.

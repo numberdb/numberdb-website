@@ -557,9 +557,15 @@ def lookup(request):
 		safe=True)
 
 
-#: How long a write waits for another write to the same table before giving up
-#: and telling the caller to try again.
-LOCK_WAIT = '5s'
+#: How long a write waits for another write to the *same table* before giving
+#: up and telling the caller to try again.
+#:
+#: It covers the write, never a caller's computation: a generator that spends
+#: three hours on one entry holds nothing during those hours and takes the lock
+#: only to store the result. What it has to cover is one rebuild of the table's
+#: rows -- 1.8s for a table of 723 entries, 3.0s for one of 1124 -- and that
+#: grows with the table, so it is a setting rather than a number in the code.
+LOCK_WAIT = getattr(settings, 'NUMBERDB_WRITE_LOCK_WAIT', '15s')
 
 
 #-- Writing ------------------------------------------------------------------
