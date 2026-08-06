@@ -489,3 +489,55 @@ class TheValuesASymbolicParameterMayTake(TestCase):
 		                      'parameter.v.values.0.display': r'$\alpha$'},
 		               allow_key_changes=True)
 		self.assertIn('alpha', out['Parameters']['v']['values'])
+
+
+class TheSettingsPageDoesNotReadEveryTable(TestCase):
+	"""Offering the types already in use took 27 seconds.
+
+	It parsed every table's document -- the largest is a quarter of a megabyte
+	and there are 107 of them -- to read two short strings that Postgres can
+	extract itself. The page was unusable, and nothing about it looked wrong
+	except the waiting.
+	"""
+
+	def setUp(self):
+		from django.contrib.auth.models import User
+
+		from .editing import create_table
+
+		self.user = User.objects.create_user('speed_user', password='pw-123456')
+		for index in range(6):
+			create_table(
+				{'Title': 'Speed probe %d' % (index,),
+				 'Data properties': {'type': 'R'},
+				 'Numbers': [{'params': {}, 'number': '3.14'}]},
+				author=self.user)
+
+	def test_it_asks_the_database_rather_than_reading_documents(self):
+		from django.db import connection
+		from django.test.utils import CaptureQueriesContext
+
+		from .metadata_form import known_other_types
+
+		with CaptureQueriesContext(connection) as queries:
+			known_other_types()
+		#One query, whatever the corpus is. Reading the documents would be one
+		#query and then a parse of every one of them.
+		self.assertLessEqual(len(queries), 2)
+
+	def test_it_still_finds_a_declared_type(self):
+		from .editing import create_table
+		from .metadata_form import known_other_types
+
+		create_table({'Title': 'Odd one',
+		              'Data properties': {'type': '*Q',
+		                                  'type name': 'hyperrationals'},
+		              'Numbers': [{'params': {}, 'number': '1'}]},
+		             author=self.user)
+		offered = {row['symbol']: row['name'] for row in known_other_types()}
+		self.assertEqual(offered.get('*Q'), 'hyperrationals')
+
+	def test_searchable_types_are_not_offered_as_something_else(self):
+		from .metadata_form import known_other_types
+
+		self.assertNotIn('R', {row['symbol'] for row in known_other_types()})
