@@ -29,6 +29,8 @@ which -- which is what the labels are for.
 
 from __future__ import annotations
 
+import json
+
 __all__ = ['SECTIONS', 'sections_from', 'apply_sections', 'section_named']
 
 #: The fields a record-shaped item carries, in the order they are shown. Read
@@ -134,7 +136,7 @@ def _labelled(value, shape, fields):
 	items = []
 	for label, item in value.items():
 		row = {'label': label, 'text': '', 'values': {}, 'extra': {},
-		       'was_plain': False}
+		       'extra_json': '', 'was_plain': False}
 		if shape == 'labelled-text':
 			row['text'] = item if isinstance(item, str) else ''
 			row['unshowable'] = not isinstance(item, str)
@@ -144,6 +146,10 @@ def _labelled(value, shape, fields):
 			#rather than dropped, which is how `github` survived before it had
 			#a field and how the next one will.
 			row['extra'] = {k: v for k, v in item.items() if k not in fields}
+			#Carried through the form as JSON in a hidden field, so a key the
+			#form has no box for survives a save instead of being dropped by
+			#the one editor that was supposed to make editing safer.
+			row['extra_json'] = json.dumps(row['extra'])
 			row['unshowable'] = False
 		else:
 			#Ten Links are a bare string rather than a title/url pair. Read into
@@ -233,8 +239,6 @@ def _rebuild(name, shape, data, fields):
 			continue
 		carried = data.get('section.%s.%s.extra' % (name, index))
 		if carried:
-			import json
-
 			try:
 				record.update(json.loads(carried))
 			except ValueError:

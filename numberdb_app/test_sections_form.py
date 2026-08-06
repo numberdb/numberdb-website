@@ -250,3 +250,122 @@ class AgainstTheCorpus(TestCase):
 			tree = yaml.load(td.full_yaml, Loader=yaml.BaseLoader) or {}
 			out = sections_form.apply_sections(tree, submitted(tree))
 			self.assertEqual(out, tree, str(td.table))
+
+
+class ThroughThePage(TestCase):
+	"""The sections form end to end.
+
+	The test that matters is the same one as for the model: open the page, send
+	it back untouched, and nothing should have changed. Doing it through HTML
+	rather than through a dict catches what the template forgets to send.
+	"""
+
+	def setUp(self):
+		from django.contrib.auth.models import User
+
+		from .editing import create_table
+
+		self.user = User.objects.create_user('sections_user',
+		                                     password='pw-123456')
+		self.table = create_table(
+			{'Title': 'Sections probe',
+			 'Definition': 'What these numbers are.',
+			 'Comments': {'comment-1': 'a remark'},
+			 'References': {'Pla15': {'bib': 'David J. Platt',
+			                          'doi': '10.1090/x',
+			                          'zenodo': '10.5281/kept'}},
+			 'Links': {'mpmath': 'https://mpmath.org/'},
+			 'Keywords': 'analysis',
+			 'Data properties': {'type': 'R'},
+			 'Numbers': [{'params': {}, 'number': '3.14'}]},
+			author=self.user)
+		self.client.login(username='sections_user', password='pw-123456')
+
+	def url(self):
+		return '/edit/%s' % (self.table.tid,)
+
+	def head(self):
+		from .editing import tree_of
+
+		self.table.refresh_from_db()
+		return tree_of(self.table.head_revision)
+
+	def form_fields(self):
+		"""Everything the rendered page would submit."""
+		import html
+		import re
+
+		body = self.client.get('%s?form=sections' % (self.url(),)) \
+			.content.decode('utf8')
+		data = {}
+		#Unescaped, as a browser submits it. The carried-fields JSON is full of
+		#quotes, so reading it back escaped loses exactly what it is for.
+		for name, value in re.findall(
+				r'<input[^>]*name="([^"]+)"[^>]*value="([^"]*)"', body):
+			data[name] = html.unescape(value)
+		for name, value in re.findall(
+				r'<textarea[^>]*name="([^"]+)"[^>]*>(.*?)</textarea>',
+				body, re.S):
+			data[name] = html.unescape(value)
+		data.pop('csrfmiddlewaretoken', None)
+		return data
+
+	def test_the_page_shows_the_fields_of_a_reference(self):
+		"""The schema is nowhere else visible."""
+		body = self.client.get('%s?form=sections' % (self.url(),)) \
+			.content.decode('utf8')
+		for field in ('bib', 'doi', 'arXiv', 'MR'):
+			self.assertIn('section.References.0.%s' % (field,), body)
+
+	def test_posting_it_back_untouched_writes_nothing(self):
+		from .models import TableRevision
+
+		before = TableRevision.objects.filter(table=self.table).count()
+		data = self.form_fields()
+		data['action'] = 'save-sections'
+		self.client.post(self.url(), data)
+		self.assertEqual(
+			TableRevision.objects.filter(table=self.table).count(), before)
+
+	def test_a_field_with_no_box_survives_the_page(self):
+		"""`zenodo` has no field; it must come back through the hidden one."""
+		data = self.form_fields()
+		data['action'] = 'save-sections'
+		self.client.post(self.url(), data)
+		self.assertEqual(self.head()['References']['Pla15']['zenodo'],
+		                 '10.5281/kept')
+
+	def test_editing_a_comment_saves(self):
+		data = self.form_fields()
+		data['action'] = 'save-sections'
+		data['section.Comments.0.text'] = 'a better remark'
+		self.client.post(self.url(), data)
+		self.assertEqual(self.head()['Comments'],
+		                 {'comment-1': 'a better remark'})
+
+	def test_adding_a_reference_saves(self):
+		data = self.form_fields()
+		data['action'] = 'save-sections'
+		data['section.References.1.label'] = 'New24'
+		data['section.References.1.bib'] = 'Somebody, 2024'
+		self.client.post(self.url(), data)
+		self.assertIn('New24', self.head()['References'])
+
+	def test_removing_a_row_deletes_it(self):
+		data = {k: v for k, v in self.form_fields().items()
+		        if not k.startswith('section.Comments.0.')}
+		data['action'] = 'save-sections'
+		self.client.post(self.url(), data)
+		self.assertEqual(self.head()['Comments'], {})
+
+	def test_the_page_offers_the_labels_a_citation_can_use(self):
+		body = self.client.get('%s?form=sections' % (self.url(),)) \
+			.content.decode('utf8')
+		self.assertIn('Pla15', body)
+
+	def test_a_signed_out_reader_cannot_save(self):
+		data = self.form_fields()
+		self.client.logout()
+		data['action'] = 'save-sections'
+		self.client.post(self.url(), data)
+		self.assertEqual(self.head()['Comments'], {'comment-1': 'a remark'})

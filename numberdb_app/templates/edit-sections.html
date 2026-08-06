@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+{% load numberdb_urls %}
+
+{% comment %}
+The prose sections, as a form.
+
+The point is that the shape is visible. Nothing else on the site tells somebody
+that a reference may carry a DOI or that a program has a language and a body:
+the source shows what this table happens to contain, so a field that no table
+has filled in is a field nobody discovers.
+
+Rows can be added, removed and moved. Order is taken from the order the fields
+arrive in, which is the order they sit in the page, so moving a row up moves it
+in the document with nothing to renumber.
+{% endcomment %}
+
+{% block head-title %}Edit {{ table_being_edited.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+a.link-below-title { font-size: 0.8rem; color: #555; text-decoration: dotted underline; }
+a.link-below-title:hover { text-decoration: underline; }
+.link-below-title-current { font-size: 0.8rem; color: #999; }
+
+.mode-switch { margin: 0.4rem 0 1rem 0; font-size: 0.9em; }
+.mode-switch .hint { color: #666; display: block; margin-top: 0.15rem; }
+.edit-note { background: #ffc; padding: 0.6rem; border: 1px solid #e6d800;
+             margin: 0.6rem 0; }
+
+.section-block { border: 1px solid #e2e2e2; border-radius: 3px;
+                 margin: 1.1rem 0; }
+.section-head { background: #f6f7f9; padding: 0.5rem 0.8rem;
+                border-bottom: 1px solid #e2e2e2; }
+.section-head h2 { margin: 0; font-size: 1.1rem; font-weight: 400; }
+.section-head .note { color: #666; font-size: 0.85em; }
+.section-body { padding: 0.6rem 0.8rem; }
+
+.row-item { border-top: 1px dashed #eee; padding: 0.6rem 0; position: relative; }
+.row-item:first-child { border-top: none; }
+.row-label { font-family: monospace; }
+.row-fields { margin: 0.3rem 0 0 0; }
+.row-fields label { display: inline-block; min-width: 5.5rem; color: #555;
+                    font-size: 0.85em; vertical-align: top; padding-top: 0.3rem; }
+.row-fields input[type=text] { width: min(30rem, 78%); padding: 0.25rem; }
+.row-fields textarea { width: min(38rem, 90%); min-height: 3.4rem;
+                       padding: 0.3rem; font-family: inherit; }
+.row-actions { font-size: 0.85em; color: #666; }
+.row-actions button { font-size: 0.85em; padding: 0.1rem 0.4rem; cursor: pointer; }
+.unshowable { background: #fcf8e3; border: 1px solid #faebcc; padding: 0.5rem;
+              font-size: 0.9em; }
+.cite-picker { font-size: 0.85em; color: #555; }
+textarea.section-text { width: min(38rem, 90%); min-height: 5rem; padding: 0.4rem;
+                        font-family: inherit; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'db:table_by_url' table_being_edited.url %}">{{ table_being_edited.title|safe }}</a></li>
+  <li class="breadcrumb-item active">Edit</li>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">Editing {{ table_being_edited.title|safe }}</h1>
+
+<p>{% include "includes/table-links.html" with table=table_being_edited current="edit" %}</p>
+
+<div class="mode-switch">
+  <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=1">Settings</a>
+  &middot;
+  <b>Text</b>
+  &middot;
+  <a href="{% url 'db:edit-table' table_being_edited.tid %}">Source</a>
+  <span class="hint">
+    The definition, comments, formulas, references, programs and links. The
+    numbers themselves are edited in the source view.
+  </span>
+</div>
+
+<div class="edit-note">
+  {% if is_draft %}
+    This table is a draft: nobody else can see it yet.
+  {% else %}
+    Your changes are published immediately.
+  {% endif %}
+</div>
+
+<form method="post" action="">
+  {% csrf_token %}
+  <input type="hidden" name="base" value="{{ base_digest }}">
+
+  {% for section in sections %}
+    <div class="section-block" data-section="{{ section.name }}">
+      <div class="section-head">
+        <h2>{{ section.name }}</h2>
+        <span class="note">{{ section.note }}</span>
+      </div>
+      <div class="section-body">
+
+        {% if section.unshowable %}
+          {% comment %}
+          Flagged rather than shown empty. A section rendered blank would be
+          saved blank, and three tables keep a list of records here that would
+          simply disappear.
+          {% endcomment %}
+          <div class="unshowable">
+            This section holds something this form cannot show, so it is left
+            exactly as it is. Edit it in the
+            <a href="{% url 'db:edit-table' table_being_edited.tid %}">source view</a>.
+          </div>
+
+        {% elif section.shape == 'text' %}
+          <input type="hidden" name="section.{{ section.name }}.present" value="1">
+          <textarea class="section-text" name="section.{{ section.name }}.text"
+                    >{{ section.text }}</textarea>
+
+        {% elif section.shape == 'list' %}
+          <input type="hidden" name="section.{{ section.name }}.present" value="1">
+          <textarea class="section-text" name="section.{{ section.name }}.items"
+                    >{% for item in section.items %}{{ item }}
+{% endfor %}</textarea>
+          <div class="note">One per line.</div>
+
+        {% else %}
+          <input type="hidden" name="section.{{ section.name }}.present" value="1">
+          <div class="rows">
+            {% for item in section.items %}
+              <div class="row-item">
+                <div class="row-actions">
+                  <button type="button" data-move="up">&uarr;</button>
+                  <button type="button" data-move="down">&darr;</button>
+                  <button type="button" data-remove="1">remove</button>
+                </div>
+                <div class="row-fields">
+                  <label>label</label>
+                  <input class="row-label" type="text" size="18"
+                         name="section.{{ section.name }}.{{ forloop.counter0 }}.label"
+                         value="{{ item.label }}">
+                  {% if item.was_plain %}
+                    <input type="hidden"
+                           name="section.{{ section.name }}.{{ forloop.counter0 }}.plain"
+                           value="1">
+                  {% endif %}
+                  {% if item.extra %}
+                    {% comment %}
+                    Fields this form has no box for travel back untouched, which
+                    is how `github` survived before it had one.
+                    {% endcomment %}
+                    <input type="hidden"
+                           name="section.{{ section.name }}.{{ forloop.counter0 }}.extra"
+                           value="{{ item.extra_json }}">
+                  {% endif %}
+                </div>
+                {% if section.shape == 'labelled-text' %}
+                  <div class="row-fields">
+                    <label>text</label>
+                    <textarea name="section.{{ section.name }}.{{ forloop.counter0 }}.text"
+                              >{{ item.text }}</textarea>
+                  </div>
+                {% else %}
+                  {% for field in section.fields %}
+                    <div class="row-fields">
+                      <label>{{ field }}</label>
+                      {% if field in section.long_fields %}
+                        <textarea name="section.{{ section.name }}.{{ forloop.parentloop.counter0 }}.{{ field }}"
+                                  >{{ item.values|get:field }}</textarea>
+                      {% else %}
+                        <input type="text"
+                               name="section.{{ section.name }}.{{ forloop.parentloop.counter0 }}.{{ field }}"
+                               value="{{ item.values|get:field }}">
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+          <p>
+            <button type="button" data-add="{{ section.name }}">add {{ section.name|lower|slice:":-1" }}</button>
+          </p>
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+
+  <div class="mode-switch">
+    <label>What did you change?
+      <input type="text" name="message" maxlength="300" size="52"
+             placeholder="e.g. added a reference for the 2015 computation">
+    </label>
+  </div>
+
+  <button type="submit" name="action" value="save-sections"><b>Save</b></button>
+  <a href="{% url 'db:table_by_url' table_being_edited.url %}">Cancel</a>
+</form>
+
+{% if citable %}
+  <p class="cite-picker">
+    Cite one of this table's references by writing
+    {% for label in citable %}<code>CITE&#123;{{ label }}&#125;</code>{% if not forloop.last %}, {% endif %}{% endfor %}
+    in any text above.
+  </p>
+{% endif %}
+
+<script>
+//Rows are added, removed and moved in the page; the document order of the
+//fields is the order they are saved in, so nothing has to be renumbered and
+//the form works the same whether or not this ran.
+(function () {
+  function renumber(block) {
+    var name = block.getAttribute('data-section');
+    block.querySelectorAll('.row-item').forEach(function (row, index) {
+      row.querySelectorAll('[name]').forEach(function (field) {
+        field.name = field.name.replace(
+          new RegExp('^section\\.' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.[^.]+\\.'),
+          'section.' + name + '.' + index + '.');
+      });
+    });
+  }
+
+  document.addEventListener('click', function (event) {
+    var button = event.target.closest('button');
+    if (!button) { return; }
+    var block = button.closest('.section-block');
+    if (!block) { return; }
+
+    if (button.hasAttribute('data-remove')) {
+      button.closest('.row-item').remove();
+      renumber(block);
+    } else if (button.hasAttribute('data-move')) {
+      var row = button.closest('.row-item');
+      var sibling = button.getAttribute('data-move') === 'up'
+        ? row.previousElementSibling : row.nextElementSibling;
+      if (sibling) {
+        button.getAttribute('data-move') === 'up'
+          ? row.parentNode.insertBefore(row, sibling)
+          : row.parentNode.insertBefore(sibling, row);
+        renumber(block);
+      }
+    } else if (button.hasAttribute('data-add')) {
+      var rows = block.querySelector('.rows');
+      var last = rows.querySelector('.row-item:last-child');
+      var fresh;
+      if (last) {
+        fresh = last.cloneNode(true);
+        fresh.querySelectorAll('input[type=text], textarea').forEach(function (f) {
+          f.value = '';
+        });
+        fresh.querySelectorAll('input[type=hidden]').forEach(function (f) {
+          f.remove();
+        });
+      } else {
+        return;   //Nothing to copy the shape from; the source view can start it.
+      }
+      rows.appendChild(fresh);
+      renumber(block);
+      var first = fresh.querySelector('input[type=text]');
+      if (first) { first.focus(); }
+    }
+  });
+})();
+</script>
+{% endblock %}

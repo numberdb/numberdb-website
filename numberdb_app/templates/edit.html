@@ -39,11 +39,13 @@ chooses to write. An author who does not know their edit is published at once
 would reasonably expect a draft.
 {% endcomment %}
 <div class="mode-switch">
-  <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=1">Form</a>
+  <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=1">Settings</a>
+  &middot;
+  <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=sections">Text</a>
   &middot;
   <b>Source</b>
-  <span class="hint">The form covers the settings with fixed choices, where a
-  value cannot be misspelt because it is picked from a list.</span>
+  <span class="hint">The forms show the shape of a table, which the source
+  cannot: a table's text shows only what that table happens to contain.</span>
 </div>
 
 <div class="edit-note">

@@ -38,3 +38,17 @@ def entry_suffix(param):
 	#encoded. A comma is legal unencoded in a query string, and encoding it
 	#turned a readable citation into 1611%2C432%2C-17496.
 	return '?entry=%s' % (quote(str(param), safe=',:'),)
+
+
+@register.filter
+def get(mapping, key):
+	"""Look a key up in a mapping when the key is a variable.
+
+	Django's template language has no syntax for it: `{{ values.field }}` looks
+	for a key literally called "field". A section's fields are data -- read off
+	what the corpus uses -- so they cannot be written out one by one.
+	"""
+	try:
+		return mapping.get(key, '')
+	except AttributeError:
+		return ''

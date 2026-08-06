@@ -62,13 +62,15 @@ table.parameter-table th { font-weight: 400; color: #555; font-size: 0.9em; }
 <p>{% include "includes/table-links.html" with table=table_being_edited current="edit" %}</p>
 
 <div class="mode-switch">
-  <b>Form</b>
+  <b>Settings</b>
+  &middot;
+  <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=sections">Text</a>
   &middot;
   <a href="{% url 'db:edit-table' table_being_edited.tid %}">Source</a>
   <span class="hint">
-    The form covers the settings with fixed choices. Everything else &mdash; the
-    definition, the comments, the references and the numbers themselves &mdash;
-    is edited in the source view.
+    The settings with fixed choices. The definition, comments, formulas,
+    references, programs and links are under Text; the numbers themselves are
+    in the source view.
   </span>
 </div>
 
