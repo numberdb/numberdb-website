@@ -156,7 +156,6 @@ div.main-column {
 <li><a href="#section-guide-to-editing-tables">Guide to editing tables</a></li>
 <li><a href="#section-guide-to-creating-new-tables">Guide to creating new tables</a></li>
 <li><a href="#section-format-of-tables">Format of tables</a></li>
-<li><a href="#section-pipeline">Data pipeline</a></li>
 </ol>
 <hr class="contents">
 <ol class="contents">
@@ -745,33 +744,6 @@ because a misspelt <code>number</code> is not a note about the entry, it is a
 value that would silently vanish.
 </p>
 
-</div>
-
-<!--------------------------------------------------------------------->
-
-<div id="section-pipeline" class="section scrollspy">
-<h2 id="pipeline" class="section scrollspy">Data pipeline</h2>
-
-<img src="{% static '/img/update.png' %}" style="float: right; margin: 2rem; width: calc(7rem + 0 * var(--xlrem));">
-
-<ol>
-<li>
-<div class="li-header">Raw data:</div>
-The raw data is entered in human readable form (yaml) in the git repository <a href="https://github.com/numberdb/numberdb-data">numberdb-data</a> on GitHub.
-To every new table, a bot associates an ID that serves as a permanent identifier.
-</li>
-
-<li>
-<div class="li-header">Database builder:</div>
-The raw data gets transformed regularly into the numberdb.org database.
-During this process, a search index is created.
-</li>
-
-<li>
-<div class="li-header">Webpage:</div>
-That database can be accessed through <a href="http://numberdb.org">numberdb.org's searchbar</a>.
-</li>
-</ol>
 </div>
 
 <!--------------------------------------------------------------------->
