@@ -101,16 +101,24 @@ def _parameters_of(tree):
 	out = []
 	for name, spec in parameters.items():
 		spec = spec if isinstance(spec, dict) else {}
+		values = spec.get('values')
 		out.append({
 			'name': name,
 			'type': str(spec.get('type') or ''),
 			'constraints': str(spec.get('constraints') or ''),
 			'display': str(spec.get('display') or ''),
+			#The values a symbolic parameter may take, and how each is
+			#written. The key is part of every identity of an entry using it,
+			#which is why it is shown but not editable once saved.
+			'values': [{'value': key, 'display': str(shown)}
+			           for key, shown in values.items()]
+			          if isinstance(values, dict) else [],
+			'has_values': isinstance(values, dict),
 		})
 	return out
 
 
-def apply_to(tree, data):
+def apply_to(tree, data, allow_key_changes=False):
 	"""Write the form's fields onto ``tree`` and return it.
 
 	``data`` is a request's POST. Only the paths the form owns are touched, and
@@ -163,11 +171,11 @@ def apply_to(tree, data):
 		_set(display, 'layout', (data.get('layout') or '').strip())
 	_drop_if_empty(out, 'Display properties')
 
-	_apply_parameters(out, data)
+	_apply_parameters(out, data, allow_key_changes)
 	return out
 
 
-def _apply_parameters(out, data):
+def _apply_parameters(out, data, allow_key_changes=False):
 	"""Each parameter's type, constraints and display.
 
 	Names are not touched here. Renaming or reordering reassigns every entry's
@@ -186,6 +194,10 @@ def _apply_parameters(out, data):
 			form_key = 'parameter.%s.%s' % (name, field)
 			if form_key in data:
 				_set(spec, key, (data.get(form_key) or '').strip())
+
+		if 'parameter.%s.values.present' % (name,) in data:
+			_apply_values(spec, name, data, allow_key_changes,
+			              _values_in_use(out, name))
 
 
 def _section(tree, name):
@@ -244,3 +256,75 @@ def known_other_types():
 			found.setdefault(
 				symbol, str(properties.get(TYPE_NAME_KEY) or '').strip())
 	return [{'symbol': k, 'name': v} for k, v in sorted(found.items())]
+
+
+def _values_in_use(tree, name):
+	"""Which values of this parameter the entries actually use.
+
+	A value nobody uses may be removed; one that is used may not, because the
+	validator refuses an entry whose value is not listed -- so removing it
+	would make the table unsaveable by way of a change that looked unrelated.
+	"""
+	from .flatten import entries_block
+
+	block = entries_block(tree)
+	if not isinstance(block, list):
+		return set()
+	used = set()
+	for record in block:
+		if isinstance(record, dict):
+			value = (record.get('params') or {}).get(name)
+			if value is not None:
+				used.add(str(value))
+	return used
+
+
+def _apply_values(spec, name, data, allow_key_changes, in_use=()):
+	"""The values a symbolic parameter may take.
+
+	Adding one is always safe: it creates identities that did not exist and
+	changes none that did. Changing how a value is *written* is safe too, since
+	the display is not the identity.
+
+	Renaming a value is not. `v: b` is part of the identity `1.629911,b`, so
+	renaming it to `beta` renumbers every entry that uses it -- the citations do
+	not break, they resolve and point at different numbers. So an existing key
+	is kept as it was unless the table is still a draft, where nothing outside
+	can be pointing at it yet.
+
+	A value that entries still use cannot be removed either; the validator
+	refuses an entry whose value is not listed, so this would otherwise make a
+	table unsaveable by way of a change that looked unrelated.
+	"""
+	existing = spec.get('values') if isinstance(spec.get('values'), dict) else {}
+	built = {}
+	prefix = 'parameter.%s.values.' % (name,)
+
+	seen = []
+	for form_key in data:
+		if form_key.startswith(prefix) and form_key.endswith('.key'):
+			index = form_key[len(prefix):-len('.key')]
+			if index not in seen:
+				seen.append(index)
+
+	for index in seen:
+		key = (data.get('%s%s.key' % (prefix, index)) or '').strip()
+		was = (data.get('%s%s.was' % (prefix, index)) or '').strip()
+		shown = (data.get('%s%s.display' % (prefix, index)) or '').strip()
+		if was and not allow_key_changes:
+			#Shown, editable-looking or not, the stored key is what counts.
+			key = was
+		if not key:
+			continue
+		built[key] = shown or key
+
+	#A value the entries still use may not disappear, whatever the form sent.
+	#One nobody uses may: a list that can only grow is a list nobody tidies.
+	for key, shown in existing.items():
+		if key in in_use:
+			built.setdefault(key, shown)
+
+	if built:
+		spec['values'] = built
+	else:
+		spec.pop('values', None)

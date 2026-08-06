@@ -382,3 +382,110 @@ def validate_problems(tree):
 	from .validate import problems
 
 	return problems(tree)
+
+
+class TheValuesASymbolicParameterMayTake(TestCase):
+	"""A value is part of the identity of every entry using it.
+
+	`v: b` is what makes the identity `1.629911,b`, so renaming it renumbers
+	those entries and their citations resolve to different numbers. Adding one
+	is safe -- it creates identities that did not exist -- which is what a table
+	needs when it grows a new case.
+	"""
+
+	def setUp(self):
+		from django.contrib.auth.models import User
+
+		from .editing import create_table
+
+		self.user = User.objects.create_user('values_user', password='pw-123456')
+		self.table = create_table(
+			{'Title': 'Values probe',
+			 'Parameters': {'q': {'type': 'R'},
+			                'v': {'type': 'Symbolic',
+			                      'values': {'a': '$a$', 'b': '$b$'}}},
+			 'Numbers': [{'params': {'q': '1.5', 'v': 'a'}, 'number': '2'},
+			             {'params': {'q': '1.5', 'v': 'b'}, 'number': '3'}]},
+			author=self.user)
+		self.client.login(username='values_user', password='pw-123456')
+
+	def head(self):
+		from .editing import tree_of
+
+		self.table.refresh_from_db()
+		return tree_of(self.table.head_revision)
+
+	def values(self):
+		return self.head()['Parameters']['v']['values']
+
+	def submit(self, **fields):
+		data = {'action': 'save-metadata',
+		        'base': self.table.head_revision.digest,
+		        'title': 'Values probe',
+		        'parameter.q.type': 'R', 'parameter.v.type': 'Symbolic',
+		        'parameter.v.values.present': '1',
+		        'parameter.v.values.0.key': 'a',
+		        'parameter.v.values.0.was': 'a',
+		        'parameter.v.values.0.display': '$a$',
+		        'parameter.v.values.1.key': 'b',
+		        'parameter.v.values.1.was': 'b',
+		        'parameter.v.values.1.display': '$b$'}
+		data.update(fields)
+		return self.client.post('/edit/%s' % (self.table.tid,), data)
+
+	def test_the_values_are_shown_in_the_form(self):
+		response = self.client.get('/edit/%s?form=1' % (self.table.tid,))
+		self.assertContains(response, 'parameter.v.values.0.key')
+		self.assertContains(response, 'add value')
+
+	def test_a_value_can_be_added(self):
+		"""What a table needs when it grows a new case."""
+		self.submit(**{'parameter.v.values.new2.key': 'c',
+		               'parameter.v.values.new2.display': '$c$'})
+		self.assertEqual(self.values(), {'a': '$a$', 'b': '$b$', 'c': '$c$'})
+
+	def test_how_a_value_is_written_can_be_changed(self):
+		"""The display is not the identity, so nothing is renumbered."""
+		self.submit(**{'parameter.v.values.1.display': r'$\beta$'})
+		self.assertEqual(self.values()['b'], r'$\beta$')
+
+	def test_a_value_cannot_be_renamed_on_a_published_table(self):
+		"""Entries would keep their old identity and the list would not match."""
+		self.submit(**{'parameter.v.values.1.key': 'beta'})
+		self.assertIn('b', self.values())
+		self.assertNotIn('beta', self.values())
+
+	def test_a_value_in_use_cannot_be_dropped(self):
+		data = {k: v for k, v in {
+			'action': 'save-metadata',
+			'base': self.table.head_revision.digest,
+			'title': 'Values probe',
+			'parameter.v.values.present': '1',
+			'parameter.v.values.0.key': 'a',
+			'parameter.v.values.0.was': 'a',
+			'parameter.v.values.0.display': '$a$'}.items()}
+		self.client.post('/edit/%s' % (self.table.tid,), data)
+		self.assertIn('b', self.values())
+
+	def test_a_value_nobody_uses_may_be_dropped(self):
+		"""A list that can only grow is a list nobody tidies."""
+		self.submit(**{'parameter.v.values.new2.key': 'unused',
+		               'parameter.v.values.new2.display': '$u$'})
+		self.assertIn('unused', self.values())
+		self.submit(base=self.head() and self.table.head_revision.digest)
+		self.assertNotIn('unused', self.values())
+
+	def test_a_draft_may_still_rename(self):
+		from .editing import create_table
+		from .metadata_form import apply_to
+
+		tree = {'Parameters': {'v': {'type': 'Symbolic',
+		                             'values': {'a': '$a$'}}},
+		        'Numbers': [{'params': {'v': 'a'}, 'number': '1'}]}
+		out = apply_to(tree, {'parameter.v.type': 'Symbolic',
+		                      'parameter.v.values.present': '1',
+		                      'parameter.v.values.0.key': 'alpha',
+		                      'parameter.v.values.0.was': 'a',
+		                      'parameter.v.values.0.display': r'$\alpha$'},
+		               allow_key_changes=True)
+		self.assertIn('alpha', out['Parameters']['v']['values'])
