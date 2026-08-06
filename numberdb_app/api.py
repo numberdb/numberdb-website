@@ -12,6 +12,8 @@ from django.conf import settings
 #Key-authenticated writes carry no cookie, so there is no session for a
 #third-party page to ride on; the CSRF check has nothing to protect here
 #and would only reject every program that is doing the right thing.
+from django.db import connection, transaction
+from django.db.utils import OperationalError
 from django.views.decorators.csrf import csrf_exempt
 
 import numpy as np
@@ -555,6 +557,11 @@ def lookup(request):
 		safe=True)
 
 
+#: How long a write waits for another write to the same table before giving up
+#: and telling the caller to try again.
+LOCK_WAIT = '5s'
+
+
 #-- Writing ------------------------------------------------------------------
 #
 #Editing through a program is deliberately harder than editing through the
@@ -828,6 +835,54 @@ def write_entries(request, tid):
 			{'error': 'Entries must be a list of records or a mapping.'},
 			status=400)
 
+	#Read, merge and write under one lock.
+	#
+	#Two submissions of the same run arrive from one script in quick
+	#succession. Each reads the document, adds its entry and writes the
+	#result -- and adding entry 2 and entry 3 is not a conflict, but the
+	#document merge compares the entries list whole, so concurrently it looks
+	#like one: the second submission is refused and the generator has to work
+	#out that its value was not stored.
+	#
+	#Worse, a request whose merge read the document at one moment and passed a
+	#base from another simply overwrote the first entry, silently.
+	#
+	#So they serialise instead. Writes to a table are rare and a run's
+	#submissions come from one script, so waiting costs nothing and the
+	#alternative is either a lost value or a 409 that means "try again".
+	#With a deadline. An unbounded wait is worse than the collision it avoids:
+	#rebuilding a table's rows takes seconds, so a queue of blocked writers
+	#occupies workers that have nothing to do but wait, and a client learns
+	#nothing until it eventually succeeds or the connection dies.
+	#
+	#Waiting a few seconds and then saying so is the honest answer. A run
+	#resending one entry costs nothing, and a caller that is told to come back
+	#can decide for itself.
+	try:
+		with transaction.atomic():
+			with connection.cursor() as cursor:
+				cursor.execute("SET LOCAL lock_timeout = %s", [LOCK_WAIT])
+			table = Table.objects.select_for_update().get(pk=table.pk)
+			return _write_entries_locked(request, table, entries, user)
+	except OperationalError:
+		response = JsonResponse(
+			{'error': 'Somebody else is writing this table just now.',
+			 'detail': ('Waited %s and gave up rather than holding the '
+			            'connection open. Nothing was written; send it again.'
+			            % (LOCK_WAIT,)),
+			 'retry_after': 2}, status=429)
+		response['Retry-After'] = '2'
+		return response
+
+
+def _write_entries_locked(request, table, entries, user):
+	from .editing import commit_table, tree_of
+	from .limits import TooBig
+	from .permissions import edits_are_reviewed
+	from .editing import InvalidDocument
+
+	#Re-read inside the lock: whatever another submission wrote a moment ago is
+	#what this one must add to.
 	tree = tree_of(table.head_revision)
 	#Whichever name this table's entries section already goes by, so replacing
 	#them does not quietly rename the section as a side effect.

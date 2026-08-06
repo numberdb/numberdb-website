@@ -211,8 +211,8 @@ def verify(generator: Generator, tid: Optional[str] = None,
            client: Any = None, **bounds: Any) -> Report:
     """Recompute entries and compare them with what the table holds.
 
-    Writes nothing. This is the check that answers "does the code still produce
-    the table", and it is the reason to insist on a per-entry ``value``: with
+    Writes nothing, and needs no key: reading is public. This is the check that
+    answers "does the code still produce the table", and it is the reason to insist on a per-entry ``value``: with
     one, ten entries can be checked in seconds; without one, the only way to
     ask is to regenerate a table that may take days, which means never.
 
@@ -303,7 +303,7 @@ def _value_of(record):
 
 def publish(generator: Generator, tid: Optional[str] = None,
             digits: Optional[int] = None, message: str = '',
-            batch: Optional[int] = None, run: str = '',
+            batch: Optional[int] = None, run: str = '', preflight: bool = True,
             client: Any = None, **bounds: Any) -> Dict[str, Any]:
     """Send a generator's entries to its table.
 
@@ -325,6 +325,15 @@ def publish(generator: Generator, tid: Optional[str] = None,
     if not tid:
         raise ValueError('which table? pass tid= or set it on the generator')
 
+    #Before computing anything. A generator may run for hours, and "no API key
+    #was set" is knowable in the first second -- as are "this account may not
+    #write yet" and "there is no table T42". Finding out at the end costs
+    #whatever the computation cost.
+    if preflight:
+        from ._write import check_writable
+
+        check_writable(tid, client=client)
+
     if not batch:
         entries = generate(generator, digits=digits, **bounds)
         return submit_entries(tid, entries, message=message,
@@ -341,9 +350,10 @@ def publish(generator: Generator, tid: Optional[str] = None,
         nonlocal pending
         if not len(pending):
             return
-        result = submit_entries(tid, pending, message=message,
-                                produced_by=type(generator).__name__,
-                                upsert=True, run=run, client=client)
+        result = _with_retry(
+            lambda: submit_entries(tid, pending, message=message,
+                                   produced_by=type(generator).__name__,
+                                   upsert=True, run=run, client=client))
         sent['entries'] += len(pending)
         sent['batches'] += 1
         answer.update(result)
@@ -358,6 +368,31 @@ def publish(generator: Generator, tid: Optional[str] = None,
     answer.update(sent)
     answer['run'] = run
     return answer
+
+
+def _with_retry(send, attempts=4):
+    """Send a batch, waiting and trying again when the table is busy.
+
+    Writes to one table are serialised, so a batch can be told that somebody
+    else is writing just now. For a run of hours that is a normal event and not
+    a failure: the values are already computed and resending them costs
+    nothing, whereas losing them costs whatever they took to produce.
+
+    Only for "busy" -- a refused document or a rejected key is not going to
+    become true by being repeated.
+    """
+    import time
+
+    from ._errors import RateLimited
+
+    for attempt in range(attempts):
+        try:
+            return send()
+        except RateLimited as busy:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(getattr(busy, 'retry_after', None) or 2 * (attempt + 1))
+    raise AssertionError('unreachable')
 
 
 def _run_name(generator):
