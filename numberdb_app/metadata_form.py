@@ -234,27 +234,31 @@ def known_other_types():
 	Read from the corpus rather than from a list in the code, so recording a
 	new kind of number does not need a release: the next person choosing
 	"something else" is offered what the last one entered.
-	"""
-	import yaml
 
-	from .models import Table
+	Extracted in the database rather than in Python. Parsing every table's
+	document to read two short strings took 27 seconds and made the settings
+	page unusable -- the largest document is a quarter of a megabyte and there
+	are 107 of them, none of which has anything to do with the question being
+	asked.
+	"""
+	from django.db.models.fields.json import KeyTextTransform
+
+	from .models import TableData
+
+	rows = (TableData.objects
+	        .annotate(
+		        declared=KeyTextTransform(
+			        'type', KeyTextTransform('Data properties', 'json')),
+		        named=KeyTextTransform(
+			        TYPE_NAME_KEY, KeyTextTransform('Data properties', 'json')))
+	        .exclude(declared=None)
+	        .values_list('declared', 'named'))
 
 	found = dict(OTHER_TYPES)
-	rows = (Table.objects.exclude(head_revision=None)
-	        .select_related('head_revision').only('head_revision'))
-	for table in rows:
-		try:
-			tree = yaml.load(table.head_revision.content,
-			                 Loader=yaml.BaseLoader) or {}
-		except Exception:
-			continue
-		properties = tree.get('Data properties')
-		if not isinstance(properties, dict):
-			continue
-		symbol = str(properties.get('type') or '').strip()
+	for symbol, name in rows:
+		symbol = (symbol or '').strip()
 		if symbol and symbol not in SEARCHABLE_TYPES:
-			found.setdefault(
-				symbol, str(properties.get(TYPE_NAME_KEY) or '').strip())
+			found.setdefault(symbol, (name or '').strip())
 	return [{'symbol': k, 'name': v} for k, v in sorted(found.items())]
 
 
@@ -291,10 +295,6 @@ def _apply_values(spec, name, data, allow_key_changes, in_use=()):
 	not break, they resolve and point at different numbers. So an existing key
 	is kept as it was unless the table is still a draft, where nothing outside
 	can be pointing at it yet.
-
-	A value that entries still use cannot be removed either; the validator
-	refuses an entry whose value is not listed, so this would otherwise make a
-	table unsaveable by way of a change that looked unrelated.
 	"""
 	existing = spec.get('values') if isinstance(spec.get('values'), dict) else {}
 	built = {}
