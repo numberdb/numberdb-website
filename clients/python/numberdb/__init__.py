@@ -325,6 +325,51 @@ def _refine(results: 'SearchResults', low, high) -> 'SearchResults':
     return SearchResults(kept, results.messages)
 
 
+def _as_real_endpoints(value: Any) -> Optional[tuple]:
+    """The endpoints of a whole real interval, or None if it is not one.
+
+    Accepts Sage's ``RealIntervalField`` and ``RealBallField`` elements and
+    this package's own ``RealInterval``. In Sage you have the interval, not its
+    endpoints, and making somebody write ``x.lower(), x.upper()`` to look up a
+    number they are holding is asking them to take an object apart so that a
+    function can put it back together.
+    """
+    if isinstance(value, RealInterval):
+        return value.lower, value.upper
+    if _sage_parent_kind(value) == 'real interval':
+        return value.lower(), value.upper()
+    return None
+
+
+def _as_complex_corners(value: Any) -> Optional[tuple]:
+    """The corners of a whole complex box, or None if it is not one."""
+    if isinstance(value, ComplexInterval):
+        return (value.real.lower, value.real.upper,
+                value.imag.lower, value.imag.upper)
+    if _sage_parent_kind(value) == 'complex interval':
+        return (value.real().lower(), value.real().upper(),
+                value.imag().lower(), value.imag().upper())
+    return None
+
+
+def _as_p_adic_parts(value: Any) -> Optional[dict]:
+    """A whole p-adic taken apart, or None if it is not one."""
+    if isinstance(value, PAdic):
+        return {'prime': value.prime, 'order': value.valuation,
+                'unit': value.unit,
+                'absolute_precision': value.precision_absolute}
+    if _sage_parent_kind(value) != 'p-adic':
+        return None
+    prime = int(value.parent().prime())
+    absolute = int(value.precision_absolute())
+    if value == 0:
+        return {'prime': prime, 'order': absolute, 'unit': 0,
+                'absolute_precision': absolute}
+    return {'prime': prime, 'order': int(value.valuation()),
+            'unit': int(value.unit_part().lift()),
+            'absolute_precision': absolute}
+
+
 def search_integer(value: Scalar, client: Optional[Client] = None) -> 'SearchResults':
     """Search for an exact integer.
 
@@ -358,13 +403,31 @@ def search_rational(numerator: Scalar, denominator: Scalar = 1,
     return _by_number({'kind': 'QQ', 'value': str(exact)}, client)
 
 
-def search_real_interval(lower: Scalar, upper: Scalar,
+def search_real_interval(lower: Any, upper: Optional[Scalar] = None,
                          client: Optional[Client] = None) -> 'SearchResults':
     """Search for a real known to lie between ``lower`` and ``upper``.
+
+    A whole interval may be given instead of its two endpoints -- Sage's
+    ``RIF``/``RBF`` or this package's ``RealInterval``:
+
+        search_real_interval(RIF(3.1415, 3.1416))
+        search_real_interval('3.1415', '3.1416')
+
+    In Sage you are holding the interval, not its endpoints, and requiring
+    ``x.lower(), x.upper()`` asks somebody to take an object apart so that a
+    function can put it back together.
 
     Endpoints are converted exactly before anything else touches them, so the
     interval searched is the interval given -- never a rounding of it.
     """
+    if upper is None:
+        endpoints = _as_real_endpoints(lower)
+        if endpoints is None:
+            raise TypeError(
+                'give two endpoints, or one real interval. A single %s says '
+                'nothing about how wide it is.' % (type(lower).__name__,))
+        lower, upper = endpoints
+
     exact_low, exact_high = to_exact(lower, 'lower'), to_exact(upper, 'upper')
     if exact_low > exact_high:
         exact_low, exact_high = exact_high, exact_low
@@ -393,10 +456,25 @@ def search_real_ball(center: Scalar, radius: Scalar,
                                 client=client)
 
 
-def search_complex_interval(re_lower: Scalar, re_upper: Scalar,
-                            im_lower: Scalar, im_upper: Scalar,
+def search_complex_interval(re_lower: Any, re_upper: Optional[Scalar] = None,
+                            im_lower: Optional[Scalar] = None,
+                            im_upper: Optional[Scalar] = None,
                             client: Optional[Client] = None) -> 'SearchResults':
-    """Search for a complex number known to lie in a rectangle."""
+    """Search for a complex number known to lie in a rectangle.
+
+    A whole box may be given instead of its four corners -- Sage's
+    ``CIF``/``CBF`` or this package's ``ComplexInterval``:
+
+        search_complex_interval(CIF(RIF(0, 1), RIF(0, 1)))
+        search_complex_interval(0, 1, 0, 1)
+    """
+    if re_upper is None:
+        corners = _as_complex_corners(re_lower)
+        if corners is None:
+            raise TypeError(
+                'give four bounds, or one complex interval. A single %s says '
+                'nothing about how wide it is.' % (type(re_lower).__name__,))
+        re_lower, re_upper, im_lower, im_upper = corners
     #Each coordinate bounded on its own, so a large real part cannot cost the
     #imaginary one its precision.
     real = list(bound_interval(to_exact(re_lower, 're_lower'),
@@ -424,17 +502,37 @@ def search_complex_ball(re_center: Scalar, im_center: Scalar, radius: Scalar,
                                    client=client)
 
 
-def search_p_adic(prime: int, order: int, unit: int,
+def search_p_adic(prime: Any, order: Optional[int] = None,
+                  unit: Optional[int] = None,
                   absolute_precision: Optional[int] = None,
                   relative_precision: Optional[int] = None,
                   client: Optional[Client] = None) -> 'SearchResults':
     """Search for ``prime**order * unit``, known to the given precision.
 
-    ``unit`` must be coprime to ``prime``. Exactly one precision must be
-    given, and it must be named: absolute and relative coincide at order zero
-    and diverge silently elsewhere, so a bare number would have to be
-    remembered rather than read.
+    A whole p-adic may be given instead of its parts -- an element of Sage's
+    ``Qp``/``Zp`` or this package's ``PAdic``, which carry their own
+    precision:
+
+        search_p_adic(Qp(2)(1, 167))
+        search_p_adic(2, 0, 1, absolute_precision=167)
+
+
+    ``unit`` must be coprime to ``prime``. When the parts are given, exactly
+    one precision must be given too, and it must be named: absolute and
+    relative coincide at order zero and diverge silently elsewhere, so a bare
+    number would have to be remembered rather than read.
     """
+    if order is None and unit is None:
+        parts = _as_p_adic_parts(prime)
+        if parts is None:
+            raise TypeError(
+                'give a prime, an order and a unit, or one p-adic number. A '
+                'single %s does not say what it is.' % (type(prime).__name__,))
+        #Its own precision, which is the point of passing the whole thing.
+        prime, order, unit = parts['prime'], parts['order'], parts['unit']
+        if absolute_precision is None and relative_precision is None:
+            absolute_precision = parts['absolute_precision']
+
     if (absolute_precision is None) == (relative_precision is None):
         raise TypeError('give exactly one of absolute_precision or '
                         'relative_precision')
@@ -604,17 +702,14 @@ def search(value: 'Searchable', client: Optional[Client] = None) -> 'SearchResul
     if isinstance(value, bool):
         raise TypeError('a bool is not a number')
 
+    #Handed on whole: the component functions take these themselves now, so
+    #there is one place that knows how to take an interval apart.
     if isinstance(value, RealInterval):
-        return search_real_interval(value.lower, value.upper,
-                                    client=client)
+        return search_real_interval(value, client=client)
     if isinstance(value, ComplexInterval):
-        return search_complex_interval(
-            value.real.lower, value.real.upper,
-            value.imag.lower, value.imag.upper, client=client)
+        return search_complex_interval(value, client=client)
     if isinstance(value, PAdic):
-        return search_p_adic(value.prime, value.valuation, value.unit,
-                             absolute_precision=value.precision_absolute,
-                             client=client)
+        return search_p_adic(value, client=client)
     if isinstance(value, Polynomial):
         return search_polynomial(value, client=client)
 
@@ -641,25 +736,11 @@ def search(value: 'Searchable', client: Optional[Client] = None) -> 'SearchResul
     if kind == 'rational':
         return search_rational(sage_value, client=client)
     if kind == 'real interval':
-        return search_real_interval(sage_value.lower(), sage_value.upper(),
-                                    client=client)
+        return search_real_interval(sage_value, client=client)
     if kind == 'complex interval':
-        return search_complex_interval(
-            sage_value.real().lower(), sage_value.real().upper(),
-            sage_value.imag().lower(), sage_value.imag().upper(),
-            client=client)
+        return search_complex_interval(sage_value, client=client)
     if kind == 'p-adic':
-        if sage_value == 0:
-            absolute = int(sage_value.precision_absolute())
-            return search_p_adic(int(sage_value.parent().prime()), absolute, 0,
-                                 absolute_precision=absolute,
-                                 client=client)
-        return search_p_adic(int(sage_value.parent().prime()),
-                             int(sage_value.valuation()),
-                             int(sage_value.unit_part().lift()),
-                             absolute_precision=int(
-                                 sage_value.precision_absolute()),
-                             client=client)
+        return search_p_adic(sage_value, client=client)
     if kind == 'polynomial':
         return search_polynomial(str(sage_value).replace(' ', ''),
                                  client=client)

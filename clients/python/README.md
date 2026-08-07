@@ -169,6 +169,15 @@ Every function above is present under the same name and signature. Two things
 change: Sage's own types are accepted as arguments, and `.value` comes back as
 a Sage object in the natural parent.
 
+A whole interval may be given where the components are expected, since in Sage
+that is what you are holding:
+
+```python
+sage: numberdb.search_real_interval(RIF(3.1415, 3.1416))
+sage: numberdb.search_complex_interval(CIF(RIF(0, 1), RIF(0, 1)))
+sage: numberdb.search_p_adic(Qp(2)(1, 167))     # brings its own precision
+```
+
 ```python
 sage: numberdb.search(10)[0].value.parent()
 Integer Ring
