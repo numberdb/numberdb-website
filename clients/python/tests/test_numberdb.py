@@ -489,15 +489,31 @@ class NoSageExtra(unittest.TestCase):
     seen to clash.
     """
 
-    def test_the_package_declares_no_sage_extra(self):
+    def declared(self):
         path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             'pyproject.toml')
         with open(path) as handle:
-            #Comments explain why there is no extra and name it while doing so.
-            declared = '\n'.join(line for line in handle
-                                 if not line.lstrip().startswith('#'))
-        self.assertNotIn('optional-dependencies', declared)
+            #Comments explain why there is no sage extra and name it while
+            #doing so, so they are dropped before looking.
+            return '\n'.join(line for line in handle
+                             if not line.lstrip().startswith('#'))
+
+    def test_the_package_declares_no_sage_extra(self):
+        """No `sage` extra, by name.
+
+        This used to forbid *any* extra, which was a proxy for the real rule
+        and stopped being true the moment the package gained a `docs` one for
+        pdoc -- a development tool that hurts nobody. The rule is about Sage.
+        """
+        declared = self.declared()
+        for spelling in ('[sage]', 'sage =', 'sage=', '"sage"', "'sage'"):
+            self.assertNotIn(spelling, declared.replace('numberdb.sage', ''))
+
+    def test_nothing_is_required_to_install_it(self):
+        """The extras that do exist are for developing it, not for using it."""
+        declared = self.declared()
+        self.assertIn('dependencies = []', declared)
         self.assertNotIn('numberdb[sage]', declared)
 
 
@@ -1174,3 +1190,96 @@ class WideningIsRefined(unittest.TestCase):
         found = numberdb.search_real_interval(lower, upper, client=client)
         self.assertEqual(found.messages,
                          ['We only show the first 100 results.'])
+
+
+class WholeSageObjectsAsInput(unittest.TestCase):
+    """In Sage you are holding the interval, not its endpoints.
+
+    Requiring `x.lower(), x.upper()` asks somebody to take an object apart so
+    that a function can put it back together, and it is the natural thing to
+    have in hand: `search(x)` already accepted it, but the component functions
+    did not.
+    """
+
+    def sage(self):
+        try:
+            import sage.all  # noqa: F401
+        except ImportError:
+            self.skipTest('Sage is not installed here')
+        import sage.all as sage
+        return sage
+
+    def sent(self, payload=None):
+        return _client(payload if payload is not None
+                       else {'results': [], 'messages': []})
+
+    def test_a_real_interval_may_be_given_whole(self):
+        sage = self.sage()
+        value = sage.RealIntervalField(200)(sage.pi)
+        found = numberdb.search_real_interval(value, client=self.sent())
+        self.assertEqual(len(found), 0)
+
+    def test_it_agrees_with_giving_the_endpoints(self):
+        """The same interval either way, or one of the two forms is lying."""
+        sage = self.sage()
+        value = sage.RealIntervalField(200)(sage.pi)
+        whole = _capture(lambda c: numberdb.search_real_interval(value, client=c))
+        parts = _capture(lambda c: numberdb.search_real_interval(
+            value.lower(), value.upper(), client=c))
+        self.assertEqual(whole, parts)
+
+    def test_a_complex_box_may_be_given_whole(self):
+        sage = self.sage()
+        value = sage.ComplexIntervalField(100)(sage.pi, sage.sqrt(2))
+        numberdb.search_complex_interval(value, client=self.sent())
+
+    def test_a_p_adic_may_be_given_whole_and_brings_its_precision(self):
+        """The point of passing the whole thing: it knows its own precision."""
+        sage = self.sage()
+        whole = _capture(lambda c: numberdb.search_p_adic(sage.Qp(2)(1, 167),
+                                                          client=c))
+        parts = _capture(lambda c: numberdb.search_p_adic(
+            2, 0, 1, absolute_precision=20, client=c))
+        self.assertEqual(whole, parts)
+
+    def test_this_package_s_own_types_are_accepted_too(self):
+        from fractions import Fraction
+
+        numberdb.search_real_interval(
+            numberdb.RealInterval(Fraction(1, 2), Fraction(3, 4)),
+            client=self.sent())
+
+    def test_the_components_still_work(self):
+        numberdb.search_real_interval('3.1415', '3.1416', client=self.sent())
+        numberdb.search_complex_interval(0, 1, 0, 1, client=self.sent())
+
+    def test_one_number_is_not_an_interval(self):
+        """A single float says nothing about how wide it is."""
+        with self.assertRaises(TypeError) as raised:
+            numberdb.search_real_interval(3.14, client=self.sent())
+        self.assertIn('two endpoints', str(raised.exception))
+
+
+def _capture(call):
+    """The query one of these searches would send."""
+    import json
+
+    seen = {}
+
+    def opener(request, timeout=None):
+        seen['url'] = request.full_url
+
+        class Answer:
+            def read(self):
+                return json.dumps({'results': [], 'messages': []}).encode()
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+        return Answer()
+
+    call(numberdb.Client(base_url='http://x', opener=opener))
+    return seen['url']
