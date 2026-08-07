@@ -193,3 +193,32 @@ For a generator that takes hours per entry this is noise. For a fast one it is
 the dominant cost, and the answer today is `batch=` — send a hundred at a time
 and pay a hundredth of it. The real fix is to rebuild only the rows that
 changed, which is worth doing when a fast generator needs it and not before.
+
+
+### Two runs on the same table at once
+
+A run amends its own revision only while that revision is still the head. So if
+two people generate into the same table at the same time, neither can amend:
+their submissions interleave, and six of them become seven revisions.
+
+Nothing about that is *wrong*. Every revision holds exactly what it held, and
+an entry is attributed to whoever last changed it — checked with two
+interleaved runs, where the odd entries come back as Alice's and the even ones
+as the other author's. The "latest revision" always matches its own entries,
+because attribution is per entry rather than per revision.
+
+What breaks is readability, and the storage that goes with it: a thousand
+entries each would be two thousand revisions, each holding the whole document.
+Two mitigations, in order of how much they help:
+
+* `batch=` — a run sending a hundred at a time makes interleaving rare and
+  divides the revisions by a hundred. This is the answer for anything that is
+  not genuinely hours per entry.
+* the history groups a run into one line, positioned at its latest part, with
+  the parts available underneath. Two acts read as two lines whether they
+  produced two revisions or two thousand.
+
+The storage cost is real and unmitigated in the worst case. Rebuilding only the
+rows that changed, and storing a revision as a diff when it belongs to a run,
+are both available if a table ever needs them; neither is worth building before
+something does.
