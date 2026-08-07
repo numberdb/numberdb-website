@@ -2910,3 +2910,33 @@ def _bundle_note(table, revision):
 		   revision.created.strftime('%Y-%m-%d %H:%M'), who,
 		   'Run: %s' % (revision.run,) if revision.run else '',
 		   'https://numberdb.org/%s' % (table.tid,)))
+
+
+def api_reference(request):
+	"""Every endpoint the API has, in one place.
+
+	Written by hand rather than generated: these are plain Django views, so
+	there is no schema to introspect, and their docstrings explain why an
+	endpoint behaves as it does rather than which headers it takes.
+
+	What is *not* left to hand is coverage. Every route named `api-...` must
+	appear here, and a test fails if one does not -- so an endpoint cannot ship
+	undocumented. That check exists because the help page had gone stale in
+	exactly that way: five write endpoints existed and it mentioned none of
+	them.
+	"""
+	from .api import (LEASE_MINUTES, LOCK_WAIT, MAX_ATTACHMENT_BYTES,
+	                  MAX_ATTACHMENTS_BYTES)
+	from .permissions import TRUSTED_AFTER
+	from .throttle import _limits
+
+	anonymous, identified, _window = _limits()
+	return render(request, 'api-reference.html', {
+		'anonymous_rate_limit': anonymous,
+		'identified_rate_limit': identified,
+		'trusted_after': TRUSTED_AFTER,
+		'lease_minutes': LEASE_MINUTES,
+		'lock_wait': LOCK_WAIT,
+		'max_attachment_kb': MAX_ATTACHMENT_BYTES // 1024,
+		'max_attachments_kb': MAX_ATTACHMENTS_BYTES // 1024,
+	})
