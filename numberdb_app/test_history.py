@@ -404,3 +404,77 @@ class WhereAnEntryCameFrom(RestoreBase):
 		self.table.published = False
 		self.table.save(update_fields=['published'])
 		self.assertEqual(self.blame().status_code, 404)
+
+
+class TwoRunsAtOnce(RestoreBase):
+	"""Two people generating into the same table interleave.
+
+	A run amends its own revision only while that revision is still the head,
+	so neither can amend and every submission becomes a revision. Nothing about
+	that is wrong -- each revision holds what it held, and an entry is still
+	attributed to whoever last changed it -- but a history of two thousand
+	lines describing two acts is unreadable.
+	"""
+
+	def setUp(self):
+		super().setUp()
+		self.entries = [{'params': {'n': '0'}, 'number': '0.5'}]
+		commit_table(self.table,
+		             {'Title': 'H', 'Parameters': {'n': {'type': 'Z'}},
+		              'Numbers': self.entries}, author=self.alice)
+		for step in range(1, 7):
+			who, run = ((self.alice, 'alice-run') if step % 2
+			            else (self.chair, 'chair-run'))
+			self.entries = self.entries + [{'params': {'n': str(step)},
+			                                'number': '%d.5' % (step,)}]
+			self.table.refresh_from_db()
+			commit_table(self.table,
+			             {'Title': 'H', 'Parameters': {'n': {'type': 'Z'}},
+			              'Numbers': self.entries},
+			             author=who, base=self.table.head_revision, run=run)
+
+	def test_interleaving_defeats_amending(self):
+		"""Recorded so the cost is visible rather than assumed away."""
+		self.assertGreaterEqual(self.table.revisions.count(), 7)
+
+	def test_each_entry_is_still_attributed_to_whoever_added_it(self):
+		"""The thing that must not break, and does not."""
+		from .entries_form import columns_of, identity_of
+		from .flatten import entries_block
+
+		self.table.refresh_from_db()
+		head = tree_of(self.table.head_revision)
+		columns = columns_of(head)
+		came, previous = {}, {}
+		for revision in self.table.revisions.order_by('created'):
+			for record in entries_block(tree_of(revision)) or []:
+				identity = identity_of(record.get('params') or {}, columns)
+				if previous.get(identity) != record.get('number'):
+					previous[identity] = record.get('number')
+					came[identity] = revision
+		self.assertEqual(came['1'].author_id, self.alice.pk)
+		self.assertEqual(came['2'].author_id, self.chair.pk)
+		self.assertEqual(came['3'].author_id, self.alice.pk)
+
+	def test_the_history_shows_two_runs_rather_than_seven_edits(self):
+		from .views import _group_by_run
+
+		rows = _group_by_run(list(self.table.revisions.all()))
+		runs = [row for row in rows if row['run']]
+		self.assertEqual({row['run'] for row in runs},
+		                 {'alice-run', 'chair-run'})
+		self.assertEqual(sum(row['count'] for row in runs), 6)
+
+	def test_a_run_keeps_its_parts_available(self):
+		from .views import _group_by_run
+
+		rows = _group_by_run(list(self.table.revisions.all()))
+		alice = [row for row in rows if row['run'] == 'alice-run'][0]
+		self.assertEqual(len(alice['parts']), 3)
+		self.assertGreater(alice['latest'].created, alice['first'].created)
+
+	def test_an_edit_by_a_person_is_still_its_own_line(self):
+		from .views import _group_by_run
+
+		rows = _group_by_run(list(self.table.revisions.all()))
+		self.assertTrue(any(not row['run'] for row in rows))

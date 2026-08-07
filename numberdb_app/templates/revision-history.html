@@ -68,7 +68,55 @@ table.revision-list tr.is-head { background: #f2f8ff; }
         <th>what</th>
         <th></th>
       </tr>
-      {% for revision in revisions %}
+      {% for group in grouped %}
+        {% if group.run and group.count > 1 %}
+          {% comment %}
+          One run, shown as one line. It amends its own revision only while
+          that revision is still the head, so two people generating into the
+          same table at once interleave and neither can amend -- six
+          submissions become seven revisions, and a thousand each would become
+          two thousand. Every one of them holds what it held, and an entry is
+          still attributed to whoever last changed it; what is unreadable is
+          the list, so the list is what changes.
+          {% endcomment %}
+          <tr {% if group.latest.pk == head.pk %}class="is-head"{% endif %}>
+            <td><input type="radio" name="from" value="{{ group.first.pk }}"></td>
+            <td><input type="radio" name="to" value="{{ group.latest.pk }}"
+                  {% if group.latest.pk == to_revision.pk %}checked{% endif %}></td>
+            <td class="revision-when">
+              {{ group.latest.created|date:"Y-m-d H:i" }}
+            </td>
+            <td>
+              {% if group.latest.author %}{{ group.latest.author.username }}
+              {% elif group.latest.contributor %}{{ group.latest.contributor.author }}
+              {% else %}{{ group.latest.produced_by|default:"unknown" }}{% endif %}
+            </td>
+            <td>
+              {{ group.latest.message|default:"(no message)" }}
+              <span class="revision-note">
+                &mdash; one run in {{ group.count }} parts, from
+                {{ group.first.created|date:"Y-m-d H:i" }}
+              </span>
+              <details>
+                <summary class="revision-note">show each part</summary>
+                <table class="revision-list">
+                  {% for part in group.parts %}
+                    <tr>
+                      <td><input type="radio" name="from" value="{{ part.pk }}"></td>
+                      <td><input type="radio" name="to" value="{{ part.pk }}"></td>
+                      <td class="revision-when">{{ part.created|date:"Y-m-d H:i" }}</td>
+                      <td class="revision-note">{{ part.digest|slice:":8" }}</td>
+                    </tr>
+                  {% endfor %}
+                </table>
+              </details>
+            </td>
+            <td class="revision-note">
+              {% if group.latest.pk == head.pk %}current{% endif %}
+            </td>
+          </tr>
+        {% else %}
+        {% with revision=group.revision %}
         <tr {% if revision.pk == head.pk %}class="is-head"{% endif %}>
           <td><input type="radio" name="from" value="{{ revision.pk }}"
                 {% if revision.pk == from_revision.pk %}checked{% endif %}></td>
@@ -96,6 +144,8 @@ table.revision-list tr.is-head { background: #f2f8ff; }
             {% if revision.pk == reviewed_at.pk %}reviewed{% endif %}
           </td>
         </tr>
+        {% endwith %}
+        {% endif %}
       {% endfor %}
     </table>
     <p><button type="submit">Compare the two selected</button></p>

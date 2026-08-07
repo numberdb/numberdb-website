@@ -2269,6 +2269,7 @@ def revision_history(request, tid):
 
 	return render(request, 'revision-history.html', {
 		'diff_blocks': _diff_blocks(diff),
+		'grouped': _group_by_run(revisions),
 		'table': table,
 		'revisions': revisions,
 		'head': table.head_revision,
@@ -2790,3 +2791,44 @@ def entry_blame(request, tid):
 		'pages': pages,
 		'total': len(records),
 	})
+
+
+def _group_by_run(revisions):
+	"""Revisions with the runs collapsed into one line each.
+
+	A run amends its own revision only while that revision is still the head.
+	Two people generating into the same table at once therefore interleave, and
+	neither can amend: six submissions become seven revisions, and a thousand
+	each would become two thousand.
+
+	Nothing about that is *wrong* -- every revision holds what it held, and an
+	entry is still attributed to whoever last changed it -- but a history of two
+	thousand lines describing two acts is unreadable, and a reader scrolling it
+	learns less than one sentence would tell them.
+
+	So a run is shown as one row, positioned at its most recent revision, with
+	its parts available underneath. Revisions with no run stay as they are: a
+	person's edit is one act and already reads as one.
+	"""
+	rows = []
+	runs = {}
+	for revision in revisions:
+		if not revision.run:
+			rows.append({'run': '', 'revision': revision, 'parts': [revision],
+			             'count': 1})
+			continue
+		group = runs.get(revision.run)
+		if group is None:
+			group = {'run': revision.run, 'revision': revision, 'parts': [],
+			         'count': 0}
+			runs[revision.run] = group
+			rows.append(group)
+		group['parts'].append(revision)
+		group['count'] += 1
+	for group in rows:
+		if group['run']:
+			#The revisions arrive newest first, so the first is the latest and
+			#the last is where the run began.
+			group['first'] = group['parts'][-1]
+			group['latest'] = group['parts'][0]
+	return rows
