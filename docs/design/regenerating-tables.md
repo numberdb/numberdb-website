@@ -218,7 +218,53 @@ Two mitigations, in order of how much they help:
   the parts available underneath. Two acts read as two lines whether they
   produced two revisions or two thousand.
 
-The storage cost is real and unmitigated in the worst case. Rebuilding only the
-rows that changed, and storing a revision as a diff when it belongs to a run,
-are both available if a table ever needs them; neither is worth building before
-something does.
+### A lease covers the run
+
+The mitigations above treat the symptom. The cause is that the write lock
+covers one write, so between a generator's writes anybody may write, and that
+is what makes two runs interleave.
+
+So a run takes a **lease** on the table before it computes anything, refreshes
+it as it goes, and drops it at the end. While it is held, another *program* is
+refused at once — in its first second, rather than discovering the collision by
+colliding after hours — and the run's revision stays the head, so amending
+works and a run is one revision again. Measured: four submissions under a
+lease add one revision, and a second run's write is refused with a 409 naming
+who holds it and until when.
+
+Three properties it needs, and why:
+
+**It expires.** A generator that dies must not lock a table for good, so this
+is a lease rather than a lock. The cost of breaking a dead one is an
+interrupted run; the cost of an unbreakable one is a table nobody can edit.
+
+**It is refreshed by writing.** A run whose entries are quicker than the term
+therefore needs no heartbeat at all. One that is slower gets a background
+thread refreshing at a third of the term, so two refreshes can be missed — a
+long computation holding the interpreter, a slow network — and the claim still
+stands.
+
+**It never refuses a person.** A generator's claim is a claim against other
+generators. Somebody correcting a digit on the site is not what it is for, and
+a table that cannot be corrected because a script is running would be a worse
+failure than the one this prevents.
+
+The storage cost is real and unmitigated in the worst case — two runs that both
+refuse to take a lease, or one interrupted often enough to restart. Rebuilding
+only the rows that changed, and storing a run's revisions as diffs, are the
+fixes worth building when something needs them rather than before.
+
+### Still to build: resuming a run
+
+A lease stops two runs colliding. It does not help a *single* run that dies
+half way: the entries already submitted are safe, but everything computed since
+the last submission is lost, and a rerun recomputes from the beginning.
+
+The answer is a local cache of computed values, keyed by something that
+changes when the code does — a fingerprint of the generator's source, its
+digits and its bounds — so a resumed run skips what it has and a *changed* one
+does not silently reuse values its old code produced. With that, submitting
+everything atomically at the end becomes reasonable too, and the write lock is
+enough on its own.
+
+That is worth building. It is not built.

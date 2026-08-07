@@ -1623,6 +1623,65 @@ class Attachment(models.Model):
 		return any(lowered.endswith(s) for s in self.SOURCE_SUFFIXES)
 
 
+class TableLease(models.Model):
+	"""A claim on a table for the length of a generator's run.
+
+	The write lock covers one write. It is the wrong tool for a generator that
+	spends hours per entry, because between its writes anybody else can write:
+	two runs interleave, neither can amend its own revision, and a thousand
+	entries each becomes two thousand revisions of the whole document.
+
+	A lease covers the run. It is taken before the first value is computed,
+	refreshed as the run goes, and dropped at the end; while it is held, other
+	writers are told the table is being generated and by whom, at once, instead
+	of finding out hours later that their work collided.
+
+	It expires. A generator that dies holding one must not lock a table for
+	good, so the claim is a lease rather than a lock: it lasts until `expires`
+	and is refreshed by each submission and by a heartbeat. Past that anybody
+	may take it, which is the right default -- the cost of breaking a dead
+	lease is one interrupted run, and the cost of an unbreakable one is a table
+	nobody can edit.
+	"""
+
+	table = models.OneToOneField(
+		Table,
+		on_delete = models.CASCADE,
+		related_name = 'lease',
+	)
+	owner = models.ForeignKey(
+		settings.AUTH_USER_MODEL,
+		null = True,
+		blank = True,
+		on_delete = models.CASCADE,
+		related_name = 'table_leases',
+	)
+	#: The run this lease belongs to, so a run's submissions are recognised as
+	#: its own and everybody else's are not.
+	run = models.CharField(max_length=64, blank=True, default='')
+	#: What is being done, shown to whoever is turned away.
+	note = models.CharField(max_length=200, blank=True, default='')
+	acquired = models.DateTimeField(auto_now_add=True)
+	expires = models.DateTimeField(db_index=True)
+
+	def __str__(self):
+		return 'Lease on %s until %s' % (self.table, self.expires)
+
+	@property
+	def is_live(self):
+		from django.utils import timezone
+
+		return self.expires > timezone.now()
+
+	def held_by(self, user, run=''):
+		"""Whether this lease belongs to the caller rather than to somebody else."""
+		if not self.is_live:
+			return True
+		if run and self.run and run == self.run:
+			return True
+		return bool(self.owner_id) and self.owner_id == getattr(user, 'pk', None)
+
+
 class TableThread(models.Model):
 	"""A discussion attached to a table or a tag.
 

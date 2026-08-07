@@ -35,8 +35,8 @@ from ._errors import (Conflict, NumberDBError, RateLimited, TooBig,
 from ._http import Client
 #After Client, since the write helpers reach for the default client at
 #call time rather than at import time.
-from ._write import (Entries, check_writable, create, document, submit,
-                     submit_entries, to_text)
+from ._write import (Entries, Lease, check_writable, create, document,
+                     submit, submit_entries, to_text)
 from ._generate import Generator, Report, generate, publish, verify
 from ._wire import (KINDS, ComplexInterval, PAdic, Polynomial, RealInterval,
                     decode, to_sage)
@@ -53,7 +53,7 @@ __all__ = ['search', 'search_many', 'search_text',
            'NumberDBError', 'TransportError', 'RateLimited', 'Unauthorized',
            'UnsupportedNumber', 'Conflict', 'TooBig',
            'Entries', 'document', 'to_text', 'submit', 'submit_entries',
-           'create', 'check_writable',
+           'create', 'check_writable', 'Lease',
            'Generator', 'Report', 'generate', 'verify', 'publish',
            '__version__']
 
