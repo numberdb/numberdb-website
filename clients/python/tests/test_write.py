@@ -789,3 +789,95 @@ class TestHoldingATableForARun:
         leases = [m for m in methods if m[1].endswith('/lease')]
         assert leases[0][0] == 'POST'
         assert leases[-1][0] == 'DELETE'
+
+
+class TestUpdatingSomeEntries:
+    """Fixing two wrong values, or adding a hundred to a table of a thousand.
+
+    Regenerating everything is the wrong answer when the existing entries are
+    expensive and correct, and replacing a table with the two entries somebody
+    wanted corrected would delete the rest of it.
+    """
+
+    def gen(self, seen):
+        class Counted(numberdb.Generator):
+            parameters = ('n',)
+            type = 'Q'
+            tid = 'T7'
+
+            def enumerate(self, limit=1000):
+                seen.append('walked')
+                for n in range(1, limit + 1):
+                    yield {'n': n}
+
+            def value(self, params, digits):
+                seen.append(int(params['n']))
+                return Fraction(1, int(params['n']))
+
+        return Counted()
+
+    def test_only_those_entries_are_computed(self):
+        seen = []
+        entries = numberdb.generate(self.gen(seen), only=[{'n': 17}, {'n': 42}],
+                                    cache=False)
+        assert [r['params']['n'] for r in entries] == ['17', '42']
+        assert seen == [17, 42]
+
+    def test_the_enumeration_is_not_walked(self):
+        """A generator whose enumeration is itself expensive would pay twice."""
+        seen = []
+        numberdb.generate(self.gen(seen), only=[{'n': 17}], cache=False)
+        assert 'walked' not in seen
+
+    def test_an_identity_may_be_named_instead(self):
+        seen = []
+        entries = numberdb.generate(self.gen(seen), only=['42'], cache=False)
+        assert [r['params']['n'] for r in entries] == ['42']
+
+    def test_an_identity_of_the_wrong_shape_is_refused(self):
+        seen = []
+        with pytest.raises(ValueError):
+            numberdb.generate(self.gen(seen), only=['1,2'], cache=False)
+
+    def test_naming_entries_never_replaces_the_table(self):
+        """Sending two entries as a replacement would delete the other 998."""
+        sent = Sent()
+        numberdb.publish(self.gen([]), only=[{'n': 17}], preflight=False,
+                         cache=False, source_name=None, client=sent.client())
+        assert sent.request.headers['X-entries-mode'] == 'upsert'
+
+    def test_upsert_can_be_asked_for_without_naming_entries(self):
+        """Extending: the cache supplies the old, the generator the new."""
+        sent = Sent()
+        numberdb.publish(self.gen([]), limit=2, upsert=True, preflight=False,
+                         cache=False, source_name=None, client=sent.client())
+        assert sent.request.headers['X-entries-mode'] == 'upsert'
+
+    def test_a_full_run_still_replaces(self):
+        """A generator asked for its whole range has said what the table holds."""
+        sent = Sent()
+        numberdb.publish(self.gen([]), limit=2, preflight=False, cache=False,
+                         source_name=None, client=sent.client())
+        assert 'X-entries-mode' not in sent.request.headers
+
+    def test_a_bulk_generator_cannot_be_asked_for_some(self):
+        class Bulk(numberdb.Generator):
+            parameters = ('n',)
+
+            def all_entries(self, digits=None, **bounds):
+                entries = numberdb.Entries('n')
+                entries.add(n=1, number='1')
+                return entries
+
+        with pytest.raises(ValueError):
+            numberdb.generate(Bulk(), only=[{'n': 1}])
+
+    def test_a_report_feeds_straight_back(self):
+        """verify says which are wrong; to_fix() is what publish wants."""
+        stored = [{'params': {'n': '1'}, 'number': '1'},
+                  {'params': {'n': '2'}, 'number': '0.5'}]
+        client = Sent(payload={'Title': 'P', 'Numbers': stored}).client()
+        report = numberdb.verify(self.gen([]), client=client, limit=2,
+                                 sample=None)
+        assert report.differing
+        assert report.to_fix() == [{'n': 2}]

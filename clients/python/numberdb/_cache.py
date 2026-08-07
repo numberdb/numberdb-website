@@ -102,7 +102,7 @@ class RunCache:
 	cache is read.
 	"""
 
-	def __init__(self, generator, digits, bounds, path=None):
+	def __init__(self, generator, digits, bounds, path=None, read=True):
 		self.fingerprint = fingerprint_of(generator, digits, bounds)
 		#Named for the fingerprint, so a changed generator reads an empty cache
 		#rather than its predecessor's values, and so the file somebody opens
@@ -111,6 +111,10 @@ class RunCache:
 		                                 '%s.yaml' % (self.fingerprint,))
 		self._known = None
 		self._handle = None
+		#A run that names the entries it wants is recomputing them, so it
+		#writes here without reading: handing back the value somebody is
+		#trying to replace would answer a different question.
+		self._read = read
 
 	#-- reading ---------------------------------------------------------
 
@@ -125,7 +129,7 @@ class RunCache:
 			return self._known
 
 		self._known = {}
-		if not os.path.exists(self.path):
+		if not self._read or not os.path.exists(self.path):
 			return self._known
 		with open(self.path, 'r', encoding='utf8') as handle:
 			text = handle.read()

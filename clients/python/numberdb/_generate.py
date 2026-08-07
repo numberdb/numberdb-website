@@ -197,7 +197,8 @@ class Report:
     actionable and "entry n=17 was 3.14159 and is now 3.14158" is.
     """
 
-    __slots__ = ('tid', 'checked', 'matched', 'differing', 'missing', 'extra')
+    __slots__ = ('tid', 'checked', 'matched', 'differing', 'missing', 'extra',
+                 'params')
 
     def __init__(self, tid, checked=0, matched=0, differing=None,
                  missing=None, extra=None):
@@ -207,6 +208,21 @@ class Report:
         self.differing = list(differing or [])
         self.missing = list(missing or [])
         self.extra = list(extra or [])
+        #: The parameters of every entry named above, as the generator
+        #: produced them. `publish(only=report.to_fix())` is then the natural
+        #: next step and does not fail on a type.
+        self.params = {}
+
+    def to_fix(self):
+        """The parameters of every entry that differed or was missing.
+
+        Feeds straight back: `numberdb.publish(g, only=report.to_fix())`
+        recomputes exactly those and leaves the rest of the table alone.
+        """
+        wanted = [identity for identity, _stored, _now in self.differing]
+        wanted += list(self.missing)
+        return [self.params[identity] for identity in wanted
+                if identity in self.params]
 
     @property
     def ok(self) -> bool:
@@ -223,7 +239,7 @@ class Report:
 
 
 def generate(generator: Generator, digits: Optional[int] = None,
-             cache: Any = True, **bounds: Any) -> Entries:
+             cache: Any = True, only: Any = None, **bounds: Any) -> Entries:
     """Run a generator and return its entries.
 
     Computed values are kept on disk as they are produced, so a run that dies
@@ -239,30 +255,75 @@ def generate(generator: Generator, digits: Optional[int] = None,
     """
     from ._cache import RunCache
 
-    #A generator whose values only come in bulk cannot be cached entry by
-    #entry, and pretending otherwise would mean calling an enumerate() it does
-    #not have. It computes all of them or none, which is the cost it accepted
-    #by not being able to produce one at a time.
-    if cache is False or _is_bulk(generator):
+    #A generator whose values only come in bulk cannot be asked for some of
+    #them, and cannot be cached entry by entry: it computes all of them or
+    #none, which is the cost it accepted by not producing one at a time.
+    if _is_bulk(generator):
+        if only is not None:
+            raise ValueError(
+                '%s produces its entries all at once, so it cannot be asked '
+                'for only some of them. Give it an enumerate() and a value() '
+                'if that is wanted.' % (type(generator).__name__,))
         return generator.all_entries(digits=digits, **bounds)
 
     digits = generator.digits if digits is None else digits
-    store = RunCache(generator, digits, bounds,
-                     path=cache if isinstance(cache, str) else None)
+    #Naming entries means recomputing them, so the cache is written but not
+    #read: somebody asking for entry 17 again has a reason, and handing back
+    #the value they are trying to replace would answer a different question.
+    store = (RunCache(generator, digits, bounds,
+                      path=cache if isinstance(cache, str) else None,
+                      read=only is None)
+             if cache is not False else None)
 
     entries = Entries(*generator.parameters)
-    for params in generator.enumerate(**bounds):
+    for params in _wanted(generator, only, bounds):
         identity = ','.join(str(params[name]) for name in generator.parameters)
-        found = store.get(identity)
+        found = store.get(identity) if store is not None else None
         if found is None:
             found = generator._entry(params, digits)
             #Written before anything else happens to it, because what this
             #protects against is the next line never running.
-            store.put(identity, _plain(found, digits))
-            entries.add(**dict(params), **found)
-        else:
-            entries.add(**dict(params), **found)
+            if store is not None:
+                store.put(identity, _plain(found, digits))
+        entries.add(**dict(params), **found)
     return entries
+
+
+def _plain(entry, digits):
+    """An entry as text, which is what can be written to a file and read back."""
+    out = {}
+    for key, value in entry.items():
+        out[key] = (to_text(value, digits) if key == 'number'
+                    else value if isinstance(value, (str, int, float, list))
+                    else str(value))
+    return out
+
+
+def _wanted(generator, only, bounds):
+    """Which entries this run is for.
+
+    Everything the generator enumerates, or just the ones named. Named ones are
+    not filtered out of the enumeration but built directly, so recomputing one
+    entry of a million costs one computation rather than a walk of the million
+    -- which for a generator whose enumeration is itself expensive is the
+    difference between a minute and an afternoon.
+    """
+    if only is None:
+        yield from generator.enumerate(**bounds)
+        return
+
+    names = tuple(generator.parameters)
+    for wanted in only:
+        if isinstance(wanted, Mapping):
+            yield dict(wanted)
+            continue
+        #An identity: the values, comma-joined, as a citation writes them.
+        parts = [part.strip() for part in str(wanted).split(',')]
+        if len(parts) != len(names):
+            raise ValueError(
+                '%r does not name the %d parameter(s) %s'
+                % (wanted, len(names), ', '.join(names)))
+        yield dict(zip(names, parts))
 
 
 def _is_bulk(generator):
@@ -314,12 +375,18 @@ def verify(generator: Generator, tid: Optional[str] = None,
         report.checked += 1
         if identity not in stored:
             report.missing.append(identity)
+            report.params[identity] = dict(params)
             continue
         recomputed = to_text(generator._entry(params, digits)['number'], digits)
         if stored[identity] == recomputed:
             report.matched += 1
         else:
             report.differing.append((identity, stored[identity], recomputed))
+            #Kept as the generator produced them, not as text. An identity is
+            #text by nature, and handing text back to a generator that expects
+            #an integer makes the natural next step -- recompute what differs
+            #-- fail on a type rather than on a number.
+            report.params[identity] = dict(params)
     return report
 
 
@@ -379,11 +446,35 @@ def publish(generator: Generator, tid: Optional[str] = None,
             digits: Optional[int] = None, message: str = '',
             batch: Optional[int] = None, run: str = '', preflight: bool = True,
             cache: Any = True, source_name: Optional[str] = 'generate.py',
+            only: Any = None, upsert: Optional[bool] = None,
             client: Any = None, **bounds: Any) -> Dict[str, Any]:
     """Send a generator's entries to its table.
 
     Entries only: the definition, the references and the tags are somebody's
     prose and a generator has no opinion about them.
+
+    ``only`` computes and sends *some* entries and leaves the rest of the table
+    alone: the parameters to recompute, as mappings or as identities.
+
+        numberdb.publish(g, only=[{'n': 17}, {'n': 42}])
+        numberdb.publish(g, only=['17', '42'])
+        numberdb.publish(g, only=numberdb.verify(g).to_fix())
+
+    An identity is text, so its parameters arrive as text; a mapping arrives
+    as it was given. Prefer mappings when the generator wants a number, and
+    `report.to_fix()` hands back exactly that.
+
+    That is what fixing two wrong values looks like, and what extending a table
+    looks like when the existing entries are expensive and correct. It implies
+    ``upsert``: sending two entries as a replacement would delete the other
+    thousand, which is not what anybody means by "update these two".
+
+    ``upsert`` sends what this run produced and leaves everything else, without
+    naming which. Extending a table is `limit=1100, upsert=True`: the cache
+    supplies the first thousand, the generator computes the new hundred, and
+    nothing already stored is touched. Without it the entries are *replaced*,
+    which is what a full regeneration means and is the default only because a
+    generator asked for its whole range has said what the table should contain.
 
     ``batch`` sends them as they are computed, in groups of that size, instead
     of computing everything and sending it at the end. That is what a generator
@@ -411,6 +502,13 @@ def publish(generator: Generator, tid: Optional[str] = None,
 
     run = run or _run_name(generator)
 
+    #Naming entries means updating them. Replacing a table with the two entries
+    #somebody wanted corrected would delete the rest of it, and the request
+    #would look like it worked.
+    if only is not None and upsert is None:
+        upsert = True
+    upsert = bool(upsert)
+
     #Compute first, send once. The network is then needed at one moment
     #instead of continuously: a connection that drops during a computation
     #costs nothing, and a submission that fails can simply be repeated because
@@ -422,10 +520,11 @@ def publish(generator: Generator, tid: Optional[str] = None,
     if not batch:
         from ._write import submit_entries
 
-        entries = generate(generator, digits=digits, cache=cache, **bounds)
+        entries = generate(generator, digits=digits, cache=cache, only=only,
+                           **bounds)
         answer = submit_entries(tid, entries, message=message,
                                 produced_by=type(generator).__name__,
-                                run=run, client=client)
+                                upsert=upsert, run=run, client=client)
         _attach_source(generator, tid, run, client, source_name)
         return answer
 
