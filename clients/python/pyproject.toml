@@ -36,6 +36,11 @@ dependencies = []
 #
 # numberdb.sage needs no extra: it uses whatever Sage is already there.
 
+# Building the reference needs pdoc and nothing else: the docstrings are
+# already there, so `pdoc numberdb numberdb.sage` is the whole build.
+[project.optional-dependencies]
+docs = ["pdoc>=14"]
+
 [project.urls]
 Homepage = "https://numberdb.org"
 Source = "https://github.com/numberdb/numberdb-website"

@@ -374,12 +374,12 @@ Anonymous use is rate limited. See <a href="#section-api">API access</a>.
 <div id="section-api" class="section scrollspy">
 <h2 id="api" class="section scrollspy">API access and rate limits</h2>
 
-NumberDB has a small JSON API:
-<code class="table-code">/api/search</code>,
-<code class="table-code">/api/table</code> and
-<code class="table-code">/api/tag</code>.
+NumberDB has a small JSON API for reading and, with a key, for writing.
+The <a href="{% url 'db:api-reference' %}">API reference</a> lists every
+endpoint.
 The <a href="#section-sage-interface">numberdb package</a> is the supported way
-to use it; it handles the response format, so you do not have to.
+to use it; it handles the response format, the retries and the crash-safety, so
+you do not have to.
 
 <p>
 Anonymous use is limited to {{ anonymous_rate_limit }} requests per hour.

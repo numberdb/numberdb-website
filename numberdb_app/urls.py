@@ -9,6 +9,7 @@ urlpatterns = [
     path('about', views.about, name='about'),
     path('help', views.help, name='help'),
 
+    path('api/docs', views.api_reference, name='api-reference'),
     path('api/search', api.advanced_search_results, name='api-search'),
     path('api/lookup', api.lookup, name='api-lookup'),
     path('api/table', api.table, name='api-table'),

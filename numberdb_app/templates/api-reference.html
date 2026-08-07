@@ -1,0 +1,281 @@
+{% extends 'base.html' %}
+
+{% comment %}
+The API, endpoint by endpoint.
+
+Every route named `api-...` has a section here whose id is `endpoint-<name>`,
+and a test fails if one does not. That is the whole anti-drift mechanism: the
+help page had gone stale in exactly this way -- five write endpoints existed
+and it mentioned none of them -- and nothing noticed, because nothing could.
+{% endcomment %}
+
+{% block head-title %}API reference{% endblock %}
+
+{% block extra_head %}
+<style>
+.api-endpoint { border: 1px solid #e2e2e2; border-radius: 3px; margin: 1.4rem 0; }
+.api-endpoint > h3 { margin: 0; padding: 0.5rem 0.8rem; background: #f6f7f9;
+  border-bottom: 1px solid #e2e2e2; font-weight: 400; font-size: 1.05rem;
+  font-family: monospace; }
+.api-endpoint .body { padding: 0.6rem 0.8rem; }
+.api-method { display: inline-block; font-size: 0.75rem; font-weight: 600;
+  padding: 0.05rem 0.35rem; border-radius: 3px; margin-right: 0.4rem;
+  vertical-align: 1px; }
+.api-get { background: #e6f0ff; color: #1e3a8a; }
+.api-post { background: #e6ffed; color: #14532d; }
+.api-delete { background: #ffeef0; color: #7f1d1d; }
+table.api-table { border-collapse: collapse; margin: 0.5rem 0; width: 100%; }
+table.api-table th, table.api-table td { padding: 0.25rem 0.6rem;
+  border-bottom: 1px solid #eee; text-align: left; vertical-align: top;
+  font-weight: 400; }
+table.api-table th { color: #555; font-size: 0.85em; white-space: nowrap; }
+table.api-table code { font-size: 0.9em; }
+pre.api-code { background: #f7f7f7; border: 1px solid #ddd; padding: 0.6rem;
+  overflow-x: auto; font-size: 0.85em; white-space: pre; margin: 0.5rem 0; }
+.api-note { color: #666; font-size: 0.9em; }
+.api-toc { columns: 2; font-size: 0.9em; }
+.api-toc a { display: block; padding: 0.1rem 0; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'db:help' %}">Help</a></li>
+  <li class="breadcrumb-item active">API reference</li>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">API reference</h1>
+
+<p class="help-text">
+A small JSON API. Reading needs nothing; writing needs a key, and an account
+whose edits have been reviewed. The
+<a href="https://pypi.org/project/numberdb/">numberdb package</a> is the
+supported way to use all of this &mdash; it handles the response format, the
+retries and the crash-safety &mdash; and this page is what it is built on.
+</p>
+
+<div class="api-toc">
+  <a href="#endpoint-api-search">/api/search</a>
+  <a href="#endpoint-api-lookup">/api/lookup</a>
+  <a href="#endpoint-api-table">/api/table</a>
+  <a href="#endpoint-api-tag">/api/tag</a>
+  <a href="#endpoint-api-create-table">/api/tables</a>
+  <a href="#endpoint-api-write-table">/api/table/&lt;tid&gt;</a>
+  <a href="#endpoint-api-write-entries">/api/table/&lt;tid&gt;/entries</a>
+  <a href="#endpoint-api-table-lease">/api/table/&lt;tid&gt;/lease</a>
+  <a href="#endpoint-api-write-file">/api/table/&lt;tid&gt;/file/&lt;name&gt;</a>
+  <a href="#endpoint-api-reference">/api/docs</a>
+</div>
+
+<h2>Keys, limits and permission</h2>
+
+<p class="help-text">
+Anonymous use is limited to {{ anonymous_rate_limit }} requests per hour; a key
+raises it to {{ identified_rate_limit }}. Send it as a bearer token, and keep
+it out of a worksheet you might share:
+</p>
+
+<pre class="api-code">export NUMBERDB_API_KEY=...
+curl -H "Authorization: Bearer $NUMBERDB_API_KEY" https://numberdb.org/api/table?id=T7</pre>
+
+<p class="help-text">
+Exceeding the limit returns <b>429</b> with a <code>Retry-After</code> header.
+Keys are not self-service yet: write to info@numberdb.org.
+</p>
+
+<p class="help-text">
+<b>Writing</b> needs more than a key. It opens once {{ trusted_after }} of the
+account's edits have been reviewed and accepted &mdash; edits made on the site
+count. A person editing one table exercises judgement about it; a program
+exercises none and writes faster than anyone can read, so the gate is a track
+record that a script cannot manufacture for itself.
+</p>
+
+<p class="help-text">
+Writing also enforces the size limits rather than warning about them, and
+refuses a document whose type or parameters do not make sense. A person over a
+soft limit is told and their edit is saved; a program is refused until the
+reason is in the document, because a warning shown to nobody is not a limit.
+</p>
+
+<h2>Reading</h2>
+
+<div class="api-endpoint" id="endpoint-api-search">
+  <h3><span class="api-method api-get">GET</span>/api/search</h3>
+  <div class="body">
+    <p>Search by number, by expression or by words. This is what the search bar
+    uses.</p>
+    <table class="api-table">
+      <tr><th>q</th><td>the term: a decimal, a fraction, a p-adic, a polynomial, an expression such as <code>pi</code>, or words</td></tr>
+      <tr><th>returns</th><td>matching numbers, and the tables and tags whose text matched</td></tr>
+    </table>
+    <p class="api-note">Values held too imprecisely to identify anything, and
+    values nobody has reviewed, are left out of search by number and marked on
+    their table instead. A reader looking at a table can weigh an unconfirmed
+    entry; somebody typing digits cannot, because a wrong fortieth digit looks
+    exactly like a right one.</p>
+  </div>
+</div>
+
+<div class="api-endpoint" id="endpoint-api-lookup">
+  <h3><span class="api-method api-get">GET</span>/api/lookup</h3>
+  <div class="body">
+    <p>Look up a number whose type you already know, given its components, or
+    several at once.</p>
+    <table class="api-table">
+      <tr><th>kind</th><td><code>ZZ</code>, <code>QQ</code>, <code>RIF</code>, <code>RBF</code>, <code>CIF</code>, <code>Qp</code>, <code>polynomial</code></td></tr>
+      <tr><th>returns</th><td>the matching entries, keyed by position when several were asked about</td></tr>
+    </table>
+    <p class="api-note">At most 100 numbers per call. Every position asked
+    about is present in the answer, so a number that matched nothing maps to an
+    empty list rather than being absent.</p>
+  </div>
+</div>
+
+<div class="api-endpoint" id="endpoint-api-table">
+  <h3><span class="api-method api-get">GET</span>/api/table</h3>
+  <div class="body">
+    <p>One table, whole.</p>
+    <table class="api-table">
+      <tr><th>id</th><td>its T-number, e.g. <code>T7</code></td></tr>
+      <tr><th>url</th><td>or its slug</td></tr>
+      <tr><th>returns</th><td>the document: its prose, its parameters and its entries</td></tr>
+    </table>
+    <p class="api-note">A draft answers as though it did not exist. Saying
+    &ldquo;you may not see this&rdquo; would confirm that a table of that name
+    is there, which is the one thing a private draft should not tell a
+    stranger.</p>
+  </div>
+</div>
+
+<div class="api-endpoint" id="endpoint-api-tag">
+  <h3><span class="api-method api-get">GET</span>/api/tag</h3>
+  <div class="body">
+    <p>One tag, and what carries it.</p>
+    <table class="api-table">
+      <tr><th>url</th><td>the tag, e.g. <code>elliptic+curves</code></td></tr>
+      <tr><th>returns</th><td>its name, how many tables and numbers carry it, and which tables</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="api-endpoint" id="endpoint-api-reference">
+  <h3><span class="api-method api-get">GET</span>/api/docs</h3>
+  <div class="body">
+    <p>This page.</p>
+  </div>
+</div>
+
+<h2>Writing</h2>
+
+<div class="api-endpoint" id="endpoint-api-create-table">
+  <h3><span class="api-method api-post">POST</span>/api/tables</h3>
+  <div class="body">
+    <p>Add a table. The body is the whole document, as YAML or JSON.</p>
+    <table class="api-table">
+      <tr><th>X-Produced-By</th><td>what made this, recorded on the revision. Defaults to <code>api</code></td></tr>
+      <tr><th>X-Edit-Message</th><td>what changed, for the history</td></tr>
+      <tr><th>returns</th><td><code>201</code> with the allocated <code>tid</code> and the first revision</td></tr>
+      <tr><th>400</th><td>no title, no entries, or a document that is not a table</td></tr>
+      <tr><th>413</th><td>over a size limit</td></tr>
+    </table>
+    <p class="api-note">A new table needs a title and <b>at least one entry</b>.
+    One with none is a draft, and a published draft holds a permanent T-number,
+    appears in the listings and answers nothing. The identifier is allocated
+    here and ignored if you send one.</p>
+  </div>
+</div>
+
+<div class="api-endpoint" id="endpoint-api-write-table">
+  <h3><span class="api-method api-post">POST</span>/api/table/&lt;tid&gt;</h3>
+  <div class="body">
+    <p>Replace a table's document. <code>PUT</code> does the same.</p>
+    <table class="api-table">
+      <tr><th>X-Base-Revision</th><td>the revision you edited from. A concurrent change is then merged where it can be and refused where it cannot, instead of silently overwritten</td></tr>
+      <tr><th>X-Produced-By</th><td>as above</td></tr>
+      <tr><th>409</th><td>a stale edit whose changes overlap, or a change to the table's parameters</td></tr>
+      <tr><th>413</th><td>over a size limit</td></tr>
+    </table>
+    <p class="api-note">The <b>whole</b> document, so anything the body omits
+    is removed. A program that computes values wants
+    <code>/entries</code> instead: assembling a document from a title, the
+    parameters and the numbers would delete the definition, the comments and
+    the references, and the result would look perfectly ordinary.</p>
+    <p class="api-note">A table's parameters cannot be changed once it is
+    published. Every entry is identified by its parameter values, so changing
+    them reassigns every identity at once and existing citations resolve to
+    different numbers.</p>
+  </div>
+</div>
+
+<div class="api-endpoint" id="endpoint-api-write-entries">
+  <h3><span class="api-method api-post">POST</span>/api/table/&lt;tid&gt;/entries</h3>
+  <div class="body">
+    <p>The entries alone, leaving the prose untouched. This is what a generator
+    wants.</p>
+    <table class="api-table">
+      <tr><th>X-Entries-Mode</th><td><code>replace</code> (default) or <code>upsert</code>. Upsert merges what you send into what is stored, by identity, so sending one entry leaves the other thousand alone</td></tr>
+      <tr><th>X-Run-Id</th><td>names one run. Submissions carrying the same run grow a single revision instead of adding one each</td></tr>
+      <tr><th>X-Produced-By</th><td>as above</td></tr>
+      <tr><th>returns</th><td>the revision, and for an upsert how many entries were <code>added</code> and <code>updated</code></td></tr>
+      <tr><th>429</th><td>another write to this table held the lock for longer than {{ lock_wait }}. Nothing was written; send it again</td></tr>
+    </table>
+    <p class="api-note">Every revision holds the complete document, so a
+    revision per entry would be a thousand copies of the whole table. A run
+    amends its own revision instead &mdash; which works only while that
+    revision is still the latest, so a run that will take a while should hold a
+    lease.</p>
+  </div>
+</div>
+
+<div class="api-endpoint" id="endpoint-api-table-lease">
+  <h3><span class="api-method api-post">POST</span><span class="api-method api-delete">DELETE</span>/api/table/&lt;tid&gt;/lease</h3>
+  <div class="body">
+    <p>Claim a table for the length of a run, refresh the claim, or drop it.</p>
+    <table class="api-table">
+      <tr><th>X-Run-Id</th><td>the run the claim belongs to, so a resumed run keeps it</td></tr>
+      <tr><th>X-Lease-Note</th><td>what is being done, shown to whoever is turned away</td></tr>
+      <tr><th>returns</th><td>whether it is held, and when it expires</td></tr>
+      <tr><th>409</th><td>somebody else holds it, with their name and its expiry</td></tr>
+    </table>
+    <p class="api-note">It lasts {{ lease_minutes }} minutes and is refreshed by
+    each submission, so a run whose entries are quicker than that needs no
+    heartbeat. It expires because a generator that dies must not lock a table
+    for good, and it never refuses a person editing on the site: a generator's
+    claim is against other generators.</p>
+  </div>
+</div>
+
+<div class="api-endpoint" id="endpoint-api-write-file">
+  <h3><span class="api-method api-post">POST</span>/api/table/&lt;tid&gt;/file/&lt;name&gt;</h3>
+  <div class="body">
+    <p>Attach a file &mdash; usually the code that produced the numbers. The
+    body is the file.</p>
+    <table class="api-table">
+      <tr><th>X-Run-Id</th><td>carrying the run of the entries puts the file on the same revision as them</td></tr>
+      <tr><th>400</th><td>a name with a directory in it, a hidden name, or no body</td></tr>
+      <tr><th>413</th><td>over {{ max_attachment_kb }} KB, or over {{ max_attachments_kb }} KB for the table's files together</td></tr>
+    </table>
+    <p class="api-note">A table's files are flat: no directories, so there is
+    one place to look and no question about where a path leads. They are
+    recorded, never executed.</p>
+  </div>
+</div>
+
+<h2>What the answers look like</h2>
+
+<pre class="api-code">$ curl -X POST https://numberdb.org/api/table/42/entries \
+    -H "Authorization: Bearer $NUMBERDB_API_KEY" \
+    -H "X-Entries-Mode: upsert" -H "X-Run-Id: zeta-2026-08" \
+    --data-binary @entries.yaml
+
+{"tid": "T42", "url": "Zeta_at_integers",
+ "revision": "9f2c...", "unchanged": false, "amended": true,
+ "entries": 1000, "added": 1, "updated": 0, "reviewed": true}</pre>
+
+<p class="help-text">
+Every refusal carries an <code>error</code> saying what is wrong and, where
+there is more to say, a <code>detail</code> saying what to do about it.
+</p>
+{% endblock %}

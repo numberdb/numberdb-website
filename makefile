@@ -31,7 +31,7 @@ RPATH  ?= $(DEPLOY_RPATH)
 DOMAIN ?= $(DEPLOY_DOMAIN)
 EMAIL  ?= $(DEPLOY_EMAIL)
 
-.PHONY: all help run test static fetch_data build_db_numbers build_db_wiki build_db_oeis build_db_all update_numbers migrations update setup_postgres reset_postgres install install_full install_packages install_sage_ubuntu compose_up compose_down compose_logs compose_migrate compose_fetch_data deploy_quickstage deploy_stage deploy_live deploy_status
+.PHONY: all help run test docs docs_serve static fetch_data build_db_numbers build_db_wiki build_db_oeis build_db_all update_numbers migrations update setup_postgres reset_postgres install install_full install_packages install_sage_ubuntu compose_up compose_down compose_logs compose_migrate compose_fetch_data deploy_quickstage deploy_stage deploy_live deploy_status
 
 
 all: help
@@ -42,6 +42,7 @@ help:
 	@echo "    make install           # first-time setup"
 	@echo "    make run               # Django dev server"
 	@echo "    make test              # run Django tests"
+	@echo "    make docs              # build the numberdb package reference"
 	@echo "    make build_db_all      # build all data tables"
 	@echo "- Docker Compose (local/server):"
 	@echo "    make compose_up        # build and start containers"
@@ -61,6 +62,29 @@ run:
 test:
 	#TEST
 	$(MANAGE) test
+
+# Reference documentation for the numberdb package, straight from its
+# docstrings -- all 45 public functions and classes have one, so there is
+# nothing to write and nothing that can drift.
+#
+# `numberdb` and `numberdb.sage` together, not separately: the Sage module
+# re-exports the same functions with the same signatures and differs only in
+# the type of value it hands back. Two documentation sets would be ninety per
+# cent identical and would drift apart, which is the failure this project keeps
+# finding.
+#
+# The API's own reference is a page on the site, /api/docs, because plain
+# Django views have no schema to introspect. A test keeps it honest: every
+# route named api-... must appear there.
+# Run from clients/python, because the repository root has a `numberdb`
+# package of its own -- the Django settings -- and pdoc would document that one.
+docs:
+	#DOCS
+	cd clients/python && $(PYTHON) -m pdoc numberdb numberdb.sage -o docs
+
+docs_serve:
+	#DOCS (live, at http://localhost:8080)
+	cd clients/python && $(PYTHON) -m pdoc numberdb numberdb.sage --port 8080
 	
 run_eval:
     #RUN EVAL WORKER
