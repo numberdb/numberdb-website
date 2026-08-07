@@ -36,8 +36,14 @@ dependencies = []
 #
 # numberdb.sage needs no extra: it uses whatever Sage is already there.
 
-# Building the reference needs pdoc and nothing else: the docstrings are
-# already there, so `pdoc numberdb numberdb.sage` is the whole build.
+# Building the reference needs pdoc and nothing else, since the docstrings are
+# already there:
+#
+#     pdoc -t pdoc-templates -o docs numberdb numberdb.sage
+#
+# The template directory holds one override, renaming pdoc's "API
+# Documentation" sidebar heading -- "the API" here is the web API, which has
+# its own separate reference. Drop the flag and that heading comes back.
 [project.optional-dependencies]
 docs = ["pdoc>=14"]
 
