@@ -16,6 +16,7 @@ urlpatterns = [
     re_path(r'^api/table/(?P<tid>[Tt]?\d+)$', api.write_table, name='api-write-table'),
     re_path(r'^api/table/(?P<tid>[Tt]?\d+)/entries$', api.write_entries, name='api-write-entries'),
     re_path(r'^api/table/(?P<tid>[Tt]?\d+)/lease$', api.table_lease, name='api-table-lease'),
+    re_path(r'^api/table/(?P<tid>[Tt]?\d+)/file/(?P<name>[-\w./]+)$', api.write_file, name='api-write-file'),
     path('api/tag', api.tag, name='api-tag'),
     
     path('suggestions', views.suggestions, name='suggestions'),
@@ -30,6 +31,7 @@ urlpatterns = [
     re_path(r'^history/(?P<tid>(T\d+))$', views.table_history, name='table-history'),
     re_path(r'^revisions/(?P<tid>(T\d+))$', views.revision_history, name='revision-history'),
     re_path(r'^files/(?P<tid>(T\d+))$', views.table_files, name='table-files'),
+    re_path(r'^bundle/(?P<tid>(T\d+))$', views.table_bundle, name='table-bundle'),
     re_path(r'^blame/(?P<tid>(T\d+))$', views.entry_blame, name='entry-blame'),
     re_path(r'^files/(?P<tid>(T\d+))/(?P<name>[-\w./]+)$', views.table_file, name='table-file'),
 

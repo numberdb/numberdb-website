@@ -2832,3 +2832,81 @@ def _group_by_run(revisions):
 			group['first'] = group['parts'][-1]
 			group['latest'] = group['parts'][0]
 	return rows
+
+
+def table_bundle(request, tid):
+	"""A table as one file: its document and everything attached to it.
+
+	The numbers and the code that produced them are one thing, and until now a
+	reader could have either -- the page, or the files, one at a time. A table
+	is small enough that all of it fits in a download, and a reader who wants
+	to check a computation wants the whole of it rather than a list of links.
+
+	As of one revision, so the code in the bundle is the code that produced the
+	numbers in the same bundle: `?rev=` names an older one, and a bundle taken
+	today of a run from March holds March's script.
+	"""
+	import io
+	import zipfile
+
+	from django.http import HttpResponse
+
+	from .editing import may_see, tree_of
+
+	table = get_object_or_404(Table, tid=tid)
+	if not may_see(table, request.user):
+		raise Http404
+
+	revision = None
+	asked = _as_int(request.GET.get('rev'))
+	if asked is not None:
+		revision = table.revisions.filter(pk=asked).first()
+	if revision is None:
+		revision = table.head_revision
+	if revision is None:
+		raise Http404('this table has no revisions')
+
+	folder = table.tid
+	buffer = io.BytesIO()
+	with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as bundle:
+		#The identifier goes back in, as it does in the export: a file that
+		#does not say which table it is cannot be read on its own.
+		tree = tree_of(revision)
+		document = {'ID': table.tid}
+		document.update({k: v for k, v in tree.items() if k != 'ID'})
+		from .editing import dump_tree
+
+		bundle.writestr('%s/table.yaml' % (folder,), dump_tree(document))
+
+		for attachment in revision.attachments.select_related('blob'):
+			bundle.writestr('%s/%s' % (folder, attachment.name),
+			                bytes(attachment.blob.content))
+
+		bundle.writestr('%s/README.txt' % (folder,), _bundle_note(table, revision))
+
+	response = HttpResponse(buffer.getvalue(), content_type='application/zip')
+	response['Content-Disposition'] = (
+		'attachment; filename="%s.zip"' % (table.tid,))
+	return response
+
+
+def _bundle_note(table, revision):
+	"""What this bundle is, for somebody opening it a year from now."""
+	who = (revision.author.username if revision.author_id
+	       else (revision.contributor.author if revision.contributor_id
+	             else revision.produced_by or 'unknown'))
+	return (
+		'%s: %s\n'
+		'\n'
+		'This is the table as of %s, by %s.\n'
+		'%s\n'
+		'\n'
+		'table.yaml holds the numbers and everything said about them. The other\n'
+		'files are what was stored alongside them -- usually the code that\n'
+		'produced them. They are recorded, not run.\n'
+		'\n'
+		'The table as it stands now: %s\n'
+		% (table.tid, table.title,
+		   revision.created.strftime('%Y-%m-%d %H:%M'), who,
+		   'Run: %s' % (revision.run,) if revision.run else '',
+		   'https://numberdb.org/%s' % (table.tid,)))

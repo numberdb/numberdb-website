@@ -597,3 +597,123 @@ class ClaimingATableForARun(WriteBase):
 				{'params': {}, 'number': '7.7'}]},
 			author=self.newcomer, base=self.table.head_revision)
 		self.assertIsNotNone(outcome.revision)
+
+
+class AttachingTheCodeThatProducedTheNumbers(WriteBase):
+	"""A program could send its results but not itself.
+
+	So generate.sage was put in the repository by hand and drifted from
+	whatever had actually run. Carrying the same run puts the code on the same
+	revision as the entries, so somebody looking at where a number came from
+	finds the code that made it.
+	"""
+
+	def setUp(self):
+		super().setUp()
+		self.token = self.key_for(self.chair)
+
+	def send_file(self, name, body, run='run-1'):
+		headers = {'HTTP_AUTHORIZATION': 'Bearer %s' % (self.token,)}
+		if run:
+			headers['HTTP_X_RUN_ID'] = run
+		return self.client.post('/api/table/%s/file/%s' % (self.table.tid, name),
+		                        body, content_type='text/plain', **headers)
+
+	def send_entries(self, run='run-1'):
+		return self.client.post(
+			'/api/table/%s/entries' % (self.table.tid,),
+			yaml.dump([{'params': {}, 'number': '2.2'}], sort_keys=False),
+			content_type='application/yaml',
+			HTTP_AUTHORIZATION='Bearer %s' % (self.token,),
+			HTTP_X_ENTRIES_MODE='upsert', HTTP_X_RUN_ID=run)
+
+	def test_a_file_can_be_attached(self):
+		response = self.send_file('generate.py', 'print(1)\n')
+		self.assertEqual(response.status_code, 200)
+		self.table.refresh_from_db()
+		names = {a.name for a in self.table.head_revision.attachments.all()}
+		self.assertIn('generate.py', names)
+
+	def test_it_lands_on_the_same_revision_as_the_entries(self):
+		"""The point: the code beside the numbers it produced."""
+		self.send_entries()
+		self.send_file('generate.py', 'print(1)\n')
+		self.table.refresh_from_db()
+		revision = self.table.head_revision
+		self.assertIn('generate.py',
+		              {a.name for a in revision.attachments.all()})
+		self.assertEqual(tree_of(revision)['Numbers'][0]['number'], '2.2')
+
+	def test_a_run_attaching_its_source_adds_no_extra_revision(self):
+		before = TableRevision.objects.filter(table=self.table).count()
+		self.send_entries()
+		self.send_file('generate.py', 'print(1)\n')
+		self.assertEqual(
+			TableRevision.objects.filter(table=self.table).count(), before + 1)
+
+	def test_an_empty_file_is_refused(self):
+		self.assertEqual(self.send_file('generate.py', '').status_code, 400)
+
+	def test_a_key_is_required(self):
+		response = self.client.post(
+			'/api/table/%s/file/generate.py' % (self.table.tid,),
+			'print(1)', content_type='text/plain')
+		self.assertEqual(response.status_code, 401)
+
+	def test_a_table_held_by_another_run_refuses_it(self):
+		other = User.objects.create_user('file_other')
+		other.groups.add(Group.objects.get_or_create(name=BOARD_GROUP)[0])
+		self.client.post('/api/table/%s/lease' % (self.table.tid,), '',
+		                 content_type='application/yaml',
+		                 HTTP_AUTHORIZATION='Bearer %s' % (self.key_for(other),),
+		                 HTTP_X_RUN_ID='their-run')
+		self.assertEqual(self.send_file('generate.py', 'x').status_code, 409)
+
+
+class WhatMayBeAttached(WriteBase):
+	"""A table's files are flat and small.
+
+	Flat so there is one place to look and no question about where a path
+	leads; small because a table holds the code that produced its numbers and
+	the notes that explain them, and anything larger is a dataset -- and a
+	dataset wants to be a table.
+	"""
+
+	def setUp(self):
+		super().setUp()
+		self.token = self.key_for(self.chair)
+
+	def send(self, name, body):
+		return self.client.post('/api/table/%s/file/%s' % (self.table.tid, name),
+		                        body, content_type='text/plain',
+		                        HTTP_AUTHORIZATION='Bearer %s' % (self.token,))
+
+	def test_a_plain_name_is_accepted(self):
+		self.assertEqual(self.send('generate.sage', 'x').status_code, 200)
+
+	def test_a_directory_is_refused(self):
+		response = self.send('data/values.txt', 'x')
+		self.assertEqual(response.status_code, 400)
+		self.assertIn('flat', json.loads(response.content)['error'])
+
+	def test_climbing_out_is_refused(self):
+		"""Refused by the name check rather than by the router, so the answer
+		says what is wrong with the name."""
+		response = self.send('..%2Ffoo.txt', 'x')
+		self.assertEqual(response.status_code, 400)
+		self.assertIn('flat', json.loads(response.content)['error'])
+
+	def test_a_hidden_file_is_refused(self):
+		self.assertEqual(self.send('.env', 'x').status_code, 400)
+
+	def test_a_file_over_the_limit_is_refused(self):
+		from .api import MAX_ATTACHMENT_BYTES
+
+		response = self.send('big.txt', 'x' * (MAX_ATTACHMENT_BYTES + 1))
+		self.assertEqual(response.status_code, 413)
+
+	def test_the_total_is_limited_too(self):
+		"""Otherwise a thousand small files do what one large one may not."""
+		from .api import MAX_ATTACHMENTS_BYTES
+
+		self.assertGreater(MAX_ATTACHMENTS_BYTES, 0)

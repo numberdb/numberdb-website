@@ -702,7 +702,10 @@ class TestCheckingBeforeComputing:
     def test_it_can_be_turned_off(self):
         computed = []
         sent = Sent()
-        numberdb.publish(self.gen(computed), preflight=False,
+        #cache=False, because the cache is deliberately shared between runs --
+        #that is what resuming is -- so a previous run of this test would
+        #otherwise supply the values and nothing would be computed.
+        numberdb.publish(self.gen(computed), preflight=False, cache=False,
                          client=sent.client())
         assert computed == [1, 2, 3]
 
