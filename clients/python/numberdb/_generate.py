@@ -80,6 +80,19 @@ class Generator:
     #: Which table this generates, when it is tied to one.
     tid: Optional[str] = None
 
+    #: Which files to store with the numbers, named rather than guessed.
+    #:
+    #: Empty means "this generator's own source", which is what most runs want.
+    #: Name them when the computation is spread over several files, or when a
+    #: note or a table of inputs belongs beside the values -- guessing at that
+    #: from the directory would sweep up whatever else happened to be sitting
+    #: there, which is nobody's intention and sooner or later somebody's
+    #: private working file.
+    #:
+    #: Paths are read relative to the file the generator is defined in and
+    #: stored under their bare names: a table's files are flat.
+    files: tuple = ()
+
     EXACT_TYPES = frozenset(['Z', 'Q', 'Z[]', 'Q[]'])
 
     def enumerate(self, **bounds: Any) -> Iterator[Mapping[str, Any]]:
@@ -145,8 +158,17 @@ class Generator:
 
         Verification exists to catch "the script or the software underneath it
         changed", so a mismatch is only useful if something recorded what the
-        first run was. Override to add the versions that matter to this
-        generator.
+        first run was.
+
+        **Nothing here is collected or sent on its own.** It reports the Python
+        and Sage versions, which are facts about the computation, and `publish`
+        never calls it. There is no `pip freeze`: what is installed on
+        somebody's machine is their business, most of it has nothing to do with
+        the numbers, and publishing a package list because a script happened to
+        run is not a trade anybody agreed to.
+
+        Override it to add the versions that matter to *this* generator, and
+        attach the result deliberately if it belongs with the table.
         """
         import platform
         import sys
@@ -201,9 +223,61 @@ class Report:
 
 
 def generate(generator: Generator, digits: Optional[int] = None,
-             **bounds: Any) -> Entries:
-    """Run a generator and return its entries."""
-    return generator.all_entries(digits=digits, **bounds)
+             cache: Any = True, **bounds: Any) -> Entries:
+    """Run a generator and return its entries.
+
+    Computed values are kept on disk as they are produced, so a run that dies
+    -- or is stopped, because somebody saw a wrong number go past -- can be
+    resumed without recomputing what it already had. Pass ``cache=False`` to
+    compute afresh, or a path to keep it somewhere particular.
+
+    The cache is keyed by a fingerprint of the generator's own source, its
+    parameters, the precision and the bounds. A changed generator therefore
+    reads an empty cache rather than its predecessor's values: a cached number
+    produced by code that has since changed is a wrong number wearing the
+    authority of having been computed.
+    """
+    from ._cache import RunCache
+
+    #A generator whose values only come in bulk cannot be cached entry by
+    #entry, and pretending otherwise would mean calling an enumerate() it does
+    #not have. It computes all of them or none, which is the cost it accepted
+    #by not being able to produce one at a time.
+    if cache is False or _is_bulk(generator):
+        return generator.all_entries(digits=digits, **bounds)
+
+    digits = generator.digits if digits is None else digits
+    store = RunCache(generator, digits, bounds,
+                     path=cache if isinstance(cache, str) else None)
+
+    entries = Entries(*generator.parameters)
+    for params in generator.enumerate(**bounds):
+        identity = ','.join(str(params[name]) for name in generator.parameters)
+        found = store.get(identity)
+        if found is None:
+            found = generator._entry(params, digits)
+            #Written before anything else happens to it, because what this
+            #protects against is the next line never running.
+            store.put(identity, _plain(found, digits))
+            entries.add(**dict(params), **found)
+        else:
+            entries.add(**dict(params), **found)
+    return entries
+
+
+def _is_bulk(generator):
+    """Whether this generator produces everything at once."""
+    return type(generator).all_entries is not Generator.all_entries
+
+
+def _plain(entry, digits):
+    """An entry as text, which is what can be written to a file and read back."""
+    out = {}
+    for key, value in entry.items():
+        out[key] = (to_text(value, digits) if key == 'number'
+                    else value if isinstance(value, (str, int, float, list))
+                    else str(value))
+    return out
 
 
 def verify(generator: Generator, tid: Optional[str] = None,
@@ -304,6 +378,7 @@ def _value_of(record):
 def publish(generator: Generator, tid: Optional[str] = None,
             digits: Optional[int] = None, message: str = '',
             batch: Optional[int] = None, run: str = '', preflight: bool = True,
+            cache: Any = True, source_name: Optional[str] = 'generate.py',
             client: Any = None, **bounds: Any) -> Dict[str, Any]:
     """Send a generator's entries to its table.
 
@@ -334,19 +409,42 @@ def publish(generator: Generator, tid: Optional[str] = None,
 
         check_writable(tid, client=client)
 
-    #Held for the whole run, not for each write. Without it two generators on
-    #one table interleave: neither can amend its own revision, and a thousand
-    #entries each becomes two thousand revisions of the whole document.
+    run = run or _run_name(generator)
+
+    #Compute first, send once. The network is then needed at one moment
+    #instead of continuously: a connection that drops during a computation
+    #costs nothing, and a submission that fails can simply be repeated because
+    #every value is still on the disk.
+    #
+    #It also makes stopping deliberate. A run interrupted half way has
+    #published nothing, and whoever stopped it decides whether to send what is
+    #there.
+    if not batch:
+        from ._write import submit_entries
+
+        entries = generate(generator, digits=digits, cache=cache, **bounds)
+        answer = submit_entries(tid, entries, message=message,
+                                produced_by=type(generator).__name__,
+                                run=run, client=client)
+        _attach_source(generator, tid, run, client, source_name)
+        return answer
+
+    #Sending as it goes, for a caller that wants the values visible early. The
+    #lease then matters, because between one batch and the next anybody else
+    #may write.
     from ._write import Lease
 
-    run = run or _run_name(generator)
     with Lease(tid, run=run, note='generated by %s' % (type(generator).__name__,),
                client=client):
-        return _publish_held(generator, tid, digits, message, batch, run, client,
-                             bounds)
+        answer = _publish_held(generator, tid, digits, message, batch, run,
+                               client, cache, bounds)
+        _attach_source(generator, tid, run, client, source_name)
+        return answer
 
 
-def _publish_held(generator, tid, digits, message, batch, run, client, bounds):
+def _publish_held(generator, tid, digits, message, batch, run, client, cache,
+                  bounds):
+    from ._cache import RunCache
     from ._write import submit_entries
 
     if not batch:
@@ -356,6 +454,9 @@ def _publish_held(generator, tid, digits, message, batch, run, client, bounds):
                               run=run, client=client)
 
     digits = generator.digits if digits is None else digits
+    store = (RunCache(generator, digits, bounds,
+                      path=cache if isinstance(cache, str) else None)
+             if cache is not False and not _is_bulk(generator) else None)
     pending = Entries(*generator.parameters)
     sent = {'entries': 0, 'batches': 0}
     answer = {}
@@ -373,8 +474,23 @@ def _publish_held(generator, tid, digits, message, batch, run, client, bounds):
         answer.update(result)
         pending = Entries(*generator.parameters)
 
+    if _is_bulk(generator):
+        #Nothing to stream: it is all computed or none of it is.
+        for record in generator.all_entries(digits=digits, **bounds):
+            pending._records.append(dict(record))
+        flush()
+        answer.update(sent)
+        answer['run'] = run
+        return answer
+
     for params in generator.enumerate(**bounds):
-        pending.add(**dict(params), **generator._entry(params, digits))
+        identity = ','.join(str(params[name]) for name in generator.parameters)
+        found = store.get(identity) if store is not None else None
+        if found is None:
+            found = generator._entry(params, digits)
+            if store is not None:
+                store.put(identity, _plain(found, digits))
+        pending.add(**dict(params), **found)
         if len(pending) >= batch:
             flush()
     flush()
@@ -407,6 +523,56 @@ def _with_retry(send, attempts=4):
                 raise
             time.sleep(getattr(busy, 'retry_after', None) or 2 * (attempt + 1))
     raise AssertionError('unreachable')
+
+
+def _attach_source(generator, tid, run, client, source_name):
+    """Send the files that produced these numbers, in the same revision.
+
+    What to send is declared on the generator rather than discovered: a
+    directory sweep would collect whatever else happened to be sitting there,
+    which is nobody's intention and sooner or later somebody's private working
+    file. With nothing declared it sends the generator's own source, which is
+    the one file certainly relevant.
+
+    Best effort. A run whose numbers are stored and whose source could not be
+    read has still done the useful part, and failing at the end over a missing
+    file would be a poor trade.
+    """
+    import inspect
+    import os
+
+    from ._write import attach
+
+    def send(name, body):
+        try:
+            #Stored under the bare name: a table's files are flat.
+            attach(tid, os.path.basename(name), body, run=run, client=client,
+                   message='a file that produced these entries')
+        except Exception:
+            pass
+
+    declared = tuple(getattr(generator, 'files', ()) or ())
+    if declared:
+        try:
+            beside = os.path.dirname(inspect.getfile(type(generator)))
+        except (OSError, TypeError):
+            beside = '.'
+        for named in declared:
+            path = named if os.path.isabs(named) else os.path.join(beside, named)
+            try:
+                with open(path, 'r', encoding='utf8') as handle:
+                    send(named, handle.read())
+            except OSError:
+                continue
+        return
+
+    if not source_name:
+        return
+    try:
+        source = inspect.getsource(type(generator))
+    except (OSError, TypeError):
+        return
+    send(source_name, source)
 
 
 def _run_name(generator):

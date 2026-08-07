@@ -999,6 +999,18 @@ def _upsert_entries(existing, arriving, tree):
 	return kept, added, updated
 
 
+#: What one attached file may weigh, and what a table's files may weigh
+#: together.
+#:
+#: A table holds the code that produced its numbers and the notes that explain
+#: them. The largest thing in the corpus is a 477 KB Sage object; anything much
+#: past that is a dataset, and a dataset wants to be a table rather than an
+#: attachment on one.
+MAX_ATTACHMENT_BYTES = getattr(settings, 'NUMBERDB_MAX_ATTACHMENT_BYTES',
+                               2 * 1024 * 1024)
+MAX_ATTACHMENTS_BYTES = getattr(settings, 'NUMBERDB_MAX_ATTACHMENTS_BYTES',
+                                8 * 1024 * 1024)
+
 #: How long a lease lasts before it must be refreshed. Long enough that a
 #: single expensive entry does not cost a generator its claim, short enough
 #: that a table is not held by a dead process for an afternoon.
@@ -1114,3 +1126,129 @@ def _refresh_lease(table, user, run):
 		return
 	lease.expires = timezone.now() + timedelta(minutes=LEASE_MINUTES)
 	lease.save(update_fields=['expires'])
+
+
+@csrf_exempt
+@rate_limited
+def write_file(request, tid, name):
+	"""Attach a file to a table, in the same revision as the run's entries.
+
+	The code that produced a set of numbers belongs with them, and until now a
+	program could send its results but not itself: `generate.sage` had to be
+	put in the data repository by hand, where it drifted from whatever actually
+	ran.
+
+	Carrying the same run as the entries puts it on the same revision, so a
+	reader looking at where a number came from finds the code that made it
+	rather than the code that happens to be there now.
+	"""
+	from .editing import commit_table, tree_of
+	from .limits import TooBig
+
+	if request.method not in ('POST', 'PUT'):
+		return JsonResponse({'error': 'Use POST or PUT.'}, status=405)
+
+	user, refusal = _writer_of(request)
+	if refusal is not None:
+		return refusal
+
+	try:
+		table = Table.objects.get(tid_int=int(str(tid).lstrip('tT')))
+	except (Table.DoesNotExist, ValueError):
+		return JsonResponse({'error': "No table '%s'." % (tid,)}, status=404)
+	if table.head_revision is None:
+		return JsonResponse({'error': 'This table has no revisions.'},
+		                    status=409)
+
+	run = (request.headers.get('X-Run-Id') or request.GET.get('run') or '')[:64]
+	refused = _lease_allows(table, user, run)
+	if refused is not None:
+		return refused
+
+	wrong = _bad_attachment_name(name)
+	if wrong is not None:
+		return wrong
+
+	content = request.body
+	if not content:
+		return JsonResponse({'error': 'No file sent.'}, status=400)
+	if len(content) > MAX_ATTACHMENT_BYTES:
+		return JsonResponse(
+			{'error': 'That file is too large.',
+			 'detail': ('%d bytes, and the limit is %d. A table holds the code '
+			            'that produced its numbers and the notes that explain '
+			            'them; anything larger is a dataset, and a dataset '
+			            'wants to be a table.'
+			            % (len(content), MAX_ATTACHMENT_BYTES))}, status=413)
+
+	total = sum(a.blob.size for a in
+	            table.head_revision.attachments.select_related('blob')
+	            if a.name != name) + len(content)
+	if total > MAX_ATTACHMENTS_BYTES:
+		return JsonResponse(
+			{'error': "That would make the table's files too large.",
+			 'detail': ('%d bytes in total, and the limit is %d.'
+			            % (total, MAX_ATTACHMENTS_BYTES))}, status=413)
+
+	try:
+		with transaction.atomic():
+			with connection.cursor() as cursor:
+				cursor.execute("SET LOCAL lock_timeout = %s", [LOCK_WAIT])
+			table = Table.objects.select_for_update().get(pk=table.pk)
+			outcome = commit_table(
+				table, tree_of(table.head_revision), author=user,
+				base=table.head_revision, strict=True, run=run,
+				produced_by=_produced_by(request, user),
+				files={name: content},
+				message=(request.headers.get('X-Edit-Message')
+				         or 'attached %s' % (name,))[:300])
+	except OperationalError:
+		response = JsonResponse(
+			{'error': 'Somebody else is writing this table just now.',
+			 'retry_after': 2}, status=429)
+		response['Retry-After'] = '2'
+		return response
+	except TooBig as big:
+		return JsonResponse({'error': 'Over a size limit.',
+		                     'detail': [b.message for b in big.breaches]},
+		                    status=413)
+
+	_refresh_lease(table, user, run)
+	return JsonResponse({
+		'tid': table.tid,
+		'name': name,
+		'bytes': len(content),
+		'revision': outcome.revision.digest if outcome.revision else None,
+		'amended': outcome.amended,
+	})
+
+
+def _bad_attachment_name(name):
+	"""Refuse a name that is not a plain file beside the table.
+
+	A table's files are flat: `generate.sage`, `notes.txt`. No directories, so
+	there is one place to look and no question about what `../` or an absolute
+	path would mean; the export writes them beside the table's document, and a
+	name that climbs out of that directory is not a file on a table at all.
+
+	The corpus needs nothing else. Its one nested case was 25 files that the
+	import flattened, and nothing has wanted a subdirectory since.
+	"""
+	if not name or name in ('.', '..'):
+		return JsonResponse({'error': 'A file needs a name.'}, status=400)
+	if '/' in name or '\\' in name:
+		return JsonResponse(
+			{'error': "A table's files are flat.",
+			 'detail': ('%r names a directory. Use a plain name such as '
+			            'generate.sage, so there is one place to look and no '
+			            'question about where a path leads.' % (name,))},
+			status=400)
+	if name.startswith('.'):
+		return JsonResponse(
+			{'error': 'A file name may not start with a dot.',
+			 'detail': 'Hidden files are not what a table carries.'},
+			status=400)
+	if len(name) > 100:
+		return JsonResponse({'error': 'That file name is too long.'},
+		                    status=400)
+	return None

@@ -222,7 +222,8 @@ def commit_table(table, tree, author=None, message='', base=None,
 		#and a history nobody can read.
 		if run and head.run == run and head.author_id == (
 				author.pk if author is not None else None):
-			return _amend(table, head, tree, message, breaches, problems)
+			return _amend(table, head, tree, message, breaches, problems,
+			              files)
 
 		return _write(table, tree, author, message, parent=head, base=head,
 		              produced_by=produced_by, breaches=breaches, files=files,
@@ -800,7 +801,7 @@ def may_see(table, user):
 	return is_board_member(user)
 
 
-def _amend(table, head, tree, message, breaches, problems):
+def _amend(table, head, tree, message, breaches, problems, files=None):
 	"""Grow the run's revision instead of writing another one.
 
 	The revision keeps its place in the history and its parent; its content,
@@ -821,6 +822,15 @@ def _amend(table, head, tree, message, breaches, problems):
 			head.message = message
 		#save() derives the digest from the content, so it follows.
 		head.save(update_fields=['content', 'digest', 'message'])
+
+		#Files too. A run attaching its own source after its first submission
+		#amends, and without this the source was accepted and dropped -- the
+		#request answered 200, the revision gained nothing, and the code that
+		#produced the numbers was simply not there.
+		if files:
+			wanted = _wanted_manifest(head, files)
+			head.attachments.all().delete()
+			_attach_manifest(head, wanted)
 		try:
 			apply_revision(table, head)
 		except (StaleEdit, ParametersChanged):

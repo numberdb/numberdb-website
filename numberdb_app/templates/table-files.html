@@ -137,6 +137,15 @@ which will assume the code shown produced the numbers shown.
     {% endfor %}
   </table>
 
+  <p>
+    <a href="{% url 'db:table-bundle' table.tid %}{% if not is_current %}?rev={{ revision.pk }}{% endif %}"
+      >Download the table and its files together</a>
+    <span class="file-note">
+      &mdash; as of this version, so the code in it is the code that produced
+      the numbers in it.
+    </span>
+  </p>
+
   {% comment %}
   Said plainly, because a page full of scripts invites the assumption that
   pressing something will run one.

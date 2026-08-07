@@ -24,7 +24,7 @@ from __future__ import annotations
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Union
 
 __all__ = ['Entries', 'document', 'to_text', 'submit', 'submit_entries',
-           'create', 'check_writable']
+           'create', 'check_writable', 'attach']
 
 #: How many digits a value is written to when nothing says otherwise. The
 #: house style, and the reason for it is not storage: digits that are cheap to
@@ -540,3 +540,28 @@ class Lease:
         if self._stop is not None:
             self._stop.set()
         self._thread = None
+
+
+def attach(tid: str, name: str, content: Any, run: str = '',
+           message: str = '', client: Any = None) -> Dict[str, Any]:
+    """Put a file on a table, in the same revision as the run's entries.
+
+    The code that produced a set of numbers belongs with them. Until now a
+    program could send its results but not itself, so `generate.sage` was put
+    in the repository by hand and drifted from whatever had actually run.
+
+    Carrying the same ``run`` as the entries puts the file on the same
+    revision, so somebody looking at where a number came from finds the code
+    that made it rather than the code that happens to be there now.
+    """
+    from . import _default_client
+
+    client = client or _default_client
+    headers = {}
+    if run:
+        headers['X-Run-Id'] = run
+    if message:
+        headers['X-Edit-Message'] = message
+    body = content if isinstance(content, str) else content.decode('utf8')
+    return client.submit('/api/table/%s/file/%s'
+                         % (str(tid).lstrip('tT'), name), body, headers)

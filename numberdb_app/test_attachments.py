@@ -265,3 +265,105 @@ class ShowingFiles(AttachingBase):
 	def test_a_file_that_is_not_on_that_revision_is_a_404(self):
 		r = self.client.get('/files/%s/nothing.sage' % (self.table.tid,))
 		self.assertEqual(r.status_code, 404)
+
+
+class AmendingKeepsItsFiles(AttachingBase):
+	"""A run attaching its own source after its first submission amends.
+
+	Without this the file was accepted and dropped: the request answered 200,
+	the revision gained nothing, and the code that produced the numbers was
+	simply not there.
+	"""
+
+	def setUp(self):
+		super().setUp()
+		self.first = commit_table(
+			self.table, {'Title': 'Attach probe', 'Numbers': {'1': '3.14'}},
+			author=self.alice, run='run-1').revision
+
+	def test_a_file_attached_by_an_amend_is_stored(self):
+		out = commit_table(
+			self.table, {'Title': 'Attach probe', 'Numbers': {'1': '3.15'}},
+			author=self.alice, base=self.first, run='run-1',
+			files={'generate.py': 'print(1)'})
+		self.assertTrue(out.amended)
+		self.assertEqual(set(manifest_of(out.revision)), {'generate.py'})
+
+	def test_it_does_not_add_a_revision(self):
+		before = self.table.revisions.count()
+		commit_table(
+			self.table, {'Title': 'Attach probe', 'Numbers': {'1': '3.16'}},
+			author=self.alice, base=self.first, run='run-1',
+			files={'generate.py': 'print(1)'})
+		self.assertEqual(self.table.revisions.count(), before)
+
+	def test_files_already_there_survive_a_later_amend(self):
+		commit_table(
+			self.table, {'Title': 'Attach probe', 'Numbers': {'1': '3.17'}},
+			author=self.alice, base=self.first, run='run-1',
+			files={'generate.py': 'print(1)'})
+		self.table.refresh_from_db()
+		out = commit_table(
+			self.table, {'Title': 'Attach probe', 'Numbers': {'1': '3.18'}},
+			author=self.alice, base=self.table.head_revision, run='run-1')
+		self.assertEqual(set(manifest_of(out.revision)), {'generate.py'})
+
+
+class ATableAsOneDownload(AttachingBase):
+	"""The numbers and the code that produced them are one thing.
+
+	A reader could have either -- the page, or the files one at a time -- and
+	somebody checking a computation wants the whole of it rather than a list of
+	links.
+	"""
+
+	def setUp(self):
+		super().setUp()
+		self.first = commit_table(
+			self.table, {'Title': 'Attach probe', 'Numbers': {'1': '3.14'}},
+			author=self.alice,
+			files={'generate.py': 'print(1)', 'notes.txt': 'why'}).revision
+
+	def bundle(self, **params):
+		import io
+		import zipfile
+
+		response = self.client.get('/bundle/%s' % (self.table.tid,), params)
+		self.assertEqual(response.status_code, 200)
+		return zipfile.ZipFile(io.BytesIO(response.content))
+
+	def test_it_holds_the_table_and_its_files(self):
+		names = set(self.bundle().namelist())
+		self.assertIn('%s/table.yaml' % (self.table.tid,), names)
+		self.assertIn('%s/generate.py' % (self.table.tid,), names)
+		self.assertIn('%s/notes.txt' % (self.table.tid,), names)
+
+	def test_the_document_carries_its_identifier(self):
+		"""A file that does not say which table it is cannot be read alone."""
+		import yaml
+
+		document = yaml.safe_load(
+			self.bundle().read('%s/table.yaml' % (self.table.tid,)))
+		self.assertEqual(document['ID'], self.table.tid)
+
+	def test_it_explains_itself(self):
+		note = self.bundle().read('%s/README.txt' % (self.table.tid,)).decode()
+		self.assertIn(self.table.tid, note)
+		self.assertIn('recorded, not run', note)
+
+	def test_an_older_version_brings_its_own_code(self):
+		"""The point: the code in the bundle produced the numbers in it."""
+		commit_table(self.table, {'Title': 'Attach probe',
+		                          'Numbers': {'1': '9.99'}},
+		             author=self.alice, base=self.first,
+		             files={'generate.py': 'print(2)'})
+		old = self.bundle(rev=self.first.pk)
+		self.assertEqual(
+			old.read('%s/generate.py' % (self.table.tid,)), b'print(1)')
+		self.assertIn(b'3.14', old.read('%s/table.yaml' % (self.table.tid,)))
+
+	def test_a_draft_is_not_downloadable_by_a_stranger(self):
+		self.table.published = False
+		self.table.save(update_fields=['published'])
+		self.assertEqual(
+			self.client.get('/bundle/%s' % (self.table.tid,)).status_code, 404)
