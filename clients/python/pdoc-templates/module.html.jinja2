@@ -1,0 +1,16 @@
+{# pdoc's sidebar heading for a module's members is "API Documentation".
+
+   In this project "the API" is the web API at numberdb.org/api -- a different
+   thing with its own reference, linked from the same help page. A reader who
+   arrives at the package reference looking for the web API and finds a heading
+   promising it has been sent to the wrong document by the document itself.
+
+   "Contents" is what the list under it actually is. #}
+{% extends "default/module.html.jinja2" %}
+
+{% block nav_members %}
+    {% if module.members %}
+        <h2>Contents</h2>
+        {{ nav_members(module.members.values()) }}
+    {% endif %}
+{% endblock %}

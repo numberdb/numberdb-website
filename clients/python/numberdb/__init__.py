@@ -4,22 +4,54 @@
     >>> for result in numberdb.search('pi'):
     ...     print(result.exact_text, '--', result.table.title)
 
-Works in plain Python. Inside SageMath, ``result.sage()`` gives the number as a
-Sage object; nothing else needs Sage, and it is not imported until asked for.
+Anything that names a number can be looked up: a decimal, an interval, a
+rational, a p-adic, a polynomial, an expression, or a phrase. ``search`` reads
+what you hand it and asks the right question; the ``search_*`` functions ask a
+particular one when you would rather be explicit. What comes back is described
+under `numberdb.Result`.
 
-Anonymous use is rate limited. A key raises the limit:
+Inside SageMath
+---------------
+
+Import the submodule instead, and every call below is unchanged:
+
+    sage: import numberdb.sage as numberdb
+    sage: numberdb.search('pi')[0].value
+    3.141592653589794?
+
+Values come back as Sage objects, rather than each one having to be converted
+by hand with `numberdb.Result.sage`, and Sage objects can be handed in --
+``search(RIF(3.14, 3.15))``, or an element of ``Qp(2)``, which brings its own
+precision with it. See `numberdb.sage` for what that submodule is and why it is
+one. The plain package never imports Sage, and needs nothing installed to be
+used from it.
+
+Adding numbers
+--------------
+
+The same package writes, for tables you have permission on:
+
+    entries = numberdb.Entries()
+    entries.add(n=1, number=RIF(3.14159, 3.14160))
+    numberdb.submit_entries('T35', entries, message='first few values')
+
+`numberdb.submit_entries` adds and updates entries, leaving the rest of the
+table alone; `numberdb.submit` replaces a whole document; `numberdb.create`
+starts a new table. A computation that runs for hours belongs in a
+`numberdb.Generator` instead, which caches values as they are computed, checks
+before starting that the run is allowed to publish, and submits once at the
+end -- see `numberdb.publish`.
+
+Keys
+----
+
+Anonymous use is read-only and rate limited. A key raises the limit and is what
+writing needs:
 
     $ export NUMBERDB_API_KEY=...
 
 or, if you must set it in code, ``numberdb.configure(api_key='...')``. For more
-than one server or key in a process, use ``Client`` directly.
-
-Why a package rather than a file to copy: the response has to be turned into
-numbers, and doing that by hand is how the previous example client came to call
-``loads()`` on server-supplied bytes -- which runs whatever those bytes say.
-Here decoding is a fixed table (see ``_wire``), and it is versioned, so a change
-to the format is a version bump and a clear message rather than an exception in
-the middle of your session.
+than one server or key in a process, use `numberdb.Client` directly.
 """
 
 import json
