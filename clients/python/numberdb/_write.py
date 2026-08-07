@@ -438,3 +438,105 @@ def check_writable(tid: str, client: Any = None) -> Dict[str, Any]:
     """
     return submit_entries(tid, [], upsert=True, client=client,
                           message='checking that this table can be written to')
+
+
+class Lease:
+    """A claim on a table for as long as a run takes.
+
+    The server's write lock covers one write. It is the wrong tool for a
+    generator that spends hours on an entry, because between its writes anybody
+    else can write: two runs interleave, neither can amend its own revision,
+    and the history fills with one revision per value.
+
+    This covers the run. It is taken before anything is computed -- so a second
+    generator is told in its first second, rather than discovering the
+    collision by colliding hours later -- and dropped at the end.
+
+    A background thread refreshes it, because one entry may take longer than
+    the lease lasts. The thread is a daemon and refreshes well inside the
+    expiry, so a lease survives a slow entry; if the process dies the lease
+    simply expires and the table frees itself, which is the behaviour to want
+    from a claim held by something that can crash.
+
+        with numberdb.Lease('T42', note='regenerating to 200 digits'):
+            ...
+    """
+
+    def __init__(self, tid, run='', note='', client=None, every=None):
+        self.tid = str(tid).lstrip('tT')
+        self.run = run
+        self.note = note
+        self.client = client
+        self.every = every
+        self.expires = None
+        self._stop = None
+        self._thread = None
+
+    def __enter__(self):
+        answer = self.take()
+        self._start_heartbeat()
+        return answer
+
+    def __exit__(self, *exc):
+        self.drop()
+        return False
+
+    def _client(self):
+        from . import _default_client
+
+        return self.client or _default_client
+
+    def _headers(self):
+        headers = {}
+        if self.run:
+            headers['X-Run-Id'] = self.run
+        if self.note:
+            headers['X-Lease-Note'] = self.note
+        return headers
+
+    def take(self):
+        """Take or refresh the claim. Raises Conflict if somebody else has it."""
+        answer = self._client().submit('/api/table/%s/lease' % (self.tid,), '',
+                                       self._headers())
+        self.expires = answer.get('expires')
+        if self.every is None:
+            #Refresh at a third of the term, so two refreshes may be missed --
+            #a long computation holding the interpreter, a slow network -- and
+            #the claim still stands.
+            self.every = max(20.0, (answer.get('minutes') or 20) * 60 / 3.0)
+        return answer
+
+    def drop(self):
+        """Give the claim up, so the next run does not wait for it to expire."""
+        self._stop_heartbeat()
+        try:
+            self._client().submit('/api/table/%s/lease' % (self.tid,), '',
+                                  dict(self._headers(), **{'X-Method': 'DELETE'}),
+                                  method='DELETE')
+        except Exception:
+            #Losing the claim is not worth failing a finished run for: it
+            #expires on its own.
+            pass
+
+    def _start_heartbeat(self):
+        import threading
+
+        self._stop = threading.Event()
+
+        def beat():
+            while not self._stop.wait(self.every):
+                try:
+                    self.take()
+                except Exception:
+                    #Nothing useful to do here: if the claim has been lost the
+                    #next submission will say so, and it says it where a caller
+                    #can see it.
+                    pass
+
+        self._thread = threading.Thread(target=beat, daemon=True)
+        self._thread.start()
+
+    def _stop_heartbeat(self):
+        if self._stop is not None:
+            self._stop.set()
+        self._thread = None

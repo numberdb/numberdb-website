@@ -488,3 +488,112 @@ class SendingEntriesOneAtATime(WriteBase):
 		self.send([{'params': {'n': '2'}, 'number': '2.2'}])
 		self.send([{'params': {'n': '3'}, 'number': 'not a number'}])
 		self.assertEqual([e['params']['n'] for e in self.entries()], ['1', '2'])
+
+
+class ClaimingATableForARun(WriteBase):
+	"""A lease covers the run; the write lock covers one write.
+
+	Without it two generators on one table interleave, neither can amend its
+	own revision, and a thousand entries each becomes two thousand revisions of
+	the whole document. With it, the second generator is told in its first
+	second rather than discovering the collision by colliding.
+	"""
+
+	def setUp(self):
+		super().setUp()
+		self.other = User.objects.create_user('api_other')
+		self.other.groups.add(Group.objects.get_or_create(name=BOARD_GROUP)[0])
+		self.mine = self.key_for(self.chair)
+		self.theirs = self.key_for(self.other)
+
+	def lease(self, token, method='post', run='run-1', note=''):
+		headers = {'HTTP_AUTHORIZATION': 'Bearer %s' % (token,)}
+		if run:
+			headers['HTTP_X_RUN_ID'] = run
+		if note:
+			headers['HTTP_X_LEASE_NOTE'] = note
+		return getattr(self.client, method)(
+			'/api/table/%s/lease' % (self.table.tid,), '',
+			content_type='application/yaml', **headers)
+
+	def write(self, token, number='2.2', run='run-1'):
+		headers = {'HTTP_AUTHORIZATION': 'Bearer %s' % (token,),
+		           'HTTP_X_ENTRIES_MODE': 'upsert'}
+		if run:
+			headers['HTTP_X_RUN_ID'] = run
+		return self.client.post(
+			'/api/table/%s/entries' % (self.table.tid,),
+			yaml.dump([{'params': {}, 'number': number}], sort_keys=False),
+			content_type='application/yaml', **headers)
+
+	def test_a_lease_can_be_taken(self):
+		response = self.lease(self.mine)
+		self.assertEqual(response.status_code, 200)
+		self.assertTrue(json.loads(response.content)['held'])
+
+	def test_somebody_else_is_refused_and_told_who_holds_it(self):
+		self.lease(self.mine, note='regenerating to 200 digits')
+		response = self.lease(self.theirs, run='run-2')
+		self.assertEqual(response.status_code, 409)
+		body = json.loads(response.content)
+		self.assertIn('api_chair', body['detail'])
+		self.assertIn('regenerating to 200 digits', body['detail'])
+
+	def test_a_held_table_refuses_another_run_s_writes(self):
+		"""The point: found out at once, not after hours of computing."""
+		self.lease(self.mine)
+		response = self.write(self.theirs, run='run-2')
+		self.assertEqual(response.status_code, 409)
+
+	def test_the_holder_may_still_write(self):
+		self.lease(self.mine)
+		self.assertEqual(self.write(self.mine).status_code, 200)
+
+	def test_the_run_may_write_whoever_sends_it(self):
+		"""A run is the unit, so a resumed run keeps its claim."""
+		self.lease(self.mine, run='run-1')
+		self.assertEqual(self.write(self.theirs, run='run-1').status_code, 200)
+
+	def test_dropping_it_lets_the_next_run_in(self):
+		self.lease(self.mine)
+		self.lease(self.mine, method='delete')
+		self.assertEqual(self.lease(self.theirs, run='run-2').status_code, 200)
+
+	def test_an_expired_lease_is_not_a_locked_table(self):
+		"""A generator that dies must not hold a table for good."""
+		from datetime import timedelta
+
+		from django.utils import timezone
+
+		from .models import TableLease
+
+		self.lease(self.mine)
+		TableLease.objects.filter(table=self.table).update(
+			expires=timezone.now() - timedelta(minutes=1))
+		self.assertEqual(self.lease(self.theirs, run='run-2').status_code, 200)
+
+	def test_a_submission_pushes_the_expiry_out(self):
+		"""So a run whose entries are quicker than the lease needs no heartbeat."""
+		from datetime import timedelta
+
+		from django.utils import timezone
+
+		from .models import TableLease
+
+		self.lease(self.mine)
+		TableLease.objects.filter(table=self.table).update(
+			expires=timezone.now() + timedelta(minutes=1))
+		self.write(self.mine)
+		lease = TableLease.objects.get(table=self.table)
+		self.assertGreater(lease.expires, timezone.now() + timedelta(minutes=5))
+
+	def test_a_person_editing_on_the_site_is_never_refused(self):
+		"""A generator's claim is against other generators."""
+		from .editing import commit_table
+
+		self.lease(self.mine)
+		outcome = commit_table(
+			self.table, {'Title': 'API probe', 'Numbers': [
+				{'params': {}, 'number': '7.7'}]},
+			author=self.newcomer, base=self.table.head_revision)
+		self.assertIsNotNone(outcome.revision)

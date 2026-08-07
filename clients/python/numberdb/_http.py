@@ -197,7 +197,8 @@ class Client:
         return payload
 
     def submit(self, path: str, document: str,
-               headers: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+               headers: Optional[Dict[str, str]] = None,
+               method: str = 'POST') -> Dict[str, Any]:
         """POST ``document`` to ``path``, returning parsed JSON.
 
         Writing needs a key, so this refuses before reaching the network when
@@ -225,7 +226,7 @@ class Client:
         sending.update(headers or {})
 
         request = urllib.request.Request(url, data=body, headers=sending,
-                                         method='POST')
+                                         method=method)
         opener = self._opener or urllib.request.urlopen
         try:
             with opener(request, timeout=self.timeout) as response:
