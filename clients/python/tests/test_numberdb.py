@@ -852,7 +852,7 @@ class OneWrittenFormForApproximateReals(unittest.TestCase):
         from numberdb._write import to_text
 
         self.assertEqual(to_text(RealInterval('1234.5678', '1234.5679'), 3),
-                         '1230')
+                         '1.23e3')
         self.assertEqual(
             to_text(RealInterval('0.000012345', '0.000012346'), 3),
             '0.0000123')
@@ -866,6 +866,34 @@ class OneWrittenFormForApproximateReals(unittest.TestCase):
 
         self.assertEqual(to_text(RealInterval('2.4999999', '2.5000001'), 6),
                          '2.50000')
+
+    def test_trailing_zeros_before_the_point_are_never_written(self):
+        """They are a claim, under this convention. `123000000` says the value
+        is known to (122999999, 123000001); with four digits known the truth is
+        (122950000, 123050000), an overclaim by five orders of magnitude."""
+        from numberdb import RealInterval
+        from numberdb._write import to_text
+
+        self.assertEqual(to_text(RealInterval('1.2299e8', '1.2301e8'), 4),
+                         '1.230e8')
+
+    def test_the_exponent_is_spelled_as_the_corpus_spells_it(self):
+        """`1.23e160`, no plus and no padding, as 708 of its values are."""
+        from numberdb import RealInterval
+        from numberdb._write import to_text
+
+        written = to_text(RealInterval('1.2299e160', '1.2301e160'), 4)
+        self.assertEqual(written, '1.230e160')
+        self.assertNotIn('e+', written)
+
+    def test_small_values_stay_in_fixed_point_while_they_are_readable(self):
+        """A trailing zero after the point is significant, not a claim."""
+        from numberdb import RealInterval
+        from numberdb._write import to_text
+
+        self.assertEqual(
+            to_text(RealInterval('0.00012299', '0.00012301'), 4),
+            '0.0001230')
 
     def test_an_interval_too_wide_for_any_decimal_becomes_a_ball(self):
         """`5` for something in (1, 9) would claim (4, 6)."""
