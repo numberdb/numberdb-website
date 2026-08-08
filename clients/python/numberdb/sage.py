@@ -42,7 +42,7 @@ from . import (KINDS, Client, ComplexInterval, NumberDBError, PAdic,
 #object is already understood wherever one is accepted -- but it has to be
 #reachable, or `import numberdb.sage as numberdb` is a drop-in replacement
 #that silently is not one. A Sage session is where generators get written.
-from . import Conflict, Disagreement, Generator, Outcome, Report, TooBig
+from . import Conflict, DisagreementError, Generator, PublishOutcome, VerifyReport, TooBig
 from . import search as _search
 from . import search_many as _search_many
 from . import search_by_expression as _search_by_expression
@@ -67,8 +67,8 @@ __all__ = ['search', 'search_many', 'search_text',
            'Tag',
            'RealInterval', 'ComplexInterval', 'PAdic', 'Polynomial', 'KINDS',
            'NumberDBError', 'TransportError', 'RateLimited', 'Unauthorized',
-           'UnsupportedNumber', 'Conflict', 'TooBig', 'Disagreement',
-           'Generator', 'Outcome', 'Report',
+           'UnsupportedNumber', 'Conflict', 'TooBig', 'DisagreementError',
+           'Generator', 'PublishOutcome', 'VerifyReport',
            '__version__']
 
 #Checked by specification rather than by importing: Sage takes seconds to load,

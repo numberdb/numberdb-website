@@ -5,7 +5,7 @@ neither should have to import the other to share a base class.
 """
 
 __all__ = ['NumberDBError', 'TransportError', 'RateLimited', 'Unauthorized',
-           'Conflict', 'Disagreement', 'TooBig',
+           'Conflict', 'DisagreementError', 'TooBig',
            'UnsupportedNumber']
 
 
@@ -74,7 +74,7 @@ class TooBig(NumberDBError):
     """
 
 
-class Disagreement(NumberDBError):
+class DisagreementError(NumberDBError):
     """A computed value cannot stand beside the one already stored.
 
     Raised as soon as it is found, so a run whose first entry already

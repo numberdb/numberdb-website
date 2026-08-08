@@ -65,10 +65,10 @@ from __future__ import annotations
 from typing import Any, Dict, Iterator, List, Mapping, Optional, Tuple
 
 from . import _compare
-from ._errors import Disagreement
+from ._errors import DisagreementError
 from ._write import DIGITS, Entries, to_text
 
-__all__ = ['Generator', 'Outcome', 'Report']
+__all__ = ['Generator', 'PublishOutcome', 'VerifyReport']
 
 #: Entries held back before a batch is sent. Small enough that a crash costs
 #: little, large enough that a thousand cheap values are not a thousand
@@ -195,7 +195,7 @@ class Generator:
     def publish(self, only: Any = None, message: str = '',
                 overwrite: bool = True, correcting: bool = False,
                 lowering: bool = False, removing: bool = False,
-                client: Any = None, **bounds: Any) -> Outcome:
+                client: Any = None, **bounds: Any) -> PublishOutcome:
         """Send this generator's entries to its table. The whole of writing.
 
         Entries only: the definition, the references and the tags are somebody's
@@ -239,7 +239,7 @@ class Generator:
 
         An identity is text, so its parameters arrive as text; a mapping
         arrives as it was given. Prefer mappings when the generator wants a
-        number, and `Report.to_fix` hands back exactly that.
+        number, and `VerifyReport.to_fix` hands back exactly that.
 
         Anything else is passed to ``enumerate``, so a bound is given here:
         ``generator.publish(limit=2000)``.
@@ -252,12 +252,21 @@ class Generator:
     def preview(self, only: Any = None, overwrite: bool = True,
                 correcting: bool = False, lowering: bool = False,
                 removing: bool = False, client: Any = None,
-                **bounds: Any) -> Outcome:
+                **bounds: Any) -> PublishOutcome:
         """Compute everything, send nothing, and report what `publish` would do.
 
-        The same refusals apply, which is the point of it: a contradiction or a
-        loss of precision is what you wanted to find out about. The values are
-        cached, so publishing afterwards does not compute them again.
+        **This asks whether the generator is right.** `verify` asks whether the
+        table is. The two questions look alike from a distance and want
+        opposite behaviour up close, which is why both exist:
+
+        * a preview is exhaustive and stops at the first contradiction,
+          because you are about to write and something is wrong;
+        * a verification samples and collects every disagreement it finds,
+          because you are auditing and want the list.
+
+        The same refusals apply as in `publish` -- a contradiction or a loss of
+        precision is exactly what you ran this to find out about. The values
+        are cached, so publishing afterwards does not compute them again.
 
         There is no ``preview=`` flag on `publish`, so there is no such thing
         as a publish that does not publish.
@@ -269,11 +278,16 @@ class Generator:
 
     def verify(self, sample: Optional[int] = 10,
                digits: Optional[int] = None, client: Any = None,
-               **bounds: Any) -> Report:
+               **bounds: Any) -> VerifyReport:
         """Recompute entries and compare them with what the table holds.
 
-        Writes nothing, and needs no key: reading is public. This is the check
-        that answers "does the code still produce the table", and it is the
+        **This asks whether the table is right** -- whether what is stored is
+        still what this code produces, after the script or the software
+        underneath it has changed. `preview` asks the other question, whether
+        a generator about to write is right, and stops at the first
+        contradiction rather than collecting them.
+
+        Writes nothing, and needs no key: reading is public. It is the
         reason to insist on a per-entry ``value``: with one, ten entries can be
         checked in seconds; without one, the only way to ask is to regenerate a
         table that may take days, which means never.
@@ -356,7 +370,7 @@ def _as_entry(produced) -> Dict[str, Any]:
     return {'number': produced}
 
 
-class Outcome:
+class PublishOutcome:
     """What a run did to a table, or -- under ``preview`` -- would have done.
 
     The counts are the point. A run that reports 100 added and 0 updated did
@@ -396,14 +410,14 @@ class Outcome:
         return len(self.added) + len(self.updated) + len(self.unchanged)
 
     def __repr__(self):
-        return ('<Outcome %s: %d added, %d updated, %d unchanged, %d left '
+        return ('<PublishOutcome %s: %d added, %d updated, %d unchanged, %d left '
                 'alone, %d removed%s>'
                 % (self.table, len(self.added), len(self.updated),
                    len(self.unchanged), len(self.left_alone),
                    len(self.removed), '' if self.applied else ', not sent'))
 
 
-class Report:
+class VerifyReport:
     """What a verification found.
 
     ``ok`` is true only when nothing contradicted and nothing was missing.
@@ -456,14 +470,14 @@ class Report:
         return self.ok
 
     def __repr__(self):
-        return ('<Report %s: %d/%d matched, %d differing, %d missing, '
+        return ('<VerifyReport %s: %d/%d matched, %d differing, %d missing, '
                 '%d extra>' % (self.table, self.matched, self.checked,
                                len(self.differing), len(self.missing),
                                len(self.extra)))
 
 
 def _verify(generator, sample=10, digits=None, client=None,
-            **bounds) -> Report:
+            **bounds) -> VerifyReport:
     """Behind `Generator.verify`, which carries the documentation."""
     from . import table as fetch_table
 
@@ -476,7 +490,7 @@ def _verify(generator, sample=10, digits=None, client=None,
         step = len(wanted) / float(sample)
         wanted = [wanted[int(i * step)] for i in range(sample)]
 
-    report = Report(table)
+    report = VerifyReport(table)
     for params in wanted:
         identity = _identity(params, generator.parameters)
         report.checked += 1
@@ -508,7 +522,7 @@ def _verify(generator, sample=10, digits=None, client=None,
 
 def _publish(generator, only=None, message='', overwrite=True,
              correcting=False, lowering=False, removing=False,
-             preview=False, client=None, **bounds) -> Outcome:
+             preview=False, client=None, **bounds) -> PublishOutcome:
     """Behind `Generator.publish` and `Generator.preview`, which carry the
     documentation. ``preview`` computes and compares but sends nothing."""
     from ._cache import RunCache
@@ -533,7 +547,7 @@ def _publish(generator, only=None, message='', overwrite=True,
         check_writable(table, client=client)
 
     stored = _current_entries(table, client)
-    outcome = Outcome(table, run='' if preview else _run_name(generator))
+    outcome = PublishOutcome(table, run='' if preview else _run_name(generator))
 
     #Keyed by the bytes that will be attached, so a cached value can never
     #outlive the code that made it: editing any attached file changes the
@@ -593,7 +607,7 @@ def _judge(table, identity, stored_text, produced_text, correcting, lowering,
     verdict = _compare.compare(stored_text, produced_text)
 
     if verdict == _compare.CONTRADICTS and not correcting:
-        raise Disagreement(
+        raise DisagreementError(
             '%s entry %s: the table holds %s and this run produced %s. They '
             'cannot both be right, so nothing further was sent%s. If the '
             'stored values are wrong and this run is meant to replace them, '
@@ -604,7 +618,7 @@ def _judge(table, identity, stored_text, produced_text, correcting, lowering,
             verdict=verdict)
 
     if verdict == _compare.COARSENS and not lowering:
-        raise Disagreement(
+        raise DisagreementError(
             '%s entry %s: the table holds %d digits and this run produced %d. '
             'The values agree, so nothing further was sent%s. If the stored '
             'precision was never justified, pass lowering=True.'

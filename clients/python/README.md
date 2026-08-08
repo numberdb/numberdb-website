@@ -353,10 +353,19 @@ answer, and a refusal names the argument that means *yes, I meant it*.
 Differing precision is not a disagreement: a table built at 20 digits and
 recomputed at 100 agrees with itself.
 
-### Checking without writing
+### Two ways of checking, for two different questions
 
-`numberdb.verify` recomputes a sample and compares. It writes nothing and needs
-no key, which is what makes it worth running:
+`preview()` asks **whether the generator is right**. `verify()` asks **whether
+the table is** — whether what is stored is still what this code produces, after
+the script or the software underneath it has changed.
+
+They look alike from a distance and want opposite behaviour up close, which is
+why both exist. A preview is exhaustive and stops at the first contradiction,
+because you are about to write and something is wrong. A verification samples
+and collects every disagreement, because you are auditing and want the list.
+
+Neither writes anything and neither needs a key, which is what makes `verify`
+worth running:
 
 ```python
 zeta = Zeta()
