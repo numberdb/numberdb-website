@@ -31,7 +31,7 @@ that entry's value**, plus a way to enumerate the parameters.
             #not how many to compute with -- and `to_text` truncates.
             return RealIntervalField(4 * digits)(zeta(params['n']))
 
-    numberdb.publish(ZetaAtIntegers())
+    ZetaAtIntegers().publish()
 
 Generating is iterating; extending is iterating further; more precision is a
 larger ``digits``. And verifying is *sampling* -- ten entries rather than a
@@ -44,6 +44,10 @@ whether to attach the source, whether to check permission first -- had a right
 answer every time, and a right answer that has to be typed is a way of getting
 it wrong. Caching, streaming, naming the run and attaching the code are not
 preferences and are no longer asked about.
+
+They are methods rather than functions taking a generator, so the whole of
+writing is one public name. A generator is *for* a table, it knows which, and
+what you can do with it is what it offers: ``publish``, ``preview``, ``verify``.
 
 What remains asked about is intent, because nothing else can know it: whether
 values already stored may be replaced, contradicted, coarsened or removed.
@@ -64,7 +68,7 @@ from . import _compare
 from ._errors import Disagreement
 from ._write import DIGITS, Entries, to_text
 
-__all__ = ['Generator', 'Outcome', 'Report', 'verify', 'publish']
+__all__ = ['Generator', 'Outcome', 'Report']
 
 #: Entries held back before a batch is sent. Small enough that a crash costs
 #: little, large enough that a thousand cheap values are not a thousand
@@ -185,6 +189,129 @@ class Generator:
 
     def _entry(self, params, digits) -> Dict[str, Any]:
         return _as_entry(self.value(params, digits))
+
+    #-- what you call ---------------------------------------------------
+
+    def publish(self, only: Any = None, message: str = '',
+                overwrite: bool = True, correcting: bool = False,
+                lowering: bool = False, removing: bool = False,
+                client: Any = None, **bounds: Any) -> Outcome:
+        """Send this generator's entries to its table. The whole of writing.
+
+        Entries only: the definition, the references and the tags are somebody's
+        prose, a generator has no opinion about them, and there is deliberately
+        no way to send them from here. Prose is edited on the site, where a
+        person signs it.
+
+        Caching, streaming, naming the run and attaching the code that produced
+        the numbers all happen without being asked for. What a run may do to
+        values that already exist is asked, because only the person running it
+        knows:
+
+        ``overwrite`` (default true) lets recomputed values replace stored ones.
+        Set it false to add what is missing and leave the rest untouched --
+        which also skips computing those entries at all, so extending a table
+        of a thousand expensive values by a hundred costs a hundred
+        computations.
+
+        ``correcting`` allows values that **contradict** what is stored.
+        Without it, the first contradiction stops the run before anything is
+        sent, which costs one entry rather than a day: a generator that has
+        started producing different numbers is usually a broken environment,
+        not a discovery. When it really is a discovery, this says so.
+
+        ``lowering`` allows values with **fewer digits** than are stored. The
+        stored precision may well have been unjustified, but throwing away
+        digits somebody computed should be something they meant.
+
+        ``removing`` deletes entries this run did not produce. Off by default:
+        a run over `n = 2..100` has said nothing whatever about `n = 500`, and
+        treating that silence as a deletion is how a narrowed bound quietly
+        empties a table. What would have gone is listed in
+        ``outcome.left_alone``.
+
+        ``only`` computes and sends *some* entries and leaves the rest alone:
+        the parameters to recompute, as mappings or as identities.
+
+            generator.publish(only=[{'n': 17}, {'n': 42}])
+            generator.publish(only=['17', '42'])
+            generator.publish(only=generator.verify().to_fix())
+
+        An identity is text, so its parameters arrive as text; a mapping
+        arrives as it was given. Prefer mappings when the generator wants a
+        number, and `Report.to_fix` hands back exactly that.
+
+        Anything else is passed to ``enumerate``, so a bound is given here:
+        ``generator.publish(limit=2000)``.
+        """
+        return _publish(self, only=only, message=message, overwrite=overwrite,
+                        correcting=correcting, lowering=lowering,
+                        removing=removing, preview=False, client=client,
+                        **bounds)
+
+    def preview(self, only: Any = None, overwrite: bool = True,
+                correcting: bool = False, lowering: bool = False,
+                removing: bool = False, client: Any = None,
+                **bounds: Any) -> Outcome:
+        """Compute everything, send nothing, and report what `publish` would do.
+
+        The same refusals apply, which is the point of it: a contradiction or a
+        loss of precision is what you wanted to find out about. The values are
+        cached, so publishing afterwards does not compute them again.
+
+        There is no ``preview=`` flag on `publish`, so there is no such thing
+        as a publish that does not publish.
+        """
+        return _publish(self, only=only, overwrite=overwrite,
+                        correcting=correcting, lowering=lowering,
+                        removing=removing, preview=True, client=client,
+                        **bounds)
+
+    def verify(self, sample: Optional[int] = 10,
+               digits: Optional[int] = None, client: Any = None,
+               **bounds: Any) -> Report:
+        """Recompute entries and compare them with what the table holds.
+
+        Writes nothing, and needs no key: reading is public. This is the check
+        that answers "does the code still produce the table", and it is the
+        reason to insist on a per-entry ``value``: with one, ten entries can be
+        checked in seconds; without one, the only way to ask is to regenerate a
+        table that may take days, which means never.
+
+        ``sample`` is how many entries to check, spread evenly through the
+        table so the check is not confined to whichever end is cheapest.
+        ``sample=None`` checks all of them.
+
+        Differing *precision* is not a difference. A table built at 20 digits
+        and checked by a generator running at 100 agrees with itself, and
+        reporting those as errors would propose rewriting a table that was
+        never wrong.
+        """
+        return _verify(self, sample=sample, digits=digits, client=client,
+                       **bounds)
+
+    #: Names this class needs for itself. A subclass defining one of them would
+    #: replace the way its own numbers get published or checked, and nothing
+    #: would say so at the point it mattered.
+    RESERVED = ('publish', 'preview', 'verify')
+
+    def __init_subclass__(cls, **kwargs):
+        """Refuse a subclass that shadows the machinery, when it is written.
+
+        ``verify`` is exactly the word a mathematician reaches for when writing
+        their own check, and quietly overriding it would leave
+        ``generator.verify()`` doing something else entirely. Raising here
+        means finding out at the ``class`` statement rather than at the end of
+        a long run.
+        """
+        super().__init_subclass__(**kwargs)
+        for name in Generator.RESERVED:
+            if name in cls.__dict__:
+                raise TypeError(
+                    '%s defines %s(), which is how a generator is published or '
+                    'checked against its table. Give yours another name -- '
+                    '%s_entries(), say -- so both survive.'
+                    % (cls.__name__, name, name))
 
     def environment(self) -> Dict[str, str]:
         """What produced these values, for a later run to be compared against.
@@ -335,25 +462,9 @@ class Report:
                                len(self.extra)))
 
 
-def verify(generator: Generator, sample: Optional[int] = 10,
-           digits: Optional[int] = None, client: Any = None,
-           **bounds: Any) -> Report:
-    """Recompute entries and compare them with what the table holds.
-
-    Writes nothing, and needs no key: reading is public. This is the check that
-    answers "does the code still produce the table", and it is the reason to
-    insist on a per-entry ``value``: with one, ten entries can be checked in
-    seconds; without one, the only way to ask is to regenerate a table that may
-    take days, which means never.
-
-    ``sample`` is how many entries to check, spread evenly through the table so
-    the check is not confined to whichever end is cheapest. ``sample=None``
-    checks all of them.
-
-    Differing *precision* is not a difference. A table built at 20 digits and
-    checked by a generator running at 100 agrees with itself, and reporting
-    those as errors would propose rewriting a table that was never wrong.
-    """
+def _verify(generator, sample=10, digits=None, client=None,
+            **bounds) -> Report:
+    """Behind `Generator.verify`, which carries the documentation."""
     from . import table as fetch_table
 
     table = _table_of(generator)
@@ -395,57 +506,11 @@ def verify(generator: Generator, sample: Optional[int] = 10,
     return report
 
 
-def publish(generator: Generator, only: Any = None, message: str = '',
-            overwrite: bool = True, correcting: bool = False,
-            lowering: bool = False, removing: bool = False,
-            preview: bool = False, client: Any = None,
-            **bounds: Any) -> Outcome:
-    """Send a generator's entries to its table. This is the whole of writing.
-
-    Entries only: the definition, the references and the tags are somebody's
-    prose, a generator has no opinion about them, and there is deliberately no
-    way to send them from here. Prose is edited on the site, where a person
-    signs it.
-
-    Caching, streaming, naming the run and attaching the code that produced the
-    numbers all happen without being asked for. What a run may do to values
-    that already exist is asked, because only the person running it knows:
-
-    ``overwrite`` (default true) lets recomputed values replace stored ones.
-    Set it false to add what is missing and leave the rest untouched -- which
-    also skips computing those entries at all, so extending a table of a
-    thousand expensive values by a hundred costs a hundred computations.
-
-    ``correcting`` allows values that **contradict** what is stored. Without
-    it, the first contradiction stops the run before anything is sent, which
-    costs one entry rather than a day: a generator that has started producing
-    different numbers is usually a broken environment, not a discovery. When it
-    really is a discovery, this says so.
-
-    ``lowering`` allows values with **fewer digits** than are stored. The
-    stored precision may well have been unjustified, but throwing away digits
-    somebody computed should be something they meant.
-
-    ``removing`` deletes entries this run did not produce. Off by default: a
-    run over `n = 2..100` has said nothing whatever about `n = 500`, and
-    treating that silence as a deletion is how a narrowed bound quietly empties
-    a table. What would have gone is listed in ``outcome.left_alone``.
-
-    ``only`` computes and sends *some* entries and leaves the rest alone: the
-    parameters to recompute, as mappings or as identities.
-
-        numberdb.publish(g, only=[{'n': 17}, {'n': 42}])
-        numberdb.publish(g, only=['17', '42'])
-        numberdb.publish(g, only=numberdb.verify(g).to_fix())
-
-    An identity is text, so its parameters arrive as text; a mapping arrives as
-    it was given. Prefer mappings when the generator wants a number, and
-    `Report.to_fix` hands back exactly that.
-
-    ``preview`` computes everything and sends nothing, returning the same
-    `Outcome` the real run would return. The values are cached, so publishing
-    afterwards does not compute them again.
-    """
+def _publish(generator, only=None, message='', overwrite=True,
+             correcting=False, lowering=False, removing=False,
+             preview=False, client=None, **bounds) -> Outcome:
+    """Behind `Generator.publish` and `Generator.preview`, which carry the
+    documentation. ``preview`` computes and compares but sends nothing."""
     from ._cache import RunCache
 
     table = _table_of(generator)

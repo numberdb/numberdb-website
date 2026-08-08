@@ -42,7 +42,7 @@ Write the program that computes them, and publish it:
         def value(self, params, digits):
             return RealIntervalField(4 * digits)(zeta(params['n']))
 
-    numberdb.publish(Zeta())
+    Zeta().publish()
 
 That is the whole of it. There is one way in, and it does the careful things
 without being asked: values are cached as they are computed, so a run that dies
@@ -57,13 +57,14 @@ That is not a rule to remember: the function does not exist, so a generator
 cannot delete a definition by assembling a document out of what it happens to
 know.
 
-What `numberdb.publish` does ask about is intent, since nothing else can know
-it: whether values already stored may be replaced, contradicted, coarsened or
-removed. Each defaults to the cautious answer, and a refusal names the argument
-that means "yes, I meant it".
+What `numberdb.Generator.publish` does ask about is intent, since nothing else
+can know it: whether values already stored may be replaced, contradicted,
+coarsened or removed. Each defaults to the cautious answer, and a refusal names
+the argument that means "yes, I meant it".
 
-`numberdb.verify` is the same computation without a key, comparing a sample of
-the table against the code that claims to produce it.
+`numberdb.Generator.preview` does all of that and sends nothing.
+`numberdb.Generator.verify` needs no key at all: it compares a sample of the
+table against the code that claims to produce it.
 
 Keys
 ----
@@ -90,7 +91,7 @@ from ._errors import (Conflict, Disagreement, NumberDBError, RateLimited,
 from ._http import Client
 #After Client, since the write helpers reach for the default client at
 #call time rather than at import time.
-from ._generate import Generator, Outcome, Report, publish, verify
+from ._generate import Generator, Outcome, Report
 from ._wire import (KINDS, ComplexInterval, PAdic, Polynomial, RealInterval,
                     decode, to_sage)
 
@@ -105,7 +106,7 @@ __all__ = ['search', 'search_many', 'search_text',
            'RealInterval', 'ComplexInterval', 'PAdic', 'Polynomial', 'KINDS',
            'NumberDBError', 'TransportError', 'RateLimited', 'Unauthorized',
            'UnsupportedNumber', 'Conflict', 'TooBig', 'Disagreement',
-           'Generator', 'Outcome', 'Report', 'verify', 'publish',
+           'Generator', 'Outcome', 'Report',
            '__version__']
 
 try:
