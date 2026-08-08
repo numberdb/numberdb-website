@@ -5,9 +5,9 @@ shape of what would be sent, and the refusals -- a generator that gets a
 table's identities subtly wrong does not fail, it publishes numbers under the
 wrong names.
 
-The write surface is deliberately small. `numberdb.publish` is the whole of it,
-and most of what used to be arguments is now decided by the package, so most of
-what is tested here is that those decisions are actually made: that a value
+The write surface is deliberately small. `numberdb.Generator` is the whole of
+it, and most of what used to be arguments is now decided by the package, so
+most of what is tested here is that those decisions are actually made: that a value
 reaches the disk before anything else can go wrong with it, that permission is
 checked before a three-day computation rather than after, that a contradiction
 stops a run at its first entry.
@@ -249,12 +249,47 @@ class TestThereIsNoWayToSendADocument:
     @pytest.mark.parametrize('name', ['submit', 'document', 'create', 'Lease',
                                       'attach', 'Entries', 'to_text',
                                       'submit_entries', 'check_writable',
-                                      'generate'])
+                                      'generate', 'publish', 'verify'])
     def test_it_is_not_public(self, name):
         assert not hasattr(numberdb, name)
 
-    def test_publish_is(self):
-        assert callable(numberdb.publish)
+    def test_the_generator_is_the_whole_surface(self):
+        for verb in ('publish', 'preview', 'verify'):
+            assert callable(getattr(numberdb.Generator, verb))
+
+
+class TestReservedNames:
+    """A subclass that shadows the machinery is refused where it is written.
+
+    `verify` is exactly the word a mathematician reaches for when writing their
+    own check of a computation. Silently overriding it would leave
+    ``generator.verify()`` doing something else entirely, and the failure would
+    surface at the end of a long run rather than at the class statement.
+    """
+
+    @pytest.mark.parametrize('verb', ['publish', 'preview', 'verify'])
+    def test_shadowing_one_is_refused(self, verb):
+        with pytest.raises(TypeError) as raised:
+            exec('class Mine(numberdb.Generator):\n'
+                 '    def %s(self): pass\n' % (verb,),
+                 {'numberdb': numberdb})
+        assert verb in str(raised.value)
+
+    def test_the_refusal_suggests_a_way_out(self):
+        with pytest.raises(TypeError) as raised:
+            exec('class Mine(numberdb.Generator):\n'
+                 '    def verify(self): pass\n', {'numberdb': numberdb})
+        assert 'verify_entries()' in str(raised.value)
+
+    def test_an_ordinary_subclass_is_fine(self):
+        """Including one that subclasses another generator, which the tests
+        here do constantly."""
+
+        class Mine(Zeta):
+            def value(self, params, digits):
+                return Fraction(1, 1)
+
+        assert Mine().table == 'T7'
 
 
 class TestPublishing:
@@ -264,30 +299,30 @@ class TestPublishing:
             table = None
 
         with pytest.raises(ValueError) as raised:
-            numberdb.publish(Homeless(), client=Server().client())
+            Homeless().publish(client=Server().client())
         assert 'table = "T42"' in str(raised.value)
 
     def test_the_entries_are_sent(self):
         server = Server()
-        outcome = numberdb.publish(Zeta(), client=server.client())
+        outcome = Zeta().publish(client=server.client())
         assert server.sent_entries() == {'1': '1', '2': '1/2', '3': '1/3'}
         assert outcome.added == ['1', '2', '3']
         assert outcome.applied is True
 
     def test_it_posts_to_the_table(self):
         server = Server()
-        numberdb.publish(Zeta(), client=server.client())
+        Zeta().publish(client=server.client())
         assert server.entry_posts()[0][0].endswith('api/table/7/entries')
 
     def test_the_program_is_named(self):
         """Readers are entitled to know a revision came out of a script."""
         server = Server()
-        numberdb.publish(Zeta(), client=server.client())
+        Zeta().publish(client=server.client())
         assert 'Zeta' in _header(server.entry_posts()[0][1], 'X-produced-by')
 
     def test_every_batch_of_one_run_carries_the_same_run_id(self):
         server = Server()
-        outcome = numberdb.publish(Zeta(), limit=250, client=server.client())
+        outcome = Zeta().publish(limit=250, client=server.client())
         runs = {_header(headers, 'X-run-id')
                 for _p, headers, _b in server.entry_posts()}
         assert len(runs) == 1
@@ -296,13 +331,13 @@ class TestPublishing:
     def test_a_run_writes_its_own_message(self):
         """History should never carry a blank line because nobody typed one."""
         server = Server()
-        numberdb.publish(Zeta(), client=server.client())
+        Zeta().publish(client=server.client())
         message = _message(server.entry_posts()[-1][1])
         assert 'Zeta' in message and 'added' in message
 
     def test_a_given_message_is_kept(self):
         server = Server()
-        numberdb.publish(Zeta(), message='first values',
+        Zeta().publish(message='first values',
                          client=server.client())
         assert _message(server.entry_posts()[0][1]) == 'first values'
 
@@ -321,14 +356,14 @@ class TestCheckingBeforeComputing:
 
     def test_it_happens(self):
         server = Server()
-        numberdb.publish(Zeta(), client=server.client())
+        Zeta().publish(client=server.client())
         assert server.preflights == 1
 
     def test_a_missing_key_is_found_before_anything_is_computed(self):
         computed = []
         server = Server()
         with pytest.raises(numberdb.Unauthorized):
-            numberdb.publish(self.gen(computed),
+            self.gen(computed).publish(
                              client=server.client(api_key=''))
         assert computed == []
 
@@ -336,7 +371,7 @@ class TestCheckingBeforeComputing:
         computed = []
         server = Server(status=403, body=b'{"error": "not allowed yet"}')
         with pytest.raises(numberdb.NumberDBError):
-            numberdb.publish(self.gen(computed), client=server.client())
+            self.gen(computed).publish(client=server.client())
         assert computed == []
 
 
@@ -344,7 +379,7 @@ class TestOverwriting:
 
     def test_recomputed_values_replace_stored_ones_by_default(self):
         server = Server(entries={'1': '1', '2': '1/2'})
-        outcome = numberdb.publish(Zeta(), client=server.client())
+        outcome = Zeta().publish(client=server.client())
         assert outcome.unchanged == ['1', '2']
         assert outcome.added == ['3']
 
@@ -359,7 +394,7 @@ class TestOverwriting:
                 return Fraction(1, int(params['n']))
 
         server = Server(entries={'1': '1', '2': '1/2'})
-        outcome = numberdb.publish(Counted(), overwrite=False,
+        outcome = Counted().publish(overwrite=False,
                                    client=server.client())
         assert computed == [3]
         assert outcome.added == ['3']
@@ -374,7 +409,7 @@ class TestContradictions:
     def test_a_contradiction_stops_the_run(self):
         server = Server(entries={'1': '2'})   # the table says 1 -> 2
         with pytest.raises(numberdb.Disagreement) as raised:
-            numberdb.publish(Zeta(), client=server.client())
+            Zeta().publish(client=server.client())
         assert 'correcting=True' in str(raised.value)
         assert server.sent_entries() == {}
 
@@ -388,12 +423,12 @@ class TestContradictions:
 
         server = Server(entries={'1': '2'})
         with pytest.raises(numberdb.Disagreement):
-            numberdb.publish(Counted(), limit=500, client=server.client())
+            Counted().publish(limit=500, client=server.client())
         assert computed == [1]
 
     def test_correcting_lets_it_through(self):
         server = Server(entries={'1': '2'})
-        outcome = numberdb.publish(Zeta(), correcting=True,
+        outcome = Zeta().publish(correcting=True,
                                    client=server.client())
         assert outcome.updated == ['1']
         assert server.sent_entries()['1'] == '1'
@@ -401,7 +436,7 @@ class TestContradictions:
     def test_the_refusal_names_the_entry_and_both_values(self):
         server = Server(entries={'1': '2'})
         with pytest.raises(numberdb.Disagreement) as raised:
-            numberdb.publish(Zeta(), client=server.client())
+            Zeta().publish(client=server.client())
         error = raised.value
         assert error.identity == '1'
         assert error.stored == '2' and error.produced == '1'
@@ -424,25 +459,25 @@ class TestPrecision:
 
     def test_more_digits_than_stored_is_not_a_disagreement(self):
         server = Server(entries={'1': '3.14'})
-        outcome = numberdb.publish(self.Rounded(), client=server.client())
+        outcome = self.Rounded().publish(client=server.client())
         assert outcome.updated == ['1']
 
     def test_fewer_digits_than_stored_is_refused(self):
         server = Server(entries={'1': '3.14159265358979323846'})
         with pytest.raises(numberdb.Disagreement) as raised:
-            numberdb.publish(self.Rounded(), client=server.client())
+            self.Rounded().publish(client=server.client())
         assert 'lowering=True' in str(raised.value)
         assert 'digits' in str(raised.value)
 
     def test_lowering_lets_it_through(self):
         server = Server(entries={'1': '3.14159265358979323846'})
-        outcome = numberdb.publish(self.Rounded(), lowering=True,
+        outcome = self.Rounded().publish(lowering=True,
                                    client=server.client())
         assert outcome.updated == ['1']
 
     def test_an_identical_value_is_not_a_change(self):
         server = Server(entries={'1': '3.14159'})
-        outcome = numberdb.publish(self.Rounded(), client=server.client())
+        outcome = self.Rounded().publish(client=server.client())
         assert outcome.unchanged == ['1']
 
 
@@ -451,14 +486,14 @@ class TestRemoving:
 
     def test_entries_this_run_did_not_produce_are_left_alone(self):
         server = Server(entries={'500': '1/500'})
-        outcome = numberdb.publish(Zeta(), client=server.client())
+        outcome = Zeta().publish(client=server.client())
         assert outcome.left_alone == ['500']
         assert outcome.removed == []
         assert set(server.modes()) == {'upsert'}
 
     def test_removing_sends_a_replacement(self):
         server = Server(entries={'500': '1/500'})
-        outcome = numberdb.publish(Zeta(), removing=True,
+        outcome = Zeta().publish(removing=True,
                                    client=server.client())
         assert outcome.removed == ['500']
         assert outcome.left_alone == []
@@ -469,7 +504,7 @@ class TestRemoving:
 
     def test_removing_and_naming_entries_together_is_refused(self):
         with pytest.raises(ValueError) as raised:
-            numberdb.publish(Zeta(), only=[{'n': 1}], removing=True,
+            Zeta().publish(only=[{'n': 1}], removing=True,
                              client=Server().client())
         assert 'did not produce' in str(raised.value)
 
@@ -489,22 +524,22 @@ class TestNamingSomeEntries:
                 return Fraction(1, int(params['n']))
 
         server = Server()
-        numberdb.publish(Counted(), only=[{'n': 17}, {'n': 42}],
+        Counted().publish(only=[{'n': 17}, {'n': 42}],
                          client=server.client())
         assert computed == [17, 42]
 
     def test_an_identity_may_be_named_instead(self):
         server = Server()
-        numberdb.publish(Zeta(), only=['42'], client=server.client())
+        Zeta().publish(only=['42'], client=server.client())
         assert set(server.sent_entries()) == {'42'}
 
     def test_an_identity_of_the_wrong_shape_is_refused(self):
         with pytest.raises(ValueError):
-            numberdb.publish(Zeta(), only=['1,2'], client=Server().client())
+            Zeta().publish(only=['1,2'], client=Server().client())
 
     def test_naming_entries_never_replaces_the_table(self):
         server = Server(entries={'9': '1/9'})
-        outcome = numberdb.publish(Zeta(), only=[{'n': 17}],
+        outcome = Zeta().publish(only=[{'n': 17}],
                                    client=server.client())
         assert set(server.modes()) == {'upsert'}
         assert outcome.left_alone == ['9']
@@ -514,16 +549,14 @@ class TestPreview:
 
     def test_nothing_is_sent(self):
         server = Server(entries={'1': '1'})
-        outcome = numberdb.publish(Zeta(), preview=True,
-                                   client=server.client())
+        outcome = Zeta().preview(client=server.client())
         assert server.posts == []
         assert server.preflights == 0
         assert outcome.applied is False
 
     def test_it_says_what_would_happen(self):
         server = Server(entries={'1': '1', '500': '1/500'})
-        outcome = numberdb.publish(Zeta(), preview=True,
-                                   client=server.client())
+        outcome = Zeta().preview(client=server.client())
         assert outcome.unchanged == ['1']
         assert outcome.added == ['2', '3']
         assert outcome.left_alone == ['500']
@@ -537,9 +570,9 @@ class TestPreview:
                 return Fraction(1, int(params['n']))
 
         server = Server()
-        numberdb.publish(Counted(), preview=True, client=server.client())
+        Counted().preview(client=server.client())
         assert computed == [1, 2, 3]
-        numberdb.publish(Counted(), client=server.client())
+        Counted().publish(client=server.client())
         assert computed == [1, 2, 3]
 
 
@@ -554,8 +587,8 @@ class TestTheCache:
                 return Fraction(1, int(params['n']))
 
         server = Server()
-        numberdb.publish(Counted(), client=server.client())
-        numberdb.publish(Counted(), client=server.client())
+        Counted().publish(client=server.client())
+        Counted().publish(client=server.client())
         assert computed == [1, 2, 3]
 
     def test_a_value_reaches_the_disk_before_the_run_can_die(self):
@@ -576,14 +609,14 @@ class TestTheCache:
 
         server = Server()
         with pytest.raises(RuntimeError):
-            numberdb.publish(Dies(), client=server.client())
+            Dies().publish(client=server.client())
         assert computed == [1, 2, 3]
 
         #Same file, same parameters, so the same fingerprint: the rerun picks
         #up what was already computed.
         computed.clear()
         breaks[0] = False
-        numberdb.publish(Dies(), client=server.client())
+        Dies().publish(client=server.client())
         assert computed == [3, 4]
 
 
@@ -650,19 +683,19 @@ class TestTheCacheKnowsWhenItIsStale:
             self, tmp_path):
         module = self.write(tmp_path, scale=1)
         server = Server()
-        numberdb.publish(self.load(module), client=server.client())
+        self.load(module).publish(client=server.client())
         assert server.sent_entries() == {'1': '1', '2': '1/2'}
 
         #The class body is untouched; only the constant above it changes.
         self.write(tmp_path, scale=10)
         server = Server()
-        numberdb.publish(self.load(module), client=server.client())
+        self.load(module).publish(client=server.client())
         assert server.sent_entries() == {'1': '1/10', '2': '1/20'}
 
     def test_the_attached_file_is_what_was_fingerprinted(self, tmp_path):
         module = self.write(tmp_path, scale=1)
         server = Server()
-        numberdb.publish(self.load(module), client=server.client())
+        self.load(module).publish(client=server.client())
         assert server.files['gen_under_test.py'] == module.read_text()
 
 
@@ -672,7 +705,7 @@ class TestBatching:
 
     def test_many_entries_are_sent_in_batches(self):
         server = Server()
-        numberdb.publish(Zeta(), limit=250, client=server.client())
+        Zeta().publish(limit=250, client=server.client())
         assert len(server.entry_posts()) >= 3
         assert len(server.sent_entries()) == 250
 
@@ -682,7 +715,7 @@ class TestBatching:
         storing nothing for a week."""
         monkeypatch.setattr(numberdb._generate, 'BATCH_SECONDS', 0)
         server = Server()
-        numberdb.publish(Zeta(), client=server.client())
+        Zeta().publish(client=server.client())
         assert len(server.entry_posts()) == 3
 
 
@@ -694,14 +727,14 @@ class TestRetryingABusyTable:
     def test_a_busy_table_is_tried_again(self, monkeypatch):
         monkeypatch.setattr('time.sleep', lambda seconds: None)
         server = Server(busy=2)
-        outcome = numberdb.publish(Zeta(), client=server.client())
+        outcome = Zeta().publish(client=server.client())
         assert outcome.entries == 3
 
     def test_it_gives_up_eventually(self, monkeypatch):
         monkeypatch.setattr('time.sleep', lambda seconds: None)
         server = Server(busy=99)
         with pytest.raises(numberdb.NumberDBError):
-            numberdb.publish(Zeta(), client=server.client())
+            Zeta().publish(client=server.client())
 
 
 class TestAttachingTheSource:
@@ -717,7 +750,7 @@ class TestAttachingTheSource:
         import generator_module
 
         server = Server()
-        numberdb.publish(generator_module.Sample(), client=server.client())
+        generator_module.Sample().publish(client=server.client())
         stored = server.files['generator_module.py']
         assert stored == open(generator_module.__file__).read()
         #The parts a class-only attachment lost.
@@ -728,7 +761,7 @@ class TestAttachingTheSource:
         import generator_module
 
         server = Server()
-        outcome = numberdb.publish(generator_module.Sample(),
+        outcome = generator_module.Sample().publish(
                                    client=server.client())
         assert outcome.files == ['generator_module.py']
 
@@ -738,7 +771,7 @@ class TestAttachingTheSource:
         import generator_module
 
         server = Server()
-        outcome = numberdb.publish(generator_module.Sample(),
+        outcome = generator_module.Sample().publish(
                                    client=server.client())
         for path, headers, _body in server.posts:
             if '/file/' in path:
@@ -751,7 +784,7 @@ class TestAttachingTheSource:
             files = ('generator_module.py',)
 
         server = Server()
-        outcome = numberdb.publish(Declaring(), client=server.client())
+        outcome = Declaring().publish(client=server.client())
         assert outcome.files == ['generator_module.py']
 
     def test_a_declared_file_that_cannot_be_read_is_refused(self):
@@ -763,7 +796,7 @@ class TestAttachingTheSource:
             files = ('generator_module.py', 'not_here.py')
 
         with pytest.raises(ValueError) as raised:
-            numberdb.publish(Missing(), client=Server().client())
+            Missing().publish(client=Server().client())
         assert 'not_here.py' in str(raised.value)
 
     def test_two_files_with_the_same_bare_name_are_refused(self, tmp_path):
@@ -780,7 +813,7 @@ class TestAttachingTheSource:
                      str(tmp_path / 'series' / 'util.py'))
 
         with pytest.raises(ValueError) as raised:
-            numberdb.publish(Colliding(), client=Server().client())
+            Colliding().publish(client=Server().client())
         assert 'flat' in str(raised.value)
         assert 'util.py' in str(raised.value)
 
@@ -811,7 +844,7 @@ class TestAttachingTheSource:
             del __main__.__file__
         try:
             server = Server()
-            outcome = numberdb.publish(namespace['Live'](),
+            outcome = namespace['Live']().publish(
                                        client=server.client())
             assert outcome.files == []
             assert server.files == {}
@@ -834,12 +867,12 @@ class TestBulkGenerators:
 
     def test_they_are_sent(self):
         server = Server()
-        numberdb.publish(self.Sweep(), client=server.client())
+        self.Sweep().publish(client=server.client())
         assert server.sent_entries() == {'1': '1', '2': '1/2'}
 
     def test_they_cannot_be_asked_for_some(self):
         with pytest.raises(ValueError) as raised:
-            numberdb.publish(self.Sweep(), only=[{'n': 1}],
+            self.Sweep().publish(only=[{'n': 1}],
                              client=Server().client())
         assert 'all at once' in str(raised.value)
 
@@ -848,8 +881,7 @@ class TestBulkGenerators:
         way keep what it found."""
         import os
 
-        numberdb.publish(self.Sweep(), preview=True,
-                         client=Server().client())
+        self.Sweep().preview(client=Server().client())
         cached = os.listdir(str(tmp_path / 'cache'))
         assert len(cached) == 1
         assert 'identity' in open(str(tmp_path / 'cache' / cached[0])).read()
@@ -860,24 +892,24 @@ class TestVerify:
 
     def test_a_table_that_matches_is_ok(self):
         server = Server(entries={'1': '1', '2': '1/2', '3': '1/3'})
-        report = numberdb.verify(Zeta(), client=server.client())
+        report = Zeta().verify(client=server.client())
         assert report.ok
         assert report.matched == 3
 
     def test_a_contradiction_is_reported(self):
         server = Server(entries={'1': '1', '2': '99', '3': '1/3'})
-        report = numberdb.verify(Zeta(), client=server.client())
+        report = Zeta().verify(client=server.client())
         assert not report.ok
         assert [identity for identity, _s, _n in report.differing] == ['2']
 
     def test_what_differs_feeds_straight_back(self):
         server = Server(entries={'1': '1', '2': '99', '3': '1/3'})
-        report = numberdb.verify(Zeta(), client=server.client())
+        report = Zeta().verify(client=server.client())
         assert report.to_fix() == [{'n': 2}]
 
     def test_a_missing_entry_is_reported(self):
         server = Server(entries={'1': '1'})
-        report = numberdb.verify(Zeta(), client=server.client())
+        report = Zeta().verify(client=server.client())
         assert set(report.missing) == {'2', '3'}
 
     def test_fewer_stored_digits_is_not_a_disagreement(self):
@@ -896,7 +928,7 @@ class TestVerify:
                 return '3.14159265358979323846'
 
         server = Server(entries={'1': '3.14159'})
-        report = numberdb.verify(Pi(), client=server.client())
+        report = Pi().verify(client=server.client())
         assert report.ok
         assert report.refined == ['1']
 
@@ -909,7 +941,7 @@ class TestVerify:
                 return Fraction(1, int(params['n']))
 
         server = Server(entries={str(n): '1/%d' % n for n in range(1, 101)})
-        numberdb.verify(Watched(), sample=5, limit=100,
+        Watched().verify(sample=5, limit=100,
                         client=server.client())
         assert len(seen) == 5
         assert seen[0] == 1 and seen[-1] > 50

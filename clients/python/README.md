@@ -298,7 +298,8 @@ specific cases.
 ## Adding numbers
 
 Write the program that computes them, and publish it. That is the whole of
-writing — there is one way in, and no second one to choose between:
+writing — `numberdb.Generator` is the only public name involved, and what you
+can do with a generator is what it offers:
 
 ```python
 class Zeta(numberdb.Generator):
@@ -313,7 +314,7 @@ class Zeta(numberdb.Generator):
     def value(self, params, digits):
         return RealIntervalField(4 * digits)(zeta(params['n']))
 
-numberdb.publish(Zeta())
+Zeta().publish()
 ```
 
 The careful things happen without being asked for:
@@ -347,7 +348,7 @@ answer, and a refusal names the argument that means *yes, I meant it*.
 | `lowering=False` | allow values with **fewer digits** than are stored |
 | `removing=False` | delete entries this run did not produce. A run over `n = 2..100` has said nothing about `n = 500`; what would have gone is listed in `outcome.left_alone` |
 | `only=[...]` | compute and send just these, leaving the rest alone |
-| `preview=True` | compute everything, send nothing, return the same report |
+| `preview()` | a method rather than a flag, so there is no such thing as a publish that does not publish: computes everything, sends nothing, applies the same refusals |
 
 Differing precision is not a disagreement: a table built at 20 digits and
 recomputed at 100 agrees with itself.
@@ -358,10 +359,15 @@ recomputed at 100 agrees with itself.
 no key, which is what makes it worth running:
 
 ```python
-report = numberdb.verify(Zeta())          # ten entries, spread through
+zeta = Zeta()
+report = zeta.verify()                # ten entries, spread through the table
 if not report.ok:
-    numberdb.publish(Zeta(), only=report.to_fix())
+    zeta.publish(only=report.to_fix())
 ```
+
+`publish`, `preview` and `verify` are reserved: a subclass that defines one is
+refused at the `class` statement rather than quietly replacing the way its own
+numbers get published.
 
 ## Rate limits and API keys
 
