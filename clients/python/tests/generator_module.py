@@ -23,7 +23,7 @@ def scaled(n):
 class Sample(numberdb.Generator):
     parameters = ('n',)
     type = 'Q'
-    tid = 'T7'
+    table = 'T7'
 
     def enumerate(self, limit=2):
         for n in range(1, limit + 1):

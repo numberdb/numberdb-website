@@ -29,18 +29,41 @@ used from it.
 Adding numbers
 --------------
 
-The same package writes, for tables you have permission on:
+Write the program that computes them, and publish it:
 
-    entries = numberdb.Entries()
-    entries.add(n=1, number=RIF(3.14159, 3.14160))
-    numberdb.submit_entries('T35', entries, message='first few values')
+    class Zeta(numberdb.Generator):
+        table = 'T42'
+        parameters = ('n',)
 
-`numberdb.submit_entries` adds and updates entries, leaving the rest of the
-table alone; `numberdb.submit` replaces a whole document; `numberdb.create`
-starts a new table. A computation that runs for hours belongs in a
-`numberdb.Generator` instead, which caches values as they are computed, checks
-before starting that the run is allowed to publish, and submits once at the
-end -- see `numberdb.publish`.
+        def enumerate(self, limit=100):
+            for n in range(2, limit + 1):
+                yield {'n': n}
+
+        def value(self, params, digits):
+            return RealIntervalField(4 * digits)(zeta(params['n']))
+
+    numberdb.publish(Zeta())
+
+That is the whole of it. There is one way in, and it does the careful things
+without being asked: values are cached as they are computed, so a run that dies
+resumes rather than starting again; they are sent as they arrive, so a crash at
+entry 900 keeps the first 899; the whole run lands in one revision rather than
+nine hundred; permission is checked in the first second rather than after three
+days; and the code that produced the numbers is stored beside them.
+
+A table's prose -- its definition, comments, references and tags -- is written
+by a person on the site, and there is deliberately no way to send it from here.
+That is not a rule to remember: the function does not exist, so a generator
+cannot delete a definition by assembling a document out of what it happens to
+know.
+
+What `numberdb.publish` does ask about is intent, since nothing else can know
+it: whether values already stored may be replaced, contradicted, coarsened or
+removed. Each defaults to the cautious answer, and a refusal names the argument
+that means "yes, I meant it".
+
+`numberdb.verify` is the same computation without a key, comparing a sample of
+the table against the code that claims to produce it.
 
 Keys
 ----
@@ -61,15 +84,13 @@ from typing import Any, Dict, List, Optional, Union
 from ._convert import Scalar, SupportsParent, to_exact
 from ._limits import (MAX_BATCH, SIGNIFICANT_DIGITS, bound_interval,
                       p_adic_digits)
-from ._errors import (Conflict, NumberDBError, RateLimited, TooBig,
-                      TransportError,
+from ._errors import (Conflict, Disagreement, NumberDBError, RateLimited,
+                      TooBig, TransportError,
                       Unauthorized, UnsupportedNumber)
 from ._http import Client
 #After Client, since the write helpers reach for the default client at
 #call time rather than at import time.
-from ._write import (Entries, Lease, attach, check_writable, create,
-                     document, submit, submit_entries, to_text)
-from ._generate import Generator, Report, generate, publish, verify
+from ._generate import Generator, Outcome, Report, publish, verify
 from ._wire import (KINDS, ComplexInterval, PAdic, Polynomial, RealInterval,
                     decode, to_sage)
 
@@ -83,10 +104,8 @@ __all__ = ['search', 'search_many', 'search_text',
            'Result', 'Table', 'Tag', 'SearchResults',
            'RealInterval', 'ComplexInterval', 'PAdic', 'Polynomial', 'KINDS',
            'NumberDBError', 'TransportError', 'RateLimited', 'Unauthorized',
-           'UnsupportedNumber', 'Conflict', 'TooBig',
-           'Entries', 'document', 'to_text', 'submit', 'submit_entries',
-           'create', 'check_writable', 'Lease', 'attach',
-           'Generator', 'Report', 'generate', 'verify', 'publish',
+           'UnsupportedNumber', 'Conflict', 'TooBig', 'Disagreement',
+           'Generator', 'Outcome', 'Report', 'verify', 'publish',
            '__version__']
 
 try:

@@ -33,10 +33,17 @@ cost to the reader.
 import importlib.util
 from typing import Optional, Union
 
-from . import (Client, ComplexInterval, NumberDBError, PAdic, Polynomial,
+from . import (KINDS, Client, ComplexInterval, NumberDBError, PAdic,
+               Polynomial,
                RateLimited, RealInterval, Result, Scalar, Searchable,
                SearchResults, Table, Tag, TransportError, Unauthorized,
                UnsupportedNumber, __version__, configure, table, tag)
+#Writing needs no Sage flavour of its own -- values go *in*, and a Sage
+#object is already understood wherever one is accepted -- but it has to be
+#reachable, or `import numberdb.sage as numberdb` is a drop-in replacement
+#that silently is not one. A Sage session is where generators get written.
+from . import (Conflict, Disagreement, Generator, Outcome, Report, TooBig,
+               publish, verify)
 from . import search as _search
 from . import search_many as _search_many
 from . import search_by_expression as _search_by_expression
@@ -59,9 +66,11 @@ __all__ = ['search', 'search_many', 'search_text',
            'table', 'tag', 'configure', 'Client',
            'Result', 'Table', 'SearchResults',
            'Tag',
-           'RealInterval', 'ComplexInterval', 'PAdic', 'Polynomial',
+           'RealInterval', 'ComplexInterval', 'PAdic', 'Polynomial', 'KINDS',
            'NumberDBError', 'TransportError', 'RateLimited', 'Unauthorized',
-           'UnsupportedNumber', '__version__']
+           'UnsupportedNumber', 'Conflict', 'TooBig', 'Disagreement',
+           'Generator', 'Outcome', 'Report', 'publish', 'verify',
+           '__version__']
 
 #Checked by specification rather than by importing: Sage takes seconds to load,
 #and the point of failing here is to say plainly that this module needs it, not
