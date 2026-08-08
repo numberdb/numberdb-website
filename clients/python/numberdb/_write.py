@@ -225,11 +225,20 @@ def _plain_decimal(value, count):
     with localcontext() as context:
         context.prec = count + 5
         quantised = value.quantize(Decimal(1).scaleb(exponent - count + 1))
-    #Fixed point while it stays readable; scientific once the zeros would
-    #outnumber the digits, which is also a form the search bar accepts.
-    if -7 < exponent < count + 7:
+    #Fixed point only while it introduces no trailing zeros before the point.
+    #Under this convention those zeros are a claim: 123000000 says the value is
+    #known to (122999999, 123000001), and if only four digits are known the
+    #truth is (122950000, 123050000) -- an overclaim by five orders of
+    #magnitude, written by a function whose whole job is not to do that. The
+    #last significant digit sits at 10^(exponent - count + 1), so it lands
+    #before the point exactly when exponent >= count.
+    #
+    #Scientific otherwise, spelled as the corpus spells it -- `1.23e160`, no
+    #plus and no padding -- in 708 of its values.
+    if -7 < exponent < count:
         return format(quantised, 'f')
-    return format(quantised, 'e')
+    mantissa, _, power = format(quantised, 'e').partition('e')
+    return '%se%d' % (mantissa, int(power))
 
 
 def _ball_text(lower, upper, digits):
