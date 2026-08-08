@@ -786,6 +786,61 @@ class TheContainer(unittest.TestCase):
             numberdb.search(object())
 
 
+class OneWrittenFormForApproximateReals(unittest.TestCase):
+    """Whatever a generator computes with, the table gets `3.14159?`.
+
+    That form says what this database means by an approximate number: the
+    digits written are known, and the last one is uncertain by one. A table
+    holding four spellings of that would make every reader work out which
+    convention each row was written under.
+    """
+
+    def setUp(self):
+        try:
+            import sage.all  # noqa: F401
+        except ImportError:
+            self.skipTest('needs SageMath')
+
+    def test_every_sage_real_type_is_written_the_same_way(self):
+        from sage.all import (ComplexBallField, ComplexIntervalField,
+                              RealBallField, RealIntervalField, zeta)
+
+        from numberdb._write import to_text
+
+        precision = numberdb.bits(20)
+        wanted = '1.2020569031595942853?'
+        self.assertEqual(to_text(RealIntervalField(precision)(zeta(3)), 20),
+                         wanted)
+        self.assertEqual(to_text(RealBallField(precision)(zeta(3)), 20),
+                         wanted)
+        self.assertEqual(
+            to_text(ComplexIntervalField(precision)(zeta(3), 1), 20),
+            wanted + ' + i * 1')
+        self.assertEqual(
+            to_text(ComplexBallField(precision)(zeta(3), 1), 20),
+            wanted + ' + i * 1')
+
+    def test_a_ball_is_not_truncated_as_text(self):
+        """`[1.20205690 +/- 2.8e-25]` cut to twenty characters keeps the centre
+        and mangles the radius into `+/- 0.00000`, claiming an uncertainty a
+        hundred million times too wide."""
+        from sage.all import RealBallField, zeta
+
+        from numberdb._write import to_text
+
+        written = to_text(RealBallField(numberdb.bits(20))(zeta(3)), 20)
+        self.assertNotIn('+/-', written)
+        self.assertTrue(written.endswith('?'), written)
+
+    def test_ball_fields_were_refused_outright_before_this(self):
+        """Sage names them `Real ball field`, not `Real Ball Field`, so a test
+        for 'Ball' matched nothing and every ball raised."""
+        from sage.all import RealBallField
+
+        self.assertNotIn('Ball', str(RealBallField(53)))
+        self.assertIn('ball', str(RealBallField(53)))
+
+
 class ExceptionsAreNamedAsExceptions(unittest.TestCase):
     """Every public exception ends in Error, so a reader knows what it is.
 

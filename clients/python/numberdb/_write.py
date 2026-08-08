@@ -78,10 +78,19 @@ def to_text(value: Any, digits: int = DIGITS) -> str:
     are written out in full, because writing fewer digits of an exact value
     does not round it, it makes it a different number.
 
-    An approximation is written to ``digits`` significant figures. Real
-    intervals become the `3.14159?` form the site parses, which records the
-    precision in the value itself -- the reason a string is a sound way to
-    carry a number here and a bare float is not.
+    An approximation is written to ``digits`` significant figures in **one**
+    form, whatever it was computed in::
+
+        3.14159?
+
+    The digits written are known and the last is uncertain by one, so that
+    value is the interval (3.14158, 3.14160). Intervals and balls, real and
+    complex, Sage's and this package's own, all arrive as that -- a table
+    holding four spellings of the same convention would make every reader work
+    out which one each row was written under.
+
+    The precision travels inside the value, which is why a string is a sound
+    way to carry a number here and a bare float is not.
     """
     if isinstance(value, str):
         return value
@@ -168,6 +177,19 @@ def _sage_text(value, digits):
     """
     name = str(value.parent())
 
+    #A ball first, because it is written differently and must not be truncated
+    #as text: `[1.20205690 +/- 2.8e-25]` cut to twenty significant characters
+    #keeps the centre and mangles the radius into `+/- 0.00000`, which claims
+    #an uncertainty a hundred million times too wide. Converting to an interval
+    #gives the same number in the one form this database writes.
+    #
+    #Matched case-insensitively because Sage does not name these consistently:
+    #`Real Interval Field with 53 bits of precision` but `Real ball field with
+    #53 bits of precision`. Testing for 'Ball' refused every ball there is.
+    if 'ball' in name.lower():
+        value = _as_interval(value)
+        name = str(value.parent())
+
     if 'Interval' in name or 'Ball' in name:
         if 'Complex' in name:
             return _complex_text(_truncate(str(value.real()), digits),
@@ -198,6 +220,23 @@ _NUMERIC_PARENTS = ('Integer Ring', 'Rational Field', 'Real Field',
                     #`2-adic Field ...`, so the prime is part of the name.
                     '-adic',
                     'Number Field', 'Algebraic')
+
+
+def _as_interval(ball):
+    """A Sage ball as the interval that holds it, at the same precision.
+
+    Sage is imported here and nowhere else in this module: reaching this line
+    means the caller already handed us a Sage object, so Sage is loaded and
+    the import costs nothing.
+    """
+    precision = ball.parent().precision()
+    if 'complex' in str(ball.parent()).lower():
+        from sage.rings.complex_interval_field import ComplexIntervalField
+
+        return ComplexIntervalField(precision)(ball)
+    from sage.rings.real_mpfi import RealIntervalField
+
+    return RealIntervalField(precision)(ball)
 
 
 def _complex_text(real, imag):

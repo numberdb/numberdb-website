@@ -166,6 +166,11 @@ class Generator:
         it does not carry its own precision, so there is no honest way to store
         one.
 
+        Compute in whatever you like -- ``RealIntervalField``, ``RealBallField``
+        and their complex counterparts all arrive the same way. An approximate
+        real is stored in one form, ``3.14159?``, meaning the digits written
+        are known and the last is uncertain by one.
+
         Must be deterministic. The same parameters and digits must give the
         same string every time, or verification means nothing: no wall clock,
         no unseeded randomness, no iteration over an unordered set.
