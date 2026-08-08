@@ -326,6 +326,10 @@ The careful things happen without being asked for:
 - **they are sent as they arrive**, so a crash at entry 900 keeps the first 899;
 - **the whole run lands in one revision**, not nine hundred;
 - **permission is checked in the first second**, not after three days;
+- **one written form**: compute in `RealIntervalField`, `RealBallField` or
+  their complex counterparts, and the table gets `3.14159?` either way — the
+  digits written are known, the last uncertain by one, so that value is the
+  interval (3.14158, 3.14160);
 - **the digits you asked for are the digits you get**: `digits` is decimal,
   Sage's fields are binary, and `RealIntervalField(digits)` — which reads
   perfectly well — delivers about a third of what was meant. `numberdb.bits()`
