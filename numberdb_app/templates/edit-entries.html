@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% load numberdb_urls %}
+
+{% comment %}
+The numbers, as rows.
+
+The last part of a table that could only be edited as YAML, and the one a
+mathematician is most likely to want to touch: a wrong digit in one entry.
+
+A page shows at most 200 rows and **replaces only the rows it showed**. Each
+row carries the identity it was drawn with, in a hidden field, so a save finds
+it again among entries this page never displayed. Rebuilding the table from the
+submission would delete every row on another page -- silently, from a save that
+looked like correcting one digit.
+{% endcomment %}
+
+{% block head-title %}Numbers of {{ table_being_edited.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+a.link-below-title { font-size: 0.8rem; color: #555; text-decoration: dotted underline; }
+a.link-below-title:hover { text-decoration: underline; }
+
+.mode-switch { margin: 0.4rem 0 1rem 0; font-size: 0.9em; }
+.mode-switch .hint { color: #666; display: block; margin-top: 0.15rem; }
+.edit-note { background: #ffc; padding: 0.6rem; border: 1px solid #e6d800;
+             margin: 0.6rem 0; }
+
+table.entries { border-collapse: collapse; width: 100%; font-size: 0.9em; }
+table.entries th { text-align: left; background: #f6f7f9; padding: 0.35rem 0.5rem;
+                   border-bottom: 1px solid #e2e2e2; font-weight: 500; }
+table.entries td { padding: 0.2rem 0.35rem; border-bottom: 1px solid #f0f0f0;
+                   vertical-align: top; }
+table.entries input[type=text] { width: 100%; padding: 0.25rem;
+                                 font-family: ui-monospace, monospace;
+                                 box-sizing: border-box; }
+table.entries input.param { font-family: ui-monospace, monospace; }
+table.entries input[readonly] { background: #f7f7f7; color: #555; }
+td.number-cell { width: 46%; }
+td.comment-cell { width: 22%; }
+td.act { width: 2.2rem; text-align: right; }
+td.act button { cursor: pointer; font-size: 0.85em; padding: 0.05rem 0.35rem; }
+tr.removed td { opacity: 0.4; text-decoration: line-through; }
+
+.pager { margin: 0.8rem 0; font-size: 0.9em; }
+.pager a, .pager b { display: inline-block; padding: 0.1rem 0.4rem; }
+.pager .of { color: #666; margin-left: 0.5rem; }
+.save-bar { margin: 1rem 0; }
+.count { color: #666; font-size: 0.9em; }
+.multi { color: #a60; font-size: 0.85em; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<h1>{{ table_being_edited.title|safe }}</h1>
+<a class="link-below-title" href="{% url 'db:table' table_being_edited.tid %}">back to the table</a>
+
+<div class="mode-switch">
+  <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=1">Settings</a>
+  &middot;
+  <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=sections">Text</a>
+  &middot;
+  <b>Numbers</b>
+  &middot;
+  <a href="{% url 'db:edit-table' table_being_edited.tid %}">Source</a>
+  <span class="hint">One page of numbers at a time. Saving replaces only the
+  rows shown here; the rest of the table is left exactly as it is.</span>
+</div>
+
+<div class="edit-note">
+  {% if is_draft %}
+    This table is a draft: nobody else can see it yet.
+  {% else %}
+    Your changes are published immediately.
+    {% if not identities_editable %}
+      Parameter values are fixed: an entry's parameters are its identity, and
+      citations to it would not break, they would resolve and point at a
+      different number.
+    {% endif %}
+  {% endif %}
+</div>
+
+{% if not rows and meta.total == 0 %}
+  <p>This table has no entries yet. Add the first one below.</p>
+{% endif %}
+
+{% if meta.pages > 1 %}
+<div class="pager">
+  {% for number in pages %}
+    {% if number == meta.page %}<b>{{ number }}</b>
+    {% else %}<a href="?form=entries&amp;page={{ number }}">{{ number }}</a>{% endif %}
+  {% endfor %}
+  <span class="of">{{ meta.total }} entries, {{ meta.per_page }} per page.
+  Save before changing page &mdash; moving away loses what you typed.</span>
+</div>
+{% endif %}
+
+<form method="post" action="" id="entries-form">
+  {% csrf_token %}
+  <input type="hidden" name="base" value="{{ base_digest }}">
+  <input type="hidden" name="page" value="{{ meta.page }}">
+  {% comment %}Says the page really did submit its rows. Without it, a form
+  that failed to render its rows would read as "every row was deleted".
+  {% endcomment %}
+  <input type="hidden" name="entries.present" value="1">
+
+  {% comment %}Which entries this page was responsible for. Anything else in
+  the table is left untouched, which is what makes paging safe -- and these sit
+  outside the rows on purpose, because removing a row disables its fields and a
+  removal has to stay covered or it would read as "not shown" rather than
+  "shown and deleted".
+  {% endcomment %}
+  {% for row in rows %}<input type="hidden" name="entries.covered" value="{{ row.identity }}">
+  {% endfor %}
+
+  <table class="entries">
+    <thead>
+      <tr>
+        {% for name in meta.columns %}<th>{{ name }}</th>{% endfor %}
+        <th>number</th>
+        <th>comment</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="rows">
+      {% for row in rows %}
+      <tr>
+        <input type="hidden" name="entry.{{ row.index }}.was" value="{{ row.identity }}">
+        <input type="hidden" name="entry.{{ row.index }}.extra" value="{{ row.extra_json }}">
+        {% for name in meta.columns %}
+        <td><input class="param" type="text"
+                   name="entry.{{ row.index }}.param.{{ name }}"
+                   value="{{ row.params|get:name }}"
+                   {% if not identities_editable %}readonly{% endif %}></td>
+        {% endfor %}
+        <td class="number-cell">
+          <input type="text" name="entry.{{ row.index }}.number" value="{{ row.number }}">
+          {% if row.number_is_list %}<span class="multi">several numbers, separated by |</span>{% endif %}
+        </td>
+        <td class="comment-cell">
+          <input type="text" name="entry.{{ row.index }}.comment" value="{{ row.comment }}">
+        </td>
+        <td class="act">
+          <button type="button" class="drop" title="remove this entry">&times;</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p><button type="button" id="add-row">add an entry</button>
+  <span class="count">A new entry needs its parameter values and a number.</span></p>
+
+  <div class="save-bar">
+    <button type="submit" name="action" value="save-entries"><b>Save</b></button>
+  </div>
+</form>
+
+{% comment %}A blank row, cloned rather than built by hand: the last row of a
+table with no entries is not there to copy, which is how "add" came to do
+nothing on the sections form.
+{% endcomment %}
+<template id="blank-row">
+  <tr>
+    <input type="hidden" name="entry.NEW.was" value="">
+    <input type="hidden" name="entry.NEW.extra" value="">
+    {% for name in meta.columns %}
+    <td><input class="param" type="text" name="entry.NEW.param.{{ name }}" value=""></td>
+    {% endfor %}
+    <td class="number-cell"><input type="text" name="entry.NEW.number" value=""></td>
+    <td class="comment-cell"><input type="text" name="entry.NEW.comment" value=""></td>
+    <td class="act"><button type="button" class="drop" title="remove this entry">&times;</button></td>
+  </tr>
+</template>
+
+<script>
+(function () {
+  var rows = document.getElementById('rows');
+  var blank = document.getElementById('blank-row');
+  var next = {{ meta.total }} + 1000;
+
+  document.getElementById('add-row').addEventListener('click', function () {
+    var row = blank.content.cloneNode(true);
+    var index = 'new' + (next++);
+    row.querySelectorAll('[name]').forEach(function (field) {
+      field.name = field.name.replace('NEW', index);
+    });
+    rows.appendChild(row);
+    var added = rows.lastElementChild;
+    var first = added.querySelector('input[type=text]');
+    if (first) { first.focus(); }
+  });
+
+  //Removing a row means not submitting it: a row that is gone from the
+  //submission is one the save treats as deleted. Disabling the fields is what
+  //keeps them out, and leaving the row visible is what makes it undoable
+  //before the save rather than only after it.
+  rows.addEventListener('click', function (event) {
+    var button = event.target.closest('button.drop');
+    if (!button) { return; }
+    var row = button.closest('tr');
+    var off = row.classList.toggle('removed');
+    row.querySelectorAll('input').forEach(function (field) {
+      field.disabled = off;
+    });
+    button.disabled = false;
+    button.textContent = off ? '↺' : '×';
+    button.title = off ? 'keep this entry after all' : 'remove this entry';
+  });
+})();
+</script>
+
+{% endblock %}

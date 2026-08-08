@@ -177,6 +177,10 @@ def _submitted_rows(data, columns):
 
 	for index in seen:
 		was = data.get('%s%s.was' % (prefix, index)) or ''
+		#A new row has no identity yet, so it is keyed by the field index
+		#instead. Keying every new row on the empty string made a save with two
+		#of them keep one: the second overwrote the first, silently.
+		key = was or 'new:%s' % (index,)
 		row = {
 			'was': was,
 			'params': {name: (data.get('%s%s.param.%s'
@@ -186,10 +190,10 @@ def _submitted_rows(data, columns):
 			'comment': (data.get('%s%s.comment' % (prefix, index)) or '').strip(),
 			'extra': data.get('%s%s.extra' % (prefix, index)) or '',
 		}
-		if not row['number'] and not row['params'].values():
+		if not row['number'] and not any(row['params'].values()):
 			continue
-		rows[was] = row
-		order.append(was)
+		rows[key] = row
+		order.append(key)
 	return rows, order
 
 

@@ -1910,6 +1910,9 @@ def edit_table(request, tid):
 	if request.method == 'POST' and request.POST.get('action') == 'save-sections':
 		return _save_sections_form(request, table, base)
 
+	if request.method == 'POST' and request.POST.get('action') == 'save-entries':
+		return _save_entries_form(request, table, base)
+
 	if request.method == 'GET' and request.GET.get('form'):
 		return _metadata_form_page(request, table, base)
 
@@ -2586,6 +2589,24 @@ def _metadata_form_page(request, table, base):
 		raise Http404
 	tree = tree_of(base) if base is not None else {}
 
+	if request.GET.get('form') == 'entries':
+		from .entries_form import rows_from
+
+		rows, meta = rows_from(tree, page=request.GET.get('page') or 1)
+		return render(request, 'edit-entries.html', {
+			'table_being_edited': table,
+			'base_digest': base.digest if base is not None else '',
+			'may_edit': may_edit(request.user),
+			'is_draft': not table.published,
+			'rows': rows,
+			'meta': meta,
+			#An identity is what citations resolve on, so it may be typed while
+			#a table is a draft and not after. The form shows that rather than
+			#refusing the save afterwards.
+			'identities_editable': not table.published,
+			'pages': range(1, meta['pages'] + 1),
+		})
+
 	if request.GET.get('form') == 'sections':
 		return render(request, 'edit-sections.html', {
 			'table_being_edited': table,
@@ -2650,6 +2671,33 @@ def _save_metadata_form(request, table, base):
 	                         back_to='%s?form=1' % (
 		                         reverse('db:edit-table',
 		                                 kwargs={'tid': table.tid}),))
+
+
+def _save_entries_form(request, table, base):
+	"""Apply one page of the entries form and save it the ordinary way.
+
+	The page number is carried through the save so the author comes back to the
+	rows they were working on, which on a table of a thousand entries is the
+	difference between an edit and a search.
+	"""
+	from .editing import tree_of
+	from .entries_form import apply_entries
+
+	base_digest = request.POST.get('base', '')
+	if base_digest:
+		base = TableRevision.objects.filter(
+			table=table, digest=base_digest).first() or base
+
+	tree = apply_entries(tree_of(base) if base is not None else {},
+	                     request.POST,
+	                     #Renaming an entry reassigns what every citation to it
+	                     #resolves to. Free while nobody can be citing it.
+	                     allow_identity_changes=not table.published)
+	page = request.POST.get('page') or '1'
+	return _save_edited_tree(request, table, base, tree,
+	                         back_to='%s?form=entries&page=%s' % (
+		                         reverse('db:edit-table',
+		                                 kwargs={'tid': table.tid}), page))
 
 
 def _save_sections_form(request, table, base):

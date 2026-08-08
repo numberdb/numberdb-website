@@ -79,6 +79,8 @@ textarea.section-text { width: min(38rem, 90%); min-height: 5rem; padding: 0.4re
   &middot;
   <b>Text</b>
   &middot;
+  <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=entries">Numbers</a>
+  &middot;
   <a href="{% url 'db:edit-table' table_being_edited.tid %}">Source</a>
   <span class="hint">
     The definition, comments, formulas, references, programs and links. The
