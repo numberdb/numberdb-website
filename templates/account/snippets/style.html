@@ -1,0 +1,47 @@
+{% comment %}
+Shared by the sign-in and sign-up pages, which are the same page twice.
+
+The one rule with a reason beyond taste: a field's help text stays out of the
+way until somebody is in that field. Django renders every password validator as
+a bulleted list, so a sign-up page opened for the first time led with four
+sentences about passwords before a single character had been typed -- rules
+read as a warning when nobody has done anything yet, and as help when they are
+in the field the rules are about.
+
+Scoped to the account forms, because elsewhere on the site a hint that only
+appears on focus is a hint nobody finds.
+{% endcomment %}
+<style>
+.account-page { max-width: 26rem; }
+.account-page h1 { margin-bottom: 0.8rem; }
+.account-page .note { font-size: 0.9rem; color: #555; margin: 0.8rem 0; }
+
+.provider-form { margin: 0.5rem 0; }
+.provider-button { width: 100%; padding: 0.6rem; cursor: pointer;
+                   font-size: 1rem; border: 1px solid #ccc; border-radius: 3px;
+                   background: #fff; }
+.provider-button:hover { background: #f6f7f9; }
+.provider-github::before { content: ""; }
+
+.or { display: flex; align-items: center; color: #999; font-size: 0.9rem;
+      margin: 1.2rem 0; }
+.or::before, .or::after { content: ""; flex: 1; border-top: 1px solid #e2e2e2; }
+.or span { padding: 0 0.7rem; }
+
+.account-page .form-group { margin-bottom: 0.8rem; }
+.account-page .form-group label { display: block; font-size: 0.9rem;
+                                  color: #444; margin-bottom: 0.2rem; }
+.account-page .form-group input { width: 100%; padding: 0.45rem;
+                                  box-sizing: border-box; }
+.account-page button.primary { padding: 0.5rem 1.1rem; cursor: pointer;
+                               font-size: 1rem; }
+.account-page a.quiet { font-size: 0.9rem; color: #555; margin-left: 0.8rem; }
+
+/* Help text waits until it is being asked for. */
+.account-page form.account .form-text { display: none; font-size: 0.85rem; }
+.account-page form.account .form-group:focus-within .form-text { display: block; }
+/* ...except when the field was rejected, where the rules are the answer. */
+.account-page form.account .form-group:has(.is-invalid) .form-text { display: block; }
+.account-page .invalid-feedback { color: #a94442; font-size: 0.9rem; }
+.account-page .form-text ul { margin: 0.3rem 0 0 1rem; padding: 0; }
+</style>

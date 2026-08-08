@@ -1,12 +1,12 @@
 {% extends "account/base.html" %}
 
 {% comment %}
-Both ways in, on one page.
+Both ways in, on one page, in the order they cost.
 
-This template previously rendered the provider list and nothing else, so email
-and password login was not hidden or half-built: it was simply absent from the
-page, along with the links to sign up and to reset a forgotten password. The
-backend supported all three the whole time.
+Signing in with GitHub is one click and no password to keep; the form below is
+two fields and a password somebody has to have. So the button comes first, and
+the form is not hidden behind a toggle either -- a login page that hides the
+login form is a puzzle.
 {% endcomment %}
 
 {% load i18n %}
@@ -14,31 +14,26 @@ backend supported all three the whole time.
 
 {% block head-title %}{% trans "Sign in" %}{% endblock %}
 
+{% block extra_head %}{% include "account/snippets/style.html" %}{% endblock %}
+
 {% block content %}
 
-<style>
-ul.socialaccount_providers {
-    margin: 1rem 0;
-    list-style-type: none;
-    padding-left: 0;
-}
-div.socialaccount_ballot {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid #ddd;
-}
-p.login-secondary {
-    margin-top: 1rem;
-    font-size: 0.9rem;
-    color: #555;
-}
-</style>
+<div class="account-page">
 
 <h1>{% trans "Sign in" %}</h1>
 
-{% url 'account_signup' as signup_url %}
-<p>{% blocktrans %}No account yet? Then please
-<a href="{{ signup_url }}">sign up</a>.{% endblocktrans %}</p>
+{% get_providers as socialaccount_providers %}
+{% if socialaccount_providers %}
+  {% include "socialaccount/snippets/provider_list.html" with process="login" %}
+  {% comment %}
+  Signing in through a provider opens an existing account holding the same
+  verified address, rather than refusing because that address is taken.
+  {% endcomment %}
+  <p class="note">{% blocktrans %}If you already have an account with the same
+  email address, this signs you into it.{% endblocktrans %}</p>
+
+  <div class="or"><span>or</span></div>
+{% endif %}
 
 <form class="login account" id="login_form" method="post"
       action="{% url 'account_login' %}">
@@ -48,28 +43,14 @@ p.login-secondary {
   <input type="hidden" name="{{ redirect_field_name }}"
          value="{{ redirect_field_value }}" />
   {% endif %}
-  <button type="submit">{% trans "Sign in" %} &raquo;</button>
+  <button type="submit" class="primary">{% trans "Sign in" %}</button>
+  <a class="quiet" href="{% url 'account_reset_password' %}">{% trans "Forgot your password?" %}</a>
 </form>
 
-<p class="login-secondary">
-  <a href="{% url 'account_reset_password' %}">{% trans "Forgot your password?" %}</a>
-</p>
+{% url 'account_signup' as signup_url %}
+<p class="note">{% blocktrans %}No account yet? <a href="{{ signup_url }}">Sign
+up</a>.{% endblocktrans %}</p>
 
-{% get_providers as socialaccount_providers %}
-
-{% if socialaccount_providers %}
-<div class="socialaccount_ballot">
-  <h3>{% trans "Or sign in via:" %}</h3>
-  <ul class="socialaccount_providers">
-    {% include "socialaccount/snippets/provider_list.html" with process="login" %}
-  </ul>
-  {% comment %}
-  Signing in through a provider now opens an existing account holding the same
-  verified address, rather than refusing because that address is taken.
-  {% endcomment %}
-  <p class="login-secondary">{% blocktrans %}If you already have an account with
-  the same email address, this signs you into it.{% endblocktrans %}</p>
 </div>
-{% endif %}
 
 {% endblock %}
