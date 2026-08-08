@@ -71,7 +71,8 @@ def bits(digits: int, losing: int = 16) -> int:
     return int(math.ceil(digits * math.log2(10))) + max(0, int(losing))
 
 
-def to_text(value: Any, digits: int = DIGITS) -> str:
+def to_text(value: Any, digits: int = DIGITS,
+            form: str = 'decimal') -> str:
     """A value as the string the database stores.
 
     Exact things keep their exact form: an integer, a fraction and a polynomial
@@ -102,7 +103,7 @@ def to_text(value: Any, digits: int = DIGITS) -> str:
     #could not write a Sage real interval at all -- the commonest value in the
     #database, 65 of 107 tables -- behind a generic "cannot write that".
     if callable(getattr(value, 'parent', None)):
-        return _sage_text(value, digits)
+        return _sage_text(value, digits, form)
 
     if isinstance(value, bool):
         #Before int, which bool is a subclass of, and never a number here.
@@ -121,10 +122,10 @@ def to_text(value: Any, digits: int = DIGITS) -> str:
     from ._wire import ComplexInterval, PAdic, Polynomial, RealInterval
 
     if isinstance(value, RealInterval):
-        return _interval_text(value, digits)
+        return _interval_text(value, digits, form)
     if isinstance(value, ComplexInterval):
-        return _complex_text(_interval_text(value.real, digits),
-                             _interval_text(value.imag, digits))
+        return _complex_text(_interval_text(value.real, digits, form),
+                             _interval_text(value.imag, digits, form))
     if isinstance(value, PAdic):
         return str(value)
     if isinstance(value, Polynomial):
@@ -139,34 +140,119 @@ def to_text(value: Any, digits: int = DIGITS) -> str:
     raise TypeError('cannot write %s as a number' % (type(value).__name__,))
 
 
-def _interval_text(interval, digits):
-    """A real interval as the `3.14159?` form, or exactly when it is exact.
+def _interval_text(interval, digits, form='decimal'):
+    """A real interval as this database writes one.
 
-    An interval whose endpoints coincide is a rational that happens to have
-    arrived as an interval; writing it with a `?` would claim an uncertainty
-    that is not there.
+    Plain decimal, no marker: ``3.14`` **is** the interval (3.13, 3.15). The
+    digits written are the digits known, and the last one is uncertain by one.
+    That is the convention the corpus is written in -- 36,946 of its values are
+    plain decimals and not one of the 45,834 carries Sage's `?`.
+
+    Written to the digits the endpoints actually agree on, capped at ``digits``.
+    One more would assert something the interval does not say.
+
+    ``form='ball'`` writes ``3.14 +/- 0.002`` instead, for the tables that
+    record an explicit radius; a thousand values in the corpus do.
     """
     from fractions import Fraction
 
-    if interval.lower == interval.upper:
-        return to_text(Fraction(interval.lower))
+    lower, upper = interval.lower, interval.upper
+    if lower == upper:
+        return to_text(Fraction(lower))
 
-    #The digits the two endpoints agree on are the digits that are known; one
-    #more would be asserting something the interval does not say.
-    low, high = interval.lower, interval.upper
-    for places in range(digits + 1):
-        scale = Fraction(10) ** places
-        if int(low * scale) != int(high * scale):
-            places = max(places - 1, 0)
-            break
-    scale = Fraction(10) ** places
-    truncated = Fraction(int(low * scale), 1) / scale
-    text = ('%%.%df' % (places,)) % (float(truncated),) if places else str(
-        int(truncated))
-    return text + '?'
+    if form == 'ball':
+        return _ball_text(Fraction(lower), Fraction(upper), digits)
+    return _decimal_text(Fraction(lower), Fraction(upper), digits)
 
 
-def _sage_text(value, digits):
+def _decimal_text(lower, upper, digits):
+    """The significant digits two endpoints agree on, at most ``digits``.
+
+    Significant digits, not decimal places. Counting places wrote `1234.567`
+    when three digits were asked for -- seven of them -- and wrote `0.000` for
+    a value near 0.000012345, which is not a loss of precision but a loss of
+    the number.
+    """
+    from decimal import Decimal, localcontext
+
+    low = _as_decimal(lower)
+    high = _as_decimal(upper)
+
+    #Every count is tried and the largest agreement wins, rather than stopping
+    #at the first disagreement: agreement is not monotonic. [2.4999999,
+    #2.5000001] disagrees at one digit -- 2 against 3 -- and agrees at every
+    #count after that, and stopping early wrote `2` for a number known to
+    #seven places.
+    digits = int(digits)
+    agreed = None
+    for count in range(1, digits + 1):
+        with localcontext() as context:
+            context.prec = count
+            if +low == +high:
+                agreed = (+low, count)
+
+    if agreed is None:
+        #Not even the leading digit is settled, so no decimal is true: `5` for
+        #something in (1, 9) claims (4, 6). A ball states exactly what is
+        #known, and `publish` refuses it against the digits asked for anyway.
+        return _ball_text(lower, upper, digits)
+
+    value, count = agreed
+    return _plain_decimal(value, count)
+
+
+def _plain_decimal(value, count):
+    """``value`` written with exactly ``count`` significant digits.
+
+    Exactly, including trailing zeros: 2.5 written to six digits is 2.50000,
+    and dropping those zeros would claim two digits where six are known.
+    """
+    from decimal import Decimal, localcontext
+
+    #int(), because a .sage file makes every literal a Sage Integer and the
+    #decimal module will not take one.
+    count = int(count)
+    with localcontext() as context:
+        context.prec = count
+        value = +value
+    if not value:
+        return '0'
+    exponent = value.adjusted()
+    #Inside a context wide enough to hold the result: quantize refuses when the
+    #answer would have more digits than the current precision, and the default
+    #is 28 -- so a hundred-digit value raised InvalidOperation rather than
+    #being written.
+    with localcontext() as context:
+        context.prec = count + 5
+        quantised = value.quantize(Decimal(1).scaleb(exponent - count + 1))
+    #Fixed point while it stays readable; scientific once the zeros would
+    #outnumber the digits, which is also a form the search bar accepts.
+    if -7 < exponent < count + 7:
+        return format(quantised, 'f')
+    return format(quantised, 'e')
+
+
+def _ball_text(lower, upper, digits):
+    """``centre +/- radius``, for a table that records the radius itself."""
+    centre = (lower + upper) / 2
+    radius = (upper - lower) / 2
+    return '%s +/- %s' % (_plain_decimal(_as_decimal(centre), digits),
+                          _plain_decimal(_as_decimal(radius), 3))
+
+
+def _as_decimal(value):
+    """A Fraction as a Decimal, wide enough that the division is not the
+    limiting factor."""
+    from decimal import Decimal, localcontext
+    from fractions import Fraction
+
+    value = Fraction(value)
+    with localcontext() as context:
+        context.prec = 2000
+        return Decimal(value.numerator) / Decimal(value.denominator)
+
+
+def _sage_text(value, digits, form='decimal'):
     """The string form of a Sage object.
 
     Real and complex intervals become the `3.14159?` form the database stores,
@@ -191,10 +277,15 @@ def _sage_text(value, digits):
         name = str(value.parent())
 
     if 'Interval' in name or 'Ball' in name:
+        #Through the same writer as everything else, from the endpoints rather
+        #than from Sage's printed form. Sage prints `3.14159?`, which this
+        #database does not use, and truncating that text is what wrote seven
+        #digits when three were asked for.
         if 'Complex' in name:
-            return _complex_text(_truncate(str(value.real()), digits),
-                                 _truncate(str(value.imag()), digits))
-        return _truncate(str(value), digits)
+            return _complex_text(
+                _interval_text(_SageEndpoints(value.real()), digits, form),
+                _interval_text(_SageEndpoints(value.imag()), digits, form))
+        return _interval_text(_SageEndpoints(value), digits, form)
 
     #Integers, rationals, polynomials and p-adics print exactly as they are
     #stored, and each is exact, so there is nothing to truncate: fewer digits
@@ -220,6 +311,31 @@ _NUMERIC_PARENTS = ('Integer Ring', 'Rational Field', 'Real Field',
                     #`2-adic Field ...`, so the prime is part of the name.
                     '-adic',
                     'Number Field', 'Algebraic')
+
+
+class _SageEndpoints:
+    """A Sage interval's endpoints as Fractions, which is what the writer wants.
+
+    Exact rationals rather than printed decimals: an endpoint printed and read
+    back is a third rounding, and rounding is the one thing a value carrying
+    its own precision must not pick up on the way to being written.
+    """
+
+    __slots__ = ('lower', 'upper')
+
+    def __init__(self, interval):
+        self.lower = _exact(interval.lower())
+        self.upper = _exact(interval.upper())
+
+
+def _exact(endpoint):
+    from fractions import Fraction
+
+    rational = getattr(endpoint, 'exact_rational', None)
+    if rational is not None:
+        value = rational()
+        return Fraction(int(value.numerator()), int(value.denominator()))
+    return Fraction(str(endpoint))
 
 
 def _as_interval(ball):

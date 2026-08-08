@@ -808,7 +808,7 @@ class OneWrittenFormForApproximateReals(unittest.TestCase):
         from numberdb._write import to_text
 
         precision = numberdb.bits(20)
-        wanted = '1.2020569031595942853?'
+        wanted = '1.2020569031595942854'
         self.assertEqual(to_text(RealIntervalField(precision)(zeta(3)), 20),
                          wanted)
         self.assertEqual(to_text(RealBallField(precision)(zeta(3)), 20),
@@ -820,6 +820,69 @@ class OneWrittenFormForApproximateReals(unittest.TestCase):
             to_text(ComplexBallField(precision)(zeta(3), 1), 20),
             wanted + ' + i * 1')
 
+    def test_it_is_a_plain_decimal_and_carries_no_marker(self):
+        """`3.14` IS the interval (3.13, 3.15). Sage writes `3.14?` for that;
+        the corpus writes it plain, in 36,946 of its 45,834 values, and not one
+        of them ends in a question mark."""
+        from sage.all import RealIntervalField, zeta
+
+        from numberdb._write import to_text
+
+        written = to_text(RealIntervalField(numberdb.bits(20))(zeta(3)), 20)
+        self.assertNotIn('?', written)
+        self.assertNotIn('+/-', written)
+
+    def test_exactly_the_digits_asked_for(self):
+        """Not a few more because the field happened to be built wider."""
+        from sage.all import RealIntervalField, zeta
+
+        from numberdb._write import to_text
+
+        for digits in (10, 40, 100):
+            with self.subTest(digits=digits):
+                written = to_text(
+                    RealIntervalField(numberdb.bits(digits))(zeta(2)), digits)
+                significant = written.lstrip('-').replace('.', '').lstrip('0')
+                self.assertEqual(len(significant), digits)
+
+    def test_significant_digits_not_decimal_places(self):
+        """Counting places wrote 1234.567 for three digits, and wrote 0.000 --
+        not a loss of precision but a loss of the number."""
+        from numberdb import RealInterval
+        from numberdb._write import to_text
+
+        self.assertEqual(to_text(RealInterval('1234.5678', '1234.5679'), 3),
+                         '1230')
+        self.assertEqual(
+            to_text(RealInterval('0.000012345', '0.000012346'), 3),
+            '0.0000123')
+
+    def test_agreement_is_looked_for_at_every_length(self):
+        """[2.4999999, 2.5000001] disagrees at one digit -- 2 against 3 -- and
+        agrees at every length after that. Stopping at the first disagreement
+        wrote `2` for a number known to seven places."""
+        from numberdb import RealInterval
+        from numberdb._write import to_text
+
+        self.assertEqual(to_text(RealInterval('2.4999999', '2.5000001'), 6),
+                         '2.50000')
+
+    def test_an_interval_too_wide_for_any_decimal_becomes_a_ball(self):
+        """`5` for something in (1, 9) would claim (4, 6)."""
+        from numberdb import RealInterval
+        from numberdb._write import to_text
+
+        self.assertIn('+/-', to_text(RealInterval('1', '9'), 5))
+
+    def test_the_ball_form_is_available_for_tables_that_use_it(self):
+        from sage.all import RealIntervalField, zeta
+
+        from numberdb._write import to_text
+
+        written = to_text(RealIntervalField(numberdb.bits(20))(zeta(3)), 20,
+                          'ball')
+        self.assertIn('+/-', written)
+
     def test_a_ball_is_not_truncated_as_text(self):
         """`[1.20205690 +/- 2.8e-25]` cut to twenty characters keeps the centre
         and mangles the radius into `+/- 0.00000`, claiming an uncertainty a
@@ -830,7 +893,7 @@ class OneWrittenFormForApproximateReals(unittest.TestCase):
 
         written = to_text(RealBallField(numberdb.bits(20))(zeta(3)), 20)
         self.assertNotIn('+/-', written)
-        self.assertTrue(written.endswith('?'), written)
+        self.assertEqual(written, '1.2020569031595942854')
 
     def test_ball_fields_were_refused_outright_before_this(self):
         """Sage names them `Real ball field`, not `Real Ball Field`, so a test

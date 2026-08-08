@@ -327,9 +327,11 @@ The careful things happen without being asked for:
 - **the whole run lands in one revision**, not nine hundred;
 - **permission is checked in the first second**, not after three days;
 - **one written form**: compute in `RealIntervalField`, `RealBallField` or
-  their complex counterparts, and the table gets `3.14159?` either way — the
-  digits written are known, the last uncertain by one, so that value is the
-  interval (3.14158, 3.14160);
+  their complex counterparts, and the table gets a plain decimal either way.
+  `3.14159` **is** the interval (3.14158, 3.14160) — the digits written are
+  known and the last is uncertain by one. No marker, and in particular not
+  Sage's `3.14159?`. Set `format = 'ball'` on the generator for a table that
+  records its radius instead;
 - **the digits you asked for are the digits you get**: `digits` is decimal,
   Sage's fields are binary, and `RealIntervalField(digits)` — which reads
   perfectly well — delivers about a third of what was meant. `numberdb.bits()`
@@ -359,6 +361,7 @@ answer, and a refusal names the argument that means *yes, I meant it*.
 | `lowering=False` | allow values with **fewer digits** than are stored |
 | `removing=False` | delete entries this run did not produce. A run over `n = 2..100` has said nothing about `n = 500`; what would have gone is listed in `outcome.left_alone` |
 | `only=[...]` | compute and send just these, leaving the rest alone |
+| `digits_for(params)` | how many digits *this* entry should carry, when the table is not all of one kind. The default is `digits` for every entry; the number reaches `value`, and is what that entry is held to |
 | `preview()` | a method rather than a flag, so there is no such thing as a publish that does not publish: computes everything, sends nothing, applies the same refusals |
 
 Differing precision is not a disagreement: a table built at 20 digits and
