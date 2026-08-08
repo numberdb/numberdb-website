@@ -1,4 +1,4 @@
-"""The interface a table's generator implements.
+"""The one way a program puts numbers into a table.
 
 A table should have a program that can recompute its entries, and that program
 has four jobs, not one: produce the table to begin with, extend it, recompute
@@ -15,6 +15,7 @@ All four fall out of one shape: **a function from one entry's parameters to
 that entry's value**, plus a way to enumerate the parameters.
 
     class ZetaAtIntegers(numberdb.Generator):
+        table = 'T42'
         parameters = ('n',)
         type = 'R'
 
@@ -30,10 +31,24 @@ that entry's value**, plus a way to enumerate the parameters.
             #not how many to compute with -- and `to_text` truncates.
             return RealIntervalField(4 * digits)(zeta(params['n']))
 
+    numberdb.publish(ZetaAtIntegers())
+
 Generating is iterating; extending is iterating further; more precision is a
 larger ``digits``. And verifying is *sampling* -- ten entries rather than a
 thousand -- which matters because several of these tables take hours or days to
 produce in full. A check that takes seconds is a check that gets run.
+
+**There is one way to send them, and it does the careful things itself.** What
+used to be arguments -- when to cache, when to batch, what to call the run,
+whether to attach the source, whether to check permission first -- had a right
+answer every time, and a right answer that has to be typed is a way of getting
+it wrong. Caching, streaming, naming the run and attaching the code are not
+preferences and are no longer asked about.
+
+What remains asked about is intent, because nothing else can know it: whether
+values already stored may be replaced, contradicted, coarsened or removed.
+Every one of those defaults to the cautious answer and names, in the refusal
+itself, the argument that means "yes, I meant it".
 
 Some tables cannot be computed one entry at a time: zeros found by a sweep,
 values lifted from another database. Those override ``all_entries`` instead and
@@ -43,26 +58,23 @@ than designed around.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional
+from typing import Any, Dict, Iterator, List, Mapping, Optional, Tuple
 
+from . import _compare
+from ._errors import Disagreement
 from ._write import DIGITS, Entries, to_text
 
-__all__ = ['Generator', 'Report', 'generate', 'verify', 'publish']
+__all__ = ['Generator', 'Outcome', 'Report', 'verify', 'publish']
 
+#: Entries held back before a batch is sent. Small enough that a crash costs
+#: little, large enough that a thousand cheap values are not a thousand
+#: requests.
+BATCH_ENTRIES = 100
 
-class _Auto:
-    """The caller named no file, so the generator's own file names itself.
-
-    A separate value from ``None`` because ``None`` already means "attach
-    nothing", and the two have to stay distinguishable: one asks for the
-    default, the other declines it.
-    """
-
-    def __repr__(self):
-        return 'auto'
-
-
-AUTO = _Auto()
+#: ...and sent anyway after this long, however few there are. Some tables take
+#: hours for one entry, and waiting for a hundred of those before storing
+#: anything would be waiting for a week.
+BATCH_SECONDS = 60
 
 
 class Generator:
@@ -78,6 +90,11 @@ class Generator:
     resolve and point at different numbers.
     """
 
+    #: Which table this generates. A property of the generator, not of the
+    #: call: a generator is written *for* a table, and one pointed at another
+    #: would be writing its numbers under somebody else's parameters.
+    table: Optional[str] = None
+
     #: Parameter names, in identity order. Empty for a table of bare values.
     parameters: tuple = ()
 
@@ -87,13 +104,10 @@ class Generator:
     #: makes it a different polynomial.
     type: str = 'R'
 
-    #: Significant digits when the caller does not say. A hundred identifies
-    #: any number in this database; more earns its place only when it was
-    #: expensive to obtain.
+    #: Significant digits when the generator does not say otherwise. A hundred
+    #: identifies any number in this database; more earns its place only when
+    #: it was expensive to obtain.
     digits: int = DIGITS
-
-    #: Which table this generates, when it is tied to one.
-    tid: Optional[str] = None
 
     #: Which files to store with the numbers, named rather than guessed.
     #:
@@ -105,6 +119,9 @@ class Generator:
     #: from the directory would sweep up whatever else happened to be sitting
     #: there, which is nobody's intention and sooner or later somebody's
     #: private working file.
+    #:
+    #: Naming any file replaces the automatic one, so a generator that lists
+    #: its helpers must list itself among them.
     #:
     #: Paths are read relative to the file the generator is defined in and
     #: stored under their bare names: a table's files are flat.
@@ -151,24 +168,23 @@ class Generator:
             % (type(self).__name__,))
 
     def all_entries(self, digits: Optional[int] = None,
-                    **bounds: Any) -> Entries:
-        """Every entry, for tables that cannot produce one at a time.
+                    **bounds: Any) -> Iterator[Tuple[Mapping[str, Any], Any]]:
+        """Yield ``(params, value)`` for every entry, for tables that cannot
+        produce one at a time.
 
         The default walks ``enumerate`` and calls ``value``, which is what most
         generators want. Override it when the values only come in bulk -- and
         accept that verification then has to recompute the whole table.
+
+        Yield rather than return where you can: what is yielded is cached and
+        sent as it arrives, so a sweep that dies half way keeps what it found.
         """
         digits = self.digits if digits is None else digits
-        entries = Entries(*self.parameters)
         for params in self.enumerate(**bounds):
-            entries.add(**dict(params), **self._entry(params, digits))
-        return entries
+            yield params, self.value(params, digits)
 
     def _entry(self, params, digits) -> Dict[str, Any]:
-        produced = self.value(params, digits)
-        if isinstance(produced, Mapping):
-            return dict(produced)
-        return {'number': produced}
+        return _as_entry(self.value(params, digits))
 
     def environment(self) -> Dict[str, str]:
         """What produced these values, for a later run to be compared against.
@@ -206,25 +222,89 @@ def _version():
     return __version__
 
 
+def _as_entry(produced) -> Dict[str, Any]:
+    """One entry's value, however the generator chose to return it."""
+    if isinstance(produced, Mapping):
+        return dict(produced)
+    return {'number': produced}
+
+
+class Outcome:
+    """What a run did to a table, or -- under ``preview`` -- would have done.
+
+    The counts are the point. A run that reports 100 added and 0 updated did
+    what extending a table looks like; one that reports 0 added and 900
+    updated rewrote a table somebody may have been reading, and that should be
+    visible without going and looking.
+    """
+
+    __slots__ = ('table', 'run', 'added', 'updated', 'unchanged', 'left_alone',
+                 'removed', 'files', 'revision', 'applied')
+
+    def __init__(self, table, run=''):
+        self.table = table
+        self.run = run
+        #: Identities this run put in the table for the first time.
+        self.added = []          # type: List[str]
+        #: Identities whose stored value this run changed.
+        self.updated = []        # type: List[str]
+        #: Identities this run recomputed and found already correct.
+        self.unchanged = []      # type: List[str]
+        #: Identities in the table that this run did not produce, and so did
+        #: not touch. Reported rather than deleted -- a run that computed
+        #: n = 2..100 has said nothing at all about n = 500.
+        self.left_alone = []     # type: List[str]
+        #: Identities deleted, which only ``removing=True`` can produce.
+        self.removed = []        # type: List[str]
+        #: Files stored alongside, by name.
+        self.files = []          # type: List[str]
+        #: The revision the server recorded, or None under ``preview``.
+        self.revision = None
+        #: False under ``preview``: nothing was sent.
+        self.applied = False
+
+    @property
+    def entries(self) -> int:
+        """How many entries this run produced."""
+        return len(self.added) + len(self.updated) + len(self.unchanged)
+
+    def __repr__(self):
+        return ('<Outcome %s: %d added, %d updated, %d unchanged, %d left '
+                'alone, %d removed%s>'
+                % (self.table, len(self.added), len(self.updated),
+                   len(self.unchanged), len(self.left_alone),
+                   len(self.removed), '' if self.applied else ', not sent'))
+
+
 class Report:
     """What a verification found.
 
-    ``ok`` is true only when every entry checked matched. ``differing`` holds
-    ``(identity, stored, recomputed)``, because "T42 disagrees" is not
-    actionable and "entry n=17 was 3.14159 and is now 3.14158" is.
+    ``ok`` is true only when nothing contradicted and nothing was missing.
+    ``differing`` holds ``(identity, stored, recomputed)``, because "T42
+    disagrees" is not actionable and "entry n=17 was 3.14159 and is now
+    3.14158" is.
+
+    A stored value written to fewer digits than the run produces is not a
+    disagreement and is not listed there -- it is the same number, known
+    better. Those land in ``refined``, and the reverse in ``coarser``.
     """
 
-    __slots__ = ('tid', 'checked', 'matched', 'differing', 'missing', 'extra',
-                 'params')
+    __slots__ = ('table', 'checked', 'matched', 'differing', 'missing',
+                 'extra', 'params', 'coarser', 'refined')
 
-    def __init__(self, tid, checked=0, matched=0, differing=None,
+    def __init__(self, table, checked=0, matched=0, differing=None,
                  missing=None, extra=None):
-        self.tid = tid
+        self.table = table
         self.checked = checked
         self.matched = matched
         self.differing = list(differing or [])
         self.missing = list(missing or [])
         self.extra = list(extra or [])
+        #: Identities where the run produced more digits than are stored.
+        self.refined = []        # type: List[str]
+        #: Identities where the run produced fewer -- consistent, but a loss
+        #: if it were published.
+        self.coarser = []        # type: List[str]
         #: The parameters of every entry named above, as the generator
         #: produced them. `publish(only=report.to_fix())` is then the natural
         #: next step and does not fail on a type.
@@ -250,60 +330,370 @@ class Report:
 
     def __repr__(self):
         return ('<Report %s: %d/%d matched, %d differing, %d missing, '
-                '%d extra>' % (self.tid, self.matched, self.checked,
+                '%d extra>' % (self.table, self.matched, self.checked,
                                len(self.differing), len(self.missing),
                                len(self.extra)))
 
 
-def generate(generator: Generator, digits: Optional[int] = None,
-             cache: Any = True, only: Any = None, **bounds: Any) -> Entries:
-    """Run a generator and return its entries.
+def verify(generator: Generator, sample: Optional[int] = 10,
+           digits: Optional[int] = None, client: Any = None,
+           **bounds: Any) -> Report:
+    """Recompute entries and compare them with what the table holds.
 
-    Computed values are kept on disk as they are produced, so a run that dies
-    -- or is stopped, because somebody saw a wrong number go past -- can be
-    resumed without recomputing what it already had. Pass ``cache=False`` to
-    compute afresh, or a path to keep it somewhere particular.
+    Writes nothing, and needs no key: reading is public. This is the check that
+    answers "does the code still produce the table", and it is the reason to
+    insist on a per-entry ``value``: with one, ten entries can be checked in
+    seconds; without one, the only way to ask is to regenerate a table that may
+    take days, which means never.
 
-    The cache is keyed by a fingerprint of the generator's own source, its
-    parameters, the precision and the bounds. A changed generator therefore
-    reads an empty cache rather than its predecessor's values: a cached number
-    produced by code that has since changed is a wrong number wearing the
-    authority of having been computed.
+    ``sample`` is how many entries to check, spread evenly through the table so
+    the check is not confined to whichever end is cheapest. ``sample=None``
+    checks all of them.
+
+    Differing *precision* is not a difference. A table built at 20 digits and
+    checked by a generator running at 100 agrees with itself, and reporting
+    those as errors would propose rewriting a table that was never wrong.
+    """
+    from . import table as fetch_table
+
+    table = _table_of(generator)
+    digits = generator.digits if digits is None else digits
+    stored = _stored_entries(fetch_table(table, client=client))
+
+    wanted = list(generator.enumerate(**bounds))
+    if sample is not None and len(wanted) > sample:
+        step = len(wanted) / float(sample)
+        wanted = [wanted[int(i * step)] for i in range(sample)]
+
+    report = Report(table)
+    for params in wanted:
+        identity = _identity(params, generator.parameters)
+        report.checked += 1
+        if identity not in stored:
+            report.missing.append(identity)
+            report.params[identity] = dict(params)
+            continue
+
+        recomputed = to_text(generator._entry(params, digits)['number'], digits)
+        verdict = _compare.compare(stored[identity], recomputed)
+        if verdict == _compare.CONTRADICTS:
+            report.differing.append((identity, stored[identity], recomputed))
+            #Kept as the generator produced them, not as text. An identity is
+            #text by nature, and handing text back to a generator that expects
+            #an integer makes the natural next step -- recompute what differs
+            #-- fail on a type rather than on a number.
+            report.params[identity] = dict(params)
+            continue
+
+        report.matched += 1
+        if verdict == _compare.REFINES:
+            report.refined.append(identity)
+        elif verdict == _compare.COARSENS:
+            report.coarser.append(identity)
+        if verdict in (_compare.REFINES, _compare.COARSENS):
+            report.params[identity] = dict(params)
+    return report
+
+
+def publish(generator: Generator, only: Any = None, message: str = '',
+            overwrite: bool = True, correcting: bool = False,
+            lowering: bool = False, removing: bool = False,
+            preview: bool = False, client: Any = None,
+            **bounds: Any) -> Outcome:
+    """Send a generator's entries to its table. This is the whole of writing.
+
+    Entries only: the definition, the references and the tags are somebody's
+    prose, a generator has no opinion about them, and there is deliberately no
+    way to send them from here. Prose is edited on the site, where a person
+    signs it.
+
+    Caching, streaming, naming the run and attaching the code that produced the
+    numbers all happen without being asked for. What a run may do to values
+    that already exist is asked, because only the person running it knows:
+
+    ``overwrite`` (default true) lets recomputed values replace stored ones.
+    Set it false to add what is missing and leave the rest untouched -- which
+    also skips computing those entries at all, so extending a table of a
+    thousand expensive values by a hundred costs a hundred computations.
+
+    ``correcting`` allows values that **contradict** what is stored. Without
+    it, the first contradiction stops the run before anything is sent, which
+    costs one entry rather than a day: a generator that has started producing
+    different numbers is usually a broken environment, not a discovery. When it
+    really is a discovery, this says so.
+
+    ``lowering`` allows values with **fewer digits** than are stored. The
+    stored precision may well have been unjustified, but throwing away digits
+    somebody computed should be something they meant.
+
+    ``removing`` deletes entries this run did not produce. Off by default: a
+    run over `n = 2..100` has said nothing whatever about `n = 500`, and
+    treating that silence as a deletion is how a narrowed bound quietly empties
+    a table. What would have gone is listed in ``outcome.left_alone``.
+
+    ``only`` computes and sends *some* entries and leaves the rest alone: the
+    parameters to recompute, as mappings or as identities.
+
+        numberdb.publish(g, only=[{'n': 17}, {'n': 42}])
+        numberdb.publish(g, only=['17', '42'])
+        numberdb.publish(g, only=numberdb.verify(g).to_fix())
+
+    An identity is text, so its parameters arrive as text; a mapping arrives as
+    it was given. Prefer mappings when the generator wants a number, and
+    `Report.to_fix` hands back exactly that.
+
+    ``preview`` computes everything and sends nothing, returning the same
+    `Outcome` the real run would return. The values are cached, so publishing
+    afterwards does not compute them again.
     """
     from ._cache import RunCache
 
-    #A generator whose values only come in bulk cannot be asked for some of
-    #them, and cannot be cached entry by entry: it computes all of them or
-    #none, which is the cost it accepted by not producing one at a time.
+    table = _table_of(generator)
+    if removing and only is not None:
+        raise ValueError(
+            'removing= deletes what this run did not produce, and a run given '
+            'only= did not produce almost anything. Naming entries and '
+            'emptying the table are different acts.')
+
+    digits = generator.digits
+    files = _source_files(generator)
+
+    #Before computing anything. A generator may run for hours, and "no API key
+    #was set" is knowable in the first second -- as are "this account may not
+    #write yet" and "there is no table T42". Finding out at the end costs
+    #whatever the computation cost.
+    if not preview:
+        from ._write import check_writable
+
+        check_writable(table, client=client)
+
+    stored = _current_entries(table, client)
+    outcome = Outcome(table, run='' if preview else _run_name(generator))
+
+    #Keyed by the bytes that will be attached, so a cached value can never
+    #outlive the code that made it: editing any attached file changes the
+    #fingerprint, and a changed fingerprint reads an empty cache rather than
+    #its predecessor's numbers.
+    cache = RunCache(generator, digits, bounds, source=_digest(files),
+                     read=only is None)
+
+    produced = Entries(*generator.parameters) if removing else None
+    sender = _Sender(table, outcome, message, generator, client, preview)
+
+    skip = (lambda identity: identity in stored) if not overwrite else None
+    seen = set()
+    for identity, params, entry in _stream(generator, only, digits, bounds,
+                                           cache, skip):
+        seen.add(identity)
+        text = to_text(entry['number'], digits)
+        if identity in stored:
+            _judge(table, identity, stored[identity], text,
+                   correcting, lowering, sender)
+            verdict = _compare.compare(stored[identity], text)
+            (outcome.unchanged if verdict == _compare.SAME
+             else outcome.updated).append(identity)
+        else:
+            outcome.added.append(identity)
+
+        if produced is not None:
+            produced.add(**dict(params), **entry)
+        sender.add(params, entry)
+
+    outcome.left_alone = [identity for identity in stored
+                          if identity not in seen]
+
+    if removing and outcome.left_alone:
+        #Sent whole, as a replacement, once everything is computed: streaming a
+        #replacement would delete the not-yet-computed rest of the table
+        #between the first batch and the second.
+        outcome.removed = list(outcome.left_alone)
+        outcome.left_alone = []
+        sender.replace_with(produced)
+    else:
+        sender.flush()
+
+    if not preview:
+        outcome.files = _attach(generator, table, outcome.run, client, files)
+        outcome.applied = True
+    return outcome
+
+
+def _judge(table, identity, stored_text, produced_text, correcting, lowering,
+           sender):
+    """Whether this value may replace the one already there.
+
+    Checked as each value is computed rather than at the end, so a run whose
+    first entry already contradicts the table stops having spent one entry.
+    """
+    verdict = _compare.compare(stored_text, produced_text)
+
+    if verdict == _compare.CONTRADICTS and not correcting:
+        raise Disagreement(
+            '%s entry %s: the table holds %s and this run produced %s. They '
+            'cannot both be right, so nothing further was sent%s. If the '
+            'stored values are wrong and this run is meant to replace them, '
+            'pass correcting=True.'
+            % (table, identity, _short(stored_text), _short(produced_text),
+               sender.so_far()),
+            identity=identity, stored=stored_text, produced=produced_text,
+            verdict=verdict)
+
+    if verdict == _compare.COARSENS and not lowering:
+        raise Disagreement(
+            '%s entry %s: the table holds %d digits and this run produced %d. '
+            'The values agree, so nothing further was sent%s. If the stored '
+            'precision was never justified, pass lowering=True.'
+            % (table, identity, _compare.digits_of(stored_text),
+               _compare.digits_of(produced_text), sender.so_far()),
+            identity=identity, stored=stored_text, produced=produced_text,
+            verdict=verdict)
+
+
+def _short(text, width=40):
+    text = str(text)
+    return text if len(text) <= width else text[:width] + '...'
+
+
+class _Sender:
+    """Entries on their way to the table, in batches of one run.
+
+    Batched by count *and* by time. A thousand cheap values should not be a
+    thousand requests, and one value that took three hours should not wait for
+    ninety-nine more before it is stored anywhere.
+    """
+
+    def __init__(self, table, outcome, message, generator, client, preview):
+        import time
+
+        self.table = table
+        self.outcome = outcome
+        self.message = message
+        self.generator = generator
+        self.client = client
+        self.preview = preview
+        self.pending = Entries(*generator.parameters)
+        self.clock = time.monotonic
+        self.last = self.clock()
+        self.sent = 0
+
+    def add(self, params, entry):
+        self.pending.add(**dict(params), **entry)
+        if (len(self.pending) >= BATCH_ENTRIES
+                or self.clock() - self.last >= BATCH_SECONDS):
+            self.flush()
+
+    def flush(self):
+        if self.preview or not len(self.pending):
+            return
+        from ._write import submit_entries
+
+        answer = _with_retry(
+            lambda: submit_entries(
+                self.table, self.pending, message=self._message(),
+                produced_by=type(self.generator).__name__,
+                upsert=True, run=self.outcome.run, client=self.client))
+        self.sent += len(self.pending)
+        self.outcome.revision = answer.get('revision', self.outcome.revision)
+        self.pending = Entries(*self.generator.parameters)
+        self.last = self.clock()
+
+    def replace_with(self, entries):
+        """The whole table, once, for a run that means to delete what it did
+        not produce."""
+        if self.preview:
+            return
+        from ._write import submit_entries
+
+        answer = _with_retry(
+            lambda: submit_entries(
+                self.table, entries, message=self._message(),
+                produced_by=type(self.generator).__name__,
+                upsert=False, run=self.outcome.run, client=self.client))
+        self.sent = len(entries)
+        self.outcome.revision = answer.get('revision', self.outcome.revision)
+        self.pending = Entries(*self.generator.parameters)
+
+    def so_far(self):
+        """What a refusal has to admit was already stored."""
+        if not self.sent:
+            return ''
+        return (' (%d entries of this run were already sent, as one revision '
+                'you can revert)' % (self.sent,))
+
+    def _message(self):
+        """An honest default, so no revision arrives with a blank line.
+
+        Written from what the run did rather than asked for, because a message
+        somebody has to invent for every run is a message that ends up saying
+        'update'.
+        """
+        if self.message:
+            return self.message
+        outcome = self.outcome
+        parts = []
+        if outcome.added:
+            parts.append('%d added' % (len(outcome.added),))
+        if outcome.updated:
+            parts.append('%d updated' % (len(outcome.updated),))
+        what = ', '.join(parts) or 'no change'
+        return '%s: %s' % (type(self.generator).__name__, what)
+
+
+def _current_entries(table, client):
+    """What the table holds now, as {identity: value}.
+
+    Fetched once, before anything is computed. Every question this run has to
+    answer about an existing value -- does it contradict, does it lose digits,
+    is it even there -- is answerable from this, and asking the server per
+    entry would be a request per value on a table of thousands.
+    """
+    from . import table as fetch_table
+
+    return _stored_entries(fetch_table(table, client=client))
+
+
+def _stream(generator, only, digits, bounds, cache, skip=None):
+    """Yield ``(identity, params, entry)``, computing and caching as it goes.
+
+    ``skip`` is consulted *before* the value is computed, which is the whole
+    value of ``overwrite=False``: skipping afterwards would still have paid for
+    the entry.
+    """
+    names = tuple(generator.parameters)
+
     if _is_bulk(generator):
         if only is not None:
             raise ValueError(
                 '%s produces its entries all at once, so it cannot be asked '
                 'for only some of them. Give it an enumerate() and a value() '
                 'if that is wanted.' % (type(generator).__name__,))
-        return generator.all_entries(digits=digits, **bounds)
+        for params, value in generator.all_entries(digits=digits, **bounds):
+            params = dict(params)
+            identity = _identity(params, names)
+            if skip is not None and skip(identity):
+                continue
+            entry = _as_entry(value)
+            cache.put(identity, _plain(entry, digits))
+            yield identity, params, entry
+        return
 
-    digits = generator.digits if digits is None else digits
-    #Naming entries means recomputing them, so the cache is written but not
-    #read: somebody asking for entry 17 again has a reason, and handing back
-    #the value they are trying to replace would answer a different question.
-    store = (RunCache(generator, digits, bounds,
-                      path=cache if isinstance(cache, str) else None,
-                      read=only is None)
-             if cache is not False else None)
-
-    entries = Entries(*generator.parameters)
     for params in _wanted(generator, only, bounds):
-        identity = ','.join(str(params[name]) for name in generator.parameters)
-        found = store.get(identity) if store is not None else None
+        params = dict(params)
+        identity = _identity(params, names)
+        if skip is not None and skip(identity):
+            continue
+        found = cache.get(identity)
         if found is None:
             found = generator._entry(params, digits)
             #Written before anything else happens to it, because what this
             #protects against is the next line never running.
-            if store is not None:
-                store.put(identity, _plain(found, digits))
-        entries.add(**dict(params), **found)
-    return entries
+            cache.put(identity, _plain(found, digits))
+        yield identity, params, found
+
+
+def _identity(params, names):
+    """An entry's identity: its parameter values, as a citation writes them."""
+    return ','.join(_text(params[name]) for name in names)
 
 
 def _plain(entry, digits):
@@ -348,69 +738,157 @@ def _is_bulk(generator):
     return type(generator).all_entries is not Generator.all_entries
 
 
-def _plain(entry, digits):
-    """An entry as text, which is what can be written to a file and read back."""
-    out = {}
-    for key, value in entry.items():
-        out[key] = (to_text(value, digits) if key == 'number'
-                    else value if isinstance(value, (str, int, float, list))
-                    else str(value))
-    return out
-
-
-def verify(generator: Generator, tid: Optional[str] = None,
-           sample: Optional[int] = 10, digits: Optional[int] = None,
-           client: Any = None, **bounds: Any) -> Report:
-    """Recompute entries and compare them with what the table holds.
-
-    Writes nothing, and needs no key: reading is public. This is the check that
-    answers "does the code still produce the table", and it is the reason to insist on a per-entry ``value``: with
-    one, ten entries can be checked in seconds; without one, the only way to
-    ask is to regenerate a table that may take days, which means never.
-
-    ``sample`` is how many entries to check, spread evenly through the table so
-    the check is not confined to whichever end is cheapest. ``sample=None``
-    checks all of them.
-    """
-    from . import table as fetch_table
-
-    tid = tid or generator.tid
-    if not tid:
-        raise ValueError('which table? pass tid= or set it on the generator')
-
-    digits = generator.digits if digits is None else digits
-    stored = _stored_entries(fetch_table(tid, client=client))
-
-    wanted = list(generator.enumerate(**bounds))
-    if sample is not None and len(wanted) > sample:
-        step = len(wanted) / float(sample)
-        wanted = [wanted[int(i * step)] for i in range(sample)]
-
-    report = Report(tid)
-    for params in wanted:
-        identity = ','.join(_text(params[name]) for name in generator.parameters)
-        report.checked += 1
-        if identity not in stored:
-            report.missing.append(identity)
-            report.params[identity] = dict(params)
-            continue
-        recomputed = to_text(generator._entry(params, digits)['number'], digits)
-        if stored[identity] == recomputed:
-            report.matched += 1
-        else:
-            report.differing.append((identity, stored[identity], recomputed))
-            #Kept as the generator produced them, not as text. An identity is
-            #text by nature, and handing text back to a generator that expects
-            #an integer makes the natural next step -- recompute what differs
-            #-- fail on a type rather than on a number.
-            report.params[identity] = dict(params)
-    return report
+def _table_of(generator):
+    table = getattr(generator, 'table', None)
+    if not table:
+        raise ValueError(
+            'which table? %s needs a table = "T42" -- a generator is written '
+            'for one table, and pointing it at another would store its '
+            'numbers under somebody else\'s parameters.'
+            % (type(generator).__name__,))
+    return str(table)
 
 
 def _text(value):
     from ._write import _param_text
 
     return _param_text(value)
+
+
+def _source_files(generator) -> Dict[str, str]:
+    """The files that will be stored with these numbers, by stored name.
+
+    One decision, made once, used twice: these bytes are what gets attached and
+    what the cache is fingerprinted by. Deciding it twice is how a cache comes
+    to hand back values that the attached code did not produce.
+
+    What to send is declared on the generator rather than discovered: a
+    directory sweep would collect whatever else happened to be sitting there,
+    which is nobody's intention and sooner or later somebody's private working
+    file. With nothing declared it is the generator's own file -- the whole
+    file, since ``inspect.getsource`` of a class returns the class body alone,
+    and the function that computed the number usually sits beside it.
+    """
+    import inspect
+    import os
+
+    out = {}  # type: Dict[str, str]
+    declared = tuple(getattr(generator, 'files', ()) or ())
+
+    try:
+        own = inspect.getfile(type(generator))
+    except (OSError, TypeError):
+        #Defined in a notebook or a session, where there is no file. Nothing
+        #is attached rather than the class body on its own: a fragment stored
+        #under a name like generate.py claims to be a script and is not one.
+        own = None
+
+    if not declared:
+        if own:
+            body = _read(own)
+            if body is not None:
+                out[os.path.basename(own)] = body
+        return out
+
+    beside = os.path.dirname(own) if own else '.'
+    for named in declared:
+        path = named if os.path.isabs(named) else os.path.join(beside, named)
+        body = _read(path)
+        if body is None:
+            raise ValueError(
+                '%s lists %r among its files, and it could not be read at %s. '
+                'A declared file is not a guess, so this is not skipped '
+                'quietly: the numbers would be stored without the code that '
+                'was meant to accompany them.'
+                % (type(generator).__name__, named, path))
+        #Stored under the bare name: a table's files are flat.
+        name = os.path.basename(named)
+        if name in out:
+            raise ValueError(
+                "%s lists two files named %r. A table's files are flat, so "
+                'one would silently replace the other.'
+                % (type(generator).__name__, name))
+        out[name] = body
+    return out
+
+
+def _read(path):
+    try:
+        with open(path, 'r', encoding='utf8') as handle:
+            return handle.read()
+    except OSError:
+        return None
+
+
+def _digest(files: Mapping[str, str]) -> str:
+    """A fingerprint of exactly the bytes that will be attached."""
+    import hashlib
+
+    digest = hashlib.sha256()
+    for name in sorted(files):
+        digest.update(name.encode('utf8'))
+        digest.update(b'\0')
+        digest.update(files[name].encode('utf8'))
+        digest.update(b'\0')
+    return digest.hexdigest()
+
+
+def _attach(generator, table, run, client, files) -> List[str]:
+    """Store the files that produced these numbers, in the same revision.
+
+    Best effort at this point. A run whose numbers are stored and whose source
+    could not be sent has still done the useful part, and failing at the end
+    over a file would be a poor trade -- the unreadable case was already
+    refused, before anything was computed.
+    """
+    from ._write import attach
+
+    stored = []
+    for name in sorted(files):
+        try:
+            attach(table, name, files[name], run=run, client=client,
+                   message='a file that produced these entries')
+            stored.append(name)
+        except Exception:
+            continue
+    return stored
+
+
+def _run_name(generator):
+    """A name for one run of this generator.
+
+    Derived from the generator and the moment it started, so two runs of the
+    same script do not amend each other's revision and one run's batches all
+    find their own.
+    """
+    import time
+
+    return '%s-%d' % (type(generator).__name__[:40], int(time.time()))
+
+
+def _with_retry(send, attempts=4):
+    """Send a batch, waiting and trying again when the table is busy.
+
+    Writes to one table are serialised, so a batch can be told that somebody
+    else is writing just now. For a run of hours that is a normal event and not
+    a failure: the values are already computed and resending them costs
+    nothing, whereas losing them costs whatever they took to produce.
+
+    Only for "busy" -- a refused document or a rejected key is not going to
+    become true by being repeated.
+    """
+    import time
+
+    from ._errors import Conflict, RateLimited
+
+    for attempt in range(attempts):
+        try:
+            return send()
+        except (Conflict, RateLimited):
+            if attempt == attempts - 1:
+                raise
+            time.sleep(2 ** attempt)
+    raise AssertionError('unreachable')
 
 
 def _stored_entries(document: Mapping[str, Any]) -> Dict[str, str]:
@@ -443,293 +921,24 @@ def _stored_entries(document: Mapping[str, Any]) -> Dict[str, str]:
                 out[','.join(prefix)] = _value_of(node)
                 return
             for key, value in node.items():
-                walk(value, prefix + (','.join(
-                    p.strip() for p in str(key).split(',')),))
+                walk(value, prefix + [str(key)])
             return
-        out[','.join(prefix)] = node if isinstance(node, str) else str(node)
+        if isinstance(node, list):
+            for item in node:
+                walk(item, prefix)
+            return
+        out[','.join(prefix)] = str(node)
 
-    walk(block, ())
+    walk(block, [])
     return out
 
 
-def _value_of(record):
-    number = record.get('number')
-    if isinstance(number, list):
-        return number[0] if number else ''
-    return number if isinstance(number, str) else str(number)
-
-
-def publish(generator: Generator, tid: Optional[str] = None,
-            digits: Optional[int] = None, message: str = '',
-            batch: Optional[int] = None, run: str = '', preflight: bool = True,
-            cache: Any = True, source_name: Any = AUTO,
-            only: Any = None, upsert: Optional[bool] = None,
-            client: Any = None, **bounds: Any) -> Dict[str, Any]:
-    """Send a generator's entries to its table.
-
-    Entries only: the definition, the references and the tags are somebody's
-    prose and a generator has no opinion about them.
-
-    ``only`` computes and sends *some* entries and leaves the rest of the table
-    alone: the parameters to recompute, as mappings or as identities.
-
-        numberdb.publish(g, only=[{'n': 17}, {'n': 42}])
-        numberdb.publish(g, only=['17', '42'])
-        numberdb.publish(g, only=numberdb.verify(g).to_fix())
-
-    An identity is text, so its parameters arrive as text; a mapping arrives
-    as it was given. Prefer mappings when the generator wants a number, and
-    `report.to_fix()` hands back exactly that.
-
-    That is what fixing two wrong values looks like, and what extending a table
-    looks like when the existing entries are expensive and correct. It implies
-    ``upsert``: sending two entries as a replacement would delete the other
-    thousand, which is not what anybody means by "update these two".
-
-    ``upsert`` sends what this run produced and leaves everything else, without
-    naming which. Extending a table is `limit=1100, upsert=True`: the cache
-    supplies the first thousand, the generator computes the new hundred, and
-    nothing already stored is touched. Without it the entries are *replaced*,
-    which is what a full regeneration means and is the default only because a
-    generator asked for its whole range has said what the table should contain.
-
-    ``batch`` sends them as they are computed, in groups of that size, instead
-    of computing everything and sending it at the end. That is what a generator
-    of expensive values wants: a run that dies at entry 900 has already stored
-    the first 899, and a rerun continues rather than starting again.
-
-    All the batches of one run land in a single revision, so the history shows
-    one act of regeneration rather than a thousand -- which is also what keeps
-    the stored size sane, since every revision holds the whole document.
-
-    ``source_name`` is what to call the generator's own file, which is attached
-    to the same revision so that the code and the numbers arrive together. By
-    default the file names itself. ``source_name=None`` attaches nothing.
-
-    It is one file because it names one. A computation spread over several
-    belongs in `Generator.files`, which lists them and replaces this.
-
-    A generator defined in a notebook or an interactive session has no file,
-    and then nothing is attached: the class body alone is not a script, and
-    storing it as one would mislead whoever came looking for how a number was
-    computed. Put such a generator in a file before publishing.
-    """
-    from ._write import submit_entries
-
-    tid = tid or generator.tid
-    if not tid:
-        raise ValueError('which table? pass tid= or set it on the generator')
-
-    #Before computing anything. A generator may run for hours, and "no API key
-    #was set" is knowable in the first second -- as are "this account may not
-    #write yet" and "there is no table T42". Finding out at the end costs
-    #whatever the computation cost.
-    if preflight:
-        from ._write import check_writable
-
-        check_writable(tid, client=client)
-
-    run = run or _run_name(generator)
-
-    #Naming entries means updating them. Replacing a table with the two entries
-    #somebody wanted corrected would delete the rest of it, and the request
-    #would look like it worked.
-    if only is not None and upsert is None:
-        upsert = True
-    upsert = bool(upsert)
-
-    #Compute first, send once. The network is then needed at one moment
-    #instead of continuously: a connection that drops during a computation
-    #costs nothing, and a submission that fails can simply be repeated because
-    #every value is still on the disk.
-    #
-    #It also makes stopping deliberate. A run interrupted half way has
-    #published nothing, and whoever stopped it decides whether to send what is
-    #there.
-    if not batch:
-        from ._write import submit_entries
-
-        entries = generate(generator, digits=digits, cache=cache, only=only,
-                           **bounds)
-        answer = submit_entries(tid, entries, message=message,
-                                produced_by=type(generator).__name__,
-                                upsert=upsert, run=run, client=client)
-        _attach_source(generator, tid, run, client, source_name)
-        return answer
-
-    #Sending as it goes, for a caller that wants the values visible early. The
-    #lease then matters, because between one batch and the next anybody else
-    #may write.
-    from ._write import Lease
-
-    with Lease(tid, run=run, note='generated by %s' % (type(generator).__name__,),
-               client=client):
-        answer = _publish_held(generator, tid, digits, message, batch, run,
-                               client, cache, bounds)
-        _attach_source(generator, tid, run, client, source_name)
-        return answer
-
-
-def _publish_held(generator, tid, digits, message, batch, run, client, cache,
-                  bounds):
-    from ._cache import RunCache
-    from ._write import submit_entries
-
-    if not batch:
-        entries = generate(generator, digits=digits, **bounds)
-        return submit_entries(tid, entries, message=message,
-                              produced_by=type(generator).__name__,
-                              run=run, client=client)
-
-    digits = generator.digits if digits is None else digits
-    store = (RunCache(generator, digits, bounds,
-                      path=cache if isinstance(cache, str) else None)
-             if cache is not False and not _is_bulk(generator) else None)
-    pending = Entries(*generator.parameters)
-    sent = {'entries': 0, 'batches': 0}
-    answer = {}
-
-    def flush():
-        nonlocal pending
-        if not len(pending):
-            return
-        result = _with_retry(
-            lambda: submit_entries(tid, pending, message=message,
-                                   produced_by=type(generator).__name__,
-                                   upsert=True, run=run, client=client))
-        sent['entries'] += len(pending)
-        sent['batches'] += 1
-        answer.update(result)
-        pending = Entries(*generator.parameters)
-
-    if _is_bulk(generator):
-        #Nothing to stream: it is all computed or none of it is.
-        for record in generator.all_entries(digits=digits, **bounds):
-            pending._records.append(dict(record))
-        flush()
-        answer.update(sent)
-        answer['run'] = run
-        return answer
-
-    for params in generator.enumerate(**bounds):
-        identity = ','.join(str(params[name]) for name in generator.parameters)
-        found = store.get(identity) if store is not None else None
-        if found is None:
-            found = generator._entry(params, digits)
-            if store is not None:
-                store.put(identity, _plain(found, digits))
-        pending.add(**dict(params), **found)
-        if len(pending) >= batch:
-            flush()
-    flush()
-
-    answer.update(sent)
-    answer['run'] = run
-    return answer
-
-
-def _with_retry(send, attempts=4):
-    """Send a batch, waiting and trying again when the table is busy.
-
-    Writes to one table are serialised, so a batch can be told that somebody
-    else is writing just now. For a run of hours that is a normal event and not
-    a failure: the values are already computed and resending them costs
-    nothing, whereas losing them costs whatever they took to produce.
-
-    Only for "busy" -- a refused document or a rejected key is not going to
-    become true by being repeated.
-    """
-    import time
-
-    from ._errors import RateLimited
-
-    for attempt in range(attempts):
-        try:
-            return send()
-        except RateLimited as busy:
-            if attempt == attempts - 1:
-                raise
-            time.sleep(getattr(busy, 'retry_after', None) or 2 * (attempt + 1))
-    raise AssertionError('unreachable')
-
-
-def _attach_source(generator, tid, run, client, source_name):
-    """Send the files that produced these numbers, in the same revision.
-
-    What to send is declared on the generator rather than discovered: a
-    directory sweep would collect whatever else happened to be sitting there,
-    which is nobody's intention and sooner or later somebody's private working
-    file. With nothing declared it sends the generator's own file, which is the
-    one file certainly relevant.
-
-    Best effort. A run whose numbers are stored and whose source could not be
-    read has still done the useful part, and failing at the end over a missing
-    file would be a poor trade.
-    """
-    import inspect
-    import os
-
-    from ._write import attach
-
-    def send(name, body):
-        try:
-            #Stored under the bare name: a table's files are flat.
-            attach(tid, os.path.basename(name), body, run=run, client=client,
-                   message='a file that produced these entries')
-        except Exception:
-            pass
-
-    declared = tuple(getattr(generator, 'files', ()) or ())
-    if declared:
-        try:
-            beside = os.path.dirname(inspect.getfile(type(generator)))
-        except (OSError, TypeError):
-            beside = '.'
-        for named in declared:
-            path = named if os.path.isabs(named) else os.path.join(beside, named)
-            try:
-                with open(path, 'r', encoding='utf8') as handle:
-                    send(named, handle.read())
-            except OSError:
-                continue
-        return
-
-    if source_name is not AUTO and not source_name:
-        return
-
-    #The file, not the class. ``inspect.getsource(type(generator))`` returns
-    #the class body alone, so a generator whose value() calls a function
-    #defined above it in the same file was stored without that function --
-    #an attachment named generate.py that omits the code computing the
-    #number, and that will not run.
-    try:
-        path = inspect.getfile(type(generator))
-    except (OSError, TypeError):
-        path = None
-    if not path:
-        #Defined in a notebook or a session, where there is no file. Nothing
-        #is sent rather than the class body on its own: a fragment stored
-        #under a name like generate.py claims to be a script and is not one.
-        return
-    try:
-        with open(path, 'r', encoding='utf8') as handle:
-            body = handle.read()
-    except OSError:
-        return
-
-    #The file names itself unless the caller said otherwise, so what is stored
-    #is what the author wrote and what a reader will look for. Declared files
-    #behave the same way.
-    send(os.path.basename(path) if source_name is AUTO else source_name, body)
-
-
-def _run_name(generator):
-    """A name for one run of this generator.
-
-    Derived from the generator and the moment it started, so two runs of the
-    same script do not amend each other's revision and one run's batches all
-    find their own.
-    """
-    import time
-
-    return '%s-%d' % (type(generator).__name__[:40], int(time.time()))
+def _value_of(node):
+    """One entry's value, however the document spells it."""
+    for key in ('number', 'equals', 'numbers'):
+        if key in node:
+            value = node[key]
+            if isinstance(value, list):
+                return str(value[0]) if value else ''
+            return str(value)
+    return ''

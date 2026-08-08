@@ -810,6 +810,21 @@ class SageModuleStaysComplete(unittest.TestCase):
                 self.assertIn(name, flavoured.__all__)
                 self.assertTrue(callable(getattr(flavoured, name)))
 
+    def test_the_whole_public_surface_is_reachable(self):
+        """`import numberdb.sage as numberdb` has to be a drop-in.
+
+        It was not: a Sage user following the documented idiom could not reach
+        Generator or publish at all, which is exactly the audience that writes
+        generators. Writing needs no Sage flavour of its own -- a Sage object
+        is already understood wherever one is accepted -- but it does need to
+        be there.
+        """
+        flavoured = self._module()
+        for name in numberdb.__all__:
+            with self.subTest(name=name):
+                self.assertTrue(hasattr(flavoured, name))
+                self.assertIn(name, flavoured.__all__)
+
     def test_the_signatures_match_the_plain_ones(self):
         """Minus the client, which the Sage module supplies itself."""
         import inspect

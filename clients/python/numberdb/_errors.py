@@ -5,7 +5,7 @@ neither should have to import the other to share a base class.
 """
 
 __all__ = ['NumberDBError', 'TransportError', 'RateLimited', 'Unauthorized',
-           'Conflict', 'TooBig',
+           'Conflict', 'Disagreement', 'TooBig',
            'UnsupportedNumber']
 
 
@@ -72,3 +72,25 @@ class TooBig(NumberDBError):
     continue: a warning shown to nobody is not a limit. State the reason in a
     "Size exception" line under Data properties if the size is deliberate.
     """
+
+
+class Disagreement(NumberDBError):
+    """A computed value cannot stand beside the one already stored.
+
+    Raised as soon as it is found, so a run whose first entry already
+    contradicts the table stops having spent one entry rather than a day.
+    Nothing further is sent; anything a long run had already sent is one
+    revision, and revertible in a click.
+
+    ``verdict`` is why -- values that cannot both be true, or a value that
+    would replace stored digits with fewer. The message names the argument
+    that means "yes, I meant it", so it need not be known in advance.
+    """
+
+    def __init__(self, message, identity='', stored='', produced='',
+                 verdict=''):
+        super().__init__(message)
+        self.identity = identity
+        self.stored = stored
+        self.produced = produced
+        self.verdict = verdict

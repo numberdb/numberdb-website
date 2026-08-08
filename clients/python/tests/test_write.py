@@ -1,9 +1,16 @@
-"""Tests for building a table and submitting it.
+"""Tests for the one way a program puts numbers into a table.
 
-No network: the opener is injected through ``Client``, as elsewhere in this
-suite. What is checked is the shape of what would be sent, and the refusals --
-a generator that gets a table's identities subtly wrong does not fail, it
-publishes numbers under the wrong names.
+No network: the opener is injected through ``Client``. What is checked is the
+shape of what would be sent, and the refusals -- a generator that gets a
+table's identities subtly wrong does not fail, it publishes numbers under the
+wrong names.
+
+The write surface is deliberately small. `numberdb.publish` is the whole of it,
+and most of what used to be arguments is now decided by the package, so most of
+what is tested here is that those decisions are actually made: that a value
+reaches the disk before anything else can go wrong with it, that permission is
+checked before a three-day computation rather than after, that a contradiction
+stops a run at its first entry.
 """
 
 import json
@@ -16,32 +23,120 @@ import pytest
 sys.path.insert(0, '.')
 
 import numberdb
+from numberdb._write import Entries, submit_entries, to_text
+
+#: What `check_writable` says it is doing. Recognised here so a preflight is
+#: not mistaken for a run's own writing.
+PREFLIGHT = 'checking that this table can be written to'
 
 
-class Sent:
-    """A Client whose opener records the request instead of sending it."""
+@pytest.fixture(autouse=True)
+def cache_in_a_temporary_place(tmp_path, monkeypatch):
+    """Never the developer's real cache.
 
-    def __init__(self, payload=None, status=None, body=None):
-        self.payload = payload if payload is not None else {'tid': 'T1'}
+    Without this a test run would write computed values into ~/.cache/numberdb
+    and, worse, read them back on the next run -- so a test could pass because
+    of what an earlier run had left behind.
+    """
+    monkeypatch.setenv('NUMBERDB_CACHE', str(tmp_path / 'cache'))
+
+
+class Server:
+    """A NumberDB that answers without a network.
+
+    Routes by method and path, because `publish` reads the table before it
+    writes: to know whether a value contradicts what is stored, loses digits,
+    or is new, it has to know what is stored.
+    """
+
+    def __init__(self, entries=None, names=('n',), busy=0, status=None,
+                 body=None):
+        #: identity -> stored value, as the table holds it.
+        self.stored = dict(entries or {})
+        self.names = tuple(names)
+        self.posts = []        # (path, headers, body), preflight excluded
+        self.preflights = 0
+        self.files = {}        # name -> content
+        self.busy = busy       # answer "busy" this many times first
         self.status = status
         self.body = body
-        self.request = None
-        #One publish makes several requests -- the entries, then the files --
-        #and a test about the files cannot read them off the last one.
-        self.requests = []
+        self.fetched = 0
+
+    def document(self):
+        records = []
+        for identity, value in self.stored.items():
+            params = dict(zip(self.names, identity.split(',')))
+            records.append({'params': params, 'number': value})
+        return {'Title': 'Probe', 'Numbers': records}
 
     def opener(self, request, timeout=None):
-        self.request = request
-        self.requests.append(request)
+        path = request.full_url.split('http://server/')[-1]
+
+        if request.data is None:
+            self.fetched += 1
+            return _Readable(json.dumps(self.document()).encode('utf8'))
+
         if self.status is not None:
             raise urllib.error.HTTPError(
                 'http://x/', self.status, 'refused', {},
                 _Readable(self.body or b'{}'))
-        return _Readable(json.dumps(self.payload).encode('utf8'))
+
+        headers = dict(request.headers)
+        body = request.data.decode('utf8')
+
+        if _message(headers) == PREFLIGHT:
+            self.preflights += 1
+            return _Readable(b'{"tid": "T7"}')
+
+        if '/file/' in path:
+            self.posts.append((path, headers, body))
+            self.files[path.rsplit('/file/', 1)[1]] = body
+            return _Readable(b'{"ok": true}')
+
+        if self.busy > 0:
+            self.busy -= 1
+            raise urllib.error.HTTPError(
+                'http://x/', 409, 'busy', {},
+                _Readable(b'{"error": "table is busy"}'))
+
+        self.posts.append((path, headers, body))
+        return _Readable(json.dumps({'tid': 'T7', 'revision': 'r1'})
+                         .encode('utf8'))
 
     def client(self, api_key='k'):
         return numberdb.Client(api_key=api_key, base_url='http://server',
                                opener=self.opener)
+
+    #-- what the tests ask it ------------------------------------------
+
+    def entry_posts(self):
+        """Every post that carried entries, ignoring files."""
+        return [post for post in self.posts if '/file/' not in post[0]]
+
+    def sent_entries(self):
+        """Every entry sent, as {identity: value}."""
+        import yaml
+
+        out = {}
+        for _path, _headers, body in self.entry_posts():
+            for record in yaml.safe_load(body) or []:
+                params = record.get('params') or {}
+                out[','.join(str(v) for v in params.values())] = \
+                    str(record.get('number'))
+        return out
+
+    def modes(self):
+        return [_header(headers, 'X-entries-mode')
+                for _path, headers, _body in self.entry_posts()]
+
+
+def _header(headers, name):
+    """urllib title-cases what it is given, so both spellings are looked for."""
+    return headers.get(name) or headers.get(name.title())
+
+
+def _message(headers):
+    return _header(headers, 'X-edit-message') or ''
 
 
 class _Readable:
@@ -52,8 +147,6 @@ class _Readable:
         return self.data
 
     def close(self):
-        #HTTPError treats what it is handed as a file and closes it on
-        #collection; without this the teardown raises into the test run.
         return None
 
     def __enter__(self):
@@ -63,828 +156,552 @@ class _Readable:
         return False
 
 
+class Zeta(numberdb.Generator):
+    """A generator with a per-entry value, which is what most tables want."""
+
+    table = 'T7'
+    parameters = ('n',)
+    type = 'Q'
+
+    def enumerate(self, limit=3):
+        for n in range(1, limit + 1):
+            yield {'n': n}
+
+    def value(self, params, digits):
+        return Fraction(1, int(params['n']))
+
+
 class TestValues:
+    """`to_text` is internal now, but it still decides how a number is
+    written, and every generator depends on it."""
 
     def test_a_string_is_kept_exactly(self):
-        assert numberdb.to_text('3.14159?') == '3.14159?'
+        assert to_text('3.14159?') == '3.14159?'
 
     def test_an_integer_keeps_every_digit(self):
-        assert numberdb.to_text(2 ** 80) == str(2 ** 80)
+        assert to_text(2 ** 80) == str(2 ** 80)
 
     def test_a_fraction_is_written_as_one(self):
-        assert numberdb.to_text(Fraction(18, 11)) == '18/11'
+        assert to_text(Fraction(18, 11)) == '18/11'
 
     def test_a_whole_fraction_loses_its_denominator(self):
-        assert numberdb.to_text(Fraction(4, 2)) == '2'
+        assert to_text(Fraction(4, 2)) == '2'
 
     def test_a_float_is_refused_and_says_why(self):
         """A float does not carry its own precision, so it cannot be stored."""
         with pytest.raises(TypeError) as raised:
-            numberdb.to_text(3.14159)
+            to_text(3.14159)
         assert 'how precise' in str(raised.value)
 
     def test_a_boolean_is_not_a_number(self):
         with pytest.raises(TypeError):
-            numberdb.to_text(True)
+            to_text(True)
 
 
 class TestEntries:
 
     def test_parameters_are_named_in_the_record(self):
-        entries = numberdb.Entries('n')
+        entries = Entries('n')
         entries.add(n=3, number='3.14')
         assert entries.as_list() == [{'params': {'n': '3'}, 'number': '3.14'}]
 
     def test_several_parameters_keep_their_declared_order(self):
-        entries = numberdb.Entries('N', 'c4', 'c6')
+        entries = Entries('N', 'c4', 'c6')
         entries.add(N=389, c4=112, c6=-856, number='1.5')
         assert list(entries.as_list()[0]['params']) == ['N', 'c4', 'c6']
 
     def test_a_missing_parameter_is_refused(self):
         """Otherwise the entry lands under an identity nobody meant."""
-        entries = numberdb.Entries('N', 'c4')
+        entries = Entries('N', 'c4')
         with pytest.raises(TypeError) as raised:
             entries.add(N=389, number='1.5')
         assert 'c4' in str(raised.value)
 
     def test_an_entry_with_no_number_is_refused(self):
-        entries = numberdb.Entries('n')
+        entries = Entries('n')
         with pytest.raises(TypeError):
             entries.add(n=1, comment='nothing here')
 
     def test_annotations_are_carried(self):
-        entries = numberdb.Entries('n')
+        entries = Entries('n')
         entries.add(n=1, number='3.14', comment='about pi', proof='CITE{x}')
         record = entries.as_list()[0]
         assert record['comment'] == 'about pi'
         assert record['proof'] == 'CITE{x}'
 
-    def test_several_numbers_may_share_a_parameter(self):
-        entries = numberdb.Entries('n')
-        entries.add(n=1, number=['3.14', '3.15'])
-        assert entries.as_list()[0]['number'] == ['3.14', '3.15']
-
     def test_a_parameter_is_not_reformatted(self):
         """`1/2` and `0.5` are different identities, so neither may drift."""
-        entries = numberdb.Entries('x')
+        entries = Entries('x')
         entries.add(x=Fraction(1, 2), number='1')
         assert entries.as_list()[0]['params']['x'] == '1/2'
 
-    def test_names_may_be_given_as_a_sequence(self):
-        assert numberdb.Entries(['a', 'b']).names == ('a', 'b')
 
-    def test_length_counts_entries(self):
-        entries = numberdb.Entries('n')
-        for n in range(5):
-            entries.add(n=n, number=str(n))
-        assert len(entries) == 5
+class TestThereIsNoWayToSendADocument:
+    """The one thing a program must not be able to do.
 
+    A generator that assembled a document out of what it knows -- a title, the
+    parameters, the numbers -- and sent it would delete the definition, the
+    comments, the references and the tags, and the table would look perfectly
+    ordinary afterwards. That is not a discipline anybody has to remember: the
+    functions do not exist.
+    """
 
-class TestDocument:
+    @pytest.mark.parametrize('name', ['submit', 'document', 'create', 'Lease',
+                                      'attach', 'Entries', 'to_text',
+                                      'submit_entries', 'check_writable',
+                                      'generate'])
+    def test_it_is_not_public(self, name):
+        assert not hasattr(numberdb, name)
 
-    def test_the_title_comes_first(self):
-        """Section order is content: a sorted document rewrites the table."""
-        doc = numberdb.document(title='Zeta', parameters={'n': {}},
-                                entries=numberdb.Entries('n'))
-        assert list(doc)[0] == 'Title'
-
-    def test_sections_are_given_prose_names(self):
-        doc = numberdb.document(title='X', data_properties={'type': 'R'})
-        assert doc['Data properties'] == {'type': 'R'}
-
-    def test_a_document_needs_a_title(self):
-        with pytest.raises(ValueError):
-            numberdb.document(title='')
-
-    def test_entries_may_be_plain_records(self):
-        doc = numberdb.document(title='X',
-                                entries=[{'params': {'n': '1'},
-                                          'number': '2'}])
-        assert doc['Numbers'][0]['number'] == '2'
+    def test_publish_is(self):
+        assert callable(numberdb.publish)
 
 
-class TestSubmitting:
+class TestPublishing:
 
-    def doc(self):
-        entries = numberdb.Entries('n')
-        entries.add(n=1, number='3.14159')
-        return numberdb.document(title='Probe', parameters={'n': {'type': 'Z'}},
-                                 entries=entries)
+    def test_a_generator_needs_a_table(self):
+        class Homeless(Zeta):
+            table = None
 
-    def test_a_key_is_required_before_anything_is_sent(self):
-        """A script that forgot its key should be told, not handed a 401."""
-        sent = Sent()
-        with pytest.raises(numberdb.Unauthorized) as raised:
-            numberdb.submit('T1', self.doc(), client=sent.client(api_key=''))
-        assert 'API key' in str(raised.value)
-        assert sent.request is None
+        with pytest.raises(ValueError) as raised:
+            numberdb.publish(Homeless(), client=Server().client())
+        assert 'table = "T42"' in str(raised.value)
 
-    def test_the_key_travels_as_a_bearer_token(self):
-        sent = Sent()
-        numberdb.submit('T1', self.doc(), client=sent.client())
-        assert sent.request.headers['Authorization'] == 'Bearer k'
+    def test_the_entries_are_sent(self):
+        server = Server()
+        outcome = numberdb.publish(Zeta(), client=server.client())
+        assert server.sent_entries() == {'1': '1', '2': '1/2', '3': '1/3'}
+        assert outcome.added == ['1', '2', '3']
+        assert outcome.applied is True
 
     def test_it_posts_to_the_table(self):
-        sent = Sent()
-        numberdb.submit('T42', self.doc(), client=sent.client())
-        assert sent.request.get_method() == 'POST'
-        assert sent.request.full_url.endswith('/api/table/42')
-
-    def test_a_t_prefix_is_accepted(self):
-        sent = Sent()
-        numberdb.submit('T42', self.doc(), client=sent.client())
-        assert sent.request.full_url.endswith('/api/table/42')
+        server = Server()
+        numberdb.publish(Zeta(), client=server.client())
+        assert server.entry_posts()[0][0].endswith('api/table/7/entries')
 
     def test_the_program_is_named(self):
         """Readers are entitled to know a revision came out of a script."""
-        sent = Sent()
-        numberdb.submit('T1', self.doc(), produced_by='zeta-generator',
-                        client=sent.client())
-        assert sent.request.headers['X-produced-by'] == 'zeta-generator'
-
-    def test_an_unnamed_program_still_says_it_is_one(self):
-        sent = Sent()
-        numberdb.submit('T1', self.doc(), client=sent.client())
-        assert sent.request.headers['X-produced-by'] == 'numberdb-python'
-
-    def test_the_base_revision_is_sent_when_given(self):
-        sent = Sent()
-        numberdb.submit('T1', self.doc(), base='abc123', client=sent.client())
-        assert sent.request.headers['X-base-revision'] == 'abc123'
-
-    def test_the_body_keeps_its_section_order(self):
-        sent = Sent()
-        numberdb.submit('T1', self.doc(), client=sent.client())
-        body = sent.request.data.decode('utf8')
-        assert body.index('Title') < body.index('Numbers')
-
-    def test_creating_posts_to_the_collection(self):
-        sent = Sent(payload={'tid': 'T108'})
-        result = numberdb.create(self.doc(), client=sent.client())
-        assert sent.request.full_url.endswith('/api/tables')
-        assert result['tid'] == 'T108'
-
-
-class TestRefusals:
-
-    def doc(self):
-        return numberdb.document(title='Probe',
-                                 entries=[{'params': {}, 'number': '1'}])
-
-    def refuse(self, status, body):
-        sent = Sent(status=status, body=json.dumps(body).encode('utf8'))
-        return sent.client()
-
-    def test_a_size_refusal_says_what_was_too_big(self):
-        client = self.refuse(413, {'error': 'The table is over a size limit.',
-                                   'detail': ['this table holds 90000 entries']})
-        with pytest.raises(numberdb.TooBig) as raised:
-            numberdb.submit('T1', self.doc(), client=client)
-        assert '90000 entries' in str(raised.value)
-
-    def test_an_untrusted_key_is_reported_as_unauthorised(self):
-        client = self.refuse(403, {'error': 'not yet',
-                                   'detail': 'opens after 5 edits'})
-        with pytest.raises(numberdb.Unauthorized) as raised:
-            numberdb.submit('T1', self.doc(), client=client)
-        assert '5 edits' in str(raised.value)
-
-    def test_a_concurrent_change_is_a_conflict(self):
-        client = self.refuse(409, {'error': 'Somebody changed this table.'})
-        with pytest.raises(numberdb.Conflict):
-            numberdb.submit('T1', self.doc(), client=client)
-
-    def test_a_bad_document_reports_the_servers_reason(self):
-        client = self.refuse(400, {'error': 'The table has no Title.'})
-        with pytest.raises(numberdb.NumberDBError) as raised:
-            numberdb.submit('T1', self.doc(), client=client)
-        assert 'no Title' in str(raised.value)
-
-
-class TestSubmittingEntriesOnly:
-    """A generator computes values; it must not be able to delete prose."""
-
-    def entries(self):
-        e = numberdb.Entries('n')
-        e.add(n=1, number='3.14159')
-        return e
-
-    def test_it_posts_to_the_entries_of_the_table(self):
-        sent = Sent()
-        numberdb.submit_entries('T42', self.entries(), client=sent.client())
-        assert sent.request.full_url.endswith('/api/table/42/entries')
-
-    def test_only_the_records_are_sent(self):
-        """No Title, no Parameters: nothing that could overwrite a section."""
-        sent = Sent()
-        numberdb.submit_entries('T42', self.entries(), client=sent.client())
-        body = sent.request.data.decode('utf8')
-        assert 'params' in body
-        assert 'Title' not in body
-        assert 'Parameters' not in body
-
-    def test_plain_records_are_accepted(self):
-        sent = Sent()
-        numberdb.submit_entries('T1', [{'params': {'n': '1'}, 'number': '2'}],
-                                client=sent.client())
-        assert 'number' in sent.request.data.decode('utf8')
-
-    def test_the_program_is_named(self):
-        sent = Sent()
-        numberdb.submit_entries('T1', self.entries(), produced_by='zeta-gen',
-                                client=sent.client())
-        assert sent.request.headers['X-produced-by'] == 'zeta-gen'
-
-    def test_a_key_is_still_required(self):
-        sent = Sent()
-        with pytest.raises(numberdb.Unauthorized):
-            numberdb.submit_entries('T1', self.entries(),
-                                    client=sent.client(api_key=''))
-
-
-class Zeta(numberdb.Generator):
-    """A generator small enough to check by eye."""
-
-    parameters = ('n',)
-    type = 'Q'
-    tid = 'T7'
-
-    def enumerate(self, limit=5):
-        for n in range(1, limit + 1):
-            yield {'n': n}
-
-    def value(self, params, digits):
-        return Fraction(1, params['n'])
-
-
-class TestGenerator:
-
-    def test_generating_walks_the_enumeration(self):
-        entries = numberdb.generate(Zeta(), limit=3)
-        assert [r['number'] for r in entries] == ['1', '1/2', '1/3']
-
-    def test_parameters_are_named_in_the_records(self):
-        entries = numberdb.generate(Zeta(), limit=2)
-        assert entries.as_list()[1]['params'] == {'n': '2'}
-
-    def test_extending_is_the_same_call_with_a_larger_bound(self):
-        assert len(numberdb.generate(Zeta(), limit=9)) == 9
-
-    def test_a_generator_may_return_annotations_with_the_value(self):
-        class WithComment(Zeta):
-            def value(self, params, digits):
-                return {'number': Fraction(1, params['n']),
-                        'comment': 'reciprocal'}
-
-        record = numberdb.generate(WithComment(), limit=1).as_list()[0]
-        assert record['comment'] == 'reciprocal'
-
-    def test_a_generator_with_neither_method_says_so(self):
-        class Empty(numberdb.Generator):
-            parameters = ('n',)
-
-        with pytest.raises(NotImplementedError):
-            numberdb.generate(Empty())
-
-    def test_a_bulk_generator_needs_no_per_entry_value(self):
-        """For tables whose values only come all at once."""
-        class Bulk(numberdb.Generator):
-            parameters = ('n',)
-
-            def all_entries(self, digits=None, **bounds):
-                entries = numberdb.Entries('n')
-                entries.add(n=1, number='3.14')
-                return entries
-
-        assert len(numberdb.generate(Bulk())) == 1
-
-    def test_the_environment_is_recorded(self):
-        """A mismatch later is only useful if something said what ran first."""
-        assert 'python' in Zeta().environment()
-
-
-class TestVerify:
-
-    def stored(self, entries):
-        """A client whose table() call answers with these stored entries."""
-        return Sent(payload={'Title': 'Probe', 'Numbers': entries}).client()
-
-    def test_a_matching_table_verifies(self):
-        client = self.stored([{'params': {'n': '1'}, 'number': '1'},
-                              {'params': {'n': '2'}, 'number': '1/2'}])
-        report = numberdb.verify(Zeta(), client=client, limit=2, sample=None)
-        assert report.ok
-        assert report.matched == 2
-
-    def test_a_changed_value_is_reported_with_both_forms(self):
-        """'T7 disagrees' is not actionable; naming the entry is."""
-        client = self.stored([{'params': {'n': '1'}, 'number': '1'},
-                              {'params': {'n': '2'}, 'number': '0.5'}])
-        report = numberdb.verify(Zeta(), client=client, limit=2, sample=None)
-        assert not report.ok
-        assert report.differing == [('2', '0.5', '1/2')]
-
-    def test_an_entry_the_table_lacks_is_reported_as_missing(self):
-        client = self.stored([{'params': {'n': '1'}, 'number': '1'}])
-        report = numberdb.verify(Zeta(), client=client, limit=2, sample=None)
-        assert report.missing == ['2']
-
-    def test_sampling_checks_only_some_of_them(self):
-        """Why a per-entry value matters: seconds instead of days."""
-        client = self.stored([{'params': {'n': str(n)},
-                               'number': '1' if n == 1 else '1/%d' % n}
-                              for n in range(1, 101)])
-        report = numberdb.verify(Zeta(), client=client, limit=100, sample=5)
-        assert report.checked == 5
-
-    def test_sampling_spreads_through_the_table(self):
-        """Not just the cheap end, which is where a sweep would stop.
-
-        The stored values are written the way `to_text` writes them -- `1`
-        rather than `1/1` -- because a table storing the other spelling really
-        would differ, and this test is about which entries get checked.
-        """
-        client = self.stored([{'params': {'n': str(n)},
-                               'number': '1' if n == 1 else '1/%d' % n}
-                              for n in range(1, 101)])
-        report = numberdb.verify(Zeta(), client=client, limit=100, sample=4)
-        assert report.matched == 4
-        assert report.checked == 4
-
-    def test_the_nested_stored_form_is_understood_too(self):
-        """Both forms coexist, so verification must read either."""
-        client = Sent(payload={'Title': 'Probe',
-                               'Numbers': {'1': '1', '2': '1/2'}}).client()
-        report = numberdb.verify(Zeta(), client=client, limit=2, sample=None)
-        assert report.ok
-
-    def test_verification_writes_nothing(self):
-        sent = Sent(payload={'Title': 'Probe',
-                             'Numbers': {'1': '1', '2': '1/2'}})
-        numberdb.verify(Zeta(), client=sent.client(), limit=2, sample=None)
-        assert sent.request.get_method() == 'GET'
-
-    def test_it_needs_to_know_which_table(self):
-        class Untied(Zeta):
-            tid = None
-
-        with pytest.raises(ValueError):
-            numberdb.verify(Untied(), client=self.stored([]))
-
-
-class TestSageValues:
-    """Sage's own types, which is what a generator actually returns.
-
-    Skipped without Sage. Worth having under it: the example in the docs
-    returns a Sage real interval, and `to_text` could not write one -- the
-    commonest value in the database, 65 of the 107 tables.
-    """
-
-    def sage(self):
-        pytest.importorskip('sage.all')
-        import sage.all as sage
-        return sage
-
-    def test_a_real_interval_gets_the_question_mark_form(self):
-        sage = self.sage()
-        text = numberdb.to_text(sage.RealIntervalField(400)(sage.pi), digits=20)
-        assert text.startswith('3.14159265358979')
-        assert text.endswith('?')
-
-    def test_digits_are_respected(self):
-        sage = self.sage()
-        value = sage.RealIntervalField(400)(sage.pi)
-        assert len(numberdb.to_text(value, digits=20).rstrip('?')) == 21
-        assert len(numberdb.to_text(value, digits=50).rstrip('?')) == 51
-
-    def test_a_complex_interval_is_spelt_as_the_database_spells_it(self):
-        """`a + i * b`: 1847 values use it and none uses Sage's `a + b*I`."""
-        sage = self.sage()
-        text = numberdb.to_text(
-            sage.ComplexIntervalField(200)(sage.pi, sage.sqrt(2)), digits=15)
-        assert ' + i * ' in text
-        assert '*I' not in text
-
-    def test_exact_types_keep_every_digit(self):
-        """Truncating an exact value does not round it, it changes it."""
-        sage = self.sage()
-        big = sage.ZZ(2) ** 80
-        assert numberdb.to_text(big, digits=10) == str(big)
-        assert numberdb.to_text(sage.QQ(18) / 11, digits=2) == '18/11'
-
-    def test_a_polynomial_is_written_out(self):
-        sage = self.sage()
-        ring = sage.PolynomialRing(sage.QQ, 'x')
-        assert numberdb.to_text(ring([1, 0, -1])) == '-x^2 + 1'
-
-    def test_a_p_adic_keeps_its_precision(self):
-        sage = self.sage()
-        assert 'O(2^' in numberdb.to_text(sage.Qp(2)(1, 167))
-
-    def test_a_failure_says_what_it_could_not_write(self):
-        """It used to swallow the reason and blame the type."""
-        sage = self.sage()
-        with pytest.raises(Exception):
-            numberdb.to_text(sage.Words('ab'))
-
-
-class TestComplexSpelling:
-    """`i` before the digits, so a truncated value still says which part it is."""
-
-    def value(self):
-        from fractions import Fraction
-        return numberdb.ComplexInterval(
-            numberdb.RealInterval(Fraction(1, 2), Fraction(1, 2)),
-            numberdb.RealInterval(Fraction(-3, 4), Fraction(-3, 4)))
-
-    def test_the_marker_comes_before_the_imaginary_digits(self):
-        text = numberdb.to_text(self.value())
-        assert ' + i * ' in text
-        #Whatever follows the marker is the imaginary part, so an abbreviated
-        #value still identifies itself.
-        assert text.index(' + i * ') < text.index('-3/4')
-
-    def test_sage_s_own_spelling_is_not_produced(self):
-        assert '*I' not in numberdb.to_text(self.value())
-
-    def test_a_negative_imaginary_part_keeps_its_sign_in_place(self):
-        """`a + i * -b`, never `a - i * b`: the separator is always plus."""
-        text = numberdb.to_text(self.value())
-        assert ' - i ' not in text
-        assert '-3/4' in text
-
-
-class TestStreamingEntries:
-    """Sending values as they are computed, rather than all at the end.
-
-    A generator of expensive values that must finish before it sends anything
-    loses everything when it dies at entry 900. The batches of one run land in
-    a single revision, so the history shows one act of regeneration.
-    """
-
-    def gen(self):
-        class Slow(numberdb.Generator):
-            parameters = ('n',)
-            type = 'Q'
-            tid = 'T7'
-
-            def enumerate(self, limit=6):
-                for n in range(1, limit + 1):
-                    yield {'n': n}
-
-            def value(self, params, digits):
-                return Fraction(1, params['n'])
-
-        return Slow()
-
-    def test_upsert_and_run_are_sent(self):
-        sent = Sent()
-        numberdb.submit_entries('T7', numberdb.Entries('n'), upsert=True,
-                                run='run-1', client=sent.client())
-        assert sent.request.headers['X-entries-mode'] == 'upsert'
-        assert sent.request.headers['X-run-id'] == 'run-1'
-
-    def test_neither_is_sent_by_default(self):
-        """Replacing is what a full regeneration means."""
-        sent = Sent()
-        entries = numberdb.Entries('n')
-        entries.add(n=1, number='1')
-        numberdb.submit_entries('T7', entries, client=sent.client())
-        assert 'X-entries-mode' not in sent.request.headers
-
-    def test_publishing_in_batches_sends_several_times(self):
-        posts = []
-
-        class Recording(Sent):
-            def opener(self, request, timeout=None):
-                posts.append(request)
-                return _Readable(json.dumps({'tid': 'T7'}).encode('utf8'))
-
-        recorder = Recording()
-        result = numberdb.publish(self.gen(), batch=2, limit=6,
-                                  preflight=False, client=recorder.client())
-        entries = [r for r in posts if r.full_url.endswith('/entries')]
-        assert len(entries) == 3
-        assert result['entries'] == 6
-        assert result['batches'] == 3
-
-    def test_every_batch_carries_the_same_run(self):
-        """Otherwise each becomes its own revision of the whole document."""
-        posts = []
-
-        class Recording(Sent):
-            def opener(self, request, timeout=None):
-                posts.append(request)
-                return _Readable(json.dumps({'tid': 'T7'}).encode('utf8'))
-
-        numberdb.publish(self.gen(), batch=2, limit=6, preflight=False,
-                         client=Recording().client())
-        entries = [r for r in posts if r.full_url.endswith('/entries')]
-        runs = {r.headers['X-run-id'] for r in entries}
+        server = Server()
+        numberdb.publish(Zeta(), client=server.client())
+        assert 'Zeta' in _header(server.entry_posts()[0][1], 'X-produced-by')
+
+    def test_every_batch_of_one_run_carries_the_same_run_id(self):
+        server = Server()
+        outcome = numberdb.publish(Zeta(), limit=250, client=server.client())
+        runs = {_header(headers, 'X-run-id')
+                for _p, headers, _b in server.entry_posts()}
         assert len(runs) == 1
+        assert outcome.run in runs
 
-    def test_batches_are_upserts(self):
-        """Each sends what it has; replacing would delete the earlier ones."""
-        posts = []
+    def test_a_run_writes_its_own_message(self):
+        """History should never carry a blank line because nobody typed one."""
+        server = Server()
+        numberdb.publish(Zeta(), client=server.client())
+        message = _message(server.entry_posts()[-1][1])
+        assert 'Zeta' in message and 'added' in message
 
-        class Recording(Sent):
-            def opener(self, request, timeout=None):
-                posts.append(request)
-                return _Readable(json.dumps({'tid': 'T7'}).encode('utf8'))
-
-        numberdb.publish(self.gen(), batch=2, limit=6, preflight=False,
-                         client=Recording().client())
-        entries = [r for r in posts if r.full_url.endswith('/entries')]
-        assert entries and all(r.headers['X-entries-mode'] == 'upsert'
-                               for r in entries)
-
-    def test_without_a_batch_it_sends_once(self):
-        sent = Sent()
-        numberdb.publish(self.gen(), limit=4, preflight=False,
-                         client=sent.client())
-        assert sent.request.headers.get('X-entries-mode') is None
-
-
-class TestRetryingABusyTable:
-    """Writes to one table are serialised, so a batch can be told to wait.
-
-    For a run of hours that is a normal event: the values are computed and
-    resending costs nothing, while losing them costs whatever they took.
-    """
-
-    def gen(self):
-        class Slow(numberdb.Generator):
-            parameters = ('n',)
-            type = 'Q'
-            tid = 'T7'
-
-            def enumerate(self, limit=2):
-                for n in range(1, limit + 1):
-                    yield {'n': n}
-
-            def value(self, params, digits):
-                return Fraction(1, params['n'])
-
-        return Slow()
-
-    def test_a_busy_answer_is_tried_again(self):
-        calls = []
-
-        class Busy(Sent):
-            def opener(self, request, timeout=None):
-                calls.append(request)
-                if request.full_url.endswith('/entries') and len(
-                        [r for r in calls if r.full_url.endswith('/entries')]) == 1:
-                    raise urllib.error.HTTPError(
-                        'http://x/', 429, 'busy', {'Retry-After': '0'},
-                        _Readable(b'{"error": "busy"}'))
-                return _Readable(json.dumps({'tid': 'T7'}).encode('utf8'))
-
-        numberdb.publish(self.gen(), batch=2, limit=2, preflight=False,
-                         client=Busy().client())
-        entries = [r for r in calls if r.full_url.endswith('/entries')]
-        assert len(entries) == 2
-
-    def test_a_refused_document_is_not_tried_again(self):
-        """Repeating it will not make it true."""
-        calls = []
-
-        class Refusing(Sent):
-            def opener(self, request, timeout=None):
-                calls.append(request)
-                raise urllib.error.HTTPError(
-                    'http://x/', 413, 'too big', {},
-                    _Readable(b'{"error": "over a size limit"}'))
-
-        with pytest.raises(numberdb.TooBig):
-            numberdb.publish(self.gen(), batch=2, limit=2, preflight=False,
-                             client=Refusing().client())
-        assert len(calls) == 1
+    def test_a_given_message_is_kept(self):
+        server = Server()
+        numberdb.publish(Zeta(), message='first values',
+                         client=server.client())
+        assert _message(server.entry_posts()[0][1]) == 'first values'
 
 
 class TestCheckingBeforeComputing:
-    """A generator may run for hours; "no API key was set" is knowable at once."""
+    """A generator may run for hours. "No API key was set" is knowable in the
+    first second."""
 
-    def gen(self, counter):
-        class Counted(numberdb.Generator):
-            parameters = ('n',)
-            type = 'Q'
-            tid = 'T7'
+    def gen(self, computed):
+        class Expensive(Zeta):
+            def value(inner, params, digits):
+                computed.append(int(params['n']))
+                return Fraction(1, int(params['n']))
 
-            def enumerate(self, limit=3):
-                for n in range(1, limit + 1):
-                    yield {'n': n}
+        return Expensive()
 
-            def value(self, params, digits):
-                counter.append(params['n'])
-                return Fraction(1, params['n'])
-
-        return Counted()
+    def test_it_happens(self):
+        server = Server()
+        numberdb.publish(Zeta(), client=server.client())
+        assert server.preflights == 1
 
     def test_a_missing_key_is_found_before_anything_is_computed(self):
         computed = []
-        sent = Sent()
+        server = Server()
         with pytest.raises(numberdb.Unauthorized):
-            numberdb.publish(self.gen(computed), client=sent.client(api_key=''))
+            numberdb.publish(self.gen(computed),
+                             client=server.client(api_key=''))
         assert computed == []
 
     def test_a_refusal_is_found_before_anything_is_computed(self):
         computed = []
-        sent = Sent(status=403,
-                    body=b'{"error": "not yet", "detail": "opens after 5"}')
-        with pytest.raises(numberdb.Unauthorized):
-            numberdb.publish(self.gen(computed), client=sent.client())
+        server = Server(status=403, body=b'{"error": "not allowed yet"}')
+        with pytest.raises(numberdb.NumberDBError):
+            numberdb.publish(self.gen(computed), client=server.client())
         assert computed == []
 
-    def test_the_check_sends_no_entries(self):
-        sent = Sent()
-        numberdb.check_writable('T7', client=sent.client())
-        body = sent.request.data.decode('utf8')
-        assert body.strip() in ('[]', '[]\n')
-        assert sent.request.headers['X-entries-mode'] == 'upsert'
 
-    def test_it_can_be_turned_off(self):
+class TestOverwriting:
+
+    def test_recomputed_values_replace_stored_ones_by_default(self):
+        server = Server(entries={'1': '1', '2': '1/2'})
+        outcome = numberdb.publish(Zeta(), client=server.client())
+        assert outcome.unchanged == ['1', '2']
+        assert outcome.added == ['3']
+
+    def test_not_overwriting_skips_computing_what_is_there(self):
+        """The point of it: extending a table of expensive values should cost
+        the extension, not the table."""
         computed = []
-        sent = Sent()
-        #cache=False, because the cache is deliberately shared between runs --
-        #that is what resuming is -- so a previous run of this test would
-        #otherwise supply the values and nothing would be computed.
-        numberdb.publish(self.gen(computed), preflight=False, cache=False,
-                         client=sent.client())
+
+        class Counted(Zeta):
+            def value(inner, params, digits):
+                computed.append(int(params['n']))
+                return Fraction(1, int(params['n']))
+
+        server = Server(entries={'1': '1', '2': '1/2'})
+        outcome = numberdb.publish(Counted(), overwrite=False,
+                                   client=server.client())
+        assert computed == [3]
+        assert outcome.added == ['3']
+        assert server.sent_entries() == {'3': '1/3'}
+
+
+class TestContradictions:
+    """The check that costs nothing: each computed value is compared with what
+    the table holds, so a run that has started producing different numbers
+    stops at its first entry rather than after three days."""
+
+    def test_a_contradiction_stops_the_run(self):
+        server = Server(entries={'1': '2'})   # the table says 1 -> 2
+        with pytest.raises(numberdb.Disagreement) as raised:
+            numberdb.publish(Zeta(), client=server.client())
+        assert 'correcting=True' in str(raised.value)
+        assert server.sent_entries() == {}
+
+    def test_it_stops_before_computing_the_rest(self):
+        computed = []
+
+        class Counted(Zeta):
+            def value(inner, params, digits):
+                computed.append(int(params['n']))
+                return Fraction(1, int(params['n']))
+
+        server = Server(entries={'1': '2'})
+        with pytest.raises(numberdb.Disagreement):
+            numberdb.publish(Counted(), limit=500, client=server.client())
+        assert computed == [1]
+
+    def test_correcting_lets_it_through(self):
+        server = Server(entries={'1': '2'})
+        outcome = numberdb.publish(Zeta(), correcting=True,
+                                   client=server.client())
+        assert outcome.updated == ['1']
+        assert server.sent_entries()['1'] == '1'
+
+    def test_the_refusal_names_the_entry_and_both_values(self):
+        server = Server(entries={'1': '2'})
+        with pytest.raises(numberdb.Disagreement) as raised:
+            numberdb.publish(Zeta(), client=server.client())
+        error = raised.value
+        assert error.identity == '1'
+        assert error.stored == '2' and error.produced == '1'
+
+
+class TestPrecision:
+    """Differing precision is not a disagreement. It is the same number known
+    better or known worse, and only one of those is a loss."""
+
+    class Rounded(numberdb.Generator):
+        table = 'T7'
+        parameters = ('n',)
+
+        def enumerate(self, limit=1):
+            for n in range(1, limit + 1):
+                yield {'n': n}
+
+        def value(self, params, digits):
+            return '3.14159'
+
+    def test_more_digits_than_stored_is_not_a_disagreement(self):
+        server = Server(entries={'1': '3.14'})
+        outcome = numberdb.publish(self.Rounded(), client=server.client())
+        assert outcome.updated == ['1']
+
+    def test_fewer_digits_than_stored_is_refused(self):
+        server = Server(entries={'1': '3.14159265358979323846'})
+        with pytest.raises(numberdb.Disagreement) as raised:
+            numberdb.publish(self.Rounded(), client=server.client())
+        assert 'lowering=True' in str(raised.value)
+        assert 'digits' in str(raised.value)
+
+    def test_lowering_lets_it_through(self):
+        server = Server(entries={'1': '3.14159265358979323846'})
+        outcome = numberdb.publish(self.Rounded(), lowering=True,
+                                   client=server.client())
+        assert outcome.updated == ['1']
+
+    def test_an_identical_value_is_not_a_change(self):
+        server = Server(entries={'1': '3.14159'})
+        outcome = numberdb.publish(self.Rounded(), client=server.client())
+        assert outcome.unchanged == ['1']
+
+
+class TestRemoving:
+    """A run over n = 1..3 has said nothing whatever about n = 500."""
+
+    def test_entries_this_run_did_not_produce_are_left_alone(self):
+        server = Server(entries={'500': '1/500'})
+        outcome = numberdb.publish(Zeta(), client=server.client())
+        assert outcome.left_alone == ['500']
+        assert outcome.removed == []
+        assert set(server.modes()) == {'upsert'}
+
+    def test_removing_sends_a_replacement(self):
+        server = Server(entries={'500': '1/500'})
+        outcome = numberdb.publish(Zeta(), removing=True,
+                                   client=server.client())
+        assert outcome.removed == ['500']
+        assert outcome.left_alone == []
+        #The replacement is one send of everything, not a stream: streaming a
+        #replacement would delete the rest of the table between batches.
+        assert server.modes()[-1] != 'upsert'
+        assert set(server.sent_entries()) == {'1', '2', '3'}
+
+    def test_removing_and_naming_entries_together_is_refused(self):
+        with pytest.raises(ValueError) as raised:
+            numberdb.publish(Zeta(), only=[{'n': 1}], removing=True,
+                             client=Server().client())
+        assert 'did not produce' in str(raised.value)
+
+
+class TestNamingSomeEntries:
+
+    def test_only_those_are_computed(self):
+        computed = []
+
+        class Counted(Zeta):
+            def enumerate(inner, limit=1000):
+                computed.append('walked')
+                yield from Zeta.enumerate(inner, limit=limit)
+
+            def value(inner, params, digits):
+                computed.append(int(params['n']))
+                return Fraction(1, int(params['n']))
+
+        server = Server()
+        numberdb.publish(Counted(), only=[{'n': 17}, {'n': 42}],
+                         client=server.client())
+        assert computed == [17, 42]
+
+    def test_an_identity_may_be_named_instead(self):
+        server = Server()
+        numberdb.publish(Zeta(), only=['42'], client=server.client())
+        assert set(server.sent_entries()) == {'42'}
+
+    def test_an_identity_of_the_wrong_shape_is_refused(self):
+        with pytest.raises(ValueError):
+            numberdb.publish(Zeta(), only=['1,2'], client=Server().client())
+
+    def test_naming_entries_never_replaces_the_table(self):
+        server = Server(entries={'9': '1/9'})
+        outcome = numberdb.publish(Zeta(), only=[{'n': 17}],
+                                   client=server.client())
+        assert set(server.modes()) == {'upsert'}
+        assert outcome.left_alone == ['9']
+
+
+class TestPreview:
+
+    def test_nothing_is_sent(self):
+        server = Server(entries={'1': '1'})
+        outcome = numberdb.publish(Zeta(), preview=True,
+                                   client=server.client())
+        assert server.posts == []
+        assert server.preflights == 0
+        assert outcome.applied is False
+
+    def test_it_says_what_would_happen(self):
+        server = Server(entries={'1': '1', '500': '1/500'})
+        outcome = numberdb.publish(Zeta(), preview=True,
+                                   client=server.client())
+        assert outcome.unchanged == ['1']
+        assert outcome.added == ['2', '3']
+        assert outcome.left_alone == ['500']
+
+    def test_what_it_computed_is_not_computed_again(self):
+        computed = []
+
+        class Counted(Zeta):
+            def value(inner, params, digits):
+                computed.append(int(params['n']))
+                return Fraction(1, int(params['n']))
+
+        server = Server()
+        numberdb.publish(Counted(), preview=True, client=server.client())
+        assert computed == [1, 2, 3]
+        numberdb.publish(Counted(), client=server.client())
         assert computed == [1, 2, 3]
 
 
-class TestHoldingATableForARun:
-    """The claim covers the run, not one write.
+class TestTheCache:
 
-    Without it two generators on one table interleave: neither can amend its
-    own revision, and a thousand entries each becomes two thousand revisions.
-    """
+    def test_a_second_run_does_not_recompute(self):
+        computed = []
 
-    def test_taking_it_posts_to_the_lease(self):
-        sent = Sent(payload={'held': True, 'expires': 'x', 'minutes': 20})
-        numberdb.Lease('T42', run='r1').take() if False else None
-        lease = numberdb.Lease('T42', run='r1', client=sent.client())
-        lease.take()
-        assert sent.request.full_url.endswith('/api/table/42/lease')
-        assert sent.request.headers['X-run-id'] == 'r1'
-
-    def test_the_note_is_sent(self):
-        sent = Sent(payload={'held': True, 'minutes': 20})
-        numberdb.Lease('T42', note='regenerating', client=sent.client()).take()
-        assert sent.request.headers['X-lease-note'] == 'regenerating'
-
-    def test_dropping_it_uses_delete(self):
-        sent = Sent(payload={'held': False})
-        numberdb.Lease('T42', client=sent.client()).drop()
-        assert sent.request.get_method() == 'DELETE'
-
-    def test_it_refreshes_well_inside_the_term(self):
-        """One entry may take longer than the lease lasts."""
-        sent = Sent(payload={'held': True, 'minutes': 30})
-        lease = numberdb.Lease('T42', client=sent.client())
-        lease.take()
-        #A third of the term, so two refreshes can be missed and it still holds.
-        assert lease.every == pytest.approx(30 * 60 / 3.0)
-
-    def test_a_table_held_by_somebody_else_is_a_conflict(self):
-        sent = Sent(status=409,
-                    body=b'{"error": "being generated by somebody else"}')
-        with pytest.raises(numberdb.Conflict):
-            numberdb.Lease('T42', client=sent.client()).take()
-
-    def test_a_context_manager_takes_and_drops(self):
-        calls = []
-
-        class Watching(Sent):
-            def opener(self, request, timeout=None):
-                calls.append(request.get_method())
-                return _Readable(json.dumps(
-                    {'held': True, 'minutes': 20}).encode('utf8'))
-
-        with numberdb.Lease('T42', client=Watching().client()):
-            pass
-        assert calls[0] == 'POST'
-        assert calls[-1] == 'DELETE'
-
-    def test_publishing_holds_one_for_the_whole_run(self):
-        methods = []
-
-        class Watching(Sent):
-            def opener(self, request, timeout=None):
-                methods.append((request.get_method(), request.full_url))
-                return _Readable(json.dumps(
-                    {'tid': 'T7', 'held': True, 'minutes': 20}).encode('utf8'))
-
-        class Slow(numberdb.Generator):
-            parameters = ('n',)
-            type = 'Q'
-            tid = 'T7'
-
-            def enumerate(self, limit=4):
-                for n in range(1, limit + 1):
-                    yield {'n': n}
-
-            def value(self, params, digits):
-                return Fraction(1, params['n'])
-
-        numberdb.publish(Slow(), batch=2, limit=4, preflight=False,
-                         client=Watching().client())
-        leases = [m for m in methods if m[1].endswith('/lease')]
-        assert leases[0][0] == 'POST'
-        assert leases[-1][0] == 'DELETE'
-
-
-class TestUpdatingSomeEntries:
-    """Fixing two wrong values, or adding a hundred to a table of a thousand.
-
-    Regenerating everything is the wrong answer when the existing entries are
-    expensive and correct, and replacing a table with the two entries somebody
-    wanted corrected would delete the rest of it.
-    """
-
-    def gen(self, seen):
-        class Counted(numberdb.Generator):
-            parameters = ('n',)
-            type = 'Q'
-            tid = 'T7'
-
-            def enumerate(self, limit=1000):
-                seen.append('walked')
-                for n in range(1, limit + 1):
-                    yield {'n': n}
-
-            def value(self, params, digits):
-                seen.append(int(params['n']))
+        class Counted(Zeta):
+            def value(inner, params, digits):
+                computed.append(int(params['n']))
                 return Fraction(1, int(params['n']))
 
-        return Counted()
+        server = Server()
+        numberdb.publish(Counted(), client=server.client())
+        numberdb.publish(Counted(), client=server.client())
+        assert computed == [1, 2, 3]
 
-    def test_only_those_entries_are_computed(self):
-        seen = []
-        entries = numberdb.generate(self.gen(seen), only=[{'n': 17}, {'n': 42}],
-                                    cache=False)
-        assert [r['params']['n'] for r in entries] == ['17', '42']
-        assert seen == [17, 42]
+    def test_a_value_reaches_the_disk_before_the_run_can_die(self):
+        """What this protects against is the next line never running."""
+        computed = []
+        breaks = [True]
 
-    def test_the_enumeration_is_not_walked(self):
-        """A generator whose enumeration is itself expensive would pay twice."""
-        seen = []
-        numberdb.generate(self.gen(seen), only=[{'n': 17}], cache=False)
-        assert 'walked' not in seen
+        class Dies(Zeta):
+            def enumerate(inner, limit=4):
+                yield from Zeta.enumerate(inner, limit=limit)
 
-    def test_an_identity_may_be_named_instead(self):
-        seen = []
-        entries = numberdb.generate(self.gen(seen), only=['42'], cache=False)
-        assert [r['params']['n'] for r in entries] == ['42']
+            def value(inner, params, digits):
+                n = int(params['n'])
+                computed.append(n)
+                if n == 3 and breaks[0]:
+                    raise RuntimeError('the machine fell over')
+                return Fraction(1, n)
 
-    def test_an_identity_of_the_wrong_shape_is_refused(self):
-        seen = []
-        with pytest.raises(ValueError):
-            numberdb.generate(self.gen(seen), only=['1,2'], cache=False)
+        server = Server()
+        with pytest.raises(RuntimeError):
+            numberdb.publish(Dies(), client=server.client())
+        assert computed == [1, 2, 3]
 
-    def test_naming_entries_never_replaces_the_table(self):
-        """Sending two entries as a replacement would delete the other 998."""
-        sent = Sent()
-        numberdb.publish(self.gen([]), only=[{'n': 17}], preflight=False,
-                         cache=False, source_name=None, client=sent.client())
-        assert sent.request.headers['X-entries-mode'] == 'upsert'
+        #Same file, same parameters, so the same fingerprint: the rerun picks
+        #up what was already computed.
+        computed.clear()
+        breaks[0] = False
+        numberdb.publish(Dies(), client=server.client())
+        assert computed == [3, 4]
 
-    def test_upsert_can_be_asked_for_without_naming_entries(self):
-        """Extending: the cache supplies the old, the generator the new."""
-        sent = Sent()
-        numberdb.publish(self.gen([]), limit=2, upsert=True, preflight=False,
-                         cache=False, source_name=None, client=sent.client())
-        assert sent.request.headers['X-entries-mode'] == 'upsert'
 
-    def test_a_full_run_still_replaces(self):
-        """A generator asked for its whole range has said what the table holds."""
-        sent = Sent()
-        numberdb.publish(self.gen([]), limit=2, preflight=False, cache=False,
-                         source_name=None, client=sent.client())
-        assert 'X-entries-mode' not in sent.request.headers
+class TestTheCacheKnowsWhenItIsStale:
+    """The fingerprint covers exactly the bytes that get attached.
 
-    def test_a_bulk_generator_cannot_be_asked_for_some(self):
-        class Bulk(numberdb.Generator):
-            parameters = ('n',)
+    It used to hash ``inspect.getsource(type(generator))`` -- the class body --
+    while the attachment was the whole file. Editing a helper function beside
+    the class then changed the numbers without changing the fingerprint, so a
+    rerun reused stale values and attached the edited file: a table carrying
+    code that did not produce its numbers, with nothing saying so.
+    """
 
-            def all_entries(self, digits=None, **bounds):
-                entries = numberdb.Entries('n')
-                entries.add(n=1, number='1')
-                return entries
+    def write(self, tmp_path, scale):
+        module = tmp_path / 'gen_under_test.py'
+        module.write_text(
+            'from fractions import Fraction\n'
+            'import numberdb\n'
+            '\n'
+            'SCALE = %d\n'
+            '\n'
+            '\n'
+            'def scaled(n):\n'
+            '    return Fraction(1, n * SCALE)\n'
+            '\n'
+            '\n'
+            'class Sample(numberdb.Generator):\n'
+            "    table = 'T7'\n"
+            "    parameters = ('n',)\n"
+            '\n'
+            '    def enumerate(self, limit=2):\n'
+            '        for n in range(1, limit + 1):\n'
+            '            yield {"n": n}\n'
+            '\n'
+            '    def value(self, params, digits):\n'
+            '        return scaled(int(params["n"]))\n' % (scale,))
+        return module
 
-        with pytest.raises(ValueError):
-            numberdb.generate(Bulk(), only=[{'n': 1}])
+    def load(self, module):
+        """Import it the way an import does.
 
-    def test_a_report_feeds_straight_back(self):
-        """verify says which are wrong; to_fix() is what publish wants."""
-        stored = [{'params': {'n': '1'}, 'number': '1'},
-                  {'params': {'n': '2'}, 'number': '0.5'}]
-        client = Sent(payload={'Title': 'P', 'Numbers': stored}).client()
-        report = numberdb.verify(self.gen([]), client=client, limit=2,
-                                 sample=None)
-        assert report.differing
-        assert report.to_fix() == [{'n': 2}]
+        Registering in sys.modules is not incidental: ``inspect.getfile`` of a
+        class looks the file up through ``sys.modules[cls.__module__]``, so a
+        module loaded without being registered has no findable file and
+        nothing would be attached at all.
+        """
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location('gen_under_test',
+                                                      str(module))
+        loaded = importlib.util.module_from_spec(spec)
+        #Left registered: publish looks the file up through sys.modules while
+        #it runs, so unregistering here would be unregistering mid-import.
+        sys.modules['gen_under_test'] = loaded
+        spec.loader.exec_module(loaded)
+        return loaded.Sample()
+
+    @pytest.fixture(autouse=True)
+    def forget_the_module_afterwards(self):
+        yield
+        sys.modules.pop('gen_under_test', None)
+
+    def test_editing_a_helper_beside_the_class_invalidates_the_cache(
+            self, tmp_path):
+        module = self.write(tmp_path, scale=1)
+        server = Server()
+        numberdb.publish(self.load(module), client=server.client())
+        assert server.sent_entries() == {'1': '1', '2': '1/2'}
+
+        #The class body is untouched; only the constant above it changes.
+        self.write(tmp_path, scale=10)
+        server = Server()
+        numberdb.publish(self.load(module), client=server.client())
+        assert server.sent_entries() == {'1': '1/10', '2': '1/20'}
+
+    def test_the_attached_file_is_what_was_fingerprinted(self, tmp_path):
+        module = self.write(tmp_path, scale=1)
+        server = Server()
+        numberdb.publish(self.load(module), client=server.client())
+        assert server.files['gen_under_test.py'] == module.read_text()
+
+
+class TestBatching:
+    """Sent as they are computed, so a crash at entry 900 keeps the first 899
+    -- and all of one run's batches land in one revision."""
+
+    def test_many_entries_are_sent_in_batches(self):
+        server = Server()
+        numberdb.publish(Zeta(), limit=250, client=server.client())
+        assert len(server.entry_posts()) >= 3
+        assert len(server.sent_entries()) == 250
+
+    def test_a_slow_entry_is_not_held_back_for_ninety_nine_more(self,
+                                                                monkeypatch):
+        """Some tables take hours per entry. Batching by count alone would mean
+        storing nothing for a week."""
+        monkeypatch.setattr(numberdb._generate, 'BATCH_SECONDS', 0)
+        server = Server()
+        numberdb.publish(Zeta(), client=server.client())
+        assert len(server.entry_posts()) == 3
+
+
+class TestRetryingABusyTable:
+    """Writes to one table are serialised, so a batch can be told somebody else
+    is writing. For a run of hours that is normal, and the values are already
+    computed."""
+
+    def test_a_busy_table_is_tried_again(self, monkeypatch):
+        monkeypatch.setattr('time.sleep', lambda seconds: None)
+        server = Server(busy=2)
+        outcome = numberdb.publish(Zeta(), client=server.client())
+        assert outcome.entries == 3
+
+    def test_it_gives_up_eventually(self, monkeypatch):
+        monkeypatch.setattr('time.sleep', lambda seconds: None)
+        server = Server(busy=99)
+        with pytest.raises(numberdb.NumberDBError):
+            numberdb.publish(Zeta(), client=server.client())
 
 
 class TestAttachingTheSource:
@@ -896,48 +713,76 @@ class TestAttachingTheSource:
     that did not contain the code computing the number, and would not run.
     """
 
-    def files(self, sent):
-        """Every file the run attached, by the name it was stored under."""
-        out = {}
-        for request in sent.requests:
-            path = request.full_url.split('/api/')[-1]
-            if '/file/' in path:
-                out[path.rsplit('/file/', 1)[1]] = request.data.decode('utf8')
-        return out
-
-    def run(self, generator, **kwargs):
-        sent = Sent()
-        numberdb.publish(generator, preflight=False, cache=False, limit=2,
-                         client=sent.client(), **kwargs)
-        return self.files(sent)
-
     def test_the_whole_file_is_attached(self):
         import generator_module
 
-        files = self.run(generator_module.Sample())
-        stored = files['generator_module.py']
+        server = Server()
+        numberdb.publish(generator_module.Sample(), client=server.client())
+        stored = server.files['generator_module.py']
         assert stored == open(generator_module.__file__).read()
         #The parts a class-only attachment lost.
         assert 'def scaled' in stored
         assert 'SCALE = 3' in stored
-        assert 'import numberdb' in stored
 
     def test_the_file_names_itself(self):
         import generator_module
 
-        assert 'generator_module.py' in self.run(generator_module.Sample())
+        server = Server()
+        outcome = numberdb.publish(generator_module.Sample(),
+                                   client=server.client())
+        assert outcome.files == ['generator_module.py']
 
-    def test_a_name_may_still_be_given(self):
+    def test_files_ride_on_the_same_run(self):
+        """So a reader finds the code that made these numbers, not the code
+        that happens to be there now."""
         import generator_module
 
-        files = self.run(generator_module.Sample(), source_name='generate.py')
-        assert 'generate.py' in files
-        assert 'def scaled' in files['generate.py']
+        server = Server()
+        outcome = numberdb.publish(generator_module.Sample(),
+                                   client=server.client())
+        for path, headers, _body in server.posts:
+            if '/file/' in path:
+                assert _header(headers, 'X-run-id') == outcome.run
 
-    def test_nothing_is_attached_when_declined(self):
+    def test_declared_files_replace_the_generators_own(self):
         import generator_module
 
-        assert self.run(generator_module.Sample(), source_name=None) == {}
+        class Declaring(generator_module.Sample):
+            files = ('generator_module.py',)
+
+        server = Server()
+        outcome = numberdb.publish(Declaring(), client=server.client())
+        assert outcome.files == ['generator_module.py']
+
+    def test_a_declared_file_that_cannot_be_read_is_refused(self):
+        """Not skipped quietly: the numbers would be stored without the code
+        that was meant to accompany them."""
+        import generator_module
+
+        class Missing(generator_module.Sample):
+            files = ('generator_module.py', 'not_here.py')
+
+        with pytest.raises(ValueError) as raised:
+            numberdb.publish(Missing(), client=Server().client())
+        assert 'not_here.py' in str(raised.value)
+
+    def test_two_files_with_the_same_bare_name_are_refused(self, tmp_path):
+        """A table's files are flat, so one would silently replace the other."""
+        import generator_module
+
+        #Two real files, in different directories, with one name between them.
+        for where in ('solvers', 'series'):
+            (tmp_path / where).mkdir()
+            (tmp_path / where / 'util.py').write_text('#%s\n' % (where,))
+
+        class Colliding(generator_module.Sample):
+            files = (str(tmp_path / 'solvers' / 'util.py'),
+                     str(tmp_path / 'series' / 'util.py'))
+
+        with pytest.raises(ValueError) as raised:
+            numberdb.publish(Colliding(), client=Server().client())
+        assert 'flat' in str(raised.value)
+        assert 'util.py' in str(raised.value)
 
     def test_a_generator_with_no_file_attaches_nothing(self):
         """A notebook cell is not a script, so it is not stored as one.
@@ -947,19 +792,13 @@ class TestAttachingTheSource:
         the only alternative to sending nothing would be sending the class
         body under a name like generate.py, which claims to be runnable code
         and is not.
-
-        A generator run the ordinary way, ``python generate.py``, also has
-        __module__ == '__main__' -- but there __main__ has a file, and that
-        file is exactly the right thing to attach. The difference is the
-        file, which is why this test takes it away rather than faking a
-        module name.
         """
         import __main__
 
         source = ('class Live(numberdb.Generator):\n'
+                  "    table = 'T7'\n"
                   "    parameters = ('n',)\n"
-                  '    tid = "T7"\n'
-                  '    def enumerate(self, limit=2):\n'
+                  '    def enumerate(self, limit=1):\n'
                   '        yield {"n": 1}\n'
                   '    def value(self, params, digits):\n'
                   '        return Fraction(1, 1)\n')
@@ -971,17 +810,128 @@ class TestAttachingTheSource:
         if had is not None:
             del __main__.__file__
         try:
-            #Publishes the numbers, and does not fail over the missing file.
-            assert self.run(namespace['Live']()) == {}
+            server = Server()
+            outcome = numberdb.publish(namespace['Live'](),
+                                       client=server.client())
+            assert outcome.files == []
+            assert server.files == {}
         finally:
             if had is not None:
                 __main__.__file__ = had
 
-    def test_declared_files_replace_the_generators_own(self):
-        import generator_module
 
-        class Declaring(generator_module.Sample):
-            files = ('generator_module.py',)
+class TestBulkGenerators:
+    """Some tables cannot be computed one entry at a time: zeros found by a
+    sweep, values lifted from another database."""
 
-        stored = self.run(Declaring())
-        assert list(stored) == ['generator_module.py']
+    class Sweep(numberdb.Generator):
+        table = 'T7'
+        parameters = ('n',)
+
+        def all_entries(self, digits=None, **bounds):
+            for n in (1, 2):
+                yield {'n': n}, Fraction(1, n)
+
+    def test_they_are_sent(self):
+        server = Server()
+        numberdb.publish(self.Sweep(), client=server.client())
+        assert server.sent_entries() == {'1': '1', '2': '1/2'}
+
+    def test_they_cannot_be_asked_for_some(self):
+        with pytest.raises(ValueError) as raised:
+            numberdb.publish(self.Sweep(), only=[{'n': 1}],
+                             client=Server().client())
+        assert 'all at once' in str(raised.value)
+
+    def test_what_they_yield_is_kept_as_it_arrives(self, tmp_path):
+        """Yielding rather than returning is what lets a sweep that dies half
+        way keep what it found."""
+        import os
+
+        numberdb.publish(self.Sweep(), preview=True,
+                         client=Server().client())
+        cached = os.listdir(str(tmp_path / 'cache'))
+        assert len(cached) == 1
+        assert 'identity' in open(str(tmp_path / 'cache' / cached[0])).read()
+
+
+class TestVerify:
+    """Reads, computes, compares. Needs no key."""
+
+    def test_a_table_that_matches_is_ok(self):
+        server = Server(entries={'1': '1', '2': '1/2', '3': '1/3'})
+        report = numberdb.verify(Zeta(), client=server.client())
+        assert report.ok
+        assert report.matched == 3
+
+    def test_a_contradiction_is_reported(self):
+        server = Server(entries={'1': '1', '2': '99', '3': '1/3'})
+        report = numberdb.verify(Zeta(), client=server.client())
+        assert not report.ok
+        assert [identity for identity, _s, _n in report.differing] == ['2']
+
+    def test_what_differs_feeds_straight_back(self):
+        server = Server(entries={'1': '1', '2': '99', '3': '1/3'})
+        report = numberdb.verify(Zeta(), client=server.client())
+        assert report.to_fix() == [{'n': 2}]
+
+    def test_a_missing_entry_is_reported(self):
+        server = Server(entries={'1': '1'})
+        report = numberdb.verify(Zeta(), client=server.client())
+        assert set(report.missing) == {'2', '3'}
+
+    def test_fewer_stored_digits_is_not_a_disagreement(self):
+        """The bug this replaced: comparing text reported every entry of a
+        table built at 20 digits as broken when checked at 100, and then
+        proposed rewriting all of them."""
+
+        class Pi(numberdb.Generator):
+            table = 'T7'
+            parameters = ('n',)
+
+            def enumerate(self, limit=1):
+                yield {'n': 1}
+
+            def value(self, params, digits):
+                return '3.14159265358979323846'
+
+        server = Server(entries={'1': '3.14159'})
+        report = numberdb.verify(Pi(), client=server.client())
+        assert report.ok
+        assert report.refined == ['1']
+
+    def test_a_sample_is_spread_through_the_table(self):
+        seen = []
+
+        class Watched(Zeta):
+            def value(inner, params, digits):
+                seen.append(int(params['n']))
+                return Fraction(1, int(params['n']))
+
+        server = Server(entries={str(n): '1/%d' % n for n in range(1, 101)})
+        numberdb.verify(Watched(), sample=5, limit=100,
+                        client=server.client())
+        assert len(seen) == 5
+        assert seen[0] == 1 and seen[-1] > 50
+
+
+class TestSubmittingEntriesOnly:
+    """The internal call `publish` is built on. Entries and nothing else."""
+
+    def test_it_posts_only_entries(self):
+        import yaml
+
+        server = Server()
+        entries = Entries('n')
+        entries.add(n=1, number='3.14')
+        submit_entries('T7', entries, client=server.client())
+        body = yaml.safe_load(server.entry_posts()[0][2])
+        #A list of entries, and nothing that could be mistaken for a document.
+        assert [sorted(record) for record in body] == [['number', 'params']]
+
+    def test_upsert_is_announced_in_a_header(self):
+        server = Server()
+        entries = Entries('n')
+        entries.add(n=1, number='3.14')
+        submit_entries('T7', entries, upsert=True, client=server.client())
+        assert server.modes() == ['upsert']

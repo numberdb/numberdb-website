@@ -295,6 +295,74 @@ from `numberdb.NumberDBError`, so a single `except` covers it;
 `TransportError`, `RateLimited`, `Unauthorized` and `UnsupportedNumber` are the
 specific cases.
 
+## Adding numbers
+
+Write the program that computes them, and publish it. That is the whole of
+writing — there is one way in, and no second one to choose between:
+
+```python
+class Zeta(numberdb.Generator):
+    table = 'T42'
+    parameters = ('n',)
+    digits = 100
+
+    def enumerate(self, limit=1000):
+        for n in range(2, limit + 1):
+            yield {'n': n}
+
+    def value(self, params, digits):
+        return RealIntervalField(4 * digits)(zeta(params['n']))
+
+numberdb.publish(Zeta())
+```
+
+The careful things happen without being asked for:
+
+- **values are cached as they are computed**, under a fingerprint of the code
+  that made them, so a run that dies resumes rather than starting again — and
+  editing that code invalidates the cache instead of quietly reusing it;
+- **they are sent as they arrive**, so a crash at entry 900 keeps the first 899;
+- **the whole run lands in one revision**, not nine hundred;
+- **permission is checked in the first second**, not after three days;
+- **the file that produced the numbers is stored beside them**, in the same
+  revision, so a reader finds the code that made a value rather than the code
+  that happens to be there now. Spread over several files? List them in
+  `files = ('generate.py', 'helpers.py')` — and list your own file among them,
+  since naming any replaces the automatic one.
+
+A table's prose — its definition, comments, references and tags — is written by
+a person on the site. There is deliberately no way to send it from here, so a
+generator cannot delete a definition by assembling a document out of what it
+happens to know.
+
+### What it asks you
+
+Only intent, since nothing else can know it. Each defaults to the cautious
+answer, and a refusal names the argument that means *yes, I meant it*.
+
+| | |
+|---|---|
+| `overwrite=True` | recomputed values replace stored ones. `False` adds only what is missing — and skips computing the rest, so extending a table of a thousand expensive values by a hundred costs a hundred computations |
+| `correcting=False` | allow values that **contradict** what is stored. Without it the first contradiction stops the run, which costs one entry rather than a day |
+| `lowering=False` | allow values with **fewer digits** than are stored |
+| `removing=False` | delete entries this run did not produce. A run over `n = 2..100` has said nothing about `n = 500`; what would have gone is listed in `outcome.left_alone` |
+| `only=[...]` | compute and send just these, leaving the rest alone |
+| `preview=True` | compute everything, send nothing, return the same report |
+
+Differing precision is not a disagreement: a table built at 20 digits and
+recomputed at 100 agrees with itself.
+
+### Checking without writing
+
+`numberdb.verify` recomputes a sample and compares. It writes nothing and needs
+no key, which is what makes it worth running:
+
+```python
+report = numberdb.verify(Zeta())          # ten entries, spread through
+if not report.ok:
+    numberdb.publish(Zeta(), only=report.to_fix())
+```
+
 ## Rate limits and API keys
 
 Anonymous use is rate limited; a key raises the limit. Keep it out of your

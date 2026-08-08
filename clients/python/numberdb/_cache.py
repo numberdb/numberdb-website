@@ -40,19 +40,27 @@ def _cache_root() -> str:
 	return os.path.join(base, 'numberdb')
 
 
-def fingerprint_of(generator, digits, bounds) -> str:
+def fingerprint_of(generator, digits, bounds, source=None) -> str:
 	"""What identifies this computation, so a changed one is not resumed.
 
-	The generator's own source, its declared parameters and type, the precision
-	asked for and the bounds it was called with. Change any of them and the
-	values are a different computation's values.
+	The code, its declared parameters and type, the precision asked for and the
+	bounds it was called with. Change any of them and the values are a
+	different computation's values.
 
-	Falls back to the compiled code when the source cannot be read -- a class
-	defined in a session has no file -- because the alternative is a cache that
-	silently spans a code change.
+	``source`` is a digest of **exactly the bytes that will be attached to the
+	table**, handed in rather than worked out here. That is the whole point of
+	it being a parameter: while this module computed its own answer, it hashed
+	``inspect.getsource(type(generator))`` -- the class body -- and the
+	attachment was the file. Editing a helper function beside the class then
+	changed the numbers the code produces without changing the fingerprint, so
+	a rerun reused stale cached values and attached the edited file. The table
+	would have carried code that did not produce its numbers, and nothing would
+	have said so.
+
+	Falls back to the compiled method bodies when there is no source to hash --
+	a class defined in a session has no file -- because the alternative is a
+	cache that silently spans a code change.
 	"""
-	import inspect
-
 	parts = [
 		'parameters=%r' % (tuple(getattr(generator, 'parameters', ())),),
 		'type=%r' % (getattr(generator, 'type', ''),),
@@ -61,15 +69,10 @@ def fingerprint_of(generator, digits, bounds) -> str:
 		                      (bounds or {}).items()),),
 	]
 
-	source = None
-	try:
-		source = inspect.getsource(type(generator))
-	except (OSError, TypeError):
-		pass
-	if source is not None:
+	if source:
 		parts.append('source=%s' % (source,))
 	else:
-		#No file to read. The compiled bodies still change when the code does,
+		#No file to hash. The compiled bodies still change when the code does,
 		#which is what this has to detect.
 		for name in ('value', 'enumerate', 'all_entries'):
 			method = getattr(type(generator), name, None)
@@ -102,8 +105,9 @@ class RunCache:
 	cache is read.
 	"""
 
-	def __init__(self, generator, digits, bounds, path=None, read=True):
-		self.fingerprint = fingerprint_of(generator, digits, bounds)
+	def __init__(self, generator, digits, bounds, source=None, path=None,
+	             read=True):
+		self.fingerprint = fingerprint_of(generator, digits, bounds, source)
 		#Named for the fingerprint, so a changed generator reads an empty cache
 		#rather than its predecessor's values, and so the file somebody opens
 		#says which computation it belongs to.

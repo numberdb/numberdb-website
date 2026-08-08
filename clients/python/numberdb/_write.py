@@ -11,20 +11,25 @@ Putting it here makes it installable, versioned and testable, and gives one
 answer to the question two generators must not answer differently: how many
 digits, and in what form.
 
-    entries = numberdb.Entries('n')
-    for n in range(1, 100):
-        entries.add(n=n, number=zeta(n))
-    numberdb.submit('T42', numberdb.document(title='Zeta at integers',
-                                             parameters={'n': {'type': 'Z'}},
-                                             entries=entries))
+Prose is not here. A table's definition, comments, references and tags are
+written by a person on the site, and a program cannot reach them from this
+module -- which is why a generator can no longer delete them by accident.
 """
 
 from __future__ import annotations
 
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Union
 
-__all__ = ['Entries', 'document', 'to_text', 'submit', 'submit_entries',
-           'create', 'check_writable', 'attach']
+#Nothing here is public. A program's one way in is `numberdb.publish`, and
+#these are the pieces it is built from: turning a value into the string the
+#database stores, collecting values under their parameters, and sending them.
+#
+#What is deliberately absent is as important as what is here. There is no way
+#from a program to write a whole document, and so no way for a generator to
+#delete a table's definition, comments or references by assembling a document
+#out of what it happens to know. That is not a discipline anybody has to
+#remember: the function does not exist.
+__all__ = ['Entries', 'to_text', 'submit_entries', 'check_writable', 'attach']
 
 #: How many digits a value is written to when nothing says otherwise. The
 #: house style, and the reason for it is not storage: digits that are cheap to
@@ -282,45 +287,7 @@ def _param_text(value: Any) -> str:
     return str(value)
 
 
-def document(title: str,
-             entries: Union[Entries, Sequence[Mapping[str, Any]], None] = None,
-             parameters: Optional[Mapping[str, Any]] = None,
-             **sections: Any) -> Dict[str, Any]:
-    """A table document, with its sections in the order the site writes them.
-
-    Order matters: it is part of the document, so a generator that let its
-    serialiser sort the keys would rewrite the whole table without having
-    changed a value.
-
-    The identifier is not a section. It belongs to the table rather than to the
-    text, it is allocated when the table is created, and the server ignores it
-    if sent.
-    """
-    if not title or not str(title).strip():
-        raise ValueError('a table needs a title')
-
-    out = {'Title': str(title)}  # type: Dict[str, Any]
-    #Everything the caller gave, in the order they gave it, so a generator can
-    #choose how its table reads.
-    for key, value in sections.items():
-        out[_section_name(key)] = value
-    if parameters is not None:
-        out['Parameters'] = dict(parameters)
-    if entries is not None:
-        out['Numbers'] = (entries.as_list() if isinstance(entries, Entries)
-                          else [dict(r) for r in entries])
-    return out
-
-
-def _section_name(key: str) -> str:
-    """`data_properties` -> `Data properties`, since sections are prose names."""
-    if key.isupper() or ' ' in key:
-        return key
-    words = key.replace('_', ' ').strip()
-    return words[:1].upper() + words[1:]
-
-
-def _as_yaml(tree: Any) -> str:
+def _as_yaml(tree):
     try:
         import yaml
     except ImportError:
@@ -332,52 +299,17 @@ def _as_yaml(tree: Any) -> str:
                      default_flow_style=False)
 
 
-def submit(tid: str, tree: Mapping[str, Any], message: str = '',
-           produced_by: str = '', base: str = '',
-           client: Any = None) -> Dict[str, Any]:
-    """Replace table ``tid`` with ``tree``. Returns what the server recorded.
-
-    The **whole** document, so anything ``tree`` omits is removed. A generator
-    that computes values wants `submit_entries` instead; this is for a caller
-    that holds the entire table and means to replace it.
-
-    ``produced_by`` names the program. It defaults to something truthful rather
-    than to nothing, because a reader is entitled to know that a revision came
-    out of a script and a reviewer triages those differently.
-
-    ``base`` is the revision the caller started from. Passing it turns a
-    concurrent change from a silent overwrite into a refusal.
-    """
-    from . import _default_client
-
-    client = client or _default_client
-    headers = {'X-Produced-By': produced_by or 'numberdb-python'}
-    if message:
-        headers['X-Edit-Message'] = message
-    if base:
-        headers['X-Base-Revision'] = base
-    return client.submit('/api/table/%s' % (str(tid).lstrip('tT'),),
-                         _as_yaml(tree), headers)
-
-
 def submit_entries(tid: str, entries: Union[Entries, Sequence[Mapping[str, Any]]],
                    message: str = '', produced_by: str = '',
                    upsert: bool = False, run: str = '',
                    client: Any = None) -> Dict[str, Any]:
-    """Replace only the entries of table ``tid``. This is what a generator wants.
+    """Replace only the entries of table ``tid``. Internal; use `publish`.
 
-    `submit` replaces the whole document, so a generator that assembles one
-    from what it knows -- a title, the parameters, the numbers it computed --
-    deletes the definition, the comments, the references and the tags, and the
-    result looks perfectly ordinary afterwards. That was impossible under the
-    old arrangement, where a script wrote its own `numbers.yaml` and could not
-    reach the prose. This restores that boundary: only entries are sent, and
-    the server sets them into the current document.
-
-        entries = numberdb.Entries('n')
-        for n in range(1, 100):
-            entries.add(n=n, number=zeta(n))
-        numberdb.submit_entries('T42', entries, produced_by='zeta-generator')
+    Entries and nothing else, which is the boundary the old arrangement had by
+    accident: a script wrote its own `numbers.yaml` and could not reach the
+    prose. Sending a whole document is not possible from this package at all,
+    so a generator cannot delete a definition, the comments, the references or
+    the tags by assembling a document out of what it happens to know.
 
     ``upsert`` sends *these* entries and leaves the rest of the table alone,
     which is what a generator computing expensive values needs: it can send
@@ -406,18 +338,6 @@ def submit_entries(tid: str, entries: Union[Entries, Sequence[Mapping[str, Any]]
                          _as_yaml(records), headers)
 
 
-def create(tree: Mapping[str, Any], message: str = '', produced_by: str = '',
-           client: Any = None) -> Dict[str, Any]:
-    """Add a new table. Returns its allocated T-number and first revision."""
-    from . import _default_client
-
-    client = client or _default_client
-    headers = {'X-Produced-By': produced_by or 'numberdb-python'}
-    if message:
-        headers['X-Edit-Message'] = message
-    return client.submit('/api/tables', _as_yaml(tree), headers)
-
-
 def check_writable(tid: str, client: Any = None) -> Dict[str, Any]:
     """Find out now whether this table can be written to.
 
@@ -438,108 +358,6 @@ def check_writable(tid: str, client: Any = None) -> Dict[str, Any]:
     """
     return submit_entries(tid, [], upsert=True, client=client,
                           message='checking that this table can be written to')
-
-
-class Lease:
-    """A claim on a table for as long as a run takes.
-
-    The server's write lock covers one write. It is the wrong tool for a
-    generator that spends hours on an entry, because between its writes anybody
-    else can write: two runs interleave, neither can amend its own revision,
-    and the history fills with one revision per value.
-
-    This covers the run. It is taken before anything is computed -- so a second
-    generator is told in its first second, rather than discovering the
-    collision by colliding hours later -- and dropped at the end.
-
-    A background thread refreshes it, because one entry may take longer than
-    the lease lasts. The thread is a daemon and refreshes well inside the
-    expiry, so a lease survives a slow entry; if the process dies the lease
-    simply expires and the table frees itself, which is the behaviour to want
-    from a claim held by something that can crash.
-
-        with numberdb.Lease('T42', note='regenerating to 200 digits'):
-            ...
-    """
-
-    def __init__(self, tid, run='', note='', client=None, every=None):
-        self.tid = str(tid).lstrip('tT')
-        self.run = run
-        self.note = note
-        self.client = client
-        self.every = every
-        self.expires = None
-        self._stop = None
-        self._thread = None
-
-    def __enter__(self):
-        answer = self.take()
-        self._start_heartbeat()
-        return answer
-
-    def __exit__(self, *exc):
-        self.drop()
-        return False
-
-    def _client(self):
-        from . import _default_client
-
-        return self.client or _default_client
-
-    def _headers(self):
-        headers = {}
-        if self.run:
-            headers['X-Run-Id'] = self.run
-        if self.note:
-            headers['X-Lease-Note'] = self.note
-        return headers
-
-    def take(self):
-        """Take or refresh the claim. Raises Conflict if somebody else has it."""
-        answer = self._client().submit('/api/table/%s/lease' % (self.tid,), '',
-                                       self._headers())
-        self.expires = answer.get('expires')
-        if self.every is None:
-            #Refresh at a third of the term, so two refreshes may be missed --
-            #a long computation holding the interpreter, a slow network -- and
-            #the claim still stands.
-            self.every = max(20.0, (answer.get('minutes') or 20) * 60 / 3.0)
-        return answer
-
-    def drop(self):
-        """Give the claim up, so the next run does not wait for it to expire."""
-        self._stop_heartbeat()
-        try:
-            self._client().submit('/api/table/%s/lease' % (self.tid,), '',
-                                  dict(self._headers(), **{'X-Method': 'DELETE'}),
-                                  method='DELETE')
-        except Exception:
-            #Losing the claim is not worth failing a finished run for: it
-            #expires on its own.
-            pass
-
-    def _start_heartbeat(self):
-        import threading
-
-        self._stop = threading.Event()
-
-        def beat():
-            while not self._stop.wait(self.every):
-                try:
-                    self.take()
-                except Exception:
-                    #Nothing useful to do here: if the claim has been lost the
-                    #next submission will say so, and it says it where a caller
-                    #can see it.
-                    pass
-
-        self._thread = threading.Thread(target=beat, daemon=True)
-        self._thread.start()
-
-    def _stop_heartbeat(self):
-        if self._stop is not None:
-            self._stop.set()
-        self._thread = None
 
 
 def attach(tid: str, name: str, content: Any, run: str = '',
