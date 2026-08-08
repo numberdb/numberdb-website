@@ -70,6 +70,8 @@ table.parameter-table th { font-weight: 400; color: #555; font-size: 0.9em; }
   &middot;
   <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=sections">Text</a>
   &middot;
+  <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=entries">Numbers</a>
+  &middot;
   <a href="{% url 'db:edit-table' table_being_edited.tid %}">Source</a>
   <span class="hint">
     The settings with fixed choices. The definition, comments, formulas,
