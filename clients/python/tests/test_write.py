@@ -26,9 +26,13 @@ class Sent:
         self.status = status
         self.body = body
         self.request = None
+        #One publish makes several requests -- the entries, then the files --
+        #and a test about the files cannot read them off the last one.
+        self.requests = []
 
     def opener(self, request, timeout=None):
         self.request = request
+        self.requests.append(request)
         if self.status is not None:
             raise urllib.error.HTTPError(
                 'http://x/', self.status, 'refused', {},
@@ -881,3 +885,103 @@ class TestUpdatingSomeEntries:
                                  sample=None)
         assert report.differing
         assert report.to_fix() == [{'n': 2}]
+
+
+class TestAttachingTheSource:
+    """What is stored beside the numbers is the file that produced them.
+
+    It used to be ``inspect.getsource(type(generator))``, which returns the
+    class body and nothing else. A generator whose ``value`` called a function
+    defined above it in the same file stored an attachment named generate.py
+    that did not contain the code computing the number, and would not run.
+    """
+
+    def files(self, sent):
+        """Every file the run attached, by the name it was stored under."""
+        out = {}
+        for request in sent.requests:
+            path = request.full_url.split('/api/')[-1]
+            if '/file/' in path:
+                out[path.rsplit('/file/', 1)[1]] = request.data.decode('utf8')
+        return out
+
+    def run(self, generator, **kwargs):
+        sent = Sent()
+        numberdb.publish(generator, preflight=False, cache=False, limit=2,
+                         client=sent.client(), **kwargs)
+        return self.files(sent)
+
+    def test_the_whole_file_is_attached(self):
+        import generator_module
+
+        files = self.run(generator_module.Sample())
+        stored = files['generator_module.py']
+        assert stored == open(generator_module.__file__).read()
+        #The parts a class-only attachment lost.
+        assert 'def scaled' in stored
+        assert 'SCALE = 3' in stored
+        assert 'import numberdb' in stored
+
+    def test_the_file_names_itself(self):
+        import generator_module
+
+        assert 'generator_module.py' in self.run(generator_module.Sample())
+
+    def test_a_name_may_still_be_given(self):
+        import generator_module
+
+        files = self.run(generator_module.Sample(), source_name='generate.py')
+        assert 'generate.py' in files
+        assert 'def scaled' in files['generate.py']
+
+    def test_nothing_is_attached_when_declined(self):
+        import generator_module
+
+        assert self.run(generator_module.Sample(), source_name=None) == {}
+
+    def test_a_generator_with_no_file_attaches_nothing(self):
+        """A notebook cell is not a script, so it is not stored as one.
+
+        ``inspect`` cannot reach the source of a class defined in a fileless
+        __main__ at all -- getfile raises, and getsource calls getfile -- so
+        the only alternative to sending nothing would be sending the class
+        body under a name like generate.py, which claims to be runnable code
+        and is not.
+
+        A generator run the ordinary way, ``python generate.py``, also has
+        __module__ == '__main__' -- but there __main__ has a file, and that
+        file is exactly the right thing to attach. The difference is the
+        file, which is why this test takes it away rather than faking a
+        module name.
+        """
+        import __main__
+
+        source = ('class Live(numberdb.Generator):\n'
+                  "    parameters = ('n',)\n"
+                  '    tid = "T7"\n'
+                  '    def enumerate(self, limit=2):\n'
+                  '        yield {"n": 1}\n'
+                  '    def value(self, params, digits):\n'
+                  '        return Fraction(1, 1)\n')
+        namespace = {'numberdb': numberdb, 'Fraction': Fraction,
+                     '__name__': '__main__'}
+        exec(compile(source, '<ipython-input-1>', 'exec'), namespace)
+
+        had = getattr(__main__, '__file__', None)
+        if had is not None:
+            del __main__.__file__
+        try:
+            #Publishes the numbers, and does not fail over the missing file.
+            assert self.run(namespace['Live']()) == {}
+        finally:
+            if had is not None:
+                __main__.__file__ = had
+
+    def test_declared_files_replace_the_generators_own(self):
+        import generator_module
+
+        class Declaring(generator_module.Sample):
+            files = ('generator_module.py',)
+
+        stored = self.run(Declaring())
+        assert list(stored) == ['generator_module.py']

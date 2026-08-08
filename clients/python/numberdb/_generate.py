@@ -50,6 +50,21 @@ from ._write import DIGITS, Entries, to_text
 __all__ = ['Generator', 'Report', 'generate', 'verify', 'publish']
 
 
+class _Auto:
+    """The caller named no file, so the generator's own file names itself.
+
+    A separate value from ``None`` because ``None`` already means "attach
+    nothing", and the two have to stay distinguishable: one asks for the
+    default, the other declines it.
+    """
+
+    def __repr__(self):
+        return 'auto'
+
+
+AUTO = _Auto()
+
+
 class Generator:
     """Base class for a table's generator.
 
@@ -82,7 +97,9 @@ class Generator:
 
     #: Which files to store with the numbers, named rather than guessed.
     #:
-    #: Empty means "this generator's own source", which is what most runs want.
+    #: Empty means "the file this generator is defined in", which is what most
+    #: runs want -- the whole file, not the class, since the function a value
+    #: was computed with usually sits beside the class rather than inside it.
     #: Name them when the computation is spread over several files, or when a
     #: note or a table of inputs belongs beside the values -- guessing at that
     #: from the directory would sweep up whatever else happened to be sitting
@@ -445,7 +462,7 @@ def _value_of(record):
 def publish(generator: Generator, tid: Optional[str] = None,
             digits: Optional[int] = None, message: str = '',
             batch: Optional[int] = None, run: str = '', preflight: bool = True,
-            cache: Any = True, source_name: Optional[str] = 'generate.py',
+            cache: Any = True, source_name: Any = AUTO,
             only: Any = None, upsert: Optional[bool] = None,
             client: Any = None, **bounds: Any) -> Dict[str, Any]:
     """Send a generator's entries to its table.
@@ -484,6 +501,18 @@ def publish(generator: Generator, tid: Optional[str] = None,
     All the batches of one run land in a single revision, so the history shows
     one act of regeneration rather than a thousand -- which is also what keeps
     the stored size sane, since every revision holds the whole document.
+
+    ``source_name`` is what to call the generator's own file, which is attached
+    to the same revision so that the code and the numbers arrive together. By
+    default the file names itself. ``source_name=None`` attaches nothing.
+
+    It is one file because it names one. A computation spread over several
+    belongs in `Generator.files`, which lists them and replaces this.
+
+    A generator defined in a notebook or an interactive session has no file,
+    and then nothing is attached: the class body alone is not a script, and
+    storing it as one would mislead whoever came looking for how a number was
+    computed. Put such a generator in a file before publishing.
     """
     from ._write import submit_entries
 
@@ -630,8 +659,8 @@ def _attach_source(generator, tid, run, client, source_name):
     What to send is declared on the generator rather than discovered: a
     directory sweep would collect whatever else happened to be sitting there,
     which is nobody's intention and sooner or later somebody's private working
-    file. With nothing declared it sends the generator's own source, which is
-    the one file certainly relevant.
+    file. With nothing declared it sends the generator's own file, which is the
+    one file certainly relevant.
 
     Best effort. A run whose numbers are stored and whose source could not be
     read has still done the useful part, and failing at the end over a missing
@@ -665,13 +694,33 @@ def _attach_source(generator, tid, run, client, source_name):
                 continue
         return
 
-    if not source_name:
+    if source_name is not AUTO and not source_name:
+        return
+
+    #The file, not the class. ``inspect.getsource(type(generator))`` returns
+    #the class body alone, so a generator whose value() calls a function
+    #defined above it in the same file was stored without that function --
+    #an attachment named generate.py that omits the code computing the
+    #number, and that will not run.
+    try:
+        path = inspect.getfile(type(generator))
+    except (OSError, TypeError):
+        path = None
+    if not path:
+        #Defined in a notebook or a session, where there is no file. Nothing
+        #is sent rather than the class body on its own: a fragment stored
+        #under a name like generate.py claims to be a script and is not one.
         return
     try:
-        source = inspect.getsource(type(generator))
-    except (OSError, TypeError):
+        with open(path, 'r', encoding='utf8') as handle:
+            body = handle.read()
+    except OSError:
         return
-    send(source_name, source)
+
+    #The file names itself unless the caller said otherwise, so what is stored
+    #is what the author wrote and what a reader will look for. Declared files
+    #behave the same way.
+    send(os.path.basename(path) if source_name is AUTO else source_name, body)
 
 
 def _run_name(generator):
