@@ -408,7 +408,7 @@ class TestContradictions:
 
     def test_a_contradiction_stops_the_run(self):
         server = Server(entries={'1': '2'})   # the table says 1 -> 2
-        with pytest.raises(numberdb.Disagreement) as raised:
+        with pytest.raises(numberdb.DisagreementError) as raised:
             Zeta().publish(client=server.client())
         assert 'correcting=True' in str(raised.value)
         assert server.sent_entries() == {}
@@ -422,7 +422,7 @@ class TestContradictions:
                 return Fraction(1, int(params['n']))
 
         server = Server(entries={'1': '2'})
-        with pytest.raises(numberdb.Disagreement):
+        with pytest.raises(numberdb.DisagreementError):
             Counted().publish(limit=500, client=server.client())
         assert computed == [1]
 
@@ -435,7 +435,7 @@ class TestContradictions:
 
     def test_the_refusal_names_the_entry_and_both_values(self):
         server = Server(entries={'1': '2'})
-        with pytest.raises(numberdb.Disagreement) as raised:
+        with pytest.raises(numberdb.DisagreementError) as raised:
             Zeta().publish(client=server.client())
         error = raised.value
         assert error.identity == '1'
@@ -464,7 +464,7 @@ class TestPrecision:
 
     def test_fewer_digits_than_stored_is_refused(self):
         server = Server(entries={'1': '3.14159265358979323846'})
-        with pytest.raises(numberdb.Disagreement) as raised:
+        with pytest.raises(numberdb.DisagreementError) as raised:
             self.Rounded().publish(client=server.client())
         assert 'lowering=True' in str(raised.value)
         assert 'digits' in str(raised.value)

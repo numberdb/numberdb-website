@@ -85,13 +85,13 @@ from typing import Any, Dict, List, Optional, Union
 from ._convert import Scalar, SupportsParent, to_exact
 from ._limits import (MAX_BATCH, SIGNIFICANT_DIGITS, bound_interval,
                       p_adic_digits)
-from ._errors import (Conflict, Disagreement, NumberDBError, RateLimited,
+from ._errors import (Conflict, DisagreementError, NumberDBError, RateLimited,
                       TooBig, TransportError,
                       Unauthorized, UnsupportedNumber)
 from ._http import Client
 #After Client, since the write helpers reach for the default client at
 #call time rather than at import time.
-from ._generate import Generator, Outcome, Report
+from ._generate import Generator, PublishOutcome, VerifyReport
 from ._wire import (KINDS, ComplexInterval, PAdic, Polynomial, RealInterval,
                     decode, to_sage)
 
@@ -105,8 +105,8 @@ __all__ = ['search', 'search_many', 'search_text',
            'Result', 'Table', 'Tag', 'SearchResults',
            'RealInterval', 'ComplexInterval', 'PAdic', 'Polynomial', 'KINDS',
            'NumberDBError', 'TransportError', 'RateLimited', 'Unauthorized',
-           'UnsupportedNumber', 'Conflict', 'TooBig', 'Disagreement',
-           'Generator', 'Outcome', 'Report',
+           'UnsupportedNumber', 'Conflict', 'TooBig', 'DisagreementError',
+           'Generator', 'PublishOutcome', 'VerifyReport',
            '__version__']
 
 try:
