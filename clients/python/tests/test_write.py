@@ -362,7 +362,7 @@ class TestCheckingBeforeComputing:
     def test_a_missing_key_is_found_before_anything_is_computed(self):
         computed = []
         server = Server()
-        with pytest.raises(numberdb.Unauthorized):
+        with pytest.raises(numberdb.UnauthorizedError):
             self.gen(computed).publish(
                              client=server.client(api_key=''))
         assert computed == []
@@ -449,6 +449,8 @@ class TestPrecision:
     class Rounded(numberdb.Generator):
         table = 'T7'
         parameters = ('n',)
+        #Said out loud, because this generator really does produce six.
+        digits = 6
 
         def enumerate(self, limit=1):
             for n in range(1, limit + 1):
@@ -479,6 +481,107 @@ class TestPrecision:
         server = Server(entries={'1': '3.14159'})
         outcome = self.Rounded().publish(client=server.client())
         assert outcome.unchanged == ['1']
+
+
+class TestValuesShorterThanAskedFor:
+    """The quiet failure of this whole interface.
+
+    Sage builds interval fields in bits and this database counts decimal
+    digits. ``RealIntervalField(digits)`` reads perfectly well and delivers
+    about a third of what was meant -- nothing is wrong with what gets stored,
+    there is just a third of it, and no exception ever fires.
+    """
+
+    class Short(numberdb.Generator):
+        table = 'T7'
+        parameters = ('n',)
+        digits = 100
+
+        def enumerate(self, limit=1):
+            yield {'n': 1}
+
+        def value(self, params, digits):
+            return '3.14159'          # six digits, not a hundred
+
+    def test_it_is_refused(self):
+        with pytest.raises(numberdb.DisagreementError) as raised:
+            self.Short().publish(client=Server().client())
+        assert 'carries 6' in str(raised.value)
+
+    def test_the_refusal_explains_bits_against_digits(self):
+        with pytest.raises(numberdb.DisagreementError) as raised:
+            self.Short().publish(client=Server().client())
+        message = str(raised.value)
+        assert 'bits, not digits' in message
+        assert str(numberdb.bits(100)) in message
+
+    def test_an_entry_may_say_it_is_known_no_better(self):
+        """A constant known to eight digits does not become wrong by being
+        stored to eight."""
+
+        class Honest(numberdb.Generator):
+            table = 'T7'
+            parameters = ('n',)
+            digits = 100
+
+            def enumerate(self, limit=1):
+                yield {'n': 1}
+
+            def value(self, params, digits):
+                return {'number': '3.14159', 'digits': 6}
+
+        server = Server()
+        outcome = Honest().publish(client=server.client())
+        assert outcome.added == ['1']
+        assert server.sent_entries() == {'1': '3.14159'}
+
+    def test_the_declared_digits_are_not_stored_as_an_annotation(self):
+        import yaml
+
+        class Honest(numberdb.Generator):
+            table = 'T7'
+            parameters = ('n',)
+
+            def enumerate(self, limit=1):
+                yield {'n': 1}
+
+            def value(self, params, digits):
+                return {'number': '3.14159', 'digits': 6}
+
+        server = Server()
+        Honest().publish(client=server.client())
+        record = yaml.safe_load(server.entry_posts()[0][2])[0]
+        assert 'digits' not in record
+
+    def test_lowering_allows_a_whole_run_of_them(self):
+        server = Server()
+        outcome = self.Short().publish(lowering=True, client=server.client())
+        assert outcome.added == ['1']
+
+    def test_an_exact_value_is_not_short(self):
+        """`1/3` states every digit there is; it is not thirty digits shy."""
+        server = Server()
+        outcome = Zeta().publish(client=server.client())
+        assert outcome.added == ['1', '2', '3']
+
+    def test_a_polynomial_is_not_measured_in_digits(self):
+        """It has precision, but not decimal precision, and counting its
+        characters would refuse a perfectly good polynomial."""
+
+        class Polys(numberdb.Generator):
+            table = 'T7'
+            parameters = ('n',)
+            type = 'Z[]'
+            digits = 100
+
+            def enumerate(self, limit=1):
+                yield {'n': 1}
+
+            def value(self, params, digits):
+                return 'x^2 + 1'
+
+        server = Server()
+        assert Polys().publish(client=server.client()).added == ['1']
 
 
 class TestRemoving:

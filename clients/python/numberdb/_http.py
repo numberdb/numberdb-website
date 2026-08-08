@@ -18,8 +18,8 @@ import urllib.parse
 import urllib.request
 from typing import Any, Callable, Dict, Optional
 
-from ._errors import (Conflict, NumberDBError, RateLimited, TooBig,
-                      TransportError, Unauthorized)
+from ._errors import (ConflictError, NumberDBError, RateLimitError, TooBigError,
+                      TransportError, UnauthorizedError)
 
 __all__ = ['Client', 'DEFAULT_BASE_URL', 'DEFAULT_TIMEOUT']
 
@@ -212,7 +212,7 @@ class Client:
         """
         key = self.api_key
         if not key:
-            raise Unauthorized(
+            raise UnauthorizedError(
                 'writing needs an API key; set NUMBERDB_API_KEY or pass '
                 'api_key= to Client')
 
@@ -266,11 +266,11 @@ class Client:
         detail = detail.strip()
 
         if error.code in (401, 403):
-            return Unauthorized(detail or 'the server refused the API key')
+            return UnauthorizedError(detail or 'the server refused the API key')
         if error.code == 409:
-            return Conflict(detail or 'the table changed while you were writing')
+            return ConflictError(detail or 'the table changed while you were writing')
         if error.code == 413:
-            return TooBig(detail or 'the table is over a size limit')
+            return TooBigError(detail or 'the table is over a size limit')
         if error.code == 429:
             return self._from_status(error)
         return NumberDBError(detail or ('HTTP %d from %s'
@@ -289,9 +289,9 @@ class Client:
             if not self.api_key:
                 detail += ('. Anonymous use is limited -- an API key raises '
                            'the limit: https://numberdb.org/help#section-api')
-            return RateLimited(detail, retry_after)
+            return RateLimitError(detail, retry_after)
         if error.code in (401, 403):
-            return Unauthorized('the server rejected the API key (HTTP %d)'
+            return UnauthorizedError('the server rejected the API key (HTTP %d)'
                                 % (error.code,))
         return TransportError('HTTP %d from %s' % (error.code, error.url))
 

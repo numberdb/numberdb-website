@@ -292,7 +292,7 @@ that value and nothing else, and its `.exact_text` is there regardless.
 
 `results.unreadable` lists them. Every exception the package raises derives
 from `numberdb.NumberDBError`, so a single `except` covers it;
-`TransportError`, `RateLimited`, `Unauthorized` and `UnsupportedNumber` are the
+`TransportError`, `RateLimitError`, `UnauthorizedError` and `UnsupportedNumberError` are the
 specific cases.
 
 ## Adding numbers
@@ -312,7 +312,8 @@ class Zeta(numberdb.Generator):
             yield {'n': n}
 
     def value(self, params, digits):
-        return RealIntervalField(4 * digits)(zeta(params['n']))
+        #Sage builds interval fields in BITS; this database counts DIGITS.
+        return RealIntervalField(numberdb.bits(digits))(zeta(params['n']))
 
 Zeta().publish()
 ```
@@ -325,6 +326,12 @@ The careful things happen without being asked for:
 - **they are sent as they arrive**, so a crash at entry 900 keeps the first 899;
 - **the whole run lands in one revision**, not nine hundred;
 - **permission is checked in the first second**, not after three days;
+- **the digits you asked for are the digits you get**: `digits` is decimal,
+  Sage's fields are binary, and `RealIntervalField(digits)` — which reads
+  perfectly well — delivers about a third of what was meant. `numberdb.bits()`
+  converts, and `publish` measures what each value actually pins down and
+  refuses a table that would silently hold a third of its claimed precision.
+  An entry genuinely known no better says so: `return {'number': x, 'digits': 8}`;
 - **the file that produced the numbers is stored beside them**, in the same
   revision, so a reader finds the code that made a value rather than the code
   that happens to be there now. Spread over several files? List them in
@@ -400,7 +407,7 @@ For more than one server or key in a process, use a client directly:
 >>> numberdb.search_text('3.14159', client=client)
 ```
 
-Exceeding the limit raises `numberdb.RateLimited`, which carries `.retry_after`
+Exceeding the limit raises `numberdb.RateLimitError`, which carries `.retry_after`
 in seconds when the server supplies it.
 
 ## Pointing it somewhere else

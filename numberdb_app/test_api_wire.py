@@ -120,9 +120,9 @@ class WireFormat(TestCase):
 	def test_the_client_refuses_a_kind_it_does_not_know(self):
 		"""Dispatch is a fixed table, so a reply cannot name its own decoder."""
 		client = _client()
-		with self.assertRaises(client.UnsupportedNumber):
+		with self.assertRaises(client.UnsupportedNumberError):
 			client.decode({'kind': 'os.system', 'value': 'rm -rf /'})
-		with self.assertRaises(client.UnsupportedNumber):
+		with self.assertRaises(client.UnsupportedNumberError):
 			client.decode('not even an object')
 
 	def test_the_payload_is_json(self):

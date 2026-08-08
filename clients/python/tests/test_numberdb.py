@@ -109,7 +109,7 @@ class Decoding(unittest.TestCase):
 
     def test_an_unknown_kind_is_refused_by_name(self):
         """Dispatch is a table; a reply cannot name its own decoder."""
-        with self.assertRaises(numberdb.UnsupportedNumber) as caught:
+        with self.assertRaises(numberdb.UnsupportedNumberError) as caught:
             _wire.decode({'kind': 'os.system', 'value': 'rm -rf /'})
         self.assertIn('upgrading', str(caught.exception))
 
@@ -117,7 +117,7 @@ class Decoding(unittest.TestCase):
         for record in [{'kind': 'ZZ'}, {'kind': 'RIF', 'lower': '1'},
                        'not an object', None, 42]:
             with self.subTest(record=record):
-                with self.assertRaises(numberdb.UnsupportedNumber):
+                with self.assertRaises(numberdb.UnsupportedNumberError):
                     _wire.decode(record)
 
 
@@ -149,13 +149,13 @@ class ForwardCompatibility(unittest.TestCase):
         self.assertEqual(unknown.kind, 'SomeFutureKind')
         self.assertFalse(unknown.is_readable)
         self.assertEqual(results.unreadable, [unknown])
-        with self.assertRaises(numberdb.UnsupportedNumber):
+        with self.assertRaises(numberdb.UnsupportedNumberError):
             unknown.value
 
     def test_every_error_is_catchable_as_one_type(self):
         """So a new failure mode cannot escape an existing handler."""
-        for error in [numberdb.UnsupportedNumber, numberdb.RateLimited,
-                      numberdb.Unauthorized, numberdb.TransportError]:
+        for error in [numberdb.UnsupportedNumberError, numberdb.RateLimitError,
+                      numberdb.UnauthorizedError, numberdb.TransportError]:
             with self.subTest(error=error.__name__):
                 self.assertTrue(issubclass(error, numberdb.NumberDBError))
 
@@ -267,14 +267,14 @@ class Failures(unittest.TestCase):
 
     def test_rate_limiting_says_how_to_lift_it(self):
         client = _client({}, status=429, headers={'Retry-After': '30'})
-        with self.assertRaises(numberdb.RateLimited) as caught:
+        with self.assertRaises(numberdb.RateLimitError) as caught:
             numberdb.search('pi', client=client)
         self.assertEqual(caught.exception.retry_after, 30)
         self.assertIn('API key', str(caught.exception))
 
     def test_a_rejected_key_is_distinguished_from_a_rate_limit(self):
         client = _client({}, status=403, api_key='bad')
-        with self.assertRaises(numberdb.Unauthorized):
+        with self.assertRaises(numberdb.UnauthorizedError):
             numberdb.search('pi', client=client)
 
     def test_an_unreachable_server_is_reported_plainly(self):
@@ -467,7 +467,7 @@ class SageFlavour(unittest.TestCase):
         """So `import numberdb.sage as numberdb` works wholesale."""
         flavoured = self._sage_module()
         for name in ['search', 'table', 'tag', 'configure', 'Client',
-                     'NumberDBError', 'RateLimited', 'UnsupportedNumber']:
+                     'NumberDBError', 'RateLimitError', 'UnsupportedNumberError']:
             with self.subTest(name=name):
                 self.assertTrue(hasattr(flavoured, name), name)
 
@@ -784,6 +784,40 @@ class TheContainer(unittest.TestCase):
     def test_something_unsearchable_is_refused_by_name(self):
         with self.assertRaises(TypeError):
             numberdb.search(object())
+
+
+class ExceptionsAreNamedAsExceptions(unittest.TestCase):
+    """Every public exception ends in Error, so a reader knows what it is.
+
+    The family used to be half and half -- NumberDBError and TransportError
+    beside RateLimited, Unauthorized, Conflict and TooBig -- which left the
+    bare ones reading like data rather than like something raised. PEP 8 asks
+    for the suffix; this keeps the next one from drifting back.
+    """
+
+    def test_every_public_exception_says_so(self):
+        for name in numberdb.__all__:
+            thing = getattr(numberdb, name)
+            if isinstance(thing, type) and issubclass(thing, Exception):
+                with self.subTest(name=name):
+                    self.assertTrue(name.endswith('Error'), name)
+
+    def test_they_all_answer_to_the_base(self):
+        """`except numberdb.NumberDBError` has to keep catching all of it."""
+        for name in numberdb.__all__:
+            thing = getattr(numberdb, name)
+            if isinstance(thing, type) and issubclass(thing, Exception):
+                with self.subTest(name=name):
+                    self.assertTrue(issubclass(thing, numberdb.NumberDBError))
+
+    def test_none_of_them_shadows_a_builtin(self):
+        """OverflowError was a candidate for TooBigError, and would have
+        replaced the builtin for anyone doing `from numberdb import *`."""
+        import builtins
+
+        for name in numberdb.__all__:
+            with self.subTest(name=name):
+                self.assertIsNone(getattr(builtins, name, None))
 
 
 class SageModuleStaysComplete(unittest.TestCase):

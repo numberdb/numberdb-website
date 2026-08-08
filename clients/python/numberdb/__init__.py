@@ -85,12 +85,13 @@ from typing import Any, Dict, List, Optional, Union
 from ._convert import Scalar, SupportsParent, to_exact
 from ._limits import (MAX_BATCH, SIGNIFICANT_DIGITS, bound_interval,
                       p_adic_digits)
-from ._errors import (Conflict, DisagreementError, NumberDBError, RateLimited,
-                      TooBig, TransportError,
-                      Unauthorized, UnsupportedNumber)
+from ._errors import (ConflictError, DisagreementError, NumberDBError, RateLimitError,
+                      TooBigError, TransportError,
+                      UnauthorizedError, UnsupportedNumberError)
 from ._http import Client
 #After Client, since the write helpers reach for the default client at
 #call time rather than at import time.
+from ._write import bits
 from ._generate import Generator, PublishOutcome, VerifyReport
 from ._wire import (KINDS, ComplexInterval, PAdic, Polynomial, RealInterval,
                     decode, to_sage)
@@ -104,9 +105,9 @@ __all__ = ['search', 'search_many', 'search_text',
            'table', 'tag', 'configure', 'Client',
            'Result', 'Table', 'Tag', 'SearchResults',
            'RealInterval', 'ComplexInterval', 'PAdic', 'Polynomial', 'KINDS',
-           'NumberDBError', 'TransportError', 'RateLimited', 'Unauthorized',
-           'UnsupportedNumber', 'Conflict', 'TooBig', 'DisagreementError',
-           'Generator', 'PublishOutcome', 'VerifyReport',
+           'NumberDBError', 'TransportError', 'RateLimitError', 'UnauthorizedError',
+           'UnsupportedNumberError', 'ConflictError', 'TooBigError', 'DisagreementError',
+           'Generator', 'PublishOutcome', 'VerifyReport', 'bits',
            '__version__']
 
 try:
@@ -212,7 +213,7 @@ class Result:
 
     @property
     def value(self) -> Any:
-        """The number. Raises ``UnsupportedNumber`` if this version cannot
+        """The number. Raises ``UnsupportedNumberError`` if this version cannot
         read its kind -- ``exact_text`` still holds it either way."""
         if not self._decoded:
             value = decode(self._wire) if self._wire else None
@@ -372,7 +373,7 @@ def _refine(results: 'SearchResults', low, high) -> 'SearchResults':
         try:
             if _overlaps(result.value, low, high):
                 kept.append(result)
-        except UnsupportedNumber:
+        except UnsupportedNumberError:
             kept.append(result)
     return SearchResults(kept, results.messages)
 

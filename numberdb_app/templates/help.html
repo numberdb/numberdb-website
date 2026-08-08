@@ -401,7 +401,7 @@ export NUMBERDB_API_KEY=...
 
 Exceeding the limit returns HTTP 429 with a
 <code class="table-code">Retry-After</code> header; the package raises
-<code class="table-code">numberdb.RateLimited</code>, carrying the same number
+<code class="table-code">numberdb.RateLimitError</code>, carrying the same number
 of seconds.
 
 <p>
@@ -586,19 +586,21 @@ package, write a generator, and send its results with an API key:
 import numberdb
 
 class Zeta(numberdb.Generator):
+    table = 'T42'
     parameters = ('n',)
     type = 'R'
-    tid = 'T42'
 
     def enumerate(self, limit=1000):
         for n in range(2, limit + 1):
             yield {'n': n}
 
     def value(self, params, digits):
-        return RealIntervalField(4 * digits)(zeta(params['n']))
+        #Sage builds interval fields in BITS; numberdb counts DIGITS.
+        return RealIntervalField(numberdb.bits(digits))(zeta(params['n']))
 
-numberdb.verify(Zeta(), sample=10)   # does it still produce the table?
-numberdb.publish(Zeta())             # send the entries
+Zeta().verify()      # is the table still right?
+Zeta().preview()     # is this generator right? computes all, sends nothing
+Zeta().publish()     # send the entries
 </pre>
 
 <p class="help-text">

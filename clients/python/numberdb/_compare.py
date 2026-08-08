@@ -32,7 +32,7 @@ from fractions import Fraction
 from typing import Optional, Tuple
 
 __all__ = ['SAME', 'REFINES', 'COARSENS', 'AGREES', 'CONTRADICTS', 'UNREADABLE',
-           'EXACT', 'compare', 'digits_of']
+           'EXACT', 'compare', 'digits_of', 'counts_digits']
 
 #: The two values are written identically.
 SAME = 'same'
@@ -135,6 +135,23 @@ def compare(stored: str, produced: str) -> str:
     if produced_digits < stored_digits:
         return COARSENS
     return AGREES
+
+
+def counts_digits(text: str) -> bool:
+    """Whether `digits_of` of this value means decimal digits.
+
+    A polynomial and a p-adic have precision, but not decimal precision: the
+    number of terms `digits_of` falls back to counting for them is not
+    comparable with a number of digits, and treating it as one would refuse a
+    perfectly good polynomial for having fewer than a hundred of something.
+    """
+    text = (text or '').strip()
+    parts = _complex_parts(text)
+    if parts:
+        return all(counts_digits(part) for part in parts)
+    if _as_fraction(text) is not None:
+        return True
+    return _claim(text) is not None
 
 
 def digits_of(text: str) -> int:

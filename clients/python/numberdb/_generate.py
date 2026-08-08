@@ -108,9 +108,16 @@ class Generator:
     #: makes it a different polynomial.
     type: str = 'R'
 
-    #: Significant digits when the generator does not say otherwise. A hundred
-    #: identifies any number in this database; more earns its place only when
-    #: it was expensive to obtain.
+    #: Significant **decimal** digits every entry is expected to carry. A
+    #: hundred identifies any number in this database; more earns its place
+    #: only when it was expensive to obtain.
+    #:
+    #: This is a promise that is checked. A value that comes back shorter stops
+    #: the run, because the usual cause is building an interval field in digits
+    #: where it wanted bits, and the result is a table holding a third of the
+    #: precision it claims with nothing whatever to show for it. An entry that
+    #: really is known no better says so for itself, by returning
+    #: ``{'number': x, 'digits': 8}``.
     digits: int = DIGITS
 
     #: Which files to store with the numbers, named rather than guessed.
@@ -166,6 +173,17 @@ class Generator:
         May return a mapping to carry annotations with the value::
 
             return {'number': x, 'comment': 'conjectural'}
+
+        ``digits`` in that mapping says this entry is known no better, and is
+        how a table of varying precision is written: everything else is
+        measured against the generator's own ``digits`` and refused if it falls
+        short.
+
+            return {'number': x, 'digits': 8}
+
+        The ``digits`` handed in is **decimal digits**, because that is how
+        this database writes numbers. Sage's interval fields are built in bits,
+        so convert: ``RealIntervalField(numberdb.bits(digits))``.
         """
         raise NotImplementedError(
             '%s must implement value() or all_entries()'
@@ -564,7 +582,14 @@ def _publish(generator, only=None, message='', overwrite=True,
     for identity, params, entry in _stream(generator, only, digits, bounds,
                                            cache, skip):
         seen.add(identity)
-        text = to_text(entry['number'], digits)
+        entry = dict(entry)
+        #An entry may declare that it is less precise on purpose -- a constant
+        #that is only known to eight digits does not become wrong by being
+        #stored to eight. Anything else is measured against what the generator
+        #said it wanted.
+        wanted = int(entry.pop('digits', digits) or digits)
+        text = to_text(entry['number'], wanted)
+        _check_precision(table, identity, text, wanted, lowering)
         if identity in stored:
             _judge(table, identity, stored[identity], text,
                    correcting, lowering, sender)
@@ -595,6 +620,42 @@ def _publish(generator, only=None, message='', overwrite=True,
         outcome.files = _attach(generator, table, outcome.run, client, files)
         outcome.applied = True
     return outcome
+
+
+def _check_precision(table, identity, text, wanted, lowering):
+    """Whether this value carries the digits the generator asked for.
+
+    Short values are the quiet failure of this whole interface. Sage's interval
+    fields are built in **bits** and this database counts **decimal digits**,
+    so ``RealIntervalField(digits)`` -- which reads perfectly well -- delivers
+    about thirty digits where a hundred were meant. Nothing is wrong with what
+    gets stored; there is just a third of it, and no exception ever fires.
+
+    Measured rather than assumed, because it cannot be guaranteed in advance:
+    arithmetic loses precision by an amount nobody can predict from the inputs.
+    A wide enough field is a good guess, and this is the check that turns the
+    guess into a fact.
+    """
+    if lowering or not _compare.counts_digits(text):
+        return
+    got = _compare.digits_of(text)
+    if got >= wanted:
+        return
+    raise DisagreementError(
+        '%s entry %s: %d digits were asked for and this value carries %d. '
+        'Sage builds interval fields in bits, not digits -- %d digits needs '
+        '%d of them, so RealIntervalField(numberdb.bits(digits)) is what that '
+        'line usually wants. If this entry is genuinely known no better, say '
+        'so where it is produced -- return {"number": x, "digits": %d} -- or '
+        'pass lowering=True for a run of them.'
+        % (table, identity, wanted, got, wanted, _bits(wanted), got),
+        identity=identity, stored='', produced=text, verdict='short')
+
+
+def _bits(digits):
+    from ._write import bits
+
+    return bits(digits)
 
 
 def _judge(table, identity, stored_text, produced_text, correcting, lowering,
@@ -958,12 +1019,12 @@ def _with_retry(send, attempts=4):
     """
     import time
 
-    from ._errors import Conflict, RateLimited
+    from ._errors import ConflictError, RateLimitError
 
     for attempt in range(attempts):
         try:
             return send()
-        except (Conflict, RateLimited):
+        except (ConflictError, RateLimitError):
             if attempt == attempts - 1:
                 raise
             time.sleep(2 ** attempt)

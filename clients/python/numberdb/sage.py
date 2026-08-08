@@ -35,14 +35,15 @@ from typing import Optional, Union
 
 from . import (KINDS, Client, ComplexInterval, NumberDBError, PAdic,
                Polynomial,
-               RateLimited, RealInterval, Result, Scalar, Searchable,
-               SearchResults, Table, Tag, TransportError, Unauthorized,
-               UnsupportedNumber, __version__, configure, table, tag)
+               RateLimitError, RealInterval, Result, Scalar, Searchable,
+               SearchResults, Table, Tag, TransportError, UnauthorizedError,
+               UnsupportedNumberError, __version__, configure, table, tag)
 #Writing needs no Sage flavour of its own -- values go *in*, and a Sage
 #object is already understood wherever one is accepted -- but it has to be
 #reachable, or `import numberdb.sage as numberdb` is a drop-in replacement
 #that silently is not one. A Sage session is where generators get written.
-from . import Conflict, DisagreementError, Generator, PublishOutcome, VerifyReport, TooBig
+from . import (ConflictError, DisagreementError, Generator,
+               PublishOutcome, TooBigError, VerifyReport, bits)
 from . import search as _search
 from . import search_many as _search_many
 from . import search_by_expression as _search_by_expression
@@ -66,9 +67,9 @@ __all__ = ['search', 'search_many', 'search_text',
            'Result', 'Table', 'SearchResults',
            'Tag',
            'RealInterval', 'ComplexInterval', 'PAdic', 'Polynomial', 'KINDS',
-           'NumberDBError', 'TransportError', 'RateLimited', 'Unauthorized',
-           'UnsupportedNumber', 'Conflict', 'TooBig', 'DisagreementError',
-           'Generator', 'PublishOutcome', 'VerifyReport',
+           'NumberDBError', 'TransportError', 'RateLimitError', 'UnauthorizedError',
+           'UnsupportedNumberError', 'ConflictError', 'TooBigError', 'DisagreementError',
+           'Generator', 'PublishOutcome', 'VerifyReport', 'bits',
            '__version__']
 
 #Checked by specification rather than by importing: Sage takes seconds to load,

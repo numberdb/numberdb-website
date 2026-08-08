@@ -4,9 +4,9 @@ Kept in its own module because both the transport and the decoder raise, and
 neither should have to import the other to share a base class.
 """
 
-__all__ = ['NumberDBError', 'TransportError', 'RateLimited', 'Unauthorized',
-           'Conflict', 'DisagreementError', 'TooBig',
-           'UnsupportedNumber']
+__all__ = ['NumberDBError', 'TransportError', 'RateLimitError', 'UnauthorizedError',
+           'ConflictError', 'DisagreementError', 'TooBigError',
+           'UnsupportedNumberError']
 
 
 class NumberDBError(Exception):
@@ -22,7 +22,7 @@ class TransportError(NumberDBError):
     """The server could not be reached, or answered with something unusable."""
 
 
-class RateLimited(TransportError):
+class RateLimitError(TransportError):
     """Too many requests.
 
     ``retry_after`` is in seconds when the server said, otherwise None. An API
@@ -34,11 +34,11 @@ class RateLimited(TransportError):
         self.retry_after = retry_after
 
 
-class Unauthorized(TransportError):
+class UnauthorizedError(TransportError):
     """The API key was rejected."""
 
 
-class UnsupportedNumber(NumberDBError):
+class UnsupportedNumberError(NumberDBError):
     """A number this version of the package has no rule for.
 
     Usually means the server is newer than the package, and upgrading is the
@@ -51,7 +51,7 @@ class UnsupportedNumber(NumberDBError):
     """
 
 
-class Conflict(NumberDBError):
+class ConflictError(NumberDBError):
     """Somebody changed the table while you were writing it.
 
     Carries the conflicting entries when the server names them, so a script can
@@ -65,7 +65,7 @@ class Conflict(NumberDBError):
         self.head = head
 
 
-class TooBig(NumberDBError):
+class TooBigError(NumberDBError):
     """The table is over a size limit and nothing was written.
 
     A program is refused where a person would be warned and allowed to
