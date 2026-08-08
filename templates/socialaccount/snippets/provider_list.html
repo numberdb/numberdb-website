@@ -1,0 +1,27 @@
+{% comment %}
+Provider buttons that post, so there is no page in between.
+
+allauth's own snippet renders links, and a GET to the provider login URL lands
+on an interstitial whose entire content is a form with a "Continue" button.
+That page is not decoration: starting an OAuth flow from a plain link means any
+site can send a visitor into it, and a browser prefetching a link would begin
+one unasked. The protection is the POST and its CSRF token, not the extra
+click -- so posting from here keeps the protection and drops the click.
+{% endcomment %}
+
+{% load socialaccount %}
+{% get_providers as socialaccount_providers %}
+
+{% for provider in socialaccount_providers %}
+  {% provider_login_url provider process=process scope=scope auth_params=auth_params as provider_url %}
+  <form method="post" action="{{ provider_url }}" class="provider-form">
+    {% csrf_token %}
+    {% if redirect_field_value %}
+      <input type="hidden" name="{{ redirect_field_name }}"
+             value="{{ redirect_field_value }}">
+    {% endif %}
+    <button type="submit" class="provider-button provider-{{ provider.id }}">
+      Continue with {{ provider.name }}
+    </button>
+  </form>
+{% endfor %}
