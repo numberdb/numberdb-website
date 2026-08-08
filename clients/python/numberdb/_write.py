@@ -29,7 +29,8 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Union
 #delete a table's definition, comments or references by assembling a document
 #out of what it happens to know. That is not a discipline anybody has to
 #remember: the function does not exist.
-__all__ = ['Entries', 'to_text', 'submit_entries', 'check_writable', 'attach']
+__all__ = ['Entries', 'to_text', 'submit_entries', 'check_writable', 'attach',
+           'bits']
 
 #: How many digits a value is written to when nothing says otherwise. The
 #: house style, and the reason for it is not storage: digits that are cheap to
@@ -39,6 +40,35 @@ __all__ = ['Entries', 'to_text', 'submit_entries', 'check_writable', 'attach']
 #: digits earn their place when they were expensive to obtain, and a table that
 #: writes more is expected to say why.
 DIGITS = 100
+
+
+def bits(digits: int, losing: int = 16) -> int:
+    """Working precision, in bits, for ``digits`` correct decimal digits.
+
+    Sage's interval and ball fields are built in **bits**, and this database
+    counts **decimal digits**, because that is how a number is written down and
+    quoted. One is not the other: a hundred digits needs 333 bits, and
+    ``RealIntervalField(100)`` gives about thirty digits, not a hundred.
+
+        def value(self, params, digits):
+            return RealIntervalField(numberdb.bits(digits))(zeta(params['n']))
+
+    ``losing`` is the guard: arithmetic loses low bits, so a field built at
+    exactly the width of the answer will not produce an answer that wide.
+    Sixteen covers the ordinary case. A computation that loses more -- a long
+    sum, a badly conditioned series -- should ask for more rather than tune
+    this: ``numberdb.bits(2 * digits)`` is the honest way to say "this one is
+    expensive to get right".
+
+    Nothing depends on getting it right, which is the point of it being a
+    guess: `publish` measures what each value actually pins down and refuses to
+    store a table of thirty-digit numbers that was meant to hold a hundred.
+    """
+    import math
+
+    if digits <= 0:
+        raise ValueError('digits must be positive')
+    return int(math.ceil(digits * math.log2(10))) + max(0, int(losing))
 
 
 def to_text(value: Any, digits: int = DIGITS) -> str:
@@ -353,7 +383,7 @@ def check_writable(tid: str, client: Any = None) -> Dict[str, Any]:
     the table's existence and the lock, and leaves the table untouched.
 
     Returns what the server said. Raises the same exceptions a real write
-    would: `Unauthorized` without a usable key, `NumberDBError` for an unknown
+    would: `UnauthorizedError` without a usable key, `NumberDBError` for an unknown
     table.
     """
     return submit_entries(tid, [], upsert=True, client=client,

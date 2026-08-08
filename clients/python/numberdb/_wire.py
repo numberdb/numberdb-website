@@ -29,7 +29,7 @@ from fractions import Fraction
 from typing import Any, Dict, FrozenSet, Optional, Union
 
 from ._convert import Scalar, to_exact
-from ._errors import UnsupportedNumber
+from ._errors import UnsupportedNumberError
 
 __all__ = ['decode', 'to_sage', 'KINDS', 'RealInterval', 'ComplexInterval',
            'PAdic', 'Polynomial']
@@ -293,18 +293,18 @@ KINDS = frozenset(_DECODERS)
 def decode(record: Dict[str, Any]) -> Any:
     """A number from its JSON record."""
     if not isinstance(record, dict):
-        raise UnsupportedNumber('number record must be an object, got %s'
+        raise UnsupportedNumberError('number record must be an object, got %s'
                                 % (type(record).__name__,))
     kind = record.get('kind')
     decoder = _DECODERS.get(kind) if isinstance(kind, str) else None
     if decoder is None:
-        raise UnsupportedNumber(
+        raise UnsupportedNumberError(
             'this version of numberdb cannot read %r; the server may be newer '
             'than the package -- try upgrading it' % (kind,))
     try:
         return decoder(record)
     except (KeyError, TypeError, ValueError) as error:
-        raise UnsupportedNumber('malformed %s record: %s' % (kind, error))
+        raise UnsupportedNumberError('malformed %s record: %s' % (kind, error))
 
 
 def _sage_rings():
@@ -388,9 +388,9 @@ def to_sage(value: Any) -> Any:
         return PolynomialRing(QQ, len(names), names)(value.text)
     if isinstance(value, bool):
         #bool is an int subclass; reaching ZZ(True) would be a silent absurdity.
-        raise UnsupportedNumber('no Sage form for a boolean')
+        raise UnsupportedNumberError('no Sage form for a boolean')
     if isinstance(value, int):
         return ZZ(value)
     if isinstance(value, Fraction):
         return QQ(value.numerator) / QQ(value.denominator)
-    raise UnsupportedNumber('no Sage form for %s' % (type(value).__name__,))
+    raise UnsupportedNumberError('no Sage form for %s' % (type(value).__name__,))

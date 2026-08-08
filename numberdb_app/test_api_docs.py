@@ -85,3 +85,55 @@ class ItSaysTheThingsACallerNeeds(TestCase):
 
 	def test_it_is_reachable_from_the_help_page(self):
 		self.assertContains(self.client.get('/help'), '/api/docs')
+
+
+class TheHelpPageNamesRealPackageThings(TestCase):
+	"""Every `numberdb.Something` the help page mentions must still exist.
+
+	The page said the package raises `numberdb.RateLimited` for a while after
+	that class had been renamed, and nothing noticed -- the same silent drift
+	this module was written for, one repository over. The client is a separate
+	distribution, so this reads its `__all__` from the source rather than
+	importing it: `import numberdb` inside the site finds the Django project
+	package of that name, not the client.
+	"""
+
+	def public_names(self):
+		import ast
+		import pathlib
+
+		root = pathlib.Path(__file__).resolve().parent.parent
+		source = (root / 'clients' / 'python' / 'numberdb' / '__init__.py')
+		if not source.exists():
+			self.skipTest('the client package is not in this checkout')
+		tree = ast.parse(source.read_text())
+		for node in tree.body:
+			if isinstance(node, ast.Assign) and any(
+					getattr(target, 'id', '') == '__all__'
+					for target in node.targets):
+				return set(ast.literal_eval(node.value))
+		self.fail('the client package has no __all__')
+
+	def mentioned(self):
+		"""Package names the page uses, from its code spans only.
+
+		Prose says numberdb.org, which is a domain and not an attribute.
+		"""
+		import pathlib
+		import re
+
+		page = (pathlib.Path(__file__).resolve().parent / 'templates'
+		        / 'help.html').read_text()
+		code = re.findall(r'<code[^>]*>(.*?)</code>', page, re.S)
+		code += re.findall(r'<pre[^>]*>(.*?)</pre>', page, re.S)
+		found = set()
+		for span in code:
+			found.update(re.findall(r'\bnumberdb\.([A-Za-z_][A-Za-z_0-9]*)',
+			                        span))
+		return found
+
+	def test_they_all_exist(self):
+		names = self.public_names()
+		for mentioned in sorted(self.mentioned()):
+			with self.subTest(name=mentioned):
+				self.assertIn(mentioned, names)
