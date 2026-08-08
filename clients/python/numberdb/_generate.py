@@ -138,7 +138,36 @@ class Generator:
     #: stored under their bare names: a table's files are flat.
     files: tuple = ()
 
+    #: How an approximate value is written. ``'decimal'`` is this database's
+    #: convention and what almost all of it holds: ``3.14`` **is** the interval
+    #: (3.13, 3.15) -- the digits written are known and the last is uncertain
+    #: by one. No marker, and in particular not Sage's ``3.14?``, which appears
+    #: nowhere in the corpus.
+    #:
+    #: ``'ball'`` writes ``3.14159 +/- 2.8e-25`` instead, for a table that
+    #: records its radius rather than implying it. A thousand values are
+    #: written that way and their generators should keep writing them that way.
+    format: str = 'decimal'
+
     EXACT_TYPES = frozenset(['Z', 'Q', 'Z[]', 'Q[]'])
+
+    def digits_for(self, params: Mapping[str, Any]) -> int:
+        """How many digits *this* entry should carry. Override to vary it.
+
+        The default is the same for every entry -- ``self.digits`` -- which is
+        what a table of one kind of thing wants. Override when the table is
+        not: entries that get expensive further along, or a family where the
+        first few are worth more precision than the rest.
+
+            def digits_for(self, params):
+                return 100 if params['n'] < 10 else 20
+
+        This is the number handed to ``value``, so a generator sizes its
+        working precision from it, and the number that entry is then held to.
+        An entry that turns out to be known no better than it hoped says so
+        when it returns: ``{'number': x, 'digits': 8}``.
+        """
+        return self.digits
 
     def enumerate(self, **bounds: Any) -> Iterator[Mapping[str, Any]]:
         """Yield one mapping of parameter values per entry.
@@ -522,7 +551,9 @@ def _verify(generator, sample=10, digits=None, client=None,
             report.params[identity] = dict(params)
             continue
 
-        recomputed = to_text(generator._entry(params, digits)['number'], digits)
+        wanted = _digits_for(generator, params, digits)
+        recomputed = to_text(generator._entry(params, wanted)['number'],
+                             wanted, generator.format)
         verdict = _compare.compare(stored[identity], recomputed)
         if verdict == _compare.CONTRADICTS:
             report.differing.append((identity, stored[identity], recomputed))
@@ -584,16 +615,23 @@ def _publish(generator, only=None, message='', overwrite=True,
 
     skip = (lambda identity: identity in stored) if not overwrite else None
     seen = set()
-    for identity, params, entry in _stream(generator, only, digits, bounds,
-                                           cache, skip):
+    for identity, params, entry, asked in _stream(generator, only, digits,
+                                                  bounds, cache, skip):
         seen.add(identity)
         entry = dict(entry)
         #An entry may declare that it is less precise on purpose -- a constant
         #that is only known to eight digits does not become wrong by being
         #stored to eight. Anything else is measured against what the generator
-        #said it wanted.
-        wanted = int(entry.pop('digits', digits) or digits)
-        text = to_text(entry['number'], wanted)
+        #asked for, per entry.
+        wanted = int(entry.pop('digits', asked) or asked)
+        #Converted once, here, and sent as text. Entries.add would otherwise
+        #convert the raw value again with its own defaults -- a hundred digits
+        #and the decimal form -- so the string that was checked for
+        #contradictions and precision was not the string that reached the
+        #table, and a generator asking for twenty digits stored a hundred.
+        entry['number'] = _written(entry['number'], wanted, generator.format)
+        text = (entry['number'][0] if isinstance(entry['number'], list)
+                else entry['number'])
         _check_precision(table, identity, text, wanted, lowering)
         if identity in stored:
             _judge(table, identity, stored[identity], text,
@@ -798,7 +836,7 @@ def _current_entries(table, client):
 
 
 def _stream(generator, only, digits, bounds, cache, skip=None):
-    """Yield ``(identity, params, entry)``, computing and caching as it goes.
+    """Yield ``(identity, params, entry, digits)``, computing as it goes.
 
     ``skip`` is consulted *before* the value is computed, which is the whole
     value of ``overwrite=False``: skipping afterwards would still have paid for
@@ -818,8 +856,9 @@ def _stream(generator, only, digits, bounds, cache, skip=None):
             if skip is not None and skip(identity):
                 continue
             entry = _as_entry(value)
-            cache.put(identity, _plain(entry, digits))
-            yield identity, params, entry
+            wanted = _digits_for(generator, params, digits)
+            cache.put(identity, _plain(entry, wanted, generator.format))
+            yield identity, params, entry, wanted
         return
 
     for params in _wanted(generator, only, bounds):
@@ -827,13 +866,14 @@ def _stream(generator, only, digits, bounds, cache, skip=None):
         identity = _identity(params, names)
         if skip is not None and skip(identity):
             continue
+        wanted = _digits_for(generator, params, digits)
         found = cache.get(identity)
         if found is None:
-            found = generator._entry(params, digits)
+            found = generator._entry(params, wanted)
             #Written before anything else happens to it, because what this
             #protects against is the next line never running.
-            cache.put(identity, _plain(found, digits))
-        yield identity, params, found
+            cache.put(identity, _plain(found, wanted, generator.format))
+        yield identity, params, found, wanted
 
 
 def _identity(params, names):
@@ -841,11 +881,25 @@ def _identity(params, names):
     return ','.join(_text(params[name]) for name in names)
 
 
-def _plain(entry, digits):
+def _digits_for(generator, params, fallback):
+    """What this entry is held to, which the generator may vary per entry."""
+    asked = generator.digits_for(params)
+    return int(fallback if asked is None else asked)
+
+
+def _written(number, digits, form):
+    """One entry's value as text. A list stays a list: an entry may hold
+    several numbers, and each is written the same way."""
+    if isinstance(number, (list, tuple)):
+        return [to_text(one, digits, form) for one in number]
+    return to_text(number, digits, form)
+
+
+def _plain(entry, digits, form='decimal'):
     """An entry as text, which is what can be written to a file and read back."""
     out = {}
     for key, value in entry.items():
-        out[key] = (to_text(value, digits) if key == 'number'
+        out[key] = (_written(value, digits, form) if key == 'number'
                     else value if isinstance(value, (str, int, float, list))
                     else str(value))
     return out

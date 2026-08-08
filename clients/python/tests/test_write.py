@@ -584,6 +584,96 @@ class TestValuesShorterThanAskedFor:
         assert Polys().publish(client=server.client()).added == ['1']
 
 
+class TestPerEntryDigits:
+    """Where a generator says how precise each entry should be."""
+
+    def test_digits_for_varies_it_by_parameter(self):
+        asked = []
+
+        class Tapering(numberdb.Generator):
+            table = 'T7'
+            parameters = ('n',)
+            digits = 100
+
+            def digits_for(self, params):
+                return 100 if int(params['n']) < 3 else 20
+
+            def enumerate(self, limit=4):
+                for n in range(1, limit + 1):
+                    yield {'n': n}
+
+            def value(self, params, digits):
+                asked.append(digits)
+                return '3.' + '1' * (digits - 1)
+
+        server = Server()
+        outcome = Tapering().publish(client=server.client())
+        #The number reaches value(), so a generator sizes its working
+        #precision from it...
+        assert asked == [100, 100, 20, 20]
+        #...and is what the entry is then held to: twenty digits where twenty
+        #were asked for is not short.
+        assert len(outcome.added) == 4
+
+    def test_the_class_attribute_is_the_default(self):
+        class Flat(numberdb.Generator):
+            table = 'T7'
+            parameters = ('n',)
+            digits = 12
+
+            def enumerate(self, limit=1):
+                yield {'n': 1}
+
+            def value(self, params, digits):
+                assert digits == 12
+                return '3.' + '1' * 11
+
+        assert Flat().publish(client=Server().client()).added == ['1']
+
+
+class TestTheWrittenForm:
+
+    class Pi(numberdb.Generator):
+        table = 'T7'
+        parameters = ('n',)
+        digits = 19
+
+        def enumerate(self, limit=1):
+            yield {'n': 1}
+
+        def value(self, params, digits):
+            from numberdb import RealInterval
+            return RealInterval('3.14159265358979323845',
+                                '3.14159265358979323847')
+
+    def test_a_plain_decimal_by_default(self):
+        """`3.14` IS (3.13, 3.15) in this database. No marker."""
+        server = Server()
+        self.Pi().publish(client=server.client())
+        written = server.sent_entries()['1']
+        assert written == '3.141592653589793238'
+        assert '?' not in written and '+/-' not in written
+
+    def test_what_is_checked_is_what_is_sent(self):
+        """Entries.add used to convert the raw value again with its own
+        defaults -- a hundred digits, the decimal form -- so the string checked
+        for contradictions was not the string that reached the table, and a
+        generator asking for twenty digits stored a hundred."""
+        server = Server()
+        self.Pi().publish(client=server.client())
+        written = server.sent_entries()['1']
+        significant = written.replace('.', '').lstrip('0')
+        assert len(significant) == 19
+
+    def test_a_generator_may_say_it_writes_balls(self):
+        class Ball(TestTheWrittenForm.Pi):
+            format = 'ball'
+
+        server = Server()
+        Ball().publish(client=server.client())
+        assert '+/-' in server.sent_entries()['1']
+
+
 class TestRemoving:
     """A run over n = 1..3 has said nothing whatever about n = 500."""
 
