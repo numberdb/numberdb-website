@@ -34,7 +34,10 @@ pre.api-code { background: #f7f7f7; border: 1px solid #ddd; padding: 0.6rem;
   overflow-x: auto; font-size: 0.85em; white-space: pre; margin: 0.5rem 0; }
 .api-note { color: #666; font-size: 0.9em; }
 .api-toc { columns: 2; font-size: 0.9em; }
-.api-toc a { display: block; padding: 0.1rem 0; }
+.api-toc a { display: block; padding: 0.1rem 0; font-family: ui-monospace, monospace; }
+.api-toc a.toc-section { font-family: inherit; font-weight: 500; margin-top: 0.4rem;
+                         break-after: avoid; }
+.api-toc a.toc-section:first-child { margin-top: 0; }
 </style>
 {% endblock %}
 
@@ -56,19 +59,22 @@ retries and the crash-safety &mdash; and this page is what it is built on.
 </p>
 
 <div class="api-toc">
+  <a class="toc-section" href="#keys">Keys, limits and permission</a>
+  <a class="toc-section" href="#reading">Reading</a>
   <a href="#endpoint-api-search">/api/search</a>
   <a href="#endpoint-api-lookup">/api/lookup</a>
   <a href="#endpoint-api-table">/api/table</a>
   <a href="#endpoint-api-tag">/api/tag</a>
+  <a href="#endpoint-api-reference">/api/docs</a>
+  <a class="toc-section" href="#writing">Writing</a>
   <a href="#endpoint-api-create-table">/api/tables</a>
   <a href="#endpoint-api-write-table">/api/table/&lt;tid&gt;</a>
   <a href="#endpoint-api-write-entries">/api/table/&lt;tid&gt;/entries</a>
   <a href="#endpoint-api-table-lease">/api/table/&lt;tid&gt;/lease</a>
   <a href="#endpoint-api-write-file">/api/table/&lt;tid&gt;/file/&lt;name&gt;</a>
-  <a href="#endpoint-api-reference">/api/docs</a>
 </div>
 
-<h2>Keys, limits and permission</h2>
+<h2 id="keys">Keys, limits and permission</h2>
 
 <p class="help-text">
 Anonymous use is limited to {{ anonymous_rate_limit }} requests per hour; a key
@@ -99,7 +105,7 @@ soft limit is told and their edit is saved; a program is refused until the
 reason is in the document, because a warning shown to nobody is not a limit.
 </p>
 
-<h2>Reading</h2>
+<h2 id="reading">Reading</h2>
 
 <div class="api-endpoint" id="endpoint-api-search">
   <h3><span class="api-method api-get">GET</span>/api/search</h3>
@@ -167,7 +173,7 @@ reason is in the document, because a warning shown to nobody is not a limit.
   </div>
 </div>
 
-<h2>Writing</h2>
+<h2 id="writing">Writing</h2>
 
 <div class="api-endpoint" id="endpoint-api-create-table">
   <h3><span class="api-method api-post">POST</span>/api/tables</h3>

@@ -180,6 +180,18 @@ class ApiKey(models.Model):
 	revoked = models.BooleanField(
 		default = False,
 	)
+	#: When it stops working, or null for a key that does not expire.
+	#:
+	#: Optional, and off by default, which is the opposite of what most sites
+	#: do. The runs this exists for take hours or days and nobody is watching
+	#: them; a key that lapses mid-run costs the run. What bounds the risk of a
+	#: forgotten key here is that `last_used` is visible and revoking is one
+	#: click -- an expiry date is for somebody who knows their key is temporary
+	#: and would rather not have to remember it.
+	expires = models.DateTimeField(
+		null = True,
+		blank = True,
+	)
 
 	class Meta:
 		ordering = ['-created']
@@ -192,8 +204,18 @@ class ApiKey(models.Model):
 		import hashlib
 		return hashlib.sha256(token.encode('utf8')).hexdigest()
 
+	@property
+	def expired(self):
+		from django.utils import timezone
+
+		return self.expires is not None and self.expires <= timezone.now()
+
+	@property
+	def usable(self):
+		return not self.revoked and not self.expired
+
 	@classmethod
-	def issue(cls, user, label=''):
+	def issue(cls, user, label='', days=None):
 		"""Create a key. Returns (record, token); the token is shown once.
 
 		The token is 256 bits from `secrets`, so it needs no slow hashing --
@@ -201,12 +223,19 @@ class ApiKey(models.Model):
 		lookup cheap enough to do on every API request.
 		"""
 		import secrets
+
+		from django.utils import timezone
+
+		expires = None
+		if days:
+			expires = timezone.now() + timezone.timedelta(days=int(days))
 		token = secrets.token_urlsafe(32)
 		record = cls.objects.create(
 			user = user,
 			label = label,
 			prefix = token[:12],
 			hashed_key = cls.hash_token(token),
+			expires = expires,
 		)
 		return record, token
 
@@ -221,7 +250,10 @@ class ApiKey(models.Model):
 			#Compared in constant time: the prefix narrows it to one row, and
 			#a timing difference here would leak the stored hash byte by byte.
 			if secrets.compare_digest(candidate.hashed_key, expected):
-				return candidate
+				#Checked after the comparison rather than in the query, so an
+				#expired key and a wrong key take the same path and the same
+				#time.
+				return candidate if not candidate.expired else None
 		return None
 
 class Table(models.Model):
