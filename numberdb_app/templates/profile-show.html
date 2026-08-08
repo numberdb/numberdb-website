@@ -26,6 +26,14 @@ a.edit-link {
 {{ user_shown.profile.bio }}
 
 
+{% if is_self %}
+<h2>API keys</h2>
+
+<a href="{% url 'db:keys' %}">Create and revoke API keys</a>
+&mdash; for reading past the anonymous rate limit, and for writing with the
+numberdb package.
+{% endif %}
+
 <h2>Settings</h2>
 
 {% load socialaccount %}

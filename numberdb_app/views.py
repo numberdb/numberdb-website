@@ -2988,3 +2988,71 @@ def api_reference(request):
 		'max_attachment_kb': MAX_ATTACHMENT_BYTES // 1024,
 		'max_attachments_kb': MAX_ATTACHMENTS_BYTES // 1024,
 	})
+
+
+#: How many usable keys one account may hold at once. Enough for a laptop, a
+#: cluster and a notebook to have their own -- which is the point of labels --
+#: and few enough that a runaway script cannot mint thousands.
+MAX_ACTIVE_KEYS = 10
+
+
+@login_required
+def api_keys(request):
+	"""Issue and revoke one's own API keys.
+
+	Until now these were issued by hand, by email, which is a bottleneck in
+	front of the one thing the write API exists for. Nothing about the model
+	needed changing: a key was always a token this server cannot read back,
+	stored as a hash and shown once.
+
+	Shown once is the part the page has to be honest about. There is no way to
+	recover a key later -- not for the user, not for us -- so the only useful
+	thing to do with a lost one is revoke it and take another.
+	"""
+	from django.shortcuts import redirect
+
+	from .models import ApiKey
+
+	if request.method == 'POST':
+		action = request.POST.get('action', '')
+
+		if action == 'revoke':
+			key = ApiKey.objects.filter(pk=request.POST.get('key') or 0,
+			                            user=request.user).first()
+			if key is not None and not key.revoked:
+				#Revoked, never deleted: a key that turns up in a log or a
+				#shared notebook should still say when it was issued and when
+				#it was last used.
+				key.revoked = True
+				key.save(update_fields=['revoked'])
+				messages.success(request, 'Key %s… revoked. Anything still '
+				                          'using it will start being refused.'
+				                 % (key.prefix,))
+			return redirect('db:keys')
+
+		if action == 'create':
+			active = ApiKey.objects.filter(user=request.user,
+			                               revoked=False).count()
+			if active >= MAX_ACTIVE_KEYS:
+				messages.error(
+					request,
+					'You already have %d keys. Revoke one you are not using: '
+					'a key nobody can account for is a key nobody can safely '
+					'revoke.' % (active,))
+				return redirect('db:keys')
+
+			label = (request.POST.get('label') or '').strip()[:64]
+			_record, token = ApiKey.issue(request.user, label=label)
+			#Through the session rather than the query string: a key in a URL
+			#is a key in the browser history, in the server log, and in the
+			#Referer header of the next page. Popped on the way out, so a
+			#refresh does not show it again.
+			request.session['fresh_api_key'] = token
+			return redirect('db:keys')
+
+	return render(request, 'api-keys.html', {
+		'keys': request.user.api_keys.all(),
+		'fresh_key': request.session.pop('fresh_api_key', None),
+		'active_count': request.user.api_keys.filter(revoked=False).count(),
+		'max_keys': MAX_ACTIVE_KEYS,
+	})

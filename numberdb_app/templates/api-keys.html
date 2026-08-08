@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% comment %}
+API keys, issued by their owner.
+
+The one thing this page must be honest about: a key is shown once. The server
+stores a hash and cannot read one back, so a lost key cannot be recovered by
+anybody, including us. The only useful thing to do with one is revoke it.
+{% endcomment %}
+
+{% block head-title %}API keys - NumberDB{% endblock %}
+
+{% block extra_head %}
+<style>
+.key-intro { max-width: 46rem; }
+.fresh { background: #d4edda; border: 1px solid #c3e6cb; padding: 0.8rem;
+         margin: 1rem 0; max-width: 46rem; }
+.fresh code { display: block; background: #fff; border: 1px solid #cfe3d4;
+              padding: 0.6rem; margin: 0.5rem 0; font-size: 1rem;
+              word-break: break-all; user-select: all; }
+.fresh .once { color: #155724; font-size: 0.9em; }
+
+table.keys { border-collapse: collapse; margin: 1rem 0; font-size: 0.92em; }
+table.keys th { text-align: left; background: #f6f7f9; padding: 0.4rem 0.7rem;
+                border-bottom: 1px solid #e2e2e2; font-weight: 500; }
+table.keys td { padding: 0.35rem 0.7rem; border-bottom: 1px solid #f0f0f0; }
+table.keys tr.gone td { color: #999; }
+table.keys code { font-family: ui-monospace, monospace; }
+.new-key { background: #f6f7f9; border: 1px solid #e2e2e2; border-radius: 3px;
+           padding: 0.8rem; margin: 1.2rem 0; max-width: 46rem; }
+.new-key input[type=text] { width: 18rem; padding: 0.3rem; }
+.new-key .why { color: #666; font-size: 0.9em; display: block;
+                margin-top: 0.3rem; }
+.usage { max-width: 46rem; }
+.usage pre { background: #f6f7f9; border: 1px solid #e2e2e2; padding: 0.6rem;
+             overflow-x: auto; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<h1>API keys</h1>
+
+<p class="key-intro">
+A key raises your rate limit for reading, and is what
+<a href="/help#api">writing</a> needs. Reading without one works and is
+limited; writing without one does not.
+</p>
+
+{% if fresh_key %}
+<div class="fresh">
+  <b>Your new key. This is the only time it will be shown.</b>
+  <code>{{ fresh_key }}</code>
+  <span class="once">The server keeps only a hash of it, so nobody can look it
+  up later &mdash; not you and not us. If it is lost, revoke it below and take
+  another.</span>
+</div>
+{% endif %}
+
+<div class="new-key">
+  <form method="post" action="">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="create">
+    <label for="label">Label</label>
+    <input id="label" type="text" name="label" maxlength="64"
+           placeholder="the laptop, the cluster, zeta-generator">
+    <button type="submit">Create a key</button>
+    <span class="why">A label is for you: it is how you tell which key to
+    revoke when one machine is retired or one script is done. It is not part
+    of the key.</span>
+  </form>
+</div>
+
+{% if keys %}
+<table class="keys">
+  <thead>
+    <tr>
+      <th>Label</th><th>Key</th><th>Created</th><th>Last used</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for key in keys %}
+    <tr {% if key.revoked %}class="gone"{% endif %}>
+      <td>{{ key.label|default:"—" }}</td>
+      <td><code>{{ key.prefix }}…</code></td>
+      <td>{{ key.created|date:"j M Y" }}</td>
+      <td>{% if key.last_used %}{{ key.last_used|date:"j M Y" }}{% else %}never{% endif %}</td>
+      <td>
+        {% if key.revoked %}
+          revoked
+        {% else %}
+          <form method="post" action="" style="display:inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="revoke">
+            <input type="hidden" name="key" value="{{ key.pk }}">
+            <button type="submit">revoke</button>
+          </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p style="color:#666; font-size:0.9em;">
+{{ active_count }} of {{ max_keys }} keys in use. Revoked keys are kept rather
+than deleted, so one that turns up somewhere it should not be can still be
+traced to when it was issued and last used.
+</p>
+{% else %}
+<p>You have no keys yet.</p>
+{% endif %}
+
+<div class="usage">
+  <h2>Using it</h2>
+  <p>Set it in the environment, so it is not in the code you publish:</p>
+<pre>export NUMBERDB_API_KEY=...</pre>
+  <p>The <a href="https://pypi.org/project/numberdb/">numberdb</a> package
+  picks it up from there. Over HTTP it is a bearer token:</p>
+<pre>Authorization: Bearer ...</pre>
+</div>
+
+{% endblock %}
