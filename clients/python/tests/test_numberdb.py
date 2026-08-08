@@ -1478,3 +1478,97 @@ def _capture(call):
 
     call(numberdb.Client(base_url='http://x', opener=opener))
     return seen['url']
+
+
+class WhereTheKeyComesFrom(unittest.TestCase):
+    """Exporting a variable works and is what a server wants.
+
+    It is not what somebody running a generator from a directory wants: the
+    export lives in one shell and is gone from the next, and the usual repair
+    -- putting it in the script -- is how a key ends up in a repository.
+    """
+
+    def setUp(self):
+        import tempfile
+
+        self.home = tempfile.mkdtemp()
+        self.where = os.getcwd()
+        self.had = os.environ.get('NUMBERDB_API_KEY')
+        os.environ.pop('NUMBERDB_API_KEY', None)
+        #So the developer's own key cannot make one of these pass.
+        os.environ['XDG_CONFIG_HOME'] = os.path.join(self.home, 'config')
+
+    def tearDown(self):
+        os.chdir(self.where)
+        if self.had is not None:
+            os.environ['NUMBERDB_API_KEY'] = self.had
+        else:
+            os.environ.pop('NUMBERDB_API_KEY', None)
+
+    def write(self, where, text):
+        os.makedirs(os.path.dirname(where), exist_ok=True)
+        with open(where, 'w', encoding='utf8') as handle:
+            handle.write(text)
+
+    def test_a_dot_env_beside_the_script_is_read(self):
+        self.write(os.path.join(self.home, '.env'),
+                   'NUMBERDB_API_KEY=from-dot-env\n')
+        os.chdir(self.home)
+        self.assertEqual(numberdb.Client().api_key, 'from-dot-env')
+
+    def test_it_is_looked_for_above_the_working_directory_too(self):
+        """A script in a subdirectory of its project is the ordinary case."""
+        self.write(os.path.join(self.home, '.env'), 'NUMBERDB_API_KEY=above\n')
+        deeper = os.path.join(self.home, 'a', 'b')
+        os.makedirs(deeper, exist_ok=True)
+        os.chdir(deeper)
+        self.assertEqual(numberdb.Client().api_key, 'above')
+
+    def test_the_per_user_file_is_the_fallback(self):
+        """In no project directory, so it cannot be committed by accident."""
+        self.write(os.path.join(self.home, 'config', 'numberdb', 'env'),
+                   'NUMBERDB_API_KEY=from-user-config\n')
+        os.chdir(self.home)
+        self.assertEqual(numberdb.Client().api_key, 'from-user-config')
+
+    def test_the_environment_beats_a_file(self):
+        self.write(os.path.join(self.home, '.env'), 'NUMBERDB_API_KEY=file\n')
+        os.chdir(self.home)
+        os.environ['NUMBERDB_API_KEY'] = 'environment'
+        self.assertEqual(numberdb.Client().api_key, 'environment')
+
+    def test_what_was_passed_beats_everything(self):
+        self.write(os.path.join(self.home, '.env'), 'NUMBERDB_API_KEY=file\n')
+        os.chdir(self.home)
+        os.environ['NUMBERDB_API_KEY'] = 'environment'
+        self.assertEqual(numberdb.Client(api_key='given').api_key, 'given')
+
+    def test_quotes_and_export_are_tolerated(self):
+        """Every example anybody copies has them half the time, and a key with
+        a quotation mark in it fails for a reason nobody will guess."""
+        from numberdb._key import read_env_file
+
+        path = os.path.join(self.home, 'quoted.env')
+        self.write(path, '# a comment\n'
+                         'export NUMBERDB_API_KEY="quoted-value"\n'
+                         'OTHER=\'single\'\n'
+                         'nonsense line without an equals\n')
+        found = read_env_file(path)
+        self.assertEqual(found['NUMBERDB_API_KEY'], 'quoted-value')
+        self.assertEqual(found['OTHER'], 'single')
+        self.assertNotIn('nonsense line without an equals', found)
+
+    def test_nothing_in_the_file_is_executed(self):
+        """A configuration file that runs is one that can be made to run
+        something else."""
+        from numberdb._key import read_env_file
+
+        path = os.path.join(self.home, 'evil.env')
+        self.write(path, 'NUMBERDB_API_KEY=$(rm -rf /)\n')
+        self.assertEqual(read_env_file(path)['NUMBERDB_API_KEY'],
+                         '$(rm -rf /)')
+
+    def test_no_key_anywhere_is_not_an_error(self):
+        """Reading is public; the refusal belongs where writing is attempted."""
+        os.chdir(self.home)
+        self.assertIsNone(numberdb.Client().api_key)

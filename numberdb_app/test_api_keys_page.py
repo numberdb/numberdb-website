@@ -89,7 +89,8 @@ class ApiKeysPage(TestCase):
 		body = self.create().content.decode()
 		#The token as shown, read back off the page the user was given.
 		import re
-		shown = re.search(r'<code>([A-Za-z0-9_\-]{20,})</code>', body)
+		shown = re.search(r'<code id="fresh-key">([A-Za-z0-9_\-]{20,})</code>',
+		                  body)
 		self.assertIsNotNone(shown)
 		self.assertEqual(ApiKey.authenticate(shown.group(1)).user, self.user)
 
@@ -108,7 +109,7 @@ class ApiKeysPage(TestCase):
 
 		import re
 		body = self.create().content.decode()
-		token = re.search(r'<code>([A-Za-z0-9_\-]{20,})</code>',
+		token = re.search(r'<code id="fresh-key">([A-Za-z0-9_\-]{20,})</code>',
 		                  body).group(1)
 		self.client.post('/profile/keys',
 		                 {'action': 'revoke', 'key': self.keys().first().pk})
@@ -174,3 +175,118 @@ class ApiKeysPage(TestCase):
 		answer = self.client.get('/profile/keys')
 		self.assertEqual(answer.status_code, 302)
 		self.assertIn('login', answer['Location'])
+
+
+class KeyExpiry(TestCase):
+	"""Optional, and off by default, which is the opposite of what most sites
+	do. The runs this exists for take hours or days with nobody watching, and a
+	key that lapses part way through costs the run."""
+
+	def setUp(self):
+		from django.contrib.auth.models import User
+
+		self.user = User.objects.create_user('expiry_user',
+		                                     password='pw-123456')
+		self.client.login(username='expiry_user', password='pw-123456')
+
+	def test_a_key_does_not_expire_unless_asked(self):
+		self.client.post('/profile/keys', {'action': 'create', 'label': 'x'})
+		self.assertIsNone(self.user.api_keys.first().expires)
+
+	def test_an_expiry_can_be_chosen(self):
+		self.client.post('/profile/keys',
+		                 {'action': 'create', 'label': 'x', 'days': '30'})
+		key = self.user.api_keys.first()
+		self.assertIsNotNone(key.expires)
+		self.assertFalse(key.expired)
+
+	def test_an_expired_key_stops_authenticating(self):
+		from django.utils import timezone
+
+		from .models import ApiKey
+
+		key, token = ApiKey.issue(self.user, label='old', days=1)
+		self.assertEqual(ApiKey.authenticate(token), key)
+
+		key.expires = timezone.now() - timezone.timedelta(seconds=1)
+		key.save(update_fields=['expires'])
+		self.assertIsNone(ApiKey.authenticate(token))
+
+	def test_an_expired_key_is_still_listed(self):
+		"""So it can be told apart from one that was revoked, and from one that
+		simply never worked."""
+		from django.utils import timezone
+
+		from .models import ApiKey
+
+		key, _token = ApiKey.issue(self.user, label='lapsed', days=1)
+		key.expires = timezone.now() - timezone.timedelta(seconds=1)
+		key.save(update_fields=['expires'])
+
+		body = self.client.get('/profile/keys').content.decode()
+		self.assertIn('lapsed', body)
+		self.assertIn('expired', body)
+
+
+class WhatTheKeyPageSays(TestCase):
+
+	def setUp(self):
+		from django.contrib.auth.models import User
+
+		self.user = User.objects.create_user('saying_user',
+		                                     password='pw-123456')
+		self.client.login(username='saying_user', password='pw-123456')
+
+	def fresh(self):
+		return self.client.post('/profile/keys',
+		                        {'action': 'create', 'label': 'x'},
+		                        follow=True).content.decode()
+
+	def test_a_new_key_can_be_copied(self):
+		body = self.fresh()
+		self.assertIn('Copy to clipboard', body)
+		self.assertIn('id="fresh-key"', body)
+
+	def test_it_says_where_to_put_it(self):
+		"""Including the .env the package actually reads, with the key already
+		written into the line to paste."""
+		body = self.fresh()
+		self.assertIn('.env', body)
+		self.assertIn('NUMBERDB_API_KEY=', body)
+		self.assertIn('.gitignore', body)
+
+	def test_it_says_a_key_is_not_permission_to_write(self):
+		"""Which saves finding out from a refusal at the end of a long
+		computation."""
+		body = self.client.get('/profile/keys').content.decode()
+		self.assertIn('Writing needs more than a key', body)
+
+
+class ProfileShowsStanding(TestCase):
+	"""It appeared nowhere, so an account learned it could not write by being
+	refused, and could not learn what would change that."""
+
+	def setUp(self):
+		from django.contrib.auth.models import User
+
+		self.user = User.objects.create_user('standing_user',
+		                                     password='pw-123456')
+		self.client.login(username='standing_user', password='pw-123456')
+
+	def test_a_new_account_is_told_what_is_needed(self):
+		from .permissions import TRUSTED_AFTER
+
+		body = self.client.get('/profile').content.decode()
+		self.assertIn('No edits reviewed yet', body)
+		self.assertIn(str(TRUSTED_AFTER), body)
+
+	def test_a_board_member_is_told_they_are_one(self):
+		from .permissions import board_group
+
+		self.user.groups.add(board_group())
+		body = self.client.get('/profile').content.decode()
+		self.assertIn('Board member', body)
+
+	def test_it_links_to_the_keys_page(self):
+		self.assertIn('/profile/keys',
+		              self.client.get('/profile').content.decode())

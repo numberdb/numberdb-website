@@ -1,73 +1,136 @@
 {% extends 'base.html' %}
 {% load account %}
 {% load static %}
+{% load socialaccount %}
 
-{% block head-title %}Profile {{ user_shown.username }}{% endblock %}
+{% comment %}
+A profile, and what this account may do here.
+
+Standing used to appear nowhere. An account found out it could not yet write
+with a program by being refused -- at the end of whatever computation it had
+just run -- and could not find out what would change that, because nothing on
+the site said.
+{% endcomment %}
+
+{% block head-title %}{{ user_shown.username }} - NumberDB{% endblock %}
 
 {% block extra_head %}
 <style>
-a.edit-link {
-  font-size: 1rem;
-}
+.profile-page { max-width: 42rem; }
+.profile-page h2 { font-size: 1.15rem; font-weight: 400; margin-top: 2rem;
+                   padding-bottom: 0.3rem; border-bottom: 1px solid #eee; }
+.profile-page .edit-link { font-size: 0.85rem; font-weight: 400; }
+.profile-page .bio { white-space: pre-wrap; }
+.profile-page .none { color: #888; }
+
+.standing { background: #f6f7f9; border: 1px solid #e2e2e2; border-radius: 3px;
+            padding: 0.8rem 1rem; margin: 0.8rem 0; }
+.standing .what { font-size: 1.05rem; }
+.standing .why { color: #555; font-size: 0.92rem; margin-top: 0.4rem; }
+.standing .bar { background: #e6e6e6; border-radius: 2px; height: 0.45rem;
+                 margin: 0.6rem 0 0.3rem 0; overflow: hidden; }
+.standing .bar span { display: block; height: 100%; background: #6c9; }
+.standing .count { font-size: 0.85rem; color: #666; }
+
+.rows { list-style: none; padding: 0; margin: 0.6rem 0; }
+.rows li { padding: 0.3rem 0; }
+.rows .note { color: #666; font-size: 0.9rem; }
 </style>
 {% endblock %}
 
 {% block content %}
 
-<h1 class="title">Profile {{ user_shown.get_full_name }}</h1>
+<div class="profile-page">
 
-<h2>Username</h2>
-{{ user_shown.username }}
+<h1 class="title">{{ user_shown.get_full_name|default:user_shown.username }}</h1>
+<p class="none">{{ user_shown.username }}</p>
 
-<h2>About{% if is_self %}
-          (<a class="edit-link" href="{% url 'db:profile-edit' %}">edit</a>)
-         {% endif %}
+<h2>About
+  {% if is_self %}
+    <a class="edit-link" href="{% url 'db:profile-edit' %}">edit</a>
+  {% endif %}
 </h2>
-{{ user_shown.profile.bio }}
+{% if user_shown.profile.bio %}
+  <div class="bio">{{ user_shown.profile.bio }}</div>
+{% else %}
+  <p class="none">Nothing yet.</p>
+{% endif %}
 
+<h2>Standing</h2>
+
+<div class="standing">
+  {% if is_board %}
+    <div class="what"><b>Board member.</b> Reviews other people's edits.</div>
+    <div class="why">Edits made here are published as already reviewed, and
+    programs running under this account's API key may write.</div>
+  {% elif is_trusted %}
+    <div class="what"><b>Trusted.</b>
+    {{ accepted_edits }} edit{{ accepted_edits|pluralize }} reviewed and
+    confirmed.</div>
+    <div class="why">Edits are published as already reviewed, and programs
+    running under {% if is_self %}your{% else %}this account's{% endif %}
+    API key may write to tables.</div>
+  {% else %}
+    <div class="what">
+      {% if accepted_edits %}
+        {{ accepted_edits }} edit{{ accepted_edits|pluralize }} reviewed and
+        confirmed, of {{ trusted_after }}.
+      {% else %}
+        No edits reviewed yet.
+      {% endif %}
+    </div>
+    <div class="bar"><span style="width: {% widthratio accepted_edits trusted_after 100 %}%"></span></div>
+    <div class="why">
+      Edits are published straight away and held out of search-by-number until
+      somebody confirms them. After {{ trusted_after }} confirmed edits they
+      publish as reviewed, and programs may write through the API.
+      {% if is_self %}
+        {% comment %}
+        The reason, not just the rule: a person told only the threshold reads
+        it as a hurdle.
+        {% endcomment %}
+        A person editing one table exercises judgement about that table; a
+        script does not, and it writes faster than any reviewer can read.
+      {% endif %}
+    </div>
+  {% endif %}
+  <div class="count">{{ revision_count }} revision{{ revision_count|pluralize }} made in all.</div>
+</div>
 
 {% if is_self %}
 <h2>API keys</h2>
+<ul class="rows">
+  <li><a href="{% url 'db:keys' %}">Create and revoke API keys</a>
+    <span class="note">&mdash; for reading past the anonymous rate limit,
+    and for writing with the numberdb package.</span></li>
+</ul>
 
-<a href="{% url 'db:keys' %}">Create and revoke API keys</a>
-&mdash; for reading past the anonymous rate limit, and for writing with the
-numberdb package.
+<h2>Account</h2>
+<ul class="rows">
+  <li><a href="{% url 'account_email' %}">Email addresses</a></li>
+  <li><a href="{% url 'account_change_password' %}">Change password</a></li>
+  {% get_social_accounts user as accounts %}
+  {% if accounts.github %}
+    <li>GitHub connected
+      <span class="note">&mdash;
+      {% for account in accounts.github %}{{ account }}{% endfor %}</span></li>
+  {% else %}
+    <li>
+      {% comment %}
+      A POST, like the buttons on the sign-in page, so connecting an account
+      does not go through allauth's Continue interstitial either.
+      {% endcomment %}
+      <form method="post" action="{% provider_login_url 'github' process='connect' %}"
+            style="display:inline">
+        {% csrf_token %}
+        <button type="submit">Connect a GitHub account</button>
+      </form>
+      <span class="note">&mdash; then you can sign in with one click.</span>
+    </li>
+  {% endif %}
+</ul>
 {% endif %}
 
-<h2>Settings</h2>
-
-{% load socialaccount %}
-
-<a href="{% provider_login_url 'github' process='connect' %}">Connect a GitHub account</a>
-
-<br>
-
-
-<a href="{% url 'account_email' %}">Change E-mail</a>
-
-
-{% if user.is_authenticated %}
-{% get_social_accounts user as accounts %}
-
-{% if accounts %}
-{% if accounts.github %}
-Linked GitHub accounts:
-{{ accounts.github }}
-{% endif %}
-{% endif %}
-
-
-<!--
-<br>
-
-Social account providers:
-
-{% get_providers as socialaccount_providers %}
-{{ socialaccount_providers }}
--->
-
-{% endif %}
-
-
+</div>
 
 {% endblock %}

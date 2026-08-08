@@ -410,6 +410,19 @@ when it is created and stored only as a hash, so nobody can look it up later
 &mdash; not you and not us. If you lose one, revoke it there and take another.
 
 <p>
+Keep it out of the code you publish. The package looks for it in
+<code class="table-code">NUMBERDB_API_KEY</code>, then in a
+<code class="table-code">.env</code> beside your script, then in
+<code class="table-code">~/.config/numberdb/env</code> &mdash; the last of
+which is in no project directory, so it cannot be committed by accident. The
+<a href="/profile/keys">keys page</a> shows the exact lines to paste.
+
+<p>
+A key says who you are; it does not by itself allow writing. That needs a few
+of your edits to have been reviewed and confirmed, which your
+<a href="/profile">profile</a> shows.
+
+<p>
 If you need more than this &mdash; a bulk download, or a systematic study
 &mdash; please get in touch rather than working around the limit. We would
 rather help.

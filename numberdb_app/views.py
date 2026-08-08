@@ -1132,9 +1132,26 @@ def show_own_profile(request):
     return show_profile_of_user(request, request.user)
 
 def show_profile_of_user(request, user):
+    """Somebody's profile, including what their account may do here.
+
+    Standing was not shown anywhere. An account discovered it was not yet
+    allowed to write with a program by being refused, at the end of whatever
+    computation it had just finished -- and could not find out what would
+    change that, because nothing said.
+    """
+    from .permissions import (TRUSTED_AFTER, accepted_edit_count,
+                              is_board_member, is_trusted)
+
+    accepted = accepted_edit_count(user)
     context = {
         'user_shown': user,
         'is_self': user.pk == request.user.pk,
+        'accepted_edits': accepted,
+        'trusted_after': TRUSTED_AFTER,
+        'is_trusted': is_trusted(user),
+        'is_board': is_board_member(user),
+        'edits_still_needed': max(0, TRUSTED_AFTER - accepted),
+        'revision_count': user.table_revisions.count(),
     }
     return render(request,'profile-show.html',context)
 
@@ -3042,7 +3059,12 @@ def api_keys(request):
 				return redirect('db:keys')
 
 			label = (request.POST.get('label') or '').strip()[:64]
-			_record, token = ApiKey.issue(request.user, label=label)
+			try:
+				days = int(request.POST.get('days') or 0)
+			except ValueError:
+				days = 0
+			_record, token = ApiKey.issue(request.user, label=label,
+			                              days=days or None)
 			#Through the session rather than the query string: a key in a URL
 			#is a key in the browser history, in the server log, and in the
 			#Referer header of the next page. Popped on the way out, so a
@@ -3050,9 +3072,17 @@ def api_keys(request):
 			request.session['fresh_api_key'] = token
 			return redirect('db:keys')
 
+	from .permissions import (TRUSTED_AFTER, accepted_edit_count,
+	                          may_write_through_api)
+
 	return render(request, 'api-keys.html', {
 		'keys': request.user.api_keys.all(),
 		'fresh_key': request.session.pop('fresh_api_key', None),
 		'active_count': request.user.api_keys.filter(revoked=False).count(),
 		'max_keys': MAX_ACTIVE_KEYS,
+		#A key authenticates; it does not authorise. Saying so here saves
+		#somebody discovering it from a 403 at the end of a long computation.
+		'may_write': may_write_through_api(request.user),
+		'accepted_edits': accepted_edit_count(request.user),
+		'trusted_after': TRUSTED_AFTER,
 	})

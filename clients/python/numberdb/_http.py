@@ -34,7 +34,9 @@ API_VERSION = '1'
 class Client:
     """A configured connection to a NumberDB server.
 
-    ``api_key`` raises the rate limit. It defaults to ``$NUMBERDB_API_KEY``, so
+    ``api_key`` raises the rate limit. Left unset it is looked for in
+    ``$NUMBERDB_API_KEY``, then a ``.env`` beside the script, then
+    ``~/.config/numberdb/env`` -- see `numberdb._key`. So
     a key need not be written into a worksheet -- a shared notebook should not
     carry its author's credentials.
 
@@ -89,7 +91,12 @@ class Client:
 
     @property
     def api_key(self) -> Optional[str]:
-        return self._api_key or os.environ.get('NUMBERDB_API_KEY') or None
+        #Looked up at each use rather than at construction, so a key set after
+        #a client was made is still found -- which is what happens in a
+        #notebook, where the client is built by the first search.
+        from ._key import api_key as find_key
+
+        return find_key(self._api_key) or None
 
     @property
     def timeout(self) -> float:

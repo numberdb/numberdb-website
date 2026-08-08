@@ -34,6 +34,17 @@ table.keys code { font-family: ui-monospace, monospace; }
 .usage { max-width: 46rem; }
 .usage pre { background: #f6f7f9; border: 1px solid #e2e2e2; padding: 0.6rem;
              overflow-x: auto; }
+.fresh button { padding: 0.35rem 0.8rem; cursor: pointer; }
+.copied { margin-left: 0.6rem; font-size: 0.9em; color: #155724;
+          opacity: 0; transition: opacity 0.15s; }
+.copied.showing { opacity: 1; }
+.stash { border: 1px solid #e2e2e2; border-radius: 3px; padding: 0.8rem;
+         margin: 1rem 0; max-width: 46rem; }
+.stash pre { background: #f6f7f9; border: 1px solid #e2e2e2; padding: 0.6rem;
+             overflow-x: auto; font-size: 0.9em; }
+.stash .warn { color: #8a6d3b; background: #fcf8e3; border: 1px solid #faebcc;
+               padding: 0.4rem 0.6rem; font-size: 0.9em; }
+.new-key select { padding: 0.3rem; }
 </style>
 {% endblock %}
 
@@ -50,10 +61,36 @@ limited; writing without one does not.
 {% if fresh_key %}
 <div class="fresh">
   <b>Your new key. This is the only time it will be shown.</b>
-  <code>{{ fresh_key }}</code>
+  <code id="fresh-key">{{ fresh_key }}</code>
+  <p>
+    <button type="button" id="copy-key">Copy to clipboard</button>
+    <span id="copied" class="copied" role="status" aria-live="polite"></span>
+  </p>
   <span class="once">The server keeps only a hash of it, so nobody can look it
   up later &mdash; not you and not us. If it is lost, revoke it below and take
   another.</span>
+</div>
+
+<div class="stash">
+  <b>Where to put it.</b> Anywhere but the code you publish. In order of how
+  much trouble each saves you:
+
+  <p><b>A <code>.env</code> beside your script</b>, which the package reads on
+  its own:</p>
+<pre>NUMBERDB_API_KEY={{ fresh_key }}</pre>
+  <p class="warn">Add <code>.env</code> to your <code>.gitignore</code> first.
+  A key in a repository is a key in everyone&rsquo;s clone, and revoking it is
+  then the only fix.</p>
+
+  <p><b>Or your shell</b>, for a key you use everywhere:</p>
+<pre>export NUMBERDB_API_KEY={{ fresh_key }}</pre>
+
+  <p><b>Or once, for good</b>, in the per-user file the package looks in when
+  neither of the above is set &mdash; which keeps it out of every project
+  directory you might publish:</p>
+<pre>mkdir -p ~/.config/numberdb
+echo 'NUMBERDB_API_KEY={{ fresh_key }}' > ~/.config/numberdb/env
+chmod 600 ~/.config/numberdb/env</pre>
 </div>
 {% endif %}
 
@@ -64,10 +101,23 @@ limited; writing without one does not.
     <label for="label">Label</label>
     <input id="label" type="text" name="label" maxlength="64"
            placeholder="the laptop, the cluster, zeta-generator">
+
+    <label for="days">Expires</label>
+    <select id="days" name="days">
+      <option value="0" selected>never</option>
+      <option value="30">in 30 days</option>
+      <option value="90">in 90 days</option>
+      <option value="365">in a year</option>
+    </select>
+
     <button type="submit">Create a key</button>
     <span class="why">A label is for you: it is how you tell which key to
     revoke when one machine is retired or one script is done. It is not part
     of the key.</span>
+    <span class="why">Expiry is off by default on purpose. The runs this exists
+    for take hours or days with nobody watching, and a key that lapses part way
+    through costs the run. Set one when you already know the key is
+    temporary.</span>
   </form>
 </div>
 
@@ -75,19 +125,23 @@ limited; writing without one does not.
 <table class="keys">
   <thead>
     <tr>
-      <th>Label</th><th>Key</th><th>Created</th><th>Last used</th><th></th>
+      <th>Label</th><th>Key</th><th>Created</th><th>Last used</th>
+      <th>Expires</th><th></th>
     </tr>
   </thead>
   <tbody>
     {% for key in keys %}
-    <tr {% if key.revoked %}class="gone"{% endif %}>
+    <tr {% if not key.usable %}class="gone"{% endif %}>
       <td>{{ key.label|default:"—" }}</td>
       <td><code>{{ key.prefix }}…</code></td>
       <td>{{ key.created|date:"j M Y" }}</td>
       <td>{% if key.last_used %}{{ key.last_used|date:"j M Y" }}{% else %}never{% endif %}</td>
+      <td>{% if key.expires %}{{ key.expires|date:"j M Y" }}{% else %}&mdash;{% endif %}</td>
       <td>
         {% if key.revoked %}
           revoked
+        {% elif key.expired %}
+          expired
         {% else %}
           <form method="post" action="" style="display:inline">
             {% csrf_token %}
@@ -111,12 +165,68 @@ traced to when it was issued and last used.
 {% endif %}
 
 <div class="usage">
-  <h2>Using it</h2>
-  <p>Set it in the environment, so it is not in the code you publish:</p>
-<pre>export NUMBERDB_API_KEY=...</pre>
-  <p>The <a href="https://pypi.org/project/numberdb/">numberdb</a> package
-  picks it up from there. Over HTTP it is a bearer token:</p>
+  <h2>What a key lets you do</h2>
+  <p>
+    Reading, past the anonymous rate limit &mdash; that is what any key does.
+  </p>
+  <p>
+    {% if may_write %}
+      Writing, too: your edits have been reviewed and confirmed, so programs
+      running under your key may change tables.
+    {% else %}
+      <b>Writing needs more than a key.</b> A key says who you are; it does not
+      say your account may write with a program. That needs
+      {{ trusted_after }} edits of yours to have been reviewed and confirmed by
+      somebody, and {% if accepted_edits %}{{ accepted_edits }} of yours
+      {% if accepted_edits == 1 %}has{% else %}have{% endif %} been so far.
+      {% else %}none of yours has been so far.{% endif %}
+      A person editing one table exercises judgement about it; a script does
+      not, and it writes faster than anyone can read. Saying so here saves
+      finding out from a refusal at the end of a long computation.
+    {% endif %}
+  </p>
+  <p>Over HTTP a key is a bearer token:</p>
 <pre>Authorization: Bearer ...</pre>
+  <p>See the <a href="/help#api">help page</a> for the rest.</p>
 </div>
+
+<script>
+(function () {
+  var button = document.getElementById('copy-key');
+  if (!button) { return; }
+  var said = document.getElementById('copied');
+
+  function tell(text) {
+    said.textContent = text;
+    said.classList.add('showing');
+    setTimeout(function () { said.classList.remove('showing'); }, 2500);
+  }
+
+  button.addEventListener('click', function () {
+    var key = document.getElementById('fresh-key').textContent.trim();
+    //navigator.clipboard needs a secure context, which http://localhost is
+    //and a plain-http deployment on any other host is not. Selecting the key
+    //is the fallback: it leaves the user one keystroke away rather than
+    //telling them it failed.
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(key).then(
+        function () { tell('Copied to clipboard'); },
+        function () { select(); });
+    } else {
+      select();
+    }
+  });
+
+  function select() {
+    var node = document.getElementById('fresh-key');
+    var range = document.createRange();
+    range.selectNodeContents(node);
+    var selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    tell('Selected \u2014 press Ctrl+C');
+  }
+})();
+</script>
 
 {% endblock %}
