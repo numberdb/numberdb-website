@@ -392,6 +392,7 @@ def apply_revision(table, revision=None):
 	data.save()
 
 	_sync_title(table, normalised)
+	_sync_tags(table, normalised)
 	build_number_table(only_table=table)
 	reindex_for_search(table, normalised)
 	#After the rebuild, not before: the rows it writes take the model default,
@@ -419,6 +420,86 @@ def _sync_title(table, document):
 	table.title = title
 	table.title_lowercase = title.lower().replace('$', '')
 	table.save(update_fields=['title', 'title_lowercase'])
+
+
+def _sync_tags(table, document):
+	"""Keep the table's tags in step with the document's.
+
+	The same shape of bug `_sync_title` was written for, and the one somebody
+	hit by adding a tag: a tag lives in two places, in the document and as a
+	`Tag` row joined to the table, and only the document was being written.
+	So a tag added on the site was in the table's text and in no tag list
+	anywhere -- not on /tags, not on its own page, not in the picker offering
+	"existing tags" to the next person. The tag pages were built once by the
+	data pipeline and had been frozen ever since.
+
+	Counts are recomputed rather than incremented. The pipeline incremented,
+	which is right exactly once and drifts on every edit afterwards -- and a
+	count that drifts is worse here than no count, because it is shown.
+	"""
+	from django.contrib.postgres.search import SearchVector
+
+	from .models import Tag
+
+	if not isinstance(document, dict):
+		return
+
+	wanted = []
+	for name in _tag_names(document.get('Tags')):
+		#The column is 32 characters. A longer one is not silently truncated
+		#into a different tag that looks like a typo of the real one.
+		if len(name) > 32:
+			continue
+		if name not in wanted:
+			wanted.append(name)
+
+	had = set(table.tags.all())
+	tags = []
+	for name in wanted:
+		tag, created = Tag.objects.get_or_create(
+			name=name, defaults={'name_lowercase': name.lower()})
+		if created or not tag.name_lowercase:
+			tag.name_lowercase = name.lower()
+			tag.save(update_fields=['name_lowercase'])
+		tags.append(tag)
+
+	table.tags.set(tags)
+
+	#Every tag this table joined or left, counted again from the join table.
+	#Both counts, because both are shown: on /tags, on a tag's own page, and
+	#in the suggestions under the search bar.
+	from django.db.models import Sum
+
+	for tag in set(tags) | had:
+		count = tag.tables.count()
+		numbers = tag.tables.aggregate(total=Sum('number_count'))['total'] or 0
+		if tag.table_count != count or tag.number_count != numbers:
+			tag.table_count = count
+			tag.number_count = numbers
+			tag.save(update_fields=['table_count', 'number_count'])
+
+	#And the vector the tag search reads. Only the data pipeline set this, so
+	#a tag created here existed, was joined to its table, was counted -- and
+	#could not be found by typing its name, which is most of what a tag is
+	#for.
+	if tags:
+		Tag.objects.filter(pk__in=[tag.pk for tag in tags]).update(
+			search_vector=SearchVector('name', weight='A'))
+
+
+def _tag_names(value):
+	"""A document's tags, however that table writes them.
+
+	A list is the usual form; a bare string is how a table with one tag was
+	written by hand, and reading it as a list of characters would create
+	thirty tags named after letters.
+	"""
+	if isinstance(value, str):
+		value = [part.strip() for part in value.split(',')]
+	elif not isinstance(value, (list, tuple)):
+		return []
+	return [str(item).strip() for item in value
+	        if isinstance(item, str) and str(item).strip()]
 
 
 def reindex_for_search(table, document):

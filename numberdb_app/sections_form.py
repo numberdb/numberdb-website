@@ -415,12 +415,25 @@ def _rebuild_list_records(name, data, fields):
 
 def _rebuild_picked(name, data):
 	"""A picked list, from its rows, in the order they arrive."""
-	prefix = 'section.%s.items.' % (name,)
+	#One repeated field name rather than numbered ones. Numbering meant the
+	#page had to renumber the rows after every add, move and remove, and the
+	#renumbering rewrote `section.Tags.items.0` into `section.Tags.0.0` --
+	#which this function does not recognise, so adding one tag saved the
+	#section as empty and removed every tag the table had. With no index in
+	#the name there is nothing to renumber and nothing to get wrong; order is
+	#the order the fields arrive in, which is the order they sit on the page.
 	items = []
-	for key in data:
-		if not key.startswith(prefix):
-			continue
-		value = (data.get(key) or '').strip()
+	key = 'section.%s.item' % (name,)
+	if hasattr(data, 'getlist'):
+		sent = data.getlist(key)
+	else:
+		#A plain mapping, as the unit tests and any other caller hand over. One
+		#value or several; both are what a browser can send.
+		value = data.get(key)
+		sent = (list(value) if isinstance(value, (list, tuple))
+		        else [value] if value else [])
+	for value in sent:
+		value = (value or '').strip()
 		if value and value not in items:
 			items.append(value)
 	return items
