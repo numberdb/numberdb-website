@@ -2599,7 +2599,7 @@ def _metadata_form_page(request, table, base):
 	"""
 	from .editing import may_see, tree_of
 	from .metadata_form import fields_from
-	from .permissions import may_edit
+	from .permissions import is_board_member, may_edit
 	from .sections_form import sections_from
 
 	if not may_see(table, request.user):
@@ -2614,6 +2614,7 @@ def _metadata_form_page(request, table, base):
 			'table_being_edited': table,
 			'base_digest': base.digest if base is not None else '',
 			'may_edit': may_edit(request.user),
+			'is_board_member': is_board_member(request.user),
 			'is_draft': not table.published,
 			'rows': rows,
 			'meta': meta,
@@ -2629,6 +2630,7 @@ def _metadata_form_page(request, table, base):
 			'table_being_edited': table,
 			'base_digest': base.digest if base is not None else '',
 			'may_edit': may_edit(request.user),
+			'is_board_member': is_board_member(request.user),
 			'is_draft': not table.published,
 			'sections': sections_from(tree),
 			#What CITE{} may point at, so a citation can be inserted rather
@@ -2652,6 +2654,7 @@ def _metadata_form_page(request, table, base):
 		'table_being_edited': table,
 		'base_digest': base.digest if base is not None else '',
 		'may_edit': may_edit(request.user),
+		'is_board_member': is_board_member(request.user),
 		'is_draft': not table.published,
 	}
 	context.update(fields_from(tree))

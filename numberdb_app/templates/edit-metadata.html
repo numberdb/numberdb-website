@@ -49,6 +49,15 @@ table.parameter-table th { font-weight: 400; color: #555; font-size: 0.9em; }
 .value-row input[readonly] { background: #f0f0f0; color: #444; }
 .other-type { margin: 0.5rem 0 0 1rem; padding: 0.5rem 0.8rem;
               border-left: 3px solid #ddd; }
+.known-others { margin: 0.2rem 0 0.6rem 0; }
+.known-others .known-label { color: #555; font-size: 0.9em;
+                             margin-right: 0.4rem; }
+.known-others button { cursor: pointer; font-size: 0.9em;
+                       padding: 0.15rem 0.5rem; margin: 0.15rem 0.3rem 0.15rem 0;
+                       border: 1px solid #ccc; border-radius: 3px;
+                       background: #fff; }
+.known-others button:hover { background: #eef4fb; }
+.known-others button.chosen { border-color: #6a9; background: #eaf5ee; }
 .other-type label { display: inline-block; margin: 0.3rem 0.4rem 0.3rem 0;
                     font-size: 0.9em; color: #555; }
 </style>
@@ -65,32 +74,9 @@ table.parameter-table th { font-weight: 400; color: #555; font-size: 0.9em; }
 
 <p>{% include "includes/table-links.html" with table=table_being_edited current="edit" %}</p>
 
-<div class="mode-switch">
-  <b>Settings</b>
-  &middot;
-  <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=sections">Text</a>
-  &middot;
-  <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=entries">Numbers</a>
-  &middot;
-  <a href="{% url 'db:edit-table' table_being_edited.tid %}">Source</a>
-  <span class="hint">
-    The settings with fixed choices. The definition, comments, formulas,
-    references, programs and links are under Text; the numbers themselves are
-    in the source view.
-  </span>
-</div>
+{% include 'includes/editor-tabs.html' with current='settings' %}
 
-<div class="edit-note">
-  {% if is_draft %}
-    This table is a draft. Nobody else can see it, and its parameters can still
-    be changed; both stop when you publish it.
-  {% else %}
-    Your changes are published immediately. The entries you change are marked
-    as needing review and are left out of
-    <a href="{% url 'db:help' %}#section-search">search by number</a> until a
-    reviewer confirms them.
-  {% endif %}
-</div>
+{% include 'includes/editor-note.html' %}
 
 {% if not may_edit %}
   <p><a href="{% url 'account_login' %}?next={{ request.path }}?form=1">Sign in</a>
@@ -141,24 +127,37 @@ table.parameter-table th { font-weight: 400; color: #555; font-size: 0.9em; }
         searching for their digits. That is the intended trade, not a
         limitation to work around.
       </p>
+      {% if known_other_types %}
+      {% comment %}
+      The kinds somebody has already named, offered as buttons rather than as a
+      datalist: a datalist has to be typed into before it suggests anything, so
+      a kind that exists looks exactly like one that does not, and the same
+      thing gets named twice a letter apart.
+
+      Deliberately not in the select above. That list is the types this
+      database can parse and search by digits; putting `*R` in it would offer
+      a value that quietly does not do what every other option in the list
+      does.
+      {% endcomment %}
+      <div class="known-others">
+        <span class="known-label">Already in use:</span>
+        {% for known in known_other_types %}
+          <button type="button" class="pick-other"
+                  data-symbol="{{ known.symbol }}"
+                  data-name="{{ known.name }}">
+            <code>{{ known.symbol }}</code>{% if known.name %} {{ known.name }}{% endif %}
+          </button>
+        {% endfor %}
+        <span class="hint">or name a new kind below.</span>
+      </div>
+      {% endif %}
+
       <label for="other_type">Symbol</label>
       <input type="text" id="other_type" name="other_type" size="10"
-             value="{{ other_type }}" list="known-other-types"
-             placeholder="e.g. *R">
-      <datalist id="known-other-types">
-        {% for known in known_other_types %}
-          <option value="{{ known.symbol }}">{{ known.name }}</option>
-        {% endfor %}
-      </datalist>
+             value="{{ other_type }}" placeholder="e.g. *R">
       <label for="other_type_name">What it is called</label>
       <input type="text" id="other_type_name" name="other_type_name" size="26"
              value="{{ other_type_name }}" placeholder="e.g. hyperreals">
-      {% if known_other_types %}
-        <span class="hint">
-          Already in use:
-          {% for known in known_other_types %}<code>{{ known.symbol }}</code>{% if known.name %} ({{ known.name }}){% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}.
-        </span>
-      {% endif %}
     </div>
   </div>
 
@@ -329,6 +328,28 @@ table.parameter-table th { font-weight: 400; color: #555; font-size: 0.9em; }
   //script they are simply always visible, which is workable rather than broken.
   (function () {
     var select = document.getElementById('data_type');
+    //Picking a kind that already exists fills both fields, because a symbol
+    //without its name is what a typo looks like.
+    var symbol = document.getElementById('other_type');
+    var named = document.getElementById('other_type_name');
+    function markChosen() {
+      document.querySelectorAll('.pick-other').forEach(function (button) {
+        button.classList.toggle(
+          'chosen',
+          !!symbol && button.dataset.symbol === symbol.value.trim());
+      });
+    }
+    document.querySelectorAll('.pick-other').forEach(function (button) {
+      button.addEventListener('click', function () {
+        symbol.value = button.dataset.symbol;
+        named.value = button.dataset.name || '';
+        markChosen();
+        named.focus();
+      });
+    });
+    if (symbol) { symbol.addEventListener('input', markChosen); }
+    markChosen();
+
     var box = document.querySelector('.other-type');
     if (!select || !box) { return; }
     function sync() { box.hidden = select.value !== '__other__'; }

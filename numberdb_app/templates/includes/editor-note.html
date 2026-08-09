@@ -1,0 +1,28 @@
+{% comment %}
+What pressing Save actually does, said on all four editor pages.
+
+"Your changes are published immediately" was ambiguous in the way that
+matters: read while typing, it sounds like the typing is what publishes. It is
+Save that publishes, and there is no second step after it -- which is the thing
+somebody needs to know *before* they press it, not after.
+
+Four copies again, drifting again: two of them explained review and two did
+not.
+{% endcomment %}
+
+<div class="edit-note">
+  {% if is_draft %}
+    This table is a draft: nobody else can see it yet, and Save keeps it that
+    way.
+  {% elif is_board_member %}
+    <b>Save publishes.</b> There is no separate publishing step: the table
+    changes for everyone the moment you press it, and counts as reviewed
+    because you are on the board.
+  {% else %}
+    <b>Save publishes.</b> There is no separate publishing step: the table
+    changes for everyone the moment you press it. The entries you change are
+    marked as needing review and left out of
+    <a href="{% url 'db:help' %}#section-search">search by number</a> until a
+    reviewer confirms them; everything else about the table is unaffected.
+  {% endif %}
+</div>

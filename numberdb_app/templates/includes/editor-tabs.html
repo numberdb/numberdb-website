@@ -1,0 +1,43 @@
+{% comment %}
+The four ways to edit a table, drawn the same way on all four pages.
+
+They were four copies, and copies drift: after the Numbers page was added, both
+Settings and Text still told the reader that "the numbers themselves are edited
+in the source view", which had stopped being true. One include, one order, and
+one place where each tab's line lives.
+
+Takes `current` -- settings, text, numbers or source.
+{% endcomment %}
+
+<div class="mode-switch">
+  {% if current == 'settings' %}<b>Settings</b>{% else %}
+    <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=1">Settings</a>
+  {% endif %}
+  &middot;
+  {% if current == 'text' %}<b>Text</b>{% else %}
+    <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=sections">Text</a>
+  {% endif %}
+  &middot;
+  {% if current == 'numbers' %}<b>Numbers</b>{% else %}
+    <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=entries">Numbers</a>
+  {% endif %}
+  &middot;
+  {% if current == 'source' %}<b>Source</b>{% else %}
+    <a href="{% url 'db:edit-table' table_being_edited.tid %}">Source</a>
+  {% endif %}
+
+  <span class="hint">
+    {% if current == 'settings' %}
+      The type, the parameters, the tags and the other settings with fixed
+      choices.
+    {% elif current == 'text' %}
+      The definition, comments, formulas, references, programs and links.
+    {% elif current == 'numbers' %}
+      The entries, a page at a time. Saving replaces only the rows shown; the
+      rest of the table is left exactly as it is.
+    {% else %}
+      The whole table as YAML. The forms show the shape a table can have, which
+      the source cannot: it shows only what this table happens to contain.
+    {% endif %}
+  </span>
+</div>

@@ -56,30 +56,9 @@ tr.removed td { opacity: 0.4; text-decoration: line-through; }
 <h1>{{ table_being_edited.title|safe }}</h1>
 <a class="link-below-title" href="{% url 'db:table' table_being_edited.tid %}">back to the table</a>
 
-<div class="mode-switch">
-  <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=1">Settings</a>
-  &middot;
-  <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=sections">Text</a>
-  &middot;
-  <b>Numbers</b>
-  &middot;
-  <a href="{% url 'db:edit-table' table_being_edited.tid %}">Source</a>
-  <span class="hint">One page of numbers at a time. Saving replaces only the
-  rows shown here; the rest of the table is left exactly as it is.</span>
-</div>
+{% include 'includes/editor-tabs.html' with current='numbers' %}
 
-<div class="edit-note">
-  {% if is_draft %}
-    This table is a draft: nobody else can see it yet.
-  {% else %}
-    Your changes are published immediately.
-    {% if not identities_editable %}
-      Parameter values are fixed: an entry's parameters are its identity, and
-      citations to it would not break, they would resolve and point at a
-      different number.
-    {% endif %}
-  {% endif %}
-</div>
+{% include 'includes/editor-note.html' %}
 
 {% if not rows and meta.total == 0 %}
   <p>This table has no entries yet. Add the first one below.</p>
