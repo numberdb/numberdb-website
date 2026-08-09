@@ -745,10 +745,10 @@ def write_table(request, tid):
 @csrf_exempt
 @rate_limited
 def create_table(request):
-	"""Add a table. POST, key required."""
+	"""Add a table. POST, key required, board only."""
 	from .editing import create_table as make_table
 	from .limits import TooBig
-	from .permissions import edits_are_reviewed
+	from .permissions import edits_are_reviewed, may_create_tables_through_api
 
 	if request.method != 'POST':
 		return JsonResponse({'error': 'Use POST.'}, status=405)
@@ -756,6 +756,21 @@ def create_table(request):
 	user, refusal = _writer_of(request)
 	if refusal is not None:
 		return refusal
+
+	#Higher than writing to a table, because it is unbounded in a way writing
+	#is not: a loop that means to make three tables and makes three hundred
+	#leaves three hundred permanent T-numbers, and reverting a table's
+	#existence is not something the history model does.
+	if not may_create_tables_through_api(user):
+		return JsonResponse(
+			{'error': 'Creating tables with a program is not open to this '
+			          'account.',
+			 'detail': 'A table is a permanent number, a title in every '
+			           'listing, and a parameter order that can never change '
+			           'because citations resolve on it. Create it on the '
+			           'site, where that is one deliberate act, and then a '
+			           'program may fill it with numbers.'},
+			status=403)
 	tree, refusal = _document_of(request)
 	if refusal is not None:
 		return refusal

@@ -34,10 +34,17 @@ table.keys code { font-family: ui-monospace, monospace; }
 .usage { max-width: 46rem; }
 .usage pre { background: #f6f7f9; border: 1px solid #e2e2e2; padding: 0.6rem;
              overflow-x: auto; }
-.fresh button { padding: 0.35rem 0.8rem; cursor: pointer; }
-.copied { margin-left: 0.6rem; font-size: 0.9em; color: #155724;
-          opacity: 0; transition: opacity 0.15s; }
-.copied.showing { opacity: 1; }
+/* The thing to copy and the button that copies it, in one box: a button that
+   sits under three code blocks is a button nobody is sure applies to which. */
+.copyable { position: relative; margin: 0.5rem 0; }
+.copyable pre, .copyable code { margin: 0; padding-right: 5rem; }
+.copyable button.copy { position: absolute; top: 0.35rem; right: 0.35rem;
+                        cursor: pointer; font-size: 0.85em;
+                        padding: 0.15rem 0.55rem; border: 1px solid #bbb;
+                        border-radius: 3px; background: #fff; }
+.copyable button.copy:hover { background: #eef4fb; }
+.copyable button.copy.done { border-color: #6a9; background: #eaf5ee;
+                             color: #155724; }
 .stash { border: 1px solid #e2e2e2; border-radius: 3px; padding: 0.8rem;
          margin: 1rem 0; max-width: 46rem; }
 .stash pre { background: #f6f7f9; border: 1px solid #e2e2e2; padding: 0.6rem;
@@ -61,11 +68,10 @@ limited; writing without one does not.
 {% if fresh_key %}
 <div class="fresh">
   <b>Your new key. This is the only time it will be shown.</b>
-  <code id="fresh-key">{{ fresh_key }}</code>
-  <p>
-    <button type="button" id="copy-key">Copy to clipboard</button>
-    <span id="copied" class="copied" role="status" aria-live="polite"></span>
-  </p>
+  <div class="copyable">
+    <code id="fresh-key">{{ fresh_key }}</code>
+    <button type="button" class="copy" data-copies="fresh-key">Copy</button>
+  </div>
   <span class="once">The server keeps only a hash of it, so nobody can look it
   up later &mdash; not you and not us. If it is lost, revoke it below and take
   another.</span>
@@ -77,20 +83,23 @@ limited; writing without one does not.
 
   <p><b>A <code>.env</code> beside your script</b>, which the package reads on
   its own:</p>
-<pre>NUMBERDB_API_KEY={{ fresh_key }}</pre>
+<div class="copyable"><pre id="paste-dotenv">NUMBERDB_API_KEY={{ fresh_key }}</pre>
+<button type="button" class="copy" data-copies="paste-dotenv">Copy</button></div>
   <p class="warn">Add <code>.env</code> to your <code>.gitignore</code> first.
   A key in a repository is a key in everyone&rsquo;s clone, and revoking it is
   then the only fix.</p>
 
   <p><b>Or your shell</b>, for a key you use everywhere:</p>
-<pre>export NUMBERDB_API_KEY={{ fresh_key }}</pre>
+<div class="copyable"><pre id="paste-export">export NUMBERDB_API_KEY={{ fresh_key }}</pre>
+<button type="button" class="copy" data-copies="paste-export">Copy</button></div>
 
   <p><b>Or once, for good</b>, in the per-user file the package looks in when
   neither of the above is set &mdash; which keeps it out of every project
   directory you might publish:</p>
-<pre>mkdir -p ~/.config/numberdb
+<div class="copyable"><pre id="paste-config">mkdir -p ~/.config/numberdb
 echo 'NUMBERDB_API_KEY={{ fresh_key }}' > ~/.config/numberdb/env
 chmod 600 ~/.config/numberdb/env</pre>
+<button type="button" class="copy" data-copies="paste-config">Copy</button></div>
 </div>
 {% endif %}
 
@@ -192,40 +201,44 @@ traced to when it was issued and last used.
 
 <script>
 (function () {
-  var button = document.getElementById('copy-key');
-  if (!button) { return; }
-  var said = document.getElementById('copied');
-
-  function tell(text) {
-    said.textContent = text;
-    said.classList.add('showing');
-    setTimeout(function () { said.classList.remove('showing'); }, 2500);
+  //One handler for every copyable box, so the key, the .env line, the export
+  //line and the three-line recipe all behave the same way.
+  function tell(button, text) {
+    var was = button.textContent;
+    button.textContent = text;
+    button.classList.add('done');
+    setTimeout(function () {
+      button.textContent = was;
+      button.classList.remove('done');
+    }, 2000);
   }
 
-  button.addEventListener('click', function () {
-    var key = document.getElementById('fresh-key').textContent.trim();
-    //navigator.clipboard needs a secure context, which http://localhost is
-    //and a plain-http deployment on any other host is not. Selecting the key
-    //is the fallback: it leaves the user one keystroke away rather than
-    //telling them it failed.
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(key).then(
-        function () { tell('Copied to clipboard'); },
-        function () { select(); });
-    } else {
-      select();
-    }
-  });
-
-  function select() {
-    var node = document.getElementById('fresh-key');
+  function select(node) {
     var range = document.createRange();
     range.selectNodeContents(node);
     var selection = window.getSelection();
     selection.removeAllRanges();
     selection.addRange(range);
-    tell('Selected \u2014 press Ctrl+C');
   }
+
+  document.querySelectorAll('button.copy').forEach(function (button) {
+    button.addEventListener('click', function () {
+      var node = document.getElementById(button.dataset.copies);
+      var text = node.textContent.trim();
+      //navigator.clipboard needs a secure context, which http://localhost is
+      //and a plain-http deployment on any other host is not. Selecting the
+      //text is the fallback: it leaves the reader one keystroke away rather
+      //than telling them it failed.
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(
+          function () { tell(button, 'Copied'); },
+          function () { select(node); tell(button, 'Press Ctrl+C'); });
+      } else {
+        select(node);
+        tell(button, 'Press Ctrl+C');
+      }
+    });
+  });
 })();
 </script>
 

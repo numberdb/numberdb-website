@@ -38,29 +38,9 @@ Said before the box rather than after saving, because it changes what somebody
 chooses to write. An author who does not know their edit is published at once
 would reasonably expect a draft.
 {% endcomment %}
-<div class="mode-switch">
-  <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=1">Settings</a>
-  &middot;
-  <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=sections">Text</a>
-  &middot;
-  <a href="{% url 'db:edit-table' table_being_edited.tid %}?form=entries">Numbers</a>
-  &middot;
-  <b>Source</b>
-  <span class="hint">The forms show the shape of a table, which the source
-  cannot: a table's text shows only what that table happens to contain.</span>
-</div>
+{% include 'includes/editor-tabs.html' with current='source' %}
 
-<div class="edit-note">
-  {% if is_board_member %}
-    Your changes are published immediately, and count as reviewed because you
-    are on the board.
-  {% else %}
-    Your changes are published immediately. The entries you change are marked
-    as needing review and are left out of
-    <a href="{% url 'db:help' %}#section-search">search by number</a> until a
-    reviewer confirms them. Everything else about the table is unaffected.
-  {% endif %}
-</div>
+{% include 'includes/editor-note.html' %}
 
 {% include 'includes/messaging.html' %}
 

@@ -244,8 +244,17 @@ class WhatTheKeyPageSays(TestCase):
 
 	def test_a_new_key_can_be_copied(self):
 		body = self.fresh()
-		self.assertIn('Copy to clipboard', body)
 		self.assertIn('id="fresh-key"', body)
+		self.assertIn('data-copies="fresh-key"', body)
+
+	def test_so_can_every_line_it_offers_to_paste(self):
+		"""A button under three code blocks is a button nobody is sure applies
+		to which, so each box carries its own."""
+		body = self.fresh()
+		for what in ('fresh-key', 'paste-dotenv', 'paste-export',
+		             'paste-config'):
+			with self.subTest(box=what):
+				self.assertIn('data-copies="%s"' % (what,), body)
 
 	def test_it_says_where_to_put_it(self):
 		"""Including the .env the package actually reads, with the key already

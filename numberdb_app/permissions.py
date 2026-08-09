@@ -22,7 +22,8 @@ from django.contrib.auth.models import Group
 
 __all__ = ['BOARD_GROUP', 'is_board_member', 'may_edit', 'board_group',
            'TRUSTED_AFTER', 'accepted_edit_count', 'is_trusted',
-           'edits_are_reviewed', 'may_write_through_api']
+           'edits_are_reviewed', 'may_write_through_api',
+           'may_create_tables_through_api']
 
 #: Accepted edits after which an account is trusted. Five is enough to have
 #: made and had confirmed a handful of real corrections, and few enough that
@@ -122,3 +123,25 @@ def may_write_through_api(user):
 	reviews, which is the one signal a script cannot manufacture for itself.
 	"""
 	return is_trusted(user)
+
+
+def may_create_tables_through_api(user):
+	"""Whether ``user`` may create *tables* with a program.
+
+	Higher than writing to one, and for a different reason. Writing numbers to
+	an existing table is bounded: somebody chose that the table should exist,
+	wrote what it is, and fixed its parameters, and the worst a bad run does is
+	fill it with wrong values that review catches and history reverts.
+
+	Creating tables is not bounded. Each one is a permanent T-number, a title
+	in every listing, a namespace whose parameter order can never be changed
+	because citations resolve on it, and prose that no reviewer wrote. A loop
+	that means to make three and makes three hundred leaves three hundred of
+	those, and reverting a table's existence is not something the history model
+	does.
+
+	So: board members. Everybody else creates tables on the site, one at a
+	time, through a form -- which is the pace the decision deserves, since what
+	is being decided is not a number but what a table *is*.
+	"""
+	return is_board_member(user)

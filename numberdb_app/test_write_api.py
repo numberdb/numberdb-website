@@ -717,3 +717,52 @@ class WhatMayBeAttached(WriteBase):
 		from .api import MAX_ATTACHMENTS_BYTES
 
 		self.assertGreater(MAX_ATTACHMENTS_BYTES, 0)
+
+
+class CreatingTablesNeedsMoreThanWriting(TestCase):
+	"""Writing numbers to a table is bounded; creating tables is not.
+
+	A loop that means to make three tables and makes three hundred leaves three
+	hundred permanent T-numbers, each a title in every listing and a parameter
+	order that can never change because citations resolve on it. Reverting a
+	table's existence is not something the history model does.
+	"""
+
+	def setUp(self):
+		from django.contrib.auth.models import User
+
+		from .models import ApiKey
+
+		self.writer = User.objects.create_user('bulk_writer')
+		_key, self.writer_token = ApiKey.issue(self.writer)
+		self.board = User.objects.create_user('board_writer')
+		_key, self.board_token = ApiKey.issue(self.board)
+
+		from .permissions import board_group
+		self.board.groups.add(board_group())
+
+	def make(self, token):
+		import json
+
+		return self.client.post(
+			'/api/tables',
+			data=json.dumps({'Title': 'Made by a program',
+			                 'Data properties': {'type': 'R'},
+			                 'Numbers': [{'params': {}, 'number': '3.14'}]}),
+			content_type='application/json',
+			HTTP_AUTHORIZATION='Bearer %s' % (self.writer_token
+			                                  if token == 'writer'
+			                                  else self.board_token,))
+
+	def test_a_board_member_may(self):
+		self.assertEqual(self.make('board').status_code, 201)
+
+	def test_somebody_who_may_write_numbers_may_not(self):
+		answer = self.make('writer')
+		self.assertEqual(answer.status_code, 403)
+
+	def test_the_refusal_says_where_to_do_it_instead(self):
+		"""Not just no: the site's form is the answer, and then a program may
+		fill the table with numbers."""
+		answer = self.make('writer')
+		self.assertIn('site', answer.json().get('detail', ''))
