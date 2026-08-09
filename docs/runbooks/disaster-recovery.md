@@ -108,6 +108,27 @@ reports missing GitHub credentials as `numberdb.W001` and undeliverable mail as
 Finally, log in, and confirm search by number returns results, which exercises
 the database, the GiST indexes and the evaluator together.
 
+## The two commands
+
+Since this runbook was written, the parts that can be a script are one:
+
+    make backup           # pull a dump, verified: size, gzip, tables present
+    make restore_check    # restore the newest one into a scratch database and
+                          # count what came back, then drop it
+
+`restore_check` touches nothing in use and is the one to run often. The first
+time it ran it caught a real thing: the dump was twenty minutes older than the
+migration that added revisions, so the table was missing. That is what a
+rehearsal is for.
+
+For the real thing, once this runbook has got you a host with the stack up and
+the secrets in place:
+
+    scripts/restore.sh --to root@newhost
+
+It stops the app, replaces the database, starts it again, and prints the counts
+so you can see what came back.
+
 ## Rehearsing it
 
 An untested restore is a hypothesis. The cheap version, which does not need a
