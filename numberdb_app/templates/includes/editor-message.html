@@ -1,0 +1,25 @@
+{% comment %}
+What changed, required.
+
+The history is read by people deciding whether a number is right, and "no
+message" is the one entry that tells them nothing at all -- it makes them open
+the diff to learn what a sentence would have said. Asking is cheap; asking
+later is impossible.
+
+Required in the browser and again on the server, because the browser's
+requirement is a convenience and the server's is the rule.
+{% endcomment %}
+
+<style>
+.edit-message { margin: 1rem 0; }
+.edit-message label { display: block; font-size: 0.9rem; color: #444;
+                      margin-bottom: 0.2rem; }
+.edit-message input { width: min(34rem, 92%); padding: 0.35rem; }
+</style>
+
+<div class="edit-message">
+  <label for="message">What did you change?</label>
+  <input type="text" id="message" name="message" maxlength="300" required
+         size="52" value="{{ edit_message|default:'' }}"
+         placeholder="e.g. corrected the last two digits of n = 7">
+</div>

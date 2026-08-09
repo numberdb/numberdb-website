@@ -211,7 +211,7 @@ class ThroughThePage(TestCase):
 		return tree_of(self.table.head_revision)
 
 	def submit(self, **fields):
-		data = {'action': 'save-metadata',
+		data = {'action': 'save-metadata', 'message': 'a change',
 		        'base': self.table.head_revision.digest,
 		        'title': 'Form probe', 'data_type': 'R', 'complete': '',
 		        'complete_condition': '', 'layout': '',
@@ -278,7 +278,7 @@ class ThroughThePage(TestCase):
 		             author=self.user, base=self.table.head_revision)
 		self.table.refresh_from_db()
 		response = self.client.post(self.url(), {
-			'action': 'save-metadata', 'base': stale, 'title': 'Form probe',
+			'action': 'save-metadata', 'message': 'a change', 'base': stale, 'title': 'Form probe',
 			'data_type': 'Q', 'parameter.n.type': 'Z'})
 		self.assertEqual(response.status_code, 302)
 		#The other edit survives: a form save is a merge, not an overwrite.
@@ -320,7 +320,7 @@ class ATypeTheDatabaseCannotParse(TestCase):
 		return tree_of(self.table.head_revision)
 
 	def submit(self, **fields):
-		data = {'action': 'save-metadata',
+		data = {'action': 'save-metadata', 'message': 'a change',
 		        'base': self.table.head_revision.digest,
 		        'title': 'Odd numbers indeed'}
 		data.update(fields)
@@ -419,7 +419,7 @@ class TheValuesASymbolicParameterMayTake(TestCase):
 		return self.head()['Parameters']['v']['values']
 
 	def submit(self, **fields):
-		data = {'action': 'save-metadata',
+		data = {'action': 'save-metadata', 'message': 'a change',
 		        'base': self.table.head_revision.digest,
 		        'title': 'Values probe',
 		        'parameter.q.type': 'R', 'parameter.v.type': 'Symbolic',
@@ -457,7 +457,7 @@ class TheValuesASymbolicParameterMayTake(TestCase):
 
 	def test_a_value_in_use_cannot_be_dropped(self):
 		data = {k: v for k, v in {
-			'action': 'save-metadata',
+			'action': 'save-metadata', 'message': 'a change',
 			'base': self.table.head_revision.digest,
 			'title': 'Values probe',
 			'parameter.v.values.present': '1',

@@ -88,6 +88,7 @@ class AddingATag(TestCase):
 	def test_saving_without_touching_anything_keeps_them(self):
 		data = self.rendered_fields()
 		data['action'] = 'save-sections'
+		data['message'] = 'tags'
 		self.client.post('/edit/%s' % (self.table.tid,), data)
 		self.assertEqual(self.tags(), ['ring', 'Abelian group'])
 
@@ -96,6 +97,7 @@ class AddingATag(TestCase):
 		data = self.rendered_fields()
 		data['section.Tags.item'] = ['ring', 'Abelian group', 'test tag']
 		data['action'] = 'save-sections'
+		data['message'] = 'tags'
 		self.client.post('/edit/%s' % (self.table.tid,), data)
 		self.assertEqual(self.tags(), ['ring', 'Abelian group', 'test tag'])
 
@@ -104,6 +106,7 @@ class AddingATag(TestCase):
 		data = self.rendered_fields()
 		data['section.Tags.item'] = ['ring', 'Abelian group', 'test tag']
 		data['action'] = 'save-sections'
+		data['message'] = 'tags'
 		self.client.post('/edit/%s' % (self.table.tid,), data)
 		self.table.refresh_from_db()
 		self.assertEqual(self.table.revisions.count(), before + 1)

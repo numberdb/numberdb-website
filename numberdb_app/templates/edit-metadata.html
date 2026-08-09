@@ -294,11 +294,7 @@ table.parameter-table th { font-weight: 400; color: #555; font-size: 0.9em; }
     </div>
   {% endif %}
 
-  <div class="form-row">
-    <label for="message">What did you change?</label>
-    <input class="wide" type="text" id="message" name="message" maxlength="300"
-           placeholder="e.g. said which values these are">
-  </div>
+  {% include 'includes/editor-message.html' %}
 
   <button type="submit" name="action" value="save-metadata"><b>Save</b></button>
   <a href="{% url 'db:table_by_url' table_being_edited.url %}">Cancel</a>
