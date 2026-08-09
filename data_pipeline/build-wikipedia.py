@@ -12,7 +12,7 @@ import django
 from django.db import models
 from django.db import transaction
 
-os.environ["DJANGO_SETTINGS_MODULE"] = 'numberdb.settings'
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "numberdb.settings.dev")
 django.setup()
 from numberdb_app.models import WikipediaNumber
 

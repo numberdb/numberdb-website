@@ -2,7 +2,7 @@
 # Entrypoint for the Nginx container.
 # - Requires SERVER_NAME (domain)
 # - If Let’s Encrypt certs exist for SERVER_NAME, render TLS template; otherwise HTTP-only
-# - Starts Nginx in the foreground
+# - Starts Nginx and periodically reloads it (to pick up renewed certs)
 set -e
 
 TEMPLATE_HTTP="/etc/nginx/templates/default.conf.http.template"
@@ -28,5 +28,29 @@ else
 fi
 
 echo "Starting Nginx..."
-exec nginx -g 'daemon off;'
 
+# Nginx must be reloaded to pick up renewed cert files. We run a small background
+# loop that periodically reloads Nginx (default: every 12 hours).
+RELOAD_INTERVAL_SECONDS="${NGINX_RELOAD_INTERVAL_SECONDS:-43200}"
+if [ "${RELOAD_INTERVAL_SECONDS}" -gt 0 ] 2>/dev/null; then
+  (
+    while :; do
+      sleep "${RELOAD_INTERVAL_SECONDS}" || exit 0
+      echo "Reloading Nginx (certificate refresh)..."
+      nginx -s reload || true
+    done
+  ) &
+  RELOADER_PID="$!"
+fi
+
+term_handler() {
+  echo "Stopping Nginx..."
+  if [ -n "${RELOADER_PID:-}" ]; then
+    kill "${RELOADER_PID}" 2>/dev/null || true
+  fi
+  nginx -s quit 2>/dev/null || true
+}
+
+trap term_handler INT TERM
+
+nginx -g 'daemon off;'
