@@ -107,12 +107,22 @@ class TheHelpPageNamesRealPackageThings(TestCase):
 		if not source.exists():
 			self.skipTest('the client package is not in this checkout')
 		tree = ast.parse(source.read_text())
+		names = None
 		for node in tree.body:
 			if isinstance(node, ast.Assign) and any(
 					getattr(target, 'id', '') == '__all__'
 					for target in node.targets):
-				return set(ast.literal_eval(node.value))
-		self.fail('the client package has no __all__')
+				names = set(ast.literal_eval(node.value))
+		if names is None:
+			self.fail('the client package has no __all__')
+
+		#Submodules are real names a page may write -- `numberdb.sage` is the
+		#documented way in from SageMath -- and are not in __all__, which
+		#lists what `from numberdb import *` gives you.
+		for module in source.parent.glob('*.py'):
+			if not module.name.startswith('_'):
+				names.add(module.stem)
+		return names
 
 	def mentioned(self):
 		"""Package names the page uses, from its code spans only.

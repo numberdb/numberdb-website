@@ -105,11 +105,11 @@ class TheEditorSaysWhatIsWrong(TestCase):
 		self.client.login(username='invalid_editor', password='pw-123456')
 		response = self.client.post(
 			'/edit/%s' % (self.table.tid,),
-			{'table': yaml.dump(
+			{'message': 'a change', 'table': yaml.dump(
 				{'Title': 'Message probe',
 				 'Numbers': [{'params': {}, 'number': 'hello world'}]},
 				sort_keys=False),
-			 'action': 'save', 'base': self.table.head_revision.digest})
+			 'action': 'save', 'message': 'a change', 'base': self.table.head_revision.digest})
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, 'cannot be made into a table')
 
@@ -117,7 +117,7 @@ class TheEditorSaysWhatIsWrong(TestCase):
 		self.client.login(username='invalid_editor', password='pw-123456')
 		response = self.client.post(
 			'/edit/%s' % (self.table.tid,),
-			{'table': 'Title: [unclosed\n', 'action': 'save',
+			{'message': 'a change', 'table': 'Title: [unclosed\n', 'action': 'save', 'message': 'a change',
 			 'base': self.table.head_revision.digest})
 		self.assertContains(response, 'YAML format error')
 

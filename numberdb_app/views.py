@@ -2515,11 +2515,24 @@ def _save_edited_tree(request, table, base, tree, source=None, back_to=None):
 
 	tree = without_managed_keys(tree)
 
+	#Required here as well as in the browser, because the browser's requirement
+	#is a convenience and this is the rule. A history entry with no message is
+	#the one that tells a later reader nothing, and makes them open the diff to
+	#learn what a sentence would have said.
+	message = request.POST.get('message', '').strip()
+	if not message:
+		messages.error(request, (
+			'Say what you changed, in a few words. Nothing has been saved. '
+			'The history is read by people deciding whether a number is '
+			'right, and an entry with no message is the one that leaves them '
+			'opening the diff to find out.'))
+		return refuse()
+
 	try:
 		outcome = commit_table(
 			table, tree,
 			author=request.user,
-			message=request.POST.get('message', '').strip(),
+			message=message,
 			base=base,
 		)
 	except ParametersChanged as changed:

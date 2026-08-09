@@ -595,7 +595,9 @@ package, write a generator, and send its results with an API key:
 </p>
 
 <pre class="help-code">
-import numberdb
+#In SageMath. The plain `import numberdb` works too, but then zeta() and
+#RealIntervalField() are not there to call.
+import numberdb.sage as numberdb
 
 class Zeta(numberdb.Generator):
     table = 'T42'

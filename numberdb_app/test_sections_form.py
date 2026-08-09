@@ -337,6 +337,7 @@ class ThroughThePage(TestCase):
 		before = TableRevision.objects.filter(table=self.table).count()
 		data = self.form_fields()
 		data['action'] = 'save-sections'
+		data['message'] = 'a change'
 		self.client.post(self.url(), data)
 		self.assertEqual(
 			TableRevision.objects.filter(table=self.table).count(), before)
@@ -345,6 +346,7 @@ class ThroughThePage(TestCase):
 		"""`zenodo` has no field; it must come back through the hidden one."""
 		data = self.form_fields()
 		data['action'] = 'save-sections'
+		data['message'] = 'a change'
 		self.client.post(self.url(), data)
 		self.assertEqual(self.head()['References']['Pla15']['zenodo'],
 		                 '10.5281/kept')
@@ -352,6 +354,7 @@ class ThroughThePage(TestCase):
 	def test_editing_a_comment_saves(self):
 		data = self.form_fields()
 		data['action'] = 'save-sections'
+		data['message'] = 'a change'
 		data['section.Comments.0.text'] = 'a better remark'
 		self.client.post(self.url(), data)
 		self.assertEqual(self.head()['Comments'],
@@ -360,6 +363,7 @@ class ThroughThePage(TestCase):
 	def test_adding_a_reference_saves(self):
 		data = self.form_fields()
 		data['action'] = 'save-sections'
+		data['message'] = 'a change'
 		data['section.References.1.label'] = 'New24'
 		data['section.References.1.bib'] = 'Somebody, 2024'
 		self.client.post(self.url(), data)
@@ -369,6 +373,7 @@ class ThroughThePage(TestCase):
 		data = {k: v for k, v in self.form_fields().items()
 		        if not k.startswith('section.Comments.0.')}
 		data['action'] = 'save-sections'
+		data['message'] = 'a change'
 		self.client.post(self.url(), data)
 		self.assertEqual(self.head()['Comments'], {})
 
@@ -381,6 +386,7 @@ class ThroughThePage(TestCase):
 		data = self.form_fields()
 		self.client.logout()
 		data['action'] = 'save-sections'
+		data['message'] = 'a change'
 		self.client.post(self.url(), data)
 		self.assertEqual(self.head()['Comments'], {'comment-1': 'a remark'})
 

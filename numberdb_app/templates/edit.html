@@ -60,12 +60,7 @@ would reasonably expect a draft.
   {% csrf_token %}
   <input type="hidden" name="base" value="{{ base_digest }}">
   <textarea id="table-yaml" name="table">{{ table_yaml }}</textarea>
-  <p>
-    <label>What did you change?
-      <input type="text" name="message" maxlength="300" size="60"
-             placeholder="e.g. corrected the 40th digit">
-    </label>
-  </p>
+  {% include 'includes/editor-message.html' %}
   {% comment %}
   Preview first, and named so it reads as the ordinary thing to do. Saving is
   a separate deliberate press, because an edit here is published the moment it

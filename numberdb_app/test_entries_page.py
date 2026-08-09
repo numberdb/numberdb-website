@@ -59,6 +59,8 @@ class EntriesPage(TestCase):
 			           if key.endswith('.was') and value]
 		data = {'action': 'save-entries',
 		        'entries.present': '1',
+		        #Required of every save, so every test says something too.
+		        'message': 'a change to the numbers',
 		        'page': str(page),
 		        'base': self.table.head_revision.digest,
 		        'entries.covered': list(covered)}
@@ -153,6 +155,7 @@ class EntriesPage(TestCase):
 		was deleted". That is what entries.present is for, and this is the
 		case where it earns its keep."""
 		data = {'action': 'save-entries', 'page': '1',
+		        'message': 'a save with no rows',
 		        'base': self.table.head_revision.digest}
 		self.client.post(self.url(), data)
 		self.assertEqual(len(self.entries()), 5)
@@ -189,7 +192,7 @@ class EntriesPage(TestCase):
 
 		self.client.post('/edit/%s' % (draft.tid,), {
 			'action': 'save-entries', 'entries.present': '1', 'page': '1',
-			'entries.covered': ['1'],
+			'message': 'renumbered an entry', 'entries.covered': ['1'],
 			'base': draft.head_revision.digest,
 			'entry.0.was': '1', 'entry.0.param.n': '7',
 			'entry.0.number': '3.11', 'entry.0.comment': '',
@@ -219,3 +222,71 @@ class EntriesPage(TestCase):
 		self.assertEqual(answer.status_code, 302)
 		self.assertIn('form=entries', answer['Location'])
 		self.assertIn('page=3', answer['Location'])
+
+
+class EveryEditSaysWhatChanged(TestCase):
+	"""The history is read by people deciding whether a number is right, and an
+	entry with no message is the one that tells them nothing -- it makes them
+	open the diff to learn what a sentence would have said.
+	"""
+
+	def setUp(self):
+		from django.contrib.auth.models import User
+
+		from .editing import create_table
+
+		self.user = User.objects.create_user('messenger',
+		                                     password='pw-123456')
+		self.table = create_table(
+			{'Title': 'Message probe',
+			 'Data properties': {'type': 'R'},
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
+			author=self.user)
+		self.client.login(username='messenger', password='pw-123456')
+
+	def save(self, message):
+		data = {'action': 'save-entries', 'entries.present': '1', 'page': '1',
+		        'entries.covered': ['1'],
+		        'base': self.table.head_revision.digest,
+		        'entry.0.was': '1', 'entry.0.param.n': '1',
+		        'entry.0.number': '3.14159', 'entry.0.comment': '',
+		        'entry.0.extra': ''}
+		if message is not None:
+			data['message'] = message
+		return self.client.post('/edit/%s' % (self.table.tid,), data,
+		                        follow=True)
+
+	def revisions(self):
+		self.table.refresh_from_db()
+		return self.table.revisions.count()
+
+	def test_a_save_without_one_is_refused(self):
+		before = self.revisions()
+		self.save(None)
+		self.assertEqual(self.revisions(), before)
+
+	def test_and_says_why(self):
+		answer = self.save(None)
+		self.assertContains(answer, 'Say what you changed')
+
+	def test_whitespace_is_not_a_message(self):
+		before = self.revisions()
+		self.save('   ')
+		self.assertEqual(self.revisions(), before)
+
+	def test_a_save_with_one_goes_through(self):
+		before = self.revisions()
+		self.save('corrected the last digits')
+		self.assertEqual(self.revisions(), before + 1)
+		self.table.refresh_from_db()
+		self.assertEqual(self.table.head_revision.message,
+		                 'corrected the last digits')
+
+	def test_every_editor_asks_for_it(self):
+		for form in ('?form=1', '?form=sections', '?form=entries', ''):
+			with self.subTest(form=form):
+				body = self.client.get('/edit/%s%s'
+				                       % (self.table.tid, form)).content.decode()
+				self.assertIn('name="message"', body)
+				self.assertIn('required', body)

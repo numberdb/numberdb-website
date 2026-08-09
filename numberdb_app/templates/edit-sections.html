@@ -246,12 +246,7 @@ the labels live in a different section of the same long document.
     </div>
   {% endfor %}
 
-  <div class="mode-switch">
-    <label>What did you change?
-      <input type="text" name="message" maxlength="300" size="52"
-             placeholder="e.g. added a reference for the 2015 computation">
-    </label>
-  </div>
+  {% include 'includes/editor-message.html' %}
 
   <button type="submit" name="action" value="save-sections"><b>Save</b></button>
   <a href="{% url 'db:table_by_url' table_being_edited.url %}">Cancel</a>

@@ -202,7 +202,7 @@ class EditView(TestCase):
 
 	def test_saving_creates_a_revision_and_redirects_to_the_table(self):
 		self.client.login(username='alice_v', password='pw-123456')
-		r = self.client.post(self.url(), {'table': self.DOC,
+		r = self.client.post(self.url(), {'message': 'a change', 'table': self.DOC,
 		                                  'message': 'first version'})
 		self.assertEqual(r.status_code, 302)
 		self.assertIn(self.table.url, r['Location'])
@@ -213,21 +213,21 @@ class EditView(TestCase):
 
 	def test_an_ordinary_edit_does_not_count_as_reviewed(self):
 		self.client.login(username='alice_v', password='pw-123456')
-		self.client.post(self.url(), {'table': self.DOC})
+		self.client.post(self.url(), {'message': 'a change', 'table': self.DOC})
 		self.table.refresh_from_db()
 		self.assertIsNone(self.table.reviewed_at_revision)
 
 	def test_a_board_members_edit_is_reviewed_on_save(self):
 		"""Otherwise the queue is one person's edits waiting for that person."""
 		self.client.login(username='chair_v', password='pw-123456')
-		self.client.post(self.url(), {'table': self.DOC})
+		self.client.post(self.url(), {'message': 'a change', 'table': self.DOC})
 		self.table.refresh_from_db()
 		self.assertEqual(self.table.reviewed_at_revision_id,
 		                 self.table.head_revision_id)
 
 	def test_malformed_yaml_saves_nothing_and_says_so(self):
 		self.client.login(username='alice_v', password='pw-123456')
-		r = self.client.post(self.url(), {'table': 'Title: [unclosed\n'})
+		r = self.client.post(self.url(), {'message': 'a change', 'table': 'Title: [unclosed\n'})
 		self.assertEqual(r.status_code, 200)
 		self.assertContains(r, 'YAML format error')
 		self.table.refresh_from_db()
@@ -235,7 +235,7 @@ class EditView(TestCase):
 
 	def test_a_conflicting_save_writes_nothing(self):
 		self.client.login(username='alice_v', password='pw-123456')
-		self.client.post(self.url(), {'table': self.DOC})
+		self.client.post(self.url(), {'message': 'a change', 'table': self.DOC})
 		self.table.refresh_from_db()
 		start = self.table.head_revision
 
@@ -249,7 +249,7 @@ class EditView(TestCase):
 		theirs = self.table.head_revision
 
 		mine = self.DOC.replace('3.14159265358979323846', '9.0')
-		r = self.client.post(self.url(), {'table': mine,
+		r = self.client.post(self.url(), {'message': 'a change', 'table': mine,
 		                                  'base': start.digest})
 		self.assertEqual(r.status_code, 200)
 		self.assertContains(r, 'Nothing was saved')
@@ -259,7 +259,7 @@ class EditView(TestCase):
 	def test_a_disjoint_save_merges_and_says_so(self):
 		self.client.login(username='alice_v', password='pw-123456')
 		doc = self.DOC + "  '2': 2.71828182845904523536\n"
-		self.client.post(self.url(), {'table': doc})
+		self.client.post(self.url(), {'message': 'a change', 'table': doc})
 		self.table.refresh_from_db()
 		start = self.table.head_revision
 
@@ -271,7 +271,7 @@ class EditView(TestCase):
 		             author=self.chair, base=start)
 
 		mine = doc.replace('3.14159265358979323846', '3.15')
-		r = self.client.post(self.url(), {'table': mine,
+		r = self.client.post(self.url(), {'message': 'a change', 'table': mine,
 		                                  'base': start.digest}, follow=True)
 		self.assertEqual(r.status_code, 200)
 		self.table.refresh_from_db()
@@ -304,7 +304,7 @@ class PreviewBeforeSaving(TestCase):
 		return '/edit/%s' % (self.table.tid,)
 
 	def test_previewing_saves_nothing(self):
-		r = self.client.post(self.url(), {'table': self.DOC,
+		r = self.client.post(self.url(), {'message': 'a change', 'table': self.DOC,
 		                                  'action': 'preview'})
 		self.assertEqual(r.status_code, 200)
 		self.table.refresh_from_db()
@@ -312,17 +312,17 @@ class PreviewBeforeSaving(TestCase):
 		self.assertEqual(TableRevision.objects.filter(table=self.table).count(), 0)
 
 	def test_the_preview_shows_the_edited_content_not_the_saved_one(self):
-		self.client.post(self.url(), {'table': self.DOC, 'action': 'save'})
+		self.client.post(self.url(), {'message': 'a change', 'table': self.DOC, 'action': 'save', 'message': 'a change'})
 		edited = self.DOC.replace('Draft probe', 'A different title')
-		r = self.client.post(self.url(), {'table': edited, 'action': 'preview'})
+		r = self.client.post(self.url(), {'message': 'a change', 'table': edited, 'action': 'preview'})
 		self.assertContains(r, 'A different title')
 
 	def test_showing_changes_saves_nothing_and_reports_the_difference(self):
-		self.client.post(self.url(), {'table': self.DOC, 'action': 'save'})
+		self.client.post(self.url(), {'message': 'a change', 'table': self.DOC, 'action': 'save', 'message': 'a change'})
 		self.table.refresh_from_db()
 		head = self.table.head_revision
 		edited = self.DOC.replace('3.14159265358979323846', '3.14159')
-		r = self.client.post(self.url(), {'table': edited, 'action': 'diff',
+		r = self.client.post(self.url(), {'message': 'a change', 'table': edited, 'action': 'diff',
 		                                  'base': head.digest})
 		self.assertEqual(r.status_code, 200)
 		self.assertContains(r, 'Your changes')
@@ -331,23 +331,23 @@ class PreviewBeforeSaving(TestCase):
 		self.assertEqual(self.table.head_revision_id, head.pk)
 
 	def test_showing_changes_when_nothing_changed(self):
-		self.client.post(self.url(), {'table': self.DOC, 'action': 'save'})
+		self.client.post(self.url(), {'message': 'a change', 'table': self.DOC, 'action': 'save', 'message': 'a change'})
 		self.table.refresh_from_db()
 		r = self.client.post(self.url(),
-		                     {'table': self.table.head_revision.content,
+		                     {'message': 'a change', 'table': self.table.head_revision.content,
 		                      'action': 'diff',
 		                      'base': self.table.head_revision.digest})
 		self.assertContains(r, 'No changes yet')
 
 	def test_saving_still_saves(self):
 		"""The default action, so a plain enter in a text field still works."""
-		r = self.client.post(self.url(), {'table': self.DOC})
+		r = self.client.post(self.url(), {'message': 'a change', 'table': self.DOC})
 		self.assertEqual(r.status_code, 302)
 		self.table.refresh_from_db()
 		self.assertIsNotNone(self.table.head_revision)
 
 	def test_a_malformed_document_previews_the_error_without_saving(self):
-		r = self.client.post(self.url(), {'table': 'Title: [oops\n',
+		r = self.client.post(self.url(), {'message': 'a change', 'table': 'Title: [oops\n',
 		                                  'action': 'preview'})
 		self.assertEqual(r.status_code, 200)
 		self.assertContains(r, 'YAML format error')
@@ -478,7 +478,7 @@ class CreatingTables(TestCase):
 	def test_creating_allocates_the_next_identifier(self):
 		from .models import Table
 		highest = max(t.tid_int for t in Table.objects.all()) if Table.objects.exists() else 0
-		r = self.client.post('/new', {'table': self.DOC})
+		r = self.client.post('/new', {'message': 'a change', 'table': self.DOC})
 		self.assertEqual(r.status_code, 302)
 		table = Table.objects.get(title='Zeros of the Airy function')
 		self.assertEqual(table.tid_int, highest + 1)
@@ -486,26 +486,26 @@ class CreatingTables(TestCase):
 
 	def test_the_slug_comes_from_the_title(self):
 		from .models import Table
-		self.client.post('/new', {'table': self.DOC})
+		self.client.post('/new', {'message': 'a change', 'table': self.DOC})
 		table = Table.objects.get(title='Zeros of the Airy function')
 		self.assertEqual(table.url, 'Zeros_of_the_Airy_function')
 
 	def test_a_second_table_of_the_same_name_is_refused_readably(self):
 		"""Titles are unique, so this must be a message and not a 500."""
 		from .models import Table
-		self.client.post('/new', {'table': self.DOC})
+		self.client.post('/new', {'message': 'a change', 'table': self.DOC})
 		before = Table.objects.count()
-		r = self.client.post('/new', {'table': self.DOC})
+		r = self.client.post('/new', {'message': 'a change', 'table': self.DOC})
 		self.assertEqual(r.status_code, 200)
 		self.assertContains(r, 'already exists')
 		self.assertEqual(Table.objects.count(), before)
 
 	def test_titles_that_differ_only_in_punctuation_get_distinct_addresses(self):
 		from .models import Table
-		self.client.post('/new', {'table': self.DOC})
+		self.client.post('/new', {'message': 'a change', 'table': self.DOC})
 		other = self.DOC.replace('Zeros of the Airy function',
 		                         'Zeros of the Airy function!')
-		self.client.post('/new', {'table': other})
+		self.client.post('/new', {'message': 'a change', 'table': other})
 		urls = sorted(Table.objects.filter(title__startswith='Zeros of the Airy')
 		              .values_list('url', flat=True))
 		self.assertEqual(urls, ['Zeros_of_the_Airy_function',
@@ -513,7 +513,7 @@ class CreatingTables(TestCase):
 
 	def test_the_first_revision_records_who_made_it(self):
 		from .models import Table
-		self.client.post('/new', {'table': self.DOC, 'message': 'first'})
+		self.client.post('/new', {'message': 'a change', 'table': self.DOC, 'message': 'first'})
 		table = Table.objects.get(title='Zeros of the Airy function')
 		self.assertIsNotNone(table.head_revision)
 		self.assertEqual(table.head_revision.author_id, self.user.pk)
@@ -521,7 +521,7 @@ class CreatingTables(TestCase):
 
 	def test_the_numbers_are_built_and_left_unreviewed(self):
 		from .models import Number, Table
-		self.client.post('/new', {'table': self.DOC})
+		self.client.post('/new', {'message': 'a change', 'table': self.DOC})
 		table = Table.objects.get(title='Zeros of the Airy function')
 		rows = Number.objects.filter(table=table)
 		self.assertEqual(rows.count(), 1)
@@ -530,7 +530,7 @@ class CreatingTables(TestCase):
 	def test_a_table_without_a_title_is_refused(self):
 		from .models import Table
 		before = Table.objects.count()
-		r = self.client.post('/new', {'table': 'Definition: no title here\n'})
+		r = self.client.post('/new', {'message': 'a change', 'table': 'Definition: no title here\n'})
 		self.assertEqual(r.status_code, 200)
 		self.assertContains(r, 'needs a Title')
 		self.assertEqual(Table.objects.count(), before)
@@ -538,13 +538,13 @@ class CreatingTables(TestCase):
 	def test_previewing_creates_nothing(self):
 		from .models import Table
 		before = Table.objects.count()
-		r = self.client.post('/new', {'table': self.DOC, 'action': 'preview'})
+		r = self.client.post('/new', {'message': 'a change', 'table': self.DOC, 'action': 'preview'})
 		self.assertEqual(r.status_code, 200)
 		self.assertEqual(Table.objects.count(), before)
 
 	def test_anonymous_cannot_create(self):
 		self.client.logout()
-		r = self.client.post('/new', {'table': self.DOC})
+		r = self.client.post('/new', {'message': 'a change', 'table': self.DOC})
 		self.assertEqual(r.status_code, 302)
 		self.assertIn('/accounts/login/', r['Location'])
 
@@ -581,7 +581,7 @@ class MacrosAreResolvedBeforeEditing(TestCase):
 		from .models import Number
 		r = self.client.get('/edit/%s' % self.table.tid)
 		offered = r.context['table_yaml']
-		self.client.post('/edit/%s' % self.table.tid, {'table': offered})
+		self.client.post('/edit/%s' % self.table.tid, {'message': 'a change', 'table': offered})
 		self.table.refresh_from_db()
 		numbers = tree_of(self.table.head_revision)['Numbers']
 		self.assertEqual(set(numbers), {'1', '2'})
@@ -766,7 +766,7 @@ class ParametersAreFixedAfterCreation(TestCase):
 		reordered = dict(self.doc)
 		reordered['Parameters'] = {'b': {'type': 'Z'}, 'a': {'type': 'Z'}}
 		r = self.client.post('/edit/%s' % self.table.tid,
-		                     {'table': y.dump(reordered, sort_keys=False)})
+		                     {'message': 'a change', 'table': y.dump(reordered, sort_keys=False)})
 		self.assertEqual(r.status_code, 200)
 		self.assertContains(r, 'changes the table')
 		self.assertContains(r, 'point at different numbers')
@@ -923,7 +923,7 @@ class ShowChangesShowsOnlyChanges(TestCase):
 		self.client.login(username='crlf_probe', password='pw-123456')
 		return self.client.post(
 			'/edit/%s' % (self.table.tid,),
-			{'table': text, 'action': 'diff',
+			{'message': 'a change', 'table': text, 'action': 'diff',
 			 'base': self.table.head_revision.digest})
 
 	def test_an_untouched_document_reports_no_changes(self):
@@ -943,9 +943,9 @@ class ShowChangesShowsOnlyChanges(TestCase):
 		before = TableRevision.objects.filter(table=self.table).count()
 		self.client.login(username='crlf_probe', password='pw-123456')
 		self.client.post('/edit/%s' % (self.table.tid,),
-		                 {'table': self.table.head_revision.content.replace(
+		                 {'message': 'a change', 'table': self.table.head_revision.content.replace(
 			                 '\n', '\r\n'),
-		                  'action': 'save',
+		                  'action': 'save', 'message': 'a change',
 		                  'base': self.table.head_revision.digest})
 		self.assertEqual(
 			TableRevision.objects.filter(table=self.table).count(), before)
@@ -957,9 +957,9 @@ class ShowChangesShowsOnlyChanges(TestCase):
 		self.client.login(username='crlf_probe', password='pw-123456')
 		self.client.post(
 			'/edit/%s' % (self.table.tid,),
-			{'table': self.table.head_revision.content.replace(
+			{'message': 'a change', 'table': self.table.head_revision.content.replace(
 				'3.14159', '3.14160'),
-			 'action': 'save', 'base': self.table.head_revision.digest})
+			 'action': 'save', 'message': 'a change', 'base': self.table.head_revision.digest})
 		self.table.refresh_from_db()
 		self.assertNotIn('ID', tree_of(self.table.head_revision))
 
@@ -969,9 +969,9 @@ class ShowChangesShowsOnlyChanges(TestCase):
 		self.client.login(username='crlf_probe', password='pw-123456')
 		self.client.post(
 			'/edit/%s' % (self.table.tid,),
-			{'table': 'ID: T99999\n' + self.table.head_revision.content.replace(
+			{'message': 'a change', 'table': 'ID: T99999\n' + self.table.head_revision.content.replace(
 				'3.14159', '3.14161'),
-			 'action': 'save', 'base': self.table.head_revision.digest})
+			 'action': 'save', 'message': 'a change', 'base': self.table.head_revision.digest})
 		self.table.refresh_from_db()
 		self.assertEqual(self.table.tid, 'T35' if False else self.table.tid)
 		self.assertNotIn('ID', tree_of(self.table.head_revision))
