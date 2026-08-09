@@ -31,8 +31,9 @@ def submitted(tree, only=None):
 		elif section['shape'] == 'list':
 			data['section.%s.items' % (name,)] = '\n'.join(section['items'])
 		elif section['shape'] == 'picked-list':
-			for index, item in enumerate(section['items']):
-				data['section.%s.items.%d' % (name, index)] = item
+			#One repeated name, as the page sends them: there is no index to
+			#renumber, which is what made adding a tag delete the others.
+			data['section.%s.item' % (name,)] = list(section['items'])
 		elif section['shape'] == 'list-record':
 			for index, item in enumerate(section['items']):
 				data['section.%s.%d.row' % (name, index)] = '1'
@@ -455,13 +456,12 @@ class TagsArePicked(SimpleTestCase):
 	def test_they_come_back_as_a_list(self):
 		out = sections_form.apply_sections({'Title': 'x'}, {
 			'section.Tags.present': '1',
-			'section.Tags.items.0': 'number theory',
-			'section.Tags.items.1': 'elliptic curves'})
+			'section.Tags.item': ['number theory', 'elliptic curves']})
 		self.assertEqual(out['Tags'], ['number theory', 'elliptic curves'])
 
 	def test_a_removed_tag_is_gone(self):
 		out = sections_form.apply_sections({'Tags': ['a', 'b']}, {
-			'section.Tags.present': '1', 'section.Tags.items.0': 'a'})
+			'section.Tags.present': '1', 'section.Tags.item': 'a'})
 		self.assertEqual(out['Tags'], ['a'])
 
 

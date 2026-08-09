@@ -154,7 +154,7 @@ the labels live in a different section of the same long document.
             {% for item in section.items %}
               <div class="row-item picked-row">
                 <input type="text" size="26" list="known-tags"
-                       name="section.{{ section.name }}.items.{{ forloop.counter0 }}"
+                       name="section.{{ section.name }}.item"
                        value="{{ item }}">
                 <button type="button" data-move="up">&uarr;</button>
                 <button type="button" data-move="down">&darr;</button>
@@ -165,7 +165,7 @@ the labels live in a different section of the same long document.
           <template class="row-template">
             <div class="row-item picked-row">
               <input type="text" size="26" list="known-tags"
-                     name="section.{{ section.name }}.items.__INDEX__"
+                     name="section.{{ section.name }}.item"
                      placeholder="an existing tag, or a new one">
               <button type="button" data-move="up">&uarr;</button>
               <button type="button" data-move="down">&darr;</button>
@@ -318,13 +318,25 @@ the labels live in a different section of the same long document.
 //fields is the order they are saved in, so nothing has to be renumbered and
 //the form works the same whether or not this ran.
 (function () {
+  //Rows whose fields are `section.<name>.<index>.<field>` are renumbered when
+  //one is added, moved or removed. Anything else is left alone.
+  //
+  //This used to rewrite the first segment after the section name whatever it
+  //was, which is right for `section.Comments.0.label` and wrong for a name
+  //with no index in it: `section.Tags.items.0` became `section.Tags.0.0`, the
+  //server did not recognise it, and adding one tag saved Tags as empty. Those
+  //fields carry no index at all now, and this only touches names that have
+  //one.
   function renumber(block) {
     var name = block.getAttribute('data-section');
+    var prefix = 'section.' + name + '.';
     block.querySelectorAll('.row-item').forEach(function (row, index) {
       row.querySelectorAll('[name]').forEach(function (field) {
-        field.name = field.name.replace(
-          new RegExp('^section\\.' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.[^.]+\\.'),
-          'section.' + name + '.' + index + '.');
+        if (field.name.indexOf(prefix) !== 0) { return; }
+        var rest = field.name.slice(prefix.length);
+        var dot = rest.indexOf('.');
+        if (dot < 0) { return; }
+        field.name = prefix + index + rest.slice(dot);
       });
     });
   }
