@@ -115,11 +115,9 @@ class Server:
 
     def sent_entries(self):
         """Every entry sent, as {identity: value}."""
-        import yaml
-
         out = {}
         for _path, _headers, body in self.entry_posts():
-            for record in yaml.safe_load(body) or []:
+            for record in _parsed(body) or []:
                 params = record.get('params') or {}
                 out[','.join(str(v) for v in params.values())] = \
                     str(record.get('number'))
@@ -128,6 +126,24 @@ class Server:
     def modes(self):
         return [_header(headers, 'X-entries-mode')
                 for _path, headers, _body in self.entry_posts()]
+
+
+def _parsed(body):
+    """What was sent, read back however it was written.
+
+    The package writes YAML when PyYAML is installed and JSON when it is not --
+    JSON being a subset, the server reads either. A test that insisted on YAML
+    passed everywhere PyYAML happened to be present and failed in the one
+    environment that proves the package needs nothing: the release gate.
+    """
+    import json
+
+    try:
+        return json.loads(body)
+    except ValueError:
+        import yaml
+
+        return yaml.safe_load(body)
 
 
 def _header(headers, name):
@@ -536,8 +552,6 @@ class TestValuesShorterThanAskedFor:
         assert server.sent_entries() == {'1': '3.14159'}
 
     def test_the_declared_digits_are_not_stored_as_an_annotation(self):
-        import yaml
-
         class Honest(numberdb.Generator):
             table = 'T7'
             parameters = ('n',)
@@ -550,7 +564,7 @@ class TestValuesShorterThanAskedFor:
 
         server = Server()
         Honest().publish(client=server.client())
-        record = yaml.safe_load(server.entry_posts()[0][2])[0]
+        record = _parsed(server.entry_posts()[0][2])[0]
         assert 'digits' not in record
 
     def test_lowering_allows_a_whole_run_of_them(self):
@@ -1144,13 +1158,11 @@ class TestSubmittingEntriesOnly:
     """The internal call `publish` is built on. Entries and nothing else."""
 
     def test_it_posts_only_entries(self):
-        import yaml
-
         server = Server()
         entries = Entries('n')
         entries.add(n=1, number='3.14')
         submit_entries('T7', entries, client=server.client())
-        body = yaml.safe_load(server.entry_posts()[0][2])
+        body = _parsed(server.entry_posts()[0][2])
         #A list of entries, and nothing that could be mistaken for a document.
         assert [sorted(record) for record in body] == [['number', 'params']]
 
