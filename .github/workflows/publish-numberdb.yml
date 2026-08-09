@@ -30,10 +30,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      # The package has no dependencies and does not need Sage, which is the
-      # point of it: these run in a bare interpreter.
+      # The package itself needs nothing installed, which is the point of it.
+      # Proved separately from the tests, because a test runner is a
+      # development dependency and conflating the two hid the real problem:
+      # discover -s only collects what imports cleanly, so when two test files
+      # started needing pytest the release was gated on 145 of 271 tests, with
+      # the ones covering writing not running at all.
+      - name: The package imports and works with nothing installed
+        run: |
+          cd clients/python
+          python -c "import numberdb; print(numberdb.__version__)"
+
+      # pytest for the suite, and nothing else: still no Sage, still none of
+      # the package's own dependencies, because it has none.
+      - run: python -m pip install --upgrade pytest
+      # From inside clients/python, so `import numberdb` finds the client and
+      # not the Django project package of the same name at the repository root.
       - name: Run the package's tests
-        run: python -m unittest discover -s clients/python/tests -v
+        run: |
+          cd clients/python
+          python -m pytest tests -q
 
   build:
     needs: test
