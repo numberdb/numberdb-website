@@ -8,6 +8,24 @@ one table was in that state and the bug had put it there; production was built
 by the data pipeline and may have more.
 
     sage -python manage.py shell < scripts/preflight_deploy.py
+
+The sequence this belongs to, since `make deploy_live` does none of it -- that
+target sets env keys, exposes ports and renews TLS, and `deploy_stage` rewrites
+the compose override and can take the public site dark:
+
+    scripts/backup.sh                       # pull, from a machine that is not the server
+    manage.py notice on "Rebuilding the tables; searches may be slow."
+    tar cz --exclude=.git --exclude=__pycache__ --exclude=staticfiles \
+        --exclude=data_pipeline/oeis-data --exclude=.env --exclude=.env.prod \
+        --exclude=docker-compose.override.yml . | ssh REMOTE "tar xz -C /opt/numberdb-website"
+    docker compose build web
+    docker compose run --rm web sage -python manage.py migrate
+    # the long ones, detached: they rebuild every table and an ssh timeout
+    # otherwise leaves you unable to see what is still running
+    nohup docker compose run --rm -T web sage -python manage.py import_table_history &
+    ... import_table_files, flatten_tables, hoist_param_labels
+    docker compose up -d web                # the running container still has the old image
+    manage.py notice off
 """
 
 from django.db.migrations.executor import MigrationExecutor

@@ -96,6 +96,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.request', #allauth
                 'numberdb_app.context_processors.review_access',
+                'numberdb_app.context_processors.site_notice',
             ],
         },
     },

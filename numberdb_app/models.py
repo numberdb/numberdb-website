@@ -1789,3 +1789,43 @@ class Comment(models.Model):
 
 	def __str__(self):
 		return 'Comment by %s' % (self.author or 'deleted user',)
+
+
+class SiteNotice(models.Model):
+	"""A banner across every page, for when the site is not itself.
+
+	Written after a deploy drove the load average to ninety and left the site
+	crawling for eight minutes with nothing anywhere saying why. A visitor
+	cannot tell "slow because somebody is rebuilding every table" from "slow
+	because it is broken", and the second reading is the one they leave with.
+
+	In the database rather than in a file or a setting, because the process
+	that turns it on is a `docker compose run` in its own container: it shares
+	no filesystem with the one serving pages, and a setting would need a
+	restart, which is the one thing not to do while a long job is running.
+
+	One row, kept and edited rather than created and deleted, so turning the
+	banner on twice does not leave two.
+	"""
+
+	message = models.CharField(
+		max_length = 300,
+		default = '',
+	)
+	#: Shown only while true, so the text of the last one survives as the
+	#: obvious thing to say next time.
+	showing = models.BooleanField(
+		default = False,
+	)
+	changed = models.DateTimeField(
+		auto_now = True,
+	)
+
+	def __str__(self):
+		return ('showing: %s' % (self.message,)) if self.showing else 'off'
+
+	@classmethod
+	def current(cls):
+		"""The notice to show, or None. Cheap enough for every request."""
+		notice = cls.objects.filter(showing=True).first()
+		return notice if notice and notice.message.strip() else None

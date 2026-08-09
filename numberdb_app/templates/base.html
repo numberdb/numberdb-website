@@ -52,6 +52,21 @@
 
   </div>
 
+{% comment %}
+Above everything, including the navigation: a banner below the fold is a
+banner nobody reads, and the whole point of it is to be read before somebody
+concludes the site is broken.
+{% endcomment %}
+{% if site_notice %}
+<style>
+.site-notice { background: #fcf3d4; border-bottom: 1px solid #e6d27a;
+               color: #6b5600; padding: 0.5rem 0; font-size: 0.95rem; }
+</style>
+<div class="site-notice">
+  <div class="horizontal-container">{{ site_notice.message }}</div>
+</div>
+{% endif %}
+
 <div class="navbar-outer">
   <div class="horizontal-container">
 
