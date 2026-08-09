@@ -31,7 +31,7 @@ RPATH  ?= $(DEPLOY_RPATH)
 DOMAIN ?= $(DEPLOY_DOMAIN)
 EMAIL  ?= $(DEPLOY_EMAIL)
 
-.PHONY: all help run test docs docs_serve static fetch_data build_db_numbers build_db_wiki build_db_oeis build_db_all update_numbers migrations update setup_postgres reset_postgres install install_full install_packages install_sage_ubuntu compose_up compose_down compose_logs compose_migrate compose_fetch_data deploy_quickstage deploy_stage deploy_live deploy_status
+.PHONY: ship backup restore_check all help run test docs docs_serve static fetch_data build_db_numbers build_db_wiki build_db_oeis build_db_all update_numbers migrations update setup_postgres reset_postgres install install_full install_packages install_sage_ubuntu compose_up compose_down compose_logs compose_migrate compose_fetch_data deploy_quickstage deploy_stage deploy_live deploy_status
 
 
 all: help
@@ -51,6 +51,9 @@ help:
 	@echo "    make compose_fetch_data# fetch numberdb-data"
 	@echo "    make compose_logs      # tail logs"
 	@echo "- Deploy scripts:"
+	@echo "    make ship [REMOTE RPATH]                   # deploy this commit to a running host"
+	@echo "    make backup                                # pull a verified database backup"
+	@echo "    make restore_check                         # prove the newest backup restores"
 	@echo "    make deploy_quickstage [REMOTE]            # uses DEPLOY_* from .env if set"
 	@echo "    make deploy_stage [REMOTE FLAGS]           # uses DEPLOY_* from .env if set"
 	@echo "    make deploy_live [REMOTE DOMAIN EMAIL]     # uses DEPLOY_* from .env if set"
@@ -238,7 +241,21 @@ compose_up_prod:
 	# Build and start containers with production overrides
 	docker compose -f docker-compose.yml -f deploy/compose/docker-compose.prod.yml up -d --build
 
-# ---- Deployment wrappers (use scripts/) ----
+# ---- Deployment ----
+# ship is the everyday one: current commit to a running host, with migrations,
+# a maintenance banner and a smoke test. The three below it are provisioning --
+# they build a machine, move ports and issue certificates -- and are not what
+# you want for a code change.
+ship:
+	scripts/ship.sh $(REMOTE) $(RPATH)
+
+backup:
+	scripts/backup.sh
+
+restore_check:
+	scripts/restore.sh --verify
+
+# ---- Provisioning wrappers (use scripts/) ----
 deploy_quickstage:
 	@if [ -z "$(REMOTE)" ]; then \
 		echo "Set REMOTE or DEPLOY_REMOTE in .env"; exit 2; \
