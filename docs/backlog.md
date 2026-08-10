@@ -3,28 +3,62 @@
 Ordered roughly by value over cost. Items carry enough detail to be picked up
 cold; design docs live in `docs/design/`.
 
-## Real users, editing content on the site
+**Adding an item.** Write a heading and a paragraph saying what is wrong and how
+you would know it was fixed. Rough is fine -- an item nobody can act on yet is
+still better than one nobody wrote down. Move a finished item to *Done* at the
+bottom with a one-line note rather than deleting it, so it does not get
+proposed again.
 
-The priority ahead of any further ingestion. Today a contribution means a pull
-request against the `numberdb-data` repository, which limits contributors to
-people comfortable with git and GitHub -- a small fraction of the people who
-know these numbers.
+## Backups that survive losing the server
 
-Wanted: accounts that can add and modify content through the website, and
-probably review each other's changes before they go live. Editing and review
-are separable, and editing alone is already worth having.
+The one item where waiting risks something that cannot be undone.
 
-This is the change that makes the data no longer merely a mirror of a git
-repository, so it decides several things currently taken for granted:
+Today there is exactly one automatic copy: a systemd user timer on the laptop
+(`scripts/systemd/`) pulls a verified dump from production nightly. That covers
+the server dying. It does not cover the laptop dying, being stolen, or being
+the thing that is away for a month.
 
-- **Deletion and privacy.** So far nothing needed deleting: the data comes from
-  the data repo, a Wikipedia crawl and an OEIS artifact. User-submitted content
-  changes that.
-- **Provenance.** `Contributor` and `TableCommit` presently model git history.
-  They would need to record edits made on the site instead.
-- **Rebuilds.** The builder currently treats the repo as the source of truth and
-  rebuilds from it. Once content originates on the site, a rebuild that starts
-  from the repo would destroy it.
+Wanted: the server also pushes a nightly copy to an object store, encrypted
+before it leaves, with credentials that **can write but cannot delete**
+(Backblaze B2 with Object Lock, or rsync.net). That is what makes the copy
+survive an attacker who is already root on the server, which plain off-site
+storage does not.
+
+Encrypt with `age` to a public key, not with a passphrase, so the server can
+write backups without holding anything that can read them back. Plain encrypted
+files rather than restic or borg: at 29 MB a night, deduplication buys little,
+and a restore that is one pipe with no tool-version risk is worth a great deal
+at the moment it is needed.
+
+Blocked on credentials that cannot be created from here: a bucket with Object
+Lock on, an application key **without `deleteFiles`**, and an `age` keypair in
+Bitwarden. Once those exist: `scripts/backup-push.sh`, a systemd timer on the
+server, `restore.sh --from-remote`, and a weekly `make restore_check`.
+
+## A bundle does not always reproduce its table
+
+A table's bundle carries the head revision's files. If half the entries were
+produced by an earlier `generate.py` and the file has since changed, those
+entries cannot be reproduced from the bundle -- and nothing in the bundle says
+so, which is the worse half of the problem.
+
+Wanted: include every file version that some surviving entry was produced
+under, plus a manifest mapping entries to the version that made them. The
+revisions are content-addressed already, so the versions are all still there;
+what is missing is the entry-to-version link and the selection at bundle time.
+
+Would be fixed when a bundle of a table whose generator changed mid-way
+contains both generators and says which entries came from which.
+
+## Republish existing tables through the numberdb package
+
+0.1.0 is on PyPI, the site tells people to install it, and nothing has yet been
+published *through* it. Converting a few of the old `generate.sage` files into
+`Generator` subclasses and republishing their tables is the first real test of
+the design, and the only way the awkward parts will surface.
+
+It is also the prerequisite for the item below: an agent asked to fill a "table
+wanted" issue needs worked examples to copy, and those do not exist yet.
 
 ## Ingest the data repo's issue page, and pages like it
 
@@ -32,9 +66,20 @@ Numbers and polynomials submitted as GitHub issues on the data repo should be
 brought in automatically, driven by Codex or Claude, and further pages added
 the same semi-automatic way.
 
-Deliberately later: worth doing only once the site itself has moved on
-considerably, and after the editing story above, since that decides where
-ingested content should land in the first place.
+Now unblocked in principle -- the package and the write API are the interface
+such an agent would use -- but wants the worked examples above first.
+
+## Deletion, privacy, and what happens to an account
+
+The site now takes accounts and user-submitted content, and has neither a
+privacy policy nor a way to delete an account. Nothing in `numberdb_app`
+mentions either. When the data came from a git repo, a Wikipedia crawl and an
+OEIS artifact, there was nothing to delete and nobody to tell; that stopped
+being true when editing moved onto the site.
+
+At minimum: what is stored about a user, what happens to their edits if the
+account goes (the revisions are the history, so they cannot simply vanish), and
+a way to ask for it.
 
 ## Move the web app to passagemath
 
@@ -103,17 +148,6 @@ Files importing Sage, in the order they matter:
 The evaluator sandbox keeps full Sage either way -- it runs arbitrary user
 expressions, which is exactly what the trimmed distributions cannot promise.
 
-## Issue API keys from the website
-
-Keys exist and work (`ApiKey`, `numberdb_app/throttle.py`), but are minted
-through the Django admin and the help page tells users to write in for one. A
-logged-in user should be able to create a key, label it, see when it was last
-used, and revoke it. The token is shown once and stored only as a hash, so the
-page has to make that clear at the moment of issue.
-
-Blocked on nothing; it is small, and it is the last step that makes the rate
-limit self-service rather than a mailbox.
-
 ## Refine matches against exact_text
 
 Search filters on the float projection and returns the survivors directly. The
@@ -149,6 +183,13 @@ same string in both places gets results in one and silence in the other, with
 nothing explaining why. At minimum advanced search should say that it searched
 and found nothing at the precision given.
 
+## Record what a run cost
+
+`publish()` could report the wall and CPU time a table's generation took, which
+is the number a reader wants when deciding whether to reproduce it. Postponed
+deliberately: the measurement is easy, deciding what it *means* across machines
+is not.
+
 ## Cleanups
 
 - Delete `utils/number_decode.py`. Obsolete since the exact layer landed, and
@@ -178,3 +219,17 @@ and found nothing at the precision given.
   around zero, reached when precision drops to or below the valuation, which is
   written `"p,0,000..."` rather than as a prefix. Such matches are too coarse to
   be useful, but the omission is deliberate rather than proven unreachable.
+
+## Done
+
+- **Real users, editing content on the site.** Accounts, editing of settings,
+  text, numbers and source through the site, content-addressed revisions with
+  an author and a required message, and a trust threshold before an edit
+  publishes. The data is no longer a mirror of the `numberdb-data` repo:
+  production is the source of truth, and a rebuild from the repo would now
+  destroy site content. What this item left unfinished is *Deletion, privacy,
+  and what happens to an account*, above.
+- **Issue API keys from the website.** `/profile/keys`: create, label, copy,
+  optional expiry, revoke, with the token shown once and stored only as a hash.
+- **The `numberdb` client package.** Published to PyPI (0.1.0), with a
+  `Generator` class as the single path for submitting a table.
