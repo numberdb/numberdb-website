@@ -44,6 +44,13 @@ answer.
   {% endcomment %}
   &middot;
   <a class="link-below-title" href="{% url 'db:revision-history' table.tid %}">history</a>
+  {% comment %}
+  Beside history, because "is this value right" and "who changed it" are the
+  same question asked twice, and until now the second had an answer and the
+  first had nowhere to be asked.
+  {% endcomment %}
+  &middot;
+  <a class="link-below-title" href="{% url 'db:discuss' table.tid %}">discussion{% if discussion_count %} ({{ discussion_count }}){% endif %}</a>
   {% if table.head_revision.attachments.exists %}
     &middot;
     <a class="link-below-title" href="{% url 'db:table-files' table.tid %}">files</a>

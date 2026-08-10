@@ -83,6 +83,7 @@ def export_account(user):
 		'linked_accounts': [],
 		'api_keys': [],
 		'edits': [],
+		'comments': [],
 		'wanted': [],
 	}
 
@@ -121,6 +122,20 @@ def export_account(user):
 		 'message': revision.message}
 		for revision in user.table_revisions.select_related('table')
 		                    .order_by('created')]
+
+	#Their own words, which is exactly the kind of thing an export is for.
+	#Hidden ones included: it is their message, and being told it was removed
+	#is more use than not being told.
+	data['comments'] = [
+		{'table': (comment.thread.table.tid
+		           if comment.thread.table_id else None),
+		 'when': comment.created,
+		 'edited': comment.edited,
+		 'about': comment.about_param,
+		 'hidden': comment.hidden,
+		 'body': comment.body}
+		for comment in user.comments.select_related('thread', 'thread__table')
+		                   .order_by('created')]
 
 	try:
 		data['wanted'] = [{'title': row.title} for row in user.wanteds.all()]

@@ -54,6 +54,7 @@ from .models import Polynomial
 from .models import OeisNumber
 from .models import OeisSequence
 from .models import WikipediaNumber
+from .models import Comment
 
 from .common import type_names
 
@@ -3194,3 +3195,70 @@ def delete_own_account(request):
 	              % (name, moved.get('edits', 0),
 	                 '' if moved.get('edits', 0) == 1 else 's'))
 	return redirect('db:home')
+
+
+def discuss_table(request, tid):
+	"""A table's discussion.
+
+	Readable by anyone who can read the table; writable by anyone who may edit
+	it. The same bar as editing on purpose: somebody trusted to change a
+	number is trusted to discuss it, and a second, different gate here would
+	only be a puzzle to work out.
+	"""
+	from django.contrib import messages
+	from django.shortcuts import redirect
+
+	from .discussion import (BODY_LIMIT, PER_HOUR, TooManyComments,
+	                         edit_comment, may_moderate, may_post,
+	                         post_comment, set_hidden, thread_for,
+	                         visible_comments)
+	from .editing import may_see
+
+	table = get_object_or_404(Table, tid=tid)
+	if not may_see(table, request.user):
+		raise Http404('No table %s' % (tid,))
+
+	if request.method == 'POST':
+		if not request.user.is_authenticated:
+			return redirect('account_login')
+
+		action = request.POST.get('action', '')
+		try:
+			if action == 'post':
+				if not may_post(request.user, table):
+					messages.error(request, 'You cannot post here.')
+				else:
+					post_comment(table, request.user,
+					             request.POST.get('body', ''),
+					             request.POST.get('about_param', ''))
+			elif action == 'save-edit':
+				comment = get_object_or_404(Comment,
+				                            pk=request.POST.get('comment'),
+				                            thread__table=table)
+				edit_comment(comment, request.user,
+				             request.POST.get('body', ''))
+			elif action in ('hide', 'unhide'):
+				comment = get_object_or_404(Comment,
+				                            pk=request.POST.get('comment'),
+				                            thread__table=table)
+				set_hidden(comment, request.user, action == 'hide')
+		except TooManyComments as e:
+			messages.error(request, str(e))
+		except PermissionError:
+			messages.error(request, 'That is not yours to change.')
+		except ValueError as e:
+			messages.error(request, str(e))
+		return redirect('db:discuss', tid=table.tid)
+
+	editing = request.GET.get('edit')
+	context = {
+		'table': table,
+		'comments': visible_comments(thread_for(table), request.user),
+		'can_post': may_post(request.user, table),
+		'can_moderate': may_moderate(request.user),
+		'body_limit': BODY_LIMIT,
+		'per_hour': PER_HOUR,
+		'about_param': request.GET.get('entry', ''),
+		'editing_pk': int(editing) if (editing or '').isdigit() else None,
+	}
+	return render(request, 'discuss.html', context)
