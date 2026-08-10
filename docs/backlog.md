@@ -50,15 +50,44 @@ what is missing is the entry-to-version link and the selection at bundle time.
 Would be fixed when a bundle of a table whose generator changed mid-way
 contains both generators and says which entries came from which.
 
-## Republish existing tables through the numberdb package
+## Move every generator script onto the numberdb package
 
 0.1.0 is on PyPI, the site tells people to install it, and nothing has yet been
-published *through* it. Converting a few of the old `generate.sage` files into
-`Generator` subclasses and republishing their tables is the first real test of
-the design, and the only way the awkward parts will surface.
+published *through* it. The goal is not a sample of two: **every** script that
+produced entries in the corpus should be converted into a `Generator`
+subclass, as far as that is possible, so that a table's stored source is
+something that can be re-run to reproduce it rather than a historical artefact
+in a language the site no longer speaks.
+
+Start with a handful by hand -- that is the first real test of the design, and
+the only way the awkward parts will surface -- then convert the rest in bulk,
+which is the sort of mechanical rewriting an agent does well once there are
+worked examples to copy.
+
+Expect a residue that cannot be converted, and record it rather than quietly
+skipping it: scripts whose dependencies are gone, that took days on hardware
+nobody has, or that were never checked in at all. A list of "these tables have
+no runnable generator, and here is why" is itself worth having, and it is what
+the *bundle* item above needs in order to be honest.
 
 It is also the prerequisite for the item below: an agent asked to fill a "table
 wanted" issue needs worked examples to copy, and those do not exist yet.
+
+## Audit the help, the docs and the READMEs against what the site does
+
+Several places are known to be out of date, and documentation that describes a
+site other than this one costs more than none: it is believed. The site changed
+a great deal in a short time -- editing moved on-site, keys became
+self-service, the package landed, a table's source became something you can
+re-run -- and the prose did not always follow.
+
+Everything that describes the system, read against the system: `/help`,
+`/about`, `/api/docs`, the root `README.md`, `clients/python/README.md`, the
+package docstrings that `make docs` renders, `AGENTS.md`, and `docs/design/`.
+Where they disagree, the code wins and the prose gets fixed.
+
+Worth doing as one deliberate pass rather than opportunistically, since the
+value is in knowing that a reader can trust the whole of it.
 
 ## Ingest the data repo's issue page, and pages like it
 
