@@ -1,0 +1,18 @@
+[Unit]
+Description=Daily NumberDB database backup
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+
+# The reason this is a timer and not a cron line. A laptop is usually asleep at
+# three in the morning, and cron simply skips what it slept through: the backup
+# would run on precisely the nights the machine happened to be on. Persistent
+# runs the missed one at the next opportunity instead, so "daily" means daily.
+Persistent=true
+
+# Nothing here is load-bearing on the minute, and waking the disk and the link
+# at the same instant every day is a pattern worth not having.
+RandomizedDelaySec=20m
+
+[Install]
+WantedBy=timers.target

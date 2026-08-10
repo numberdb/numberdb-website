@@ -11,9 +11,11 @@
 # has any reach into the copies, and the backups keep working when the hosting
 # account itself is what went away.
 #
-# Run it from cron on a machine that is usually on:
+# Run it unattended from the systemd user timer in scripts/systemd/, which
+# catches up a missed run rather than skipping it -- the difference that
+# matters on a laptop that is not on at three in the morning:
 #
-#     0 3 * * *  /home/matschke/projects/numberdb/numberdb-website/scripts/backup.sh >> ~/numberdb-backups/backup.log 2>&1
+#     systemctl --user enable --now numberdb-backup.timer
 #
 # What this does NOT cover, on purpose:
 #
@@ -39,6 +41,14 @@ KEEP_DAYS="${KEEP_DAYS:-60}"
 #plausible and far above an error message.
 MIN_BYTES="${MIN_BYTES:-1000000}"
 
+#An unattended run has no ssh agent, so the key has to be named outright.
+#Without this the timer fails with "Permission denied (publickey)" while the
+#same command typed by hand works -- the agent being the whole difference, and
+#the least obvious one to look for.
+SSH_KEY="${SSH_KEY:-}"
+ssh_opts=(-o BatchMode=yes -o ClearAllForwardings=yes)
+[ -n "$SSH_KEY" ] && ssh_opts+=(-o IdentitiesOnly=yes -i "$SSH_KEY")
+
 stamp="$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$DEST"
 out="$DEST/numberdb-$stamp.sql.gz"
@@ -51,7 +61,7 @@ echo "[$(date -Iseconds)] backing up $REMOTE:$RPATH -> $out"
 #with ExitOnForwardFailure, so a second connection aborts rather than sharing
 #the port. A backup that fails because a terminal is open is a backup that
 #fails on exactly the busy days.
-ssh -o BatchMode=yes -o ClearAllForwardings=yes "$REMOTE" \
+ssh "${ssh_opts[@]}" "$REMOTE" \
 	"cd $RPATH && docker compose exec -T db pg_dump -U u_numberdb --clean --if-exists numberdb" \
 	| gzip -9 > "$out"
 
