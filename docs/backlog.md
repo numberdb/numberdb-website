@@ -73,6 +73,26 @@ the *bundle* item above needs in order to be honest.
 It is also the prerequisite for the item below: an agent asked to fill a "table
 wanted" issue needs worked examples to copy, and those do not exist yet.
 
+## Tell the numberdb-data repository it is no longer where editing happens
+
+The `numberdb-data` repository is still, to anyone arriving at it, the way to
+contribute: it is where the tables visibly live, it has an issue tracker people
+are using, and nothing on it says otherwise. Editing moved onto the site, and
+the repository has not been told.
+
+A notice at the **very top** of its README -- above everything, before the
+first heading anyone reads past -- saying that tables are edited on
+numberdb.org now, and linking to the help page and the `numberdb` package
+documentation that explain how. Not a paragraph buried in a section: someone
+who opens the repository to file a pull request should learn it before they
+start writing one.
+
+Worth doing soon and cheaply, because the cost of leaving it is paid by other
+people: work done in the wrong place, which is the most discouraging kind to
+have to redo. Coordinate with the *bundle* and *generator* items above, which
+decide what the repository is still for once it is no longer the editing
+surface -- an archive, a mirror, or something to retire.
+
 ## Audit the help, the docs and the READMEs against what the site does
 
 Several places are known to be out of date, and documentation that describes a
