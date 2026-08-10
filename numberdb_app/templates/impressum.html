@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% comment %}
+Who is responsible for this site.
+
+Deliberately no postal address. Benjamin's decision, and worth recording why it
+is a decision rather than an omission: a private address published here is
+published permanently and to everyone, and that is not a thing to do in a
+hurry. German law (§ 5 DDG, formerly § 5 TMG) does expect a postal address from
+a site it considers "geschäftsmäßig", which is read broadly and does not
+require the site to charge for anything. So this may be incomplete, on purpose,
+until he decides what address to give -- a university department, a PO box, or
+his own.
+
+The rest is what such a notice must carry in any reading: who runs it, and a
+way to reach them directly and quickly.
+{% endcomment %}
+
+{% block head-title %}Legal notice{% endblock %}
+
+{% block extra_head %}
+<style>
+.legal { max-width: 42rem; }
+.legal h2 { font-weight: 400; font-size: 1.3rem; margin: 1.6rem 0 0.4rem 0;
+            padding-bottom: 0.2rem; border-bottom: 1px solid #ddd; }
+.legal dt { font-weight: 500; margin-top: 0.7rem; }
+.legal dd { margin: 0.1rem 0 0 0; }
+.legal .aside { color: #666; font-size: 0.92em; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="legal">
+
+<h1 class="title">Legal notice</h1>
+<p class="aside">Impressum &middot; information about who is responsible for
+this website.</p>
+
+<h2 id="operator">Responsible for this site</h2>
+<dl>
+  <dt>Benjamin Matschke</dt>
+  <dd>Operator of numberdb.org, and responsible for its content.</dd>
+
+  <dt>Email</dt>
+  <dd><a href="mailto:matschke@numberdb.org">matschke@numberdb.org</a></dd>
+</dl>
+
+<p class="aside">Email is the fastest way to reach a person here, and the one
+that is read. There is no telephone number and no support desk: NumberDB is run
+by mathematicians rather than by a company.</p>
+
+<h2 id="content">About the content</h2>
+
+<p>NumberDB is a collaborative database. Tables of numbers are written and
+edited by the people who use it, and each table records who changed it and
+when &mdash; follow the &ldquo;history&rdquo; link under any table to see it.
+Content contributed by others is theirs, and is marked as such.</p>
+
+<p>Mathematical content is offered in the hope that it is useful and is checked
+as carefully as we can manage, but it comes with no warranty. A number in a
+table is a claim, not a proof; several are conjectural and say so. If you find
+one that is wrong, the fastest fix is to correct it yourself, and the second
+fastest is to write.</p>
+
+<h2 id="links">Links to other sites</h2>
+
+<p>Tables cite sources, and those citations lead off this site. We have no
+influence over what those pages contain and do not adopt their content as our
+own. Nothing on NumberDB loads anything from another site on its own &mdash;
+a link is followed only if you click it. Why that is so, and what it means for
+what is recorded about you, is in the
+<a href="{% url 'db:privacy' %}">privacy policy</a>.</p>
+
+<h2 id="rights">Copyright</h2>
+
+<p>The software that runs this site is open source and lives at
+<a href="https://github.com/numberdb/numberdb-website">github.com/numberdb/numberdb-website</a>.
+The data is licensed
+<a href="{% url 'db:help' %}#section-licence">CC&nbsp;BY-SA&nbsp;4.0</a>;
+contributors keep the copyright in what they write. Third-party components
+carried with the site keep their own licences, which are recorded alongside
+them in the source.</p>
+
+</div>
+
+{% endblock %}

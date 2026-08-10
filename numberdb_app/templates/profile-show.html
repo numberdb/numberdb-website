@@ -35,6 +35,17 @@ the site said.
 .rows { list-style: none; padding: 0; margin: 0.6rem 0; }
 .rows li { padding: 0.3rem 0; }
 .rows .note { color: #666; font-size: 0.9rem; }
+
+/* Not red and shouting. The point is that this is irreversible, which is a
+   thing to read rather than a thing to be alarmed by -- and the typed
+   confirmation is what actually prevents the accident. */
+.danger { border: 1px solid #e0cdcd; background: #fdf7f7; border-radius: 3px;
+          padding: 0.8rem 1rem; margin: 0.8rem 0; font-size: 0.95rem; }
+.danger p { margin: 0 0 0.6rem 0; }
+.danger label { display: block; margin-bottom: 0.3rem; }
+.danger input[type=text] { padding: 0.3rem; font-family: ui-monospace, monospace;
+                           width: 14rem; }
+.danger button { padding: 0.3rem 0.7rem; margin-left: 0.4rem; cursor: pointer; }
 </style>
 {% endblock %}
 
@@ -129,6 +140,39 @@ the site said.
     </li>
   {% endif %}
 </ul>
+
+{% comment %}
+The two rights people actually exercise, as buttons rather than as an address
+to write to. A policy that promises access and erasure without implementing
+them is a promise to answer emails, and it gets broken the first busy week.
+{% endcomment %}
+<h2>Your data</h2>
+<ul class="rows">
+  <li><a href="{% url 'db:profile-export' %}">Download everything this account holds</a>
+    <span class="note">&mdash; a JSON file: your account, your keys and every
+    edit you have published.</span></li>
+  <li><a href="{% url 'db:privacy' %}">What is stored, and why</a></li>
+</ul>
+
+<h2>Close this account</h2>
+<div class="danger">
+  <p>Deleting the account removes your username, your email address, any
+  connected GitHub account and all your API keys. It cannot be undone.</p>
+
+  <p><b>Your edits stay.</b> They are the provenance of numbers other people
+  cite, so removing them would silently change published mathematics. They are
+  re-attributed to <code>deleted-user</code>, and the account they came from is
+  gone. {{ revision_count }} revision{{ revision_count|pluralize }} would be
+  re-attributed.</p>
+
+  <form method="post" action="{% url 'db:profile-delete' %}">
+    {% csrf_token %}
+    <label for="confirm">Type <b>{{ user_shown.username }}</b> to confirm:</label>
+    <input type="text" id="confirm" name="confirm" autocomplete="off"
+           placeholder="{{ user_shown.username }}">
+    <button type="submit">Delete this account</button>
+  </form>
+</div>
 {% endif %}
 
 </div>

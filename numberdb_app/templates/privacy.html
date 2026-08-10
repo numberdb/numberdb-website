@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+
+{% comment %}
+The privacy policy.
+
+Written against the code rather than from a template, and every claim in it is
+meant to be checkable in the source. Three are checked by tests, because they
+are the ones that quietly stop being true:
+
+  * nothing is fetched from another host     test_no_third_party_assets.py
+  * reading the site sets no cookies         test_privacy_pages.py
+  * no API token or IP reaches a log         test_activity_log.py
+
+If you change what the site stores, this page is part of the change. A policy
+that describes a different site is worse than no policy, because it is the one
+people rely on.
+{% endcomment %}
+
+{% block head-title %}Privacy{% endblock %}
+
+{% block extra_head %}
+<style>
+.legal { max-width: 42rem; }
+.legal h2 { font-weight: 400; font-size: 1.3rem; margin: 1.8rem 0 0.4rem 0;
+            padding-bottom: 0.2rem; border-bottom: 1px solid #ddd; }
+.legal h3 { font-weight: 500; font-size: 1.05rem; margin: 1.1rem 0 0.3rem 0; }
+.legal .aside { color: #666; font-size: 0.92em; }
+.legal .short { background: #f6f7f9; border-left: 3px solid #b0be90;
+                padding: 0.7rem 1rem; margin: 1rem 0; }
+.legal table.what { border-collapse: collapse; width: 100%; font-size: 0.93em;
+                    margin: 0.6rem 0; }
+.legal table.what th { text-align: left; background: #f6f7f9; padding: 0.35rem 0.5rem;
+                       border-bottom: 1px solid #e2e2e2; font-weight: 500; }
+.legal table.what td { padding: 0.35rem 0.5rem; border-bottom: 1px solid #f0f0f0;
+                       vertical-align: top; }
+.legal ol.contents { margin-bottom: 1.2rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="legal">
+
+<h1 class="title">Privacy</h1>
+<p class="aside">What NumberDB records about you, why, and what you can do
+about it. Last changed 10 August 2026.</p>
+
+<div class="short">
+<b>The short version.</b> Reading NumberDB is anonymous: no cookies, no
+analytics, no tracking, and nothing on the page is loaded from anyone else's
+server. If you make an account, we keep your username, your email address and
+what you publish &mdash; and what you publish is public and stays in the
+record, because it is where the numbers came from. Nothing here is sold,
+shared for advertising, or used to profile anyone.
+</div>
+
+<ol class="contents">
+<li><a href="#reading">If you only read the site</a></li>
+<li><a href="#cookies">Cookies, and why there is no banner</a></li>
+<li><a href="#account">If you have an account</a></li>
+<li><a href="#public">What is public, and what is permanent</a></li>
+<li><a href="#api">The API and the numberdb package</a></li>
+<li><a href="#contributors">Contributors from the data repository</a></li>
+<li><a href="#others">Who else touches the data</a></li>
+<li><a href="#keeping">How long things are kept</a></li>
+<li><a href="#why">The legal bases</a></li>
+<li><a href="#rights">Your rights, and how to use them</a></li>
+<li><a href="#changes">Changes</a></li>
+</ol>
+
+<h2 id="reading">If you only read the site</h2>
+
+<p>Searching for a number, reading a table and following a citation require no
+account and record nothing about you personally.</p>
+
+<p>The server keeps a short technical log of requests, as every web server
+does. A line looks like this, and this is genuinely all of it:</p>
+
+<pre class="table-code">203.0.113.0 - [10/Aug/2026:14:22:07 +0000] "GET /T42 HTTP/1.1" 200 18443 "-" "Mozilla/5.0 ..." 0.031</pre>
+
+<p><b>The address is masked before it is written.</b> The last part of an IPv4
+address is replaced with a zero and an IPv6 address is cut to its network
+prefix, so what is stored identifies a network and not a person. That is enough
+for the two things the log is for &mdash; noticing that something is hammering
+the server, and finding out why a page returned an error &mdash; and not enough
+to follow one reader around the site. Nothing at all is written to a database
+when you read a page.</p>
+
+<p>Nothing on any page is fetched from another company's server. Fonts,
+formula rendering and syntax highlighting are all served from here, so no third
+party learns that you visited, or which page. This was not always true; it is
+now, and a test keeps it that way.</p>
+
+<h2 id="cookies">Cookies, and why there is no banner</h2>
+
+<p><b>Reading NumberDB sets no cookies whatsoever.</b> You can check in your
+browser. A cookie appears only when you do something that cannot work without
+one:</p>
+
+<table class="what">
+<thead><tr><th>Cookie</th><th>When it appears</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><code>csrftoken</code></td><td>When a page shows you a form &mdash; signing in, signing up, editing</td>
+    <td>Stops another site from submitting that form on your behalf. Without it the form is refused.</td></tr>
+<tr><td><code>sessionid</code></td><td>When you sign in</td>
+    <td>Remembers that you are signed in. Delete it and you are signed out.</td></tr>
+<tr><td><code>messages</code></td><td>Briefly, to carry a notice like &ldquo;saved&rdquo; across a redirect</td>
+    <td>Holds the notice until the next page has shown it, then goes.</td></tr>
+</tbody>
+</table>
+
+<p>All three are strictly necessary to do the thing you asked for, and none of
+them is used to learn anything about you. Under the ePrivacy rules
+(in Germany, &sect; 25(2) TTDSG) that kind of storage needs no consent, which
+is why this site has no cookie banner. A banner here would ask you to agree to
+something nobody is doing.</p>
+
+<p>There are no analytics cookies, no advertising cookies and no third-party
+cookies, because there is no analytics, no advertising and no third party.</p>
+
+<h2 id="account">If you have an account</h2>
+
+<p>An account exists so that edits can be attributed and so that a person can
+be written to about their own work. It stores:</p>
+
+<table class="what">
+<thead><tr><th>What</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Username</td><td>Shown beside every edit you publish. Chosen by you, and it need not be your name.</td></tr>
+<tr><td>Email address</td><td>Confirming the account, resetting a password, and writing to you about your own edits. Never shown on the site.</td></tr>
+<tr><td>Password</td><td>Stored only as a slow one-way hash. It cannot be read back, here or by us.</td></tr>
+<tr><td>When you joined and last signed in</td><td>Recognising abandoned and compromised accounts.</td></tr>
+<tr><td>API keys</td><td>The label you gave, the first few characters, when it was made and last used, and a hash of the key. The key itself is shown once and never stored.</td></tr>
+<tr><td>Your edits</td><td>See below. These are public.</td></tr>
+</tbody>
+</table>
+
+<h3>If you sign in through GitHub</h3>
+
+<p>Then GitHub tells us your account id, your username and your email address,
+and we keep those to link the two accounts. <b>No access token is kept</b>, so
+this site cannot act on GitHub as you, then or later. GitHub learns that you
+signed in to NumberDB, because you went there to do it &mdash; their privacy
+statement covers what they do with that. Nothing about you is sent to GitHub
+unless you choose that button; the sign-in page itself contacts nobody.</p>
+
+<h2 id="public">What is public, and what is permanent</h2>
+
+<p>NumberDB is a record of where numbers came from, and that record is the
+point of it. When you publish an edit, the site keeps &mdash; publicly and
+indefinitely &mdash; the content you wrote, the message describing your change,
+the time, and the username it was published under. Anyone can read the history
+of any table.</p>
+
+<p><b>This does not go away when you delete your account.</b> Deleting your
+account removes your username, email address, any linked GitHub account and all
+your API keys, and the edits are re-attributed to a placeholder
+(<code>deleted-user</code>) &mdash; but the edits themselves stay, because
+removing them would break the provenance of numbers other people are relying
+on, and in many cases would silently change published mathematics. If that is
+not acceptable to you, the moment to decide is before you publish.</p>
+
+<p>Your username is what appears there. If you would rather not be identifiable
+in the record, choose a username that does not identify you: it is never
+matched against your email address anywhere on the site.</p>
+
+<h2 id="api">The API and the numberdb package</h2>
+
+<p>Every request to <code>/api/</code> is logged, on one line, with the
+endpoint, whether it succeeded, how long it took, which API key or account was
+asking, and what the client called itself:</p>
+
+<pre class="table-code">{"actor": "key:aB3dE5gH7jK9", "client": "numberdb-python/0.1.0", "event": "api",
+ "method": "POST", "ms": 412, "path": "/api/table/T42/entries", "status": 200}</pre>
+
+<p>A key is identified by its first few characters &mdash; the same ones shown
+on your keys page &mdash; and never by the key itself. <b>No IP address appears
+in this log</b>, because the web server's log already has one, masked, for a
+different purpose; recording it twice for one use would be collecting more than
+is needed.</p>
+
+<p><code>client</code> is whatever the calling program says it is. The
+<code>numberdb</code> package says its version, and that is deliberate: the API
+is used by scripts that run for hours, and knowing which versions are actually
+in use is what makes it possible to change something without breaking them
+silently. It says nothing about your machine &mdash; not your operating system,
+not what you have installed, not what you were computing. The package does not
+look, and the site does not ask.</p>
+
+<h2 id="contributors">Contributors from the data repository</h2>
+
+<p>Most of the tables here were first written in a public git repository, and
+the site read that repository's history to work out who wrote what. So the
+database holds names and email addresses taken from public git commits, for
+people who may never have had an account here.</p>
+
+<p><b>Only the name is ever displayed.</b> The email address is stored because
+it is what distinguishes two contributors with the same name, and it is not
+shown on any page, in any table, or through the API. If you are in that list
+and would rather not be, write and it will be removed.</p>
+
+<h2 id="others">Who else touches the data</h2>
+
+<table class="what">
+<thead><tr><th>Who</th><th>What for</th><th>Where</th></tr></thead>
+<tbody>
+<tr><td>Akamai (Linode)</td><td>The server this site runs on, and everything stored on it</td><td>New Jersey, United States</td></tr>
+<tr><td>Mailgun</td><td>Sending account emails: confirmation, password reset</td><td>United States</td></tr>
+<tr><td>GitHub</td><td>Only if you choose to sign in with GitHub</td><td>United States</td></tr>
+</tbody>
+</table>
+
+<p>That is the complete list. There is no analytics provider, no advertising
+network, no content delivery network, no error-reporting service and no
+customer-support tool, because there is nobody selling anything here.</p>
+
+<p class="aside">The server is in the United States, so if you are in the EU or
+the UK your data is transferred there. That transfer is necessary to provide
+the site you asked for. Nothing is sold, and nothing is shared with anyone not
+named above.</p>
+
+<h2 id="keeping">How long things are kept</h2>
+
+<table class="what">
+<thead><tr><th>What</th><th>How long</th></tr></thead>
+<tbody>
+<tr><td>Web server logs (masked addresses)</td><td>Rotated automatically; a few weeks at this site's traffic, and never more than 30&nbsp;MB per service</td></tr>
+<tr><td>API activity log</td><td>The same rotation</td></tr>
+<tr><td>Your account</td><td>Until you delete it</td></tr>
+<tr><td>API keys</td><td>Until you revoke them; a revoked key is kept as a record that it existed, and is deleted with the account</td></tr>
+<tr><td>Published edits</td><td>Indefinitely, as described above</td></tr>
+<tr><td>Database backups</td><td><b>Up to 60 days.</b> Something you delete today is gone from the site at once, and gone from the last backup that contains it within 60 days.</td></tr>
+</tbody>
+</table>
+
+<h2 id="why">The legal bases</h2>
+
+<p>For readers in the EU and the UK, under Article 6(1) GDPR:</p>
+
+<ul>
+<li><b>Your account and your edits</b> &mdash; performance of a contract,
+    Art. 6(1)(b): you asked for an account and this is what one is.</li>
+<li><b>Server logs, rate limiting, and keeping the site up</b> &mdash;
+    legitimate interests, Art. 6(1)(f): running a service that is reachable and
+    not being abused. The masking above is what keeps that interest
+    proportionate.</li>
+<li><b>Keeping the record of who edited what</b> &mdash; legitimate interests,
+    Art. 6(1)(f): the provenance of a mathematical claim is the thing that
+    makes it checkable, and a database of numbers with no history is much less
+    useful than one with it.</li>
+<li><b>Contributor names and emails from public git history</b> &mdash;
+    legitimate interests, Art. 6(1)(f): crediting the people whose work this
+    is, from data they published themselves.</li>
+</ul>
+
+<p>There is no automated decision-making and no profiling.</p>
+
+<h2 id="rights">Your rights, and how to use them</h2>
+
+<p>You can ask for a copy of your data, correct it, have it deleted, restrict
+or object to what is done with it, and take it elsewhere. Two of those you can
+do yourself, immediately, without asking anyone:</p>
+
+<ul>
+<li><b>A copy of everything</b> &mdash; the download button on your
+    <a href="{% url 'db:profile' %}">profile</a> gives you a JSON file with
+    your account, your keys and your edits.</li>
+<li><b>Deletion</b> &mdash; also on your profile. It happens straight away.
+    Read the note above about what stays.</li>
+</ul>
+
+<p>For anything else, write to
+<a href="mailto:matschke@numberdb.org">matschke@numberdb.org</a>. A person
+reads it. If you are in the EU or the UK and you think this site has handled
+your data badly, you can also complain to the data protection authority where
+you live.</p>
+
+<h2 id="changes">Changes</h2>
+
+<p>If this changes in a way that matters, the date at the top changes and the
+change is described here. The page's whole history is public, in the same
+repository as the site itself, so you can see exactly what it used to say.</p>
+
+<p class="aside">Who runs this site, and how to reach them:
+<a href="{% url 'db:impressum' %}">legal notice</a>.</p>
+
+</div>
+
+{% endblock %}

@@ -46,7 +46,12 @@ urlpatterns = [
     re_path(r'^review/(?P<tid>(T\d+))$', views.review_table, name='review-table'),
     re_path(r'^preview/(?P<tid>(T\d+))$', views.preview, name='preview-table'),
 
+    path('privacy', views.privacy, name='privacy'),
+    path('impressum', views.impressum, name='impressum'),
+
     path('profile', views.show_own_profile, name='profile'),
+    path('profile/export', views.export_own_data, name='profile-export'),
+    path('profile/delete', views.delete_own_account, name='profile-delete'),
     path('profile/<int:other_user_id>/', views.show_other_profile, name='show-other-profile'),
     path('profile/keys', views.api_keys, name='keys'),
     path('profile/edit/', views.edit, name='profile-edit'),

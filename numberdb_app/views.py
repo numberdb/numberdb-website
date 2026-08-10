@@ -3102,3 +3102,79 @@ def api_keys(request):
 		'accepted_edits': accepted_edit_count(request.user),
 		'trusted_after': TRUSTED_AFTER,
 	})
+
+
+def privacy(request):
+	"""What the site records, and why.
+
+	A flat page, but the claims on it are checked: see
+	numberdb_app/test_privacy_pages.py and test_no_third_party_assets.py. A
+	policy is a set of factual statements about a program, and the ones worth
+	writing down are the ones something verifies.
+	"""
+	return render(request, 'privacy.html', {})
+
+
+def impressum(request):
+	"""Who is responsible for this site, and how to reach them."""
+	return render(request, 'impressum.html', {})
+
+
+@login_required
+def export_own_data(request):
+	"""Everything this account holds, as a JSON file.
+
+	A right people rarely use, and one that costs nothing to honour properly
+	when it is a button rather than an email to answer.
+	"""
+	import json
+
+	from django.http import HttpResponse
+
+	from .account_data import export_account
+
+	data = export_account(request.user)
+	body = json.dumps(data, indent=2, sort_keys=True, default=str)
+	answer = HttpResponse(body, content_type='application/json')
+	answer['Content-Disposition'] = (
+		'attachment; filename="numberdb-%s.json"'
+		% (request.user.get_username(),))
+	return answer
+
+
+@login_required
+def delete_own_account(request):
+	"""Close the account, keeping what it published.
+
+	POST only, and the username has to be typed. What is irreversible should
+	not be one stray click away, and this is irreversible: the account, its
+	keys and its email address are gone, and only the edits remain, under a
+	placeholder name.
+	"""
+	from django.contrib import messages
+	from django.shortcuts import redirect
+
+	from .account_data import delete_account
+
+	if request.method != 'POST':
+		return redirect('db:profile')
+
+	typed = (request.POST.get('confirm') or '').strip()
+	if typed != request.user.get_username():
+		messages.error(request, 'Type your username exactly to confirm. '
+		                        'Nothing was deleted.')
+		return redirect('db:profile')
+
+	name = request.user.get_username()
+	moved = delete_account(request.user)
+	#After the account is gone: the session it was pressed from refers to a
+	#user that no longer exists, and logout() tidies the cookie rather than
+	#leaving the browser holding one.
+	from django.contrib.auth import logout
+	logout(request)
+	messages.info(request,
+	              'The account %s has been deleted. Its %d edit%s remain in '
+	              'the record, now shown as deleted-user.'
+	              % (name, moved.get('edits', 0),
+	                 '' if moved.get('edits', 0) == 1 else 's'))
+	return redirect('db:home')
