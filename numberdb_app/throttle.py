@@ -170,6 +170,11 @@ def rate_limited(view):
     def guarded(request, *args, **kwargs):
         scope, limit, key = requester_of(request)
 
+        #Left on the request so the activity log can say which key was asking
+        #without authenticating the token a second time. Set before the
+        #refusals below, so a request that is turned away is still attributed.
+        request.numberdb_api_key = key if key not in (None, False) else None
+
         if key is False:
             return JsonResponse(
                 {'error': 'Invalid API key.',
