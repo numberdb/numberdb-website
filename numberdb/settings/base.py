@@ -261,6 +261,18 @@ ACCOUNT_SESSION_REMEMBER = True #Always remember session
 #ACCOUNT_USER_DISPLAY #Perhaps in future
 ACCOUNT_USERNAME_MIN_LENGTH = 1
 
+#Names nobody may register.
+#
+#`deleted-user` is the one that matters: it is the account a closed account's
+#edits are re-attributed to, and it is found by username. If a person could
+#register it, they would inherit every departed contributor's revisions, and
+#the history would say they had made edits they had never seen. The rest are
+#names that would let somebody be mistaken for the site itself.
+ACCOUNT_USERNAME_BLACKLIST = [
+    'deleted-user', 'deleted', 'anonymous',
+    'numberdb', 'admin', 'administrator', 'root', 'support', 'system',
+]
+
 #: Verification is for people who typed an address into our form. Someone
 #: arriving from GitHub or Google has already proved that address to a provider
 #: that checked it, and asking again is a second confirmation email for no

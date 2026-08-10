@@ -1,0 +1,23 @@
+{% comment %}
+The site footer.
+
+There was none at all, which is how a site ends up with a privacy policy nobody
+can reach. These pages are only published if every page carries a way to them.
+
+Kept quiet on purpose: it sits under the content, in small grey type, and is
+the last thing in the tab order. Nothing here needs to compete with a table of
+numbers for attention -- it needs to be findable by someone looking for it.
+{% endcomment %}
+<div class="site-footer">
+  <div class="horizontal-container">
+    <a href="{% url 'db:about' %}">About</a>
+    <a href="{% url 'db:help' %}">Help</a>
+    <a href="{% url 'db:api-reference' %}">API</a>
+    <a href="{% url 'db:privacy' %}">Privacy</a>
+    <a href="{% url 'db:impressum' %}">Legal notice</a>
+    <a href="https://github.com/numberdb/numberdb-website">Source</a>
+    <span class="footer-note">Data licensed
+      <a href="{% url 'db:help' %}#section-licence">CC&nbsp;BY-SA&nbsp;4.0</a>.
+      No tracking, no analytics, no cookies for reading.</span>
+  </div>
+</div>

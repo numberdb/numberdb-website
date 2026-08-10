@@ -508,3 +508,29 @@ a.navbar-field:hover {
   */
   text-decoration: underline;   
 }
+
+/* The site footer.
+
+   There was none, which is how a site ends up with a privacy policy that
+   cannot be reached from anywhere. Deliberately quiet: small, grey, under the
+   content, and last in the tab order. It has to be findable by someone looking
+   for it, not compete with a table of numbers. */
+.site-footer {
+  border-top: 1px solid #e6e6e6;
+  margin-top: 3rem;
+  padding: 1rem 0 2rem 0;
+  font-size: 0.85rem;
+  color: #777;
+}
+.site-footer a {
+  color: #555;
+  margin-right: 1rem;
+  text-decoration: none;
+}
+.site-footer a:hover { text-decoration: underline; }
+.site-footer .footer-note {
+  display: block;
+  margin-top: 0.4rem;
+  color: #999;
+}
+.site-footer .footer-note a { margin-right: 0; }
