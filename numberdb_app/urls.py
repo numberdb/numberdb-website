@@ -29,6 +29,7 @@ urlpatterns = [
     path('tables', views.tables, name='tables'),
     re_path(r'^(?P<tid>(T\d+))$', views.table_by_tid, name='table'),
     
+    re_path(r'^discuss/(?P<tid>(T\d+))$', views.discuss_table, name='discuss'),
     re_path(r'^history/(?P<tid>(T\d+))$', views.table_history, name='table-history'),
     re_path(r'^revisions/(?P<tid>(T\d+))$', views.revision_history, name='revision-history'),
     re_path(r'^files/(?P<tid>(T\d+))$', views.table_files, name='table-files'),

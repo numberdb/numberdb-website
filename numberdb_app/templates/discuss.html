@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% comment %}
+A table's discussion.
+
+Plain text, escaped, with line breaks kept. No markup of any kind: this is a
+box that strangers type into, and every formatting feature is another thing
+that has to be got exactly right. A number, a formula and a link to an entry
+are all readable without it.
+{% endcomment %}
+
+{% block head-title %}Discussion of {{ table.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+a.link-below-title { font-size: 0.8rem; color: #555; text-decoration: dotted underline; }
+a.link-below-title:hover { text-decoration: underline; }
+
+.thread { max-width: 44rem; }
+.comment { border-top: 1px solid #eee; padding: 0.9rem 0; }
+.comment:first-child { border-top: 0; }
+.comment .who { font-size: 0.9rem; color: #555; }
+.comment .who b { font-weight: 500; color: #222; }
+.comment .when { color: #888; }
+.comment .body { white-space: pre-wrap; margin: 0.35rem 0 0 0; }
+.comment .about { font-size: 0.85rem; color: #666; }
+.comment .about code { background: #f4f6f4; padding: 0.05rem 0.25rem; }
+.comment.is-hidden .body { color: #999; font-style: italic; }
+.comment .tools { font-size: 0.8rem; margin-top: 0.3rem; }
+.comment .tools button { font-size: 0.8rem; padding: 0.05rem 0.4rem; cursor: pointer; }
+
+.say { margin: 1.5rem 0; }
+.say textarea { width: 100%; min-height: 6rem; padding: 0.5rem; box-sizing: border-box;
+                font-family: inherit; font-size: 0.95rem; }
+.say .limit { color: #888; font-size: 0.85rem; }
+.say button { padding: 0.35rem 0.9rem; cursor: pointer; }
+.empty { color: #666; margin: 1rem 0; }
+.closed { background: #f6f7f9; border: 1px solid #e2e2e2; padding: 0.7rem 1rem;
+          margin: 1.2rem 0; font-size: 0.95rem; }
+.edit-box textarea { width: 100%; min-height: 5rem; padding: 0.4rem;
+                     box-sizing: border-box; font-family: inherit; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="thread">
+
+<h1>{{ table.title|safe }}</h1>
+<a class="link-below-title" href="{% url 'db:table' table.tid %}">back to the table</a>
+&middot;
+<a class="link-below-title" href="{% url 'db:revision-history' table.tid %}">history</a>
+
+<h2 style="font-weight: 400; font-size: 1.3rem; margin: 1.4rem 0 0.2rem 0;">Discussion</h2>
+<p class="empty" style="margin-top:0">
+  For questions about the numbers in this table: where a value came from, why
+  one looks wrong, what a parameter means. Corrections themselves belong in an
+  <a href="{% url 'db:edit-table' table.tid %}">edit</a>, whose message says
+  what changed.
+</p>
+
+{% if not comments %}
+  <p class="empty">Nothing has been said about this table yet.</p>
+{% endif %}
+
+{% for item in comments %}
+  <div class="comment{% if item.hidden %} is-hidden{% endif %}" id="c{{ item.comment.pk }}">
+    <div class="who">
+      <b>{% if item.comment.author %}{{ item.comment.author.username }}{% else %}deleted user{% endif %}</b>
+      <span class="when">&middot; {{ item.comment.created|date:"j M Y, H:i" }}</span>
+      {% if item.comment.edited %}<span class="when">&middot; edited</span>{% endif %}
+    </div>
+
+    {% if item.comment.about_param %}
+      {% comment %}Every entry has a permanent anchor, so a comment about one
+      value points at it rather than repeating it.{% endcomment %}
+      <div class="about">about
+        <a href="{% url 'db:table' table.tid %}?entry={{ item.comment.about_param|urlencode }}"><code>{{ item.comment.about_param }}</code></a>
+      </div>
+    {% endif %}
+
+    {% if item.hidden and not can_moderate %}
+      <p class="body">This message was hidden by a moderator.</p>
+    {% else %}
+      {% if editing_pk == item.comment.pk %}
+        <form method="post" class="edit-box">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="save-edit">
+          <input type="hidden" name="comment" value="{{ item.comment.pk }}">
+          <textarea name="body" maxlength="{{ body_limit }}">{{ item.comment.body }}</textarea>
+          <button type="submit">Save</button>
+          <a class="link-below-title" href="{% url 'db:discuss' table.tid %}">cancel</a>
+        </form>
+      {% else %}
+        <p class="body">{{ item.body }}</p>
+      {% endif %}
+      {% if item.hidden %}<div class="about">Hidden. Only the board can read this.</div>{% endif %}
+    {% endif %}
+
+    <div class="tools">
+      {% if item.is_own and not item.hidden and editing_pk != item.comment.pk %}
+        <a class="link-below-title" href="?edit={{ item.comment.pk }}">edit</a>
+      {% endif %}
+      {% if can_moderate %}
+        <form method="post" style="display:inline">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="{% if item.hidden %}unhide{% else %}hide{% endif %}">
+          <input type="hidden" name="comment" value="{{ item.comment.pk }}">
+          <button type="submit">{% if item.hidden %}restore{% else %}hide{% endif %}</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+{% endfor %}
+
+{% if can_post %}
+  <form method="post" class="say">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="post">
+    {% if about_param %}
+      <input type="hidden" name="about_param" value="{{ about_param }}">
+      <p class="about">About the entry <code>{{ about_param }}</code>.</p>
+    {% endif %}
+    <textarea name="body" maxlength="{{ body_limit }}"
+              placeholder="Plain text. Say which entry you mean."></textarea>
+    <p class="limit">Up to {{ body_limit }} characters, and {{ per_hour }} messages an hour.
+      Everything here is public and stays with the table.</p>
+    <button type="submit">Post</button>
+  </form>
+{% else %}
+  <div class="closed">
+    {% if user.is_authenticated %}
+      You cannot post here.
+    {% else %}
+      <a href="{% url 'account_login' %}">Sign in</a> to join the discussion.
+      Anyone can read it.
+    {% endif %}
+  </div>
+{% endif %}
+
+</div>
+
+{% endblock %}

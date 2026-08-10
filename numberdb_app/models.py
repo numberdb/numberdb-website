@@ -357,7 +357,20 @@ class Table(models.Model):
 
 	def __str__(self):
 		return 'Table %s' % (self.title,)
-		
+
+	@property
+	def discussion_count(self):
+		"""Messages about this table, for the link beside its title.
+
+		A property rather than a context variable, because the header that
+		shows it is included from half a dozen pages and threading one more
+		value through each of them is how a number goes stale on two of them.
+
+		Hidden messages are not counted: a badge that says 3 over a thread
+		showing 2 invites exactly the question moderation was meant to close.
+		"""
+		return Comment.objects.filter(thread__table=self, hidden=False).count()
+
 	def to_serializable_dict(self):
 		return {
 			'tid': self.tid,

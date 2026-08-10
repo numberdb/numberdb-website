@@ -118,17 +118,35 @@ the same semi-automatic way.
 Now unblocked in principle -- the package and the write API are the interface
 such an agent would use -- but wants the worked examples above first.
 
-## Deletion, privacy, and what happens to an account
+## A postal address for the legal notice
 
-The site now takes accounts and user-submitted content, and has neither a
-privacy policy nor a way to delete an account. Nothing in `numberdb_app`
-mentions either. When the data came from a git repo, a Wikipedia crawl and an
-OEIS artifact, there was nothing to delete and nobody to tell; that stopped
-being true when editing moved onto the site.
+`/impressum` gives a name and an email address and no address, deliberately:
+a private address published there is published permanently and to everyone.
+German law (&sect; 5 DDG) reads "gesch&auml;ftsm&auml;&szlig;ig" broadly enough
+that this may not be sufficient, and the fix is a decision rather than a
+change -- a department, a PO box, or his own.
 
-At minimum: what is stored about a user, what happens to their edits if the
-account goes (the revisions are the history, so they cannot simply vanish), and
-a way to ask for it.
+Left open because it is Benjamin's to make, not because it is unclear what to
+write.
+
+## Follow a discussion without visiting it
+
+Tables now have discussions, and nothing tells anyone that a message was
+posted. The author of a table learns that somebody questioned one of their
+numbers by happening to look, which for most tables means never.
+
+Wanted, roughly in this order: a list of recent messages across the whole site,
+so the board can moderate without opening tables one at a time; a way to watch
+a table; and only then email, which is the expensive part and the one that
+needs an unsubscribe link, a bounce policy and a rate at which it is not spam.
+
+The schema already allows a thread on a **tag** as well as a table, which is
+unused. That would be the place for a discussion spanning many tables, and it
+costs one more view.
+
+Not urgent while the number of messages is zero, and genuinely urgent the week
+it is not: an unwatched discussion is worse than none, because it looks like a
+place where somebody is listening.
 
 ## Move the web app to passagemath
 
@@ -282,3 +300,14 @@ is not.
   optional expiry, revoke, with the token shown once and stored only as a hash.
 - **The `numberdb` client package.** Published to PyPI (0.1.0), with a
   `Generator` class as the single path for submitting a table.
+- **Privacy, deletion, and the legal pages.** `/privacy` and `/impressum`,
+  reachable from a footer on every page; no third party is contacted by any
+  page; reading sets no cookie, which is what makes having no cookie banner
+  correct; server logs mask the address and rotate; the API log records the
+  client version and never a token. An account can be exported and deleted,
+  keeping its contributions under a placeholder name. What is left of this
+  item is the postal address, above.
+- **Discussions on tables.** A thread per table, linked beside its title.
+  Anyone reads, anyone who may edit posts, the board can hide a message
+  (kept, not deleted). The models had been designed and migrated long before
+  and were sitting unused; what was missing was the pages.
