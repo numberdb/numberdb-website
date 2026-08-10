@@ -90,8 +90,8 @@ docs_serve:
 	cd clients/python && $(PYTHON) -m pdoc numberdb numberdb.sage --port 8080
 	
 run_eval:
-    #RUN EVAL WORKER
-    $(PYTHON) workers/eval.py
+	#RUN EVAL WORKER
+	$(PYTHON) workers/eval.py
 
 static:
 	#STATIC
@@ -110,17 +110,17 @@ fetch_data:
 	git -C '../numberdb-data/' pull
 
 build_db_numbers:
-    #BUILD DB NUMBERS
-    $(PYTHON) data_pipeline/build.py
+	#BUILD DB NUMBERS
+	$(PYTHON) data_pipeline/build.py
 	
 build_db_wiki:
-    #BUILD DB WIKI
-    $(PYTHON) data_pipeline/build-wikipedia.py
+	#BUILD DB WIKI
+	$(PYTHON) data_pipeline/build-wikipedia.py
 
 build_db_oeis:
-    #BUILD DB OEIS
-    ./data_pipeline/update-oeis.sh
-    $(PYTHON) data_pipeline/build-oeis.py
+	#BUILD DB OEIS
+	./data_pipeline/update-oeis.sh
+	$(PYTHON) data_pipeline/build-oeis.py
 	
 build_db_all:
 	#BUILD DB ALL
@@ -275,7 +275,7 @@ deploy_live:
 	scripts/deploy.sh live $(REMOTE) $(DOMAIN) $(EMAIL) $(if $(RPATH),$(RPATH),)
 
 deploy_status:
-    @if [ -z "$(REMOTE)" ]; then \
-        echo "Set REMOTE or DEPLOY_REMOTE in .env"; exit 2; \
-    fi
-    scripts/deploy.sh status $(REMOTE) $(if $(RPATH),$(RPATH),)
+	@if [ -z "$(REMOTE)" ]; then \
+	    echo "Set REMOTE or DEPLOY_REMOTE in .env"; exit 2; \
+	fi
+	scripts/deploy.sh status $(REMOTE) $(if $(RPATH),$(RPATH),)

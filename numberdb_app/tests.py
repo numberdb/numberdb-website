@@ -30,7 +30,7 @@ from .models import WikipediaNumber
 
 from .common import test_table_ids
 
-from db_builder.build import numberdb_data_repository, build_numberdb_data
+from data_pipeline.build import numberdb_data_repository, build_numberdb_data
 
 class DataBuildTest(TestCase):
     def setUp(self):

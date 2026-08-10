@@ -79,7 +79,7 @@ from utils.utils import blur_real_interval
 from utils.utils import blur_complex_interval
 from utils.utils import is_polynomial_ring
 
-from db_builder.utils import normalize_table_data
+from data_pipeline.utils import normalize_table_data
 
 
 @rate_limited
