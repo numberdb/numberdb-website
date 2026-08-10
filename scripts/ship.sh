@@ -74,6 +74,11 @@ on_remote "printf '%s\n' '$commit' > .deployed-commit"
 # 4 ---------------------------------------------------------------------------
 say "building"
 on_remote "docker compose build web" | tail -2
+# nginx carries configuration from this repo -- the anonymised log format, the
+# TLS templates -- so a deploy that only ever built `web` shipped those changes
+# to the server's disk and then ran the old image, forever. Cheap: unchanged
+# inputs mean a cached build and no recreate below.
+on_remote "docker compose build nginx" | tail -2
 say "migrating"
 on_remote "docker compose run --rm -T web sage -python manage.py migrate" | tail -8
 
@@ -87,8 +92,12 @@ if [ "$DATA_STEPS" = "1" ]; then
 	done
 fi
 
-say "restarting web"
-on_remote "docker compose up -d web" | tail -2
+say "restarting web and nginx"
+# Compose recreates only what actually changed, so naming both here costs
+# nothing when nginx is untouched. Other services (db, evaluator) pick up
+# compose-file changes -- log rotation, limits -- the next time they are
+# recreated, which is deliberately not on every deploy.
+on_remote "docker compose up -d web nginx" | tail -3
 sleep 15
 
 # 6 ---------------------------------------------------------------------------
