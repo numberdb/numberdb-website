@@ -374,7 +374,7 @@ def apply_revision(table, revision=None):
 	rows carry the right state rather than the default.
 	"""
 	from data_pipeline.build import build_number_table
-	from db_builder.utils import normalize_table_data
+	from data_pipeline.utils import normalize_table_data
 	from .models import TableData
 	from .review import sync_review_flags
 

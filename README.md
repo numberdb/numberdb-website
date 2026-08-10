@@ -13,7 +13,6 @@ Core data is imported from the companion repository numberdb-data (cloned next t
 - `numberdb/` Django project settings, URLs, WSGI/ASGI
 - `numberdb_app/` Main Django app (models, views, templates, tests)
 - `data_pipeline/` Data import/build scripts (SageMath; OEIS/Wikipedia helpers)
-- `db_builder/` Builds database rows from the numberdb-data files
 - `utils/` Number parsing, formatting and the wire format shared by app and builder
 - `workers/` sandboxed evaluator used by the app (see docs/design/eval-sandbox.md)
 - `templates/`, `static/` source assets; `staticfiles/` is collected output

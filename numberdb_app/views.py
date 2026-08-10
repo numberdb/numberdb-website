@@ -83,7 +83,7 @@ from .search import (PAGE_SIZE, full_text_query, max_relative_width,
 from .search import (search_complex_numbers, search_fractional_parts,
                      search_p_adic_numbers, search_real_numbers)
 
-from db_builder.utils import normalize_table_data
+from data_pipeline.utils import normalize_table_data
 from .templatetags.numberdb_urls import entry_suffix
 
 def home(request):

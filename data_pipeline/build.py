@@ -66,8 +66,8 @@ import yaml
 import os
 #from pydriller import RepositoryMining
 
-from db_builder.utils import normalize_table_data
-from db_builder.utils import load_yaml_recursively
+from data_pipeline.utils import normalize_table_data
+from data_pipeline.utils import load_yaml_recursively
 
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 
