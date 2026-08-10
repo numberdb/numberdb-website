@@ -2,6 +2,11 @@ server {
     listen 80;
     server_name ${SERVER_NAME};
 
+    # This block is nearly all redirects, and would otherwise have been the one
+    # place still logging full addresses -- every visitor passes through it
+    # before reaching HTTPS.
+    access_log /var/log/nginx/access.log anonymised;
+
     # ACME challenge location
     location ^~ /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -17,6 +22,11 @@ server {
 server {
     listen 443 ssl http2;
     server_name ${SERVER_NAME};
+
+    # Replaces the http-block default, which logs the full IP. A second
+    # access_log beside it would log twice rather than replace it, so it has to
+    # live here. See 00-logging.conf.
+    access_log /var/log/nginx/access.log anonymised;
 
     # Resolve Docker DNS for service names at runtime to avoid stale IPs
     resolver 127.0.0.11 ipv6=off valid=10s;

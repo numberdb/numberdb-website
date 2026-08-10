@@ -74,6 +74,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    #Last, so it wraps the least and sees the final status -- including the
+    #ones no view produced, which are the requests people write in about.
+    'numberdb_app.activity.ApiActivityMiddleware',
 ]
 
 ROOT_URLCONF = 'numberdb.urls'
@@ -364,3 +367,65 @@ NUMBERDB_RATE_LIMIT_WINDOW = int(
 #: corpus and grows with the table. Past it the caller is told to try again
 #: rather than left holding a connection open.
 NUMBERDB_WRITE_LOCK_WAIT = os.environ.get('NUMBERDB_WRITE_LOCK_WAIT', '15s')
+
+
+# Logging
+#
+# There was no LOGGING block at all until now, which meant Django's default:
+# warnings and errors to the console, and nothing whatsoever about who was
+# using the API or what was being edited. Two things are wanted from a log
+# here, and they are different enough to keep apart.
+#
+#   numberdb.api    one line per /api/* request -- endpoint, status, duration,
+#                   which key or account, and what the client said it was. The
+#                   last is the point: scripts using the `numberdb` package
+#                   announce their version, so the versions in the wild are
+#                   readable off this log, which is what makes it possible to
+#                   change a field and know what will break.
+#
+#   numberdb.edit   one line per revision written, by anyone, by any route.
+#
+# Both are JSON, one object per line, to stdout, where Docker collects them.
+# Neither records an IP address: nginx already logs those, for abuse and load,
+# with its own shorter retention, and writing them down a second time for a
+# purpose that does not need them would be collecting the same personal data
+# twice for one use. See numberdb_app/activity.py and the privacy policy.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        #The line is already JSON by the time it arrives, so the formatter's
+        #whole job is to not get in the way of it.
+        'raw': {'format': '%(message)s'},
+        'plain': {'format': '%(asctime)s %(levelname)s %(name)s %(message)s'},
+    },
+    'handlers': {
+        'activity': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'raw',
+        },
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'plain',
+        },
+    },
+    'loggers': {
+        'numberdb.api': {
+            'handlers': ['activity'],
+            'level': 'INFO',
+            #Not propagated, or every line would be printed twice: once as
+            #itself and once with the root formatter's timestamp glued on.
+            'propagate': False,
+        },
+        'numberdb.edit': {
+            'handlers': ['activity'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': os.environ.get('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+    },
+}

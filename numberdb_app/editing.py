@@ -297,9 +297,16 @@ def _write(table, tree, author, message, parent, base, produced_by,
 	#and the two disagreed permanently, with the failure long since reported
 	#and forgotten.
 	with transaction.atomic():
-		return _write_inside(table, tree, author, message, parent, base,
-		                     produced_by, merged, breaches, files, manifest,
-		                     problems, run)
+		outcome = _write_inside(table, tree, author, message, parent, base,
+		                        produced_by, merged, breaches, files, manifest,
+		                        problems, run)
+
+	#Outside the transaction, so nothing is ever logged that was then rolled
+	#back -- a line describing a revision that does not exist is worse than no
+	#line, since it is the log you would trust while hunting the problem.
+	from .activity import record_revision
+	record_revision(table, outcome.revision, produced_by)
+	return outcome
 
 
 def _write_inside(table, tree, author, message, parent, base, produced_by,

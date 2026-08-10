@@ -1,5 +1,19 @@
+# Log rotation, applied to every service that says anything.
+#
+# Docker's json-file driver keeps growing forever by default. That is a disk
+# that fills on its own schedule, and -- since these logs hold request lines --
+# personal data with no end date, which is the part a privacy policy cannot
+# describe honestly. Ten megabytes across three files per service is a few
+# weeks at this site's traffic and a hard ceiling at any traffic.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   web:
+    logging: *logging
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile
@@ -30,6 +44,7 @@ services:
       start_period: 20s
 
   nginx:
+    logging: *logging
     build:
       context: .
       dockerfile: deploy/nginx/Dockerfile
@@ -47,6 +62,7 @@ services:
       - letsencrypt:/etc/letsencrypt
 
   db:
+    logging: *logging
     image: postgres:14-alpine
     environment:
       - POSTGRES_DB=numberdb
@@ -77,6 +93,7 @@ services:
   # See docs/design/eval-sandbox.md. Replaces the Pyro5 name server + SafeEval
   # worker, which is why there is no pyro-ns service any more.
   evaluator:
+    logging: *logging
     image: numberdb/web:latest
     command: ["sage", "-python", "workers/evaluator.py"]
     restart: unless-stopped
@@ -116,6 +133,7 @@ services:
   # One-shot issuance (run manually):
   # docker compose run --rm certbot certonly --webroot -w /var/www/certbot -d ${SERVER_NAME} --email ${LETSENCRYPT_EMAIL} --agree-tos --no-eff-email
   certbot:
+    logging: *logging
     image: certbot/certbot:latest
     volumes:
       - certbot-www:/var/www/certbot
@@ -124,6 +142,7 @@ services:
 
   # Background renewer
   certbot-renew:
+    logging: *logging
     image: certbot/certbot:latest
     restart: unless-stopped
     volumes:
@@ -133,6 +152,7 @@ services:
     command: ["trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h; done"]
 
   data-fetcher:
+    logging: *logging
     image: alpine/git:latest
     entrypoint: ["/bin/sh","-c"]
     command:
