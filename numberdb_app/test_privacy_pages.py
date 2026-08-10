@@ -34,7 +34,7 @@ class TheLegalPagesExist(TestCase):
 
 	def test_every_page_links_to_both(self):
 		"""A policy nobody can reach is not published."""
-		for path in ('/', '/tables', '/help', '/about', '/privacy'):
+		for path in ('/', '/tables', '/help', '/privacy'):
 			with self.subTest(page=path):
 				body = self.client.get(path).content.decode()
 				self.assertIn('/privacy', body)
@@ -56,7 +56,7 @@ class ReadingTheSiteSetsNoCookies(TestCase):
 	"""
 
 	def pages(self):
-		return ['/', '/tables', '/tags', '/help', '/about', '/privacy',
+		return ['/', '/tables', '/tags', '/help', '/privacy',
 		        '/impressum', '/advanced-search']
 
 	def test_no_page_sets_a_cookie_for_a_reader(self):
@@ -287,3 +287,40 @@ class ThePlaceholderNameIsReserved(TestCase):
 		User.objects.create_user(TOMBSTONE_NAME, password='pw-123456')
 		with self.assertRaises(ValueError):
 			tombstone()
+
+
+class TheAboutPageWasFoldedIntoHelp(TestCase):
+	"""It duplicated the help page's Welcome and Acknowledgements, in stale
+	copies whose example links had 404'd since tables were renumbered to
+	T-ids. Its only unique content was the roadmap, which moved."""
+
+	def test_about_still_resolves_rather_than_404ing(self):
+		"""It was linked to for years, including from other sites."""
+		answer = self.client.get('/about')
+		self.assertEqual(answer.status_code, 302)
+		self.assertIn('help', answer['Location'])
+
+	def test_the_roadmap_landed_on_the_help_page(self):
+		body = self.client.get('/help').content.decode()
+		self.assertIn('id="section-work-in-progress"', body)
+		self.assertIn('Work in progress', body)
+
+	def test_the_beta_link_leads_there(self):
+		"""The superscript beta on the front page pointed at the old page's
+		roadmap, which is the one link that would have died quietly."""
+		for path in ('/', '/advanced-search'):
+			with self.subTest(page=path):
+				body = self.client.get(path).content.decode()
+				self.assertIn('/help#section-work-in-progress', body)
+
+	def test_the_help_page_does_not_credit_what_was_removed(self):
+		"""Pyro5 went when the sandboxed evaluator replaced it; the credit
+		stayed behind."""
+		body = self.client.get('/help').content.decode()
+		self.assertNotIn('Pyro5', body)
+
+	def test_the_example_tables_it_used_to_link_to_resolve(self):
+		"""The old page pointed at /C1, /C2 and /C9. Help says T1, T2, T9."""
+		body = self.client.get('/help').content.decode()
+		self.assertNotIn('"/C1"', body)
+		self.assertIn('/T1', body)

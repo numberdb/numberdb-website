@@ -161,6 +161,7 @@ div.main-column {
 <hr class="contents">
 <ol class="contents">
 <li><a href="#section-faq">Frequently asked questions</a></li>
+<li><a href="#section-work-in-progress">Work in progress</a></li>
 <li><a href="#section-contributors">List of contributors</a></li>
 <li><a href="#section-licence">Licence</a></li>
 <li><a href="#section-acknowledgements">Acknowledgements</a></li>
@@ -784,6 +785,63 @@ as it does not depend on the base.
 
 <!--------------------------------------------------------------------->
 
+{% comment %}
+Folded in from the old /about page, which duplicated this page's Welcome and
+Acknowledgements almost word for word -- with stale table links that 404'd --
+and whose only unique content was this list.
+
+Most of what it listed has since been built, and saying so is the point: a
+roadmap that still promises what shipped a year ago reads as a dead project.
+Kept short, and kept honest about what is not done.
+{% endcomment %}
+<div id="section-work-in-progress" class="section scrollspy">
+<h2 id="work-in-progress" class="section scrollspy">Work in progress</h2>
+
+NumberDB is in active development, and the &beta; beside its name is meant
+literally: things still move.
+
+<div class="medskip"></div>
+
+Since this list was first written, most of it has been built. Complex numbers
+and p&#8209;adic numbers are searchable; there is an
+<a href="#section-api">API</a> and a
+<a href="#section-sage-interface">Python and Sage package</a>; tables are
+edited here on the site rather than through pull requests, and every table
+records <a href="#section-contributors">who changed it and when</a>. What
+remains:
+
+<ul>
+<li>
+<div class="li-header">More numbers and tables</div>
+The aim is around 10&nbsp;000 tables of around 1000 numbers each &mdash; some
+10<sup>7</sup> numbers, which can still be searched by ten digits. There are
+currently rather fewer, and which numbers are chosen is decided by their
+simplicity and significance.
+<a href="#section-how-to-contribute">Contributions</a> are greatly welcome.
+</li>
+
+<li>
+<div class="li-header">Search results ordered by significance</div>
+At present a search returns what matches, not what you most likely meant.
+</li>
+
+<li>
+<div class="li-header">Discussion and review</div>
+Tables can be edited and the edits reviewed, but there is nowhere yet to
+discuss a table, question a value, or rate one.
+</li>
+
+<li>
+<div class="li-header">Reproducing a table from its own record</div>
+A table carries the program that produced it, and can be downloaded whole. It
+is not yet true that every table's program can simply be re-run to rebuild it
+&mdash; some were made by scripts that predate this arrangement.
+</li>
+</ul>
+</div>
+
+<!--------------------------------------------------------------------->
+
 <div id="section-licence" class="section scrollspy">
 <h2 id="licence" class="section scrollspy">Licence</h2>
 
@@ -852,16 +910,37 @@ stored with a link to the article they came from.
 <h2 id="acknowledgements" class="section scrollspy">Acknowledgements</h2>
 
 
-NumberDB is build and runs on various open-source projects, in particular:
-<a href="https://www.djangoproject.com/">Django</a>, 
-<a href="https://www.postgresql.org/">PostgreSQL</a>, 
+{% comment %}
+Pyro5 was listed here until it was not used any more -- the sandboxed evaluator
+replaced the Pyro5 name server and SafeEval worker, and nothing removed the
+credit. Everything named below is something the running site actually depends
+on; the fonts and browser libraries are listed because they are served from
+this site rather than from someone else's, which is deliberate and is explained
+on the privacy page.
+{% endcomment %}
+NumberDB is built on, and runs on, various open-source projects. The
+mathematics is done by
 <a href="https://www.sagemath.org/">SageMath</a>,
-<a href="https://pari.math.u-bordeaux.fr/">Pari/GP</a>,
-<a href="https://arblib.org/">arb</a>,
-<a href="https://nginx.org/en/">nginx</a>, 
-<a href="https://gunicorn.org/">Gunicorn</a>, 
-<a href="https://github.com/irmen/Pyro5">Pyro5</a>,
-<a href="https://git-scm.com/">git</a>.
+<a href="https://pari.math.u-bordeaux.fr/">Pari/GP</a> and
+<a href="https://arblib.org/">arb</a>, whose interval and ball arithmetic is
+what lets a number be stored with its accuracy rather than as a decimal that
+means nothing in particular.
+The site itself is
+<a href="https://www.djangoproject.com/">Django</a> and
+<a href="https://www.postgresql.org/">PostgreSQL</a>, with
+<a href="https://gunicorn.org/">Gunicorn</a>,
+<a href="https://nginx.org/en/">nginx</a> and
+<a href="https://www.docker.com/">Docker</a>,
+certificates from <a href="https://letsencrypt.org/">Let's Encrypt</a>,
+accounts by <a href="https://docs.allauth.org/">django-allauth</a>,
+and <a href="https://numpy.org/">NumPy</a>,
+<a href="https://pyyaml.org/">PyYAML</a> and
+<a href="https://git-scm.com/">git</a> underneath.
+Formulas are set by <a href="https://www.mathjax.org/">MathJax</a>, code is
+coloured by <a href="https://highlightjs.org/">highlight.js</a>, and the type
+is <a href="https://fonts.google.com/specimen/Source+Sans+Pro">Source Sans
+Pro</a> &mdash; all three served from this site, so that reading a page here
+tells nobody else that you did.
 NumberDB's repositories are stored on <a href="https://github.com/">GitHub</a>.
 <p>
 Parts of NumberDB's code and documentation were written with the help of AI
