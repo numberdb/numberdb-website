@@ -88,9 +88,12 @@ concludes the site is broken.
       
       <a class="navbar-field" href="{% url 'db:tags' %}">Tags</a>      
       <a class="navbar-field" href="{% url 'db:tables' %}">Tables</a>      
-      <!--
-      <a class="navbar-field" href="{% url 'db:about' %}">About</a>
-      -->
+      {% comment %}
+      An "About" link used to sit here, commented out. The page it led to is
+      gone: it duplicated the help page's Welcome and Acknowledgements, with
+      stale copies and example links that 404'd, and its roadmap has moved to
+      help#section-work-in-progress. /about still redirects there.
+      {% endcomment %}
       {% comment %}
       "Add numbers" is gone. It led to a help section rather than anywhere you
       could add a number, and it dates from when adding one meant a pull

@@ -119,7 +119,23 @@ def home(request):
 	return render(request, 'home.html', context)
 
 def about(request):
-    return render(request, 'about.html', {})
+	"""Kept as a redirect, because /about had been linked to for years.
+
+	The page itself is gone. It duplicated the help page's Welcome and
+	Acknowledgements almost word for word -- stale copies, with example links
+	to /C1, /C2 and /C9, which have been 404 since tables were renumbered to
+	T-ids -- and its only unique content, the roadmap, has moved to
+	`#section-work-in-progress` on the help page, where the "beta" link on the
+	front page now points.
+
+	A temporary redirect rather than a permanent one. 301s are cached by
+	browsers for a very long time and are correspondingly hard to take back,
+	and an "about" page is an ordinary thing for a site to want again later.
+	Nothing here rests on consolidating the URL.
+	"""
+	from django.shortcuts import redirect
+
+	return redirect('db:help')
 
 def help(request):
 	contribution_count = {}
