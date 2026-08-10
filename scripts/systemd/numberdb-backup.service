@@ -1,0 +1,26 @@
+[Unit]
+Description=Pull a verified NumberDB database backup from production
+Documentation=file:///home/matschke/projects/numberdb/numberdb-website/scripts/backup.sh
+# Pointless without a network, and the failure would otherwise be recorded as a
+# real one rather than as "the laptop was not online yet".
+After=network-online.target
+
+[Service]
+Type=oneshot
+
+# Named outright because a timer has no ssh agent. See the note in backup.sh.
+Environment=SSH_KEY=%h/.ssh/id_rsa_matschke
+Environment=REMOTE=linode
+
+ExecStart=%h/projects/numberdb/numberdb-website/scripts/backup.sh %h/numberdb-backups
+
+# The script already refuses a dump that is too small, is not valid gzip, or is
+# missing db_table/db_number/auth_user, and it prunes old backups only after
+# the new one has passed all three. A non-zero exit here therefore means the
+# backup did not happen -- which is worth seeing in `systemctl --user status`
+# rather than swallowing into a log file nobody opens.
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
