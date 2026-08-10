@@ -1,4 +1,4 @@
-<style>
+{% load static %}<style>
 .table-block-focused { background: #e5eecc; outline: 2px solid #b0be90; }
 </style>
 
@@ -139,10 +139,13 @@ code.table-code {
 </style>
 
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.5.0/build/styles/default.min.css">
-<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.5.0/build/highlight.min.js"></script>
-<!-- and it's easy to individually load additional languages -->
-<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.5.0/build/languages/python.min.js"></script>
+{% comment %}highlight.js 10.5.0, served from here rather than from jsDelivr, so
+that reading a table does not report the reader to a CDN. Same three files, same
+version; adding a language is still just another file in static/vendor/highlight/.
+{% endcomment %}
+<link rel="stylesheet" href="{% static '/vendor/highlight/default.min.css' %}">
+<script src="{% static '/vendor/highlight/highlight.min.js' %}"></script>
+<script src="{% static '/vendor/highlight/python.min.js' %}"></script>
 <script>hljs.initHighlightingOnLoad();</script>
 
 <script>
