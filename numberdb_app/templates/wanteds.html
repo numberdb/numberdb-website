@@ -4,9 +4,9 @@
 
 {% block extra_head %}
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rye&display=swap" rel="stylesheet"> 
+{% comment %}Rye now arrives with the rest of the fonts, from static/css/fonts.css,
+which base.html already loads. It used to be fetched from Google here.
+{% endcomment %}
 
 <style>
 h1.wanted { 

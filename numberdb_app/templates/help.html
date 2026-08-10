@@ -8,10 +8,11 @@
     <meta property="og:description" content="How to search. How to contribute.">
     <meta name="description" content="How to search. How to contribute.">
 
-<!--
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
--->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+{% comment %}Materialize is gone. Its stylesheet had already been commented out,
+and the script it left behind was doing nothing: no page here uses a Materialize
+class or calls into `M.`. What it did do was fetch 180 KB from cdnjs.cloudflare.com
+on every visit to the help page, which told Cloudflare who was reading it.
+{% endcomment %}
 
 <style>
 img.help-screenshot {

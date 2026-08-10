@@ -24,9 +24,15 @@
 
     <script src="{% static '/js/load-mathjax.js' %}" async></script>
 
-    <!--https://fonts.google.com/specimen/Source+Sans+Pro?category=Sans+Serif&preview.text=NumberDB&preview.text_type=custom&slant=1&thickness=4&sidebar.open=true&selection.family=Source+Sans+Pro:wght@200;400 -->
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@200;300;400&display=swap" rel="stylesheet"> 
+    {% comment %}Source Sans Pro, served from here rather than from Google.
+
+    The stylesheet used to be linked straight from fonts.googleapis.com, which
+    meant every visitor's browser announced their IP address to Google before
+    the page had drawn -- on every page, with nothing asked and nothing gained.
+    static/css/fonts.css carries the same @font-face rules, unicode-range and
+    all, pointing at static/fonts/.
+    {% endcomment %}
+    <link rel="stylesheet" href="{% static '/css/fonts.css' %}">
 
 
     <link rel="stylesheet" href="{% static '/css/bootstrap.min.css' %}">
