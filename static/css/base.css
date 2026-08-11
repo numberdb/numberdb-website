@@ -522,13 +522,6 @@ a.navbar-field:hover {
   border-top: 1px solid #e6e6e6;
   padding: 0.3rem 0 1.5rem 0;
   color: #777;
-
-  /* The bottom half of the sticky footer below: <body> is a flex column with
-     spare vertical space, and an auto top margin puts all of that space above
-     this element -- which is exactly "sit at the bottom, but only if the page
-     is short". No fixed height is assumed, so the note wrapping onto a second
-     line on a narrow screen simply makes the strip taller. */
-  margin-top: auto;
 }
 .site-footer .footer-links {
   /* The navbar is right-aligned because it trails the site name. A footer has
@@ -555,28 +548,18 @@ a.searchbar-link:hover,
   text-decoration: underline;
 }
 
-/* Sticky footer.
+/* There was a sticky footer here -- <body> as a flex column, with the footer
+   taking the slack -- and it cost more than it was worth. It narrowed the
+   content on every page.
 
-   Standard flex column: the page is at least as tall as the viewport, and the
-   footer's `margin-top: auto` above takes the slack. Short pages -- /impressum,
-   an empty discussion, a table with three numbers -- used to leave the footer
-   floating halfway up with white space beneath it.
+   Worth writing down so nobody re-derives it: `div.horizontal-container`
+   centres itself with `margin: auto`, and **an auto margin in the cross axis
+   makes a flex item ignore `align-items: stretch`**. Instead of filling the
+   width up to its 96rem cap, the container fell back to shrink-to-fit and
+   collapsed around whatever it held. Every page got narrower, which is a much
+   bigger thing than where the footer sits on a short one.
 
-   The one trap is that `div.horizontal-container` sets `margin: auto`, which
-   for a block element means "centre me horizontally" but for a *flex item*
-   means "absorb the free space on every side". Left alone it would eat the
-   slack before the footer could, and centre the page vertically into the
-   bargain. Only the direct children of <body> are flex items, so only those
-   are corrected, and the horizontal centring is kept. */
-html {
-  height: 100%;
-}
-body {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-body > div.horizontal-container {
-  margin-top: 0;
-  margin-bottom: 0;
-}
+   If it is ever wanted again, the fix is `width: 100%` on those containers so
+   their size no longer depends on their contents -- but the layout was good as
+   it was, and the footer sitting directly under the content is not a
+   problem. */

@@ -326,10 +326,8 @@ class TheAboutPageWasFoldedIntoHelp(TestCase):
 		self.assertIn('/T1', body)
 
 
-class TheFooterSitsWhereTheStylesheetExpects(TestCase):
-	"""Two structural facts the sticky-footer rule depends on, both of which a
-	well-meant tidy-up would break without anything looking wrong until a
-	short page is opened."""
+class TheFooter(TestCase):
+	"""What the footer must carry, and what it must not repeat."""
 
 	def body_children(self):
 		import re
@@ -348,17 +346,24 @@ class TheFooterSitsWhereTheStylesheetExpects(TestCase):
 				depth += 1
 		return children
 
-	def test_it_is_a_direct_child_of_body(self):
-		"""`margin-top: auto` only takes the slack if the footer is a flex item
-		of <body>. Wrapped in one more div and it silently stops working."""
-		self.assertIn('site-footer', self.body_children())
-
-	def test_and_the_last_one(self):
+	def test_it_is_the_last_thing_on_the_page(self):
 		self.assertEqual(self.body_children()[-1], 'site-footer')
+
+	def footer(self):
+		return self.client.get('/').content.decode().split('site-footer', 1)[1]
 
 	def test_its_links_are_styled_as_the_navigation_is(self):
 		"""Same class, not a copy of the rules, so the two cannot drift."""
-		body = self.client.get('/').content.decode()
-		footer = body.split('site-footer', 1)[1]
+		footer = self.footer()
 		self.assertIn('class="navbar-field" href="/privacy"', footer)
 		self.assertIn('class="navbar-field" href="/impressum"', footer)
+
+	def test_it_points_at_the_published_package(self):
+		"""The one way to use the data that neither the navigation nor any
+		page of the site leads to."""
+		self.assertIn('pypi.org/project/numberdb', self.footer())
+
+	def test_it_does_not_repeat_the_navigation(self):
+		"""Help is at the top of every page. A footer that echoes the header
+		is a footer people stop reading."""
+		self.assertNotIn('>Help<', self.footer())
