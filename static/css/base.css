@@ -536,12 +536,24 @@ a.navbar-field:hover {
   text-align: left;
   margin-left: -0.5rem;   /* cancel navbar-field's own left padding */
 }
-.site-footer .footer-note {
-  font-size: 0.85rem;
-  color: #999;
-  padding: 0 0 0 0;
+/* Quiet secondary text.
+
+   Two places wear it: the "search tips &middot; advanced search" line under the
+   search box on the front page, and the footer's note. One rule for both, so
+   they cannot drift -- the same reason the footer's links borrow
+   `navbar-field` rather than imitating it. The front page used to declare this
+   itself, in its own <style> block. */
+a.searchbar-link,
+.site-footer .footer-note,
+.site-footer .footer-note a {
+  color: #888;
+  font-size: 0.8rem;
+  text-decoration: none;
 }
-.site-footer .footer-note a { color: #777; }
+a.searchbar-link:hover,
+.site-footer .footer-note a:hover {
+  text-decoration: underline;
+}
 
 /* Sticky footer.
 
