@@ -84,7 +84,7 @@ class DisagreementError(NumberDBError):
 
     ``verdict`` is why -- values that cannot both be true, or a value that
     would replace stored digits with fewer. The message names the argument
-    that means "yes, I meant it", so it need not be known in advance.
+    that permits the operation, so it need not be known in advance.
     """
 
     def __init__(self, message, identity='', stored='', produced='',

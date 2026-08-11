@@ -58,9 +58,9 @@ cannot delete a definition by assembling a document out of what it happens to
 know.
 
 What `numberdb.Generator.publish` does ask about is intent, since nothing else
-can know it: whether values already stored may be replaced, contradicted,
-coarsened or removed. Each defaults to the cautious answer, and a refusal names
-the argument that means "yes, I meant it".
+can determine it: whether values already stored may be replaced, contradicted,
+coarsened or removed. Each defaults to the conservative choice, and a refusal
+names the argument that permits the operation.
 
 `numberdb.Generator.preview` does all of that and sends nothing.
 `numberdb.Generator.verify` needs no key at all: it compares a sample of the
