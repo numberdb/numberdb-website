@@ -436,6 +436,27 @@ $ export NUMBERDB_URL=http://localhost:8000
 A trailing slash is optional, and a base URL with a path prefix keeps it either
 way.
 
+## Where this lives, and how to work on it
+
+The package is kept inside the website's repository, under
+[`clients/python/`](https://github.com/numberdb/numberdb-website/tree/main/clients/python),
+rather than in one of its own. That is deliberate: about a third of the changes
+that touch the package also touch the server it talks to, because the two share
+one wire format — the written form of a number, the conversion from decimal
+digits to bits, the canonical form of a polynomial. Keeping them together means
+such a change is one commit and one test run rather than a release cycle.
+
+It has no dependencies and needs no SageMath, so its own tests run against a
+plain interpreter:
+
+```console
+$ cd clients/python
+$ python -m pytest tests -q
+```
+
+Issues and pull requests go to the
+[website repository](https://github.com/numberdb/numberdb-website/issues).
+
 ## Licence
 
 MIT.
