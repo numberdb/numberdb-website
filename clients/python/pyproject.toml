@@ -49,8 +49,13 @@ docs = ["pdoc>=14"]
 
 [project.urls]
 Homepage = "https://numberdb.org"
-Source = "https://github.com/numberdb/numberdb-website"
+# The subdirectory, not the repository root. The package lives inside the
+# website's repository -- deliberately, because a third of the changes that
+# touch it also touch the server it talks to -- and someone arriving from PyPI
+# should not have to work that out by looking.
+Source = "https://github.com/numberdb/numberdb-website/tree/main/clients/python"
 Issues = "https://github.com/numberdb/numberdb-website/issues"
+Documentation = "https://numberdb.org/help#section-sage-interface"
 
 [tool.setuptools.packages.find]
 include = ["numberdb*"]

@@ -23,7 +23,63 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Nothing else runs until the release being published is actually a release
+  # of this package.
+  #
+  # The trigger is `release: published`, which fires for *any* release in this
+  # repository -- and this repository is the website as well. A release cut for
+  # the site would otherwise walk straight into an upload of whatever version
+  # happened to be sitting in pyproject.toml: a failure if that version already
+  # exists on PyPI, and a genuinely unintended publication if it does not.
+  # Versions on PyPI cannot be replaced or reused, so that is not a mistake
+  # anybody gets to undo.
+  #
+  # Two conditions, both cheap:
+  #
+  #   * the tag looks like a package version -- `v1.2.3`
+  #   * and it *is* the version in pyproject.toml
+  #
+  # The second is the one that earns its keep. It catches the ordinary slip of
+  # tagging v0.2.0 while the file still says 0.1.0, which otherwise publishes
+  # the old version under the new name, or fails at the last step after the
+  # release notes have already gone out.
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Pinned rather than relying on the runner's default, because `tomllib`
+      # is 3.11 and up and the default is not something this workflow chooses.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: The release is a release of this package
+        run: |
+          set -euo pipefail
+          tag="${{ github.event.release.tag_name }}"
+          if [ -z "$tag" ]; then
+            echo "Run by hand (workflow_dispatch); skipping the tag check."
+            exit 0
+          fi
+          case "$tag" in
+            v[0-9]*) ;;
+            *) echo "::error::Tag '$tag' is not a package version (expected vX.Y.Z)."
+               echo "If this release is for the website rather than the numberdb"
+               echo "package, that is exactly what this check is for."
+               exit 1 ;;
+          esac
+          version=$(cd clients/python && python -c "
+          import tomllib
+          print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])
+          ")
+          if [ "$tag" != "v$version" ]; then
+            echo "::error::Tag '$tag' does not match the package version '$version'."
+            echo "Set the version in clients/python/pyproject.toml and tag it to match."
+            exit 1
+          fi
+          echo "Publishing numberdb $version from tag $tag."
+
   test:
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
