@@ -512,25 +512,59 @@ a.navbar-field:hover {
 /* The site footer.
 
    There was none, which is how a site ends up with a privacy policy that
-   cannot be reached from anywhere. Deliberately quiet: small, grey, under the
-   content, and last in the tab order. It has to be findable by someone looking
-   for it, not compete with a table of numbers. */
+   cannot be reached from anywhere. Deliberately quiet: under the content and
+   last in the tab order. It has to be findable by someone looking for it, not
+   compete with a table of numbers.
+
+   Its links carry `navbar-field`, the same class as the navigation at the top,
+   so the two cannot drift apart. Nothing here restyles them. */
 .site-footer {
   border-top: 1px solid #e6e6e6;
-  margin-top: 3rem;
-  padding: 1rem 0 2rem 0;
-  font-size: 0.85rem;
+  padding: 0.3rem 0 1.5rem 0;
   color: #777;
+
+  /* The bottom half of the sticky footer below: <body> is a flex column with
+     spare vertical space, and an auto top margin puts all of that space above
+     this element -- which is exactly "sit at the bottom, but only if the page
+     is short". No fixed height is assumed, so the note wrapping onto a second
+     line on a narrow screen simply makes the strip taller. */
+  margin-top: auto;
 }
-.site-footer a {
-  color: #555;
-  margin-right: 1rem;
-  text-decoration: none;
+.site-footer .footer-links {
+  /* The navbar is right-aligned because it trails the site name. A footer has
+     nothing to trail. */
+  text-align: left;
+  margin-left: -0.5rem;   /* cancel navbar-field's own left padding */
 }
-.site-footer a:hover { text-decoration: underline; }
 .site-footer .footer-note {
-  display: block;
-  margin-top: 0.4rem;
+  font-size: 0.85rem;
   color: #999;
+  padding: 0 0 0 0;
 }
-.site-footer .footer-note a { margin-right: 0; }
+.site-footer .footer-note a { color: #777; }
+
+/* Sticky footer.
+
+   Standard flex column: the page is at least as tall as the viewport, and the
+   footer's `margin-top: auto` above takes the slack. Short pages -- /impressum,
+   an empty discussion, a table with three numbers -- used to leave the footer
+   floating halfway up with white space beneath it.
+
+   The one trap is that `div.horizontal-container` sets `margin: auto`, which
+   for a block element means "centre me horizontally" but for a *flex item*
+   means "absorb the free space on every side". Left alone it would eat the
+   slack before the footer could, and centre the page vertically into the
+   bargain. Only the direct children of <body> are flex items, so only those
+   are corrected, and the horizontal centring is kept. */
+html {
+  height: 100%;
+}
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+body > div.horizontal-container {
+  margin-top: 0;
+  margin-bottom: 0;
+}
