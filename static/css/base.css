@@ -548,18 +548,42 @@ a.searchbar-link:hover,
   text-decoration: underline;
 }
 
-/* There was a sticky footer here -- <body> as a flex column, with the footer
-   taking the slack -- and it cost more than it was worth. It narrowed the
-   content on every page.
+/* Sticky footer.
 
-   Worth writing down so nobody re-derives it: `div.horizontal-container`
-   centres itself with `margin: auto`, and **an auto margin in the cross axis
-   makes a flex item ignore `align-items: stretch`**. Instead of filling the
-   width up to its 96rem cap, the container fell back to shrink-to-fit and
-   collapsed around whatever it held. Every page got narrower, which is a much
-   bigger thing than where the footer sits on a short one.
+   <body> is a flex column at least as tall as the window, and the footer's
+   `margin-top: auto` takes whatever slack is left, so a short page -- the
+   front page, /impressum, an empty discussion -- has it at the bottom instead
+   of floating under the content with white space beneath.
 
-   If it is ever wanted again, the fix is `width: 100%` on those containers so
-   their size no longer depends on their contents -- but the layout was good as
-   it was, and the footer sitting directly under the content is not a
-   problem. */
+   `width: 100%` on the containers is the whole trick, and the first attempt
+   at this omitted it and narrowed every page. The reason is worth writing
+   down, because the mistake looks nothing like its cause:
+   `div.horizontal-container` centres itself with `margin: auto`, and **an
+   auto margin in the cross axis makes a flex item ignore
+   `align-items: stretch`**. Without an explicit width the container then
+   falls back to shrink-to-fit and collapses around its contents -- so a page
+   of short lines becomes a narrow column. Stating the width means the size no
+   longer depends on what is inside, which is what a block element did here
+   all along. Global `box-sizing: border-box` (from bootstrap) makes 100%
+   safe next to the horizontal padding.
+
+   The vertical auto margins go for a different reason: an auto margin absorbs
+   free space, so left alone these would eat the slack before the footer could
+   and centre the whole page vertically. The horizontal ones stay -- they are
+   what does the centring. */
+html {
+  height: 100%;
+}
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+body > div.horizontal-container {
+  width: 100%;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.site-footer {
+  margin-top: auto;
+}
