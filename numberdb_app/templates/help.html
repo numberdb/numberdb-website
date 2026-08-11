@@ -435,11 +435,48 @@ rather help.
 <div id="section-how-to-contribute" class="section scrollspy">
 <h2 id="how-to-contribute" class="section scrollspy">How to contribute</h2>
     
-Contributions are possible in a number of ways:
+{% comment %}
+Rewritten because it had gone badly out of date: it told people to edit YAML
+files in the numberdb-data repository and to open a pull request there, which
+has not been how any of this works since editing moved onto the site. That is
+worse than saying nothing, because someone follows it and does the work in a
+place it cannot arrive from.
+{% endcomment %}
+
+Everything here is edited on this site. You need an account, which takes a
+moment and an email address, and nothing else.
 
 <ul>
 <li>
-<div class="li-header">Questions about a particular table:</div>
+<div class="li-header">A wrong digit, a missing reference, a clearer definition:</div>
+Sign in and click <b>edit</b> under the table's title. Your change is published
+when you save it, and you are asked to say what you changed, because the next
+person reading the history needs to know. The
+<a href="#section-guide-to-editing-tables">guide to editing tables</a> has the
+detail.
+</li>
+
+<li>
+<div class="li-header">A number that should be here and is not:</div>
+If it belongs in a table that exists, add it in that table's editor. If it
+needs a table of its own, use <a href="{% url 'db:new-table' %}">new table</a>
+&mdash; see the
+<a href="#section-guide-to-creating-new-tables">guide to creating new
+tables</a>. A title and one number are enough to start.
+</li>
+
+<li>
+<div class="li-header">A great many numbers, computed by a program:</div>
+Write the program, and let it publish its own results: install the
+<a href="https://pypi.org/project/numberdb/">numberdb</a> package, write a
+generator, and send them with an <a href="{% url 'db:keys' %}">API key</a>. The
+code that produced the numbers is stored beside them, so a reader can see how a
+value was obtained rather than being asked to take it on trust. See
+<a href="#section-sage-interface">Python and Sage interface</a>.
+</li>
+
+<li>
+<div class="li-header">A question about a particular table:</div>
 Every table has a <b>discussion</b>, linked beside its title, for asking where
 a value came from, why one looks wrong, or what a parameter means. Anyone can
 read it; anyone who may edit the table may post. A correction itself belongs in
@@ -447,49 +484,31 @@ an edit rather than a message &mdash; the edit's own note says what changed.
 </li>
 
 <li>
-<div class="li-header">Bug reports, feature requests, general discussions:</div>
-Visit the <a href="https://github.com/numberdb/numberdb-website/issues">GitHub issue page</a> (preferred), or send an email to info@numberdb.org.
-</li>
-
-<li>
-<div class="li-header">Typos in tables, adding references, comments, etc.:</div>
-You may edit the table's yaml file via the <a href="#guide-to-editing-tables">Guide to editing tables</a> below.
-In short:
-Edit the corresponding yaml-file in the 
-<a href="https://github.com/numberdb/numberdb-data">numberdb-data</a> repository.
-The link can be found below the title on the table's webpage.
-</li>
-
-<li>
-<div class="li-header">Contribute new tables:</div>
-You may contribute new tables via the <a href="#guide-to-editing-tables">Guide to creating new tables</a> below.
-In short: 
-You need to create a table.yaml in a new folder of the 
-<a href="https://github.com/numberdb/numberdb-data">numberdb-data</a> 
-repository and submit a pull request.
-<!--
-It will be easiest to copy an existing table.yaml 
-from another table, and modify it.
-Keep the first line "ID: INPUT{id.yaml}", but do not copy the id.yaml, 
-as it will be added automatically by our robot zeta3.
-You may either do this on GitHub directly, or by forking or cloning the respository and creating a pull request to the main branch.
--->
-</li>
-
-<li>
-<div class="li-header">Programming the webpage:</div>
-The webpage is in active development.
-Current development goals are listed in the 
-<a href="https://github.com/numberdb/numberdb-website/issues">issues section</a> 
-of the GitHub repository 
-<a href="https://github.com/numberdb/numberdb-website">numberdb-website</a>.
+<div class="li-header">A bug in the website, or an idea for it:</div>
+The <a href="https://github.com/numberdb/numberdb-website/issues">issue
+page</a> on GitHub, please, or an email to info@numberdb.org. The site's code
+is at
+<a href="https://github.com/numberdb/numberdb-website">numberdb-website</a> and
+patches are welcome.
 </li>
 </ul>
 
-Credits for contributions are automatically given within git and on GitHub, 
-as every single change is stored in a permanent history.
-In the future, contributors to tables of numbers will be 
-automatically displayed also on numberdb.org.
+<p class="help-text">
+<b>About the data repository.</b>
+<a href="https://github.com/numberdb/numberdb-data">numberdb-data</a> is where
+the corpus can be read, cited and forked in bulk. It is no longer where tables
+are changed: it mirrors what this site holds, and a commit made there would not
+appear here. If you have come from that repository intending to send a pull
+request, the table's <b>edit</b> button is the shorter road, and the only one
+that arrives.
+</p>
+
+<p class="help-text">
+Every change is attributed. Each table records who edited it and when &mdash;
+follow <b>history</b> under its title &mdash; each entry can be traced to the
+edit that last touched it, and everyone who has contributed appears in the
+<a href="#section-contributors">list of contributors</a> below.
+</p>
 </div>
 
 <!--------------------------------------------------------------------->
@@ -498,9 +517,9 @@ automatically displayed also on numberdb.org.
 <h2 id="guide-to-editing-tables" class="section scrollspy">Guide to editing tables</h2>
 
 {% comment %}
-Rewritten when editing moved onto the site. The GitHub round trip is kept
-below rather than deleted: it is still how a new table is created, and some
-contributors would rather send a pull request than hold an account here.
+Rewritten when editing moved onto the site. The note about the data repository
+at the end of this section stays: people arrive from it expecting to send a
+pull request, and being told plainly that it is a mirror saves them the work.
 {% endcomment %}
 
 <p class="help-text">
@@ -520,7 +539,7 @@ only practical way to check an edit to a table of a thousand entries.</li>
 <p class="help-text">
 Your change is live as soon as you save it. The entries you changed are marked
 as needing review and are left out of
-<a href="#section-search">search by number</a> until a reviewer confirms them;
+<a href="#section-how-to-search">search by number</a> until a reviewer confirms them;
 everything else in the table is unaffected, and the entries themselves stay
 visible on the page throughout. This is deliberate: a reader looking at a table
 can see that an entry is unconfirmed and weigh it, while somebody typing digits
