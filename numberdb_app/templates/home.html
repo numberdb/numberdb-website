@@ -34,14 +34,9 @@ div.home-searchbar-container {
   width: var(--searchbox-width);
   margin: auto;
 }
-a.searchbar-link {
-  color: #888;
-  font-size: 0.8rem;
-  text-decoration: none;
-}
-a.searchbar-link:hover {
-  text-decoration: underline;
-}
+{% comment %}`a.searchbar-link` moved to base.css, where the footer's note wears
+the same rule -- two bits of quiet secondary text that should look alike, and
+did not.{% endcomment %}
 div.searchbar-help {
   text-align: right;
 }
