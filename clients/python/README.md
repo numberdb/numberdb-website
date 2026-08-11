@@ -215,7 +215,7 @@ x^20 + x^15 + x^10 + x^5 + 1
 `import numberdb` never imports Sage, so it starts instantly; a single result
 can be converted on demand with `.sage()` either way.
 
-## What you get back
+## What a search returns
 
 A search returns a `SearchResults`: a `list` of `Result` objects, which also
 carries
@@ -349,10 +349,12 @@ a person on the site. There is deliberately no way to send it from here, so a
 generator cannot delete a definition by assembling a document out of what it
 happens to know.
 
-### What it asks you
+### Arguments that control what a publish may change
 
-Only intent, since nothing else can know it. Each defaults to the cautious
-answer, and a refusal names the argument that means *yes, I meant it*.
+A generator can work out everything about a table except what you intended, so
+these are the decisions it asks you to state explicitly. Each one defaults to
+the conservative choice. When `publish` refuses to carry out an operation, the
+error message names the argument that would permit it.
 
 | | |
 |---|---|
@@ -367,7 +369,7 @@ answer, and a refusal names the argument that means *yes, I meant it*.
 Differing precision is not a disagreement: a table built at 20 digits and
 recomputed at 100 agrees with itself.
 
-### Two ways of checking, for two different questions
+### Checking a generator, and checking a table
 
 `preview()` asks **whether the generator is right**. `verify()` asks **whether
 the table is** — whether what is stored is still what this code produces, after
@@ -417,10 +419,10 @@ For more than one server or key in a process, use a client directly:
 Exceeding the limit raises `numberdb.RateLimitError`, which carries `.retry_after`
 in seconds when the server supplies it.
 
-## Pointing it somewhere else
+## Using a different server
 
-The default is `https://numberdb.org`. Override it for a development server, or
-a private instance:
+The default is `https://numberdb.org`. Override it to use a development server
+or a private instance:
 
 ```console
 $ export NUMBERDB_URL=http://localhost:8000

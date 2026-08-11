@@ -49,10 +49,10 @@ They are methods rather than functions taking a generator, so the whole of
 writing is one public name. A generator is *for* a table, it knows which, and
 what you can do with it is what it offers: ``publish``, ``preview``, ``verify``.
 
-What remains asked about is intent, because nothing else can know it: whether
-values already stored may be replaced, contradicted, coarsened or removed.
-Every one of those defaults to the cautious answer and names, in the refusal
-itself, the argument that means "yes, I meant it".
+What remains to be asked is intent, because nothing else can determine it:
+whether values already stored may be replaced, contradicted, coarsened or
+removed. Each of those defaults to the conservative choice, and a refusal names
+the argument that permits the operation.
 
 Some tables cannot be computed one entry at a time: zeros found by a sweep,
 values lifted from another database. Those override ``all_entries`` instead and
