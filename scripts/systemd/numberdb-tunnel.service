@@ -1,0 +1,34 @@
+[Unit]
+Description=SOCKS proxy through the NumberDB server, for reaching numberdb.org from a country that blocks it
+After=network-online.target
+
+[Service]
+# A SOCKS proxy rather than a port forward. Forwarding 443 to a local port
+# means browsing https://localhost:8443, which serves the site but presents a
+# certificate for numberdb.org -- a name-mismatch warning on every visit, and
+# every absolute link on the page still points at the blocked address. Through
+# SOCKS the browser asks for numberdb.org, the name is resolved and connected
+# at the far end, and the certificate matches because it is genuinely the site.
+#
+# Connects to the address rather than the `linode` alias on purpose: that alias
+# carries `RemoteForward 2222` with `ExitOnForwardFailure yes`, so a second
+# session aborts when the first still holds the port. This one has no business
+# with that forward.
+ExecStart=/usr/bin/ssh -N -D 127.0.0.1:1080 \
+    -o BatchMode=yes \
+    -o IdentitiesOnly=yes \
+    -i %h/.ssh/id_rsa_matschke \
+    -o ExitOnForwardFailure=yes \
+    -o ServerAliveInterval=30 \
+    -o ServerAliveCountMax=3 \
+    -o StrictHostKeyChecking=accept-new \
+    root@45.33.90.86
+
+# A tunnel that stays down after the first flaky moment is a tunnel nobody
+# trusts. `always` covers the connection dropping, the laptop suspending, and
+# the network changing.
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
