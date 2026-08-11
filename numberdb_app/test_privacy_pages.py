@@ -327,7 +327,8 @@ class TheAboutPageWasFoldedIntoHelp(TestCase):
 
 
 class TheFooter(TestCase):
-	"""What the footer must carry, and what it must not repeat."""
+	"""What the footer must carry, what it must not repeat, and the one
+	structural fact the stylesheet depends on."""
 
 	def body_children(self):
 		import re
@@ -346,7 +347,10 @@ class TheFooter(TestCase):
 				depth += 1
 		return children
 
-	def test_it_is_the_last_thing_on_the_page(self):
+	def test_it_is_the_last_child_of_body(self):
+		"""`margin-top: auto` only takes the slack if the footer is a flex item
+		of <body>. Wrapped in one more div and it silently stops working, on
+		short pages only, which is where nobody looks."""
 		self.assertEqual(self.body_children()[-1], 'site-footer')
 
 	def footer(self):
