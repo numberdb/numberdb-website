@@ -324,3 +324,41 @@ class TheAboutPageWasFoldedIntoHelp(TestCase):
 		body = self.client.get('/help').content.decode()
 		self.assertNotIn('"/C1"', body)
 		self.assertIn('/T1', body)
+
+
+class TheFooterSitsWhereTheStylesheetExpects(TestCase):
+	"""Two structural facts the sticky-footer rule depends on, both of which a
+	well-meant tidy-up would break without anything looking wrong until a
+	short page is opened."""
+
+	def body_children(self):
+		import re
+
+		html = self.client.get('/impressum').content.decode()
+		body = html.split('<body', 1)[1].split('>', 1)[1]
+		children, depth = [], 0
+		for match in re.finditer(r'<(/?)div\b([^>]*)>', body):
+			closing, attrs = match.groups()
+			if closing:
+				depth -= 1
+			else:
+				if depth == 0:
+					found = re.search(r'class="([^"]*)"', attrs)
+					children.append(found.group(1) if found else '')
+				depth += 1
+		return children
+
+	def test_it_is_a_direct_child_of_body(self):
+		"""`margin-top: auto` only takes the slack if the footer is a flex item
+		of <body>. Wrapped in one more div and it silently stops working."""
+		self.assertIn('site-footer', self.body_children())
+
+	def test_and_the_last_one(self):
+		self.assertEqual(self.body_children()[-1], 'site-footer')
+
+	def test_its_links_are_styled_as_the_navigation_is(self):
+		"""Same class, not a copy of the rules, so the two cannot drift."""
+		body = self.client.get('/').content.decode()
+		footer = body.split('site-footer', 1)[1]
+		self.assertIn('class="navbar-field" href="/privacy"', footer)
+		self.assertIn('class="navbar-field" href="/impressum"', footer)
