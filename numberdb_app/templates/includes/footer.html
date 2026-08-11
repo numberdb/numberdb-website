@@ -8,14 +8,19 @@ The links use `navbar-field`, the same class as the navigation at the top,
 rather than a second set of rules that would drift from it. The footer's own
 styling is confined to the strip: its rule, its spacing, and the muted note.
 
-`.site-footer` is a direct child of <body>, which is what lets the sticky-footer
-rule in base.css push it to the bottom of a short page.
 {% endcomment %}
 <div class="site-footer">
   <div class="horizontal-container">
+    {% comment %}
+    No Help link: it is in the navigation at the top of every page, and a
+    footer that repeats the header is a footer people stop reading.
+
+    What is here instead is the three things the header has nowhere for -- how
+    to use the data from a program, who is responsible, and where the code is.
+    {% endcomment %}
     <div class="footer-links">
-      <a class="navbar-field" href="{% url 'db:help' %}">Help</a>
       <a class="navbar-field" href="{% url 'db:api-reference' %}">API</a>
+      <a class="navbar-field" href="https://pypi.org/project/numberdb/">Python package</a>
       <a class="navbar-field" href="{% url 'db:privacy' %}">Privacy</a>
       <a class="navbar-field" href="{% url 'db:impressum' %}">Legal notice</a>
       <a class="navbar-field" href="https://github.com/numberdb/numberdb-website">Source</a>
