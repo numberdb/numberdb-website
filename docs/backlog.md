@@ -265,6 +265,13 @@ is not.
 - Rename `str_short`. It is the uniform search-result view, not an abbreviation;
   `utils/numbers/display.uniform_real_text` is the implementation.
 
+## Deadline for edits in discussion + user profile pages
+
+In the discussions of a table, one can edit messages. There should be a reasonable deadline for how long this is possible, say 10 min? What is standard in these chats?
+Also the user/author of the message should be clickable, pointing to the public profile of the user.
+This requires also a public profile of the user. 
+The public profile should be perhaps similar to the ones on wikipedia, content-wise. Perhaps with a history of all edits, or the number of edits, entries, the last discussion items, not sure how much should be openly available, or whether the user can choose to show them on their profile.
+
 ## Deferred, with the trigger to revisit
 
 - **A GiST box index for complex search.** 1849 rows, 0.2 ms sequential; worth
