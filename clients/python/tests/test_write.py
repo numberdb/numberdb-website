@@ -1172,3 +1172,127 @@ class TestSubmittingEntriesOnly:
         entries.add(n=1, number='3.14')
         submit_entries('T7', entries, upsert=True, client=server.client())
         assert server.modes() == ['upsert']
+
+
+class TestRestating:
+    """Whether a re-run rewrites values that merely agree with what is stored.
+
+    The case this exists for turned up the first time an old script was
+    converted. The original truncated the final digit and the package rounds
+    it, so on 237 of that table's 501 entries the two differed in that digit
+    while denoting intervals of the same width, both containing the number.
+    Neither is more true. Rewriting them all is a mass edit that says nothing
+    about any number, and marks every entry as changed.
+    """
+
+    class Rounded(numberdb.Generator):
+        """Produces a value that agrees with the stored one to the same
+        precision, in a different final digit."""
+
+        table = 'T7'
+        parameters = ('n',)
+        type = 'R'
+        digits = 4
+
+        def enumerate(self):
+            yield {'n': 1}
+
+        def value(self, params, digits):
+            return '1.235'
+
+    def test_a_value_that_only_agrees_is_left_alone(self):
+        server = Server(entries={'1': '1.234'})
+        outcome = self.Rounded().publish(client=server.client())
+        assert outcome.agreed == ['1']
+        assert outcome.updated == []
+        assert server.sent_entries() == {}
+
+    def test_and_restating_writes_it_after_all(self):
+        server = Server(entries={'1': '1.234'})
+        outcome = self.Rounded().publish(restating=True,
+                                         client=server.client())
+        assert outcome.updated == ['1']
+        assert server.sent_entries() == {'1': '1.235'}
+
+    def test_an_identical_value_is_never_sent(self):
+        """Writing a value byte-identical to the stored one is a write that
+        changes nothing, and a thousand of them is a revision that does."""
+        server = Server(entries={'1': '1'})
+
+        class Same(TestRestating.Rounded):
+            digits = 1
+
+            def value(inner, params, digits):
+                return '1'
+
+        outcome = Same().publish(client=server.client())
+        assert outcome.unchanged == ['1']
+        assert server.sent_entries() == {}
+
+    def test_a_refinement_is_written_whatever_restating_says(self):
+        """More digits is a real improvement, not a restatement."""
+        server = Server(entries={'1': '1.2'})
+
+        class Longer(TestRestating.Rounded):
+            digits = 6
+
+            def value(inner, params, digits):
+                return '1.23456'
+
+        outcome = Longer().publish(client=server.client())
+        assert outcome.updated == ['1']
+        assert server.sent_entries() == {'1': '1.23456'}
+
+    def test_a_new_entry_is_written_whatever_it_says(self):
+        server = Server(entries={})
+        outcome = self.Rounded().publish(client=server.client())
+        assert outcome.added == ['1']
+        assert server.sent_entries() == {'1': '1.235'}
+
+    def test_what_is_not_restated_still_survives_a_removing_run(self):
+        """`removing` sends the table as a replacement. An entry left alone
+        because it merely agreed must still be in it, or declining to rewrite
+        a value would delete it -- the worst possible reading of "leave it
+        as it is"."""
+        server = Server(entries={'1': '1.234', '2': '9.9'})
+        outcome = self.Rounded().publish(removing=True,
+                                         client=server.client())
+        assert outcome.agreed == ['1']
+        assert outcome.removed == ['2']
+        assert server.sent_entries() == {'1': '1.235'}
+
+    def test_the_source_is_attached_even_when_no_number_changed(self):
+        """The reason to re-run a converted generator at all: the table gets
+        the code that produces its numbers, whether or not any of them move."""
+        server = Server(entries={'1': '1.234'})
+        outcome = self.Rounded().publish(client=server.client())
+        assert server.sent_entries() == {}
+        assert outcome.files
+
+
+class TestTheRunsMessageIsWhatTheHistoryShows:
+    """A published run lands in one revision, and whichever part of it writes
+    last decides what the table's history says happened.
+
+    The attachment writes last, so a run described as "extended to n = 2000"
+    was recorded as "a file that produced these entries" -- which is true of
+    every run ever made and therefore tells a reader nothing. Found by
+    publishing a real table and then reading its history.
+    """
+
+    def test_the_message_reaches_the_attachment(self):
+        server = Server(entries={})
+        Zeta().publish(message='extended to n = 3', client=server.client())
+        files = [(path, headers) for path, headers, _body in server.posts
+                 if '/file/' in path]
+        assert files
+        assert all(_message(headers) == 'extended to n = 3'
+                   for _path, headers in files)
+
+    def test_and_there_is_still_a_message_when_none_was_given(self):
+        server = Server(entries={})
+        Zeta().publish(client=server.client())
+        files = [headers for path, headers, _body in server.posts
+                 if '/file/' in path]
+        assert files
+        assert all(_message(headers) for headers in files)

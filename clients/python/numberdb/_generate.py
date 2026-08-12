@@ -247,6 +247,7 @@ class Generator:
     def publish(self, only: Any = None, message: str = '',
                 overwrite: bool = True, correcting: bool = False,
                 lowering: bool = False, removing: bool = False,
+                restating: bool = False,
                 client: Any = None, **bounds: Any) -> PublishOutcome:
         """Send this generator's entries to its table. The whole of writing.
 
@@ -282,6 +283,24 @@ class Generator:
         empties a table. What would have gone is listed in
         ``outcome.left_alone``.
 
+        ``restating`` rewrites entries whose stored value says the same thing
+        to the same precision in different digits. Off by default, and this is
+        the argument that decides whether re-running a generator is a quiet
+        no-op or a mass edit.
+
+        The case it exists for: a value stored as ``...4689`` and recomputed as
+        ``...4690``, because the old script truncated the last digit and this
+        one rounds it. Under this database's convention both denote intervals
+        that contain the number, to the same number of digits, so neither is
+        more true than the other -- and the first table converted from an old
+        script had 237 entries of exactly that kind out of 501. Rewriting them
+        says nothing new about any number, while marking every one of them
+        edited and costing anyone who cited one a moment of doubt.
+
+        A value that is genuinely *better* -- more digits, a refinement -- is
+        written whatever this says, because that is a real improvement rather
+        than a restatement. Ones left alone are listed in ``outcome.agreed``.
+
         ``only`` computes and sends *some* entries and leaves the rest alone:
         the parameters to recompute, as mappings or as identities.
 
@@ -298,13 +317,13 @@ class Generator:
         """
         return _publish(self, only=only, message=message, overwrite=overwrite,
                         correcting=correcting, lowering=lowering,
-                        removing=removing, preview=False, client=client,
-                        **bounds)
+                        removing=removing, restating=restating,
+                        preview=False, client=client, **bounds)
 
     def preview(self, only: Any = None, overwrite: bool = True,
                 correcting: bool = False, lowering: bool = False,
-                removing: bool = False, client: Any = None,
-                **bounds: Any) -> PublishOutcome:
+                removing: bool = False, restating: bool = False,
+                client: Any = None, **bounds: Any) -> PublishOutcome:
         """Compute everything, send nothing, and report what `publish` would do.
 
         **This asks whether the generator is right.** `verify` asks whether the
@@ -325,8 +344,8 @@ class Generator:
         """
         return _publish(self, only=only, overwrite=overwrite,
                         correcting=correcting, lowering=lowering,
-                        removing=removing, preview=True, client=client,
-                        **bounds)
+                        removing=removing, restating=restating,
+                        preview=True, client=client, **bounds)
 
     def verify(self, sample: Optional[int] = 10,
                digits: Optional[int] = None, client: Any = None,
@@ -431,8 +450,8 @@ class PublishOutcome:
     visible without going and looking.
     """
 
-    __slots__ = ('table', 'run', 'added', 'updated', 'unchanged', 'left_alone',
-                 'removed', 'files', 'revision', 'applied')
+    __slots__ = ('table', 'run', 'added', 'updated', 'unchanged', 'agreed',
+                 'left_alone', 'removed', 'files', 'revision', 'applied')
 
     def __init__(self, table, run=''):
         self.table = table
@@ -443,6 +462,10 @@ class PublishOutcome:
         self.updated = []        # type: List[str]
         #: Identities this run recomputed and found already correct.
         self.unchanged = []      # type: List[str]
+        #: Identities whose stored value says the same thing to the same
+        #: precision, in different digits, and which were therefore left as
+        #: they are. See ``restating``.
+        self.agreed = []         # type: List[str]
         #: Identities in the table that this run did not produce, and so did
         #: not touch. Reported rather than deleted -- a run that computed
         #: n = 2..100 has said nothing at all about n = 500.
@@ -459,13 +482,14 @@ class PublishOutcome:
     @property
     def entries(self) -> int:
         """How many entries this run produced."""
-        return len(self.added) + len(self.updated) + len(self.unchanged)
+        return (len(self.added) + len(self.updated) + len(self.unchanged)
+                + len(self.agreed))
 
     def __repr__(self):
-        return ('<PublishOutcome %s: %d added, %d updated, %d unchanged, %d left '
-                'alone, %d removed%s>'
+        return ('<PublishOutcome %s: %d added, %d updated, %d unchanged, '
+                '%d agreed, %d left alone, %d removed%s>'
                 % (self.table, len(self.added), len(self.updated),
-                   len(self.unchanged), len(self.left_alone),
+                   len(self.unchanged), len(self.agreed), len(self.left_alone),
                    len(self.removed), '' if self.applied else ', not sent'))
 
 
@@ -576,7 +600,8 @@ def _verify(generator, sample=10, digits=None, client=None,
 
 def _publish(generator, only=None, message='', overwrite=True,
              correcting=False, lowering=False, removing=False,
-             preview=False, client=None, **bounds) -> PublishOutcome:
+             restating=False, preview=False, client=None,
+             **bounds) -> PublishOutcome:
     """Behind `Generator.publish` and `Generator.preview`, which carry the
     documentation. ``preview`` computes and compares but sends nothing."""
     from ._cache import RunCache
@@ -633,18 +658,39 @@ def _publish(generator, only=None, message='', overwrite=True,
         text = (entry['number'][0] if isinstance(entry['number'], list)
                 else entry['number'])
         _check_precision(table, identity, text, wanted, lowering)
+        send = True
         if identity in stored:
             _judge(table, identity, stored[identity], text,
                    correcting, lowering, sender)
             verdict = _compare.compare(stored[identity], text)
-            (outcome.unchanged if verdict == _compare.SAME
-             else outcome.updated).append(identity)
+            if verdict == _compare.SAME:
+                outcome.unchanged.append(identity)
+                #Nothing to say. Sending a value identical to the stored one
+                #is a write that changes nothing, and a thousand of them is a
+                #revision that changes nothing.
+                send = False
+            elif verdict == _compare.AGREES and not restating:
+                #Different digits, same claim, same precision -- the usual
+                #cause being that the two disagree about the last digit
+                #because one rounds and the other truncates. Under this
+                #database's convention both denote intervals that contain the
+                #value, so rewriting says nothing new about the number while
+                #marking the entry edited and costing whoever cited it a
+                #moment of doubt.
+                outcome.agreed.append(identity)
+                send = False
+            else:
+                outcome.updated.append(identity)
         else:
             outcome.added.append(identity)
 
+        #Always, even when nothing is sent: this is the full replacement set
+        #that `removing` writes, and leaving out the entries this run chose
+        #not to restate would delete them.
         if produced is not None:
             produced.add(**dict(params), **entry)
-        sender.add(params, entry)
+        if send:
+            sender.add(params, entry)
 
     outcome.left_alone = [identity for identity in stored
                           if identity not in seen]
@@ -660,7 +706,8 @@ def _publish(generator, only=None, message='', overwrite=True,
         sender.flush()
 
     if not preview:
-        outcome.files = _attach(generator, table, outcome.run, client, files)
+        outcome.files = _attach(generator, table, outcome.run, client, files,
+                                message=message)
         outcome.applied = True
     return outcome
 
@@ -1032,8 +1079,14 @@ def _digest(files: Mapping[str, str]) -> str:
     return digest.hexdigest()
 
 
-def _attach(generator, table, run, client, files) -> List[str]:
+def _attach(generator, table, run, client, files, message='') -> List[str]:
     """Store the files that produced these numbers, in the same revision.
+
+    Carries the run's own message. Everything a run does lands in one revision,
+    and whichever part writes last decides what the history says it was -- so
+    without this a published run was described in the table's history as "a
+    file that produced these entries", whatever the caller had said it was
+    doing.
 
     Best effort at this point. A run whose numbers are stored and whose source
     could not be sent has still done the useful part, and failing at the end
@@ -1046,7 +1099,7 @@ def _attach(generator, table, run, client, files) -> List[str]:
     for name in sorted(files):
         try:
             attach(table, name, files[name], run=run, client=client,
-                   message='a file that produced these entries')
+                   message=message or 'a file that produced these entries')
             stored.append(name)
         except Exception:
             continue
