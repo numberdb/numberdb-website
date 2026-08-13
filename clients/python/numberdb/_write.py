@@ -560,7 +560,7 @@ def check_writable(tid: str, client: Any = None) -> Dict[str, Any]:
 
 
 def attach(tid: str, name: str, content: Any, run: str = '',
-           message: str = '', client: Any = None) -> Dict[str, Any]:
+           message: str = '', rigour: str = '', client: Any = None) -> Dict[str, Any]:
     """Put a file on a table, in the same revision as the run's entries.
 
     The code that produced a set of numbers belongs with them. Until now a

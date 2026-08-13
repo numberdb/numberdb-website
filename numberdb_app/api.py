@@ -904,7 +904,6 @@ def write_entries(request, tid):
 
 def _write_entries_locked(request, table, entries, user):
 	from .editing import commit_table, tree_of
-	from .validate import RIGOUR_LEVELS
 	from .limits import TooBig
 	from .permissions import edits_are_reviewed
 	from .editing import InvalidDocument
@@ -940,16 +939,9 @@ def _write_entries_locked(request, table, entries, user):
 	#a program has no opinion about it; this is a fact about the computation
 	#that produced these numbers, which is the one thing the program knows and
 	#the person cannot check. See docs/design/rigour.md.
-	rigour = (request.headers.get('X-Rigour') or '').strip()[:60]
-	if rigour:
-		if rigour not in RIGOUR_LEVELS:
-			return JsonResponse(
-				{'error': "Unknown rigour %r." % (rigour,),
-				 'detail': 'One of: %s.' % (', '.join(RIGOUR_LEVELS),)},
-				status=400)
-		properties = dict(tree.get('Data properties') or {})
-		properties['rigour'] = rigour
-		tree['Data properties'] = properties
+	refused = _apply_rigour(request, tree)
+	if refused is not None:
+		return refused
 
 	#A run's submissions grow one revision instead of adding one each, so
 	#sending a thousand values one at a time leaves one entry in the history
@@ -1166,6 +1158,32 @@ def _refresh_lease(table, user, run):
 
 @csrf_exempt
 @rate_limited
+def _apply_rigour(request, tree):
+	"""Set Data properties: rigour from the X-Rigour header, if it is there.
+
+	Shared by the two endpoints a generator writes through. A run that changes
+	no number still sends its source, and that is exactly the run whose point
+	may be to state how well the numbers are known -- so the declaration cannot
+	ride only with the entries.
+
+	Returns an error response, or None.
+	"""
+	from .validate import RIGOUR_LEVELS
+
+	rigour = (request.headers.get('X-Rigour') or '').strip()[:60]
+	if not rigour:
+		return None
+	if rigour not in RIGOUR_LEVELS:
+		return JsonResponse(
+			{'error': "Unknown rigour %r." % (rigour,),
+			 'detail': 'One of: %s.' % (', '.join(RIGOUR_LEVELS),)},
+			status=400)
+	properties = dict(tree.get('Data properties') or {})
+	properties['rigour'] = rigour
+	tree['Data properties'] = properties
+	return None
+
+
 def write_file(request, tid, name):
 	"""Attach a file to a table, in the same revision as the run's entries.
 
@@ -1231,8 +1249,12 @@ def write_file(request, tid, name):
 			with connection.cursor() as cursor:
 				cursor.execute("SET LOCAL lock_timeout = %s", [LOCK_WAIT])
 			table = Table.objects.select_for_update().get(pk=table.pk)
+			tree = tree_of(table.head_revision)
+			refused = _apply_rigour(request, tree)
+			if refused is not None:
+				return refused
 			outcome = commit_table(
-				table, tree_of(table.head_revision), author=user,
+				table, tree, author=user,
 				base=table.head_revision, strict=True, run=run,
 				produced_by=_produced_by(request, user),
 				files={name: content},
