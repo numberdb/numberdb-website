@@ -140,3 +140,59 @@ class ShowingTheRigour(TestCase):
 		from .validate import KNOWN_ANNOTATIONS
 
 		self.assertIn('rigour', KNOWN_ANNOTATIONS)
+
+
+class TheLevelArrivesEvenWhenNoNumberChanges(TestCase):
+	"""The gap that only a real publish revealed.
+
+	With `restating=False` a re-run that finds every value already correct
+	sends no entries at all -- and that is exactly the run whose purpose may be
+	to state how well the numbers are known. The declaration cannot ride only
+	with the entries. It rides with the source too, which every publish sends.
+	"""
+
+	def setUp(self):
+		from django.contrib.auth.models import User
+
+		from .editing import create_table
+		from .models import ApiKey
+		from .permissions import board_group
+
+		self.user = User.objects.create_user('attacher', password='pw-123456')
+		self.user.groups.add(board_group())
+		self.key, self.token = ApiKey.issue(self.user, label='generator')
+		self.table = create_table(
+			{'Title': 'Attach probe',
+			 'Data properties': {'type': 'R'},
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
+			author=self.user)
+
+	def attach(self, rigour=None):
+		headers = {'HTTP_AUTHORIZATION': 'Bearer %s' % (self.token,),
+		           'content_type': 'application/octet-stream'}
+		if rigour is not None:
+			headers['HTTP_X_RIGOUR'] = rigour
+		return self.client.post(
+			'/api/table/%s/file/generate.py' % (self.table.tid,),
+			b'print("hello")', **headers)
+
+	def properties(self):
+		from .editing import tree_of
+
+		self.table.refresh_from_db()
+		return tree_of(self.table.head_revision).get('Data properties') or {}
+
+	def test_attaching_the_source_records_the_level(self):
+		self.assertEqual(self.attach(rigour='proven').status_code, 200)
+		self.assertEqual(self.properties().get('rigour'), 'proven')
+
+	def test_an_unknown_level_is_refused_here_too(self):
+		self.assertEqual(self.attach(rigour='quite good').status_code, 400)
+		self.assertNotIn('rigour', self.properties())
+
+	def test_and_the_file_still_arrives(self):
+		self.attach(rigour='heuristic')
+		self.table.refresh_from_db()
+		names = [a.name for a in self.table.head_revision.attachments.all()]
+		self.assertIn('generate.py', names)

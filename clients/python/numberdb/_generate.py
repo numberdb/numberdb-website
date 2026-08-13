@@ -1234,6 +1234,7 @@ def _attach(generator, table, run, client, files, message='') -> List[str]:
     for name in sorted(files):
         try:
             attach(table, name, files[name], run=run, client=client,
+                   rigour=getattr(generator, 'rigour', ''),
                    message=message or 'a file that produced these entries')
             stored.append(name)
         except Exception:
