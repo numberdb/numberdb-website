@@ -239,17 +239,44 @@ SECOND_OPINION = 2.0     # ...and again at this much, so the two can be compared
 Both converted generators already work this way, and their constants carry the
 measurement that justified them.
 
-**When one constant will not do**, the reproducible answer is a rule rather
-than a loop. Entries that get harder further along -- and most families do --
-should compute their working precision from their own parameters:
+**One constant, sized for the worst entry, is the right default** -- including
+when that is far more than the easy entries need. The easy entries are not the
+bottleneck, and a single number in the file is a great deal easier to read,
+justify and re-run than a formula. Simplicity beats run-time wherever run-time
+does not explode.
+
+Measured, so that "does not explode" is a fact rather than a hope:
+
+| | |
+| --- | --- |
+| T27, 501 entries, 16-bit guard | 0.08 s |
+| ...at 256 bits, sixteen times the guard | 0.08 s |
+| ...at 1024 bits | 0.22 s |
+| ...at 4096 bits | 2.58 s |
+| T55, 1000 Airy zeros at 150 digits | 75 s |
+| ...at 200 digits | 123 s |
+| ...at 400 digits | 587 s |
+| ...at 800 digits | 3542 s |
+
+For T27, generosity is free: sixteen times the guard costs nothing measurable,
+and the constant is 256 for that reason. For T55 the cost grows roughly as the
+2.4th power of the precision -- doubling it is about five times the work -- so
+one constant is still comfortable at 150 against 200 digits, and would not be
+if one awkward entry needed 800 while the rest needed 150.
+
+**That ratio is the trigger**, and it is the only thing worth measuring before
+reaching for something cleverer. When the worst entry needs several times the
+precision of the typical one *and* the table already takes hours, a rule
+computed from the parameters earns its place:
 
 ```python
 def working_digits(self, params, digits):
     return int(1.5 * digits) + 2 * params['d']
 ```
 
-Deterministic, in the attached file, and it scales with the table instead of
-forcing every entry to pay the worst case.
+Deterministic, in the attached file, and it scales with the table. Until then
+it is a formula standing in for a number, which is a worse thing to have to
+check.
 
 **What tooling can honestly do** is help with the trial rather than replace it:
 a development-time pass that reports, per entry, how many digits each one
