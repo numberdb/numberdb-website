@@ -352,6 +352,78 @@ a person on the site. There is deliberately no way to send it from here, so a
 generator cannot delete a definition by assembling a document out of what it
 happens to know.
 
+### How well are the digits known?
+
+A hundred digits can be proven, believed on a stated assumption, checked by
+agreement, or simply assumed, and a table that does not say presents all four
+identically. `rigour` says which, and the table shows it:
+
+| | |
+|---|---|
+| `exact` | an integer, a rational, a polynomial. Nothing to be wrong about |
+| `proven` | interval or ball arithmetic throughout; the digits follow from the width of the result |
+| `assumed-bound` | fixed precision, with an error bound you assert and justify — see `assume_accurate` below |
+| `heuristic (agreement-checked)` | computed twice at different precisions, keeping the digits that agree |
+| `heuristic` | one computation and a guard chosen by judgement |
+
+**`proven` is the default, and it is enforced** — in one direction, since a
+value that carries no error cannot have a proven one:
+
+```python
+class UnitBallVolume(numberdb.Generator):
+    rigour = 'proven'                       # the default; said out loud
+
+    def value(self, params, digits):
+        field = RealIntervalField(numberdb.bits(digits, losing=256))
+        return field.pi() ** half / (field(half) + 1).gamma()
+```
+
+A point, a float or a string is refused under `proven`. That matters more than
+it sounds: wrapping a fixed-precision result in an interval field produces an
+interval of **width zero**, which says the value is exact, so the digits then
+written are however many were asked for. Twenty-nine tables in this database
+were built that way and nothing ever noticed. If the value really is exact,
+return an exact number — an `int` or a `Fraction` — rather than an interval
+around one.
+
+When the computation cannot be bounded, say so. It is not a worse
+contribution, it is a differently qualified one:
+
+```python
+class AiryAiZeros(numberdb.Generator):
+    rigour = 'heuristic (agreement-checked)'
+
+    def value(self, params, digits):
+        low = self._zero(n, int(digits * 1.5))      # two precisions
+        high = self._zero(n, int(digits * 2.0))
+        field = RealIntervalField(numberdb.bits(int(digits * 2.0)))
+        return field(low).union(field(high))        # keep what they agree on
+```
+
+The union has real width, so only the digits both computations support are
+written — and the precision check has something to measure, which it does not
+when handed a point.
+
+In SageMath, `assume_accurate` turns a bound you can justify into a ball, so
+that everything after it is interval arithmetic and the error propagates
+instead of vanishing at the first multiplication:
+
+```python
+value = numberdb.assume_accurate(
+    pari_result, ulps=2,
+    because='PARI ellL1 at 38 digits; agrees with an independent '
+            'implementation to 30 digits on this curve')
+```
+
+There is no default for `ulps` and `because` is required. Neither is
+bureaucracy: checked against the documentation, PARI mentions "ulp" in one of
+its 1271 documented functions and mpmath's `airyaizero` says nothing about
+accuracy at all, so the bound is your assertion and the reason is what makes it
+checkable later.
+
+Agreement bounds **rounding** error, not **method** error. Two runs of a wrong
+algorithm agree perfectly and are both wrong.
+
 ### Arguments that control what a publish may change
 
 A generator can work out everything about a table except what you intended, so
