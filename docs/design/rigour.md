@@ -79,6 +79,14 @@ as measured ones.
 - **`heuristic (agreement-checked)`** -- computed twice at different working
   precisions, keeping the digits that agree. Measured rather than assumed, and
   still not a proof.
+
+  Tried on T55, the Airy zeros, and it works with no package change at all:
+  take the two results as an interval, `field(low).union(field(high))`. The
+  union has real width, so the writer emits only the digits both support and
+  the precision check has something to measure. A deliberately inadequate
+  guard -- computing at 30 digits for 100 written -- is **accepted** by the
+  original point-value method and **refused** by this one, with the message
+  naming the shortfall. That is the whole of the argument for it.
 - **`heuristic`** -- one computation and a guard chosen by judgement. What the
   29 tables have today.
 
@@ -207,6 +215,36 @@ same treatment.
 Adaptive precision -- widening until the result carries the digits asked for --
 then makes sense for the first and third, where there is something real to
 measure, and is refused for the others, where there is not.
+
+## What mpmath documents, since half the corpus depends on it
+
+The same question asked of PARI, asked of mpmath 1.4.1:
+
+- its low-level arithmetic documents **correct rounding** (`libmp/libmpf.py`),
+  and it is candid where it is not -- one integer routine documents being "1
+  ulp wrong with high probability";
+- `airyaizero` and `besseljzero` say **nothing at all** about accuracy, and
+  neither do `mp`, `mpf`, `workprec` or `workdps`;
+- it ships a **rigorous interval mode**, `mpmath.iv`, which returns genuine
+  intervals for `pi`, `exp` and `gamma` -- and raises `AttributeError` for
+  `zeta`, `airyaizero` and `besseljzero`, whose implementations call context
+  methods the interval context does not have. Sage's `RealBallField` does not
+  expose Airy or Bessel at all.
+
+So mpmath is careful and says so where it can, and the functions this corpus
+leans on carry no claim. Those tables cannot be made `proven` with what is
+installed, short of wrapping arb's `arb_hypgeom_airy_zero` ourselves. They can
+be made agreement-checked today.
+
+**And the padding trap, which is worse than the point-interval one.**
+`mpmath.nstr(z, 100)` prints a hundred digits of a value computed to thirty.
+The extra seventy are the decimal expansion of a binary approximation:
+deterministic, reproducible, and wrong. Measured on the first Airy zero,
+computing at 30 digits and at 300 gives answers that diverge at the 40th, so
+**61 of the 100 digits would be published** with nothing anywhere noticing --
+not the writer, which was asked for a hundred, and not the check, which counts
+the digits it was given. Returning a string instead of an interval does not
+help: the string is padded too.
 
 ## What this does not do
 
