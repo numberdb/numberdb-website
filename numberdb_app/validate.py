@@ -62,7 +62,25 @@ STRUCTURAL_KEYS = frozenset(['number', 'numbers', 'equals', 'params'])
 #: Keys the corpus uses for prose about an entry. Not a permitted list -- an
 #: unknown key still renders -- but enough to spell-check against.
 KNOWN_ANNOTATIONS = frozenset(['comment', 'comments', 'param-latex', 'proof',
-                               'url', 'both signs', 'reliability'])
+                               'url', 'both signs', 'reliability', 'rigour'])
+
+#: How well a table's digits are known, weakest last. Closed, because the whole
+#: value of the field is that the words mean the same thing on every table --
+#: and because a reader deciding whether to trust a hundred digits is not
+#: helped by a hundred and seven ways of saying "approximately".
+#:
+#: `exact`     nothing to be wrong about.
+#: `proven`    interval arithmetic throughout; the digits follow from a bound.
+#: `assumed-bound`
+#:             fixed precision, with an error bound asserted and a reason
+#:             given.
+#: `heuristic (agreement-checked)`
+#:             computed twice at different precisions, keeping what agreed.
+#: `heuristic` one computation and a guard chosen by judgement.
+#:
+#: See docs/design/rigour.md.
+RIGOUR_LEVELS = ('exact', 'proven', 'assumed-bound',
+                 'heuristic (agreement-checked)', 'heuristic')
 
 
 class Problem:

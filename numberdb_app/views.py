@@ -710,6 +710,11 @@ def table_context(table, preview=False):
 			'relative precision': 'Relative precision',
 			'absolute precision': 'Absolute precision',
 			'reliability': 'Reliability',
+			#How well the digits are known: proven, believed on a stated
+			#assumption, checked by agreement, or assumed. A table that does
+			#not say presents all four identically, which is what this line
+			#exists to stop. See docs/design/rigour.md.
+			'rigour': 'How well the digits are known',
 			#'accuracy': 'Accuracy',
 		}
 		current_job = 'parsing data properties'

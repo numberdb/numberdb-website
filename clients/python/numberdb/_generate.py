@@ -80,6 +80,20 @@ BATCH_ENTRIES = 100
 #: anything would be waiting for a week.
 BATCH_SECONDS = 60
 
+#: How well a table's digits are known, weakest last.
+#:
+#: The distinction this whole attribute exists for: a hundred digits can be
+#: proven, believed on a stated assumption, checked by agreement, or simply
+#: assumed, and a table that does not say which presents all four identically.
+#: See docs/design/rigour.md.
+RIGOUR_LEVELS = (
+    'exact',
+    'proven',
+    'assumed-bound',
+    'heuristic (agreement-checked)',
+    'heuristic',
+)
+
 
 class Generator:
     """Base class for a table's generator.
@@ -149,6 +163,21 @@ class Generator:
     #: records its radius rather than implying it. A thousand values are
     #: written that way and their generators should keep writing them that way.
     format: str = 'decimal'
+
+    #: How well this generator's digits are known. One of `RIGOUR_LEVELS`.
+    #:
+    #: ``'proven'`` is the default and is enforced: a value must then be either
+    #: exact or an interval of nonzero width, because those are the only two
+    #: things that carry their own error. A point value of approximate type is
+    #: refused -- wrapping a fixed-precision result in an interval field
+    #: produces an interval of width zero, which claims, in the one type whose
+    #: purpose is to carry error, that there is none. Twenty-nine tables in
+    #: this corpus were built that way and nothing ever noticed.
+    #:
+    #: Say otherwise when it is otherwise. A computation that cannot be bounded
+    #: is not a worse contribution, it is a differently qualified one, and the
+    #: table will say so where a reader can see it.
+    rigour: str = 'proven'
 
     EXACT_TYPES = frozenset(['Z', 'Q', 'Z[]', 'Q[]'])
 
@@ -665,6 +694,7 @@ def _publish(generator, only=None, message='', overwrite=True,
         #and the decimal form -- so the string that was checked for
         #contradictions and precision was not the string that reached the
         #table, and a generator asking for twenty digits stored a hundred.
+        _check_rigour(generator, table, identity, entry['number'])
         entry['number'] = _written(entry['number'], wanted, generator.format)
         text = (entry['number'][0] if isinstance(entry['number'], list)
                 else entry['number'])
@@ -721,6 +751,71 @@ def _publish(generator, only=None, message='', overwrite=True,
                                 message=message)
         outcome.applied = True
     return outcome
+
+
+def _carries_its_own_error(value) -> bool:
+    """Whether ``value`` says how wrong it might be.
+
+    True for an exact number -- nothing to be wrong about -- and for an
+    interval or ball of nonzero width. False for a float, a string, and for an
+    interval of width zero, which is what wrapping a fixed-precision result in
+    an interval field produces.
+    """
+    from fractions import Fraction
+
+    if isinstance(value, (int, Fraction)):
+        return True
+    if isinstance(value, (str, float)):
+        return False
+    lower, upper = getattr(value, 'lower', None), getattr(value, 'upper', None)
+    if lower is not None and upper is not None:
+        try:
+            return lower() != upper()
+        except TypeError:
+            return lower != upper
+    #A Sage Integer or Rational, or anything else exact enough to have no
+    #endpoints: is_exact() is Sage's own answer to this question.
+    exact = getattr(value, 'is_exact', None)
+    if exact is not None:
+        try:
+            return bool(exact())
+        except TypeError:
+            pass
+    return False
+
+
+def _check_rigour(generator, table, identity, value):
+    """Refuse a value that cannot support the rigour the generator claims.
+
+    Only ``proven`` is enforceable, and only in one direction: a value that
+    carries no error cannot have a proven one. The weaker levels are the
+    author's word, which is the whole content of them.
+    """
+    level = getattr(generator, 'rigour', 'proven')
+    if level not in RIGOUR_LEVELS:
+        raise ValueError(
+            '%s.rigour is %r, which is not one of: %s'
+            % (type(generator).__name__, level, ', '.join(RIGOUR_LEVELS)))
+    if level not in ('exact', 'proven'):
+        return
+    if generator.type in Generator.EXACT_TYPES:
+        return
+    if _carries_its_own_error(value):
+        return
+    raise DisagreementError(
+        '%s entry %s: rigour is %r, and this value carries no error of its '
+        'own -- it is a point, a float or a string. Wrapping a '
+        'fixed-precision result in an interval field does not make it an '
+        'enclosure: the interval has width zero, which says the value is '
+        'exact, and the digits then written are however many were asked for. '
+        'Either compute in interval arithmetic throughout, or say what this '
+        'actually is: rigour = %r, or %r if two precisions were compared. If '
+        'the value really is exact, return it as an exact number -- an int or '
+        'a Fraction -- rather than as an interval around one.'
+        % (table, identity, level, 'heuristic',
+           'heuristic (agreement-checked)'),
+        identity=identity, stored='', produced=str(value)[:80],
+        verdict='unbounded')
 
 
 def _check_precision(table, identity, text, wanted, lowering):
@@ -850,7 +945,9 @@ class _Sender:
             lambda: submit_entries(
                 self.table, self.pending, message=self._message(),
                 produced_by=type(self.generator).__name__,
-                upsert=True, run=self.outcome.run, client=self.client))
+                upsert=True, run=self.outcome.run,
+                rigour=getattr(self.generator, 'rigour', ''),
+                client=self.client))
         self.sent += len(self.pending)
         self.outcome.revision = answer.get('revision', self.outcome.revision)
         self.pending = Entries(*self.generator.parameters)
@@ -867,7 +964,9 @@ class _Sender:
             lambda: submit_entries(
                 self.table, entries, message=self._message(),
                 produced_by=type(self.generator).__name__,
-                upsert=False, run=self.outcome.run, client=self.client))
+                upsert=False, run=self.outcome.run,
+                rigour=getattr(self.generator, 'rigour', ''),
+                client=self.client))
         self.sent = len(entries)
         self.outcome.revision = answer.get('revision', self.outcome.revision)
         self.pending = Entries(*self.generator.parameters)

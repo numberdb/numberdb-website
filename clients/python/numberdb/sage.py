@@ -70,6 +70,7 @@ __all__ = ['search', 'search_many', 'search_text',
            'NumberDBError', 'TransportError', 'RateLimitError', 'UnauthorizedError',
            'UnsupportedNumberError', 'ConflictError', 'TooBigError', 'DisagreementError',
            'Generator', 'PublishOutcome', 'VerifyReport', 'bits',
+           'assume_accurate',
            '__version__']
 
 #Checked by specification rather than by importing: Sage takes seconds to load,
@@ -173,3 +174,57 @@ for _name in __all__:
         _original = globals()['_' + _name]
         globals()[_name].__doc__ = (_original.__doc__ or '') + _SAGE_NOTE
 del _name, _original
+
+
+def assume_accurate(value, ulps, because):
+    """A ball around ``value``, of radius ``ulps`` units in its last place.
+
+    For a number computed in fixed-precision arithmetic that you have a reason
+    to believe is accurate to within a stated number of ulps. It turns that
+    belief into a radius **once**, at the point where the belief is made, so
+    that every operation afterwards is interval arithmetic and the error
+    propagates instead of vanishing at the first multiplication.
+
+        zero = numberdb.sage.assume_accurate(
+            pari_result, ulps=2,
+            because='PARI ellL1 at 38 digits; agrees with the Dokchitser '
+                    'implementation to 30 digits on this curve')
+
+    Two things it deliberately does not do.
+
+    **It has no default for ``ulps``.** A helper that supplies the bound
+    supplies the judgement, and the judgement is the whole content of it. There
+    is no general answer: PARI's documentation, checked, mentions "ulp" in one
+    of its 1271 documented functions, and mpmath's `airyaizero` and
+    `besseljzero` say nothing about accuracy at all. *"It was PARI"* is not a
+    reason; *"PARI's documentation for this function states X"* is one.
+
+    **It requires ``because``**, which is stored with the run. An assumption
+    nobody wrote down is indistinguishable, a year later, from an assumption
+    nobody made.
+
+    The generator using this should declare ``rigour = 'assumed-bound'``: the
+    arithmetic downstream is rigorous, and it rests on something asserted here
+    rather than proven.
+    """
+    from sage.all import RealBallField, RealIntervalField
+
+    if not because or not str(because).strip():
+        raise ValueError(
+            'assume_accurate() needs a reason: what makes this value accurate '
+            'to %r ulps? It is stored with the numbers, because an assumption '
+            'nobody wrote down cannot be checked later.' % (ulps,))
+    if ulps is None or ulps <= 0:
+        raise ValueError('ulps must be positive: an accuracy of zero ulps is '
+                         'a claim of exactness, which is what an exact value '
+                         'is for.')
+
+    parent = getattr(value, 'parent', None)
+    field = parent() if parent is not None else None
+    precision = getattr(field, 'precision', None)
+    bits_of = precision() if precision is not None else 53
+
+    #The last place of a value of this precision, then that many of them.
+    ball = RealBallField(bits_of)(value)
+    return ball.add_error(ball.abs() * RealBallField(bits_of)(2) ** (-bits_of)
+                          * ulps)

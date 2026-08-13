@@ -66,6 +66,12 @@ class AiryAiZeros(numberdb.Generator):
     type = 'R'
     digits = 100
 
+    #Said out loud, and it is the honest word. mpmath's airyaizero carries no
+    #error bound and documents no accuracy; two computations at different
+    #precisions agreeing is evidence about rounding, not a proof about the
+    #zero. The table will say so where a reader can see it.
+    rigour = 'heuristic (agreement-checked)'
+
     def enumerate(self, up_to=1000):
         for n in range(1, up_to + 1):
             yield {'n': n}

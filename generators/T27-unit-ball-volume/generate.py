@@ -56,6 +56,12 @@ class UnitBallVolume(numberdb.Generator):
     type = 'R'
     digits = 100
 
+    #Interval arithmetic end to end, so the written digits follow from the
+    #width of the result rather than from a guard chosen by hope. The two
+    #exact entries are returned as exact rationals, which is the other thing
+    #`proven` accepts.
+    rigour = 'proven'
+
     def enumerate(self, up_to=500):
         # 0 is a real entry, not an edge case: the 0-dimensional ball is a
         # point and its volume is 1, which is what the table says.

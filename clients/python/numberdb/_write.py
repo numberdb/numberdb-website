@@ -495,7 +495,7 @@ def _as_yaml(tree):
 
 def submit_entries(tid: str, entries: Union[Entries, Sequence[Mapping[str, Any]]],
                    message: str = '', produced_by: str = '',
-                   upsert: bool = False, run: str = '',
+                   upsert: bool = False, run: str = '', rigour: str = '',
                    client: Any = None) -> Dict[str, Any]:
     """Replace only the entries of table ``tid``. Internal; use `publish`.
 
@@ -526,6 +526,11 @@ def submit_entries(tid: str, entries: Union[Entries, Sequence[Mapping[str, Any]]
         headers['X-Entries-Mode'] = 'upsert'
     if run:
         headers['X-Run-Id'] = run
+    #How well these digits are known, sent once for the run rather than
+    #written on every entry: it is a property of the method, and a thousand
+    #copies of the same word is a thousand copies of the same word.
+    if rigour:
+        headers['X-Rigour'] = rigour
     records = (entries.as_list() if isinstance(entries, Entries)
                else [dict(r) for r in entries])
     return client.submit('/api/table/%s/entries' % (str(tid).lstrip('tT'),),
