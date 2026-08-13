@@ -228,3 +228,38 @@ class TheWriteEndpointsKeepTheirDecorators(TestCase):
 		from .api import _apply_rigour
 
 		self.assertFalse(getattr(_apply_rigour, 'csrf_exempt', False))
+
+
+class TheLevelsAreDocumented(TestCase):
+	"""A feature that exists only in commit messages gets re-invented.
+
+	These check that the vocabulary a generator must use is written down where
+	somebody would look for it, and -- more usefully -- that the documented
+	list and the enforced list are the same one.
+	"""
+
+	def test_the_help_page_explains_the_levels(self):
+		from .validate import RIGOUR_LEVELS
+
+		body = self.client.get('/help').content.decode()
+		self.assertIn('How well are the digits known', body)
+		for level in RIGOUR_LEVELS:
+			with self.subTest(level=level):
+				self.assertIn(level, body)
+
+	def test_the_api_reference_documents_the_header(self):
+		body = self.client.get('/api/docs').content.decode()
+		self.assertIn('X-Rigour', body)
+
+	def test_the_documented_levels_are_the_enforced_ones(self):
+		"""The one that will actually catch something: a level added to the
+		code and not to the page, or the reverse."""
+		import re
+
+		from .validate import RIGOUR_LEVELS
+
+		body = self.client.get('/help').content.decode()
+		section = body.split('How well are the digits known', 1)[1][:2500]
+		listed = set(re.findall(r'<b>([a-z()\- ]+)</b>', section))
+		self.assertEqual(listed & set(RIGOUR_LEVELS), set(RIGOUR_LEVELS),
+		                 'the help page lists %s' % (sorted(listed),))

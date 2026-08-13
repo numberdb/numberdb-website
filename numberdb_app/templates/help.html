@@ -403,6 +403,33 @@ so the run recomputes exactly what disagreed and nothing else:
 Verifying needs no API key and writes nothing, which is what makes it worth
 running on a table that takes a day to recompute in full.
 
+<div id="how-well-known" class="li-header">How well are the digits known?</div>
+<p>
+A hundred digits can be <b>proven</b>, believed on a stated assumption,
+<b>checked by agreement</b>, or simply <b>assumed</b>. A table that does not say
+presents all four identically, so a generator states it and the table shows it
+under <em>Data properties</em>:
+
+<ul>
+<li><b>exact</b> &mdash; an integer, a rational, a polynomial. Nothing to be
+wrong about.</li>
+<li><b>proven</b> &mdash; interval or ball arithmetic throughout, so the digits
+follow from the width of the result. This is the default, and it is checked: a
+value that carries no error of its own cannot have a proven one.</li>
+<li><b>assumed-bound</b> &mdash; computed in fixed precision, with an error
+bound the author asserts and justifies.</li>
+<li><b>heuristic (agreement-checked)</b> &mdash; computed twice at different
+precisions, keeping the digits that agree. Measured rather than assumed, and
+not a proof: two runs of a wrong method agree perfectly.</li>
+<li><b>heuristic</b> &mdash; one computation and a guard chosen by
+judgement.</li>
+</ul>
+
+<p>
+Most tables do not say yet, and an absent line means nobody has established it
+rather than that the digits are poor. Working through the rest is
+<a href="#section-work-in-progress">work in progress</a>.
+
 <p>
 Anonymous use is rate limited. See <a href="#section-api">API access</a>.
 </div>
@@ -900,6 +927,15 @@ way to rate a table, or to be told when one you care about changes.
 A table carries the program that produced it, and can be downloaded whole. It
 is not yet true that every table's program can simply be re-run to rebuild it
 &mdash; some were made by scripts that predate this arrangement.
+</li>
+
+<li>
+<div class="li-header">Saying how well every table's digits are known</div>
+Two tables so far state whether their digits are
+<a href="#how-well-known">proven, checked or assumed</a>. The other hundred and
+five do not, and until most of them do the statement is hard to read: an absent
+line should mean "nobody has established this", and it cannot be told apart
+from "not applicable" while it is the common case.
 </li>
 </ul>
 </div>

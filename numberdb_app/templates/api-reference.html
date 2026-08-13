@@ -223,6 +223,7 @@ reason is in the document, because a warning shown to nobody is not a limit.
     <table class="api-table">
       <tr><th>X-Entries-Mode</th><td><code>replace</code> (default) or <code>upsert</code>. Upsert merges what you send into what is stored, by identity, so sending one entry leaves the other thousand alone</td></tr>
       <tr><th>X-Run-Id</th><td>names one run. Submissions carrying the same run grow a single revision instead of adding one each</td></tr>
+      <tr><th>X-Rigour</th><td>how well these digits are known, recorded on the table: <code>exact</code>, <code>proven</code>, <code>assumed-bound</code>, <code>heuristic (agreement-checked)</code> or <code>heuristic</code>. Anything else is refused &mdash; the value of the field is that the words mean the same on every table. The only table metadata a program may set: everything else under Data properties is somebody's prose, and this is a fact about the computation</td></tr>
       <tr><th>X-Produced-By</th><td>as above</td></tr>
       <tr><th>returns</th><td>the revision, and for an upsert how many entries were <code>added</code> and <code>updated</code></td></tr>
       <tr><th>429</th><td>another write to this table held the lock for longer than {{ lock_wait }}. Nothing was written; send it again</td></tr>
@@ -260,6 +261,7 @@ reason is in the document, because a warning shown to nobody is not a limit.
     body is the file.</p>
     <table class="api-table">
       <tr><th>X-Run-Id</th><td>carrying the run of the entries puts the file on the same revision as them</td></tr>
+      <tr><th>X-Rigour</th><td>how well these digits are known, recorded on the table: <code>exact</code>, <code>proven</code>, <code>assumed-bound</code>, <code>heuristic (agreement-checked)</code> or <code>heuristic</code>. Anything else is refused &mdash; the value of the field is that the words mean the same on every table. The only table metadata a program may set: everything else under Data properties is somebody's prose, and this is a fact about the computation</td></tr>
       <tr><th>400</th><td>a name with a directory in it, a hidden name, or no body</td></tr>
       <tr><th>413</th><td>over {{ max_attachment_kb }} KB, or over {{ max_attachments_kb }} KB for the table's files together</td></tr>
     </table>
