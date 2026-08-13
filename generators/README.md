@@ -40,6 +40,29 @@ like a broken endpoint rather than a rejected `Host` header.
 
 ## Checking before publishing
 
+The interface worth knowing is not the command line. In a Sage session you have
+the generator itself, and the two useful questions are one call each:
+
+```python
+report = Zeta().verify()          # ten entries, spread through the table
+report                            # <VerifyReport T42: 10/10 matched, 0 differing>
+report.differing                  # (identity, stored, recomputed) for each one
+```
+
+and, when something has drifted, the repair is the report handed straight back:
+
+```python
+zeta = Zeta()
+report = zeta.verify()
+if not report.ok:
+    zeta.publish(only=report.to_fix())
+```
+
+That is the whole loop: ask what is wrong, fix exactly that. `to_fix()` yields
+the parameters of the entries that disagreed, so the run recomputes those and
+touches nothing else -- which matters on a table where recomputing everything
+takes a day.
+
 `verify()` needs no key and writes nothing: it compares a sample of the stored
 table against what the code produces now.
 

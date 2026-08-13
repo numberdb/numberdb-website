@@ -368,6 +368,42 @@ Sage is optional: without it you still get exact values as Python
 and interval endpoints.
 
 <p>
+The package also <b>writes</b>. A table's numbers come from a program, and that
+program is a <code class="table-code">Generator</code>: a function from one
+entry's parameters to its value, plus a way to enumerate the parameters. See
+<a href="#section-guide-to-creating-new-tables">creating new tables</a> for one
+in full.
+
+<p>
+Two questions are worth asking of a table that already exists, and each is one
+call. <b>Has this table drifted from the code that claims to produce it</b>
+&mdash; after the script changed, or the software underneath it did?
+
+<div class="code-block">
+<code class="table-code">
+&gt;&gt;&gt; report = Zeta().verify()&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#888"># ten entries, spread through the table</span><br>
+&gt;&gt;&gt; report<br>
+&lt;VerifyReport T42: 10/10 matched, 0 differing, 0 missing, 0 extra&gt;
+</code>
+</div>
+
+And when something has drifted, the repair is the report handed straight back,
+so the run recomputes exactly what disagreed and nothing else:
+
+<div class="code-block">
+<code class="table-code">
+&gt;&gt;&gt; zeta = Zeta()<br>
+&gt;&gt;&gt; report = zeta.verify()<br>
+&gt;&gt;&gt; if not report.ok:<br>
+&gt;&gt;&gt; &nbsp;&nbsp;&nbsp;&nbsp;zeta.publish(only=report.to_fix())
+</code>
+</div>
+
+<p>
+Verifying needs no API key and writes nothing, which is what makes it worth
+running on a table that takes a day to recompute in full.
+
+<p>
 Anonymous use is rate limited. See <a href="#section-api">API access</a>.
 </div>
 
