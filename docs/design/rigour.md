@@ -1,9 +1,9 @@
 # How well is a number actually known?
 
 A table says a number has a hundred digits. It does not say whether those
-digits are **proven**, **guaranteed by a library**, **believed on the strength
-of a check**, or **assumed**. All four appear in this corpus, in roughly equal
-measure, and nothing anywhere distinguishes them.
+digits are **proven**, **believed on a stated assumption**, **checked by
+agreement**, or simply **assumed**. All four appear in this corpus, in roughly
+equal measure, and nothing anywhere distinguishes them.
 
 This note proposes that they be distinguished, says where the distinction
 should live, and is deliberately written before any code.
@@ -55,10 +55,27 @@ as measured ones.
 - **`proven`** -- interval or ball arithmetic end to end (RIF, RBF, CIF, CBF,
   arb). The written digits follow from the width of the result. Trustworthy up
   to the correctness of arb and Sage.
-- **`library`** -- computed in fixed-precision arithmetic by a routine whose
-  documentation guarantees an accuracy, typically to within an ulp. PARI/GP
-  states this for many functions. The claim is per function, not per library,
-  so *"it was PARI"* is not itself an answer.
+- **`assumed-bound`** -- computed in fixed-precision arithmetic, with an error
+  bound **asserted by the author and accompanied by a reason**. The value is
+  then carried as a ball of that radius, so everything after it is interval
+  arithmetic again.
+
+  This level was first drafted as `library`, on the understanding that PARI and
+  friends document an accuracy -- typically one ulp -- that could simply be
+  trusted. **The documentation does not support that.** In the PARI shipped
+  with Sage: of 1271 documented functions, the word "ulp" appears in exactly
+  one, and not in this sense. PARI's own header on transcendental functions
+  explains at length how precision is *carried* -- from the argument, or from
+  `realprecision` -- and says nothing at all about the accuracy of the result.
+  Fifty functions mention a guarantee, nineteen an absolute or relative error,
+  and sixteen state that the result may be wrong.
+
+  PARI is carefully written and its results are very probably good to an ulp in
+  most of these cases. That is a reasonable belief and it is not a citation, so
+  the level is named for what the author is doing -- assuming -- rather than
+  for where the number came from. *"It was PARI"* is not an answer; *"PARI's
+  documentation for this function states X"* is one, and so is *"checked
+  against an independent method at 200 digits"*.
 - **`heuristic (agreement-checked)`** -- computed twice at different working
   precisions, keeping the digits that agree. Measured rather than assumed, and
   still not a proof.
@@ -66,28 +83,40 @@ as measured ones.
   29 tables have today.
 
 Ordered, because the ordering is what lets a change be checked: `exact` >
-`proven` > `library` > `heuristic (agreement-checked)` > `heuristic`.
+`proven` > `assumed-bound` > `heuristic (agreement-checked)` > `heuristic`.
 
-### Promoting a library result into rigorous arithmetic
+That ordering has one soft spot worth naming: an `assumed-bound` is only as
+good as its reason. A cited theorem outranks an agreement check; a bound
+asserted because it felt about right does not. The reason is mandatory
+precisely because the level cannot be read without it.
 
-Where a routine's accuracy is documented, the right move is not to carry the
-point value onward but to turn it into a ball immediately:
+### Turning a point value into a ball, deliberately
+
+Where an author does have a reason to believe an error bound, the right move is
+not to carry the point value onward but to turn it into a ball at once:
 
 ```python
-value = numberdb.sage.from_library(pari_result, ulps=1)   # a genuine RBF/RIF
-return value * something_else_rigorous                    # error propagates
+value = numberdb.sage.assume_accurate(
+    pari_result, ulps=2,
+    because='PARI ellL1 at 38 digits; agrees with the Dokchitser '
+            'implementation to 30 digits on this curve')
+return value * something_else_rigorous          # error propagates from here
 ```
 
-One ulp of stated accuracy becomes one ulp of radius, and every later operation
-is interval arithmetic again. The result is rigorous *conditional on one
-documented claim*, which is a far better position than a point value that
-silently loses its error at the first multiplication. The entry is still
-recorded as `library` -- the assumption is real and should be visible -- but
-the arithmetic downstream of it is sound.
+Two properties, both deliberate:
 
-This is the single highest-value piece of the whole proposal: it converts
-category 3 into category 2 mechanically, wherever the documentation supports
-it.
+- **No default for `ulps`.** A helper that supplies the bound supplies the
+  judgement, and the judgement is the whole content of this level.
+- **`because` is required**, and is stored with the entry, feeding the table's
+  `rigour details`. An assumption nobody wrote down is indistinguishable later
+  from an assumption nobody made.
+
+What this buys is real: after the ball exists, every later operation is
+interval arithmetic, so the error propagates instead of vanishing at the first
+multiplication. The result is rigorous *conditional on one stated assumption*,
+which is a far better position than a point value carrying no error at all --
+and far better than a general `from_library()` helper, which would invite
+wrapping anything at one ulp and moving on.
 
 ## Where the level lives
 
@@ -165,8 +194,9 @@ same treatment.
 - **`rigour = 'proven'`** (the default for approximate types) -- a zero-width
   value of approximate type is refused, with a message that explains the
   point-interval trap outright, because it is otherwise invisible.
-- **`rigour = 'library'`** -- accepted, and `from_library()` is offered for
-  turning the point into a ball at the stated accuracy.
+- **`rigour = 'assumed-bound'`** -- accepted only with a reason, and
+  `assume_accurate()` is the way to state the bound and carry the value on as
+  a ball.
 - **`rigour = 'heuristic (agreement-checked)'`** -- the package calls `value()`
   twice, at two working precisions, and writes only the digits that agree. The
   author does not implement this; that is the point of putting it here rather
@@ -192,7 +222,7 @@ more than "100 digits, no further comment".
 
 ## Order of work
 
-1. `from_library()` and the refusal of unmarked point values. Small, and it
+1. `assume_accurate()` and the refusal of unmarked point values. Small, and it
    stops the corpus growing more of the problem.
 2. `rigour` on entries and tables, with the table-level default. A migration
    that marks the 29 known tables `heuristic` and the 21 rigorous ones
