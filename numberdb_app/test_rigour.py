@@ -263,3 +263,118 @@ class TheLevelsAreDocumented(TestCase):
 		listed = set(re.findall(r'<b>([a-z()\- ]+)</b>', section))
 		self.assertEqual(listed & set(RIGOUR_LEVELS), set(RIGOUR_LEVELS),
 		                 'the help page lists %s' % (sorted(listed),))
+
+
+class TheAuditCommand(TestCase):
+	"""`set_rigour` writes docs/rigour-audit.tsv into the tables.
+
+	It edits 88 tables in one run, so the things worth pinning are the ones
+	that would be discovered afterwards: that it does not overwrite a level a
+	generator set, and that it refuses a file it cannot understand rather than
+	writing something plausible.
+	"""
+
+	def setUp(self):
+		from django.contrib.auth.models import User
+
+		from .editing import create_table
+
+		self.user = User.objects.create_user('auditor', password='pw-123456')
+		self.table = create_table(
+			{'Title': 'Audit probe',
+			 'Data properties': {'type': 'R'},
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
+			author=self.user)
+
+	def audit_file(self, body):
+		import tempfile
+
+		handle = tempfile.NamedTemporaryFile('w', suffix='.tsv', delete=False)
+		handle.write(body)
+		handle.close()
+		return handle.name
+
+	def run_command(self, body, **options):
+		from io import StringIO
+
+		from django.core.management import call_command
+
+		out = StringIO()
+		call_command('set_rigour', file=self.audit_file(body), stdout=out,
+		             **options)
+		return out.getvalue()
+
+	def properties(self):
+		from .editing import tree_of
+
+		self.table.refresh_from_db()
+		return tree_of(self.table.head_revision).get('Data properties') or {}
+
+	def test_it_sets_the_level(self):
+		self.run_command('%s\theuristic\ta reason\n' % (self.table.tid,))
+		self.assertEqual(self.properties().get('rigour'), 'heuristic')
+
+	def test_it_records_the_evidence_in_the_history(self):
+		self.run_command('%s\theuristic\twrapped a point value\n'
+		                 % (self.table.tid,))
+		self.table.refresh_from_db()
+		self.assertIn('wrapped a point value', self.table.head_revision.message)
+		self.assertEqual(self.table.head_revision.produced_by, 'rigour-audit')
+
+	def test_a_dry_run_writes_nothing(self):
+		self.run_command('%s\theuristic\ta reason\n' % (self.table.tid,),
+		                 dry_run=True)
+		self.assertNotIn('rigour', self.properties())
+
+	def test_it_does_not_overwrite_what_a_generator_said(self):
+		"""Two tables were labelled by the programs that produce them, which
+		know better than a file written by reading one line of each."""
+		self.run_command('%s\theuristic (agreement-checked)\tthe generator\n'
+		                 % (self.table.tid,))
+		out = self.run_command('%s\theuristic\tthe audit\n' % (self.table.tid,))
+		self.assertEqual(self.properties().get('rigour'),
+		                 'heuristic (agreement-checked)')
+		self.assertIn('leaving it', out)
+
+	def test_unless_asked_to(self):
+		self.run_command('%s\tproven\tfirst\n' % (self.table.tid,))
+		self.run_command('%s\theuristic\tsecond\n' % (self.table.tid,),
+		                 overwrite=True)
+		self.assertEqual(self.properties().get('rigour'), 'heuristic')
+
+	def test_a_level_nobody_defined_stops_the_whole_run(self):
+		"""Rather than writing the 40 lines before it and failing on the 41st."""
+		from django.core.management.base import CommandError
+
+		with self.assertRaises(CommandError):
+			self.run_command('%s\tquite good\ta reason\n' % (self.table.tid,))
+		self.assertNotIn('rigour', self.properties())
+
+	def test_the_heuristic_ones_get_a_line_saying_why(self):
+		self.run_command('%s\theuristic\ta reason\n' % (self.table.tid,))
+		self.assertIn('no error of its own',
+		              self.properties().get('rigour details', ''))
+
+	def test_the_audit_file_in_the_repository_parses(self):
+		"""It is data, and data with a typo in it is a command that stops
+		half way."""
+		import os
+
+		from django.conf import settings
+
+		from .validate import RIGOUR_LEVELS
+
+		path = os.path.join(settings.BASE_DIR, 'docs', 'rigour-audit.tsv')
+		self.assertTrue(os.path.exists(path))
+		labelled = 0
+		for line in open(path, encoding='utf8'):
+			line = line.rstrip('\n')
+			if not line or line.startswith('#'):
+				continue
+			parts = line.split('\t')
+			self.assertEqual(len(parts), 3, 'malformed line: %r' % (line,))
+			self.assertIn(parts[1], RIGOUR_LEVELS)
+			self.assertTrue(parts[2].strip(), 'no evidence given for %s' % parts[0])
+			labelled += 1
+		self.assertGreater(labelled, 50)

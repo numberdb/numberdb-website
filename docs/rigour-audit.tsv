@@ -1,0 +1,102 @@
+# How well each table's digits are known.
+#
+# One line per table: tid, level, and the evidence for it. Read by
+# `manage.py set_rigour`, which writes the level into the table's Data
+# properties. Kept as a file rather than done in a script so that the
+# judgement can be read, argued with and corrected -- it is a claim about
+# 88 tables and most of it was made by reading one line of each generator.
+#
+# The evidence is the generate.sage that produced the table, in the
+# numberdb-data repository. Tables with no script, and the measured
+# physical constants, are deliberately absent: an absent level means
+# nobody has established one, which is the truth for them.
+#
+# tid	level	evidence
+T0	exact	type Z
+T1	exact	type Z
+T2	exact	type Z
+T6	exact	type Z
+T9	proven	interval or ball arithmetic only
+T11	exact	type Z
+T13	exact	type Q
+T14	proven	interval or ball arithmetic only
+T15	proven	interval or ball arithmetic only
+T16	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
+T17	proven	interval or ball arithmetic only
+T20	heuristic	a fixed-precision value wrapped in an interval field
+T21	heuristic	a fixed-precision value wrapped in an interval field
+T22	heuristic	a fixed-precision value wrapped in an interval field
+T23	heuristic	a fixed-precision value wrapped in an interval field
+T24	heuristic	a fixed-precision value wrapped in an interval field
+T25	proven	interval or ball arithmetic only
+T26	proven	interval or ball arithmetic only
+T27	proven	interval or ball arithmetic only
+T28	proven	interval or ball arithmetic only
+T29	proven	interval or ball arithmetic only
+T30	exact	type Q
+T31	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
+T33	proven	interval or ball arithmetic only
+T34	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
+T35	heuristic	a fixed-precision value wrapped in an interval field
+T36	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
+T40	proven	interval or ball arithmetic only
+T42	exact	type Z
+T44	heuristic	a fixed-precision value wrapped in an interval field
+T45	heuristic	a fixed-precision value wrapped in an interval field
+T46	heuristic	a fixed-precision value wrapped in an interval field
+T47	heuristic	a fixed-precision value wrapped in an interval field
+T48	heuristic	a fixed-precision value wrapped in an interval field
+T49	proven	interval or ball arithmetic only
+T50	heuristic	a fixed-precision value wrapped in an interval field
+T51	proven	interval or ball arithmetic only
+T52	proven	p-adic arithmetic, precision tracked by Qp
+T53	heuristic	a fixed-precision value wrapped in an interval field
+T54	heuristic	a fixed-precision value wrapped in an interval field
+T55	heuristic	a fixed-precision value wrapped in an interval field
+T56	heuristic	a fixed-precision value wrapped in an interval field
+T57	heuristic	a fixed-precision value wrapped in an interval field
+T58	heuristic	a fixed-precision value wrapped in an interval field
+T59	proven	interval or ball arithmetic only
+T60	heuristic	a fixed-precision value wrapped in an interval field
+T61	heuristic	a fixed-precision value wrapped in an interval field
+T62	exact	type Z
+T63	exact	type Z
+T64	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
+T65	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
+T66	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
+T67	exact	type Q
+T68	heuristic	a fixed-precision value wrapped in an interval field
+T69	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
+T70	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
+T71	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
+T72	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
+T73	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
+T74	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
+T77	exact	type Z
+T79	exact	type Z
+T80	exact	type Z
+T81	exact	type Z
+T82	exact	type Z
+T83	exact	type Z
+T84	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
+T85	proven	interval or ball arithmetic only
+T86	proven	interval or ball arithmetic only
+T87	heuristic	a fixed-precision value wrapped in an interval field
+T88	heuristic	a fixed-precision value wrapped in an interval field
+T90	exact	type Z
+T91	exact	type Z
+T92	proven	interval or ball arithmetic only
+T93	heuristic	a fixed-precision value wrapped in an interval field
+T94	proven	interval or ball arithmetic only
+T95	exact	type Z[]
+T96	exact	type Z[]
+T97	exact	type Z[]
+T98	exact	type Z[]
+T99	exact	type Z[]
+T101	exact	type Q[]
+T102	exact	type Q[]
+T103	exact	type Z[]
+T104	exact	type Z[]
+T105	exact	type Q[]
+T106	exact	type Q[]
+T107	exact	type Z[]

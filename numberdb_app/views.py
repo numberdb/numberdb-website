@@ -715,6 +715,10 @@ def table_context(table, preview=False):
 			#not say presents all four identically, which is what this line
 			#exists to stop. See docs/design/rigour.md.
 			'rigour': 'How well the digits are known',
+			#Elaborates the line above: what the method actually was, and what
+			#was assumed. Optional, and worth more than the single word when
+			#the single word is "assumed-bound".
+			'rigour details': 'How they were obtained',
 			#'accuracy': 'Accuracy',
 		}
 		current_job = 'parsing data properties'
