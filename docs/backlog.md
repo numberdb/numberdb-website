@@ -35,6 +35,34 @@ Lock on, an application key **without `deleteFiles`**, and an `age` keypair in
 Bitwarden. Once those exist: `scripts/backup-push.sh`, a systemd timer on the
 server, `restore.sh --from-remote`, and a weekly `make restore_check`.
 
+## Say how well each number is actually known
+
+A table says a number has a hundred digits and never says whether they are
+proven, guaranteed by a library, checked by agreement, or assumed. Measured
+over the data repository's 80 generator scripts: 21 are rigorous throughout,
+**43 touch arithmetic with no error bound**, and 29 of those end by wrapping a
+point value in an interval field, which is a zero-width interval that will
+print as many digits as it is asked for.
+
+Two consequences, and the second is worse than the first. Those 29 tables
+publish a hundred digits on the strength of a guard chosen by judgement -- the
+idiom is `mpmath.mp.dps = prec10 * 1.5`, with nothing checking it. And the
+client package's precision check is **silently inert** on exactly those tables:
+it measures the digits of the written string, so a point value always satisfies
+it. It has never fired for any of them and never will.
+
+The design is written up in `docs/design/rigour.md`: four ordered levels, held
+on the entry with a table-level default, `proven_digits` alongside the written
+value for numbers proven part of the way, and a `weakening` argument so a run
+cannot quietly replace a proven value with a heuristic one. The first step is
+small and stops the problem growing: a `from_library()` that turns a
+documented one-ulp accuracy into a genuine ball, and a refusal of unmarked
+point values.
+
+This is a correctness item rather than a feature. Nothing here is wrong that
+was not wrong before, but the site currently presents assumption and proof
+identically, and search by number treats them alike.
+
 ## A bundle does not always reproduce its table
 
 A table's bundle carries the head revision's files. If half the entries were
