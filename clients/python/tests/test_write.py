@@ -1457,3 +1457,26 @@ class TestRigour:
         with pytest.raises(ValueError) as raised:
             Wrong().publish(client=Server(entries={}).client())
         assert 'not one of' in str(raised.value)
+
+
+class TestRigourAcceptsSageExactValues:
+    """`is_exact()` is on the parent, not the element: ZZ(2) has no such
+    attribute and ZZ does. Asking the element is how the first version of this
+    refused every exact value a Sage generator produced -- caught by publishing
+    a real table, whose first entry is exactly 1.
+    """
+
+    def test_a_sage_rational_carries_no_error_to_be_wrong_about(self):
+        sage = pytest.importorskip('sage.all')
+        from numberdb._generate import _carries_its_own_error
+
+        assert _carries_its_own_error(sage.QQ(1))
+        assert _carries_its_own_error(sage.ZZ(2))
+
+    def test_but_a_point_interval_still_does_not(self):
+        sage = pytest.importorskip('sage.all')
+        from numberdb._generate import _carries_its_own_error
+
+        field = sage.RealIntervalField(53)
+        assert not _carries_its_own_error(field(1))
+        assert _carries_its_own_error(field(1, 2))
