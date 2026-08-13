@@ -1156,8 +1156,6 @@ def _refresh_lease(table, user, run):
 	lease.save(update_fields=['expires'])
 
 
-@csrf_exempt
-@rate_limited
 def _apply_rigour(request, tree):
 	"""Set Data properties: rigour from the X-Rigour header, if it is there.
 
@@ -1184,6 +1182,8 @@ def _apply_rigour(request, tree):
 	return None
 
 
+@csrf_exempt
+@rate_limited
 def write_file(request, tid, name):
 	"""Attach a file to a table, in the same revision as the run's entries.
 

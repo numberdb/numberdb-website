@@ -196,3 +196,35 @@ class TheLevelArrivesEvenWhenNoNumberChanges(TestCase):
 		self.table.refresh_from_db()
 		names = [a.name for a in self.table.head_revision.attachments.all()]
 		self.assertIn('generate.py', names)
+
+
+class TheWriteEndpointsKeepTheirDecorators(TestCase):
+	"""A helper defined immediately above a view takes that view's decorators.
+
+	`_apply_rigour` was inserted directly above `write_file` and silently
+	collected its `@csrf_exempt` and `@rate_limited`, so every attachment came
+	back as a Django CSRF page -- an HTML 403, from an endpoint that answers
+	JSON, on a request that had a perfectly good API key. Publishing swallows
+	attachment failures by design, so two tables published with no source and
+	no rigour and said nothing about it.
+	"""
+
+	def test_write_file_is_still_exempt_from_csrf(self):
+		from .api import write_file
+
+		self.assertTrue(getattr(write_file, 'csrf_exempt', False))
+
+	def test_and_so_are_the_other_write_endpoints(self):
+		from . import api
+
+		for name in ('write_entries', 'write_table', 'create_table',
+		             'table_lease'):
+			with self.subTest(endpoint=name):
+				view = getattr(api, name)
+				self.assertTrue(getattr(view, 'csrf_exempt', False),
+				                '%s is not csrf_exempt' % (name,))
+
+	def test_the_helper_is_not_a_view(self):
+		from .api import _apply_rigour
+
+		self.assertFalse(getattr(_apply_rigour, 'csrf_exempt', False))
