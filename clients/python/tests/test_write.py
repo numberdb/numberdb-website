@@ -468,6 +468,11 @@ class TestPrecision:
         #Said out loud, because this generator really does produce six.
         digits = 6
 
+        #A hardcoded decimal string carries no error of its own, which
+        #`rigour = 'proven'` refuses. Declared rather than worked around: this
+        #fixture really is a heuristic value.
+        rigour = 'heuristic'
+
         def enumerate(self, limit=1):
             for n in range(1, limit + 1):
                 yield {'n': n}
@@ -513,6 +518,11 @@ class TestValuesShorterThanAskedFor:
         parameters = ('n',)
         digits = 100
 
+        #A hardcoded decimal string carries no error of its own, which
+        #`rigour = 'proven'` refuses. Declared rather than worked around: this
+        #fixture really is a heuristic value.
+        rigour = 'heuristic'
+
         def enumerate(self, limit=1):
             yield {'n': 1}
 
@@ -557,6 +567,11 @@ class TestValuesShorterThanAskedFor:
             parameters = ('n',)
             digits = 100
 
+            #Hardcoded decimal strings, so heuristic by any reading;
+            #`proven` would refuse them and this test is about
+            #something else.
+            rigour = 'heuristic'
+
             def enumerate(self, limit=1):
                 yield {'n': 1}
 
@@ -572,6 +587,11 @@ class TestValuesShorterThanAskedFor:
         class Honest(numberdb.Generator):
             table = 'T7'
             parameters = ('n',)
+
+            #Hardcoded decimal strings, so heuristic by any reading;
+            #`proven` would refuse them and this test is about
+            #something else.
+            rigour = 'heuristic'
 
             def enumerate(self, limit=1):
                 yield {'n': 1}
@@ -626,6 +646,11 @@ class TestPerEntryDigits:
             parameters = ('n',)
             digits = 100
 
+            #A hardcoded decimal string carries no error of its own, which
+            #`rigour = 'proven'` refuses. Declared rather than worked around:
+            #this fixture really is a heuristic value.
+            rigour = 'heuristic'
+
             def digits_for(self, params):
                 return 100 if int(params['n']) < 3 else 20
 
@@ -651,6 +676,11 @@ class TestPerEntryDigits:
             table = 'T7'
             parameters = ('n',)
             digits = 12
+
+            #Hardcoded decimal strings, so heuristic by any reading;
+            #`proven` would refuse them and this test is about
+            #something else.
+            rigour = 'heuristic'
 
             def enumerate(self, limit=1):
                 yield {'n': 1}
@@ -1211,6 +1241,11 @@ class TestRestating:
         type = 'R'
         digits = 4
 
+        #A hardcoded decimal string carries no error of its own, which
+        #`rigour = 'proven'` refuses. Declared rather than worked around: this
+        #fixture really is a heuristic value.
+        rigour = 'heuristic'
+
         def enumerate(self):
             yield {'n': 1}
 
@@ -1313,3 +1348,112 @@ class TestTheRunsMessageIsWhatTheHistoryShows:
                  if '/file/' in path]
         assert files
         assert all(_message(headers) for headers in files)
+
+
+class TestRigour:
+    """A table that does not say how well its digits are known presents proof
+    and assumption identically. Twenty-nine tables in this corpus were built
+    by wrapping a fixed-precision result in an interval field -- an interval of
+    width zero, which says the value is exact -- and nothing ever noticed,
+    because the precision check counts the digits it is given and a point
+    yields as many as are asked for.
+    """
+
+    class Rigorous(numberdb.Generator):
+        table = 'T7'
+        parameters = ('n',)
+        type = 'R'
+        #Four, because that is what (3.1415, 3.1416) actually pins down; asking
+        #for more would be refused by the precision check, which is a different
+        #test.
+        digits = 4
+
+        def enumerate(self):
+            yield {'n': 1}
+
+        def value(self, params, digits):
+            from fractions import Fraction
+            return numberdb.RealInterval(Fraction(31415, 10000),
+                                         Fraction(31416, 10000))
+
+    def test_an_interval_satisfies_proven(self):
+        server = Server(entries={})
+        outcome = self.Rigorous().publish(client=server.client())
+        assert outcome.added == ['1']
+
+    def test_the_default_is_proven(self):
+        assert numberdb.Generator.rigour == 'proven'
+
+    def test_a_point_value_is_refused_under_proven(self):
+        """The whole point. A fixed-precision result wrapped in an interval
+        field is a point, and a point claims to be exact."""
+
+        class Point(TestRigour.Rigorous):
+            def value(inner, params, digits):
+                from fractions import Fraction
+                return numberdb.RealInterval(Fraction(31415, 10000),
+                                             Fraction(31415, 10000))
+
+        with pytest.raises(numberdb.DisagreementError) as raised:
+            Point().publish(client=Server(entries={}).client())
+        message = str(raised.value)
+        assert 'carries no error of its own' in message
+        assert 'heuristic' in message          # names what to say instead
+
+    def test_a_string_is_refused_under_proven(self):
+        """A string carries digits, not an error. mpmath prints a hundred of
+        them for a value computed to thirty."""
+
+        class Text(TestRigour.Rigorous):
+            def value(inner, params, digits):
+                return '3.14159'
+
+        with pytest.raises(numberdb.DisagreementError):
+            Text().publish(client=Server(entries={}).client())
+
+    def test_but_an_exact_value_is_fine(self):
+        """Exactly 2 has nothing to be wrong about, and saying so with an
+        exact number is what the refusal asks for."""
+
+        class Exact(TestRigour.Rigorous):
+            def value(inner, params, digits):
+                from fractions import Fraction
+                return Fraction(2)
+
+        outcome = Exact().publish(client=Server(entries={}).client())
+        assert outcome.added == ['1']
+
+    def test_a_declared_heuristic_may_send_a_point(self):
+        """Not a worse contribution -- a differently qualified one."""
+
+        class Honest(TestRigour.Rigorous):
+            rigour = 'heuristic (agreement-checked)'
+
+            def value(inner, params, digits):
+                return '3.14159'
+
+        outcome = Honest().publish(client=Server(entries={}).client())
+        assert outcome.added == ['1']
+
+    def test_the_level_is_sent_to_the_table(self):
+        """Once for the run, not written on every entry."""
+
+        class Honest(TestRigour.Rigorous):
+            rigour = 'heuristic'
+
+            def value(inner, params, digits):
+                return '3.14159'
+
+        server = Server(entries={})
+        Honest().publish(client=server.client())
+        headers = [h for path, h, _b in server.posts if '/entries' in path]
+        assert headers
+        assert any(_header(h, 'X-rigour') == 'heuristic' for h in headers)
+
+    def test_a_level_nobody_defined_is_refused(self):
+        class Wrong(TestRigour.Rigorous):
+            rigour = 'pretty sure'
+
+        with pytest.raises(ValueError) as raised:
+            Wrong().publish(client=Server(entries={}).client())
+        assert 'not one of' in str(raised.value)

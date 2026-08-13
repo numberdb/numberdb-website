@@ -904,6 +904,7 @@ def write_entries(request, tid):
 
 def _write_entries_locked(request, table, entries, user):
 	from .editing import commit_table, tree_of
+	from .validate import RIGOUR_LEVELS
 	from .limits import TooBig
 	from .permissions import edits_are_reviewed
 	from .editing import InvalidDocument
@@ -929,6 +930,26 @@ def _write_entries_locked(request, table, entries, user):
 	else:
 		added = updated = None
 		tree[section] = entries
+
+	#How well these digits are known, as the generator declares it. Recorded on
+	#the table rather than on every entry: it is a property of the method, and
+	#a reader wants one line, not a word repeated a thousand times.
+	#
+	#The one piece of table metadata a generator may set, and the exception is
+	#deliberate. Everything else under Data properties is somebody's prose and
+	#a program has no opinion about it; this is a fact about the computation
+	#that produced these numbers, which is the one thing the program knows and
+	#the person cannot check. See docs/design/rigour.md.
+	rigour = (request.headers.get('X-Rigour') or '').strip()[:60]
+	if rigour:
+		if rigour not in RIGOUR_LEVELS:
+			return JsonResponse(
+				{'error': "Unknown rigour %r." % (rigour,),
+				 'detail': 'One of: %s.' % (', '.join(RIGOUR_LEVELS),)},
+				status=400)
+		properties = dict(tree.get('Data properties') or {})
+		properties['rigour'] = rigour
+		tree['Data properties'] = properties
 
 	#A run's submissions grow one revision instead of adding one each, so
 	#sending a thousand values one at a time leaves one entry in the history
