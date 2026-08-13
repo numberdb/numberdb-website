@@ -55,9 +55,16 @@ The design is written up in `docs/design/rigour.md`: four ordered levels, held
 on the entry with a table-level default, `proven_digits` alongside the written
 value for numbers proven part of the way, and a `weakening` argument so a run
 cannot quietly replace a proven value with a heuristic one. The first step is
-small and stops the problem growing: a `from_library()` that turns a
-documented one-ulp accuracy into a genuine ball, and a refusal of unmarked
-point values.
+small and stops the problem growing: an `assume_accurate()` that turns a
+*stated* error bound into a genuine ball, and a refusal of unmarked point
+values.
+
+Checked while drafting, and it changed the design: PARI's documentation does
+not support the general one-ulp confidence it is credited with. Of the 1271
+documented functions in the PARI shipped with Sage, "ulp" appears in one, and
+the header on transcendental functions describes only how precision is
+*carried*, never how accurate the answer is. So a bound is the author's
+assertion with the author's reason, not something a helper can supply.
 
 This is a correctness item rather than a feature. Nothing here is wrong that
 was not wrong before, but the site currently presents assumption and proof
