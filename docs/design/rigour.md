@@ -212,9 +212,50 @@ same treatment.
 - **`rigour = 'heuristic'`** -- accepted, recorded, and never dressed up as
   anything else.
 
-Adaptive precision -- widening until the result carries the digits asked for --
-then makes sense for the first and third, where there is something real to
-measure, and is refused for the others, where there is not.
+## The working precision is chosen by the author, and written down
+
+An earlier draft of this note proposed that the package widen the working
+precision automatically, retrying an entry until it carried the digits asked
+for. That is the wrong default, for a reason that outweighs the convenience:
+**the file attached to a table is supposed to be how those numbers were made.**
+A generator that silently escalated would not be. Re-running it would not
+reproduce the computation that produced the stored values, only a computation
+that happened to land in the same place.
+
+The escape from that is to record, per entry, the precision the run finally
+used -- and that is a great deal of machinery, in the table and in the wire
+format, to buy back a property the code already had before we took it away.
+
+So: **the package refuses, and the author decides.** `publish` measures what
+each value pinned down and stops when it falls short, naming the shortfall and
+suggesting a starting figure. The author raises the constant and runs again.
+Trial and error, with the answer ending up in the file:
+
+```python
+GUARD_RATIO = 1.5        # digits computed beyond digits written
+SECOND_OPINION = 2.0     # ...and again at this much, so the two can be compared
+```
+
+Both converted generators already work this way, and their constants carry the
+measurement that justified them.
+
+**When one constant will not do**, the reproducible answer is a rule rather
+than a loop. Entries that get harder further along -- and most families do --
+should compute their working precision from their own parameters:
+
+```python
+def working_digits(self, params, digits):
+    return int(1.5 * digits) + 2 * params['d']
+```
+
+Deterministic, in the attached file, and it scales with the table instead of
+forcing every entry to pay the worst case.
+
+**What tooling can honestly do** is help with the trial rather than replace it:
+a development-time pass that reports, per entry, how many digits each one
+actually pinned down, so the author can see the shape of the loss and write a
+rule that fits it. The output of that is a number typed into the file. Nothing
+adaptive survives into a published run.
 
 ## What mpmath documents, since half the corpus depends on it
 
@@ -266,6 +307,8 @@ more than "100 digits, no further comment".
    that marks the 29 known tables `heuristic` and the 21 rigorous ones
    `proven`, leaving the rest to inspection.
 3. The site shows it, next to `reliability`.
-4. `heuristic (agreement-checked)` in the package, and adaptive precision
-   gated on the level.
+4. `heuristic (agreement-checked)` in the package, so 43 generators do not
+   each hand-roll it. Not adaptive precision: see above. A development-time
+   report of what each entry pinned down would help the author choose, and
+   what they choose goes in the file.
 5. `weakening`, once anything can be weakened.
