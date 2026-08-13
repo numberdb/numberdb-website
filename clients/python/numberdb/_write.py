@@ -579,6 +579,12 @@ def attach(tid: str, name: str, content: Any, run: str = '',
         headers['X-Run-Id'] = run
     if message:
         headers['X-Edit-Message'] = message
+    #Also here, and not only on the entries, because a re-run that changes no
+    #number sends no entries at all -- and that is exactly the run whose whole
+    #purpose may be to state how well the numbers are known. The source is
+    #attached on every publish, so this always arrives.
+    if rigour:
+        headers['X-Rigour'] = rigour
     body = content if isinstance(content, str) else content.decode('utf8')
     return client.submit('/api/table/%s/file/%s'
                          % (str(tid).lstrip('tT'), name), body, headers)

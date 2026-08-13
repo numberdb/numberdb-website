@@ -1480,3 +1480,34 @@ class TestRigourAcceptsSageExactValues:
         field = sage.RealIntervalField(53)
         assert not _carries_its_own_error(field(1))
         assert _carries_its_own_error(field(1, 2))
+
+
+class TestTheLevelRidesWithTheSourceToo:
+    """A re-run that changes no number sends no entries, and that is exactly
+    the run whose purpose may be to state how well the numbers are known.
+
+    Found by publishing a real table and finding the level absent. The first
+    fix aimed at the wrong lines and did nothing, which a test would have said
+    at once -- so here it is.
+    """
+
+    class Quiet(numberdb.Generator):
+        table = 'T7'
+        parameters = ('n',)
+        type = 'R'
+        digits = 4
+        rigour = 'heuristic'
+
+        def enumerate(self):
+            yield {'n': 1}
+
+        def value(self, params, digits):
+            return '3.142'
+
+    def test_the_attachment_carries_it(self):
+        server = Server(entries={'1': '3.142'})       # nothing to update
+        outcome = self.Quiet().publish(client=server.client())
+        assert outcome.updated == [] and outcome.added == []
+        files = [h for path, h, _b in server.posts if '/file/' in path]
+        assert files
+        assert any(_header(h, 'X-rigour') == 'heuristic' for h in files)
