@@ -524,12 +524,29 @@ class TestValuesShorterThanAskedFor:
             self.Short().publish(client=Server().client())
         assert 'carries 6' in str(raised.value)
 
-    def test_the_refusal_explains_bits_against_digits(self):
+    def test_the_refusal_names_both_causes(self):
+        """It used to name one: the units mistake, with
+        `RealIntervalField(numberdb.bits(digits))` as the remedy. That is the
+        remedy for the *other* cause, and this check fires precisely when
+        `bits(digits)` was not enough -- so it was recommending the thing that
+        had just failed.
+
+        Losing precision during a computation is the ordinary cause and is not
+        a mistake at all; the fix is a wider field, not a corrected unit.
+        """
         with pytest.raises(numberdb.DisagreementError) as raised:
             self.Short().publish(client=Server().client())
         message = str(raised.value)
-        assert 'bits, not digits' in message
-        assert str(numberdb.bits(100)) in message
+
+        # the ordinary cause, and a remedy that is actually larger
+        assert 'wider' in message
+        assert 'losing=' in message
+
+        # the units mistake, still named, no longer as the only explanation
+        assert 'digits where Sage counts bits' in message
+
+        # and it does not offer the bare conversion as the answer
+        assert 'RealIntervalField(numberdb.bits(digits)) is what' not in message
 
     def test_an_entry_may_say_it_is_known_no_better(self):
         """A constant known to eight digits does not become wrong by being

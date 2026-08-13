@@ -335,8 +335,11 @@ The careful things happen without being asked for:
 - **the digits you asked for are the digits you get**: `digits` is decimal,
   Sage's fields are binary, and `RealIntervalField(digits)` — which reads
   perfectly well — delivers about a third of what was meant. `numberdb.bits()`
-  converts, and `publish` measures what each value actually pins down and
-  refuses a table that would silently hold a third of its claimed precision.
+  converts the units; how much *more* than that to compute with is yours to
+  choose, since arithmetic loses low bits by an amount that depends on the
+  problem — `bits(digits, losing=512)` for something that cancels. `publish`
+  measures what each value actually pins down and refuses a table that would
+  silently hold a third of its claimed precision.
   An entry genuinely known no better says so: `return {'number': x, 'digits': 8}`;
 - **the file that produced the numbers is stored beside them**, in the same
   revision, so a reader finds the code that made a value rather than the code

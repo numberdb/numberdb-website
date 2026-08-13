@@ -113,10 +113,11 @@ class Generator:
     #: only when it was expensive to obtain.
     #:
     #: This is a promise that is checked. A value that comes back shorter stops
-    #: the run, because the usual cause is building an interval field in digits
-    #: where it wanted bits, and the result is a table holding a third of the
-    #: precision it claims with nothing whatever to show for it. An entry that
-    #: really is known no better says so for itself, by returning
+    #: the run, and the two things that cause it are worth telling apart: a
+    #: field built in digits where Sage counts bits, which is a mistake; and a
+    #: computation that lost more precision than the working field allowed for,
+    #: which is ordinary and is fixed by computing wider. An entry that really
+    #: is known no better says so for itself, by returning
     #: ``{'number': x, 'digits': 8}``.
     digits: int = DIGITS
 
@@ -216,8 +217,18 @@ class Generator:
             return {'number': x, 'digits': 8}
 
         The ``digits`` handed in is **decimal digits**, because that is how
-        this database writes numbers. Sage's interval fields are built in bits,
-        so convert: ``RealIntervalField(numberdb.bits(digits))``.
+        this database writes numbers, and it is how many to *write* -- not how
+        many to compute with. Sage's interval fields are built in bits, so the
+        units have to be converted; and the field has to be built **wider than
+        the answer**, because arithmetic loses low bits:
+
+            field = RealIntervalField(numberdb.bits(digits))          # start here
+            field = RealIntervalField(numberdb.bits(digits, losing=512))   # cancels
+
+        How much wider depends on the computation and cannot be known in
+        advance, so it is yours to choose. `publish` measures what each value
+        actually pinned down and refuses the run if it fell short, which is
+        what turns the choice into something you find out about.
         """
         raise NotImplementedError(
             '%s must implement value() or all_entries()'
@@ -715,16 +726,26 @@ def _publish(generator, only=None, message='', overwrite=True,
 def _check_precision(table, identity, text, wanted, lowering):
     """Whether this value carries the digits the generator asked for.
 
-    Short values are the quiet failure of this whole interface. Sage's interval
-    fields are built in **bits** and this database counts **decimal digits**,
-    so ``RealIntervalField(digits)`` -- which reads perfectly well -- delivers
-    about thirty digits where a hundred were meant. Nothing is wrong with what
-    gets stored; there is just a third of it, and no exception ever fires.
+    Short values are the quiet failure of this whole interface, and there are
+    two ways to arrive at one.
 
-    Measured rather than assumed, because it cannot be guaranteed in advance:
-    arithmetic loses precision by an amount nobody can predict from the inputs.
-    A wide enough field is a good guess, and this is the check that turns the
-    guess into a fact.
+    The mundane one: Sage's interval fields are built in **bits** and this
+    database counts **decimal digits**, so ``RealIntervalField(digits)`` --
+    which reads perfectly well -- delivers about thirty digits where a hundred
+    were meant.
+
+    The ordinary one, which is not a mistake at all: **arithmetic loses
+    precision**. A field built at the width of the intended answer does not
+    produce an answer that wide, and how much is lost depends on the
+    computation -- a cancellation can cost hundreds of bits, a long product a
+    handful. Nobody can know the figure in advance, which is why the working
+    precision is the author's to choose and why this check exists to measure
+    what came out. The remedy is a wider field, raised until the digits appear.
+
+    ``numberdb.bits(digits)`` converts the units and adds a small guard. It is
+    the right starting point and emphatically not a guarantee: for anything
+    that cancels it will be nowhere near enough, and the guard is a parameter
+    -- ``bits(digits, losing=512)`` -- for exactly that reason.
     """
     if lowering or not _compare.counts_digits(text):
         return
@@ -733,12 +754,20 @@ def _check_precision(table, identity, text, wanted, lowering):
         return
     raise DisagreementError(
         '%s entry %s: %d digits were asked for and this value carries %d. '
-        'Sage builds interval fields in bits, not digits -- %d digits needs '
-        '%d of them, so RealIntervalField(numberdb.bits(digits)) is what that '
-        'line usually wants. If this entry is genuinely known no better, say '
-        'so where it is produced -- return {"number": x, "digits": %d} -- or '
-        'pass lowering=True for a run of them.'
-        % (table, identity, wanted, got, wanted, _bits(wanted), got),
+        'Two things cause that. Either the working precision was too low for '
+        'this computation -- arithmetic loses low bits, by an amount that '
+        'depends on the problem and cannot be known in advance, so the field '
+        'has to be built wider than the answer is meant to be: try '
+        'numberdb.bits(%d, losing=%d) or more, and raise it until the digits '
+        'come back. Or the field was built in digits where Sage counts bits, '
+        'which is the same mistake by a factor of about 3.3 -- %d digits is '
+        '%d bits before any guard at all. If instead this entry is genuinely '
+        'known no better, say so where it is produced -- '
+        'return {"number": x, "digits": %d} -- or pass lowering=True for a '
+        'run of them.'
+        % (table, identity, wanted, got,
+           wanted, max(64, 4 * (wanted - got)),
+           wanted, int(_bits(wanted) - 16), got),
         identity=identity, stored='', produced=text, verdict='short')
 
 
