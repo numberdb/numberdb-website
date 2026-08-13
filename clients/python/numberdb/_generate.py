@@ -773,13 +773,20 @@ def _carries_its_own_error(value) -> bool:
             return lower() != upper()
         except TypeError:
             return lower != upper
-    #A Sage Integer or Rational, or anything else exact enough to have no
-    #endpoints: is_exact() is Sage's own answer to this question.
-    exact = getattr(value, 'is_exact', None)
-    if exact is not None:
+    #A Sage Integer, Rational or polynomial. `is_exact()` lives on the parent
+    #rather than on the element -- ZZ(2) has no such attribute, ZZ does -- and
+    #asking the element instead is how the first version of this refused every
+    #exact value a Sage generator produced.
+    #
+    #Checked after the endpoints, deliberately: an interval field is not exact,
+    #so a point interval still reaches the refusal it deserves.
+    parent = getattr(value, 'parent', None)
+    if parent is not None:
         try:
-            return bool(exact())
-        except TypeError:
+            exact = getattr(parent(), 'is_exact', None)
+            if exact is not None and exact():
+                return True
+        except (TypeError, AttributeError):
             pass
     return False
 
