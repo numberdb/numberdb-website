@@ -378,3 +378,68 @@ class TheAuditCommand(TestCase):
 			self.assertTrue(parts[2].strip(), 'no evidence given for %s' % parts[0])
 			labelled += 1
 		self.assertGreater(labelled, 50)
+
+
+class MeasuredIsNotOnTheScale(TestCase):
+	"""Four tables hold physical constants that were never computed. None of
+	the five computed levels describes them, and `measured` is not a sixth
+	degree of confidence -- a well-determined constant can be known to more
+	digits than a heuristic computation and fewer than a proven one.
+	"""
+
+	def test_it_is_a_level(self):
+		from .validate import RIGOUR_LEVELS
+
+		self.assertIn('measured', RIGOUR_LEVELS)
+
+	def test_but_not_one_of_the_ordered_ones(self):
+		"""`weakening`, when it exists, will compare the computed levels. It
+		must not be handed `measured` and asked which is better."""
+		from .validate import COMPUTED_LEVELS, RIGOUR_LEVELS
+
+		self.assertNotIn('measured', COMPUTED_LEVELS)
+		self.assertEqual(set(RIGOUR_LEVELS) - set(COMPUTED_LEVELS), {'measured'})
+
+	def test_the_api_accepts_it(self):
+		from django.contrib.auth.models import User
+
+		from .editing import create_table, tree_of
+		from .models import ApiKey
+		from .permissions import board_group
+
+		user = User.objects.create_user('measurer', password='pw-123456')
+		user.groups.add(board_group())
+		_key, token = ApiKey.issue(user, label='k')
+		table = create_table(
+			{'Title': 'Measured probe',
+			 'Data properties': {'type': 'R'},
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
+			author=user)
+		answer = self.client.post(
+			'/api/table/%s/entries' % (table.tid,),
+			'[{"params": {"n": "1"}, "number": "3.14159"}]',
+			content_type='application/json',
+			HTTP_AUTHORIZATION='Bearer %s' % (token,),
+			HTTP_X_RIGOUR='measured')
+		self.assertEqual(answer.status_code, 200)
+		table.refresh_from_db()
+		self.assertEqual(tree_of(table.head_revision)['Data properties']['rigour'],
+		                 'measured')
+
+	def test_the_help_page_explains_why_it_is_different(self):
+		#Whitespace-normalised, because the sentence is wrapped in the
+		#template and a line break should not fail a test about wording.
+		body = ' '.join(self.client.get('/help').content.decode().split())
+		self.assertIn('measured', body)
+		self.assertIn('not on the same scale as the others', body)
+
+	def test_the_audit_labels_the_physical_constants(self):
+		import os
+
+		from django.conf import settings
+
+		path = os.path.join(settings.BASE_DIR, 'docs', 'rigour-audit.tsv')
+		measured = {line.split('\t')[0] for line in open(path, encoding='utf8')
+		            if line.startswith('T') and '\tmeasured\t' in line}
+		self.assertEqual(measured, {'T10', 'T12', 'T76', 'T78'})

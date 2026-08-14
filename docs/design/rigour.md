@@ -89,9 +89,23 @@ as measured ones.
   naming the shortfall. That is the whole of the argument for it.
 - **`heuristic`** -- one computation and a guard chosen by judgement. What the
   29 tables have today.
+- **`measured`** -- not computed. The value comes from experiment and the
+  stored interval holds the measurements together with their stated
+  uncertainties. Four tables: the fine-structure constant, the
+  proton-to-electron mass ratio, and the mass and magnetic moment ratios.
 
 Ordered, because the ordering is what lets a change be checked: `exact` >
 `proven` > `assumed-bound` > `heuristic (agreement-checked)` > `heuristic`.
+
+**`measured` is deliberately outside that order.** It was added after the audit
+found four tables the five levels could not describe, all of them physical
+constants that were never computed at all. It is not a sixth degree of
+confidence: a well-determined constant can be known to more digits than a
+heuristic computation and fewer than a proven one, and asking whether
+measurement beats agreement-checking has no answer. So `weakening`, when it
+exists, must refuse a change *into or out of* `measured` rather than pretend to
+compare it -- the two are different kinds of claim, and a comparison would
+invent a fact.
 
 That ordering has one soft spot worth naming: an `assumed-bound` is only as
 good as its reason. A cited theorem outranks an agreement check; a bound

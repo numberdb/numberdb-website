@@ -365,6 +365,7 @@ identically. `rigour` says which, and the table shows it:
 | `assumed-bound` | fixed precision, with an error bound you assert and justify — see `assume_accurate` below |
 | `heuristic (agreement-checked)` | computed twice at different precisions, keeping the digits that agree |
 | `heuristic` | one computation and a guard chosen by judgement |
+| `measured` | not computed at all — an experimental value, whose uncertainty is the experiment's |
 
 **`proven` is the default, and it is enforced** — in one direction, since a
 value that carries no error cannot have a proven one:
@@ -420,6 +421,14 @@ bureaucracy: checked against the documentation, PARI mentions "ulp" in one of
 its 1271 documented functions and mpmath's `airyaizero` says nothing about
 accuracy at all, so the bound is your assertion and the reason is what makes it
 checkable later.
+
+The first five are ordered, weakest last. **`measured` is not on that scale**: a
+well-determined physical constant can be known to more digits than a heuristic
+computation and fewer than a proven one, and "is measurement better than
+agreement-checking" has no answer, because they are not the same kind of claim.
+A generator may declare it — one reading CODATA, say — but nothing about it can
+be checked here, since the uncertainty belongs to an experiment this program
+never saw.
 
 Agreement bounds **rounding** error, not **method** error. Two runs of a wrong
 algorithm agree perfectly and are both wrong.
