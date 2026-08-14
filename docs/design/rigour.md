@@ -36,11 +36,23 @@ a genuine interval -- Sage's `?` reflects real uncertainty -- and is pure
 truncation of an unbounded value for a point. The `* 1.5` is the entire error
 control, in 11 scripts. One uses `* 2`. Nothing checks either.
 
-To be clear about what is *not* there: no script computes at two precisions and
-keeps the digits that agree. There is no repeated `mp.dps`, no
-precision-raising loop, no difference of two computed values, no interval
-union. That technique is a good idea for the future rather than a practice to
-preserve.
+**Six scripts do compare two precisions**, and an earlier draft of this note
+said flatly that none did. That was wrong: the search looked for a repeated
+`mp.dps`, a precision-raising loop or a difference of two values, and the
+pattern is none of those --
+
+    prec_factors = [1, 2]
+    for prec_factor in prec_factors:
+        number = E.lseries().taylor_series(..., prec=prec_factor * RIFprec.prec())[1]
+        number_str[prec_factor] = ...blur_real_interval(RIFprec(number))...
+    assert len(set(number_str.values())) == 1      # Sanity check
+
+-- all six being elliptic-curve tables, the L-values and the real periods.
+Their check is cruder than keeping the agreeing digits and in one way stricter:
+they compute at `p` and `2p`, write both, and **fail** if the two written
+forms differ, rather than falling back to fewer digits. Failing loudly is a
+defensible choice. Those tables are better than the bare `assumed-bound` label
+suggests, and their details should say so.
 
 **The precision check in the client package is silently inert on exactly these
 tables.** It measures the digits of the written string, and a zero-width

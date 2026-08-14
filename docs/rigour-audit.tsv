@@ -82,12 +82,12 @@ T65	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
 T66	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
 T67	exact	type Q
 T68	proven	j-invariants of exact curves, taken in a complex interval field
-T69	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
-T70	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
-T71	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
-T72	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
-T73	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
-T74	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
+T69	assumed-bound	widened by a hand-chosen 4 ulps, and computed twice at p and 2p with the two written forms asserted equal
+T70	assumed-bound	widened by a hand-chosen 4 ulps, and computed twice at p and 2p with the two written forms asserted equal
+T71	assumed-bound	widened by a hand-chosen 4 ulps, and computed twice at p and 2p with the two written forms asserted equal
+T72	assumed-bound	widened by a hand-chosen 4 ulps, and computed twice at p and 2p with the two written forms asserted equal
+T73	assumed-bound	widened by a hand-chosen 4 ulps, and computed twice at p and 2p with the two written forms asserted equal
+T74	assumed-bound	widened by a hand-chosen 4 ulps, and computed twice at p and 2p with the two written forms asserted equal
 T77	exact	type Z
 T79	exact	type Z
 T80	exact	type Z
