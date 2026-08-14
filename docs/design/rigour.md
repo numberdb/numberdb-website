@@ -298,6 +298,47 @@ actually pinned down, so the author can see the shape of the loss and write a
 rule that fits it. The output of that is a number typed into the file. Nothing
 adaptive survives into a published run.
 
+## What Sage documents for the elliptic-curve tables
+
+Fourteen tables are `assumed-bound`, all of them elliptic-curve quantities
+widened by a hand-chosen four ulps. The question worth asking of each is
+whether anything states an accuracy, and the answer differs by quantity.
+
+**L-values: yes, and it is usable.** `E.lseries().at1()` and `deriv_at1()`
+return a *pair* -- the value and, in Sage's own words, "a bound on the error in
+the approximation". It is a series-truncation bound following Cohen's
+algorithm, so it shrinks with the number of terms rather than with the working
+precision. Measured on curve 37a:
+
+| terms | error bound | proven digits | time |
+| --- | --- | --- | --- |
+| 100 | 1.5e-45 | 45 | 0.0 s |
+| 1000 | 1.9e-118 | **118** | 0.0 s |
+
+So a hundred proven digits costs a thousand terms and no measurable time, and
+those tables could be **`proven`** rather than assumed. Two limits: `at1` is
+`L(E,1)` and `deriv_at1` is `L'(E,1)` assuming `L(E,1) = 0`, so this covers
+rank 0 and rank 1 and nothing higher; and past a thousand terms the bound stops
+improving, because it becomes limited by the working precision instead. The
+rank 2 and rank 3 tables have only `taylor_series`, which documents a precision
+in bits and no accuracy at all.
+
+**Regulators: no.** `regulator(precision=...)` documents bits, not accuracy.
+The word "rigorous" does appear in the elliptic-curve code, but about a
+different thing -- whether the generators found are provably the full
+Mordell-Weil basis. That is a question about *which lattice*, not about the
+digits of its determinant, and conflating the two would be a false claim of
+the most misleading kind.
+
+**Real periods: no.** `period_lattice().real_period(prec=...)` documents bits,
+and the period lattice offers no interval or ball variant at all.
+
+So of the fourteen, the rank 0 and rank 1 L-value tables have a documented,
+citable, cheap bound and should be recomputed as `proven`; the rest keep their
+four ulps, and their `rigour details` should say that Sage documents no
+accuracy for the quantity in question rather than leaving a reader to wonder
+whether anybody looked.
+
 ## What mpmath documents, since half the corpus depends on it
 
 The same question asked of PARI, asked of mpmath 1.4.1:
