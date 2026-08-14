@@ -20,9 +20,30 @@ import os
 
 from django.core.management.base import BaseCommand, CommandError
 
-#: What each level says, for the `rigour details` line. Only where there is
-#: something to say beyond the word itself.
+#: What each level says, for the `rigour details` line.
+#:
+#: Every level has one, so the line can never be left over from a level the
+#: table used to have. T61 said "proven" above "a fixed-precision value wrapped
+#: in an interval field, which records no error of its own" for a day, because
+#: the level was corrected upward and the sentence was not: a page contradicting
+#: itself, and reading as though the proof were being retracted underneath.
 DETAILS = {
+	'exact':
+		'An exact value -- an integer, a rational or a polynomial -- so there '
+		'is no precision to choose and nothing to be wrong about.',
+	'proven':
+		'Computed in interval or ball arithmetic throughout, so the digits '
+		'written follow from the width of the result rather than from a guard '
+		'chosen in advance.',
+	'heuristic (agreement-checked)':
+		'Computed twice at different working precisions, keeping only the '
+		'digits both computations support. That bounds the error from working '
+		'precision and nothing else: two runs of the same method agree even '
+		'when the method is wrong.',
+	'measured':
+		'Not computed: the value comes from experiment, and the interval is '
+		'chosen to hold the measurements together with their stated '
+		'uncertainties. See the reliability note for which measurements.',
 	'assumed-bound':
 		'The computed interval was widened by four units in the last place '
 		'(blur_real_interval). That bound was asserted rather than derived, '
@@ -31,11 +52,12 @@ DETAILS = {
 		'A fixed-precision value wrapped in an interval field, which records '
 		'no error of its own. The working precision was half as many digits '
 		'again as were written, and nothing checked that the margin sufficed.',
-	'measured':
-		'Not computed: the value comes from experiment, and the interval is '
-		'chosen to hold the measurements together with their stated '
-		'uncertainties. See the reliability note for which measurements.',
 }
+
+#: The sentences this command has written. Anything else in `rigour details` is
+#: somebody's prose and is left alone; these are ours to replace when the level
+#: changes under them.
+OURS = frozenset(DETAILS.values())
 
 
 class Command(BaseCommand):
@@ -90,19 +112,34 @@ class Command(BaseCommand):
 			properties = dict(tree.get('Data properties') or {})
 			already = properties.get('rigour')
 
-			if already == level:
-				unchanged += 1
-				continue
-			if already and not options['overwrite']:
+			if already and already != level and not options['overwrite']:
 				skipped += 1
 				self.stdout.write('  %-6s already says %r, leaving it'
 				                  % (tid, already))
 				continue
 
 			properties['rigour'] = level
-			detail = DETAILS.get(level)
-			if detail and not properties.get('rigour details'):
-				properties['rigour details'] = detail
+
+			#The detail must follow the level, or a corrected label leaves the
+			#old explanation sitting under it. Only sentences this command
+			#wrote are replaced; anything a person put there is theirs.
+			existing = properties.get('rigour details')
+			if not existing or existing in OURS:
+				detail = DETAILS.get(level)
+				if detail:
+					properties['rigour details'] = detail
+				else:
+					properties.pop('rigour details', None)
+
+			#Skip on nothing-to-change rather than on level-matches. The two are
+			#not the same: a table whose level was corrected upward keeps the
+			#right level and the wrong sentence, and an early continue on the
+			#level alone is exactly why thirteen of them went out contradicting
+			#themselves.
+			if properties == (tree.get('Data properties') or {}):
+				unchanged += 1
+				continue
+
 			tree = dict(tree)
 			tree['Data properties'] = properties
 

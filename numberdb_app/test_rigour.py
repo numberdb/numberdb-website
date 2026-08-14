@@ -443,3 +443,95 @@ class MeasuredIsNotOnTheScale(TestCase):
 		measured = {line.split('\t')[0] for line in open(path, encoding='utf8')
 		            if line.startswith('T') and '\tmeasured\t' in line}
 		self.assertEqual(measured, {'T10', 'T12', 'T76', 'T78'})
+
+
+class TheDetailFollowsTheLevel(TestCase):
+	"""A corrected level must not leave the old explanation under it.
+
+	T61 went out reading "proven" above "a fixed-precision value wrapped in an
+	interval field, which records no error of its own" -- the sentence from the
+	level it used to have. Thirteen tables said it. The command only ever added
+	a detail where there was none, and skipped any table whose level already
+	matched, so a level corrected upward could never have its sentence revised.
+	"""
+
+	def _table(self, properties):
+		from .editing import create_table
+
+		return create_table(
+			{'Title': 'Detail test',
+			 'Data properties': dict(properties),
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}]})
+
+	def _run(self, table, level, tmpdir):
+		import os
+
+		from django.core.management import call_command
+
+		path = os.path.join(tmpdir, 'audit.tsv')
+		with open(path, 'w', encoding='utf8') as handle:
+			handle.write('%s\t%s\tbecause the test says so\n' % (table.tid, level))
+		call_command('set_rigour', file=path, overwrite=True, verbosity=0)
+
+		from .editing import tree_of
+		table.refresh_from_db()
+		return tree_of(table.head_revision)['Data properties']
+
+	def test_a_corrected_level_takes_its_own_sentence(self):
+		import tempfile
+
+		from .management.commands.set_rigour import DETAILS
+
+		table = self._table({'rigour': 'heuristic',
+		                     'rigour details': DETAILS['heuristic']})
+		with tempfile.TemporaryDirectory() as tmp:
+			properties = self._run(table, 'proven', tmp)
+
+		self.assertEqual(properties['rigour'], 'proven')
+		self.assertEqual(properties['rigour details'], DETAILS['proven'])
+		self.assertNotIn('no error of its own', properties['rigour details'])
+
+	def test_a_stale_sentence_is_fixed_even_when_the_level_is_right(self):
+		#The exact shape of the thirteen: right label, wrong sentence. If the
+		#command skips on "level already matches" this never gets repaired.
+		import tempfile
+
+		from .management.commands.set_rigour import DETAILS
+
+		table = self._table({'rigour': 'proven',
+		                     'rigour details': DETAILS['heuristic']})
+		with tempfile.TemporaryDirectory() as tmp:
+			properties = self._run(table, 'proven', tmp)
+
+		self.assertEqual(properties['rigour details'], DETAILS['proven'])
+
+	def test_somebody_elses_prose_is_left_alone(self):
+		import tempfile
+
+		mine = 'Checked by hand against Gourdon and Sebah, 2003.'
+		table = self._table({'rigour': 'heuristic', 'rigour details': mine})
+		with tempfile.TemporaryDirectory() as tmp:
+			properties = self._run(table, 'proven', tmp)
+
+		self.assertEqual(properties['rigour'], 'proven')
+		self.assertEqual(properties['rigour details'], mine)
+
+	def test_every_level_has_a_sentence(self):
+		#The hole is what let a stale one survive: with no sentence for
+		#`proven` there was nothing to overwrite the old one with.
+		from .management.commands.set_rigour import DETAILS
+		from .validate import RIGOUR_LEVELS
+
+		self.assertEqual(set(DETAILS), set(RIGOUR_LEVELS))
+
+	def test_no_sentence_contradicts_its_own_level(self):
+		from .management.commands.set_rigour import DETAILS
+
+		for level, detail in DETAILS.items():
+			if level != 'heuristic':
+				self.assertNotIn('records no error of its own', detail,
+				                 '%s claims more than it does' % (level,))
+			if level != 'assumed-bound':
+				self.assertNotIn('asserted rather than derived', detail,
+				                 '%s claims more than it does' % (level,))
