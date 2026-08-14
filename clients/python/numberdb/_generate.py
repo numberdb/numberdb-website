@@ -86,13 +86,23 @@ BATCH_SECONDS = 60
 #: proven, believed on a stated assumption, checked by agreement, or simply
 #: assumed, and a table that does not say which presents all four identically.
 #: See docs/design/rigour.md.
-RIGOUR_LEVELS = (
+#: The first five are ordered, weakest last. `measured` is not on that scale
+#: and must not be compared with it: a well-determined physical constant can be
+#: known to more digits than a heuristic computation and fewer than a proven
+#: one, and "is measurement better than agreement-checking" has no answer,
+#: because they are not the same kind of claim.
+COMPUTED_LEVELS = (
     'exact',
     'proven',
     'assumed-bound',
     'heuristic (agreement-checked)',
     'heuristic',
 )
+
+#: ...and one that is not a computation at all. A generator may declare it --
+#: one that reads CODATA, say -- but nothing about it can be enforced here,
+#: because the uncertainty belongs to an experiment this program never saw.
+RIGOUR_LEVELS = COMPUTED_LEVELS + ('measured',)
 
 
 class Generator:

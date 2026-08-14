@@ -7,9 +7,13 @@
 # 88 tables and most of it was made by reading one line of each generator.
 #
 # The evidence is the generate.sage that produced the table, in the
-# numberdb-data repository. Tables with no script, and the measured
-# physical constants, are deliberately absent: an absent level means
-# nobody has established one, which is the truth for them.
+# numberdb-data repository. Tables with no script are deliberately absent: an
+# absent level means nobody has established one, which is the truth for them.
+#
+# The four physical constants are `measured`, which is not on the scale the
+# other levels sit on. It says the number was not computed at all, so asking
+# whether measurement beats agreement-checking has no answer -- they are not
+# the same kind of claim.
 #
 # A first pass classified these by pattern-matching the scripts and got
 # thirteen wrong, in three separate ways: `mpmath.mp.airyaizero(` does not
@@ -112,3 +116,7 @@ T104	exact	type Z[]
 T105	exact	type Q[]
 T106	exact	type Q[]
 T107	exact	type Z[]
+T10	measured	experimental values; the stored interval spans the measurements
+T12	measured	experimental values; the stored interval spans the measurements
+T76	measured	experimental values, per NIST's stated uncertainties
+T78	measured	experimental values, per NIST's stated uncertainties

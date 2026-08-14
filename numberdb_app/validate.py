@@ -77,10 +77,24 @@ KNOWN_ANNOTATIONS = frozenset(['comment', 'comments', 'param-latex', 'proof',
 #: `heuristic (agreement-checked)`
 #:             computed twice at different precisions, keeping what agreed.
 #: `heuristic` one computation and a guard chosen by judgement.
+#: `measured`  not computed at all: the value comes from experiment, and its
+#:             uncertainty is the experiment's.
+#:
+#: The first five are ordered, weakest last, which is what will let a future
+#: `weakening` check refuse a run that quietly stores a worse value than the
+#: one it replaces. **`measured` is not on that scale and must not be compared
+#: with it.** A well-determined physical constant can be known to more digits
+#: than a heuristic computation and to fewer than a proven one, and the
+#: question "is measurement better than agreement-checking" has no answer --
+#: they are not the same kind of claim. Four tables here are of this kind: the
+#: fine-structure constant, the proton-to-electron mass ratio, and the mass
+#: and magnetic moment ratios.
 #:
 #: See docs/design/rigour.md.
-RIGOUR_LEVELS = ('exact', 'proven', 'assumed-bound',
-                 'heuristic (agreement-checked)', 'heuristic')
+COMPUTED_LEVELS = ('exact', 'proven', 'assumed-bound',
+                   'heuristic (agreement-checked)', 'heuristic')
+
+RIGOUR_LEVELS = COMPUTED_LEVELS + ('measured',)
 
 
 class Problem:

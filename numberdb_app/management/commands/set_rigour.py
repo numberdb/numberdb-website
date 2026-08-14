@@ -31,6 +31,10 @@ DETAILS = {
 		'A fixed-precision value wrapped in an interval field, which records '
 		'no error of its own. The working precision was half as many digits '
 		'again as were written, and nothing checked that the margin sufficed.',
+	'measured':
+		'Not computed: the value comes from experiment, and the interval is '
+		'chosen to hold the measurements together with their stated '
+		'uncertainties. See the reliability note for which measurements.',
 }
 
 
