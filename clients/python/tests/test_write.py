@@ -1511,3 +1511,93 @@ class TestTheLevelRidesWithTheSourceToo:
         files = [h for path, h, _b in server.posts if '/file/' in path]
         assert files
         assert any(_header(h, 'X-rigour') == 'heuristic' for h in files)
+
+
+class TestAgreeing:
+    """Computing at two precisions and keeping the digits they agree on.
+
+    Written by hand in T55's generator first, and lifted here before seven
+    more generators copied it. It is what makes a value from a library with no
+    error bound into something the precision check can measure.
+    """
+
+    def sage(self):
+        return pytest.importorskip('sage.all')
+
+    def test_it_returns_an_interval_of_real_width(self):
+        self.sage()
+        import numberdb.sage as sage_client
+
+        value = sage_client.agreeing(
+            lambda working: '3.14159265358979' if working > 12 else '3.1415926',
+            at=(10, 30))
+        assert value.lower() != value.upper()
+
+    def test_only_the_agreeing_digits_survive(self):
+        self.sage()
+        import numberdb.sage as sage_client
+        from numberdb._write import to_text
+
+        value = sage_client.agreeing(
+            lambda working: '1.2345678' if working > 12 else '1.2340000',
+            at=(10, 30))
+        #Three digits, not four: rounded to four significant figures the two
+        #are 1.234 and 1.235, which do not agree. The writer keeps what both
+        #support and no more, which is the whole point of the union.
+        assert to_text(value, digits=8) == '1.23'
+
+    def test_two_identical_computations_are_refused(self):
+        """They agree completely and say nothing, which would read as
+        infinite precision."""
+        self.sage()
+        import numberdb.sage as sage_client
+
+        with pytest.raises(ValueError) as raised:
+            sage_client.agreeing(lambda working: '3.14159', at=(50, 50))
+        assert 'say nothing' in str(raised.value)
+
+    def test_one_precision_is_refused(self):
+        self.sage()
+        import numberdb.sage as sage_client
+
+        with pytest.raises(ValueError) as raised:
+            sage_client.agreeing(lambda working: '3.14159', at=(50,))
+        assert 'cannot check itself' in str(raised.value)
+
+    def test_it_is_called_once_per_precision(self):
+        self.sage()
+        import numberdb.sage as sage_client
+
+        asked = []
+
+        def compute(working):
+            asked.append(working)
+            return '2.718281828459045'
+
+        sage_client.agreeing(compute, at=(20, 40, 60))
+        assert asked == [20, 40, 60]
+
+    def test_a_generator_using_it_publishes(self):
+        """The end of the road: a heuristic value that the precision check can
+        measure, which a point value never could."""
+        self.sage()
+        import numberdb.sage as sage_client
+
+        class Zeros(sage_client.Generator):
+            table = 'T7'
+            parameters = ('n',)
+            type = 'R'
+            digits = 8
+            rigour = 'heuristic (agreement-checked)'
+
+            def enumerate(self):
+                yield {'n': 1}
+
+            def value(inner, params, digits):
+                return sage_client.agreeing(
+                    lambda working: '2.33810741045976703848919725',
+                    at=(20, 40))
+
+        server = Server(entries={})
+        outcome = Zeros().publish(client=server.client())
+        assert outcome.added == ['1']
