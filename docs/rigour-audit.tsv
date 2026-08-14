@@ -38,6 +38,12 @@
 # right -- they agree with a 4000-bit computation past 200 characters -- but
 # nothing proves them, which is the distinction this file exists to draw.
 #
+# A table with a generator in `generators/` is described by that generator,
+# not by this file: the generator is what runs, and it may do better than the
+# script it replaced. Nine lines below say `converted:` for that reason, and
+# running this file with --overwrite before they did cost those nine tables
+# their levels for about a minute.
+#
 # tid	level	evidence
 T0	exact	type Z
 T1	exact	type Z
@@ -50,10 +56,10 @@ T14	proven	interval or ball arithmetic only
 T15	proven	interval or ball arithmetic only
 T16	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
 T17	proven	interval or ball arithmetic only
-T20	heuristic	a fixed-precision value wrapped in an interval field
-T21	heuristic	a fixed-precision value wrapped in an interval field
-T22	heuristic	a fixed-precision value wrapped in an interval field
-T23	heuristic	a fixed-precision value wrapped in an interval field
+T20	heuristic (agreement-checked)	converted: generators/T20-bessel-j-zeros computes at 150 and 200 digits and keeps what agrees
+T21	heuristic (agreement-checked)	converted: generators/T21-bessel-y-zeros computes at 150 and 200 digits and keeps what agrees
+T22	heuristic (agreement-checked)	converted: generators/T22-bessel-j-extrema computes at 150 and 200 digits and keeps what agrees
+T23	heuristic (agreement-checked)	converted: generators/T23-bessel-y-extrema computes at 150 and 200 digits and keeps what agrees
 T24	heuristic	a fixed-precision value wrapped in an interval field
 T25	heuristic	elliptic_kc under an interval field returns a POINT, not an enclosure: verified it does not contain a 4000-bit value
 T26	heuristic	elliptic_ec under an interval field returns a POINT, not an enclosure: verified it does not contain a 4000-bit value
@@ -79,10 +85,10 @@ T51	proven	interval or ball arithmetic only
 T52	proven	p-adic arithmetic, precision tracked by Qp
 T53	heuristic	a fixed-precision value wrapped in an interval field
 T54	heuristic	a fixed-precision value wrapped in an interval field
-T55	heuristic (agreement-checked)	its generator computes at two precisions and keeps what agrees
-T56	heuristic	a fixed-precision value wrapped in an interval field
-T57	heuristic	a fixed-precision value wrapped in an interval field
-T58	heuristic	a fixed-precision value wrapped in an interval field
+T55	heuristic (agreement-checked)	converted: generators/T55-airy-ai-zeros computes at 150 and 200 digits and keeps what agrees
+T56	heuristic (agreement-checked)	converted: generators/T56-airy-bi-zeros computes at 150 and 200 digits and keeps what agrees
+T57	heuristic (agreement-checked)	converted: generators/T57-airy-ai-extrema computes at 150 and 200 digits and keeps what agrees
+T58	heuristic (agreement-checked)	converted: generators/T58-airy-bi-extrema computes at 150 and 200 digits and keeps what agrees
 T59	heuristic	elliptic_pi under an interval field returns a POINT, not an enclosure: verified it does not contain a 4000-bit value
 T60	proven	exp(2*pi*i*k/n) evaluated into a complex interval field
 T61	proven	cos(pi*x) at exact rationals, evaluated into an interval field
@@ -93,7 +99,7 @@ T65	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
 T66	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
 T67	exact	type Q
 T68	proven	j-invariants of exact curves, taken in a complex interval field
-T69	assumed-bound	widened by a hand-chosen 4 ulps, and computed twice at p and 2p with the two written forms asserted equal
+T69	proven	converted: generators/T69-lvalue-rank-1 uses deriv_at1, which returns a proven error bound
 T70	assumed-bound	widened by a hand-chosen 4 ulps, and computed twice at p and 2p with the two written forms asserted equal
 T71	assumed-bound	widened by a hand-chosen 4 ulps, and computed twice at p and 2p with the two written forms asserted equal
 T72	assumed-bound	widened by a hand-chosen 4 ulps, and computed twice at p and 2p with the two written forms asserted equal
