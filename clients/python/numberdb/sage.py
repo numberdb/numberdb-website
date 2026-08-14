@@ -206,6 +206,18 @@ def assume_accurate(value, ulps, because):
     The generator using this should declare ``rigour = 'assumed-bound'``: the
     arithmetic downstream is rigorous, and it rests on something asserted here
     rather than proven.
+
+    **The argument counts too.** A documented bound on a routine bounds
+    ``f(x̃)``, where ``x̃`` is the argument as the routine received it. If ``x``
+    is not exactly representable at the working precision then ``x̃`` is not
+    ``x``, and there is a second error of size ``|f'| · |x - x̃|`` that no claim
+    about ``f`` covers -- and bounding *that* needs the derivative over an
+    interval, since a derivative at a point is itself a heuristic. So ``ulps``
+    here should account for the argument as well as the routine, and
+    ``because`` should say so. Where the argument is exactly representable --
+    an integer, a half -- there is nothing to add, and where the whole
+    computation is interval arithmetic the question does not arise, which is
+    the strongest practical case for `proven`.
     """
     from sage.all import RealBallField, RealIntervalField
 
