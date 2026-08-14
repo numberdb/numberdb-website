@@ -27,6 +27,17 @@
 # was re-checked against a deliberately wide net for inexact arithmetic, and
 # the one hit turned out to be a `.n()` inside a debugging print.
 #
+# That check was not enough. Reading a script cannot tell you whether
+# `RIF(f(x))` is an enclosure: it depends on whether f has an interval
+# implementation, and when it does not, Sage evaluates numerically and hands
+# back an interval of width zero -- which looks exactly like an exact value.
+# Running each function settled it. gamma, psi, zeta and log return genuine
+# enclosures; elliptic_kc, elliptic_ec, elliptic_pi and sin_integral return
+# points that do not contain a 4000-bit value. Four tables were labelled
+# `proven` on that basis and are now `heuristic`. Their stored digits are
+# right -- they agree with a 4000-bit computation past 200 characters -- but
+# nothing proves them, which is the distinction this file exists to draw.
+#
 # tid	level	evidence
 T0	exact	type Z
 T1	exact	type Z
@@ -44,8 +55,8 @@ T21	heuristic	a fixed-precision value wrapped in an interval field
 T22	heuristic	a fixed-precision value wrapped in an interval field
 T23	heuristic	a fixed-precision value wrapped in an interval field
 T24	heuristic	a fixed-precision value wrapped in an interval field
-T25	proven	interval or ball arithmetic only
-T26	proven	interval or ball arithmetic only
+T25	heuristic	elliptic_kc under an interval field returns a POINT, not an enclosure: verified it does not contain a 4000-bit value
+T26	heuristic	elliptic_ec under an interval field returns a POINT, not an enclosure: verified it does not contain a 4000-bit value
 T27	proven	interval or ball arithmetic only
 T28	proven	interval or ball arithmetic only
 T29	proven	interval or ball arithmetic only
@@ -55,7 +66,7 @@ T33	proven	interval or ball arithmetic only
 T34	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
 T35	proven	roots of integer quadratics, taken in a complex interval field
 T36	assumed-bound	interval widened by a hand-chosen 4 ulps (blur_real_interval)
-T40	proven	interval or ball arithmetic only
+T40	heuristic	sin_integral under an interval field returns a POINT, not an enclosure: verified it does not contain a 4000-bit value
 T42	exact	type Z
 T44	proven	p-adic arithmetic (Qp.teichmuller_system); mpmath is imported and never used
 T45	proven	p-adic arithmetic (Qp(k).log()); precision tracked by Qp
@@ -72,7 +83,7 @@ T55	heuristic (agreement-checked)	its generator computes at two precisions and k
 T56	heuristic	a fixed-precision value wrapped in an interval field
 T57	heuristic	a fixed-precision value wrapped in an interval field
 T58	heuristic	a fixed-precision value wrapped in an interval field
-T59	proven	interval or ball arithmetic only
+T59	heuristic	elliptic_pi under an interval field returns a POINT, not an enclosure: verified it does not contain a 4000-bit value
 T60	proven	exp(2*pi*i*k/n) evaluated into a complex interval field
 T61	proven	cos(pi*x) at exact rationals, evaluated into an interval field
 T62	exact	type Z
