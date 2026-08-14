@@ -381,6 +381,48 @@ not the writer, which was asked for a hundred, and not the check, which counts
 the digits it was given. Returning a string instead of an interval does not
 help: the string is padded too.
 
+## The argument is part of the error, and it is the part that gets forgotten
+
+A documented bound on a routine is a bound on **f(x̃)**, where x̃ is the
+argument as that routine actually received it. If x is not exactly
+representable at the working precision, x̃ is not x, and the value carries a
+second error that no accuracy claim about f covers:
+
+    |f(x) - computed| <= (the library's bound) + |f'(ξ)| · |x - x̃|
+
+The second term needs a bound on the derivative *over an interval containing
+both points*, and a derivative evaluated at a point is itself only a heuristic
+-- so a "rigorous" bound assembled that way can be neither.
+
+**Where this bites here.** Any table whose parameters are rationals and whose
+values come from a point-computation library: the prime zeta function and the
+Barnes G function at rational arguments both do `s = a/b` in Sage and hand the
+exact rational to mpmath, which rounds it. At two hundred working digits for a
+hundred written the induced error is far below anything stored, but it is
+unaccounted rather than small-by-argument.
+
+**Where it does not.** Three cases, worth knowing apart:
+
+- *Exactly representable arguments.* The Bessel tables are indexed by orders
+  in halves, which are dyadic and survive conversion exactly; the Airy tables
+  are indexed by an integer that is not an argument at all; T69 evaluates at
+  s = 1. Checked rather than assumed -- the Bessel orders really do have
+  denominators 1 and 2 only.
+- *Interval arithmetic throughout.* This is precisely what it is for.
+  `RIF(a)/RIF(b)` encloses the rational, and an interval-aware f propagates
+  that width along with its own. Argument error stops being a separate thing
+  to remember, which is the strongest practical argument for `proven` over any
+  amount of careful bookkeeping.
+- *Agreement checking*, partially. Two working precisions round the argument
+  *differently*, so an argument error large enough to matter at the digits
+  written will show up as disagreement. That is a real property and not a
+  proof: it catches the error at the size that matters and says nothing about
+  its bound.
+
+So the rule for `assumed-bound`: the `because` must cover the argument as well
+as the routine. "PARI documents one ulp for this function" is not enough when
+the function is being evaluated somewhere the machine cannot put you.
+
 ## What this does not do
 
 Agreement between two precisions bounds **rounding** error, not **method**
