@@ -69,6 +69,28 @@ zeros: their numbers came from somewhere, and nothing here records where. That
 is a provenance question rather than a rigour one, and it overlaps with the
 *bundle* item below.
 
+## Recompute the rank 1 L-values with the bound Sage already provides
+
+Of the fourteen `assumed-bound` tables, the L-value ones have a documented
+error bound and nobody used it. `E.lseries().deriv_at1()` returns the value
+*and* "a bound on the error in the approximation" -- a series-truncation bound
+from Cohen's algorithm. Measured on 37a: a thousand terms gives a bound of
+2e-118, so **118 proven digits in under a tenth of a second**.
+
+The tables were built with `taylor_series` instead, which documents a precision
+in bits and no accuracy, and then widened by four ulps chosen by hand. Using
+the bounded method turns the special value of the L-function of rank 1 curves
+from `assumed-bound` into `proven`, at no cost worth measuring.
+
+It covers rank 0 and rank 1 only -- `at1` is `L(E,1)`, `deriv_at1` is `L'(E,1)`
+assuming the first vanishes. The rank 2 and rank 3 tables have no such method
+and stay as they are, as do the regulators and real periods, for which Sage
+documents bits and not accuracy. Those should say so in `rigour details`:
+"Sage documents no accuracy for this quantity" is worth more to a reader than
+silence, because it says somebody looked.
+
+See `docs/design/rigour.md`.
+
 ## A bundle does not always reproduce its table
 
 A table's bundle carries the head revision's files. If half the entries were
