@@ -70,7 +70,7 @@ __all__ = ['search', 'search_many', 'search_text',
            'NumberDBError', 'TransportError', 'RateLimitError', 'UnauthorizedError',
            'UnsupportedNumberError', 'ConflictError', 'TooBigError', 'DisagreementError',
            'Generator', 'PublishOutcome', 'VerifyReport', 'bits',
-           'assume_accurate',
+           'assume_accurate', 'agreeing',
            '__version__']
 
 #Checked by specification rather than by importing: Sage takes seconds to load,
@@ -228,3 +228,64 @@ def assume_accurate(value, ulps, because):
     ball = RealBallField(bits_of)(value)
     return ball.add_error(ball.abs() * RealBallField(bits_of)(2) ** (-bits_of)
                           * ulps)
+
+
+def agreeing(compute, at):
+    """Compute a value at several precisions and keep the digits they agree on.
+
+    For a number that cannot be computed rigorously. `mpmath.airyaizero` and
+    its kind return a fixed-precision float with no error bound, and printing
+    one to a hundred digits gives a hundred digits -- the last sixty of them
+    the decimal expansion of a binary approximation. Nothing downstream can
+    tell: a point wrapped in an interval field has width zero, which says the
+    value is exact.
+
+    Computing twice and keeping what agrees turns that into something
+    measurable::
+
+        def value(self, params, digits):
+            return numberdb.agreeing(
+                lambda working: self._zero(params['n'], working),
+                at=(150, 200))
+
+    ``compute`` is called once per entry in ``at`` with that number of working
+    **decimal digits**, and should return whatever it computed -- a string
+    carrying that many digits is the usual thing, since a string crossing from
+    another library into Sage keeps the digits rather than a binary
+    approximation of them.
+
+    The result is the union of the values as intervals, so it has real width,
+    only the digits every computation supports are written, and `publish`'s
+    precision check has something to measure. A generator using this should
+    declare ``rigour = 'heuristic (agreement-checked)'``.
+
+    ``at`` is stated explicitly rather than derived from ``digits``, and there
+    is no escalation on failure: the file attached to a table is meant to be
+    how those numbers were made, and a run that silently raised its own
+    precision would not be. If the agreement is too short, raise the numbers
+    here and run it again.
+
+    **This is not a proof.** It bounds the error from working precision and
+    nothing else. Two runs of a wrong algorithm agree perfectly, and so do two
+    runs of a library function with a bug.
+    """
+    from sage.all import RealIntervalField
+
+    from ._write import bits
+
+    working = [int(w) for w in at]
+    if len(working) < 2:
+        raise ValueError(
+            'agreeing() needs at least two precisions to compare; one '
+            'computation cannot check itself, which is the whole point of it.')
+    if len(set(working)) != len(working):
+        raise ValueError(
+            'agreeing() was given the same precision twice: %r. Two identical '
+            'computations agree completely and say nothing.' % (at,))
+
+    field = RealIntervalField(bits(max(working)))
+    values = [field(compute(w)) for w in working]
+    result = values[0]
+    for value in values[1:]:
+        result = result.union(value)
+    return result

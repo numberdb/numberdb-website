@@ -41,14 +41,11 @@ import sys
 
 import mpmath
 import numberdb.sage as numberdb
-from sage.all import RealIntervalField
 
 
-#: Digits computed beyond the digits written, as the original used: fifty guard
-#: digits for a hundred written.
-GUARD_RATIO = 1.5
-
-#: ...and again at this much more, so the two can be compared.
+#: The two working precisions, in decimal digits. The first is what the
+#: original script used for a hundred written digits; the second is enough more
+#: to disagree if the first were wrong.
 #:
 #: One computation cannot check itself. `mpmath.nstr(z, 100)` prints a hundred
 #: digits of a value computed to thirty, and the last seventy are the decimal
@@ -56,7 +53,7 @@ GUARD_RATIO = 1.5
 #: wrong. Measured on n = 1: computing at 30 digits and at 300 gives answers
 #: that diverge at the 40th, so 61 of the 100 digits would have been published
 #: without anything noticing.
-SECOND_OPINION = 2.0
+WORKING = (150, 200)
 
 
 class AiryAiZeros(numberdb.Generator):
@@ -77,24 +74,10 @@ class AiryAiZeros(numberdb.Generator):
             yield {'n': n}
 
     def value(self, params, digits):
-        n = params['n']
-        low = self._zero(n, int(digits * GUARD_RATIO))
-        high = self._zero(n, int(digits * SECOND_OPINION))
-
-        # The two answers as one interval. This is the whole idea: a value
-        # computed twice at different precisions, kept only as far as the two
-        # agree. The union has real width, so the package's writer emits only
-        # the digits both support, and its precision check -- which measures
-        # what a value pins down -- is no longer looking at a point that claims
-        # everything.
-        #
-        # Not a proof, and it must not be read as one. Two runs of the same
-        # algorithm can be wrong together, and this bounds the error from
-        # working precision, nothing else. It is the difference between a
-        # hundred digits believed because fifty extra were computed, and a
-        # hundred digits that two computations agreed on.
-        field = RealIntervalField(numberdb.bits(int(digits * SECOND_OPINION)))
-        return field(low).union(field(high))
+        # `agreeing` was written here by hand first, and lifted into the
+        # package before the seven generators that followed copied it.
+        return numberdb.agreeing(
+            lambda working: self._zero(params['n'], working), at=WORKING)
 
     @staticmethod
     def _zero(n, working_digits):
