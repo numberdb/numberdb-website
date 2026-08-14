@@ -35,40 +35,39 @@ Lock on, an application key **without `deleteFiles`**, and an `age` keypair in
 Bitwarden. Once those exist: `scripts/backup-push.sh`, a systemd timer on the
 server, `restore.sh --from-remote`, and a weekly `make restore_check`.
 
-## Say how well each number is actually known
+## What is left of saying how well each number is known
 
-A table says a number has a hundred digits and never says whether they are
-proven, guaranteed by a library, checked by agreement, or assumed. Measured
-over the data repository's 80 generator scripts: 21 are rigorous throughout,
-**43 touch arithmetic with no error bound**, and 29 of those end by wrapping a
-point value in an interval field, which is a zero-width interval that will
-print as many digits as it is asked for.
+Most of it is done -- see *Done* at the bottom, and `docs/design/rigour.md`.
+Four things were designed and not built, and one question is nobody's to answer
+but Benjamin's.
 
-Two consequences, and the second is worse than the first. Those 29 tables
-publish a hundred digits on the strength of a guard chosen by judgement -- the
-idiom is `mpmath.mp.dps = prec10 * 1.5`, with nothing checking it. And the
-client package's precision check is **silently inert** on exactly those tables:
-it measures the digits of the written string, so a point value always satisfies
-it. It has never fired for any of them and never will.
+**The measured constants.** Four tables hold numbers that were never computed:
+the fine-structure constant, the proton-to-electron mass ratio, the mass ratios
+and the magnetic moment ratios. None of the five levels fits, because all five
+describe a calculation. Their `reliability` prose already says the right thing
+-- "chosen to contain all measurements up to five measurement uncertainties" --
+so the choice is whether to add a `measured` level or leave them unlabelled.
+Leaving them is defensible; the audit did.
 
-The design is written up in `docs/design/rigour.md`: four ordered levels, held
-on the entry with a table-level default, `proven_digits` alongside the written
-value for numbers proven part of the way, and a `weakening` argument so a run
-cannot quietly replace a proven value with a heuristic one. The first step is
-small and stops the problem growing: an `assume_accurate()` that turns a
-*stated* error bound into a genuine ball, and a refusal of unmarked point
-values.
+**Per-entry levels and `proven_digits`.** The level lives on the table today.
+Polya's random walk constants is the case that needs more: it is proven for
+d <= 3 and has no error bounds beyond, which its prose says and no field can.
+The same tables want `proven_digits` -- a number known rigorously to twenty
+digits and heuristically to a hundred should say so rather than pick one.
 
-Checked while drafting, and it changed the design: PARI's documentation does
-not support the general one-ulp confidence it is credited with. Of the 1271
-documented functions in the PARI shipped with Sage, "ulp" appears in one, and
-the header on transcendental functions describes only how precision is
-*carried*, never how accurate the answer is. So a bound is the author's
-assertion with the author's reason, not something a helper can supply.
+**Agreement-checking in the package.** T55 does it by hand, in eight lines that
+every heuristic generator will otherwise copy: compute at two precisions and
+hand over `field(low).union(field(high))`. Lifting it into the package is the
+difference between one implementation and eleven.
 
-This is a correctness item rather than a feature. Nothing here is wrong that
-was not wrong before, but the site currently presents assumption and proof
-identically, and search by number treats them alike.
+**`weakening`.** A run cannot yet be stopped from replacing a proven value with
+a heuristic one. Nothing can weaken anything until per-entry levels exist, so
+this waits on them.
+
+**The fourteen tables with no script.** Pi, e, the golden ratio, the zeta
+zeros: their numbers came from somewhere, and nothing here records where. That
+is a provenance question rather than a rigour one, and it overlaps with the
+*bundle* item below.
 
 ## A bundle does not always reproduce its table
 
@@ -104,6 +103,15 @@ skipping it: scripts whose dependencies are gone, that took days on hardware
 nobody has, or that were never checked in at all. A list of "these tables have
 no runnable generator, and here is why" is itself worth having, and it is what
 the *bundle* item above needs in order to be honest.
+
+**Where to start is now known rather than guessed.** The rigour audit
+(`docs/rigour-audit.tsv`) names the eleven tables whose digits are least
+supported -- the ones still labelled `heuristic` -- and most of them are the
+same shape as T55: `mpmath.mp.somethingzero(n)` wrapped in an interval field.
+Airy Bi, the four Bessel families and the local extrema can be converted from
+T55's generator almost mechanically, and each conversion moves a table from
+"believed because fifty extra digits were computed" to "agreement-checked".
+That is a better order than working down the table list.
 
 It is also the prerequisite for the item below: an agent asked to fill a "table
 wanted" issue needs worked examples to copy, and those do not exist yet.
@@ -349,6 +357,13 @@ The public profile should be perhaps similar to the ones on wikipedia, content-w
   client version and never a token. An account can be exported and deleted,
   keeping its contributions under a placeholder name. What is left of this
   item is the postal address, above.
+- **Saying how well each number is known.** Five levels, closed and enforced:
+  a generator claiming `proven` must return an exact value or an interval of
+  nonzero width, so the point-interval trap is refused rather than published.
+  The level is sent once per run and shown on the table. 88 of 107 tables are
+  labelled, audited in `docs/rigour-audit.tsv` -- 31 exact, 31 proven, 14
+  assumed-bound, 11 heuristic, 1 agreement-checked -- and 19 deliberately not.
+  Two generators declare their own. What is left is above.
 - **Discussions on tables.** A thread per table, linked beside its title.
   Anyone reads, anyone who may edit posts, the board can hide a message
   (kept, not deleted). The models had been designed and migrated long before
