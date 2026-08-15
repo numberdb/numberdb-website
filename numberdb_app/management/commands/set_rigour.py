@@ -94,13 +94,13 @@ class Command(BaseCommand):
 			line = line.rstrip('\n')
 			if not line or line.startswith('#'):
 				continue
-			tid, level, evidence = (line.split('\t') + ['', ''])[:3]
+			tid, level, evidence, detail = (line.split('\t') + ['', '', ''])[:4]
 			if level not in RIGOUR_LEVELS:
 				raise CommandError('%s: %r is not a rigour level' % (tid, level))
-			wanted.append((tid, level, evidence))
+			wanted.append((tid, level, evidence, detail.strip()))
 
 		set_ = skipped = missing = unchanged = 0
-		for tid, level, evidence in wanted:
+		for tid, level, evidence, detail in wanted:
 			try:
 				table = Table.objects.get(tid=tid)
 			except Table.DoesNotExist:
@@ -123,11 +123,18 @@ class Command(BaseCommand):
 			#The detail must follow the level, or a corrected label leaves the
 			#old explanation sitting under it. Only sentences this command
 			#wrote are replaced; anything a person put there is theirs.
+			#A fourth column in the audit gives this table its own sentence,
+			#for the tables the generic one does not fit: `proven` usually
+			#means ball arithmetic, but T5's interval is a pair of theorems and
+			#T3's zeros were checked against arb's certified enclosures.
+			#Neither is described by "computed in interval arithmetic
+			#throughout", and a sentence that is nearly right is worse here
+			#than none.
 			existing = properties.get('rigour details')
 			if not existing or existing in OURS:
-				detail = DETAILS.get(level)
-				if detail:
-					properties['rigour details'] = detail
+				chosen = detail or DETAILS.get(level)
+				if chosen:
+					properties['rigour details'] = chosen
 				else:
 					properties.pop('rigour details', None)
 
