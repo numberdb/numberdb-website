@@ -161,25 +161,51 @@ class RunCache:
 		row = self.known().get(identity)
 		return row.get('entry') if row else None
 
+	def bounded(self, identity: str) -> Optional[bool]:
+		"""Whether this entry's value carried its own error when computed.
+
+		The cache holds text, and text cannot say whether the number it was
+		written from was a ball or a float -- `0.5` reads the same either way.
+		So the answer is recorded when the value still exists as an object,
+		and read back here.
+
+		``None`` means the row predates this field, in which case the caller
+		has nothing to go on and should not pretend otherwise.
+		"""
+		row = self.known().get(identity)
+		if not row:
+			return None
+		value = row.get('bounded')
+		return value if isinstance(value, bool) else None
+
 	def __len__(self) -> int:
 		return len(self.known())
 
 	#-- writing ---------------------------------------------------------
 
-	def put(self, identity: str, entry: Mapping[str, Any]) -> None:
+	def put(self, identity: str, entry: Mapping[str, Any],
+	        bounded: Optional[bool] = None) -> None:
 		"""Record one computed entry, and get it onto the disk now.
 
 		Flushed and synced deliberately: a cache that loses the last hour
 		because it was still in a buffer is not doing the one job it has.
+
+		``bounded`` says whether the value carried its own error bound before
+		it was turned into text. It is stored beside the entry rather than
+		inside it, because it is a fact about the computation and not a field
+		of the entry -- putting it inside would send it to the server as an
+		annotation somebody would then have to explain.
 		"""
 		os.makedirs(os.path.dirname(self.path) or '.', exist_ok=True)
-		row = _write_document({'identity': identity, 'entry': dict(entry)})
+		row = {'identity': identity, 'entry': dict(entry)}
+		if bounded is not None:
+			row['bounded'] = bool(bounded)
 		with open(self.path, 'a', encoding='utf8') as handle:
-			handle.write('---\n' + row)
+			handle.write('---\n' + _write_document(row))
 			handle.flush()
 			os.fsync(handle.fileno())
 		if self._known is not None:
-			self._known[identity] = {'identity': identity, 'entry': dict(entry)}
+			self._known[identity] = dict(row)
 
 	def entries(self) -> Iterator[Dict[str, Any]]:
 		"""The cached entries, in the order they were computed."""

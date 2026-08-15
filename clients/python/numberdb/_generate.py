@@ -690,8 +690,8 @@ def _publish(generator, only=None, message='', overwrite=True,
 
     skip = (lambda identity: identity in stored) if not overwrite else None
     seen = set()
-    for identity, params, entry, asked in _stream(generator, only, digits,
-                                                  bounds, cache, skip):
+    for identity, params, entry, asked, bounded in _stream(
+            generator, only, digits, bounds, cache, skip):
         seen.add(identity)
         entry = dict(entry)
         #An entry may declare that it is less precise on purpose -- a constant
@@ -704,7 +704,8 @@ def _publish(generator, only=None, message='', overwrite=True,
         #and the decimal form -- so the string that was checked for
         #contradictions and precision was not the string that reached the
         #table, and a generator asking for twenty digits stored a hundred.
-        _check_rigour(generator, table, identity, entry['number'])
+        _check_rigour(generator, table, identity, entry['number'],
+                      bounded=bounded)
         entry['number'] = _written(entry['number'], wanted, generator.format)
         text = (entry['number'][0] if isinstance(entry['number'], list)
                 else entry['number'])
@@ -801,7 +802,7 @@ def _carries_its_own_error(value) -> bool:
     return False
 
 
-def _check_rigour(generator, table, identity, value):
+def _check_rigour(generator, table, identity, value, bounded=None):
     """Refuse a value that cannot support the rigour the generator claims.
 
     Only ``proven`` is enforceable, and only in one direction: a value that
@@ -817,7 +818,14 @@ def _check_rigour(generator, table, identity, value):
         return
     if generator.type in Generator.EXACT_TYPES:
         return
-    if _carries_its_own_error(value):
+    #`bounded` is what the value was when it existed as an object. On a cache
+    #hit that is the only thing anyone knows: the value here is the text the
+    #cache held, and text carries no error term, so deriving the answer from
+    #it would refuse every warm re-run of a proven generator -- which is
+    #exactly what it did, on the second publish of T93.
+    if bounded is True:
+        return
+    if bounded is None and _carries_its_own_error(value):
         return
     raise DisagreementError(
         '%s entry %s: rigour is %r, and this value carries no error of its '
@@ -1028,7 +1036,12 @@ def _current_entries(table, client):
 
 
 def _stream(generator, only, digits, bounds, cache, skip=None):
-    """Yield ``(identity, params, entry, digits)``, computing as it goes.
+    """Yield ``(identity, params, entry, digits, bounded)``, computing as it
+    goes.
+
+    ``bounded`` is whether the value carried its own error bound. It is passed
+    along rather than re-derived downstream because a cached entry is text, and
+    text cannot be asked.
 
     ``skip`` is consulted *before* the value is computed, which is the whole
     value of ``overwrite=False``: skipping afterwards would still have paid for
@@ -1049,8 +1062,10 @@ def _stream(generator, only, digits, bounds, cache, skip=None):
                 continue
             entry = _as_entry(value)
             wanted = _digits_for(generator, params, digits)
-            cache.put(identity, _plain(entry, wanted, generator.format))
-            yield identity, params, entry, wanted
+            bounded = _carries_its_own_error(entry['number'])
+            cache.put(identity, _plain(entry, wanted, generator.format),
+                      bounded=bounded)
+            yield identity, params, entry, wanted, bounded
         return
 
     for params in _wanted(generator, only, bounds):
@@ -1064,8 +1079,15 @@ def _stream(generator, only, digits, bounds, cache, skip=None):
             found = generator._entry(params, wanted)
             #Written before anything else happens to it, because what this
             #protects against is the next line never running.
-            cache.put(identity, _plain(found, wanted, generator.format))
-        yield identity, params, found, wanted
+            bounded = _carries_its_own_error(found['number'])
+            cache.put(identity, _plain(found, wanted, generator.format),
+                      bounded=bounded)
+        else:
+            #A cached value is text: `0.5` reads the same whether it came from
+            #a ball or a float, so whether it carried an error cannot be
+            #recovered from it. The cache was asked at the time and remembers.
+            bounded = cache.bounded(identity)
+        yield identity, params, found, wanted, bounded
 
 
 def _identity(params, names):

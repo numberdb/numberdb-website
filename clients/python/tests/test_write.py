@@ -1601,3 +1601,80 @@ class TestAgreeing:
         server = Server(entries={})
         outcome = Zeros().publish(client=server.client())
         assert outcome.added == ['1']
+
+
+class TestAWarmCacheDoesNotBreakProven:
+    """A second run must not be refused for reading its own cache.
+
+    The cache holds text. `0.5` reads the same whether it was written from a
+    ball or from a float, so whether the value carried an error bound cannot
+    be recovered from the cached form -- and the rigour check, deriving it
+    from the string, concluded that it had none and refused. The first run of
+    a `proven` generator therefore succeeded and the second failed, with a
+    message telling the author to compute in interval arithmetic, which is
+    what they had done.
+
+    Found on the second publish of T93 (Barnes G), where an earlier run had
+    stopped on an unrelated precision refusal and left a full cache behind.
+    """
+
+    class Bounded(numberdb.Generator):
+        table = 'T7'
+        parameters = ('n',)
+        type = 'R'
+        rigour = 'proven'
+        #One digit, because the point of these intervals is that they carry
+        #endpoints at all, not that they are narrow. Asking for a hundred
+        #would fail them on precision before the check under test is reached.
+        digits = 1
+
+        def enumerate(self, limit=2):
+            for n in range(1, limit + 1):
+                yield {'n': n}
+
+        def value(self, params, digits):
+            from numberdb._wire import RealInterval
+            n = int(params['n'])
+            return RealInterval(Fraction(1, n + 1), Fraction(1, n))
+
+    def test_the_second_run_is_not_refused(self):
+        self.Bounded().publish(client=Server().client())
+
+        #Same generator, same arguments: every entry now comes from the cache
+        #the first run wrote, as text.
+        self.Bounded().publish(client=Server().client())
+
+    def test_the_cache_records_whether_the_value_was_bounded(self, tmp_path):
+        import os
+
+        self.Bounded().publish(client=Server().client())
+        cached = os.listdir(str(tmp_path / 'cache'))
+        text = open(str(tmp_path / 'cache' / cached[0])).read()
+        assert 'bounded: true' in text
+
+    def test_a_point_is_still_refused_on_a_warm_cache(self):
+        """The check must not have been turned off, only taught to remember.
+
+        A value that carries no error is refused on the first run; it must
+        still be refused on the second, when the answer comes from the cache
+        rather than from the value.
+        """
+        class Point(numberdb.Generator):
+            table = 'T7'
+            parameters = ('n',)
+            type = 'R'
+            rigour = 'proven'
+
+            def enumerate(self, limit=2):
+                for n in range(1, limit + 1):
+                    yield {'n': n}
+
+            def value(self, params, digits):
+                #A string: accepted as a number, and carrying no error of its
+                #own, which is exactly what `proven` may not be built on.
+                return '0.5'
+
+        for attempt in (1, 2):
+            with pytest.raises(numberdb.DisagreementError) as raised:
+                Point().publish(client=Server().client())
+            assert 'carries no error of its own' in str(raised.value), attempt
