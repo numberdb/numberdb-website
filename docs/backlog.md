@@ -83,13 +83,62 @@ the bounded method turns the special value of the L-function of rank 1 curves
 from `assumed-bound` into `proven`, at no cost worth measuring.
 
 It covers rank 0 and rank 1 only -- `at1` is `L(E,1)`, `deriv_at1` is `L'(E,1)`
-assuming the first vanishes. The rank 2 and rank 3 tables have no such method
-and stay as they are, as do the regulators and real periods, for which Sage
-documents bits and not accuracy. Those should say so in `rigour details`:
-"Sage documents no accuracy for this quantity" is worth more to a reader than
-silence, because it says somebody looked.
+assuming the first vanishes. The rank 2 and rank 3 tables have no such method.
+
+**Done for the rest of that group, 2026-08-15**, by reading the implementations
+rather than the docstrings. Every one now says what is and is not known about
+it, in its own words:
+
+  * *Regulators (T64-66).* `E.regulator(proof=True)` proves the Mordell-Weil
+    basis, so the quantity is right; the numerics are not bounded. Heights come
+    from PARI's `ellheight`, whose documentation gives the normalisation and no
+    accuracy. Sage's own implementation truncates Silverman's series at a count
+    derived from his published bound but tracks no rounding, and its working
+    precision is a guard arrived at by patching failures ("100 extra bits is
+    not enough when the discriminant is ~1e-92"). The matrix is ordinary
+    floating point with a cancelling subtraction off the diagonal, then a
+    determinant. Measured: recomputing at double precision agrees to ~204
+    digits.
+
+  * *Real periods (T72-74) and L-values (T70-71).* These were mislabelled
+    *upward*. They compute at two precisions and assert agreement, which is an
+    agreement check, not an assumed bound.
+
+**Still open, and now easy:** the real periods can be *proven*. `real_period`
+is pi divided by an AGM, and arb implements the AGM in ball arithmetic --
+`RBF.pi() / RBF(a).agm(RBF(b))` from the exact algebraic `_abc`, measured at
+695 accurate bits out of 700. What it needs is a generator, and the curve list
+vendored beside it the way T69 vendors `curves.py`.
 
 See `docs/design/rigour.md`.
+
+## Three tables that are still guesses
+
+The audit is complete -- 107 of 107 tables state a level -- and after the
+2026-08-15 pass these are the computed tables that remain `heuristic`, with
+what each would take:
+
+  * **T24, prime zeta.** `mpmath.primezeta`, which documents no accuracy.
+    Provable: `P(s) = sum_n mu(n)/n log zeta(ns)` with arb's rigorous zeta and
+    an explicit tail bound (for `ns >= 2`, `|log zeta(ns)| < 2^(1-ns)`, so the
+    tail past N is geometric). The care is in the terms with `ns <= 1`, where
+    `log zeta` goes complex -- which is why the table's type is `C` -- and in
+    the singularities at `s = 1/k` the table already excludes.
+
+  * **T53, T54, multiple zeta values.** Sage gets these from PARI's
+    `zetamult`/`zetamultall` in `RealField`; PARI documents no accuracy, as
+    with `ellheight`. There is no ball implementation of general MZVs. The
+    cheap honest step is an agreement check at two precisions, which is what
+    the stored digits actually rest on and would move them one level. Proving
+    them means Euler-Maclaurin on the nested sum with a rigorous tail.
+
+  * The transcribed tables -- T4 (LMFDB), T18 (Feigenbaum), T38, T84 (LMFDB
+    Maass forms), and the tail of T19 -- are a different problem: the digits
+    were never computed here, so no amount of care in this repository can
+    raise them. Either recompute or leave them saying what they are.
+
+`numberdb.sage.agreeing` handles the real case; T24 would need a complex
+counterpart, since it is the only one of these whose values are not real.
 
 ## A bundle does not always reproduce its table
 
