@@ -431,10 +431,15 @@ The public profile should be perhaps similar to the ones on wikipedia, content-w
 - **Saying how well each number is known.** Five levels, closed and enforced:
   a generator claiming `proven` must return an exact value or an interval of
   nonzero width, so the point-interval trap is refused rather than published.
-  The level is sent once per run and shown on the table. 88 of 107 tables are
-  labelled, audited in `docs/rigour-audit.tsv` -- 31 exact, 31 proven, 14
-  assumed-bound, 11 heuristic, 1 agreement-checked -- and 19 deliberately not.
-  Two generators declare their own. What is left is above.
+  The level is sent once per run and shown on the table. **All 107 tables are
+  labelled** as of 2026-08-15, audited in `docs/rigour-audit.tsv` -- 33 exact,
+  39 proven, 15 agreement-checked, 7 assumed-bound, 9 heuristic, 4 measured.
+  The last fifteen had no generating script, so they were checked here: pi, e,
+  the golden ratio and exp(pi*sqrt(163)) against ball arithmetic, and all 1000
+  zeta zeros against arb's certified enclosures, none disagreeing. Five tables
+  moved from `heuristic` to `proven` by being recomputed in arb ball
+  arithmetic (T25, T26, T59, T40, T93), every entry matching what was stored.
+  What is left is above.
 - **Discussions on tables.** A thread per table, linked beside its title.
   Anyone reads, anyone who may edit posts, the board can hide a message
   (kept, not deleted). The models had been designed and migrated long before
