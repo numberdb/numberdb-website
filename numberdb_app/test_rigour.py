@@ -373,11 +373,42 @@ class TheAuditCommand(TestCase):
 			if not line or line.startswith('#'):
 				continue
 			parts = line.split('\t')
-			self.assertEqual(len(parts), 3, 'malformed line: %r' % (line,))
+			#Three columns, or four when the table needs its own sentence
+			#rather than the generic one for its level.
+			self.assertIn(len(parts), (3, 4), 'malformed line: %r' % (line,))
 			self.assertIn(parts[1], RIGOUR_LEVELS)
 			self.assertTrue(parts[2].strip(), 'no evidence given for %s' % parts[0])
+			if len(parts) == 4:
+				detail = parts[3].strip()
+				self.assertTrue(detail, 'empty fourth column for %s' % parts[0])
+				#It is shown to readers under "How they were obtained", so it
+				#is prose and has to read like it.
+				self.assertTrue(detail[0].isupper() and detail.endswith('.'),
+				                'not a sentence for %s: %r' % (parts[0], detail))
 			labelled += 1
 		self.assertGreater(labelled, 50)
+
+	def test_every_table_with_a_level_still_has_evidence(self):
+		#The fifteen tables added on 2026-08-15 have no generating script, so
+		#their evidence is what was done to check them here. A line with a
+		#level and no evidence is a label nobody can argue with, which is the
+		#thing this file exists to prevent.
+		import os
+
+		from django.conf import settings
+
+		path = os.path.join(settings.BASE_DIR, 'docs', 'rigour-audit.tsv')
+		for line in open(path, encoding='utf8'):
+			if line.startswith('#') or '\t' not in line:
+				continue
+			tid, level, evidence = line.split('\t')[:3]
+			evidence = evidence.strip()
+			#`type Z` is six characters and is the whole argument for an exact
+			#table: there is no precision to choose. The computed levels are
+			#the ones that have to say something.
+			floor = 5 if level == 'exact' else 15
+			self.assertGreater(len(evidence), floor,
+			                   'thin evidence for %s: %r' % (tid, evidence))
 
 
 class MeasuredIsNotOnTheScale(TestCase):
