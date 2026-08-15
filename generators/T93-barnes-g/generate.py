@@ -36,10 +36,11 @@ from sage.all import QQ, ZZ, ComplexBallField, factorial, prod
 #: Bits of working precision beyond what the written digits need.
 #:
 #: G grows and shrinks fast, and the negative arguments come through the
-#: reflection formula with cancellation. Measured over the whole table: at the
-#: default guard the worst entry (s = -29/3) retains 105.5 digits, and at 64 it
-#: retains 119.9 -- the worst entry is the same one either way, so the cost is
-#: the argument's, not the guard's.
+#: reflection formula with cancellation. Measured over the whole table at the
+#: 200 digits this table holds: at the default guard the worst entry (s = 29/3)
+#: retains 205.2 digits, and at 64 it retains 219.6. The worst entry is the
+#: same one at every guard, so what it costs is the argument's doing rather
+#: than the guard's.
 WORKING_GUARD = 64
 
 
@@ -48,7 +49,16 @@ class BarnesG(numberdb.Generator):
     table = 'T93'
     parameters = ('s',)
     type = 'R'
-    digits = 100
+
+    #Two hundred, not the hundred usual here, because that is what the table
+    #holds and the package refuses to publish over a stored value with fewer
+    #digits than it found -- which is how this was noticed. The original script
+    #set `prec10 = 100` and passed its result through a formatter with
+    #`max_digits = 100`, but handed that formatter an *mpmath* number rather
+    #than a Sage interval, so the limit never applied and mpmath's full working
+    #precision of 200 digits was written out. Every one of those digits was
+    #unestablished; all 200 are now proven.
+    digits = 200
 
     #Ball arithmetic, and exact integers where the value is one.
     rigour = 'proven'
