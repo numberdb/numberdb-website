@@ -395,15 +395,22 @@ class AiryAiZeros(numberdb.Generator):
     rigour = 'heuristic (agreement-checked)'
 
     def value(self, params, digits):
-        low = self._zero(n, int(digits * 1.5))      # two precisions
-        high = self._zero(n, int(digits * 2.0))
-        field = RealIntervalField(numberdb.bits(int(digits * 2.0)))
-        return field(low).union(field(high))        # keep what they agree on
+        return numberdb.agreeing(
+            lambda working: self._zero(params['n'], working),
+            at=(150, 200))                          # two working precisions
 ```
 
-The union has real width, so only the digits both computations support are
-written — and the precision check has something to measure, which it does not
-when handed a point.
+`agreeing` calls your function once per precision — in **decimal digits**, not
+bits — and returns the union of the results as intervals. The union has real
+width, so only the digits every computation supports are written, and the
+precision check has something to measure, which it does not when handed a
+point.
+
+The precisions are written out rather than derived from `digits`, and a run
+that falls short does not quietly try again with more: the file attached to a
+table is meant to say how those numbers were made, and a computation that
+raised its own precision behind your back would not be saying it. If the
+agreement is too short, raise the numbers in the file.
 
 In SageMath, `assume_accurate` turns a bound you can justify into a ball, so
 that everything after it is interval arithmetic and the error propagates
