@@ -130,11 +130,26 @@ class Command(BaseCommand):
 			#Neither is described by "computed in interval arithmetic
 			#throughout", and a sentence that is nearly right is worse here
 			#than none.
+			#
+			#A supplied sentence is written whatever is there, because the
+			#audit is the authority for the tables it describes and its
+			#sentences have to be *correctable*. They were not: the guard
+			#below recognised only the generic sentences as this command's
+			#own, so a fourth column, once written, could never be revised --
+			#T7, T8 and T37 went on saying they had been checked "at 400 bits,
+			#to past the hundredth digit" after they had been checked at 4000
+			#bits across all 301 and 1000 of their stored digits.
+			#
+			#Which means: to correct one of these, edit the audit. A sentence
+			#typed into the table by hand survives only where the audit offers
+			#none of its own.
 			existing = properties.get('rigour details')
-			if not existing or existing in OURS:
-				chosen = detail or DETAILS.get(level)
-				if chosen:
-					properties['rigour details'] = chosen
+			if detail:
+				properties['rigour details'] = detail
+			elif not existing or existing in OURS:
+				generic = DETAILS.get(level)
+				if generic:
+					properties['rigour details'] = generic
 				else:
 					properties.pop('rigour details', None)
 

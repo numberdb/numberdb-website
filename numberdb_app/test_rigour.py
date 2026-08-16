@@ -566,3 +566,74 @@ class TheDetailFollowsTheLevel(TestCase):
 			if level != 'assumed-bound':
 				self.assertNotIn('asserted rather than derived', detail,
 				                 '%s claims more than it does' % (level,))
+
+
+class TheAuditsOwnSentencesCanBeCorrected(TestCase):
+	"""A fourth-column sentence must be revisable, or it is a claim nobody
+	can fix.
+
+	The first version recognised only the generic per-level sentences as this
+	command's own, so anything the audit supplied looked like hand-written
+	prose and was left alone for ever. T7, T8 and T37 went on saying they had
+	been checked "at 400 bits, to past the hundredth digit" after they had
+	been checked at 4000 bits across all 301 and 1000 of their stored digits --
+	an understatement, but the next one could as easily be the reverse.
+	"""
+
+	def _table(self, properties):
+		from .editing import create_table
+
+		return create_table(
+			{'Title': 'Correctable detail test',
+			 'Data properties': dict(properties),
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}]})
+
+	def _run(self, table, level, detail, tmpdir):
+		import os
+
+		from django.core.management import call_command
+
+		path = os.path.join(tmpdir, 'audit.tsv')
+		with open(path, 'w', encoding='utf8') as handle:
+			handle.write('%s\t%s\tevidence enough to argue with\t%s\n'
+			             % (table.tid, level, detail))
+		call_command('set_rigour', file=path, overwrite=True, verbosity=0)
+
+		from .editing import tree_of
+		table.refresh_from_db()
+		return tree_of(table.head_revision)['Data properties']
+
+	def test_a_supplied_sentence_replaces_an_earlier_supplied_one(self):
+		import tempfile
+
+		first = 'Checked at 400 bits, to past the hundredth digit.'
+		second = 'Checked at 4000 bits, across every stored digit.'
+		table = self._table({'rigour': 'proven', 'rigour details': first})
+		with tempfile.TemporaryDirectory() as tmp:
+			properties = self._run(table, 'proven', second, tmp)
+
+		self.assertEqual(properties['rigour details'], second)
+
+	def test_the_audit_wins_over_the_generic_sentence(self):
+		import tempfile
+
+		from .management.commands.set_rigour import DETAILS
+
+		mine = 'Checked against arb certified enclosures; all 1000 agreed.'
+		table = self._table({'rigour': 'proven',
+		                     'rigour details': DETAILS['proven']})
+		with tempfile.TemporaryDirectory() as tmp:
+			properties = self._run(table, 'proven', mine, tmp)
+
+		self.assertEqual(properties['rigour details'], mine)
+
+	def test_hand_written_prose_survives_where_the_audit_offers_none(self):
+		import tempfile
+
+		mine = 'Checked by hand against Gourdon and Sebah, 2003.'
+		table = self._table({'rigour': 'heuristic', 'rigour details': mine})
+		with tempfile.TemporaryDirectory() as tmp:
+			properties = self._run(table, 'proven', '', tmp)
+
+		self.assertEqual(properties['rigour details'], mine)
