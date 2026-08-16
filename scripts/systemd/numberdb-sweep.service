@@ -1,0 +1,38 @@
+[Unit]
+# The expensive check: every stored value this can recompute is recomputed in
+# ball arithmetic and compared against what the table holds.
+#
+# It runs here rather than on a laptop because it is hours of arithmetic and a
+# laptop closes. The checkpoint means that does not matter either way: killed
+# at any point, it resumes at the entry after the last one decided.
+Description=NumberDB: recompute stored values in ball arithmetic
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/numberdb-website
+
+# One entry at a time, appending its verdict. `docker compose exec -T` and not
+# `run`, so this uses the running web container rather than starting a second
+# one against the same database.
+ExecStart=/usr/bin/docker compose exec -T web sage -python manage.py sweep_arb \
+    --out /numberdb-data/sweep-arb.jsonl
+
+# Resumed rather than restarted, so a failure that is going to recur does not
+# spin: it waits ten minutes, picks up where it stopped, and gets a little
+# further each time if the trouble is one entry rather than the whole run.
+Restart=on-failure
+RestartSec=600
+
+# Lowest priority for both CPU and disk. This is a background audit and the
+# site is not: nothing here should make a page slower to serve.
+Nice=19
+IOSchedulingClass=idle
+CPUWeight=20
+
+# It reads tables and writes one file. It has no business doing anything else.
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
