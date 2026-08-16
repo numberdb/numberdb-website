@@ -98,8 +98,17 @@ if __name__ == '__main__':
     generator = BarnesG()
 
     if '--publish' in sys.argv:
+        # `correcting` because this run does not merely restate the table: the
+        # stored values claimed 200 digits and about 197 of them were right.
+        # mpmath was asked for 200 decimal digits of working precision and its
+        # barnesg returned rather fewer correct ones, which nothing checked.
+        # Measured against the balls below, 995 of the 1050 inexact entries
+        # were outside the one unit in the last place that a written value
+        # promises -- typically by 10 to 100 units, worst 386 at s = 29/14.
         outcome = generator.publish(
-            message='recomputed in ball arithmetic; the digits are now proven')
+            correcting=True,
+            message='recomputed in ball arithmetic; the last digits were '
+                    'wrong and are now proven')
         print(outcome)
     else:
         report = generator.verify()
