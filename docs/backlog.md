@@ -184,11 +184,13 @@ branch it takes; four candidate conventions were tried against it and none
 reproduced it. Either the convention should be stated in the table, or the
 table should say the values are PARI's and leave it at that.
 
-**T45's parameter constraint is wrong.** It reads `k = 1 mod p`, and 702 of its
-856 entries are outside that -- p = 3 with k = -49 among them. The values are
-right: the p-adic logarithm extends to every unit through the Iwasawa branch,
-and all 856 check out once that is used. It is the constraint that needs
-fixing.
+**T45's parameter constraint was wrong; fixed 2026-08-16.** It read
+`k = 1 mod p`, and 702 of its 856 entries were outside that -- p = 3 with
+k = -49 among them. The values were right: what the table holds is every
+integer coprime to p, in every residue class, and all 856 verify. The
+constraint now reads `p does not divide k`, and the table states the extension
+that makes those entries exist -- `log_p(k) = log_p(k^(p-1))/(p-1)`, since the
+series converges only in the residue class of 1.
 
 ## Three tables that are still guesses
 
