@@ -1645,12 +1645,25 @@ class TestAWarmCacheDoesNotBreakProven:
         self.Bounded().publish(client=Server().client())
 
     def test_the_cache_records_whether_the_value_was_bounded(self, tmp_path):
+        """Read back through the cache's own reader, not as text.
+
+        An earlier version asserted `bounded: true`, which is how PyYAML
+        writes it -- and CI has no PyYAML, so the cache falls back to JSON and
+        writes `"bounded": true`. Both are correct and the fallback is
+        deliberate; the assertion was the thing that only knew one format.
+        """
         import os
+
+        from numberdb._cache import _read_document
 
         self.Bounded().publish(client=Server().client())
         cached = os.listdir(str(tmp_path / 'cache'))
         text = open(str(tmp_path / 'cache' / cached[0])).read()
-        assert 'bounded: true' in text
+
+        rows = [_read_document(chunk) for chunk in text.split('---')
+                if chunk.strip()]
+        assert rows, 'nothing was cached'
+        assert all(row.get('bounded') is True for row in rows), rows
 
     def test_a_point_is_still_refused_on_a_warm_cache(self):
         """The check must not have been turned off, only taught to remember.
