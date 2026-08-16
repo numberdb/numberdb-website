@@ -112,6 +112,42 @@ vendored beside it the way T69 vendors `curves.py`.
 
 See `docs/design/rigour.md`.
 
+## The arb sweep, and what it does not reach
+
+`manage.py sweep_arb` recomputes stored values in ball arithmetic and reports
+anything the site's own parsers would read as a different number. It runs as
+`numberdb-sweep.service` on the server, checkpointed per entry so a restart
+resumes rather than begins.
+
+First run, 2026-08-16: **5,205 entries recomputed, none wrong** -- Gamma and
+zeta at rationals, the d-sphere, the AGM, roots of unity, cos(pi x). It took
+six seconds, not the hours budgeted for it: arb is fast and these are cheap
+functions. The expense is in what is *not* covered, and the registry is meant
+to grow.
+
+What it cannot reach yet, roughly in order of what it would take:
+
+  * **Easy, just unwritten.** T17 (areas of the regular n-gon), T85 and T86
+    (Platonic solids), T92 (the Sobolev constant), T15 and T33 (Taylor
+    coefficients of the completed zeta -- arb has a zeta series). Each needs
+    its definition written out here, from the table rather than from its
+    script.
+
+  * **A different engine.** The seven p-adic tables (T44-T48, T50, T52) hold
+    some 6,000 entries labelled `proven`, and none of them has ever been
+    checked by anything but the code that made them. Qp tracks its own
+    precision, so this is a sweep of the same shape with a different field.
+
+  * **A different check.** The fifteen tables with generators are better
+    served by `verify`, which recomputes from the file attached to the table.
+    Worth running on a schedule for the same reason as this.
+
+  * **Nobody knows how, yet.** Stieltjes constants (T16, T31, T34, T36), prime
+    zeta (T24), multiple zeta values (T53, T54), and everything resting on
+    elliptic curve L-functions and regulators (T64-T66, T70-T74). These are
+    the tables whose labels say least, and they are exactly the ones no
+    independent implementation can currently check.
+
 ## Three tables that are still guesses
 
 The audit is complete -- 107 of 107 tables state a level -- and after the
