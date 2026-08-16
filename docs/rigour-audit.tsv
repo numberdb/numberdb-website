@@ -126,7 +126,7 @@ T88	proven	a count of curves, evaluated into an interval field
 T90	exact	type Z
 T91	exact	type Z
 T92	proven	interval or ball arithmetic only
-T93	proven	converted: generators/T93-barnes-g recomputes it with arb (acb_barnes_g); 1080/1080 matched
+T93	proven	converted: generators/T93-barnes-g recomputes it with arb (acb_barnes_g); the stored tails were wrong and were corrected	Recomputed in ball arithmetic (arb, acb_barnes_g), which carries its error bound through the computation. This table holds 200 significant digits and about 197 of them had been right: mpmath was asked for 200 digits of working precision, its barnesg returned fewer correct ones, and nothing checked. Of the 1050 inexact entries, 995 were outside the one unit in the last place that a written value promises -- typically by 10 to 100 units, worst 386. The tails were replaced on 2026-08-16; the earlier values are in the table history.
 T94	proven	interval or ball arithmetic only
 T95	exact	type Z[]
 T96	exact	type Z[]
