@@ -112,7 +112,8 @@ class TheCheckpointResumes(TestCase):
 		def registry():
 			from sage.all import QQ
 
-			return {table.tid: lambda params, field: field(QQ(params['s'])).gamma()}
+			return {table.tid: ('real',
+			                    lambda params, field: field(QQ(params['s'])).gamma())}
 
 		with tempfile.TemporaryDirectory() as tmp:
 			path = os.path.join(tmp, 'sweep.jsonl')
@@ -155,7 +156,8 @@ class TheCheckpointResumes(TestCase):
 		def registry():
 			from sage.all import QQ
 
-			return {table.tid: lambda params, field: field(QQ(params['s'])).gamma()}
+			return {table.tid: ('real',
+			                    lambda params, field: field(QQ(params['s'])).gamma())}
 
 		with tempfile.TemporaryDirectory() as tmp:
 			path = os.path.join(tmp, 'sweep.jsonl')
@@ -169,3 +171,50 @@ class TheCheckpointResumes(TestCase):
 
 			lines = [l for l in open(path).readlines() if l.strip()]
 			self.assertEqual(len(lines), 2)      # the torn one, and the redone entry
+
+
+class ThePAdicSideCanSayNo(TestCase):
+	"""The p-adic engine has no tolerance in it, and should not need one.
+
+	A p-adic value states how far it is known -- `... + O(2^167)` -- so there
+	is no judgement about how many digits to compare: the difference must
+	vanish to exactly that precision.
+	"""
+
+	def _check(self, stored, recompute, params=None):
+		from .management.commands.sweep_arb import Command
+
+		return Command()._check_p_adic('T44', 'test', stored, params or {},
+		                               recompute)
+
+	def setUp(self):
+		from sage.all import Qp
+
+		#The Teichmueller representative of 3 in Z_5, to 20 places.
+		self.true = str(Qp(5, 20).teichmuller(3))
+		self.recompute = lambda params, prec: Qp(5, prec + 5).teichmuller(3)
+
+	def test_a_matching_value_passes(self):
+		self.assertEqual(self._check(self.true, self.recompute)['verdict'], 'ok')
+
+	def test_a_value_wrong_in_its_last_place_is_caught(self):
+		from sage.all import Qp
+
+		#Not "close enough": p-adically, differing at 5^19 within a value
+		#claiming O(5^20) is simply a different number.
+		wrong = str(Qp(5, 20).teichmuller(3) + Qp(5, 20)(5) ** 19)
+		row = self._check(wrong, self.recompute)
+		self.assertEqual(row['verdict'], 'wrong')
+		self.assertEqual(row['agrees_to'], 19)
+
+	def test_the_comparison_uses_the_stored_precision(self):
+		#A value known to fewer places is not wrong for being vaguer, so long
+		#as it agrees as far as it claims.
+		from sage.all import Qp
+
+		shorter = str(Qp(5, 8).teichmuller(3))
+		self.assertEqual(self._check(shorter, self.recompute)['verdict'], 'ok')
+
+	def test_a_definition_that_cannot_do_the_entry_is_skipped(self):
+		row = self._check(self.true, lambda params, prec: None)
+		self.assertEqual(row['verdict'], 'skipped')

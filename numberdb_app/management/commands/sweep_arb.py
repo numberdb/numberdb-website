@@ -105,6 +105,23 @@ def _recomputations():
 		complex_field = ComplexBallField(field.precision())
 		return (2 * complex_field.pi() * complex_field(0, 1) * k / n).exp()
 
+	def polygon_area(params, field):
+		#The regular n-gon under each of the three normalisations the table
+		#lists. Checked at n = 3, side 1: 3/(4 tan(pi/3)) = 0.4330127..., and
+		#at n = 4, where the square of side 1 has area exactly 1.
+		n = ZZ(params['n'])
+		which = params['expression']
+		angle = field.pi() / n
+		if which == 'unit-s':                # side length 1
+			if n == 4:
+				return None                  # exactly 1, and stored as such
+			return n / (4 * angle.tan())
+		if which == 'unit-R':                # circumradius 1
+			return n * (2 * angle).sin() / 2
+		if which == 'unit-r':                # inradius (apothem) 1
+			return n * angle.tan()
+		return None
+
 	def agm(params, field):
 		a, b = QQ(params['a']), QQ(params['b'])
 		if a == b:
@@ -112,12 +129,200 @@ def _recomputations():
 		return field(a).agm(field(b))
 
 	return {
-		'T9': gamma_at_rationals,
-		'T14': zeta_at_rationals,
-		'T28': sphere_volume,
-		'T51': agm,
-		'T60': root_of_unity,
-		'T61': cos_pi_x,
+		'T9': ('real', gamma_at_rationals),
+		'T14': ('real', zeta_at_rationals),
+		'T17': ('real', polygon_area),
+		'T28': ('real', sphere_volume),
+		'T51': ('real', agm),
+		'T60': ('real', root_of_unity),
+		'T61': ('real', cos_pi_x),
+	}
+
+
+def _p_adic_recomputations():
+	"""The p-adic tables, computed from their definitions.
+
+	Deliberately not by calling the same Sage function the original script
+	called. `Qp(p, n)(k).log()` checked against `Qp(p, n)(k).log()` establishes
+	that the digits were transcribed and truncated correctly -- which is worth
+	something, and is exactly the class of error T93 turned out to be -- but it
+	cannot notice that the function is wrong. The series and products below are
+	the definitions themselves, so they can.
+
+	Each takes the parameters and a working precision in powers of p, and
+	returns an element of Qp.
+	"""
+	from sage.all import QQ, Qp, ZZ
+
+	def teichmuller(params, prec):
+		#omega(k) is the unique (p-1)st root of unity congruent to k mod p,
+		#and k^(p^n) converges to it: the limit is the definition, so this is
+		#not Sage's teichmuller() checking itself.
+		p, k = ZZ(params['p']), ZZ(params['k'])
+		field = Qp(p, prec + 5)
+
+		#p = 2 is not that limit. The character is on (Z/4)^*, so omega takes
+		#the values +/-1 and is fixed by k mod 4 -- and squaring destroys
+		#exactly the sign that carries the answer: k^(2^n) tends to 1 whatever
+		#k was, which is why omega(-1) came back as 1 rather than -1.
+		if p == 2:
+			return field(1) if k % 4 == 1 else field(-1)
+
+		x = field(k)
+		for _ in range(prec + 2):
+			x = x ** p
+		return x
+
+	def p_adic_log(params, prec):
+		#log(1+u) = sum (-1)^(n+1) u^n/n converges only for v(u) > 0, which
+		#covers k = 1 mod p and no more. The table says that is its range --
+		#the parameter constraint reads "k = 1 mod p" -- and it is not: 702 of
+		#its 856 entries are outside it, p = 3 with k = -49 among them. The
+		#logarithm is defined there anyway, by the standard extension: it is
+		#the Iwasawa branch, log_p(p) = 0, and on units log(u) is recovered
+		#from log(u^(p-1)), whose argument is 1 mod p whatever u was.
+		p, k = ZZ(params['p']), ZZ(params['k'])
+		if k == 0:
+			return None
+		field = Qp(p, prec + 30)
+		x = field(k)
+
+		#log_p(p) = 0, so only the unit part contributes.
+		unit = x / field(p) ** x.valuation()
+		raised = unit ** int(p - 1)
+
+		u = raised - 1
+		if u.valuation() < 1:
+			return None
+		total, term_n = field(0), 1
+		while term_n < 6 * (prec + 30):
+			total += (-1) ** (term_n + 1) * u ** term_n / field(term_n)
+			term_n += 1
+		return total / field(p - 1)
+
+	def p_adic_exp(params, prec):
+		#exp(x) = sum x^n / n!, converging when v(x) > 1/(p-1).
+		from sage.functions.other import factorial
+
+		p, k = ZZ(params['p']), ZZ(params['k'])
+		field = Qp(p, prec + 20)
+		x = field(k)
+		if x != 0 and x.valuation() * (p - 1) <= 1:
+			return None                      # outside the region of convergence
+		total, n = field(1), 1
+		while n < 4 * (prec + 20):
+			total += x ** n / field(factorial(n))
+			n += 1
+		return total
+
+	def p_adic_gamma(params, prec):
+		#Morita's Gamma_p: for n >= 1 the product of the units below n, with a
+		#sign; elsewhere by the functional equation, walked down from
+		#Gamma_p(1) = -1.
+		p, k = ZZ(params['p']), ZZ(params['k'])
+		field = Qp(p, prec + 5)
+		if k >= 1:
+			product = field(1)
+			for j in range(1, int(k)):
+				if j % p:
+					product *= field(j)
+			return (-1) ** int(k) * product
+		#Gamma_p(x) = -Gamma_p(x+1)/x when p does not divide x, and
+		#-Gamma_p(x+1) when it does.
+		value = field(-1)                    # Gamma_p(1)
+        # walk from 1 down to k
+		x = ZZ(1)
+		while x > k:
+			x -= 1
+			value = -value / field(x) if x % p else -value
+		return value
+
+	#The Artin-Hasse series depends only on p and how far it is taken, not on
+	#where it is evaluated, so it is built once per table rather than once per
+	#entry -- a degree-190 formal exponential a thousand times over is the
+	#difference between a minute and an hour.
+	series_cache = {}
+
+	def artin_hasse(params, prec):
+		#E_p(x) = exp(sum_n x^(p^n)/p^n), as a *formal* power series over Q
+		#which is then evaluated.
+		#
+		#Not by exponentiating the sum in Q_p. That was the first attempt and
+		#it was wrong for the reason the Artin-Hasse exponential exists: the
+		#p-adic exp converges only for v(x) > 1/(p-1), which at p = 2 means
+		#v(x) > 1, and this table's arguments have v(x) = 1. E_p is defined
+		#there anyway, because its *coefficients* are p-integral even though
+		#the exponential series is not summable. Eleven of twelve trial
+		#entries were reported wrong before this was understood; the table
+		#was right every time.
+		from sage.all import PowerSeriesRing
+		from sage.rings.rational_field import QQ as rationals
+
+		p, k = ZZ(params['p']), ZZ(params['k'])
+		field = Qp(p, prec + 20)
+		x = field(k)
+		if x != 0 and x.valuation() < 1:
+			return None                      # the table asks for |k|_p < 1
+
+		#v(c_m x^m) >= m since the coefficients are p-integral, so the series
+		#is taken a little past the precision asked for and no further.
+		degree = int(prec) + 10
+		key = (int(p), degree)
+		if key not in series_cache:
+			ring = PowerSeriesRing(rationals, 't', default_prec=degree + 1)
+			t = ring.gen()
+			inner = ring(0)
+			n = 0
+			while p ** n <= degree:
+				inner += t ** int(p ** n) / rationals(p) ** n
+				n += 1
+			series_cache[key] = list(inner.exp(prec=degree + 1))
+
+		total = field(0)
+		power = field(1)
+		for coefficient in series_cache[key]:
+			if coefficient:
+				total += field(coefficient) * power
+			power *= x
+		return total
+
+	def p_adic_agm(params, prec):
+		#a_{n+1} = (a_n + g_n)/2, g_{n+1} = sqrt(a_n g_n), taking at each step
+		#the square root nearer to a_n -- the other one sends the iteration
+		#somewhere else, which is the whole difficulty of the p-adic agm.
+		p = ZZ(params['p'])
+		field = Qp(p, prec + 20)
+		a, g = field(QQ(params['a'])), field(QQ(params['b']))
+		for _ in range(prec + 20):
+			if (a - g).valuation() >= prec + 10:
+				break
+			product = a * g
+			if not product.is_square():
+				return None
+			roots = [product.sqrt(), -product.sqrt()]
+			g = max(roots, key=lambda r: (r - a).valuation())
+			a = (a + g) / 2
+		return a
+
+	return {
+		'T44': ('padic', teichmuller),
+		'T45': ('padic', p_adic_log),
+		'T46': ('padic', p_adic_exp),
+		'T47': ('padic', p_adic_gamma),
+		'T48': ('padic', artin_hasse),
+		#T52 is deliberately absent. Its definition -- a_{n+1} = (a_n+g_n)/2,
+		#g_{n+1} = sqrt(a_n g_n) -- does not say *which* square root, and over
+		#Q_p that is not a detail: the two choices give different limits, and
+		#only one of them stays in Q_p at all (the other needs a quadratic
+		#extension, which Sage refuses outright). Following the definition by
+		#that forced choice gives a different number from the one the table
+		#holds, which came from PARI's agm; PARI documents when a p-adic agm
+		#exists and not which branch it takes. Four candidate conventions were
+		#tried against PARI and none reproduced it.
+		#
+		#So the table cannot presently be reproduced from what it says, and a
+		#sweep that reported 718 entries as wrong would be reporting that this
+		#file guessed a different convention. Recorded in the backlog instead.
 	}
 
 
@@ -159,7 +364,8 @@ class Command(BaseCommand):
 		from numberdb_app.models import Table
 
 		path = options['out']
-		recomputations = _recomputations()
+		recomputations = dict(_recomputations())
+		recomputations.update(_p_adic_recomputations())
 
 		only = [t.strip() for t in options['only'].split(',') if t.strip()]
 		if only:
@@ -201,7 +407,7 @@ class Command(BaseCommand):
 		checked = skipped = wrong = 0
 		started = time.time()
 		for tid in wanted:
-			recompute = recomputations[tid]
+			kind, recompute = recomputations[tid]
 			try:
 				table = Table.objects.get(tid=tid)
 			except Table.DoesNotExist:
@@ -220,9 +426,21 @@ class Command(BaseCommand):
 					break
 
 				stored = entry['number']
-				if not isinstance(stored, str) or '.' not in stored:
+				exact_looking = (not isinstance(stored, str)
+				                 or ('.' not in stored and 'O(' not in stored))
+				if exact_looking:
 					row = {'table': tid, 'identity': identity, 'verdict': 'exact'}
 					skipped += 1
+				elif kind == 'padic':
+					row = self._check_p_adic(tid, identity, stored,
+					                         entry['params'], recompute)
+					if row['verdict'] == 'wrong':
+						wrong += 1
+						self.stdout.write('  WRONG %s %s' % (tid, identity))
+					elif row['verdict'] == 'ok':
+						checked += 1
+					else:
+						skipped += 1
 				else:
 					row = self._check(tid, identity, stored, entry['params'],
 					                  recompute)
@@ -320,3 +538,40 @@ class Command(BaseCommand):
 		        'ulps': round(off, 3) if off is not None else None,
 		        'digits': digits, 'stored': stored[:80],
 		        'computed': str(computed.center())[:80]}
+
+	def _check_p_adic(self, tid, identity, stored, params, recompute):
+		"""One p-adic entry, to the precision the stored value states.
+
+		A p-adic value says how far it is known -- `... + O(2^167)` -- so there
+		is no question of how many digits to compare: the difference must
+		vanish to exactly that precision, and this is one of the few checks
+		here with no tolerance in it at all.
+		"""
+		from utils.utils import parse_p_adic
+
+		try:
+			held = parse_p_adic(stored)
+		except Exception as trouble:
+			return {'table': tid, 'identity': identity, 'verdict': 'unparsed',
+			        'detail': str(trouble)[:200]}
+		if held is None:
+			return {'table': tid, 'identity': identity, 'verdict': 'unparsed'}
+
+		precision = held.precision_absolute()
+		try:
+			computed = recompute(params, int(precision))
+		except Exception as trouble:
+			return {'table': tid, 'identity': identity, 'verdict': 'error',
+			        'detail': str(trouble)[:200]}
+		if computed is None:
+			return {'table': tid, 'identity': identity, 'verdict': 'skipped'}
+
+		difference = held - computed
+		agrees = difference.is_zero() or difference.valuation() >= precision
+		if agrees:
+			return {'table': tid, 'identity': identity, 'verdict': 'ok',
+			        'digits': int(precision)}
+		return {'table': tid, 'identity': identity, 'verdict': 'wrong',
+		        'digits': int(precision),
+		        'agrees_to': int(difference.valuation()),
+		        'stored': stored[:80], 'computed': str(computed)[:80]}
