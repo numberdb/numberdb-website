@@ -38,6 +38,27 @@ class TheSkillIsServed(TestCase):
 		self.assertIn('description:', body)
 
 
+class TheSkillIsFindableByToolsThatAreNotThisOne(TestCase):
+	"""`.claude/skills/` is one tool's convention, and nothing else looks
+	there. The pointers that make the file findable otherwise are worth a test,
+	because they are the kind of line that survives a rewrite by luck."""
+
+	def test_agents_md_points_at_the_skill(self):
+		import os
+
+		from django.conf import settings
+
+		with open(os.path.join(settings.BASE_DIR, 'AGENTS.md'),
+		          encoding='utf8') as handle:
+			body = handle.read()
+		self.assertIn('.claude/skills/numberdb-table/SKILL.md', body)
+		self.assertIn('numberdb.org/skill', body)
+
+	def test_the_help_page_points_at_it_too(self):
+		body = self.client.get('/help').content.decode()
+		self.assertIn('/skill', body)
+
+
 class TheSkillSaysTheThingsThatWentWrong(TestCase):
 	"""Each of these is in the skill because it happened, and none of them was
 	caught by a test at the time. If the skill loses them it is a description
@@ -45,6 +66,24 @@ class TheSkillSaysTheThingsThatWentWrong(TestCase):
 
 	def setUp(self):
 		self.body = self.client.get('/skill').content.decode()
+
+	def test_it_says_the_database_is_not_only_real_numbers(self):
+		#The opening said "number" twice and quietly excluded half the corpus:
+		#12 polynomial tables, 6 p-adic, 4 complex.
+		for kind in ('polynomial', 'p-adic', 'complex'):
+			with self.subTest(kind=kind):
+				self.assertIn(kind, self.body)
+
+	def test_it_lists_every_type_a_table_may_declare(self):
+		from .validate import DATA_TYPES
+
+		for declared in DATA_TYPES:
+			with self.subTest(type=declared):
+				self.assertIn('`%s`' % (declared,), self.body)
+
+	def test_it_says_what_a_written_real_means(self):
+		#The convention the whole database rests on: 3.14 *is* an interval.
+		self.assertIn('[3.13, 3.15]', self.body)
 
 	def test_it_warns_about_the_point_interval_trap(self):
 		self.assertIn('width zero', self.body)

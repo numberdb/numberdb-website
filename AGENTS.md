@@ -46,3 +46,14 @@
 - Never commit real secrets. Create `.env` from `env/.env.dev.example` and adjust locally.
 - Prefer Postgres locally and in production; avoid SQLite.
 - Deployment config lives in `deploy/`. `make deploy` is server‑side and modifies system packages; do not run on a dev machine.
+
+## Making or Updating a Table of Numbers
+- The conventions for contributing a table — the value types and how each is
+  written, the size limits, the rigour levels, what each refusal from the
+  `numberdb` package means, and what a definition has to pin down — are in
+  `.claude/skills/numberdb-table/SKILL.md`.
+- The same file is served at <https://numberdb.org/skill> as plain markdown, so
+  an assistant working outside this checkout can fetch it. There is one copy;
+  the site reads the file rather than holding a duplicate.
+- That path is Claude Code's convention for a skill, and nothing else looks
+  there by itself. Read it directly, or fetch the URL.
