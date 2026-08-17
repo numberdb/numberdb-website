@@ -111,6 +111,25 @@ for path in / /help /api/docs /tables; do
 	[ "$code" = "200" ] || failed=1
 done
 
+# A page that answers 200 can still be answering nothing. This asks the one
+# question the site exists to answer -- here is a number, is it known? -- and
+# insists on the table by name. Searching for pi stopped finding the table
+# called Pi for three days in August 2026, because a metadata edit had marked
+# the whole corpus unreviewed and unreviewed values are held out of search by
+# number. Every page returned 200 throughout.
+say "checking search by number still answers"
+for probe in "3.14159265:Pi" "1.6180339887:Golden_ratio"; do
+	query="${probe%%:*}"
+	expected="${probe##*:}"
+	found=$(on_remote "curl -s -m 25 -k --resolve $domain:443:127.0.0.1 -H 'X-Requested-With: XMLHttpRequest' 'https://$domain/?q=$query'" | grep -c "$expected" || true)
+	if [ "${found:-0}" -gt 0 ]; then
+		printf '  %-14s finds %s\n' "$query" "$expected"
+	else
+		printf '  %-14s DOES NOT FIND %s\n' "$query" "$expected"
+		failed=1
+	fi
+done
+
 if [ "$failed" = "1" ]; then
 	cat >&2 <<'MSG'
 
