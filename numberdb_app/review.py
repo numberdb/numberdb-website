@@ -108,6 +108,45 @@ def _entries_of(tree):
 	return section if isinstance(section, (dict, list)) else {}
 
 
+def _same_entry(one, other):
+	"""Whether two recorded entries say the same thing.
+
+	Not `==`. The corpus holds the same entry in two shapes -- a bare value,
+
+	    Numbers: ['3.14159...']
+
+	and the normalised form the editing path writes,
+
+	    Numbers: [{'params': {}, 'number': '3.14159...'}]
+
+	-- and comparing those literally says every entry changed. It did that:
+	a run of `set_rigour`, which touches only a table's Data properties,
+	rewrote every tree into the normalised shape and so declared the whole
+	corpus unreviewed. 71% of stored reals, and every complex, p-adic and
+	polynomial value, silently left search by number, because unreviewed
+	values are held out of it.
+
+	`params` is dropped before comparing: it is the identity these entries are
+	keyed by, so it cannot differ between two entries being compared, and it is
+	present in one shape and absent in the other. Everything else is kept --
+	a changed comment or proof is a change to the entry, and comparing only
+	the value would let it pass unreviewed.
+	"""
+	def canonical(node):
+		#Recursive, because `flatten_entries` does not descend into lists: a
+		#table whose entries are a bare list arrives here as the list itself,
+		#under one identity, so the two shapes have to be reconciled element
+		#by element.
+		if isinstance(node, list):
+			return [canonical(item) for item in node]
+		if isinstance(node, dict):
+			return {key: value for key, value in node.items()
+			        if key != 'params'}
+		return {'number': node}
+
+	return canonical(one) == canonical(other)
+
+
 def changed_params(before_tree, after_tree):
 	"""Parameter identities whose value differs between two trees.
 
@@ -119,7 +158,8 @@ def changed_params(before_tree, after_tree):
 	after = flatten_entries(_entries_of(after_tree))
 	changed = set()
 	for key in set(before) | set(after):
-		if before.get(key, _ABSENT) != after.get(key, _ABSENT):
+		one, other = before.get(key, _ABSENT), after.get(key, _ABSENT)
+		if one is _ABSENT or other is _ABSENT or not _same_entry(one, other):
 			changed.add(key)
 	return changed
 

@@ -99,8 +99,9 @@ as measured ones.
   guard -- computing at 30 digits for 100 written -- is **accepted** by the
   original point-value method and **refused** by this one, with the message
   naming the shortfall. That is the whole of the argument for it.
-- **`heuristic`** -- one computation and a guard chosen by judgement. What the
-  29 tables have today.
+- **`heuristic`** -- one computation and a guard chosen by judgement. What 29
+  tables had when this was written; nine have it now, and what happened to the
+  other twenty is at the end of this note.
 - **`measured`** -- not computed. The value comes from experiment and the
   stored interval holds the measurements together with their stated
   uncertainties. Four tables: the fine-structure constant, the
@@ -448,3 +449,46 @@ more than "100 digits, no further comment".
    report of what each entry pinned down would help the author choose, and
    what they choose goes in the file.
 5. `weakening`, once anything can be weakened.
+
+## Where this stands, 2026-08-17
+
+The note above was written when nothing in the corpus said anything. It is
+kept as it was, because the argument is what matters and rewriting the state
+of play into it would leave nobody able to tell which parts were predictions.
+What actually happened:
+
+**Every table states a level.** 107 of 107: 39 `proven`, 33 `exact`, 15
+`heuristic (agreement-checked)`, 9 `heuristic`, 7 `assumed-bound`, 4
+`measured`. The audit is `docs/rigour-audit.tsv`, one line per table with the
+evidence, and `manage.py set_rigour` applies it.
+
+**Twenty of the twenty-nine `heuristic` tables were raised**, not relabelled.
+Five were recomputed in arb ball arithmetic and are now `proven` -- the
+complete elliptic integrals, the sine integral, Barnes G -- and the rest were
+either agreement-checked or turned out to have been mislabelled downward.
+
+**The refusal earns its keep.** Two of the errors below were caught by the
+package declining to publish, not by anyone looking:
+
+- **T93** held 200 digits per value and about 197 were right. mpmath was asked
+  for 200 digits of working precision and returned fewer correct ones; nothing
+  checked. 995 of 1050 inexact entries were outside the one unit in the last
+  place a written value promises, worst 386. Found because the generator
+  claimed 100 digits and the package refused to publish over a stored 200.
+- **T32** stored the golden ratio's *conjugate* under the label of its
+  inverse: every digit right, sign wrong. Its own formulas said the same thing
+  wrongly twice.
+
+**Saying is not checking.** `manage.py sweep_arb` recomputes stored values
+from definitions written independently of the tables' own scripts -- which are
+never run here -- and compares. 18 tables, some 13,000 values, none wrong. It
+found two tables that could not be reproduced from what they said: T52, whose
+definition never named which square root the p-adic agm takes (the two choices
+give different limits), and T45, whose parameter constraint excluded two
+thirds of its own entries. Both now say what they mean.
+
+Worth recording honestly: since those first two, every disagreement the sweep
+has reported has been the checker's fault and not the corpus's -- three p-adic
+definitions wrong at p = 2, a dodecahedron's inradius out by a factor of
+sqrt(5). The corpus has held up better than the instrument, which is why each
+definition is trialled against a sample before its verdicts are believed.
