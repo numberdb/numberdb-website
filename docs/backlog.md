@@ -125,6 +125,16 @@ six seconds, not the hours budgeted for it: arb is fast and these are cheap
 functions. The expense is in what is *not* covered, and the registry is meant
 to grow.
 
+**Third run, 2026-08-17: 14,030 entries across 18 tables, none wrong.** The
+Platonic solids, the Sobolev constants, the p-adic agm once its convention was
+established, and the Taylor coefficients of the completed zeta -- assembled
+from `zetaderiv` and polygamma, since Sage has no zeta of a power series over a
+ball field. That last one needs 2600 bits to work at all: at s0 = 1/2 the
+log Gamma series has radius 1/2, so its coefficients reach 1e75 by k = 250
+while the answer they combine to give is 1.5e-471, and the 546 orders of
+magnitude in between are pure cancellation. At 1400 bits the k = 250
+coefficient has no correct digits.
+
 **Second run, 2026-08-16: 10,217 entries, none wrong.** The p-adic engine went
 in -- Teichmueller representatives, the p-adic logarithm, exponential, Gamma
 and the Artin-Hasse exponential, each written from its definition rather than
@@ -141,11 +151,6 @@ as a formal series with p-integral coefficients; and the logarithm needed the
 Iwasawa branch to reach 702 of T45's 856 entries.
 
 What it cannot reach yet, roughly in order of what it would take:
-
-  * **Needs assembling.** T15 and T33, the Taylor coefficients of the completed
-    zeta. Sage has no zeta of a power series over a ball field, so these have
-    to be built from `zetaderiv` and the Leibniz rule against the other three
-    factors.
 
   * **Needs mathematics.** T50, the Kubota-Leopoldt zeta function: Sage has no
     implementation, and the table's own definition pins the value only at

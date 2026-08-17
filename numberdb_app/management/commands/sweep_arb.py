@@ -204,6 +204,78 @@ def _recomputations():
 		         / (field(n).gamma() * field(1 + QQ(n) / 2).gamma()))
 		return half * first * second * ratio ** (QQ(1) / n)
 
+	#The completed zeta's Taylor series, built once per table. It costs about
+	#a minute and every entry of the table reads a coefficient out of it, so
+	#building it per entry would turn a minute into eight hours.
+	xi_cache = {}
+
+	def _xi_series(s0, degree, bits):
+		"""The Taylor series of xi(s0 + t), in ball arithmetic.
+
+		    xi(s) = (1/2) s(s-1) pi^(-s/2) Gamma(s/2) zeta(s)
+
+		Sage has no zeta of a power series over a ball field, so the series is
+		assembled from the pieces arb does have: `zetaderiv(k)` for zeta,
+		`psi(k-1)` -- polygamma -- for log Gamma, and the power series
+		exponential for both that and pi^(-s/2).
+
+		The precision is high and has to be. At s0 = 1/2 the log Gamma series
+		has radius 1/2, so its coefficients grow like 2^k and reach about 1e75
+		by k = 250, while the coefficient they combine to give is 1.5e-471.
+		Everything in between cancels: some 546 orders of magnitude, which no
+		amount of care in the arithmetic avoids and only working precision
+		covers. At 1400 bits the answer at k = 250 has no correct digits at
+		all; at 2600 it has 232.
+		"""
+		from sage.all import ComplexBallField, PowerSeriesRing, factorial
+
+		key = (s0, degree, bits)
+		if key in xi_cache:
+			return xi_cache[key]
+
+		field = ComplexBallField(bits)
+		ring = PowerSeriesRing(field, 't', default_prec=degree + 1)
+		t = ring.gen()
+		s = field(s0) + t
+
+		polynomial = s * (s - 1) / 2
+		power = (-s * field.pi().log() / 2).exp()
+
+		#log Gamma(z + u) = log Gamma(z) + sum psi^(k-1)(z) u^k / k!
+		z, u = field(s0) / 2, t / 2
+		log_gamma = ring(z.log_gamma())
+		for k in range(1, degree + 1):
+			log_gamma += ring(z.psi(k - 1) / factorial(k)) * u ** k
+
+		zeta = ring(0)
+		for k in range(degree + 1):
+			zeta += ring(field(s0).zetaderiv(k) / factorial(k)) * t ** k
+
+		series = polynomial * power * log_gamma.exp() * zeta
+		xi_cache[key] = series
+		return series
+
+	def _xi_coefficient(s0, params):
+		from sage.all import factorial
+
+		n = ZZ(params['n'])
+		series = _xi_series(s0, 251, 2600)
+		coefficient = series[int(n)]
+		if not coefficient.imag().contains_zero():
+			return None                      # xi is real on the real axis
+		value = coefficient.real()
+		if params['expression'] == 'a_n':
+			return value * factorial(int(n))
+		if params['expression'] == 'a_n/n!':
+			return value
+		return None
+
+	def xi_at_half(params, field):
+		return _xi_coefficient(QQ(1) / 2, params)
+
+	def xi_at_two(params, field):
+		return _xi_coefficient(QQ(2), params)
+
 	def agm(params, field):
 		a, b = QQ(params['a']), QQ(params['b'])
 		if a == b:
@@ -213,7 +285,9 @@ def _recomputations():
 	return {
 		'T9': ('real', gamma_at_rationals),
 		'T14': ('real', zeta_at_rationals),
+		'T15': ('real', xi_at_half),
 		'T17': ('real', polygon_area),
+		'T33': ('real', xi_at_two),
 		'T28': ('real', sphere_volume),
 		'T51': ('real', agm),
 		'T85': ('real', platonic_volume),
