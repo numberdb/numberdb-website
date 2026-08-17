@@ -276,6 +276,45 @@ def _recomputations():
 	def xi_at_two(params, field):
 		return _xi_coefficient(QQ(2), params)
 
+	def hurwitz_zeta(params, field):
+		#zeta(s, x), which arb has as `zeta` with an argument. At s a
+		#non-positive integer the value is a Bernoulli polynomial in x and so
+		#rational; the table stores those exactly and they are not this
+		#check's business.
+		from sage.all import ComplexBallField
+
+		s, x = QQ(params['s']), QQ(params['x'])
+		if s == 1 or (s.denominator() == 1 and s <= 0):
+			return None
+		complex_field = ComplexBallField(field.precision())
+		return complex_field(s).zeta(complex_field(x))
+
+	#The zeros are computed as a list -- asking for the nth means computing the
+	#first n -- so the list is built once per precision rather than once per
+	#entry, which would be a thousand times the work for the same thousand
+	#zeros.
+	zeros_cache = {}
+
+	def zeta_zero(params, field):
+		"""The imaginary part of the nth zero, from arb's certified list.
+
+		`acb_dirichlet_zeta_zeros` returns enclosures proven to contain the
+		zeros, and to be the nth ones: it is not a root-finder that happened
+		to land somewhere. That is what makes this a check on the table rather
+		than a second opinion.
+		"""
+		from sage.all import ComplexBallField
+
+		n = int(ZZ(params['n']))
+		bits = field.precision()
+		key = (bits, 1000)
+		if key not in zeros_cache:
+			zeros_cache[key] = ComplexBallField(bits).zeta_zeros(key[1])
+		zeros = zeros_cache[key]
+		if not 1 <= n <= len(zeros):
+			return None
+		return zeros[n - 1].imag()
+
 	def agm(params, field):
 		a, b = QQ(params['a']), QQ(params['b'])
 		if a == b:
@@ -285,6 +324,7 @@ def _recomputations():
 	return {
 		'T9': ('real', gamma_at_rationals),
 		'T14': ('real', zeta_at_rationals),
+		'T3': ('real', zeta_zero),
 		'T15': ('real', xi_at_half),
 		'T17': ('real', polygon_area),
 		'T33': ('real', xi_at_two),
@@ -293,6 +333,7 @@ def _recomputations():
 		'T85': ('real', platonic_volume),
 		'T86': ('real', platonic_area),
 		'T92': ('real', sobolev),
+		'T94': ('real', hurwitz_zeta),
 		'T60': ('real', root_of_unity),
 		'T61': ('real', cos_pi_x),
 	}
@@ -490,6 +531,82 @@ def _p_adic_recomputations():
 	}
 
 
+def _bracket_recomputations():
+	"""Tables whose values are the *location* of a zero.
+
+	Checked differently, and it is worth being clear what the check does. A
+	value here is not recomputed and compared: it is a claim that a zero lies
+	in a particular interval, and the interval is the width the written digits
+	promise. So the function is evaluated at both ends. If the two results are
+	balls of strictly opposite sign, a zero lies strictly between them, by the
+	intermediate value theorem and nothing else -- no root-finder, no
+	tolerance, no appeal to how the value was produced.
+
+	What it does not establish is the *index*: that this is the nth zero and
+	not the (n+1)st. Proving that needs a count, and arb's zero-counting is not
+	exposed here. So a table passing this is confirmed to hold zeros, spaced
+	and ordered as its own values say, and not confirmed to have started
+	counting in the right place.
+
+	Sage exposes Airy and Bessel on the complex ball field only, so the values
+	are taken as complex and the imaginary part is required to contain zero
+	before the real part is used.
+	"""
+	from sage.all import QQ, ComplexBallField
+
+	def airy_ai(x):
+		return x.airy_ai()
+
+	def airy_ai_prime(x):
+		return x.airy_ai_prime()
+
+	def airy_bi(x):
+		return x.airy_bi()
+
+	def airy_bi_prime(x):
+		return x.airy_bi_prime()
+
+	def bessel(kind, derivative):
+		#J'(x) = (J_{a-1}(x) - J_{a+1}(x))/2, and the same for Y.
+		def evaluate(x, alpha):
+			field = x.parent()
+			call = getattr(x, 'bessel_%s' % kind)
+			if not derivative:
+				return call(field(alpha))
+			return (getattr(x, 'bessel_%s' % kind)(field(alpha - 1))
+			        - getattr(x, 'bessel_%s' % kind)(field(alpha + 1))) / 2
+		return evaluate
+
+	def with_alpha(evaluate):
+		def bound(params):
+			alpha = QQ(params['alpha'])
+			return lambda x: evaluate(x, alpha)
+		return bound
+
+	def plain(evaluate):
+		return lambda params: evaluate
+
+	return {
+		'T20': ('bracket', with_alpha(bessel('J', False))),
+		'T21': ('bracket', with_alpha(bessel('Y', False))),
+		'T22': ('bracket', with_alpha(bessel('J', True))),
+		'T23': ('bracket', with_alpha(bessel('Y', True))),
+		'T55': ('bracket', plain(airy_ai)),
+		'T56': ('bracket', plain(airy_bi)),
+		'T57': ('bracket', plain(airy_ai_prime)),
+		'T58': ('bracket', plain(airy_bi_prime)),
+	}
+
+
+def _sign_of(ball):
+	"""-1, +1, or 0 when the ball is too wide to say."""
+	if ball.upper() < 0:
+		return -1
+	if ball.lower() > 0:
+		return 1
+	return 0
+
+
 def _significant(text):
 	"""How many significant digits a written value carries."""
 	body = text.strip().lstrip('-').split(' ')[0]
@@ -530,6 +647,7 @@ class Command(BaseCommand):
 		path = options['out']
 		recomputations = dict(_recomputations())
 		recomputations.update(_p_adic_recomputations())
+		recomputations.update(_bracket_recomputations())
 
 		only = [t.strip() for t in options['only'].split(',') if t.strip()]
 		if only:
@@ -595,6 +713,16 @@ class Command(BaseCommand):
 				if exact_looking:
 					row = {'table': tid, 'identity': identity, 'verdict': 'exact'}
 					skipped += 1
+				elif kind == 'bracket':
+					row = self._check_bracket(tid, identity, stored,
+					                          entry['params'], recompute)
+					if row['verdict'] == 'wrong':
+						wrong += 1
+						self.stdout.write('  NO ZERO %s %s' % (tid, identity))
+					elif row['verdict'] == 'ok':
+						checked += 1
+					else:
+						skipped += 1
 				elif kind == 'padic':
 					row = self._check_p_adic(tid, identity, stored,
 					                         entry['params'], recompute)
@@ -739,3 +867,59 @@ class Command(BaseCommand):
 		        'digits': int(precision),
 		        'agrees_to': int(difference.valuation()),
 		        'stored': stored[:80], 'computed': str(computed)[:80]}
+
+	def _check_bracket(self, tid, identity, stored, params, recompute):
+		"""Whether a zero really lies in the interval this value claims.
+
+		Evaluated at both ends: opposite strict signs mean a zero between
+		them. A ball straddling zero at either end decides nothing and is
+		recorded as undecided rather than passed -- at these precisions it
+		means the interval is too narrow to resolve, not that the value is
+		wrong.
+		"""
+		from sage.all import ComplexBallField, RealIntervalField
+		from utils.utils import parse_real_interval
+
+		digits = _significant(stored)
+		bits = int(digits * 3.33) + 96
+
+		try:
+			evaluate = recompute(params)
+		except Exception as trouble:
+			return {'table': tid, 'identity': identity, 'verdict': 'error',
+			        'detail': str(trouble)[:200]}
+		if evaluate is None:
+			return {'table': tid, 'identity': identity, 'verdict': 'skipped'}
+
+		for attempt in range(ESCALATIONS + 1):
+			field = ComplexBallField(bits)
+			interval = parse_real_interval(stored,
+			                               RIF=RealIntervalField(bits))
+			if interval is None:
+				return {'table': tid, 'identity': identity,
+				        'verdict': 'unparsed'}
+			try:
+				low = evaluate(field(interval.lower()))
+				high = evaluate(field(interval.upper()))
+			except Exception as trouble:
+				return {'table': tid, 'identity': identity, 'verdict': 'error',
+				        'detail': str(trouble)[:200]}
+
+			if not (low.imag().contains_zero() and high.imag().contains_zero()):
+				return {'table': tid, 'identity': identity, 'verdict': 'complex',
+				        'detail': 'the function is not real here'}
+
+			signs = (_sign_of(low.real()), _sign_of(high.real()))
+			if 0 not in signs:
+				break
+			bits *= 2
+		else:
+			return {'table': tid, 'identity': identity, 'verdict': 'undecided',
+			        'detail': 'the endpoints do not resolve at %d bits' % bits}
+
+		if signs[0] != signs[1]:
+			return {'table': tid, 'identity': identity, 'verdict': 'ok',
+			        'digits': digits}
+		return {'table': tid, 'identity': identity, 'verdict': 'wrong',
+		        'digits': digits, 'detail': 'no sign change across the interval',
+		        'stored': stored[:80]}
