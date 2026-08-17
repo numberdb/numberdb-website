@@ -104,11 +104,13 @@ it, in its own words:
     *upward*. They compute at two precisions and assert agreement, which is an
     agreement check, not an assumed bound.
 
-**Still open, and now easy:** the real periods can be *proven*. `real_period`
-is pi divided by an AGM, and arb implements the AGM in ball arithmetic --
-`RBF.pi() / RBF(a).agm(RBF(b))` from the exact algebraic `_abc`, measured at
-695 accurate bits out of 700. What it needs is a generator, and the curve list
-vendored beside it the way T69 vendors `curves.py`.
+**Done 2026-08-17: the real periods are proven.** All 3,023 entries of T72,
+T73 and T74 were recomputed as `pi / agm` in ball arithmetic and agree, at
+about 395 accurate bits out of 400. No curve list was needed after all: the
+entries carry N, c4 and c6, and the c-invariants determine the curve, so each
+entry rebuilds its own and its conductor is checked against the N it claims.
+Both branches of Sage's own implementation are followed -- `pi/agm(a,b)` for
+positive discriminant, `pi/agm(|a|, |Re a|)` for negative.
 
 See `docs/design/rigour.md`.
 
