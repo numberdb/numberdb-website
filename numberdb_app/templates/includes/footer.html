@@ -21,9 +21,15 @@ styling is confined to the strip: its rule, its spacing, and the muted note.
     <div class="footer-links">
       <a class="navbar-field" href="{% url 'db:api-reference' %}">API</a>
       <a class="navbar-field" href="https://pypi.org/project/numberdb/">Python package</a>
-      {# Plain markdown: the conventions for contributing a table, written to
-         be handed to an AI assistant. Linked here because nothing makes the
-         path discoverable on its own -- see also /llms.txt. #}
+      {% comment %}
+      Plain markdown: the conventions for contributing a table, written to be
+      handed to an AI assistant. Linked here because nothing makes the path
+      discoverable on its own -- see also /llms.txt.
+
+      {% comment %} and not {#...#}, which Django only reads to the end of the
+      line: a multi-line one is printed to the page, which is how this arrived
+      in the footer of every page on the site.
+      {% endcomment %}
       <a class="navbar-field" href="{% url 'db:skill' %}">Skill for AI</a>
       <a class="navbar-field" href="{% url 'db:privacy' %}">Privacy</a>
       <a class="navbar-field" href="{% url 'db:impressum' %}">Legal notice</a>

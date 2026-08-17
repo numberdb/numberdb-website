@@ -141,3 +141,21 @@ class TheSkillCanBeFound(TestCase):
 			with self.subTest(path=path):
 				body = self.client.get(path).content.decode()
 				self.assertIn('/skill', body)
+
+
+class NoTemplateSyntaxReachesTheReader(TestCase):
+	"""A `{# ... #}` comment is read only to the end of its line.
+
+	A multi-line one is not a comment at all: Django prints it. One shipped in
+	the site footer and so appeared on every page. Nothing failed -- the page
+	was valid, the link worked, the tests passed -- and it was visible to
+	anybody who scrolled down.
+	"""
+
+	def test_no_page_shows_its_own_markup(self):
+		for path in ('/', '/help', '/tables', '/privacy', '/impressum'):
+			with self.subTest(path=path):
+				body = self.client.get(path).content.decode()
+				for leak in ('{#', '{%', '#}'):
+					self.assertNotIn(leak, body,
+					                 '%s leaks %r' % (path, leak))
