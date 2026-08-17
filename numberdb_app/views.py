@@ -146,6 +146,48 @@ def skill(request):
 	return HttpResponse(body, content_type='text/markdown; charset=utf-8')
 
 
+def llms_txt(request):
+	"""An index of this site for a language model, at the conventional path.
+
+	`/llms.txt` (llmstxt.org) is the nearest thing to a convention for "where
+	are your documents": a short markdown file at the root, listing the pages
+	worth reading and what each is. Nothing makes an arbitrary path like
+	`/skill` discoverable on its own, and an assistant asked to contribute a
+	table should not have to guess.
+
+	Short on purpose. A list of everything is a list nobody reads.
+	"""
+	from django.http import HttpResponse
+
+	body = """# NumberDB
+
+> A collaborative database of numbers and polynomials: integers, rationals,
+> reals, complex numbers, p-adics and polynomials over Z and Q, indexed so that
+> a value can be identified from its digits. Every table states how well its
+> digits are known.
+
+## For assistants contributing a table
+
+- [Skill: making a NumberDB table](https://numberdb.org/skill): the value types
+  and how each is written, size limits, the rigour levels, what each refusal
+  from the `numberdb` package means, and what a table's definition has to pin
+  down. Plain markdown.
+- [Python package](https://pypi.org/project/numberdb/): `pip install numberdb`.
+  Search, fetch a table, or publish one with a generator.
+- [Web API](https://numberdb.org/api/docs): search and read without a key;
+  writing needs one.
+
+## For readers
+
+- [Help](https://numberdb.org/help): how to search, what a written value means,
+  and how accurate the numbers are.
+- [Tables](https://numberdb.org/tables): the corpus.
+- [Source](https://github.com/numberdb/numberdb-website) and
+  [data](https://github.com/numberdb/numberdb-data).
+"""
+	return HttpResponse(body, content_type='text/markdown; charset=utf-8')
+
+
 def about(request):
 	"""Kept as a redirect, because /about had been linked to for years.
 
