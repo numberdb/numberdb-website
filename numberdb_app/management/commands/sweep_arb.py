@@ -34,6 +34,17 @@ import time
 from django.core.management.base import BaseCommand, CommandError
 
 
+#: Tables where the recomputation is the same method the table used, and that
+#: method carries no error bound. Agreement means the digits were transcribed,
+#: rounded and stored correctly -- the T93 class of error, which is the one
+#: that has actually happened here -- and it means nothing about whether the
+#: method is right. Sage's `regulator()` checked against Sage's `regulator()`
+#: cannot notice that PARI's height is wrong.
+#:
+#: Recorded on every row, and counted separately, so that a clean sweep is not
+#: read as more than it is.
+SANITY_ONLY = frozenset(['T64', 'T65', 'T66', 'T70', 'T71'])
+
 #: How much wider than the stored digits to compute before giving up on an
 #: entry. Doubling four times is 16x the starting precision, which is far more
 #: than any entry here has needed; the cap exists so that one pathological
@@ -347,6 +358,77 @@ def _recomputations():
 		a = complex_field(lattice._abc[0])
 		return field.pi() / a.abs().agm(a.real().abs())
 
+	def rank_one_l_value(params, field):
+		"""L'(E,1) for a rank one curve, as a ball with a proven radius.
+
+		`deriv_at1` returns a pair -- the value and, in Sage's own words, "a
+		bound on the error in the approximation" (Cohen, section 7.5.3) -- so
+		the ball formed from them encloses the true derivative and the check
+		is a real one: it asks whether the stored digits lie inside a bound
+		that is proven.
+
+		It is not an *independent* computation. The table's own generator uses
+		this same method, so what this establishes is that the published
+		digits sit within the bound the table rests on, not that Cohen's
+		algorithm is right. An independent check would mean implementing the
+		approximate functional equation with its own tail bounds, which is the
+		same algorithm again.
+
+		The curve is rebuilt from the entry's c-invariants and its conductor
+		checked against the N the entry claims, so no list of curves is
+		needed.
+		"""
+		from sage.all import EllipticCurve_from_c4c6, RealBallField
+
+		#The bound falls with the number of terms and weakens with the
+		#conductor; 4000 is what the generator settled on for the worst entry
+		#in this table, measured rather than guessed.
+		terms, working = 4000, 800
+
+		curve = EllipticCurve_from_c4c6(ZZ(params['c4']), ZZ(params['c6']))
+		if curve.conductor() != ZZ(params['N']):
+			return None
+		value, error = curve.lseries().deriv_at1(k=terms, prec=working)
+		return RealBallField(working)(value).add_error(error)
+
+	def _curve_of(params):
+		"""The curve an entry names, rebuilt from its own c-invariants.
+
+		Checked against the conductor the entry claims, so a mismatch is
+		caught here rather than quietly compared against the wrong curve.
+		"""
+		from sage.all import EllipticCurve_from_c4c6
+
+		curve = EllipticCurve_from_c4c6(ZZ(params['c4']), ZZ(params['c6']))
+		if curve.conductor() != ZZ(params['N']):
+			return None
+		return curve
+
+	def regulator(params, field):
+		#Sanity only. `E.regulator()` here is what produced the table, and it
+		#documents no accuracy: PARI's ellheight states its normalisation and
+		#nothing about error, the height pairing matrix is ordinary floating
+		#point with a cancelling subtraction off its diagonal, and a
+		#determinant is taken of that. See the table's own rigour details.
+		curve = _curve_of(params)
+		if curve is None:
+			return None
+		return field(curve.regulator(proof=True, precision=field.precision()))
+
+	def l_value(rank):
+		#Sanity only, for the same reason: `taylor_series` documents a
+		#precision in bits and no accuracy.
+		from sage.all import factorial
+
+		def compute(params, field):
+			curve = _curve_of(params)
+			if curve is None:
+				return None
+			series = curve.lseries().taylor_series(
+				a=1, series_prec=rank + 1, prec=field.precision())
+			return field(series[rank]) * factorial(rank)
+		return compute
+
 	def agm(params, field):
 		a, b = QQ(params['a']), QQ(params['b'])
 		if a == b:
@@ -365,6 +447,12 @@ def _recomputations():
 		'T85': ('real', platonic_volume),
 		'T86': ('real', platonic_area),
 		'T92': ('real', sobolev),
+		'T64': ('real', regulator),
+		'T65': ('real', regulator),
+		'T66': ('real', regulator),
+		'T69': ('real', rank_one_l_value),
+		'T70': ('real', l_value(2)),
+		'T71': ('real', l_value(3)),
 		'T72': ('real', real_period),
 		'T73': ('real', real_period),
 		'T74': ('real', real_period),
@@ -721,7 +809,11 @@ class Command(BaseCommand):
 					mend.write('\n')
 		handle = open(path, 'a', encoding='utf8')
 
-		checked = skipped = wrong = 0
+		checked = skipped = wrong = sanity = 0
+		#Counted separately from the verdicts, because the verdict counters
+		#move between each other -- a sanity row decrements `checked` -- and a
+		#limit computed from them stopped stopping.
+		processed = 0
 		started = time.time()
 		for tid in wanted:
 			kind, recompute = recomputations[tid]
@@ -739,8 +831,9 @@ class Command(BaseCommand):
 				identity = json.dumps(entry['params'], sort_keys=True)
 				if (tid, identity) in done:
 					continue
-				if options['limit'] and checked + skipped >= options['limit']:
+				if options['limit'] and processed >= options['limit']:
 					break
+				processed += 1
 
 				stored = entry['number']
 				exact_looking = (not isinstance(stored, str)
@@ -781,14 +874,20 @@ class Command(BaseCommand):
 					else:
 						skipped += 1
 
+				if tid in SANITY_ONLY and row.get('verdict') in ('ok', 'wrong'):
+					row['check'] = 'sanity'
+					if row['verdict'] == 'ok':
+						checked -= 1
+						sanity += 1
 				handle.write(json.dumps(row, sort_keys=True) + '\n')
 				handle.flush()
 				os.fsync(handle.fileno())
 
 		handle.close()
 		self.stdout.write(
-			'%d checked, %d skipped, %d wrong, in %d seconds.'
-			% (checked, skipped, wrong, time.time() - started))
+			'%d checked, %d agreed on a sanity check only, %d skipped, '
+			'%d wrong, in %d seconds.'
+			% (checked, sanity, skipped, wrong, time.time() - started))
 		if wrong:
 			self.stdout.write('Findings are the "wrong" lines in %s' % path)
 
