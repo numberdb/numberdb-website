@@ -242,7 +242,10 @@ class TheLevelsAreDocumented(TestCase):
 		from .validate import RIGOUR_LEVELS
 
 		body = self.client.get('/help').content.decode()
-		self.assertIn('How well are the digits known', body)
+		#By anchor rather than by heading: the wording is presentation and has
+		#already changed once, while the anchor is what every link into this
+		#section depends on.
+		self.assertIn('id="how-well-known"', body)
 		for level in RIGOUR_LEVELS:
 			with self.subTest(level=level):
 				self.assertIn(level, body)
@@ -259,7 +262,7 @@ class TheLevelsAreDocumented(TestCase):
 		from .validate import RIGOUR_LEVELS
 
 		body = self.client.get('/help').content.decode()
-		section = body.split('How well are the digits known', 1)[1][:2500]
+		section = body.split('id="how-well-known"', 1)[1][:2500]
 		listed = set(re.findall(r'<b>([a-z()\- ]+)</b>', section))
 		self.assertEqual(listed & set(RIGOUR_LEVELS), set(RIGOUR_LEVELS),
 		                 'the help page lists %s' % (sorted(listed),))
