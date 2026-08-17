@@ -315,6 +315,38 @@ def _recomputations():
 			return None
 		return zeros[n - 1].imag()
 
+	def real_period(params, field):
+		"""The real period of the curve with these c-invariants.
+
+		The entries carry N, c4 and c6, and the c-invariants determine the
+		curve -- so the table identifies its own curves and the list of them
+		attached to it is not needed here.
+
+		Sage computes this as pi divided by an arithmetic-geometric mean, in
+		ordinary floating point. arb has the agm in ball arithmetic, so the
+		same identity gives an enclosure instead: the inputs are exact
+		algebraic numbers, and every step after them carries its own error.
+
+		Two branches, as in Sage's own implementation: for positive
+		discriminant the three quantities are real and the period is
+		pi/agm(a, b); for negative discriminant there is one complex quantity
+		and it is pi/agm(|a|, |Re a|).
+		"""
+		from sage.all import ComplexBallField, EllipticCurve_from_c4c6
+
+		curve = EllipticCurve_from_c4c6(ZZ(params['c4']), ZZ(params['c6']))
+		if curve.conductor() != ZZ(params['N']):
+			return None                      # not the curve the entry names
+		lattice = curve.period_lattice()
+
+		if lattice.real_flag == 1:
+			a, b = (field(x) for x in lattice._abc[:2])
+			return field.pi() / a.agm(b)
+
+		complex_field = ComplexBallField(field.precision())
+		a = complex_field(lattice._abc[0])
+		return field.pi() / a.abs().agm(a.real().abs())
+
 	def agm(params, field):
 		a, b = QQ(params['a']), QQ(params['b'])
 		if a == b:
@@ -333,6 +365,9 @@ def _recomputations():
 		'T85': ('real', platonic_volume),
 		'T86': ('real', platonic_area),
 		'T92': ('real', sobolev),
+		'T72': ('real', real_period),
+		'T73': ('real', real_period),
+		'T74': ('real', real_period),
 		'T94': ('real', hurwitz_zeta),
 		'T60': ('real', root_of_unity),
 		'T61': ('real', cos_pi_x),
