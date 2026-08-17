@@ -125,6 +125,19 @@ six seconds, not the hours budgeted for it: arb is fast and these are cheap
 functions. The expense is in what is *not* covered, and the registry is meant
 to grow.
 
+**Fourth run, 2026-08-17: 23,260 entries across 28 tables, none wrong.** Added
+the Hurwitz zeta values, the zeta zeros -- against arb's certified enclosures,
+now permanently rather than as a one-off check -- and the eight tables of Airy
+and Bessel zeros and extrema, 8,199 values, by a different kind of check.
+
+Those tables hold the *location* of a zero, so nothing is recomputed and
+compared. The function is evaluated in ball arithmetic at both ends of the
+interval the written digits denote, and opposite strict signs put a zero
+between them by the intermediate value theorem. No root-finder, no tolerance.
+It does not establish the index -- that this is the nth zero and not a
+neighbour -- which needs a count of the zeros below, and arb's counting is not
+exposed in Sage. The tables now say exactly that.
+
 **Third run, 2026-08-17: 14,030 entries across 18 tables, none wrong.** The
 Platonic solids, the Sobolev constants, the p-adic agm once its convention was
 established, and the Taylor coefficients of the completed zeta -- assembled
