@@ -135,32 +135,31 @@ def _entries_of(tree):
 def _same_entry(one, other):
 	"""Whether two recorded entries say the same thing.
 
-	Not `==`. The corpus holds the same entry in two shapes -- a bare value,
+	Not `==`. The same entry is held in the corpus in more than one shape --
 
-	    Numbers: ['3.14159...']
+	    Numbers: ['3.14159...']                             # as imported
+	    Numbers: [{'params': {}, 'number': '3.14159...'}]   # as rewritten
 
-	and the normalised form the editing path writes,
+	-- and normalising a tree also moves annotations about: `param-latex` off
+	the entry, `url` and `both signs` down onto it from the node above. None of
+	that changes what the table asserts about a number, and comparing it
+	literally said every entry in the corpus had changed. It did: 71% of stored
+	reals, and every complex, p-adic and polynomial value, left search by
+	number, which holds unreviewed values back.
 
-	    Numbers: [{'params': {}, 'number': '3.14159...'}]
+	So: `params` is dropped, being the identity these are keyed by. `number`
+	must agree. Any other key present on *both* sides must agree -- a changed
+	comment or proof is a change to the entry, and comparing only the value
+	would let it pass unreviewed. A key on one side only is relocation, and
+	is not a claim about the digits that a reviewer confirmed.
 
-	-- and comparing those literally says every entry changed. It did that:
-	a run of `set_rigour`, which touches only a table's Data properties,
-	rewrote every tree into the normalised shape and so declared the whole
-	corpus unreviewed. 71% of stored reals, and every complex, p-adic and
-	polynomial value, silently left search by number, because unreviewed
-	values are held out of it.
-
-	`params` is dropped before comparing: it is the identity these entries are
-	keyed by, so it cannot differ between two entries being compared, and it is
-	present in one shape and absent in the other. Everything else is kept --
-	a changed comment or proof is a change to the entry, and comparing only
-	the value would let it pass unreviewed.
+	Measured over the whole corpus when this was written: 2124 entries
+	differed only in `param-latex`, 1075 in `url`, 1075 in `both signs`, and
+	43 in `number`. The 43 are the ones review is for.
 	"""
 	def canonical(node):
-		#Recursive, because `flatten_entries` does not descend into lists: a
-		#table whose entries are a bare list arrives here as the list itself,
-		#under one identity, so the two shapes have to be reconciled element
-		#by element.
+		#Recursive, because `flatten_entries` need not descend into a list: a
+		#table whose entries are a bare list can arrive here whole.
 		if isinstance(node, list):
 			return [canonical(item) for item in node]
 		if isinstance(node, dict):
@@ -168,7 +167,18 @@ def _same_entry(one, other):
 			        if key != 'params'}
 		return {'number': node}
 
-	return canonical(one) == canonical(other)
+	def same(one, other):
+		if isinstance(one, list) or isinstance(other, list):
+			if not (isinstance(one, list) and isinstance(other, list)):
+				return False
+			return (len(one) == len(other)
+			        and all(same(a, b) for a, b in zip(one, other)))
+		if one.get('number') != other.get('number'):
+			return False
+		return all(one[key] == other[key]
+		           for key in set(one) & set(other))
+
+	return same(canonical(one), canonical(other))
 
 
 def changed_params(before_tree, after_tree):

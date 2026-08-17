@@ -348,3 +348,28 @@ class TheSameEntryInTwoShapes(TestCase):
 		before = {'Numbers': {'1': '3.14', '2': '2.71'}}
 		after = {'Numbers': {'1': '3.14'}}
 		self.assertEqual(changed_params(before, after), {'2'})
+
+	def test_an_annotation_moved_by_normalisation_is_not_a_change(self):
+		#`param-latex` sits on the entry in one shape and not the other, and
+		#`url` and `both signs` move down onto entries from the node above.
+		#2124, 1075 and 1075 entries respectively differed by exactly this.
+		from .review import changed_params
+
+		before = {'Numbers': {'1': {'param-latex': '$a$', 'number': '83521'}}}
+		after = {'Numbers': [{'params': {'q': '1'}, 'number': '83521',
+		                      'url': 'https://example.org/1'}]}
+		self.assertEqual(changed_params(before, after), set())
+
+	def test_a_changed_annotation_present_in_both_is_a_change(self):
+		from .review import changed_params
+
+		before = {'Numbers': {'1': {'number': '3.14', 'comment': 'measured'}}}
+		after = {'Numbers': {'1': {'number': '3.14', 'comment': 'computed'}}}
+		self.assertEqual(changed_params(before, after), {'1'})
+
+	def test_a_changed_number_is_a_change_whatever_moved(self):
+		from .review import changed_params
+
+		before = {'Numbers': {'1': {'param-latex': '$a$', 'number': '83521'}}}
+		after = {'Numbers': [{'params': {'q': '1'}, 'number': '83522'}]}
+		self.assertEqual(changed_params(before, after), {'1'})
