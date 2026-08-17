@@ -122,6 +122,88 @@ def _recomputations():
 			return n * angle.tan()
 		return None
 
+	def _platonic(field):
+		"""Edge 1: volume, surface area, and the three radii, per solid.
+
+		Standard formulas, but checked against the table's own `unit-a` and
+		`unit-r` columns before being trusted: a wrong radius here would be
+		invisible in the edge-1 column and wrong in the other four.
+		"""
+		two, three, five, six = (field(n).sqrt() for n in (2, 3, 5, 6))
+		golden = (1 + five) / 2
+		return {
+			'tetrahedron': {
+				'V': two / 12, 'A': three,
+				'r': 1 / (2 * six), 'rho': 1 / (2 * two), 'R': six / 4},
+			'cube': {
+				'V': field(1), 'A': field(6),
+				'r': field(1) / 2, 'rho': two / 2, 'R': three / 2},
+			'octahedron': {
+				'V': two / 3, 'A': 2 * three,
+				'r': 1 / six, 'rho': field(1) / 2, 'R': 1 / two},
+			'dodecahedron': {
+				'V': (15 + 7 * five) / 4,
+				'A': 3 * (25 + 10 * five).sqrt(),
+				#r = (a/2) sqrt((25 + 11 sqrt5)/10). Written wrong the first
+				#time, as sqrt(5(25+11 sqrt5)/10)/2, which is the same thing
+				#multiplied by sqrt5 -- and invisible in four of the five
+				#columns, since only `unit-r` divides by it.
+				'r': ((25 + 11 * five) / 10).sqrt() / 2,
+				'rho': (3 + five) / 4,
+				'R': three * (1 + five) / 4},
+			'icosahedron': {
+				'V': 5 * (3 + five) / 12,
+				'A': 5 * three,
+				'r': three * (3 + five) / 12,
+				'rho': (1 + five) / 4,
+				'R': (10 + 2 * five).sqrt() / 4},
+		}
+
+	def platonic_volume(params, field):
+		solid = _platonic(field).get(params['solid'])
+		if solid is None:
+			return None
+		which = params['expression']
+		if which == 'unit-a':
+			return solid['V']
+		if which == 'unit-A':                # scaled so the surface area is 1
+			return solid['V'] / solid['A'] ** (QQ(3) / 2)
+		length = {'unit-r': 'r', 'unit-rho': 'rho', 'unit-R': 'R'}.get(which)
+		if length is None:
+			return None
+		return solid['V'] / solid[length] ** 3
+
+	def platonic_area(params, field):
+		solid = _platonic(field).get(params['solid'])
+		if solid is None:
+			return None
+		which = params['expression']
+		if which == 'unit-a':
+			return solid['A']
+		if which == 'unit-V':                # scaled so the volume is 1
+			return solid['A'] / solid['V'] ** (QQ(2) / 3)
+		length = {'unit-r': 'r', 'unit-rho': 'rho', 'unit-R': 'R'}.get(which)
+		if length is None:
+			return None
+		return solid['A'] / solid[length] ** 2
+
+	def sobolev(params, field):
+		#The table gives both formulas itself, from Aubin and Talenti for
+		#p > 1 and from Federer-Fleming and Maz'ya for p = 1, so this is its
+		#own statement recomputed rather than a formula found elsewhere.
+		n, exponent = ZZ(params['n']), QQ(params['p'])
+		half = field.pi().sqrt()
+		if exponent == 1:
+			return half * n / (field(1 + QQ(n) / 2).gamma()) ** (QQ(1) / n)
+		if exponent >= n:
+			return None
+		first = field(n) ** (1 / exponent)
+		second = (field(QQ(n) - exponent) / (exponent - 1)) ** (1 - 1 / exponent)
+		ratio = (field(QQ(n) / exponent).gamma()
+		         * field(QQ(n) + 1 - QQ(n) / exponent).gamma()
+		         / (field(n).gamma() * field(1 + QQ(n) / 2).gamma()))
+		return half * first * second * ratio ** (QQ(1) / n)
+
 	def agm(params, field):
 		a, b = QQ(params['a']), QQ(params['b'])
 		if a == b:
@@ -134,6 +216,9 @@ def _recomputations():
 		'T17': ('real', polygon_area),
 		'T28': ('real', sphere_volume),
 		'T51': ('real', agm),
+		'T85': ('real', platonic_volume),
+		'T86': ('real', platonic_area),
+		'T92': ('real', sobolev),
 		'T60': ('real', root_of_unity),
 		'T61': ('real', cos_pi_x),
 	}
@@ -287,21 +372,34 @@ def _p_adic_recomputations():
 		return total
 
 	def p_adic_agm(params, prec):
-		#a_{n+1} = (a_n + g_n)/2, g_{n+1} = sqrt(a_n g_n), taking at each step
-		#the square root nearer to a_n -- the other one sends the iteration
-		#somewhere else, which is the whole difficulty of the p-adic agm.
+		#a_{n+1} = (a_n + g_n)/2, g_{n+1} = sqrt(a_n g_n) -- taking the root
+		#nearer to a_{n+1}, the *new* arithmetic mean.
+		#
+		#Which root is not a detail here. Both lie in Q_p and they lead to
+		#different limits, and the table's definition does not say. The rule
+		#above is PARI's, established by asking it: the agm is unchanged by one
+		#step, so `agm(a,b) == agm((a+b)/2, r)` holds for the root PARI took
+		#and not for the other. Measured over six cases at four primes it took
+		#the root nearer the new mean every time, and with that rule all 990
+		#stored entries reproduce, p = 2 included.
+		#
+		#The first attempt compared against a_n, the *old* value, which is the
+		#natural misreading and gives a different number entirely -- not a sign
+		#difference, a different limit. It reported every odd-prime entry as
+		#wrong.
 		p = ZZ(params['p'])
-		field = Qp(p, prec + 20)
+		field = Qp(p, prec + 25)
 		a, g = field(QQ(params['a'])), field(QQ(params['b']))
-		for _ in range(prec + 20):
-			if (a - g).valuation() >= prec + 10:
+		for _ in range(prec + 25):
+			if (a - g).valuation() >= prec + 8:
 				break
+			mean = (a + g) / 2
 			product = a * g
 			if not product.is_square():
 				return None
-			roots = [product.sqrt(), -product.sqrt()]
-			g = max(roots, key=lambda r: (r - a).valuation())
-			a = (a + g) / 2
+			root = product.sqrt()
+			g = max([root, -root], key=lambda t: (t - mean).valuation())
+			a = mean
 		return a
 
 	return {
@@ -310,19 +408,11 @@ def _p_adic_recomputations():
 		'T46': ('padic', p_adic_exp),
 		'T47': ('padic', p_adic_gamma),
 		'T48': ('padic', artin_hasse),
-		#T52 is deliberately absent. Its definition -- a_{n+1} = (a_n+g_n)/2,
-		#g_{n+1} = sqrt(a_n g_n) -- does not say *which* square root, and over
-		#Q_p that is not a detail: the two choices give different limits, and
-		#only one of them stays in Q_p at all (the other needs a quadratic
-		#extension, which Sage refuses outright). Following the definition by
-		#that forced choice gives a different number from the one the table
-		#holds, which came from PARI's agm; PARI documents when a p-adic agm
-		#exists and not which branch it takes. Four candidate conventions were
-		#tried against PARI and none reproduced it.
-		#
-		#So the table cannot presently be reproduced from what it says, and a
-		#sweep that reported 718 entries as wrong would be reporting that this
-		#file guessed a different convention. Recorded in the backlog instead.
+		'T52': ('padic', p_adic_agm),
+		#T52 was left out for a day: its definition does not say which square
+		#root the iteration takes, and the wrong reading gives a different limit
+		#rather than a near miss. The rule is in `p_adic_agm` above, and the
+		#table now states it too.
 	}
 
 

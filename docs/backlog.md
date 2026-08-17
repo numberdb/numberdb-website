@@ -142,16 +142,10 @@ Iwasawa branch to reach 702 of T45's 856 entries.
 
 What it cannot reach yet, roughly in order of what it would take:
 
-  * **Easy, just unwritten.** T85 and T86 (Platonic solids: five solids under
-    five normalisations each), T92 (the Sobolev constant).
-
   * **Needs assembling.** T15 and T33, the Taylor coefficients of the completed
     zeta. Sage has no zeta of a power series over a ball field, so these have
     to be built from `zetaderiv` and the Leibniz rule against the other three
     factors.
-
-  * **Needs a convention nobody has written down.** T52, the p-adic
-    arithmetic-geometric mean -- see below.
 
   * **Needs mathematics.** T50, the Kubota-Leopoldt zeta function: Sage has no
     implementation, and the table's own definition pins the value only at
@@ -168,21 +162,23 @@ What it cannot reach yet, roughly in order of what it would take:
     the tables whose labels say least, and they are exactly the ones no
     independent implementation can currently check.
 
-## Two tables that cannot be reproduced from what they say
+## Two tables that could not be reproduced from what they said
 
-Found by the sweep, and neither is a wrong digit: both are a table that does
-not say enough for a reader to get its numbers back.
+Found by the sweep, and neither was a wrong digit: both were a table that did
+not say enough for a reader to get its numbers back. Both fixed 2026-08-17.
 
-**T52, the p-adic arithmetic-geometric mean.** Its definition gives the
-iteration `a_{n+1} = (a_n+g_n)/2, g_{n+1} = sqrt(a_n g_n)` and never says
-*which* square root. Over Q_p that is not a detail: the two choices give
-different limits, and only one of them stays in Q_p at all -- the other needs a
-quadratic extension. Following the definition by that forced choice gives a
-different number from the one the table holds. The stored values come from
-PARI's `agm`, whose documentation says when a p-adic agm exists and not which
-branch it takes; four candidate conventions were tried against it and none
-reproduced it. Either the convention should be stated in the table, or the
-table should say the values are PARI's and leave it at that.
+**T52, the p-adic arithmetic-geometric mean.** Its definition gave the
+iteration `a_{n+1} = (a_n+g_n)/2, g_{n+1} = sqrt(a_n g_n)` and never said
+*which* square root. Over Q_p that is not a detail: both roots are there and
+they lead to different limits -- reading it the natural way gives a different
+number for every entry at every odd prime, which is what happened.
+
+The rule was established by asking PARI rather than guessing at it. The agm is
+unchanged by one step, so `agm(a,b) == agm((a+b)/2, r)` holds for the root PARI
+took and fails for the other; at every prime tried it takes the root nearer the
+**new** arithmetic mean. With that rule all 990 entries reproduce, p = 2
+included. The definition now says so, and the table carries the step-invariance
+as a formula, since that identity is what makes the choice checkable at all.
 
 **T45's parameter constraint was wrong; fixed 2026-08-16.** It read
 `k = 1 mod p`, and 702 of its 856 entries were outside that -- p = 3 with
