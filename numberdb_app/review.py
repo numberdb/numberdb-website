@@ -173,27 +173,34 @@ def _same_entry(one, other):
 			        if key != 'params'}
 		return {'number': node}
 
-	def same(one, other):
-		if isinstance(one, list) or isinstance(other, list):
-			if not (isinstance(one, list) and isinstance(other, list)):
-				return False
-			return (len(one) == len(other)
-			        and all(same(a, b) for a, b in zip(one, other)))
-		#`number: ['-188.5']` and `number: '-188.5'` are the same claim: the
-		#normalised shape wraps a lone value in a list. T68 differed in 187
-		#entries by nothing else.
-		def value_of(entry):
-			number = entry.get('number')
-			if isinstance(number, list) and len(number) == 1:
-				return number[0]
-			return number
+	def sequence(node):
+		"""The values an entry states, in order and without its shape.
 
-		if value_of(one) != value_of(other):
+		A bare list is ambiguous: it can be several entries (T67, 442 values
+		with no parameters) or one entry holding several values (T68, where a
+		discriminant has more than one j-invariant). Both read the same way
+		here, and both compare equal to the normalised shape that writes
+		`number: [...]` -- which is the point, since neither is a change to
+		what the table says.
+		"""
+		if isinstance(node, list):
+			out = []
+			for item in node:
+				out.extend(sequence(item))
+			return out
+		if isinstance(node, dict):
+			return sequence(node.get('number'))
+		return [node]
+
+	def same(one, other):
+		if sequence(one) != sequence(other):
 			return False
-		#`number` is settled above, by a comparison that knows a lone value may
-		#be wrapped in a list; comparing it again literally undoes that.
-		return all(one[key] == other[key]
-		           for key in (set(one) & set(other)) - {'number'})
+		#Annotations are compared only where both sides are entries carrying
+		#them: a key on one side only is relocation, not a claim about digits.
+		if isinstance(one, dict) and isinstance(other, dict):
+			return all(one[key] == other[key]
+			           for key in (set(one) & set(other)) - {'number'})
+		return True
 
 	return same(canonical(one), canonical(other))
 
