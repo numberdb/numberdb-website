@@ -373,3 +373,34 @@ class TheSameEntryInTwoShapes(TestCase):
 		before = {'Numbers': {'1': {'param-latex': '$a$', 'number': '83521'}}}
 		after = {'Numbers': [{'params': {'q': '1'}, 'number': '83522'}]}
 		self.assertEqual(changed_params(before, after), {'1'})
+
+	def test_a_lone_value_wrapped_in_a_list_is_not_a_change(self):
+		#The normalised shape writes `number: ['-188.5']` where the older one
+		#has `number: '-188.5'`. T68 differed in 187 entries by only this.
+		from .review import changed_params
+
+		before = {'Numbers': {'-1316': '-1986121593'}}
+		after = {'Numbers': [{'params': {'D': '-1316'},
+		                      'number': ['-1986121593']}]}
+		self.assertEqual(changed_params(before, after), set())
+
+	def test_unparameterised_entries_do_not_collapse_onto_one_identity(self):
+		#Every entry of a bare-list table carries `params: {}`, so keying by
+		#the parameters gives them all the same identity and the last one
+		#wins. T67's 442 values collapsed onto one.
+		from .review import changed_params
+
+		before = {'Numbers': ['0', '-6', '-9/5']}
+		after = {'Numbers': [{'params': {}, 'number': '0'},
+		                     {'params': {}, 'number': '-6'},
+		                     {'params': {}, 'number': '-9/5'}]}
+		self.assertEqual(changed_params(before, after), set())
+
+	def test_a_changed_value_in_a_bare_list_is_still_a_change(self):
+		from .review import changed_params
+
+		before = {'Numbers': ['0', '-6', '-9/5']}
+		after = {'Numbers': [{'params': {}, 'number': '0'},
+		                     {'params': {}, 'number': '-7'},
+		                     {'params': {}, 'number': '-9/5'}]}
+		self.assertNotEqual(changed_params(before, after), set())
