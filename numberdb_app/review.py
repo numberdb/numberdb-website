@@ -58,6 +58,30 @@ def flatten_entries(numbers):
 	flat = {}
 
 	def walk(node, prefix):
+		if isinstance(node, list):
+			#The normalised shape the editing path writes: a list of entries,
+			#each carrying its own `params`. Without this the walk records the
+			#whole list under one identity, so a table of 1080 entries has one,
+			#matching nothing in the shape it was reviewed in -- and every
+			#entry counts as changed. That is what took the corpus out of
+			#search by number.
+			if node and all(isinstance(item, dict) and 'params' in item
+			                for item in node):
+				for item in node:
+					values = (item.get('params') or {}).values()
+					identity = ','.join(_normalise_param(value)
+					                    for value in values)
+					flat[identity or ','.join(prefix)] = item
+				return
+			#A table with no parameters is a list of one bare value; record
+			#the value, not the list, so it can be compared with the same
+			#entry written the other way.
+			if len(node) == 1:
+				walk(node[0], prefix)
+				return
+			flat[','.join(prefix)] = node
+			return
+
 		if isinstance(node, dict):
 			if set(node) & ENTRY_MARKERS:
 				#`numbers` holds further entries at the same parameter depth,
