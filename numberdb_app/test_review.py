@@ -404,3 +404,22 @@ class TheSameEntryInTwoShapes(TestCase):
 		                     {'params': {}, 'number': '-7'},
 		                     {'params': {}, 'number': '-9/5'}]}
 		self.assertNotEqual(changed_params(before, after), set())
+
+	def test_several_values_under_one_parameter_survive_normalisation(self):
+		#T68: a discriminant with more than one j-invariant, stored as a bare
+		#list before and as `number: [...]` after. 147 entries differed by
+		#only this.
+		from .review import changed_params
+
+		before = {'Numbers': {'-10691': ['-188.5', '1.4562755']}}
+		after = {'Numbers': [{'params': {'D': '-10691'},
+		                      'number': ['-188.5', '1.4562755']}]}
+		self.assertEqual(changed_params(before, after), set())
+
+	def test_a_changed_value_among_several_is_still_a_change(self):
+		from .review import changed_params
+
+		before = {'Numbers': {'-10691': ['-188.5', '1.4562755']}}
+		after = {'Numbers': [{'params': {'D': '-10691'},
+		                      'number': ['-188.5', '1.4562766']}]}
+		self.assertEqual(changed_params(before, after), {'-10691'})
