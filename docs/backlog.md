@@ -167,6 +167,43 @@ What it cannot reach yet, roughly in order of what it would take:
     the tables whose labels say least, and they are exactly the ones no
     independent implementation can currently check.
 
+## Search by number was answering for a third of the corpus
+
+Fixed 2026-08-17, and worth keeping written down because nothing failed
+loudly. Searching for pi did not find the table called Pi.
+
+Unreviewed values are deliberately held out of search by number: a reader
+looking at a table can see an entry is marked unreviewed and weigh it, and
+somebody typing digits cannot. What decides is `changed_params`, the difference
+between a table's reviewed revision and its head -- and it compared
+representations rather than values. The corpus holds the same entry in several
+shapes, and normalising a tree moves annotations about:
+
+    Numbers: ['3.14159...']                             # as imported
+    Numbers: [{'params': {}, 'number': '3.14159...'}]   # as rewritten
+
+    param-latex comes off the entry; url and both signs move onto it
+    a lone value gets wrapped: number: ['-188.5']
+    a bare list is ambiguous -- several entries, or one entry of several values
+
+Every one of those read as a changed entry. A run of `set_rigour`, which
+touches nothing but a table's Data properties, therefore declared the whole
+corpus unreviewed: 71% of stored reals and *every* complex, p-adic and
+polynomial value silently left search by number. 55,432 values, of which 41,582
+were held back.
+
+The comparison is now over the sequence of values an entry states, with
+annotations compared only where both sides carry them, and it is down to 2
+rows -- T32's corrected `phi_inv` and its new `phi_conj`, which genuinely
+changed and are genuinely waiting for review. Nine tests hold the line between
+a shape that moved and a digit that changed.
+
+Two things to take from it. Metadata edits must not be able to invalidate a
+review of digits, which is now true. And the site's own headline claim -- give
+us a number, we will tell you whether it is known -- had no test that ran
+against real data; it was found by checking the README's example by hand while
+sweeping the documentation.
+
 ## Two tables that could not be reproduced from what they said
 
 Found by the sweep, and neither was a wrong digit: both were a table that did
