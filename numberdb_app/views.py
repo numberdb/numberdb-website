@@ -119,6 +119,33 @@ def home(request):
 		return render(request, 'includes/search-results-panel.html', context)
 	return render(request, 'home.html', context)
 
+def skill(request):
+	"""Serve the agent skill as plain markdown.
+
+	The same file the repository holds at
+	`.claude/skills/numberdb-table/SKILL.md`, read at request time rather than
+	copied, because two copies of instructions drift and the drifting one is
+	always the one somebody is reading.
+
+	Markdown rather than a rendered page: the audience is a program being told
+	how to contribute a table, and it wants the source. A person who follows
+	the link gets something perfectly readable anyway.
+	"""
+	import os
+
+	from django.conf import settings
+	from django.http import Http404, HttpResponse
+
+	path = os.path.join(settings.BASE_DIR, '.claude', 'skills',
+	                    'numberdb-table', 'SKILL.md')
+	try:
+		with open(path, encoding='utf8') as handle:
+			body = handle.read()
+	except OSError:
+		raise Http404('the skill is not installed on this server')
+	return HttpResponse(body, content_type='text/markdown; charset=utf-8')
+
+
 def about(request):
 	"""Kept as a redirect, because /about had been linked to for years.
 

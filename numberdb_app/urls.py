@@ -8,6 +8,9 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('about', views.about, name='about'),
     path('help', views.help, name='help'),
+    #Plain markdown, for an agent being told how to contribute a table.
+    path('skill', views.skill, name='skill'),
+    path('skill.md', views.skill),
 
     path('api/docs', views.api_reference, name='api-reference'),
     path('api/search', api.advanced_search_results, name='api-search'),

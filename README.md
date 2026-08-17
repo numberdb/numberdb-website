@@ -35,6 +35,11 @@ Core data is imported from the companion repository numberdb-data (cloned next t
 Notes
 - Default DB is Postgres via `DATABASE_URL` in `.env`. SQLite is discouraged even for local development due to missing features and different behavior; prefer a local Postgres instance.
 - `.env` defines `PYTHON`, `PIP`, and `MANAGE` (typically `sage -python manage.py`).
+- The site serves the agent skill at `/skill`, reading
+  `.claude/skills/numberdb-table/SKILL.md`. The image copies the whole
+  repository, so this works in production; a development override that mounts
+  source directories one by one needs `./.claude:/app/.claude:ro` as well, or
+  the page 404s locally and works deployed.
 
 ### Common Make Targets
 - `make fetch_data`: clone/pull `../numberdb-data`
