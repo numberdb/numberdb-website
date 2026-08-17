@@ -144,7 +144,8 @@ div.main-column {
 <ol class="contents">
 <li><a href="#section-how-to-search">How to search</a></li>
 <li><a href="#section-advanced-search-guide">Advanced search guide</a></li>
-<li><a href="#section-number-types">Number types and accuracy</a></li>
+<li><a href="#section-number-types">Number types and how they are written</a></li>
+<li><a href="#section-accuracy">How accurate are the numbers?</a></li>
 <li><a href="#section-search-precision">Numbers not found by search</a></li>
 <li><a href="#section-sage-interface">Python and Sage interface</a></li>
 <li><a href="#section-api">API access and rate limits</a></li>
@@ -220,7 +221,7 @@ Furthermore tables are given <b>tags</b>, which helps searchability and classifi
 <!--------------------------------------------------------------------->
 
 <div id="section-number-types" class="section scrollspy">
-<h2 id="number-types" class="section scrollspy">Number types and displayed accuracy</h2>
+<h2 id="number-types" class="section scrollspy">Number types and how they are written</h2>
 
 Numbers in NumberDB can be of the following types.
 
@@ -295,6 +296,55 @@ These formats apply to the tables' webpages, the searchbar, as well as to the ra
 Note that in the yaml format one has put quotation marks around square brackets, such that
 the interval does not get parsed as a list.
 -->
+</div>
+
+<!--------------------------------------------------------------------->
+
+<div id="section-accuracy" class="section scrollspy">
+<h2 id="accuracy" class="section scrollspy">How accurate are the numbers?</h2>
+
+<p>
+The section above says what a written value <em>claims</em>: <code>3.14</code>
+is the interval $[3.13, 3.15]$, and a value written to a hundred digits claims
+all hundred. This section is about the other question, which is not the same
+one &mdash; what that claim rests on.
+
+<div id="how-well-known" class="li-header">How well the digits are known</div>
+<p>
+A hundred digits can be <b>proven</b>, believed on a stated assumption,
+<b>checked by agreement</b>, or simply <b>assumed</b>. A table that does not say
+presents all four identically, so a generator states it and the table shows it
+under <em>Data properties</em>:
+
+<ul>
+<li><b>exact</b> &mdash; an integer, a rational, a polynomial. Nothing to be
+wrong about.</li>
+<li><b>proven</b> &mdash; interval or ball arithmetic throughout, so the digits
+follow from the width of the result. This is the default, and it is checked: a
+value that carries no error of its own cannot have a proven one.</li>
+<li><b>assumed-bound</b> &mdash; computed in fixed precision, with an error
+bound the author asserts and justifies.</li>
+<li><b>heuristic (agreement-checked)</b> &mdash; computed twice at different
+precisions, keeping the digits that agree. Measured rather than assumed, and
+not a proof: two runs of a wrong method agree perfectly.</li>
+<li><b>heuristic</b> &mdash; one computation and a guard chosen by
+judgement.</li>
+<li><b>measured</b> &mdash; not computed at all. The value comes from
+experiment and the interval holds the measurements together with their stated
+uncertainties, as for the fine-structure constant. This one is not on the same
+scale as the others: asking whether measurement beats agreement-checking has no
+answer, because they are not the same kind of claim.</li>
+</ul>
+
+<p>
+Every table states one. An absent line would mean nobody has established it
+rather than that the digits are poor &mdash; that used to be the common case
+and is no longer one at all. The weakest labels sit on the tables whose values
+come from methods that offer no error bound, and they say so rather than
+leaving the question open. Checking those statements against an independent
+computation is
+<a href="#section-work-in-progress">work in progress</a>.
+
 </div>
 
 <!--------------------------------------------------------------------->
@@ -403,41 +453,10 @@ so the run recomputes exactly what disagreed and nothing else:
 Verifying needs no API key and writes nothing, which is what makes it worth
 running on a table that takes a day to recompute in full.
 
-<div id="how-well-known" class="li-header">How well are the digits known?</div>
 <p>
-A hundred digits can be <b>proven</b>, believed on a stated assumption,
-<b>checked by agreement</b>, or simply <b>assumed</b>. A table that does not say
-presents all four identically, so a generator states it and the table shows it
-under <em>Data properties</em>:
-
-<ul>
-<li><b>exact</b> &mdash; an integer, a rational, a polynomial. Nothing to be
-wrong about.</li>
-<li><b>proven</b> &mdash; interval or ball arithmetic throughout, so the digits
-follow from the width of the result. This is the default, and it is checked: a
-value that carries no error of its own cannot have a proven one.</li>
-<li><b>assumed-bound</b> &mdash; computed in fixed precision, with an error
-bound the author asserts and justifies.</li>
-<li><b>heuristic (agreement-checked)</b> &mdash; computed twice at different
-precisions, keeping the digits that agree. Measured rather than assumed, and
-not a proof: two runs of a wrong method agree perfectly.</li>
-<li><b>heuristic</b> &mdash; one computation and a guard chosen by
-judgement.</li>
-<li><b>measured</b> &mdash; not computed at all. The value comes from
-experiment and the interval holds the measurements together with their stated
-uncertainties, as for the fine-structure constant. This one is not on the same
-scale as the others: asking whether measurement beats agreement-checking has no
-answer, because they are not the same kind of claim.</li>
-</ul>
-
-<p>
-Every table states one. An absent line would mean nobody has established it
-rather than that the digits are poor &mdash; that used to be the common case
-and is no longer one at all. The weakest labels sit on the tables whose values
-come from methods that offer no error bound, and they say so rather than
-leaving the question open. Checking those statements against an independent
-computation is
-<a href="#section-work-in-progress">work in progress</a>.
+A generator also states <a href="#how-well-known">how well its digits are
+known</a>, and that claim is checked before anything is published: a value
+carrying no error of its own cannot be called proven.
 
 <p>
 Anonymous use is rate limited. See <a href="#section-api">API access</a>.
