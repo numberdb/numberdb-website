@@ -637,3 +637,40 @@ class TheAuditsOwnSentencesCanBeCorrected(TestCase):
 			properties = self._run(table, 'proven', '', tmp)
 
 		self.assertEqual(properties['rigour details'], mine)
+
+
+class TheRigourLineLinksToItsExplanation(TestCase):
+	"""`assumed-bound` is not self-explanatory, and nothing linked to the
+	place that explains it.
+
+	The help has a section on the levels, with an anchor. No page pointed at
+	it -- not the table pages that print the word, and not the help's own
+	roadmap after that item was rewritten. A reader meeting `heuristic
+	(agreement-checked)` on a table had nowhere to go.
+	"""
+
+	def setUp(self):
+		from .editing import create_table
+
+		self.table = create_table(
+			{'Title': 'Linked rigour probe',
+			 'Data properties': {'type': 'R', 'rigour': 'assumed-bound',
+			                     'rigour details': 'a bound taken on trust'},
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}]})
+
+	def test_the_table_page_links_the_level_to_the_help(self):
+		body = self.client.get('/%s' % (self.table.tid,)).content.decode()
+		self.assertIn('/help#how-well-known', body)
+		self.assertIn('How well the digits are known', body)
+
+	def test_the_details_line_links_there_too(self):
+		body = self.client.get('/%s' % (self.table.tid,)).content.decode()
+		#Both lines, because either one is where a reader's eye lands.
+		self.assertEqual(body.count('/help#how-well-known'), 2)
+
+	def test_the_help_still_has_that_anchor(self):
+		#The link is only worth having while the target exists; an anchor is
+		#exactly the kind of thing a rewrite silently drops.
+		body = self.client.get('/help').content.decode()
+		self.assertIn('id="how-well-known"', body)
