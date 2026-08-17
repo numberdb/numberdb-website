@@ -11,6 +11,8 @@ urlpatterns = [
     #Plain markdown, for an agent being told how to contribute a table.
     path('skill', views.skill, name='skill'),
     path('skill.md', views.skill),
+    #The conventional place a language model looks for a site's documents.
+    path('llms.txt', views.llms_txt, name='llms-txt'),
 
     path('api/docs', views.api_reference, name='api-reference'),
     path('api/search', api.advanced_search_results, name='api-search'),

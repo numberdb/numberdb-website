@@ -112,3 +112,32 @@ class TheSkillSaysTheThingsThatWentWrong(TestCase):
 		self.assertIn(str(SOFT_ENTRY_COUNT), self.body)
 		self.assertIn(str(SOFT_DIGITS), self.body)
 		self.assertIn('{:,}'.format(HARD_ENTRY_COUNT), self.body)
+
+
+class TheSkillCanBeFound(TestCase):
+	"""Nothing makes `/skill` discoverable by itself.
+
+	A path is not a convention. `/llms.txt` is as close as there is to one --
+	a root-level index of a site's documents for a language model -- and a
+	footer link is how a person finds it. Both are one line and both are the
+	kind of line that disappears in a redesign.
+	"""
+
+	def test_llms_txt_is_served_and_points_at_the_skill(self):
+		response = self.client.get('/llms.txt')
+		self.assertEqual(response.status_code, 200)
+		self.assertTrue(response['Content-Type'].startswith('text/markdown'))
+		body = response.content.decode()
+		self.assertIn('numberdb.org/skill', body)
+
+	def test_llms_txt_describes_what_the_database_holds(self):
+		body = self.client.get('/llms.txt').content.decode()
+		for kind in ('polynomial', 'p-adic', 'complex'):
+			with self.subTest(kind=kind):
+				self.assertIn(kind, body)
+
+	def test_the_footer_links_the_skill_on_every_page(self):
+		for path in ('/', '/help', '/tables'):
+			with self.subTest(path=path):
+				body = self.client.get(path).content.decode()
+				self.assertIn('/skill', body)
