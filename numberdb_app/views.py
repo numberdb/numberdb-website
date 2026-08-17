@@ -721,6 +721,20 @@ def table_context(table, preview=False):
 			'rigour details': 'How they were obtained',
 			#'accuracy': 'Accuracy',
 		}
+
+		#Properties whose label links to the part of the help that explains
+		#them. `rigour` says one word -- `assumed-bound`, `heuristic
+		#(agreement-checked)` -- and a reader meeting it on a table has
+		#nowhere to find out what it means: nothing linked to that section at
+		#all, including from here.
+		#
+		#Not written as HREF{} markup, which is for the corpus and resolves
+		#`/help#how-well-known` into `/help?entry=how-well-known` -- an entry
+		#of a table called /help.
+		property_help = {
+			'rigour': 'how-well-known',
+			'rigour details': 'how-well-known',
+		}
 		current_job = 'parsing data properties'
 		if 'Data properties' in data and len(data['Data properties']) > 0:
 			properties = data['Data properties']
@@ -736,7 +750,12 @@ def table_context(table, preview=False):
 				if key == 'complete-note':
 					continue
 				if key in property_names:
-					text = "%s: " % (property_names[key])
+					label = property_names[key]
+					anchor = property_help.get(key)
+					if anchor:
+						label = '<a class="HREF" href="%s#%s">%s</a>' % (
+							reverse('db:help'), anchor, label)
+					text = "%s: " % (label,)
 					if key == 'type':
 						data_type = value
 						if properties['type'] in type_names:
