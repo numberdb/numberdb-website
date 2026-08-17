@@ -5,8 +5,16 @@ description: Make or update a table of numbers for NumberDB (numberdb.org) with 
 
 # Making a NumberDB table
 
-NumberDB answers one question: *here is a number — is it already known?* A
-table earns its place by making that answer possible and trustworthy. So the
+NumberDB answers one question: *here is a value — has anyone seen it before?*
+
+The values are not only real numbers. A table may hold integers, rationals,
+reals, complex numbers, p-adic numbers, or polynomials over Z or Q — and the
+database is meant to be able to hold kinds nobody has added yet, which are
+shown and cited even where they cannot be searched by their digits. Of the 107
+tables today, 65 are real, 16 integer, 12 polynomial, 6 p-adic, 4 complex, 3
+rational, and one holds hyperreals.
+
+A table earns its place by making that answer possible and trustworthy. So the
 work is not "compute some values"; it is "compute values somebody else can
 check, indexed so they can be found, and labelled with how well they are
 known".
@@ -53,7 +61,62 @@ The server enforces this with three limits (`numberdb_app/limits.py`):
 Soft limits may be passed by an author who explains why, recorded in the table
 as `Size exception`. Digit limits do not apply to exact tables.
 
-## 3. Write a generator
+## 3. Types: what a value is, how it is written, what to return
+
+`type` in Data properties says what the table holds. Seven are searchable by
+their digits:
+
+| type | holds | written as |
+|---|---|---|
+| `Z` | integers | `3`, `-1729` |
+| `Q` | rationals | `-3/2` |
+| `R` | reals | see below |
+| `C` | complex | `0.309... + i * 0.951...` |
+| `Qp` | p-adics | `2^4 * 111736... + O(2^167)`, or `Q2:1.110` |
+| `Z[]`, `Q[]` | polynomials | `x^2 - x - 1` |
+
+A type outside that set is allowed but is *shown and cited rather than found*:
+it must also carry a `type name` (T41's four hyperreals are `*R`, "hyperreals").
+A misspelling is a typo; a new symbol with a name beside it is somebody
+deciding something.
+
+**A real is stored as an interval that contains it**, in one of four forms, and
+the first is the one the corpus is written in:
+
+    3.14                 the interval [3.13, 3.15] -- the last digit may be
+                         off by one. `12e2` means [1100, 1300].
+    [2, 2.3728596]       endpoints, exactly
+    3.14 +/- 2e-2        centre and radius, exactly: [3.12, 3.16]
+    1p31415              p-notation: 0.31415e1 with the last digit uncertain
+
+A string with no `.` and no `e` is an **exact integer**, not an approximation.
+This convention is the whole reason a hundred digits means something: `3.14`
+*is* an interval, so a table never has to say separately how far to trust it.
+
+**What `value()` should return**, and what each return means:
+
+| return | recorded as | rigour it can support |
+|---|---|---|
+| `int`, `ZZ(n)` | exact integer | `exact` |
+| `Fraction`, `QQ(a)/b` | exact rational | `exact` |
+| `RealBallField(prec)(x)` (arb) | interval, from the ball | `proven` |
+| `ComplexBallField(prec)(x)` | complex interval | `proven` |
+| `RealIntervalField(prec)` element of nonzero width | interval | `proven` |
+| a Sage polynomial | polynomial | `exact` |
+| a `Qp` element | p-adic, with its own `O(p^n)` | `proven` |
+| a string | taken verbatim | not `proven` |
+| a `float` | **refused** — it does not say how precise it is | — |
+
+Prefer **balls** (`RealBallField`, `ComplexBallField`) for anything
+transcendental: arb carries the error through every step, so the digits written
+are the digits the result supports. `RealIntervalField` is fine when the whole
+computation is interval arithmetic (MPFI), and is a trap when it merely wraps a
+fixed-precision result — see below.
+
+An entry may also say it is deliberately less precise than the table's
+`digits`, by returning `{'number': x, 'digits': 8}`.
+
+## 4. Write a generator
 
 ```python
 import sys
@@ -103,7 +166,7 @@ if __name__ == '__main__':
   digits the worst entry actually retained. Do not tune it until the run stops
   complaining.
 
-## 4. Rigour: say how well the digits are known
+## 5. Rigour: say how well the digits are known
 
 One value per table, in `rigour`. The first five are ordered, weakest last.
 
@@ -147,7 +210,7 @@ the file attached to a table is meant to say how the numbers were made.
 `assume_accurate` requires `because` — checked against documentation, most
 libraries state no accuracy at all.
 
-## 5. What the refusals mean
+## 6. What the refusals mean
 
 The package stops rather than guesses. Each of these has caught a real error:
 
@@ -163,7 +226,7 @@ The package stops rather than guesses. Each of these has caught a real error:
   shorten stored values. `lowering=True` only if the stored precision was never
   justified.
 
-## 6. Metadata
+## 7. Metadata
 
 Every table has: **Title**, **Definition**, **Tags** (two is typical),
 **Links**, **Data properties** (`type`, `rigour`). Definitions run to one or
@@ -177,7 +240,7 @@ standard incantation in Sage, PARI or mpmath for a reader who wants one more
 value. `generate.py` is the program that reproduces and extends *this* table,
 attached to it. A table wants both where both apply.
 
-## 7. Publishing, and what happens next
+## 8. Publishing, and what happens next
 
 - Publishing needs the owner's API key. Do not ask for it, and do not put a key
   in a file you commit.
@@ -187,7 +250,7 @@ attached to it. A table wants both where both apply.
 - Correcting values that are already public is a human decision. Show the
   measured discrepancy — in units of the last place — and ask.
 
-## 8. Check the work
+## 9. Check the work
 
 - `verify(sample=None)` after publishing.
 - `manage.py sweep_arb` (server-side) recomputes stored values from

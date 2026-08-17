@@ -38,8 +38,9 @@ Notes
 - The site serves the agent skill at `/skill`, reading
   `.claude/skills/numberdb-table/SKILL.md`. The image copies the whole
   repository, so this works in production; a development override that mounts
-  source directories one by one needs `./.claude:/app/.claude:ro` as well, or
-  the page 404s locally and works deployed.
+  source directories one by one needs `./.claude:/app/.claude:ro` and
+  `./AGENTS.md:/app/AGENTS.md:ro` as well, or the page 404s locally and works
+  deployed, and the tests that check those pointers read a stale copy.
 
 ### Common Make Targets
 - `make fetch_data`: clone/pull `../numberdb-data`
