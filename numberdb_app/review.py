@@ -65,8 +65,14 @@ def flatten_entries(numbers):
 			#matching nothing in the shape it was reviewed in -- and every
 			#entry counts as changed. That is what took the corpus out of
 			#search by number.
-			if node and all(isinstance(item, dict) and 'params' in item
-			                for item in node):
+			#Only when the entries are actually distinguished by parameters.
+			#A table whose values are a bare list has `params: {}` on every
+			#entry, and keying by that gives every one of them the same
+			#identity -- T67's 442 values collapsed onto one, and the last
+			#one won.
+			if (node and all(isinstance(item, dict) and 'params' in item
+			                 for item in node)
+					and any(item.get('params') for item in node)):
 				for item in node:
 					values = (item.get('params') or {}).values()
 					identity = ','.join(_normalise_param(value)
@@ -173,10 +179,21 @@ def _same_entry(one, other):
 				return False
 			return (len(one) == len(other)
 			        and all(same(a, b) for a, b in zip(one, other)))
-		if one.get('number') != other.get('number'):
+		#`number: ['-188.5']` and `number: '-188.5'` are the same claim: the
+		#normalised shape wraps a lone value in a list. T68 differed in 187
+		#entries by nothing else.
+		def value_of(entry):
+			number = entry.get('number')
+			if isinstance(number, list) and len(number) == 1:
+				return number[0]
+			return number
+
+		if value_of(one) != value_of(other):
 			return False
+		#`number` is settled above, by a comparison that knows a lone value may
+		#be wrapped in a list; comparing it again literally undoes that.
 		return all(one[key] == other[key]
-		           for key in set(one) & set(other))
+		           for key in (set(one) & set(other)) - {'number'})
 
 	return same(canonical(one), canonical(other))
 
