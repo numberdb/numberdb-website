@@ -18,6 +18,8 @@ Core data is imported from the companion repository numberdb-data (cloned next t
 - `templates/`, `static/` source assets; `staticfiles/` is collected output
 - `deploy/` Deployment assets (Docker Compose, Nginx snippets)
 - `clients/python/` the `numberdb` client package, published to PyPI
+- `generators/` per-table programs that recompute a table and publish it
+- `scripts/` deployment (`ship.sh`), systemd units, and one-off corrections
 - `docs/` Design notes and the backlog
 - `tests/` Additional Sage-based tests; `manage.py` project entry
 - `.env` local settings (see `env/.env.dev.example`)

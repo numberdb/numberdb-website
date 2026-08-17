@@ -296,3 +296,55 @@ class ImportedContentIsNotAProposal(TestCase):
 		sync_review_flags(self.table)
 		self.assertGreater(
 			Number.objects.filter(table=self.table, reviewed=False).count(), 0)
+
+
+class TheSameEntryInTwoShapes(TestCase):
+	"""The corpus holds entries in two shapes, and they mean the same thing.
+
+	    Numbers: ['3.14159...']                                  # as imported
+	    Numbers: [{'params': {}, 'number': '3.14159...'}]        # as rewritten
+
+	Comparing those literally says the entry changed, so a metadata-only edit
+	-- a rigour label, say -- marked every value in the table unreviewed and
+	dropped it out of search by number. That happened to the whole corpus:
+	71% of stored reals and every complex, p-adic and polynomial value.
+	"""
+
+	def test_the_two_shapes_are_not_a_change(self):
+		from .review import changed_params
+
+		before = {'Numbers': ['3.14159']}
+		after = {'Numbers': [{'params': {}, 'number': '3.14159'}]}
+		self.assertEqual(changed_params(before, after), set())
+
+	def test_a_changed_value_in_the_other_shape_is_still_a_change(self):
+		from .review import changed_params
+
+		before = {'Numbers': ['3.14159']}
+		after = {'Numbers': [{'params': {}, 'number': '3.14160'}]}
+		self.assertEqual(changed_params(before, after), {''})
+
+	def test_a_changed_comment_is_still_a_change(self):
+		#Comparing only the number would let an altered proof or provenance
+		#note through unreviewed, which is why the whole entry is compared.
+		from .review import changed_params
+
+		before = {'Numbers': [{'params': {}, 'number': '3.14159',
+		                       'comment': 'from Archimedes'}]}
+		after = {'Numbers': [{'params': {}, 'number': '3.14159',
+		                      'comment': 'from a spreadsheet'}]}
+		self.assertEqual(changed_params(before, after), {''})
+
+	def test_an_added_entry_is_a_change(self):
+		from .review import changed_params
+
+		before = {'Numbers': {'1': '3.14'}}
+		after = {'Numbers': {'1': '3.14', '2': '2.71'}}
+		self.assertEqual(changed_params(before, after), {'2'})
+
+	def test_a_removed_entry_is_a_change(self):
+		from .review import changed_params
+
+		before = {'Numbers': {'1': '3.14', '2': '2.71'}}
+		after = {'Numbers': {'1': '3.14'}}
+		self.assertEqual(changed_params(before, after), {'2'})

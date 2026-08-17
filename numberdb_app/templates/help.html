@@ -431,8 +431,12 @@ answer, because they are not the same kind of claim.</li>
 </ul>
 
 <p>
-Most tables do not say yet, and an absent line means nobody has established it
-rather than that the digits are poor. Working through the rest is
+Every table states one. An absent line would mean nobody has established it
+rather than that the digits are poor &mdash; that used to be the common case
+and is no longer one at all. The weakest labels sit on the tables whose values
+come from methods that offer no error bound, and they say so rather than
+leaving the question open. Checking those statements against an independent
+computation is
 <a href="#section-work-in-progress">work in progress</a>.
 
 <p>
@@ -930,17 +934,21 @@ way to rate a table, or to be told when one you care about changes.
 <li>
 <div class="li-header">Reproducing a table from its own record</div>
 A table carries the program that produced it, and can be downloaded whole. It
-is not yet true that every table's program can simply be re-run to rebuild it
-&mdash; some were made by scripts that predate this arrangement.
+is not yet true that every table's program can simply be re-run to rebuild it:
+fifteen tables carry a generator that recomputes them on demand, and the rest
+were made by scripts that predate this arrangement and are kept as history
+rather than as something to run.
 </li>
 
 <li>
-<div class="li-header">Saying how well every table's digits are known</div>
-Two tables so far state whether their digits are
-<a href="#how-well-known">proven, checked or assumed</a>. The other hundred and
-five do not, and until most of them do the statement is hard to read: an absent
-line should mean "nobody has established this", and it cannot be told apart
-from "not applicable" while it is the common case.
+<div class="li-header">Checking the numbers against an independent computation</div>
+Every table now says how well its digits are known, but saying is not
+checking. Eighteen tables, some thirteen thousand values, are recomputed from
+their definitions in ball arithmetic and compared against what is stored. That
+has found real errors &mdash; one table's last three digits were wrong in a
+thousand entries, and another held a value with the right digits and the wrong
+sign. The tables it cannot yet reach are those no independent implementation
+exists for, which are also the ones whose stated rigour is weakest.
 </li>
 </ul>
 </div>
