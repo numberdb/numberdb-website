@@ -1,0 +1,128 @@
+# What a NumberDB table looks like
+
+Measured over all 107 published tables on 2026-08-17, so that advice about new
+tables cites the corpus rather than somebody's taste. Written for whoever --
+person or program -- is about to make table 108.
+
+The short version: **500 to 1000 entries, a hundred significant digits, one or
+two integer parameters, and a definition of one or two sentences that says
+which convention is meant.** The rest of this note is what that is based on and
+where it does not apply.
+
+## Scale
+
+    107 tables, 55,939 entries
+    entries per table   min 1, median 502, max 1134
+                        19 tables under 10, 31 between 10 and 500, 57 at 500+
+
+Nineteen small tables are not failures. They are the ones where the *whole*
+subject is small: five Platonic solids, four rescalings of the Gibbs constant,
+one exponent of matrix multiplication. A table should hold what there is.
+
+**How many entries is a question about how expensive the digits are.** Few
+numbers known to great precision is as legitimate as many numbers known to a
+hundred digits; what is not legitimate is both at once. That trade-off is
+enforced rather than merely suggested -- see `numberdb_app/limits.py`, which
+counts entries, digits and the size of the serialised block, and holds the
+third limit precisely because the first two trade against each other:
+
+| | recommended | soft | hard |
+|---|---|---|---|
+| entries | 1000 | 1200 | 50,000 |
+| digits (approximations only) | 100 | 500 | 10,000 |
+| entries block | -- | 320 KB | 4 MB |
+
+A soft limit is a judgement about what makes a good table, and an author who
+explains why may pass it -- the table records the reason under `Size
+exception`. A hard limit is not a judgement: it is where a paste went wrong, or
+where the editor and the diff view stop working.
+
+The digit limits do not apply to exact tables (`Z`, `Q`, `Z[]`, `Q[]`): a
+polynomial has no precision to choose, and writing fewer of its coefficients
+does not round it, it makes it a different polynomial.
+
+## Types and parameters
+
+    R 65 · Z 16 · Z[] 8 · Qp 6 · C 4 · Q[] 4 · Q 3 · *R 1
+
+    parameters per table   none 11 · one 50 · two 30 · three 15 · four 1
+    parameter types        Z 102 · Symbolic 27 · R 14 · Q 8 · C 5 · Qp 2 · Set 1
+
+Integer parameters dominate, and reach a median of 100 (quartiles 29 and 1450).
+Rational parameters use denominators of 10 to 30, at most 55. `Symbolic` is the
+variant selector -- `expression` in the Gibbs table, `solid` in the Platonic
+ones -- and is how a table holds several related quantities without becoming
+several tables.
+
+## Precision
+
+A hundred significant digits, overwhelmingly: 1014 of a 1500-entry sample,
+with 96 to 104 accounting for leading zeros and rounding. A hundred digits
+identifies a number; a reader who wants more of a cheap value can compute them.
+
+More than that is for values that were expensive to obtain, and then the count
+should come down to match -- which is what the block limit expresses. Four
+tables write more than 500 digits and each is one of those cases.
+
+## The metadata, and what is not optional
+
+    Title              107        Comments            82
+    Links              107        Programs            45
+    Tags               107        Formulas            43
+    Data properties    107        References          29
+    Definition         106        Keywords            13
+    Display properties  99        Similar tables       3
+    Parameters          96
+
+Definitions run to a median of 195 characters -- one or two sentences. 46 of
+107 titles carry LaTeX; 102 tables use `$...$` in their prose, 52 use `CITE{}`
+for a reference and 7 use `HREF{}`.
+
+Links are how a reader checks the table against something outside it, and they
+should go to sources that will still be there: Wikipedia (85 tables), LMFDB
+(13), mpmath (9), MathWorld (7), OEIS (5), or a paper.
+
+**The definition must fix the convention.** This is the one place where the
+corpus is not a good model for what to do next. T52 defined the p-adic
+arithmetic-geometric mean by its iteration and never said which square root,
+and over Q_p the two choices give different limits -- so the table could not be
+reproduced from what it said, and reading it the natural way gave a different
+number for every entry at every odd prime. T45's stated parameter constraint
+excluded two thirds of its own entries. Both are fixed; neither was found by a
+test, because neither is the kind of thing a test can see. A definition that
+does not pin the branch, the normalisation and the indexing is incomplete even
+when every digit in the table is right.
+
+## `Programs` and `generate.py` are different things
+
+Both exist, and a table wants both where both apply.
+
+**`Programs`** is for daily use: the standard incantation in Sage, PARI or
+mpmath that produces these numbers, so a reader who wants one more value knows
+what to type. 45 tables have one, all Sage.
+
+**`generate.py`** is for reproducibility: the program that produced *this
+table*, attached to it, which recomputes and republishes it and can extend it.
+Fifteen tables carry one; 91 attachments are the older `generate.sage` scripts,
+kept as history and never run by the server.
+
+A one-line `Programs` entry does not make a table reproducible, and a
+`generate.py` does not tell a reader how to get the next value in one line.
+
+## Entries
+
+    params 4776 · number 4771 · comment 535 · equals 60
+    both signs 59 · url 59 · proof 30
+
+`equals` links an entry to the table that holds the same number under its own
+name -- the entry for the volume of the 2-ball says `HREF{Pi}` rather than
+repeating it -- and `comment` carries whatever a reader needs to know about
+that value in particular.
+
+## Style
+
+Concise, exact, and checkable. A table is a reference: it says what the numbers
+are, how they are indexed, where they came from and how well they are known,
+and it says each of those once. Prose that could be a link should be a link;
+prose that could be a formula should be a formula; a claim that could be wrong
+should be one somebody can check without asking the author.
