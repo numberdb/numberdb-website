@@ -2262,11 +2262,31 @@ def review_queue(request):
 	than it could, which is exactly the sort of decay that needs to be visible
 	somewhere.
 	"""
+	from django.db.models import Count, Q
+
+	from .models import Number, NumberComplex, NumberPAdic, Polynomial
 	from .permissions import is_board_member
-	from .review import ALL_UNREVIEWED, unreviewed_params
 
 	if not is_board_member(request.user):
 		raise Http404()
+
+	#Counted from the rows rather than by diffing the documents.
+	#
+	#`sync_review_flags` already works out which entries are unreviewed and
+	#marks them, after every commit and every review, so the answer is in the
+	#database on an indexed column. This view used to recompute it: two YAML
+	#parses and a full entry comparison for every table whose head had moved
+	#since its last review -- which, after a run that touched the metadata of
+	#every table in the corpus, was 108 of 109. Forty seconds, most of it
+	#spent proving that nothing had changed, and gunicorn killed the worker
+	#before the page arrived.
+	outstanding = {}
+	for model in (Number, NumberComplex, NumberPAdic, Polynomial):
+		rows = (model.objects.filter(reviewed=False)
+		        .values('table_id').annotate(n=Count('id')))
+		for row in rows:
+			outstanding[row['table_id']] = (outstanding.get(row['table_id'], 0)
+			                                + row['n'])
 
 	waiting = []
 	for table in (Table.objects.exclude(head_revision=None)
@@ -2278,13 +2298,12 @@ def review_queue(request):
 		#skim -- which costs exactly the attention it exists to get.
 		if not table.published and not table.ready_for_review:
 			continue
-		outstanding = unreviewed_params(table)
-		if outstanding is ALL_UNREVIEWED:
-			count, whole = table.number_count, True
-		elif outstanding:
-			count, whole = len(outstanding), False
-		else:
+		count = outstanding.get(table.pk, 0)
+		whole = table.reviewed_at_revision_id is None
+		if not count and not whole:
 			continue
+		if whole:
+			count = count or table.number_count
 		waiting.append({
 			'table': table,
 			'count': count,
