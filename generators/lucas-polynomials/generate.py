@@ -1,4 +1,4 @@
-"""Lucas polynomials L_n(x) -- numberdb.org (table wanted: numberdb-data#101)
+"""Lucas polynomials L_n(x) -- numberdb.org/T109 (table wanted: numberdb-data#101)
 
     L_0 = 2,  L_1 = x,  L_n(x) = x L_(n-1)(x) + L_(n-2)(x)
 
@@ -46,7 +46,7 @@ UP_TO = 150
 
 class LucasPolynomials(numberdb.Generator):
 
-    table = None            # set when the table exists
+    table = 'T109'
     parameters = ('n',)
     type = 'Z[]'
     rigour = 'exact'

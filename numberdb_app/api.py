@@ -308,6 +308,27 @@ def advanced_search_results(request, return_type='json'):
 	
 	return wrap_response(results,messages)
 	
+def _may_see_draft(request, table):
+	"""Whether the key on this request belongs to somebody who may see a draft.
+
+	Read-only, and deliberately narrow: it answers the same question the site
+	answers for a signed-in person, and it answers `False` for a request with
+	no key at all rather than raising, so an ordinary public read is unchanged.
+	"""
+	from .models import ApiKey
+	from .throttle import _bearer_token
+
+	token = _bearer_token(request)
+	if not token:
+		return False
+	key = ApiKey.authenticate(token)
+	if key is None or not getattr(key, 'user', None):
+		return False
+	from .editing import may_see
+
+	return may_see(table, key.user)
+
+
 @rate_limited
 def table(request):
 	tid = request.GET.get('id',default=None)
@@ -327,8 +348,12 @@ def table(request):
 	else:
 		return JsonResponse({'error':'No id or url given.'},safe=True)
 		
-	#A draft answers nothing here either; the API is as public as the site.
-	if not table.published:
+	#A draft answers nothing here either: the API is as public as the site,
+	#and as private. The site lets a draft's author and the board see it, so a
+	#request carrying their key sees it too -- otherwise a generator can
+	#create a draft through this API and then be unable to fill it, which is
+	#exactly the workflow drafts exist for.
+	if not table.published and not _may_see_draft(request, table):
 		return JsonResponse(
 			{'error': "Table with id '%s' does not exist." % (table.tid,)},
 			safe=True)

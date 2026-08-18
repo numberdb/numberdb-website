@@ -8,6 +8,8 @@ knowing.
 See docs/design/drafts-and-duplicates.md.
 """
 
+import json
+
 from django.contrib.auth.models import Group, User
 from django.test import TestCase
 
@@ -197,3 +199,31 @@ class CreatingADraftThroughTheApi(TestCase):
 			HTTP_AUTHORIZATION='Bearer %s' % (self.token,))
 		self.assertEqual(answer.status_code, 400)
 		self.assertIn('X-Draft', answer.json()['detail'])
+
+	def test_the_owner_can_read_their_own_draft_through_the_api(self):
+		#Otherwise a generator can create a draft and then not fill it, which
+		#is the whole workflow drafts exist for.
+		import json
+
+		tid = self._create('Readable by its author').json()['tid']
+		answer = self.client.get(
+			'/api/table', {'id': tid},
+			HTTP_AUTHORIZATION='Bearer %s' % (self.token,))
+		self.assertEqual(answer.status_code, 200)
+		self.assertIn('Title', answer.json())
+
+	def test_a_key_less_request_still_cannot_read_it(self):
+		tid = self._create('Not readable publicly').json()['tid']
+		answer = self.client.get('/api/table', {'id': tid})
+		self.assertIn('does not exist', json.dumps(answer.json()))
+
+	def test_somebody_elses_key_cannot_read_it(self):
+		from .models import ApiKey
+
+		tid = self._create('Not readable by strangers').json()['tid']
+		stranger = User.objects.create_user('other_holder', password='pw-123456')
+		_, token = ApiKey.issue(stranger, label='theirs')
+		answer = self.client.get(
+			'/api/table', {'id': tid},
+			HTTP_AUTHORIZATION='Bearer %s' % (token,))
+		self.assertIn('does not exist', json.dumps(answer.json()))
