@@ -297,7 +297,7 @@ class Generator:
     def publish(self, only: Any = None, message: str = '',
                 overwrite: bool = True, correcting: bool = False,
                 lowering: bool = False, removing: bool = False,
-                restating: bool = False,
+                restating: bool = False, assisted_by: str = '',
                 client: Any = None, **bounds: Any) -> PublishOutcome:
         """Send this generator's entries to its table. The whole of writing.
 
@@ -368,7 +368,8 @@ class Generator:
         return _publish(self, only=only, message=message, overwrite=overwrite,
                         correcting=correcting, lowering=lowering,
                         removing=removing, restating=restating,
-                        preview=False, client=client, **bounds)
+                        preview=False, assisted_by=assisted_by,
+                        client=client, **bounds)
 
     def preview(self, only: Any = None, overwrite: bool = True,
                 correcting: bool = False, lowering: bool = False,
@@ -650,7 +651,7 @@ def _verify(generator, sample=10, digits=None, client=None,
 
 def _publish(generator, only=None, message='', overwrite=True,
              correcting=False, lowering=False, removing=False,
-             restating=False, preview=False, client=None,
+             restating=False, preview=False, assisted_by='', client=None,
              **bounds) -> PublishOutcome:
     """Behind `Generator.publish` and `Generator.preview`, which carry the
     documentation. ``preview`` computes and compares but sends nothing."""
@@ -686,7 +687,8 @@ def _publish(generator, only=None, message='', overwrite=True,
                      read=only is None)
 
     produced = Entries(*generator.parameters) if removing else None
-    sender = _Sender(table, outcome, message, generator, client, preview)
+    sender = _Sender(table, outcome, message, generator, client, preview,
+                     assisted_by=_assisted_by(assisted_by))
 
     skip = (lambda identity: identity in stored) if not overwrite else None
     seen = set()
@@ -933,6 +935,50 @@ def _short(text, width=40):
     return text if len(text) <= width else text[:width] + '...'
 
 
+#: Environment variable naming the tool that ran this publish.
+#:
+#: Read at publish time rather than written into a generator, and the reason is
+#: worth stating: a file that says `claude-opus-5` keeps saying it after
+#: somebody else edits and republishes it, so a hard-coded name records who
+#: wrote the file rather than who submitted the run, and quietly attributes one
+#: tool's work to another. Provenance belongs to the act, not to the file.
+#:
+#: Unset means a person ran it. That is the honest default and needs no
+#: ceremony.
+ASSISTED_BY = 'NUMBERDB_ASSISTED_BY'
+
+
+def _assisted_by(given=None):
+    """The tool that ran this publish, if one did."""
+    import os
+
+    return (given or os.environ.get(ASSISTED_BY) or '').strip()
+
+
+def _producer(generator, assisted_by=''):
+    """What to record as the maker of a revision.
+
+    Three facts, in the order a reader wants them: which generator produced the
+    values, what software computed them, and what tool submitted the run. The
+    versions are here because `verify()` disagreeing a year from now is only
+    informative if something recorded what the first run was -- and they are
+    the two versions that bear on the digits, not a list of what is installed.
+    """
+    name = type(generator).__name__
+    try:
+        versions = generator.environment() or {}
+    except Exception:
+        versions = {}
+    parts = ['%s=%s' % (key, versions[key])
+             for key in ('numberdb', 'python', 'sage') if versions.get(key)]
+    if parts:
+        name = '%s (%s)' % (name, ', '.join(parts))
+    tool = _assisted_by(assisted_by)
+    if tool:
+        name = '%s, assisted by %s' % (name, tool)
+    return name[:100]
+
+
 class _Sender:
     """Entries on their way to the table, in batches of one run.
 
@@ -941,7 +987,8 @@ class _Sender:
     ninety-nine more before it is stored anywhere.
     """
 
-    def __init__(self, table, outcome, message, generator, client, preview):
+    def __init__(self, table, outcome, message, generator, client, preview,
+                 assisted_by=''):
         import time
 
         self.table = table
@@ -950,6 +997,7 @@ class _Sender:
         self.generator = generator
         self.client = client
         self.preview = preview
+        self.assisted_by = assisted_by
         self.pending = Entries(*generator.parameters)
         self.clock = time.monotonic
         self.last = self.clock()
@@ -969,7 +1017,7 @@ class _Sender:
         answer = _with_retry(
             lambda: submit_entries(
                 self.table, self.pending, message=self._message(),
-                produced_by=type(self.generator).__name__,
+                produced_by=_producer(self.generator, self.assisted_by),
                 upsert=True, run=self.outcome.run,
                 rigour=getattr(self.generator, 'rigour', ''),
                 client=self.client))
@@ -988,7 +1036,7 @@ class _Sender:
         answer = _with_retry(
             lambda: submit_entries(
                 self.table, entries, message=self._message(),
-                produced_by=type(self.generator).__name__,
+                produced_by=_producer(self.generator, self.assisted_by),
                 upsert=False, run=self.outcome.run,
                 rigour=getattr(self.generator, 'rigour', ''),
                 client=self.client))

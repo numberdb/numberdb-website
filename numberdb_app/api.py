@@ -728,7 +728,11 @@ def write_table(request, tid):
 
 	if outcome.revision and edits_are_reviewed(user):
 		table.reviewed_at_revision = outcome.revision
-		table.save(update_fields=['reviewed_at_revision'])
+		#The author, by virtue of being trusted: this path publishes their
+		#edits as already reviewed. Recording it is what lets the trust ladder
+		#tell a self-review from somebody else's.
+		table.reviewed_by = user
+		table.save(update_fields=['reviewed_at_revision', 'reviewed_by'])
 		from .review import sync_review_flags
 		sync_review_flags(table)
 
@@ -790,7 +794,8 @@ def create_table(request):
 
 	if table.head_revision and edits_are_reviewed(user):
 		table.reviewed_at_revision = table.head_revision
-		table.save(update_fields=['reviewed_at_revision'])
+		table.reviewed_by = user
+		table.save(update_fields=['reviewed_at_revision', 'reviewed_by'])
 		from .review import sync_review_flags
 		sync_review_flags(table)
 
@@ -967,7 +972,11 @@ def _write_entries_locked(request, table, entries, user):
 
 	if outcome.revision and edits_are_reviewed(user):
 		table.reviewed_at_revision = outcome.revision
-		table.save(update_fields=['reviewed_at_revision'])
+		#The author, by virtue of being trusted: this path publishes their
+		#edits as already reviewed. Recording it is what lets the trust ladder
+		#tell a self-review from somebody else's.
+		table.reviewed_by = user
+		table.save(update_fields=['reviewed_at_revision', 'reviewed_by'])
 		from .review import sync_review_flags
 		sync_review_flags(table)
 

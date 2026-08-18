@@ -2237,7 +2237,8 @@ def review_table(request, tid):
 			return HttpResponseRedirect(reverse('db:review-table',
 			                                    kwargs={'tid': table.tid}))
 		table.reviewed_at_revision = head
-		table.save(update_fields=['reviewed_at_revision'])
+		table.reviewed_by = request.user
+		table.save(update_fields=['reviewed_at_revision', 'reviewed_by'])
 		marked = sync_review_flags(table)
 		messages.success(request, (
 			'Confirmed. %s'
@@ -2303,7 +2304,8 @@ def new_table(request):
 		from .permissions import edits_are_reviewed
 		if edits_are_reviewed(request.user):
 			table.reviewed_at_revision = table.head_revision
-			table.save(update_fields=['reviewed_at_revision'])
+			table.reviewed_by = request.user
+			table.save(update_fields=['reviewed_at_revision', 'reviewed_by'])
 			from .review import sync_review_flags
 			sync_review_flags(table)
 
@@ -2372,7 +2374,8 @@ def revision_history(request, tid):
 			if edits_are_reviewed(request.user):
 				table.refresh_from_db()
 				table.reviewed_at_revision = table.head_revision
-				table.save(update_fields=['reviewed_at_revision'])
+				table.reviewed_by = request.user
+				table.save(update_fields=['reviewed_at_revision', 'reviewed_by'])
 				from .review import sync_review_flags
 				sync_review_flags(table)
 		return HttpResponseRedirect(reverse('db:revision-history',
@@ -2706,7 +2709,8 @@ def _save_edited_tree(request, table, base, tree, source=None, back_to=None):
 
 	if outcome.revision and edits_are_reviewed(request.user):
 		table.reviewed_at_revision = outcome.revision
-		table.save(update_fields=['reviewed_at_revision'])
+		table.reviewed_by = request.user
+		table.save(update_fields=['reviewed_at_revision', 'reviewed_by'])
 		from .review import sync_review_flags
 		sync_review_flags(table)
 

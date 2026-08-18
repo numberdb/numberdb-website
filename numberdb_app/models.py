@@ -321,6 +321,20 @@ class Table(models.Model):
 	#: and head is unreviewed: visible, marked, and held out of search by
 	#: number until somebody confirms it. Null means nobody has reviewed this
 	#: table at all, which is the honest default for a new one.
+	#: Who last confirmed this table's digits. A review is a claim about
+	#: whether the numbers are right, so it is worth knowing whose claim it
+	#: is -- and the trust ladder needs it: a revision an assistant produced
+	#: is evidence about its author only when somebody else confirmed it.
+	#:
+	#: Null for reviews made before this was recorded.
+	reviewed_by = models.ForeignKey(
+		settings.AUTH_USER_MODEL,
+		null = True,
+		blank = True,
+		on_delete = models.SET_NULL,
+		related_name = 'tables_reviewed',
+	)
+
 	reviewed_at_revision = models.ForeignKey(
 		'TableRevision',
 		null = True,

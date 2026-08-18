@@ -423,6 +423,30 @@ value = numberdb.assume_accurate(
             'implementation to 30 digits on this curve')
 ```
 
+### Who ran the publish
+
+A revision records what produced it: the generator, the versions of the package
+and of Sage, and -- when a tool submitted the run -- which one.
+
+```
+$ export NUMBERDB_ASSISTED_BY=claude-opus-5      # or codex-cli, or ...
+$ sage -python generate.py --publish
+```
+
+which is stored as `Zeta (numberdb=0.1.2, python=3.12.5, sage=10.9), assisted
+by claude-opus-5` and shown in the table's history and blame views.
+
+Read from the environment rather than written into the generator, and
+deliberately: a name hard-coded in a file keeps claiming that tool's work after
+somebody else edits and republishes it, so it would record who wrote the file
+rather than who submitted the run. `publish(assisted_by=...)` overrides it for
+a caller that knows better. Unset means a person ran it, which needs no
+ceremony.
+
+The author is the person whose key published it. Authorship is accountability
+and a model can neither answer for a wrong value nor agree to the licence, so
+this is a disclosed method rather than a co-authorship.
+
 There is no default for `ulps` and `because` is required. Neither is
 bureaucracy: checked against the documentation, PARI mentions "ulp" in one of
 its 1271 documented functions and mpmath's `airyaizero` says nothing about
