@@ -25,7 +25,8 @@ td.table-label-tid {
     <h1 class="title">List of tables</h1>
 
 {% if user.is_authenticated %}
-  <p><a href="{% url 'db:new-table' %}">Create a new table</a></p>
+  <p><a href="{% url 'db:new-table' %}">Create a new table</a>
+     &middot; <a href="{% url 'db:drafts' %}">tables in progress</a></p>
 {% endif %}
 
 

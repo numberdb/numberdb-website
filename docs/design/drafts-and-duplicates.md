@@ -65,14 +65,27 @@ Showing the age in the list is enough for a person to ask, and the board can
 already see and close an abandoned draft. If it becomes a real problem, a
 prompt to the author before the board acts is the next step, not a cron job.
 
-## What to build, in order
+## What was built, 2026-08-18
 
-1. A drafts listing, visible to signed-in accounts: title, subject, author,
-   age. Existence only, never values.
-2. Draft creation through the API, with a per-account cap on unpublished
-   drafts, replacing the board-only rule for drafts alone.
-3. A note on the "table wanted" issue when a draft claims it, so the two
-   coordination points do not drift apart.
+1. **A drafts listing at `/drafts`**, for anybody signed in: number, title,
+   who started it, when, and when it last changed. Existence only -- the title
+   links through to the table for its author and the board, and for everybody
+   else it is a name and a date. The values stay out of search, which is the
+   part that matters: a reader looking at a table can see it is a draft, and a
+   reader typing digits cannot.
+
+2. **Draft creation through the API**, with `X-Draft: yes`, open to any account
+   that may write with a program and capped at five drafts in flight. The cap
+   is on drafts *held*, not drafts made: publish one and the allowance comes
+   back. The board is not capped. A refusal says how many are held and why the
+   limit exists, and every successful creation reports `drafts_held` and
+   `drafts_remaining` so a caller need not be refused to find out.
+
+   `X-Draft` is explicit rather than inferred, because creating a table and
+   proposing one are different acts with different consequences.
+
+Still to do: a note on the "table wanted" issue when a draft claims it, so the
+two coordination points do not drift apart.
 
 Publishing stays a person's act, and should. It is the moment a T-number
 becomes permanent and a table starts answering searches.
