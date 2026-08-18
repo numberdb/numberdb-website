@@ -269,15 +269,19 @@ class ADraftsAddressFollowsItsTitle(DraftBase):
 		self.assertEqual(self.table.tid, before)
 
 	def test_a_published_table_keeps_its_address(self):
-		publish_table(self.table, self.chair)
+		publish_table(self.table)
 		self.table.refresh_from_db()
 		self._retitle('Renamed after publication')
 		self.assertEqual(self.table.url, 'Fibonacci_polynomials')
 		self.assertEqual(self.table.title, 'Renamed after publication')
 
 	def test_a_rename_cannot_take_another_tables_address(self):
+		#Two tables cannot share a *title* -- the column is unique, which the
+		#first version of this test discovered by violating it. They can still
+		#collide on an *address*, because slugification maps several titles
+		#onto one: punctuation becomes an underscore.
 		create_table(
-			{'Title': 'Lucas polynomials',
+			{'Title': 'Lucas polynomials!',
 			 'Data properties': {'type': 'Z[]'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '1'}]},
