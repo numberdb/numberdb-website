@@ -159,6 +159,14 @@ An entry may also say it is deliberately less precise than the table's
 
 ## 4. Write a generator
 
+**A generator fills a table; it does not create one.** A new table is made on
+the site, by a person, deliberately -- it takes a permanent T-number, a title
+in every listing, and a parameter order that can never change because citations
+resolve on it. Creating tables through the API is board-only for that reason.
+So: agree the title, definition, parameters and type with whoever owns the
+database, let them create it, then point a generator at it.
+
+
 ```python
 import sys
 import numberdb.sage as numberdb
@@ -167,7 +175,7 @@ from sage.all import QQ, ComplexBallField
 WORKING_GUARD = 64          # bits beyond what the digits need, measured
 
 class CompleteEllipticK(numberdb.Generator):
-    table = 'T25'           # omit when creating a new table
+    table = 'T25'           # the table must already exist
     parameters = ('m',)
     type = 'R'              # Z, Q, R, C, Qp, Z[], Q[]
     digits = 100

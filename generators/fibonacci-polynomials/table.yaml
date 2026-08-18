@@ -1,0 +1,58 @@
+# The table document for numberdb-data#100, to be created on the site.
+#
+# A generator fills a table; it does not create one. A table takes a permanent
+# T-number, a title in every listing, and a parameter order that can never
+# change because citations resolve on it, so making one is a deliberate act by
+# a person. This is the proposal for that act.
+Title: Fibonacci polynomials $F_n$
+Definition: >-
+  The Fibonacci polynomials $F_n$ are defined by $F_0 = 0$, $F_1 = 1$ and the
+  recurrence $F_{n}(x) = x F_{n-1}(x) + F_{n-2}(x)$ for $n \geq 2$. At $x = 1$
+  they give the Fibonacci numbers, $F_n(1) = F_n$. Note that some authors index
+  them from $F_1 = 1$, so that every polynomial here appears one place earlier,
+  and that the polynomials with the same recurrence started at $2$ and $x$ are
+  the Lucas polynomials, listed separately.
+Parameters:
+  n:
+    type: Z
+    constraints: $n \geq 0$
+Formulas:
+  formula-recurrence: >-
+    $F_0(x) = 0$, $F_1(x) = 1$, and $F_{n}(x) = x F_{n-1}(x) + F_{n-2}(x)$ for
+    $n \geq 2$ (recurrence).
+  formula-closed: >-
+    $F_n(x) = \sum_{k=0}^{\lfloor (n-1)/2 \rfloor} \binom{n-k-1}{k} x^{n-2k-1}$
+    (closed form).
+  formula-generating-function: >-
+    $\sum_{n=0}^\infty F_n(x) t^n = \frac{t}{1 - xt - t^2}$ (generating
+    function).
+Comments:
+  comment-lucas-sequence: >-
+    $F_n(x)$ is the Lucas sequence $U_n(x, -1)$; its companion $V_n(x, -1)$
+    gives the Lucas polynomials.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x> = ZZ[]
+      def fibonacci_polynomial(n):
+          a, b = R(0), R(1)
+          for _ in range(n): a, b = b, x*b + a
+          return a
+      polynomials = {n: fibonacci_polynomial(n) for n in [0..150]}
+Links:
+  Wiki:
+    title: 'Wikipedia: Fibonacci polynomials'
+    url: https://en.wikipedia.org/wiki/Fibonacci_polynomials
+  OEIS:
+    title: 'OEIS A011973: coefficients, indexed so that row $n$ gives $F_{n+1}$'
+    url: https://oeis.org/A011973
+Tags:
+  - polynomial
+  - recurrence
+Data properties:
+  type: Z[]
+  complete: 'no'
+  rigour: exact
+Display properties:
+  number-header: $F_n(x)$

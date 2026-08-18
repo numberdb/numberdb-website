@@ -1,0 +1,54 @@
+# The table document for numberdb-data#101, to be created on the site.
+Title: Lucas polynomials $L_n$
+Definition: >-
+  The Lucas polynomials $L_n$ are defined by $L_0 = 2$, $L_1 = x$ and the
+  recurrence $L_{n}(x) = x L_{n-1}(x) + L_{n-2}(x)$ for $n \geq 2$. At $x = 1$
+  they give the Lucas numbers, $L_n(1) = L_n$. They obey the same recurrence as
+  the Fibonacci polynomials and differ only in the two starting values, which
+  is why each table says which it holds; elsewhere they are called the
+  Fibonacci polynomials of the second kind, and some authors index them
+  from $L_1$.
+Parameters:
+  n:
+    type: Z
+    constraints: $n \geq 0$
+Formulas:
+  formula-recurrence: >-
+    $L_0(x) = 2$, $L_1(x) = x$, and $L_{n}(x) = x L_{n-1}(x) + L_{n-2}(x)$ for
+    $n \geq 2$ (recurrence).
+  formula-fibonacci: >-
+    $L_n(x) = F_{n-1}(x) + F_{n+1}(x)$ for $n \geq 1$, where $F_n$ are the
+    Fibonacci polynomials.
+  formula-generating-function: >-
+    $\sum_{n=0}^\infty L_n(x) t^n = \frac{2 - xt}{1 - xt - t^2}$ (generating
+    function).
+Comments:
+  comment-lucas-sequence: >-
+    $L_n(x)$ is the Lucas sequence $V_n(x, -1)$, the companion of the
+    $U_n(x, -1)$ that gives the Fibonacci polynomials.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x> = ZZ[]
+      def lucas_polynomial(n):
+          a, b = R(2), x
+          for _ in range(n): a, b = b, x*b + a
+          return a
+      polynomials = {n: lucas_polynomial(n) for n in [0..150]}
+Links:
+  Wiki:
+    title: 'Wikipedia: Fibonacci polynomials (Lucas polynomials)'
+    url: https://en.wikipedia.org/wiki/Fibonacci_polynomials
+  OEIS:
+    title: 'OEIS A034807: triangle of coefficients of Lucas polynomials'
+    url: https://oeis.org/A034807
+Tags:
+  - polynomial
+  - recurrence
+Data properties:
+  type: Z[]
+  complete: 'no'
+  rigour: exact
+Display properties:
+  number-header: $L_n(x)$
