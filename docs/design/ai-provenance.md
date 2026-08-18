@@ -1,8 +1,9 @@
 # Who made this table, when part of it was made by an AI
 
-A proposal, not a decision. Written before the first AI-assisted table is
+Decided and implemented on 2026-08-18, before the first AI-assisted table was
 submitted, because the answer is easier to agree on in the abstract than with a
-finished table waiting.
+finished table waiting. What follows is the reasoning; the last section records
+what was built.
 
 ## The distinction that matters
 
@@ -119,3 +120,37 @@ Small. `publish(assisted_by=...)` passing an `X-Produced-By` header the API
 already reads; a sentence in the skill; the trust-ladder change; and
 `environment()` called by `publish` when the author asks for it, so the software
 versions stop being the gap they currently are.
+
+## What was built
+
+- **`publish()` records the software versions.** `Generator.environment()` was
+  never called by anything, so no table said which Sage produced it -- and
+  `verify()` disagreeing in a year is only informative if something recorded
+  the first run. The package and Sage versions now go into `produced_by`. Still
+  no package list: what else is installed is nobody's business.
+
+- **`NUMBERDB_ASSISTED_BY` names the tool that ran the publish**, read from the
+  environment at publish time. Not written into the generator, and the reason
+  decided it: a file saying `claude-opus-5` keeps saying it after another tool
+  edits and republishes it, so a hard-coded name records who wrote the file
+  rather than who submitted the run, and quietly credits one tool with
+  another's work. `publish(assisted_by=...)` overrides for a caller that knows
+  better. Unset means a person ran it.
+
+  Recorded as `Zeta (numberdb=0.1.2, python=3.12.5, sage=10.9), assisted by
+  claude-opus-5`, in the field the blame view, the revision history, the file
+  history and the review queue already show.
+
+- **The trust ladder counts people.** `accepted_edit_count` now ignores an
+  assisted revision that its own author reviewed. Tables gained `reviewed_by`
+  for this -- who confirmed the digits was not recorded at all, which is worth
+  fixing on its own, since a review is a claim and claims have claimants.
+  Reviews predating the field count as before: they were the board's.
+
+- **Documented in three places** because there are three audiences: the skill
+  (an assistant about to publish), the package README (somebody writing a
+  generator), and the API reference (somebody writing their own client).
+
+Nine tests. The open question left is the licence: whether numberdb-data's CLA
+needs a sentence about assisted contributions is a legal question, not a
+technical one.

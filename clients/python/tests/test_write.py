@@ -1691,3 +1691,72 @@ class TestAWarmCacheDoesNotBreakProven:
             with pytest.raises(numberdb.DisagreementError) as raised:
                 Point().publish(client=Server().client())
             assert 'carries no error of its own' in str(raised.value), attempt
+
+
+class TestWhoRanThePublish:
+    """A revision records what produced it: the generator, the software
+    versions, and the tool that submitted the run.
+
+    The tool comes from the environment rather than from the file. A generator
+    that says `claude-opus-5` in its source keeps saying it after somebody else
+    edits and republishes it, so a hard-coded name records who wrote the file
+    rather than who submitted the run -- and quietly attributes one tool's work
+    to another.
+    """
+
+    class Probe(numberdb.Generator):
+        table = 'T7'
+        parameters = ('n',)
+        type = 'Q'
+
+        def enumerate(self, limit=2):
+            for n in range(1, limit + 1):
+                yield {'n': n}
+
+        def value(self, params, digits):
+            return Fraction(1, int(params['n']))
+
+    def _produced_by(self, server):
+        for _, headers, body in server.entry_posts():
+            #urllib capitalises only the first letter, so the header arrives
+            #as `X-produced-by` -- the same spelling `_message` looks for.
+            got = _header(headers, 'X-produced-by')
+            if got:
+                return got
+        return ''
+
+    def test_the_versions_are_recorded_without_being_asked_for(self, monkeypatch):
+        #`verify()` disagreeing a year from now is only informative if
+        #something recorded what the first run was.
+        monkeypatch.delenv('NUMBERDB_ASSISTED_BY', raising=False)
+        server = Server()
+        self.Probe().publish(client=server.client())
+        produced = self._produced_by(server)
+        assert 'Probe' in produced
+        assert 'numberdb=' in produced
+
+    def test_no_tool_is_claimed_when_a_person_ran_it(self, monkeypatch):
+        monkeypatch.delenv('NUMBERDB_ASSISTED_BY', raising=False)
+        server = Server()
+        self.Probe().publish(client=server.client())
+        assert 'assisted by' not in self._produced_by(server)
+
+    def test_the_environment_names_the_tool(self, monkeypatch):
+        monkeypatch.setenv('NUMBERDB_ASSISTED_BY', 'claude-opus-5')
+        server = Server()
+        self.Probe().publish(client=server.client())
+        assert 'assisted by claude-opus-5' in self._produced_by(server)
+
+    def test_an_argument_overrides_the_environment(self, monkeypatch):
+        #So a caller that knows better than its own environment can say so.
+        monkeypatch.setenv('NUMBERDB_ASSISTED_BY', 'stale-name')
+        server = Server()
+        self.Probe().publish(client=server.client(), assisted_by='codex-cli')
+        assert 'assisted by codex-cli' in self._produced_by(server)
+
+    def test_the_producer_string_fits_the_column(self, monkeypatch):
+        #The server stores 100 characters.
+        monkeypatch.setenv('NUMBERDB_ASSISTED_BY', 'x' * 200)
+        server = Server()
+        self.Probe().publish(client=server.client())
+        assert len(self._produced_by(server)) <= 100

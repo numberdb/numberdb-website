@@ -301,6 +301,25 @@ attached to it. A table wants both where both apply.
 
 - Publishing needs the owner's API key. Do not ask for it, and do not put a key
   in a file you commit.
+- **Say what you are.** If an assistant is running the publish, set
+
+      export NUMBERDB_ASSISTED_BY=claude-opus-5     # or codex-cli, or ...
+
+  and the revision records it, beside the generator and the Sage and package
+  versions, where readers and reviewers already see it. Do not write the name
+  into the generator instead: the file outlives the run, and a name hard-coded
+  there keeps claiming one tool's work after another tool edits and republishes
+  it.
+
+  The author of a submission is the person whose key published it -- authorship
+  is accountability, and a model can neither answer for a wrong value nor agree
+  to the licence. What an assistant did is a disclosed method, not a
+  co-authorship. Disclose when it made a decision a reader would otherwise
+  attribute to a person: chose the convention, the range or the
+  parameterisation, wrote the definition, wrote the generator. Not for
+  formatting or renaming.
+- A table made from a "table wanted" issue should cite the issue in its
+  References. That is provenance of the idea, and it is owed to whoever asked.
 - Values are held out of search by number until a board member reviews them.
   That is deliberate: a reader looking at a table can see an entry is
   unreviewed, and somebody typing digits into a search box cannot.

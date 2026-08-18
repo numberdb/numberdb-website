@@ -53,6 +53,13 @@ def is_board_member(user):
 	return user.groups.filter(name=BOARD_GROUP).exists()
 
 
+#: How a revision says an assistant produced it. Written by the client package
+#: into `produced_by`, from the NUMBERDB_ASSISTED_BY environment variable, and
+#: matched here rather than parsed: this is a human-readable field and the
+#: phrase is the convention.
+ASSISTED_MARKER = 'assisted by'
+
+
 def may_edit(user):
 	"""Whether ``user`` may change a table.
 
@@ -74,7 +81,7 @@ def accepted_edit_count(user):
 	A revision counts as accepted once its table has been reviewed at or after
 	it, which is what `reviewed_at_revision` advancing means.
 	"""
-	from django.db.models import F
+	from django.db.models import F, Q
 
 	from .models import TableRevision
 
@@ -84,6 +91,16 @@ def accepted_edit_count(user):
 		author=user,
 		table__reviewed_at_revision__isnull=False,
 		created__lte=F('table__reviewed_at_revision__created'),
+	).exclude(
+		#A revision an assistant produced is evidence about its author only
+		#when somebody else confirmed it. The counter was already built
+		#against farming -- it counts reviews rather than approvals, because
+		#"a script can farm" approval -- and an assistant whose operator
+		#reviews its own output farms it just as effectively and more
+		#politely. Reviews from before `reviewed_by` was recorded are null and
+		#so do not match, which is the right default: they were confirmed by
+		#the board.
+		Q(produced_by__icontains=ASSISTED_MARKER) & Q(table__reviewed_by=user)
 	).count()
 
 
