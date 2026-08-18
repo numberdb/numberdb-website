@@ -167,3 +167,33 @@ class CreatingADraftThroughTheApi(TestCase):
 		stranger = User.objects.create_user('nobody', password='pw-123456')
 		self.client.force_login(stranger)
 		self.assertEqual(self.client.get('/%s' % (tid,)).status_code, 404)
+
+	def test_a_draft_may_have_no_numbers_yet(self):
+		#The prose is written first and a generator fills it. The refusal that
+		#used to fire here said "drafts are not published here", which was
+		#true before drafts could be made this way and stale afterwards.
+		import json
+
+		answer = self.client.post(
+			'/api/tables',
+			json.dumps({'Title': 'Prose first',
+			            'Data properties': {'type': 'Z[]'},
+			            'Parameters': {'n': {'type': 'Z'}}}),
+			content_type='application/json',
+			HTTP_AUTHORIZATION='Bearer %s' % (self.token,),
+			HTTP_X_DRAFT='yes')
+		self.assertEqual(answer.status_code, 201, answer.content[:300])
+		self.assertFalse(answer.json()['published'])
+
+	def test_a_published_table_still_needs_numbers(self):
+		import json
+
+		answer = self.client.post(
+			'/api/tables',
+			json.dumps({'Title': 'Empty and public',
+			            'Data properties': {'type': 'Z[]'},
+			            'Parameters': {'n': {'type': 'Z'}}}),
+			content_type='application/json',
+			HTTP_AUTHORIZATION='Bearer %s' % (self.token,))
+		self.assertEqual(answer.status_code, 400)
+		self.assertIn('X-Draft', answer.json()['detail'])
