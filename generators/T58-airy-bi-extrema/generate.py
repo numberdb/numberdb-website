@@ -4,6 +4,7 @@ The n-th local extremum of Bi(x), for n = 1..1000.
 
 Run it with SageMath:
 
+    $ sage -pip install numberdb          # once
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # send it, with NUMBERDB_API_KEY set
 

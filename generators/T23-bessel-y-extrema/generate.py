@@ -4,6 +4,7 @@ The n-th local extremum of Y_alpha(x), for alpha in halves and n = 1..50.
 
 Run it with SageMath:
 
+    $ sage -pip install numberdb          # once
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # send it, with NUMBERDB_API_KEY set
 

@@ -4,9 +4,12 @@ Measured over all 107 published tables on 2026-08-17, so that advice about new
 tables cites the corpus rather than somebody's taste. Written for whoever --
 person or program -- is about to make table 108.
 
-The short version: **500 to 1000 entries, a hundred significant digits, one or
-two integer parameters, and a definition of one or two sentences that says
-which convention is meant.** The rest of this note is what that is based on and
+The short version: **as many entries as are worth looking up and no more, a
+hundred significant digits, one or two integer parameters, and a definition of
+one or two sentences that says which convention is meant.** For cheap
+approximations that is 500 to 1000 entries; for anything whose entries grow --
+polynomials above all -- it is far fewer, and the target is half the soft size
+limit rather than the limit. The rest of this note is what that is based on and
 where it does not apply.
 
 ## Scale
@@ -40,6 +43,39 @@ where the editor and the diff view stop working.
 The digit limits do not apply to exact tables (`Z`, `Q`, `Z[]`, `Q[]`): a
 polynomial has no precision to choose, and writing fewer of its coefficients
 does not round it, it makes it a different polynomial.
+
+### Tables whose entries grow
+
+The twelve polynomial tables run to n = 50 or 100, not to a thousand, and both
+reasons matter.
+
+A table is a reference: somebody meets a value and wants to know what it is.
+Nobody meets the 500th Chebyshev polynomial. Beyond the first tens of a family
+the entries are not values anyone is looking up, and they bury the ones that
+are.
+
+And they get expensive fast. A polynomial of degree n has about n/2 terms with
+coefficients of O(n) digits, so it costs O(n²) characters and a table running
+to n costs O(n³). Measured on Chebyshev polynomials of the first kind:
+
+| range | table |
+|---|---|
+| 0..50 | 11 KB |
+| 0..100 | 69 KB |
+| 0..200 | 472 KB (over the soft block limit) |
+| 0..500 | 6.6 MB (over the hard limit) |
+
+The target is **half the soft block limit, about 160 KB**, rather than the
+limit itself: a table that only just fits cannot be extended by the next person
+without breaching it. For a family indexed by degree that puts the range at
+**n = 100 or a little below** --
+
+    chebyshev_T   0..100     69 KB
+    hermite       0..100    144 KB
+    legendre_P    0..100    164 KB     rational coefficients cost more
+
+-- which is what the existing tables do. Measure the largest entry before
+choosing a range.
 
 ## Types and parameters
 
