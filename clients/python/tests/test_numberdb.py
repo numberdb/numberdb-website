@@ -1572,3 +1572,30 @@ class WhereTheKeyComesFrom(unittest.TestCase):
         """Reading is public; the refusal belongs where writing is attempted."""
         os.chdir(self.home)
         self.assertIsNone(numberdb.Client().api_key)
+
+
+class VersionFromASourceTree(unittest.TestCase):
+    """A checkout that was never installed still knows what it is.
+
+    `importlib.metadata` answers for an installed distribution and raises for a
+    source tree -- which is how a generator author works. The fallback used to
+    be `0.0.0+unknown`, which is honest and useless: the version is recorded so
+    a disagreement a year from now can be traced to a change, and "unknown"
+    traces to nothing.
+    """
+
+    def test_it_reports_something_usable(self):
+        import numberdb
+
+        self.assertNotEqual(numberdb.__version__, '0.0.0+unknown')
+        self.assertRegex(numberdb.__version__, r'^\d+\.\d+\.\d+')
+
+    def test_a_source_tree_says_so(self):
+        #So nobody reads a dirty checkout as a release.
+        from numberdb import _installed_version
+
+        try:
+            from importlib.metadata import version
+            version('numberdb')
+        except Exception:
+            self.assertTrue(_installed_version().endswith('+source'))

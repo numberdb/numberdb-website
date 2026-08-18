@@ -110,13 +110,44 @@ __all__ = ['search', 'search_many', 'search_text',
            'Generator', 'PublishOutcome', 'VerifyReport', 'bits',
            '__version__']
 
-try:
-    from importlib.metadata import PackageNotFoundError, version
-    #Single source of truth: the installed metadata, which comes from
-    #pyproject.toml. Declaring the version in two places guarantees they drift.
-    __version__ = version('numberdb')
-except Exception:  # pragma: no cover - running from a source tree
-    __version__ = '0.0.0+unknown'
+def _installed_version() -> str:
+    """This package's version, however it is being run.
+
+    The installed metadata first, which comes from pyproject.toml: declaring
+    the version in two places guarantees they drift.
+
+    Then pyproject.toml itself, for a source tree that was never installed --
+    a generator author running against a checkout, which is a normal way to
+    work and used to report `0.0.0+unknown`. That string is honest and it is
+    useless: the version is recorded so that a disagreement a year from now
+    can be traced to a change, and "unknown" traces to nothing. `+source`
+    marks it as read from the tree rather than from an installation, because
+    a checkout can be dirty in a way a release cannot.
+    """
+    try:
+        from importlib.metadata import version
+
+        return version('numberdb')
+    except Exception:
+        pass
+
+    try:
+        import os
+        import re
+
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(root, 'pyproject.toml'), encoding='utf8') as f:
+            found = re.search(r'^version\s*=\s*["\']([^"\']+)["\']',
+                              f.read(), re.M)
+        if found:
+            return '%s+source' % (found.group(1),)
+    except Exception:
+        pass
+
+    return '0.0.0+unknown'
+
+
+__version__ = _installed_version()
 
 #: Polynomials longer than this are looked up by a digest of their canonical
 #: key rather than sent whole. Comfortably under the 8k a URL survives.
