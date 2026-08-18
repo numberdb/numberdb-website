@@ -296,3 +296,38 @@ class ADraftsAddressFollowsItsTitle(DraftBase):
 		self._retitle('Chebyshev polynomials')
 		self._retitle('Chebyshev polynomials')
 		self.assertEqual(self.table.url, 'Chebyshev_polynomials')
+
+
+class TitlesWithMathematicsGetReadableAddresses(DraftBase):
+	"""`Chebyshev polynomials of the first kind $T_n$` lives at
+	`Chebyshev_polynomials_of_the_first_kind`, and a table created today wrote
+	its title the same way and got `Fibonacci_polynomials_F_n`. The slug is
+	what people paste into papers."""
+
+	def test_the_latex_is_left_out_of_the_address(self):
+		from .editing import slug_for
+
+		self.assertEqual(slug_for('Fibonacci polynomials $F_n$', taken=set()),
+		                 'Fibonacci_polynomials')
+		self.assertEqual(
+			slug_for('Chebyshev polynomials of the first kind $T_n$', taken=set()),
+			'Chebyshev_polynomials_of_the_first_kind')
+
+	def test_a_title_that_is_only_mathematics_still_gets_an_address(self):
+		from .editing import slug_for
+
+		self.assertTrue(slug_for('$\\pi$', taken=set()))
+
+	def test_a_draft_renamed_takes_the_readable_form(self):
+		table = create_table(
+			{'Title': 'Working name',
+			 'Data properties': {'type': 'Z[]'},
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '1'}]},
+			author=self.author, published=False)
+		tree = dict(tree_of(table.head_revision))
+		tree['Title'] = 'Lucas polynomials $L_n$'
+		commit_table(table, tree, author=self.author,
+		             base=table.head_revision, message='renamed')
+		table.refresh_from_db()
+		self.assertEqual(table.url, 'Lucas_polynomials')

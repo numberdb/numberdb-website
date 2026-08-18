@@ -616,7 +616,14 @@ def slug_for(title, taken=None):
 	"""
 	from .models import Table
 
-	base = re.sub(r"[^\w'()-]+", '_', (title or '').strip()).strip('_')
+	#Mathematics in the title does not belong in the address. The corpus was
+	#named this way -- `Chebyshev polynomials of the first kind $T_n$` lives at
+	#`Chebyshev_polynomials_of_the_first_kind` -- and without this a new table
+	#gets a worse URL than an old one for writing its title the same way:
+	#`Fibonacci_polynomials_F_n`. The slug is what people paste into papers.
+	plain = re.sub(r'\$[^$]*\$', ' ', title or '')
+
+	base = re.sub(r"[^\w'()-]+", '_', plain.strip()).strip('_')
 	base = re.sub(r'_+', '_', base) or 'table'
 	base = base[:90]
 
