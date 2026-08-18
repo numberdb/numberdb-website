@@ -26,18 +26,36 @@ an AI's involvement actually bears on whether a reader should trust the table.
 
 Only the second needs a new convention.
 
-## Authorship: the person, and only the person
+## Authorship: the account
 
-The author of a submission is the human whose key published it. Not a
-co-author arrangement, and not the model.
+The author of a submission is **the account whose key published it**, and that
+account is answerable for what it uploads.
 
-This is the settled position in scientific publishing (ICMJE, Nature, COPE) and
-the reasoning transfers exactly: authorship is accountability, and a model can
-neither take responsibility for a wrong value nor agree to the licence the
-data is published under. Somebody has to answer for T93's tails being wrong.
-That is the person who published it.
+This is the rule rather than "the human who published it", and the difference
+matters. It is enforceable -- the key identifies an account and nothing else --
+and it settles the case that the first rule fumbles: an agent may hold its own
+account, and then the agent is the author in the record, which is honest. What
+does not change is that somebody stands behind every account: it was
+registered, the board can revoke it, and a table published under it is that
+account's claim.
 
-So: **author = the person. AI involvement = a disclosed method.**
+Scientific publishing reaches the same place from the other direction (ICMJE,
+Nature, COPE all refuse AI authorship) because their concern is a *byline*,
+which is a claim about credit. This is a *log*, which is a claim about who
+answers for the digits. An agent with an account can be answerable in the only
+sense the word means here: revoked if what it publishes is wrong.
+
+So there are two separate records, and they answer different questions:
+
+- **Author** -- which account published this. Always recorded, always the thing
+  responsibility attaches to.
+- **`produced_by`** -- what made it: the generator, the software versions, and
+  the tool that ran the publish. A disclosure, not a byline.
+
+An assistant working under a person's account is that person's submission, with
+the tool disclosed. An assistant with its own account is that account's
+submission. Neither arrangement hides anything, and the second is more honest
+about volume than a person nominally publishing a thousand tables a day.
 
 ## Where the disclosure goes
 
@@ -65,8 +83,8 @@ A rule of "disclose any use" becomes noise -- everyone's editor completes lines
 -- and cannot be checked. A rule of "disclose when it matters" is too vague to
 follow. The line proposed:
 
-**Disclose when the AI made a decision a reader would otherwise attribute to a
-person.** Concretely, disclose if it chose the convention, the range or the
+**Disclose when the AI made a decision a reader would otherwise attribute to
+the account holder.** Concretely, disclose if it chose the convention, the range or the
 parameterisation; wrote the definition a reader relies on; or wrote the
 generator. Do not disclose for renaming variables, formatting, running the
 tests, or fixing a typo.
