@@ -610,7 +610,7 @@ def _writer_of(request):
 	return user, None
 
 
-def _document_of(request):
+def _document_of(request, allow_empty=False):
 	"""The table document a write request carries, or an error response.
 
 	YAML or JSON, since JSON is a subset and a caller that has one is spared
@@ -636,13 +636,14 @@ def _document_of(request):
 		                          status=400)
 
 	from .editing import has_entries
-	if not has_entries(tree):
+	if not allow_empty and not has_entries(tree):
 		return None, JsonResponse(
 			{'error': 'A table needs at least one entry.',
-			 'detail': ('A table with no numbers is a draft, and drafts are '
-			            'not published here: one holds a permanent T-number '
-			            'and is indistinguishable from a table somebody '
-			            'abandoned.')}, status=400)
+			 'detail': ('A published table with no numbers holds a permanent '
+			            'T-number, appears in every listing and answers '
+			            'nothing, which is indistinguishable from one '
+			            'somebody abandoned. Send X-Draft: yes to propose it '
+			            'instead, and fill it before publishing.')}, status=400)
 	return tree, None
 
 
@@ -817,7 +818,10 @@ def create_table(request):
 			           'created here -- send X-Draft: yes -- and published '
 			           'afterwards by somebody who has looked at it.'},
 			status=403)
-	tree, refusal = _document_of(request)
+	#A draft is exactly the thing that may not have numbers in it yet: the
+	#prose is written first and a generator fills it. Publishing still
+	#requires entries, which is where that rule belongs.
+	tree, refusal = _document_of(request, allow_empty=wants_draft)
 	if refusal is not None:
 		return refusal
 
