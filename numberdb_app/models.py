@@ -1506,6 +1506,22 @@ class TableRevision(models.Model):
 		on_delete = models.SET_NULL,
 		related_name = 'table_revisions',
 	)
+	@property
+	def assisted_by(self):
+		"""The tool that submitted this revision, if one did.
+
+		`produced_by` holds a sentence -- generator, versions, and the tool --
+		and the templates want only the last part, because a revision with a
+		human author showed the author *instead of* the producer and so hid
+		the disclosure exactly where it mattered: an assisted publish under
+		somebody's key looked like their own work.
+		"""
+		marker = ', assisted by '
+		produced = self.produced_by or ''
+		if marker not in produced:
+			return ''
+		return produced.split(marker, 1)[1].strip()
+
 	#: What produced this, when it was not typed by a person: a model name, a
 	#: script, an importer. Reviewers triage generated edits differently, and
 	#: readers are entitled to know, which is why Wikipedia flags bot edits.

@@ -80,3 +80,45 @@ class TheTrustLadderCountsPeople(TestCase):
 		self.table.reviewed_by = None
 		self.table.save(update_fields=['reviewed_at_revision', 'reviewed_by'])
 		self.assertEqual(accepted_edit_count(self.author), 1)
+
+
+class TheDisclosureIsVisible(TestCase):
+	"""A disclosure nobody sees is not one.
+
+	The history showed the *author* instead of the producer when a revision had
+	one, so an assisted publish under somebody's key looked exactly like their
+	own work -- which is the only case the disclosure exists for.
+	"""
+
+	def setUp(self):
+		from django.contrib.auth.models import User
+
+		from .editing import create_table
+
+		self.user = User.objects.create_user('publisher', password='pw-123456')
+		self.table = create_table(
+			{'Title': 'Disclosure probe',
+			 'Data properties': {'type': 'R'},
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}]},
+			author=self.user,
+			produced_by='Probe (numberdb=0.1.2, sage=10.9), assisted by claude-opus-5')
+
+	def test_the_property_pulls_out_the_tool(self):
+		self.assertEqual(self.table.head_revision.assisted_by, 'claude-opus-5')
+
+	def test_a_revision_nobody_assisted_names_no_tool(self):
+		from .editing import create_table
+
+		table = create_table(
+			{'Title': 'Unassisted probe',
+			 'Data properties': {'type': 'R'},
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '2.71'}]},
+			author=self.user, produced_by='Probe (numberdb=0.1.2)')
+		self.assertEqual(table.head_revision.assisted_by, '')
+
+	def test_the_history_shows_the_tool_next_to_the_author(self):
+		body = self.client.get('/revisions/%s' % (self.table.tid,)).content.decode()
+		self.assertIn('publisher', body)
+		self.assertIn('claude-opus-5', body)
