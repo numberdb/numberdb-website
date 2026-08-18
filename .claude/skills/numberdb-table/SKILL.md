@@ -23,7 +23,27 @@ Install: `pip install numberdb`, or `sage -pip install numberdb` inside
 SageMath. In Sage use `import numberdb.sage as numberdb`, which returns Sage
 objects.
 
-## 1. Decide what the table says before computing anything
+## 1. Look at the database before writing anything
+
+Search it, for two different reasons, and neither is optional.
+
+**Is this table already here, under another name?** Two tables of the same
+objects are sometimes right -- the Hermite polynomials are held twice, in the
+physicists' and the probabilists' conventions -- but that is a decision, not an
+accident. `/drafts` lists what is being made right now and is invisible from
+outside, so a table can be half-built and unfindable while you start it again.
+
+**What does the database already hold that this table should point at?** A
+reference to a table here is worth more than a link to Wikipedia for the same
+thing: a reader following it lands on the numbers. Search titles, tags and
+definitions before reaching for an external link. The Fibonacci polynomials
+should point at the Chebyshev polynomials of the second kind, which are T99 --
+not at an encyclopedia article about them.
+
+    numberdb.search_text('Chebyshev')          # titles and tags
+    numberdb.table('T99')                      # what it holds
+
+## 2. Decide what the table says before computing anything
 
 Write these down first. Every one of them has gone wrong in this corpus, and
 none was caught by a test.
@@ -43,7 +63,7 @@ none was caught by a test.
   approximation. Exact values are stronger and shorter — return them exactly
   rather than as a hundred digits of an integer.
 
-## 2. How much to include
+## 3. How much to include
 
 **A table is a reference, not a dump.** NumberDB exists so that somebody who
 has met a value can find out what it is. That is the test for every entry: is
@@ -73,7 +93,15 @@ to n costs O(n³). Measured on Chebyshev polynomials of the first kind:
     n = 200    6828                 table 0..200   472 KB   over the soft limit
     n = 500   39674                 table 0..500  6639 KB   over the hard limit
 
-**Aim at half the soft block limit -- about 160 KB -- not at the limit.** A
+**The binding constraint is usually readability, not size.** An entry is
+something a person looks at. The Fibonacci polynomials were first published to
+n = 150 because that fitted comfortably inside every limit, and the range came
+back down to 100 for a better reason: F_150 is 2248 characters and F_100 is
+1107, and somewhere between those an entry stops being something anybody reads.
+Ask what the largest entry looks like on a page before asking whether the table
+fits.
+
+**Then aim at half the soft block limit -- about 160 KB -- not at the limit.** A
 table that only just fits cannot be extended by the next person without
 breaching it, and the limit is there to be a margin rather than a target.
 
@@ -102,7 +130,48 @@ digit limits do not apply to exact tables. The block limit is the one that
 binds for polynomials, and it is a limit on the *whole table*: it admits many
 small entries or a few large ones, and refuses both at once.
 
-## 3. Types: what a value is, how it is written, what to return
+## 4. Where each thing goes
+
+A table has sections and they are not interchangeable. The definitions of the
+two newest tables in the database each grew to hold a definition, two
+conventions, a caveat about indexing and a pointer to a companion table, and
+had to be taken apart again.
+
+| section | holds | not |
+|---|---|---|
+| **Title** | what the thing is called, LaTeX allowed | a description |
+| **Definition** | one or two sentences saying what the object *is* | caveats, history, relations |
+| **Parameters** | each parameter's type and the constraint the entries actually satisfy | aspiration |
+| **Comments** | conventions, caveats, what the values mean at a special point, alternative indexing, notation used elsewhere in the table | formulas |
+| **Formulas** | identities, closed forms, generating functions, recurrences | prose about them |
+| **Similar tables** | tables *in this database* it relates to, with the relation named | external links |
+| **Links** | sources outside: Wikipedia, LMFDB, OEIS, MathWorld | anything the database holds itself |
+| **References** | papers and books, cited from the prose with `CITE{}` | uncited decoration |
+| **Programs** | the standard incantation for a reader who wants one more value | the generator |
+| **Data properties** | `type`, `rigour`, and how the digits were obtained | anything else |
+
+Two rules that follow from the table above and are worth stating alone:
+
+**Define notation where you use it.** A comment saying the values are
+`U_n(x,-1)` is useless until something says what `U` is. If a symbol appears in
+a formula or a comment, its definition belongs in the same table.
+
+**A reference is for citing, not for listing.** `CITE{Koshy}` in a comment
+earns its place; a bibliography nobody points at is furniture.
+
+Every table has at least Title, Definition, Tags (two is typical), Links and
+Data properties. Use existing tags rather than inventing one -- the tag list is
+a way through the corpus, and a tag with one table on it is not. Use `$...$`
+for mathematics, `CITE{key}` for a reference or link, and
+`HREF{slug}[caption]` for a table here. Link outward only to sources that will
+still exist: Wikipedia, LMFDB, OEIS, MathWorld, mpmath, or a paper.
+
+**`Programs` and `generate.py` answer different questions.** `Programs` is the
+standard incantation in Sage, PARI or mpmath for a reader who wants one more
+value. `generate.py` is the program that reproduces and extends *this* table,
+attached to it. A table wants both where both apply.
+
+## 5. Types: what a value is, how it is written, what to return
 
 `type` in Data properties says what the table holds. Seven are searchable by
 their digits:
@@ -157,7 +226,7 @@ fixed-precision result — see below.
 An entry may also say it is deliberately less precise than the table's
 `digits`, by returning `{'number': x, 'digits': 8}`.
 
-## 4. Write a generator
+## 6. Write a generator
 
 **A generator fills a table; it does not create one.** A new table is made on
 the site, by a person, deliberately -- it takes a permanent T-number, a title
@@ -231,7 +300,7 @@ Then say what the file does and, where it matters, what was decided and why: a
 working precision that was measured, a convention that had to be chosen, an
 error bound and where it comes from.
 
-## 5. Rigour: say how well the digits are known
+## 7. Rigour: say how well the digits are known
 
 One value per table, in `rigour`. The first five are ordered, weakest last.
 
@@ -275,7 +344,7 @@ the file attached to a table is meant to say how the numbers were made.
 `assume_accurate` requires `because` — checked against documentation, most
 libraries state no accuracy at all.
 
-## 6. What the refusals mean
+## 8. What the refusals mean
 
 The package stops rather than guesses. Each of these has caught a real error:
 
@@ -291,21 +360,24 @@ The package stops rather than guesses. Each of these has caught a real error:
   shorten stored values. `lowering=True` only if the stored precision was never
   justified.
 
-## 7. Metadata
+## 9. Publishing, and what happens next
 
-Every table has: **Title**, **Definition**, **Tags** (two is typical),
-**Links**, **Data properties** (`type`, `rigour`). Definitions run to one or
-two sentences; use `$...$` for mathematics and `CITE{}` for references.
+**A table is proposed, filled, reviewed and then public**, and those are four
+separate acts:
 
-Link to sources that will still be there: Wikipedia, LMFDB, OEIS, MathWorld,
-mpmath, or a paper.
+1. **Propose it as a draft** -- `POST /api/tables` with `X-Draft: yes`, or made
+   on the site. It takes its permanent T-number at once, and keeps it: a
+   generator is written against that number while the table is still being set
+   up. A draft is invisible, in no listing, answers no search, and may have no
+   numbers in it yet, because the prose is written first.
+2. **Fill it** with a generator pointed at that T-number.
+3. **Somebody reviews it.** A draft appears in the review queue as "waiting to
+   be published", and confirming it publishes it -- the two are the same act,
+   since what they have in common is that somebody competent looked.
+4. **It is public**, and its values answer search by number.
 
-**`Programs` and `generate.py` answer different questions.** `Programs` is the
-standard incantation in Sage, PARI or mpmath for a reader who wants one more
-value. `generate.py` is the program that reproduces and extends *this* table,
-attached to it. A table wants both where both apply.
-
-## 8. Publishing, and what happens next
+Do not expect to do step 3. It is the point at which a person takes
+responsibility for a table existing.
 
 - Publishing needs the owner's API key. Do not ask for it, and do not put a key
   in a file you commit.
@@ -334,12 +406,30 @@ attached to it. A table wants both where both apply.
 - Correcting values that are already public is a human decision. Show the
   measured discrepancy — in units of the last place — and ask.
 
-## 9. Check the work
+## 10. Check the work
 
 - `verify(sample=None)` after publishing.
 - `manage.py sweep_arb` (server-side) recomputes stored values from
   independent definitions and reports anything the site's own parsers would
   read as a different number.
+- **Check new values against something independent.** Not the code that
+  produced them: the Fibonacci polynomials were checked against Sage's own
+  `fibonacci()` at x = 1, and against identities that tie the two tables
+  together -- L_n = F_(n-1) + F_(n+1), F_2n = F_n L_n, gcd(F_m, F_n) =
+  F_gcd(m,n). A family with known identities gives you a free test suite.
+- **Verify a claim before writing it into a table, including one somebody
+  suggested.** A suggestion is a hypothesis. "These are orthogonal polynomials,
+  tag them so" sounds obviously right and is false: Favard's condition fails,
+  and what holds instead is an *indefinite* pairing on the imaginary axis. The
+  table now says that, which is worth more than either the wrong tag or
+  silence.
+- **A measurement needs a control that returns a known answer.** The first
+  attempt at that orthogonality check used Simpson's rule on a weight with an
+  endpoint singularity and reported -0.023 for a pairing that is exactly zero.
+  Worse, the control -- the Chebyshev family, whose answers are known --
+  silently returned zero for everything because of a coercion error, so it
+  confirmed nothing while looking like confirmation. Run the control first and
+  check it gives the answer you already know.
 - If your recomputation disagrees with a stored value, suspect your
   recomputation first. In this corpus every disagreement after the first two
   was the checker's fault: a Teichmüller limit that collapses at p = 2, an
