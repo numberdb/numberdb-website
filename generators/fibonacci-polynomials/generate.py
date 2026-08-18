@@ -1,4 +1,4 @@
-"""Fibonacci polynomials F_n(x) -- numberdb.org (table wanted: numberdb-data#100)
+"""Fibonacci polynomials F_n(x) -- numberdb.org/T108 (table wanted: numberdb-data#100)
 
     F_0 = 0,  F_1 = 1,  F_n(x) = x F_(n-1)(x) + F_(n-2)(x)
 
@@ -51,7 +51,7 @@ UP_TO = 150
 
 class FibonacciPolynomials(numberdb.Generator):
 
-    table = None            # set when the table exists; see --publish below
+    table = 'T108'
     parameters = ('n',)
     type = 'Z[]'
     rigour = 'exact'
