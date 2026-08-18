@@ -416,9 +416,16 @@ def _sync_title(table, document):
 	changed its page and nothing else -- and the two disagreed indefinitely,
 	each looking right on its own.
 
-	The slug is deliberately left alone. It is semi-stable by design: every
-	link anybody has written points at it, and a title is edited far more often
-	than a table wants a new address.
+	The slug of a *published* table is deliberately left alone. It is
+	semi-stable by design: every link anybody has written points at it, and a
+	title is edited far more often than a table wants a new address.
+
+	A draft is the exception, and the reason for the rule is the reason for the
+	exception. Nobody can have linked to a draft: it is invisible to everyone
+	but its author and the board, it appears in no listing and answers no
+	search. So while a table is being set up its address follows its title,
+	which is what somebody renaming a half-made table expects -- and it freezes
+	at publication, when the address starts to matter.
 	"""
 	title = (document.get('Title') or '').strip() if isinstance(document, dict) \
 		else ''
@@ -426,7 +433,20 @@ def _sync_title(table, document):
 		return
 	table.title = title
 	table.title_lowercase = title.lower().replace('$', '')
-	table.save(update_fields=['title', 'title_lowercase'])
+	fields = ['title', 'title_lowercase']
+	if not table.published:
+		from .models import Table
+
+		#Every other table's address, so a rename cannot collide -- and not
+		#this table's own, or it would count as a collision with itself and
+		#gain a number on every save.
+		taken = set(Table.objects.exclude(pk=table.pk)
+		            .values_list('url', flat=True))
+		slug = slug_for(title, taken=taken)
+		if slug and slug != table.url:
+			table.url = slug
+			fields.append('url')
+	table.save(update_fields=fields)
 
 
 def _sync_tags(table, document):
