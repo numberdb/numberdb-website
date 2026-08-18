@@ -259,6 +259,44 @@ def tables(request):
 	#print("shown_tables:",shown_tables)
 	return render(request, 'tables.html', {'tables': shown_tables, 'sortby': sortby})
 
+def drafts(request):
+	"""Tables being set up, for anybody signed in.
+
+	Existence, not contents. A draft's numbers are unreviewed and may be wrong,
+	which is why they answer no search -- but the reason to hide what is in a
+	draft is not a reason to hide *that* it exists, and hiding both is how two
+	people end up making the same table.
+
+	Sometimes two tables of the same objects are right: T103 and T104 are the
+	Hermite polynomials in the physicists' and the probabilists' conventions,
+	held twice on purpose. What this page prevents is the accidental case,
+	where nobody knew.
+
+	Age is shown and nothing is enforced. An automatic expiry deletes somebody's
+	work on a timer, and the timer is always wrong for somebody.
+	"""
+	if not request.user.is_authenticated:
+		from django.shortcuts import redirect
+
+		#allauth owns the login route; there is no `db:login`.
+		return redirect('%s?next=%s' % (reverse('account_login'), request.path))
+
+	from .permissions import draft_allowance, is_board_member
+
+	drafts = (Table.objects.filter(published=False)
+	          .select_related('created_by')
+	          .order_by('tid_int'))
+	remaining, held = draft_allowance(request.user)
+	return render(request, 'drafts.html', {
+		'drafts': drafts,
+		'draft_count': drafts.count(),
+		'mine': sum(1 for d in drafts if d.created_by_id == request.user.pk),
+		'remaining': remaining,
+		'held': held,
+		'is_board': is_board_member(request.user),
+	})
+
+
 def tags(request):
 	page = request.GET.get('page', 1)
 	tags = Tag.objects.all()

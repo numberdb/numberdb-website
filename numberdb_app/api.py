@@ -749,10 +749,19 @@ def write_table(request, tid):
 @csrf_exempt
 @rate_limited
 def create_table(request):
-	"""Add a table. POST, key required, board only."""
+	"""Add a table. POST, key required.
+
+	Published tables are board-only. Drafts are open to any account that may
+	write through the API, up to a few in flight at once -- send
+	`X-Draft: yes`, or `draft=1`. A draft is invisible, answers no search and
+	can be abandoned, so proposing one is not the irreversible act that
+	publishing one is.
+	"""
 	from .editing import create_table as make_table
 	from .limits import TooBig
-	from .permissions import edits_are_reviewed, may_create_tables_through_api
+	from .permissions import (draft_allowance, edits_are_reviewed,
+	                          may_create_drafts_through_api,
+	                          may_create_tables_through_api)
 
 	if request.method != 'POST':
 		return JsonResponse({'error': 'Use POST.'}, status=405)
@@ -765,7 +774,38 @@ def create_table(request):
 	#is not: a loop that means to make three tables and makes three hundred
 	#leaves three hundred permanent T-numbers, and reverting a table's
 	#existence is not something the history model does.
-	if not may_create_tables_through_api(user):
+	#`X-Draft: yes` asks for an unpublished table. Explicit rather than
+	#inferred: creating a table and creating a draft are different acts with
+	#different consequences, and a caller should have to say which it means.
+	wants_draft = ((request.headers.get('X-Draft') or
+	                request.GET.get('draft') or '').strip().lower()
+	               in ('1', 'yes', 'true', 'draft'))
+
+	if wants_draft and not may_create_tables_through_api(user):
+		if not may_create_drafts_through_api(user):
+			remaining, held = draft_allowance(user)
+			if remaining == 0:
+				return JsonResponse(
+					{'error': 'This account already holds %d unpublished '
+					          'drafts.' % (held,),
+					 'detail': ('Publish one, or abandon it, and then this '
+					            'will go through. The limit is on drafts in '
+					            'flight rather than on drafts made: it is '
+					            'here so that a loop which meant to create '
+					            'three tables and creates three hundred is '
+					            'stopped after a handful, in a place where '
+					            'nobody can see them and somebody can clear '
+					            'them up.')},
+					status=429)
+			return JsonResponse(
+				{'error': 'Writing through the API is not open to this '
+				          'account yet.',
+				 'detail': ('Drafts may be created by any account that may '
+				            'write with a program. That opens once some of '
+				            'your edits have been reviewed.')},
+				status=403)
+
+	if not wants_draft and not may_create_tables_through_api(user):
 		return JsonResponse(
 			{'error': 'Creating tables with a program is not open to this '
 			          'account.',
@@ -773,7 +813,9 @@ def create_table(request):
 			           'listing, and a parameter order that can never change '
 			           'because citations resolve on it. Create it on the '
 			           'site, where that is one deliberate act, and then a '
-			           'program may fill it with numbers.'},
+			           'program may fill it with numbers. A *draft* may be '
+			           'created here -- send X-Draft: yes -- and published '
+			           'afterwards by somebody who has looked at it.'},
 			status=403)
 	tree, refusal = _document_of(request)
 	if refusal is not None:
@@ -784,7 +826,7 @@ def create_table(request):
 			tree, author=user,
 			produced_by=_produced_by(request, user),
 			message=(request.headers.get('X-Edit-Message') or '')[:300],
-			strict=True)
+			published=not wants_draft, strict=True)
 	except TooBig as big:
 		return JsonResponse(
 			{'error': 'The table is over a size limit.',
@@ -799,11 +841,17 @@ def create_table(request):
 		from .review import sync_review_flags
 		sync_review_flags(table)
 
+	remaining, held = draft_allowance(user)
 	return JsonResponse({
 		'tid': table.tid,
 		'url': table.url,
 		'revision': table.head_revision.digest if table.head_revision else None,
 		'reviewed': edits_are_reviewed(user),
+		'published': table.published,
+		#So a caller filling several drafts knows where it stands without
+		#having to be refused first.
+		'drafts_held': held,
+		'drafts_remaining': remaining,
 	}, status=201)
 
 

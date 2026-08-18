@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block head-title %}Tables in progress{% endblock %}
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'db:tables' %}">Tables</a></li>
+  <li class="breadcrumb-item active">In progress</li>
+{% endblock %}
+{% block content %}
+<h1 class="title">Tables in progress</h1>
+
+<p>
+Tables that have been started and not published. They are listed here so that
+somebody about to make a table can see that it is already being made &mdash;
+what is in them is not shown, and their numbers answer no search until they are
+published and reviewed.
+
+<p>
+Two tables of the same objects are sometimes right: the Hermite polynomials are
+held twice, in the physicists' and the probabilists' conventions, because a
+reader arriving with a number needs whichever they have. If a draft here covers
+what you were going to make, it is worth saying so on it before starting.
+
+{% if drafts %}
+<table class="listing">
+  <tr><th>Number</th><th>Title</th><th>Started by</th><th>Started</th><th>Last change</th></tr>
+  {% for draft in drafts %}
+  <tr>
+    <td class="table-label-tid">{{ draft.tid }}</td>
+    <td>
+      {% if draft.created_by_id == user.pk or is_board %}
+        <a href="/{{ draft.tid }}">{{ draft.title }}</a>
+      {% else %}
+        {{ draft.title }}
+      {% endif %}
+    </td>
+    <td>{{ draft.created_by.username|default:"unknown" }}</td>
+    <td>{{ draft.created|date:"Y-m-d" }}</td>
+    <td>{{ draft.head_revision.created|date:"Y-m-d"|default:"&mdash;" }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p><em>Nothing is in progress.</em>
+{% endif %}
+
+<p>
+{% if remaining == None %}
+  You hold {{ held }} draft{{ held|pluralize }}, and are not limited.
+{% else %}
+  You hold {{ held }} draft{{ held|pluralize }} and may start {{ remaining }} more.
+  The limit is on drafts in flight rather than on drafts made: it is there so
+  that a program which meant to create three tables and creates three hundred
+  stops after a handful.
+{% endif %}
+
+<p><a href="{% url 'db:new-table' %}">Create a new table</a>
+{% endblock %}

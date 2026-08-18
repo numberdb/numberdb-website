@@ -180,6 +180,7 @@ reason is in the document, because a warning shown to nobody is not a limit.
   <div class="body">
     <p>Add a table. The body is the whole document, as YAML or JSON.</p>
     <table class="api-table">
+      <tr><th>X-Draft</th><td><code>yes</code> creates the table unpublished: invisible, in no listing, answering no search, and publishable later by somebody who has looked at it. Creating a <em>published</em> table with a program is board-only, because a table is a permanent number and a parameter order that citations resolve on; a draft is neither yet. An account may hold a few drafts at once, and the answer reports <code>drafts_held</code> and <code>drafts_remaining</code></td></tr>
       <tr><th>X-Produced-By</th><td>what made this, recorded on the revision and shown in its history. Defaults to <code>api</code>. The <code>numberdb</code> package sends the generator, the versions of the package and of Sage, and &mdash; when <code>NUMBERDB_ASSISTED_BY</code> is set &mdash; the tool that ran the publish: <code>Zeta (numberdb=0.1.2, sage=10.9), assisted by claude-opus-5</code>. Name the tool if one submitted the run; the author is still the person whose key it was</td></tr>
       <tr><th>X-Edit-Message</th><td>what changed, for the history</td></tr>
       <tr><th>returns</th><td><code>201</code> with the allocated <code>tid</code> and the first revision</td></tr>

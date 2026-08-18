@@ -142,6 +142,53 @@ def may_write_through_api(user):
 	return is_trusted(user)
 
 
+#: How many unpublished drafts an account may hold at once.
+#:
+#: Creating *published* tables with a program is board-only, and the reasoning
+#: is about permanence: a T-number, a title in every listing, a parameter order
+#: citations resolve on, and prose no reviewer wrote. A loop that means to make
+#: three and makes three hundred leaves three hundred of those.
+#:
+#: A draft is none of those things yet. It is invisible, in no listing, answers
+#: no search, and costs a number if abandoned. So a draft may be created with a
+#: program, and this is what keeps the same loop bounded: the three-hundredth
+#: attempt is refused, and what it leaves behind is a handful of drafts nobody
+#: can see, which somebody can clean up.
+#:
+#: Five, because more than five tables genuinely in progress at once is not a
+#: workflow anybody has, and a loop that has made five is already obviously
+#: wrong. Board members are not capped: they are the ones who publish, and a
+#: draft of theirs is one step from being a table.
+DRAFTS_IN_FLIGHT = 5
+
+
+def draft_allowance(user):
+	"""How many more drafts ``user`` may create, and how many they hold.
+
+	Returns ``(remaining, held)``. ``remaining`` is None for no limit.
+	"""
+	from .models import Table
+
+	if is_board_member(user):
+		return (None, Table.objects.filter(created_by=user,
+		                                   published=False).count())
+	held = Table.objects.filter(created_by=user, published=False).count()
+	return (max(0, DRAFTS_IN_FLIGHT - held), held)
+
+
+def may_create_drafts_through_api(user):
+	"""Whether ``user`` may create an unpublished table with a program.
+
+	Lower than creating a published one, because a draft is reversible in the
+	way a table is not: nobody has cited it, nothing links to it, and no
+	search answers with its numbers. Publishing stays a person's act.
+	"""
+	if not may_write_through_api(user):
+		return False
+	remaining, _ = draft_allowance(user)
+	return remaining is None or remaining > 0
+
+
 def may_create_tables_through_api(user):
 	"""Whether ``user`` may create *tables* with a program.
 
