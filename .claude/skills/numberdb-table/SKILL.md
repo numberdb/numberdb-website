@@ -371,12 +371,18 @@ separate acts:
    up. A draft is invisible, in no listing, answers no search, and may have no
    numbers in it yet, because the prose is written first.
 2. **Fill it** with a generator pointed at that T-number.
-3. **Somebody reviews it.** A draft appears in the review queue as "waiting to
-   be published", and confirming it publishes it -- the two are the same act,
-   since what they have in common is that somebody competent looked.
-4. **It is public**, and its values answer search by number.
+3. **Offer it for review** when it is finished -- the button on `/drafts`, or
+   `X-Draft: ready` at creation for a run that proposes and fills in one go. A
+   draft in progress asks for nobody's attention; offering it says the work is
+   done. Nothing can work that out from outside, which is why it is a
+   statement rather than a rule, and it can be withdrawn.
+4. **Somebody reviews it.** An offered draft appears in the review queue as
+   "waiting to be published", and confirming it publishes it -- the two are
+   the same act, since what they have in common is that somebody competent
+   looked.
+5. **It is public**, and its values answer search by number.
 
-Do not expect to do step 3. It is the point at which a person takes
+Do not expect to do step 4. It is the point at which a person takes
 responsibility for a table existing.
 
 - Publishing needs the owner's API key. Do not ask for it, and do not put a key

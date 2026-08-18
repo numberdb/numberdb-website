@@ -287,7 +287,16 @@ def drafts(request):
 	          .select_related('created_by')
 	          .order_by('tid_int'))
 	remaining, held = draft_allowance(request.user)
+	rows = []
+	for draft in drafts:
+		rows.append({
+			'table': draft,
+			'mine': draft.created_by_id == request.user.pk,
+			'may_offer': (draft.created_by_id == request.user.pk
+			              or is_board_member(request.user)),
+		})
 	return render(request, 'drafts.html', {
+		'rows': rows,
 		'drafts': drafts,
 		'draft_count': drafts.count(),
 		'mine': sum(1 for d in drafts if d.created_by_id == request.user.pk),
@@ -2203,6 +2212,46 @@ def _edit_context(request, table, table_yaml, base):
 
 
 @login_required
+@login_required
+def offer_draft(request, tid):
+	"""Say that a draft is finished, or take that back.
+
+	The author's statement, and the board's for a draft somebody has
+	abandoned. Nothing can work out from outside whether a person is done, and
+	a table with entries in it may still be half-built.
+	"""
+	from .editing import has_entries, may_see, tree_of
+	from .permissions import is_board_member
+
+	table = get_object_or_404(Table, tid=tid)
+	if table.published:
+		raise Http404('This table is already published.')
+	if not may_see(table, request.user):
+		raise Http404()
+	mine = table.created_by_id and table.created_by_id == request.user.pk
+	if not (mine or is_board_member(request.user)):
+		raise Http404()
+
+	if request.method != 'POST':
+		return HttpResponseRedirect(reverse('db:drafts'))
+
+	wanted = request.POST.get('ready') == 'yes'
+	if wanted and not has_entries(tree_of(table.head_revision)
+	                              if table.head_revision else {}):
+		messages.error(request, (
+			'%s has no numbers in it yet, so there is nothing to review. '
+			'Add at least one value; a program can add the rest.' % (table.tid,)))
+		return HttpResponseRedirect(reverse('db:drafts'))
+
+	table.ready_for_review = wanted
+	table.save(update_fields=['ready_for_review'])
+	messages.success(request, (
+		'%s is offered for review; it is in the queue now.' % (table.tid,)
+		if wanted else
+		'%s is back in progress and out of the review queue.' % (table.tid,)))
+	return HttpResponseRedirect(reverse('db:drafts'))
+
+
 def review_queue(request):
 	"""Tables carrying changes nobody has confirmed.
 
@@ -2223,6 +2272,12 @@ def review_queue(request):
 	for table in (Table.objects.exclude(head_revision=None)
 	                           .select_related('head_revision',
 	                                           'reviewed_at_revision')):
+		#A draft asks for attention only when its author says it is finished.
+		#Otherwise every table entered the queue the moment it was created,
+		#and a queue that is mostly half-built tables trains its reader to
+		#skim -- which costs exactly the attention it exists to get.
+		if not table.published and not table.ready_for_review:
+			continue
 		outstanding = unreviewed_params(table)
 		if outstanding is ALL_UNREVIEWED:
 			count, whole = table.number_count, True

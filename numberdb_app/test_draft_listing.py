@@ -282,13 +282,30 @@ class PublishingIsAReview(TestCase):
 		self.chair.groups.add(Group.objects.get_or_create(name=BOARD_GROUP)[0])
 		self.draft = a_table('Proposed table', self.author)
 
-	def test_a_draft_waits_in_the_review_queue(self):
+	def _offer(self, table=None):
+		table = table or self.draft
+		return self.client.post('/drafts/%s/offer' % (table.tid,),
+		                        {'ready': 'yes'})
+
+	def test_a_draft_in_progress_does_not_ask_for_attention(self):
+		#Every draft used to enter the queue the moment it existed, so a title
+		#with no numbers in it sat beside a finished table asking for the same
+		#thing.
+		self.client.force_login(self.chair)
+		self.assertNotIn('Proposed table',
+		                 self.client.get('/review').content.decode())
+
+	def test_an_offered_draft_waits_in_the_review_queue(self):
+		self.client.force_login(self.author)
+		self._offer()
 		self.client.force_login(self.chair)
 		body = self.client.get('/review').content.decode()
 		self.assertIn('Proposed table', body)
 		self.assertIn('waiting to be published', body)
 
 	def test_confirming_publishes_it(self):
+		self.client.force_login(self.author)
+		self._offer()
 		self.client.force_login(self.chair)
 		head = self.draft.head_revision
 		answer = self.client.post('/review/%s' % (self.draft.tid,),
@@ -346,3 +363,95 @@ class PublishingIsAReview(TestCase):
 			HTTP_AUTHORIZATION='Bearer %s' % (token,), HTTP_X_DRAFT='yes')
 		table = Table.objects.get(tid=answer.json()['tid'])
 		self.assertIsNone(table.reviewed_at_revision)
+
+
+class OfferingADraftForReview(TestCase):
+	"""A draft in progress and a draft that is finished are different things,
+	and only its author can tell them apart."""
+
+	def setUp(self):
+		from django.contrib.auth.models import Group
+
+		from .permissions import BOARD_GROUP
+
+		self.author = User.objects.create_user('drafter2', password='pw-123456')
+		self.stranger = User.objects.create_user('bystander', password='pw-123456')
+		self.chair = User.objects.create_user('chair2', password='pw-123456')
+		self.chair.groups.add(Group.objects.get_or_create(name=BOARD_GROUP)[0])
+		self.draft = a_table('Work in progress', self.author)
+
+	def _offer(self, ready='yes'):
+		return self.client.post('/drafts/%s/offer' % (self.draft.tid,),
+		                        {'ready': ready})
+
+	def test_a_new_draft_starts_in_progress(self):
+		self.assertFalse(self.draft.ready_for_review)
+
+	def test_the_author_may_offer_it(self):
+		self.client.force_login(self.author)
+		self._offer()
+		self.draft.refresh_from_db()
+		self.assertTrue(self.draft.ready_for_review)
+
+	def test_the_author_may_take_it_back(self):
+		#Offering is a statement, and a statement can be withdrawn while the
+		#table is still a draft.
+		self.client.force_login(self.author)
+		self._offer()
+		self._offer(ready='no')
+		self.draft.refresh_from_db()
+		self.assertFalse(self.draft.ready_for_review)
+
+	def test_a_stranger_may_not_offer_somebody_elses_draft(self):
+		self.client.force_login(self.stranger)
+		self.assertEqual(self._offer().status_code, 404)
+		self.draft.refresh_from_db()
+		self.assertFalse(self.draft.ready_for_review)
+
+	def test_the_board_may_offer_an_abandoned_one(self):
+		self.client.force_login(self.chair)
+		self._offer()
+		self.draft.refresh_from_db()
+		self.assertTrue(self.draft.ready_for_review)
+
+	def test_an_empty_draft_cannot_be_offered(self):
+		#Publishing would refuse it, so offering it would put a table in the
+		#queue that nobody can act on.
+		from .editing import create_table
+
+		empty = create_table(
+			{'Title': 'Nothing in it yet',
+			 'Data properties': {'type': 'Z[]'},
+			 'Parameters': {'n': {'type': 'Z'}}},
+			author=self.author, published=False)
+		self.client.force_login(self.author)
+		self.client.post('/drafts/%s/offer' % (empty.tid,), {'ready': 'yes'})
+		empty.refresh_from_db()
+		self.assertFalse(empty.ready_for_review)
+
+	def test_the_state_is_shown_on_the_drafts_page(self):
+		self.client.force_login(self.author)
+		self.assertIn('in progress', self.client.get('/drafts').content.decode())
+		self._offer()
+		self.assertIn('offered for review',
+		              self.client.get('/drafts').content.decode())
+
+	def test_the_api_can_propose_and_offer_in_one_step(self):
+		import json
+
+		from .models import ApiKey
+		from .permissions import board_group
+
+		self.author.groups.add(board_group())
+		_, token = ApiKey.issue(self.author, label='one step')
+		answer = self.client.post(
+			'/api/tables',
+			json.dumps({'Title': 'Proposed and offered',
+			            'Data properties': {'type': 'Z[]'},
+			            'Parameters': {'n': {'type': 'Z'}},
+			            'Numbers': [{'params': {'n': '1'}, 'number': '1'}]}),
+			content_type='application/json',
+			HTTP_AUTHORIZATION='Bearer %s' % (token,), HTTP_X_DRAFT='ready')
+		body = answer.json()
+		self.assertFalse(body['published'])
+		self.assertTrue(body['ready_for_review'])
