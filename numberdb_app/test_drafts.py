@@ -229,3 +229,66 @@ class ParametersAreSettledWhileDrafting(DraftBase):
 		spec = tree_of(self.draft.head_revision)['Parameters']['n']
 		self.assertEqual(spec['type'], 'R')
 		self.assertEqual(spec['constraints'], '$n > 0$')
+
+
+class ADraftsAddressFollowsItsTitle(DraftBase):
+	"""The slug of a published table is frozen because links point at it.
+	Nobody can have linked to a draft: it is invisible, in no listing, and
+	answers no search. So while a table is being set up its address follows its
+	title, and freezes at publication when the address starts to matter.
+	"""
+
+	def setUp(self):
+		super().setUp()
+		self.table = create_table(
+			{'Title': 'Fibonacci polynomials',
+			 'Data properties': {'type': 'Z[]'},
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '1'}]},
+			author=self.author, published=False)
+
+	def _retitle(self, title):
+		tree = dict(tree_of(self.table.head_revision))
+		tree['Title'] = title
+		commit_table(self.table, tree, author=self.author,
+		             base=self.table.head_revision, message='renamed')
+		self.table.refresh_from_db()
+
+	def test_a_draft_renamed_gets_the_new_address(self):
+		self.assertEqual(self.table.url, 'Fibonacci_polynomials')
+		self._retitle('Lucas polynomials')
+		self.assertEqual(self.table.url, 'Lucas_polynomials')
+		self.assertEqual(self.table.title, 'Lucas polynomials')
+
+	def test_the_number_never_moves(self):
+		#The whole reason drafts keep their T-number: a generator carries the
+		#identifier of the table it fills, written while the table is still
+		#being set up.
+		before = self.table.tid
+		self._retitle('Something else entirely')
+		self.assertEqual(self.table.tid, before)
+
+	def test_a_published_table_keeps_its_address(self):
+		publish_table(self.table, self.chair)
+		self.table.refresh_from_db()
+		self._retitle('Renamed after publication')
+		self.assertEqual(self.table.url, 'Fibonacci_polynomials')
+		self.assertEqual(self.table.title, 'Renamed after publication')
+
+	def test_a_rename_cannot_take_another_tables_address(self):
+		create_table(
+			{'Title': 'Lucas polynomials',
+			 'Data properties': {'type': 'Z[]'},
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '1'}]},
+			author=self.author)
+		self._retitle('Lucas polynomials')
+		self.assertNotEqual(self.table.url, 'Lucas_polynomials')
+		self.assertTrue(self.table.url.startswith('Lucas_polynomials'))
+
+	def test_renaming_twice_does_not_accumulate_suffixes(self):
+		#It would, if the table's own address counted as a collision with
+		#itself.
+		self._retitle('Chebyshev polynomials')
+		self._retitle('Chebyshev polynomials')
+		self.assertEqual(self.table.url, 'Chebyshev_polynomials')
