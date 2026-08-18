@@ -43,14 +43,52 @@ none was caught by a test.
   approximation. Exact values are stronger and shorter — return them exactly
   rather than as a hundred digits of an integer.
 
-## 2. Size
+## 2. How much to include
 
-See `docs/design/corpus-shape.md` for the measurements. In brief: **500–1000
-entries, 100 significant digits, one or two integer parameters.**
+**A table is a reference, not a dump.** NumberDB exists so that somebody who
+has met a value can find out what it is. That is the test for every entry: is
+this a value somebody could plausibly encounter and want to identify? Nobody
+meets the 500th Chebyshev polynomial and wonders what it is. A hundred of a
+family is a reference; a thousand is a listing of something nobody was looking
+for, and it makes the search results worse for everybody by burying the values
+that are common.
 
-How many entries is a question about how expensive the digits are. Few numbers
-at great precision is as legitimate as many at a hundred; both at once is not.
-The server enforces this with three limits (`numberdb_app/limits.py`):
+So: **include what is common, and stop.** Then check what it costs.
+
+See `docs/design/corpus-shape.md` for what the corpus does. Very roughly, and
+only as a starting point to think from: 500–1000 entries for cheap
+approximations, one or two integer parameters, 100 significant digits.
+
+**Two things move that number down, and they are the usual case.**
+
+*Expensive digits.* Few numbers known to great precision is as legitimate as
+many known to a hundred digits; both at once is not.
+
+*Values that grow.* A polynomial of degree n has about n/2 terms with
+coefficients of O(n) digits, so it costs O(n²) characters and a table running
+to n costs O(n³). Measured on Chebyshev polynomials of the first kind:
+
+    n = 50      570 characters      table 0..50     11 KB
+    n = 100    1892                 table 0..100    69 KB
+    n = 200    6828                 table 0..200   472 KB   over the soft limit
+    n = 500   39674                 table 0..500  6639 KB   over the hard limit
+
+**Aim at half the soft block limit -- about 160 KB -- not at the limit.** A
+table that only just fits cannot be extended by the next person without
+breaching it, and the limit is there to be a margin rather than a target.
+
+For a family of polynomials indexed by degree, **n up to about 100** is the
+house range, and it lands where it should:
+
+    chebyshev_T   0..100     69 KB
+    hermite       0..100    144 KB
+    legendre_P    0..100    164 KB     rational coefficients cost more
+
+Stop earlier when the coefficients are rational or the family grows faster, and
+**measure the largest entry before choosing the range** rather than assuming.
+Beyond that, the question is not what fits but what anybody is looking up.
+
+The server enforces three limits (`numberdb_app/limits.py`):
 
 | | recommended | soft | hard |
 |---|---|---|---|
@@ -58,8 +96,11 @@ The server enforces this with three limits (`numberdb_app/limits.py`):
 | digits | 100 | 500 | 10,000 |
 | entries block | — | 320 KB | 4 MB |
 
-Soft limits may be passed by an author who explains why, recorded in the table
-as `Size exception`. Digit limits do not apply to exact tables.
+A soft limit may be passed by an author who explains why, recorded in the table
+as `Size exception`. A hard limit is not a judgement and cannot be passed. The
+digit limits do not apply to exact tables. The block limit is the one that
+binds for polynomials, and it is a limit on the *whole table*: it admits many
+small entries or a few large ones, and refuses both at once.
 
 ## 3. Types: what a value is, how it is written, what to return
 
@@ -165,6 +206,22 @@ if __name__ == '__main__':
   guard. State the guard as a constant with the measurement behind it: how many
   digits the worst entry actually retained. Do not tune it until the run stops
   complaining.
+
+**Open the file with the commands to run it.** The generator is attached to the
+table and downloaded from it, by somebody who has neither this repository nor a
+way to guess:
+
+```
+Run it with SageMath:
+
+    $ sage -pip install numberdb          # once
+    $ sage -python generate.py            # check the table against this code
+    $ sage -python generate.py --publish  # send it, with NUMBERDB_API_KEY set
+```
+
+Then say what the file does and, where it matters, what was decided and why: a
+working precision that was measured, a convention that had to be chosen, an
+error bound and where it comes from.
 
 ## 5. Rigour: say how well the digits are known
 

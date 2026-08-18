@@ -159,3 +159,76 @@ class NoTemplateSyntaxReachesTheReader(TestCase):
 				for leak in ('{#', '{%', '#}'):
 					self.assertNotIn(leak, body,
 					                 '%s leaks %r' % (path, leak))
+
+
+class EveryGeneratorSaysHowToRunIt(TestCase):
+	"""A generator is downloaded from the table it made, by somebody who has
+	neither this repository nor a way to guess the command.
+
+	Fourteen of fifteen said it and one did not, which is what a convention
+	kept by hand looks like just before it stops being one.
+	"""
+
+	def generators(self):
+		import glob
+		import os
+
+		from django.conf import settings
+
+		found = sorted(glob.glob(os.path.join(settings.BASE_DIR, 'generators',
+		                                      '*', 'generate.py')))
+		self.assertTrue(found, 'no generators found -- is the directory mounted?')
+		return found
+
+	def test_each_one_gives_the_terminal_commands(self):
+		for path in self.generators():
+			with self.subTest(generator=path.split('/')[-2]):
+				with open(path, encoding='utf8') as handle:
+					head = handle.read(4000)
+				self.assertIn('sage -pip install numberdb', head)
+				self.assertIn('sage -python generate.py', head)
+				self.assertIn('--publish', head)
+
+	def test_the_commands_are_in_the_docstring_not_buried(self):
+		#First forty lines, so it is the first thing read rather than a note
+		#somewhere after two pages of reasoning.
+		for path in self.generators():
+			with self.subTest(generator=path.split('/')[-2]):
+				with open(path, encoding='utf8') as handle:
+					head = ''.join(handle.readlines()[:40])
+				self.assertIn('sage -python generate.py', head)
+
+
+class TheSkillSaysWhenToStop(TestCase):
+	"""Size advice that says only "500 to 1000" is wrong for half the corpus.
+
+	The polynomial tables run to n = 50 or 100, because entries that grow make
+	a table expensive cubically -- and, before that, because nobody looks up
+	the 500th Chebyshev polynomial. A skill that gives one number teaches an
+	assistant to fill a table with values nobody was looking for.
+	"""
+
+	def setUp(self):
+		self.body = self.client.get('/skill').content.decode()
+
+	def test_it_says_a_table_is_a_reference_not_a_dump(self):
+		self.assertIn('reference, not a dump', self.body)
+
+	def test_it_says_to_measure_before_choosing_a_range(self):
+		self.assertIn('largest entry', self.body)
+
+	def test_it_gives_the_measured_cost_of_growing_entries(self):
+		#The numbers, so the advice can be checked rather than believed.
+		for measured in ('472 KB', '6639 KB'):
+			with self.subTest(measured=measured):
+				self.assertIn(measured, self.body)
+
+	def test_it_aims_below_the_soft_limit_rather_than_at_it(self):
+		#A table that only just fits cannot be extended without breaching the
+		#limit, which makes the limit a target instead of a margin.
+		self.assertIn('half the soft block limit', self.body)
+		self.assertIn('160 KB', self.body)
+
+	def test_it_requires_a_generator_to_say_how_it_is_run(self):
+		self.assertIn('sage -pip install numberdb', self.body)
+		self.assertIn('Open the file with the commands to run it', self.body)
