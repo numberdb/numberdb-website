@@ -38,10 +38,11 @@ from sage.all import PolynomialRing, ZZ
 
 #: How far the table goes. Kept equal to the Fibonacci polynomials' range: the
 #: two tables are read together, and a reader comparing L_n with F_n should not
-#: find one of them missing. Measured at 0..150: 125 KB, against a soft limit
-#: of 320 KB for the whole entries block, with a largest entry of 2255
-#: characters.
-UP_TO = 150
+#: find one of them missing. A hundred is where the other polynomial tables
+#: stop, and past it an entry stops being something anybody reads -- L_100 is
+#: 1114 characters and L_150 is 2255. Measured at 0..100: 44 KB, against a
+#: soft limit of 320 KB for the whole entries block.
+UP_TO = 100
 
 
 class LucasPolynomials(numberdb.Generator):

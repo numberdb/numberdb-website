@@ -39,7 +39,7 @@ Programs:
           a, b = R(0), R(1)
           for _ in range(n): a, b = b, x*b + a
           return a
-      polynomials = {n: fibonacci_polynomial(n) for n in [0..150]}
+      polynomials = {n: fibonacci_polynomial(n) for n in [0..100]}
 Links:
   Wiki:
     title: 'Wikipedia: Fibonacci polynomials'
