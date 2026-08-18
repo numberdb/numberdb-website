@@ -100,6 +100,7 @@ TEMPLATES = [
                 'django.template.context_processors.request', #allauth
                 'numberdb_app.context_processors.review_access',
                 'numberdb_app.context_processors.site_notice',
+                'numberdb_app.context_processors.drafts_in_progress',
             ],
         },
     },

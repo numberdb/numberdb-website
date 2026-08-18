@@ -35,7 +35,7 @@ Programs:
           a, b = R(2), x
           for _ in range(n): a, b = b, x*b + a
           return a
-      polynomials = {n: lucas_polynomial(n) for n in [0..150]}
+      polynomials = {n: lucas_polynomial(n) for n in [0..100]}
 Links:
   Wiki:
     title: 'Wikipedia: Fibonacci polynomials (Lucas polynomials)'

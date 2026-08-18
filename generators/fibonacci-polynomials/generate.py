@@ -39,14 +39,17 @@ from sage.all import PolynomialRing, ZZ
 
 #: How far the table goes.
 #:
-#: Not chosen for roundness. A polynomial of degree n has about n/2 terms with
-#: coefficients of O(n) digits, so a table running to n costs O(n^3): measured
-#: here, 0..100 is 42 KB, 0..150 is 123 KB and 0..200 is 269 KB, against a soft
-#: limit of 320 KB for the whole entries block. 150 sits in the middle of the
-#: 100-200 KB the database aims at and leaves room for somebody to extend it
-#: without breaching anything, and the largest entry is 2248 characters, which
-#: is still a thing you can look at.
-UP_TO = 150
+#: A polynomial of degree n has about n/2 terms with coefficients of O(n)
+#: digits, so it costs O(n^2) characters and a table running to n costs O(n^3):
+#: measured here, 0..100 is 42 KB, 0..150 is 123 KB and 0..200 is 269 KB,
+#: against a soft limit of 320 KB for the whole entries block.
+#:
+#: A hundred, which is where the other polynomial tables stop -- the Chebyshev
+#: ones run to 100, the Legendre and Hermite ones to 50. The binding limit is
+#: not the size but the reading: F_150 is 2248 characters and F_100 is 1107,
+#: and past that an entry stops being something anybody looks at. A table is a
+#: reference, and the values people meet are at the near end.
+UP_TO = 100
 
 
 class FibonacciPolynomials(numberdb.Generator):

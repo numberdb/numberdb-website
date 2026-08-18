@@ -227,3 +227,38 @@ class CreatingADraftThroughTheApi(TestCase):
 			'/api/table', {'id': tid},
 			HTTP_AUTHORIZATION='Bearer %s' % (token,))
 		self.assertIn('does not exist', json.dumps(answer.json()))
+
+
+class TheNavbarLink(TestCase):
+	"""Somebody about to make a table should not have to know that /drafts
+	exists in order to find out that it is already being made."""
+
+	def setUp(self):
+		self.person = User.objects.create_user('navigator', password='pw-123456')
+
+	def test_a_stranger_is_not_told_that_work_is_happening(self):
+		a_table('Quietly in progress', self.person)
+		body = self.client.get('/').content.decode()
+		self.assertNotIn('/drafts', body)
+
+	def test_a_signed_in_account_gets_the_link_with_a_count(self):
+		a_table('One in progress', self.person)
+		a_table('Two in progress', self.person)
+		self.client.force_login(self.person)
+		body = self.client.get('/').content.decode()
+		self.assertIn('/drafts', body)
+		self.assertIn('Drafts', body)
+		self.assertIn('(2)', body)
+
+	def test_no_link_when_nothing_is_in_progress(self):
+		#A link that is usually a dead end teaches people to stop clicking it.
+		self.client.force_login(self.person)
+		body = self.client.get('/').content.decode()
+		self.assertNotIn('>Drafts', body)
+
+	def test_the_link_is_on_every_page(self):
+		a_table('In progress', self.person)
+		self.client.force_login(self.person)
+		for path in ('/', '/tables', '/help'):
+			with self.subTest(path=path):
+				self.assertIn('/drafts', self.client.get(path).content.decode())

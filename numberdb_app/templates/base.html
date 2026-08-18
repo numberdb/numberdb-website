@@ -106,6 +106,15 @@ concludes the site is broken.
         <!--<a class="navbar-field" href="{% url 'account_login' %}">Login</a>-->
         <a class="navbar-field" href="{% url 'account_login' %}"><img class="profile" src="{% static '/img/profile3.png' %}" alt="Login"></a>
       {% else %}
+        {% if drafts_in_progress %}
+          {% comment %}
+          Only when there is something to look at. A link that is usually a
+          dead end teaches people to stop clicking it, and the point of this
+          one is that somebody about to make a table sees that it is already
+          being made.
+          {% endcomment %}
+          <a class="navbar-field" href="{% url 'db:drafts' %}">Drafts&nbsp;({{ drafts_in_progress }})</a>
+        {% endif %}
         {% if is_board_member %}
           <a class="navbar-field" href="{% url 'db:review-queue' %}">Review</a>
         {% endif %}

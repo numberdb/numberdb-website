@@ -31,3 +31,22 @@ def site_notice(request):
 		#every page is worse than no banner, and this is exactly the moment
 		#the site is least able to afford it.
 		return {'site_notice': None}
+
+def drafts_in_progress(request):
+	"""How many tables are being set up, for the navbar.
+
+	Signed-in accounts only: a draft is invisible to everybody else, and
+	counting them for a passer-by would leak that work is happening even
+	though the count is all they would get.
+
+	One indexed count per page against a table that holds a handful of rows.
+	If drafts ever become numerous enough for this to matter, the count is the
+	wrong thing to show anyway.
+	"""
+	user = getattr(request, 'user', None)
+	if not getattr(user, 'is_authenticated', False):
+		return {'drafts_in_progress': 0}
+
+	from .models import Table
+
+	return {'drafts_in_progress': Table.objects.filter(published=False).count()}
