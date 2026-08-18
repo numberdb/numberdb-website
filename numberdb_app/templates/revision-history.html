@@ -90,6 +90,7 @@ table.revision-list tr.is-head { background: #f2f8ff; }
               {% if group.latest.author %}{{ group.latest.author.username }}
               {% elif group.latest.contributor %}{{ group.latest.contributor.author }}
               {% else %}{{ group.latest.produced_by|default:"unknown" }}{% endif %}
+              {% if group.latest.assisted_by %}<span class="revision-note">with {{ group.latest.assisted_by }}</span>{% endif %}
             </td>
             <td>
               {{ group.latest.message|default:"(no message)" }}
@@ -132,6 +133,7 @@ table.revision-list tr.is-head { background: #f2f8ff; }
             {% if revision.author %}{{ revision.author.username }}
             {% elif revision.contributor %}{{ revision.contributor.author }}
             {% else %}{{ revision.produced_by|default:"unknown" }}{% endif %}
+            {% if revision.assisted_by %}<span class="revision-note">with {{ revision.assisted_by }}</span>{% endif %}
           </td>
           <td>
             {{ revision.message|default:"(no message)" }}

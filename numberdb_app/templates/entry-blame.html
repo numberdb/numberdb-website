@@ -72,6 +72,7 @@ td.blame-from { white-space: nowrap; }
           {% if row.revision.author %}{{ row.revision.author.username }}
           {% elif row.revision.contributor %}{{ row.revision.contributor.author }}
           {% else %}<span class="blame-machine">{{ row.revision.produced_by|default:"unknown" }}</span>{% endif %}
+          {% if row.revision.assisted_by %}<span class="blame-machine">with {{ row.revision.assisted_by }}</span>{% endif %}
           {% if row.revision.run %}
             <span class="blame-machine">(run {{ row.revision.run }})</span>
           {% endif %}
