@@ -343,6 +343,22 @@ class Table(models.Model):
 		related_name = 'reviewed_head_of',
 	)
 
+	#: Whether this draft's author says it is finished and wants it looked at.
+	#:
+	#: A draft is invisible either way. What this changes is whether it asks
+	#: for somebody's attention: without it every draft enters the review
+	#: queue the moment it is created, so a title with no numbers in it yet
+	#: sits beside a finished table asking for the same thing, and a queue
+	#: that is mostly noise trains its reader to skim.
+	#:
+	#: It is the author's statement, not a property of the table -- nothing
+	#: can work out from the outside whether somebody is done. Meaningless on
+	#: a published table, where the review queue tracks changes instead.
+	ready_for_review = models.BooleanField(
+		default = False,
+		db_index = True,
+	)
+
 	#: Whether anybody but its author may see this table.
 	#:
 	#: A draft is a table that is not published yet, and it keeps the T-number

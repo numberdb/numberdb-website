@@ -22,23 +22,51 @@ what you were going to make, it is worth saying so on it before starting.
 
 {% if drafts %}
 <table class="listing">
-  <tr><th>Number</th><th>Title</th><th>Started by</th><th>Started</th><th>Last change</th></tr>
-  {% for draft in drafts %}
+  <tr><th>Number</th><th>Title</th><th>State</th><th>Started by</th><th>Started</th><th>Last change</th><th></th></tr>
+  {% for row in rows %}
   <tr>
-    <td class="table-label-tid">{{ draft.tid }}</td>
+    <td class="table-label-tid">{{ row.table.tid }}</td>
     <td>
-      {% if draft.created_by_id == user.pk or is_board %}
-        <a href="/{{ draft.tid }}">{{ draft.title }}</a>
+      {% if row.mine or is_board %}
+        <a href="/{{ row.table.tid }}">{{ row.table.title }}</a>
       {% else %}
-        {{ draft.title }}
+        {{ row.table.title }}
       {% endif %}
     </td>
-    <td>{{ draft.created_by.username|default:"unknown" }}</td>
-    <td>{{ draft.created|date:"Y-m-d" }}</td>
-    <td>{{ draft.head_revision.created|date:"Y-m-d"|default:"&mdash;" }}</td>
+    <td>
+      {% if row.table.ready_for_review %}
+        <b>offered for review</b>
+      {% else %}
+        in progress
+      {% endif %}
+    </td>
+    <td>{{ row.table.created_by.username|default:"unknown" }}</td>
+    <td>{{ row.table.created|date:"Y-m-d" }}</td>
+    <td>{{ row.table.head_revision.created|date:"Y-m-d"|default:"&mdash;" }}</td>
+    <td>
+      {% if row.may_offer %}
+      <form method="post" action="{% url 'db:offer-draft' row.table.tid %}">
+        {% csrf_token %}
+        {% if row.table.ready_for_review %}
+          <input type="hidden" name="ready" value="no">
+          <button type="submit">Back to in progress</button>
+        {% else %}
+          <input type="hidden" name="ready" value="yes">
+          <button type="submit">Offer for review</button>
+        {% endif %}
+      </form>
+      {% endif %}
+    </td>
   </tr>
   {% endfor %}
 </table>
+
+<p>
+A draft is invisible either way. Offering it for review is a statement that it
+is finished and wants somebody's attention: it puts the table in the
+<a href="{% url 'db:review-queue' %}">review queue</a>, where confirming it is
+what publishes it. Nothing can work that out from outside, which is why it is
+the author who says so.
 {% else %}
 <p><em>Nothing is in progress.</em>
 {% endif %}

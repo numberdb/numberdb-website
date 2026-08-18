@@ -50,6 +50,8 @@ urlpatterns = [
     path('new', views.new_table, name='new-table'),
     #Existence of unpublished tables, so two people do not make the same one.
     path('drafts', views.drafts, name='drafts'),
+    re_path(r'^drafts/(?P<tid>(T\d+))/offer$', views.offer_draft,
+            name='offer-draft'),
     path('review', views.review_queue, name='review-queue'),
     re_path(r'^review/(?P<tid>(T\d+))$', views.review_table, name='review-table'),
     re_path(r'^preview/(?P<tid>(T\d+))$', views.preview, name='preview-table'),

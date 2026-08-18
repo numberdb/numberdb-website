@@ -803,9 +803,13 @@ def create_table(request):
 	#`X-Draft: yes` asks for an unpublished table. Explicit rather than
 	#inferred: creating a table and creating a draft are different acts with
 	#different consequences, and a caller should have to say which it means.
-	wants_draft = ((request.headers.get('X-Draft') or
-	                request.GET.get('draft') or '').strip().lower()
-	               in ('1', 'yes', 'true', 'draft'))
+	asked = (request.headers.get('X-Draft')
+	         or request.GET.get('draft') or '').strip().lower()
+	wants_draft = asked in ('1', 'yes', 'true', 'draft', 'ready')
+	#`X-Draft: ready` proposes a table and offers it in one step, for a run
+	#that creates and fills a table before anybody looks. Plain `yes` leaves it
+	#in progress, which is what a run that means to keep working wants.
+	offer_now = asked == 'ready'
 
 	if wants_draft and not may_create_tables_through_api(user):
 		if not may_create_drafts_through_api(user):
@@ -856,6 +860,9 @@ def create_table(request):
 			produced_by=_produced_by(request, user),
 			message=(request.headers.get('X-Edit-Message') or '')[:300],
 			published=not wants_draft, strict=True)
+		if offer_now and not table.published:
+			table.ready_for_review = True
+			table.save(update_fields=['ready_for_review'])
 	except TooBig as big:
 		return JsonResponse(
 			{'error': 'The table is over a size limit.',
@@ -882,6 +889,7 @@ def create_table(request):
 		'revision': table.head_revision.digest if table.head_revision else None,
 		'reviewed': edits_are_reviewed(user),
 		'published': table.published,
+		'ready_for_review': table.ready_for_review,
 		#So a caller filling several drafts knows where it stands without
 		#having to be refused first.
 		'drafts_held': held,
