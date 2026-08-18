@@ -423,3 +423,75 @@ class TheSameEntryInTwoShapes(TestCase):
 		after = {'Numbers': [{'params': {'D': '-10691'},
 		                      'number': ['-188.5', '1.4562766']}]}
 		self.assertEqual(changed_params(before, after), {'-10691'})
+
+
+class TheQueueIsCheapToLoad(TestCase):
+	"""It used to diff every table's document against its last reviewed one.
+
+	After a run that changed the metadata of every table in the corpus, that
+	was 108 of 109 tables, each costing two YAML parses and a full entry
+	comparison to prove that nothing had changed: forty seconds, and gunicorn
+	killed the worker before the page arrived. The answer was already in the
+	database, on an indexed column that `sync_review_flags` maintains.
+	"""
+
+	def setUp(self):
+		from django.contrib.auth.models import Group, User
+
+		from .editing import create_table
+		from .permissions import BOARD_GROUP
+
+		self.chair = User.objects.create_user('queue_chair', password='pw-123456')
+		self.chair.groups.add(Group.objects.get_or_create(name=BOARD_GROUP)[0])
+		self.tables = [
+			create_table({'Title': 'Queue probe %d' % n,
+			              'Data properties': {'type': 'R'},
+			              'Parameters': {'n': {'type': 'Z'}},
+			              'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}]},
+			             author=self.chair)
+			for n in range(6)]
+		self.client.force_login(self.chair)
+
+	def test_it_asks_the_database_rather_than_the_documents(self):
+		from django.test.utils import CaptureQueriesContext
+		from django.db import connection
+
+		with CaptureQueriesContext(connection) as queries:
+			self.assertEqual(self.client.get('/review').status_code, 200)
+		#A handful of aggregates and one table scan, not a query per table.
+		self.assertLess(len(queries), 30, 'queries: %d' % len(queries))
+
+	def test_a_table_with_unreviewed_entries_is_listed(self):
+		from .editing import commit_table, tree_of
+
+		table = self.tables[0]
+		table.reviewed_at_revision = table.head_revision
+		table.reviewed_by = self.chair
+		table.save(update_fields=['reviewed_at_revision', 'reviewed_by'])
+
+		tree = dict(tree_of(table.head_revision))
+		tree['Numbers'] = [{'params': {'n': '1'}, 'number': '3.15'}]
+		commit_table(table, tree, author=self.chair, base=table.head_revision,
+		             message='changed a digit')
+
+		body = self.client.get('/review').content.decode()
+		self.assertIn(table.title, body)
+
+	def test_a_table_whose_metadata_changed_is_not_listed(self):
+		#The case that made the page slow: a rigour label moved and no digit
+		#did. There is nothing for a reviewer to look at.
+		from .editing import commit_table, tree_of
+
+		table = self.tables[1]
+		table.reviewed_at_revision = table.head_revision
+		table.reviewed_by = self.chair
+		table.save(update_fields=['reviewed_at_revision', 'reviewed_by'])
+
+		tree = dict(tree_of(table.head_revision))
+		tree['Data properties'] = dict(tree['Data properties'],
+		                               rigour='proven')
+		commit_table(table, tree, author=self.chair, base=table.head_revision,
+		             message='labelled')
+
+		body = self.client.get('/review').content.decode()
+		self.assertNotIn(table.title, body)
