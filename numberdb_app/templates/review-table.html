@@ -56,12 +56,24 @@ pre.review-diff { background: #f7f7f7; border: 1px solid #ddd; padding: 0.6rem;
   mid-review cannot be approved by somebody who never saw it.
   {% endcomment %}
   <input type="hidden" name="head" value="{{ head.digest }}">
-  <button type="submit"><b>Confirm these changes</b></button>
+  {% if table_being_reviewed.published %}
+    <button type="submit"><b>Confirm these changes</b></button>
+  {% else %}
+    <button type="submit"><b>Publish {{ table_being_reviewed.tid }}</b></button>
+  {% endif %}
   <a href="{% url 'db:review-queue' %}">Back to the queue</a>
 </form>
 
+{% if table_being_reviewed.published %}
 <p><small>Confirming means somebody competent looked, not that every digit has
 been recomputed. It admits these values back into search by number.</small></p>
+{% else %}
+<p><small>This table is a draft: it is in no listing, answers no search, and
+nobody outside can reach it. Publishing is the same act as confirming &mdash;
+somebody competent looked &mdash; and it does both at once, which is why the
+number and the address it already has do not change. It does not mean every
+digit has been recomputed.</small></p>
+{% endif %}
 
 <h2>Recent revisions</h2>
 <ul>
