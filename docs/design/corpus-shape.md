@@ -162,3 +162,39 @@ are, how they are indexed, where they came from and how well they are known,
 and it says each of those once. Prose that could be a link should be a link;
 prose that could be a formula should be a formula; a claim that could be wrong
 should be one somebody can check without asking the author.
+
+## What making tables 108 and 109 taught
+
+The Fibonacci and Lucas polynomials were the first tables made with the skill
+rather than by hand, and they needed six rounds of correction. Four of those
+were the skill's fault and are now lines in it.
+
+**A definition is not a place to put everything true about the table.** Both
+definitions grew to hold a definition, an alternative indexing, the value at
+x = 1 and a pointer to the companion table. The sections for those already
+existed and the skill never said which was which.
+
+**Reference the database before the encyclopedia.** The Chebyshev polynomials
+were cited as a Wikipedia article by a table whose own database holds them as
+T99. A reader following a reference should land on the numbers.
+
+**Readability binds before the size limit.** The range was first set at n = 150
+because that fitted every limit comfortably. It came down to 100 because
+F_150 is 2248 characters and nobody reads that.
+
+**Notation has to be defined where it is used.** A comment said the values are
+the Lucas sequences U_n(x,-1) and V_n(x,-1) without saying what U and V are.
+
+And two that were not the skill's fault but are worth keeping:
+
+**A suggestion is a hypothesis.** Tagging these as orthogonal polynomials was
+a reasonable idea and false -- Favard's condition fails, and what holds instead
+is an indefinite pairing on the imaginary axis. Checking took twenty minutes
+and the table now says something true and interesting instead of something
+plausible.
+
+**A measurement needs a control that returns a known answer.** The first
+version of that check used Simpson's rule on a singular weight and reported
+-0.023 for a pairing that is exactly zero -- and its control, the Chebyshev
+family, silently returned zero for everything through a coercion error, so it
+agreed with the wrong answer while looking like agreement.

@@ -232,3 +232,47 @@ class TheSkillSaysWhenToStop(TestCase):
 	def test_it_requires_a_generator_to_say_how_it_is_run(self):
 		self.assertIn('sage -pip install numberdb', self.body)
 		self.assertIn('Open the file with the commands to run it', self.body)
+
+
+class TheSkillCarriesWhatTheFirstTablesTaught(TestCase):
+	"""T108 and T109 were made with this skill and needed six rounds of
+	correction. Each round that was the skill's fault, rather than a mistake
+	anybody could make once, is a line in it now."""
+
+	def setUp(self):
+		self.body = self.client.get('/skill').content.decode()
+
+	def test_it_says_to_search_the_database_first(self):
+		#Wikipedia was cited for the Chebyshev polynomials, which are T99.
+		self.assertIn('Look at the database before writing anything', self.body)
+		self.assertIn('lands on the numbers', self.body)
+
+	def test_it_says_where_each_thing_goes(self):
+		#The definitions grew to hold conventions, caveats and cross-links.
+		self.assertIn('Where each thing goes', self.body)
+		for section in ('Definition', 'Comments', 'Formulas', 'Similar tables',
+		                'References'):
+			with self.subTest(section=section):
+				self.assertIn(section, self.body)
+
+	def test_it_says_notation_must_be_defined(self):
+		#A comment said the values are U_n(x,-1) and never said what U was.
+		self.assertIn('Define notation where you use it', self.body)
+
+	def test_it_puts_readability_before_the_size_limit(self):
+		#150 fitted every limit and was still too long to read.
+		self.assertIn('readability, not size', self.body)
+
+	def test_it_says_a_measurement_needs_a_control(self):
+		#The control returned zero for everything and confirmed nothing.
+		self.assertIn('control', self.body)
+		self.assertIn('answer you already know', self.body)
+
+	def test_it_treats_a_suggestion_as_a_hypothesis(self):
+		#"Tag them as orthogonal polynomials" was reasonable and false.
+		self.assertIn('a hypothesis', self.body)
+
+	def test_it_describes_the_four_acts(self):
+		for act in ('X-Draft: yes', 'review queue', 'answer search by number'):
+			with self.subTest(act=act):
+				self.assertIn(act, self.body)
