@@ -30,7 +30,9 @@ edit is already public and is waiting only to be findable by its digits.
       <tr>
         <td><a href="{% url 'db:table_by_url' w.table.url %}">{{ w.table.title|safe }}</a></td>
         <td>
-          {% if w.whole_table %}
+          {% if not w.table.published %}
+            <b>a draft</b>, waiting to be published
+          {% elif w.whole_table %}
             the whole table, never reviewed
           {% else %}
             {{ w.count }} entr{{ w.count|pluralize:"y,ies" }}
@@ -38,7 +40,7 @@ edit is already public and is waiting only to be findable by its digits.
         </td>
         <td>{{ w.head.created }}{% if w.head.author %} by {{ w.head.author }}{% endif %}
             {% if w.head.produced_by %}<em>({{ w.head.produced_by }})</em>{% endif %}</td>
-        <td><a href="{% url 'db:review-table' w.table.tid %}">Review</a></td>
+        <td><a href="{% url 'db:review-table' w.table.tid %}">{% if w.table.published %}Review{% else %}Review and publish{% endif %}</a></td>
       </tr>
     {% endfor %}
   </table>

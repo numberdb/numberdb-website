@@ -262,3 +262,87 @@ class TheNavbarLink(TestCase):
 		for path in ('/', '/tables', '/help'):
 			with self.subTest(path=path):
 				self.assertIn('/drafts', self.client.get(path).content.decode())
+
+
+class PublishingIsAReview(TestCase):
+	"""A draft becomes public by being reviewed, because that is what the two
+	acts have in common: somebody competent has looked.
+
+	Anything else means either a table going public that nobody read, or a
+	reviewer confirming values on a page the public cannot reach.
+	"""
+
+	def setUp(self):
+		from django.contrib.auth.models import Group
+
+		from .permissions import BOARD_GROUP
+
+		self.author = User.objects.create_user('proposer', password='pw-123456')
+		self.chair = User.objects.create_user('reviewer', password='pw-123456')
+		self.chair.groups.add(Group.objects.get_or_create(name=BOARD_GROUP)[0])
+		self.draft = a_table('Proposed table', self.author)
+
+	def test_a_draft_waits_in_the_review_queue(self):
+		self.client.force_login(self.chair)
+		body = self.client.get('/review').content.decode()
+		self.assertIn('Proposed table', body)
+		self.assertIn('waiting to be published', body)
+
+	def test_confirming_publishes_it(self):
+		self.client.force_login(self.chair)
+		head = self.draft.head_revision
+		answer = self.client.post('/review/%s' % (self.draft.tid,),
+		                          {'head': head.digest})
+		self.assertEqual(answer.status_code, 302)
+		self.draft.refresh_from_db()
+		self.assertTrue(self.draft.published)
+		self.assertEqual(self.draft.reviewed_by, self.chair)
+
+	def test_the_number_and_address_do_not_change(self):
+		#The whole reason a draft keeps its T-number from creation: a
+		#generator was written against it while the table was being set up.
+		was_tid, was_url = self.draft.tid, self.draft.url
+		self.client.force_login(self.chair)
+		self.client.post('/review/%s' % (self.draft.tid,),
+		                 {'head': self.draft.head_revision.digest})
+		self.draft.refresh_from_db()
+		self.assertEqual((self.draft.tid, self.draft.url), (was_tid, was_url))
+
+	def test_its_values_answer_search_afterwards(self):
+		from .models import Number
+
+		self.client.force_login(self.chair)
+		self.client.post('/review/%s' % (self.draft.tid,),
+		                 {'head': self.draft.head_revision.digest})
+		self.assertEqual(
+			Number.objects.filter(table=self.draft, reviewed=False).count(), 0)
+
+	def test_a_stranger_cannot_publish(self):
+		self.client.force_login(self.author)
+		answer = self.client.post('/review/%s' % (self.draft.tid,),
+		                          {'head': self.draft.head_revision.digest})
+		self.assertEqual(answer.status_code, 404)
+		self.draft.refresh_from_db()
+		self.assertFalse(self.draft.published)
+
+	def test_a_draft_made_by_a_trusted_account_still_waits(self):
+		#The shortcut that publishes a trusted account's edits as already
+		#reviewed is meant for edits to existing tables. Applied to a draft it
+		#skips the only look anybody gets at a new table.
+		import json
+
+		from .models import ApiKey, Table
+		from .permissions import board_group
+
+		self.chair.groups.add(board_group())
+		_, token = ApiKey.issue(self.chair, label='drafting')
+		answer = self.client.post(
+			'/api/tables',
+			json.dumps({'Title': 'Trusted proposal',
+			            'Data properties': {'type': 'Z[]'},
+			            'Parameters': {'n': {'type': 'Z'}},
+			            'Numbers': [{'params': {'n': '1'}, 'number': '1'}]}),
+			content_type='application/json',
+			HTTP_AUTHORIZATION='Bearer %s' % (token,), HTTP_X_DRAFT='yes')
+		table = Table.objects.get(tid=answer.json()['tid'])
+		self.assertIsNone(table.reviewed_at_revision)

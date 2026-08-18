@@ -863,7 +863,12 @@ def create_table(request):
 	except ValueError as e:
 		return JsonResponse({'error': str(e)}, status=400)
 
-	if table.head_revision and edits_are_reviewed(user):
+	#A trusted account's edits are published as already reviewed, which is what
+	#keeps a queue from filling with work its own reviewer would have to
+	#approve. A *draft* is the exception: reviewing it is what publishing it
+	#means, so marking it reviewed on arrival would skip the only look anybody
+	#gets at a new table. It waits in the queue instead.
+	if table.head_revision and not wants_draft and edits_are_reviewed(user):
 		table.reviewed_at_revision = table.head_revision
 		table.reviewed_by = user
 		table.save(update_fields=['reviewed_at_revision', 'reviewed_by'])

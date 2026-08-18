@@ -2277,11 +2277,36 @@ def review_table(request, tid):
 		table.reviewed_at_revision = head
 		table.reviewed_by = request.user
 		table.save(update_fields=['reviewed_at_revision', 'reviewed_by'])
+
+		#A draft is published by being reviewed, because that is what the two
+		#acts have in common: somebody competent has looked. Anything else
+		#means either a table going public that nobody read, or a reviewer
+		#confirming values on a page the public cannot reach.
+		published_now = False
+		if not table.published:
+			from .editing import publish_table
+
+			try:
+				publish_table(table)
+				published_now = True
+			except ValueError as empty:
+				messages.error(request, str(empty))
+				return HttpResponseRedirect(
+					reverse('db:review-table', kwargs={'tid': table.tid}))
+
 		marked = sync_review_flags(table)
-		messages.success(request, (
-			'Confirmed. %s'
-			% ('Nothing is now waiting on this table.' if not marked
-			   else '%d entries are still marked.' % (marked,))))
+		if published_now:
+			messages.success(request, (
+				'%s is published. %s'
+				% (table.tid,
+				   'Its entries answer search by number from now on.'
+				   if not marked else
+				   '%d entries are still marked.' % (marked,))))
+		else:
+			messages.success(request, (
+				'Confirmed. %s'
+				% ('Nothing is now waiting on this table.' if not marked
+				   else '%d entries are still marked.' % (marked,))))
 		return HttpResponseRedirect(reverse('db:review-queue'))
 
 	outstanding = unreviewed_params(table)
