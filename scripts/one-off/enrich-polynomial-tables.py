@@ -25,16 +25,27 @@ LUCAS_SEQUENCE_COMMENT = (
 	r'$F_n(x) = U_n(x, -1)$ and $L_n(x) = V_n(x, -1)$, which at $x = 1$ are '
 	r'the Fibonacci and the Lucas numbers.')
 
-NOT_ORTHOGONAL = (
-	r'These are <em>not</em> orthogonal polynomials in the usual sense. A '
-	r'three-term recurrence $p_n = (x - c_n)p_{n-1} - k_n p_{n-2}$ gives a '
-	r'family orthogonal for a positive measure on $\mathbb{R}$ exactly when '
-	r'$k_n > 0$ (Favard), and here $k_n = -1$. What holds instead is inherited '
-	r'from the Chebyshev polynomials of the second kind CITE{ChebyshevU} '
-	r'through $F_n(x) = i^{n-1}U_{n-1}(-ix/2)$: along the segment $x = 2it$, '
-	r'$t \in [-1,1]$, with weight $\sqrt{1-t^2}$, distinct $F_m, F_n$ pair to '
-	r'zero while $\langle F_n, F_n\rangle$ alternates between $\pm\pi/2$ &mdash; '
-	r'an indefinite form rather than an inner product.')
+def not_orthogonal(family, chebyshev, relation, weight, norm):
+	"""Why the orthogonal polynomials tag does not belong on these tables.
+
+	Written per family rather than shared, because the Fibonacci polynomials
+	inherit from Chebyshev U and the Lucas polynomials from Chebyshev T, with
+	different weights and different norms. The numbers below came from
+	Gauss-Chebyshev quadrature, which is exact for these weights -- Simpson is
+	not, and gave <L_1,L_3> = -0.023 for a pairing that is exactly zero.
+	"""
+	return (
+		r'These are <em>not</em> orthogonal polynomials in the usual sense. A '
+		r'three-term recurrence $p_n = (x - c_n)p_{n-1} - k_n p_{n-2}$ gives a '
+		r'family orthogonal for a positive measure on $\mathbb{R}$ exactly when '
+		r'$k_n > 0$ (Favard), and here $k_n = -1$. What holds instead is '
+		r'inherited from the Chebyshev polynomials CITE{ChebyshevU} through '
+		+ relation +
+		r': along the segment $x = 2it$, $t \in [-1,1]$, with weight ' + weight +
+		r', distinct ' + family + r' pair to zero, while $\langle ' + norm[0] +
+		r'\rangle$ alternates between $\pm' + norm[1] + r'$ &mdash; an indefinite '
+		r'form rather than an inner product.')
+
 
 SHARED_LINKS = {
 	'WikiLucasSeq': {'title': 'Wikipedia: Lucas sequence',
@@ -77,7 +88,9 @@ FIBONACCI = {
 	},
 	'Comments': {
 		'comment-lucas-sequence': LUCAS_SEQUENCE_COMMENT,
-		'comment-not-orthogonal': NOT_ORTHOGONAL,
+		'comment-not-orthogonal': not_orthogonal(
+			r'$F_m, F_n$', 'U', r'$F_n(x) = i^{n-1}U_{n-1}(-ix/2)$',
+			r'$\sqrt{1-t^2}$', (r'F_n, F_n', r'\pi/2')),
 	},
 	'Links': {
 		'Wiki': {'title': 'Wikipedia: Fibonacci polynomials',
@@ -117,9 +130,9 @@ LUCAS = {
 	},
 	'Comments': {
 		'comment-lucas-sequence': LUCAS_SEQUENCE_COMMENT,
-		'comment-not-orthogonal': NOT_ORTHOGONAL.replace(
-			'$F_n(x) = i^{n-1}U_{n-1}(-ix/2)$',
-			'the same relation the Fibonacci polynomials have'),
+		'comment-not-orthogonal': not_orthogonal(
+			r'$L_m, L_n$', 'T', r'$L_n(x) = 2i^{n}T_{n}(-ix/2)$',
+			r'$1/\sqrt{1-t^2}$', (r'L_n, L_n', r'2\pi')),
 	},
 	'Links': {
 		'Wiki': {'title': 'Wikipedia: Fibonacci polynomials (Lucas polynomials)',
