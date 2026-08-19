@@ -60,9 +60,17 @@ class TheAuditFindsWhatWasMissedBefore(TestCase):
 			         'url': 'https://en.wikipedia.org/wiki/Bernoulli_number'}})
 		self.assertIn('prefer HREF', findings_for(table))
 
-	def test_a_tag_no_other_table_uses(self):
+	def test_a_tag_that_reaches_only_this_table(self):
+		#Not "the tag does not exist": committing a table creates its tags, so
+		#that check would fire never. What matters is the tag's reach.
 		table = a_table(Tags=['a tag of ones own'])
 		self.assertIn('leads nowhere', findings_for(table))
+
+	def test_a_tag_other_tables_use_is_fine(self):
+		a_table(title='First user', Tags=['shared tag'])
+		a_table(title='Second user', Tags=['shared tag'])
+		table = a_table(title='Third user', Tags=['shared tag'])
+		self.assertNotIn('leads nowhere', findings_for(table))
 
 	def test_a_definition_that_has_grown_into_several_things(self):
 		table = a_table(Definition='The thing is defined thus. ' + (
@@ -88,6 +96,8 @@ class TheAuditFindsWhatWasMissedBefore(TestCase):
 		self.assertIn('goes stale', findings_for(table))
 
 	def test_a_clean_table_reports_nothing(self):
+		#Two tables share the tag, so it reaches somewhere.
+		a_table(title='Also tagged', Tags=['polynomial'])
 		table = a_table(
 			Definition='The number three, and nothing else.',
 			Tags=['polynomial'],
