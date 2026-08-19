@@ -116,13 +116,18 @@ class Command(BaseCommand):
 					       % (name, other.title[:40], other.tid, other.url))
 
 		#Tags that lead nowhere.
+		#
+		#Not "the tag does not exist": committing a table creates its tags, so
+		#by the time anything looks, every tag exists and the check fires
+		#never. What matters is how many tables a tag reaches, since a tag is
+		#a way through the corpus and one that reaches a single table is not.
 		from numberdb_app.models import Tag
 
-		known = set(Tag.objects.values_list('name', flat=True))
+		reach = dict(Tag.objects.values_list('name', 'table_count'))
 		for tag in (tree.get('Tags') or []):
-			if tag not in known:
-				yield ('Tags: "%s" is used by no other table; a tag that leads '
-				       'to one table leads nowhere' % tag)
+			if reach.get(tag, 0) <= 1:
+				yield ('Tags: "%s" reaches only this table; a tag that leads '
+				       'nowhere else leads nowhere' % tag)
 
 		#A definition that has grown into several things.
 		definition = (tree.get('Definition') or '').strip()
