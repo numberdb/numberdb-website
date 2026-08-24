@@ -371,11 +371,15 @@ def _sage_rings():
 
     _prime_sage()
 
+    #Which passagemath distribution ships which ring, read out of the wheels
+    #rather than guessed: three of these were guessed first and three were
+    #wrong. An error message that names the wrong package to install is worse
+    #than one that names none.
     wanted = (
         ('ZZ', 'sage.rings.integer_ring', 'ZZ',
-         'integers', 'passagemath-modules'),
+         'integers', 'passagemath-categories'),
         ('QQ', 'sage.rings.rational_field', 'QQ',
-         'rationals', 'passagemath-modules'),
+         'rationals', 'passagemath-categories'),
         ('RIF', 'sage.rings.real_mpfi', 'RIF',
          'real intervals', 'passagemath-flint'),
         ('CIF', 'sage.rings.cif', 'CIF',
@@ -383,7 +387,7 @@ def _sage_rings():
         ('Qp', 'sage.rings.padics.factory', 'Qp',
          'p-adic numbers', 'passagemath-pari'),
         ('PolynomialRing', 'sage.rings.polynomial.polynomial_ring_constructor',
-         'PolynomialRing', 'polynomials', 'passagemath-modules'),
+         'PolynomialRing', 'polynomials', 'passagemath-categories'),
     )
 
     found = []

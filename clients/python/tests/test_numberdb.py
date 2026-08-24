@@ -1728,3 +1728,40 @@ class TheImportIsTheSameWhicheverSageIsPresent(unittest.TestCase):
         for case in ('no Sage', 'SageMath', 'passagemath'):
             with self.subTest(case=case):
                 self.assertIn(case, readme)
+
+
+class TheDistributionNamesAreTheRealOnes(unittest.TestCase):
+    """A missing ring names the passagemath distribution that ships it.
+
+    Read out of the 10.8.9 wheels, because three of the six were guessed first
+    and three of those guesses were wrong -- integers, rationals and
+    polynomials come from passagemath-categories, not passagemath-modules. An
+    error telling somebody to install the wrong package is worse than one that
+    names none.
+    """
+
+    def test_each_ring_names_a_distribution_that_exists(self):
+        import re
+
+        known = {'passagemath-categories', 'passagemath-flint',
+                 'passagemath-pari', 'passagemath-symbolics',
+                 'passagemath-modules', 'passagemath-ntl'}
+        source = open('numberdb/_wire.py').read()
+        named = set(re.findall(r"'(passagemath-[a-z-]+)'", source))
+        self.assertTrue(named, 'no distributions named at all')
+        self.assertLessEqual(named, known, 'unknown distribution named')
+
+    def test_p_adics_are_attributed_to_pari(self):
+        source = open('numberdb/_wire.py').read()
+        padic_line = [l for l in source.splitlines() if 'p-adic numbers' in l]
+        self.assertTrue(padic_line)
+        self.assertIn('passagemath-pari', padic_line[0])
+
+    def test_the_readme_gives_the_same_mapping(self):
+        readme = open('README.md').read()
+        for pair in (('p-adic numbers', 'passagemath-pari'),
+                     ('real and complex intervals', 'passagemath-flint')):
+            with self.subTest(pair=pair):
+                row = [l for l in readme.splitlines() if pair[0] in l]
+                self.assertTrue(row, 'no row for %s' % (pair[0],))
+                self.assertIn(pair[1], row[0])
