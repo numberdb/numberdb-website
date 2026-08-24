@@ -1647,6 +1647,11 @@ class SageIsReachedWithoutSageAll(unittest.TestCase):
     """
 
     def test_the_narrow_modules_are_enough(self):
+        #CI has no Sage of any kind, which is where this first ran red.
+        try:
+            import sage  # noqa: F401
+        except ImportError:
+            self.skipTest('needs SageMath or passagemath')
         import numberdb.sage as sage_layer
 
         ball, interval = sage_layer._ball_and_interval_fields()
@@ -1657,6 +1662,10 @@ class SageIsReachedWithoutSageAll(unittest.TestCase):
         import builtins
         import sys
 
+        try:
+            import sage  # noqa: F401
+        except ImportError:
+            self.skipTest('needs SageMath or passagemath')
         import numberdb.sage as sage_layer
 
         real_import = builtins.__import__
