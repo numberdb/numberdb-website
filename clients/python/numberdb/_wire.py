@@ -307,39 +307,99 @@ def decode(record: Dict[str, Any]) -> Any:
         raise UnsupportedNumberError('malformed %s record: %s' % (kind, error))
 
 
+class _MissingRing:
+    """Stands in for a ring this installation does not have.
+
+    passagemath is modular: `pip install passagemath-symbolics` gives real and
+    complex intervals and polynomials and no p-adics at all. Importing the six
+    rings together meant a missing one broke conversion of every kind --
+    a real number could not be converted because p-adics were not installed,
+    which is nobody's idea of a dependency.
+
+    So each ring is fetched on its own and a missing one becomes this, which
+    says what to install at the point where something actually needs it.
+    """
+
+    def __init__(self, name, distribution):
+        self._name = name
+        self._distribution = distribution
+
+    def __call__(self, *args, **kwargs):
+        raise ImportError(
+            'converting this value needs %s, which this SageMath does not '
+            'have. With passagemath: `pip install %s`.'
+            % (self._name, self._distribution))
+
+    def __repr__(self):
+        return '<%s missing: pip install %s>' % (self._name,
+                                                 self._distribution)
+
+
+def _prime_sage():
+    """Make it safe to import Sage's ring modules directly.
+
+    Importing `sage.rings.integer_ring` before anything has initialised Sage
+    raises "partially initialized module ... most likely due to a circular
+    import" -- on full SageMath, and on passagemath, where it is the first
+    thing that happens because there is no `sage.rings.all` to go through.
+    Importing `sage.rings.integer` first does the initialisation, after which
+    the rest import cleanly. Measured on passagemath-symbolics 10.8.9.
+    """
+    try:
+        import sage.rings.integer            # noqa: F401  (imported for effect)
+    except ImportError:
+        pass
+
+
 def _sage_rings():
     """Sage's number types, however this installation spells them.
 
     Two import paths because there are two Sages. Full SageMath has the
     monolithic ``sage.rings.all``; passagemath, the distribution split into pip
-    packages, does not -- there each name lives in its own module.
+    packages, does not -- there each name lives in its own module, and which
+    modules exist depends on which distributions are installed.
 
-    ``sage.rings.all`` is tried first, and the order matters. In full SageMath,
-    importing ``sage.rings.integer_ring`` before anything else has initialised
-    Sage raises "partially initialized module ... most likely due to a circular
-    import". Going through the package's own aggregate module avoids that,
-    and where it does not exist the ModuleNotFoundError is clean and the
-    specific modules work.
+    A ring that is absent comes back as `_MissingRing`, which raises only if
+    something asks for it. That is the difference between "this installation
+    cannot do p-adics" and "this installation cannot do anything".
     """
     try:
         from sage.rings.all import ZZ, QQ, RIF, CIF, Qp, PolynomialRing
         return ZZ, QQ, RIF, CIF, Qp, PolynomialRing
     except ImportError:
         pass
-    try:
-        from sage.rings.integer_ring import ZZ
-        from sage.rings.rational_field import QQ
-        from sage.rings.real_mpfi import RIF
-        from sage.rings.cif import CIF
-        from sage.rings.padics.factory import Qp
-        from sage.rings.polynomial.polynomial_ring_constructor import \
-            PolynomialRing
-        return ZZ, QQ, RIF, CIF, Qp, PolynomialRing
-    except ImportError:
+
+    _prime_sage()
+
+    wanted = (
+        ('ZZ', 'sage.rings.integer_ring', 'ZZ',
+         'integers', 'passagemath-modules'),
+        ('QQ', 'sage.rings.rational_field', 'QQ',
+         'rationals', 'passagemath-modules'),
+        ('RIF', 'sage.rings.real_mpfi', 'RIF',
+         'real intervals', 'passagemath-flint'),
+        ('CIF', 'sage.rings.cif', 'CIF',
+         'complex intervals', 'passagemath-flint'),
+        ('Qp', 'sage.rings.padics.factory', 'Qp',
+         'p-adic numbers', 'passagemath-pari'),
+        ('PolynomialRing', 'sage.rings.polynomial.polynomial_ring_constructor',
+         'PolynomialRing', 'polynomials', 'passagemath-modules'),
+    )
+
+    found = []
+    for _, module_name, attribute, description, distribution in wanted:
+        try:
+            module = __import__(module_name, fromlist=[attribute])
+            found.append(getattr(module, attribute))
+        except (ImportError, AttributeError):
+            found.append(_MissingRing(description, distribution))
+
+    if all(isinstance(ring, _MissingRing) for ring in found):
         raise ImportError(
             'SageMath is required to convert a NumberDB result to a Sage '
             'object. The value itself is available without Sage: see '
             '.value and .exact_text')
+    return tuple(found)
 
 
 def to_sage(value: Any) -> Any:
