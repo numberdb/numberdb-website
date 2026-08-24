@@ -223,8 +223,14 @@ into an ordinary virtual environment without a full Sage installation:
 $ pip install passagemath-symbolics numberdb
 ```
 
-Nothing here asks for `sage.all`; the specific modules are imported instead,
-which is what makes a narrow install enough.
+Tested against passagemath-symbolics 10.8.9: integers, rationals, real and
+complex intervals and polynomials all convert. **p-adic values do not** --
+that distribution has no p-adic rings, and asking for one raises an error
+saying so rather than failing at import. If you need p-adics, install a fuller
+passagemath than symbolics, or SageMath itself.
+
+Nothing here asks for `sage.all`, and each ring is imported on its own, so a
+distribution that lacks one still converts everything else.
 
 ## What a search returns
 

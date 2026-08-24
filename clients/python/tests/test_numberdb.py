@@ -58,6 +58,48 @@ def _record(kind_record, exact_text='', title='Pi', param='', url='Pi'):
     }
 
 
+def rings_or_skip(test, *names):
+    """The rings the package itself would use, or skip if this Sage lacks them.
+
+    Not `from sage.rings.all import ...`: passagemath has no such module, and a
+    test that reaches for it is testing the harness rather than the package.
+    Going through the package's own loader also means these tests exercise the
+    path a user is on.
+    """
+    try:
+        import sage  # noqa: F401
+    except ImportError:
+        test.skipTest('needs SageMath')
+
+    from numberdb._wire import _MissingRing, _sage_rings
+
+    available = dict(zip(('ZZ', 'QQ', 'RIF', 'CIF', 'Qp', 'PolynomialRing'),
+                         _sage_rings()))
+    chosen = []
+    for name in names:
+        ring = available[name]
+        if isinstance(ring, _MissingRing):
+            test.skipTest('this SageMath has no %s (%r)' % (name, ring))
+        chosen.append(ring)
+    return chosen[0] if len(chosen) == 1 else chosen
+
+
+def sage_all_or_skip(test, *names):
+    """Names from `sage.all`, skipping where there is no `sage.all`.
+
+    A modular passagemath install has no aggregate module. These tests want
+    things like `zeta` that the package never imports itself, so there is
+    nothing to route through the loader -- they simply do not run there.
+    """
+    try:
+        import sage.all as sage_all
+    except ImportError:
+        test.skipTest('this SageMath has no sage.all (modular passagemath)')
+    found = [getattr(sage_all, name) for name in names]
+    return found[0] if len(found) == 1 else found
+
+
+
 class Decoding(unittest.TestCase):
     """A response may select a decoder and nothing else."""
 
@@ -390,11 +432,7 @@ class PAdicNormalForm(unittest.TestCase):
         self.assertEqual(zero.value, 0)
 
     def test_such_a_value_reaches_sage(self):
-        try:
-            import sage  # noqa: F401
-        except ImportError:
-            self.skipTest('needs SageMath')
-        from sage.rings.all import Qp, QQ
+        Qp, QQ = rings_or_skip(self, 'Qp', 'QQ')
         self.assertEqual(_wire.to_sage(_wire.PAdic(5, -1, 1, 19)),
                          Qp(5, 20)(QQ(1) / 5))
 
@@ -414,10 +452,7 @@ class BothPrecisionsAreNamed(unittest.TestCase):
         self.assertEqual(str(_wire.PAdic(5, -1, 1, 19)), '1/5 + O(5^19)')
 
     def test_sage_receives_the_absolute_one(self):
-        try:
-            import sage  # noqa: F401
-        except ImportError:
-            self.skipTest('needs SageMath')
+        rings_or_skip(self, 'Qp')          # a p-adic needs a p-adic ring
         for valuation, absolute in [(-1, 19), (0, 20), (2, 22)]:
             with self.subTest(valuation=valuation):
                 converted = _wire.to_sage(_wire.PAdic(5, valuation, 1, absolute))
@@ -639,7 +674,8 @@ class ExactConversionOfSageValues(unittest.TestCase):
             self.skipTest('needs SageMath')
 
     def test_sage_scalars_convert_exactly(self):
-        from sage.rings.all import QQ, RR, ZZ
+        QQ, ZZ = rings_or_skip(self, 'QQ', 'ZZ')
+        from sage.rings.real_mpfr import RR
         from numberdb._convert import to_exact
         self.assertEqual(to_exact(ZZ(7)), Fraction(7))
         self.assertEqual(to_exact(QQ(2) / 3), Fraction(2, 3))
@@ -647,19 +683,19 @@ class ExactConversionOfSageValues(unittest.TestCase):
 
     def test_a_sage_rational_is_not_mangled_the_way_fraction_mangles_it(self):
         """Fraction(QQ(1)/3) does not raise -- it stores the bound methods."""
-        from sage.rings.all import QQ
+        QQ = rings_or_skip(self, 'QQ')
         from numberdb._convert import to_exact
         self.assertEqual(to_exact(QQ(1) / 3), Fraction(1, 3))
 
     def test_a_sage_polynomial_is_refused_despite_having_a_numerator(self):
-        from sage.rings.all import QQ
+        QQ = rings_or_skip(self, 'QQ')
         from numberdb._convert import to_exact
         ring = QQ['x']
         with self.assertRaises(TypeError):
             to_exact(ring([-1, 1]))
 
     def test_a_sage_p_adic_is_refused_despite_having_a_numerator(self):
-        from sage.rings.all import Qp
+        Qp = rings_or_skip(self, 'Qp')
         from numberdb._convert import to_exact
         with self.assertRaises(TypeError):
             to_exact(Qp(5, 20)(6))
@@ -802,8 +838,7 @@ class OneWrittenFormForApproximateReals(unittest.TestCase):
             self.skipTest('needs SageMath')
 
     def test_every_sage_real_type_is_written_the_same_way(self):
-        from sage.all import (ComplexBallField, ComplexIntervalField,
-                              RealBallField, RealIntervalField, zeta)
+        ComplexBallField, ComplexIntervalField, RealBallField, RealIntervalField, zeta = sage_all_or_skip(self, 'ComplexBallField', 'ComplexIntervalField', 'RealBallField', 'RealIntervalField', 'zeta')
 
         from numberdb._write import to_text
 
@@ -824,7 +859,7 @@ class OneWrittenFormForApproximateReals(unittest.TestCase):
         """`3.14` IS the interval (3.13, 3.15). Sage writes `3.14?` for that;
         the corpus writes it plain, in 36,946 of its 45,834 values, and not one
         of them ends in a question mark."""
-        from sage.all import RealIntervalField, zeta
+        RealIntervalField, zeta = sage_all_or_skip(self, 'RealIntervalField', 'zeta')
 
         from numberdb._write import to_text
 
@@ -834,7 +869,7 @@ class OneWrittenFormForApproximateReals(unittest.TestCase):
 
     def test_exactly_the_digits_asked_for(self):
         """Not a few more because the field happened to be built wider."""
-        from sage.all import RealIntervalField, zeta
+        RealIntervalField, zeta = sage_all_or_skip(self, 'RealIntervalField', 'zeta')
 
         from numberdb._write import to_text
 
@@ -903,7 +938,7 @@ class OneWrittenFormForApproximateReals(unittest.TestCase):
         self.assertIn('+/-', to_text(RealInterval('1', '9'), 5))
 
     def test_the_ball_form_is_available_for_tables_that_use_it(self):
-        from sage.all import RealIntervalField, zeta
+        RealIntervalField, zeta = sage_all_or_skip(self, 'RealIntervalField', 'zeta')
 
         from numberdb._write import to_text
 
@@ -915,7 +950,7 @@ class OneWrittenFormForApproximateReals(unittest.TestCase):
         """`[1.20205690 +/- 2.8e-25]` cut to twenty characters keeps the centre
         and mangles the radius into `+/- 0.00000`, claiming an uncertainty a
         hundred million times too wide."""
-        from sage.all import RealBallField, zeta
+        RealBallField, zeta = sage_all_or_skip(self, 'RealBallField', 'zeta')
 
         from numberdb._write import to_text
 
@@ -926,7 +961,7 @@ class OneWrittenFormForApproximateReals(unittest.TestCase):
     def test_ball_fields_were_refused_outright_before_this(self):
         """Sage names them `Real ball field`, not `Real Ball Field`, so a test
         for 'Ball' matched nothing and every ball raised."""
-        from sage.all import RealBallField
+        RealBallField = sage_all_or_skip(self, 'RealBallField')
 
         self.assertNotIn('Ball', str(RealBallField(53)))
         self.assertIn('ball', str(RealBallField(53)))
