@@ -21,7 +21,11 @@ known".
 
 Install: `pip install numberdb`, or `sage -pip install numberdb` inside
 SageMath. In Sage use `import numberdb.sage as numberdb`, which returns Sage
-objects.
+objects; that works on SageMath and on a modular
+[passagemath](https://github.com/passagemath/passagemath) install alike
+(`pip install passagemath-symbolics numberdb`, which has everything but
+p-adics). Without any Sage, plain `import numberdb` still works and returns
+Python values.
 
 ## 1. Look at the database before writing anything
 

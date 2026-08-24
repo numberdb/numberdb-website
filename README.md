@@ -73,9 +73,12 @@ $ pip install numberdb          # or: sage -pip install numberdb
 ```
 
 In Sage, `import numberdb.sage as numberdb` gives the same calls with Sage
-objects coming back. The package lives in `clients/python/`, is published to
-[PyPI](https://pypi.org/project/numberdb/), and its
-[README](clients/python/README.md) documents every call.
+objects coming back. That works with SageMath and with
+[passagemath](https://github.com/passagemath/passagemath), the modular pip
+distribution -- `pip install passagemath-symbolics numberdb` into a fresh
+environment is enough for everything but p-adics. The package lives in
+`clients/python/`, is published to [PyPI](https://pypi.org/project/numberdb/),
+and its [README](clients/python/README.md) documents every call.
 
 It replaces the old `clients/sage/numberdb-sage-interface.py`, which was
 loaded over the network and called `loads()` on server-supplied bytes; that
