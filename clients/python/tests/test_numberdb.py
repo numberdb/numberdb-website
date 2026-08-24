@@ -1599,3 +1599,53 @@ class VersionFromASourceTree(unittest.TestCase):
             version('numberdb')
         except Exception:
             self.assertTrue(_installed_version().endswith('+source'))
+
+
+class SageIsReachedWithoutSageAll(unittest.TestCase):
+    """`sage.all` imports the whole library.
+
+    That is free in a full SageMath and it is not free with passagemath, which
+    ships Sage as separate pip distributions so a person can install the parts
+    they need into an ordinary virtual environment. This package asks for the
+    specific modules first so that it works on a narrow install, and keeps
+    `sage.all` as a fallback for the circular-import case `_wire` documents.
+    """
+
+    def test_the_narrow_modules_are_enough(self):
+        import numberdb.sage as sage_layer
+
+        ball, interval = sage_layer._ball_and_interval_fields()
+        self.assertEqual(ball(53).precision(), 53)
+        self.assertEqual(interval(53).precision(), 53)
+
+    def test_it_does_not_need_sage_all(self):
+        import builtins
+        import sys
+
+        import numberdb.sage as sage_layer
+
+        real_import = builtins.__import__
+
+        def refuse_sage_all(name, *args, **kwargs):
+            if name == 'sage.all':
+                raise ImportError('sage.all is not installed here')
+            return real_import(name, *args, **kwargs)
+
+        cached = sys.modules.pop('sage.all', None)
+        builtins.__import__ = refuse_sage_all
+        try:
+            ball, interval = sage_layer._ball_and_interval_fields()
+            self.assertEqual(ball(53).precision(), 53)
+        finally:
+            builtins.__import__ = real_import
+            if cached is not None:
+                sys.modules['sage.all'] = cached
+
+    def test_the_error_names_both_ways_to_get_sage(self):
+        import re
+
+        source = open('numberdb/sage.py').read()
+        message = re.search(r"'SageMath is required here[^']*'\s*\n?\s*'[^']*'",
+                            source)
+        self.assertTrue(message, 'the ImportError message moved')
+        self.assertIn('passagemath', message.group(0))

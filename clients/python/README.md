@@ -215,6 +215,17 @@ x^20 + x^15 + x^10 + x^5 + 1
 `import numberdb` never imports Sage, so it starts instantly; a single result
 can be converted on demand with `.sage()` either way.
 
+**[passagemath](https://github.com/passagemath/passagemath) works too.** It
+ships Sage as separate pip distributions, so the parts this package needs go
+into an ordinary virtual environment without a full Sage installation:
+
+```
+$ pip install passagemath-symbolics numberdb
+```
+
+Nothing here asks for `sage.all`; the specific modules are imported instead,
+which is what makes a narrow install enough.
+
 ## What a search returns
 
 A search returns a `SearchResults`: a `list` of `Result` objects, which also

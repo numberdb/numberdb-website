@@ -176,6 +176,36 @@ for _name in __all__:
 del _name, _original
 
 
+def _ball_and_interval_fields():
+    """``RealBallField, RealIntervalField``, without going through `sage.all`.
+
+    `sage.all` imports the whole library. That is free in a full SageMath, and
+    it is not free with passagemath, which ships Sage as separate pip
+    distributions so that a person can install the parts they need into an
+    ordinary virtual environment. Asking for `sage.all` there either drags in
+    far more than this package uses or fails outright on a narrow install.
+
+    The specific modules are tried first for that reason, and `sage.all` is
+    kept as the fallback because importing a submodule before anything has
+    initialised Sage can raise "partially initialized module" -- the same
+    circular-import problem `_wire.py` documents, with the order reversed
+    because these two modules are safe to reach directly.
+    """
+    try:
+        from sage.rings.real_arb import RealBallField
+        from sage.rings.real_mpfi import RealIntervalField
+        return RealBallField, RealIntervalField
+    except ImportError:
+        pass
+    try:
+        from sage.all import RealBallField, RealIntervalField
+        return RealBallField, RealIntervalField
+    except ImportError:
+        raise ImportError(
+            'SageMath is required here. Install SageMath, or passagemath: '
+            '`pip install passagemath-symbolics`.')
+
+
 def assume_accurate(value, ulps, because):
     """A ball around ``value``, of radius ``ulps`` units in its last place.
 
@@ -219,7 +249,7 @@ def assume_accurate(value, ulps, because):
     computation is interval arithmetic the question does not arise, which is
     the strongest practical case for `proven`.
     """
-    from sage.all import RealBallField, RealIntervalField
+    RealBallField, RealIntervalField = _ball_and_interval_fields()
 
     if not because or not str(because).strip():
         raise ValueError(
@@ -281,7 +311,7 @@ def agreeing(compute, at):
     nothing else. Two runs of a wrong algorithm agree perfectly, and so do two
     runs of a library function with a bug.
     """
-    from sage.all import RealIntervalField
+    _, RealIntervalField = _ball_and_interval_fields()
 
     from ._write import bits
 
