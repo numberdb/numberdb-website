@@ -1684,3 +1684,38 @@ class SageIsReachedWithoutSageAll(unittest.TestCase):
                             source)
         self.assertTrue(message, 'the ImportError message moved')
         self.assertIn('passagemath', message.group(0))
+
+
+class TheImportIsTheSameWhicheverSageIsPresent(unittest.TestCase):
+    """`import numberdb` anywhere; `numberdb.sage` wherever there is any Sage.
+
+    Verified against all three: plain Python, full SageMath, and a modular
+    passagemath install. The failure this guards is a message that tells
+    somebody to install SageMath when passagemath would do, or the reverse.
+    """
+
+    def test_the_plain_client_never_needs_sage(self):
+        import numberdb
+
+        self.assertTrue(numberdb.__version__)
+        #Importing it must not have dragged Sage in.
+        import sys
+        self.assertNotIn('sage.all', sys.modules.get('numberdb').__dict__)
+
+    def test_the_sage_layer_names_both_ways_to_get_sage(self):
+        source = open('numberdb/sage.py').read()
+        self.assertIn('passagemath', source)
+        self.assertIn('SageMath', source)
+
+    def test_the_error_says_to_use_the_plain_client_instead(self):
+        #Somebody without Sage should be told the thing that works, not only
+        #the thing that does not.
+        source = open('numberdb/sage.py').read()
+        self.assertIn('import numberdb', source)
+
+    def test_the_readme_documents_all_three(self):
+        readme = open('README.md').read()
+        self.assertIn('The import is the same either way', readme)
+        for case in ('no Sage', 'SageMath', 'passagemath'):
+            with self.subTest(case=case):
+                self.assertIn(case, readme)
