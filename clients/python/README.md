@@ -229,8 +229,33 @@ that distribution has no p-adic rings, and asking for one raises an error
 saying so rather than failing at import. If you need p-adics, install a fuller
 passagemath than symbolics, or SageMath itself.
 
+Install passagemath into a fresh environment, never into an existing SageMath,
+where it would overwrite the installation.
+
 Nothing here asks for `sage.all`, and each ring is imported on its own, so a
 distribution that lacks one still converts everything else.
+
+### The import is the same either way
+
+| | no Sage | SageMath | passagemath |
+|---|---|---|---|
+| `import numberdb` | yes | yes | yes |
+| `import numberdb.sage as numberdb` | says what to install | yes | yes |
+
+`import numberdb` never imports Sage and works anywhere. `numberdb.sage` is the
+same interface returning Sage objects, and it does not care which Sage it
+found; without one it raises an `ImportError` that names both ways to get one.
+So a script that does
+
+```python
+try:
+    import numberdb.sage as numberdb
+except ImportError:
+    import numberdb
+```
+
+runs everywhere, with exact values where Sage is available and plain Python
+values where it is not.
 
 ## What a search returns
 
