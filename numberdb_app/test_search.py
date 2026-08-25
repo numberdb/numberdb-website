@@ -745,3 +745,62 @@ class ATruncatedWordMustStillFindItsTable(TestCase):
 		#so an unstemmed prefix of the whole word would never reach it. Both
 		#forms are asked for, which is why this passes as well.
 		self.assertIn('polynomials', self.found('polynomials'))
+
+
+class ATableIsFoundByItsNumber(TestCase):
+	"""`T12` is how a table is cited, so it is what somebody arrives holding.
+
+	Looking one up directly has always worked -- numberdb.org/T12, and
+	/api/table?id=T12 -- but typing it into the search box found nothing at
+	all, because a number is not a word and the text index has never held one.
+	"""
+
+	def setUp(self):
+		from .editing import create_table
+
+		self.table = create_table(
+			{'Title': 'A table with a number',
+			 'Data properties': {'type': 'R'},
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '2.5'}]})
+
+	def found_titles(self, term):
+		from .search import search_metadata
+
+		_, tables = search_metadata(term)
+		return [t.title for t in tables]
+
+	def test_by_the_number_as_written(self):
+		self.assertIn(self.table.title, self.found_titles(self.table.tid))
+
+	def test_lowercase_too(self):
+		self.assertIn(self.table.title,
+		              self.found_titles(self.table.tid.lower()))
+
+	def test_bare_digits(self):
+		self.assertIn(self.table.title,
+		              self.found_titles(self.table.tid.lstrip('T')))
+
+	def test_a_number_no_table_has_finds_nothing(self):
+		self.assertEqual(self.found_titles('T999999'), [])
+
+	def test_the_dropdown_answers_it_as_well(self):
+		body = self.client.get('/suggestions',
+		                       {'term': self.table.tid}).content.decode()
+		self.assertIn(self.table.title, body)
+
+	def test_a_draft_is_not_returned_by_its_number(self):
+		#It answers no search by name; answering one by number would be the
+		#same disclosure in a different spelling.
+		from .editing import create_table
+
+		draft = create_table(
+			{'Title': 'A draft with a number',
+			 'Data properties': {'type': 'R'},
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '2.5'}]},
+			published=False)
+		self.assertEqual(self.found_titles(draft.tid), [])
+		body = self.client.get('/suggestions',
+		                       {'term': draft.tid}).content.decode()
+		self.assertNotIn('A draft with a number', body)

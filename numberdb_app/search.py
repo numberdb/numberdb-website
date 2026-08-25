@@ -522,6 +522,26 @@ def _looks_like_a_number(term):
 	return ':' in term or '^' in term
 
 
+def _table_by_number(term):
+	"""The table a term names by number, or None.
+
+	Accepts `T12`, `t12` and a bare `12`, because all three are how a table's
+	number gets written, and nothing else.
+
+	A draft is not returned. It answers no search by name, and answering one by
+	number would be the same disclosure in a different spelling.
+	"""
+	from .models import Table
+
+	text = (term or '').strip()
+	if not text:
+		return None
+	digits = text[1:] if text[:1] in 'tT' else text
+	if not digits.isdigit():
+		return None
+	return Table.objects.filter(tid_int=int(digits), published=True).first()
+
+
 def search_metadata(term, limit=METADATA_LIMIT):
 	"""Tags and tables whose text matches the term, best first.
 
@@ -536,6 +556,17 @@ def search_metadata(term, limit=METADATA_LIMIT):
 	from .models import Tag, TableSearch
 
 	term = (term or '').strip()
+
+	#A table's own number, typed straight in. `T12` is how a table is
+	#cited, so it is a thing somebody arrives holding -- and it found
+	#nothing at all, because a number is not a word and the text index
+	#has never held one. Answered directly rather than indexed: it is
+	#exact, there is at most one, and an index would only be a slower
+	#way to ask.
+	numbered = _table_by_number(term)
+	if numbered is not None:
+		return [], [numbered]
+
 	if not term or _looks_like_a_number(term):
 		return [], []
 
