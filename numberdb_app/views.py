@@ -1671,6 +1671,23 @@ def suggestions(request):
 		if i >= 10:
 			return wrap_response(entries)
 		
+	#A table's number, answered directly. The dropdown is a separate query
+	#from `search_metadata`, so it needs telling too -- the same split that
+	#let a draft appear here after `search.py` had stopped showing them.
+	from .search import _table_by_number
+
+	numbered = _table_by_number(term)
+	if numbered is not None and i < 10:
+		entries[i] = {
+			'value': str(i),
+			'label': '',
+			'type': 'table',
+			'title': numbered.title,
+			'url': '/%s' % (numbered.url,),
+			'subtitle': numbered.tid,
+		}
+		i += 1
+
 	#Searching for tables:
 	if ':' not in term and '^' not in term:
 		search_query = full_text_search_query(term)
