@@ -367,7 +367,7 @@ can do with a generator is what it offers:
 
 ```python
 class Zeta(numberdb.Generator):
-    table = 'T42'
+    table = 'T14'          # the table this fills, which must already exist
     parameters = ('n',)
     digits = 100
 
