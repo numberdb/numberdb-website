@@ -142,6 +142,38 @@ jobs:
           print('sage.all is absent, which is the point')
           "
 
+  # The annotations, because the package ships `py.typed` and a user's own
+  # checker reads them. An error here is one they would otherwise find.
+  types:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade mypy
+      - name: Check the package's own annotations
+        run: |
+          cd clients/python
+          mypy
+      # And from outside, which is the only place the difference shows: a name
+      # imported into a module is not part of its interface unless it is
+      # exported deliberately. `numberdb.Fraction` resolves and is Python's,
+      # not ours, so a checker must say so.
+      - name: The public interface is what __all__ says it is
+        run: |
+          cd clients/python
+          python -m pip install --quiet .
+          cat > /tmp/consumer.py <<'PY'
+          import numberdb
+          numberdb.RealInterval("1", "2")   # ours, and exported
+          numberdb.Fraction(1, 3)           # Python's, and must not be
+          PY
+          mypy --no-implicit-reexport /tmp/consumer.py > /tmp/out.txt 2>&1 || true
+          cat /tmp/out.txt
+          grep -q 'does not explicitly export attribute "Fraction"' /tmp/out.txt
+          ! grep -q 'export attribute "RealInterval"' /tmp/out.txt
+
   # And with a full SageMath, which is what most contributors have and what
   # every generator in the repository is written against. The official image
   # rather than an apt or conda install, because it is the same Sage the
@@ -166,7 +198,7 @@ jobs:
           sage -python -m pytest tests -q
 
   build:
-    needs: [test, passagemath, sagemath]
+    needs: [test, types, passagemath, sagemath]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

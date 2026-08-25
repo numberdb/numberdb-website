@@ -33,9 +33,10 @@ cost to the reader.
 import importlib.util
 from typing import Any, Optional, Union
 
+from ._convert import Scalar
 from . import (KINDS, Client, ComplexInterval, NumberDBError, PAdic,
                Polynomial,
-               RateLimitError, RealInterval, Result, Scalar, Searchable,
+               RateLimitError, RealInterval, Result, Searchable,
                SearchResults, Table, Tag, TransportError, UnauthorizedError,
                UnsupportedNumberError, __version__, configure, table, tag)
 #Writing needs no Sage flavour of its own -- values go *in*, and a Sage
