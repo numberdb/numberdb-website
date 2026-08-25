@@ -68,8 +68,8 @@ $ pip install numberdb          # or: sage -pip install numberdb
 
 ```python
 >>> import numberdb
->>> numberdb.search_real_ball(3.14159265, 1e-8)[0].table.title
-'Pi'
+>>> 'Pi' in [r.table.title for r in numberdb.search_real_ball(3.14159265, 1e-8)]
+True
 ```
 
 In Sage, `import numberdb.sage as numberdb` gives the same calls with Sage

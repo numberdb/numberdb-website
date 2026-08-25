@@ -1878,3 +1878,53 @@ class TheSageLayerAcceptsWhateverThePlainOneDoes(unittest.TestCase):
         self.assertLess(lower, upper)
         self.assertAlmostEqual(float(lower), 3.1415, places=4)
         self.assertAlmostEqual(float(upper), 3.1416, places=4)
+
+
+class TheDocumentationIsExecutable(unittest.TestCase):
+    """The README's examples are claims, and claims need running.
+
+    Nobody had ever run them. A maintainer of another project ran three and
+    found a real bug; running the rest found six more, including a `Fraction`
+    used with no import, a key that had been renamed, and two examples that
+    assumed search results come back in a fixed order.
+
+    The examples themselves need the network, so the run belongs where the
+    network is -- `tests/check_documentation.py README.md`. What is checked
+    here is the part that needs nothing: that the harness still finds them,
+    and that the ones deliberately not executed say so.
+    """
+
+    def test_the_readme_still_holds_examples_to_run(self):
+        from tests.check_documentation import examples_from
+
+        blocks = examples_from('README.md')
+        dialects = [dialect for dialect, _ in blocks]
+        self.assertGreater(dialects.count('python'), 10)
+        self.assertGreater(dialects.count('sage'), 3)
+
+    def test_examples_that_cannot_run_say_so(self):
+        #A placeholder key and example.org cannot answer. Marking them is how
+        #the reader knows they are illustrations, and how the checker knows
+        #not to count them as failures.
+        readme = open('README.md').read()
+        for illustration in ("numberdb.Client(api_key='...')",
+                             "base_url='https://example.org/numberdb'"):
+            with self.subTest(illustration=illustration):
+                line = [l for l in readme.splitlines() if illustration in l]
+                self.assertTrue(line, 'the illustration moved')
+                self.assertIn('+SKIP', line[0])
+
+    def test_no_example_names_a_table_by_position(self):
+        #Two did, in two different READMEs, and both said Pi came first. It
+        #does not: the server promises no order, and it returns the elliptic
+        #integral first today.
+        #
+        #Taking [0] is fine where every result carries the same number -- the
+        #`.value` examples do that, and pi is pi whichever table it came from.
+        #What broke was reading a *title* off a position.
+        import re
+
+        readme = open('README.md').read()
+        offenders = re.findall(r'\[0\]\.table\.title', readme)
+        self.assertEqual(offenders, [],
+                         'an example reads a table title off a position')
