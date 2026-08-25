@@ -39,13 +39,58 @@ def sage_preparse(source):
     return preparse(source)
 
 
+def _blocks_in_markdown(text):
+    return re.findall(r'```(?:\w+)?\n(.*?)```', text, re.S)
+
+
+def _blocks_in_html(text):
+    """Code out of a template, unescaped and stripped of markup.
+
+    The site's own pages carry examples too -- the help page shows a whole
+    generator and the reply `verify()` gives -- and they are written as HTML,
+    so `&gt;&gt;&gt;` is what a `>>> ` prompt looks like there. A checker that
+    only reads markdown never sees them, which is how the help page came to
+    tell people to write zeta values into the table for the number 42.
+    """
+    import html as html_module
+
+    def readable(block):
+        #`<br>` is the line break and `&nbsp;` is the indentation, so both
+        #have to go back before doctest sees any of it.
+        block = re.sub(r'<br\s*/?>', '\n', block)
+        block = re.sub(r'<[^>]+>', '', block)
+        block = html_module.unescape(block).replace('\xa0', ' ')
+        #`<br>` sits at the end of a source line, so every break became two.
+        #A blank line ends the expected output in doctest, which would cut
+        #every example off after its first line.
+        return re.sub(r'\n[ \t]*\n', '\n', block)
+
+    #A block can say it is a transcript rather than something to run, with a
+    #comment the reader never sees. The alternative is `# doctest: +SKIP` in
+    #the middle of a help page, which is noise for the person it is written
+    #for.
+    text = re.sub(r'<!--\s*doctest:\s*skip\s*-->\s*<div[^>]*>.*?</div>',
+                  '', text, flags=re.S)
+
+    found = [readable(b) for b in
+             re.findall(r'<pre[^>]*>(.*?)</pre>', text, re.S)]
+    found += [readable(b) for b in
+              re.findall(r'<code[^>]*class="[^"]*table-code[^"]*"[^>]*>(.*?)</code>',
+                         text, re.S)]
+    #Django template syntax is not Python and cannot be run.
+    return [b for b in found if '{%' not in b and '{{' not in b]
+
+
 def examples_from(path):
-    """`(dialect, doctest text)` for each fenced block that holds examples."""
+    """`(dialect, doctest text)` for each block that holds examples."""
     with open(path, encoding='utf8') as handle:
         text = handle.read()
 
+    raw = (_blocks_in_html(text) if path.endswith(('.html', '.htm'))
+           else _blocks_in_markdown(text))
+
     blocks = []
-    for block in re.findall(r'```(?:\w+)?\n(.*?)```', text, re.S):
+    for block in raw:
         if re.search(r'^sage: ', block, re.M):
             blocks.append(('sage', block))
         elif re.search(r'^>>> ', block, re.M):

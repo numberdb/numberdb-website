@@ -274,12 +274,12 @@ reason is in the document, because a warning shown to nobody is not a limit.
 
 <h2>What the answers look like</h2>
 
-<pre class="api-code">$ curl -X POST https://numberdb.org/api/table/42/entries \
+<pre class="api-code">$ curl -X POST https://numberdb.org/api/table/14/entries \
     -H "Authorization: Bearer $NUMBERDB_API_KEY" \
     -H "X-Entries-Mode: upsert" -H "X-Run-Id: zeta-2026-08" \
     --data-binary @entries.yaml
 
-{"tid": "T42", "url": "Zeta_at_integers",
+{"tid": "T14", "url": "Values_of_the_Riemann_zeta_function_at_rational_numbers",
  "revision": "9f2c...", "unchanged": false, "amended": true,
  "entries": 1000, "added": 1, "updated": 0, "reviewed": true}</pre>
 

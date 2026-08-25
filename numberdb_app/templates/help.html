@@ -402,8 +402,13 @@ NumberDB can be searched from Python, and from
 pip install numberdb<br>
 <br>
 &gt;&gt;&gt; import numberdb<br>
-&gt;&gt;&gt; for result in numberdb.search('{n: pi^n for n in [1..5]}'):<br>
-&gt;&gt;&gt; &nbsp;&nbsp;&nbsp;&nbsp;print(result.exact_text, result.table.title)
+&gt;&gt;&gt; found = numberdb.search_by_expression('{n: pi^n for n in [1..5]}')<br>
+&gt;&gt;&gt; for result in sorted(found, key=lambda r: r.table.title):<br>
+...&nbsp;&nbsp;&nbsp;&nbsp;print(result.exact_text[:20], result.table.title)<br>
+3.141592653589793238 Best Sobolev constant for $W^{1,p}(\mathbb{R}^n)$<br>
+3.141592653589793238 Complete elliptic integral of the third kind $\Pi(n,m)$<br>
+3.141592653589793238 Pi<br>
+31.00627668029982017 Volume of the $d$-dimensional unit sphere
 </code>
 </div>
 
@@ -430,23 +435,25 @@ Two questions are worth asking of a table that already exists, and each is one
 call. <b>Has this table drifted from the code that claims to produce it</b>
 &mdash; after the script changed, or the software underneath it did?
 
+<!-- doctest: skip -->
 <div class="code-block">
 <code class="table-code">
 &gt;&gt;&gt; report = Zeta().verify()&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#888"># ten entries, spread through the table</span><br>
 &gt;&gt;&gt; report<br>
-&lt;VerifyReport T42: 10/10 matched, 0 differing, 0 missing, 0 extra&gt;
+&lt;VerifyReport T14: 10/10 matched, 0 differing, 0 missing, 0 extra&gt;
 </code>
 </div>
 
 And when something has drifted, the repair is the report handed straight back,
 so the run recomputes exactly what disagreed and nothing else:
 
+<!-- doctest: skip -->
 <div class="code-block">
 <code class="table-code">
 &gt;&gt;&gt; zeta = Zeta()<br>
 &gt;&gt;&gt; report = zeta.verify()<br>
 &gt;&gt;&gt; if not report.ok:<br>
-&gt;&gt;&gt; &nbsp;&nbsp;&nbsp;&nbsp;zeta.publish(only=report.to_fix())
+...&nbsp;&nbsp;&nbsp;&nbsp;zeta.publish(only=report.to_fix())
 </code>
 </div>
 
@@ -729,7 +736,7 @@ package, write a generator, and send its results with an API key:
 import numberdb.sage as numberdb
 
 class Zeta(numberdb.Generator):
-    table = 'T42'
+    table = 'T14'   # the table this generator fills
     parameters = ('n',)
     type = 'R'
 
