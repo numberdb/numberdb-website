@@ -239,17 +239,18 @@ resolve on it. Creating tables through the API is board-only for that reason.
 So: agree the title, definition, parameters and type with whoever owns the
 database, let them create it, then point a generator at it.
 
-A generator wants a full SageMath. `from sage.all import ...` is how Sage code
-is written and how every generator here is written, and a modular passagemath
-install has no `sage.all` at all -- the specific modules are there, but
-importing one cold raises "cannot import name QQ" until something else has
-initialised Sage. Searching and reading work fine on passagemath; writing a
-generator is the part that wants the whole thing.
+**Name the rings you use, rather than importing `sage.all`.** A modular
+passagemath has no `sage.all`, and the generator below runs unchanged on both
+it and a full SageMath -- verified against the live table it fills. Importing
+`numberdb.sage` first is what makes the direct imports work: a ring module
+imported before anything has initialised Sage raises "cannot import name QQ",
+and that module does the initialising.
 
 ```python
 import sys
-import numberdb.sage as numberdb
-from sage.all import QQ, ComplexBallField
+import numberdb.sage as numberdb          # import this before the rings
+from sage.rings.rational_field import QQ
+from sage.rings.complex_arb import ComplexBallField
 
 WORKING_GUARD = 64          # bits beyond what the digits need, measured
 

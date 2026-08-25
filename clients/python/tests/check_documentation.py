@@ -259,10 +259,11 @@ def check_generator_examples(paths):
                     print('  %s: %s does NOT verify against %s -- %s'
                           % (path, klass.group(1), named.group(1), report))
             except ImportError as trouble:
-                #A generator wants a full SageMath, and says so. On anything
-                #else this is not a failure of the example.
+                #A generator needs some Sage -- full or modular, either will
+                #do now -- and where there is none this is not a failure of
+                #the example.
                 total -= 1
-                print('  %s: %s skipped, needs SageMath (%s)'
+                print('  %s: %s skipped, needs Sage (%s)'
                       % (path, klass.group(1), str(trouble)[:60]))
             except Exception as trouble:
                 failed += 1

@@ -84,6 +84,20 @@ if importlib.util.find_spec('sage') is None:
         'SageMath, install passagemath into a fresh environment -- never into '
         'an existing Sage, where it would overwrite the installation.')
 
+from ._wire import _prime_sage
+
+#Initialise Sage as this module loads, so that a caller can import Sage's own
+#rings directly afterwards.
+#
+#`from sage.rings.rational_field import QQ` raises "cannot import name QQ" on a
+#modular passagemath until something else has brought Sage up -- and there is
+#no `sage.all` there to do it. So a generator either opened with `from sage.all
+#import ...`, which only exists in a full SageMath, or carried a line importing
+#a module it never used. Importing this module is now enough, and it costs
+#nothing that was not already being paid: `numberdb.sage` needs Sage to do
+#anything at all.
+_prime_sage()
+
 _sage_client = Client(as_sage=True)
 
 _SAGE_NOTE = """
