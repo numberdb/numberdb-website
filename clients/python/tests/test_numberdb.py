@@ -1971,3 +1971,45 @@ class ImportingTheSageLayerBringsSageUp(unittest.TestCase):
         body = source.split('_sage_client = Client')[0]
         self.assertIn('_prime_sage()', body,
                       'the priming moved out of module scope')
+
+
+class NothingFromTheStandardLibraryIsReExported(unittest.TestCase):
+    """`numberdb.Fraction` resolves, and is not part of the API.
+
+    It resolves because `__init__` imports `Fraction` at module scope and the
+    name leaks; it is not in `__all__`, and it should not be. The package
+    provides types Python has none of -- `RealInterval`, `ComplexInterval`,
+    `PAdic`, `Polynomial` -- and takes Python's own where they exist. A
+    rational is `fractions.Fraction`, imported from where it lives.
+
+    Re-exporting it would read as the package claiming something that is not
+    its own, and would mean `from numberdb import *` quietly rebinding a name
+    a caller may already hold. This test is here so that the accident is not
+    later tidied into a promise.
+    """
+
+    def test_fraction_is_reachable_but_not_public(self):
+        import numberdb
+
+        #Reachable, because the module imports it and Python does not hide it.
+        self.assertTrue(hasattr(numberdb, 'Fraction'))
+        #Not promised.
+        self.assertNotIn('Fraction', numberdb.__all__)
+
+    def test_no_standard_library_type_is_exported(self):
+        import decimal
+        import fractions
+        import numbers
+
+        import numberdb
+
+        borrowed = {'Fraction', 'Decimal', 'Number', 'Rational'}
+        for name in numberdb.__all__:
+            with self.subTest(name=name):
+                self.assertNotIn(name, borrowed,
+                                 '%s belongs to the standard library' % (name,))
+
+    def test_the_readme_imports_it_from_where_it_lives(self):
+        readme = open('README.md').read()
+        self.assertIn('from fractions import Fraction', readme)
+        self.assertNotIn('numberdb.Fraction', readme)
