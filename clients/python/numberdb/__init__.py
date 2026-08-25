@@ -340,7 +340,11 @@ class SearchResults(list):
 
 def table(table_id: Union[int, str],
           client: Optional[Client] = None) -> Dict[str, Any]:
-    """A whole table, as stored. ``table_id`` may be 12 or ``'T12'``.
+    """A whole table, as stored.
+
+    ``table_id`` may be its number -- 12, ``'T12'``, ``'t12'`` -- or the
+    address its title makes, ``'Cyclotomic_polynomials'``, which is what a
+    table's URL ends with and what somebody reading one has to hand.
 
     Returned as the server sends it, a plain dict. Deliberately not wrapped in
     classes: a table's shape is the data format's business, and mirroring it
