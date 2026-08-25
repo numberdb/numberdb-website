@@ -93,16 +93,18 @@ float is not:
 3
 ```
 
-The same term is also read as **words**, against table titles and tag names.
-Those matches arrive as `.tables` and `.tags` rather than in the list itself,
-since they are signposts and not numbers:
+The same term is also read as **words**, against tag names and against the
+whole of each table's document -- its title, definition, comments and formulas,
+not the title alone. Those matches arrive as `.tables` and `.tags` rather than
+in the list itself, since they are signposts and not numbers:
 
 ```python
 >>> found = numberdb.search_text('matrix multiplication')
 >>> len(found)
 0
->>> [table.title for table in found.tables]
-['Exponent of matrix multiplication complexity']
+>>> ('Exponent of matrix multiplication complexity'
+...  in [table.title for table in found.tables])
+True
 >>> [tag.name for tag in found.tags]
 ['matrix multiplication']
 >>> numberdb.tag(found.tags[0].url)['table_count']
@@ -114,8 +116,8 @@ and `if not found:` speak only for the numbers. `total` counts everything the
 term matched, and is the question usually meant:
 
 ```python
->>> found.total
-2
+>>> len(found), found.total > 0
+(0, True)
 >>> if not found.total:
 ...     print('nothing at all')
 ```
