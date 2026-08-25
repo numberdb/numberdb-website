@@ -1843,9 +1843,12 @@ class TheSageLayerAcceptsWhateverThePlainOneDoes(unittest.TestCase):
             import sage  # noqa: F401
         except ImportError:
             self.skipTest('needs SageMath or passagemath')
-        from sage.all import RIF
-
+        #Through the package's own loader, not `sage.all`: a modular
+        #passagemath has no such module, and this test was the last thing in
+        #the suite still asking for it.
         import numberdb.sage as sage_layer
+
+        RIF = rings_or_skip(self, 'RIF')
 
         sent = {}
 
@@ -1928,3 +1931,43 @@ class TheDocumentationIsExecutable(unittest.TestCase):
         offenders = re.findall(r'\[0\]\.table\.title', readme)
         self.assertEqual(offenders, [],
                          'an example reads a table title off a position')
+
+
+class ImportingTheSageLayerBringsSageUp(unittest.TestCase):
+    """So a generator can import Sage's own rings directly afterwards.
+
+    `from sage.rings.rational_field import QQ` raises "cannot import name QQ"
+    on a modular passagemath until something has initialised Sage, and there
+    is no `sage.all` there to do it. That left a generator with two bad
+    choices: open with `from sage.all import ...`, which only a full SageMath
+    has, or carry a line importing a module it never uses.
+
+    Importing `numberdb.sage` is enough now. It costs nothing that was not
+    already being paid, since that module needs Sage to do anything at all.
+    """
+
+    def test_a_ring_module_imports_directly_afterwards(self):
+        try:
+            import sage  # noqa: F401
+        except ImportError:
+            self.skipTest('needs SageMath or passagemath')
+
+        import numberdb.sage  # noqa: F401
+        from sage.rings.complex_arb import ComplexBallField
+        from sage.rings.rational_field import QQ
+
+        #Sage arithmetic, which is what a generator does. Both modules are
+        #imported because that is the shape a generator has -- the rings it
+        #uses, named -- and importing one ring alone leaves parts of Sage's
+        #coercion unbuilt on a full SageMath.
+        self.assertEqual(str(QQ(1) / QQ(3)), '1/3')
+        self.assertEqual(str(QQ(1) / 3), '1/3')
+        self.assertIn('1.854', str(ComplexBallField(60)(QQ(1) / QQ(2)).elliptic_k()))
+
+    def test_the_priming_happens_at_import_not_on_first_use(self):
+        #Reading it out of the source: by the time a test runs, something else
+        #has usually imported Sage, so observing the effect proves nothing.
+        source = open('numberdb/sage.py').read()
+        body = source.split('_sage_client = Client')[0]
+        self.assertIn('_prime_sage()', body,
+                      'the priming moved out of module scope')
