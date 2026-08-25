@@ -563,6 +563,15 @@ def search_complex_interval(re_lower: Any, re_upper: Optional[Scalar] = None,
                 'give four bounds, or one complex interval. A single %s says '
                 'nothing about how wide it is.' % (type(re_lower).__name__,))
         re_lower, re_upper, im_lower, im_upper = corners
+    elif im_upper is None:
+        raise TypeError(
+            'give four bounds, or one complex interval; re_upper, im_lower '
+            'and im_upper are all needed when the bounds are given apart.')
+    #Narrowed for the reader as much as for the checker: past those two
+    #branches every corner has a value, whichever way it arrived.
+    assert re_upper is not None and im_lower is not None
+    assert im_upper is not None
+
     #Each coordinate bounded on its own, so a large real part cannot cost the
     #imaginary one its precision.
     real = list(bound_interval(to_exact(re_lower, 're_lower'),
@@ -621,6 +630,10 @@ def search_p_adic(prime: Any, order: Optional[int] = None,
         if absolute_precision is None and relative_precision is None:
             absolute_precision = parts['absolute_precision']
 
+    if order is None or unit is None:
+        raise TypeError(
+            'give a prime, an order and a unit, or one p-adic number; an '
+            'order and a unit are both needed when they are given apart.')
     if (absolute_precision is None) == (relative_precision is None):
         raise TypeError('give exactly one of absolute_precision or '
                         'relative_precision')

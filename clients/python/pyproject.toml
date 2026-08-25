@@ -63,3 +63,36 @@ include = ["numberdb*"]
 [tool.setuptools.package-data]
 # Marks the package as carrying inline type information (PEP 561).
 numberdb = ["py.typed"]
+
+[tool.mypy]
+# The package is published with `py.typed`, so a user's own type checker reads
+# these annotations and reports against them. Checking them here means the
+# errors are ours to see rather than theirs.
+python_version = "3.8"
+files = ["numberdb"]
+
+# The rule that makes `__all__` mean something: a name imported into a module
+# is not part of its interface unless it is exported deliberately. Without
+# this, `numberdb.Fraction` would look like part of the API to a checker, and
+# it is Python's, not ours.
+no_implicit_reexport = true
+
+[[tool.mypy.overrides]]
+# SageMath ships no type stubs, and there is nothing to be done about that
+# from here. Every one of these imports is already inside a try/except that
+# handles the absence at runtime.
+module = ["sage.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# PyYAML is optional: a table is read as JSON when it is absent, which is the
+# case in CI. Its stubs are a separate package and not worth requiring.
+module = ["yaml"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# `numberdb.real` exists in the website that shares this file and not in the
+# client package, which is why the import sits in a try/except with a fallback
+# class beside it.
+module = ["numberdb.real"]
+ignore_missing_imports = true

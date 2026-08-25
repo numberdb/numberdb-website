@@ -197,7 +197,10 @@ class RunCache:
 		annotation somebody would then have to explain.
 		"""
 		os.makedirs(os.path.dirname(self.path) or '.', exist_ok=True)
-		row = {'identity': identity, 'entry': dict(entry)}
+		#Annotated because the values are of different kinds: mypy would
+		#otherwise infer the type from the two it can see and refuse the
+		#third.
+		row: Dict[str, Any] = {'identity': identity, 'entry': dict(entry)}
 		if bounded is not None:
 			row['bounded'] = bool(bounded)
 		with open(self.path, 'a', encoding='utf8') as handle:
