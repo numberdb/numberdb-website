@@ -9,11 +9,12 @@ $ pip install numberdb
 
 ```python
 >>> import numberdb
->>> for result in numberdb.search_real_ball(3.14159265, 1e-8):
+>>> for result in sorted(numberdb.search_real_ball(3.14159265, 1e-8),
+...                      key=lambda r: r.table.title):
 ...     print(result.exact_text[:24], '--', result.table.title)
-3.1415926535897932384626 -- Pi
-3.1415926535897932384626 -- Complete elliptic integral of the third kind $\Pi(n,m)$
 3.1415926535897932384626 -- Best Sobolev constant for $W^{1,p}(\mathbb{R}^n)$
+3.1415926535897932384626 -- Complete elliptic integral of the third kind $\Pi(n,m)$
+3.1415926535897932384626 -- Pi
 ```
 
 One number, three places it is known to appear; that is the question this
@@ -28,6 +29,7 @@ counts shown are what numberdb.org answers today.
 works out what it is:
 
 ```python
+>>> from fractions import Fraction
 >>> len(numberdb.search(10))                                  # int
 2
 >>> len(numberdb.search(Fraction(1, 3)))                      # fractions.Fraction
@@ -72,8 +74,9 @@ exactly one.
 this one in `x`, and asking in `y` finds it:
 
 ```python
->>> numberdb.search_polynomial('x^20 + x^15 + x^10 + x^5 + 1')[0].table.title
-'Cyclotomic polynomials'
+>>> [r.table.title for r in
+...  numberdb.search_polynomial('x^20 + x^15 + x^10 + x^5 + 1')]
+['Cyclotomic polynomials']
 >>> numberdb.search_polynomial('y^20 + y^15 + y^10 + y^5 + 1')[0].exact_text
 'x^20 + x^15 + x^10 + x^5 + 1'
 ```
@@ -148,7 +151,7 @@ nothing maps to an empty list.
 
 ```python
 >>> sorted(numberdb.table('T12'))[:6]
-['Comments', 'Data properties', 'Definition', 'Display properties', 'Formulas', 'ID']
+['Comments', 'Data properties', 'Definition', 'Display properties', 'Formulas', 'Keywords']
 >>> sorted(numberdb.tag('matrix+multiplication'))
 ['name', 'number_count', 'table_count', 'tables']
 ```
@@ -173,9 +176,12 @@ A whole interval may be given where the components are expected, since in Sage
 that is what you are holding:
 
 ```python
-sage: numberdb.search_real_interval(RIF(3.1415, 3.1416))
-sage: numberdb.search_complex_interval(CIF(RIF(0, 1), RIF(0, 1)))
-sage: numberdb.search_p_adic(Qp(2)(1, 167))     # brings its own precision
+sage: len(numberdb.search_real_interval(RIF(3.1415, 3.1416))) > 0
+True
+sage: len(numberdb.search_complex_interval(CIF(RIF(0, 1), RIF(0, 1)))) > 0
+True
+sage: len(numberdb.search_p_adic(Qp(2)(1, 167))) > 0     # brings its own precision
+True
 ```
 
 ```python
@@ -341,7 +347,7 @@ that value and nothing else, and its `.exact_text` is there regardless.
 ```python
 >>> for result in numberdb.search_text('3.14159'):
 ...     if result.is_readable:
-...         use(result.value)
+...         value = result.value       # an object of the natural kind
 ...     else:
 ...         print(result.exact_text)   # still perfectly readable
 ```
@@ -577,14 +583,15 @@ $ export NUMBERDB_API_KEY=...
 or, if you must set it in code:
 
 ```python
->>> numberdb.configure(api_key='...')
+>>> numberdb.configure(api_key='...')                 # doctest: +SKIP
+Client(base_url='https://numberdb.org/', api_key=set)
 ```
 
 For more than one server or key in a process, use a client directly:
 
 ```python
->>> client = numberdb.Client(api_key='...')
->>> numberdb.search_text('3.14159', client=client)
+>>> client = numberdb.Client(api_key='...')            # doctest: +SKIP
+>>> numberdb.search_text('3.14159', client=client)    # doctest: +SKIP
 ```
 
 Exceeding the limit raises `numberdb.RateLimitError`, which carries `.retry_after`
@@ -600,8 +607,8 @@ $ export NUMBERDB_URL=http://localhost:8000
 ```
 
 ```python
->>> client = numberdb.Client(base_url='https://example.org/numberdb')
->>> numberdb.search_text('3.14159', client=client)
+>>> client = numberdb.Client(base_url='https://example.org/numberdb')  # doctest: +SKIP
+>>> numberdb.search_text('3.14159', client=client)                    # doctest: +SKIP
 ```
 
 A trailing slash is optional, and a base URL with a path prefix keeps it either
