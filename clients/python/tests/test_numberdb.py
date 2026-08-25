@@ -1789,25 +1789,43 @@ class TheSageLayerAcceptsWhateverThePlainOneDoes(unittest.TestCase):
                'search_complex_ball', 'search_p_adic', 'search_polynomial')
 
     def test_no_wrapper_demands_more_than_the_plain_function(self):
-        import inspect
+        #Read out of the source rather than by importing, so this runs where
+        #there is no Sage at all -- which is where CI runs, and where a test
+        #that imports numberdb.sage goes red for the wrong reason. It did.
+        import ast
 
-        import numberdb
-        import numberdb.sage as sage_layer
+        def required_arguments(path):
+            tree = ast.parse(open(path).read())
+            found = {}
+            for node in tree.body:
+                if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                arguments = node.args
+                positional = arguments.posonlyargs + arguments.args
+                #Defaults bind to the tail of the positional list.
+                without_default = (positional[:len(positional)
+                                              - len(arguments.defaults)]
+                                   if arguments.defaults else positional)
+                names = {a.arg for a in without_default} - {'self'}
+                names |= {a.arg for a, d
+                          in zip(arguments.kwonlyargs, arguments.kw_defaults)
+                          if d is None}
+                found[node.name] = names
+            return found
+
+        plain = required_arguments('numberdb/__init__.py')
+        wrapped = required_arguments('numberdb/sage.py')
 
         for name in self.WRAPPED:
             with self.subTest(function=name):
-                plain = inspect.signature(getattr(numberdb, name))
-                wrapped = inspect.signature(getattr(sage_layer, name))
-
-                def required(signature):
-                    return [n for n, p in signature.parameters.items()
-                            if p.default is inspect.Parameter.empty
-                            and p.kind not in (p.VAR_POSITIONAL, p.VAR_KEYWORD)]
-
+                self.assertIn(name, plain)
+                self.assertIn(name, wrapped)
                 self.assertLessEqual(
-                    set(required(wrapped)), set(required(plain)),
-                    '%s requires arguments in the Sage layer that the plain '
-                    'function makes optional' % (name,))
+                    wrapped[name], plain[name],
+                    '%s requires %s in the Sage layer, which the plain '
+                    'function makes optional -- so the layer meant to accept '
+                    'Sage objects refuses them'
+                    % (name, sorted(wrapped[name] - plain[name])))
 
     def test_the_readme_examples_are_the_ones_covered(self):
         #The three that broke are named here so that dropping the test is a
