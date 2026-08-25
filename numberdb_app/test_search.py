@@ -695,3 +695,53 @@ class MetadataSearch(TestCase):
 		"""Empty test database, so this checks the query executes, not hits."""
 		tags, tables = search_metadata('matrix multiplication')
 		self.assertEqual((list(tags), list(tables)), ([], []))
+
+
+class ATruncatedWordMustStillFindItsTable(TestCase):
+	"""The search bar found "Cyclotomic" and not "Chebyshev".
+
+	The last word of a query is asked for as a prefix, so the dropdown works
+	while somebody is typing, and it was cut to six characters first. That
+	makes "Chebyshev" into "chebys", and Postgres's English stemmer turns
+	"chebys" into "chebi" -- the rule that takes "bodies" to "bodi". "chebi"
+	is not a prefix of the indexed "chebyshev", so nothing matched. "cyclot"
+	survives the stemmer untouched, which is why the bug looked like nothing
+	at all.
+	"""
+
+	def setUp(self):
+		from .editing import create_table
+
+		for title in ('Chebyshev polynomials of the first kind',
+		              'Cyclotomic polynomials',
+		              'Legendre polynomials',
+		              'Zeros of Bessel functions'):
+			create_table({'Title': title,
+			              'Data properties': {'type': 'R'},
+			              'Parameters': {'n': {'type': 'Z'}},
+			              'Numbers': [{'params': {'n': '1'}, 'number': '1.5'}]})
+
+	def found(self, term):
+		body = self.client.get('/suggestions', {'term': term}).content.decode()
+		return body
+
+	def test_the_word_that_the_stemmer_mangles(self):
+		self.assertIn('Chebyshev', self.found('Chebyshev'))
+
+	def test_while_it_is_still_being_typed(self):
+		#The case the prefix exists for, and the one that fails hardest: six
+		#characters is exactly where "chebys" lands.
+		for typed in ('cheb', 'chebys', 'chebysh'):
+			with self.subTest(typed=typed):
+				self.assertIn('Chebyshev', self.found(typed))
+
+	def test_the_words_that_always_worked_still_do(self):
+		for term in ('Cyclotomic', 'Legendre', 'Bessel'):
+			with self.subTest(term=term):
+				self.assertIn(term, self.found(term))
+
+	def test_a_word_the_stemmer_shortens_in_the_index(self):
+		#The opposite failure: the index holds "polynomi" for "polynomials",
+		#so an unstemmed prefix of the whole word would never reach it. Both
+		#forms are asked for, which is why this passes as well.
+		self.assertIn('polynomials', self.found('polynomials'))
