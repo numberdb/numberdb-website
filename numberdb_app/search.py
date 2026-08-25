@@ -486,7 +486,26 @@ def full_text_query(term):
 	def quoted(word):
 		return "'%s'" % (word.replace("'", "''"),)
 
-	prefix = SearchQuery('%s:*' % (quoted(words[-1][:6]),), search_type='raw')
+	#The prefix is asked for twice, stemmed and unstemmed, because neither
+	#alone is right.
+	#
+	#Stemmed alone loses words the stemmer rewrites when they are cut short:
+	#"Chebyshev" truncated to "chebys" stems to "chebi" -- the rule that takes
+	#"bodies" to "bodi" -- and "chebi" is not a prefix of the indexed
+	#"chebyshev", so the search bar found nothing for it while finding
+	#"Cyclotomic" perfectly well, since "cyclot" survives untouched.
+	#
+	#Unstemmed alone loses the opposite case: the vector holds "polynomi" for
+	#"polynomials", and a plain "polynomials" prefix never reaches it.
+	#
+	#Either match is a match, so both are asked and the results are OR-ed.
+	#The truncation is kept for the unstemmed half, where it is what makes the
+	#dropdown work while somebody is still typing, and dropped from the
+	#stemmed half, where it was doing the damage.
+	last = words[-1]
+	prefix = (SearchQuery('%s:*' % (quoted(last),), search_type='raw')
+	          | SearchQuery('%s:*' % (quoted(last[:6]),), search_type='raw',
+	                        config='simple'))
 	if len(words) == 1:
 		return prefix
 	earlier = ' & '.join(quoted(word) for word in words[:-1])

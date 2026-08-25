@@ -1675,7 +1675,15 @@ def suggestions(request):
 	if ':' not in term and '^' not in term:
 		search_query = full_text_search_query(term)
 		rank = SearchRank(F('search_vector'), search_query)
-		query_tables = TableSearch.objects.annotate(rank=rank).filter(rank__gte=0.01).order_by('-rank')[:(10-i)]
+		#Published only. `search.py` has filtered this since drafts existed --
+		#"drafts are their author's until published, so they do not answer a
+		#search by name any more than they answer one by number" -- and this
+		#older dropdown was not changed with it, so an anonymous request for
+		#"Fibonacci" was answered with two unpublished tables, their titles,
+		#their addresses and how many entries they held.
+		query_tables = (TableSearch.objects.filter(table__published=True)
+		                .annotate(rank=rank).filter(rank__gte=0.01)
+		                .order_by('-rank')[:(10-i)])
 		
 		#OLD: Simpler query:
 		#query_tables = TableSearch.objects.filter(search_vector = term)[:(10-i)]

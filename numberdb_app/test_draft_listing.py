@@ -455,3 +455,38 @@ class OfferingADraftForReview(TestCase):
 		body = answer.json()
 		self.assertFalse(body['published'])
 		self.assertTrue(body['ready_for_review'])
+
+
+class ADraftAnswersNoSearch(TestCase):
+	"""A draft is invisible, and that has to include the search box.
+
+	`search.py` had this from the start. The suggestions dropdown -- older,
+	and a separate query -- did not, so an anonymous request for "Fibonacci"
+	came back with two unpublished tables, their titles, their addresses and
+	how many entries they held. The page behind them was properly refused,
+	which made the leak quieter rather than smaller.
+	"""
+
+	def setUp(self):
+		self.author = User.objects.create_user('hidden', password='pw-123456')
+		self.draft = a_table('Quite unpublished Zebras', self.author)
+		self.published = a_table('Quite published Zebras', self.author)
+		from .editing import publish_table
+
+		publish_table(self.published)
+
+	def test_the_dropdown_does_not_name_a_draft(self):
+		body = self.client.get('/suggestions', {'term': 'Zebras'}).content.decode()
+		self.assertIn('Quite published Zebras', body)
+		self.assertNotIn('Quite unpublished Zebras', body)
+
+	def test_the_search_page_does_not_name_a_draft(self):
+		body = self.client.get('/', {'q': 'Zebras'}).content.decode()
+		self.assertNotIn('Quite unpublished Zebras', body)
+
+	def test_not_even_for_its_own_author(self):
+		#Not a permission question: the index is public, and a draft that
+		#appears for one signed-in person appears in a cache for everybody.
+		self.client.force_login(self.author)
+		body = self.client.get('/suggestions', {'term': 'Zebras'}).content.decode()
+		self.assertNotIn('Quite unpublished Zebras', body)
