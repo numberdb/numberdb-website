@@ -31,7 +31,7 @@ cost to the reader.
 """
 
 import importlib.util
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from . import (KINDS, Client, ComplexInterval, NumberDBError, PAdic,
                Polynomial,
@@ -128,8 +128,13 @@ def search_rational(numerator: Scalar, denominator: Scalar = 1,
     return _search_rational(numerator, denominator, client=_flavoured(client))
 
 
-def search_real_interval(lower: Scalar, upper: Scalar,
+def search_real_interval(lower: Any, upper: Optional[Scalar] = None,
                          client: Optional[Client] = None) -> SearchResults:
+    #The signature mirrors the plain one deliberately. Narrowing it here --
+    #`upper` required, forwarded positionally -- meant the Sage layer refused
+    #a whole RIF element while the plain package accepted it, which is exactly
+    #backwards: in Sage the interval is what you are holding. Reported from
+    #outside, against the examples in this package's own README.
     return _search_real_interval(lower, upper, client=_flavoured(client))
 
 
@@ -138,8 +143,10 @@ def search_real_ball(center: Scalar, radius: Scalar,
     return _search_real_ball(center, radius, client=_flavoured(client))
 
 
-def search_complex_interval(re_lower: Scalar, re_upper: Scalar,
-                            im_lower: Scalar, im_upper: Scalar,
+def search_complex_interval(re_lower: Any,
+                            re_upper: Optional[Scalar] = None,
+                            im_lower: Optional[Scalar] = None,
+                            im_upper: Optional[Scalar] = None,
                             client: Optional[Client] = None) -> SearchResults:
     return _search_complex_interval(re_lower, re_upper, im_lower, im_upper,
                                     client=_flavoured(client))
@@ -151,7 +158,8 @@ def search_complex_ball(re_center: Scalar, im_center: Scalar, radius: Scalar,
                                 client=_flavoured(client))
 
 
-def search_p_adic(prime: int, order: int, unit: int,
+def search_p_adic(prime: Any, order: Optional[int] = None,
+                  unit: Optional[int] = None,
                   absolute_precision: Optional[int] = None,
                   relative_precision: Optional[int] = None,
                   client: Optional[Client] = None) -> SearchResults:
