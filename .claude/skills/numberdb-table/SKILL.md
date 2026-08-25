@@ -239,6 +239,12 @@ resolve on it. Creating tables through the API is board-only for that reason.
 So: agree the title, definition, parameters and type with whoever owns the
 database, let them create it, then point a generator at it.
 
+A generator wants a full SageMath. `from sage.all import ...` is how Sage code
+is written and how every generator here is written, and a modular passagemath
+install has no `sage.all` at all -- the specific modules are there, but
+importing one cold raises "cannot import name QQ" until something else has
+initialised Sage. Searching and reading work fine on passagemath; writing a
+generator is the part that wants the whole thing.
 
 ```python
 import sys

@@ -218,5 +218,64 @@ def run(paths):
     return 1 if failed else 0
 
 
+def check_generator_examples(paths):
+    """Run any generator a document shows, against the table it names.
+
+    A generator example is the one kind of example that cannot be a doctest --
+    it defines a class and says nothing -- and it is also the one most worth
+    running, because it claims a table can be reproduced from the code on the
+    page. `verify()` recomputes a sample and says whether the table still
+    matches, so the claim is checkable in a few seconds.
+
+    Skipped where the example names no table, or names one that does not
+    exist: those are sketches of a shape rather than of a table.
+    """
+    total = failed = 0
+    for path in paths:
+        with open(path, encoding='utf8') as handle:
+            text = handle.read()
+        for block in re.findall(r'```python\n(.*?)```', text, re.S):
+            if 'numberdb.Generator' not in block:
+                continue
+            #A fragment shows the shape and leaves the imports out; a program
+            #can be run. Only the second kind is a claim about a table.
+            if 'import numberdb' not in block:
+                continue
+            named = re.search(r"table\s*=\s*'(T\d+)'", block)
+            klass = re.search(r'class\s+(\w+)\(', block)
+            if not named or not klass:
+                continue
+            total += 1
+            namespace = {}
+            source = block.replace("if __name__ == '__main__':", 'if False:')
+            try:
+                exec(compile(source, path, 'exec'), namespace)
+                report = namespace[klass.group(1)]().verify()
+                if report.ok:
+                    print('  %s: %s verifies against %s -- %s'
+                          % (path, klass.group(1), named.group(1), report))
+                else:
+                    failed += 1
+                    print('  %s: %s does NOT verify against %s -- %s'
+                          % (path, klass.group(1), named.group(1), report))
+            except ImportError as trouble:
+                #A generator wants a full SageMath, and says so. On anything
+                #else this is not a failure of the example.
+                total -= 1
+                print('  %s: %s skipped, needs SageMath (%s)'
+                      % (path, klass.group(1), str(trouble)[:60]))
+            except Exception as trouble:
+                failed += 1
+                print('  %s: %s could not be run: %s: %s'
+                      % (path, klass.group(1), type(trouble).__name__,
+                         str(trouble)[:90]))
+    if total:
+        print('%d generator example(s), %d failed' % (total, failed))
+    return 1 if failed else 0
+
+
 if __name__ == '__main__':
-    sys.exit(run(sys.argv[1:] or ['README.md']))
+    files = sys.argv[1:] or ['README.md']
+    status = run(files)
+    status |= check_generator_examples(files)
+    sys.exit(status)

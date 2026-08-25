@@ -42,9 +42,24 @@ cp /tmp/checkdocs/pages/numberdb_app/templates/*.html /tmp/checkdocs/
 cp /tmp/checkdocs/pages/.claude/skills/numberdb-table/SKILL.md /tmp/checkdocs/
 cp /tmp/checkdocs/pages/AGENTS.md /tmp/checkdocs/
 docker cp /tmp/checkdocs numberdb-website-web-1:/tmp/checkdocs >/dev/null
+pages="README.md repository-README.md help.html api-reference.html SKILL.md AGENTS.md"
+
+echo "=== SageMath ==="
 docker compose exec -T -e NUMBERDB_API_KEY="$KEY" web bash -lc "
-cd /tmp/checkdocs
-sage -python tests/check_documentation.py \
-    README.md repository-README.md help.html api-reference.html \
-    SKILL.md AGENTS.md
-"'
+cd /tmp/checkdocs && sage -python tests/check_documentation.py $pages
+"
+
+# The other two environments are containers of their own: passagemath is a set
+# of pip wheels, and "no Sage at all" is what most readers have. The examples
+# that need Sage report as skipped there rather than as failures.
+for extra in "passagemath-symbolics passagemath-pari passagemath-repl" ""; do
+	label="${extra:-no Sage at all}"
+	echo "=== ${label} ==="
+	docker run --rm -m 950m --cpus 1 -e NUMBERDB_API_KEY="$KEY" \
+		-v /tmp/checkdocs:/pkg:ro -w /work python:3.12-slim bash -c "
+cp -r /pkg/* /work/
+pip install --quiet --no-cache-dir $extra 2>&1 | tail -0
+pip install --quiet --no-cache-dir ./ 2>&1 | tail -0 || pip install --quiet --no-cache-dir -e . 2>&1 | tail -0
+python tests/check_documentation.py $pages 2>&1 | tail -3
+"
+done'

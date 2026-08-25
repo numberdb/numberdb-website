@@ -147,3 +147,90 @@ class TheHelpPageNamesRealPackageThings(TestCase):
 		for mentioned in sorted(self.mentioned()):
 			with self.subTest(name=mentioned):
 				self.assertIn(mentioned, names)
+
+
+class TheReferenceKeepsUpWithTheCode(TestCase):
+	"""Checks that derive from the source rather than from a list kept by hand.
+
+	A list of headers written into a test documents what somebody thought of
+	on the day. Reading them out of `api.py` means a header added tomorrow
+	fails this until the reference mentions it, which is the only version of
+	this check that keeps working.
+	"""
+
+	def setUp(self):
+		import os
+
+		from django.conf import settings
+
+		self.page = self.client.get('/api/docs').content.decode()
+		with open(os.path.join(settings.BASE_DIR, 'numberdb_app', 'api.py'),
+		          encoding='utf8') as handle:
+			self.source = handle.read()
+
+	def headers_read_by_the_code(self):
+		import re
+
+		#`request.headers.get('X-...')`, however it is spelled.
+		found = set(re.findall(r"headers\.get\(\s*'(X-[A-Za-z-]+)'", self.source))
+		found |= set(re.findall(r'headers\.get\(\s*"(X-[A-Za-z-]+)"', self.source))
+		return found
+
+	def test_there_are_headers_to_check(self):
+		self.assertGreaterEqual(len(self.headers_read_by_the_code()), 5)
+
+	def test_every_header_the_code_reads_is_documented(self):
+		for header in sorted(self.headers_read_by_the_code()):
+			with self.subTest(header=header):
+				self.assertIn(header, self.page,
+				              '%s changes what the API does and is not in the '
+				              'reference' % (header,))
+
+	def test_no_header_is_documented_that_the_code_ignores(self):
+		import re
+
+		documented = set(re.findall(r'X-[A-Za-z-]+', self.page))
+		#Response headers a caller reads rather than sends.
+		documented -= {'X-Frame-Options', 'X-Content-Type-Options'}
+		for header in sorted(documented):
+			with self.subTest(header=header):
+				self.assertIn(header, self.headers_read_by_the_code(),
+				              '%s is documented and nothing reads it'
+				              % (header,))
+
+
+class TheDocumentedExamplesAreStillBeingChecked(TestCase):
+	"""`scripts/check-docs.sh` runs every example in every document.
+
+	It can only run what it can find, and it finds examples by their markup.
+	A page restructured so the harness stops seeing its examples looks exactly
+	like a page with no examples -- so the count is asserted here, where a
+	silent drop to zero fails instead of passing.
+	"""
+
+	def blocks_in(self, relative):
+		import os
+		import sys
+
+		from django.conf import settings
+
+		tests = os.path.join(settings.BASE_DIR, 'clients', 'python', 'tests')
+		if tests not in sys.path:
+			sys.path.insert(0, tests)
+		from check_documentation import examples_from
+
+		return examples_from(os.path.join(settings.BASE_DIR, relative))
+
+	def test_the_help_page_still_offers_examples(self):
+		blocks = self.blocks_in('numberdb_app/templates/help.html')
+		self.assertGreaterEqual(len(blocks), 1,
+		                        'the harness can no longer see the help page examples')
+
+	def test_the_client_readme_still_offers_examples(self):
+		blocks = self.blocks_in('clients/python/README.md')
+		dialects = [dialect for dialect, _ in blocks]
+		self.assertGreaterEqual(dialects.count('python'), 10)
+		self.assertGreaterEqual(dialects.count('sage'), 3)
+
+	def test_the_repository_readme_still_offers_examples(self):
+		self.assertGreaterEqual(len(self.blocks_in('README.md')), 1)
