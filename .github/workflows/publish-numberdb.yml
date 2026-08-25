@@ -107,8 +107,66 @@ jobs:
           cd clients/python
           python -m pytest tests -q
 
+  # The same suite with a Sage present, because the job above has none and so
+  # skips every test that needs one -- which is all of the ones about accepting
+  # Sage objects, and all of the ones about this package working on a modular
+  # install. Those were checked by hand in a container and by nothing
+  # afterwards, so a passagemath regression would have reached PyPI.
+  #
+  # passagemath rather than SageMath because it installs with pip in a minute
+  # or two; a full SageMath does not. `-symbolics` brings the rings and
+  # intervals, `-pari` the p-adics, and the two together are what the README
+  # tells a reader to install.
+  passagemath:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pytest passagemath-symbolics passagemath-pari
+      - name: Run the package's tests against a modular passagemath
+        run: |
+          cd clients/python
+          python -m pytest tests -q
+      - name: A ring imports directly, with no sage.all anywhere
+        run: |
+          cd clients/python
+          python -c "
+          import numberdb.sage as numberdb
+          from sage.rings.rational_field import QQ
+          from sage.rings.complex_arb import ComplexBallField
+          print('rings:', QQ(1) / QQ(3), ComplexBallField(53))
+          import importlib.util
+          assert importlib.util.find_spec('sage.all') is None, 'this is not a modular install'
+          print('sage.all is absent, which is the point')
+          "
+
+  # And with a full SageMath, which is what most contributors have and what
+  # every generator in the repository is written against. The official image
+  # rather than an apt or conda install, because it is the same Sage the
+  # project's own container runs and it needs no build.
+  #
+  # Three jobs because there are three environments a reader can be in, and
+  # each skips what the others cover: plain Python skips everything needing
+  # Sage, passagemath skips nothing but has no `sage.all`, and this one has
+  # `sage.all` and cannot show that the package works without it.
+  sagemath:
+    runs-on: ubuntu-latest
+    container:
+      image: sagemath/sagemath:latest
+      # The image runs as `sage`; the workspace arrives owned by root.
+      options: --user root
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run the package's tests against a full SageMath
+        run: |
+          cd clients/python
+          sage -python -m pip install --quiet pytest
+          sage -python -m pytest tests -q
+
   build:
-    needs: test
+    needs: [test, passagemath, sagemath]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
