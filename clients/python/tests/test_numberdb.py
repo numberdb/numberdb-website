@@ -1765,3 +1765,98 @@ class TheDistributionNamesAreTheRealOnes(unittest.TestCase):
                 row = [l for l in readme.splitlines() if pair[0] in l]
                 self.assertTrue(row, 'no row for %s' % (pair[0],))
                 self.assertIn(pair[1], row[0])
+
+
+class TheSageLayerAcceptsWhateverThePlainOneDoes(unittest.TestCase):
+    """`numberdb.sage` narrowed three signatures and refused Sage objects.
+
+    The plain package already took a whole interval apart -- there is a
+    `_as_real_endpoints` for exactly that -- and the Sage wrapper redeclared
+    the arguments as required pairs and forwarded them positionally. So
+    `numberdb.search_real_interval(RIF(...))` worked and
+    `numberdb.sage.search_real_interval(RIF(...))` raised TypeError, which is
+    backwards: in Sage the interval is the thing you are holding.
+
+    Reported by the passagemath maintainer, against the examples in this
+    package's own README, on both SageMath and passagemath. It was never a
+    passagemath bug.
+    """
+
+    #Every name the Sage layer re-exports as a function of its own.
+    WRAPPED = ('search', 'search_many', 'search_text', 'search_by_expression',
+               'search_integer', 'search_rational', 'search_real_interval',
+               'search_real_ball', 'search_complex_interval',
+               'search_complex_ball', 'search_p_adic', 'search_polynomial')
+
+    def test_no_wrapper_demands_more_than_the_plain_function(self):
+        import inspect
+
+        import numberdb
+        import numberdb.sage as sage_layer
+
+        for name in self.WRAPPED:
+            with self.subTest(function=name):
+                plain = inspect.signature(getattr(numberdb, name))
+                wrapped = inspect.signature(getattr(sage_layer, name))
+
+                def required(signature):
+                    return [n for n, p in signature.parameters.items()
+                            if p.default is inspect.Parameter.empty
+                            and p.kind not in (p.VAR_POSITIONAL, p.VAR_KEYWORD)]
+
+                self.assertLessEqual(
+                    set(required(wrapped)), set(required(plain)),
+                    '%s requires arguments in the Sage layer that the plain '
+                    'function makes optional' % (name,))
+
+    def test_the_readme_examples_are_the_ones_covered(self):
+        #The three that broke are named here so that dropping the test is a
+        #visible act rather than an omission.
+        readme = open('README.md').read()
+        for example in ('search_real_interval(RIF(3.1415, 3.1416))',
+                        'search_complex_interval(CIF(RIF(0, 1), RIF(0, 1)))',
+                        'search_p_adic(Qp(2)(1, 167))'):
+            with self.subTest(example=example):
+                self.assertIn(example, readme)
+
+    def test_a_whole_interval_reaches_the_wire_unpacked(self):
+        #No network: check the request the client would send.
+        try:
+            import sage  # noqa: F401
+        except ImportError:
+            self.skipTest('needs SageMath or passagemath')
+        from sage.all import RIF
+
+        import numberdb.sage as sage_layer
+
+        sent = {}
+
+        class Recorder:
+            """Enough of a client to see what the call would have sent."""
+
+            def for_sage(self):
+                return self
+
+            def request(self, path, parameters):
+                sent['path'] = path
+                sent['parameters'] = parameters
+                return {'results': []}
+
+        sage_layer.search_real_interval(RIF(3.1415, 3.1416), client=Recorder())
+
+        self.assertEqual(sent.get('path'), 'api/lookup')
+
+        #The interval arrived as endpoints, which is the whole point: the
+        #wrapper took it apart rather than refusing it. They travel as exact
+        #rationals -- 7074029114692207/2251799813685248 rather than "3.1415"
+        #-- because that is what the binary endpoint actually is.
+        import json
+        from fractions import Fraction
+
+        record = json.loads(sent['parameters']['number'])
+        self.assertEqual(record['kind'], 'RIF')
+        lower = Fraction(record['lower'])
+        upper = Fraction(record['upper'])
+        self.assertLess(lower, upper)
+        self.assertAlmostEqual(float(lower), 3.1415, places=4)
+        self.assertAlmostEqual(float(upper), 3.1416, places=4)
