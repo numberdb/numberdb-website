@@ -335,11 +335,24 @@ def table(request):
 	url = request.GET.get('url',default=None)
 
 	if tid != None:
-		try:
-			tid_int = int(tid.lstrip('tT'))
-			table = Table.objects.get(tid_int=tid_int)
-		except Table.DoesNotExist:
-			return JsonResponse({'error':"Table with id '%s' does not exist." % (tid,)},safe=True)
+		#A table has two names a person might be holding: its number, and the
+		#address its title makes. Both arrive as `id`, because somebody with
+		#`Cyclotomic_polynomials` has no reason to know it belongs in a
+		#different parameter -- and until this, a non-numeric one reached
+		#`int()` and left as HTTP 500, which is a crash rather than an answer.
+		stripped = tid.lstrip('tT')
+		if stripped.isdigit():
+			try:
+				table = Table.objects.get(tid_int=int(stripped))
+			except Table.DoesNotExist:
+				return JsonResponse({'error':"Table with id '%s' does not exist." % (tid,)},safe=True)
+		else:
+			try:
+				table = Table.objects.get(url=tid)
+			except Table.DoesNotExist:
+				return JsonResponse(
+					{'error': "No table has the number or address '%s'." % (tid,)},
+					safe=True)
 	elif url != None:
 		try:
 			table = Table.objects.get(url=url)
