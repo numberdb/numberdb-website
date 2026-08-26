@@ -1,0 +1,56 @@
+# The table document for numberdb-data#81, to be created on the site.
+Title: Bernoulli polynomials $B_n$
+Definition: >-
+  The Bernoulli polynomials are defined by the exponential generating function
+  $\frac{t e^{xt}}{e^t - 1} = \sum_{n=0}^{\infty} B_n(x) \frac{t^n}{n!}$.
+  Equivalently $B_0 = 1$ and, for $n \geq 1$, $B_n$ is the polynomial of degree
+  $n$ with $B_n'(x) = n B_{n-1}(x)$ and $\int_0^1 B_n(x)\,dx = 0$.
+Parameters:
+  n:
+    type: Z
+    constraints: $0 \leq n \leq 50$
+    display: $n$
+Data properties:
+  type: Q[]
+  complete: no
+  rigour: exact
+Formulas:
+  formula-numbers: >-
+    $B_n(0) = B_n$, the $n$-th Bernoulli number HREF{Bernoulli_numbers}.
+  formula-difference: >-
+    $B_n(x+1) - B_n(x) = n x^{n-1}$, which is what makes these the right
+    polynomials for summing powers.
+  formula-derivative: >-
+    $B_n'(x) = n B_{n-1}(x)$.
+  formula-reflection: >-
+    $B_n(1-x) = (-1)^n B_n(x)$.
+  formula-sums-of-powers: >-
+    $\sum_{k=0}^{m-1} k^{n} = \frac{B_{n+1}(m) - B_{n+1}}{n+1}$ (Faulhaber's
+    formula).
+  formula-explicit: >-
+    $B_n(x) = \sum_{k=0}^{n} \binom{n}{k} B_{n-k}\, x^{k}$.
+Comments:
+  comment-convention: >-
+    The convention here is $B_1(x) = x - \tfrac{1}{2}$, so $B_1 = B_1(0) =
+    -\tfrac{1}{2}$. Some authors take $B_1 = +\tfrac{1}{2}$; every other
+    Bernoulli number is unaffected, and the odd ones beyond the first vanish.
+  comment-euler: >-
+    The Euler polynomials HREF{Euler_polynomials} are the companion family,
+    with $e^{xt}\frac{2}{e^t+1}$ in place of the generating function above.
+Links:
+  Wiki:
+    title: 'Wikipedia: Bernoulli polynomials'
+    url: https://en.wikipedia.org/wiki/Bernoulli_polynomials
+  MathWorld:
+    title: 'MathWorld: Bernoulli Polynomial'
+    url: https://mathworld.wolfram.com/BernoulliPolynomial.html
+Tags:
+  - polynomial
+  - number theory
+  - generating function
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x> = QQ[]
+      bernoulli_polynomial(x, 51)      # the next one after this table

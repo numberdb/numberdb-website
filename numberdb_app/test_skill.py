@@ -276,3 +276,26 @@ class TheSkillCarriesWhatTheFirstTablesTaught(TestCase):
 		for act in ('X-Draft: yes', 'review queue', 'answer search by number'):
 			with self.subTest(act=act):
 				self.assertIn(act, self.body)
+
+
+class TheSkillWarnsAboutDivision(TestCase):
+	"""A generator that divides can be exact up to 2^53 and wrong after it.
+
+	`sage -python` has no preparser, so `factorial(30)` is a Python int and
+	`factorial(n) / k` is float division. A Bessel polynomial built that way
+	was right to n = 15 and wrong from n = 16, in the last two digits.
+	"""
+
+	def setUp(self):
+		self.body = self.client.get('/skill').content.decode()
+
+	def test_it_says_what_goes_wrong(self):
+		self.assertIn('float', self.body)
+		self.assertIn('2^53', self.body)
+
+	def test_it_gives_both_ways_out(self):
+		self.assertIn('recurrence that only multiplies and adds', self.body)
+		self.assertIn('QQ(a) / QQ(b)', self.body)
+
+	def test_it_says_the_obvious_check_does_not_catch_it(self):
+		self.assertIn('float that', self.body)

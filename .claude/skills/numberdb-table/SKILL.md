@@ -105,6 +105,16 @@ back down to 100 for a better reason: F_150 is 2248 characters and F_100 is
 Ask what the largest entry looks like on a page before asking whether the table
 fits.
 
+**Division in a generator is where exactness goes.** `sage -python` has no
+preparser, so `factorial(30)` is a Python `int` and `factorial(n) / k` is
+*float* division -- exact up to 2^53 and quietly wrong after it. A Bessel
+polynomial built from its closed form this way had the right coefficients up
+to n = 15 and wrong ones from n = 16, differing in the last two digits, which
+is exactly the kind of wrong that gets published. Two ways out: build from a
+recurrence that only multiplies and adds, or write every division between Sage
+rationals, `QQ(a) / QQ(b)`. Note that `c in ZZ` is true of a float that
+happens to be integral, so that check will not catch it.
+
 **Then aim at half the soft block limit -- about 160 KB -- not at the limit.** A
 table that only just fits cannot be extended by the next person without
 breaching it, and the limit is there to be a margin rather than a target.

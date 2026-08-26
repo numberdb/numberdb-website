@@ -1,0 +1,64 @@
+# The table document for numberdb-data#82, to be created on the site.
+Title: Euler polynomials $E_n$
+Definition: >-
+  The Euler polynomials are defined by the exponential generating function
+  $\frac{2 e^{xt}}{e^t + 1} = \sum_{n=0}^{\infty} E_n(x) \frac{t^n}{n!}$.
+  Equivalently $E_0 = 1$ and, for $n \geq 1$, $E_n$ is the polynomial of
+  degree $n$ with $E_n'(x) = n E_{n-1}(x)$ and $E_n(x) + E_n(x+1) = 2x^n$.
+Parameters:
+  n:
+    type: Z
+    constraints: $0 \leq n \leq 50$
+    display: $n$
+Data properties:
+  type: Q[]
+  complete: no
+  rigour: exact
+Formulas:
+  formula-defining-relation: >-
+    $E_n(x) + E_n(x+1) = 2x^{n}$.
+  formula-derivative: >-
+    $E_n'(x) = n E_{n-1}(x)$.
+  formula-reflection: >-
+    $E_n(1-x) = (-1)^n E_n(x)$.
+  formula-euler-numbers: >-
+    $E_n = 2^{n} E_n\!\left(\tfrac{1}{2}\right)$ are the Euler numbers, which
+    are integers and vanish for odd $n$.
+  formula-from-bernoulli: >-
+    $E_n(x) = \frac{2}{n+1}\left(B_{n+1}(x) - 2^{n+1}
+    B_{n+1}\!\left(\tfrac{x}{2}\right)\right)$, where $B_n$ are the Bernoulli
+    polynomials HREF{Bernoulli_polynomials}.
+  formula-alternating-sums: >-
+    $\sum_{k=0}^{m-1} (-1)^{k} k^{n} =
+    \frac{E_n(0) + (-1)^{m-1} E_n(m)}{2}$, the alternating counterpart of
+    Faulhaber's formula.
+Comments:
+  comment-bernoulli: >-
+    The Bernoulli polynomials HREF{Bernoulli_polynomials} are the companion
+    family: the generating function has $e^t - 1$ in place of $e^t + 1$, and
+    they sum powers where these sum them alternately.
+  comment-half-integers: >-
+    $E_n(0)$ is rational and $E_n(\tfrac{1}{2})$ is a rational whose numerator
+    is the Euler number; the polynomials themselves have rational coefficients
+    with denominators a power of two.
+Links:
+  Wiki:
+    title: 'Wikipedia: Euler polynomials'
+    url: https://en.wikipedia.org/wiki/Bernoulli_polynomials
+  MathWorld:
+    title: 'MathWorld: Euler Polynomial'
+    url: https://mathworld.wolfram.com/EulerPolynomial.html
+Tags:
+  - polynomial
+  - number theory
+  - generating function
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x> = QQ[]
+      def euler_polynomial(n):
+          B = lambda m, y: bernoulli_polynomial(y, m)
+          return R(2/(n+1) * (B(n+1, x) - 2^(n+1) * B(n+1, x/2)))
+
+      euler_polynomial(51)             # the next one after this table
