@@ -1,0 +1,61 @@
+# The table document for numberdb-data#80, to be created on the site.
+Title: Bessel polynomials $y_n$
+Definition: >-
+  The Bessel polynomials are $y_0 = 1$, $y_1 = x + 1$, and
+  $y_n(x) = (2n-1)\,x\,y_{n-1}(x) + y_{n-2}(x)$ for $n \geq 2$. They are the
+  polynomial solutions of $x^{2} y'' + 2(x+1) y' = n(n+1) y$.
+Parameters:
+  n:
+    type: Z
+    constraints: $0 \leq n \leq 30$
+    display: $n$
+Data properties:
+  type: Z[]
+  complete: no
+  rigour: exact
+Formulas:
+  formula-recurrence: >-
+    $y_n(x) = (2n-1)\,x\,y_{n-1}(x) + y_{n-2}(x)$, with $y_0 = 1$ and
+    $y_1 = x+1$.
+  formula-closed: >-
+    $y_n(x) = \sum_{k=0}^{n} \frac{(n+k)!}{(n-k)!\,k!\,2^{k}}\, x^{k}$; the
+    coefficients are integers despite the division.
+  formula-differential-equation: >-
+    $x^{2} y_n''(x) + 2(x+1) y_n'(x) = n(n+1)\, y_n(x)$.
+  formula-degree: >-
+    $y_n$ has degree $n$, constant term $1$, and leading coefficient
+    $\frac{(2n)!}{n!\,2^{n}} = (2n-1)!!$.
+Comments:
+  comment-not-bessel-functions: >-
+    Not the Bessel functions, and not their zeros: those are transcendental
+    and are listed separately HREF{Zeros_of_Bessel_J_functions}. The
+    connection is that $y_n$ appears in the closed form of a modified Bessel
+    function of half-integer order.
+  comment-reverse: >-
+    Some authors write the reverse polynomials $\theta_n(x) = x^{n}
+    y_n(1/x)$, which satisfy the same recurrence with the roles of the two
+    ends exchanged. The table holds $y_n$.
+Links:
+  Wiki:
+    title: 'Wikipedia: Bessel polynomials'
+    url: https://en.wikipedia.org/wiki/Bessel_polynomials
+  MathWorld:
+    title: 'MathWorld: Bessel Polynomial'
+    url: https://mathworld.wolfram.com/BesselPolynomial.html
+Tags:
+  - polynomial
+  - special functions
+  - recurrence
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x> = ZZ[]
+      def bessel_polynomial(n):
+          a, b = R(1), x + 1
+          if n == 0: return R(1)
+          for i in range(2, n + 1):
+              a, b = b, (2*i - 1)*x*b + a
+          return b
+
+      bessel_polynomial(31)            # the next one after this table

@@ -1,0 +1,67 @@
+# The table document for numberdb-data#98, to be created on the site.
+Title: Dickson polynomials of the first kind $D_n(x,a)$
+Definition: >-
+  The Dickson polynomials of the first kind are $D_0(x,a) = 2$,
+  $D_1(x,a) = x$, and $D_n(x,a) = x\,D_{n-1}(x,a) - a\,D_{n-2}(x,a)$ for
+  $n \geq 2$. They are polynomials in two variables, $x$ and the parameter
+  $a$, and are characterised by
+  $D_n\!\left(y + \tfrac{a}{y},\, a\right) = y^{n} + \left(\tfrac{a}{y}\right)^{n}$.
+Parameters:
+  n:
+    type: Z
+    constraints: $0 \leq n \leq 40$
+    display: $n$
+Data properties:
+  type: Z[]
+  complete: no
+  rigour: exact
+Formulas:
+  formula-recurrence: >-
+    $D_n(x,a) = x\,D_{n-1}(x,a) - a\,D_{n-2}(x,a)$, with $D_0 = 2$ and
+    $D_1 = x$.
+  formula-functional-equation: >-
+    $D_n\!\left(y + \tfrac{a}{y},\, a\right) = y^{n} +
+    \left(\tfrac{a}{y}\right)^{n}$, which determines them.
+  formula-chebyshev: >-
+    $D_n(2x, 1) = 2\,T_n(x)$, where $T_n$ are the Chebyshev polynomials of
+    the first kind HREF{Chebyshev_polynomials_of_the_first_kind}.
+  formula-explicit: >-
+    $D_n(x,a) = \sum_{k=0}^{\lfloor n/2 \rfloor} \frac{n}{n-k}
+    \binom{n-k}{k} (-a)^{k} x^{n-2k}$ for $n \geq 1$.
+  formula-composition: >-
+    $D_{mn}(x,a) = D_m\!\left(D_n(x,a),\, a^{n}\right)$, so these compose the
+    way powers do.
+  formula-at-a-zero: >-
+    $D_n(x, 0) = x^{n}$.
+Comments:
+  comment-permutation: >-
+    Over a finite field $\mathbb{F}_q$, $D_n(x,a)$ with $a \neq 0$ permutes
+    the field exactly when $\gcd(n, q^{2}-1) = 1$; this is what makes them a
+    standard source of permutation polynomials.
+  comment-second-kind: >-
+    The Dickson polynomials of the second kind $E_n$ satisfy the same
+    recurrence with $E_0 = 1$ and $E_1 = x$, and relate to the Chebyshev
+    polynomials of the second kind HREF{Chebyshev_polynomials_of_the_second_kind}
+    as these do to the first. They are not in this table.
+  comment-two-variables: >-
+    Stored as polynomials in $x$ and $a$ together, rather than as a family
+    indexed by $a$: $a$ is a parameter of the polynomial, not of the table.
+Links:
+  Wiki:
+    title: 'Wikipedia: Dickson polynomial'
+    url: https://en.wikipedia.org/wiki/Dickson_polynomial
+Tags:
+  - polynomial
+  - number theory
+  - recurrence
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x, a> = ZZ[]
+      def dickson(n):
+          p, q = R(2), x
+          for _ in range(n): p, q = q, x*q - a*p
+          return p
+
+      dickson(41)                      # the next one after this table
