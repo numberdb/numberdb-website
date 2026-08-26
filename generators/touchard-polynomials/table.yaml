@@ -1,0 +1,76 @@
+# The table document for numberdb-data#115, to be created on the site.
+#
+# A generator fills a table; it does not create one. A table takes a permanent
+# T-number, a title in every listing, and a parameter order that can never
+# change because citations resolve on it, so making one is a deliberate act by
+# a person. This is the proposal for that act.
+#
+# It also answers the univariate half of numberdb-data#114: the Bell
+# polynomials in one variable are these. The multivariate $B_{n,k}(x_1, \dots)$
+# of that issue are a separate family and want a table of their own -- `Z[]`
+# and `Q[]` are polynomial rings rather than univariate ones, and five tables
+# already hold several variables, T106 three of them.
+Title: Touchard polynomials $T_n$
+Definition: >-
+  The Touchard polynomials are $T_n(x) = \sum_{k=0}^{n} S(n,k) x^k$, where
+  $S(n,k)$ is the Stirling number of the second kind CITE{WikiStirling}: the
+  number of ways to partition a set of $n$ labelled elements into $k$ non-empty
+  blocks. The sum is taken with $S(0,0) = 1$, so $T_0 = 1$.
+Parameters:
+  n:
+    type: Z
+    constraints: $0 \leq n \leq 40$
+    display: $n$
+Data properties:
+  type: Z[]
+  complete: no
+  rigour: exact
+Formulas:
+  formula-coefficients: >-
+    The coefficient of $x^k$ in $T_n$ is $S(n,k)$, so the coefficients are the
+    rows of CITE{OEISStirling}.
+  formula-recurrence: >-
+    $T_{n+1}(x) = x\left(T_n(x) + T_n'(x)\right)$, with $T_0(x) = 1$.
+  formula-bell: >-
+    $T_n(1) = B_n$, the $n$-th Bell number CITE{OEISBell}: the number of
+    partitions of a set of $n$ elements.
+  formula-generating-function: >-
+    $\sum_{n=0}^{\infty} T_n(x) \frac{t^n}{n!} = e^{x(e^t - 1)}$ (exponential
+    generating function).
+  formula-degree: >-
+    $T_n$ is monic of degree $n$, and $T_n(0) = 0$ for $n \geq 1$.
+Comments:
+  comment-other-names: >-
+    Also called the exponential polynomials, and the Bell polynomials in one
+    variable. The Bell polynomials usually written $B_{n,k}(x_1, x_2, \dots)$
+    are a different, multivariate family; these are the case of one variable.
+  comment-partitions: >-
+    $T_n(x)$ counts the partitions of an $n$-element set by the number of
+    blocks, with $x$ marking a block: the coefficient of $x^k$ is how many
+    partitions have exactly $k$ of them.
+Links:
+  Wiki:
+    title: 'Wikipedia: Touchard polynomials'
+    url: https://en.wikipedia.org/wiki/Touchard_polynomials
+  WikiStirling:
+    title: 'Wikipedia: Stirling numbers of the second kind'
+    url: https://en.wikipedia.org/wiki/Stirling_numbers_of_the_second_kind
+  OEISStirling:
+    title: 'OEIS A008277: triangle of Stirling numbers of the second kind'
+    url: https://oeis.org/A008277
+  OEISBell:
+    title: 'OEIS A000110: Bell numbers'
+    url: https://oeis.org/A000110
+Tags:
+  - polynomial
+  - combinatorics
+  - generating function
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x> = ZZ[]
+      def touchard_polynomial(n):
+          return sum(stirling_number2(n, k) * x^k for k in range(n + 1))
+
+      touchard_polynomial(41)          # the next one after this table
