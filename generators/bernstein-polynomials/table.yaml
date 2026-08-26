@@ -1,0 +1,71 @@
+# The table document for numberdb-data#122, to be created on the site.
+#
+# A generator fills a table; it does not create one. A table takes a permanent
+# T-number, a title in every listing, and a parameter order that can never
+# change because citations resolve on it, so making one is a deliberate act by
+# a person. This is the proposal for that act.
+Title: Bernstein basis polynomials $b_{v,n}$
+Definition: >-
+  For integers $0 \leq v \leq n$ the Bernstein basis polynomial is
+  $b_{v,n}(x) = \binom{n}{v} x^{v} (1-x)^{n-v}$. Parameters are given as $n$
+  then $v$, the degree before the index, though the usual notation writes
+  the index first.
+Parameters:
+  n:
+    type: Z
+    constraints: $0 \leq n \leq 25$
+    display: $n$
+  v:
+    type: Z
+    constraints: $0 \leq v \leq n$
+    display: $v$
+Data properties:
+  type: Z[]
+  complete: no
+  rigour: exact
+Formulas:
+  formula-definition: >-
+    $b_{v,n}(x) = \binom{n}{v} x^{v} (1-x)^{n-v}$.
+  formula-partition-of-unity: >-
+    $\sum_{v=0}^{n} b_{v,n}(x) = 1$ for every $n$, which is why a Bezier curve
+    lies in the convex hull of its control points.
+  formula-recurrence: >-
+    $b_{v,n}(x) = (1-x)\,b_{v,n-1}(x) + x\,b_{v-1,n-1}(x)$, reading
+    $b_{v,n-1} = 0$ when $v > n-1$ and $b_{-1,n-1} = 0$.
+  formula-roots: >-
+    $b_{v,n}$ has degree $n$, a zero of order $v$ at $x = 0$ and a zero of
+    order $n-v$ at $x = 1$, and no others.
+  formula-derivative: >-
+    $b_{v,n}'(x) = n\left(b_{v-1,n-1}(x) - b_{v,n-1}(x)\right)$.
+Comments:
+  comment-basis: >-
+    The $n+1$ polynomials $b_{0,n}, \dots, b_{n,n}$ are a basis of the
+    polynomials of degree at most $n$, and are the basis in which a Bezier
+    curve of degree $n$ is written.
+  comment-expanded: >-
+    Stored expanded, as a polynomial in $x$ with integer coefficients, rather
+    than in the factored form of the definition: that is what makes two
+    polynomials comparable here.
+  comment-approximation: >-
+    The Bernstein polynomial of a function $f$, $\sum_{v} f(v/n)\, b_{v,n}$,
+    converges uniformly to $f$ on $[0,1]$ for continuous $f$ -- Bernstein's
+    proof of the Weierstrass approximation theorem CITE{Wiki}.
+Links:
+  Wiki:
+    title: 'Wikipedia: Bernstein polynomial'
+    url: https://en.wikipedia.org/wiki/Bernstein_polynomial
+  MathWorld:
+    title: 'MathWorld: Bernstein Polynomial'
+    url: https://mathworld.wolfram.com/BernsteinPolynomial.html
+Tags:
+  - polynomial
+  - analysis
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x> = ZZ[]
+      def bernstein_basis(v, n):
+          return binomial(n, v) * x^v * (1 - x)^(n - v)
+
+      bernstein_basis(0, 26)           # the next degree after this table

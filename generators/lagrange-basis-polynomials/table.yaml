@@ -1,0 +1,81 @@
+# The table document for numberdb-data#121, to be created on the site.
+#
+# That issue asks for this "perhaps twice, for general point sets, and for the
+# point set (0,1,2,...,d)". Only the second can be a table: a general point set
+# is a parameter with infinitely many values and no canonical order, and the
+# polynomials for one set say nothing about another. The formula for the
+# general case is here instead, which is what a reader needs in order to build
+# them for their own nodes.
+Title: Lagrange basis polynomials for equally spaced nodes
+Definition: >-
+  For integers $0 \leq i \leq d$ the Lagrange basis polynomial for the nodes
+  $0, 1, \dots, d$ is
+  $\ell_{d,i}(x) = \prod_{j \neq i} \frac{x - j}{i - j}$, the product taken
+  over $0 \leq j \leq d$ with $j \neq i$. Parameters are given as $d$ then
+  $i$, the degree before the index.
+Parameters:
+  d:
+    type: Z
+    constraints: $0 \leq d \leq 20$
+    display: $d$
+  i:
+    type: Z
+    constraints: $0 \leq i \leq d$
+    display: $i$
+Data properties:
+  type: Q[]
+  complete: no
+  rigour: exact
+Formulas:
+  formula-definition: >-
+    $\ell_{d,i}(x) = \prod_{\substack{0 \leq j \leq d \\ j \neq i}}
+    \frac{x - j}{i - j}$.
+  formula-delta: >-
+    $\ell_{d,i}(k) = 1$ if $k = i$ and $0$ for every other integer
+    $0 \leq k \leq d$. This is the property that makes them a basis for
+    interpolation.
+  formula-partition-of-unity: >-
+    $\sum_{i=0}^{d} \ell_{d,i}(x) = 1$, since the constant polynomial $1$
+    interpolates the value $1$ at every node.
+  formula-interpolation: >-
+    The polynomial of degree at most $d$ through the points
+    $(0, y_0), \dots, (d, y_d)$ is $\sum_{i=0}^{d} y_i\, \ell_{d,i}(x)$.
+  formula-general-nodes: >-
+    For arbitrary distinct nodes $x_0, \dots, x_d$ the same construction gives
+    $\ell_i(x) = \prod_{j \neq i} \frac{x - x_j}{x_i - x_j}$; this table is the
+    case $x_j = j$.
+  formula-degree: >-
+    $\ell_{d,i}$ has degree exactly $d$, with leading coefficient
+    $\frac{(-1)^{d-i}}{i!\,(d-i)!}$.
+Comments:
+  comment-unique: >-
+    $\ell_{d,i}$ is the only polynomial of degree at most $d$ that takes the
+    value $1$ at $x = i$ and $0$ at every other node, which is what makes
+    these a basis for interpolation.
+  comment-rational: >-
+    The coefficients are rational rather than integral: the denominators are
+    the products $\prod_{j \neq i}(i-j) = (-1)^{d-i}\, i!\,(d-i)!$, which is
+    why the table holds $\mathbb{Q}[x]$ and not $\mathbb{Z}[x]$.
+  comment-conditioning: >-
+    Equally spaced nodes are the classical example of interpolation behaving
+    badly as the degree grows -- Runge's phenomenon -- so these are useful for
+    seeing that happen rather than as a way to interpolate at high degree.
+Links:
+  Wiki:
+    title: 'Wikipedia: Lagrange polynomial'
+    url: https://en.wikipedia.org/wiki/Lagrange_polynomial
+  MathWorld:
+    title: 'MathWorld: Lagrange Interpolating Polynomial'
+    url: https://mathworld.wolfram.com/LagrangeInterpolatingPolynomial.html
+Tags:
+  - polynomial
+  - analysis
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x> = QQ[]
+      def lagrange_basis(d, i):
+          return R(prod((x - j) / (i - j) for j in range(d + 1) if j != i))
+
+      lagrange_basis(21, 0)            # the next degree after this table
