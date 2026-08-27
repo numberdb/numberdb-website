@@ -1,0 +1,68 @@
+# The table document for numberdb-data#102, to be created on the site.
+Title: Elementary symmetric polynomials $e_k$
+Definition: >-
+  For $1 \leq k \leq n$ the elementary symmetric polynomial in $n$ variables is
+  $e_k(x_1, \dots, x_n) = \sum_{i_1 < i_2 < \cdots < i_k} x_{i_1} x_{i_2}
+  \cdots x_{i_k}$, the sum of all products of $k$ distinct variables. It has
+  $\binom{n}{k}$ terms, each with coefficient one.
+Parameters:
+  n:
+    type: Z
+    constraints: $1 \leq n \leq 6$
+    display: $n$
+  k:
+    type: Z
+    constraints: $1 \leq k \leq n$
+    display: $k$
+Data properties:
+  type: Z[]
+  complete: no
+  rigour: exact
+Formulas:
+  formula-generating-function: >-
+    $\prod_{i=1}^{n} (1 + x_i t) = \sum_{k=0}^{n} e_k(x_1,\dots,x_n)\, t^{k}$,
+    with $e_0 = 1$.
+  formula-vieta: >-
+    The monic polynomial with roots $x_1, \dots, x_n$ is $\prod_i (T - x_i) =
+    \sum_{k=0}^{n} (-1)^{k} e_k\, T^{n-k}$, which is where these are usually
+    met.
+  formula-newton: >-
+    $k\,e_k = \sum_{i=1}^{k} (-1)^{i-1} e_{k-i}\, p_i$, where $p_i$ are the
+    power sums HREF{Power_sum_symmetric_polynomials} (Newton's identities).
+  formula-with-homogeneous: >-
+    $\sum_{k=0}^{d} (-1)^{k} e_k\, h_{d-k} = 0$ for $d \geq 1$, where $h_d$
+    are the complete homogeneous symmetric polynomials
+    HREF{Complete_homogeneous_symmetric_polynomials}.
+  formula-monomial: >-
+    $e_k = m_{(1^k)}$, the monomial symmetric polynomial
+    HREF{Monomial_symmetric_polynomials} for the partition of $k$ into $k$
+    ones.
+Comments:
+  comment-range: >-
+    Six variables is the most this database searches: matching polynomials
+    that differ only in the names of their variables needs a key found by
+    trying permutations, and beyond six that is refused rather than attempted.
+    Here it costs nothing, since $e_k$ in six variables is 217 characters
+    written out at its longest.
+  comment-basis: >-
+    $e_1, \dots, e_n$ generate the symmetric polynomials in $n$ variables
+    freely: every symmetric polynomial is a polynomial in them in exactly one
+    way.
+Links:
+  Wiki:
+    title: 'Wikipedia: Elementary symmetric polynomial'
+    url: https://en.wikipedia.org/wiki/Elementary_symmetric_polynomial
+Tags:
+  - polynomial
+  - combinatorics
+  - algebra
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      def elementary(n, k):
+          R = PolynomialRing(ZZ, ['x%d' % (i+1) for i in range(n)])
+          f = SymmetricFunctions(QQ).e()[k]
+          return R(f.expand(n, alphabet=[str(g) for g in R.gens()]))
+
+      elementary(7, 3)                 # more variables than this table holds

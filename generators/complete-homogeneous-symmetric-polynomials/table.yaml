@@ -1,0 +1,65 @@
+# The table document for numberdb-data#105, to be created on the site.
+Title: Complete homogeneous symmetric polynomials $h_k$
+Definition: >-
+  For $k \geq 1$ the complete homogeneous symmetric polynomial in $n$
+  variables is $h_k(x_1, \dots, x_n) = \sum_{i_1 \leq i_2 \leq \cdots \leq
+  i_k} x_{i_1} x_{i_2} \cdots x_{i_k}$, the sum of every monomial of degree
+  $k$, each with coefficient one.
+Parameters:
+  n:
+    type: Z
+    constraints: $1 \leq n \leq 6$
+    display: $n$
+  k:
+    type: Z
+    constraints: $1 \leq k \leq 3$
+    display: $k$
+Data properties:
+  type: Z[]
+  complete: no
+  rigour: exact
+Formulas:
+  formula-generating-function: >-
+    $\prod_{i=1}^{n} \frac{1}{1 - x_i t} = \sum_{k \geq 0}
+    h_k(x_1,\dots,x_n)\, t^{k}$, with $h_0 = 1$.
+  formula-with-elementary: >-
+    $\sum_{k=0}^{d} (-1)^{k} e_k\, h_{d-k} = 0$ for $d \geq 1$, where $e_k$
+    are the elementary symmetric polynomials
+    HREF{Elementary_symmetric_polynomials}. The two generating functions are
+    reciprocal.
+  formula-monomial-sum: >-
+    $h_d = \sum_{|\lambda| = d} m_\lambda$, the sum over all partitions of
+    $d$ of the monomial symmetric polynomials
+    HREF{Monomial_symmetric_polynomials}.
+  formula-schur: >-
+    $h_k = s_{(k)}$, the Schur polynomial HREF{Schur_polynomials} for the
+    one-row partition.
+  formula-count: >-
+    $h_k$ in $n$ variables has $\binom{n+k-1}{k}$ terms.
+Comments:
+  comment-range: >-
+    This table stops at $k = 3$ where the others go further, because these
+    grow fastest: $h_3$ in six variables is 559 characters written out and
+    $h_6$ would be 6969. The rule across these five tables is the largest
+    complete rectangle whose longest entry stays under about 600 characters.
+  comment-duality: >-
+    Swapping $e$ and $h$ is an involution on the symmetric functions, so
+    every identity between them has a partner with the two exchanged.
+Links:
+  Wiki:
+    title: 'Wikipedia: Complete homogeneous symmetric polynomial'
+    url: https://en.wikipedia.org/wiki/Complete_homogeneous_symmetric_polynomial
+Tags:
+  - polynomial
+  - combinatorics
+  - algebra
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from itertools import combinations_with_replacement
+      def homogeneous(n, k):
+          R = PolynomialRing(ZZ, ['x%d' % (i+1) for i in range(n)])
+          return sum(prod(c) for c in combinations_with_replacement(R.gens(), k))
+
+      homogeneous(6, 4)                # the next degree after this table

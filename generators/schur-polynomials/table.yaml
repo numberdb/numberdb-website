@@ -1,0 +1,74 @@
+# The table document for numberdb-data#103, to be created on the site.
+Title: Schur polynomials $s_\lambda$
+Definition: >-
+  For a partition $\lambda$ with at most $n$ parts, the Schur polynomial is
+  $s_\lambda(x_1, \dots, x_n) = \frac{\det\left(x_i^{\lambda_j + n - j}\right)}
+  {\det\left(x_i^{n-j}\right)}$, the ratio of two determinants, the
+  denominator being the Vandermonde determinant. It is a polynomial despite
+  the division.
+Parameters:
+  n:
+    type: Z
+    constraints: $1 \leq n \leq 4$
+    display: $n$
+  lambda:
+    type: Symbolic
+    constraints: a partition of at most $4$, with at most $n$ parts
+    display: $\lambda$
+Data properties:
+  type: Z[]
+  complete: no
+  rigour: exact
+Formulas:
+  formula-jacobi-trudi: >-
+    $s_\lambda = \det\left(h_{\lambda_i - i + j}\right)_{1 \leq i,j \leq
+    \ell(\lambda)}$, where $h_d$ are the complete homogeneous symmetric
+    polynomials HREF{Complete_homogeneous_symmetric_polynomials} and
+    $h_0 = 1$, $h_d = 0$ for $d < 0$ (the Jacobi-Trudi identity). This is how
+    the table is computed.
+  formula-edges: >-
+    $s_{(k)} = h_k$ and $s_{(1^k)} = e_k$, the complete homogeneous and
+    elementary symmetric polynomials
+    HREF{Elementary_symmetric_polynomials}.
+  formula-tableaux: >-
+    $s_\lambda = \sum_T x^{T}$, summed over semistandard Young tableaux of
+    shape $\lambda$ with entries in $\{1, \dots, n\}$, where $x^{T}$ records
+    how often each entry occurs.
+  formula-kostka: >-
+    $s_\lambda = \sum_\mu K_{\lambda\mu}\, m_\mu$, the monomial symmetric
+    polynomials HREF{Monomial_symmetric_polynomials} with the Kostka numbers
+    as coefficients.
+Comments:
+  comment-notation: >-
+    The partition is written as its parts, largest first, separated by
+    commas: $2,1,1$ is the partition $(2,1,1)$ of $4$.
+  comment-range: >-
+    Partitions of at most $4$ in at most $4$ variables, so that the longest
+    entry is 387 characters. These grow faster than the monomial polynomials
+    they expand into, which is why this table stops one variable sooner.
+  comment-representations: >-
+    $s_\lambda$ in $n$ variables is the character of an irreducible polynomial
+    representation of $GL_n$, evaluated at a diagonal matrix with entries
+    $x_1, \dots, x_n$; the partitions with at most $n$ parts index those
+    representations.
+Links:
+  Wiki:
+    title: 'Wikipedia: Schur polynomial'
+    url: https://en.wikipedia.org/wiki/Schur_polynomial
+Tags:
+  - polynomial
+  - combinatorics
+  - algebra
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      def schur(n, lam):
+          R = PolynomialRing(ZZ, ['x%d' % (i+1) for i in range(n)])
+          h = lambda d: (R.one() if d == 0 else R.zero() if d < 0 else
+                         sum(prod(c) for c in
+                             Combinations(list(R.gens())*d, d).list()))
+          f = SymmetricFunctions(QQ).s()[lam]
+          return R(f.expand(n, alphabet=[str(g) for g in R.gens()]))
+
+      schur(4, [3, 2])                 # a partition of 5, past this table

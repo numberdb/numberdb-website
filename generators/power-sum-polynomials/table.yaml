@@ -1,0 +1,62 @@
+# The table document for numberdb-data#104, to be created on the site.
+Title: Power sum symmetric polynomials $p_k$
+Definition: >-
+  For $k \geq 1$ the power sum symmetric polynomial in $n$ variables is
+  $p_k(x_1, \dots, x_n) = x_1^{k} + x_2^{k} + \cdots + x_n^{k}$.
+Parameters:
+  n:
+    type: Z
+    constraints: $1 \leq n \leq 6$
+    display: $n$
+  k:
+    type: Z
+    constraints: $1 \leq k \leq 12$
+    display: $k$
+Data properties:
+  type: Z[]
+  complete: no
+  rigour: exact
+Formulas:
+  formula-newton: >-
+    $k\,e_k = \sum_{i=1}^{k} (-1)^{i-1} e_{k-i}\, p_i$, where $e_k$ are the
+    elementary symmetric polynomials
+    HREF{Elementary_symmetric_polynomials} (Newton's identities). These
+    determine the $p_k$ from the $e_k$ and back again.
+  formula-generating-function: >-
+    $\sum_{k \geq 1} p_k\, t^{k} = \sum_{i=1}^{n} \frac{x_i t}{1 - x_i t}$.
+  formula-monomial: >-
+    $p_k = m_{(k)}$, the monomial symmetric polynomial
+    HREF{Monomial_symmetric_polynomials} for the one-part partition.
+  formula-basis: >-
+    Over $\mathbb{Q}$ the $p_1, \dots, p_n$ generate the symmetric polynomials
+    freely; over $\mathbb{Z}$ they do not, which is why Newton's identities
+    divide by $k$.
+Comments:
+  comment-short: >-
+    These are the shortest of the symmetric families: $p_k$ has $n$ terms
+    whatever $k$ is, so the table runs to $k = 12$ where the others stop much
+    sooner. In six variables the longest entry is 39 characters.
+  comment-traces: >-
+    If $x_1, \dots, x_n$ are the eigenvalues of a matrix $A$, then
+    $p_k = \operatorname{tr}(A^{k})$, which is how these are most often met
+    outside symmetric function theory.
+Links:
+  Wiki:
+    title: 'Wikipedia: Power sum symmetric polynomial'
+    url: https://en.wikipedia.org/wiki/Power_sum_symmetric_polynomial
+  WikiNewton:
+    title: "Wikipedia: Newton's identities"
+    url: https://en.wikipedia.org/wiki/Newton%27s_identities
+Tags:
+  - polynomial
+  - combinatorics
+  - algebra
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      def power_sum(n, k):
+          R = PolynomialRing(ZZ, ['x%d' % (i+1) for i in range(n)])
+          return sum(g^k for g in R.gens())
+
+      power_sum(6, 13)                 # the next degree after this table
