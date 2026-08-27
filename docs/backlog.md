@@ -577,3 +577,31 @@ The public profile should be perhaps similar to the ones on wikipedia, content-w
   Anyone reads, anyone who may edit posts, the board can hide a message
   (kept, not deleted). The models had been designed and migrated long before
   and were sitting unused; what was missing was the pages.
+
+## Links from published tables into the new families
+
+Eight tables are waiting in the review queue -- T110 to T117, the polynomial
+families answering numberdb-data#80, #81, #82, #98, #114, #115, #121 and #122.
+Each links outward to what the database already holds: T114 to the Bernoulli
+numbers, T117 to both Chebyshev tables, T116 to the Bessel function zeros.
+
+**The links back do not exist and cannot be added yet.** A draft answers 404 to
+everybody, so a published table linking to one is a dead link on every page
+view until it is published. `audit_table` now says so rather than passing it,
+which it used to do because a draft's address is in the database like any
+other.
+
+When these are published, the reverse links are worth adding:
+
+    T13   Bernoulli numbers          -> T114 Bernoulli polynomials
+    T98   Chebyshev, first kind      -> T117 Dickson polynomials
+    T99   Chebyshev, second kind     -> T117 Dickson polynomials
+    T20   Zeros of Bessel J          -> T116 Bessel polynomials, with a note
+                                        that they are a different object
+    T101  Legendre polynomials       -> T111, T112, as other bases
+    T13   Bernoulli numbers          -> T115 Euler polynomials
+
+The links between the drafts themselves are done: Touchard and Bell each name
+the other, Bernstein and Lagrange each name the other as a different basis of
+the same space, and Bernoulli and Euler each name the other as the companion
+family.

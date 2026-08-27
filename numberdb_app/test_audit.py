@@ -103,3 +103,48 @@ class TheAuditFindsWhatWasMissedBefore(TestCase):
 			Tags=['polynomial'],
 			Comments={'c': 'Nothing surprising here.'})
 		self.assertIn('Nothing to report', findings_for(table))
+
+
+class APublishedTableMayNotLinkToADraft(TestCase):
+	"""A draft answers 404 to everybody, so such a link is dead on every page
+	view. The check passed it before, because the draft's address does exist
+	in the database -- it just is not reachable.
+
+	Two drafts may link to each other: they become visible together.
+	"""
+
+	def setUp(self):
+		from .editing import create_table, publish_table
+
+		self.draft = create_table(
+			{'Title': 'Still a draft',
+			 'Data properties': {'type': 'R'},
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '1.5'}]},
+			published=False)
+		self.published = a_table(title='Already published',
+		                         Comments={'c': 'See HREF{%s}.' % self.draft.url})
+		publish_table(self.published)
+
+	def test_a_published_table_linking_to_a_draft_is_a_finding(self):
+		found = findings_for(self.published)
+		self.assertIn('points at a draft', found)
+
+	def test_a_draft_linking_to_a_draft_is_not(self):
+		from .editing import create_table
+
+		other = create_table(
+			{'Title': 'Another draft',
+			 'Data properties': {'type': 'R'},
+			 'Parameters': {'n': {'type': 'Z'}},
+			 'Numbers': [{'params': {'n': '1'}, 'number': '2.5'}],
+			 'Comments': {'c': 'See HREF{%s}.' % self.draft.url}},
+			published=False)
+		self.assertNotIn('points at a draft', findings_for(other))
+
+	def test_a_link_to_a_published_table_is_still_fine(self):
+		other = a_table(title='Links to the published one',
+		                Comments={'c': 'See HREF{%s}.' % self.published.url})
+		found = findings_for(other)
+		self.assertNotIn('points at a draft', found)
+		self.assertNotIn('names no table here', found)
