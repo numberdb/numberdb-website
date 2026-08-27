@@ -299,3 +299,15 @@ class TheSkillWarnsAboutDivision(TestCase):
 
 	def test_it_says_the_obvious_check_does_not_catch_it(self):
 		self.assertIn('float that', self.body)
+
+
+class TheSkillSaysNotToGuessAnAddress(TestCase):
+	"""A slug is not the title with underscores: the mathematics is dropped,
+	it is truncated, and a clash appends a number. A link written to
+	`Power_sum_polynomials` for a table at `Power_sum_symmetric_polynomials`
+	points at nothing, and the audit only catches it afterwards."""
+
+	def test_it_says_to_read_the_address_rather_than_derive_it(self):
+		body = self.client.get('/skill').content.decode()
+		self.assertIn("Never guess a table's address", body)
+		self.assertIn('audit_table', body)
