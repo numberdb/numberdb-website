@@ -580,28 +580,17 @@ The public profile should be perhaps similar to the ones on wikipedia, content-w
 
 ## Links from published tables into the new families
 
-Eight tables are waiting in the review queue -- T110 to T117, the polynomial
-families answering numberdb-data#80, #81, #82, #98, #114, #115, #121 and #122.
-Each links outward to what the database already holds: T114 to the Bernoulli
-numbers, T117 to both Chebyshev tables, T116 to the Bessel function zeros.
+Done. T110 to T117 are published -- the polynomial families answering
+numberdb-data#80, #81, #82, #98, #114, #115, #121 and #122 -- and the links
+back are in place:
 
-**The links back do not exist and cannot be added yet.** A draft answers 404 to
-everybody, so a published table linking to one is a dead link on every page
-view until it is published. `audit_table` now says so rather than passing it,
-which it used to do because a draft's address is in the database like any
-other.
+    T13   Bernoulli numbers      -> T114 Bernoulli, T115 Euler polynomials
+    T98   Chebyshev, first kind  -> T117 Dickson, with 2 T_n(x) = D_n(2x, 1)
+    T99   Chebyshev, second kind -> T117 Dickson
+    T20   Zeros of Bessel J      -> T116 Bessel polynomials, saying they are
+                                    a different object
+    T101  Legendre polynomials   -> T111 and T112, as the other two bases
 
-When these are published, the reverse links are worth adding:
-
-    T13   Bernoulli numbers          -> T114 Bernoulli polynomials
-    T98   Chebyshev, first kind      -> T117 Dickson polynomials
-    T99   Chebyshev, second kind     -> T117 Dickson polynomials
-    T20   Zeros of Bessel J          -> T116 Bessel polynomials, with a note
-                                        that they are a different object
-    T101  Legendre polynomials       -> T111, T112, as other bases
-    T13   Bernoulli numbers          -> T115 Euler polynomials
-
-The links between the drafts themselves are done: Touchard and Bell each name
-the other, Bernstein and Lagrange each name the other as a different basis of
-the same space, and Bernoulli and Euler each name the other as the companion
-family.
+`audit_table` refuses a link from a published table into a draft, which it
+used to pass: a draft answers 404 to everybody, so the link would be dead on
+every page view. Two drafts may link to each other.
