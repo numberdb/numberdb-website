@@ -1,0 +1,71 @@
+# The table document for numberdb-data#106, to be created on the site.
+Title: Monomial symmetric polynomials $m_\lambda$
+Definition: >-
+  For a partition $\lambda$ with at most $n$ parts, the monomial symmetric
+  polynomial is $m_\lambda(x_1, \dots, x_n) = \sum x^{\alpha}$, summed over
+  the distinct rearrangements $\alpha$ of $\lambda$ padded with zeros to
+  length $n$. Each monomial appears once.
+Parameters:
+  n:
+    type: Z
+    constraints: $1 \leq n \leq 5$
+    display: $n$
+  lambda:
+    type: Symbolic
+    constraints: a partition of at most $4$, with at most $n$ parts
+    display: $\lambda$
+Data properties:
+  type: Z[]
+  complete: no
+  rigour: exact
+Formulas:
+  formula-basis: >-
+    The $m_\lambda$ with $\lambda$ running over partitions of $d$ into at most
+    $n$ parts are a basis of the symmetric polynomials of degree $d$ in $n$
+    variables.
+  formula-homogeneous: >-
+    $h_d = \sum_{|\lambda| = d} m_\lambda$, where $h_d$ is the complete
+    homogeneous symmetric polynomial
+    HREF{Complete_homogeneous_symmetric_polynomials}.
+  formula-elementary: >-
+    $e_k = m_{(1^k)}$, the partition of $k$ into $k$ ones, where $e_k$ is the
+    elementary symmetric polynomial HREF{Elementary_symmetric_polynomials}.
+  formula-power-sum: >-
+    $p_k = m_{(k)}$, the one-part partition, where $p_k$ is the power sum
+    HREF{Power_sum_symmetric_polynomials}.
+  formula-count: >-
+    $m_\lambda$ has as many terms as there are distinct rearrangements of
+    $\lambda$ padded to length $n$: $\binom{n}{m_0, m_1, m_2, \dots}$ where
+    $m_i$ counts the parts equal to $i$.
+Comments:
+  comment-notation: >-
+    The partition is written as its parts, largest first, separated by
+    commas: $2,1,1$ is the partition $(2,1,1)$ of $4$.
+  comment-range: >-
+    Partitions of at most $4$ in at most $5$ variables, so that the longest
+    entry is 387 characters. The rule across these five tables is the largest
+    complete rectangle whose longest entry stays under about 600.
+  comment-schur: >-
+    The Schur polynomials HREF{Schur_polynomials} are indexed by the same
+    partitions and expand in this basis with non-negative integer
+    coefficients, the Kostka numbers.
+Links:
+  Wiki:
+    title: 'Wikipedia: Symmetric polynomial'
+    url: https://en.wikipedia.org/wiki/Symmetric_polynomial
+Tags:
+  - polynomial
+  - combinatorics
+  - algebra
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from itertools import permutations
+      def monomial_symmetric(n, lam):
+          R = PolynomialRing(ZZ, ['x%d' % (i+1) for i in range(n)])
+          exps = list(lam) + [0]*(n - len(lam))
+          return sum(prod(g^a for g, a in zip(R.gens(), e))
+                     for e in sorted(set(permutations(exps))))
+
+      monomial_symmetric(5, [3, 2])    # a partition of 5, past this table
