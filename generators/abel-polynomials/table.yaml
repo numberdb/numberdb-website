@@ -1,0 +1,56 @@
+# The table document for numberdb-data#90, to be created on the site.
+Title: Abel polynomials $A_n(x;a)$
+Definition: >-
+  The Abel polynomials are $A_0(x;a) = 1$ and
+  $A_n(x;a) = x\,(x - a n)^{n-1}$ for $n \geq 1$. They are polynomials in two
+  variables, $x$ and the parameter $a$.
+Parameters:
+  n:
+    type: Z
+    constraints: $0 \leq n \leq 20$
+    display: $n$
+Data properties:
+  type: Z[]
+  complete: no
+  rigour: exact
+Formulas:
+  formula-definition: >-
+    $A_n(x;a) = x\,(x - a n)^{n-1}$ for $n \geq 1$, and $A_0 = 1$.
+  formula-binomial-type: >-
+    $A_n(x+y; a) = \sum_{k=0}^{n} \binom{n}{k} A_k(x;a)\, A_{n-k}(y;a)$: the
+    Abel polynomials are of binomial type, which is the property that
+    characterises them among Sheffer sequences.
+  formula-at-a-zero: >-
+    $A_n(x;0) = x^{n}$.
+  formula-cayley: >-
+    $A_n(1;-1) = (n+1)^{n-1}$, the number of labelled trees on $n+1$ vertices
+    (Cayley's formula). More generally $A_n(x;-1) = x(x+n)^{n-1}$ counts
+    labelled rooted forests.
+  formula-derivative: >-
+    $A_n(x;a)$ is the image of $x^{n}$ under the umbral operator inverse to
+    $f \mapsto f(x+a)$, which is what "Abel sequence" means.
+Comments:
+  comment-two-variables: >-
+    Stored as polynomials in $x$ and $a$ together, rather than as a family
+    indexed by $a$: $a$ is a parameter of the polynomial, not of the table.
+    The same choice as the Dickson polynomials
+    HREF{Dickson_polynomials_of_the_first_kind}.
+  comment-range: >-
+    Twenty is where the longest entry reaches 551 characters, which is about
+    where the polynomial tables here stop being something a person reads.
+Links:
+  Wiki:
+    title: 'Wikipedia: Abel polynomials'
+    url: https://en.wikipedia.org/wiki/Abel_polynomials
+Tags:
+  - polynomial
+  - combinatorics
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x, a> = ZZ[]
+      def abel(n):
+          return R(1) if n == 0 else x * (x - a*n)^(n - 1)
+
+      abel(21)                         # the next one after this table

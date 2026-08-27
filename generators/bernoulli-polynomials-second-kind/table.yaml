@@ -1,0 +1,61 @@
+# The table document for numberdb-data#83, to be created on the site.
+Title: Bernoulli polynomials of the second kind $\psi_n$
+Definition: >-
+  The Bernoulli polynomials of the second kind, also called the Fontana-Bessel
+  polynomials, are defined by the generating function
+  $\frac{t}{\log(1+t)}\,(1+t)^{x} = \sum_{n \geq 0} \psi_n(x)\,
+  \frac{t^{n}}{n!}$. They are monic of degree $n$ with rational coefficients.
+Parameters:
+  n:
+    type: Z
+    constraints: $0 \leq n \leq 25$
+    display: $n$
+Data properties:
+  type: Q[]
+  complete: no
+  rigour: exact
+Formulas:
+  formula-generating-function: >-
+    $\frac{t}{\log(1+t)}\,(1+t)^{x} = \sum_{n \geq 0} \psi_n(x)\,
+    \frac{t^{n}}{n!}$.
+  formula-cauchy-numbers: >-
+    $\psi_n(0) = b_n$, the Cauchy numbers of the first kind:
+    $1, \tfrac{1}{2}, -\tfrac{1}{6}, \tfrac{1}{4}, -\tfrac{19}{30},
+    \tfrac{9}{4}, \dots$
+  formula-monic: >-
+    $\psi_n$ is monic of degree $n$.
+  formula-integral: >-
+    $\psi_n(x) = n! \int_{0}^{1} \binom{x+u}{n}\, du$, which is the form in
+    which they arise in the Gregory-Newton interpolation of an integral.
+Comments:
+  comment-convention: >-
+    The convention here puts the $n!$ in the generating function, so that
+    $\psi_1(x) = x + \tfrac{1}{2}$ and $\psi_n$ is monic. Some authors write
+    $\sum b_n(x) t^{n}$ without the factorial, giving $b_n = \psi_n / n!$;
+    every statement here is about the monic form.
+  comment-first-kind: >-
+    Not the Bernoulli polynomials HREF{Bernoulli_polynomials}, which come from
+    $\frac{t e^{xt}}{e^{t}-1}$ and whose constant terms are the Bernoulli
+    numbers. These come from $\frac{t}{\log(1+t)}$ and their constant terms
+    are the Cauchy numbers; the two families are related by the change from
+    $e^{t}-1$ to $\log(1+t)$, which is the inverse substitution.
+  comment-range: >-
+    Twenty-five is where the longest entry reaches 636 characters.
+Links:
+  Wiki:
+    title: 'Wikipedia: Bernoulli polynomials of the second kind'
+    url: https://en.wikipedia.org/wiki/Bernoulli_polynomials_of_the_second_kind
+Tags:
+  - polynomial
+  - number theory
+  - generating function
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x> = QQ[]
+      P.<t> = PowerSeriesRing(R, default_prec=30)
+      series = t/log(1+t) * sum(binomial(x, k)*t^k for k in range(30))
+      psi = [series[n] * factorial(n) for n in range(26)]
+
+      series[26] * factorial(26)       # the next one after this table

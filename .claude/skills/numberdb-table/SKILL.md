@@ -47,6 +47,15 @@ not at an encyclopedia article about them.
     numberdb.search_text('Chebyshev')          # titles and tags
     numberdb.table('T99')                      # what it holds
 
+**Never guess a table's address.** `HREF{...}` takes the slug, and the slug is
+not the title with underscores: mathematics is dropped from it, it is
+truncated, and a clash appends a number. A table called "Power sum symmetric
+polynomials $p_k$" is at `Power_sum_symmetric_polynomials`, and a link written
+to `Power_sum_polynomials` from the shorter name in one's head points at
+nothing. Read it off the table -- `numberdb.table('T119')` and the `url` in
+the answer, or the address bar -- and let `manage.py audit_table` confirm it
+afterwards rather than instead.
+
 ## 2. Decide what the table says before computing anything
 
 Write these down first. Every one of them has gone wrong in this corpus, and
