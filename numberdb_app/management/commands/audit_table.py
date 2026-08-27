@@ -62,13 +62,24 @@ class Command(BaseCommand):
 		#HREF{Integers} and HREF{T13} both resolve.
 		urls = set(Table.objects.values_list('url', flat=True))
 		urls |= set(Table.objects.values_list('tid', flat=True))
+
+		#Which of those a *published* table may point at is narrower. A draft
+		#answers 404 to everybody, so a published table linking to one gives
+		#every visitor a dead link -- and this check passed it, because the
+		#draft's address exists in the database. Two drafts may link to each
+		#other: they become visible together.
+		public = set(Table.objects.filter(published=True)
+		             .values_list('url', flat=True))
+		public |= set(Table.objects.filter(published=True)
+		              .values_list('tid', flat=True))
 		titles = {t.title.lower(): t for t in Table.objects.all()}
 		found_any = False
 
 		for table in tables:
 			tree = tree_of(table.head_revision)
 			findings = list(self._check(table, tree, urls, titles,
-			                            fetch=options['links']))
+			                            fetch=options['links'],
+			                            public=public))
 			if not findings:
 				continue
 			found_any = True
@@ -79,7 +90,7 @@ class Command(BaseCommand):
 		if not found_any:
 			self.stdout.write('Nothing to report.')
 
-	def _check(self, table, tree, urls, titles, fetch=False):
+	def _check(self, table, tree, urls, titles, fetch=False, public=None):
 		from numberdb_app.validate import DATA_TYPES, RIGOUR_LEVELS
 
 		import json
@@ -97,9 +108,14 @@ class Command(BaseCommand):
 				yield 'CITE{%s} is not a Link or a Reference' % cite
 		for href in sorted(set(re.findall(r'HREF\{([^}\]]+)\}', prose))):
 			target = href.split('#')[0]
-			if target and not target.startswith(('http://', 'https://')) \
-					and target not in urls:
-				yield 'HREF{%s} names no table here' % target
+			if target and not target.startswith(('http://', 'https://')):
+				if target not in urls:
+					yield 'HREF{%s} names no table here' % target
+				elif (table.published and public is not None
+						and target not in public):
+					yield ('HREF{%s} points at a draft, which answers 404 to '
+					       'everybody; a published table must not link to one'
+					       % target)
 
 		#An external link to something the database holds itself.
 		for name, link in (tree.get('Links') or {}).items():
