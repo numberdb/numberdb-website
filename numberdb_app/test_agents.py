@@ -232,3 +232,49 @@ class ATableIsNotBuiltInItsOwnHistory(TestCase):
 			source = ' '.join(handle.read().split())
 		self.assertIn('needs no table for this', source)
 		self.assertIn('nothing is sent anywhere and no key is needed', source)
+
+
+class ProposalsAreScreenedNotJustWritten(TestCase):
+	"""Three failure modes prose cannot catch, because a proposal that fails
+	any of them reads exactly like one that does not: a family that does not
+	exist, one the corpus already holds under another name, and one somebody
+	already asked for."""
+
+	def screen(self):
+		import importlib.util
+
+		path = os.path.join(settings.BASE_DIR, 'agents', 'table-ideas',
+		                    'screen.py')
+		spec = importlib.util.spec_from_file_location('agent_screen', path)
+		module = importlib.util.module_from_spec(spec)
+		spec.loader.exec_module(module)
+		return module
+
+	def test_the_prompt_requires_a_source_and_screens_it(self):
+		body = prompt('table-ideas')
+		self.assertIn('source_names_it', body)
+		self.assertIn('Cite a source for every proposal', body)
+
+	def test_the_prompt_says_what_a_real_check_looks_like(self):
+		body = prompt('table-ideas')
+		self.assertIn('is not a check; it is a hope', body)
+
+	def test_the_prompt_refuses_to_pad_the_list(self):
+		body = prompt('table-ideas')
+		self.assertIn('The count is a ceiling, not a target', body)
+
+	def test_it_refuses_a_type_the_database_does_not_hold(self):
+		complaints = self.screen().representable('Matrix', True, 1)
+		self.assertTrue(any('not one of' in c for c in complaints))
+
+	def test_it_refuses_a_parameter_that_cannot_be_enumerated(self):
+		#numberdb-data#121: Lagrange polynomials over general point sets.
+		complaints = self.screen().representable('Q[]', False, 1)
+		self.assertTrue(any('canonical enumeration' in c for c in complaints))
+
+	def test_it_refuses_more_variables_than_the_search_key_allows(self):
+		complaints = self.screen().representable('Z[]', True, 9)
+		self.assertTrue(any('permutations' in c for c in complaints))
+
+	def test_it_accepts_a_shape_the_database_does_hold(self):
+		self.assertEqual(self.screen().representable('Z[]', True, 2), [])
