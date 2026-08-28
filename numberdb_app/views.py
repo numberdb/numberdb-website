@@ -902,8 +902,24 @@ def table_context(table, preview=False):
 		current_job = 'parsing display properties'
 		param_groups = [[p] for p in parameters]
 		number_header = None
+		#What a table says about an entry, shown under the entry.
+		#
+		#Every row has carried this since the beginning and the template only
+		#showed it when there was no number, so it was visible exactly when
+		#there was nothing to attach it to. Nine thousand of them were
+		#invisible, including "Value is only a heuristic estimate" on T100 and
+		#the LMFDB link on every elliptic curve entry.
+		#
+		#Shown by default, because an author who wrote something about a value
+		#meant a reader to see it. A table that would rather not can say so.
+		show_entry_notes = True
+
 		if 'Display properties' in data:
 			display_properties = data['Display properties']
+			if 'entry notes' in display_properties:
+				show_entry_notes = (
+					str(display_properties['entry notes']).strip().lower()
+					not in ('hidden', 'no', 'none', 'off', 'false'))
 			if 'group parameters' in display_properties:
 				param_groups = display_properties['group parameters']
 			if 'number-header' in display_properties:
@@ -1111,6 +1127,7 @@ def table_context(table, preview=False):
 				'title': pluralize('Number',table.number_count),
 				'param_groups': param_groups_display,
 				'number_header': number_header,
+				'show_entry_notes': show_entry_notes,
 			}
 			number_list = number_table_as_list(numbers)
 			'''
@@ -1138,6 +1155,7 @@ def table_context(table, preview=False):
 				'title': number_section_title,
 				'param_groups': param_groups_display,
 				'number_header': number_header,
+				'show_entry_notes': show_entry_notes,
 			}
 			number_list = number_table_as_list(numbers)
 			number_section['number_list'] = number_list
