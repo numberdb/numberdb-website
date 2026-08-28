@@ -206,6 +206,17 @@ function scrollTo(event, id) {
           <div class="table-cell-right table-number">
             {% if n.number %}
                 {{ n.number | safe}}{% if n.not_findable %}{% include 'includes/not-findable-mark.html' %}{% endif %}
+                {% comment %}
+                What the table says about this particular value, under it.
+                This used to appear only in the branch below -- that is, only
+                when there was no number to say it about -- so a caveat like
+                "only a heuristic estimate" was written, stored, and never
+                shown. A line rather than a tooltip: a tooltip is invisible to
+                a keyboard, to a phone, to print, and to anyone scanning.
+                {% endcomment %}
+                {% if number_section.show_entry_notes and n.extra_info %}
+                  {% include 'includes/number-extra-info-snippet.html' with info=n.extra_info %}
+                {% endif %}
             {% else %}
               {% include 'includes/number-extra-info-snippet.html' with info=n.extra_info %}
             {% endif %}
