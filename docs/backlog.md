@@ -594,3 +594,97 @@ back are in place:
 `audit_table` refuses a link from a published table into a draft, which it
 used to pass: a draft answers 404 to everybody, so the link would be dead on
 every page view. Two drafts may link to each other.
+
+## Transformations: finding a number that appears here in a different form
+
+The use case the whole database serves is: a number came out of a calculation,
+and the question is whether it is already known somewhere else. A table that
+holds `x/5` when the searcher has `x` fails that question, and fails it
+silently -- the searcher concludes the number is new.
+
+Advanced search already answers part of this from the searcher's side: it takes
+a batch of numbers, so `x*p/q` for bounded `p, q` can be asked as one query,
+and the searcher decides which transformations are worth trying. That is the
+right place for a searcher's guesses.
+
+**What is missing is the table's side.** Some transformations are natural to a
+particular table rather than to a particular search, and the table is the only
+place that knows them:
+
+* The zeros of the Riemann zeta function are stored as their imaginary parts.
+  Somebody holding the complex zero `1/2 + 14.134...i` should find them, and
+  somebody holding the modulus perhaps too.
+* An orthogonal family on `[-1,1]` has a natural twin on `[0,1]`, reached by
+  `x -> 2x - 1`. Somebody who met the shifted form should find the table.
+* A polynomial met with its coefficients reversed, or scaled to be monic, is
+  the same object for the purpose of "have I seen this before".
+
+None of these should need a second table. A second table for the shifted
+Legendre polynomials would double the corpus for no new mathematics, and the
+two would then have to be kept in step.
+
+### The shape of it
+
+A table declares transformations of its own entries that are also searchable.
+The index carries the transformed values; the table stores what it stores.
+
+Four things have to be settled and none of them is obvious:
+
+**A hit must say which form matched.** "Your number is in T3" is wrong if what
+is in T3 is half of it. The result has to carry the transformation, or the
+answer misleads in exactly the way the database exists to prevent.
+
+**Rigour is derived, not inherited.** `sqrt(x)` of a proven interval is proven
+only if the square root was taken in interval arithmetic. Taking it of the
+printed digits gives a number whose last places are wrong, and the T93 episode
+is what that looks like when nobody checks. A transformation has to be computed
+the way the entry was.
+
+**Every transformation added makes a hit mean less.** If enough forms are
+searchable, every number matches something and the answer "this is known"
+stops carrying information. This is the real cost and it is not a
+storage cost. A short, argued list per table is worth more than a general
+mechanism applied everywhere.
+
+**The index grows by a factor per transformation**, on 56,000 entries.
+
+### Worth considering, roughly in order of how often they would help
+
+    x -> p x / q for small p, q        already available from the search side
+    x -> 1/x                           reciprocals are met constantly
+    x -> -x                            a sign convention differing
+    complex <-> real and imaginary parts, and modulus
+    polynomial: reversal, monic scaling, x -> ax + b
+
+### For now
+
+Each table should hold the most natural form of its objects, so that the
+question arises as rarely as possible. The orthogonal families here are on
+their conventional intervals, the Bernstein basis on `[0,1]` where it belongs,
+and the Lagrange basis on the nodes it is usually written for. Where a table
+had a choice, the definition says which was taken -- that is what the
+convention rule in `corpus-shape.md` is for.
+
+## Finding table ideas at scale
+
+Two halves, and only the second is what has been done so far.
+
+**Which families are worth a table** is the harder half, and the use case
+answers it: a family earns a table if a number from somebody's calculation
+might turn out to be one of its members. That favours things that arise as
+answers -- constants, special values, invariants, discriminants -- over things
+that are merely easy to generate. numberdb-data#128 makes the point against
+itself: "Monomials. Trivial but maybe should be included?" A table of monomials
+would match everything and tell nobody anything.
+
+It also argues for breadth over depth. Fifty families with their first dozen
+members are worth more than one family with a thousand, because the question is
+"is this number known", not "give me more of this sequence".
+
+**Adding them** is what the last few days have been: measure before choosing a
+range, check every identity before writing it down and again on the values read
+back, reference tables that exist here rather than encyclopedias, and let
+`audit_table` catch what a person would not. That part is repeatable and could
+be run in batches by a program that has the skill and an API key -- with
+publication still an act by a person, for the reasons in
+`guarding-generated-tables.md`.
