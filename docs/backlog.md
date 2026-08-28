@@ -659,11 +659,22 @@ mechanism applied everywhere.
 ### For now
 
 Each table should hold the most natural form of its objects, so that the
-question arises as rarely as possible. The orthogonal families here are on
-their conventional intervals, the Bernstein basis on `[0,1]` where it belongs,
-and the Lagrange basis on the nodes it is usually written for. Where a table
-had a choice, the definition says which was taken -- that is what the
-convention rule in `corpus-shape.md` is for.
+question arises as rarely as possible.
+
+The polynomial tables here do. Worth being exact about why: a family does not
+live "on an interval" -- the interval is where it is orthogonal, which is a
+property and not the definition. T98 defines the Chebyshev polynomials by
+`T_n(cos a) = cos(na)`, which determines them and leaves nothing to choose;
+the Bernstein basis is given by its formula; the Lagrange basis names its
+nodes. The shifted families are genuinely different polynomials, reached by
+`x -> 2x - 1`, which is exactly why they are a transformation to find rather
+than a convention to pick.
+
+Where a table did have a choice -- the two Hermite conventions, the
+factorial in the Bernoulli polynomials of the second kind, the parameter order
+in Bernstein -- the definition says which was taken. That is what the
+convention rule in `corpus-shape.md` is for, and the reason it is there is
+T52, which could not be reproduced from what it said.
 
 ## Finding table ideas at scale
 
