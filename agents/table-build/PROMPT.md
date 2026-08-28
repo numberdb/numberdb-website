@@ -59,17 +59,35 @@ counted set partitions for the Bell coefficients.
   initialised. Write the arithmetic out: a determinant over permutations, a
   series product coefficient by coefficient.
 
-**7. Create it as a draft**, fill it, and run `verify()`. Then check the
-identities again **on the values read back out of the database** -- `verify()`
-compares a table with the generator that made it and cannot catch a generator
-wrong in the same way twice.
+**7. Do all of that before the table exists.** A table's history is public and
+permanent, so a table should not be built in it: repairing one in public leaves
+a revision per mistake. The Fibonacci polynomials took nine revisions, six of
+them corrections that could have happened privately; the tables built the other
+way took two.
 
-**8. Run `manage.py audit_table T1xx`** and act on what it says. It catches
+    sage -python agents/table-build/dry_run.py path/to/generate.py
+
+computes every entry, checks the exactness, measures the longest one, and sends
+nothing. It needs no table and no key -- the generator is asked for its values
+directly. Iterate here: change the range, fix the arithmetic, settle the
+definition, and run it again. It exits non-zero while anything is wrong.
+
+**8. Then create the draft, fill it once, and run `verify()`.** Two revisions,
+not nine. Check the identities again **on the values read back out of the
+database** -- `verify()` compares a table with the generator that made it and
+cannot catch a generator wrong in the same way twice.
+
+If something still needs repairing after this, repair it: a wrong table is
+worse than an untidy history, and `audit_table` findings are worth acting on
+whenever they arrive. The point is not to publish nothing twice, it is to have
+done the obvious checking first.
+
+**9. Run `manage.py audit_table T1xx`** and act on what it says. It catches
 what a person does not: a CITE naming nothing, a link out to something the
 corpus holds, a definition that has grown into four things, a snippet whose
 range no longer matches the table, a published table linking to a draft.
 
-**9. Offer it for review** and stop. Say what you did, what you checked, and
+**10. Offer it for review** and stop. Say what you did, what you checked, and
 what you decided that the proposal did not settle.
 
 ## Run the checks rather than re-writing them

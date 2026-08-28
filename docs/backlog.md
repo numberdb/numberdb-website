@@ -717,3 +717,40 @@ run can be stopped by revoking one key.
 **What a batch costs.** A stage-two run computed, checked and filled two
 tables in about an hour of wall time here, most of it Sage. Worth measuring
 before running several at once on a machine that also serves the site.
+
+## Should revisions be stored as diffs rather than snapshots?
+
+Measured before deciding, and the answer is no.
+
+    whole database        222 MB
+      db_number           132 MB   the search index
+      db_tablerevision     36 MB   all of the history
+      db_tabledata         17 MB
+
+The revision text is 63.7 MB uncompressed across 840 revisions, and 36 MB on
+disk -- Postgres already compresses it. Storing first-plus-diffs would take
+about 31% of the raw size, measured on the heaviest table (T64, ten revisions,
+2.32 MB of content). So the saving is roughly 25 MB of a 222 MB database, and
+the history is 16% of it while the search index is 59%.
+
+Against that:
+
+**A snapshot is self-contained.** A diff chain is not: a bug in reconstruction,
+or one corrupt link, loses everything after it. For a database whose claim is
+that a value can be traced to what produced it, that is the wrong trade at any
+saving, and certainly at this one.
+
+**It would be paid for on every read.** The history page, the review diff, the
+export and the revert all want a whole document, so each would reconstruct one.
+
+If storage ever binds, it binds on `db_number` -- the index, not the history --
+and the interesting lever there is the transformation question above, which
+would multiply it.
+
+**What is worth doing about long histories is not about bytes.** A history
+should record what changed about the table, not the process of getting it
+right, and that is a matter of building the table before creating it:
+`agents/table-build/dry_run.py` computes and checks every entry with no table
+and no key. The Fibonacci polynomials took nine revisions, six of them
+corrections that could have happened privately; the tables built afterwards
+took two, against a corpus median of seven.

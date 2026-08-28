@@ -203,3 +203,32 @@ class TheRulesThatAreNotChecksAreStated(TestCase):
 	def test_it_points_at_the_toolkit_rather_than_asking_for_prose(self):
 		self.assertIn('check.py', self.body)
 		self.assertIn('exactness', self.body)
+
+
+class ATableIsNotBuiltInItsOwnHistory(TestCase):
+	"""A table's history is public and permanent, so the repairing happens
+	before it exists. The Fibonacci polynomials took nine revisions, six of
+	them corrections that could have been made privately; the tables built
+	after this pattern took two."""
+
+	def setUp(self):
+		self.body = prompt('table-build')
+
+	def test_it_says_to_check_before_the_table_exists(self):
+		self.assertIn('before the table exists', self.body)
+		self.assertIn('dry_run.py', self.body)
+
+	def test_it_says_how_many_revisions_that_saved(self):
+		self.assertIn('nine revisions', self.body)
+
+	def test_it_still_allows_repair_afterwards(self):
+		#The point is not to publish nothing twice; a wrong table is worse
+		#than an untidy history.
+		self.assertIn('a wrong table is worse than an untidy history', self.body)
+
+	def test_the_dry_run_needs_no_table_and_no_key(self):
+		with open(os.path.join(settings.BASE_DIR, 'agents', 'table-build',
+		                       'dry_run.py'), encoding='utf8') as handle:
+			source = ' '.join(handle.read().split())
+		self.assertIn('needs no table for this', source)
+		self.assertIn('nothing is sent anywhere and no key is needed', source)
