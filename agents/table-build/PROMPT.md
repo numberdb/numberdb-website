@@ -72,6 +72,52 @@ range no longer matches the table, a published table linking to a draft.
 **9. Offer it for review** and stop. Say what you did, what you checked, and
 what you decided that the proposal did not settle.
 
+## Run the checks rather than re-writing them
+
+`agents/table-build/check.py` holds what this work needs repeatedly. Use it
+instead of writing your own, which is how it stays as good as the day it caught
+something:
+
+    exactness(values)        every coefficient is an exact Sage number.
+                             Catches the float class mechanically: a Bessel
+                             polynomial built by dividing Python ints reports
+                             "coefficient 1.0 is a float", where `c in ZZ` says
+                             nothing is wrong.
+    measure(values)          entries, longest written entry, block size --
+                             so the range is chosen from data.
+    agrees_with(values, f)   compare against a computation sharing no code.
+    names_its_rings(path)    the generator does not import sage.all, and does
+                             import numberdb.sage.
+    stored(tid)              the table read back, to check identities on what
+                             was published rather than on what was computed.
+
+## Three rules that are not checks
+
+These are where a run is weaker than a careful person, so they are stated
+rather than left to judgement.
+
+**When two computations disagree, neither is right until you know why.** Do not
+pick the one that looks better and move on. The Bessel polynomials came from a
+closed form and from a recurrence, and they differed from n = 16; the cause was
+float division, and taking either at face value would have published wrong
+digits. Chase it to a cause you can name.
+
+**A measurement needs a control that returns an answer you already know.** The
+first attempt at an orthogonality check used Simpson's rule on a singular
+weight and reported -0.023 for a pairing that is exactly zero -- and its
+control silently returned zero for everything through a coercion error, so it
+agreed with the wrong answer while looking like agreement. Run the control
+first, and check it gives the known answer, before believing anything else the
+method says.
+
+**Declining is a good outcome.** A run that builds nothing and explains why is
+worth more than one that guessed a convention. Four families were looked at and
+left this week -- Mahler, Bateman, Boole, the Stirling polynomials -- because
+each has more than one convention in circulation and there was no independent
+value to check a choice against. Say what you found, what the choices are, and
+what would settle it. A table whose definition was guessed is worth less than
+no table, and is harder to remove than to never add.
+
 ## Two limits you will meet
 
 **Six variables.** Matching polynomials that differ only in variable names

@@ -116,3 +116,90 @@ class TheLessonsLoopSaysHowALessonLands(TestCase):
 		                       'test_skill.py'), encoding='utf8') as handle:
 			source = handle.read()
 		self.assertGreaterEqual(source.count('def test_'), 30)
+
+
+class TheCheckingToolkitCatchesWhatItWasBuiltFor(TestCase):
+	"""Each of these reproduces an error that was actually made.
+
+	The toolkit exists because prose asking a run to "make sure the arithmetic
+	is exact" gets a confident answer, and a function that inspects the
+	coefficients does not.
+	"""
+
+	def toolkit(self):
+		import importlib.util
+
+		path = os.path.join(settings.BASE_DIR, 'agents', 'table-build',
+		                    'check.py')
+		spec = importlib.util.spec_from_file_location('agent_check', path)
+		module = importlib.util.module_from_spec(spec)
+		spec.loader.exec_module(module)
+		return module
+
+	def test_it_catches_a_float_pretending_to_be_an_integer(self):
+		#The Bessel bug: Python ints divided with / give floats that are
+		#exact to 2^53 and wrong after, and `c in ZZ` says nothing is wrong.
+		complaints = self.toolkit().exactness({16: [1.0, 2.0, 92854250304440624.0]})
+		self.assertTrue(complaints)
+		self.assertIn('float', complaints[0])
+
+	def test_it_looks_at_the_numbers_not_the_container(self):
+		#Its first version reported "unexpected type list" for a list of
+		#floats, which is a check stumbling on the shape instead of doing its
+		#job.
+		complaints = self.toolkit().exactness({1: [[1.5], [2.5]]})
+		self.assertTrue(complaints)
+		self.assertIn('float', complaints[0])
+
+	def test_it_passes_exact_values(self):
+		from fractions import Fraction
+
+		self.assertEqual(self.toolkit().exactness({1: 3, 2: 4}), [])
+
+	def test_it_measures_the_longest_entry(self):
+		measured = self.toolkit().measure({1: 'x', 2: 'x^2 + 3*x + 1'})
+		self.assertEqual(measured['entries'], 2)
+		self.assertEqual(measured['longest'], len('x^2 + 3*x + 1'))
+		self.assertEqual(measured['longest_at'], 2)
+
+	def test_it_reports_a_disagreement_with_an_independent_computation(self):
+		found = self.toolkit().agrees_with({1: 10, 2: 20}, lambda k: k * 10 + 1)
+		self.assertEqual(len(found), 2)
+
+	def test_it_refuses_a_generator_that_imports_sage_all(self):
+		import tempfile
+
+		with tempfile.NamedTemporaryFile('w', suffix='.py', delete=False) as f:
+			f.write('import numberdb.sage\nfrom sage.all import QQ\n')
+			path = f.name
+		complaints = self.toolkit().names_its_rings(path)
+		self.assertTrue(any('sage.all' in c for c in complaints))
+
+	def test_it_requires_the_generator_to_initialise_sage(self):
+		import tempfile
+
+		with tempfile.NamedTemporaryFile('w', suffix='.py', delete=False) as f:
+			f.write('from sage.rings.rational_field import QQ\n')
+			path = f.name
+		complaints = self.toolkit().names_its_rings(path)
+		self.assertTrue(any('numberdb.sage' in c for c in complaints))
+
+
+class TheRulesThatAreNotChecksAreStated(TestCase):
+
+	def setUp(self):
+		self.body = prompt('table-build')
+
+	def test_disagreement_must_be_chased_to_a_cause(self):
+		self.assertIn('neither is right until you know why', self.body)
+
+	def test_a_measurement_needs_a_working_control(self):
+		self.assertIn('control that returns an answer you already know',
+		              self.body)
+
+	def test_declining_is_allowed_and_expected(self):
+		self.assertIn('Declining is a good outcome', self.body)
+
+	def test_it_points_at_the_toolkit_rather_than_asking_for_prose(self):
+		self.assertIn('check.py', self.body)
+		self.assertIn('exactness', self.body)

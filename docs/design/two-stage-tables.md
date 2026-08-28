@@ -76,3 +76,37 @@ The cost is real: each run re-reads the corpus and re-learns the shape of the
 work, and that is slower. It is worth it, on the same argument as everything
 else here -- the expensive check is the one that catches the error the cheap
 one misses.
+
+## Is stage two as good as a person doing it?
+
+No, and it is worth being exact about the gap rather than hoping.
+
+Of the things that actually caught an error while these tables were being
+made, four are now mechanical, three are stated as rules, and one is not
+reproducible at all:
+
+    caught by                                    now
+    ------------------------------------------   ----------------------------
+    float coefficients passing `c in ZZ`         check.exactness
+    a generator importing sage.all               check.names_its_rings
+    a range chosen before measuring              check.measure
+    a slug guessed, a definition grown to four   audit_table
+      things, a link to something we hold
+    two computations disagreeing                 a rule in the prompt
+    a measurement without a working control      a rule in the prompt
+    guessing a convention rather than declining  a rule in the prompt
+    somebody asking "is that actually true?"     nothing
+
+The last line is the real one. Several of the best findings this week came from
+Benjamin pushing back -- that multivariate polynomials are supported, that
+entry comments were never displayed, that six variables is already a lot. No
+prompt reproduces someone who knows the project asking whether a claim is true.
+
+That is an argument for the review step rather than against the automation. The
+run leaves a draft; a person reads it before it becomes public; and the run is
+told to make that reading easy by saying what it decided and what it could not
+check. It is also an argument for the adversarial pass sketched in
+`guarding-generated-tables.md` -- a second agent whose only job is to attack
+the table, propose an experiment that would fail if a claim were false, and run
+it. That is the nearest mechanical thing to being asked whether it is true, and
+it is the obvious next piece to build.
