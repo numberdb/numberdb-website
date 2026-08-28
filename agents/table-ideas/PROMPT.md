@@ -72,6 +72,41 @@ size limits.
 
 **What it would link to.** Tables in the corpus it relates to, by T-number.
 
+## Screen every proposal before you write it up
+
+`agents/table-ideas/screen.py` checks the three things prose cannot, because a
+proposal that fails any of them reads exactly like one that does not:
+
+    source_names_it(name, url)     the source exists and actually names this
+                                   family. A proposal for the "Zhang-Liu
+                                   polynomials" citing a real Wikipedia article
+                                   that says nothing of them fails here, and
+                                   reads perfectly well otherwise.
+    already_here(name)             tables the corpus holds that look like it
+    already_asked(name)            issues that ask for it, open or closed --
+                                   a closed one usually means it exists
+    representable(kind, finite,    the value is one of the eight types, the
+                  variables)       parameter can be enumerated, and there are
+                                   at most six variables
+
+**Cite a source for every proposal and run `source_names_it` on it.** Not as a
+formality: it is the only check that a family is real and is called what you
+say. Wikipedia, MathWorld, DLMF, OEIS or a paper.
+
+## What a good check looks like
+
+"There is a known closed form" is not a check; it is a hope. Name something a
+builder could run this afternoon:
+
+* a specialisation to a sequence with an OEIS number
+* a value in a published table, quoted
+* an identity relating it to a table this database already holds
+* a count of something small, done by brute force
+
+**If you cannot name one, say so in the proposal.** That is not a failure --
+four families were looked at and left this week for exactly this reason, and
+saying which were left, and what would settle each, is a useful result.
+
 ## Shape of the batch
 
 Propose **four to eight related families**, not a list of unrelated ideas. A
@@ -81,6 +116,10 @@ so were the Bernoulli-and-Euler pair.
 
 Rank them, and say plainly which you would not do and why. A proposal you argue
 against is more useful than one you pad the list with.
+
+**Four good ones beat eight with three weak.** The count is a ceiling, not a
+target. A batch of two, argued well, is a good result; a batch padded to eight
+costs the next person the time to reject five of them.
 
 ## What you must not do
 

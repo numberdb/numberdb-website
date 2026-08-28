@@ -77,6 +77,40 @@ work, and that is slower. It is worth it, on the same argument as everything
 else here -- the expensive check is the one that catches the error the cheap
 one misses.
 
+## Stage one's failure modes
+
+Three of them are invisible in prose, because a proposal that fails any reads
+exactly like one that does not. Those are screened:
+
+    a family that does not exist, or is not called that   source_names_it
+    one the corpus already holds under another name       already_here
+    one somebody already asked for, open or closed        already_asked
+    one that cannot be a table at all                     representable
+
+The first is the one worth having. A proposal for the "Zhang-Liu polynomials"
+citing a real Wikipedia article about something else is fluent, plausible, and
+wrong, and nothing in the writing gives it away -- `source_names_it` fetches
+the page and looks for the distinguishing words, and reports that the source
+does not mention it.
+
+Two more are addressed by saying so plainly rather than by a check:
+
+**A claimed check that cannot be run.** "There is a known closed form" is a
+hope. The prompt asks for something a builder could run this afternoon -- a
+specialisation to an OEIS sequence, a value in a published table, an identity
+tying it to a table already here -- and says that having none is a result worth
+reporting rather than a gap to paper over.
+
+**Padding to the requested count.** An agent asked for four to eight will
+produce eight. The count is stated as a ceiling, and a batch of two argued well
+as a good outcome, because the cost of a weak proposal is the next person's
+time rejecting it.
+
+What is left unguarded is the interesting half: whether the family is worth
+having at all. The use case answers it -- would a number from somebody's
+calculation turn out to be one of these -- and that is a judgement, checked by
+the person who reads the batch.
+
 ## Is stage two as good as a person doing it?
 
 No, and it is worth being exact about the gap rather than hoping.
