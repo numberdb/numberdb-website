@@ -699,3 +699,21 @@ back, reference tables that exist here rather than encyclopedias, and let
 be run in batches by a program that has the skill and an API key -- with
 publication still an act by a person, for the reasons in
 `guarding-generated-tables.md`.
+
+## Running the two stages
+
+`agents/` holds the prompts; `docs/design/two-stage-tables.md` argues the
+shape. What is not built yet is the runner -- the thing that starts a session,
+hands it the prompt and a key, and collects what comes back. That is
+deliberately last: the prompts are the hard part and they can be used by hand
+today, which is also how they get tested before anything runs unattended.
+
+Two things to settle when it is built:
+
+**Where the key comes from.** An agent gets its own API key, not Benjamin's, so
+its writes are attributable and its rate limit is its own. That also means a
+run can be stopped by revoking one key.
+
+**What a batch costs.** A stage-two run computed, checked and filled two
+tables in about an hour of wall time here, most of it Sage. Worth measuring
+before running several at once on a machine that also serves the site.
