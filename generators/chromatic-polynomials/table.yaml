@@ -1,0 +1,73 @@
+# The table document for numberdb-data#97, to be created on the site.
+Title: Chromatic polynomials of connected graphs
+Definition: >-
+  The chromatic polynomial $P(G, x)$ of a graph $G$ counts the proper
+  colourings of $G$ with $x$ colours: the number of maps from the vertices to
+  a set of size $x$ giving adjacent vertices different colours. It is a
+  polynomial in $x$ of degree $|V(G)|$.
+Parameters:
+  g:
+    type: Symbolic
+    constraints: a connected graph on at most $7$ vertices, named by its
+      canonical graph6 string
+    display: $G$
+Data properties:
+  type: Z[]
+  complete: yes
+  rigour: exact
+Formulas:
+  formula-deletion-contraction: >-
+    $P(G, x) = P(G - e, x) - P(G / e, x)$ for any edge $e$, where $G - e$ is
+    $G$ with the edge deleted and $G / e$ with it contracted. This determines
+    the polynomial and is how it is computed.
+  formula-leading-terms: >-
+    $P(G, x) = x^{n} - m\,x^{n-1} + \cdots$ for a graph with $n$ vertices and
+    $m$ edges, and the coefficients alternate in sign.
+  formula-constant-term: >-
+    $P(G, 0) = 0$, and $P(G, 1) = 0$ for a graph with at least one edge. The
+    smallest $x$ with $P(G, x) > 0$ is the chromatic number.
+  formula-tutte: >-
+    $P(G, x) = (-1)^{n-1} x\, T(G; 1-x, 0)$ for a connected graph on $n$
+    vertices, where $T$ is the Tutte polynomial
+    HREF{Tutte_polynomials_of_connected_graphs}.
+Comments:
+  comment-graph6: >-
+    Graphs are named by their graph6 string CITE{Graph6}, McKay's compact
+    encoding, taken after a canonical relabelling so that the name depends on
+    the graph and not on how its vertices happen to be numbered. Recover the
+    graph in Sage with $\texttt{Graph(name)}$, and produce the name with
+    $\texttt{g.canonical\_label().graph6\_string()}$.
+  comment-connected: >-
+    Connected graphs only. The chromatic polynomial of a disconnected graph is
+    the product of those of its components, so nothing is lost and the table
+    is half the size.
+  comment-named: >-
+    Thirty-five of the $996$ graphs here have a name in common use; those
+    entries carry it. The rest have no name, which is why the graph6 string
+    is the parameter rather than a convenience.
+  comment-complete: >-
+    Complete in the strict sense: every connected graph on at most seven
+    vertices is here, all $996$ of them, in the counts
+    $1, 1, 2, 6, 21, 112, 853$.
+Links:
+  Wiki:
+    title: 'Wikipedia: Chromatic polynomial'
+    url: https://en.wikipedia.org/wiki/Chromatic_polynomial
+  Graph6:
+    title: 'The graph6 and sparse6 formats (McKay)'
+    url: https://users.cecs.anu.edu.au/~bdm/data/formats.txt
+  OEIS:
+    title: 'OEIS A001349: number of connected graphs on n nodes'
+    url: https://oeis.org/A001349
+Tags:
+  - polynomial
+  - combinatorics
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      G = Graph('I@OZCMgs?')           # the Petersen graph, by its name here
+      G.chromatic_polynomial()
+
+      # and the name of a graph you have:
+      G.canonical_label().graph6_string()
