@@ -311,3 +311,37 @@ class ProposalsAreScreenedNotJustWritten(TestCase):
 		#exactly like an empty corpus.
 		body = prompt('table-ideas')
 		self.assertIn('.tables', body)
+
+
+class TheToolkitUnderstandsInexactTables(TestCase):
+	"""Not every table holds polynomials. A real table computed rigorously
+	carries balls, and the check has to tell a good one from a dangerous one."""
+
+	def check(self):
+		import importlib.util
+
+		path = os.path.join(settings.BASE_DIR, 'agents', 'table-build',
+		                    'check.py')
+		spec = importlib.util.spec_from_file_location('agent_check', path)
+		module = importlib.util.module_from_spec(spec)
+		spec.loader.exec_module(module)
+		return module
+
+	def test_a_ball_is_not_a_complaint(self):
+		#It is the strongest thing an inexact value can carry.
+		from sage.rings.real_arb import RealBallField
+		values = {'n=0': RealBallField(64)(1.5)}
+		self.assertEqual(self.check().exactness(values), [])
+
+	def test_a_ball_that_encloses_everything_is_a_complaint(self):
+		#A nan ball overlaps every interval, so a control compared against it
+		#cannot fail. This is how a wrong polygamma passed its own check.
+		from sage.rings.real_arb import RealBallField
+		R = RealBallField(64)
+		values = {'n=0': R('nan')}
+		complaints = self.check().exactness(values)
+		self.assertTrue(any('not finite' in c for c in complaints), complaints)
+
+	def test_a_float_is_still_a_complaint(self):
+		self.assertTrue(any('not exact' in c
+		                    for c in self.check().exactness({'n=0': 1.5})))
