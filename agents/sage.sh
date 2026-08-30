@@ -49,6 +49,12 @@ for file in "$@"; do
 	mounts+=(-v "$remote_dir.$base:/work/$base:ro")
 done
 
+# The container runs as a different user from the one that owns these copies,
+# so a file that arrived mode 600 -- anything from `mktemp`, for instance -- is
+# unreadable inside it, and the error names the file rather than the cause.
+# Make them readable once, here, rather than expecting every caller to know.
+ssh "${ssh_opts[@]}" "$REMOTE" "chmod 644 $remote_dir.* 2>/dev/null || true"
+
 cleanup() {
 	ssh "${ssh_opts[@]}" "$REMOTE" "rm -f $remote_dir.*" >/dev/null 2>&1 || true
 }
