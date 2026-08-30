@@ -23,6 +23,25 @@ import urllib.request
 TIMEOUT = 25
 
 
+#: Words too common to identify anything. A family is recognised by the rest.
+GENERIC = {'polynomial', 'polynomials', 'numbers', 'number', 'sequence',
+           'sequences', 'function', 'functions', 'values', 'value', 'of',
+           'the', 'and', 'in', 'for', 'a', 'constant', 'constants',
+           'transcendent', 'transcendental', 'zeros', 'zeta', 'series',
+           'coefficients', 'small', 'interesting', 'some'}
+
+
+def _distinguishing(name):
+    """The words in a name that could identify it.
+
+    Hyphens are split, because the search splits them too: asking for
+    "K-function" asks for "k" or "function", which is every table with the
+    word "function" in its title.
+    """
+    return [w for w in re.findall(r"[a-z][a-z']+", name.lower().replace('-', ' '))
+            if w not in GENERIC and len(w) > 2]
+
+
 def source_names_it(name, url):
     """Does the cited source exist, and does it actually name this family?
 
@@ -51,11 +70,7 @@ def source_names_it(name, url):
     #The distinguishing words, not the generic ones: "Bessel polynomials"
     #should be looked for as "bessel", since a page may write "polynomials of
     #Bessel type" or hyphenate.
-    generic = {'polynomial', 'polynomials', 'numbers', 'number', 'sequence',
-               'sequences', 'function', 'functions', 'values', 'of', 'the',
-               'and', 'in', 'for', 'a'}
-    words = [w for w in re.findall(r"[a-z][a-z'-]+", name.lower())
-             if w not in generic]
+    words = _distinguishing(name)
     if not words:
         return None
     missing = [w for w in words if w not in text]
@@ -76,7 +91,17 @@ def already_here(name, client=None):
     import numberdb
 
     found = {}
-    terms = [name] + [w for w in name.split() if len(w) > 4]
+    #Distinguishing words only, and not the full name: the search ORs the words
+    #of whatever it is given, so asking for "Polygamma function" returns every
+    #table with "function" in its title. The first version of this reported
+    #that the Bessel polynomials matched "transcendent" -- noise a reader has
+    #to wade through to find the one real collision.
+    terms = _distinguishing(name)
+    if not terms:
+        #Every word is generic, so there is nothing to search on that would
+        #not match half the corpus. Say so; a person can look by hand.
+        return ['(no distinguishing word in %r -- search the corpus by hand)'
+                % name]
     for term in terms:
         try:
             results = numberdb.search_text(term, client=client)
