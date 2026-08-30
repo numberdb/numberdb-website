@@ -21,6 +21,8 @@ can confirm a digit is not thereby somebody who should be able to delete a user.
 from django.contrib.auth.models import Group
 
 __all__ = ['BOARD_GROUP', 'is_board_member', 'may_edit', 'board_group',
+           'TRUSTED_GROUP', 'trusted_group', 'operator_of',
+           'is_vouched_for',
            'TRUSTED_AFTER', 'accepted_edit_count', 'is_trusted',
            'edits_are_reviewed', 'may_write_through_api',
            'may_create_tables_through_api']
@@ -33,11 +35,44 @@ TRUSTED_AFTER = 5
 #: The group whose members may review.
 BOARD_GROUP = 'board'
 
+#: The group whose members are trusted without having earned it by count.
+#:
+#: Trust is normally a track record, and it should be. This exists for the one
+#: case the count cannot serve: an account that is a program, run by somebody
+#: who is also its only reviewer. `accepted_edit_count` refuses to credit an
+#: assistant's revision confirmed by its operator -- correctly, since that is
+#: one person's judgement either way -- so such an account can never reach
+#: TRUSTED_AFTER no matter how much good work it does. Somebody has to vouch
+#: for it instead, in a place that is visible and can be taken back.
+#:
+#: What this grants is narrow, which is why granting it is reasonable. Trust
+#: unlocks *writing* through the API. It does not unlock publishing, which is
+#: board-only; it does not unlock reviewing, which is board-only; and it does
+#: not stop a non-board account's edits being marked unreviewed and held out
+#: of search by number until a person confirms them. A vouched-for program
+#: still has every call it makes reviewed by somebody.
+TRUSTED_GROUP = 'trusted'
+
 
 def board_group():
 	"""The board group, created on first use so a fresh install has one."""
 	group, _ = Group.objects.get_or_create(name=BOARD_GROUP)
 	return group
+
+
+def trusted_group():
+	"""The trusted group, created on first use."""
+	group, _ = Group.objects.get_or_create(name=TRUSTED_GROUP)
+	return group
+
+
+def operator_of(user):
+	"""The person who runs ``user``, or None.
+
+	Set for an account that is a program. See `UserProfile.operated_by`.
+	"""
+	profile = getattr(user, 'profile', None)
+	return getattr(profile, 'operated_by', None)
 
 
 def is_board_member(user):
@@ -70,6 +105,16 @@ def may_edit(user):
 	return bool(getattr(user, 'is_authenticated', False))
 
 
+def _self_and_operator(user):
+	"""``user``, and whoever runs them if anybody does.
+
+	A list rather than a Q so the caller reads as what it means: these are the
+	people whose confirmation says nothing new about this account.
+	"""
+	operator = operator_of(user)
+	return [user] if operator is None else [user, operator]
+
+
 def accepted_edit_count(user):
 	"""How many of ``user``'s revisions a reviewer has since confirmed.
 
@@ -100,7 +145,15 @@ def accepted_edit_count(user):
 		#politely. Reviews from before `reviewed_by` was recorded are null and
 		#so do not match, which is the right default: they were confirmed by
 		#the board.
-		Q(produced_by__icontains=ASSISTED_MARKER) & Q(table__reviewed_by=user)
+		#
+		#`operated_by` is why the reviewer is a set rather than the author.
+		#Giving an agent its own account is good practice -- attributable
+		#work, a key that can be revoked on its own -- and it used to defeat
+		#this check completely, because author and reviewer were then two
+		#different usernames belonging to the same judgement. An account that
+		#says who runs it does not get to launder its edits through them.
+		Q(produced_by__icontains=ASSISTED_MARKER)
+		& Q(table__reviewed_by__in=_self_and_operator(user))
 	).count()
 
 
@@ -114,7 +167,22 @@ def is_trusted(user):
 		return False
 	if is_board_member(user):
 		return True
+	#Vouched for explicitly. See TRUSTED_GROUP for why the count alone cannot
+	#serve an account that is a program.
+	if user.groups.filter(name=TRUSTED_GROUP).exists():
+		return True
 	return accepted_edit_count(user) >= TRUSTED_AFTER
+
+
+def is_vouched_for(user):
+	"""Whether somebody granted this account trust it has not earned.
+
+	See TRUSTED_GROUP. Separate from `is_trusted` because the two questions
+	that used to share an answer are not the same question.
+	"""
+	if not getattr(user, 'is_authenticated', False):
+		return False
+	return user.groups.filter(name=TRUSTED_GROUP).exists()
 
 
 def edits_are_reviewed(user):
@@ -125,8 +193,19 @@ def edits_are_reviewed(user):
 	with a confirmed track record turns review into a formality that trains
 	reviewers to click through. Everybody else waits, which is what keeps
 	unchecked digits out of search by number.
+
+	Deliberately not `is_trusted`, though it was until an agent account made
+	the difference visible. Trust answers "may this account write with a
+	program", and a vouch can answer that: it is a statement about who takes
+	responsibility for the rate. This answers "are these digits right without
+	anybody looking", and a vouch cannot answer that, because the digits are
+	the thing nobody has looked at yet. Vouching for a program in order to
+	let it write, and thereby exempting everything it writes from review,
+	would undo the reason for having it write into a queue at all.
 	"""
-	return is_trusted(user)
+	if is_board_member(user):
+		return True
+	return accepted_edit_count(user) >= TRUSTED_AFTER
 
 
 def may_write_through_api(user):
