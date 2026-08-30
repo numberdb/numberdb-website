@@ -100,3 +100,37 @@ class TheSageWrapperKeepsRunsOffTheLiveSite(TestCase):
 		#Which otherwise exits 255 having printed nothing, and reads as a dead
 		#server rather than as a busy port.
 		self.assertIn('ExitOnForwardFailure=no', script('agents/sage.sh'))
+
+	def test_it_makes_copied_files_readable_in_the_container(self):
+		#The container runs as a different user from the one owning the copy,
+		#so a mode-600 file -- anything from mktemp -- is unreadable inside,
+		#and the error names the file rather than the cause. The runner's own
+		#preflight hit this and refused to start.
+		self.assertIn('chmod 644', script('agents/sage.sh'))
+
+
+class ThePreflightStopsARunThatCannotWork(TestCase):
+	"""A run that cannot reach GitHub, the site or Sage should stop in
+	seconds. The first unattended run discovered its own impotence over an
+	hour and ten dollars instead."""
+
+	def test_it_probes_github_the_site_and_sage(self):
+		body = flat('agents/run.sh')
+		self.assertIn('gh auth status', body)
+		self.assertIn('numberdb.org/skill', body)
+		self.assertIn('agents/sage.sh "$probe"', body)
+
+	def test_it_sets_the_proxy_before_probing_with_it(self):
+		#numberdb.org is unreachable from this network without the proxy, and
+		#a plain curl to it hangs rather than failing -- which would eat the
+		#whole turn budget rather than stopping the run.
+		body = script('agents/run.sh')
+		self.assertLess(body.index('export ALL_PROXY'),
+		                body.index('gh auth status'))
+
+	def test_the_briefing_forbids_ai_attribution_on_commits(self):
+		#The first run tried to add a Co-Authored-By trailer.
+		self.assertIn('Co-Authored-By', flat('agents/run.sh'))
+
+	def test_the_briefing_forbids_mining_transcripts(self):
+		self.assertIn('not from other people', flat('agents/run.sh'))
