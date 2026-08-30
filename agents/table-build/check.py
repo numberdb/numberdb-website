@@ -40,11 +40,47 @@ def exactness(values):
                     'divided with / where both sides were Python ints'
                     % (key, coefficient, name))
                 break
+            if _is_enclosure(coefficient):
+                #A ball or an interval is not a failure of exactness, it is
+                #the strongest thing an inexact value can carry: the error
+                #bound travels with the number. What must not pass is one
+                #that encloses everything -- a nan ball compares true against
+                #any interval, so letting one through turns every later
+                #agreement check into a formality that cannot fail. A
+                #polygamma generator produced exactly that, from arb taking a
+                #negative base to a negative power, and a control "passed"
+                #while establishing nothing.
+                if not _is_finite(coefficient):
+                    complaints.append(
+                        '%s: value %r is not finite -- an enclosure this wide '
+                        'contains every answer, so nothing compared against '
+                        'it can fail' % (key, coefficient))
+                    break
+                continue
             if name not in ('Integer', 'Rational', 'int'):
                 complaints.append('%s: coefficient of unexpected type %s'
                                   % (key, name))
                 break
     return complaints
+
+
+def _is_enclosure(value):
+    """Whether this carries its own error bound: a ball or an interval."""
+    name = type(value).__name__
+    return ('Ball' in name or 'IntervalFieldElement' in name
+            or 'Interval' in name)
+
+
+def _is_finite(value):
+    """Whether an enclosure actually pins something down."""
+    try:
+        if hasattr(value, 'is_finite'):
+            return bool(value.is_finite())
+        if hasattr(value, 'is_NaN'):
+            return not bool(value.is_NaN())
+    except Exception:                                    # noqa: BLE001
+        return False
+    return True
 
 
 def measure(values):
