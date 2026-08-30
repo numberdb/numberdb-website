@@ -62,7 +62,7 @@ def main(argv):
     for complaint in complaints[:5]:
         print('  ', complaint)
     if not complaints:
-        print('   every coefficient is an exact Sage number')
+        print('   every value is exact, or carries its own error bound')
 
     print()
     print('== size ==')

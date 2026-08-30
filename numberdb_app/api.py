@@ -699,6 +699,59 @@ def _produced_by(request, user):
 
 @csrf_exempt
 @rate_limited
+@csrf_exempt
+def offer_table(request, tid):
+	"""Offer a filled draft for review. POST, key required.
+
+	This exists because the workflow it serves has three steps and the API had
+	routes for two. `X-Draft: ready` offers a table as it is created, which is
+	necessarily before anything has been computed into it -- and an empty table
+	is precisely what the review queue should not be shown, which is why the
+	form on the site refuses to offer one. A run that creates a draft, fills it,
+	and then wants a person to look had nowhere to say so.
+
+	Offering is not publishing. It moves the draft into the queue and leaves it
+	invisible and unpublished; somebody still has to read it and decide.
+	"""
+	from .editing import has_entries, tree_of
+	from .permissions import is_board_member
+
+	if request.method != 'POST':
+		return JsonResponse({'error': 'Offering a draft is a POST.'}, status=405)
+
+	user, refusal = _writer_of(request)
+	if refusal is not None:
+		return refusal
+
+	try:
+		table = Table.objects.get(tid_int=int(str(tid).lstrip('tT')))
+	except (Table.DoesNotExist, ValueError):
+		return JsonResponse({'error': "No table '%s'." % (tid,)}, status=404)
+	if table.published:
+		return JsonResponse(
+			{'error': '%s is already published.' % table.tid,
+			 'detail': 'Review applies to drafts; a published table carries '
+			           'its unreviewed edits in the queue instead.'}, status=409)
+
+	mine = table.created_by_id and table.created_by_id == user.pk
+	if not (mine or is_board_member(user)):
+		#Not 403: an account that may not see this draft should not learn from
+		#the answer that it exists.
+		return JsonResponse({'error': "No table '%s'." % (tid,)}, status=404)
+
+	tree = tree_of(table.head_revision) if table.head_revision else {}
+	if not has_entries(tree):
+		return JsonResponse(
+			{'error': '%s has no numbers in it yet.' % table.tid,
+			 'detail': 'There is nothing to review until it holds at least '
+			           'one value. Fill it first, then offer it.'}, status=409)
+
+	table.ready_for_review = True
+	table.save(update_fields=['ready_for_review'])
+	return JsonResponse({'tid': table.tid, 'published': table.published,
+	                     'ready_for_review': True})
+
+
 def write_table(request, tid):
 	"""Replace a table's document. POST or PUT, key required."""
 	from .editing import (InvalidDocument, ParametersChanged, StaleEdit,

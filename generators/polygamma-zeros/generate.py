@@ -1,4 +1,4 @@
-"""Zeros of the polygamma functions -- numberdb.org/TBD
+"""Zeros of the polygamma functions -- numberdb.org/T127
 
 The k-th largest real zero of psi^(n), for even n.
 
@@ -185,7 +185,7 @@ def zero(n, k, digits):
 
 class PolygammaZeros(numberdb.Generator):
 
-    table = 'TBD'
+    table = 'T127'
     parameters = ('n', 'k')
     type = 'R'
     digits = 100
