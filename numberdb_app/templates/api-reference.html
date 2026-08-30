@@ -70,6 +70,7 @@ retries and the crash-safety &mdash; and this page is what it is built on.
   <a href="#endpoint-api-create-table">/api/tables</a>
   <a href="#endpoint-api-write-table">/api/table/&lt;tid&gt;</a>
   <a href="#endpoint-api-write-entries">/api/table/&lt;tid&gt;/entries</a>
+  <a href="#endpoint-api-offer-table">/api/table/&lt;tid&gt;/offer</a>
   <a href="#endpoint-api-table-lease">/api/table/&lt;tid&gt;/lease</a>
   <a href="#endpoint-api-write-file">/api/table/&lt;tid&gt;/file/&lt;name&gt;</a>
 </div>
@@ -234,6 +235,27 @@ reason is in the document, because a warning shown to nobody is not a limit.
     amends its own revision instead &mdash; which works only while that
     revision is still the latest, so a run that will take a while should hold a
     lease.</p>
+  </div>
+</div>
+
+<div class="api-endpoint" id="endpoint-api-offer-table">
+  <h3><span class="api-method api-post">POST</span>/api/table/&lt;tid&gt;/offer</h3>
+  <div class="body">
+    <p>Put a filled draft into the review queue. The last step of making one
+    with a program: create the draft, fill it, then ask for a person.</p>
+    <table class="api-table">
+      <tr><th>returns</th><td>the table number and <code>ready_for_review</code></td></tr>
+      <tr><th>404</th><td>no such table, or a draft this account did not make &mdash; a draft it may not see does not answer differently for existing</td></tr>
+      <tr><th>409</th><td>the table is already published, or holds no numbers yet: there is nothing to review until it does</td></tr>
+    </table>
+    <p class="api-note">Offering is not publishing. The draft stays invisible
+    and unpublished; what changes is that somebody is now being asked to read
+    it. Publishing remains a person's act, on the site.</p>
+    <p class="api-note"><code>X-Draft: ready</code> on
+    <a href="#endpoint-api-create-table">/api/tables</a> does the same thing at
+    creation, which is before a generator has put anything in the table. Use
+    that when the document arrives complete with its numbers, and this when it
+    does not.</p>
   </div>
 </div>
 
