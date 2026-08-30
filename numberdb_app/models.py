@@ -46,6 +46,23 @@ class UserProfile(models.Model):
 	)
 	bio = models.TextField(max_length=500, blank=True)
 
+	#: The person who runs this account, for an account that is a program.
+	#:
+	#: An agent gets its own account so that its work is attributable and its
+	#: key revocable on its own. That separation is worth having, and it opens
+	#: a hole in the trust counter if nothing records the connection: the
+	#: counter refuses to credit an assistant's revision that its own author
+	#: confirmed, but an operator confirming their bot's revision is the same
+	#: person's judgement wearing a second username, and without this field
+	#: the query cannot tell.
+	operated_by = models.ForeignKey(
+		User,
+		on_delete = models.SET_NULL,
+		related_name = 'operates',
+		null = True,
+		blank = True,
+	)
+
 	date_updated = models.DateTimeField(auto_now=True)
 	date_created = models.DateTimeField(auto_now_add=True)
 	
