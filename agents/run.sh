@@ -56,9 +56,33 @@ mkdir -p agents/runs
 started=$(date -u +%Y%m%dT%H%M%SZ)
 log="agents/runs/$started-$stage.log"
 
+# numberdb.org is blocked from this network without the SOCKS proxy, and a
+# plain curl to it hangs until it is killed rather than failing. curl and the
+# client both honour ALL_PROXY, so setting it here means the run never has to
+# know -- and the preflight below tests the same path the run will use.
+export ALL_PROXY="${NUMBERDB_PROXY:-socks5h://127.0.0.1:1080}"
 export NUMBERDB_AGENT_RUN=1
 export NUMBERDB_ASSISTED_BY="assisted by $engine (numberdb agent run $started)"
 export NUMBERDB_KEY_FILE="$key_file"
+
+# A run that cannot reach what the prompt requires should stop now rather
+# than spend an hour and ten dollars finding out. Each of these is something
+# the prompt tells the run to do.
+for probe in "gh auth status" "curl -sS -o /dev/null https://numberdb.org/skill"; do
+	if ! timeout 60 bash -c "$probe" >/dev/null 2>&1; then
+		echo "Refusing: \`$probe\` does not work here, and the run needs it." >&2
+		exit 5
+	fi
+done
+probe=$(mktemp /tmp/numberdb-preflight-XXXXXX.py)
+printf 'import numberdb\nfrom sage.all import RealBallField\nassert hasattr(numberdb, "table")\nprint("ok", RealBallField(32)(2).sqrt())\n' > "$probe"
+if ! timeout 600 agents/sage.sh "$probe" >/dev/null 2>&1; then
+	rm -f "$probe"
+	echo "Refusing: agents/sage.sh cannot run, and every computation needs it." >&2
+	exit 5
+fi
+rm -f "$probe"
+
 
 briefing=$(cat <<BRIEF
 $(cat "$prompt_file")
@@ -86,7 +110,14 @@ ask anybody to. Leaving a draft offered for review is a finished job.
 **Do not deploy.** \`scripts/ship.sh\` will refuse anyway.
 
 **Commit** each change as you make it, with a message saying what you learned
-rather than what you touched. Do not push.
+rather than what you touched. Do not push. **Never add a \`Co-Authored-By\`
+trailer or any other AI attribution to a commit** -- this project does not use
+them, and the first unattended run tried to.
+
+**Work from the database and the issues, not from other people's transcripts.**
+If something you need is unreachable, say so in your output and carry on with
+what you have. Do not go looking through \`~/.claude\` for cached copies of it;
+the first run spent twenty turns doing that and found nothing.
 
 **When something you met is not in the skill**, append it to
 \`agents/lessons/PROPOSALS.md\` in the format given there. Do not edit the
@@ -102,8 +133,23 @@ echo "=== $stage run $started, engine $engine" | tee "$log"
 
 case "$engine" in
 	claude)
+		# Without an allowlist, `acceptEdits` refuses every command that
+		# leaves the machine -- gh, curl, python3, sage.sh, and git commit --
+		# with nobody there to approve them. The first unattended run spent
+		# ten dollars discovering this and produced a batch with none of its
+		# mandatory checks run. These are the tools the prompt actually
+		# requires, and nothing wider: no ssh of its own, no docker.
 		claude -p "$briefing" \
 			--permission-mode acceptEdits \
+			--allowed-tools \
+				"Read" "Write" "Edit" "Glob" "Grep" "WebFetch" "TodoWrite" \
+				"Bash(agents/sage.sh:*)" \
+				"Bash(git add:*)" "Bash(git commit:*)" "Bash(git status:*)" \
+				"Bash(git log:*)" "Bash(git diff:*)" "Bash(git show:*)" \
+				"Bash(gh issue:*)" "Bash(gh api:*)" \
+				"Bash(curl:*)" "Bash(python3:*)" \
+				"Bash(ls:*)" "Bash(cat:*)" "Bash(head:*)" "Bash(tail:*)" \
+				"Bash(grep:*)" "Bash(wc:*)" "Bash(mkdir:*)" \
 			--max-turns "$turns" \
 			--output-format stream-json --verbose 2>&1 | tee -a "$log"
 		;;
