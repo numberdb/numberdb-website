@@ -297,3 +297,17 @@ class ProposalsAreScreenedNotJustWritten(TestCase):
 		#answer with whatever the generic word matched, it says so.
 		found = self.screen().already_here('K-function')
 		self.assertTrue(any('by hand' in f for f in found), found)
+
+	def test_the_prompt_says_to_look_past_the_name(self):
+		#The screen searches words. A family already in the corpus under a
+		#name sharing no word with it -- polygamma against Hurwitz zeta --
+		#passes every check and is still a duplicate.
+		body = prompt('table-ideas')
+		self.assertIn('specialisation or a multiple of', body)
+		self.assertIn('T94', body)
+
+	def test_the_prompt_says_how_the_search_result_is_shaped(self):
+		#Iterating it directly yields nothing and raises nothing, which reads
+		#exactly like an empty corpus.
+		body = prompt('table-ideas')
+		self.assertIn('.tables', body)

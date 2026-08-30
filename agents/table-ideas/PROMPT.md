@@ -33,11 +33,22 @@ the question is not "give me more of this sequence".
 1. **Search the corpus.** `numberdb.search_text(...)` on the name and on
    related words; `numberdb.table('T99')` to see what a neighbour holds. 126
    tables exist. Proposing one that is already there wastes the next person's
-   day.
-2. **Read the open issues** at <https://github.com/numberdb/numberdb-data/issues>
+   day. The result is an object with a `.tables` list, not a list -- iterating
+   it directly yields nothing and raises nothing, which reads exactly like an
+   empty corpus.
+2. **Ask what the family is a specialisation or a multiple of, and search for
+   that too.** Searching the name finds a table that shares a word with it.
+   It cannot find one that holds the same numbers under a name sharing no
+   word, and the screen cannot either. The polygamma functions are
+   `psi^(n)(x) = (-1)^(n+1) n! zeta(n+1, x)`, so every value with `n >= 1` is
+   a rational multiple of an entry of T94, *Values of the Hurwitz zeta
+   function* -- and nothing in "polygamma" points at "Hurwitz". Write down the
+   identities that define the family in terms of something else, and search
+   for the something else. If a proposal survives that, say so in it.
+3. **Read the open issues** at <https://github.com/numberdb/numberdb-data/issues>
    with label `table wanted`. Around 80 are open. If your idea is there, say so
    and cite the number rather than proposing it afresh.
-3. **Check it can be a table at all.** Some things cannot: numberdb-data#121
+4. **Check it can be a table at all.** Some things cannot: numberdb-data#121
    asks for Lagrange polynomials "for general point sets", and a general point
    set is a parameter with infinitely many values and no canonical order, so
    there is nothing to enumerate and nothing to look a value up by. Say so
