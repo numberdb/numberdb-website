@@ -30,6 +30,16 @@ set -euo pipefail
 
 here=$(cd "$(dirname "$0")/.." && pwd)
 cd "$here"
+# An unattended agent run must not be able to deploy. It may propose tables,
+# fill drafts and commit; putting code on the live site is a person's act, and
+# the runner sets this so that a session which talks itself into shipping is
+# stopped by something other than its own judgement.
+if [ "${NUMBERDB_AGENT_RUN:-0}" = "1" ]; then
+	echo "Refusing: this is an agent run (NUMBERDB_AGENT_RUN=1)." >&2
+	echo "Deploying is a person's act. Run it yourself when you have looked." >&2
+	exit 4
+fi
+
 
 env_value() { grep -E "^$1=" .env 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"'"'"''; }
 
