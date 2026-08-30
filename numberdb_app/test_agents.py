@@ -278,3 +278,22 @@ class ProposalsAreScreenedNotJustWritten(TestCase):
 
 	def test_it_accepts_a_shape_the_database_does_hold(self):
 		self.assertEqual(self.screen().representable('Z[]', True, 2), [])
+
+	def test_it_searches_on_the_words_that_identify_a_family(self):
+		#Not on the ones every second title shares. Screening "Polygamma
+		#function" against the corpus by its full name asked the search for
+		#"polygamma" OR "function", which answered with the Bessel extrema
+		#and the zeta Laurent coefficients -- three plausible-looking
+		#collisions, none of them real.
+		self.assertEqual(self.screen()._distinguishing('Polygamma function'),
+		                 ['polygamma'])
+
+	def test_it_splits_hyphens_because_the_search_does(self):
+		self.assertEqual(self.screen()._distinguishing('Keiper-Li coefficients'),
+		                 ['keiper'])
+
+	def test_it_admits_when_a_name_has_nothing_to_search_on(self):
+		#"K-function" is a hyphen, a letter and a generic word. Rather than
+		#answer with whatever the generic word matched, it says so.
+		found = self.screen().already_here('K-function')
+		self.assertTrue(any('by hand' in f for f in found), found)
