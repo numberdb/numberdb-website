@@ -53,14 +53,16 @@ done
 # so a file that arrived mode 600 -- anything from `mktemp`, for instance -- is
 # unreadable inside it, and the error names the file rather than the cause.
 # Make them readable once, here, rather than expecting every caller to know.
-ssh "${ssh_opts[@]}" "$REMOTE" "chmod 644 $remote_dir.* 2>/dev/null || true"
+#
+# `-n` on every ssh call but the last: ssh forwards its stdin to the remote
+# command, so without it the first helper call here swallowed the API key that
+# was piped in for the script, and the script was told it had no key.
+ssh -n "${ssh_opts[@]}" "$REMOTE" "chmod 644 $remote_dir.* 2>/dev/null || true"
 
 cleanup() {
-	ssh "${ssh_opts[@]}" "$REMOTE" "rm -f $remote_dir.*" >/dev/null 2>&1 || true
+	ssh -n "${ssh_opts[@]}" "$REMOTE" "rm -f $remote_dir.*" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
-
-ssh "${ssh_opts[@]}" "$REMOTE" "mkdir -p /dev/null" >/dev/null 2>&1 || true
 
 # --no-deps so this never restarts the site's own containers.
 ssh "${ssh_opts[@]}" "$REMOTE" \
