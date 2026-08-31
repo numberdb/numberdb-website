@@ -107,7 +107,18 @@ into a file in this repository. \`agents/sage.sh\` forwards stdin, so
 to five drafts. It may not publish and may not review; do not try, and do not
 ask anybody to. Leaving a draft offered for review is a finished job.
 
-**Do not deploy.** \`scripts/ship.sh\` will refuse anyway.
+**Do not deploy.** \`scripts/ship.sh\` will refuse anyway. \`ssh\`,
+\`scp\`, \`docker\` and \`git push\` are refused too; \`agents/sage.sh\` is
+how you reach the server.
+
+**Finish before you stop.** Do not end your turn while a computation you
+started is still running -- wait for it and use the answer. A previous run
+ended with "waiting on the Sage checks" and its work was lost. If you are
+running out of turns, write down what you have and commit that.
+
+**Keep scratch out of the repository.** Working scripts go in \`/tmp\`. What
+belongs in the repository is the batch, a generator you intend to keep, and a
+lesson.
 
 **Commit** each change as you make it, with a message saying what you learned
 rather than what you touched. Do not push. **Never add a \`Co-Authored-By\`
@@ -133,23 +144,23 @@ echo "=== $stage run $started, engine $engine" | tee "$log"
 
 case "$engine" in
 	claude)
-		# Without an allowlist, `acceptEdits` refuses every command that
-		# leaves the machine -- gh, curl, python3, sage.sh, and git commit --
-		# with nobody there to approve them. The first unattended run spent
-		# ten dollars discovering this and produced a batch with none of its
-		# mandatory checks run. These are the tools the prompt actually
-		# requires, and nothing wider: no ssh of its own, no docker.
+		# An allowlist of command prefixes does not survive contact with a
+		# shell: the run composed `(curl ...; curl ...)`, `which a b c && ...`
+		# and `sed -i ...`, none of which match a prefix, and nine commands
+		# were refused for shape rather than for substance. So Bash is allowed
+		# and the few things that could do harm are denied by name.
+		#
+		# This is a guard against drift, not against an adversary -- anything
+		# here can be worked around by a run that means to. What cannot be
+		# worked around is on the server: zeta3 may not publish, whatever it
+		# runs locally.
 		claude -p "$briefing" \
 			--permission-mode acceptEdits \
 			--allowed-tools \
-				"Read" "Write" "Edit" "Glob" "Grep" "WebFetch" "TodoWrite" \
-				"Bash(agents/sage.sh:*)" \
-				"Bash(git add:*)" "Bash(git commit:*)" "Bash(git status:*)" \
-				"Bash(git log:*)" "Bash(git diff:*)" "Bash(git show:*)" \
-				"Bash(gh issue:*)" "Bash(gh api:*)" \
-				"Bash(curl:*)" "Bash(python3:*)" \
-				"Bash(ls:*)" "Bash(cat:*)" "Bash(head:*)" "Bash(tail:*)" \
-				"Bash(grep:*)" "Bash(wc:*)" "Bash(mkdir:*)" \
+				"Bash" "Read" "Write" "Edit" "Glob" "Grep" "WebFetch" "TodoWrite" \
+			--disallowed-tools \
+				"Bash(ssh:*)" "Bash(scp:*)" "Bash(rsync:*)" "Bash(docker:*)" \
+				"Bash(git push:*)" "Bash(scripts/ship.sh:*)" \
 			--max-turns "$turns" \
 			--output-format stream-json --verbose 2>&1 | tee -a "$log"
 		;;

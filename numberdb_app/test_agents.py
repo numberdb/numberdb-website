@@ -345,3 +345,65 @@ class TheToolkitUnderstandsInexactTables(TestCase):
 	def test_a_float_is_still_a_complaint(self):
 		self.assertTrue(any('not exact' in c
 		                    for c in self.check().exactness({'n=0': 1.5})))
+
+
+class AFailedQuestionDoesNotLookLikeAnEmptyAnswer(TestCase):
+	"""The screen reaches the corpus over the network, and the network can be
+	unavailable. What it must never do is answer as though it had asked."""
+
+	def screen(self):
+		import importlib.util
+
+		path = os.path.join(settings.BASE_DIR, 'agents', 'table-ideas',
+		                    'screen.py')
+		spec = importlib.util.spec_from_file_location('agent_screen2', path)
+		module = importlib.util.module_from_spec(spec)
+		spec.loader.exec_module(module)
+		return module
+
+	def test_it_says_when_it_could_not_ask(self):
+		#already_here returned [] for every name once, because Python ignores
+		#the SOCKS proxy that curl honours and the corpus was unreachable. An
+		#empty list reads exactly like "nothing similar is here", and a run
+		#came close to reporting a clean sweep on the strength of it.
+		#
+		#The client is stood in for rather than patched: in this environment
+		#`numberdb` is the Django project package, and the client is not
+		#importable at all.
+		import sys
+		import types
+
+		stand_in = types.ModuleType('numberdb')
+
+		def refuse(*args, **kwargs):
+			raise OSError('the handshake operation timed out')
+
+		stand_in.search_text = refuse
+		kept = sys.modules.get('numberdb')
+		sys.modules['numberdb'] = stand_in
+		try:
+			found = self.screen().already_here('Polygamma function')
+		finally:
+			if kept is None:
+				sys.modules.pop('numberdb', None)
+			else:
+				sys.modules['numberdb'] = kept
+		self.assertTrue(any('could not ask' in f for f in found), found)
+
+	def test_it_still_answers_normally_when_it_can_ask(self):
+		#So the check above is not passing because everything fails.
+		import sys
+		import types
+
+		stand_in = types.ModuleType('numberdb')
+		stand_in.search_text = lambda *a, **k: types.SimpleNamespace(tables=[])
+		kept = sys.modules.get('numberdb')
+		sys.modules['numberdb'] = stand_in
+		try:
+			found = self.screen().already_here('Polygamma function')
+		finally:
+			if kept is None:
+				sys.modules.pop('numberdb', None)
+			else:
+				sys.modules['numberdb'] = kept
+		self.assertEqual(found, [])
