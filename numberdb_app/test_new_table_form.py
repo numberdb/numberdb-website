@@ -105,3 +105,18 @@ class ATitleIsEnoughToBegin(TestCase):
 		from .validate import check
 		self.assertEqual(check({'Title': 'A table', 'Numbers': {'1': '2'},
 		                        'Parameters': {'n': {}}}), [])
+
+
+class TheSimpleFormIsGuardedToo(TestCase):
+	"""The decorator lives on the view, and a helper added just above it once
+	took the decorator with it -- leaving /new open to anybody."""
+
+	def test_anonymous_cannot_create_from_a_title(self):
+		from django.test import Client
+
+		response = Client().post(reverse('db:new-table'),
+		                         {'form': 'simple', 'title': 'Sneaked in'},
+		                         HTTP_HOST='numberdb.org')
+		self.assertEqual(response.status_code, 302)
+		self.assertIn('/accounts/login/', response['Location'])
+		self.assertFalse(Table.objects.filter(title='Sneaked in').exists())

@@ -2447,7 +2447,6 @@ def review_table(request, tid):
 	})
 
 
-@login_required
 def _new_table_from_title(request):
 	"""Create a draft from a title, and go straight to the editor.
 
@@ -2501,6 +2500,7 @@ def _new_table_from_title(request):
 	                                    kwargs={'tid': table.tid}))
 
 
+@login_required
 def new_table(request):
 	"""Create a table here rather than in the data repository.
 
