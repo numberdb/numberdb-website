@@ -1,5 +1,10 @@
+{% comment %}
+One line per thing the table says about this value. A blank one is skipped:
+a note consisting of spaces is not a note, and rendering it leaves an empty
+line under the number that reads as a missing value rather than as nothing.
+{% endcomment %}
 <div class="number-extra-info">
   {% for key, value in info.items %}
-    {{ key | safe }}: {{ value | safe }} <br>  
+    {% if value.strip %}{{ key | safe }}: {{ value | safe }} <br>{% endif %}
   {% endfor %}
 </div>

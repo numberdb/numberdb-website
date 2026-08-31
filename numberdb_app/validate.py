@@ -122,6 +122,54 @@ class Problem:
 		        else self.message)
 
 
+#: Control characters that must not appear in a document's text.
+#:
+#: Newline and tab are ordinary; the rest are not typed by anybody and arrive
+#: one way. `\f` is a valid JSON escape, so a document written with
+#: `"$1-\frac{1}{3}$"` instead of `"$1-\\frac{1}{3}$"` reaches the database
+#: holding a form feed and the letters `rac`, and renders as "Math input
+#: error" with the backslash simply gone. `\b` eats `\beta` and `\binom`,
+#: `\r` eats `\rho` and `\right`, `\t` eats `\theta` and `\times`.
+#:
+#: T128 was published with two of its three fractions eaten this way, and
+#: nothing noticed until a person read the page.
+FORBIDDEN_CONTROLS = {
+	'\x08': r'\b -- did you mean \\beta, \\binom or \\bar?',
+	'\x0c': r'\f -- did you mean \\frac or \\forall?',
+	'\r': r'\r -- did you mean \\rho or \\right?',
+	'\x0b': r'\v -- did you mean \\varepsilon or \\varphi?',
+	'\x07': r'\a -- did you mean \\alpha or \\angle?',
+}
+
+
+def _check_control_characters(tree, path=()):
+	"""Control characters in text, which are almost always an eaten backslash.
+
+	Fatal. The damage is silent -- the document parses, saves, and renders
+	with a macro missing -- and it cannot be repaired from the stored value
+	alone, since the backslash is gone.
+	"""
+	found = []
+	if isinstance(tree, dict):
+		for key, value in tree.items():
+			found.extend(_check_control_characters(value, path + (str(key),)))
+	elif isinstance(tree, (list, tuple)):
+		for index, value in enumerate(tree):
+			found.extend(_check_control_characters(value, path + (str(index),)))
+	elif isinstance(tree, str):
+		for character, explanation in FORBIDDEN_CONTROLS.items():
+			if character in tree:
+				where = '.'.join(path) or 'the document'
+				found.append(Problem(
+					'%s holds a %s control character. In JSON that is an '
+					'escape, so a backslash was eaten before it ever '
+					'arrived: %s' % (where, explanation.split(' --')[0],
+					                 explanation),
+					where=where))
+				break
+	return found
+
+
 def problems(tree):
 	"""Everything wrong with ``tree``, fatal and otherwise."""
 	found = []
@@ -130,6 +178,7 @@ def problems(tree):
 
 	found.extend(_check_types(tree))
 	found.extend(_check_entries(tree))
+	found.extend(_check_control_characters(tree))
 	return found
 
 
