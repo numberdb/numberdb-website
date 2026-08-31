@@ -700,6 +700,7 @@ def _produced_by(request, user):
 @csrf_exempt
 @rate_limited
 @csrf_exempt
+@rate_limited
 def offer_table(request, tid):
 	"""Offer a filled draft for review. POST, key required.
 
