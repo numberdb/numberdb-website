@@ -311,3 +311,55 @@ class TheSkillSaysNotToGuessAnAddress(TestCase):
 		body = self.client.get('/skill').content.decode()
 		self.assertIn("Never guess a table's address", body)
 		self.assertIn('audit_table', body)
+
+
+class LessonsPromotedFromRunsAreStated(TestCase):
+	"""Eleven lessons that five runs paid for. Each is asserted by the
+	sentence that carries it, so a later rewrite that drops one fails here
+	rather than passing quietly."""
+
+	def setUp(self):
+		with open(SKILL_PATH, encoding='utf8') as handle:
+			self.body = ' '.join(handle.read().split())
+
+	def test_the_document_carries_no_address(self):
+		#The skill used to say to read the slug off numberdb.table(), which
+		#answers with the document and no url at all.
+		self.assertIn('carries no address', self.body)
+		self.assertIn('.tables[0].url', self.body)
+
+	def test_a_tag_is_a_name_the_database_resolves(self):
+		self.assertIn('`zero`, not `zeros`', self.body)
+
+	def test_the_search_result_is_an_object_with_tables(self):
+		self.assertIn('`.tables` list, not a list', self.body)
+
+	def test_the_search_stems(self):
+		self.assertIn('stems', self.body)
+		self.assertIn('"regulator" also matches "regular"', self.body)
+
+	def test_the_numbers_key_is_every_entry(self):
+		self.assertIn('Printing it is megabytes', self.body)
+
+	def test_an_enclosure_containing_everything_agrees_with_everything(self):
+		#A nan ball, and a merely very wide one, both pass every containment
+		#test while establishing nothing.
+		self.assertIn('An enclosure that contains everything agrees with '
+		              'everything', self.body)
+		self.assertIn('radius 1.4e18', self.body)
+
+	def test_the_claim_to_check_is_the_bracket_not_the_midpoint(self):
+		self.assertIn('not the value at their midpoint', self.body)
+		self.assertIn('measures conditioning', self.body)
+
+	def test_entry_comments_count_toward_the_block(self):
+		self.assertIn('part of the entries block', self.body)
+		self.assertIn('166 KB', self.body)
+
+	def test_named_imports_leave_out_root_finding_and_decimal_rationals(self):
+		self.assertIn('RealBall.str', self.body)
+		self.assertIn("QQ('1.25')", self.body)
+
+	def test_it_still_says_never_to_guess(self):
+		#The rule these extend, which must survive them.
+		self.assertIn('Never guess a name the database resolves', self.body)

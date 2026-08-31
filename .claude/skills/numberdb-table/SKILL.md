@@ -47,14 +47,31 @@ not at an encyclopedia article about them.
     numberdb.search_text('Chebyshev')          # titles and tags
     numberdb.table('T99')                      # what it holds
 
-**Never guess a table's address.** `HREF{...}` takes the slug, and the slug is
-not the title with underscores: mathematics is dropped from it, it is
-truncated, and a clash appends a number. A table called "Power sum symmetric
-polynomials $p_k$" is at `Power_sum_symmetric_polynomials`, and a link written
-to `Power_sum_polynomials` from the shorter name in one's head points at
-nothing. Read it off the table -- `numberdb.table('T119')` and the `url` in
-the answer, or the address bar -- and let `manage.py audit_table` confirm it
-afterwards rather than instead.
+Three things about those two calls, each of which has cost somebody an hour.
+`search_text` returns an object with a `.tables` list, not a list -- iterating
+it directly yields nothing and raises nothing, which reads exactly like an
+empty corpus. The search **stems**, so "regulator" also matches "regular", and
+it looks past titles into definitions and comments; read what came back rather
+than counting it. And there is no call that lists the corpus, so to see
+everything you walk the T-numbers.
+
+`numberdb.table(...)` answers with the whole document, capitalised keys and
+all -- `Title`, `Definition`, `Numbers` -- and `Numbers` is every entry the
+table holds. Printing it is megabytes. Take the keys you want.
+
+**Never guess a name the database resolves -- an address or a tag.**
+`HREF{...}` takes the slug, and the slug is not the title with underscores:
+mathematics is dropped from it, it is truncated, and a clash appends a number.
+A table called "Power sum symmetric polynomials $p_k$" is at
+`Power_sum_symmetric_polynomials`, and a link written to
+`Power_sum_polynomials` from the shorter name in one's head points at nothing.
+Tags are the same: the corpus says `zero`, not `zeros`, and a tag invented
+from the plural in your head simply fails to group anything.
+
+Read both off tables that already have them. `numberdb.table('T119')` returns
+the document and **carries no address**; the slug is in a search result,
+`numberdb.search_text('power sum').tables[0].url`, or in the address bar. Let
+`manage.py audit_table` confirm afterwards rather than instead.
 
 ## 2. Decide what the table says before computing anything
 
@@ -123,6 +140,14 @@ is exactly the kind of wrong that gets published. Two ways out: build from a
 recurrence that only multiplies and adds, or write every division between Sage
 rationals, `QQ(a) / QQ(b)`. Note that `c in ZZ` is true of a float that
 happens to be integral, so that check will not catch it.
+
+**A comment on every entry is part of the entries block.** Notes are stored
+with the values they belong to, so a line of prose on each of a thousand
+entries is counted with them: on one table the block was 166 KB with a comment
+on every row and 152 KB without. Worth having when it says something the row
+cannot -- the field a discriminant names, a caveat about one value -- and
+worth leaving out when it repeats what a formula in the document already says
+for every row at once.
 
 **Then aim at half the soft block limit -- about 160 KB -- not at the limit.** A
 table that only just fits cannot be extended by the next person without
@@ -264,6 +289,8 @@ it and a full SageMath -- verified against the live table it fills. Importing
 `numberdb.sage` first is what makes the direct imports work: a ring module
 imported before anything has initialised Sage raises "cannot import name QQ",
 and that module does the initialising.
+
+What else the named imports do not bring: root finding (`sage.numerical.optimize`), `RealBall.str`, and `QQ('1.25')` -- a rational is built from a decimal *string* by hand, `QQ(125)/10**2`, or it raises. Bisection and a rational built from its digits are usually the shortest way past all three.
 
 ```python
 import sys
@@ -466,6 +493,23 @@ responsibility for a table existing.
   silently returned zero for everything because of a coercion error, so it
   confirmed nothing while looking like confirmation. Run the control first and
   check it gives the answer you already know.
+- **An enclosure that contains everything agrees with everything.** The same
+  rule, in the form it takes in ball arithmetic, where it is easy to miss
+  because the check reports success. `psi(-1/2)` was compared against its
+  closed form and reported `overlaps = True` while its value was `nan` -- arb
+  takes a power as `exp(y log x)`, so a negative base with a negative exponent
+  is not a number, and a nan ball overlaps every interval there is. A ball
+  merely *wide* does the same quietly: one of radius 1.4e18 contains zero, and
+  every other answer. Before believing a comparison, check that both sides are
+  finite and that the radius is small enough to mean anything.
+- **Check the claim the digits make, not the value at their midpoint.** What a
+  written number claims is the interval its last place denotes, so the thing
+  to verify is that a zero lies *inside* it -- the function taking opposite
+  signs at the two ends. Feeding the midpoint back in and asking for something
+  near zero measures conditioning instead: near the poles of `psi^(n)` the
+  derivative is enormous, and a point 10^-100 from a true zero evaluates to
+  order one. The same 607 values failed that test twenty times in sixty-three
+  and passed the bracket test 1050 times out of 1050.
 - If your recomputation disagrees with a stored value, suspect your
   recomputation first. In this corpus every disagreement after the first two
   was the checker's fault: a Teichmüller limit that collapses at p = 2, an
