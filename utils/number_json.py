@@ -202,11 +202,43 @@ _DECODERS = {
 }
 
 
+#: What each kind needs, so that a record missing a field is told which one.
+#:
+#: Without this a well-formed record with the wrong field names raised
+#: KeyError out of the decoder, and `/api/lookup` -- which catches
+#: UnsupportedNumber, TypeError, ValueError and ArithmeticError -- answered
+#: 500 with an empty body. Somebody looking a number up learned nothing, and
+#: the one thing this site is for is looking a number up.
+_REQUIRED = {
+    'RIF': ('lower', 'upper'),
+    'CIF': ('re_lower', 're_upper', 'im_lower', 'im_upper'),
+    'RBF': ('lower', 'upper'),
+    'ZZ': ('value',),
+    'QQ': ('value',),
+    'Qp': ('precision', 'prime', 'valuation', 'unit'),
+    'polynomial': ('value',),
+}
+
+
 def decode_number(record):
     """Rebuild a Sage number from an ``encode_number`` record."""
     if not isinstance(record, dict):
         raise UnsupportedNumber('number record must be an object')
-    decoder = _DECODERS.get(record.get('kind'))
+    kind = record.get('kind')
+    decoder = _DECODERS.get(kind)
     if decoder is None:
-        raise UnsupportedNumber('unknown number kind %r' % (record.get('kind'),))
-    return decoder(record)
+        raise UnsupportedNumber(
+            'unknown number kind %r; expected one of %s'
+            % (kind, ', '.join(sorted(_DECODERS))))
+    missing = [name for name in _REQUIRED.get(kind, ()) if name not in record]
+    if missing:
+        raise UnsupportedNumber(
+            'a %s record needs %s; %s missing'
+            % (kind, ' and '.join(repr(n) for n in _REQUIRED[kind]),
+               ' and '.join(repr(n) for n in missing)))
+    try:
+        return decoder(record)
+    except KeyError as error:
+        #A decoder that reads a field this table does not list.
+        raise UnsupportedNumber('a %s record needs %s as well'
+                                % (kind, error)) from error
