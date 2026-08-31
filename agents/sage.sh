@@ -38,7 +38,14 @@ main=$1
 
 # A colliding remote forward makes ssh exit 255 having printed nothing, which
 # reads exactly like a dead server. Tolerate it.
-ssh_opts=(-o BatchMode=yes -o ExitOnForwardFailure=no)
+# One connection per run, not three. Each call here opened a new ssh for the
+# copy, another for the chmod, another for the command, and a run makes many
+# calls; enough of them at once and sshd stops completing handshakes, which
+# looks exactly like the server being down. Multiplexing puts them all through
+# the first connection, which is also faster.
+control="/tmp/numberdb-ssh-%r@%h:%p"
+ssh_opts=(-o BatchMode=yes -o ExitOnForwardFailure=no
+          -o ControlMaster=auto -o "ControlPath=$control" -o ControlPersist=60)
 
 remote_dir="/tmp/agent-run-$$"
 mounts=()
