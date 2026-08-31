@@ -2448,6 +2448,59 @@ def review_table(request, tid):
 
 
 @login_required
+def _new_table_from_title(request):
+	"""Create a draft from a title, and go straight to the editor.
+
+	The form used to be a YAML document in a text area, and it published the
+	table the moment it was saved. Both were wrong for the same reason: they
+	asked for everything before anything could be looked at.
+
+	Only the title is genuinely needed, because it is what the address is
+	built from. Not even the parameters: nothing is frozen while a table is a
+	draft -- see `commit_table` -- so they can be settled in the editor, which
+	is where the entries that motivate them get written. And a draft is
+	invisible until somebody offers it, so a half-written table is not
+	published to anybody in the meantime.
+	"""
+	from .editing import create_table
+
+	title = (request.POST.get('title') or '').strip()
+	definition = (request.POST.get('definition') or '').strip()
+	if not title:
+		messages.error(request, 'A new table needs a title.')
+		return render(request, 'new-table.html', _new_table_context(request))
+
+	tree = {'Title': title}
+	if definition:
+		tree['Definition'] = definition
+
+	#What indexes the family, if the person already knows. It is asked for
+	#here because it is what fixes the shape of the entry form: the columns an
+	#entry is identified by are the declared parameters, so a table with none
+	#has an entry form with no identity in it. Only the names are asked for --
+	#a parameter needs nothing else to be valid, and its type, constraints and
+	#display are better set in the editor, next to the entries that show what
+	#they should be.
+	names = [name.strip() for name in
+	         (request.POST.get('parameters') or '').replace(',', ' ').split()]
+	if names:
+		tree['Parameters'] = {name: {} for name in names}
+
+	try:
+		table = create_table(tree, author=request.user,
+		                     message='created this table', published=False)
+	except ValueError as trouble:
+		messages.error(request, str(trouble))
+		return render(request, 'new-table.html', _new_table_context(request))
+
+	messages.success(request, (
+		'%s is yours to fill in. It is a draft: nobody else can read it yet, '
+		'and its parameters can still change. Offer it for review when it '
+		'holds numbers.' % (table.tid,)))
+	return HttpResponseRedirect(reverse('db:edit-table',
+	                                    kwargs={'tid': table.tid}))
+
+
 def new_table(request):
 	"""Create a table here rather than in the data repository.
 
@@ -2462,6 +2515,9 @@ def new_table(request):
 	sequence in a database rather than a file in git.
 	"""
 	from .editing import NEW_TABLE_TEMPLATE, create_table
+
+	if request.method == 'POST' and request.POST.get('form') == 'simple':
+		return _new_table_from_title(request)
 
 	if request.method == 'POST':
 		table_yaml = _submitted_yaml(request)
@@ -2508,8 +2564,13 @@ def new_table(request):
 		              title='A short, descriptive title')))
 
 
-def _new_table_context(request, table_yaml):
+def _new_table_context(request, table_yaml=None):
+	"""The new-table page. ``table_yaml`` is None for the simple form."""
+	from .editing import NEW_TABLE_TEMPLATE
 	from .permissions import is_board_member
+
+	if table_yaml is None:
+		table_yaml = NEW_TABLE_TEMPLATE
 
 	context = {
 		'table_yaml': table_yaml,
