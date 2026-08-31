@@ -527,8 +527,21 @@ def build_number_table(only_table=None):
 
 	def traverse_number_table(c, numbers, params_so_far, groups_left):
 		if isinstance(numbers,dict):
-			if 'equals' in numbers:
-				return 0 #not counted
+			#An entry that says only "this equals that" has no digits to index,
+			#and there is nothing to do with it here.
+			#
+			#But an entry may give *both* -- its own digits and the table its
+			#value also appears in -- and 102 entries in this corpus do. Those
+			#were skipped as well, so their numbers answered no search: pi is
+			#stored in T29 to a hundred places as the rational multiple with
+			#a = 1, and carries `equals` pointing at T7, and a search for
+			#3.14159 did not find it. Which is precisely backwards, because an
+			#entry that says where else its value appears is the most useful
+			#kind of hit somebody looking a number up can get.
+			has_digits = any(key in numbers for key in
+			                 ('number', 'numbers', 'polynomial', 'polynomials'))
+			if 'equals' in numbers and not has_digits:
+				return 0 #a reference with nothing to index
 			for key in ['number','numbers','polynomial','polynomials']:
 				if key in numbers:
 					return traverse_number_table(c, numbers[key], params_so_far, groups_left)
@@ -542,11 +555,12 @@ def build_number_table(only_table=None):
 				for number in numbers:
 					count += save_number(c, number, params_so_far)
 			elif isinstance(numbers,dict):
-				if 'equals' not in numbers:
-					for key, value in numbers.items():
-						#print("key,value:",key,value)
-						if key in ['number','polynomial']:
-							count += save_number(c, value, params_so_far)
+				#The loop only saves keys that hold digits, so the presence of
+				#`equals` beside them is not a reason to skip the entry. See
+				#above.
+				for key, value in numbers.items():
+					if key in ['number','polynomial']:
+						count += save_number(c, value, params_so_far)
 		else:
 			next_group = groups_left[0]
 			for p, numbers_p in numbers.items():
