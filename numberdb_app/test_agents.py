@@ -436,3 +436,36 @@ class LessonsAreSortedByWhoCouldHitThem(TestCase):
 		for word in ('docker', 'ssh ', 'sage.sh', 'ALL_PROXY', 'container'):
 			self.assertNotIn(word, body,
 			                 '%r belongs in docs/agent-environment.md' % word)
+
+
+class WhatEarnsATableIsFindabilityNotDerivability(TestCase):
+	"""Two corrections from Benjamin, in opposite directions, and the rule
+	that produced both mistakes was the same one."""
+
+	def test_a_relation_is_not_a_reason_to_drop_a_proposal(self):
+		#A run withdrew zeta_K(1-2m) because it is a product of two stored
+		#numbers. Nobody holding 1/30 can get to it that way: they would have
+		#to guess the rational, and it is not a small one.
+		body = ' '.join(prompt('table-ideas').split())
+		self.assertIn('Finding a relation is not a reason to drop the '
+		              'proposal', body)
+		self.assertIn('Being derivable is not the same as being findable',
+		              body)
+
+	def test_small_integers_are_refused_by_the_same_question(self):
+		#Class numbers are mostly 1, 2, 3: a hit tells the reader nothing, and
+		#it makes search by number worse for every other table.
+		body = ' '.join(prompt('table-ideas').split())
+		self.assertIn('makes search by number *worse for everybody*', body)
+		self.assertIn('comment on the entries of the table that motivates it',
+		              body)
+
+	def test_the_skill_states_both_directions(self):
+		import os as _os
+
+		path = _os.path.join(settings.BASE_DIR, '.claude', 'skills',
+		                     'numberdb-table', 'SKILL.md')
+		with open(path, encoding='utf-8') as handle:
+			body = ' '.join(handle.read().split())
+		self.assertIn('guessing a rational nobody would guess', body)
+		self.assertIn('match everything and tell nobody anything', body)

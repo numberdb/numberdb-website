@@ -45,6 +45,38 @@ the question is not "give me more of this sequence".
    function* -- and nothing in "polygamma" points at "Hurwitz". Write down the
    identities that define the family in terms of something else, and search
    for the something else. If a proposal survives that, say so in it.
+
+   **Finding a relation is not a reason to drop the proposal.** It is a reason
+   to ask one further question: *could a reader holding one of these numbers
+   find it through the table that already exists?* The database is for
+   somebody who has a number and does not know what it is. They can try a
+   handful of obvious factors -- a half, a two, a pi -- and no more than that;
+   searching over rationals p/q is not a search anybody can run.
+
+   So a family whose values are a *small, guessable* multiple of a stored one
+   is arguably already covered. A family whose values are some elaborate
+   multiple is not: nobody will ever get from the number in their hand to the
+   entry that explains it. `zeta_K(1-2m) = (B_{2m}/2m)(B_{2m,chi_D}/2m)` is a
+   product of two stored numbers, and 1/30 is not findable from either -- that
+   family earns its table. Being derivable is not the same as being findable,
+   and only the second one matters here.
+
+   **The same question refuses the opposite kind of family.** A value has to be
+   distinctive enough that finding it tells the reader something. Class
+   numbers are mostly 1, 2, 3: somebody holding a 3 learns nothing from being
+   told it is the class number of `Q(sqrt -23)`, because 3 is the class number
+   of hundreds of fields and arises in every other part of mathematics as
+   well. Worse, such a table makes search by number *worse for everybody* --
+   every small integer now matches it.
+
+   That is the monomial argument of numberdb-data#128 again, in numbers rather
+   than polynomials. A family whose values are a handful of small integers is
+   usually better as a **comment on the entries of the table that motivates
+   it** than as a table of its own: T128 gives `h_K` in the comment on each
+   residue, where it explains that value, and it is exactly where a reader
+   meets it. Propose such a family as a table only when the individual values
+   are themselves the object of interest -- the diagonal Ramsey numbers of T6
+   are ten specific integers people care about one at a time.
 3. **Read the open issues** at <https://github.com/numberdb/numberdb-data/issues>
    with label `table wanted`. Around 80 are open. If your idea is there, say so
    and cite the number rather than proposing it afresh.
