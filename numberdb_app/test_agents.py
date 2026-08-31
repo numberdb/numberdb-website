@@ -407,3 +407,32 @@ class AFailedQuestionDoesNotLookLikeAnEmptyAnswer(TestCase):
 			else:
 				sys.modules['numberdb'] = kept
 		self.assertEqual(found, [])
+
+
+class LessonsAreSortedByWhoCouldHitThem(TestCase):
+	"""The skill is published for somebody with Python and perhaps Sage. A
+	lesson about our containers teaches them somebody else's setup."""
+
+	def test_the_build_prompt_sends_environment_findings_elsewhere(self):
+		body = ' '.join(prompt('table-build').split())
+		self.assertIn('docs/agent-environment.md', body)
+		self.assertIn('on their own laptop, hit what you hit', body)
+
+	def test_the_proposals_file_states_the_rule(self):
+		path = os.path.join(settings.BASE_DIR, 'agents', 'lessons',
+		                    'PROPOSALS.md')
+		with open(path, encoding='utf-8') as handle:
+			body = ' '.join(handle.read().split())
+		self.assertIn('docs/agent-environment.md', body)
+		self.assertIn('only if it would still be true for that person', body)
+
+	def test_no_deployment_detail_leaks_into_the_proposals(self):
+		#The words that mean "this is about our machines, not about tables".
+		path = os.path.join(settings.BASE_DIR, 'agents', 'lessons',
+		                    'PROPOSALS.md')
+		with open(path, encoding='utf-8') as handle:
+			body = handle.read()
+		body = body[body.index('---'):]          # past the header, which names them
+		for word in ('docker', 'ssh ', 'sage.sh', 'ALL_PROXY', 'container'):
+			self.assertNotIn(word, body,
+			                 '%r belongs in docs/agent-environment.md' % word)

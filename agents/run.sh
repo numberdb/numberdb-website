@@ -130,9 +130,24 @@ If something you need is unreachable, say so in your output and carry on with
 what you have. Do not go looking through \`~/.claude\` for cached copies of it;
 the first run spent twenty turns doing that and found nothing.
 
-**When something you met is not in the skill**, append it to
-\`agents/lessons/PROPOSALS.md\` in the format given there. Do not edit the
-skill itself: a person promotes a lesson, together with a test.
+**When something you met is not in the skill**, write it down -- but sort it
+first, because two different files are involved and mixing them spoils the
+skill.
+
+The skill is published at <https://numberdb.org/skill> for somebody who has
+Python, and perhaps Sage or passagemath, and wants to contribute a table. Ask:
+**could that person, on their own laptop, hit this?**
+
+* Yes -- the mathematics of checking a value, what the API accepts, what the
+  client returns, how search behaves, what a Sage import does not bring with
+  it: append it to \`agents/lessons/PROPOSALS.md\`, in the format given there.
+* No -- anything about this deployment: containers, ssh, the proxy,
+  \`agents/sage.sh\`, your own permissions, a bug in the site itself: append it
+  to \`docs/agent-environment.md\` instead. It is a real finding and worth
+  writing down; it is just not a lesson about making tables.
+
+Do not edit the skill itself: a person promotes a lesson, together with a
+test.
 
 ## Your task
 

@@ -148,7 +148,19 @@ caveat about a particular value.
 
 ## When you meet something new
 
-Append it to `agents/lessons/PROPOSALS.md`: what you had to decide that the
-skill did not cover, what went wrong, and what the skill should say. Do not
-edit the skill yourself. A person accepts the lesson, with a test that asserts
-it, in one commit.
+Write it down, in whichever of two files it belongs to. Do not edit the skill
+yourself: a person accepts a lesson, with a test that asserts it, in one
+commit.
+
+The skill is published at <https://numberdb.org/skill>, for somebody who has
+Python and perhaps Sage and wants to contribute a table. **Could that person,
+on their own laptop, hit what you hit?**
+
+* Yes -- `agents/lessons/PROPOSALS.md`: what you had to decide that the skill
+  did not cover, what went wrong, and what the skill should say.
+* No, it is about this deployment -- containers, ssh, the proxy, the wrapper
+  scripts, your own permissions, a bug in the site -- `docs/agent-environment.md`.
+  Still worth writing down; just not a lesson about making tables.
+
+A skill that carries somebody else's docker problem teaches the wrong thing to
+everybody who reads it.
