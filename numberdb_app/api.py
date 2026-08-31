@@ -752,8 +752,17 @@ def offer_table(request, tid):
 	                     'ready_for_review': True})
 
 
+@csrf_exempt
+@rate_limited
 def write_table(request, tid):
-	"""Replace a table's document. POST or PUT, key required."""
+	"""Replace a table's document. POST or PUT, key required.
+
+	`csrf_exempt` like every other writer here: without it the CSRF middleware
+	answers an outside POST with a bare 403 before this function runs, which
+	the client reports as "the server refused the API key" -- and the test
+	client, which does not enforce CSRF, never sees it. A run retitling a
+	draft it had just created and filled with the same key found it that way.
+	"""
 	from .editing import (InvalidDocument, ParametersChanged, StaleEdit,
 	                      commit_table, without_managed_keys)
 	from .limits import TooBig
