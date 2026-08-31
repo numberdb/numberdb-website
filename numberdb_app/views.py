@@ -1035,7 +1035,14 @@ def table_context(table, preview=False):
 					for key, value in numbers.items():
 						if key in ('number','numbers','param-latex'):
 							continue
-						extra_info[key] = render_text(value)
+						shown = render_text(value)
+						#A note that is blank, or only spaces, is not a note.
+						#Kept out here rather than hidden in the template so
+						#that `extra_info` being non-empty means there is
+						#something to show -- the template asks exactly that.
+						if not str(shown).strip():
+							continue
+						extra_info[key] = shown
 					if 'number' in numbers:
 						numbers = numbers['number']
 					elif 'numbers' in numbers:
