@@ -42,6 +42,44 @@ def _distinguishing(name):
             if w not in GENERIC and len(w) > 2]
 
 
+def use_socks_proxy_if_set():
+    """Route Python through ALL_PROXY when it names a SOCKS proxy.
+
+    curl honours ALL_PROXY; `urllib` and `http.client`, which the client and
+    this module use, do not. On a network that reaches numberdb.org only
+    through the proxy that difference is invisible and expensive: curl answers
+    200, Python times out, and the corpus looks empty rather than unreachable.
+
+    Idempotent, and a no-op when ALL_PROXY is unset or is not SOCKS.
+    """
+    global _PROXY_READY
+    if _PROXY_READY:
+        return
+    url = os.environ.get('ALL_PROXY', '')
+    if not url.startswith('socks'):
+        _PROXY_READY = True
+        return
+    try:
+        import socket
+        import socks                                  # PySocks
+    except ImportError:
+        _PROXY_READY = True
+        return
+    parsed = urllib.parse.urlparse(url)
+    socks.set_default_proxy(socks.SOCKS5, parsed.hostname, parsed.port or 1080,
+                            rdns=url.startswith('socks5h'))
+    socket.socket = socks.socksocket
+    #urllib would otherwise try to speak HTTP to a SOCKS port.
+    for name in ('ALL_PROXY', 'all_proxy', 'HTTP_PROXY', 'http_proxy',
+                 'HTTPS_PROXY', 'https_proxy'):
+        os.environ.pop(name, None)
+    _PROXY_READY = True
+
+
+#: Whether `use_socks_proxy_if_set` has already run.
+_PROXY_READY = False
+
+
 def source_names_it(name, url):
     """Does the cited source exist, and does it actually name this family?
 
@@ -51,6 +89,7 @@ def source_names_it(name, url):
 
     Returns a complaint, or None if the source names it.
     """
+    use_socks_proxy_if_set()
     try:
         request = urllib.request.Request(
             url, headers={'User-Agent': 'numberdb-proposal-screen'})
@@ -102,11 +141,18 @@ def already_here(name, client=None):
         #not match half the corpus. Say so; a person can look by hand.
         return ['(no distinguishing word in %r -- search the corpus by hand)'
                 % name]
+    use_socks_proxy_if_set()
     for term in terms:
         try:
             results = numberdb.search_text(term, client=client)
-        except Exception:                            # noqa: BLE001
-            continue
+        except Exception as trouble:                 # noqa: BLE001
+            #Never silently. This returned [] for every name once, because
+            #Python ignores the SOCKS proxy that curl honours and the corpus
+            #was simply unreachable -- and [] reads exactly like "nothing
+            #similar is here", which is the opposite of what was known. A
+            #failed question and an empty answer must not look the same.
+            return ['(could not ask the corpus: %s: %s)'
+                    % (type(trouble).__name__, trouble)]
         for table in getattr(results, 'tables', []):
             found[table.title] = term
     return sorted('%s (matched %r)' % (title, term)
@@ -119,6 +165,7 @@ def already_asked(name, repository='numberdb/numberdb-data'):
     Closed ones matter as much: a closed issue means the table exists, and
     proposing it again wastes the next person's day.
     """
+    use_socks_proxy_if_set()
     words = [w for w in re.findall(r"[A-Za-z][A-Za-z'-]+", name)
              if len(w) > 4]
     if not words:
