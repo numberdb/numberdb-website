@@ -34,7 +34,15 @@ Search it, for two different reasons, and neither is optional.
 **Is this table already here, under another name?** Two tables of the same
 objects are sometimes right -- the Hermite polynomials are held twice, in the
 physicists' and the probabilists' conventions -- but that is a decision, not an
-accident. `/drafts` lists what is being made right now and is invisible from
+accident. Values that are a *derivable* multiple of stored ones are a
+different question from values that are already **findable**: a reader with a
+number tries a half, a two, a pi, and stops. If getting from their number to
+the stored one means guessing a rational nobody would guess, the family is not
+covered, whatever the identity says. The same question refuses the opposite
+family: values that are a handful of small integers -- class numbers are
+mostly 1, 2, 3 -- match everything and tell nobody anything, and putting them
+in a table makes search by number worse for everyone. Those belong in the
+comment on the entry they explain, which is where a reader meets them. `/drafts` lists what is being made right now and is invisible from
 outside, so a table can be half-built and unfindable while you start it again.
 
 **What does the database already hold that this table should point at?** A
