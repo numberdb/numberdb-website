@@ -469,3 +469,22 @@ class WhatEarnsATableIsFindabilityNotDerivability(TestCase):
 			body = ' '.join(handle.read().split())
 		self.assertIn('guessing a rational nobody would guess', body)
 		self.assertIn('match everything and tell nobody anything', body)
+
+	def test_a_shared_value_is_not_a_reason_against_a_table(self):
+		#Pi is stored three times over -- as itself, as a value of an elliptic
+		#integral, as a Sobolev constant -- and somebody holding 3.14159 is
+		#better served by three answers than by one.
+		body = ' '.join(prompt('table-ideas').split())
+		self.assertIn('A value already in the corpus is not a reason against '
+		              'anything', body)
+		self.assertIn('never refuse one because its numbers are known', body)
+
+	def test_the_skill_says_the_question_is_about_the_family(self):
+		import os as _os
+
+		path = _os.path.join(settings.BASE_DIR, '.claude', 'skills',
+		                     'numberdb-table', 'SKILL.md')
+		with open(path, encoding='utf-8') as handle:
+			body = ' '.join(handle.read().split())
+		self.assertIn('about the *family*, never about the values', body)
+		self.assertIn('the different context *is* the product', body.lower())

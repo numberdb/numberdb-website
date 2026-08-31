@@ -36,7 +36,16 @@ the question is not "give me more of this sequence".
    day. The result is an object with a `.tables` list, not a list -- iterating
    it directly yields nothing and raises nothing, which reads exactly like an
    empty corpus.
-2. **Ask what the family is a specialisation or a multiple of, and search for
+2. **A value already in the corpus is not a reason against anything.** The
+   screen looks for a duplicate *family*, and a family is not duplicated by
+   sharing numbers with another one. Pi is stored three times over -- as
+   itself in T7, as a value of the elliptic integral in T59, as a Sobolev
+   constant in T92 -- and that is the database working: somebody holding
+   3.14159 wants every context it arises in, not the first. The coincidence
+   between contexts is the product. Only propose a table twice under two names
+   by accident, never refuse one because its numbers are known.
+
+3. **Ask what the family is a specialisation or a multiple of, and search for
    that too.** Searching the name finds a table that shares a word with it.
    It cannot find one that holds the same numbers under a name sharing no
    word, and the screen cannot either. The polygamma functions are
@@ -77,10 +86,10 @@ the question is not "give me more of this sequence".
    meets it. Propose such a family as a table only when the individual values
    are themselves the object of interest -- the diagonal Ramsey numbers of T6
    are ten specific integers people care about one at a time.
-3. **Read the open issues** at <https://github.com/numberdb/numberdb-data/issues>
+4. **Read the open issues** at <https://github.com/numberdb/numberdb-data/issues>
    with label `table wanted`. Around 80 are open. If your idea is there, say so
    and cite the number rather than proposing it afresh.
-4. **Check it can be a table at all.** Some things cannot: numberdb-data#121
+5. **Check it can be a table at all.** Some things cannot: numberdb-data#121
    asks for Lagrange polynomials "for general point sets", and a general point
    set is a parameter with infinitely many values and no canonical order, so
    there is nothing to enumerate and nothing to look a value up by. Say so

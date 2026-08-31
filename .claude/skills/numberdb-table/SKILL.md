@@ -31,10 +31,18 @@ Python values.
 
 Search it, for two different reasons, and neither is optional.
 
-**Is this table already here, under another name?** Two tables of the same
-objects are sometimes right -- the Hermite polynomials are held twice, in the
-physicists' and the probabilists' conventions -- but that is a decision, not an
-accident. Values that are a *derivable* multiple of stored ones are a
+**Is this table already here, under another name?** The question is about the
+*family*, never about the values. A number appearing in several tables is the
+point of the database, not a fault in it: pi is in T7 as itself, in T59 as a
+value of the elliptic integral, and in T92 as a Sobolev constant, and somebody
+who arrives holding 3.14159 is better served by three answers than by one.
+Never drop a proposal because its numbers are already stored somewhere -- the
+different context *is* the product.
+
+What is worth avoiding is the same family twice by accident. Two tables of the
+same objects are sometimes right -- the Hermite polynomials are held twice, in
+the physicists' and the probabilists' conventions -- but that is a decision,
+not an accident. Values that are a *derivable* multiple of stored ones are a
 different question from values that are already **findable**: a reader with a
 number tries a half, a two, a pi, and stops. If getting from their number to
 the stored one means guessing a rational nobody would guess, the family is not
