@@ -276,3 +276,29 @@ once the fix is deployed (`/tmp/retitle.py` does it in one request).
 Evidence: 2026-08-31, `/tmp/retitle.py`: `HTTPError: HTTP Error 403:
 Forbidden` from `urllib`, no JSON body; `create_table` and `write_entries`
 with the same key returned 201 and 200.
+
+## The server is small, and concurrent Sage runs take it down
+
+What happened: several test suites were started on the server without waiting
+for the previous one to finish -- and `timeout` on this side kills the local
+ssh, not the remote `docker compose run`, so runs believed to be dead were
+still going. Load average reached 68 on a box with 961 MB of RAM. sshd went on
+accepting TCP connections but stopped completing handshakes, which reads
+exactly like the server being down, and the SOCKS proxy that this machine
+reaches numberdb.org through is itself an ssh tunnel to that same box, so it
+died too and the site became unreachable from here. The site itself was up
+throughout, and answering; only this machine could not see it.
+
+What to do instead: **one thing at a time on that server.** Wait for a test
+run to report before starting another. Give a run a timeout long enough to
+finish -- the full suite takes about ten minutes and 780 seconds was not
+enough -- and remember that a `timeout` here does not stop the container
+there.
+
+`agents/sage.sh` now multiplexes its ssh calls (`ControlMaster`), so a run
+costs one connection rather than three.
+
+To tell an overloaded server from a dead one: TCP connects on 22, 443 and 80
+but ssh hangs "during banner exchange" -- that is load, not a ban, and it
+clears on its own. `https://r.jina.ai/https://numberdb.org/` fetches a page
+from outside this network and answers whether the site is actually serving.
