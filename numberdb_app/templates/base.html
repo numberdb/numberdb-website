@@ -106,6 +106,13 @@ concludes the site is broken.
         <!--<a class="navbar-field" href="{% url 'account_login' %}">Login</a>-->
         <a class="navbar-field" href="{% url 'account_login' %}"><img class="profile" src="{% static '/img/profile3.png' %}" alt="Login"></a>
       {% else %}
+        {% comment %}
+        Making a table was reachable only from a link inside the help page,
+        which is a strange place to keep the one action the site exists to
+        collect. Signed in, so it is never a dead end: the form needs an
+        account.
+        {% endcomment %}
+        <a class="navbar-field" href="{% url 'db:new-table' %}">New&nbsp;table</a>
         {% if drafts_in_progress %}
           {% comment %}
           Only when there is something to look at. A link that is usually a

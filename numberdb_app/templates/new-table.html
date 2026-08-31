@@ -27,45 +27,80 @@
 
 <p>
   A table is a family of numbers with a description: what they are, what the
-  parameters mean, where they come from. Fill in the skeleton below; the
-  <a href="{% url 'db:help' %}#section-format-of-tables">format guide</a>
-  describes every section.
+  parameters mean, where they come from. All that is needed to begin is a
+  name.
 </p>
-
-<div class="edit-note">
-  {% if is_board_member %}
-    The table is created and published as soon as you save, and counts as
-    reviewed because you are on the board.
-  {% else %}
-    The table is created and published as soon as you save. Its numbers are
-    marked as needing review and stay out of
-    <a href="{% url 'db:help' %}#section-search">search by number</a> until a
-    reviewer confirms them; the page itself is visible immediately.
-  {% endif %}
-</div>
 
 {% include 'includes/messaging.html' %}
 
 <form method="post" action="">
   {% csrf_token %}
-  <textarea id="table-yaml" name="table">{{ table_yaml }}</textarea>
+  <input type="hidden" name="form" value="simple">
   <p>
-    <label>What is this table?
-      <input type="text" name="message" maxlength="300" size="60"
-             placeholder="e.g. zeros of the Airy function">
-    </label>
+    <label for="new-title"><b>What is this a table of?</b></label><br>
+    <input id="new-title" type="text" name="title" size="60" maxlength="200"
+           autofocus required
+           placeholder="Zeros of the Airy function Ai"><br>
+    <small>The title. It is what the address is built from, and both can be
+    changed later.</small>
   </p>
-  <button type="submit" name="action" value="preview">Show preview</button>
-  <button type="submit" name="action" value="save"><b>Create table</b></button>
+  <p>
+    <label for="new-definition">What are these numbers? <small>(optional)</small></label><br>
+    <textarea id="new-definition" name="definition" rows="3" cols="60"
+              placeholder="The list contains the negative real zeros of Ai(x), in decreasing order."></textarea><br>
+    <small>A sentence or two, precise enough that two people would build the
+    same table. You can write it later.</small>
+  </p>
+  <p>
+    <label for="new-parameters">What indexes them? <small>(optional)</small></label><br>
+    <input id="new-parameters" type="text" name="parameters" size="30"
+           maxlength="120" placeholder="n">
+    <br>
+    <small>The parameter names, separated by commas &mdash; <code>n</code>, or
+    <code>n, alpha</code>. These become the columns that identify an entry, so
+    the entry form needs them; their types are set in the editor. They can
+    still be changed while the table is a draft.</small>
+  </p>
+  <button type="submit"><b>Create draft</b></button>
   <a href="{% url 'db:tables' %}">Cancel</a>
 </form>
 
-<script>
-  var editor = CodeMirror.fromTextArea(document.getElementById("table-yaml"), {
-    lineNumbers: true, mode: "text/x-yaml", matchBrackets: true,
-    spellcheck: true, viewportMargin: 1,
-  });
-</script>
+<div class="edit-note">
+  It is created as a <b>draft</b>: only you can read it, it answers no search,
+  and its parameters can still change. You fill in the type, the parameters,
+  the entries and the rest in the editor, and offer it for review when it
+  holds numbers. Nothing is published until somebody has looked at it.
+</div>
+
+{% comment %}
+The YAML document is still here for anybody who has one -- an import, a table
+written elsewhere, a generator's output. It is no longer the way in: asking
+somebody to write a whole document before they can see anything is what this
+page used to do, and the editor it now hands off to is better at every part
+of it.
+{% endcomment %}
+<details>
+  <summary>Or paste a whole table document</summary>
+  <form method="post" action="">
+    {% csrf_token %}
+    <textarea id="table-yaml" name="table">{{ table_yaml }}</textarea>
+    <p>
+      <label>What is this table?
+        <input type="text" name="message" maxlength="300" size="60"
+               placeholder="e.g. zeros of the Airy function">
+      </label>
+    </p>
+    <button type="submit" name="action" value="preview">Show preview</button>
+    <button type="submit" name="action" value="save"><b>Create table</b></button>
+  </form>
+
+  <script>
+    var editor = CodeMirror.fromTextArea(document.getElementById("table-yaml"), {
+      lineNumbers: true, mode: "text/x-yaml", matchBrackets: true,
+      spellcheck: true, viewportMargin: 1,
+    });
+  </script>
+</details>
 
 <div id="preview-header">&mdash; preview, as the table will look &mdash;</div>
 {% if table %}{% include 'includes/table-snippet.html' %}{% endif %}
