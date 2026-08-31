@@ -89,8 +89,14 @@ def measure(values):
     Length is what decides these tables, not the stated size limits. The
     Fibonacci polynomials stop where the longest is 1107 characters; `h_6` in
     six variables would be 6969, which nobody reads.
+
+    `longest` is the written value alone. `block_kb` is what the server
+    measures against its limit: the YAML of the flat records, annotations
+    included -- a comment on every entry is part of the block, and a table of
+    607 hundred-digit values found that out by coming in at 166 KB rather
+    than the 75 KB its numbers alone would make.
     """
-    lengths = {key: len(str(value)) for key, value in _pairs(values)}
+    lengths = {key: len(str(_number_of(value))) for key, value in _pairs(values)}
     if not lengths:
         return {'entries': 0, 'longest': 0, 'block_kb': 0.0, 'longest_at': None}
     longest_at = max(lengths, key=lambda k: lengths[k])
@@ -98,8 +104,44 @@ def measure(values):
         'entries': len(lengths),
         'longest': lengths[longest_at],
         'longest_at': longest_at,
-        'block_kb': sum(n + 24 for n in lengths.values()) / 1024.0,
+        'block_kb': _block_bytes(values) / 1024.0,
     }
+
+
+def _number_of(value):
+    """The value inside an entry, whether it came bare or as a mapping.
+
+    A generator may return ``{'number': x, 'comment': '...'}``, which the
+    skill says it may; the first version of these checks reported that as
+    "coefficient of unexpected type dict" and measured the comment's length
+    as the value's.
+    """
+    if isinstance(value, dict) and 'number' in value:
+        return value['number']
+    return value
+
+
+def _block_bytes(values):
+    """The size of the entries block as the server serialises it.
+
+    The same `yaml.dump` of the same flat records as `numberdb_app/limits.py`;
+    without PyYAML, the old estimate of 24 bytes of overhead per entry.
+    """
+    records = []
+    for key, value in _pairs(values):
+        record = {'params': {'key': str(key)}}
+        if isinstance(value, dict):
+            record.update({k: (str(v) if k == 'number' else v)
+                           for k, v in value.items()})
+        else:
+            record['number'] = str(value)
+        records.append(record)
+    try:
+        import yaml
+    except ImportError:
+        return sum(len(str(_number_of(v))) + 24 for _, v in _pairs(values))
+    return len(yaml.dump(records, default_flow_style=False,
+                         allow_unicode=True).encode('utf8'))
 
 
 def agrees_with(values, other):
@@ -177,6 +219,7 @@ def _coefficients(value):
     the floats -- which is a check stumbling on the shape rather than doing
     its job.
     """
+    value = _number_of(value)
     getter = getattr(value, 'coefficients', None)
     if callable(getter):
         try:
