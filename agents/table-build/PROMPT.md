@@ -142,6 +142,17 @@ no table, and is harder to remove than to never add.
 needs a key found by trying permutations, so more than six is refused. The
 partial Bell polynomials stop at n = 7 because B(8,2) has seven variables.
 
+**Look for the entry that identifies nothing.** A family can be distinctive
+and still contain one value that is not: the Hilbert class polynomial of
+Delta = -3 is `x`, because j vanishes there, and `x` already answers a search
+in ten other tables. One such entry is not a reason against the table -- it is
+the true value and a hole where the most famous case should be is worse -- but
+it is a reason to say so in its comment, so that a reader who arrives at it by
+searching sees immediately why the hit means nothing. Check the shortest and
+the most common-looking entries in your range before you fill, with
+`numberdb.search_number` or `/api/lookup`, and write the comment then rather
+than after somebody notices.
+
 **Entry comments are shown**, as a line under the value. Use one for a name a
 reader would recognise -- 35 of the 996 small graphs have one -- and for a
 caveat about a particular value.

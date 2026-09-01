@@ -45,10 +45,13 @@ class AnOperatedAccountCannotLaunderItsEditsThroughItsOperator(TestCase):
 		self.reviewed_table(self.bot, 'assisted by Claude', stranger)
 		self.assertEqual(accepted_edit_count(self.bot), 1)
 
-	def test_an_unassisted_revision_still_counts(self):
-		#The exclusion is about assisted work, not about operated accounts.
+	def test_an_unassisted_revision_does_not_count_either(self):
+		#This asserted the opposite until zeta3 reached nine accepted edits on
+		#revisions marked 'api' and 'numberdb-python' and started confirming
+		#its own tables. For an operated account the marker is irrelevant:
+		#what its operator confirmed is one person's judgement either way.
 		self.reviewed_table(self.bot, '', self.operator)
-		self.assertEqual(accepted_edit_count(self.bot), 1)
+		self.assertEqual(accepted_edit_count(self.bot), 0)
 
 	def test_an_account_with_no_operator_is_unaffected(self):
 		plain = User.objects.create_user('plain')
@@ -103,3 +106,67 @@ class VouchingForAnAccountGrantsWritingAndNothingElse(TestCase):
 		person = User.objects.create_user('veteran')
 		person.groups.add(board_group())
 		self.assertTrue(edits_are_reviewed(person))
+
+
+class AProgramNeverConfirmsItsOwnWork(TestCase):
+	"""zeta3 reached nine accepted edits and began marking its own tables
+	reviewed -- T129 was saved with `reviewed_by = zeta3`. The exclusion that
+	should have stopped it depended on `produced_by` naming an assistant, and
+	the client writes 'api', 'numberdb-python' or a generator's class name
+	there instead."""
+
+	def setUp(self):
+		self.operator = User.objects.create_user('operator3')
+		self.bot = User.objects.create_user('bot3')
+		self.bot.profile.operated_by = self.operator
+		self.bot.profile.save()
+
+	def reviewed_table(self, produced_by, reviewer, tid='T901', number=901):
+		table = Table.objects.create(
+			tid=tid, tid_int=number, url=tid.lower(),
+			title='A table %s' % tid, published=True)
+		revision = TableRevision.objects.create(
+			table=table, author=self.bot, content='Title: t\n',
+			produced_by=produced_by)
+		table.reviewed_at_revision = revision
+		table.reviewed_by = reviewer
+		table.save()
+		return table
+
+	def test_an_operated_account_is_never_auto_reviewed(self):
+		from .permissions import edits_are_reviewed
+
+		#However many edits it has to its name.
+		for i in range(8):
+			self.reviewed_table('api', User.objects.create_user('other%d' % i),
+			                    tid='T9%02d' % (10 + i), number=910 + i)
+		self.assertFalse(edits_are_reviewed(self.bot))
+
+	def test_the_operator_confirming_it_does_not_count_whatever_produced_by_says(self):
+		#'api' is what the client writes for a plain write, and it used to
+		#slip past an exclusion that looked for the word "assisted".
+		self.reviewed_table('api', self.operator)
+		self.assertEqual(accepted_edit_count(self.bot), 0)
+
+	def test_nor_does_the_generator_name(self):
+		self.reviewed_table('HilbertClassPolynomials (numberdb=0.1.6)',
+		                    self.operator)
+		self.assertEqual(accepted_edit_count(self.bot), 0)
+
+	def test_somebody_else_confirming_it_still_counts(self):
+		stranger = User.objects.create_user('stranger3')
+		self.reviewed_table('api', stranger)
+		self.assertEqual(accepted_edit_count(self.bot), 1)
+
+	def test_an_account_with_no_operator_is_unaffected(self):
+		#A person's own edits, confirmed by somebody else, still count.
+		person = User.objects.create_user('person3')
+		stranger = User.objects.create_user('stranger4')
+		table = Table.objects.create(
+			tid='T950', tid_int=950, url='t950', title='P', published=True)
+		revision = TableRevision.objects.create(
+			table=table, author=person, content='Title: t\n', produced_by='')
+		table.reviewed_at_revision = revision
+		table.reviewed_by = stranger
+		table.save()
+		self.assertEqual(accepted_edit_count(person), 1)

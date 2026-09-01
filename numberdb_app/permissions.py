@@ -132,28 +132,36 @@ def accepted_edit_count(user):
 
 	if not getattr(user, 'is_authenticated', False):
 		return 0
-	return TableRevision.objects.filter(
+	from django.db.models import Q
+
+	from .models import TableRevision
+
+	confirmed = TableRevision.objects.filter(
 		author=user,
 		table__reviewed_at_revision__isnull=False,
 		created__lte=F('table__reviewed_at_revision__created'),
-	).exclude(
-		#A revision an assistant produced is evidence about its author only
-		#when somebody else confirmed it. The counter was already built
-		#against farming -- it counts reviews rather than approvals, because
-		#"a script can farm" approval -- and an assistant whose operator
-		#reviews its own output farms it just as effectively and more
-		#politely. Reviews from before `reviewed_by` was recorded are null and
-		#so do not match, which is the right default: they were confirmed by
-		#the board.
-		#
-		#`operated_by` is why the reviewer is a set rather than the author.
-		#Giving an agent its own account is good practice -- attributable
-		#work, a key that can be revoked on its own -- and it used to defeat
-		#this check completely, because author and reviewer were then two
-		#different usernames belonging to the same judgement. An account that
-		#says who runs it does not get to launder its edits through them.
+	)
+
+	operator = operator_of(user)
+	if operator is not None:
+		#An account that says who runs it is a program, and nothing its
+		#operator confirmed is evidence about it -- whatever `produced_by`
+		#happens to say. The client writes 'api', 'numberdb-python' or a
+		#generator's class name there far more often than the assisted marker,
+		#so an exclusion that looked for the marker excluded almost nothing:
+		#zeta3 reached nine accepted edits and began marking its own tables
+		#reviewed.
+		return confirmed.exclude(
+			table__reviewed_by__in=[user, operator]).count()
+
+	#For a person, the marker is still the signal: an assistant's revision
+	#confirmed by its own author says nothing about the author. It counts
+	#against farming, and reviews from before `reviewed_by` was recorded are
+	#null and so do not match, which is the right default -- the board
+	#confirmed those.
+	return confirmed.exclude(
 		Q(produced_by__icontains=ASSISTED_MARKER)
-		& Q(table__reviewed_by__in=_self_and_operator(user))
+		& Q(table__reviewed_by=user)
 	).count()
 
 
@@ -205,6 +213,12 @@ def edits_are_reviewed(user):
 	"""
 	if is_board_member(user):
 		return True
+	#An account that is a program never has its output taken on trust, however
+	#long it has been running. The point of letting it write is that somebody
+	#reads what it wrote, and zeta3 marking its own table reviewed -- which it
+	#did, on T129 -- is the failure this whole arrangement exists to prevent.
+	if operator_of(user) is not None:
+		return False
 	return accepted_edit_count(user) >= TRUSTED_AFTER
 
 

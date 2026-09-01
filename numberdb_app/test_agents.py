@@ -488,3 +488,10 @@ class WhatEarnsATableIsFindabilityNotDerivability(TestCase):
 			body = ' '.join(handle.read().split())
 		self.assertIn('about the *family*, never about the values', body)
 		self.assertIn('the different context *is* the product', body.lower())
+
+	def test_the_build_prompt_looks_for_the_entry_that_identifies_nothing(self):
+		#A family can be distinctive and still hold one value that is not:
+		#H_{-3} is x, and x already answers a search in ten other tables.
+		body = ' '.join(prompt('table-build').split())
+		self.assertIn('Look for the entry that identifies nothing', body)
+		self.assertIn('is not a reason against the table', body)
