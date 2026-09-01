@@ -366,3 +366,39 @@ What to do instead: when `run.sh build` is given a task, quote the
 proposal's own "What has to be decided" section rather than paraphrasing the
 batch; and a build that meets a disagreement should follow the body and
 report the conflict rather than resolve it silently either way.
+
+## `/tmp` outlives a run, and `sage.sh` mounts by basename
+
+What happened: this run wrote its draft-creation script as
+`/tmp/create_draft.py`. The `Write` tool refused, because a file of that
+name from the T128 run still existed and had not been read, and the
+`agents/sage.sh` call in the same turn went ahead and executed the *old*
+script -- which failed on its own missing input before it could post
+anything. Had the old script been self-contained it would have created a
+second draft with the previous table's document.
+
+What to do instead: name scratch files after the table or the date
+(`/tmp/t130_create.py`), or clear `/tmp/*.py` at the start of a run; and
+never put a `Write` and the `sage.sh` call that runs it in the same turn.
+
+Evidence: 2026-09-01, `FileNotFoundError: /work/draft.json` from a script
+that this run never wrote.
+
+## The stored tree keeps `Numbers` as a flat list; the API nests it
+
+What happened: the whole-document edit of T130 counted its entries with
+`tree['Numbers'].values()` and died, because the tree from
+`tree_of(head_revision)` holds `Numbers` as a list of
+`{params: {D, s}, number, comment}` records, while `numberdb.table()`
+returns the same entries nested by parameter value
+(`Numbers['5']['-1']`). Both are the same table; a script that reads one
+shape and writes the other should know which it has.
+
+What to do instead: the two-run edit (previous note) round-trips the flat
+list untouched, and `write_table` accepted it as is; count with
+`len(tree['Numbers'])` on the stored side and by walking the nesting on the
+API side.
+
+Evidence: `/tmp/write_doc_t130.py`, 2026-09-01, first attempt
+`AttributeError: 'list' object has no attribute 'values'`; second attempt
+`906 added` preserved as `906/906 matched`.
