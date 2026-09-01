@@ -50,3 +50,27 @@ transcript. If it leaks, revoke it -- `last_used` shows what it did.
 **What it must set.** `NUMBERDB_ASSISTED_BY`, so `produced_by` records that an
 assistant wrote the revision. That is what the trust counter reads, and
 leaving it unset would quietly claim the work was unassisted.
+
+## What a run costs
+
+`agents/runs/COSTS.tsv` gets a line per run, written by `run.sh` from the
+result record. The first five, all on Claude:
+
+| stage | runs | turns | cost |
+|-------|------|-------|------|
+| ideas | 3 | 39-108 | $8.71, $9.86, $10.49 |
+| build | 2 | 72-121 | $12.17, $15.70 |
+
+So roughly **$10 for a batch of five screened proposals** and **$14 for one
+table built, checked and offered** -- about **$16 a table** once the
+proposing is amortised over the batch it produces.
+
+Two things that number does not include, and both are larger than it. A
+person still reads every table before it is published, which is the gate and
+is not going away. And three of those five runs found a defect in the tooling
+rather than producing a table -- the first could not reach the network at all.
+That rate should fall, but a run that finds something is not a wasted run.
+
+The transcripts are about a megabyte each and are gitignored; the ledger is
+not. Sessions accumulate elsewhere too: this machine's `~/.codex` holds 5.7 GB
+and `~/.claude/projects` 172 MB, neither of them written by this pipeline.

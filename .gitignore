@@ -156,3 +156,6 @@ clients/python/*.egg-info/
 # committing it would be committing a copy that can disagree with the source.
 clients/python/docs/
 agents/runs/
+#...but not the ledger. The transcripts are a megabyte each and are working
+#material; what they cost is a fact about the project worth keeping.
+!agents/runs/COSTS.tsv
