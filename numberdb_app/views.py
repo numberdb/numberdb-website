@@ -537,10 +537,28 @@ def table_context(table, preview=False):
 		'''
 		Parse text for 'CITE', 'HREF', and '\n', 
 		and replace accordingly.
+
+		A table's prose is LaTeX and plain text, never HTML, so a '<' in it is
+		mathematics and is escaped before anything else happens here. It is
+		escaped rather than left alone because a browser starts a tag at '<'
+		followed directly by a letter, and then eats everything up to the next
+		'>': T13's comment on sums of powers, which contains
+		'\sum_{k<m}', has been rendering as half a sentence, and T130's
+		parameter list showed 'argument ()' because '$1<D\leq 1000$' swallowed
+		the rest of the section. '$a < b$' with a space was always safe, which
+		is why this went unnoticed in a dozen other tables.
+
+		MathJax reads the text after the browser has parsed it, so '&lt;'
+		reaches it as a '<' and the mathematics renders correctly.
+
+		The anchors this function builds are added afterwards and are not
+		affected.
 		'''
 		
 		if not isinstance(text, str):
 			raise ValueError('string expected instead of %s' % text.__class__)
+		
+		text = text.replace('<', '&lt;')
 		
 		#Parse 'CITE's:
 		parts = text.split("CITE{")
