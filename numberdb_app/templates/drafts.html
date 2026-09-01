@@ -14,6 +14,17 @@ somebody about to make a table can see that it is already being made &mdash;
 what is in them is not shown, and their numbers answer no search until they are
 published and reviewed.
 
+{% if is_board_member %}
+<p class="help-text">
+  This page is about <b>tables</b> that are not published yet. Entries waiting
+  to be confirmed are a different question and live in the
+  <a href="{% url 'db:review-queue' %}">review queue</a> &mdash; which covers
+  published tables too, since an edit to one is public before anybody has
+  checked it. A table can appear on both pages at once, and usually does while
+  it is being filled.
+</p>
+{% endif %}
+
 <p>
 Two tables of the same objects are sometimes right: the Hermite polynomials are
 held twice, in the physicists' and the probabilists' conventions, because a

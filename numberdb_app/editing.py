@@ -745,22 +745,6 @@ def without_managed_keys(tree):
 	return {k: v for k, v in tree.items() if k not in MANAGED_KEYS}
 
 
-def with_managed_keys(tree, table):
-	"""A document as it is stored, with the site's own keys restored.
-
-	Put back rather than trusted from the form: whatever the author typed for
-	ID is ignored, so an identifier cannot be changed by editing text, and a
-	table cannot be given somebody else's.
-	"""
-	if not isinstance(tree, dict):
-		return tree
-	restored = {'ID': table.tid}
-	for k, v in tree.items():
-		if k not in MANAGED_KEYS:
-			restored[k] = v
-	return restored
-
-
 def restore_revision(table, revision, author=None, message=''):
 	"""Put a table back to an earlier revision.
 

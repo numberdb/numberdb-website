@@ -147,16 +147,6 @@ back down to 100 for a better reason: F_150 is 2248 characters and F_100 is
 Ask what the largest entry looks like on a page before asking whether the table
 fits.
 
-**Division in a generator is where exactness goes.** `sage -python` has no
-preparser, so `factorial(30)` is a Python `int` and `factorial(n) / k` is
-*float* division -- exact up to 2^53 and quietly wrong after it. A Bessel
-polynomial built from its closed form this way had the right coefficients up
-to n = 15 and wrong ones from n = 16, differing in the last two digits, which
-is exactly the kind of wrong that gets published. Two ways out: build from a
-recurrence that only multiplies and adds, or write every division between Sage
-rationals, `QQ(a) / QQ(b)`. Note that `c in ZZ` is true of a float that
-happens to be integral, so that check will not catch it.
-
 **A comment on every entry is part of the entries block.** Notes are stored
 with the values they belong to, so a line of prose on each of a thousand
 entries is counted with them: on one table the block was 166 KB with a comment
@@ -298,6 +288,16 @@ in every listing, and a parameter order that can never change because citations
 resolve on it. Creating tables through the API is board-only for that reason.
 So: agree the title, definition, parameters and type with whoever owns the
 database, let them create it, then point a generator at it.
+
+**Division in a generator is where exactness goes.** `sage -python` has no
+preparser, so `factorial(30)` is a Python `int` and `factorial(n) / k` is
+*float* division -- exact up to 2^53 and quietly wrong after it. A Bessel
+polynomial built from its closed form this way had the right coefficients up
+to n = 15 and wrong ones from n = 16, differing in the last two digits, which
+is exactly the kind of wrong that gets published. Two ways out: build from a
+recurrence that only multiplies and adds, or write every division between Sage
+rationals, `QQ(a) / QQ(b)`. Note that `c in ZZ` is true of a float that
+happens to be integral, so that check will not catch it.
 
 **Name the rings you use, rather than importing `sage.all`.** A modular
 passagemath has no `sage.all`, and the generator below runs unchanged on both
