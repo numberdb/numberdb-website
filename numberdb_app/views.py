@@ -1525,7 +1525,7 @@ def suggestions(request):
 		print("r_query:",r_query)
 		#Overlap rather than containment, ranked by how much of each stored
 		#interval the query accounts for -- see search.py.
-		query_real_intervals = search_real_numbers(r_query, 10-i)
+		query_real_intervals = search_real_numbers(r_query, 10-i, per_table=True)
 		
 		if len(query_real_intervals) > 0:
 			found_as_real_number = True
@@ -1546,7 +1546,8 @@ def suggestions(request):
 		f_query = blur_real_interval(f)
 		print("f_query:",f_query)
 		#Overlap rather than containment, ranked -- see search.py.
-		query_fractional_part = search_fractional_parts(f_query, 10-i)
+		query_fractional_part = search_fractional_parts(f_query, 10-i,
+		                                                per_table=True)
 		for _number in query_fractional_part:
 			#Preserved from the annotate() this replaced: the template uses it
 			#to mark a hit as matched on the fractional part.
@@ -1622,7 +1623,7 @@ def suggestions(request):
 			#shorter stored string could start with, so nothing matched. Box
 			#overlap is symmetric, so a precise query finds coarser stored
 			#values on its own and the query keeps its precision.
-			query_complex = search_complex_numbers(n, int(10-i))
+			query_complex = search_complex_numbers(n, int(10-i), per_table=True)
 			print("query_complex:",query_complex)
 			suggested_numbers += list(query_complex)
 			#print("suggested_numbers:",suggested_numbers)

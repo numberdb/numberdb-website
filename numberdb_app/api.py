@@ -240,7 +240,8 @@ def advanced_search_results(request, return_type='json'):
 			#short-circuited once a full page scores 1 -- see search.py.
 			r_query = blur_real_interval(r)
 			print("r_query:",r_query)
-			query_real_intervals += search_real_numbers(r_query, max_results)
+			query_real_intervals += search_real_numbers(r_query, max_results,
+			                                            per_table=True)
 			query_i += 1
 
 		elif K == CIF:
@@ -258,7 +259,8 @@ def advanced_search_results(request, return_type='json'):
 			#it wants a GiST index on a box column.
 			r_query = blur_complex_interval(r)
 			print("r_query:",r_query)
-			query_complex_intervals += search_complex_numbers(r_query, max_results)
+			query_complex_intervals += search_complex_numbers(r_query, max_results,
+			                                                  per_table=True)
 			query_i += 1
 		
 		elif is_pAdicField(K):
@@ -512,7 +514,7 @@ def lookup(request):
 		results, messages = [], []
 		for index, record in enumerate(records):
 			try:
-				found = search_number(decode_number(record))
+				found = search_number(decode_number(record), per_table=True)
 			except (UnsupportedNumber, TypeError, ValueError,
 			        ArithmeticError) as error:
 				messages.append({
@@ -538,7 +540,7 @@ def lookup(request):
 			return JsonResponse({'error': 'could not read that number: %s'
 			                              % (error,)}, safe=True)
 		try:
-			return wrap(search_number(value), [])
+			return wrap(search_number(value, per_table=True), [])
 		except ValueError as error:
 			return JsonResponse({'error': str(error)}, safe=True)
 
@@ -577,7 +579,7 @@ def lookup(request):
 		if parsed is None:
 			return JsonResponse(
 				{'error': 'could not read that polynomial.'}, safe=True)
-		return wrap(search_number(parsed), [])
+		return wrap(search_number(parsed, per_table=True), [])
 
 	if text:
 		groups = search_by_term(text)

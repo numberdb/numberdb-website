@@ -158,7 +158,7 @@ def one_per_table(queryset, limit, order=()):
 	return rows
 
 
-def search_real_numbers(r_query, limit):
+def search_real_numbers(r_query, limit, per_table=False):
 	"""Stored values that could be ``r_query``, best first.
 
 	Broad queries are answered without sorting anything. A stored interval
@@ -180,23 +180,29 @@ def search_real_numbers(r_query, limit):
 	"""
 	query = real_query_range(r_query)
 
-	contained = one_per_table(
-		_identifiable(Number.objects).filter(value_range__contained_by = query),
-		limit)
+	inside = _identifiable(Number.objects).filter(
+		value_range__contained_by = query)
+	#The decision stays on rows even when the answer is per table. A broad
+	#query matching twenty thousand values across three tables is still a
+	#broad query, and the point of this branch is to skip the scoring, which
+	#is what costs. Deciding it on tables sent those queries down the scored
+	#path and turned 0.56 ms into 22.8 ms.
+	contained = list(inside[:limit])
 	if len(contained) >= limit:
-		return contained
+		return one_per_table(inside, limit) if per_table else contained
 
 	#Fewer than a full page score 1, so the coarser values that merely overlap
 	#have to be ranked in. This re-finds the contained ones -- they overlap
 	#too -- and sorts the union, so the result is a superset of the above.
-	rows = one_per_table(
-		_identifiable(Number.objects)
-			.filter(value_range__overlap = query)
-			.annotate(overlap_score = RawSQL(_SCORE_SQL, (query, query))),
-		limit, order=('-overlap_score',))
+	scored = (_identifiable(Number.objects)
+		.filter(value_range__overlap = query)
+		.annotate(overlap_score = RawSQL(_SCORE_SQL, (query, query))))
+	if not per_table:
+		return list(scored.order_by('-overlap_score')[:limit])
 	#`DISTINCT ON` had to order by table to pick each table's best row; the
 	#page wants them best-first.
-	return sorted(rows, key=lambda row: -row.overlap_score)
+	return sorted(one_per_table(scored, limit, order=('-overlap_score',)),
+	              key=lambda row: -row.overlap_score)
 
 
 #Per axis rather than by area, so that a value exact in one component and
@@ -217,7 +223,7 @@ _COMPLEX_SCORE_SQL = """
 """
 
 
-def search_complex_numbers(n_query, limit):
+def search_complex_numbers(n_query, limit, per_table=False):
 	"""Stored complex values that could be ``n_query``, best first.
 
 	The same shape as the real case, one dimension up: a stored box lying
@@ -234,24 +240,25 @@ def search_complex_numbers(n_query, limit):
 	re_low, re_high = float(n_query.real().lower()), float(n_query.real().upper())
 	im_low, im_high = float(n_query.imag().lower()), float(n_query.imag().upper())
 
-	contained = one_per_table(
-		_reviewed(NumberComplex.objects).filter(
-			re_lower__gte = re_low, re_upper__lte = re_high,
-			im_lower__gte = im_low, im_upper__lte = im_high,
-		), limit)
+	inside = _reviewed(NumberComplex.objects).filter(
+		re_lower__gte = re_low, re_upper__lte = re_high,
+		im_lower__gte = im_low, im_upper__lte = im_high,
+	)
+	contained = list(inside[:limit])
 	if len(contained) >= limit:
-		return contained
+		return one_per_table(inside, limit) if per_table else contained
 
-	rows = one_per_table(
-		_reviewed(NumberComplex.objects)
-			.filter(
-				re_lower__lte = re_high, re_upper__gte = re_low,
-				im_lower__lte = im_high, im_upper__gte = im_low,
-			)
-			.annotate(overlap_score = RawSQL(
-				_COMPLEX_SCORE_SQL, (re_high, re_low, im_high, im_low))),
-		limit, order=('-overlap_score',))
-	return sorted(rows, key=lambda row: -row.overlap_score)
+	scored = (_reviewed(NumberComplex.objects)
+		.filter(
+			re_lower__lte = re_high, re_upper__gte = re_low,
+			im_lower__lte = im_high, im_upper__gte = im_low,
+		)
+		.annotate(overlap_score = RawSQL(
+			_COMPLEX_SCORE_SQL, (re_high, re_low, im_high, im_low))))
+	if not per_table:
+		return list(scored.order_by('-overlap_score')[:limit])
+	return sorted(one_per_table(scored, limit, order=('-overlap_score',)),
+	              key=lambda row: -row.overlap_score)
 
 
 def _coarser_ball_strings(number_string):
@@ -278,7 +285,7 @@ def _coarser_ball_strings(number_string):
 	        for count in range(1, len(places))]
 
 
-def search_p_adic_numbers(number_string, limit):
+def search_p_adic_numbers(number_string, limit, per_table=False):
 	"""Stored p-adic values that could be the query, best first.
 
 	Both directions, where before only one was asked. A stored value more
@@ -294,22 +301,25 @@ def search_p_adic_numbers(number_string, limit):
 	precision, so ordering by score is ordering by string length: exact matches
 	and finer values first, then the coarser ones, widest last.
 	"""
-	inside = one_per_table(
-		_reviewed(NumberPAdic.objects).filter(
-			number_string__startswith = number_string), limit)
+	prefix = _reviewed(NumberPAdic.objects).filter(
+		number_string__startswith = number_string)
+	inside = one_per_table(prefix, limit) if per_table else list(prefix[:limit])
 	if len(inside) >= limit:
 		return inside
 
-	shown = {row.table_id for row in inside}
-	coarser = [row for row in one_per_table(
-		_reviewed(NumberPAdic.objects).filter(
-			number_string__in = _coarser_ball_strings(number_string)), limit)
-		if row.table_id not in shown]
+	wider = _reviewed(NumberPAdic.objects).filter(
+		number_string__in = _coarser_ball_strings(number_string))
+	if per_table:
+		shown = {row.table_id for row in inside}
+		coarser = [row for row in one_per_table(wider, limit)
+		           if row.table_id not in shown]
+	else:
+		coarser = list(wider)
 	coarser.sort(key = lambda number: -len(number.number_string))
 	return (inside + coarser)[:limit]
 
 
-def search_fractional_parts(f_query, limit):
+def search_fractional_parts(f_query, limit, per_table=False):
 	"""Stored values whose fractional part could be ``f_query``, best first.
 
 	The real search, applied to the other range column. It was the last place
@@ -333,19 +343,20 @@ def search_fractional_parts(f_query, limit):
 	query = real_query_range(f_query)
 	unknown = NumericRange(Decimal(0), Decimal(1), '[]')
 
-	contained = one_per_table(
-		_identifiable(Number.objects).filter(frac_range__contained_by = query),
-		limit)
+	inside = _identifiable(Number.objects).filter(
+		frac_range__contained_by = query)
+	contained = list(inside[:limit])
 	if len(contained) >= limit:
-		return contained
+		return one_per_table(inside, limit) if per_table else contained
 
-	rows = one_per_table(
-		_identifiable(Number.objects)
-			.filter(frac_range__overlap = query)
-			.exclude(frac_range__contains = unknown)
-			.annotate(overlap_score = RawSQL(_FRAC_SCORE_SQL, (query, query))),
-		limit, order=('-overlap_score',))
-	return sorted(rows, key=lambda row: -row.overlap_score)
+	scored = (_identifiable(Number.objects)
+		.filter(frac_range__overlap = query)
+		.exclude(frac_range__contains = unknown)
+		.annotate(overlap_score = RawSQL(_FRAC_SCORE_SQL, (query, query))))
+	if not per_table:
+		return list(scored.order_by('-overlap_score')[:limit])
+	return sorted(one_per_table(scored, limit, order=('-overlap_score',)),
+	              key=lambda row: -row.overlap_score)
 
 
 #: Results shown on one page of the panel. The searches themselves cap here
@@ -431,7 +442,7 @@ def search_by_term(term, limit = PAGE_SIZE):
 	return groups
 
 
-def search_number(value, limit = PAGE_SIZE):
+def search_number(value, limit = PAGE_SIZE, per_table=False):
 	"""Search for a number the caller already has.
 
 	The counterpart to search_by_term, one level lower: the caller supplies a
@@ -454,18 +465,22 @@ def search_number(value, limit = PAGE_SIZE):
 
 	if is_pAdicField(parent):
 		return search_p_adic_numbers(
-			NumberPAdic(sage_number = value).number_string, limit)
+			NumberPAdic(sage_number = value).number_string, limit,
+			per_table=per_table)
 
 	if is_polynomial_ring(parent):
 		#No identifiability filter: a polynomial is exact, so there is no
 		#question of it being known too weakly to identify anything.
 		polynomial = Polynomial(sage_polynomial = value)
-		return one_per_table(_reviewed(Polynomial.objects).filter(
+		matching = _reviewed(Polynomial.objects).filter(
 			number_string_hash = polynomial.number_string_hash,
-			number_string = polynomial.number_string), limit)
+			number_string = polynomial.number_string)
+		return (one_per_table(matching, limit) if per_table
+		        else list(matching[:limit]))
 
 	if parent is CIF or parent == CIF:
-		return search_complex_numbers(blur_complex_interval(value), limit)
+		return search_complex_numbers(blur_complex_interval(value), limit,
+		                              per_table=per_table)
 
 	#Exact values are searched as point intervals on the real line, which is
 	#what the evaluator path does with them too.
@@ -474,7 +489,8 @@ def search_number(value, limit = PAGE_SIZE):
 		parent = value.parent()
 
 	if parent is RIF or parent == RIF:
-		return search_real_numbers(blur_real_interval(value), limit)
+		return search_real_numbers(blur_real_interval(value), limit,
+		                           per_table=per_table)
 
 	raise ValueError('no search for values of %s' % (parent,))
 
