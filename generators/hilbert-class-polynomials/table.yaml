@@ -1,0 +1,137 @@
+# The table document for the Hilbert class polynomials, proposal 4 of
+# agents/table-ideas/BATCH-2026-08-31b.md. Created as a draft through the API
+# (X-Draft: yes) and filled by generate.py beside it; publishing is a person's
+# act on the site.
+Title: Hilbert class polynomials $H_\Delta$
+Definition: >-
+  Let $\Delta<0$ be a discriminant, $\Delta\equiv 0$ or $1 \pmod 4$, and let
+  $\mathcal{O}_\Delta$ be the imaginary quadratic order of discriminant
+  $\Delta$. The Hilbert class polynomial is
+  $H_\Delta(x)=\prod_{[\mathfrak{a}]}\bigl(x-j(\mathfrak{a})\bigr)$, the
+  product over the $h(\Delta)$ classes of proper $\mathcal{O}_\Delta$-ideals
+  $\mathfrak{a}$ of the $j$-invariants of the lattices
+  $\mathfrak{a}\subset\mathbb{C}$. It is monic with integer coefficients,
+  irreducible over $\mathbb{Q}$, and of degree $h(\Delta)$.
+Parameters:
+  Delta:
+    type: Z
+    title: discriminant
+    display: $\Delta$
+    constraints: $\Delta<0$, $\Delta\equiv 0,1 \pmod 4$, $|\Delta|\leq 300$
+Comments:
+  comment-orders: >-
+    Every discriminant is listed, not only the fundamental ones. Writing
+    $\Delta=f^2\Delta_0$ with $\Delta_0$ fundamental, $f$ is the conductor of
+    $\mathcal{O}_\Delta$ in $K=\mathbb{Q}(\sqrt{\Delta})$, and the roots of
+    $H_\Delta$ generate the ring class field of $\mathcal{O}_\Delta$ over
+    $K$, which is the Hilbert class field of $K$ exactly when $f=1$. Each
+    entry's comment names the order and its class number $h(\Delta)$, which
+    is the degree. Of the 150 entries, 94 are fundamental and 56 are not.
+  comment-roots: >-
+    The roots of $H_\Delta$ are the singular moduli of discriminant $\Delta$,
+    the values $j(\tau)$ at the imaginary quadratic $\tau$ with
+    $\mathrm{End}\langle\tau,1\rangle=\mathcal{O}_\Delta$; they are algebraic
+    integers. The thirteen rows of degree one, where $H_\Delta(x)=x-j$, are
+    exactly the HREF{Rational_singular_moduli}[rational singular moduli].
+  comment-cm-method: >-
+    This is the polynomial the CM method reduces modulo $p$: for a prime $p$
+    with $4p=X^2-\Delta Y^2$, the roots of $H_\Delta$ in $\mathbb{F}_p$ are
+    the $j$-invariants of the elliptic curves over $\mathbb{F}_p$ with
+    complex multiplication by $\mathcal{O}_\Delta$, and those curves have
+    $p+1\pm X$ points. That is how curves of prescribed order are built and
+    how the ECPP primality test finds its curves.
+  comment-not-weber: >-
+    These are the class polynomials of $j$ itself. The Weber class
+    polynomials and the other class polynomials of smaller height, built from
+    Weber's $\mathfrak{f}$ or from $\gamma_2$, are different polynomials with
+    the same splitting fields and are not listed here.
+  comment-size: >-
+    The coefficients grow like $\exp\bigl(\pi\sqrt{|\Delta|}\sum 1/a\bigr)$,
+    the sum over the reduced forms, and the degree like $\sqrt{|\Delta|}$;
+    the longest entry here is $\Delta=-239$, of degree $15$ and $1106$
+    characters. The OEIS entry CITE{OEIS} carries the coefficients to
+    $\Delta=-500$, and the Sage and PARI programs below give any further one.
+Formulas:
+  formula-forms: >-
+    $H_\Delta(x)=\prod_{(a,b,c)}\Bigl(x-j\bigl(\tfrac{-b+\sqrt{\Delta}}{2a}\bigr)\Bigr)$,
+    the product over the reduced primitive positive definite binary quadratic
+    forms $ax^2+bxy+cy^2$ of discriminant $b^2-4ac=\Delta$: $|b|\leq a\leq
+    c$, $\gcd(a,b,c)=1$, and $b\geq 0$ when $|b|=a$ or $a=c$. There are
+    $h(\Delta)$ of them.
+  formula-cube: >-
+    $H_\Delta(0)$ is a perfect cube whenever $3\nmid\Delta$: then Weber's
+    $\gamma_2=\sqrt[3]{j}$ takes values in the ring class field, so the norm
+    of $j$ is a cube (CITE{Cox}, §12). Checked on every entry.
+  formula-splitting: >-
+    For a prime $p\nmid\Delta$: $4p=X^2-\Delta Y^2$ has a solution in
+    integers if and only if $\left(\frac{\Delta}{p}\right)=1$ and $H_\Delta$
+    has a root modulo $p$ (CITE{Cox}, Theorem 9.2, stated there for
+    $\Delta=-4n$). Checked here for every $\Delta$ in the table and every
+    prime $p<400$, both directions, with no exception.
+  formula-diagonal: >-
+    For a prime $\ell$, the diagonal of the
+    HREF{Modular_polynomials_for_j-invariant}[modular polynomial] factors
+    as $\Phi_\ell(x,x)=-\prod_{\Delta}H_\Delta(x)^{r_\ell(\Delta)}$, with
+    $r_\ell(\Delta)=\#\{\alpha\in\mathcal{O}_\Delta : N(\alpha)=\ell\}/w_\Delta$
+    and $w_\Delta$ the number of units of $\mathcal{O}_\Delta$; only
+    $\Delta=(t^2-4\ell)/f^2$ with $t^2<4\ell$ occur, and
+    $\sum_\Delta r_\ell(\Delta)\,h(\Delta)=2\ell$ (CITE{Cox}, §13). For
+    $\ell=2$: $\Phi_2(x,x)=-(x-1728)(x+3375)^2(x-8000)$. Checked against the
+    stored $\Phi_\ell$ for $\ell=2,3,5,7,11$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      polynomials = {D: hilbert_class_polynomial(D) for D in [-300..-3] if D % 4 in [0, 1]}
+      hilbert_class_polynomial(-303)      # the next one after this table
+  program-pari:
+    language: PARI/GP
+    code: |-
+      polclass(-303)
+Similar tables:
+  - table: HREF{Rational_singular_moduli}[Rational singular moduli]
+    relation: the thirteen entries of degree one, $H_\Delta(x)=x-j$
+  - table: HREF{Modular_polynomials_for_j-invariant}[Modular polynomials for the $j$-invariant]
+    relation: $\Phi_\ell(x,x)$ is a product of powers of $H_\Delta$
+  - table: HREF{Ramanujan_constant}[Ramanujan's constant]
+    relation: $e^{\pi\sqrt{163}}$ is within $10^{-12}$ of $744-H_{-163}(0)=640320^3+744$
+  - table: HREF{Q-expansion_of_the_j-invariant}[$q$-expansion of the $j$-invariant]
+    relation: the function whose values at imaginary quadratic points are the roots
+  - table: HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[Residues of Dedekind zeta functions of quadratic fields]
+    relation: the same fields, indexed by fundamental discriminant; its comments carry $h(\Delta)$
+  - table: HREF{J-invariants_of_elliptic_curves_over_quadratic_fields_with_everywere_good_reduction}[$j$-invariants of elliptic curves over quadratic fields with everywhere good reduction]
+    relation: $j$-invariants indexed by the discriminant of the same quadratic fields
+Links:
+  Wiki:
+    title: 'Wikipedia: Complex multiplication'
+    url: https://en.wikipedia.org/wiki/Complex_multiplication
+  OEIS:
+    title: 'OEIS A305474: the coefficients of $H_\Delta$, constant term first, $\Delta=-3,-4,-7,\dots$'
+    url: https://oeis.org/A305474
+  Sage:
+    title: 'SageMath reference: complex multiplication, hilbert_class_polynomial'
+    url: https://doc.sagemath.org/html/en/reference/arithmetic_curves/sage/schemes/elliptic_curves/cm.html
+References:
+  Cox:
+    bib: >-
+      David A. Cox, "Primes of the form $x^2+ny^2$: Fermat, class field theory,
+      and complex multiplication", 2nd edition, Wiley, 2013.
+Tags:
+  - polynomial
+  - number theory
+  - elliptic curves
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  rigour details: >-
+    Each polynomial is Sage's hilbert_class_polynomial (FLINT, complex
+    interval arithmetic), required by the generator to agree with PARI's
+    polclass, a different algorithm; to have degree equal to the number of
+    reduced primitive forms counted by brute force; and to be enclosed,
+    coefficient by coefficient, in balls of radius below $1/2$ by the product
+    $\prod(x-j(\tau))$ over those forms computed in ComplexBallField at 1500
+    bits, which determines an integer coefficient. All 150 were also compared
+    with the 250 rows of the OEIS b-file of A305474.
+Display properties:
+  number-header: $H_\Delta(x)$
