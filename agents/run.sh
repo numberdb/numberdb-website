@@ -187,5 +187,43 @@ case "$engine" in
 esac
 
 status=${PIPESTATUS[0]}
+
+# What the run cost, in one line, appended to a ledger.
+#
+# Every run's result record carries `total_cost_usd`, and until this existed
+# the only way to answer "what would this cost at scale" was to grep six
+# transcripts by hand. The first five runs came to $56.94, which is the sort
+# of number worth knowing before deciding to make eighty tables.
+ledger="agents/runs/COSTS.tsv"
+if [ ! -f "$ledger" ]; then
+	printf 'started\tstage\tengine\tturns\tcost_usd\tresult\tlog\n' > "$ledger"
+fi
+python3 - "$log" "$started" "$stage" "$engine" >> "$ledger" <<'LEDGER' || true
+import json, os, sys
+path, started, stage, engine = sys.argv[1:5]
+last = None
+try:
+	for line in open(path, errors='replace'):
+		line = line.strip()
+		if line.startswith('{'):
+			try:
+				record = json.loads(line)
+			except Exception:
+				continue
+			if record.get('type') == 'result':
+				last = record
+except OSError:
+	pass
+if last is None:
+	print('%s\t%s\t%s\t\t\tno result record\t%s'
+	      % (started, stage, engine, os.path.basename(path)))
+else:
+	print('%s\t%s\t%s\t%s\t%.2f\t%s\t%s'
+	      % (started, stage, engine, last.get('num_turns', ''),
+	         last.get('total_cost_usd', 0) or 0, last.get('subtype', ''),
+	         os.path.basename(path)))
+LEDGER
+
 echo "=== finished with status $status; transcript in $log"
+tail -1 "$ledger" | awk -F'\t' '{printf "=== %s turns, $%s\n", $4, $5}'
 exit "$status"
