@@ -449,6 +449,12 @@ def lookup(request):
 					'index': number.param_str(),
 					'number': number.to_serializable_dict(),
 					'table': number.table.to_serializable_dict(),
+					#A table appears once however often it holds this value.
+					#The count is part of the answer: a value occurring six
+					#times in one family is characteristic of it, and once is
+					#incidental.
+					'occurrences_in_table': getattr(
+						number, 'occurrences_in_table', 1),
 				}
 				for number in results
 			],
