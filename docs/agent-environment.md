@@ -402,3 +402,26 @@ API side.
 Evidence: `/tmp/write_doc_t130.py`, 2026-09-01, first attempt
 `AttributeError: 'list' object has no attribute 'values'`; second attempt
 `906 added` preserved as `906/906 matched`.
+
+## Corpus searches and slugs need no Sage run: `curl` through the proxy does it
+
+What happened: the build of T131 needed the corpus searched for
+"regulator", "fundamental unit", and its neighbours, and the slug of every
+table it would link to. Each earlier run did that from inside
+`agents/sage.sh`, at twenty to thirty seconds a run. `curl -s -G
+https://numberdb.org/api/lookup --data-urlencode text=regulator` from this
+machine -- `curl` honours the SOCKS proxy that Python does not -- answers in
+about a second with `tables`, each carrying `tid`, `title` and `url`, which
+is the slug `HREF{...}` needs; `api/table?id=T128` gives a published table's
+whole document, and answers "does not exist" for a draft, which is how the
+run learned T130 was still unpublished without a key. A lookup by digits is
+the same call with the digits as `text`.
+
+The `api/search` route is not this: it is the advanced search and answers
+`{"results": [], ...}` to a word. Also, `curl -o /dev/null -w
+'%{redirect_url}'` on `numberdb.org/T35` prints nothing -- a T-number is
+served directly, not redirected -- so the slug has to come from a search
+result, as the skill says.
+
+Evidence: 2026-09-02, this run; every slug in T131's document was read
+from `api/lookup` output and `audit_table` reported nothing.
