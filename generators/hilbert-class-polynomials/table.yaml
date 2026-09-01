@@ -4,14 +4,13 @@
 # act on the site.
 Title: Hilbert class polynomials $H_\Delta$
 Definition: >-
-  Let $\Delta<0$ be a discriminant, $\Delta\equiv 0$ or $1 \pmod 4$, and let
-  $\mathcal{O}_\Delta$ be the imaginary quadratic order of discriminant
+  Let $\Delta<0$ be a discriminant, $\Delta\equiv 0$ or $1 \pmod 4$, and
+  $\mathcal{O}_\Delta$ the imaginary quadratic order of discriminant
   $\Delta$. The Hilbert class polynomial is
   $H_\Delta(x)=\prod_{[\mathfrak{a}]}\bigl(x-j(\mathfrak{a})\bigr)$, the
   product over the $h(\Delta)$ classes of proper $\mathcal{O}_\Delta$-ideals
   $\mathfrak{a}$ of the $j$-invariants of the lattices
-  $\mathfrak{a}\subset\mathbb{C}$. It is monic with integer coefficients,
-  irreducible over $\mathbb{Q}$, and of degree $h(\Delta)$.
+  $\mathfrak{a}\subset\mathbb{C}$.
 Parameters:
   Delta:
     type: Z
@@ -19,6 +18,10 @@ Parameters:
     display: $\Delta$
     constraints: $\Delta<0$, $\Delta\equiv 0,1 \pmod 4$, $|\Delta|\leq 300$
 Comments:
+  comment-properties: >-
+    $H_\Delta$ is monic with integer coefficients, irreducible over
+    $\mathbb{Q}$, and of degree $h(\Delta)$, the class number of
+    $\mathcal{O}_\Delta$.
   comment-orders: >-
     Every discriminant is listed, not only the fundamental ones. Writing
     $\Delta=f^2\Delta_0$ with $\Delta_0$ fundamental, $f$ is the conductor of

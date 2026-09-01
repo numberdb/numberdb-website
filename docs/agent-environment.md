@@ -321,3 +321,48 @@ in the first place.
 
 If a run reports "another run held the lock for an hour", something really is
 stuck: `docker ps --filter name=numberdb-agent-run` names it.
+
+## `/app` on `sys.path` shadows the client: the site is also a package called `numberdb`
+
+What happened: one script wanted both Django (to read a draft's stored tree
+byte for byte) and the client (to write it back through the API). After
+`sys.path.insert(0, '/app')` and `django.setup()`, `import numberdb` returned
+the Django project package, which has no `configure`, and the script died
+with `AttributeError: module 'numberdb' has no attribute 'configure'`. The
+two cannot share one process: the settings module is `numberdb.settings`,
+so the site's package must own the name while Django is up.
+
+What to do instead: two runs. One with Django prints the document between
+markers (`BEGIN-DOCUMENT` / `END-DOCUMENT`) and the head revision's digest;
+the near side saves it to a file and mounts it into a second run that has
+only the client on the path. That is how T129's Definition was shortened
+without touching its 150 entries: the stored tree round-trips exactly, and
+`X-Base-Revision` pins the write to the revision that was read.
+
+Evidence: `/tmp/hcp_edit.py` (failed) and `/tmp/hcp_read_tree.py` +
+`/tmp/hcp_write_doc.py` (worked), 2026-09-01.
+
+## `write_table` works from outside now
+
+The note above about `POST /api/table/<tid>` answering 403 to a valid key
+is history: the `@csrf_exempt` fix was deployed, and on 2026-09-01 the same
+route accepted a full document for draft T129 and returned the new revision.
+A run may now fix a draft's prose itself, provided it sends the *whole*
+document -- `write_table` replaces it, so a document without `Numbers`
+would empty the table. Read the stored tree first (previous note).
+
+## The task line handed to stage two can disagree with the proposal it names
+
+What happened: the build was asked for "Hilbert class polynomials, indexed
+by fundamental discriminant", and proposal 4's own text says, with reasons,
+"all discriminants $D < 0$ with $D = 0, 1 \bmod 4$, not only fundamental
+ones". The one-line task was written from the batch's header ("the five
+share one enumeration -- fundamental discriminants"), which proposal 4
+explicitly excepts itself from. The build followed the proposal's body,
+because that is where the decision and its reasons are, and said so in its
+report.
+
+What to do instead: when `run.sh build` is given a task, quote the
+proposal's own "What has to be decided" section rather than paraphrasing the
+batch; and a build that meets a disagreement should follow the body and
+report the conflict rather than resolve it silently either way.
