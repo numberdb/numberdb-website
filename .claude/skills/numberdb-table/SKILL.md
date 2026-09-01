@@ -206,6 +206,22 @@ had to be taken apart again.
 
 Two rules that follow from the table above and are worth stating alone:
 
+**Name the thing, do not point at it.** "The first factor is in the table of
+Bernoulli numbers and the second, for $D=5$ and $D=8$, in the table of
+generalized Bernoulli numbers" makes a reader count backwards through a
+formula with four factors in it, and be wrong. Write "$B_{2m}$ is in ... and
+$B_{2m,\chi_D}$ ... in ...". The same goes for "the former", "the latter",
+"as above", and "the second one": the symbol is shorter than the phrase
+pointing at it, and it stays right when the formula is edited.
+
+**Link a table the first time it is named, and only the first time.** The
+convention is Wikipedia's, and it is worth following in both directions. A
+family the corpus holds should be a link, not a plain phrase -- somebody
+reading about Bernoulli numbers here is one click from the table of them -- and
+linking the same name four times in one comment is noise. First mention in a
+section, `HREF{Bernoulli_numbers}[the Bernoulli numbers]`; afterwards, plain
+text.
+
 **Define notation where you use it.** A comment saying the values are
 `U_n(x,-1)` is useless until something says what `U` is. If a symbol appears in
 a formula or a comment, its definition belongs in the same table.

@@ -142,6 +142,13 @@ no table, and is harder to remove than to never add.
 needs a key found by trying permutations, so more than six is refused. The
 partial Bell polynomials stop at n = 7 because B(8,2) has seven variables.
 
+**Write the symbol, not its position.** "The first factor", "the latter", "as
+above" all make a reader count back through a formula and be wrong. Name it:
+`$B_{2m}$ is in ...`. And **link a table the first time you name it, once per
+section** -- the corpus holding the thing you are talking about is the most
+useful sentence in a comment, and the fourth link to it in the same paragraph
+is noise.
+
 **Look for the entry that identifies nothing.** A family can be distinctive
 and still contain one value that is not: the Hilbert class polynomial of
 Delta = -3 is `x`, because j vanishes there, and `x` already answers a search
