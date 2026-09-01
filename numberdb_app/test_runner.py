@@ -134,3 +134,20 @@ class ThePreflightStopsARunThatCannotWork(TestCase):
 
 	def test_the_briefing_forbids_mining_transcripts(self):
 		self.assertIn('not from other people', flat('agents/run.sh'))
+
+	def test_only_one_run_at_a_time(self):
+		#Two Sage processes on a 961 MB server drive the load past 70, and
+		#sshd then accepts connections without completing a handshake --
+		#indistinguishable from the machine being down, and it takes tens of
+		#minutes to clear. It happened twice, both times because the rule
+		#against it was a sentence in a document rather than a lock.
+		body = script('agents/sage.sh')
+		self.assertIn('flock', body)
+		self.assertIn('numberdb-sage.lock', body)
+
+	def test_it_kills_the_container_when_this_end_dies(self):
+		#`timeout` here kills the local ssh and leaves the remote work
+		#running; an abandoned Sage process is what takes the machine down.
+		body = script('agents/sage.sh')
+		self.assertIn('--name', body)
+		self.assertIn('docker rm -f', body)
