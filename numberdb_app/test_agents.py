@@ -495,3 +495,24 @@ class WhatEarnsATableIsFindabilityNotDerivability(TestCase):
 		body = ' '.join(prompt('table-build').split())
 		self.assertIn('Look for the entry that identifies nothing', body)
 		self.assertIn('is not a reason against the table', body)
+
+	def test_the_build_prompt_says_to_name_the_symbol(self):
+		#"The first factor is in the table of Bernoulli numbers and the
+		#second..." makes a reader count backwards through four factors.
+		body = ' '.join(prompt('table-build').split())
+		self.assertIn('Write the symbol, not its position', body)
+
+	def test_the_build_prompt_gives_the_linking_convention(self):
+		body = ' '.join(prompt('table-build').split())
+		self.assertIn('link a table the first time you name it, once per '
+		              'section', body)
+
+	def test_the_skill_carries_both(self):
+		import os as _os
+
+		path = _os.path.join(settings.BASE_DIR, '.claude', 'skills',
+		                     'numberdb-table', 'SKILL.md')
+		with open(path, encoding='utf-8') as handle:
+			body = ' '.join(handle.read().split())
+		self.assertIn('Name the thing, do not point at it', body)
+		self.assertIn('Link a table the first time it is named', body)
