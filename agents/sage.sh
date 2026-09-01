@@ -33,6 +33,21 @@ TIMEOUT="${NUMBERDB_TIMEOUT:-1800}"
 
 [ $# -ge 1 ] || { echo "usage: $0 script.py [more.py ...]" >&2; exit 2; }
 
+# One run at a time, enforced rather than remembered.
+#
+# This server has 961 MB. Two Sage processes on it drive the load average past
+# 70, and sshd then accepts TCP connections without ever completing a
+# handshake -- which is indistinguishable from the machine being down, and
+# takes tens of minutes to clear. It has happened twice, both times because a
+# second run was started while the first was still going, and both times the
+# rule against it existed and was simply not followed.
+#
+# `flock` makes it impossible instead. The lock is held on the server for the
+# life of the command, so it applies across sessions and across people, not
+# just within one script.
+LOCK="/tmp/numberdb-sage.lock"
+
+
 main=$1
 [ -f "$main" ] || { echo "no such file: $main" >&2; exit 2; }
 
@@ -67,13 +82,24 @@ done
 ssh -n "${ssh_opts[@]}" "$REMOTE" "chmod 644 $remote_dir.* 2>/dev/null || true"
 
 cleanup() {
-	ssh -n "${ssh_opts[@]}" "$REMOTE" "rm -f $remote_dir.*" >/dev/null 2>&1 || true
+	#The container as well as the copies. A `timeout` on this side kills the
+	#local ssh and leaves the remote work running, and an abandoned Sage
+	#process is what takes the machine down.
+	ssh -n "${ssh_opts[@]}" "$REMOTE" \
+		"rm -f $remote_dir.*; docker rm -f 'numberdb-agent-run-$$' >/dev/null 2>&1" \
+		>/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
 # --no-deps so this never restarts the site's own containers.
+# `flock -w` waits rather than failing outright: a queued run is what somebody
+# wants, and a refusal would only be retried by hand. `--rm` and a name let the
+# cleanup below reach the container if this end dies first, which is the other
+# half of the problem -- `timeout` here kills the ssh, never the work.
+name="numberdb-agent-run-$$"
 ssh "${ssh_opts[@]}" "$REMOTE" \
-	"cd '$RPATH' && timeout $TIMEOUT docker compose run --rm --no-deps -T \
+	"exec 9>'$LOCK'; flock -w 3600 9 || { echo 'another run held the lock for an hour' >&2; exit 75; }; \
+	 cd '$RPATH' && timeout $TIMEOUT docker compose run --rm --no-deps -T --name '$name' \
 		-e PYTHONPATH=/app/clients/python \
 		-e NUMBERDB_ASSISTED_BY='${NUMBERDB_ASSISTED_BY:-assisted by an agent}' \
 		${mounts[*]} \

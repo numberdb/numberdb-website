@@ -302,3 +302,22 @@ To tell an overloaded server from a dead one: TCP connects on 22, 443 and 80
 but ssh hangs "during banner exchange" -- that is load, not a ban, and it
 clears on its own. `https://r.jina.ai/https://numberdb.org/` fetches a page
 from outside this network and answers whether the site is actually serving.
+
+## The rule against concurrent runs is now a lock
+
+The note above said "one thing at a time on that server". It was ignored
+twice, on the same day, by the person who wrote it -- once by starting an
+audit while the suite ran, once by starting the suite while an audit ran. Both
+times the load average passed 70, sshd stopped completing handshakes, and
+access took between fifteen and sixty minutes to come back. The site kept
+serving throughout; only administration was lost.
+
+A rule that has to be remembered at the moment of temptation is not a control.
+`agents/sage.sh` now takes an exclusive `flock` on the server for the life of
+the run, so a second one waits instead of starting, and registers a cleanup
+that removes the container by name -- because a `timeout` on the near side
+kills the ssh and never the work, which is how the abandoned processes arose
+in the first place.
+
+If a run reports "another run held the lock for an hour", something really is
+stuck: `docker ps --filter name=numberdb-agent-run` names it.
