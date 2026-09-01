@@ -155,7 +155,9 @@ clients/python/*.egg-info/
 # Generated reference documentation. Built from docstrings by `make docs`, so
 # committing it would be committing a copy that can disagree with the source.
 clients/python/docs/
-agents/runs/
-#...but not the ledger. The transcripts are a megabyte each and are working
-#material; what they cost is a fact about the project worth keeping.
+#The transcripts are a megabyte each and are working material; what they cost
+#is a fact about the project worth keeping. Written as `runs/*` rather than
+#`runs/`, because git does not descend into an excluded directory and the
+#negation below would never be reached.
+agents/runs/*
 !agents/runs/COSTS.tsv
