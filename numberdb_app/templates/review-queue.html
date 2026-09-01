@@ -10,6 +10,14 @@
 {% block content %}
 <h1 class="title">Review queue</h1>
 
+<p class="help-text">
+  This page is about <b>entries</b> nobody has confirmed, wherever they are:
+  most of them are on tables that have been public for years. Tables that are
+  not published at all are a different question and live in
+  <a href="{% url 'db:drafts' %}">tables in progress</a>. A table being filled
+  appears on both.
+</p>
+
 {% comment %}
 Says what confirming is for. A reviewer who thinks they are gatekeeping
 publication will review differently, and more anxiously, than one who knows the
