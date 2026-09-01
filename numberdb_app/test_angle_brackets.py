@@ -60,3 +60,37 @@ class MathematicsSurvivesRendering(TestCase):
 		})
 		self.assertIn('class="CITE"', body)
 		self.assertIn('&lt;m', body)
+
+
+class MarkupThisCodeWroteIsNotEscaped(TestCase):
+	"""The data-properties block builds its own anchors -- the label of
+	`rigour` links to the part of the help that explains it -- and escaping
+	the finished string printed `<a class="HREF" ...>` at the reader."""
+
+	def setUp(self):
+		self.user = get_user_model().objects.create_user('author2')
+		self.table = Table.objects.create(
+			tid='T701', tid_int=701, url='t701', title='Another table',
+			published=True)
+
+	def page(self, tree):
+		commit_table(self.table, tree, author=self.user, message='m')
+		return Client().get('/T701', HTTP_HOST='numberdb.org').content.decode()
+
+	def test_the_rigour_label_is_still_a_link(self):
+		body = self.page({
+			'Title': 'Another table', 'Numbers': {'1': '2'},
+			'Data properties': {'type': 'Q', 'rigour': 'proven'},
+		})
+		self.assertIn('href="/help#how-well-known"', body)
+		self.assertNotIn('&lt;a class="HREF"', body)
+
+	def test_the_author_half_is_still_escaped(self):
+		#A '<' in rigour details is mathematics and must not eat the page.
+		body = self.page({
+			'Title': 'Another table', 'Numbers': {'1': '2'},
+			'Data properties': {'type': 'Q', 'rigour': 'proven',
+			                    'rigour details': 'exact for $k<m$ throughout'},
+		})
+		self.assertIn('&lt;m', body)
+		self.assertIn('throughout', body)
