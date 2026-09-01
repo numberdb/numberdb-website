@@ -96,6 +96,16 @@ class Command(BaseCommand):
 		import json
 		prose = json.dumps({k: v for k, v in tree.items() if k != 'Numbers'})
 
+		#Every entry that holds digits should be findable by them. Nothing
+		#checked this, and it went wrong quietly: the number builder skipped
+		#any entry carrying `equals`, so 101 values across 16 tables were
+		#stored, displayed and correct while answering no search at all --
+		#pi among them, in the table of rational multiples of pi, and the
+		#whole of T60 whose every entry carries one. The values were right, so
+		#no check that looked at values could have noticed.
+		for complaint in self._indexed_as_many_as_written(table, tree):
+			yield complaint
+
 		#References that go nowhere. A CITE may name a Link, a Reference, or a
 		#label defined elsewhere in the same table -- CITE{formula-recurrence}
 		#is how a comment points at a formula on the same page, and the first
@@ -197,6 +207,65 @@ class Command(BaseCommand):
 				status = self._fetch(url)
 				if status != 200:
 					yield 'Links[%s] answered %s: %s' % (name, status, url)
+
+	def _indexed_as_many_as_written(self, table, tree):
+		"""Distinct values in the document, against rows in the index.
+
+		Distinct, and not the number of entries, because the index holds a row
+		per value: the Bernoulli numbers write 101 entries of which 49 are
+		zero, the chromatic polynomials write 996 of which many graphs share
+		one, and both are indexed correctly at 52 and 304. Counting entries
+		called nineteen tables broken and would have taught everybody to
+		ignore this.
+
+		Tables whose type the search cannot hold are skipped -- the hyperreals
+		of T41 are recorded and cited and were never findable by their digits.
+		"""
+		from numberdb_app.flatten import to_records
+		from numberdb_app.models import (Number, NumberComplex, NumberPAdic,
+		                                 Polynomial)
+		from numberdb_app.validate import SEARCHABLE_TYPES
+
+		declared = str((tree.get('Data properties') or {}).get('type') or '')
+		if declared and declared not in SEARCHABLE_TYPES:
+			return
+
+		try:
+			records = to_records(tree)
+		except Exception:                                    # noqa: BLE001
+			return                                           # not our complaint
+		if not records:
+			return
+
+		DIGITS = ('number', 'numbers', 'polynomial', 'polynomials')
+		values = set()
+		for record in records:
+			if not isinstance(record, dict):
+				if record is not None:
+					values.add(str(record))
+				continue
+			for key in DIGITS:
+				held = record.get(key)
+				if held is None:
+					continue
+				if isinstance(held, (list, tuple)):
+					values.update(str(one) for one in held)
+				else:
+					values.add(str(held))
+		if not values:
+			return
+
+		indexed = sum(model.objects.filter(table=table).count()
+		              for model in (Number, NumberComplex, NumberPAdic,
+		                            Polynomial))
+		if indexed < len(values):
+			yield ('%d distinct values are written but only %d are in the '
+			       'search index: %d cannot be found by their digits. This is '
+			       'how pi came to be missing from the table of rational '
+			       'multiples of pi. Rebuild with '
+			       'build_number_table(only_table=...); if the gap stays, '
+			       'something is skipping them.'
+			       % (len(values), indexed, len(values) - indexed))
 
 	def _fetch(self, url):
 		import urllib.error
