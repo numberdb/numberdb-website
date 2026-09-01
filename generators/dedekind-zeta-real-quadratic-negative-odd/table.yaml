@@ -1,0 +1,179 @@
+# The table document for zeta_K(1-2m), proposal 6 of
+# agents/table-ideas/BATCH-2026-08-31b.md. Created as a draft through the API
+# (X-Draft: yes) and filled by generate.py beside it; publishing is a person's
+# act on the site.
+Title: Values of Dedekind zeta functions of real quadratic fields at negative odd integers
+Definition: >-
+  Let $K=\mathbb{Q}(\sqrt{D})$ be the real quadratic field of fundamental
+  discriminant $D>1$ and $\zeta_K(s)=\sum_{\mathfrak{a}}N(\mathfrak{a})^{-s}$
+  its Dedekind zeta function, summed over the nonzero ideals of
+  $\mathcal{O}_K$ and continued to the whole plane. Listed is $\zeta_K(s)$ at
+  the negative odd integers $s=-1,-3,-5$, where it is a nonzero rational
+  number.
+Parameters:
+  D:
+    type: Z
+    title: fundamental discriminant of $K$
+    display: $D$
+    constraints: $D$ a fundamental discriminant, $1<D\leq 1000$
+  s:
+    type: Z
+    title: argument
+    display: $s$
+    constraints: $s\in\{-1,-3,-5\}$
+Comments:
+  comment-rational: >-
+    That $\zeta_K(1-2m)$ is rational for every totally real field $K$ and
+    every $m\geq 1$ is the Siegel–Klingen theorem (CITE{Klingen}, CITE{Siegel});
+    for a real quadratic field it follows from the factorisation
+    $\zeta_K(s)=\zeta(s)\,L(s,\chi_D)$ and the Bernoulli-number formulas
+    below. Every value here is positive: $\zeta_K(2m)>0$ and the functional
+    equation relates the two by a positive factor.
+  comment-why-these-arguments: >-
+    Only real quadratic fields and only negative odd $s$, because that is
+    where the values are not zero. From the functional equation, $\zeta_K$
+    vanishes at every negative even integer to order $r_1+r_2$ and at every
+    negative odd integer to order $r_2$, the number of complex places, so for
+    an imaginary quadratic field $\zeta_K(1-2m)=0$ and for a real quadratic
+    field it is not. At $s=0$ the order is $r_1+r_2-1=1$, so $\zeta_K(0)=0$
+    too.
+  comment-notation: >-
+    $\chi_D=\left(\frac{D}{\cdot}\right)$ is the Kronecker symbol, the
+    primitive even quadratic character of conductor $D$; $B_n$ are the
+    Bernoulli numbers with $B_1=-1/2$, $B_n(x)$ the Bernoulli polynomials, and
+    $B_{n,\chi}=q^{n-1}\sum_{a=1}^{q}\chi(a)B_n(a/q)$ the generalized
+    Bernoulli numbers of a character $\chi$ of modulus $q$; $\sigma_1(n)$ is
+    the sum of the divisors of $n$.
+  comment-discriminant: >-
+    $D$ is the discriminant of $K$, not the squarefree integer $d$ with
+    $K=\mathbb{Q}(\sqrt{d})$: $D=d$ if $d\equiv 1 \pmod 4$ and $D=4d$
+    otherwise, so $\mathbb{Q}(\sqrt{3})$ is $D=12$. The comment on each entry
+    names the field. Every real fundamental discriminant with $D\leq 1000$ is
+    listed, 302 of them, the same enumeration as
+    HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[the residues at $s=1$].
+  comment-small-values: >-
+    $60\,\zeta_K(-1)$ is always an integer, by Siegel's formula below, and
+    $\zeta_K(-1)$ itself is an integer for 88 of the 302 fields here
+    ($\zeta_K(-1)=1$ for $D=33$, $2$ for $D=60,69,77$). A small integer, or a
+    fraction with denominator dividing $60$, that matches an entry at $s=-1$
+    is therefore weak evidence on its own; the values at $s=-3$ and $s=-5$
+    have distinctive digits. In this table every denominator at $s=-1$
+    divides $60$, at $s=-3$ divides $120$, and at $s=-5$ divides $16380$.
+  comment-requested: >-
+    Asked for in CITE{issue22}; this is its real quadratic case at negative
+    integers.
+Formulas:
+  formula-bernoulli: >-
+    $\zeta_K(1-2m)=\zeta(1-2m)\,L(1-2m,\chi_D)=\frac{B_{2m}}{2m}\cdot\frac{B_{2m,\chi_D}}{2m}$,
+    since $\zeta(1-2m)=-B_{2m}/2m$ and $L(1-2m,\chi)=-B_{2m,\chi}/2m$. The
+    first factor is in HREF{Bernoulli_numbers}[the table of Bernoulli numbers]
+    and the second, for $D=5$ and $D=8$, in
+    HREF{Generalized_Bernoulli_numbers}[the table of generalized Bernoulli numbers].
+    This is how the table was computed, in exact rational arithmetic.
+  formula-siegel: >-
+    $\zeta_K(-1)=\frac{1}{60}\sum_{b^2<D,\ b\equiv D \pmod 2}\sigma_1\!\left(\frac{D-b^2}{4}\right)$
+    (CITE{Siegel}; CITE{Zagier}, where it is the case $m=1$ of Siegel's
+    formula for $\zeta_K(1-2m)$). Checked against the Bernoulli formula on
+    every entry at $s=-1$.
+  formula-functional-equation: >-
+    $\zeta_K(2m)=\frac{2^{4m}m^2\,\pi^{4m}}{((2m)!)^2\,D^{2m-1/2}}\,\zeta_K(1-2m)$,
+    from $\Lambda_K(s)=D^{s/2}\bigl(\pi^{-s/2}\Gamma(s/2)\bigr)^2\zeta_K(s)=\Lambda_K(1-s)$;
+    in particular $\zeta_K(2)=4\pi^4\zeta_K(-1)/D^{3/2}$, so
+    $\zeta_{\mathbb{Q}(\sqrt{5})}(2)=2\pi^4/(75\sqrt{5})$. Checked in ball
+    arithmetic on every entry, with $\zeta_K(2m)=\zeta(2m)L(2m,\chi_D)$
+    computed from the Hurwitz zeta function. The rationals
+    $\zeta_K(2m)\sqrt{D}/\pi^{4m}$ are CITE{OEIS-num} and CITE{OEIS-den}.
+  formula-euler-number: >-
+    $2\zeta_K(-1)$ is the Euler number, in the orbifold sense of
+    Gauss–Bonnet, of the Hilbert modular surface
+    $\mathrm{SL}_2(\mathcal{O}_K)\backslash\mathfrak{H}^2$ (CITE{Hirzebruch},
+    CITE{vanderGeer}); for $K=\mathbb{Q}(\sqrt{5})$ it is $1/15$. That is
+    the two-dimensional analogue of $\zeta(-1)=-1/12$ being the Euler
+    characteristic of $\mathrm{SL}_2(\mathbb{Z})$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      D, m = 5, 1
+      bernoulli(2*m) * kronecker_character(D).bernoulli(2*m) / (2*m)^2     # 1/30
+  program-pari:
+    language: PARI/GP
+    code: |-
+      bestappr(lfun(lfuncreate(x^2 - 5), -1), 10^6)    \\ 1/30, numerically; the denominator divides 60
+Similar tables:
+  - table: HREF{Bernoulli_numbers}[Bernoulli numbers]
+    relation: the factor $B_{2m}$, and $\zeta(1-2m)=-B_{2m}/2m$
+  - table: HREF{Generalized_Bernoulli_numbers}[Generalized Bernoulli numbers]
+    relation: the factor $B_{2m,\chi_D}$, indexed there by the Conrey label $(q,n)$ of $\chi_D$; $\chi_5$ is $(5,4)$ and $\chi_8$ is $(8,5)$
+  - table: HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[Residues of Dedekind zeta functions of quadratic fields]
+    relation: the same $\zeta_K$ at $s=1$, for the same fields and the imaginary ones; its comments carry the class numbers
+  - table: HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[Values of the Riemann zeta function at rational numbers]
+    relation: the factor $\zeta(1-2m)$ of $\zeta_K(1-2m)=\zeta(1-2m)L(1-2m,\chi_D)$
+  - table: HREF{Bernoulli_polynomials}[Bernoulli polynomials]
+    relation: $B_{2m,\chi_D}$ is a sum of their values at $a/D$
+  - table: HREF{J-invariants_of_elliptic_curves_over_quadratic_fields_with_everywere_good_reduction}[$j$-invariants of elliptic curves over quadratic fields with everywhere good reduction]
+    relation: indexed by the same discriminant $D$
+Links:
+  Wiki:
+    title: 'Wikipedia: Dedekind zeta function, values at negative integers'
+    url: https://en.wikipedia.org/wiki/Dedekind_zeta_function#Values_at_negative_integers
+  WikiBernoulli:
+    title: 'Wikipedia: generalized Bernoulli numbers'
+    url: https://en.wikipedia.org/wiki/Bernoulli_number#Generalized_Bernoulli_numbers
+  OEIS-num:
+    title: 'OEIS A370412: numerators of $\zeta_K(2n)\sqrt{D}/\pi^{4n}$ for real quadratic $K$, by antidiagonals'
+    url: https://oeis.org/A370412
+  OEIS-den:
+    title: 'OEIS A370411: the denominators'
+    url: https://oeis.org/A370411
+  OEIS-disc:
+    title: 'OEIS A003658: fundamental discriminants of real quadratic fields'
+    url: https://oeis.org/A003658
+  LMFDB:
+    title: 'LMFDB: real quadratic number fields'
+    url: https://www.lmfdb.org/NumberField/?degree=2&signature=%5B2%2C0%5D
+References:
+  issue22:
+    bib: >-
+      numberdb-data issue #22, "Special values of various L-functions at
+      integers", https://github.com/numberdb/numberdb-data/issues/22
+  Siegel:
+    bib: >-
+      Carl Ludwig Siegel, "Berechnung von Zetafunktionen an ganzzahligen
+      Stellen", Nachrichten der Akademie der Wissenschaften in Göttingen,
+      Math.-Phys. Klasse 1969, 87–102.
+  Klingen:
+    bib: >-
+      Helmut Klingen, "Über die Werte der Dedekindschen Zetafunktion",
+      Mathematische Annalen 145 (1962), 265–272.
+  Zagier:
+    bib: >-
+      Don Zagier, "On the values at negative integers of the zeta-function of
+      a real quadratic field", L'Enseignement Mathématique 22 (1976), 55–95.
+  Hirzebruch:
+    bib: >-
+      Friedrich Hirzebruch, "Hilbert modular surfaces", L'Enseignement
+      Mathématique 19 (1973), 183–281.
+  vanderGeer:
+    bib: >-
+      Gerard van der Geer, "Hilbert Modular Surfaces", Ergebnisse der
+      Mathematik und ihrer Grenzgebiete 16, Springer, 1988, Chapter IV.
+Tags:
+  - number theory
+  - L-function
+  - special values
+Data properties:
+  type: Q
+  rigour: exact
+  complete: 'no'
+  rigour details: >-
+    Each value is $B_{2m}B_{2m,\chi_D}/(2m)^2$ in exact rational arithmetic.
+    The generator refuses a value unless it equals Siegel's $\sigma_1$
+    formula at $s=-1$ and satisfies the functional equation in ball
+    arithmetic at every $s$, with $\zeta_K(2m)$ computed independently from
+    the Hurwitz zeta function at 256 bits (worst radius $3\cdot 10^{-74}$).
+    All 906 were also compared with PARI's lfun for 121 of the fields, with
+    the generalized Bernoulli numbers stored in T49 for $D=5,8$, and with the
+    OEIS array A370412/A370411.
+Display properties:
+  number-header: $\zeta_K(s)$
