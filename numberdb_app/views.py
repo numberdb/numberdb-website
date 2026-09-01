@@ -533,7 +533,17 @@ def table_context(table, preview=False):
 	def wrap_in_div(div_class,html):
 		return '<div class="%s">%s</div>' % (div_class,html)
 
-	def render_text(text, line_breaks = True):
+	def escape_maths(text):
+		"""Author text on its way into a string that already holds markup.
+
+		A table's prose is LaTeX, so a '<' in it is mathematics; but some of
+		these strings are assembled here with anchors this code wrote, and
+		escaping the finished string prints those anchors at the reader
+		instead of following them.
+		"""
+		return text.replace('<', '&lt;') if isinstance(text, str) else text
+
+	def render_text(text, line_breaks = True, escape = True):
 		'''
 		Parse text for 'CITE', 'HREF', and '\n', 
 		and replace accordingly.
@@ -558,7 +568,8 @@ def table_context(table, preview=False):
 		if not isinstance(text, str):
 			raise ValueError('string expected instead of %s' % text.__class__)
 		
-		text = text.replace('<', '&lt;')
+		if escape:
+			text = text.replace('<', '&lt;')
 		
 		#Parse 'CITE's:
 		parts = text.split("CITE{")
@@ -899,16 +910,20 @@ def table_context(table, preview=False):
 					elif key == 'sources':
 						text += ", ".join(value)                
 					elif key == 'complete':
-						text += value
+						text += escape_maths(value)
 						note = properties.get('complete-note')
 						if note:
-							text += " (%s)" % (note,)
+							text += " (%s)" % (escape_maths(note),)
 					else:
-						text += value
+						text += escape_maths(value)
 				else:
-					text = "%s: %s (Unknown key)" % (key, value)     
+					text = "%s: %s (Unknown key)" % (
+						escape_maths(key), escape_maths(value))
+				#Not escaped here: this string already holds the anchor built
+				#above, and escaping it printed `<a class="HREF" ...>` at the
+				#reader. The author's half was escaped as it went in.
 				unlabeled_list.append({
-					'text': render_text(text),
+					'text': render_text(text, escape=False),
 				})
 			section = {
 				'title': 'Data properties',
