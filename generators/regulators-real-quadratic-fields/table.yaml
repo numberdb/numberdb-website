@@ -1,0 +1,167 @@
+# The table document for the regulators of real quadratic fields, proposal 3
+# of agents/table-ideas/BATCH-2026-08-31b.md. Created as a draft through the
+# API (X-Draft: yes) and filled by generate.py beside it; publishing is a
+# person's act on the site.
+Title: Regulators of real quadratic fields
+Definition: >-
+  Let $K=\mathbb{Q}(\sqrt{D})$ be the real quadratic field of fundamental
+  discriminant $D>1$ and $\varepsilon_K>1$ the fundamental unit of its ring of
+  integers $\mathcal{O}_K$. Listed is the regulator $R_K=\log\varepsilon_K$.
+Parameters:
+  D:
+    type: Z
+    title: fundamental discriminant of $K$
+    display: $D$
+    constraints: $D$ a fundamental discriminant, $1<D\leq 1000$
+Comments:
+  comment-maximal-order: >-
+    $\varepsilon_K$ is the fundamental unit of the maximal order
+    $\mathcal{O}_K$, not of the order $\mathbb{Z}[\sqrt{d}]$ where
+    $K=\mathbb{Q}(\sqrt{d})$ with $d$ squarefree, and it is not the
+    smallest solution of a Pell equation. The two differ exactly when
+    $D\equiv 5 \pmod 8$ and $\varepsilon_K$ has half-integral coordinates:
+    $\varepsilon_K=(1+\sqrt{5})/2$ for $D=5$, whereas $2+\sqrt{5}$, the
+    smallest unit of $\mathbb{Z}[\sqrt{5}]$, is $\varepsilon_K^3$. That
+    happens for 77 of the 302 fields here. The comment on each entry gives
+    $\varepsilon_K$ exactly, as $(a+b\sqrt{d})/2$ with $a^2-db^2=\pm 4$, and
+    its norm.
+  comment-normalisation: >-
+    $\varepsilon_K$ is normalised to exceed $1$; its conjugates
+    $-\varepsilon_K$, $1/\varepsilon_K$ and $-1/\varepsilon_K$ generate the
+    same unit group. $R_K$ is $\log\varepsilon_K$ with no other factor, the
+    convention of the LMFDB and the one under which the class number formula
+    below holds as written; every real quadratic field has unit rank $1$, so
+    the regulator is a single logarithm rather than a determinant.
+  comment-norm: >-
+    $N(\varepsilon_K)=-1$ for 114 of the 302 fields and $+1$ for the other
+    188. The norm decides the narrow class number: $h_K^+=h_K$ when
+    $N(\varepsilon_K)=-1$ and $h_K^+=2h_K$ when $N(\varepsilon_K)=1$. Norm
+    $-1$ requires every odd prime dividing $D$ to be $1 \bmod 4$, and is
+    not guaranteed by it: $D=136=8\cdot 17$ has $\varepsilon_K=35+6\sqrt{34}$
+    of norm $1$.
+  comment-discriminant: >-
+    $D$ is the discriminant of $K$, not the squarefree integer $d$ with
+    $K=\mathbb{Q}(\sqrt{d})$: $D=d$ if $d\equiv 1 \pmod 4$ and $D=4d$
+    otherwise, so $\mathbb{Q}(\sqrt{3})$ is $D=12$. The comment on each entry
+    names the field. Every real fundamental discriminant with $D\leq 1000$ is
+    listed, 302 of them, the same enumeration as
+    HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[the residues at $s=1$].
+  comment-imaginary: >-
+    Only real quadratic fields: an imaginary quadratic field has a finite
+    unit group and its regulator is $1$ by convention.
+  comment-recognisable: >-
+    $R_K$ is transcendental, being the logarithm of an algebraic number other
+    than $0$ and $1$, but a few entries are constants a reader may hold under
+    another name: $R_K=\log\varphi$ for $D=5$, with $\varphi$
+    HREF{Golden_ratio}[the golden ratio], $\log(1+\sqrt{2})=\operatorname{arsinh}(1)$
+    for $D=8$, $\log(2+\sqrt{3})=\operatorname{arcosh}(2)$ for $D=12$. In
+    general $R_K$ is $\operatorname{arcosh}$ or $\operatorname{arsinh}$ of
+    half the trace of $\varepsilon_K$, by the formula below.
+  comment-different-regulator: >-
+    The regulator of an elliptic curve, held in
+    HREF{Regulators_of_elliptic_curves_over_Q_of_rank_1}[the tables of regulators of elliptic curves],
+    is the determinant of the canonical height pairing on the Mordell–Weil
+    group, a different object under the same name.
+  comment-requested: >-
+    Asked for in CITE{issue15}, of which this is the quadratic case.
+Formulas:
+  formula-class-number: >-
+    $\kappa_D=\frac{2\,h_K R_K}{\sqrt{D}}$, where $h_K$ is the class number
+    and $\kappa_D=L(1,\chi_D)$ the residue of the Dedekind zeta function of
+    $K$ at $s=1$, listed with $h_K$ in
+    HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[the table of residues].
+    Checked against every stored entry of that table.
+  formula-trace: >-
+    $R_K=\operatorname{arcosh}(t/2)$ if $N(\varepsilon_K)=1$ and
+    $R_K=\operatorname{arsinh}(t/2)$ if $N(\varepsilon_K)=-1$, where
+    $t=\varepsilon_K+\bar{\varepsilon}_K=a$ is the trace of
+    $\varepsilon_K=(a+b\sqrt{d})/2$: from $a^2-db^2=\pm 4$,
+    $\varepsilon_K=\bigl(a+\sqrt{a^2\mp 4}\bigr)/2$. Checked in ball
+    arithmetic on every entry.
+  formula-pell: >-
+    The fundamental solution of Pell's equation $x^2-dy^2=1$ is
+    $x_1+y_1\sqrt{d}=\varepsilon_K^{k}$ with $k=1$ if $N(\varepsilon_K)=1$
+    and $\varepsilon_K\in\mathbb{Z}[\sqrt{d}]$, $k=2$ if $N(\varepsilon_K)=-1$
+    and $\varepsilon_K\in\mathbb{Z}[\sqrt{d}]$, and $k=3$ or $k=6$
+    respectively when $\varepsilon_K$ has half-integral coordinates; so
+    $\log(x_1+y_1\sqrt{d})=k\,R_K$. For $D=61$, $\varepsilon_K=(39+5\sqrt{61})/2$
+    has norm $-1$ and half-integral coordinates, and
+    $\varepsilon_K^6=1766319049+226153980\sqrt{61}$ is the famous fundamental
+    solution of $x^2-61y^2=1$. Checked on every entry.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      K.<w> = QuadraticField(61)
+      eps = K.units(proof=True)[0]                  # a generator: eps, -eps, 1/eps or -1/eps
+      abs(log(abs(RealField(400)(eps))))            # 3.6642184608864375259...; K.regulator() is the 53-bit value
+  program-pari:
+    language: PARI/GP
+    code: |-
+      default(realprecision, 60); bnfinit(x^2 - 61).reg    \\ 3.66421846088643752592584648846429273478387712410404090314775
+Similar tables:
+  - table: HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[Residues of Dedekind zeta functions of quadratic fields]
+    relation: $\kappa_D=2h_KR_K/\sqrt{D}$ for the same fields; its entry comments carry $h_K$ and $\varepsilon_K$
+  - table: HREF{Golden_ratio}[Golden ratio]
+    relation: $\varphi=\varepsilon_K$ for $D=5$, so $R_K=\log\varphi$ there
+  - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
+    relation: holds the units $\varepsilon_K$ themselves for the smallest fields, as roots of $x^2-ax\pm 1$
+  - table: HREF{Regulators_of_elliptic_curves_over_Q_of_rank_1}[Regulators of elliptic curves over $\mathbb{Q}$ of rank 1]
+    relation: a different regulator, of the height pairing on an elliptic curve; likewise the tables for rank 2 and rank 3
+  - table: HREF{J-invariants_of_elliptic_curves_over_quadratic_fields_with_everywere_good_reduction}[$j$-invariants of elliptic curves over quadratic fields with everywhere good reduction]
+    relation: indexed by the same discriminant $D$
+Links:
+  Wiki-unit-theorem:
+    title: "Wikipedia: Dirichlet's unit theorem"
+    url: https://en.wikipedia.org/wiki/Dirichlet%27s_unit_theorem
+  Wiki-fundamental-unit:
+    title: 'Wikipedia: Fundamental unit (number theory)'
+    url: https://en.wikipedia.org/wiki/Fundamental_unit_(number_theory)
+  Wiki-pell:
+    title: "Wikipedia: Pell's equation"
+    url: https://en.wikipedia.org/wiki/Pell%27s_equation
+  LMFDB:
+    title: 'LMFDB: real quadratic number fields'
+    url: https://www.lmfdb.org/NumberField/?degree=2&signature=%5B2%2C0%5D
+  LMFDB-knowl:
+    title: 'LMFDB: regulator of a number field'
+    url: https://www.lmfdb.org/knowledge/show/nf.regulator
+  OEIS-x:
+    title: 'OEIS A014000: first coordinate of the fundamental unit of the real quadratic field of discriminant A003658(n)'
+    url: https://oeis.org/A014000
+  OEIS-y:
+    title: 'OEIS A014046: its second coordinate'
+    url: https://oeis.org/A014046
+  OEIS-norm:
+    title: 'OEIS A014077: its norm'
+    url: https://oeis.org/A014077
+  OEIS-disc:
+    title: 'OEIS A003658: fundamental discriminants of real quadratic fields'
+    url: https://oeis.org/A003658
+References:
+  issue15:
+    bib: >-
+      numberdb-data issue #15, "Regulators of number fields",
+      https://github.com/numberdb/numberdb-data/issues/15
+Tags:
+  - number theory
+  - transcendental
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  rigour details: >-
+    $\varepsilon_K=(a+b\sqrt{d})/2$ is taken exactly, as integers $a,b$,
+    from Sage's unit group with proof=True, and $R_K$ is arb's logarithm of
+    the real ball $(a+b\sqrt{d})/2$ at 397 bits; the digits written are those
+    the ball supports (the worst entry, $D=889$, supports 117).
+    $K.\mathrm{regulator}()$, a 53-bit float, is not used. Before its
+    logarithm is taken every unit is required to be the smallest unit of
+    $\mathbb{Z}[\sqrt{d}]$ from the continued fraction of $\sqrt{d}$, or its
+    cube root, a computation sharing no code with the unit group. All 302
+    units were also compared with OEIS A014000/A014046/A014077, eight
+    regulators with their LMFDB pages, and all 302 with the residue table
+    through the class number formula, with the controls that must fail
+    failing.
+Display properties:
+  number-header: $R_K$
