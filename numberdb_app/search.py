@@ -36,7 +36,7 @@ from django.db.models.expressions import RawSQL
 
 from .models import Number, NumberComplex, NumberPAdic, searchable_range
 
-__all__ = ['search_real_numbers', 'search_fractional_parts',
+__all__ = ['one_per_table', 'search_real_numbers', 'search_fractional_parts',
            'search_complex_numbers', 'search_p_adic_numbers',
            'real_query_range', 'full_text_query', 'search_metadata',
            'METADATA_LIMIT', 'MIN_RANK']
@@ -131,6 +131,33 @@ def real_query_range(r_query):
 	return searchable_range(r_query.lower(), r_query.upper())
 
 
+def one_per_table(queryset, limit, order=()):
+	"""The best row from each table, and how many that table holds.
+
+	Search answers "I have this number, what is it", and the answer wanted is
+	the list of *contexts* it appears in. A value that occurs many times in one
+	table -- `x` is a Chebyshev polynomial three times over, and a Fibonacci
+	one, and a Legendre one -- would otherwise fill the page with one table's
+	rows and crowd out every other answer, which is the opposite of what the
+	reader asked.
+
+	So the limit counts tables. Each returned row carries
+	`occurrences_in_table`, because "and 3 more here" is itself informative:
+	it says the value is characteristic of that family rather than incidental.
+
+	`DISTINCT ON` needs the distinct column to lead the ordering, so the caller
+	passes the ranking that should decide *which* row represents a table, and
+	sorts the result afterwards if the page order matters.
+	"""
+	from django.db.models import Count
+
+	counts = dict(queryset.values_list('table_id').annotate(n=Count('id')))
+	rows = list(queryset.order_by('table_id', *order).distinct('table_id')[:limit])
+	for row in rows:
+		row.occurrences_in_table = counts.get(row.table_id, 1)
+	return rows
+
+
 def search_real_numbers(r_query, limit):
 	"""Stored values that could be ``r_query``, best first.
 
@@ -153,22 +180,23 @@ def search_real_numbers(r_query, limit):
 	"""
 	query = real_query_range(r_query)
 
-	contained = list(
-		_identifiable(Number.objects)
-			.filter(value_range__contained_by = query)[:limit]
-	)
+	contained = one_per_table(
+		_identifiable(Number.objects).filter(value_range__contained_by = query),
+		limit)
 	if len(contained) >= limit:
 		return contained
 
 	#Fewer than a full page score 1, so the coarser values that merely overlap
 	#have to be ranked in. This re-finds the contained ones -- they overlap
 	#too -- and sorts the union, so the result is a superset of the above.
-	return list(
+	rows = one_per_table(
 		_identifiable(Number.objects)
 			.filter(value_range__overlap = query)
-			.annotate(overlap_score = RawSQL(_SCORE_SQL, (query, query)))
-			.order_by('-overlap_score')[:limit]
-	)
+			.annotate(overlap_score = RawSQL(_SCORE_SQL, (query, query))),
+		limit, order=('-overlap_score',))
+	#`DISTINCT ON` had to order by table to pick each table's best row; the
+	#page wants them best-first.
+	return sorted(rows, key=lambda row: -row.overlap_score)
 
 
 #Per axis rather than by area, so that a value exact in one component and
@@ -206,25 +234,24 @@ def search_complex_numbers(n_query, limit):
 	re_low, re_high = float(n_query.real().lower()), float(n_query.real().upper())
 	im_low, im_high = float(n_query.imag().lower()), float(n_query.imag().upper())
 
-	contained = list(
+	contained = one_per_table(
 		_reviewed(NumberComplex.objects).filter(
 			re_lower__gte = re_low, re_upper__lte = re_high,
 			im_lower__gte = im_low, im_upper__lte = im_high,
-		)[:limit]
-	)
+		), limit)
 	if len(contained) >= limit:
 		return contained
 
-	return list(
+	rows = one_per_table(
 		_reviewed(NumberComplex.objects)
 			.filter(
 				re_lower__lte = re_high, re_upper__gte = re_low,
 				im_lower__lte = im_high, im_upper__gte = im_low,
 			)
 			.annotate(overlap_score = RawSQL(
-				_COMPLEX_SCORE_SQL, (re_high, re_low, im_high, im_low)))
-			.order_by('-overlap_score')[:limit]
-	)
+				_COMPLEX_SCORE_SQL, (re_high, re_low, im_high, im_low))),
+		limit, order=('-overlap_score',))
+	return sorted(rows, key=lambda row: -row.overlap_score)
 
 
 def _coarser_ball_strings(number_string):
@@ -267,17 +294,17 @@ def search_p_adic_numbers(number_string, limit):
 	precision, so ordering by score is ordering by string length: exact matches
 	and finer values first, then the coarser ones, widest last.
 	"""
-	inside = list(
+	inside = one_per_table(
 		_reviewed(NumberPAdic.objects).filter(
-			number_string__startswith = number_string)[:limit]
-	)
+			number_string__startswith = number_string), limit)
 	if len(inside) >= limit:
 		return inside
 
-	coarser = list(
+	shown = {row.table_id for row in inside}
+	coarser = [row for row in one_per_table(
 		_reviewed(NumberPAdic.objects).filter(
-			number_string__in = _coarser_ball_strings(number_string))
-	)
+			number_string__in = _coarser_ball_strings(number_string)), limit)
+		if row.table_id not in shown]
 	coarser.sort(key = lambda number: -len(number.number_string))
 	return (inside + coarser)[:limit]
 
@@ -306,20 +333,19 @@ def search_fractional_parts(f_query, limit):
 	query = real_query_range(f_query)
 	unknown = NumericRange(Decimal(0), Decimal(1), '[]')
 
-	contained = list(
-		_identifiable(Number.objects)
-			.filter(frac_range__contained_by = query)[:limit]
-	)
+	contained = one_per_table(
+		_identifiable(Number.objects).filter(frac_range__contained_by = query),
+		limit)
 	if len(contained) >= limit:
 		return contained
 
-	return list(
+	rows = one_per_table(
 		_identifiable(Number.objects)
 			.filter(frac_range__overlap = query)
 			.exclude(frac_range__contains = unknown)
-			.annotate(overlap_score = RawSQL(_FRAC_SCORE_SQL, (query, query)))
-			.order_by('-overlap_score')[:limit]
-	)
+			.annotate(overlap_score = RawSQL(_FRAC_SCORE_SQL, (query, query))),
+		limit, order=('-overlap_score',))
+	return sorted(rows, key=lambda row: -row.overlap_score)
 
 
 #: Results shown on one page of the panel. The searches themselves cap here
@@ -434,9 +460,9 @@ def search_number(value, limit = PAGE_SIZE):
 		#No identifiability filter: a polynomial is exact, so there is no
 		#question of it being known too weakly to identify anything.
 		polynomial = Polynomial(sage_polynomial = value)
-		return list(_reviewed(Polynomial.objects).filter(
+		return one_per_table(_reviewed(Polynomial.objects).filter(
 			number_string_hash = polynomial.number_string_hash,
-			number_string = polynomial.number_string)[:limit])
+			number_string = polynomial.number_string), limit)
 
 	if parent is CIF or parent == CIF:
 		return search_complex_numbers(blur_complex_interval(value), limit)

@@ -52,6 +52,16 @@ thead > tr > td {
     {% if result.number.param_str %}
       (<a href="{% url 'db:table_by_url' result.table.url %}{{ result.number.param_str|entry_suffix }}">#{{ result.number.param_str }}</a>)
     {% endif %}
+    {% comment %}
+    A table appears once however many of its entries hold this value, so that
+    one family cannot fill the page and hide the others -- the answer wanted is
+    the list of contexts, not the list of rows. The count is part of that
+    answer: six occurrences say the value is characteristic of the family, one
+    says it is incidental.
+    {% endcomment %}
+    {% if result.number.occurrences_in_table > 1 %}
+      <span class="search-result-count">and {{ result.number.occurrences_in_table|add:"-1" }} more in this table</span>
+    {% endif %}
    </td>
   
  </tr>
