@@ -99,7 +99,15 @@ from ._wire import _prime_sage
 #anything at all.
 _prime_sage()
 
-_sage_client = Client(as_sage=True)
+#Not a client of its own. One was made here at import time, with no key, and
+#every search through this module used it -- so `numberdb.configure(api_key=
+#...)` had no effect on the Sage wrappers and an authenticated run read the
+#corpus anonymously, at sixty requests an hour. Three separate runs met that
+#as a mysterious throttle; one of them could not walk the corpus at all,
+#which the skill asks it to do.
+#
+#`for_sage()` is asked of whatever client the caller has, so configuring the
+#package configures this too.
 
 _SAGE_NOTE = """
 
@@ -111,8 +119,16 @@ _SAGE_NOTE = """
 
 
 def _flavoured(client: Optional[Client]) -> Client:
-    """The caller's client, or ours, returning Sage objects either way."""
-    return (client or _sage_client).for_sage()
+    """The caller's client, or the package's, returning Sage objects either way.
+
+    The package's, not one of this module's own: `numberdb.configure()`
+    replaces `numberdb._default_client`, and a module holding its own client
+    would keep reading with whatever key existed at import time -- which was
+    none.
+    """
+    import numberdb
+
+    return (client or numberdb._default_client).for_sage()
 
 
 def search(value: Searchable,
