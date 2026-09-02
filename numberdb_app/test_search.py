@@ -719,7 +719,8 @@ class ATruncatedWordMustStillFindItsTable(TestCase):
 			create_table({'Title': title,
 			              'Data properties': {'type': 'R'},
 			              'Parameters': {'n': {'type': 'Z'}},
-			              'Numbers': [{'params': {'n': '1'}, 'number': '1.5'}]})
+			              'Numbers': [{'params': {'n': '1'}, 'number': '1.5'}]},
+		via='orm')
 
 	def found(self, term):
 		body = self.client.get('/suggestions', {'term': term}).content.decode()
@@ -762,7 +763,8 @@ class ATableIsFoundByItsNumber(TestCase):
 			{'Title': 'A table with a number',
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
-			 'Numbers': [{'params': {'n': '1'}, 'number': '2.5'}]})
+			 'Numbers': [{'params': {'n': '1'}, 'number': '2.5'}]},
+		via='orm')
 
 	def found_titles(self, term):
 		from .search import search_metadata
@@ -799,7 +801,8 @@ class ATableIsFoundByItsNumber(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '2.5'}]},
-			published=False)
+			published=False,
+		via='orm')
 		self.assertEqual(self.found_titles(draft.tid), [])
 		body = self.client.get('/suggestions',
 		                       {'term': draft.tid}).content.decode()

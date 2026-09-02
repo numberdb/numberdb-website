@@ -1561,20 +1561,36 @@ class TableRevision(models.Model):
 	#: tracing an edit wants to know which. The activity log guessed it from
 	#: `produced_by` being non-empty, which called every API write and every
 	#: package write the same thing.
+	#: Which channel a revision came through, and nothing more. It is not a
+	#: claim about who: a person uses the API and the package as readily as
+	#: the form, and whether one was involved is what `author` and
+	#: `produced_by` answer.
+	#:
+	#: The one thing it does imply is the converse: an assistant cannot use a
+	#: form, so an assisted edit is never `web`. Recording one as `web` would
+	#: say somebody sat and typed what a program wrote.
 	VIA_WEB = 'web'
 	VIA_API = 'api'
 	VIA_PACKAGE = 'package'
 	VIA_IMPORT = 'import'
+	#: A write made by calling into the code directly -- a management command,
+	#: a shell. It is the honest name for a path that goes past the permission
+	#: checks, the rate limits and the document validation every other writer
+	#: passes through, and it is the *default* so that a caller which says
+	#: nothing is recorded as what it is rather than as a person at a form.
+	#: Seeing it in a history is a mild reproach: the same edit could almost
+	#: always have gone through the API.
+	VIA_ORM = 'orm'
 	VIA_CHOICES = [
 		(VIA_WEB, 'the site'),
 		(VIA_API, 'the API directly'),
 		(VIA_PACKAGE, 'the numberdb package'),
 		(VIA_IMPORT, 'an importer'),
+		(VIA_ORM, 'the code directly'),
 	]
 	via = models.CharField(
 		max_length = 16,
 		choices = VIA_CHOICES,
-		default = VIA_WEB,
 		blank = True,
 	)
 

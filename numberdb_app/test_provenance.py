@@ -31,7 +31,8 @@ class TheTrustLadderCountsPeople(TestCase):
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}]},
 			author=self.author,
-			produced_by='Probe (numberdb=0.1.2), assisted by claude-opus-5')
+			produced_by='Probe (numberdb=0.1.2), assisted by claude-opus-5',
+		via='orm')
 
 	def _review(self, reviewer):
 		self.table.reviewed_at_revision = self.table.head_revision
@@ -64,7 +65,8 @@ class TheTrustLadderCountsPeople(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '2.71'}]},
-			author=person, produced_by='web')
+			author=person, produced_by='web',
+		via='orm')
 		table.reviewed_at_revision = table.head_revision
 		table.reviewed_by = person
 		table.save(update_fields=['reviewed_at_revision', 'reviewed_by'])
@@ -102,7 +104,8 @@ class TheDisclosureIsVisible(TestCase):
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}]},
 			author=self.user,
-			produced_by='Probe (numberdb=0.1.2, sage=10.9), assisted by claude-opus-5')
+			produced_by='Probe (numberdb=0.1.2, sage=10.9), assisted by claude-opus-5',
+		via='orm')
 
 	def test_the_property_pulls_out_the_tool(self):
 		self.assertEqual(self.table.head_revision.assisted_by, 'claude-opus-5')
@@ -115,7 +118,8 @@ class TheDisclosureIsVisible(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '2.71'}]},
-			author=self.user, produced_by='Probe (numberdb=0.1.2)')
+			author=self.user, produced_by='Probe (numberdb=0.1.2)',
+		via='orm')
 		self.assertEqual(table.head_revision.assisted_by, '')
 
 	def test_the_history_shows_the_tool_next_to_the_author(self):

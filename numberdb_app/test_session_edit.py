@@ -43,6 +43,13 @@ class AnEditMadeWithAPersonRecordsTheAssistant(TestCase):
 		self.assertIn('assisted by Claude',
 		              self.table.head_revision.produced_by)
 
+	def test_it_is_not_recorded_as_typed_into_the_browser(self):
+		helper().edit_with_person(
+			self.table, {'Title': 'A table', 'Numbers': {'1': '4'}},
+			self.person, 'a change')
+		self.table.refresh_from_db()
+		self.assertNotEqual(self.table.head_revision.via, 'web')
+
 	def test_the_author_is_the_person_not_the_assistant(self):
 		helper().edit_with_person(
 			self.table, {'Title': 'A table', 'Numbers': {'1': '3'}},

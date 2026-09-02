@@ -32,7 +32,8 @@ class WritingTheRigour(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 
 	def send(self, rigour=None, body=None):
 		headers = {'HTTP_AUTHORIZATION': 'Bearer %s' % (self.token,),
@@ -113,7 +114,8 @@ class ShowingTheRigour(TestCase):
 			 'Data properties': {'type': 'R', 'rigour': level},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 
 	def test_the_table_page_says_how_well_the_digits_are_known(self):
 		table = self.table_with('heuristic')
@@ -130,7 +132,8 @@ class ShowingTheRigour(TestCase):
 			{'Title': 'Quiet', 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 		body = self.client.get('/%s' % (quiet.tid,)).content.decode()
 		self.assertNotIn('How well the digits are known', body)
 
@@ -166,7 +169,8 @@ class TheLevelArrivesEvenWhenNoNumberChanges(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 
 	def attach(self, rigour=None):
 		headers = {'HTTP_AUTHORIZATION': 'Bearer %s' % (self.token,),
@@ -288,7 +292,8 @@ class TheAuditCommand(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 
 	def audit_file(self, body):
 		import tempfile
@@ -449,7 +454,8 @@ class MeasuredIsNotOnTheScale(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
-			author=user)
+			author=user,
+		via='orm')
 		answer = self.client.post(
 			'/api/table/%s/entries' % (table.tid,),
 			'[{"params": {"n": "1"}, "number": "3.14159"}]',
@@ -496,7 +502,8 @@ class TheDetailFollowsTheLevel(TestCase):
 			{'Title': 'Detail test',
 			 'Data properties': dict(properties),
 			 'Parameters': {'n': {'type': 'Z'}},
-			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}]})
+			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}]},
+		via='orm')
 
 	def _run(self, table, level, tmpdir):
 		import os
@@ -590,7 +597,8 @@ class TheAuditsOwnSentencesCanBeCorrected(TestCase):
 			{'Title': 'Correctable detail test',
 			 'Data properties': dict(properties),
 			 'Parameters': {'n': {'type': 'Z'}},
-			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}]})
+			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}]},
+		via='orm')
 
 	def _run(self, table, level, detail, tmpdir):
 		import os
@@ -660,7 +668,8 @@ class TheRigourLineLinksToItsExplanation(TestCase):
 			 'Data properties': {'type': 'R', 'rigour': 'assumed-bound',
 			                     'rigour details': 'a bound taken on trust'},
 			 'Parameters': {'n': {'type': 'Z'}},
-			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}]})
+			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}]},
+		via='orm')
 
 	def test_the_table_page_links_the_level_to_the_help(self):
 		body = self.client.get('/%s' % (self.table.tid,)).content.decode()

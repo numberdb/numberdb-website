@@ -158,7 +158,7 @@ def dump_tree(tree):
 
 def commit_table(table, tree, author=None, message='', base=None,
                  produced_by='', allow_parameter_change=False, strict=False,
-                 files=None, run='', via='web'):
+                 files=None, run='', via=None):
 	"""Put ``tree`` on ``table``'s history and return a :class:`CommitOutcome`.
 
 	``base`` is the revision the author started from. Passing None means "this
@@ -184,6 +184,28 @@ def commit_table(table, tree, author=None, message='', base=None,
 	from .limits import enforce
 	from .models import TableRevision
 	from .validate import check as check_schema
+
+	#Every caller says which channel it is. There is no default, because the
+	#one that would be convenient -- `orm`, for a direct call -- is the path
+	#that should need a reason: it writes past the permission checks, the rate
+	#limits and the document validation that the API applies. A one-off script
+	#may well be the right tool, and then `via='orm'` is typed on purpose.
+	if via is None:
+		raise TypeError(
+			"commit_table needs via=: 'web' from the site, 'api' or 'package' "
+			"through the API, 'import' for an importer, 'orm' for a script "
+			"writing directly -- which should have a reason")
+
+	#`web` means a person typed it into the browser, so it cannot also say an
+	#assistant made it: an assistant does not use a form. An edit written from
+	#a conversation reaches the database through the API or the package, and
+	#saying otherwise would record a person as having typed what a program
+	#wrote. Corrected rather than refused -- the caller has already done the
+	#work, and the honest label is knowable from what it passed.
+	from .permissions import ASSISTED_MARKER
+
+	if via == 'web' and ASSISTED_MARKER in (produced_by or ''):
+		via = TableRevision.VIA_API
 
 	head = table.head_revision
 
@@ -283,7 +305,7 @@ def _wanted_manifest(revision, files):
 
 def _write(table, tree, author, message, parent, base, produced_by,
            merged=False, breaches=(), files=None, manifest=None, problems=(),
-           run='', via='web'):
+           run='', via='orm'):
 	from django.db import transaction
 
 	from .models import TableRevision
@@ -311,7 +333,7 @@ def _write(table, tree, author, message, parent, base, produced_by,
 
 def _write_inside(table, tree, author, message, parent, base, produced_by,
                   merged, breaches, files, manifest, problems=(), run='',
-                  via='web'):
+                  via='orm'):
 	from .models import TableRevision
 
 	revision = TableRevision.objects.create(
@@ -641,7 +663,7 @@ def slug_for(title, taken=None):
 
 
 def create_table(tree, author=None, message='', produced_by='', strict=False,
-                 published=True):
+                 published=True, via=None):
 	"""Create a table from a document and return it.
 
 	The T-number is allocated here rather than in the data repository, which is
@@ -657,6 +679,9 @@ def create_table(tree, author=None, message='', produced_by='', strict=False,
 	from django.db.models import Max
 
 	from .models import Table, TableData
+
+	if via is None:
+		raise TypeError("create_table needs via=: see commit_table")
 
 	title = (tree.get('Title') or '').strip() if isinstance(tree, dict) else ''
 	if not title:
@@ -707,7 +732,7 @@ def create_table(tree, author=None, message='', produced_by='', strict=False,
 
 		commit_table(table, tree, author=author,
 		             message=message or 'created this table',
-		             produced_by=produced_by, strict=strict)
+		             produced_by=produced_by, strict=strict, via=via)
 	table.refresh_from_db()
 	return table
 
@@ -747,7 +772,7 @@ def without_managed_keys(tree):
 	return {k: v for k, v in tree.items() if k not in MANAGED_KEYS}
 
 
-def restore_revision(table, revision, author=None, message=''):
+def restore_revision(table, revision, author=None, message='', via='orm'):
 	"""Put a table back to an earlier revision.
 
 	Committed forward rather than rewound: the old content becomes a new
@@ -774,6 +799,7 @@ def restore_revision(table, revision, author=None, message=''):
 	return commit_table(
 		table, tree_of(revision),
 		author=author,
+		via=via,
 		message=message or ('restored the version from %s'
 		                    % (revision.created.strftime('%Y-%m-%d %H:%M'),)),
 		base=table.head_revision,

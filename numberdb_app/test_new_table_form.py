@@ -69,10 +69,10 @@ class ATitleIsEnoughToBegin(TestCase):
 		table = Table.objects.get(title='Parameters later')
 		tree = tree_of(table.head_revision)
 		tree['Parameters'] = {'n': {'type': 'Z'}}
-		commit_table(table, tree, author=self.user, message='add n')
+		commit_table(table, tree, author=self.user, message='add n', via='orm')
 		tree = tree_of(Table.objects.get(pk=table.pk).head_revision)
 		tree['Parameters'] = {'m': {'type': 'Z'}, 'k': {'type': 'Z'}}
-		commit_table(table, tree, author=self.user, message='rename and add')
+		commit_table(table, tree, author=self.user, message='rename and add', via='orm')
 		table.refresh_from_db()
 		self.assertEqual(list(tree_of(table.head_revision)['Parameters']),
 		                 ['m', 'k'])

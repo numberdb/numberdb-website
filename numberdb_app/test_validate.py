@@ -119,11 +119,13 @@ class ThroughTheWritePath(TestCase):
 			{'Title': 'Validation probe',
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14159'}]},
-			author=self.author)
+			author=self.author,
+		via='orm')
 
 	def edit(self, tree):
 		return commit_table(self.table, tree, author=self.author,
-		                    base=self.table.head_revision)
+		                    base=self.table.head_revision,
+		via='orm')
 
 	def test_a_bad_type_never_reaches_the_table(self):
 		with self.assertRaises(InvalidDocument):

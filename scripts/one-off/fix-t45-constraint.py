@@ -52,7 +52,8 @@ if APPLY:
 		base=table.head_revision, produced_by='correction',
 		message=('the constraint said k = 1 mod p and 702 of the 856 entries '
 		         'are not; they are the integers coprime to p, and the '
-		         'logarithm reaches them through log(k^(p-1))/(p-1)'))
+		         'logarithm reaches them through log(k^(p-1))/(p-1)'),
+		via='orm')
 	print('\ncommitted')
 else:
 	print('\ndry run; set APPLY=1 to commit')

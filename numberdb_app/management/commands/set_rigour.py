@@ -174,7 +174,8 @@ class Command(BaseCommand):
 				table, tree, author=author, base=table.head_revision,
 				produced_by='rigour-audit',
 				message='how well the digits are known: %s (%s)'
-				        % (level, evidence))
+				        % (level, evidence),
+		via='orm')
 
 		self.stdout.write(
 			'%s %d table(s); %d already correct, %d left alone, %d missing.'

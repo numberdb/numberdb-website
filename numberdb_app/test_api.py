@@ -19,7 +19,8 @@ class ATableIsFoundByNumberOrByAddress(TestCase):
 			{'Title': 'Cyclotomic polynomials of a sort',
 			 'Data properties': {'type': 'Z[]'},
 			 'Parameters': {'n': {'type': 'Z'}},
-			 'Numbers': [{'params': {'n': '1'}, 'number': 'x - 1'}]})
+			 'Numbers': [{'params': {'n': '1'}, 'number': 'x - 1'}]},
+		via='orm')
 
 	def ask(self, **parameters):
 		return self.client.get('/api/table', parameters)

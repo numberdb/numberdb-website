@@ -35,9 +35,11 @@ class TheChannelIsRecorded(TestCase):
 		self.table.refresh_from_db()
 		return self.table.head_revision
 
-	def test_an_edit_defaults_to_the_site(self):
+	def test_the_form_says_the_site(self):
+		#Only the view a person reached through a form claims `web`; that is
+		#about the channel, not about who -- a person uses the API too.
 		commit_table(self.table, {'Title': 'A table', 'Numbers': {'1': '2'}},
-		             author=self.person, message='m')
+		             author=self.person, message='m', via='web')
 		self.assertEqual(self.head().via, TableRevision.VIA_WEB)
 
 	def test_the_package_is_distinguished_from_a_raw_api_call(self):
@@ -57,7 +59,22 @@ class TheChannelIsRecorded(TestCase):
 			HTTP_AUTHORIZATION='Bearer %s' % self.token)
 		self.assertEqual(self.head().via, TableRevision.VIA_API)
 
-	def test_a_session_edit_records_the_site_and_the_assistant(self):
+	def test_an_assisted_edit_is_never_web(self):
+		#`web` means a person typed it into the browser. An assistant cannot
+		#use a form, so an edit it made arrived through the API or the
+		#package however the conversation went.
+		commit_table(self.table, {'Title': 'A table', 'Numbers': {'1': '7'}},
+		             author=self.person, message='m', via='web',
+		             produced_by='assisted by Claude')
+		self.assertEqual(self.head().via, TableRevision.VIA_API)
+
+	def test_an_unassisted_edit_may_be_web(self):
+		commit_table(self.table, {'Title': 'A table', 'Numbers': {'1': '8'}},
+		             author=self.person, message='m', via='web',
+		             produced_by='')
+		self.assertEqual(self.head().via, TableRevision.VIA_WEB)
+
+	def test_a_session_edit_records_the_channel_and_the_assistant(self):
 		import importlib.util
 		import os
 
@@ -71,7 +88,7 @@ class TheChannelIsRecorded(TestCase):
 			self.table, {'Title': 'A table', 'Numbers': {'1': '5'}},
 			self.person, 'a change', assistant='Claude')
 		head = self.head()
-		self.assertEqual(head.via, TableRevision.VIA_WEB)
+		self.assertEqual(head.via, TableRevision.VIA_API)
 		self.assertIn('assisted by Claude', head.produced_by)
 
 	def test_produced_by_still_answers_the_other_question(self):
@@ -87,3 +104,26 @@ class TheChannelIsRecorded(TestCase):
 		self.assertEqual(head.via, TableRevision.VIA_PACKAGE)
 		self.assertIn('SomeGenerator', head.produced_by)
 		self.assertEqual(head.assisted_by, 'claude')
+
+	def test_a_direct_call_is_recorded_as_the_code_itself(self):
+		#The default, and deliberately not `web`: a call into commit_table
+		#goes past the permission checks, the rate limits and the validation
+		#every other writer passes through, and the history should say so.
+		commit_table(self.table, {'Title': 'A table', 'Numbers': {'1': '9'}},
+		             author=self.person, message='m',
+		via='orm')
+		self.assertEqual(self.head().via, TableRevision.VIA_ORM)
+
+	def test_only_the_form_reports_the_site(self):
+		#`web` is claimed in exactly three places, all of them views a person
+		#reached through a form: the editor, and the two ways of creating a
+		#table. Nothing else may say it, because nothing else is a browser.
+		import os
+		import re
+
+		from django.conf import settings
+
+		path = os.path.join(settings.BASE_DIR, 'numberdb_app', 'views.py')
+		with open(path, encoding='utf-8') as handle:
+			body = handle.read()
+		self.assertEqual(len(re.findall(r"via='web'", body)), 4)

@@ -76,7 +76,8 @@ if APPLY:
         produced_by='correction',
         message=('phi_inv held the conjugate root: its sign was wrong, and so '
                  'were the two formulas that said phi^-1 is a root of '
-                 'x^2-x-1. The value is kept as phi_conj, which is what it is.'))
+                 'x^2-x-1. The value is kept as phi_conj, which is what it is.'),
+		via='orm')
     print('\ncommitted')
 else:
     print('\ndry run; set APPLY=1 to commit')

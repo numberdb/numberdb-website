@@ -24,7 +24,7 @@ class MathematicsSurvivesRendering(TestCase):
 			published=True)
 
 	def page(self, tree):
-		commit_table(self.table, tree, author=self.user, message='m')
+		commit_table(self.table, tree, author=self.user, message='m', via='orm')
 		return Client().get('/T700', HTTP_HOST='numberdb.org').content.decode()
 
 	def test_a_comparison_without_a_space_is_not_eaten(self):
@@ -74,7 +74,7 @@ class MarkupThisCodeWroteIsNotEscaped(TestCase):
 			published=True)
 
 	def page(self, tree):
-		commit_table(self.table, tree, author=self.user, message='m')
+		commit_table(self.table, tree, author=self.user, message='m', via='orm')
 		return Client().get('/T701', HTTP_HOST='numberdb.org').content.decode()
 
 	def test_the_rigour_label_is_still_a_link(self):

@@ -36,7 +36,8 @@ class TwoWritersAtOnce(TransactionTestCase):
 			{'Title': 'Race probe',
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '1.1'}]},
-			author=self.chair)
+			author=self.chair,
+		via='orm')
 		_key, self.token = ApiKey.issue(user=self.chair, label='race')
 
 	def send(self, number, results, run='run-1'):

@@ -75,7 +75,8 @@ class Command(BaseCommand):
 						author=None, base=table.head_revision,
 						produced_by='flattening',
 						message='entries rewritten as records with named '
-						        'parameters')
+						        'parameters',
+		via='orm')
 					written += 1
 			else:
 				differ += 1

@@ -218,7 +218,8 @@ for tid, sections in TABLES.items():
 			table, tree, author=AUTHOR, base=table.head_revision,
 			produced_by=PRODUCED_BY,
 			message='each thing in its own section, and tables in this '
-			        'database referenced from here rather than from Wikipedia')
+			        'database referenced from here rather than from Wikipedia',
+		via='orm')
 		print('   committed')
 
 if not APPLY:

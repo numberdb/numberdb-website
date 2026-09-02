@@ -49,7 +49,8 @@ class AttachingBase(TestCase):
 
 	def commit(self, tree, files=None, who=None, base=None, message=''):
 		return commit_table(self.table, tree, author=who or self.alice,
-		                    message=message, base=base, files=files)
+		                    message=message, base=base, files=files,
+		via='orm')
 
 	def head(self):
 		self.table.refresh_from_db()
@@ -167,11 +168,13 @@ class ConcurrentFileEdits(AttachingBase):
 		commit_table(self.table, {'Title': 'Attach probe',
 		                          'Numbers': {'1': '3.14'}},
 		             author=self.bob, base=self.start,
-		             files={'notes.txt': 'goodbye'})
+		             files={'notes.txt': 'goodbye'},
+		via='orm')
 		out = commit_table(self.table, {'Title': 'Attach probe',
 		                               'Numbers': {'1': '3.14'}},
 		                   author=self.alice, base=self.start,
-		                   files={'generate.sage': 'print(4*atan(1))'})
+		                   files={'generate.sage': 'print(4*atan(1))'},
+		via='orm')
 		self.assertTrue(out.merged)
 		names = {a.name: a.blob.text()
 		         for a in out.revision.attachments.select_related('blob')}
@@ -184,20 +187,24 @@ class ConcurrentFileEdits(AttachingBase):
 		commit_table(self.table, {'Title': 'Attach probe',
 		                          'Numbers': {'1': '3.14'}},
 		             author=self.bob, base=self.start,
-		             files={'generate.sage': 'bob was here'})
+		             files={'generate.sage': 'bob was here'},
+		via='orm')
 		with self.assertRaises(StaleEdit):
 			commit_table(self.table, {'Title': 'Attach probe',
 			                          'Numbers': {'1': '3.14'}},
 			             author=self.alice, base=self.start,
-			             files={'generate.sage': 'alice was here'})
+			             files={'generate.sage': 'alice was here'},
+		via='orm')
 
 	def test_a_merge_keeps_the_files_of_a_document_only_edit(self):
 		commit_table(self.table, {'Title': 'Attach probe',
 		                          'Numbers': {'1': '9.99'}},
-		             author=self.bob, base=self.start)
+		             author=self.bob, base=self.start,
+		via='orm')
 		out = commit_table(self.table, {'Title': 'Changed',
 		                                'Numbers': {'1': '3.14'}},
-		                   author=self.alice, base=self.start)
+		                   author=self.alice, base=self.start,
+		via='orm')
 		self.assertTrue(out.merged)
 		self.assertEqual(set(manifest_of(out.revision)),
 		                 {'generate.sage', 'notes.txt'})
@@ -208,7 +215,8 @@ class WhatMayBeShownAsSource(TestCase):
 	def make(self, name):
 		table = Table.objects.create(tid='T941', tid_int=941, title='x', url='x941')
 		revision = commit_table(table, {'Title': 'x'},
-		                        files={name: b'x'}).revision
+		                        files={name: b'x'},
+		via='orm').revision
 		return revision.attachments.get()
 
 	def test_a_sage_script_is_source(self):
@@ -279,13 +287,15 @@ class AmendingKeepsItsFiles(AttachingBase):
 		super().setUp()
 		self.first = commit_table(
 			self.table, {'Title': 'Attach probe', 'Numbers': {'1': '3.14'}},
-			author=self.alice, run='run-1').revision
+			author=self.alice, run='run-1',
+		via='orm').revision
 
 	def test_a_file_attached_by_an_amend_is_stored(self):
 		out = commit_table(
 			self.table, {'Title': 'Attach probe', 'Numbers': {'1': '3.15'}},
 			author=self.alice, base=self.first, run='run-1',
-			files={'generate.py': 'print(1)'})
+			files={'generate.py': 'print(1)'},
+		via='orm')
 		self.assertTrue(out.amended)
 		self.assertEqual(set(manifest_of(out.revision)), {'generate.py'})
 
@@ -294,18 +304,21 @@ class AmendingKeepsItsFiles(AttachingBase):
 		commit_table(
 			self.table, {'Title': 'Attach probe', 'Numbers': {'1': '3.16'}},
 			author=self.alice, base=self.first, run='run-1',
-			files={'generate.py': 'print(1)'})
+			files={'generate.py': 'print(1)'},
+		via='orm')
 		self.assertEqual(self.table.revisions.count(), before)
 
 	def test_files_already_there_survive_a_later_amend(self):
 		commit_table(
 			self.table, {'Title': 'Attach probe', 'Numbers': {'1': '3.17'}},
 			author=self.alice, base=self.first, run='run-1',
-			files={'generate.py': 'print(1)'})
+			files={'generate.py': 'print(1)'},
+		via='orm')
 		self.table.refresh_from_db()
 		out = commit_table(
 			self.table, {'Title': 'Attach probe', 'Numbers': {'1': '3.18'}},
-			author=self.alice, base=self.table.head_revision, run='run-1')
+			author=self.alice, base=self.table.head_revision, run='run-1',
+		via='orm')
 		self.assertEqual(set(manifest_of(out.revision)), {'generate.py'})
 
 
@@ -322,7 +335,8 @@ class ATableAsOneDownload(AttachingBase):
 		self.first = commit_table(
 			self.table, {'Title': 'Attach probe', 'Numbers': {'1': '3.14'}},
 			author=self.alice,
-			files={'generate.py': 'print(1)', 'notes.txt': 'why'}).revision
+			files={'generate.py': 'print(1)', 'notes.txt': 'why'},
+		via='orm').revision
 
 	def bundle(self, **params):
 		import io
@@ -356,7 +370,8 @@ class ATableAsOneDownload(AttachingBase):
 		commit_table(self.table, {'Title': 'Attach probe',
 		                          'Numbers': {'1': '9.99'}},
 		             author=self.alice, base=self.first,
-		             files={'generate.py': 'print(2)'})
+		             files={'generate.py': 'print(2)'},
+		via='orm')
 		old = self.bundle(rev=self.first.pk)
 		self.assertEqual(
 			old.read('%s/generate.py' % (self.table.tid,)), b'print(1)')

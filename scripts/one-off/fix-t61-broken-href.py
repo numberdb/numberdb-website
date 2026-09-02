@@ -34,7 +34,8 @@ if APPLY and target and changed:
 		table, tree, author=User.objects.get(username='bmatschke'),
 		base=table.head_revision, produced_by='correction',
 		message='the link to the roots of unity said Roots_or_unity and went '
-		        'nowhere')
+		        'nowhere',
+		via='orm')
 	print('committed')
 elif not APPLY:
 	print('\ndry run; set APPLY=1 to commit')

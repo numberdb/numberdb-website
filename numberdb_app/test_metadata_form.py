@@ -198,7 +198,8 @@ class ThroughThePage(TestCase):
 			 'Data properties': {'type': 'R', 'sources': ['CITE{X}']},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14159'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 		self.client.login(username='form_user', password='pw-123456')
 
 	def url(self):
@@ -275,7 +276,8 @@ class ThroughThePage(TestCase):
 		              'Data properties': {'type': 'R', 'sources': ['CITE{X}']},
 		              'Parameters': {'n': {'type': 'Z'}},
 		              'Numbers': [{'params': {'n': '1'}, 'number': '9.99'}]},
-		             author=self.user, base=self.table.head_revision)
+		             author=self.user, base=self.table.head_revision,
+		via='orm')
 		self.table.refresh_from_db()
 		response = self.client.post(self.url(), {
 			'action': 'save-metadata', 'message': 'a change', 'base': stale, 'title': 'Form probe',
@@ -310,7 +312,8 @@ class ATypeTheDatabaseCannotParse(TestCase):
 			{'Title': 'Odd numbers indeed',
 			 'Data properties': {'type': 'R'},
 			 'Numbers': [{'params': {}, 'number': '3.14'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 		self.client.login(username='other_type', password='pw-123456')
 
 	def head(self):
@@ -406,7 +409,8 @@ class TheValuesASymbolicParameterMayTake(TestCase):
 			                      'values': {'a': '$a$', 'b': '$b$'}}},
 			 'Numbers': [{'params': {'q': '1.5', 'v': 'a'}, 'number': '2'},
 			             {'params': {'q': '1.5', 'v': 'b'}, 'number': '3'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 		self.client.login(username='values_user', password='pw-123456')
 
 	def head(self):
@@ -511,7 +515,8 @@ class TheSettingsPageDoesNotReadEveryTable(TestCase):
 				{'Title': 'Speed probe %d' % (index,),
 				 'Data properties': {'type': 'R'},
 				 'Numbers': [{'params': {}, 'number': '3.14'}]},
-				author=self.user)
+				author=self.user,
+		via='orm')
 
 	def test_it_asks_the_database_rather_than_reading_documents(self):
 		from django.db import connection
@@ -533,7 +538,8 @@ class TheSettingsPageDoesNotReadEveryTable(TestCase):
 		              'Data properties': {'type': '*Q',
 		                                  'type name': 'hyperrationals'},
 		              'Numbers': [{'params': {}, 'number': '1'}]},
-		             author=self.user)
+		             author=self.user,
+		via='orm')
 		offered = {row['symbol']: row['name'] for row in known_other_types()}
 		self.assertEqual(offered.get('*Q'), 'hyperrationals')
 

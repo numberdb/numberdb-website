@@ -66,7 +66,8 @@ if APPLY:
 		base=table.head_revision, produced_by='correction',
 		message=('the definition did not say which square root the iteration '
 		         'takes, and over Q_p the two choices give different limits; '
-		         'it now states the convention the values follow'))
+		         'it now states the convention the values follow'),
+		via='orm')
 	print('\ncommitted')
 else:
 	print('\ndry run; set APPLY=1 to commit')

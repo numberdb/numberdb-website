@@ -49,7 +49,8 @@ if APPLY:
 		table, tree, author=User.objects.get(username='bmatschke'),
 		base=table.head_revision, produced_by='correction',
 		message=('the conjugate column names the number rather than stating an '
-		         'equation, and the formula drops a sentence that repeats it'))
+		         'equation, and the formula drops a sentence that repeats it'),
+		via='orm')
 	print('\ncommitted')
 else:
 	print('\ndry run; set APPLY=1 to commit')

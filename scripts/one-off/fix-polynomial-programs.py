@@ -48,7 +48,8 @@ for tid, code in SNIPPETS.items():
 			table, tree, author=AUTHOR, base=table.head_revision,
 			produced_by='table document, assisted by claude-opus-5',
 			message='the Sage snippet gives the next value rather than a '
-			        'range that goes stale when the table changes')
+			        'range that goes stale when the table changes',
+		via='orm')
 		print('   committed')
 
 if not APPLY:

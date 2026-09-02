@@ -15,7 +15,7 @@ def a_table(**sections):
 	            'Parameters': {'n': {'type': 'Z'}},
 	            'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}]}
 	document.update(sections)
-	return create_table(document)
+	return create_table(document, via='orm')
 
 
 def findings_for(table):
@@ -121,7 +121,8 @@ class APublishedTableMayNotLinkToADraft(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '1.5'}]},
-			published=False)
+			published=False,
+		via='orm')
 		self.published = a_table(title='Already published',
 		                         Comments={'c': 'See HREF{%s}.' % self.draft.url})
 		publish_table(self.published)
@@ -139,7 +140,8 @@ class APublishedTableMayNotLinkToADraft(TestCase):
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '2.5'}],
 			 'Comments': {'c': 'See HREF{%s}.' % self.draft.url}},
-			published=False)
+			published=False,
+		via='orm')
 		self.assertNotIn('points at a draft', findings_for(other))
 
 	def test_a_link_to_a_published_table_is_still_fine(self):

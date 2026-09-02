@@ -30,14 +30,15 @@ class DerivedStateAgreesWithTheDocument(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14'},
 			             {'params': {'n': '2'}, 'number': '2.71'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 
 	def commit(self, changes):
 		from .editing import commit_table, tree_of
 
 		tree = dict(tree_of(self.table.head_revision))
 		tree.update(changes)
-		commit_table(self.table, tree, author=self.user, message='a change')
+		commit_table(self.table, tree, author=self.user, message='a change', via='orm')
 		self.table.refresh_from_db()
 		return tree
 

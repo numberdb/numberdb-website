@@ -29,7 +29,8 @@ class NothingIsHalfWritten(TestCase):
 		self.table = create_table(
 			{'Title': 'Atomicity probe',
 			 'Numbers': [{'params': {}, 'number': '3.14159'}]},
-			author=self.author)
+			author=self.author,
+		via='orm')
 		self.good = self.table.head_revision
 
 	def bad_edit(self):
@@ -37,7 +38,8 @@ class NothingIsHalfWritten(TestCase):
 			self.table,
 			{'Title': 'Atomicity probe',
 			 'Numbers': [{'params': {}, 'number': 'hello world'}]},
-			author=self.author, base=self.table.head_revision)
+			author=self.author, base=self.table.head_revision,
+		via='orm')
 
 	def test_a_value_that_is_not_a_number_is_refused(self):
 		with self.assertRaises(InvalidDocument):
@@ -77,14 +79,16 @@ class NothingIsHalfWritten(TestCase):
 			commit_table(self.table,
 			             {'Title': 'Atomicity probe',
 			              'Numbers': [{'params': {}, 'numbr': '3.14'}]},
-			             author=self.author, base=self.table.head_revision)
+			             author=self.author, base=self.table.head_revision,
+		via='orm')
 
 	def test_a_new_table_is_not_created_from_a_bad_document(self):
 		before = Table.objects.count()
 		with self.assertRaises(Exception):
 			create_table({'Title': 'Never exists',
 			              'Numbers': [{'params': {}, 'number': 'not a number'}]},
-			             author=self.author)
+			             author=self.author,
+		via='orm')
 		self.assertEqual(Table.objects.count(), before)
 
 
@@ -98,7 +102,8 @@ class TheEditorSaysWhatIsWrong(TestCase):
 		self.table = create_table(
 			{'Title': 'Message probe',
 			 'Numbers': [{'params': {}, 'number': '3.14159'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 
 	def test_a_bad_value_is_reported_rather_than_crashing(self):
 		"""It was a Sage parse error on an error page, which says nothing."""
@@ -130,7 +135,8 @@ class TheApiSaysWhatIsWrong(TestCase):
 		self.table = create_table(
 			{'Title': 'API message probe',
 			 'Numbers': [{'params': {}, 'number': '3.14159'}]},
-			author=self.chair)
+			author=self.chair,
+		via='orm')
 		_key, self.token = ApiKey.issue(user=self.chair, label='test')
 
 	def post(self, path, body):
