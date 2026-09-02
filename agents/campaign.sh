@@ -38,6 +38,18 @@ propose_a_batch() {
 say() { printf '\n=== %s\n' "$*"; }
 
 while [ "$made" -lt "$builds" ]; do
+	#Asked for between tables, so a campaign can be stopped without killing a
+	#build half-way. Twice I stopped one by killing the process, and both
+	#times the build in flight died with it: the parent's children are not
+	#spared, and a run that was twenty minutes in was simply lost.
+	#
+	#    touch agents/campaign.stop
+	if [ -e agents/campaign.stop ]; then
+		say "stopping: agents/campaign.stop is there"
+		rm -f agents/campaign.stop
+		exit 0
+	fi
+
 	if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
 		say "stopping: the tree has uncommitted changes"
 		git status --short --untracked-files=no
@@ -77,6 +89,17 @@ while [ "$made" -lt "$builds" ]; do
 		continue
 	fi
 	made=$((made + 1))
+
+	#Read the table as a reader would, in a session that did not build it.
+	#The build checked its own numbers and cannot see its own prose; three
+	#faults this year lived only in the rendered page. It reports and changes
+	#nothing, so a critique that goes wrong costs a file nobody acts on.
+	tid=$(git show --stat HEAD | grep -oE 'T1[0-9]{2}' | head -1)
+	if [ -n "$tid" ]; then
+		say "reading $tid as a reader would"
+		agents/run.sh critique "Read $tid. Fetch the rendered page, read the document, run audit_table on it, and write agents/critiques/$tid.md. Change nothing else." \
+			|| say "the critique run failed; the table stands and somebody should look"
+	fi
 
 	#The ceiling is the intended stopping point and it announces itself: the
 	#API refuses the create, the run says so in its report, and `run.sh`

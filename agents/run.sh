@@ -33,7 +33,8 @@ task="${2:-}"
 case "$stage" in
 	ideas) prompt_file="agents/table-ideas/PROMPT.md" ;;
 	build) prompt_file="agents/table-build/PROMPT.md" ;;
-	*) echo "usage: $0 {ideas|build} [task]" >&2; exit 2 ;;
+	critique) prompt_file="agents/table-critique/PROMPT.md" ;;
+	*) echo "usage: $0 {ideas|build|critique} [task]" >&2; exit 2 ;;
 esac
 
 engine="${NUMBERDB_AGENT:-claude}"
