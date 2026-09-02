@@ -88,10 +88,10 @@ swap('Formulas', 'formula-splitting',
 properties = dict(tree['Data properties'])
 properties['rigour details'] = properties['rigour details'] + (
 	' The stored polynomials were also checked against the cube formula on '
-	'every entry, against the diagonal of the modular polynomials '
-	'HREF{Modular_polynomials_for_j-invariant} for $\\ell=2,3,5,7,11$, and '
-	'against the splitting criterion for every $\\Delta$ here and every prime '
-	'$p<400$, in both directions.')
+	'every entry, against the diagonal '
+	'HREF{Modular_polynomials_for_j-invariant}[of the modular polynomials '
+	'for $j$] for $\\ell=2,3,5,7,11$, and against the splitting criterion for '
+	'every $\\Delta$ here and every prime $p<400$, in both directions.')
 
 # 3 --------------------------------------------------------------------------
 properties['complete-note'] = (
