@@ -6,10 +6,9 @@ Title: Nodes and weights of Gauss–Legendre quadrature
 Definition: >-
   For $n\geq 1$ the Gauss–Legendre quadrature rule with $n$ points is the
   unique rule $\int_{-1}^{1} f(x)\,dx \approx \sum_{k=1}^{n} w_k f(x_k)$ that
-  is exact for every polynomial $f$ of degree at most $2n-1$ CITE{Wiki}. Its
-  nodes $x_1<x_2<\cdots<x_n$ are the roots of the
-  HREF{Legendre_polynomials}[Legendre polynomial] $P_n$, and listed are the
-  nodes $x_k$ and the weights $w_k$.
+  is exact for every polynomial $f$ of degree at most $2n-1$ CITE{Wiki}.
+  Listed are its nodes $x_1<\cdots<x_n$, the roots of the Legendre polynomial
+  $P_n$, and its weights $w_k$.
 Parameters:
   n:
     type: Z
@@ -29,6 +28,12 @@ Parameters:
       w: $w_k$
     show-in-parameter-list: 'no'
 Comments:
+  comment-nodes: >-
+    $P_n$ is the HREF{Legendre_polynomials}[Legendre polynomial] of degree
+    $n$ with $P_n(1)=1$. Its $n$ roots are real, simple and lie in $(-1,1)$,
+    and $x_1<\cdots<x_n$ is their increasing order. Placing the nodes at
+    these roots is what lets a rule with $n$ points reach degree $2n-1$;
+    any other $n$ points give at most $n-1$ in general.
   comment-both-halves: >-
     Every rule is symmetric, $x_{n+1-k}=-x_k$ and $w_{n+1-k}=w_k$, and both
     halves are listed rather than the nonnegative one: a reader holding

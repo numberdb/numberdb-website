@@ -472,3 +472,33 @@ repeated. Same lesson as the pipeline note above, in a different shape.
 What to do instead: `agents/sage.sh script.py > /tmp/out.txt 2>&1`, then
 `grep -c PASS` and `grep FAIL | grep -v 'must fail'` on the file; the file
 is also what the batch quotes from.
+
+## `dry_run.py` measures the ball's printed form, not the digits that will be written
+
+What happened: the dry run of the Gauss-Legendre generator reported
+"longest 139 characters at expression=x,k=8,n=16, block 174.5 KB, OVER THE
+TARGET". The same 930 entries passed through `numberdb._write.to_text` at
+100 digits measure 104 characters and 129.1 KB. `check.measure` takes
+`str()` of whatever `value()` returned, and a 397-bit `RealBall` prints
+about 120 digits and a radius, so a table of balls is overstated by a
+third and a range decision was nearly taken on the wrong number.
+
+What to do instead: `dry_run.py` should write each value with `to_text(value,
+digits)` before measuring, as `publish()` will. Until then, re-measure
+through `to_text` (`/tmp/gl_measure.py`, ten lines) before believing OVER
+THE TARGET on a table of balls; exact tables are measured correctly.
+
+Evidence: 2026-09-02, the dry run and `/tmp/gl_measure.py` on the same
+generator: `{'entries': 930, 'longest': 104, 'block_kb': 129.1}`.
+
+## Editing a draft's prose after the fill: read the tree with Django, write the document with the client
+
+Repeated here because it was needed again and the earlier notes say it in
+three pieces. `manage.py audit_table` found two things in T132's
+Definition after the fill; fixing them means sending the *whole* document,
+`Numbers` included, to `POST /api/table/132` with `X-Base-Revision` set to
+the head digest. `/tmp/gl_read_tree.py` (Django in the throwaway, prints
+the flat tree between markers and the digest) and `/tmp/gl_write_doc.py`
+(client only: the repository's `table.yaml` plus the stored `Numbers`,
+posted with the digest) are the pair; they cannot share a process because
+the site is also a package called `numberdb`.
