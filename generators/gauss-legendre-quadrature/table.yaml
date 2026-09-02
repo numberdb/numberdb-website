@@ -1,0 +1,171 @@
+# The table document for the Gauss-Legendre nodes and weights, proposal 1 of
+# agents/table-ideas/BATCH-2026-09-02.md. Created as a draft through the API
+# (X-Draft: yes) and filled by generate.py beside it; publishing is a person's
+# act on the site.
+Title: Nodes and weights of Gauss–Legendre quadrature
+Definition: >-
+  For $n\geq 1$ the Gauss–Legendre quadrature rule with $n$ points is the
+  unique rule $\int_{-1}^{1} f(x)\,dx \approx \sum_{k=1}^{n} w_k f(x_k)$ that
+  is exact for every polynomial $f$ of degree at most $2n-1$ CITE{Wiki}. Its
+  nodes $x_1<x_2<\cdots<x_n$ are the roots of the
+  HREF{Legendre_polynomials}[Legendre polynomial] $P_n$, and listed are the
+  nodes $x_k$ and the weights $w_k$.
+Parameters:
+  n:
+    type: Z
+    title: number of nodes
+    display: $n$
+    constraints: $n\geq 1$
+  k:
+    type: Z
+    title: index of the node, in increasing order
+    display: $k$
+    constraints: $1\leq k\leq n$
+  expression:
+    type: Symbolic
+    title: node or weight
+    values:
+      x: $x_k$
+      w: $w_k$
+    show-in-parameter-list: 'no'
+Comments:
+  comment-both-halves: >-
+    Every rule is symmetric, $x_{n+1-k}=-x_k$ and $w_{n+1-k}=w_k$, and both
+    halves are listed rather than the nonnegative one: a reader holding
+    $-0.7745966692\ldots$ finds it with its sign.
+  comment-exact-entries: >-
+    Every value here is an algebraic number, and the ones that are rational
+    are written exactly rather than to a hundred digits: the node $x=0$ of
+    every rule of odd order, its weight $w_{(n+1)/2}=2/P_n'(0)^2$, and the
+    weights of the rules with $n\leq 3$. The node $x=0$ identifies nothing
+    on its own; it is the weight beside it that belongs to $n$.
+  comment-closed-forms: >-
+    The rules with $n\leq 5$ have closed forms in square roots, given in the
+    comments on their entries, and the nodes $\pm 1/\sqrt{3}$ and
+    $\pm\sqrt{3/5}$ of $n=2,3$ are also in
+    HREF{Algebraic_numbers_of_degree_2}[the table of quadratic algebraic numbers].
+    From $n=4$ on the nodes have degree at least $4$ over $\mathbb{Q}$ and the
+    weights degree at least $2$; the polynomials whose roots are the weights
+    are OEIS A112734 CITE{OEIS-weight-polynomials}.
+  comment-unit-interval: >-
+    The same rule on $[0,1]$ has nodes $c_k=(1+x_k)/2$ and weights
+    $b_k=w_k/2$, which is how it appears as the Butcher tableau of the
+    $n$-stage Gauss collocation method for ordinary differential equations:
+    $c=(3\mp\sqrt{3})/6=0.2113\ldots,0.7886\ldots$ and $b=1/2,1/2$ for two
+    stages. Those values are an affine image of the entries here rather than
+    a multiple of them, and they are not listed separately.
+  comment-other-rules: >-
+    Gauss–Chebyshev quadrature, the same construction for the weight
+    $(1-x^2)^{-1/2}$, has nodes $\cos\frac{(2k-1)\pi}{2n}$, which are in
+    HREF{Cos_pi_times_x_at_rational_numbers}[the table of $\cos(\pi x)$ at rational $x$],
+    and all weights equal to $\pi/n$, which is in
+    HREF{Rational_multiples_of_pi}[the table of rational multiples of $\pi$].
+    The Gauss–Hermite, Gauss–Laguerre, Gauss–Lobatto, Gauss–Radau and
+    Gauss–Kronrod rules are different tables.
+  comment-requested: >-
+    Asked for in CITE{issue11}, for the Legendre polynomials.
+Formulas:
+  formula-weights: >-
+    $w_k=\dfrac{2}{(1-x_k^2)\,P_n'(x_k)^2}=\dfrac{2\,(1-x_k^2)}{n^2\,P_{n-1}(x_k)^2}$
+    CITE{AS}. Both were computed for every entry and agree.
+  formula-exactness: >-
+    $\sum_{k=1}^{n} w_k x_k^m=\int_{-1}^{1}x^m\,dx=\dfrac{1+(-1)^m}{m+1}$ for
+    $0\leq m\leq 2n-1$, and not for $m=2n$. Checked in ball arithmetic on
+    every rule here, the failure at $m=2n$ included.
+  formula-symmetry: >-
+    $x_{n+1-k}=-x_k$, $w_{n+1-k}=w_k$, $w_k>0$ and $\sum_{k=1}^{n}w_k=2$.
+  formula-central-weight: >-
+    For odd $n$, $x_{(n+1)/2}=0$ and
+    $w_{(n+1)/2}=\dfrac{2}{P_n'(0)^2}=\dfrac{2\,((n-1)!!)^2}{n^2\,((n-2)!!)^2}$:
+    $2$, $8/9$, $128/225$, $512/1225$, $32768/99225$ for $n=1,3,5,7,9$.
+  formula-lagrange: >-
+    $w_k=\int_{-1}^{1}\ell_k(x)\,dx$ with $\ell_k(x)=\prod_{j\neq k}\frac{x-x_j}{x_k-x_j}$
+    the Lagrange basis polynomial of the nodes; the same integrals over
+    HREF{Lagrange_basis_polynomials_for_equally_spaced_nodes}[equally spaced nodes]
+    are the Newton–Cotes weights.
+  formula-interlacing: >-
+    The nodes of the rules with $n$ and $n-1$ points interlace:
+    $x_k^{(n)}<x_k^{(n-1)}<x_{k+1}^{(n)}$ for $1\leq k\leq n-1$, as the
+    roots of consecutive orthogonal polynomials do.
+  formula-interval: >-
+    On $[a,b]$ the rule is $\int_a^b f \approx \frac{b-a}{2}\sum_k w_k\,
+    f\bigl(\frac{b-a}{2}x_k+\frac{a+b}{2}\bigr)$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x> = QQ[]
+      p = R(legendre_P(8, x))
+      nodes = p.roots(RealIntervalField(400), multiplicities=False)   # x_1 = -0.96028985649753623168...
+      weights = [2/((1 - r^2)*p.derivative()(r)^2) for r in nodes]    # w_1 = 0.10122853629037625915...
+  program-numpy:
+    language: Python
+    code: |-
+      import numpy.polynomial.legendre as L
+      nodes, weights = L.leggauss(8)      # double precision: -0.96028986, 0.10122854
+Similar tables:
+  - table: HREF{Legendre_polynomials}[Legendre polynomials]
+    relation: the nodes are the roots of $P_n$
+  - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
+    relation: holds the nodes $\pm 1/\sqrt{3}$ and $\pm\sqrt{3/5}$ of $n=2,3$
+  - table: HREF{Cos_pi_times_x_at_rational_numbers}[$\cos(\pi x)$ for rational $x$]
+    relation: the Gauss–Chebyshev nodes $\cos\frac{(2k-1)\pi}{2n}$
+  - table: HREF{Rational_multiples_of_pi}[Rational multiples of pi]
+    relation: the Gauss–Chebyshev weights $\pi/n$
+  - table: HREF{Lagrange_basis_polynomials_for_equally_spaced_nodes}[Lagrange basis polynomials for equally spaced nodes]
+    relation: the weights are the integrals of the Lagrange basis of the nodes; on equally spaced nodes that gives Newton–Cotes
+Links:
+  Wiki:
+    title: 'Wikipedia: Gauss–Legendre quadrature'
+    url: https://en.wikipedia.org/wiki/Gauss%E2%80%93Legendre_quadrature
+  Wiki-Gaussian:
+    title: 'Wikipedia: Gaussian quadrature'
+    url: https://en.wikipedia.org/wiki/Gaussian_quadrature
+  MathWorld:
+    title: 'MathWorld: Legendre-Gauss Quadrature'
+    url: https://mathworld.wolfram.com/Legendre-GaussQuadrature.html
+  DLMF:
+    title: 'DLMF 3.5(v): Gauss quadrature'
+    url: https://dlmf.nist.gov/3.5#v
+  OEIS-zeros:
+    title: 'OEIS A372267–A372276: the positive zeros of P_4, P_5, P_6, P_7'
+    url: https://oeis.org/A372267
+  OEIS-weights:
+    title: 'OEIS A382103–A382107, A382686–A382690: the matching weights (A382103 and A382104 are labelled the other way round: A382103 is the weight at the larger zero of P_4)'
+    url: https://oeis.org/A382103
+  OEIS-weight-polynomials:
+    title: 'OEIS A112734: polynomials whose roots are the Gauss–Legendre weights'
+    url: https://oeis.org/A112734
+References:
+  AS:
+    bib: >-
+      M. Abramowitz and I. A. Stegun, Handbook of Mathematical Functions,
+      Dover, 1972, §25.4.29 and Table 25.4.
+  issue11:
+    bib: >-
+      numberdb-data issue #11, "Roots of important families of orthogonal
+      polynomials", https://github.com/numberdb/numberdb-data/issues/11
+Tags:
+  - zero
+  - algebraic
+  - analysis
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: every rule with $n\leq 30$ is here, nodes and weights, both halves
+  rigour details: >-
+    $P_n$ is built exactly in $\mathbb{Q}[x]$; its roots are isolated by
+    Sage's real root isolation over the interval field, so each node is an
+    interval provably containing one root, carried on as an arb ball at 397
+    bits; $w_k$ is $2/((1-x_k^2)P_n'(x_k)^2)$ in ball arithmetic, and the
+    digits written are those the ball supports (the widest, a weight at
+    $n=30$, supports 110). Before a rule is written it must also satisfy the
+    second weight formula, the symmetry, $\sum w_k=2$, and exactness on
+    $x^m$ for $m\leq 2n-1$ with failure at $m=2n$. Outside the generator the
+    values were compared with the closed forms for $n\leq 5$, twenty OEIS
+    expansions to 100 digits, the OEIS A112734 weight polynomials for
+    $n\leq 8$, and Wikipedia's seven-point row, with the controls that must
+    fail failing.
+Display properties:
+  number-header: $x_k$ or $w_k$
