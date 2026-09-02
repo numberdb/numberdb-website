@@ -1,0 +1,163 @@
+# The table document for the secondary polynomials of the Legendre
+# polynomials, proposal 6 of agents/table-ideas/BATCH-2026-09-02.md. Created as
+# a draft through the API (X-Draft: yes) and filled by generate.py beside it;
+# publishing is a person's act on the site.
+Title: Secondary polynomials of the Legendre polynomials $q_n$
+Definition: >-
+  For $n\geq 0$ the secondary polynomial of the Legendre polynomial $P_n$ is
+  $q_n(x)=\int_{-1}^{1}\frac{P_n(t)-P_n(x)}{t-x}\,dt$ CITE{Wiki}, the
+  integral taken against the density $1$ on $[-1,1]$. It is a polynomial of
+  degree $n-1$ with rational coefficients, and $q_0=0$.
+Parameters:
+  n:
+    type: Z
+    display: $n$
+    constraints: $n\geq 0$
+Comments:
+  comment-legendre: >-
+    $P_n$ is the HREF{Legendre_polynomials}[Legendre polynomial] of degree
+    $n$ with $P_n(1)=1$, orthogonal on $[-1,1]$ for the density $\rho(t)=1$.
+    The quotient $(P_n(t)-P_n(x))/(t-x)$ is a polynomial in $t$ and $x$, so
+    $q_n$ is a combination of the moments $\int_{-1}^{1}t^i\,dt$ and is
+    rational; it has degree $n-1$ because $P_n$ has degree $n$.
+  comment-density: >-
+    CITE{Wiki} defines the secondary polynomials for "a density" and fixes
+    none. Taking $\rho=1$, the inner product the table of Legendre
+    polynomials states, gives $q_1=2$, the length of the interval; the
+    probability density $\frac12$ on $[-1,1]$ would halve every entry.
+    Under $\rho=1$ the values at the roots of $P_n$ are the Gauss–Legendre
+    weights, and $q_n$ is twice the $W_{n-1}$ of CITE{DLMF}.
+  comment-second-kind: >-
+    $q_n=2W_{n-1}$, where $W_{n-1}$ is the polynomial part of the Legendre
+    function of the second kind, $Q_n(x)=\frac12P_n(x)\ln\frac{1+x}{1-x}-W_{n-1}(x)$
+    CITE{DLMF}. Anyone computing $Q_n$ by hand from $Q_0=\operatorname{artanh}x$
+    and Bonnet's recurrence produces $W_{n-1}$, and $W_{n-1}/P_n$ is the
+    $n$-th convergent of Gauss's continued fraction for $\operatorname{artanh}$.
+  comment-weights: >-
+    At the roots $x_1<\cdots<x_n$ of $P_n$, $q_n(x_k)/P_n'(x_k)$ is the
+    weight $w_k$ of the $n$-point Gauss–Legendre quadrature rule, whose
+    nodes and weights are in
+    HREF{Nodes_and_weights_of_Gauss_Legendre_quadrature}[the table of Gauss–Legendre nodes and weights].
+    Every weight there for $n\leq 30$ was recomputed from the polynomials
+    here and agrees.
+  comment-other-families: >-
+    The same construction for the other classical families: for the
+    HREF{Chebyshev_polynomials_of_the_first_kind}[Chebyshev polynomials $T_n$]
+    with the density $(1-x^2)^{-1/2}$ it gives $\pi\,U_{n-1}$, with $U_{n-1}$
+    the HREF{Chebyshev_polynomials_of_the_second_kind}[Chebyshev polynomial of the second kind];
+    for the HREF{Hermite_polynomials_H}[Hermite polynomials $H_n$] with
+    $e^{-x^2}$ it gives $\sqrt{\pi}$ times a polynomial with integer
+    coefficients ($2$, $4x$, $8x^2-8$, $16x^3-40x$), so a table of those in
+    $\mathbb{Q}[x]$ must divide the density by $\sqrt\pi$ and say so; for the
+    HREF{Laguerre_polynomials}[Laguerre polynomials $L_n$] with $e^{-x}$ the
+    result is rational as it stands ($-1$, $\frac12x-\frac32$,
+    $-\frac16x^2+\frac43x-\frac{11}{6}$). None of those is tabulated here.
+  comment-orthogonal: >-
+    For $n\geq 1$ the $q_n$ are themselves orthogonal on $[-1,1]$, for the
+    secondary measure $d\mu=\dfrac{du}{\pi^2+\ln^2\frac{1+u}{1-u}}$ of the
+    density $1$ CITE{Wiki-measure} (given there on $[0,1]$ as
+    $1/(\pi^2+\ln^2\frac{x}{1-x})$), and $\int_{-1}^{1}q_n^2\,d\mu=\frac{2}{2n+1}=\int_{-1}^{1}P_n^2\,dt$.
+    Checked in ball arithmetic for every pair with $n\leq 50$.
+  comment-names: >-
+    Up to the index and a factor $2$ these are the associated polynomials
+    of order one, or numerator polynomials, of the Legendre family:
+    $q_{n+1}/2$ has degree $n$, starts at $1$ and satisfies Bonnet's
+    recurrence shifted by one step. They are not the associated Legendre
+    functions $P_n^m$, and not the Stieltjes polynomials of Gauss–Kronrod
+    quadrature.
+  comment-small: >-
+    $q_0=0$, $q_1=2$ and $q_2=3x$ identify nothing on their own; $3x$ is also
+    the HREF{Gegenbauer_polynomials}[Gegenbauer polynomial] $C_1^{(3/2)}$.
+    From $q_3=5x^2-\frac43$ on, the entries are distinctive.
+  comment-requested: >-
+    Asked for in CITE{issue93}, for every sequence of orthogonal
+    polynomials; this table is the Legendre one.
+Formulas:
+  formula-recurrence: >-
+    $q_0=0$, $q_1=2$, and $(n+1)\,q_{n+1}(x)=(2n+1)\,x\,q_n(x)-n\,q_{n-1}(x)$
+    for $n\geq 1$: Bonnet's recurrence for $P_n$ with the other pair of
+    starting values.
+  formula-sum: >-
+    $q_n(x)=2\sum_{k=1}^{n}\frac{1}{k}\,P_{k-1}(x)\,P_{n-k}(x)$ CITE{DLMF}.
+  formula-moments: >-
+    If $P_n(x)=\sum_{j=0}^{n}c_j x^j$ then
+    $q_n(x)=\sum_{j=1}^{n}c_j\sum_{i=0}^{j-1}m_i\,x^{j-1-i}$ with
+    $m_i=\int_{-1}^{1}t^i\,dt=\frac{1+(-1)^i}{i+1}$.
+  formula-second-kind: >-
+    $Q_n(x)=\frac12P_n(x)\ln\frac{1+x}{1-x}-\frac12q_n(x)$ for $-1<x<1$, and
+    $Q_n(x)=\frac12P_n(x)\ln\frac{x+1}{x-1}-\frac12q_n(x)$ for $x>1$, where
+    $Q_n$ is the Legendre function of the second kind CITE{DLMF}, CITE{AS}.
+  formula-pade: >-
+    $\frac{t^{n}\,q_n(1/t)}{2\,t^{n}\,P_n(1/t)}$ is the $[n-1/n]$ Padé
+    approximant of $\operatorname{artanh}t=\frac12\ln\frac{1+t}{1-t}$ at
+    $t=0$: $t^{n}P_n(1/t)\operatorname{artanh}t-\frac12t^{n}q_n(1/t)=O(t^{2n+1})$.
+  formula-values: >-
+    $q_n(1)=2H_n=2\bigl(1+\frac12+\cdots+\frac1n\bigr)$;
+    $q_n(-x)=(-1)^{n-1}q_n(x)$; $q_n(0)=(-1)^{(n-1)/2}\,\frac{2\,(n-1)!!}{n!!}$
+    for odd $n$ and $0$ for even $n$; the leading coefficient is
+    $\binom{2n}{n}/2^{n-1}$, twice that of $P_n$.
+  formula-weights: >-
+    At a root $x_k$ of $P_n$,
+    $\dfrac{q_n(x_k)}{P_n'(x_k)}=\dfrac{2}{(1-x_k^2)\,P_n'(x_k)^2}=w_k$,
+    the Gauss–Legendre weight.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x> = QQ[]
+      P = R(legendre_P(8, x))
+      m = lambda i: 2/(i + 1) if i % 2 == 0 else 0            # moments of the density 1 on [-1, 1]
+      q = sum(c * sum(m(i) * x^(j - 1 - i) for i in range(j)) for j, c in enumerate(P.list()))
+      q          # 6435/64*x^7 - 9867/64*x^5 + 4213/64*x^3 - 15159/2240*x
+Similar tables:
+  - table: HREF{Legendre_polynomials}[Legendre polynomials]
+    relation: the $P_n$ these are the secondary polynomials of, and the recurrence they share
+  - table: HREF{Nodes_and_weights_of_Gauss_Legendre_quadrature}[Nodes and weights of Gauss–Legendre quadrature]
+    relation: the weights are $q_n(x_k)/P_n'(x_k)$ at the nodes
+  - table: HREF{Chebyshev_polynomials_of_the_second_kind}[Chebyshev polynomials of the second kind]
+    relation: the same construction for $T_n$ gives $\pi\,U_{n-1}$
+Links:
+  Wiki:
+    title: 'Wikipedia: Secondary polynomials'
+    url: https://en.wikipedia.org/wiki/Secondary_polynomials
+  Wiki-measure:
+    title: 'Wikipedia: Secondary measure'
+    url: https://en.wikipedia.org/wiki/Secondary_measure
+  DLMF:
+    title: 'DLMF 14.7(i): Legendre function of the second kind, W_{n-1}'
+    url: https://dlmf.nist.gov/14.7#i
+  Wiki-Legendre-function:
+    title: 'Wikipedia: Legendre function (Legendre functions of the second kind)'
+    url: https://en.wikipedia.org/wiki/Legendre_function
+  MathWorld:
+    title: 'MathWorld: Legendre Function of the Second Kind'
+    url: https://mathworld.wolfram.com/LegendreFunctionoftheSecondKind.html
+References:
+  AS:
+    bib: >-
+      M. Abramowitz and I. A. Stegun, Handbook of Mathematical Functions,
+      Dover, 1972, §8.6.19.
+  issue93:
+    bib: >-
+      numberdb-data issue #93, "Secondary polynomials for each sequence of
+      orthogonal polynomials", https://github.com/numberdb/numberdb-data/issues/93
+Tags:
+  - polynomial
+  - orthogonal polynomials
+Data properties:
+  type: Q[]
+  rigour: exact
+  complete: 'no'
+  complete-note: every $n\leq 50$ is here, the range of the table of Legendre polynomials
+  rigour details: >-
+    An exact value -- a polynomial with rational coefficients -- so there is
+    no precision to choose. Each entry is built by the recurrence and, before
+    it is written, must equal the defining integral evaluated exactly from the
+    moments and the sum of CITE{DLMF}, and must have degree $n-1$, the parity
+    of $n-1$ and $q_n(1)=2H_n$. Outside the generator the same polynomials
+    were compared with a computation in plain Python fractions, with the
+    Legendre function of the second kind in ball arithmetic at rational
+    points, with the Padé property for $\operatorname{artanh}$, and with
+    every Gauss–Legendre weight for $n\leq 30$.
+Display properties:
+  number-header: $q_n(x)$
