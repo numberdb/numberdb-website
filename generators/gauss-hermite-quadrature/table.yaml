@@ -1,0 +1,194 @@
+# The table document for the Gauss-Hermite nodes and weights, proposal 2 of
+# agents/table-ideas/BATCH-2026-09-02.md. Created as a draft through the API
+# (X-Draft: yes) and filled by generate.py beside it; publishing is a person's
+# act on the site.
+Title: Nodes and weights of Gauss–Hermite quadrature
+Definition: >-
+  For $n\geq 1$ the Gauss–Hermite quadrature rule with $n$ points is the
+  unique rule $\int_{-\infty}^{\infty} f(x)\,e^{-x^2}\,dx \approx
+  \sum_{k=1}^{n} w_k f(x_k)$ that is exact for every polynomial $f$ of degree
+  at most $2n-1$ CITE{Wiki}. Listed are its nodes $x_1<\cdots<x_n$, the roots
+  of the Hermite polynomial $H_n$, and its weights $w_k$.
+Parameters:
+  n:
+    type: Z
+    title: number of nodes
+    display: $n$
+    constraints: $n\geq 1$
+  k:
+    type: Z
+    title: index of the node, in increasing order
+    display: $k$
+    constraints: $1\leq k\leq n$
+  expression:
+    type: Symbolic
+    title: node or weight
+    values:
+      x: $x_k$
+      w: $w_k$
+    show-in-parameter-list: 'no'
+Comments:
+  comment-nodes: >-
+    $H_n$ is the HREF{Hermite_polynomials_H}[Hermite polynomial in the
+    physicists' convention], $H_n(x)=(-1)^n e^{x^2}\frac{d^n}{dx^n}e^{-x^2}$,
+    orthogonal for the weight $e^{-x^2}$ on the real line. Its $n$ roots are
+    real and simple, and $x_1<\cdots<x_n$ is their increasing order. Placing
+    the nodes at these roots is what lets a rule with $n$ points reach degree
+    $2n-1$; any other $n$ points give at most $n-1$ in general.
+  comment-probabilists: >-
+    The same rule for the weight $e^{-x^2/2}$, whose orthogonal polynomials
+    are the HREF{Hermite_polynomials_He}[Hermite polynomials $He_n$ in the
+    probabilists' convention], has nodes $\sqrt{2}\,x_k$ and weights
+    $\sqrt{2}\,w_k$, and is not listed separately. For a random variable
+    $Z$ with the standard normal distribution the rule reads
+    $\mathbb{E}\,f(Z)\approx\frac{1}{\sqrt{\pi}}\sum_{k=1}^{n}w_k f(\sqrt{2}\,x_k)$,
+    which is how it is used to take expectations under a Gaussian.
+  comment-both-halves: >-
+    Every rule is symmetric, $x_{n+1-k}=-x_k$ and $w_{n+1-k}=w_k$, and both
+    halves are listed rather than the nonnegative one: a reader holding
+    $-1.2247448713\ldots$ finds it with its sign.
+  comment-exact-entries: >-
+    Every node is an algebraic number and every weight is $\sqrt{\pi}$ times
+    an algebraic number. The node $x=0$ of every rule of odd order is written
+    exactly; its weight $w_{(n+1)/2}=2^{n+1}n!\sqrt{\pi}/H_n'(0)^2$ is a
+    rational multiple of $\sqrt{\pi}$, given in the comment on the entry for
+    $n\leq 9$. The weight of the one-point rule is $\sqrt{\pi}=\Gamma(1/2)$
+    and the two weights of the two-point rule are $\sqrt{\pi}/2=\Gamma(3/2)$,
+    both in
+    HREF{Values_of_the_Gamma_function_at_rational_numbers}[the table of values of the Gamma function].
+  comment-closed-forms: >-
+    The rules with $n\leq 5$ have closed forms in square roots, given in the
+    comments on their entries, and the nodes $\pm 1/\sqrt{2}$ and
+    $\pm\sqrt{3/2}$ of $n=2,3$ are also in
+    HREF{Algebraic_numbers_of_degree_2}[the table of quadratic algebraic numbers].
+    The polynomials whose roots are the normalised weights $w_k/\sqrt{\pi}$
+    are OEIS A393904 CITE{OEIS-weight-polynomials}.
+  comment-size: >-
+    The nodes are unbounded, the largest growing like $\sqrt{2n}$: at $n=30$
+    it is $6.8633\ldots$, and the weight there, $2.9\cdot 10^{-21}$, is small
+    because $e^{-x^2}$ is. Every approximate entry carries $100$ significant
+    digits, so such a weight is written with an exponent.
+  comment-other-rules: >-
+    HREF{Nodes_and_weights_of_Gauss_Legendre_quadrature}[Gauss–Legendre quadrature]
+    is the same construction for the weight $1$ on $[-1,1]$. The
+    Gauss–Laguerre rule, for $e^{-x}$ on $[0,\infty)$, and the Gauss–Chebyshev
+    rule, whose nodes $\cos\frac{(2k-1)\pi}{2n}$ are in
+    HREF{Cos_pi_times_x_at_rational_numbers}[the table of $\cos(\pi x)$ at rational $x$],
+    are different tables.
+  comment-requested: >-
+    Asked for in CITE{issue11}, for the Hermite polynomials.
+Formulas:
+  formula-weights: >-
+    $w_k=\dfrac{2^{n-1}\,n!\,\sqrt{\pi}}{n^2\,H_{n-1}(x_k)^2}=\dfrac{2^{n+1}\,n!\,\sqrt{\pi}}{H_n'(x_k)^2}$
+    CITE{AS}, the two equal because $H_n'=2nH_{n-1}$. Also
+    $\dfrac{1}{w_k}=\sum_{j=0}^{n-1}\dfrac{H_j(x_k)^2}{2^j\,j!\,\sqrt{\pi}}$,
+    the Christoffel function at the node; both were computed for every entry
+    and agree.
+  formula-exactness: >-
+    $\sum_{k=1}^{n} w_k x_k^m=\int_{-\infty}^{\infty}x^m e^{-x^2}\,dx$, which
+    is $\Gamma\bigl(\frac{m+1}{2}\bigr)=\sqrt{\pi}\,\dfrac{(m-1)!!}{2^{m/2}}$
+    for even $m$ and $0$ for odd $m$, for $0\leq m\leq 2n-1$, and not for
+    $m=2n$. Checked in ball arithmetic on every rule here, the failure at
+    $m=2n$ included.
+  formula-symmetry: >-
+    $x_{n+1-k}=-x_k$, $w_{n+1-k}=w_k$, $w_k>0$ and $\sum_{k=1}^{n}w_k=\sqrt{\pi}$.
+  formula-central-weight: >-
+    For odd $n$, $x_{(n+1)/2}=0$ and
+    $w_{(n+1)/2}=\dfrac{2^{n+1}\,n!\,\sqrt{\pi}}{H_n'(0)^2}
+    =\dfrac{2^{n-1}\,n!\,\sqrt{\pi}}{n^2\,H_{n-1}(0)^2}$ with
+    $H_{n-1}(0)=(-1)^{(n-1)/2}\dfrac{(n-1)!}{((n-1)/2)!}$:
+    $\sqrt{\pi}$, $\frac{2}{3}\sqrt{\pi}$, $\frac{8}{15}\sqrt{\pi}$,
+    $\frac{16}{35}\sqrt{\pi}$, $\frac{128}{315}\sqrt{\pi}$ for $n=1,3,5,7,9$.
+  formula-probabilists: >-
+    For the weight $e^{-x^2/2}$ the nodes are $\sqrt{2}\,x_k$, the roots of
+    $He_n(x)=2^{-n/2}H_n(x/\sqrt{2})$, and the weights are $\sqrt{2}\,w_k$,
+    summing to $\sqrt{2\pi}$.
+  formula-normal: >-
+    For $Y$ normally distributed with mean $\mu$ and variance $\sigma^2$,
+    $\mathbb{E}\,f(Y)=\dfrac{1}{\sigma\sqrt{2\pi}}\int_{-\infty}^{\infty}
+    f(y)\,e^{-(y-\mu)^2/(2\sigma^2)}\,dy\approx\dfrac{1}{\sqrt{\pi}}
+    \sum_{k=1}^{n}w_k\,f\bigl(\sqrt{2}\,\sigma x_k+\mu\bigr)$ CITE{Wiki}.
+  formula-interlacing: >-
+    The nodes of the rules with $n$ and $n-1$ points interlace:
+    $x_k^{(n)}<x_k^{(n-1)}<x_{k+1}^{(n)}$ for $1\leq k\leq n-1$, as the
+    roots of consecutive orthogonal polynomials do.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x> = ZZ[]
+      p = R(hermite(8, x))
+      nodes = p.roots(RealIntervalField(400), multiplicities=False)   # x_1 = -2.93063742025724401922...
+      weights = [2^7*factorial(8)*sqrt(pi)/(64*R(hermite(7, x))(r)^2) for r in nodes]   # w_1 = 0.000199604072211367619...
+  program-numpy:
+    language: Python
+    code: |-
+      import numpy.polynomial.hermite as H
+      nodes, weights = H.hermgauss(8)      # double precision: -2.93063742, 1.99604072e-04
+Similar tables:
+  - table: HREF{Hermite_polynomials_H}[Hermite polynomials in physicist's convention]
+    relation: the nodes are the roots of $H_n$
+  - table: HREF{Hermite_polynomials_He}[Hermite polynomials in probabilist's convention]
+    relation: the rule for $e^{-x^2/2}$ has nodes $\sqrt{2}\,x_k$, the roots of $He_n$, and weights $\sqrt{2}\,w_k$
+  - table: HREF{Nodes_and_weights_of_Gauss_Legendre_quadrature}[Nodes and weights of Gauss–Legendre quadrature]
+    relation: the same construction for the weight $1$ on $[-1,1]$
+  - table: HREF{Values_of_the_Gamma_function_at_rational_numbers}[Values of the Gamma function at rational numbers]
+    relation: holds $\sqrt{\pi}=\Gamma(1/2)$ and $\sqrt{\pi}/2=\Gamma(3/2)$, the weights of $n=1,2$, and the moments $\Gamma(\frac{m+1}{2})$
+  - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
+    relation: holds the nodes $\pm 1/\sqrt{2}$ and $\pm\sqrt{3/2}$ of $n=2,3$
+Links:
+  Wiki:
+    title: 'Wikipedia: Gauss–Hermite quadrature'
+    url: https://en.wikipedia.org/wiki/Gauss%E2%80%93Hermite_quadrature
+  Wiki-Gaussian:
+    title: 'Wikipedia: Gaussian quadrature'
+    url: https://en.wikipedia.org/wiki/Gaussian_quadrature
+  MathWorld:
+    title: 'MathWorld: Hermite-Gauss Quadrature'
+    url: https://mathworld.wolfram.com/Hermite-GaussQuadrature.html
+  DLMF:
+    title: 'DLMF 3.5(v): Gauss quadrature, the Gauss–Hermite formula and Tables 3.5.10–3.5.13'
+    url: https://dlmf.nist.gov/3.5#v
+  OEIS-zeros:
+    title: 'OEIS A393353–A393374: the positive zeros of H_4, H_5, H_6, H_7 and the matching weights'
+    url: https://oeis.org/A393353
+  OEIS-weight-polynomials:
+    title: 'OEIS A393904: minimal polynomials of the normalised weights w_k/sqrt(pi)'
+    url: https://oeis.org/A393904
+  OEIS-A019708:
+    title: 'OEIS A019708: sqrt(pi)/6, the outer weights of the three-point rule'
+    url: https://oeis.org/A019708
+References:
+  AS:
+    bib: >-
+      M. Abramowitz and I. A. Stegun, Handbook of Mathematical Functions,
+      Dover, 1972, §25.4.46 and Table 25.10.
+  issue11:
+    bib: >-
+      numberdb-data issue #11, "Roots of important families of orthogonal
+      polynomials", https://github.com/numberdb/numberdb-data/issues/11
+Tags:
+  - zero
+  - analysis
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: every rule with $n\leq 30$ is here, nodes and weights, both halves
+  rigour details: >-
+    $H_n$ is built exactly in $\mathbb{Z}[x]$; its roots are isolated by
+    Sage's real root isolation over the interval field, so each node is an
+    interval provably containing one root, carried on as an arb ball at 397
+    bits; $w_k$ is $2^{n-1}n!\sqrt{\pi}/(n^2H_{n-1}(x_k)^2)$ in ball
+    arithmetic, $\sqrt{\pi}$ included, and the digits written are those the
+    ball supports (every entry supports more than 110). Before a rule is
+    written it must also satisfy the Christoffel formula for the weights, the
+    symmetry, $\sum w_k=\sqrt{\pi}$, the central-weight formula, and
+    exactness on $x^m$ for $m\leq 2n-1$ with failure at $m=2n$. Outside the
+    generator the values were compared with the closed forms for $n\leq 5$,
+    with the stored polynomials $H_n$ and $He_n$, with twenty-five OEIS
+    expansions to 100 digits, with the OEIS A393904 weight polynomials for
+    $n\leq 7$, and with DLMF Tables 3.5.10–3.5.13 ($n=5,10,15,20$), with the
+    controls that must fail failing.
+Display properties:
+  number-header: $x_k$ or $w_k$
