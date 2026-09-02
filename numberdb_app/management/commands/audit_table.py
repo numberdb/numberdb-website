@@ -36,6 +36,24 @@ COMMENT_PHRASES = ('note that', 'some authors', 'elsewhere they', 'listed '
                    'separately', 'which is why')
 
 
+def _entry_records(tree):
+	"""Every entry of a table, whatever shape its Numbers block has."""
+	numbers = tree.get('Numbers')
+
+	def walk(node):
+		if isinstance(node, dict):
+			if 'number' in node or 'numbers' in node or 'equals' in node:
+				yield node
+				return
+			for value in node.values():
+				yield from walk(value)
+		elif isinstance(node, list):
+			for value in node:
+				yield from walk(value)
+
+	return list(walk(numbers)) if numbers is not None else []
+
+
 def _bare_title(title):
 	"""A title without its LaTeX, for matching against prose."""
 	import re
@@ -318,6 +336,17 @@ class Command(BaseCommand):
 				texts.extend(('%s[%s]' % (name, key), value)
 				             for key, value in blob.items()
 				             if isinstance(value, str))
+
+		#And the comment on each entry, which is prose a reader meets more
+		#often than the sections: it sits under the value they came for. This
+		#read only the sections at first, so entry comments saying a value
+		#"identifies nothing" survived a cleanup that removed the same
+		#sentence from the sections above them.
+		for record in _entry_records(tree):
+			note = record.get('comment')
+			if isinstance(note, str) and note.strip():
+				where = 'entry %s' % (record.get('params') or '')
+				texts.append((where.strip(), note))
 
 		for where, text in texts:
 			lowered = text.lower()
