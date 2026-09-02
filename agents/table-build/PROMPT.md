@@ -161,16 +161,12 @@ section** -- the corpus holding the thing you are talking about is the most
 useful sentence in a comment, and the fourth link to it in the same paragraph
 is noise.
 
-**Look for the entry that identifies nothing.** A family can be distinctive
-and still contain one value that is not: the Hilbert class polynomial of
-Delta = -3 is `x`, because j vanishes there, and `x` already answers a search
-in ten other tables. One such entry is not a reason against the table -- it is
-the true value and a hole where the most famous case should be is worse -- but
-it is a reason to say so in its comment, so that a reader who arrives at it by
-searching sees immediately why the hit means nothing. Check the shortest and
-the most common-looking entries in your range before you fill, with
-`numberdb.search_number` or `/api/lookup`, and write the comment then rather
-than after somebody notices.
+**A comment states a fact.** Not how useful a search hit would be, not how
+distinctive the value is, not what a reader should conclude -- those are
+remarks about this website, and they read as apology. Where a value looks
+surprising, the fact is the explanation: "the value is $x$ because
+$j(\zeta_3)=0$" earns its place, and "this is the one entry that identifies
+nothing on its own" does not. Write the first and stop.
 
 **Entry comments are shown**, as a line under the value. Use one for a name a
 reader would recognise -- 35 of the 996 small graphs have one -- and for a

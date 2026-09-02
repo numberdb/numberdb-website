@@ -240,6 +240,13 @@ linking the same name four times in one comment is noise. First mention in a
 section, `HREF{Bernoulli_numbers}[the Bernoulli numbers]`; afterwards, plain
 text.
 
+**A comment states a fact about the mathematics.** How strong a search hit
+would be, how distinctive a value is, what a reader ought to conclude: those
+are remarks about the website, and a table full of them reads as apology.
+Where a value looks surprising the fact is the explanation -- "the value is
+$x$ because $j(\zeta_3)=0$" -- and the sentence after it, explaining that a
+search for $x$ therefore means little, is the one to leave out.
+
 **Define notation where you use it.** A comment saying the values are
 `U_n(x,-1)` is useless until something says what `U` is. If a symbol appears in
 a formula or a comment, its definition belongs in the same table.
