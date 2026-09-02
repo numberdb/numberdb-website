@@ -544,7 +544,7 @@ def table_context(table, preview=False):
 		return text.replace('<', '&lt;') if isinstance(text, str) else text
 
 	def render_text(text, line_breaks = True, escape = True):
-		'''
+		r'''
 		Parse text for 'CITE', 'HREF', and '\n', 
 		and replace accordingly.
 
