@@ -855,6 +855,42 @@ def table_context(table, preview=False):
 				}
 				sections.append(section)
 
+		#Rendered here for the first time. The section has been writable, and
+		#written, since the beginning -- six tables name related tables in it,
+		#with a sentence saying how they are related -- and no branch ever
+		#built it, so every one of those pointers was stored and shown to
+		#nobody. Three shapes are in the corpus: a list of {relation, table}
+		#records, a list of plain names, and a bare string.
+		current_job = 'parsing similar tables'
+		similar = data.get('Similar tables')
+		if isinstance(similar, str):
+			similar = [similar] if similar.strip() else []
+		if isinstance(similar, list) and len(similar) > 0:
+			unlabeled_list = []
+			for item in similar:
+				current_job = 'parsing a similar table'
+				if isinstance(item, dict):
+					named = str(item.get('table') or '').strip()
+					relation = str(item.get('relation') or '').strip()
+				elif isinstance(item, str):
+					named, relation = item.strip(), ''
+				else:
+					continue
+				if not named and not relation:
+					continue
+				text = render_text(named)
+				if relation:
+					#An em dash, as in the parameter list: the table is the
+					#subject and the relation is the gloss on it.
+					text += ' &mdash;&nbsp;&nbsp; %s' % (render_text(relation),)
+				unlabeled_list.append({'text': text})
+			if len(unlabeled_list) > 0:
+				section = {
+					'title': 'Similar tables',
+					'unlabeled_list': unlabeled_list,
+				}
+				sections.append(section)
+
 		data_type = None #Will be set to data['Data properties']['type'].
 
 		property_names = {
