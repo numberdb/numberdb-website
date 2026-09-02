@@ -205,3 +205,16 @@ class TheCampaignSequencesRunsAndStops(TestCase):
 		#and the campaign relies on that rather than parallelising.
 		body = ' '.join(script('agents/campaign.sh').split())
 		self.assertIn('One run at a time', body)
+
+	def test_the_campaign_moves_on_when_a_batch_is_finished(self):
+		#The first version looked for a batch file and found the newest one,
+		#which always exists once one does -- so the branch that proposes a
+		#new batch could never fire again, and the loop would ask an
+		#exhausted batch for another table until it ran out of turns.
+		body = script('agents/campaign.sh')
+		self.assertIn('git rev-parse HEAD', body)
+		self.assertIn('is finished; proposing the next batch', body)
+
+	def test_the_campaign_stops_if_stage_one_commits_nothing(self):
+		#Otherwise it would spin between two runs that each do nothing.
+		self.assertIn('committed nothing either', script('agents/campaign.sh'))
