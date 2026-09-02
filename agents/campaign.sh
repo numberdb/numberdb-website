@@ -31,18 +31,8 @@ batch_file() {
 	ls -t agents/table-ideas/BATCH-*.md 2>/dev/null | head -1
 }
 
-remaining_proposals() {
-	#Proposals in the newest batch that no generator directory answers yet.
-	local batch; batch=$(batch_file)
-	[ -n "$batch" ] || { echo 0; return; }
-	grep -c '^## [0-9]' "$batch" 2>/dev/null || echo 0
-}
-
-built_from() {
-	#How many of them have been built, counted by the drafts and tables whose
-	#generator sits in this repository. Crude on purpose: the exact accounting
-	#is in the batch file, which a person reads.
-	ls -d generators/*/ 2>/dev/null | wc -l
+propose_a_batch() {
+	agents/run.sh ideas "Propose a batch from the open 'table wanted' issues, screening every candidate, in an area the corpus does not already cover. Write it to agents/table-ideas/BATCH-$(date -u +%Y-%m-%dT%H%M).md and commit it."
 }
 
 say() { printf '\n=== %s\n' "$*"; }
@@ -57,15 +47,34 @@ while [ "$made" -lt "$builds" ]; do
 	batch=$(batch_file)
 	if [ -z "$batch" ]; then
 		say "no batch yet; proposing one"
-		agents/run.sh ideas "Propose a batch from the open 'table wanted' issues, screening every candidate. Write it to agents/table-ideas/BATCH-$(date -u +%Y-%m-%d).md and commit it." || exit $?
+		propose_a_batch || exit $?
 		continue
 	fi
 
 	say "next table from $(basename "$batch") (built $made so far)"
-	if ! agents/run.sh build "Build the highest-ranked proposal in $batch that no generator in generators/ answers yet. Say at the start which one you chose and why it is the next one. Follow the order of work in the prompt. Do not publish. If every proposal in that batch is built, say so and stop without building anything."; then
+	before=$(git rev-parse HEAD)
+	if ! agents/run.sh build "Build the highest-ranked proposal in $batch that no generator in generators/ answers yet. Say at the start which one you chose and why it is the next one. Follow the order of work in the prompt. Do not publish. If every proposal in that batch is already built, say so and stop without building anything, and do not commit."; then
 		status=$?
 		say "stopping: the build run exited $status"
 		exit "$status"
+	fi
+
+	#Did it build anything? Every build commits its generator, so an unmoved
+	#HEAD means the batch is finished. Asked this way rather than by counting
+	#proposals against directories, which needs a mapping between a heading
+	#and a folder name that nothing maintains.
+	#
+	#Without this the loop would ask the same exhausted batch for another
+	#table until it ran out of turns -- eight runs at nine dollars each,
+	#building nothing.
+	if [ "$(git rev-parse HEAD)" = "$before" ]; then
+		say "$(basename "$batch") is finished; proposing the next batch"
+		propose_a_batch || exit $?
+		if [ "$(git rev-parse HEAD)" = "$before" ]; then
+			say "stopping: the stage-one run committed nothing either"
+			exit 4
+		fi
+		continue
 	fi
 	made=$((made + 1))
 
