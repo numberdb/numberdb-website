@@ -111,5 +111,9 @@ def record_revision(table, revision, produced_by=''):
 	      table = getattr(table, 'tid', None),
 	      revision = getattr(revision, 'digest', None),
 	      author = author.get_username() if author is not None else 'anonymous',
-	      via = produced_by or 'web',
+	      #The revision's own field now, rather than a guess from produced_by
+	      #being non-empty -- which called an API write and a package write
+	      #the same thing, and a session edit with an assistant 'web' only
+	      #because nobody had filled produced_by in.
+	      via = getattr(revision, 'via', '') or produced_by or 'web',
 	      message = (getattr(revision, 'message', '') or '')[:200])

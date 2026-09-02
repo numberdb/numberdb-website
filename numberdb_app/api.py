@@ -705,6 +705,23 @@ def _produced_by(request, user):
 	return (named or 'api')[:100]
 
 
+def _via(request):
+	"""Which channel this write came through.
+
+	A different fact from `produced_by`: the same generator can be run from
+	the package on a laptop or pasted into the form on the site, and somebody
+	tracing an edit wants to know which. The package says so in a header; a
+	request without one reached the API some other way, which is worth
+	recording as exactly that rather than guessing.
+	"""
+	from .models import TableRevision
+
+	client = (request.headers.get('X-Numberdb-Client') or '').strip().lower()
+	if client.startswith('numberdb-python'):
+		return TableRevision.VIA_PACKAGE
+	return TableRevision.VIA_API
+
+
 @csrf_exempt
 @rate_limited
 @csrf_exempt
@@ -809,7 +826,7 @@ def write_table(request, tid):
 		outcome = commit_table(
 			table, without_managed_keys(tree),
 			author=user, base=base, strict=True,
-			produced_by=_produced_by(request, user),
+			produced_by=_produced_by(request, user), via=_via(request),
 			message=(request.headers.get('X-Edit-Message') or '')[:300])
 	except TooBig as big:
 		return JsonResponse(
@@ -941,7 +958,7 @@ def create_table(request):
 	try:
 		table = make_table(
 			tree, author=user,
-			produced_by=_produced_by(request, user),
+			produced_by=_produced_by(request, user), via=_via(request),
 			message=(request.headers.get('X-Edit-Message') or '')[:300],
 			published=not wants_draft, strict=True)
 		if offer_now and not table.published:
@@ -1131,7 +1148,7 @@ def _write_entries_locked(request, table, entries, user):
 	try:
 		outcome = commit_table(
 			table, tree, author=user, base=table.head_revision, strict=True,
-			produced_by=_produced_by(request, user), run=run,
+			produced_by=_produced_by(request, user), via=_via(request), run=run,
 			message=(request.headers.get('X-Edit-Message')
 			         or ('regenerated the entries' if mode != 'upsert'
 			             else 'added entries as they were computed'))[:300])
@@ -1439,7 +1456,7 @@ def write_file(request, tid, name):
 			outcome = commit_table(
 				table, tree, author=user,
 				base=table.head_revision, strict=True, run=run,
-				produced_by=_produced_by(request, user),
+				produced_by=_produced_by(request, user), via=_via(request),
 				files={name: content},
 				message=(request.headers.get('X-Edit-Message')
 				         or 'attached %s' % (name,))[:300])

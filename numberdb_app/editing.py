@@ -158,7 +158,7 @@ def dump_tree(tree):
 
 def commit_table(table, tree, author=None, message='', base=None,
                  produced_by='', allow_parameter_change=False, strict=False,
-                 files=None, run=''):
+                 files=None, run='', via='web'):
 	"""Put ``tree`` on ``table``'s history and return a :class:`CommitOutcome`.
 
 	``base`` is the revision the author started from. Passing None means "this
@@ -206,7 +206,7 @@ def commit_table(table, tree, author=None, message='', base=None,
 
 	if head is None:
 		return _write(table, tree, author, message, parent=None, base=None,
-		              produced_by=produced_by, breaches=breaches, files=files,
+		              produced_by=produced_by, via=via, breaches=breaches, files=files,
 		              problems=problems, run=run)
 
 	if base is None or base.pk == head.pk:
@@ -226,7 +226,7 @@ def commit_table(table, tree, author=None, message='', base=None,
 			              files)
 
 		return _write(table, tree, author, message, parent=head, base=head,
-		              produced_by=produced_by, breaches=breaches, files=files,
+		              produced_by=produced_by, via=via, breaches=breaches, files=files,
 		              problems=problems, run=run)
 
 	#Somebody committed while this edit was being written.
@@ -251,7 +251,7 @@ def commit_table(table, tree, author=None, message='', base=None,
 		                     problems=problems)
 
 	return _write(table, result.tree, author, message, parent=head, base=base,
-	              produced_by=produced_by, merged=True, breaches=breaches,
+	              produced_by=produced_by, via=via, merged=True, breaches=breaches,
 	              manifest=merged_files, problems=problems, run=run)
 
 
@@ -283,7 +283,7 @@ def _wanted_manifest(revision, files):
 
 def _write(table, tree, author, message, parent, base, produced_by,
            merged=False, breaches=(), files=None, manifest=None, problems=(),
-           run=''):
+           run='', via='web'):
 	from django.db import transaction
 
 	from .models import TableRevision
@@ -299,7 +299,7 @@ def _write(table, tree, author, message, parent, base, produced_by,
 	with transaction.atomic():
 		outcome = _write_inside(table, tree, author, message, parent, base,
 		                        produced_by, merged, breaches, files, manifest,
-		                        problems, run)
+		                        problems, run, via=via)
 
 	#Outside the transaction, so nothing is ever logged that was then rolled
 	#back -- a line describing a revision that does not exist is worse than no
@@ -310,7 +310,8 @@ def _write(table, tree, author, message, parent, base, produced_by,
 
 
 def _write_inside(table, tree, author, message, parent, base, produced_by,
-                  merged, breaches, files, manifest, problems=(), run=''):
+                  merged, breaches, files, manifest, problems=(), run='',
+                  via='web'):
 	from .models import TableRevision
 
 	revision = TableRevision.objects.create(
@@ -321,6 +322,7 @@ def _write_inside(table, tree, author, message, parent, base, produced_by,
 		author = author,
 		message = message,
 		produced_by = produced_by,
+		via = via,
 		run = run,
 	)
 	#Before head moves, so a revision is never briefly visible without the

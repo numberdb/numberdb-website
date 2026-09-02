@@ -42,5 +42,9 @@ def edit_with_person(table, tree, person, message, assistant=DEFAULT_ASSISTANT,
     from numberdb_app.editing import commit_table
 
     kwargs.setdefault('base', table.head_revision)
+    #A session edit is made where a person is: `web` is the channel, even when
+    #the typing happens through a shell, because the alternative reading --
+    #that this came from the API or the package -- would say nobody was there.
+    kwargs.setdefault('via', 'web')
     return commit_table(table, tree, author=person, message=message,
                         produced_by=producer(assistant), **kwargs)
