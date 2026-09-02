@@ -62,7 +62,10 @@ log="agents/runs/$started-$stage.log"
 # know -- and the preflight below tests the same path the run will use.
 export ALL_PROXY="${NUMBERDB_PROXY:-socks5h://127.0.0.1:1080}"
 export NUMBERDB_AGENT_RUN=1
-export NUMBERDB_ASSISTED_BY="assisted by $engine (numberdb agent run $started)"
+# The tool's name only. The client writes "<generator>, assisted by <this>",
+# so including the phrase here produced "assisted by assisted by claude", and
+# the field is capped at 100 characters so the doubling cost the run id.
+export NUMBERDB_ASSISTED_BY="$engine (agent run $started)"
 export NUMBERDB_KEY_FILE="$key_file"
 
 # A run that cannot reach what the prompt requires should stop now rather

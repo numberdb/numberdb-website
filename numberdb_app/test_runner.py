@@ -151,3 +151,11 @@ class ThePreflightStopsARunThatCannotWork(TestCase):
 		body = script('agents/sage.sh')
 		self.assertIn('--name', body)
 		self.assertIn('docker rm -f', body)
+
+	def test_the_assisted_by_variable_names_the_tool_only(self):
+		#The client writes "<generator>, assisted by <this>", so including the
+		#phrase here produced "assisted by assisted by claude" -- and the
+		#field is capped at 100 characters, so the doubling cost the run id.
+		body = script('agents/run.sh')
+		self.assertIn('NUMBERDB_ASSISTED_BY="$engine', body)
+		self.assertNotIn('NUMBERDB_ASSISTED_BY="assisted by', body)
