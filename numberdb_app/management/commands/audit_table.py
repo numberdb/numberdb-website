@@ -36,6 +36,20 @@ COMMENT_PHRASES = ('note that', 'some authors', 'elsewhere they', 'listed '
                    'separately', 'which is why')
 
 
+def _bare_title(title):
+	"""A title without its LaTeX, for matching against prose."""
+	import re
+
+	return ' '.join(re.sub(r'\$[^$]*\$', ' ', title).split()).strip(' ,.')
+
+
+#: Titles too common to look for in prose: they would match ordinary sentences.
+_GENERIC_TITLES = {
+	'integers', 'one', 'pi', 'rational numbers', 'algebraic numbers',
+	'mass ratios', 'hyperreal numbers', 'roots of unity',
+}
+
+
 class Command(BaseCommand):
 	help = 'Check a table for the mistakes that have been made before.'
 
@@ -104,6 +118,12 @@ class Command(BaseCommand):
 		#whole of T60 whose every entry carries one. The values were right, so
 		#no check that looked at values could have noticed.
 		for complaint in self._indexed_as_many_as_written(table, tree):
+			yield complaint
+
+		#Prose faults, each one found by a person reading a rendered page and
+		#none of them by any check. They are mechanical; they were simply not
+		#looked for.
+		for complaint in self._prose_faults(table, tree, urls, titles):
 			yield complaint
 
 		#References that go nowhere. A CITE may name a Link, a Reference, or a
@@ -266,6 +286,90 @@ class Command(BaseCommand):
 			       'build_number_table(only_table=...); if the gap stays, '
 			       'something is skipping them.'
 			       % (len(values), indexed, len(values) - indexed))
+
+	#: Sentences that say something about this website rather than about the
+	#: mathematics. A table full of them reads as apology, and four carried
+	#: one before anybody noticed.
+	EDITORIAL = (
+		'identifies nothing', 'identify nothing', 'weak evidence',
+		'tells the reader nothing', 'means nothing on its own',
+		'should not lead here', 'is not distinctive',
+	)
+
+	#: Pointing at a thing instead of naming it. The symbol is shorter than
+	#: the phrase pointing at it and stays right when the formula is edited.
+	POSITIONAL = (
+		'the first factor', 'the second factor', 'the former', 'the latter',
+		'the first one', 'the second one', 'as above', 'the latter two',
+	)
+
+	def _prose_faults(self, table, tree, urls, titles):
+		"""What a reader would notice and no other check does."""
+		import json
+		import re
+
+		sections = ('Definition', 'Comments', 'Formulas', 'Similar tables')
+		texts = []
+		for name in sections:
+			blob = tree.get(name)
+			if isinstance(blob, str):
+				texts.append((name, blob))
+			elif isinstance(blob, dict):
+				texts.extend(('%s[%s]' % (name, key), value)
+				             for key, value in blob.items()
+				             if isinstance(value, str))
+
+		for where, text in texts:
+			lowered = text.lower()
+			for phrase in self.EDITORIAL:
+				if phrase in lowered:
+					yield ('%s says %r. A comment states a fact about the '
+					       'mathematics; how good a search hit would be is a '
+					       'remark about this website' % (where, phrase))
+			for phrase in self.POSITIONAL:
+				if phrase in lowered:
+					yield ('%s says %r. Name the symbol instead: it is shorter '
+					       'than the phrase pointing at it, and it stays right '
+					       'when the formula is edited' % (where, phrase))
+
+		#A family the corpus holds, named in prose and not linked. Titles are
+		#matched without their LaTeX, and only the distinctive ones.
+		#
+		#`titles` maps a lowercased title to its table, so the slug and the
+		#name for matching both come off the object.
+		own = _bare_title(tree.get('Title') or '')
+		families = sorted(((other.url, _bare_title(other.title))
+		                   for other in titles.values()
+		                   if other.pk != table.pk),
+		                  key=lambda pair: -len(pair[1]))
+		for slug, name in families:
+			if len(name) < 9 or name.lower() in _GENERIC_TITLES:
+				continue
+			if name.lower() in own.lower() or own.lower() in name.lower():
+				continue
+			for where, text in texts:
+				if 'HREF{%s}' % slug in text:
+					continue
+				masked = re.sub(r'HREF\{[^}]*\}(\[[^\]]*\])?', ' ', text)
+				if re.search(r'(?<![\w-])%s(?![\w-])' % re.escape(name),
+				             masked, re.I):
+					yield ('%s names %s and does not link it: '
+					       'HREF{%s}[%s]' % (where, name, slug, name))
+					break
+
+		#A link sitting after the name instead of on it.
+		for where, text in texts:
+			by_slug = {other.url: _bare_title(other.title)
+			           for other in titles.values()}
+			for match in re.finditer(r'HREF\{([^}]*)\}(?!\[)', text):
+				name = by_slug.get(match.group(1))
+				if not name:
+					continue
+				head = text[:match.start()]
+				if re.search(r'%s\s*$' % re.escape(name), head, re.I):
+					yield ('%s writes "%s HREF{%s}" -- put the link on the '
+					       'name: HREF{%s}[%s]'
+					       % (where, name, match.group(1), match.group(1), name))
 
 	def _fetch(self, url):
 		import urllib.error
