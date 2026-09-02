@@ -94,3 +94,35 @@ class MarkupThisCodeWroteIsNotEscaped(TestCase):
 		})
 		self.assertIn('&lt;m', body)
 		self.assertIn('throughout', body)
+
+
+class ProgramCodeIsShownAsCode(TestCase):
+	"""`R.<x> = ZZ[]` is how you make a polynomial ring in Sage, and the page
+	rendered it as `R. = ZZ[]` -- the browser ate `<x>` as a tag, so a reader
+	who copied the program got a syntax error. Found by the critique stage."""
+
+	def setUp(self):
+		self.user = get_user_model().objects.create_user('coder')
+		self.table = Table.objects.create(
+			tid='T702', tid_int=702, url='t702', title='A table with code',
+			published=True)
+
+	def page(self, code):
+		commit_table(self.table, {
+			'Title': 'A table with code', 'Numbers': {'1': '2'},
+			'Programs': {'program-sage': {'code': code, 'language': 'Sage'}},
+		}, author=self.user, message='m', via='orm')
+		return Client().get('/T702', HTTP_HOST='numberdb.org').content.decode()
+
+	def test_a_polynomial_ring_survives(self):
+		body = self.page('R.<x> = ZZ[]\nprint(R)')
+		self.assertIn('R.&lt;x&gt; = ZZ[]', body)
+
+	def test_a_comparison_survives(self):
+		body = self.page('if n<m:\n    pass')
+		self.assertIn('n&lt;m', body)
+
+	def test_an_ampersand_is_not_double_escaped(self):
+		body = self.page('a = b & c')
+		self.assertIn('b &amp; c', body)
+		self.assertNotIn('&amp;amp;', body)

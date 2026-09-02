@@ -749,11 +749,20 @@ def table_context(table, preview=False):
 						code_language = highlight_language[language]
 					else:
 						code_language = highlight_language['default']
+					#Escaped, because this is code and the browser reads it as
+					#markup otherwise. `R.<x> = ZZ[]` -- the ordinary way to
+					#make a polynomial ring in Sage -- rendered as `R. = ZZ[]`,
+					#the `<x>` swallowed as a tag, so a reader who copied the
+					#program got a syntax error. `&` first, or the escapes
+					#introduced below would themselves be escaped.
+					code = (program['code']
+					        .replace('&', '&amp;')
+					        .replace('<', '&lt;')
+					        .replace('>', '&gt;'))
 					text = '%s<br><pre><code class="table-code language-%s">%s</code></pre>' % (
 						language,
 						code_language,
-						#render_text(program['code']),
-						program['code'],
+						code,
 					)
 					labeled_list.append({
 						'label_id': label,

@@ -238,3 +238,12 @@ class TheCampaignSequencesRunsAndStops(TestCase):
 		body = ' '.join(script('agents/table-critique/PROMPT.md').split())
 		self.assertIn('You will not change the table', body)
 		self.assertIn('Say when there is nothing', body)
+
+	def test_running_anything_on_the_server_takes_the_same_lock(self):
+		#sage.sh held a lock and nothing else did, so an agent run and a test
+		#suite could still collide -- which took the server down three times
+		#in a day, every time because I started the second one.
+		body = script('agents/on-server.sh')
+		self.assertIn('flock', body)
+		self.assertIn('numberdb-sage.lock', body)
+		self.assertIn('docker rm -f', body)
