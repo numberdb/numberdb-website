@@ -30,11 +30,16 @@ class SimilarTablesAreRendered(TestCase):
 		commit_table(self.table, tree, author=self.user, message='m', via='orm')
 		return Client().get('/T701', HTTP_HOST='numberdb.org').content.decode()
 
+	#The page ends with an HTML comment holding the whole document, so the
+	#words are on it whatever the view does. The heading is what a reader
+	#sees, so the heading is what these ask about.
+	HEADING = '<div class="table-section-title">Similar tables</div>'
+
 	def test_the_section_has_a_heading(self):
 		body = self.page({'Similar tables': [
 			{'table': 'HREF{Hermite_polynomials_H}[Hermite polynomials]',
 			 'relation': 'the nodes are its roots'}]})
-		self.assertIn('Similar tables', body)
+		self.assertIn(self.HEADING, body)
 
 	def test_the_named_table_becomes_a_link(self):
 		body = self.page({'Similar tables': [
@@ -71,16 +76,16 @@ class SimilarTablesAreRendered(TestCase):
 		#104 tables have nothing related to name, and an empty heading on all
 		#of them would be worse than the silence it replaces.
 		body = self.page({'Similar tables': ''})
-		self.assertNotIn('Similar tables', body)
+		self.assertNotIn(self.HEADING, body)
 
 	def test_a_missing_section_shows_no_heading(self):
 		body = self.page({})
-		self.assertNotIn('Similar tables', body)
+		self.assertNotIn(self.HEADING, body)
 
 	def test_an_empty_record_is_skipped(self):
 		body = self.page({'Similar tables': [
 			{'table': '', 'relation': ''},
 			{'table': 'HREF{Hermite_polynomials_H}[H]', 'relation': 'r'}]})
-		self.assertIn('Similar tables', body)
+		self.assertIn(self.HEADING, body)
 		#A record with neither half would otherwise be an empty row.
 		self.assertNotIn('<div class="table-entry"></div>', body)
