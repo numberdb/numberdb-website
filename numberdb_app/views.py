@@ -1268,11 +1268,18 @@ def preview(request, tid=None):
 	
 	#Second try to get yaml from table if tid is give:
 	if table_yaml == None:
-		print('tid:',tid)
 		if tid != None:
-			table = Table.objects.get(tid=tid)
-			if table != None:
-				table_yaml = table.data.raw_yaml
+			#The same guard the table page makes. Without it /preview/T133
+			#rendered a private draft to anybody who guessed its number,
+			#which is the one thing a draft is supposed not to do: it is
+			#invisible, answers no search, and is readable by its author and
+			#the board. This route loaded it by tid and asked nothing.
+			try:
+				table = Table.objects.get(tid=tid)
+			except Table.DoesNotExist:
+				raise Http404
+			_refuse_a_draft(request, table)
+			table_yaml = table.data.raw_yaml
 	
 	#Third option is: Set table_yaml to default:
 	if table_yaml == None:
