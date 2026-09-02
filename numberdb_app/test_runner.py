@@ -218,3 +218,23 @@ class TheCampaignSequencesRunsAndStops(TestCase):
 	def test_the_campaign_stops_if_stage_one_commits_nothing(self):
 		#Otherwise it would spin between two runs that each do nothing.
 		self.assertIn('committed nothing either', script('agents/campaign.sh'))
+
+	def test_a_campaign_can_be_stopped_between_tables(self):
+		#Twice a campaign was stopped by killing the process, and both times
+		#the build in flight died with it.
+		body = script('agents/campaign.sh')
+		self.assertIn('agents/campaign.stop', body)
+
+	def test_each_table_is_read_by_a_session_that_did_not_build_it(self):
+		body = script('agents/campaign.sh')
+		self.assertIn('agents/run.sh critique', body)
+
+	def test_a_failed_critique_does_not_stop_the_campaign(self):
+		#It reports and changes nothing, so its failure costs a missing file.
+		body = ' '.join(script('agents/campaign.sh').split())
+		self.assertIn('the critique run failed; the table stands', body)
+
+	def test_the_critique_prompt_forbids_editing(self):
+		body = ' '.join(script('agents/table-critique/PROMPT.md').split())
+		self.assertIn('You will not change the table', body)
+		self.assertIn('Say when there is nothing', body)
