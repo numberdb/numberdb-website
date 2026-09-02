@@ -516,3 +516,26 @@ class WhatEarnsATableIsFindabilityNotDerivability(TestCase):
 			body = ' '.join(handle.read().split())
 		self.assertIn('Name the thing, do not point at it', body)
 		self.assertIn('Link a table the first time it is named', body)
+
+	def test_the_build_prompt_separates_the_domain_from_the_range(self):
+		#Four tables in a row wrote the afternoon's range into the parameter,
+		#so extending one meant editing the definition of the family.
+		body = ' '.join(prompt('table-build').split())
+		self.assertIn("The parameters are the family's domain, not your range",
+		              body)
+		self.assertIn('complete-note', body)
+
+	def test_the_build_prompt_says_to_cite_what_is_declared(self):
+		body = ' '.join(prompt('table-build').split())
+		self.assertIn('Cite what you already declared', body)
+
+	def test_the_skill_carries_the_domain_rule(self):
+		import os as _os
+
+		path = _os.path.join(settings.BASE_DIR, '.claude', 'skills',
+		                     'numberdb-table', 'SKILL.md')
+		with open(path, encoding='utf-8') as handle:
+			body = ' '.join(handle.read().split())
+		self.assertIn('not how much of it you computed', body)
+		self.assertIn('Link the first mention of a thing to what explains it',
+		              body)
