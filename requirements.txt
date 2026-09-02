@@ -1,4 +1,11 @@
-django
+#Pinned below 6.1: that release requires PostgreSQL 15 and this server runs
+#14.20, so a fresh build produced an image whose first migration refused to
+#run. The pin was invisible until then -- `django` unpinned had been resolving
+#to 6.0.7 out of the build cache for months, and pruning the cache to free
+#disk space is what surfaced it.
+#
+#Lift it when the database is upgraded, not before.
+django<6.1
 django-allauth
 django-db
 requests
