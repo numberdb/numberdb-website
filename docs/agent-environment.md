@@ -512,3 +512,19 @@ data is wrong should be checked by a person before it is sent.
 
 Write the finding in `docs/external-bugs.md`, in the format at its head, and
 leave the reporting to a person with the batch.
+
+## The slug of a draft is not in any search result; read it with Django in the throwaway
+
+What happened: T133 links to T132, which is still a draft. The skill says
+to take a slug from `search_text(...).tables[0].url`, and a draft is in no
+search result and `numberdb.table('T132')` carries no address. Six lines
+through `agents/sage.sh` -- `sys.path.insert(0, '/app')`, `django.setup()`,
+`Table.objects.get(tid_int=132).url` -- printed it
+(`Nodes_and_weights_of_Gauss_Legendre_quadrature`), and `slug_for(title)`
+from `numberdb_app.editing` said in advance what the new table's own address
+would be, which the creation answer then confirmed. The creation answer's
+`url` is the other place it exists; save it.
+
+What to do instead: `/tmp/sp_slug.py` is the script; or have the `offer`
+and `create` answers written to a file the next script can read.
+`audit_table --links` then checks that a draft-to-draft link resolves.
