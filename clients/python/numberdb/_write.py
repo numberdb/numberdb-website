@@ -42,6 +42,7 @@ __all__ = ['Entries', 'to_text', 'submit_entries', 'check_writable', 'attach',
 DIGITS = 100
 
 
+
 def bits(digits: int, losing: int = 16) -> int:
     """Working precision, in bits, for ``digits`` correct decimal digits.
 
@@ -519,7 +520,16 @@ def submit_entries(tid: str, entries: Union[Entries, Sequence[Mapping[str, Any]]
     from . import _default_client
 
     client = client or _default_client
-    headers = {'X-Produced-By': produced_by or 'numberdb-python'}
+    #Says which channel this is, so the revision can record whether an edit
+    #came through the package, the API directly, or the site. `produced_by`
+    #answers a different question -- what made the values.
+    #
+    #Imported here rather than at module scope: `numberdb/__init__` imports
+    #this module, so naming the package at the top is a circular import.
+    from numberdb import __version__
+
+    headers = {'X-Produced-By': produced_by or 'numberdb-python',
+               'X-Numberdb-Client': 'numberdb-python/%s' % (__version__,)}
     if message:
         headers['X-Edit-Message'] = message
     if upsert:

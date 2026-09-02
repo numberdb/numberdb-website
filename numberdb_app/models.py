@@ -1555,6 +1555,29 @@ class TableRevision(models.Model):
 			return ''
 		return produced.split(marker, 1)[1].strip()
 
+	#: How this revision arrived. A different fact from `produced_by`, which
+	#: says what *made* the values: the same generator can be run from a
+	#: package on somebody's laptop or pasted into the form, and a reader
+	#: tracing an edit wants to know which. The activity log guessed it from
+	#: `produced_by` being non-empty, which called every API write and every
+	#: package write the same thing.
+	VIA_WEB = 'web'
+	VIA_API = 'api'
+	VIA_PACKAGE = 'package'
+	VIA_IMPORT = 'import'
+	VIA_CHOICES = [
+		(VIA_WEB, 'the site'),
+		(VIA_API, 'the API directly'),
+		(VIA_PACKAGE, 'the numberdb package'),
+		(VIA_IMPORT, 'an importer'),
+	]
+	via = models.CharField(
+		max_length = 16,
+		choices = VIA_CHOICES,
+		default = VIA_WEB,
+		blank = True,
+	)
+
 	#: What produced this, when it was not typed by a person: a model name, a
 	#: script, an importer. Reviewers triage generated edits differently, and
 	#: readers are entitled to know, which is why Wikipedia flags bot edits.
