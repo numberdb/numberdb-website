@@ -425,3 +425,50 @@ result, as the skill says.
 
 Evidence: 2026-09-02, this run; every slug in T131's document was read
 from `api/lookup` output and `audit_table` reported nothing.
+
+## `already_asked` is throttled after ten names, and this `gh` cannot search issues
+
+What happened: the 2026-09-02 ideas run called `already_asked` seventeen
+times in one script. The first ten answered; the rest returned `could not
+ask GitHub (HTTPError)`, because the unauthenticated GitHub search API
+allows ten requests a minute. The fallback of `gh search issues --repo ...`
+does not exist here: this machine's `gh` has only `gh search repos`.
+
+What to do instead: `gh issue list -R numberdb/numberdb-data --state closed
+--limit 300 --json number,title` and the same for `open` -- two authenticated
+calls that return the whole tracker (81 open, 44 closed today), which is
+what `already_asked` searches word by word. Read them. `already_asked` could
+go through `gh api search/issues` when `gh` is present, or sleep six
+seconds between calls; `run.sh` could fetch the two lists once, as the
+notes above already ask.
+
+Evidence: `/tmp/gq_20260902_screen.py` output, 2026-09-02; `gh search
+issues` prints `unknown flag: --repo` and lists `repos` as the only
+subcommand.
+
+## The anonymous lookup budget is per address and shared by every tool on the machine
+
+What happened: the corpus walk at the start of the run spent the 60
+anonymous requests an address gets per hour before the key was set, and
+forty minutes later `curl .../api/lookup` -- which the previous note
+recommends as the fast way to search -- was refused with `retry_after:
+2665`. The sign test that needed it went through the Python client with
+`NUMBERDB_API_KEY` set instead. `curl` can carry the key too, but only as a
+header on the command line or from a file, and neither is the "pipe it, never
+an argument" shape the run is held to; the client reading it from the
+environment is.
+
+What to do instead: set the key in the environment for the whole run before
+the first `numberdb.table()` call, and treat `curl` lookups as anonymous and
+metered.
+
+## `agents/sage.sh script | tail -N` throws away the half that matters
+
+What happened: the first check run was piped through `tail -150`; it had
+262 lines, and the Gauss-Legendre and Hermite sections -- the ones with the
+published-value comparisons -- were the ones lost, so the run had to be
+repeated. Same lesson as the pipeline note above, in a different shape.
+
+What to do instead: `agents/sage.sh script.py > /tmp/out.txt 2>&1`, then
+`grep -c PASS` and `grep FAIL | grep -v 'must fail'` on the file; the file
+is also what the batch quotes from.
