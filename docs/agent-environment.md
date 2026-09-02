@@ -502,3 +502,13 @@ the flat tree between markers and the digest) and `/tmp/gl_write_doc.py`
 (client only: the repository's `table.yaml` plus the stored `Numbers`,
 posted with the digest) are the pair; they cannot share a process because
 the site is also a package called `numberdb`.
+
+## A bug in somebody else's data goes in docs/external-bugs.md
+
+Runs turn these up regularly -- a swapped OEIS label, a value that disagrees
+with a published table. They are worth keeping and worth reporting, but not
+one at a time and not by the run that found them: a claim that somebody else's
+data is wrong should be checked by a person before it is sent.
+
+Write the finding in `docs/external-bugs.md`, in the format at its head, and
+leave the reporting to a person with the batch.
