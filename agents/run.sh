@@ -68,6 +68,20 @@ export NUMBERDB_AGENT_RUN=1
 export NUMBERDB_ASSISTED_BY="$engine (agent run $started)"
 export NUMBERDB_KEY_FILE="$key_file"
 
+# And the key itself, for reading.
+#
+# The client takes `NUMBERDB_API_KEY` from the environment; it was given only
+# the file's name, so every read went out anonymous -- 60 requests an hour
+# against a corpus of 131 tables. A run would spend the budget walking the
+# corpus, as the skill asks it to, and be refused ordinary lookups forty
+# minutes later. Three runs met that before it was traced, and one wrote it
+# down as the skill asking too much.
+#
+# In the environment rather than on a command line: `ps` shows arguments to
+# everyone, `/proc/<pid>/environ` only to the same user, and this is the shape
+# the client already reads. It never reaches a transcript.
+export NUMBERDB_API_KEY="$(cat "$key_file")"
+
 # A run that cannot reach what the prompt requires should stop now rather
 # than spend an hour and ten dollars finding out. Each of these is something
 # the prompt tells the run to do.

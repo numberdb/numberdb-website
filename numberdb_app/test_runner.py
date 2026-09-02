@@ -58,10 +58,15 @@ class TheRunnerFencesOffWhatItCannotUndo(TestCase):
 		self.assertIn('uncommitted changes', body)
 		self.assertIn('exit 3', body)
 
-	def test_the_runner_needs_a_key_file_rather_than_a_key(self):
+	def test_the_key_comes_from_a_file_and_not_from_the_caller(self):
+		#This asserted that NUMBERDB_API_KEY never appeared, which is what
+		#left every read anonymous: the client takes the key from the
+		#environment, and the runner was passing only the file's name. The
+		#property worth holding is that the value comes out of the file --
+		#never typed, never an argument, never in a transcript.
 		body = script('agents/run.sh')
 		self.assertIn('NUMBERDB_KEY_FILE', body)
-		self.assertNotIn('NUMBERDB_API_KEY=', body)
+		self.assertIn('NUMBERDB_API_KEY="$(cat "$key_file")"', body)
 
 	def test_the_briefing_forbids_publishing_and_deploying(self):
 		body = flat('agents/run.sh')
@@ -159,3 +164,17 @@ class ThePreflightStopsARunThatCannotWork(TestCase):
 		body = script('agents/run.sh')
 		self.assertIn('NUMBERDB_ASSISTED_BY="$engine', body)
 		self.assertNotIn('NUMBERDB_ASSISTED_BY="assisted by', body)
+
+	def test_the_key_is_in_the_environment_for_reading(self):
+		#The client takes NUMBERDB_API_KEY from the environment. Given only
+		#the file's name, every read went out anonymous at 60 an hour against
+		#a corpus of 131 tables, and a run spent its budget on the corpus walk
+		#the skill asks for.
+		body = script('agents/run.sh')
+		self.assertIn('export NUMBERDB_API_KEY="$(cat "$key_file")"', body)
+
+	def test_the_key_is_never_an_argument(self):
+		#`ps` shows arguments to every user on the machine.
+		body = script('agents/run.sh')
+		self.assertNotIn('--api-key', body)
+		self.assertNotIn('NUMBERDB_API_KEY=$(cat "$key_file") claude', body)
