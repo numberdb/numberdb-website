@@ -123,12 +123,10 @@ print('now  :', tree['Numbers']['-163']['comment'])
 if APPLY:
 	edit_with_person(
 		table, tree, User.objects.get(username='bmatschke'),
-		("the -163 comment had the sign of H(0) wrong and the direction of "
-		 "the 744 wrong: H(0)=+640320^3 and Ramanujan's constant exceeds it, "
-		 "rather than falling short; the same slip in Similar tables. Also "
-		 "take the run out of three formulas and two comments, put what was "
-		 "checked in the rigour details, and say why Cox's extra hypothesis "
-		 "is free"),
+		("the -163 comment had the sign of H(0) and the direction of "
+		 "the 744 both wrong: H(0)=+640320^3 and Ramanujan's constant "
+		 "exceeds it. The same slip in Similar tables. Also take the "
+		 "run out of three formulas and two comments"),
 		assistant='claude-opus-5', via='orm')
 	print('\ncommitted')
 else:

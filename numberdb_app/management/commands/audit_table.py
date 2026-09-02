@@ -61,6 +61,28 @@ def _bare_title(title):
 	return ' '.join(re.sub(r'\$[^$]*\$', ' ', title).split()).strip(' ,.')
 
 
+#: Prose that points down or up the page. The document has Comments before
+#: Formulas; the page draws Formulas first, so "the class number formula
+#: below" sends a reader past it to the Programs and back. Four tables said
+#: it, and the author writing YAML cannot see the order the site will use.
+#: Naming the thing, or citing its label -- which renders as its number --
+#: is right whichever way round the sections end up.
+_POINTING = re.compile(
+	r'\b(formulas?|comments?|programs?|sections?|identit(?:y|ies))'
+	r'\s+(?:below|above)\b', re.I)
+
+#: A formula that ends by saying somebody checked it. That is a fact about
+#: the build rather than about the mathematics, and in a Formulas section it
+#: reads as an apology: "we did not prove this, we looked". Its home is
+#: `rigour details`, which is the field for how the numbers were obtained.
+#: Seven formulas across four tables ended this way.
+_NARRATION = re.compile(
+	r'\b(?:checked\s+(?:on|against|in|here|for)\b[^.]*\bevery\b'
+	r'|(?:both\s+)?were\s+computed\s+for\s+every'
+	r'|computed\s+for\s+every\s+entry'
+	r'|was\s+recomputed\s+from)', re.I)
+
+
 #: Titles too common to look for in prose: they would match ordinary sentences.
 _GENERIC_TITLES = {
 	'integers', 'one', 'pi', 'rational numbers', 'algebraic numbers',
@@ -360,6 +382,17 @@ class Command(BaseCommand):
 					yield ('%s says %r. Name the symbol instead: it is shorter '
 					       'than the phrase pointing at it, and it stays right '
 					       'when the formula is edited' % (where, phrase))
+			for match in _POINTING.finditer(text):
+				yield ('%s says %r. The page draws Formulas before Comments, '
+				       'whatever order the document is written in, so a '
+				       'reader who looks where they are told may not find it. '
+				       'Name it, or CITE its label, which renders as its '
+				       'number' % (where, match.group(0)))
+			for match in _NARRATION.finditer(text):
+				yield ('%s says %r. That is a fact about the build, not about '
+				       'the mathematics; "rigour details" is the field for '
+				       'how the numbers were obtained' % (where,
+				                                          match.group(0)))
 
 		#A family the corpus holds, named in prose and not linked. Titles are
 		#matched without their LaTeX, and only the distinctive ones.
