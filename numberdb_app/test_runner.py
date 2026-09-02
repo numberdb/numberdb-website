@@ -178,3 +178,30 @@ class ThePreflightStopsARunThatCannotWork(TestCase):
 		body = script('agents/run.sh')
 		self.assertNotIn('--api-key', body)
 		self.assertNotIn('NUMBERDB_API_KEY=$(cat "$key_file") claude', body)
+
+
+class TheCampaignSequencesRunsAndStops(TestCase):
+	"""A loop that works through a batch. It decides nothing: which proposals
+	exist is stage one's business, and whether a table is any good is a
+	person's."""
+
+	def test_it_refuses_a_dirty_tree(self):
+		body = script('agents/campaign.sh')
+		self.assertIn('uncommitted changes', body)
+
+	def test_it_stops_when_a_build_fails(self):
+		#The next table would be built on top of whatever went wrong.
+		body = script('agents/campaign.sh')
+		self.assertIn('the build run exited', body)
+
+	def test_it_does_not_probe_the_ceiling_by_creating_a_draft(self):
+		#The obvious probe leaves a junk table behind on every pass.
+		body = script('agents/campaign.sh')
+		self.assertNotIn('ceiling probe', body)
+		self.assertIn('no probe here', ' '.join(body.split()))
+
+	def test_it_runs_one_at_a_time(self):
+		#Two Sage processes on this server take it down; sage.sh holds a lock
+		#and the campaign relies on that rather than parallelising.
+		body = ' '.join(script('agents/campaign.sh').split())
+		self.assertIn('One run at a time', body)

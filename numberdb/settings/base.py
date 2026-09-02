@@ -364,6 +364,12 @@ NUMBERDB_MAX_RELATIVE_WIDTH = float(
 # caller identifiable, which is the point of having one.
 #
 # Only /api/* is limited: the site's own pages never call it.
+#: How many unpublished drafts a vouched account may hold at once. See
+#: permissions.DRAFTS_IN_FLIGHT: the number bounds a runaway, and the right
+#: value depends on how the review queue is actually being worked.
+NUMBERDB_DRAFTS_IN_FLIGHT = int(
+    os.environ.get('NUMBERDB_DRAFTS_IN_FLIGHT', '15'))
+
 NUMBERDB_ANONYMOUS_RATE_LIMIT = int(
     os.environ.get('NUMBERDB_ANONYMOUS_RATE_LIMIT', '60'))
 NUMBERDB_IDENTIFIED_RATE_LIMIT = int(

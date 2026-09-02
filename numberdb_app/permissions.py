@@ -18,6 +18,7 @@ Django's administrative flag and grants access to the admin site. Somebody who
 can confirm a digit is not thereby somebody who should be able to delete a user.
 """
 
+from django.conf import settings
 from django.contrib.auth.models import Group
 
 __all__ = ['BOARD_GROUP', 'is_board_member', 'may_edit', 'board_group',
@@ -248,11 +249,21 @@ def may_write_through_api(user):
 #: attempt is refused, and what it leaves behind is a handful of drafts nobody
 #: can see, which somebody can clean up.
 #:
-#: Five, because more than five tables genuinely in progress at once is not a
-#: workflow anybody has, and a loop that has made five is already obviously
-#: wrong. Board members are not capped: they are the ones who publish, and a
-#: draft of theirs is one step from being a table.
-DRAFTS_IN_FLIGHT = 5
+#: Fifteen, and it was five. Five was written for the accident: a loop meaning
+#: to make three tables and making three hundred is obviously wrong by the
+#: sixth, and nobody has five tables genuinely in progress. What it could not
+#: tell apart from the accident is a campaign somebody meant to run -- a day
+#: of building through a screened batch, reviewed in a sitting rather than one
+#: at a time -- which is a real workflow and hits the same wall.
+#:
+#: So the number is larger and the property is unchanged: a runaway still
+#: stops, long before it has cost anything that is not a handful of invisible
+#: drafts and their numbers. It is a setting because the right value is a
+#: matter of how the review queue is actually being worked, which changes.
+#:
+#: Board members are not capped: they are the ones who publish, and a draft of
+#: theirs is one step from being a table.
+DRAFTS_IN_FLIGHT = getattr(settings, 'NUMBERDB_DRAFTS_IN_FLIGHT', 15)
 
 
 def draft_allowance(user):
