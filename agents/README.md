@@ -74,3 +74,22 @@ That rate should fall, but a run that finds something is not a wasted run.
 The transcripts are about a megabyte each and are gitignored; the ledger is
 not. Sessions accumulate elsewhere too: this machine's `~/.codex` holds 5.7 GB
 and `~/.claude/projects` 172 MB, neither of them written by this pipeline.
+
+## Who an edit is by
+
+Two accounts, and the distinction is about *who decided*, not about which
+software typed:
+
+* **zeta3** — the run was autonomous. `agents/run.sh` started it, nobody
+  watched it, and it stopped at a draft offered for review. Its revisions say
+  which generator produced them and which tool ran it:
+  `QuadraticRegulators (numberdb=0.1.0, ...), assisted by claude (agent run ...)`.
+
+* **bmatschke** — the edit was made in a session with a person, whatever tool
+  did the typing. Those revisions must still record the assistant, in
+  `produced_by`, beginning with the words `assisted by`: a reader is entitled
+  to know a program was involved, and `accepted_edit_count` reads that phrase.
+
+The failure to avoid is either one claiming the other's work. An autonomous
+run recorded as a person's hides that nobody read it; a person's session
+recorded as the bot's hides that somebody chose it.
