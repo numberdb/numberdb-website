@@ -89,7 +89,8 @@ class Command(BaseCommand):
 				commit_table(table, tree, author=None,
 				             message='imported from the data repository',
 				             produced_by='data-repository import',
-				             files=files)
+				             files=files,
+		via='import')
 				created += 1
 			else:
 				commit_table(table, yaml.load(head.content,
@@ -97,7 +98,8 @@ class Command(BaseCommand):
 				             author=None, base=head,
 				             message='attached the files from the data repository',
 				             produced_by='data-repository import',
-				             files=files)
+				             files=files,
+		via='import')
 
 			#As in import_table_history: what came from the repository is the
 			#published corpus, not a pile of unchecked proposals. Left

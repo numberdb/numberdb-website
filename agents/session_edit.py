@@ -42,9 +42,12 @@ def edit_with_person(table, tree, person, message, assistant=DEFAULT_ASSISTANT,
     from numberdb_app.editing import commit_table
 
     kwargs.setdefault('base', table.head_revision)
-    #A session edit is made where a person is: `web` is the channel, even when
-    #the typing happens through a shell, because the alternative reading --
-    #that this came from the API or the package -- would say nobody was there.
-    kwargs.setdefault('via', 'web')
+    #Never `web`: that means a person typed it into the browser, and an
+    #assistant cannot use a form. An edit made in a conversation reaches the
+    #database through the API -- and should reach it through the API in fact,
+    #not only in the record. Calling `commit_table` from a shell writes past
+    #the permission checks, the rate limits and the validation that every
+    #other writer goes through, which is a good reason to prefer a key.
+    kwargs.setdefault('via', 'api')
     return commit_table(table, tree, author=person, message=message,
                         produced_by=producer(assistant), **kwargs)

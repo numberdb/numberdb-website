@@ -292,7 +292,8 @@ class ThroughThePage(TestCase):
 			 'Keywords': 'analysis',
 			 'Data properties': {'type': 'R'},
 			 'Numbers': [{'params': {}, 'number': '3.14'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 		self.client.login(username='sections_user', password='pw-123456')
 
 	def url(self):

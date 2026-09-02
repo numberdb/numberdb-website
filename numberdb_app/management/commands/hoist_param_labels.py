@@ -76,7 +76,8 @@ class Command(BaseCommand):
 				             author=None, base=table.head_revision,
 				             produced_by='label hoist',
 				             message='moved the parameter labels onto the '
-				                     'parameter they describe')
+				                     'parameter they describe',
+		via='orm')
 
 		self.stdout.write(self.style.SUCCESS(
 			'%d table(s) %s, %d unaffected, %d left alone'

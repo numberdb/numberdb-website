@@ -164,13 +164,15 @@ class EditsAreLogged(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 
 		tree = tree_of(table.head_revision)
 		tree['Title'] = 'Activity probe, corrected'
 		with CapturedLog('numberdb.edit') as log:
 			commit_table(table, tree, author=self.user,
-			             message='fixed the title')
+			             message='fixed the title',
+		via='orm')
 
 		self.assertEqual(len(log.lines), 1)
 		line = log.lines[0]
@@ -190,13 +192,14 @@ class EditsAreLogged(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 
 		tree = tree_of(table.head_revision)
 		tree['Numbers'] = [{'params': {'n': '1'}, 'number': 'not a number'}]
 		with CapturedLog('numberdb.edit') as log:
 			try:
-				commit_table(table, tree, author=self.user, message='broken')
+				commit_table(table, tree, author=self.user, message='broken', via='orm')
 			except Exception:
 				pass
 		self.assertEqual(log.records, [])

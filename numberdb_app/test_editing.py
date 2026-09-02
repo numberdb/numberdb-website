@@ -22,7 +22,8 @@ class CommitBase(TestCase):
 
 	def commit(self, tree, who=None, base=None, message=''):
 		return commit_table(self.table, tree, author=who or self.alice,
-		                    message=message, base=base)
+		                    message=message, base=base,
+		via='orm')
 
 	def head_tree(self):
 		self.table.refresh_from_db()
@@ -71,11 +72,13 @@ class ConcurrentEdits(CommitBase):
 		#Bob commits first.
 		commit_table(self.table, {'Title': 'Probe',
 		                          'Numbers': {'5': '1.234', '17': '9.999'}},
-		             author=self.bob, base=self.start)
+		             author=self.bob, base=self.start,
+		via='orm')
 		#Alice was editing from the same start and only touched entry 5.
 		out = commit_table(self.table, {'Title': 'Probe',
 		                                'Numbers': {'5': '1.111', '17': '5.678'}},
-		                   author=self.alice, base=self.start)
+		                   author=self.alice, base=self.start,
+		via='orm')
 		self.assertTrue(out.merged)
 		#Both survive. This is the assertion the whole design is for.
 		self.assertEqual(self.head_tree()['Numbers'],
@@ -85,11 +88,13 @@ class ConcurrentEdits(CommitBase):
 		bob = commit_table(self.table,
 		                   {'Title': 'Probe',
 		                    'Numbers': {'5': '1.234', '17': '9.999'}},
-		                   author=self.bob, base=self.start).revision
+		                   author=self.bob, base=self.start,
+		via='orm').revision
 		out = commit_table(self.table,
 		                   {'Title': 'Probe',
 		                    'Numbers': {'5': '1.111', '17': '5.678'}},
-		                   author=self.alice, base=self.start)
+		                   author=self.alice, base=self.start,
+		via='orm')
 		#Parent is what it was applied to; base is what Alice actually saw.
 		self.assertEqual(out.revision.parent_id, bob.pk)
 		self.assertEqual(out.revision.base_id, self.start.pk)
@@ -98,14 +103,16 @@ class ConcurrentEdits(CommitBase):
 	def test_conflicting_edits_write_nothing(self):
 		commit_table(self.table,
 		             {'Title': 'Probe', 'Numbers': {'5': '2.000', '17': '5.678'}},
-		             author=self.bob, base=self.start)
+		             author=self.bob, base=self.start,
+		via='orm')
 		before = TableRevision.objects.count()
 		head_before = self.head_tree()
 		with self.assertRaises(StaleEdit) as caught:
 			commit_table(self.table,
 			             {'Title': 'Probe',
 			              'Numbers': {'5': '3.000', '17': '5.678'}},
-			             author=self.alice, base=self.start)
+			             author=self.alice, base=self.start,
+		via='orm')
 		#Nothing half-written, and Bob's version still stands.
 		self.assertEqual(TableRevision.objects.count(), before)
 		self.assertEqual(self.head_tree(), head_before)
@@ -114,10 +121,11 @@ class ConcurrentEdits(CommitBase):
 	def test_an_edit_already_contained_in_head_is_a_no_op(self):
 		"""Alice and Bob happened to make the same correction."""
 		same = {'Title': 'Probe', 'Numbers': {'5': '1.234', '17': '7.777'}}
-		commit_table(self.table, same, author=self.bob, base=self.start)
+		commit_table(self.table, same, author=self.bob, base=self.start, via='orm')
 		before = TableRevision.objects.count()
 		out = commit_table(self.table, same, author=self.alice,
-		                   base=self.start)
+		                   base=self.start,
+		via='orm')
 		self.assertTrue(out.unchanged)
 		self.assertEqual(TableRevision.objects.count(), before)
 
@@ -125,9 +133,11 @@ class ConcurrentEdits(CommitBase):
 		"""base=None on a table with history means 'apply to head'."""
 		commit_table(self.table,
 		             {'Title': 'Probe', 'Numbers': {'5': '1.234', '17': '9.999'}},
-		             author=self.bob, base=self.start)
+		             author=self.bob, base=self.start,
+		via='orm')
 		out = commit_table(self.table, {'Title': 'Overwritten'},
-		                   author=self.alice, base=None)
+		                   author=self.alice, base=None,
+		via='orm')
 		self.assertFalse(out.merged)
 		self.assertEqual(self.head_tree(), {'Title': 'Overwritten'})
 
@@ -159,7 +169,8 @@ class Attribution(CommitBase):
 	def test_a_machine_written_edit_says_so(self):
 		out = self.commit({'Title': 'A'})
 		out = commit_table(self.table, {'Title': 'B'}, author=self.alice,
-		                   base=out.revision, produced_by='some-model/1.0')
+		                   base=out.revision, produced_by='some-model/1.0',
+		via='orm')
 		self.assertEqual(out.revision.produced_by, 'some-model/1.0')
 		self.assertEqual(out.revision.author_id, self.alice.pk)
 
@@ -244,7 +255,8 @@ class EditView(TestCase):
 		             {'Title': 'View probe',
 		              'Parameters': {'n': {'type': 'Z'}},
 		              'Numbers': {'1': '2.0'}},
-		             author=self.chair, base=start)
+		             author=self.chair, base=start,
+		via='orm')
 		self.table.refresh_from_db()
 		theirs = self.table.head_revision
 
@@ -268,7 +280,8 @@ class EditView(TestCase):
 		              'Parameters': {'n': {'type': 'Z'}},
 		              'Numbers': {'1': '3.14159265358979323846',
 		                          '2': '9.99'}},
-		             author=self.chair, base=start)
+		             author=self.chair, base=start,
+		via='orm')
 
 		mine = doc.replace('3.14159265358979323846', '3.15')
 		r = self.client.post(self.url(), {'message': 'a change', 'table': mine,
@@ -375,7 +388,7 @@ class ReviewInterface(TestCase):
 	                   '2': '2.71828182845904523536'}}
 
 	def seed(self):
-		first = commit_table(self.table, self.DOC, author=self.author)
+		first = commit_table(self.table, self.DOC, author=self.author, via='orm')
 		self.table.refresh_from_db()
 		self.table.reviewed_at_revision = first.revision
 		self.table.save(update_fields=['reviewed_at_revision'])
@@ -384,7 +397,8 @@ class ReviewInterface(TestCase):
 		           'Numbers': {'1': '3.14159265358979323846',
 		                       '2': '1.41421356237309504880'}}
 		commit_table(self.table, changed, author=self.author,
-		             base=first.revision)
+		             base=first.revision,
+		via='orm')
 		self.table.refresh_from_db()
 
 	def test_the_queue_is_not_visible_to_ordinary_accounts(self):
@@ -440,7 +454,8 @@ class ReviewInterface(TestCase):
 		             {'Title': 'Review probe',
 		              'Parameters': {'n': {'type': 'Z'}},
 		              'Numbers': {'1': '9.99', '2': '1.41421356237309504880'}},
-		             author=self.author)
+		             author=self.author,
+		via='orm')
 		self.table.refresh_from_db()
 
 		r = self.client.post('/review/%s' % self.table.tid,
@@ -723,7 +738,7 @@ class ParametersAreFixedAfterCreation(TestCase):
 		self.doc = {'Title': 'Param probe',
 		            'Parameters': {'a': {'type': 'Z'}, 'b': {'type': 'Z'}},
 		            'Numbers': {'1': {'2': '3.14159265358979323846'}}}
-		commit_table(self.table, self.doc, author=self.user)
+		commit_table(self.table, self.doc, author=self.user, via='orm')
 		self.table.refresh_from_db()
 
 	def test_an_edit_that_reorders_them_is_refused(self):
@@ -732,7 +747,8 @@ class ParametersAreFixedAfterCreation(TestCase):
 		reordered['Parameters'] = {'b': {'type': 'Z'}, 'a': {'type': 'Z'}}
 		with self.assertRaises(ParametersChanged):
 			commit_table(self.table, reordered, author=self.user,
-			             base=self.table.head_revision)
+			             base=self.table.head_revision,
+		via='orm')
 
 	def test_an_edit_that_adds_one_is_refused(self):
 		from .editing import ParametersChanged
@@ -740,7 +756,8 @@ class ParametersAreFixedAfterCreation(TestCase):
 		added['Parameters'] = dict(self.doc['Parameters'], c={'type': 'Z'})
 		with self.assertRaises(ParametersChanged):
 			commit_table(self.table, added, author=self.user,
-			             base=self.table.head_revision)
+			             base=self.table.head_revision,
+		via='orm')
 
 	def test_nothing_is_written_when_it_is_refused(self):
 		from .editing import ParametersChanged
@@ -749,7 +766,8 @@ class ParametersAreFixedAfterCreation(TestCase):
 		reordered['Parameters'] = {'b': {'type': 'Z'}, 'a': {'type': 'Z'}}
 		with self.assertRaises(ParametersChanged):
 			commit_table(self.table, reordered, author=self.user,
-			             base=self.table.head_revision)
+			             base=self.table.head_revision,
+		via='orm')
 		self.assertEqual(TableRevision.objects.filter(table=self.table).count(),
 		                 before)
 
@@ -758,7 +776,8 @@ class ParametersAreFixedAfterCreation(TestCase):
 		           'Parameters': {'a': {'type': 'Z'}, 'b': {'type': 'Z'}},
 		           'Numbers': {'1': {'2': '2.71828182845904523536'}}}
 		out = commit_table(self.table, changed, author=self.user,
-		                   base=self.table.head_revision)
+		                   base=self.table.head_revision,
+		via='orm')
 		self.assertIsNotNone(out.revision)
 
 	def test_the_editor_explains_rather_than_failing(self):
@@ -777,7 +796,8 @@ class ParametersAreFixedAfterCreation(TestCase):
 		reordered['Parameters'] = {'b': {'type': 'Z'}, 'a': {'type': 'Z'}}
 		out = commit_table(self.table, reordered, author=self.user,
 		                   base=self.table.head_revision,
-		                   allow_parameter_change=True)
+		                   allow_parameter_change=True,
+		via='orm')
 		self.assertIsNotNone(out.revision)
 
 
@@ -796,7 +816,7 @@ class ANewTableNeedsANumberInIt(TestCase):
 	def make(self, tree):
 		from .editing import create_table
 
-		return create_table(tree, author=self.author)
+		return create_table(tree, author=self.author, via='orm')
 
 	def test_a_table_with_one_entry_is_fine(self):
 		table = self.make({'Title': 'Just the one',
@@ -845,7 +865,8 @@ class ATableEditedHereStaysFindableByItsWords(TestCase):
 			{'Title': 'Klein quartic invariants',
 			 'Definition': 'Invariants of the Klein quartic curve.',
 			 'Numbers': [{'params': {}, 'number': '168'}]},
-			author=self.author)
+			author=self.author,
+		via='orm')
 		_tags, tables = search_metadata('Klein quartic')
 		self.assertIn(table.tid, {t.tid for t in tables})
 
@@ -855,10 +876,12 @@ class ATableEditedHereStaysFindableByItsWords(TestCase):
 
 		table = create_table({'Title': 'Provisional name',
 		                      'Numbers': [{'params': {}, 'number': '1'}]},
-		                     author=self.author)
+		                     author=self.author,
+		via='orm')
 		commit_table(table, {'Title': 'Weierstrass gap sequence',
 		                     'Numbers': [{'params': {}, 'number': '1'}]},
-		             author=self.author, base=table.head_revision)
+		             author=self.author, base=table.head_revision,
+		via='orm')
 		_tags, tables = search_metadata('Weierstrass gap')
 		self.assertIn(table.tid, {t.tid for t in tables})
 
@@ -877,7 +900,8 @@ class RenamingATableChangesItEverywhere(TestCase):
 		self.author = User.objects.create_user('renamer')
 		self.table = create_table(
 			{'Title': 'Provisional name',
-			 'Numbers': [{'params': {}, 'number': '1'}]}, author=self.author)
+			 'Numbers': [{'params': {}, 'number': '1'}]}, author=self.author,
+		via='orm')
 
 	def rename(self, title):
 		from .editing import commit_table
@@ -885,7 +909,8 @@ class RenamingATableChangesItEverywhere(TestCase):
 		commit_table(self.table,
 		             {'Title': title,
 		              'Numbers': [{'params': {}, 'number': '1'}]},
-		             author=self.author, base=self.table.head_revision)
+		             author=self.author, base=self.table.head_revision,
+		via='orm')
 		self.table.refresh_from_db()
 
 	def test_the_row_follows_the_document(self):
@@ -917,7 +942,8 @@ class ShowChangesShowsOnlyChanges(TestCase):
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14159'},
 			             {'params': {'n': '2'}, 'number': '2.71828'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 
 	def show_changes(self, text):
 		self.client.login(username='crlf_probe', password='pw-123456')
@@ -992,7 +1018,8 @@ class TheTNumberIsTheCanonicalAddress(TestCase):
 		self.author = User.objects.create_user('canonical_probe')
 		self.table = create_table(
 			{'Title': 'Provisional name',
-			 'Numbers': [{'params': {}, 'number': '1'}]}, author=self.author)
+			 'Numbers': [{'params': {}, 'number': '1'}]}, author=self.author,
+		via='orm')
 
 	def canonical(self, path):
 		body = self.client.get(path).content.decode('utf8')
@@ -1016,7 +1043,8 @@ class TheTNumberIsTheCanonicalAddress(TestCase):
 
 		commit_table(self.table, {'Title': 'The real name',
 		                          'Numbers': [{'params': {}, 'number': '1'}]},
-		             author=self.author, base=self.table.head_revision)
+		             author=self.author, base=self.table.head_revision,
+		via='orm')
 		self.table.refresh_from_db()
 		self.assertEqual(self.table.url, 'Provisional_name')
 		self.assertTrue(

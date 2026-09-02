@@ -169,7 +169,8 @@ class ThroughCommitTable(TestCase):
 			self.table,
 			{'Title': 'Limit probe',
 			 'Numbers': {'1': '0.' + '1' * (limits.SOFT_DIGITS + 1)}},
-			author=self.alice)
+			author=self.alice,
+		via='orm')
 		self.assertIsNotNone(out.revision)
 		self.assertEqual([b.kind for b in out.breaches], ['digits'])
 		self.table.refresh_from_db()
@@ -181,7 +182,8 @@ class ThroughCommitTable(TestCase):
 				self.table,
 				{'Title': 'Limit probe',
 				 'Numbers': {'1': '0.' + '1' * (limits.HARD_DIGITS + 1)}},
-				author=self.alice)
+				author=self.alice,
+		via='orm')
 		self.table.refresh_from_db()
 		self.assertIsNone(self.table.head_revision)
 
@@ -191,7 +193,8 @@ class ThroughCommitTable(TestCase):
 				self.table,
 				{'Title': 'Limit probe',
 				 'Numbers': {'1': '0.' + '1' * (limits.SOFT_DIGITS + 1)}},
-				author=self.alice, strict=True)
+				author=self.alice, strict=True,
+		via='orm')
 		self.table.refresh_from_db()
 		self.assertIsNone(self.table.head_revision)
 

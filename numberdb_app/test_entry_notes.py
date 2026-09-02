@@ -22,7 +22,7 @@ def a_table(**sections):
 	                                      'number': '1.5',
 	                                      'comment': 'only an estimate'}])}
 	document.update(sections)
-	table = create_table(document)
+	table = create_table(document, via='orm')
 	publish_table(table)
 	return table
 

@@ -28,7 +28,8 @@ class Discussing(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
-			author=self.author)
+			author=self.author,
+		via='orm')
 		self.talker = User.objects.create_user('talker', password='pw-123456')
 
 	def url(self):
@@ -280,7 +281,8 @@ class Discussing(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '2.71'}]},
-			author=self.author)
+			author=self.author,
+		via='orm')
 
 		self.client.login(username='talker', password='pw-123456')
 		self.say('belongs to the first table')
@@ -311,7 +313,8 @@ class DraftsAreNotDiscussedInPublic(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
-			author=self.author, published=False)
+			author=self.author, published=False,
+		via='orm')
 
 	def test_a_stranger_cannot_read_it(self):
 		from django.contrib.auth.models import User
@@ -341,7 +344,8 @@ class WhatIsRecordedAboutDiscussion(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 		self.client.login(username='recorded_user', password='pw-123456')
 
 	def test_a_message_reaches_the_activity_log(self):

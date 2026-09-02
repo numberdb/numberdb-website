@@ -29,7 +29,8 @@ class WriteBase(TestCase):
 		self.chair.groups.add(Group.objects.get_or_create(name=BOARD_GROUP)[0])
 		commit_table(self.table, {'Title': 'API probe',
 		                          'Numbers': {'1': '3.14'}},
-		             author=self.chair)
+		             author=self.chair,
+		via='orm')
 		self.table.refresh_from_db()
 
 	def key_for(self, user):
@@ -72,7 +73,8 @@ class Trust(TestCase):
 			out = commit_table(self.table,
 			                   {'Title': 'Trust probe',
 			                    'Numbers': {'1': '3.%d' % (i,)}},
-			                   author=self.user, base=base)
+			                   author=self.user, base=base,
+		via='orm')
 			base = out.revision
 		self.table.refresh_from_db()
 		self.table.reviewed_at_revision = self.table.head_revision
@@ -85,7 +87,8 @@ class Trust(TestCase):
 		"""Otherwise trust is a measure of typing rather than of correctness."""
 		commit_table(self.table, {'Title': 'Trust probe',
 		                          'Numbers': {'1': '9.9'}},
-		             author=self.user)
+		             author=self.user,
+		via='orm')
 		self.assertEqual(accepted_edit_count(self.user), 0)
 
 	def test_reviewed_edits_count(self):
@@ -209,7 +212,8 @@ class ConcurrencyThroughTheApi(WriteBase):
 		first = self.table.head_revision
 		commit_table(self.table, {'Title': 'API probe',
 		                          'Numbers': {'1': '3.14', '2': '9.9'}},
-		             author=self.chair, base=first)
+		             author=self.chair, base=first,
+		via='orm')
 		r = self.send(yaml.dump({'Title': 'API probe',
 		                         'Numbers': {'1': '3.14', '2': '8.8'}},
 		                        sort_keys=False),
@@ -227,7 +231,8 @@ class ConcurrencyThroughTheApi(WriteBase):
 		first = self.table.head_revision
 		commit_table(self.table, {'Title': 'API probe',
 		                          'Numbers': {'1': '3.14', '2': '9.9'}},
-		             author=self.chair, base=first)
+		             author=self.chair, base=first,
+		via='orm')
 		r = self.send(yaml.dump({'Title': 'API probe',
 		                         'Numbers': {'1': '7.77'}}, sort_keys=False),
 		              token=self.key_for(self.chair),
@@ -264,7 +269,8 @@ class LimitsAreEnforcedNotWarned(WriteBase):
 		out = commit_table(self.table,
 		                   {'Title': 'API probe',
 		                    'Numbers': {'1': '0.' + '1' * (limits.SOFT_DIGITS + 1)}},
-		                   author=self.chair, base=self.table.head_revision)
+		                   author=self.chair, base=self.table.head_revision,
+		via='orm')
 		self.assertIsNotNone(out.revision)
 		self.assertEqual([b.kind for b in out.breaches], ['digits'])
 
@@ -326,7 +332,8 @@ class EntriesOnly(WriteBase):
 			'References': {'reference-1': 'CITE{Someone}'},
 			'Parameters': {'n': {'type': 'Z'}},
 			'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}],
-		}, author=self.chair, base=self.table.head_revision)
+		}, author=self.chair, base=self.table.head_revision,
+		via='orm')
 		self.table.refresh_from_db()
 
 	def post(self, body, token=None, tid=None):
@@ -422,7 +429,8 @@ class SendingEntriesOneAtATime(WriteBase):
 			'Title': 'API probe',
 			'Parameters': {'n': {'type': 'Z'}},
 			'Numbers': [{'params': {'n': '1'}, 'number': '1.1'}],
-		}, author=self.chair, base=self.table.head_revision)
+		}, author=self.chair, base=self.table.head_revision,
+		via='orm')
 		self.table.refresh_from_db()
 		self.token = self.key_for(self.chair)
 
@@ -595,7 +603,8 @@ class ClaimingATableForARun(WriteBase):
 		outcome = commit_table(
 			self.table, {'Title': 'API probe', 'Numbers': [
 				{'params': {}, 'number': '7.7'}]},
-			author=self.newcomer, base=self.table.head_revision)
+			author=self.newcomer, base=self.table.head_revision,
+		via='orm')
 		self.assertIsNotNone(outcome.revision)
 
 

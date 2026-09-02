@@ -113,7 +113,8 @@ class DeletingAnAccount(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 		self.client.login(username='leaving_user', password='pw-123456')
 
 	def delete(self):
@@ -208,7 +209,8 @@ class ExportingAnAccount(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 		self.client.login(username='exporting_user', password='pw-123456')
 
 	def export(self):

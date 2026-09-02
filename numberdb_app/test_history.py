@@ -27,7 +27,8 @@ class RestoreBase(TestCase):
 
 	def commit(self, tree, who=None, base=None, message=''):
 		return commit_table(self.table, tree, author=who or self.alice,
-		                    message=message, base=base).revision
+		                    message=message, base=base,
+		via='orm').revision
 
 	def head_tree(self):
 		self.table.refresh_from_db()
@@ -96,7 +97,8 @@ class RestoringPastAParameterChange(RestoreBase):
 		              'Parameters': {'m': {'type': 'Z'}, 'k': {'type': 'Z'}},
 		              'Numbers': {'1': {'2': '3.14'}}},
 		             author=self.alice, base=first,
-		             allow_parameter_change=True)
+		             allow_parameter_change=True,
+		via='orm')
 		restore_revision(self.table, first, author=self.alice)
 		self.assertEqual(list(self.head_tree()['Parameters']), ['n'])
 
@@ -200,7 +202,8 @@ class RestoreThroughTheView(RestoreBase):
 		other = Table.objects.create(tid='T922', tid_int=922, title='Other',
 		                             url='Other922')
 		theirs = commit_table(other, {'Title': 'Other', 'Numbers': {'1': '9'}},
-		                      author=self.alice).revision
+		                      author=self.alice,
+		via='orm').revision
 		self.client.login(username='alice_h', password='pw-123456')
 		self.client.post(self.url(), {'restore': theirs.pk})
 		self.assertEqual(self.head_numbers(), {'1': '2.71828'})
@@ -255,11 +258,13 @@ class FilesBelongToARevision(RestoreBase):
 		self.first = commit_table(
 			self.table, {'Title': 'H', 'Numbers': {'1': '3.14'}},
 			author=self.alice,
-			files={'generate.sage': 'v1', 'notes.txt': 'unchanged'}).revision
+			files={'generate.sage': 'v1', 'notes.txt': 'unchanged'},
+		via='orm').revision
 		self.second = commit_table(
 			self.table, {'Title': 'H', 'Numbers': {'1': '3.15'}},
 			author=self.alice, base=self.first,
-			files={'generate.sage': 'v2'}).revision
+			files={'generate.sage': 'v2'},
+		via='orm').revision
 
 	def files_at(self, revision):
 		from .views import _files_with_history
@@ -298,7 +303,8 @@ class FilesBelongToARevision(RestoreBase):
 	def test_a_file_carried_unchanged_has_one_version(self):
 		"""Fifty manifests, one version. Listing the fifty would bury it."""
 		commit_table(self.table, {'Title': 'H', 'Numbers': {'1': '3.16'}},
-		             author=self.alice, base=self.second)
+		             author=self.alice, base=self.second,
+		via='orm')
 		self.table.refresh_from_db()
 		shown = self.files_at(self.table.head_revision)
 		self.assertEqual(shown['notes.txt']['version_count'], 1)
@@ -361,13 +367,15 @@ class WhereAnEntryCameFrom(RestoreBase):
 			{'Title': 'H', 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '1.1'},
 			             {'params': {'n': '2'}, 'number': '2.2'}]},
-			author=self.alice).revision
+			author=self.alice,
+		via='orm').revision
 		self.second = commit_table(
 			self.table,
 			{'Title': 'H', 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '1.1'},
 			             {'params': {'n': '2'}, 'number': '9.9'}]},
-			author=self.chair, base=self.first).revision
+			author=self.chair, base=self.first,
+		via='orm').revision
 
 	def blame(self):
 		from .views import entry_blame
@@ -395,7 +403,8 @@ class WhereAnEntryCameFrom(RestoreBase):
 			             {'params': {'n': '2'}, 'number': '9.9'},
 			             {'params': {'n': '3'}, 'number': '3.3'}]},
 			author=None, base=self.second, produced_by='zeta-generator',
-			run='run-77')
+			run='run-77',
+		via='orm')
 		body = self.blame().content.decode('utf8')
 		self.assertIn('zeta-generator', body)
 		self.assertIn('run-77', body)
@@ -421,7 +430,8 @@ class TwoRunsAtOnce(RestoreBase):
 		self.entries = [{'params': {'n': '0'}, 'number': '0.5'}]
 		commit_table(self.table,
 		             {'Title': 'H', 'Parameters': {'n': {'type': 'Z'}},
-		              'Numbers': self.entries}, author=self.alice)
+		              'Numbers': self.entries}, author=self.alice,
+		via='orm')
 		for step in range(1, 7):
 			who, run = ((self.alice, 'alice-run') if step % 2
 			            else (self.chair, 'chair-run'))
@@ -431,7 +441,8 @@ class TwoRunsAtOnce(RestoreBase):
 			commit_table(self.table,
 			             {'Title': 'H', 'Parameters': {'n': {'type': 'Z'}},
 			              'Numbers': self.entries},
-			             author=who, base=self.table.head_revision, run=run)
+			             author=who, base=self.table.head_revision, run=run,
+		via='orm')
 
 	def test_interleaving_defeats_amending(self):
 		"""Recorded so the cost is visible rather than assumed away."""

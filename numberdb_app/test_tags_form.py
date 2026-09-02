@@ -23,7 +23,8 @@ class AddingATag(TestCase):
 			 'Tags': ['ring', 'Abelian group'],
 			 'Data properties': {'type': 'R'},
 			 'Numbers': [{'params': {}, 'number': '3.14'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 		self.client.login(username='tagger', password='pw-123456')
 
 	def tags(self):
@@ -131,7 +132,8 @@ class TagsBecomeRealTags(TestCase):
 			 'Tags': ['ring', 'Abelian group'],
 			 'Data properties': {'type': 'R'},
 			 'Numbers': [{'params': {}, 'number': '3.14'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 		self.client.login(username='tag_syncer', password='pw-123456')
 
 	def save(self, tags):
@@ -139,7 +141,7 @@ class TagsBecomeRealTags(TestCase):
 
 		tree = dict(tree_of(self.table.head_revision))
 		tree['Tags'] = tags
-		commit_table(self.table, tree, author=self.user, message='tags')
+		commit_table(self.table, tree, author=self.user, message='tags', via='orm')
 		self.table.refresh_from_db()
 
 	def names(self):

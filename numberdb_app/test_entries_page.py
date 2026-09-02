@@ -28,7 +28,8 @@ class EntriesPage(TestCase):
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': str(n)}, 'number': '3.1%d' % (n,)}
 			             for n in range(1, 6)]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 		self.client.login(username='entries_user', password='pw-123456')
 
 	def url(self, extra=''):
@@ -182,7 +183,8 @@ class EntriesPage(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
-			author=self.user, published=False)
+			author=self.user, published=False,
+		via='orm')
 
 		body = self.client.get('/edit/%s?form=entries'
 		                       % (draft.tid,)).content.decode()
@@ -242,7 +244,8 @@ class EveryEditSaysWhatChanged(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.11'}]},
-			author=self.user)
+			author=self.user,
+		via='orm')
 		self.client.login(username='messenger', password='pw-123456')
 
 	def save(self, message):

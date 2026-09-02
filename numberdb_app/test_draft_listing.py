@@ -23,7 +23,8 @@ def a_table(title, author, published=False):
 		 'Data properties': {'type': 'Z[]'},
 		 'Parameters': {'n': {'type': 'Z'}},
 		 'Numbers': [{'params': {'n': '1'}, 'number': '1'}]},
-		author=author, published=published)
+		author=author, published=published,
+		via='orm')
 
 
 class TheDraftsListing(TestCase):
@@ -423,7 +424,8 @@ class OfferingADraftForReview(TestCase):
 			{'Title': 'Nothing in it yet',
 			 'Data properties': {'type': 'Z[]'},
 			 'Parameters': {'n': {'type': 'Z'}}},
-			author=self.author, published=False)
+			author=self.author, published=False,
+		via='orm')
 		self.client.force_login(self.author)
 		self.client.post('/drafts/%s/offer' % (empty.tid,), {'ready': 'yes'})
 		empty.refresh_from_db()

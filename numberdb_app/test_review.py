@@ -123,7 +123,8 @@ class UnreviewedParams(TestCase):
 
 	def commit(self, tree, base=None):
 		return commit_table(self.table, tree, author=self.user,
-		                    base=base).revision
+		                    base=base,
+		via='orm').revision
 
 	def test_a_table_never_edited_here_is_treated_as_reviewed(self):
 		"""The imported corpus arrived through pull requests."""
@@ -231,14 +232,16 @@ class TheGateBites(TestCase):
 			}
 
 		first = commit_table(self.table, document('2.71828182845904523536'),
-		                     author=User.objects.create(username='gate_probe'))
+		                     author=User.objects.create(username='gate_probe'),
+		via='orm')
 		self.table.reviewed_at_revision = first.revision
 		self.table.save(update_fields=['reviewed_at_revision'])
 		self.table.refresh_from_db()
 		self.assertEqual(Number.objects.filter(table=self.table).count(), 2)
 
 		commit_table(self.table, document('1.41421356237309504880'),
-		             base=first.revision)
+		             base=first.revision,
+		via='orm')
 		self.table.refresh_from_db()
 
 		rows = {n.param_str(): n for n in Number.objects.filter(table=self.table)}
@@ -275,7 +278,8 @@ class ImportedContentIsNotAProposal(TestCase):
 
 		commit_table(self.table, {'Title': 'Import probe',
 		                          'Parameters': {'n': {'type': 'R'}},
-		                          'Numbers': {'1': '5.5'}}, author=None)
+		                          'Numbers': {'1': '5.5'}}, author=None,
+		via='orm')
 		self.table.refresh_from_db()
 		self.table.reviewed_at_revision = self.table.head_revision
 		self.table.save(update_fields=['reviewed_at_revision'])
@@ -291,7 +295,8 @@ class ImportedContentIsNotAProposal(TestCase):
 
 		commit_table(self.table, {'Title': 'Import probe',
 		                          'Parameters': {'n': {'type': 'R'}},
-		                          'Numbers': {'1': '5.5'}}, author=None)
+		                          'Numbers': {'1': '5.5'}}, author=None,
+		via='orm')
 		self.table.refresh_from_db()
 		sync_review_flags(self.table)
 		self.assertGreater(
@@ -448,7 +453,8 @@ class TheQueueIsCheapToLoad(TestCase):
 			              'Data properties': {'type': 'R'},
 			              'Parameters': {'n': {'type': 'Z'}},
 			              'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}]},
-			             author=self.chair)
+			             author=self.chair,
+		via='orm')
 			for n in range(6)]
 		self.client.force_login(self.chair)
 
@@ -472,7 +478,8 @@ class TheQueueIsCheapToLoad(TestCase):
 		tree = dict(tree_of(table.head_revision))
 		tree['Numbers'] = [{'params': {'n': '1'}, 'number': '3.15'}]
 		commit_table(table, tree, author=self.chair, base=table.head_revision,
-		             message='changed a digit')
+		             message='changed a digit',
+		via='orm')
 
 		body = self.client.get('/review').content.decode()
 		self.assertIn(table.title, body)
@@ -491,7 +498,8 @@ class TheQueueIsCheapToLoad(TestCase):
 		tree['Data properties'] = dict(tree['Data properties'],
 		                               rigour='proven')
 		commit_table(table, tree, author=self.chair, base=table.head_revision,
-		             message='labelled')
+		             message='labelled',
+		via='orm')
 
 		body = self.client.get('/review').content.decode()
 		self.assertNotIn(table.title, body)

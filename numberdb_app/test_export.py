@@ -34,7 +34,8 @@ class ExportBase(TestCase):
 		              'Numbers': [{'params': {'n': '1'}, 'number': '3.14159'}]},
 		             author=self.author,
 		             files={'generate.sage': 'print(pi)',
-		                    'curves.sobj': b'\x80\x03}q\x00.'})
+		                    'curves.sobj': b'\x80\x03}q\x00.'},
+		via='orm')
 		self.table.refresh_from_db()
 
 	def export(self, **kwargs):
@@ -86,7 +87,8 @@ class WhatIsWritten(ExportBase):
 		from .editing import create_table
 
 		made = create_table({'Title': 'Born here', 'Numbers': ['1']},
-		                    author=self.author)
+		                    author=self.author,
+		via='orm')
 		self.export()
 		self.assertTrue(os.path.exists(os.path.join(
 			self.root, 'data/Uncategorised', made.url, 'table.yaml')))
@@ -107,7 +109,8 @@ class WritingAgain(ExportBase):
 		             {'Title': 'Export probe',
 		              'Parameters': {'n': {'type': 'Z'}},
 		              'Numbers': [{'params': {'n': '1'}, 'number': '2.71828'}]},
-		             author=self.author, base=self.table.head_revision)
+		             author=self.author, base=self.table.head_revision,
+		via='orm')
 		self.export()
 		with open(self.path('table.yaml')) as handle:
 			self.assertIn('2.71828', handle.read())

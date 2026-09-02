@@ -33,7 +33,8 @@ class DraftBase(TestCase):
 			{'Title': title,
 			 'Parameters': {'n': {'type': 'R'}},
 			 'Numbers': entries if entries is not None else {}},
-			author=self.author, published=False)
+			author=self.author, published=False,
+		via='orm')
 
 
 class MakingOne(DraftBase):
@@ -61,7 +62,8 @@ class MakingOne(DraftBase):
 	def test_a_public_table_still_needs_an_entry(self):
 		with self.assertRaises(ValueError):
 			create_table({'Title': 'Empty and public', 'Numbers': {}},
-			             author=self.author)
+			             author=self.author,
+		via='orm')
 
 	def test_publishing_an_empty_draft_is_refused(self):
 		draft = self.make_draft()
@@ -185,11 +187,13 @@ class ParametersAreSettledWhileDrafting(DraftBase):
 			{'Title': 'Settling down',
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '3.14'}]},
-			author=self.author, published=False)
+			author=self.author, published=False,
+		via='orm')
 
 	def edit(self, tree):
 		return commit_table(self.draft, tree, author=self.author,
-		                    base=self.draft.head_revision)
+		                    base=self.draft.head_revision,
+		via='orm')
 
 	def test_a_parameter_may_be_renamed(self):
 		self.edit({'Title': 'Settling down',
@@ -245,13 +249,15 @@ class ADraftsAddressFollowsItsTitle(DraftBase):
 			 'Data properties': {'type': 'Z[]'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '1'}]},
-			author=self.author, published=False)
+			author=self.author, published=False,
+		via='orm')
 
 	def _retitle(self, title):
 		tree = dict(tree_of(self.table.head_revision))
 		tree['Title'] = title
 		commit_table(self.table, tree, author=self.author,
-		             base=self.table.head_revision, message='renamed')
+		             base=self.table.head_revision, message='renamed',
+		via='orm')
 		self.table.refresh_from_db()
 
 	def test_a_draft_renamed_gets_the_new_address(self):
@@ -285,7 +291,8 @@ class ADraftsAddressFollowsItsTitle(DraftBase):
 			 'Data properties': {'type': 'Z[]'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '1'}]},
-			author=self.author)
+			author=self.author,
+		via='orm')
 		self._retitle('Lucas polynomials')
 		self.assertNotEqual(self.table.url, 'Lucas_polynomials')
 		self.assertTrue(self.table.url.startswith('Lucas_polynomials'))
@@ -324,10 +331,12 @@ class TitlesWithMathematicsGetReadableAddresses(DraftBase):
 			 'Data properties': {'type': 'Z[]'},
 			 'Parameters': {'n': {'type': 'Z'}},
 			 'Numbers': [{'params': {'n': '1'}, 'number': '1'}]},
-			author=self.author, published=False)
+			author=self.author, published=False,
+		via='orm')
 		tree = dict(tree_of(table.head_revision))
 		tree['Title'] = 'Lucas polynomials $L_n$'
 		commit_table(table, tree, author=self.author,
-		             base=table.head_revision, message='renamed')
+		             base=table.head_revision, message='renamed',
+		via='orm')
 		table.refresh_from_db()
 		self.assertEqual(table.url, 'Lucas_polynomials')

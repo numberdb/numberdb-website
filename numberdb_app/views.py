@@ -2521,7 +2521,8 @@ def _new_table_from_title(request):
 
 	try:
 		table = create_table(tree, author=request.user,
-		                     message='created this table', published=False)
+		                     message='created this table', published=False,
+		                     via='web')
 	except ValueError as trouble:
 		messages.error(request, str(trouble))
 		return render(request, 'new-table.html', _new_table_context(request))
@@ -2572,7 +2573,8 @@ def new_table(request):
 
 		try:
 			table = create_table(tree, author=request.user,
-			                     message=request.POST.get('message', '').strip())
+			                     message=request.POST.get('message', '').strip(),
+			                     via='web')
 		except ValueError as e:
 			messages.error(request, str(e))
 			return render(request, 'new-table.html',
@@ -2647,7 +2649,7 @@ def revision_history(request, tid):
 		elif revision.pk == table.head_revision_id:
 			messages.info(request, 'That is already the current version.')
 		else:
-			restore_revision(table, revision, author=request.user)
+			restore_revision(table, revision, author=request.user, via='web')
 			messages.success(request, (
 				'Restored the version from %s. This is a new revision rather '
 				'than an erasure: what happened in between is still here.'
@@ -2933,6 +2935,9 @@ def _save_edited_tree(request, table, base, tree, source=None, back_to=None):
 			author=request.user,
 			message=message,
 			base=base,
+			#The form. `web` is about the channel, not about who: a person
+			#uses the API and the package too, and those say so themselves.
+			via='web',
 		)
 	except ParametersChanged as changed:
 		messages.error(request, (

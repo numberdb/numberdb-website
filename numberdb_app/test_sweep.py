@@ -104,7 +104,8 @@ class TheCheckpointResumes(TestCase):
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'s': {'type': 'Q'}},
 			 'Numbers': [{'params': {'s': '1/2'}, 'number': '1.7724538509'},
-			             {'params': {'s': '3/2'}, 'number': '0.8862269254'}]})
+			             {'params': {'s': '3/2'}, 'number': '0.8862269254'}]},
+		via='orm')
 
 		#The registry is keyed by the real table ids, and a test database has
 		#none of them. Point it at the table just made, or this checks that
@@ -151,7 +152,8 @@ class TheCheckpointResumes(TestCase):
 			{'Title': 'Torn line probe',
 			 'Data properties': {'type': 'R'},
 			 'Parameters': {'s': {'type': 'Q'}},
-			 'Numbers': [{'params': {'s': '1/2'}, 'number': '1.7724538509'}]})
+			 'Numbers': [{'params': {'s': '1/2'}, 'number': '1.7724538509'}]},
+		via='orm')
 
 		def registry():
 			from sage.all import QQ
