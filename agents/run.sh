@@ -242,6 +242,16 @@ else:
 	         os.path.basename(path)))
 LEDGER
 
+#The ledger is tracked, so appending to it leaves the tree dirty -- and the
+#next run refuses a dirty tree, by design. Committing the line here is what
+#makes a sequence of runs possible: without it a campaign built exactly one
+#table and stopped, and a sweep of critiques read exactly one, both of which
+#looked like something else for an afternoon.
+if [ -n "$(git status --porcelain -- "$ledger")" ]; then
+	git add "$ledger"
+	git commit -q -m "$stage run $started: $(tail -1 "$ledger" | awk -F'\t' '{printf "%s turns, $%s", $4, $5}')" -- "$ledger" || true
+fi
+
 echo "=== finished with status $status; transcript in $log"
 tail -1 "$ledger" | awk -F'\t' '{printf "=== %s turns, $%s\n", $4, $5}'
 exit "$status"

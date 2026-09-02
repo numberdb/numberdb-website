@@ -247,3 +247,11 @@ class TheCampaignSequencesRunsAndStops(TestCase):
 		self.assertIn('flock', body)
 		self.assertIn('numberdb-sage.lock', body)
 		self.assertIn('docker rm -f', body)
+
+	def test_a_run_commits_its_own_ledger_line(self):
+		#The ledger is tracked and every run appends to it, so without this
+		#the next run refuses a dirty tree -- which limited a campaign to one
+		#table and a sweep of critiques to one report, both silently.
+		body = script('agents/run.sh')
+		self.assertIn('git add "$ledger"', body)
+		self.assertIn('next run refuses a dirty tree', body)
