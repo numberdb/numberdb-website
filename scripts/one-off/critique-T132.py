@@ -96,12 +96,10 @@ print('comment-closed-forms:', tree['Comments']['comment-closed-forms'])
 if APPLY:
 	edit_with_person(
 		table, tree, User.objects.get(username='bmatschke'),
-		('comment (11) said the weights have degree at least 2 from n=4 on, '
-		 'which the rational central weights two rows up contradict; '
-		 'comment (8) had "at most n-1" where n-1 is the floor and Simpson '
-		 'reaches 3; drop a clause about the search box, the run from two '
-		 'formulas, and two sentences addressed to table builders; link '
-		 'Gauss-Hermite, which is now a table'),
+		("comment (11) said the weights have degree at least 2 from "
+		 "n=4 on, which the rational central weights two rows up "
+		 "contradict, and comment (8) had at most n-1 where n-1 is the "
+		 "floor; link Gauss-Hermite, which is now a table"),
 		assistant='claude-opus-5', via='orm')
 	print('\ncommitted')
 else:

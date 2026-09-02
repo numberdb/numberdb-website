@@ -125,13 +125,11 @@ for item in tree['Similar tables']:
 if APPLY:
 	edit_with_person(
 		table, tree, User.objects.get(username='bmatschke'),
-		('the six related tables had no captions and the site has only just '
-		 'begun to draw that section, so they would have rendered as their '
-		 'slugs; add captions and the two tables the corpus has grown since. '
-		 'Also name the class number formula instead of pointing below at '
-		 'what the page draws above, move a count into complete-note, say '
-		 'what the L-values are rather than what conductor was reached, and '
-		 'stop promising 38 digits from PARI, which gives 15 through Sage'),
+		("caption the six related tables, which the site now draws, "
+		 "and add the two the corpus has grown since; name the class "
+		 "number formula instead of pointing below at what the page "
+		 "draws above; stop promising 38 digits from PARI, which gives "
+		 "15 through Sage"),
 		assistant='claude-opus-5', via='orm')
 	print('\ncommitted')
 else:

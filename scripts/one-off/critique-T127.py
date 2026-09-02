@@ -74,11 +74,9 @@ print('comments now:', list(comments.keys()))
 if APPLY:
 	edit_with_person(
 		table, tree, User.objects.get(username='bmatschke'),
-		('say what the table covers instead of only that it is incomplete; '
-		 'say why the entries are so close to half-integers, which is what a '
-		 'reader arriving with one of them wants; drop the comparison with '
-		 'six tables it does not link, whose content is the comment before '
-		 'it and whose conclusion the rigour details already state'),
+		("say what the table covers instead of only that it is "
+		 "incomplete; say why the entries are so near half-integers; "
+		 "drop the comparison with six tables it does not link"),
 		assistant='claude-opus-5', via='orm')
 	print('\ncommitted')
 else:

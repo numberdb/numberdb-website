@@ -43,7 +43,22 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# The command crosses an ssh boundary and is parsed once more by the remote
+# shell, so every argument is quoted for it. Unquoted, an argument containing
+# brackets or a redirect was torn apart there:
+#
+#     manage.py shell -c "exec(open('x.py').read())"
+#     -> bash: syntax error near unexpected token `('
+#
+# NUMBERDB_ENV passes variables into the container, space-separated NAME=value
+# pairs, because `docker compose run` does not inherit this shell's.
+remote_args=$(printf '%q ' "$@")
+env_args=''
+for pair in ${NUMBERDB_ENV:-}; do
+	env_args="$env_args -e $(printf '%q' "$pair")"
+done
+
 ssh "${ssh_opts[@]}" "$REMOTE" \
 	"exec 9>'$LOCK'; flock -w 3600 9 || { echo 'another run held the lock for an hour' >&2; exit 75; }; \
 	 cd '$RPATH' && timeout $TIMEOUT docker compose run --rm --no-deps -T --name '$name' \
-	 $mounted web sage -python $*; code=\$?; docker rm -f '$name' >/dev/null 2>&1; exit \$code"
+	 $env_args $mounted web sage -python $remote_args; code=\$?; docker rm -f '$name' >/dev/null 2>&1; exit \$code"

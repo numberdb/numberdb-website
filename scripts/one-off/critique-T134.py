@@ -85,12 +85,11 @@ print('now:\n' + tree['Programs']['program-sage']['code'])
 if APPLY:
 	edit_with_person(
 		table, tree, User.objects.get(username='bmatschke'),
-		("the Sage program's sqrt(pi) is symbolic, so every weight printed "
-		 "as a multiple of sqrt(pi) rather than as the number written beside "
-		 "it; take the square root in the interval field. Also drop the run "
-		 "from two formulas, a clause about the search box and one about how "
-		 "many digits are printed, and fix 'at most n-1', which is the floor "
-		 "for any n distinct points"),
+		("the Sage program's sqrt(pi) was symbolic, so every weight "
+		 "printed as a multiple of sqrt(pi) rather than as the number "
+		 "written beside it; take the square root in the interval "
+		 "field. Also fix at most n-1, which is the floor for n "
+		 "distinct points"),
 		assistant='claude-opus-5', via='orm')
 	print('\ncommitted')
 else:
