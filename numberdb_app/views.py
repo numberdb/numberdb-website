@@ -2863,12 +2863,24 @@ def table_file(request, tid, name):
 		response['X-Content-Type-Options'] = 'nosniff'
 		return response
 
+	#Which highlighter to ask for, by extension. Only the languages the site
+	#actually ships a grammar for: naming one it does not have leaves
+	#highlight.js to guess, and it guesses badly on mathematics.
+	HIGHLIGHT = {
+		'.py': 'python', '.sage': 'python', '.yaml': 'yaml', '.yml': 'yaml',
+		'.json': 'json', '.md': 'markdown', '.txt': '', '.tsv': '', '.csv': '',
+	}
+	import os as _os
+
+	suffix = _os.path.splitext(name)[1].lower()
+
 	return render(request, 'table-file.html', {
 		'table': table,
 		'revision': revision,
 		'is_current': revision.pk == table.head_revision_id,
 		'attachment': attachment,
 		'text': text,
+		'code_language': HIGHLIGHT.get(suffix, ''),
 	})
 
 

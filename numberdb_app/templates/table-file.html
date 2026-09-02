@@ -1,8 +1,18 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %}{% load static %}
 
 {% block head-title %}{{ attachment.name }} - {{ table.title }}{% endblock %}
 
 {% block extra_head %}
+{% comment %}
+The same highlighter the table page uses for its Programs block, served from
+here rather than from a CDN. A generator is the most-read code on the site --
+it is what somebody checks when they want to know how a number was made -- and
+it was the one place shown as flat grey text.
+{% endcomment %}
+<link rel="stylesheet" href="{% static '/vendor/highlight/default.min.css' %}">
+<script src="{% static '/vendor/highlight/highlight.min.js' %}"></script>
+<script src="{% static '/vendor/highlight/python.min.js' %}"></script>
+<script>hljs.initHighlightingOnLoad();</script>
 <style>
 a.link-below-title {
   font-size: 0.8rem;
@@ -40,5 +50,9 @@ pre.file-source { background: #f7f7f7; border: 1px solid #ddd; padding: 0.6rem;
   Recorded here, not run.
 </p>
 
-<pre class="file-source">{{ text }}</pre>
+{% comment %}
+`language-none` rather than no class at all when the file is not code: without
+it highlight.js guesses, and on a table of numbers it guesses wrong.
+{% endcomment %}
+<pre class="file-source"><code class="{% if code_language %}language-{{ code_language }}{% else %}language-none{% endif %}">{{ text }}</code></pre>
 {% endblock %}
