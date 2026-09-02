@@ -206,6 +206,24 @@ had to be taken apart again.
 
 Two rules that follow from the table above and are worth stating alone:
 
+**A parameter says what the family is indexed by, not how much of it you
+computed.** These are two different facts and they have two different homes. A
+table of `zeta_K(s)` at negative odd `s` has a parameter `s` that is *a
+negative odd integer* -- writing `$s\in\{-1,-3,-5\}$` describes this
+afternoon's run, and the next person to extend the table has to edit the
+definition of the family to add a row. The range that is actually here belongs
+under `Data properties`: `complete: no`, with `complete-note` saying which part
+is finished -- "every real fundamental discriminant with $D\leq 1000$ is
+here, at $s=-1,-3,-5$". It renders as "complete: no (...)", and it is the
+sentence a reader wants: not that the table is incomplete, which is true of
+almost all of them, but what it *does* cover.
+
+**Link the first mention of a thing to what explains it.** A table if the
+corpus holds one; otherwise a reference the table already declares --
+`CITE{Wiki}` beside the first "Dedekind zeta function" costs nothing and the
+article is in `Links` already. The rule is the same in both cases: first
+mention, once per section.
+
 **Name the thing, do not point at it.** "The first factor is in the table of
 Bernoulli numbers and the second, for $D=5$ and $D=8$, in the table of
 generalized Bernoulli numbers" makes a reader count backwards through a

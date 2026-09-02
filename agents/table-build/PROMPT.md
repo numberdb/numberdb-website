@@ -142,6 +142,18 @@ no table, and is harder to remove than to never add.
 needs a key found by trying permutations, so more than six is refused. The
 partial Bell polynomials stop at n = 7 because B(8,2) has seven variables.
 
+**The parameters are the family's domain, not your range.** `$s$ a negative
+odd integer`, not `$s\in\{-1,-3,-5\}$`; `$D$ a fundamental discriminant,
+$D>1$`, not `$1<D\leq 1000$`. What you actually computed goes in
+`Data properties` as `complete: no` with a `complete-note` saying which part
+is finished, which renders as "complete: no (every real fundamental
+discriminant with $D\leq 1000$ is here)". Otherwise extending the table later
+means editing the definition of the family.
+
+**Cite what you already declared.** If `Links` holds the Wikipedia article for
+the object, put `CITE{Wiki}` at its first mention in the definition. The
+reference is there; the reader should not have to scroll for it.
+
 **Write the symbol, not its position.** "The first factor", "the latter", "as
 above" all make a reader count back through a formula and be wrong. Name it:
 `$B_{2m}$ is in ...`. And **link a table the first time you name it, once per
