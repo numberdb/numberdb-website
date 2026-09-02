@@ -489,12 +489,15 @@ class WhatEarnsATableIsFindabilityNotDerivability(TestCase):
 		self.assertIn('about the *family*, never about the values', body)
 		self.assertIn('the different context *is* the product', body.lower())
 
-	def test_the_build_prompt_looks_for_the_entry_that_identifies_nothing(self):
-		#A family can be distinctive and still hold one value that is not:
-		#H_{-3} is x, and x already answers a search in ten other tables.
+	def test_the_build_prompt_explains_a_surprising_value_with_a_fact(self):
+		#This asked for the opposite: it held a rule telling a run to write
+		#down that an entry identifies nothing, and four tables got such a
+		#comment before Benjamin pointed out that it says something about the
+		#website rather than about the mathematics. The surviving half of the
+		#rule is that a surprising value deserves its explanation.
 		body = ' '.join(prompt('table-build').split())
-		self.assertIn('Look for the entry that identifies nothing', body)
-		self.assertIn('is not a reason against the table', body)
+		self.assertIn('A comment states a fact', body)
+		self.assertIn('j(\\zeta_3)=0', body)
 
 	def test_the_build_prompt_says_to_name_the_symbol(self):
 		#"The first factor is in the table of Bernoulli numbers and the
@@ -539,3 +542,11 @@ class WhatEarnsATableIsFindabilityNotDerivability(TestCase):
 		self.assertIn('not how much of it you computed', body)
 		self.assertIn('Link the first mention of a thing to what explains it',
 		              body)
+
+	def test_a_comment_states_a_fact(self):
+		#"This identifies nothing on its own" is a remark about the website,
+		#not about the mathematics, and four tables carried one before
+		#Benjamin asked for them to go.
+		body = ' '.join(prompt('table-build').split())
+		self.assertIn('A comment states a fact', body)
+		self.assertNotIn('Look for the entry that identifies nothing', body)
