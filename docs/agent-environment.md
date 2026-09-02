@@ -528,3 +528,30 @@ would be, which the creation answer then confirmed. The creation answer's
 What to do instead: `/tmp/sp_slug.py` is the script; or have the `offer`
 and `create` answers written to a file the next script can read.
 `audit_table --links` then checks that a draft-to-draft link resolves.
+
+## `cd /tmp && agents/sage.sh ...` is "No such file or directory"
+
+What happened: the first run of the Hermite checks chained the DLMF
+extraction and the Sage run in one shell line beginning `cd /tmp`, and the
+`agents/sage.sh` half failed with exit 127 before doing anything. The
+working directory is reset for every Bash call, and a `cd` inside a compound
+command changes it for the rest of that command, so a relative path to the
+runner stops resolving. The same line with
+`/home/.../numberdb-website/agents/sage.sh` worked.
+
+What to do instead: call the runner by absolute path, always; the relative
+form works only until somebody puts a `cd` in front of it.
+
+## `WebFetch` is refused for Wikipedia in a build run; `curl` through the proxy is not
+
+What happened: `WebFetch` on the Gauss–Hermite quadrature article answered
+"Unable to verify if domain en.wikipedia.org is safe to fetch", although the
+allowlist names the domain. The raw wikitext fetched by `curl` (which honours
+the SOCKS proxy) was already in `/tmp/gh_wiki.txt` from an earlier run, and
+was enough. OEIS also answered `error code: 502` for some minutes in the
+middle of the run; the b-files an earlier run had saved to `/tmp` carried
+the comparison.
+
+What to do instead: fetch sources with `curl` into `/tmp` under the table's
+prefix, once, and read the files; a run that depends on the site answering at
+the moment of the check is a run that stops for somebody else's outage.
