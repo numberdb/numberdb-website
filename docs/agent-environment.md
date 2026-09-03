@@ -1051,3 +1051,29 @@ decision as for T144, for the same reason: the closed form is where
 those numbers are used. T145's outside checks used T142's stored digits
 through the API with the key (`/tmp/lv_T142.json`), so the two tables
 have been checked against each other in both directions.
+
+## A whole-document write stores `Numbers` in the shape it was sent, and the review diff does not mind
+
+What happened: the T145 repair read the draft through `api/table`, which
+nests `Numbers` by parameter value, changed six sentences and wrote the
+document back as it came. Before the write `tree_of(head_revision)` gave
+`Numbers` as the flat list the fill had stored (the note on T130 above);
+after it, the head's tree holds the nested dict. A check script written
+against the first shape died on the second with `'list' object has no
+attribute 'items'`, and its successor died the other way round. The
+reviewer's view is unaffected: `flatten_entries` gives 503 identities for
+both revisions and `changed_params` between them is empty, so the queue
+shows the prose changes and no entry.
+
+What to do instead: a script that reads the stored tree should accept both
+shapes, and a run should not read a shape flip in the revision content as
+a rewritten table. One more thing met on the way: `cat "$NUMBERDB_KEY_FILE"
+| python3 - <<'EOF'` sends the *script* on stdin and the key nowhere, so
+the request goes out anonymous and a draft answers "does not exist"; pipe
+the key into a script file, `cat "$NUMBERDB_KEY_FILE" | python3 script.py`,
+which is the shape `agents/sage.sh` takes as well.
+
+Evidence: `/tmp/repair145_check.py` and `/tmp/repair145_audit.py` output,
+2026-09-03: "stored Numbers shape: dict", "previous revision: 8b1a2cb8…
+shape list", "flatten before/after: 503 503", "changed_params between
+them: 0".
