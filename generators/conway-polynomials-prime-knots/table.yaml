@@ -1,0 +1,258 @@
+# The table document for the Conway polynomials of the prime knots up to ten
+# crossings, proposal 4 of agents/table-ideas/BATCH-2026-09-03T0305.md.
+# Created as a draft through the API (X-Draft: yes) and filled by generate.py
+# beside it; publishing is a person's act on the site.
+Title: Conway polynomials of the prime knots with at most ten crossings
+Definition: >-
+  The Conway polynomial $\nabla_K(z)\in\mathbb{Z}[z]$ of a knot $K$
+  CITE{Wiki}, defined by $\nabla(0_1)=1$ and the skein relation
+  $\nabla(L_+)-\nabla(L_-)=z\,\nabla(L_0)$, for the unknot $0_1$ and for
+  every prime knot $n_k$ with at most ten crossings, named as in the Rolfsen
+  table CITE{Rolfsen}.
+Parameters:
+  n:
+    type: Z
+    title: crossing number
+    display: $n$
+    constraints: $n=0$ or $3\leq n\leq 10$
+  k:
+    type: Z
+    title: index in the Rolfsen table
+    display: $k$
+    constraints: >-
+      $1\leq k\leq N(n)$, where $N(n)$ is the number of prime knots with $n$
+      crossings, $1,1,1,2,3,7,21,49,165$ for $n=0,3,4,\ldots,10$
+Comments:
+  comment-convention: >-
+    The Conway polynomial is unique: where the
+    HREF{Alexander_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Alexander polynomial]
+    $\Delta_K$ is defined only up to a unit, $\nabla_K$ is fixed by the skein
+    relation CITE{formula-skein} with Conway's sign CITE{Conway}, the one
+    used by Wikipedia CITE{Wiki}, MathWorld CITE{MathWorld}, KnotInfo
+    CITE{KnotInfo} and Sage CITE{Sage}, under which the positive Hopf link
+    has $\nabla=z$. For a knot, $\nabla$ has only even powers of $z$ and
+    constant term $1$. It does not depend on the orientation of the knot,
+    and since the mirror image $\bar K$ has $\nabla_{\bar K}(z)=\nabla_K(-z)$
+    it does not depend on the choice between a knot and its mirror image
+    either, so it is well defined for the name $n_k$, which names a knot
+    only up to mirror image. The variable is Conway's $z$; Sage's
+    conway_polynomial() prints the same coefficients in $t$.
+  comment-alexander: >-
+    $\nabla_K$ is a reparametrisation of the Alexander polynomial,
+    $\Delta_K(t^2)=\epsilon\,t^{2d}\,\nabla_K(t-t^{-1})$
+    CITE{formula-alexander}, so the two determine each other and the two
+    tables hold the same information in different forms:
+    $\nabla(5_1)=z^4+3z^2+1$ where $\Delta(5_1)=t^4-t^3+t^2-t+1$.
+    $\nabla$ is the form the skein relation computes directly, and its
+    coefficients are invariants in their own right: the coefficient $a_2$ of
+    $z^2$ is the Casson invariant of the knot, the Vassiliev invariant of
+    order two CITE{WikiFinite}, and $a_2$ modulo $2$ is the Arf invariant
+    CITE{Kauffman} CITE{WikiArf}. For every knot here the degree of $\nabla$
+    is twice the genus, and $a_2$ takes every integer value from $-6$
+    ($10_3$) to $10$ ($9_1$); 127 of the 249 prime knots have Arf invariant
+    $1$. Each entry's comment gives the knot's common name
+    where it has one, the torus knot it is if it is one, $a_2$, the Arf
+    invariant, the determinant $|\nabla(2i)|$, and every other knot in the
+    table with the same polynomial.
+  comment-torus: >-
+    The torus knot $T(2,q)$ has $\nabla=F_q(z)$, the
+    HREF{Fibonacci_polynomials}[Fibonacci polynomial] CITE{formula-torus}:
+    $3_1$, $5_1$, $7_1$ and $9_1$ are $F_3$, $F_5$, $F_7$ and $F_9$, and
+    $10_{132}$ shares $F_5$ with $5_1$. Three entries are
+    HREF{Cyclotomic_polynomials}[cyclotomic polynomials]:
+    $\nabla(3_1)=\Phi_4$, $\nabla(7_7)=\Phi_{12}$ and $\nabla(9_{44})=\Phi_8$.
+  comment-numbering: >-
+    The numbering is Rolfsen's after Perko's correction CITE{Perko}: the
+    knots Rolfsen listed as $10_{161}$ and $10_{162}$ are one knot, so there
+    are $165$ prime knots with ten crossings rather than $166$ CITE{OEIS},
+    and Rolfsen's $10_{163}$ to $10_{166}$ are $10_{162}$ to $10_{165}$ here
+    CITE{WikiList}. Sage's knot table, the Knot Atlas CITE{KnotAtlas} and
+    KnotInfo all use this numbering.
+  comment-collisions: >-
+    Since $\nabla$ determines $\Delta$, the knots that share a Conway
+    polynomial are the knots that share an Alexander polynomial: the 249
+    prime knots here take 211 distinct values, and 36 of those values are
+    shared by two or three knots each, 74 knots in all, among them
+    $\nabla(5_1)=\nabla(10_{132})=F_5$, $\nabla(6_1)=\nabla(9_{46})=1-2z^2$,
+    $\nabla(8_{20})=\nabla(10_{140})=(z^2+1)^2$ and the triples
+    $8_{14},9_8,10_{131}$ and $9_{28},9_{29},10_{163}$. No knot here has
+    $\nabla=1$ apart from the unknot; the first that do, the Conway knot
+    $11n_{34}$ and the Kinoshita–Terasaka knot $11n_{42}$, have eleven
+    crossings CITE{Wiki}.
+  comment-range: >-
+    The Rolfsen table ends at ten crossings, and so do the names $n_k$. The
+    552 prime knots with eleven crossings are named $11a_1$ to $11a_{367}$
+    and $11n_1$ to $11n_{185}$ after Hoste and Thistlethwaite, alternating
+    and non-alternating separately CITE{KnotInfo}, which the two parameters
+    here cannot express; KnotInfo carries the Conway polynomials of all
+    prime knots to thirteen crossings. The Alexander polynomials of the
+    knots listed here are in their own table, and so are the
+    HREF{Jones_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Jones polynomials],
+    which were asked for together in CITE{issue91}.
+Formulas:
+  formula-skein: >-
+    $\nabla(0_1)=1$ and $\nabla(L_+)-\nabla(L_-)=z\,\nabla(L_0)$ for three
+    oriented link diagrams $L_+$, $L_-$ and $L_0$ that agree except at one
+    crossing, which is positive in $L_+$, negative in $L_-$ and smoothed in
+    $L_0$ CITE{Conway} CITE{Wiki}. For a knot, $\nabla$ has only even powers
+    of $z$ and constant term $1$; for a split link, $\nabla=0$.
+  formula-alexander: >-
+    $\Delta_K(t^2)=\epsilon\,t^{2d}\,\nabla_K(t-t^{-1})$, where
+    $\Delta_K(t)\in\mathbb{Z}[t]$ is the
+    HREF{Alexander_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Alexander polynomial]
+    with positive constant term, $2d=\deg\Delta_K=\deg\nabla_K$, and
+    $\epsilon=\Delta_K(1)=\pm1$ is the sign of the leading coefficient of
+    $\nabla_K$ CITE{Wiki}. Equivalently, $\nabla_K(t^{1/2}-t^{-1/2})$ is the
+    Conway-normalised Alexander polynomial $\epsilon\,t^{-d}\Delta_K(t)$,
+    which is symmetric under $t\mapsto t^{-1}$ and equal to $1$ at $t=1$.
+  formula-determinant: >-
+    $|\nabla_K(2i)|=\det K=|\Delta_K(-1)|$, the determinant of the knot,
+    from CITE{formula-alexander} at $t=i$; since $\nabla_K$ is even,
+    $\nabla_K(2i)=\sum_j a_{2j}(-4)^j$, where $a_{2j}$ is the coefficient of
+    $z^{2j}$, and it is an odd integer.
+  formula-arf: >-
+    $\operatorname{Arf}(K)\equiv a_2(K)\pmod 2$ for the coefficient $a_2$ of
+    $z^2$ CITE{Kauffman} CITE{WikiFinite}, and $\operatorname{Arf}(K)=0$
+    exactly when $\det K\equiv\pm1\pmod 8$ CITE{Murasugi} CITE{WikiArf}.
+  formula-jones: >-
+    $V_K''(1)=-6\,a_2(K)$ CITE{Murakami} and
+    $V_K(i)=(-1)^{\operatorname{Arf}(K)}$ CITE{Jones} for the
+    HREF{Jones_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Jones polynomial]
+    $V_K(t)$, and $|V_K(-1)|=\det K=|\nabla_K(2i)|$ CITE{MathWorldJones}.
+  formula-torus: >-
+    $\nabla_{T(2,q)}(z)=F_q(z)$ for the torus knot $T(2,q)$, $q$ odd, where
+    $F_q$ is the HREF{Fibonacci_polynomials}[Fibonacci polynomial], $F_0=0$,
+    $F_1=1$, $F_q=zF_{q-1}+F_{q-2}$: the Alexander polynomial is
+    $\Delta_{T(2,q)}(t)=(t^q+1)/(t+1)$ CITE{WikiTorus}, and
+    $F_q(z)=(\alpha^q-\beta^q)/(\alpha-\beta)$ for the roots
+    $\alpha=t^{1/2}$, $\beta=-t^{-1/2}$ of $y^2-zy-1$ at $z=t^{1/2}-t^{-1/2}$
+    gives $F_q(t^{1/2}-t^{-1/2})=t^{-(q-1)/2}(t^q+1)/(t+1)$, the
+    Conway-normalised form of CITE{formula-alexander}. The torus knots here
+    are $3_1=T(2,3)$, $5_1=T(2,5)$, $7_1=T(2,7)$, $9_1=T(2,9)$,
+    $8_{19}=T(3,4)$ and $10_{124}=T(3,5)$, the last two with
+    $\nabla=z^6+5z^4+5z^2+1$ and $z^8+7z^6+14z^4+8z^2+1$.
+  formula-sum-and-mirror: >-
+    $\nabla_{K_1\#K_2}=\nabla_{K_1}\nabla_{K_2}$ for the connected sum, and
+    $\nabla_{\bar K}(z)=\nabla_K(-z)$ for the mirror image $\bar K$, which
+    for a knot is $\nabla_K(z)$ again CITE{Wiki}; so the granny knot
+    $3_1\#3_1$ and the square knot $3_1\#\bar 3_1$ both have
+    $\nabla=(z^2+1)^2$, the value of $8_{20}$ and $10_{140}$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      K = Knots().from_table(10, 132)
+      K.conway_polynomial()               # t^4 + 3*t^2 + 1, the same coefficients printed in t
+      R.<z> = ZZ[]
+      R(K.conway_polynomial().list())     # z^4 + 3*z^2 + 1, the entry listed here
+Similar tables:
+  - table: HREF{Alexander_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Alexander polynomials of the prime knots with at most ten crossings]
+    relation: the same knots; $\Delta_K(t^2)=\epsilon\,t^{2d}\,\nabla_K(t-t^{-1})$, so each table determines the other
+  - table: HREF{Jones_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Jones polynomials of the prime knots with at most ten crossings]
+    relation: the same knots; $V_K''(1)=-6a_2(K)$ and $V_K(i)=(-1)^{\operatorname{Arf}(K)}$
+  - table: HREF{Fibonacci_polynomials}[Fibonacci polynomials $F_n$]
+    relation: the Conway polynomial of the torus knot $T(2,q)$ is $F_q$; $3_1$, $5_1$, $7_1$, $9_1$ and $10_{132}$ are $F_3$, $F_5$, $F_7$, $F_9$ and $F_5$
+  - table: HREF{Cyclotomic_polynomials}[Cyclotomic polynomials]
+    relation: $\nabla(3_1)=\Phi_4$, $\nabla(7_7)=\Phi_{12}$ and $\nabla(9_{44})=\Phi_8$
+Links:
+  Wiki:
+    title: 'Wikipedia: Alexander polynomial, section Alexander–Conway polynomial'
+    url: https://en.wikipedia.org/wiki/Alexander_polynomial
+  WikiFinite:
+    title: 'Wikipedia: Finite type invariant'
+    url: https://en.wikipedia.org/wiki/Finite_type_invariant
+  WikiArf:
+    title: 'Wikipedia: Arf invariant of a knot'
+    url: https://en.wikipedia.org/wiki/Arf_invariant_of_a_knot
+  WikiTorus:
+    title: 'Wikipedia: Torus knot'
+    url: https://en.wikipedia.org/wiki/Torus_knot
+  WikiList:
+    title: 'Wikipedia: List of prime knots'
+    url: https://en.wikipedia.org/wiki/List_of_prime_knots
+  MathWorld:
+    title: 'MathWorld: Conway Polynomial'
+    url: https://mathworld.wolfram.com/ConwayPolynomial.html
+  MathWorldJones:
+    title: 'MathWorld: Jones Polynomial'
+    url: https://mathworld.wolfram.com/JonesPolynomial.html
+  KnotAtlas:
+    title: 'The Knot Atlas: The Rolfsen Knot Table'
+    url: http://katlas.org/wiki/The_Rolfsen_Knot_Table
+  KnotInfo:
+    title: 'KnotInfo: Table of Knot Invariants (C. Livingston and A. H. Moore)'
+    url: https://knotinfo.math.indiana.edu/
+  Sage:
+    title: 'SageMath reference: Links, conway_polynomial'
+    url: https://doc.sagemath.org/html/en/reference/knots/sage/knots/link.html
+  OEIS:
+    title: 'OEIS A002863: number of prime knots with n crossings'
+    url: https://oeis.org/A002863
+References:
+  Conway:
+    bib: >-
+      J. H. Conway, An enumeration of knots and links, and some of their
+      algebraic properties, in: Computational Problems in Abstract Algebra,
+      Pergamon, 1970, 329–358.
+  Rolfsen:
+    bib: >-
+      D. Rolfsen, Knots and Links, Publish or Perish, 1976, Appendix C: Table
+      of knots and links.
+  Perko:
+    bib: >-
+      K. A. Perko, On the classification of knots, Proc. Amer. Math. Soc. 45
+      (1974), 262–266.
+  Kauffman:
+    bib: >-
+      L. H. Kauffman, On Knots, Annals of Mathematics Studies 115, Princeton
+      University Press, 1987.
+  Murasugi:
+    bib: >-
+      K. Murasugi, The Arf invariant for knot types, Proc. Amer. Math. Soc.
+      21 (1969), 69–72.
+  Jones:
+    bib: >-
+      V. F. R. Jones, A polynomial invariant for knots via von Neumann
+      algebras, Bull. Amer. Math. Soc. 12 (1985), 103–111.
+  Murakami:
+    bib: >-
+      H. Murakami, On derivatives of the Jones polynomial, Kobe J. Math. 3
+      (1986), 61–64.
+  issue91:
+    bib: >-
+      numberdb-data issue #91, "Knot polynomials",
+      https://github.com/numberdb/numberdb-data/issues/91
+Tags:
+  - polynomial
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'yes'
+  rigour details: >-
+    Each polynomial is Sage's conway_polynomial() of Knots().from_table(n, k),
+    which substitutes into the determinant $\det(V-tV^{\mathsf T})$ of a
+    Seifert matrix of the braid closure. Before it is written the generator
+    requires it to agree with the polynomial obtained from
+    $\det(I-\psi(\beta))(1-t)/(1-t^r)$, computed from the reduced Burau
+    matrix $\psi(\beta)$ of the same braid word on $r$ strands, with the
+    matrices, their product and a Bareiss determinant written out in the
+    generator rather than taken from a library, and converted to $\nabla$
+    by writing the symmetric Laurent polynomial $\epsilon t^{-d}\Delta(t)$
+    as a polynomial in $t+t^{-1}=z^2+2$; to have only even powers and
+    constant term $1$; to satisfy $|\nabla(2i)|=\det K$; to have $a_2$
+    modulo $2$ equal to the Arf invariant both as Robertello's sum of
+    Alexander coefficients and by Murasugi's criterion; to equal $F_q$ for
+    the torus knots $T(2,q)$ and $10_{132}$, and $\Phi_4$, $\Phi_{12}$,
+    $\Phi_8$ for $3_1$, $7_7$, $9_{44}$; and the counts per crossing number
+    must be $1,1,2,3,7,21,49,165$. Outside the generator all 250 values were
+    compared with the conway_polynomial column of KnotInfo (package
+    database_knotinfo 2026.9.1, computed from KnotInfo's own diagrams) and
+    the Arf invariants with its arf_invariant column; the stored Alexander
+    polynomials satisfy $\Delta(s^2)=\epsilon s^{2d}\nabla(s-s^{-1})$ and
+    the stored Jones polynomials $V''(1)=-6a_2$, $V(i)=(-1)^{\mathrm{Arf}}$
+    and $|V(-1)|=|\nabla(2i)|$ on every knot; the linked Fibonacci and
+    cyclotomic entries hold the same polynomials, and no other entry of
+    those two tables coincides with a value here. All agree, and the
+    controls that must fail fail.
+Display properties:
+  number-header: $\nabla_{n_k}(z)$
