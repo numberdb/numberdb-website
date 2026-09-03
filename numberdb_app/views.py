@@ -207,21 +207,78 @@ def about(request):
 
 	return redirect('db:help')
 
-def help(request):
-	contribution_count = {}
+def _contributors():
+	"""Who has changed a table, and how often.
+
+	Counted from the revisions, because that is where a table edit is
+	recorded whatever it arrived through -- the site, the API, the package,
+	an import. The old list came from `Contributor`, which is built from
+	commits in the data repository, so it stopped counting the day the site
+	could be edited without GitHub: 708 edits since were invisible on a page
+	whose purpose is to credit them. It also showed Benjamin four times,
+	once per email address he has committed under.
+
+	Contributors with no account are kept, from that same table. They are
+	the reason not to count accounts alone: two people contributed through
+	GitHub before accounts existed, and a credits page that drops somebody
+	because of how they contributed is worse than one that is out of date.
+	Their commits carry no account, so nothing here counts them twice.
+	"""
+	from django.db.models import Count
+
+	from .models import TableRevision
+	from .permissions import operator_of
+
+	rows = (TableRevision.objects.filter(author__isnull=False)
+	        .values('author__username', 'author__first_name',
+	                'author__last_name')
+	        .annotate(count=Count('id')))
+
+	counted = []
+	for row in rows:
+		full = ('%s %s' % (row['author__first_name'],
+		                   row['author__last_name'])).strip()
+		username = row['author__username']
+		counted.append({'name': full or username, 'count': row['count'],
+		                'account': username})
+
+	#An account that is a program is said to be one. It has done the work and
+	#belongs on the list; a reader comparing two rows is entitled to know
+	#that one of them is a pipeline.
+	from django.contrib.auth.models import User
+
+	for entry in counted:
+		person = User.objects.filter(username=entry['account']).first()
+		entry['program'] = bool(person and operator_of(person))
+
+	#And the people who never had an account to write from.
+	#
+	#Matched by name as well as by email, because one person commits under
+	#several addresses: Benjamin's commits carry both his own address and a
+	#GitHub noreply one, and matching on email alone left him on the list
+	#twice -- which is the duplication this is meant to end, arriving by a
+	#different route.
+	accounted = set(User.objects.values_list('email', flat=True))
+	accounted.discard('')
+	already = {entry['name'].strip().lower() for entry in counted}
+	without = {}
 	for contributor in Contributor.objects.all():
-		name = contributor.author
-		if name in contribution_count:
-			contribution_count[name] += contributor.table_commit_count
-		else:
-			contribution_count[name] = contributor.table_commit_count
-	contribution_count = [
-		{'name': name, 'count': count} 
-		for name, count in contribution_count.items()
-	]
-	contribution_count.sort(key = lambda name_count: -name_count['count'])
-	print("contribution_count:",contribution_count)
-	#contributors = Contributor.objects.all().order_by('-table_commit_count')
+		if (contributor.email in accounted
+				or contributor.author.strip().lower() in already
+				or not contributor.table_commit_count):
+			continue
+		without[contributor.author] = (without.get(contributor.author, 0)
+		                               + contributor.table_commit_count)
+	for name, count in without.items():
+		counted.append({'name': name, 'count': count, 'account': '',
+		                'program': False})
+
+	counted.sort(key=lambda entry: (-entry['count'], entry['name']))
+	return counted
+
+
+def help(request):
+	contribution_count = _contributors()
 	context = {
 		'contribution_count': contribution_count,
 		#Documented from the setting, so the help text cannot drift from the

@@ -1045,7 +1045,8 @@ stored with a link to the article they came from.
  </thead>
 {% for name_count in contribution_count %}
  <tr>
-  <td>{{ name_count.name }}</td>
+  <td>{{ name_count.name }}{% if name_count.program %} <span
+    style="color:#666; font-size:0.85em;">(a program)</span>{% endif %}</td>
   <td align="right">{{ name_count.count }}</td>
  </tr>
 {% endfor %}
