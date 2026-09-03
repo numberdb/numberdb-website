@@ -111,7 +111,8 @@ Formulas:
   formula-L-values: >-
     For odd primitive $\chi$, $L(1,\chi)=\frac{\pi i\,\tau(\chi)}{q}\,B_{1,\bar\chi}$;
     for even primitive $\chi$, $L(2,\chi)=\frac{\pi^2\,\tau(\chi)}{q^2}\,B_{2,\bar\chi}$;
-    with $B_{k,\chi}$ the generalized Bernoulli numbers. Both are
+    with $B_{k,\chi}$ the HREF{Generalized_Bernoulli_numbers}[generalized
+    Bernoulli numbers]. Both are
     CITE{formula-functional-equation} at $s=1$ and $s=2$ together with
     $L(1-k,\bar\chi)=-B_{k,\bar\chi}/k$.
   formula-jacobi: >-
