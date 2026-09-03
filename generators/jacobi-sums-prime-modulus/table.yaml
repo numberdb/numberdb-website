@@ -1,0 +1,250 @@
+# The table document for the Jacobi sums of pairs of Dirichlet characters
+# modulo a prime, proposal 2 of agents/table-ideas/BATCH-2026-09-03T1011.md.
+# Created as a draft through the API (X-Draft: yes) and filled by generate.py
+# beside it; publishing is a person's act on the site.
+Title: Jacobi sums of pairs of Dirichlet characters modulo a prime
+Definition: >-
+  The Jacobi sum $J(\chi,\psi)=\sum_{a=0}^{p-1}\chi(a)\,\psi(1-a)$ CITE{Wiki}
+  of two nontrivial Dirichlet characters $\chi=\chi_p(m,\cdot)$ and
+  $\psi=\chi_p(n,\cdot)$ modulo a prime $p$ with $\chi\psi$ nontrivial,
+  indexed by the Conrey labels CITE{CL} $(p,m)$ and $(p,n)$, $m\leq n$.
+Parameters:
+  p:
+    type: Z
+    title: prime modulus
+    display: $p$
+    constraints: $p$ prime, $p\geq 5$
+    comments: >-
+      Modulo $2$ there is no nontrivial character, and modulo $3$ the only
+      one is the Legendre symbol, whose square is trivial; so the first prime
+      with an admissible pair is $5$.
+  m:
+    type: Z
+    title: HREF{#CL}[Conrey index] of $\chi$
+    display: $m$
+    constraints: $2\leq m\leq p-1$
+    comments: >-
+      $\chi=\chi_p(m,\cdot)$ is nontrivial exactly when $m\neq 1$, and its
+      order is the multiplicative order of $m$ modulo $p$.
+  n:
+    type: Z
+    title: HREF{#CL}[Conrey index] of $\psi$
+    display: $n$
+    constraints: $m\leq n\leq p-1$, $mn\not\equiv 1\pmod p$
+    comments: >-
+      $\chi\psi=\chi_p(mn,\cdot)$ is trivial exactly when $mn\equiv 1\pmod p$,
+      that is when $\psi=\bar\chi$, and those pairs have
+      $J(\chi,\bar\chi)=-\chi(-1)$ by CITE{formula-conjugate}. Since
+      $J(\chi,\psi)=J(\psi,\chi)$, each pair is listed once, with $m\leq n$.
+Comments:
+  comment-conrey: >-
+    The Conrey label $(p,n)$ CITE{CL} names the character $\chi_p(n,\cdot)$
+    with $\chi_p(g^a,g^b)=e^{2\pi i ab/(p-1)}$, where $g$ is the least
+    positive integer generating $(\mathbb{Z}/p^k\mathbb{Z})^\times$ for every
+    $k\geq 1$, which for $p<40487$ is the least primitive root modulo $p$,
+    and $\chi_p(n,m)=0$ when $p\mid m$. So $\chi_p(n,m)=\chi_p(m,n)$, the
+    trivial character is $\chi_p(1,\cdot)$,
+    $\chi_p(m,\cdot)\chi_p(n,\cdot)=\chi_p(mn,\cdot)$,
+    $\overline{\chi_p(n,\cdot)}=\chi_p(n',\cdot)$ with $nn'\equiv 1\pmod p$,
+    and the quadratic character $\left(\frac{\cdot}{p}\right)$ is
+    $\chi_p(p-1,\cdot)$. The
+    HREF{Gauss_sums_of_primitive_Dirichlet_characters}[Gauss sums $\tau(\chi)$],
+    the HREF{Zeros_of_Dirichlet_L_functions}[zeros of $L(s,\chi)$] and the
+    HREF{Generalized_Bernoulli_numbers}[generalized Bernoulli numbers] on this
+    site, and the characters in the LMFDB CITE{LMFDB}, are indexed the same
+    way; the LMFDB's page for $\chi_p(m,\cdot)$ computes its Jacobi sums
+    exactly.
+  comment-zero: >-
+    The characters listed are nontrivial, so $\chi(0)=\psi(0)=0$, the terms
+    $a=0$ and $a=1$ vanish, and the sum runs over $2\leq a\leq p-1$. What the
+    trivial character $\varepsilon$ is worth at $0$ is a convention that
+    changes $J(\varepsilon,\chi)$: with $\varepsilon(0)=1$, as in
+    CITE{IrelandRosen}, $J(\varepsilon,\chi)=0$ and
+    $J(\varepsilon,\varepsilon)=p$, which is what the point count
+    CITE{formula-fermat} needs; with $\varepsilon(0)=0$, as in Sage,
+    $J(\varepsilon,\chi)=-1$.
+  comment-exact: >-
+    $J(\chi,\psi)$ is an algebraic integer in $\mathbb{Z}[\zeta_d]$, $d$ the
+    least common multiple of the orders of $\chi$ and $\psi$ and
+    $\zeta_d=e^{2\pi i/d}$ a HREF{Roots_of_unity}[root of unity], because
+    every term $\chi(a)\psi(1-a)$ is a $d$-th root of unity; its absolute
+    value is $\sqrt{p}$ by CITE{formula-absolute-value}. Each entry's comment
+    gives the orders of $\chi$ and $\psi$ and the exact value, written in
+    $\zeta_d$ with the constant term first and with $i$ for $\zeta_4$. The
+    Galois conjugates of an entry are entries: $\sigma_c(J(\chi,\psi))$ of
+    CITE{formula-galois} is the entry at $(p,m^c,n^c)$, the indices reduced
+    modulo $p$ and ordered.
+  comment-real: >-
+    No entry is real or purely imaginary: $J\bar J=p$ with $p$ prime makes
+    $J$ irrational, and a purely imaginary $J$ would put $\sqrt{-p}$ into
+    $\mathbb{Q}(\zeta_{p-1})$, in which $p$ is unramified. The two entries at
+    $p=5$, $-1\mp 2i$, are the roots of $x^2+2x+5$ in the table of
+    HREF{Algebraic_numbers_of_degree_2}[algebraic numbers of degree 2]; every
+    other entry has degree at least $2$ over $\mathbb{Q}$ and absolute value
+    $\sqrt{p}$ with $p\geq 7$, so is a root of no polynomial there.
+  comment-norms: >-
+    For $p\equiv 1\pmod 3$ and $\chi$ of order $3$, the entry
+    $J(\chi,\chi)=a+b\zeta_3$ writes $p=a^2-ab+b^2$ as a norm from
+    $\mathbb{Z}[\zeta_3]$, with $a\equiv -1$ and $b\equiv 0\pmod 3$ by
+    CITE{formula-cubic}, and $L=2a-b$ is the integer with $4p=L^2+27M^2$,
+    $L\equiv 1\pmod 3$, for which $x^3+y^3=1$ has $p-2+L$ solutions over
+    $\mathbb{F}_p$. For $p\equiv 1\pmod 4$ and $\chi$ of order $4$,
+    $J(\chi,\chi)=a+bi$ writes $p=a^2+b^2$, with the sign fixed by
+    CITE{formula-quartic}. Weil CITE{Weil} wrote the zeta function of every
+    diagonal hypersurface over a finite field in terms of Jacobi sums, which
+    is how they enter the point counts of Fermat curves
+    CITE{formula-fermat}.
+Formulas:
+  formula-symmetric: >-
+    $J(\chi,\psi)=J(\psi,\chi)$, and $\overline{J(\chi,\psi)}=J(\bar\chi,\bar\psi)$.
+  formula-gauss: >-
+    $J(\chi,\psi)=\dfrac{\tau(\chi)\,\tau(\psi)}{\tau(\chi\psi)}$ for $\chi$,
+    $\psi$ and $\chi\psi$ nontrivial, where
+    $\tau(\chi)=\sum_{a=1}^{p}\chi(a)\,e^{2\pi i a/p}$ is the
+    HREF{Gauss_sums_of_primitive_Dirichlet_characters}[Gauss sum]
+    CITE{IrelandRosen}.
+  formula-absolute-value: >-
+    $J(\chi,\psi)\,\overline{J(\chi,\psi)}=p$ for $\chi$, $\psi$ and
+    $\chi\psi$ nontrivial, so $|J(\chi,\psi)|=\sqrt{p}$ CITE{IrelandRosen}.
+  formula-conjugate: >-
+    For nontrivial $\chi$, $J(\chi,\bar\chi)=-\chi(-1)$; and with the trivial
+    character $\varepsilon$ taking the value $\varepsilon(0)=1$,
+    $J(\varepsilon,\chi)=0$ for nontrivial $\chi$ and
+    $J(\varepsilon,\varepsilon)=p$ CITE{IrelandRosen}.
+  formula-galois: >-
+    For $\gcd(c,d)=1$ and $\sigma_c$ the automorphism of
+    $\mathbb{Q}(\zeta_d)$ with $\sigma_c(\zeta_d)=\zeta_d^c$:
+    $\sigma_c(J(\chi,\psi))=J(\chi^c,\psi^c)$, where
+    $\chi_p(n,\cdot)^c=\chi_p(n^c,\cdot)$.
+  formula-fermat: >-
+    For $k$ and $l$ dividing $p-1$, the number of solutions
+    $(x,y)\in\mathbb{F}_p^2$ of $x^k+y^l=1$ is
+    $\sum_{\chi^k=\varepsilon,\ \psi^l=\varepsilon}J(\chi,\psi)$, the sum
+    over the characters of order dividing $k$ and of order dividing $l$, with
+    $\varepsilon(0)=1$ as in CITE{formula-conjugate} CITE{IrelandRosen}.
+  formula-cubic: >-
+    For $p\equiv 1\pmod 3$ and $\chi$ of order $3$: $J(\chi,\chi)=a+b\zeta_3$
+    with $a\equiv -1\pmod 3$, $b\equiv 0\pmod 3$ and $a^2-ab+b^2=p$; so
+    $4p=L^2+27M^2$ with $L=2a-b\equiv 1\pmod 3$ and $M=b/3$, and $x^3+y^3=1$
+    has $p-2+L$ solutions over $\mathbb{F}_p$ CITE{IrelandRosen}.
+  formula-quartic: >-
+    For $p\equiv 1\pmod 4$ and $\chi$ of order $4$:
+    $-\chi(-1)\,J(\chi,\chi)=a+bi\equiv 1\pmod{2+2i}$, that is $b$ even and
+    $a\equiv 1-b\pmod 4$, with $a^2+b^2=p$ CITE{IrelandRosen}.
+  formula-legendre: >-
+    For the quadratic character $\chi=\left(\frac{\cdot}{p}\right)=\chi_p(p-1,\cdot)$
+    and every nontrivial $\psi\neq\chi$: $J(\chi,\psi)=\psi(4)\,J(\psi,\psi)$,
+    so the row $n=p-1$ is the diagonal $m=n$ twisted by $\psi(4)$ CITE{BEW}.
+  formula-gauss-power: >-
+    For $\chi$ of order $d\geq 3$:
+    $\tau(\chi)^d=\chi(-1)\,p\prod_{j=1}^{d-2}J(\chi,\chi^j)$, the
+    $J(\chi,\chi^j)$ being the entries at $(p,m,m^j)$ CITE{IrelandRosen}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      G = DirichletGroup(7)
+      chi = [c for c in G if c.conrey_number() == 2][0]        # chi_7(2, .)
+      chi.jacobi_sum(chi)                                      # -3*zeta6 + 2, exact: -1 - 3 zeta_3
+      CBF = ComplexBallField(400)
+      sum(CBF(chi(a)) * CBF(chi(1 - a)) for a in range(2, 7))   # 0.5 - 2.598...i
+  program-pari:
+    language: PARI/GP
+    code: |-
+      p = 7; G = znstar(p, 1); chi1 = znconreychar(G, 2); chi2 = znconreychar(G, 2);   \\ chi_7(2, .) twice; psi is PARI's digamma
+      z = exp(2*Pi*I/(p-1)); sum(a = 2, p-1, z^((chareval(G, chi1, a) + chareval(G, chi2, 1-a)) * (p-1)))   \\ 0.5 - 2.598...*I
+Similar tables:
+  - table: HREF{Gauss_sums_of_primitive_Dirichlet_characters}[Gauss sums of primitive Dirichlet characters]
+    relation: $J(\chi,\psi)=\tau(\chi)\tau(\psi)/\tau(\chi\psi)$, the same characters under the same Conrey labels
+  - table: HREF{Zeros_of_Dirichlet_L_functions}[Zeros of Dirichlet $L$-functions]
+    relation: zeros of $L(s,\chi)$ for the same characters under the same Conrey labels
+  - table: HREF{Generalized_Bernoulli_numbers}[Generalized Bernoulli numbers]
+    relation: $B_{k,\chi}$ under the same labels
+  - table: HREF{Roots_of_unity}[Roots of unity]
+    relation: the values $\chi(a)\psi(1-a)$ that are summed, and the $\zeta_d$ the exact values are written in
+  - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
+    relation: holds the two entries at $p=5$, the roots $-1\mp 2i$ of $x^2+2x+5$
+Links:
+  Wiki:
+    title: 'Wikipedia: Jacobi sum'
+    url: https://en.wikipedia.org/wiki/Jacobi_sum
+  LMFDBJacobi:
+    title: 'LMFDB knowl: Jacobi sum'
+    url: https://www.lmfdb.org/knowledge/show/character.dirichlet.jacobi_sum
+  LMFDB:
+    title: 'LMFDB: Dirichlet characters'
+    url: https://www.lmfdb.org/Character/Dirichlet/
+  CL:
+    title: 'LMFDB knowl: Conrey label'
+    url: https://www.lmfdb.org/knowledge/show/character.dirichlet.conrey
+  OEIScubic:
+    title: 'OEIS A001479: $x$ with $p=x^2+3y^2$ for the primes $p\equiv 1\pmod 3$'
+    url: https://oeis.org/A001479
+  OEISperiods:
+    title: 'OEIS A394567: product of the three cubic Gauss periods, $((L+3)p-1)/27$'
+    url: https://oeis.org/A394567
+  OEISquartic:
+    title: 'OEIS A002972: the odd $x$ with $p=x^2+y^2$ for the primes $p\equiv 1\pmod 4$'
+    url: https://oeis.org/A002972
+References:
+  IrelandRosen:
+    bib: >-
+      K. Ireland and M. Rosen, A Classical Introduction to Modern Number
+      Theory, second edition, Graduate Texts in Mathematics 84, Springer,
+      1990, Chapter 8.
+  BEW:
+    bib: >-
+      B. C. Berndt, R. J. Evans and K. S. Williams, Gauss and Jacobi Sums,
+      Canadian Mathematical Society Series of Monographs and Advanced Texts
+      21, Wiley, 1998.
+  Weil:
+    bib: >-
+      A. Weil, Numbers of solutions of equations in finite fields, Bulletin
+      of the American Mathematical Society 55 (1949), 497-508.
+  issue14:
+    bib: >-
+      numberdb-data issue #14, "Jacobi sums of pairs of Dirichlet characters",
+      https://github.com/numberdb/numberdb-data/issues/14
+Tags:
+  - algebraic
+  - number theory
+Data properties:
+  type: C
+  rigour: proven
+  complete: 'no'
+  complete-note: every admissible pair for the primes $p\leq 19$ is here, 372 entries
+  rigour details: >-
+    Each value is a complex ball at 397 bits: the sum of the $p-2$ terms
+    $e^{2\pi i r}$, $r$ the exact rational with $\chi(a)\psi(1-a)=e^{2\pi i r}$,
+    each term arb's exponential of a ball containing $r$. The characters are
+    built from Conrey's definition (discrete logarithms to the least
+    primitive root), not from a library, and compared with Sage's on every
+    value of every character modulo every prime in range. The generator
+    requires every value to overlap an enclosure of Sage's exact Jacobi sum
+    of the characters Sage numbers $(p,m)$ and $(p,n)$; that exact value to
+    satisfy $J\bar J=p$, to lie in $\mathbb{Z}[\zeta_d]$, to equal
+    $\tau(\chi)\tau(\psi)/\tau(\chi\psi)$ in Sage's exact Gauss sums and to
+    equal the sum with $\chi$ and $\psi$ exchanged; and the congruences of
+    CITE{formula-cubic} and CITE{formula-quartic} and the identity
+    CITE{formula-legendre} to hold, before returning it. A hundred digits are
+    written; the widest ball, at $p=19$, supports $117$. Outside the
+    generator: five Jacobi sums computed by the LMFDB's calculator, four of
+    them entries here and one at $p=23$, agree exactly with Sage's; the
+    number of solutions of $x^k+y^l=1$ over $\mathbb{F}_p$ for every $k$
+    and $l$ dividing $p-1$, found by enumeration, agrees with the sum of
+    CITE{formula-fermat} in all $132$ cases and disagrees for every $p$
+    when the trivial character is given the value $0$ at $0$; the cubic
+    entries $J(\chi,\chi)$ reproduce OEIS A001479 and A001480
+    CITE{OEIScubic} and, through $L$, OEIS A394567 CITE{OEISperiods}, and
+    the quartic entries reproduce OEIS A002972 and A002973
+    CITE{OEISquartic}; the conjugate, Galois, Legendre-row and Gauss-sum
+    power identities hold exactly on every entry, and
+    $\tau(\chi)\tau(\psi)/\tau(\chi\psi)$ from the stored digits of the
+    Gauss-sum table encloses every entry; both programs were run and give
+    the values their comments state; and every comment's exact value, read
+    back from the stored table, encloses the stored digits. Two controls
+    that must fail did: the conjugate of each LMFDB value is refused, and
+    the quotient $\tau(\chi_7(2,\cdot))^2/\tau(\chi_7(3,\cdot))$ does not
+    enclose $J(\chi_7(2,\cdot),\chi_7(2,\cdot))$.
+Display properties:
+  number-header: $J(\chi_p(m,\cdot),\chi_p(n,\cdot))$
