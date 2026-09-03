@@ -668,3 +668,29 @@ page is 750 KB and the tool result is truncated at about 100 KB.
 Evidence: `/tmp/crit137.py` and `/tmp/crit137_out.txt`, 2026-09-03; the
 three `label:`/`properties:` lines at the top of the HTML block are the
 view's stdout noise, not part of the page.
+
+## KnotInfo's site is unreachable from here, but its data is a `pip download` away; the container has no SnapPy
+
+What happened: the 2026-09-03 ideas run needed KnotInfo as the independent
+copy of every knot invariant. `curl https://knotinfo.math.indiana.edu/`
+through the proxy returns no status at all (`000`), and
+`screen.source_names_it` reports `URLError`, so the site cannot be cited
+through the screen. `pip download --no-deps --no-binary :all:
+database_knotinfo` from this machine, through the same proxy, fetched the
+16 MB sdist in seconds; it contains
+`database_knotinfo/csv_data/knotinfo_data_complete.csv` (12966 knots to 13
+crossings, 248 pipe-separated columns, header row then a description
+row) and `linkinfo_data_complete.csv`. That file was the check for all 249
+knots. The Sage behind `agents/sage.sh` has neither `snappy` nor
+`database_knotinfo` (`ModuleNotFoundError` for both), so hyperbolic
+volumes cannot be computed in a run at all, and `sage.knots.knotinfo`
+imports but cannot answer.
+
+What to do instead: fetch published datasets as packages from PyPI when
+their site is dark; keep the sdist in `/tmp` under the batch's prefix. A
+build of a volume table needs SnapPy on the builder's own machine, and the
+proposal says so.
+
+Evidence: `/tmp/kn_pkg/database_knotinfo-2026.9.1.tar.gz`; probe output
+`snappy NOT importable: ModuleNotFoundError`, `database_knotinfo NOT
+importable: ModuleNotFoundError`, 2026-09-03.
