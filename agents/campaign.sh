@@ -26,6 +26,9 @@ cd "$here"
 
 builds="${1:-999}"
 made=0
+#Attempts at the table currently being built. Policy, not judgement: however
+#good a reason triage gives, the same table is not tried a third time.
+attempted=0
 
 batch_file() {
 	ls -t agents/table-ideas/BATCH-*.md 2>/dev/null | head -1
@@ -72,8 +75,57 @@ while [ "$made" -lt "$builds" ]; do
 	status=0
 	agents/run.sh build "Build the highest-ranked proposal in $batch that no generator in generators/ answers yet. Say at the start which one you chose and why it is the next one. Follow the order of work in the prompt. Do not publish. If every proposal in that batch is already built, say so and stop without building anything, and do not commit." || status=$?
 	if [ "$status" -ne 0 ]; then
-		say "stopping: the build run exited $status"
-		exit "$status"
+		#What to do about a failure is a judgement, and it has been made four
+		#times today by a line of shell and been wrong each time: HEAD moving
+		#always, `T182` inside a run stamp, `subtype` saying success on a 401,
+		#and a grep for `api_error_status` that cannot tell a run which died
+		#on turn 1 from one which died on turn 39 with a draft half filled.
+		#
+		#So it is asked of something that can look. What stays here is what is
+		#policy rather than judgement: one attempt per table, and the token
+		#refreshed first -- if the failure was the eight-hour boundary, the
+		#triage run shares that credential and cannot start either.
+		stamp=$(ls -t agents/runs/*-build.log 2>/dev/null | head -1 \
+		        | xargs -r basename 2>/dev/null | sed 's/-build.log$//' || true)
+		verdict=stop
+		if [ -n "$stamp" ] && [ "$attempted" -lt 2 ]; then
+			timeout 120 claude -p "Reply with exactly: ok" >/dev/null 2>&1 || true
+			say "the build run exited $status; asking what to do about it"
+			agents/run.sh triage "The build run $stamp failed with status $status. Its log is agents/runs/$stamp-build.log and the campaign was at $before before it. Decide what happens next and write agents/runs/$stamp-verdict." \
+				|| say "the triage run failed too"
+			if [ -f "agents/runs/$stamp-verdict" ]; then
+				verdict=$(head -1 "agents/runs/$stamp-verdict" | tr -d '[:space:]')
+			fi
+		fi
+		say "verdict: $verdict"
+		case "$verdict" in
+			resume)
+				attempted=$((attempted + 1))
+				session=$(awk -F'\t' -v s="$stamp" '$1 == s {print $10}' \
+				          agents/runs/COSTS.tsv | tail -1)
+				if [ -z "$session" ]; then
+					say "stopping: no session recorded for $stamp to resume"
+					exit "$status"
+				fi
+				NUMBERDB_RESUME="$session" agents/run.sh build "Continue where you left off." \
+					|| { say "stopping: the resumed run failed too"; exit 1; }
+				;;
+			restart)
+				attempted=$((attempted + 1))
+				continue
+				;;
+			skip)
+				attempted=0
+				say "skipped; see agents/table-ideas/SKIPPED.md"
+				continue
+				;;
+			*)
+				say "stopping: $verdict"
+				exit "$status"
+				;;
+		esac
+	else
+		attempted=0
 	fi
 
 	#Did it build anything? A build that built a table commits a generator for

@@ -37,7 +37,9 @@ case "$stage" in
 	build) prompt_file="agents/table-build/PROMPT.md" ;;
 	critique) prompt_file="agents/table-critique/PROMPT.md" ;;
 	repair) prompt_file="agents/table-repair/PROMPT.md" ;;
-	*) echo "usage: $0 {ideas|build|critique|repair} [task]" >&2; exit 2 ;;
+	triage) prompt_file="agents/triage/PROMPT.md" ;;
+	*) echo "usage: $0 {ideas|build|critique|repair|triage} [task]" >&2
+	   exit 2 ;;
 esac
 
 engine="${NUMBERDB_AGENT:-claude}"
@@ -312,7 +314,11 @@ set +e
 run_agent "${start_flags[@]}"
 status=$agent_status
 resumed=no
-if [ "$status" -ne 0 ] && [ "${NUMBERDB_NO_RETRY:-0}" != "1" ] && worth_resuming; then
+#Not for triage. Deciding whether a run is worth resuming is exactly the
+#judgement this shell should not be making, and a triage run that fails
+#should say so rather than quietly try again.
+if [ "$status" -ne 0 ] && [ "$stage" != "triage" ] \
+		&& [ "${NUMBERDB_NO_RETRY:-0}" != "1" ] && worth_resuming; then
 	#The token first, because the commonest transient failure here is the
 	#eight-hour boundary, and resuming into an expired token just fails again.
 	if [ "$engine" = "claude" ]; then

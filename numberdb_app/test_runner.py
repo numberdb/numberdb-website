@@ -444,3 +444,72 @@ class ARunCanBeResumed(TestCase):
 		body = script('agents/run.sh')
 		self.assertIn('session\\tresumed', body)
 		self.assertIn('"$session" "$resumed"', body)
+
+
+class WhatToDoAboutAFailureIsAsked(TestCase):
+	"""Four times today a line of shell answered a judgement, and was wrong.
+
+	"did it build anything?" asked whether HEAD had moved, and the runner
+	commits its own cost line. "which table?" grepped T1[0-9][0-9] and matched
+	T182 inside a run stamp. "did it succeed?" read `subtype`, which says
+	success on a 401. "is this worth retrying?" grepped api_error_status,
+	which cannot tell a run that died on turn 1 from one that died on turn 39
+	with a draft half filled.
+
+	So the decision is asked of something that can look. What stays in the
+	shell is policy: a cap, and refreshing the token first.
+	"""
+
+	def test_triage_is_a_stage(self):
+		body = script('agents/run.sh')
+		self.assertIn('triage) prompt_file="agents/triage/PROMPT.md" ;;', body)
+
+	def test_the_campaign_asks_before_deciding(self):
+		body = flat('agents/campaign.sh')
+		self.assertIn('agents/run.sh triage', body)
+		self.assertIn('-verdict', body)
+
+	def test_it_acts_on_each_verdict(self):
+		body = script('agents/campaign.sh')
+		for verdict in ('resume)', 'restart)', 'skip)'):
+			self.assertIn(verdict, body)
+
+	def test_an_unknown_verdict_stops(self):
+		#Including an empty file, a crashed triage run, or a word nobody
+		#planned for: the default is to fetch a person, not to guess.
+		body = script('agents/campaign.sh')
+		self.assertIn('verdict=stop', body)
+		self.assertIn("say \"stopping: $verdict\"", body)
+
+	def test_a_table_is_not_attempted_a_third_time(self):
+		#However good a reason triage gives.
+		body = flat('agents/campaign.sh')
+		self.assertIn('[ "$attempted" -lt 2 ]', body)
+		self.assertIn('attempted=$((attempted + 1))', body)
+
+	def test_the_counter_resets_when_a_table_succeeds(self):
+		body = script('agents/campaign.sh')
+		self.assertIn('\telse\n\t\tattempted=0\n\tfi', body)
+
+	def test_the_token_is_refreshed_before_triage_runs(self):
+		#If the failure was the eight-hour boundary, triage shares that
+		#credential and cannot start either.
+		body = flat('agents/campaign.sh')
+		at = body.index('agents/run.sh triage')
+		self.assertIn('claude -p "Reply with exactly: ok"', body[:at])
+
+	def test_triage_does_not_inherit_the_automatic_retry(self):
+		body = flat('agents/run.sh')
+		self.assertIn('[ "$stage" != "triage" ]', body)
+
+	def test_triage_reads_and_decides_and_does_not_repair(self):
+		import os
+
+		from django.conf import settings
+		with open(os.path.join(settings.BASE_DIR, 'agents', 'triage',
+		                       'PROMPT.md'), encoding='utf-8') as handle:
+			prompt = handle.read()
+		self.assertIn('You do not fix anything', prompt)
+		self.assertIn('You do not publish, review, or edit a table', prompt)
+		for verdict in ('`resume`', '`restart`', '`skip`', '`stop`'):
+			self.assertIn(verdict, prompt)
