@@ -116,3 +116,27 @@ and `unknotting_number` columns of the same row are empty rather than
 $0$.
 
 **Reported:** no.
+
+## OEIS A394567: the second `%F` formula does not produce the sequence
+
+**Found:** building T143, *Jacobi sums of pairs of Dirichlet characters
+modulo a prime*, on 2026-09-03, while using the sequence as an outside check
+on the cubic entries $J(\chi,\chi)=a+b\zeta_3$ through $L=2a-b$.
+
+**Evidence:** the entry's first formula, $a(n)=((c+3)q-1)/27$ with
+$q=x^2+xy+7y^2$, $c=2x+y\equiv 1\pmod 3$, gives $1,-1,7$ for $q=7,13,19$,
+which are the sequence's terms and which the table's cubic entries
+reproduce ($L=c$: $1,-5,7$). Its second formula,
+$a(n)=(L^3-3qL+3q-1)/27$ with $4q=L^2+27M^2$, $L\equiv 1\pmod 3$, gives
+$0$ for $q=7$ ($L=1$), $4$ for $q=13$ ($L=-5$) and $0$ for $q=19$ ($L=7$),
+none of which is a term. The two formulas are stated for the same $a(n)$
+with the same $L=2x+y$; the first agrees with the data and the second does
+not.
+
+**Confidence:** high that the second formula as printed is not a formula
+for $a(n)$; the intended identity is not obvious from it (perhaps a
+different quantity of the cubic periods was meant). The b-file and the
+first formula are unaffected, and the Lean verification linked from the
+entry is of the sequence, not of this line.
+
+**Reported:** no.
