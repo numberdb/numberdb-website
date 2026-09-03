@@ -555,3 +555,29 @@ the comparison.
 What to do instead: fetch sources with `curl` into `/tmp` under the table's
 prefix, once, and read the files; a run that depends on the site answering at
 the moment of the check is a run that stops for somebody else's outage.
+
+## `dry_run.py` does not say how many digits the balls support; the guard was nearly too small and nothing printed said so
+
+What happened: the Gauss–Laguerre generator was written with the same
+64-bit guard as the Legendre and Hermite ones, whose worst balls support
+110 digits. The dry run reported "every value is exact, or carries its own
+error bound" and would have let the table be filled. Only the wrapper
+(`/tmp/la_dry.py`) that also prints the worst relative radius showed
+$3\cdot10^{-104}$ at $n = 30$, $k = 21$: a hundred digits supported with
+three to spare, because $L_{31}$ evaluated at a node near 40 loses about
+fifteen digits to cancellation. The guard went to 128 bits (radius
+$1.6\cdot10^{-123}$) before anything was sent. `numberdb` would have
+refused to *write* more digits than the ball supports, so nothing wrong
+could have reached the table; but a table published with three spare
+digits is one the next family of the same shape overruns.
+
+What to do instead: `dry_run.py` should print, for a table of balls, the
+worst relative radius and where it is, beside the size measurement -- the
+same ten lines as the wrapper -- so the guard's own comment ("measured:
+...") can be written from the run that measured it. Until then, every
+build of a `proven` table should use a wrapper like `/tmp/la_dry.py` and
+quote the number in the generator.
+
+Evidence: `/tmp/la_dry_out.txt`, 2026-09-03, first run: `worst relative
+radius: (3.03e-104, '30,21,w')`; second run with `WORKING_GUARD = 128`:
+`(1.63e-123, '30,21,w')`.
