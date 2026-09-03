@@ -162,8 +162,10 @@ class ThePreflightStopsARunThatCannotWork(TestCase):
 		#phrase here produced "assisted by assisted by claude" -- and the
 		#field is capped at 100 characters, so the doubling cost the run id.
 		body = script('agents/run.sh')
-		self.assertIn('NUMBERDB_ASSISTED_BY="$engine', body)
+		self.assertIn('NUMBERDB_ASSISTED_BY="$harness', body)
 		self.assertNotIn('NUMBERDB_ASSISTED_BY="assisted by', body)
+		self.assertNotIn('assisted by', body.split(
+			'NUMBERDB_ASSISTED_BY=')[1][:80])
 
 	def test_the_key_is_in_the_environment_for_reading(self):
 		#The client takes NUMBERDB_API_KEY from the environment. Given only
@@ -255,3 +257,70 @@ class TheCampaignSequencesRunsAndStops(TestCase):
 		body = script('agents/run.sh')
 		self.assertIn('git add "$ledger"', body)
 		self.assertIn('next run refuses a dirty tree', body)
+
+
+class WhatARunRecordsAboutItself(TestCase):
+	"""There is rarely one thing that made a revision.
+
+	`produced_by` used to say `claude (agent run ...)`, which names the CLI.
+	Meanwhile every campaign run was answered by claude-fable-5-1, and seven
+	earlier ones by claude-fable-5, and the record could not tell any of them
+	apart -- nor say which version of which prompt was running, though the
+	build prompt changed materially between tables.
+
+	The rule is to name each layer that can change without anybody noticing,
+	at a version, and to name no layer the script cannot check.
+	"""
+
+	def test_it_names_the_harness_not_the_cli_binary(self):
+		body = script('agents/run.sh')
+		self.assertIn('harness="Claude Code"', body)
+		self.assertIn('harness="Codex CLI"', body)
+
+	def test_it_names_the_prompt_by_its_own_commit(self):
+		#Not HEAD: HEAD moves every run, because the run commits its cost.
+		body = flat('agents/run.sh')
+		self.assertIn('git log -1 --format=%h -- "$prompt_file"', body)
+
+	def test_produced_by_carries_harness_prompt_and_run(self):
+		body = flat('agents/run.sh')
+		self.assertIn(
+			'export NUMBERDB_ASSISTED_BY="$harness, $prompt_version, '
+			'run $started"', body)
+
+	def test_produced_by_does_not_claim_a_model(self):
+		"""It is exported before the run; the CLI picks the model after."""
+		body = flat('agents/run.sh')
+		exported = body.split('export NUMBERDB_ASSISTED_BY=')[1][:80]
+		for guess in ('opus', 'fable', 'sonnet', 'haiku', 'gpt'):
+			self.assertNotIn(guess, exported.lower())
+
+	def test_the_ledger_records_the_model_and_the_prompt(self):
+		body = script('agents/run.sh')
+		self.assertIn('model\\tprompt', body)
+		self.assertIn("named = (record.get('message') or {}).get('model')",
+		              body)
+
+	def test_the_ledger_does_not_call_an_api_error_a_success(self):
+		#A 401 ended a build with subtype "success" and is_error true, and
+		#the ledger believed the subtype.
+		body = script('agents/run.sh')
+		self.assertIn("if last.get('is_error'):", body)
+
+
+class ACampaignReadsTheStatusItActuallyGot(TestCase):
+	"""`$?` inside `if ! cmd` is the status of the negation, not the command.
+
+	So a build that died on an expired token was reported as "the build run
+	exited 0", and the campaign exited 0 with it: a failure that looked like
+	a finished campaign.
+	"""
+
+	def test_the_status_is_captured_from_the_command(self):
+		body = flat('agents/campaign.sh')
+		self.assertIn('agents/run.sh build "Build the highest-ranked', body)
+		self.assertIn('|| status=$?', body)
+
+	def test_it_does_not_read_the_status_of_a_negation(self):
+		body = flat('agents/campaign.sh')
+		self.assertNotIn('if ! agents/run.sh build', body)

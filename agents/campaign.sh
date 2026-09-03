@@ -65,8 +65,13 @@ while [ "$made" -lt "$builds" ]; do
 
 	say "next table from $(basename "$batch") (built $made so far)"
 	before=$(git rev-parse HEAD)
-	if ! agents/run.sh build "Build the highest-ranked proposal in $batch that no generator in generators/ answers yet. Say at the start which one you chose and why it is the next one. Follow the order of work in the prompt. Do not publish. If every proposal in that batch is already built, say so and stop without building anything, and do not commit."; then
-		status=$?
+	#`$?` inside `if ! cmd` is the status of the negation, not of the command,
+	#so this used to report "the build run exited 0" and then exit 0 -- a
+	#failed campaign that looked like a finished one. It said exactly that
+	#when an expired OAuth token stopped a build on 2026-09-03.
+	status=0
+	agents/run.sh build "Build the highest-ranked proposal in $batch that no generator in generators/ answers yet. Say at the start which one you chose and why it is the next one. Follow the order of work in the prompt. Do not publish. If every proposal in that batch is already built, say so and stop without building anything, and do not commit." || status=$?
+	if [ "$status" -ne 0 ]; then
 		say "stopping: the build run exited $status"
 		exit "$status"
 	fi
