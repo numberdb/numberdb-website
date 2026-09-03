@@ -199,6 +199,16 @@ BRIEF
 
 echo "=== $stage run $started, engine $engine" | tee "$log"
 
+# `set -e` would abort here the moment the agent exits non-zero: before
+# the status is captured, before the ledger is written, before the commit
+# that lets the next run start on a clean tree. So a run that failed left
+# no record at all. A build died 39 turns in on an expired token on
+# 2026-09-03, having cost real money, and the ledger has no row for it.
+# What a failure cost is exactly the number worth keeping.
+#
+# Off around the call only, and PIPESTATUS[0] is read immediately after,
+# so it is the agent's status and not tee's.
+set +e
 case "$engine" in
 	claude)
 		# An allowlist of command prefixes does not survive contact with a
@@ -229,6 +239,7 @@ case "$engine" in
 esac
 
 status=${PIPESTATUS[0]}
+set -e
 
 # What the run cost, in one line, appended to a ledger.
 #
