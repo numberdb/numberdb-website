@@ -161,6 +161,23 @@ section** -- the corpus holding the thing you are talking about is the most
 useful sentence in a comment, and the fourth link to it in the same paragraph
 is noise.
 
+**Never "below" or "above" either.** The document is written with Comments
+before Formulas; the page draws Formulas *first*, whatever order you wrote
+them in, so "the class number formula below" sends a reader past it into the
+Programs and back. Four tables said it before anyone noticed. `CITE` the
+formula's label instead -- it renders as the formula's number -- or name the
+formula itself: "by Siegel's formula $\zeta_K(-1)=\frac{1}{60}\sum\ldots$".
+Both stay right if the page order ever changes. `audit_table` now refuses
+this.
+
+**A formula states a relation, not who checked it.** "Checked on every
+entry", "both were computed and agree", "checked in ball arithmetic on every
+rule here" are facts about your run. In a Formulas section they read as an
+apology -- *we did not prove this, we looked* -- and the field for them
+already exists: `rigour details`, under "How they were obtained". Put what
+you verified there, once, and let the formula be a formula. `audit_table`
+refuses this too.
+
 **A comment states a fact.** Not how useful a search hit would be, not how
 distinctive the value is, not what a reader should conclude -- those are
 remarks about this website, and they read as apology. Where a value looks
