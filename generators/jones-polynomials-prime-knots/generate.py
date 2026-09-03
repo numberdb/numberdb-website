@@ -16,9 +16,11 @@ Run it with SageMath:
 
 **Which mirror image is which.** The name n_k names a knot only up to mirror
 image, and the Jones polynomial sees the difference: V of the mirror image
-is V(1/t). The two standard tables disagree: for 137 of the 249 knots the
-diagram in the Knot Atlas (which is where Sage's `Knots().from_table` takes
-its braid words) is the mirror image of the diagram in KnotInfo. Here the
+is V(1/t). The two standard tables disagree: for 139 of the 229 chiral knots
+the diagram in the Knot Atlas (which is where Sage's `Knots().from_table`
+takes its braid words) is the mirror image of the diagram in KnotInfo -- 137
+of them by the Jones polynomial, 9_42 and 10_125 by the signature, while for
+10_48, 10_71, 10_91 and 10_104 the two tables give the same braid word. Here the
 knot K is the one KnotInfo draws, built from the `braid_notation` column of
 the `database_knotinfo` package, version 2026.9.1, copied into
 KNOTINFO_BRAIDS below so that this file needs nothing but Sage; the entry
