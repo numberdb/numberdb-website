@@ -47,7 +47,9 @@ Comments:
     one CITE{LMFDBL}, is reached from its page for the character.
   comment-primitive: >-
     Only primitive characters are listed, and for $q=1$ only $s\geq 2$,
-    since $L(s,1)=\zeta(s)$ has its pole at $s=1$. No primitive character
+    since $L(s,1)=\zeta(s)$, the
+    HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[Riemann
+    zeta function], has its pole at $s=1$. No primitive character
     has conductor $q\equiv 2\pmod 4$, because the only character modulo $2$
     is trivial. The $L$-function of an imprimitive character is that of the
     primitive character inducing it with finitely many Euler factors
@@ -78,13 +80,15 @@ Comments:
     a value with a nonzero imaginary part is listed twice, once with each
     sign; $\chi\neq\bar\chi$ exactly when $\chi$ is not real.
   comment-entries: >-
-    Each entry's comment gives the order and the parity of $\chi$; for a
-    real character, the discriminant $D$ and, when $s\equiv\mathfrak
-    a\pmod 2$, the value as a rational multiple of $\pi^s/\sqrt{q}$; for a
-    character of order $d$ with $s\equiv\mathfrak a\pmod 2$ and
-    $\varphi(d)\leq 6$, the exact $B_{s,\bar\chi}\in\mathbb{Q}(\zeta_d)$,
-    $\zeta_d=e^{2\pi i/d}$, from which CITE{formula-closed-form} and the
-    Gauss sum give the value.
+    For $q>1$, each entry's comment gives the parity of $\chi$ and, for a
+    nonreal character, its order; for a real character it gives the
+    Kronecker symbol $\left(\frac{D}{\cdot}\right)$ in place of the order
+    and, when $s\equiv\mathfrak a\pmod 2$, the value as a rational multiple
+    of $\pi^s/\sqrt{q}$; for a nonreal character of order $d$ with
+    $s\equiv\mathfrak a\pmod 2$ and $\varphi(d)\leq 6$, the exact
+    $B_{s,\bar\chi}\in\mathbb{Q}(\zeta_d)$, $\zeta_d=e^{2\pi i/d}$, from
+    which CITE{formula-closed-form} and the Gauss sum give the value. The
+    two entries with $q=1$ name $\zeta(2)$ and $\zeta(3)$.
   comment-pentagon: >-
     For the quartic characters modulo $5$, CITE{formula-cotangent} gives
     $L(1,\chi_5(2,\cdot))=\frac{\pi}{5}\left(\cot\frac{\pi}{5}+i\cot\frac{2\pi}{5}\right)$
@@ -92,9 +96,7 @@ Comments:
     $\frac{\pi}{5}\cot\frac{\pi}{5}=0.8648062659\ldots$ is the isoperimetric
     quotient $4\pi A/P^2$ of the regular pentagon, CITE{OEISpentagon}.
   comment-requested: >-
-    Asked for in CITE{issue22}, of which this is the Dirichlet case; the
-    real characters at $s=1$ were answered first by the table of residues
-    $\kappa_D$.
+    Asked for in CITE{issue22}, of which this is the Dirichlet case.
 Formulas:
   formula-hurwitz: >-
     $L(s,\chi)=q^{-s}\sum_{a=1}^{q}\chi(a)\,\zeta(s,a/q)$ for $s\geq 2$, with
@@ -165,10 +167,10 @@ Similar tables:
   - table: HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[Residues of Dedekind zeta functions of quadratic fields]
     relation: holds every entry here with $\chi$ real and $s=1$, as $\kappa_D=L(1,\chi_D)$, indexed by $D$
   - table: HREF{Generalized_Bernoulli_numbers}[Generalized Bernoulli numbers]
-    relation: $B_{s,\bar\chi}$ under the same labels, one factor of the closed form when $\chi(-1)=(-1)^s$; $L(1-k,\chi)=-B_{k,\chi}/k$ gives the values at $s\leq 0$
+    relation: $B_{s,\bar\chi}$ under the same labels, the Bernoulli factor of the closed form CITE{formula-closed-form} when $\chi(-1)=(-1)^s$; $L(1-k,\chi)=-B_{k,\chi}/k$ gives the values at $s\leq 0$
   - table: HREF{Gauss_sums_of_primitive_Dirichlet_characters}[Gauss sums of primitive Dirichlet characters]
-    relation: $\tau(\chi)$ under the same labels, the other factor of the closed form
-  - table: HREF{Zeros_of_Dirichlet_L_functions}[Zeros of Dirichlet $L$-functions]
+    relation: $\tau(\chi)$ under the same labels, the Gauss-sum factor of the closed form CITE{formula-closed-form} when $\chi(-1)=(-1)^s$
+  - table: HREF{Zeros_of_Dirichlet_L_functions}[Zeros of Dirichlet L-series]
     relation: zeros of the same $L(s,\chi)$ under the same labels
   - table: HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[Values of the Riemann zeta function at rational numbers]
     relation: holds the entries $q=1$, $L(s,1)=\zeta(s)$
@@ -237,7 +239,7 @@ Data properties:
     character, that the imaginary part contain $0$ and the value contain
     the rational multiple of $\pi^s/\sqrt{q}$ of CITE{formula-real}.
     Outside the generator, every one of the $501$ entries with $q>1$ agrees
-    with PARI's `lfun` at $120$ digits, the character handed to PARI as its
+    with PARI's lfun at $120$ digits, the character handed to PARI as its
     Conrey label; the $19$ real characters at $s=1$ reproduce the stored
     digits of the residues $\kappa_D$; $\zeta(2)$, $\zeta(3)$ and $\pi/4$
     reproduce their stored digits; for $q\leq 11$ the closed form assembled
