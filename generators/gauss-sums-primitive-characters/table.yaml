@@ -1,0 +1,238 @@
+# The table document for the Gauss sums of primitive Dirichlet characters,
+# proposal 1 of agents/table-ideas/BATCH-2026-09-03T1011.md. Created as a
+# draft through the API (X-Draft: yes) and filled by generate.py beside it;
+# publishing is a person's act on the site.
+Title: Gauss sums of primitive Dirichlet characters
+Definition: >-
+  The Gauss sum $\tau(\chi)=\sum_{a=1}^{q}\chi(a)\,e^{2\pi i a/q}$ CITE{Wiki}
+  of a primitive Dirichlet character $\chi$ of conductor $q$, listed for
+  every primitive character, each indexed by its Conrey label $(q,n)$
+  CITE{CL}, $\chi=\chi_q(n,\cdot)$.
+Parameters:
+  q:
+    type: Z
+    title: conductor of $\chi$
+    display: $q$
+    constraints: $q\geq 1$, $q\not\equiv 2\pmod 4$
+    comments: >-
+      No primitive character has conductor $2 \bmod 4$, because the only
+      character modulo $2$ is trivial; so there is no row $q=2,6,10,\ldots$.
+  n:
+    type: Z
+    title: HREF{#CL}[Conrey index] of $\chi$
+    display: $n$
+    constraints: >-
+      $1\leq n\leq\max(q-1,1)$, $\gcd(n,q)=1$, and $\chi_q(n,\cdot)$ primitive
+    comments: The pair $(q,n)$ uniquely determines the Dirichlet character $\chi$.
+Comments:
+  comment-conrey: >-
+    The Conrey label $(q,n)$ CITE{CL} names the character $\chi_q(n,\cdot)$
+    with $\chi_q(n,m)=\prod_{p^e\parallel q}\chi_{p^e}(n,m)$, where for an odd
+    prime power $p^e$, with $g$ the least positive integer generating
+    $(\mathbb{Z}/p^k\mathbb{Z})^\times$ for every $k\geq 1$,
+    $\chi_{p^e}(g^a,g^b)=e^{2\pi i ab/\varphi(p^e)}$; for $2^e$ with $e\geq 2$
+    and the units written as $(-1)^a5^b$,
+    $\chi_{2^e}\big((-1)^a5^b,(-1)^{a'}5^{b'}\big)=e^{2\pi i(aa'/2+bb'/2^{e-2})}$;
+    and $\chi_q(n,m)=0$ when $\gcd(m,q)>1$. So $\chi_q(n,m)=\chi_q(m,n)$, the
+    trivial character is $\chi_q(1,\cdot)$, $\chi_q(n,\cdot)\chi_q(n',\cdot)
+    =\chi_q(nn',\cdot)$, and $\overline{\chi_q(n,\cdot)}=\chi_q(n',\cdot)$
+    with $nn'\equiv 1\pmod q$. The HREF{Zeros_of_Dirichlet_L_functions}[zeros
+    of $L(s,\chi)$] and the HREF{Generalized_Bernoulli_numbers}[generalized
+    Bernoulli numbers $B_{k,\chi}$] on this site, and the characters in the
+    LMFDB CITE{LMFDB}, are indexed the same way; the LMFDB's page for
+    $\chi_q(n,\cdot)$ computes its Gauss sums to ten decimals.
+  comment-primitive: >-
+    Only primitive characters are listed: the Gauss sum of an imprimitive
+    character is the Gauss sum of the primitive character inducing it times
+    a root of unity, or zero, by CITE{formula-imprimitive}. The trivial
+    character, of conductor $q=1$, is primitive and has $\tau(1)=1$.
+  comment-real: >-
+    For a real character, $\chi=\left(\frac{D}{\cdot}\right)$ is the
+    Kronecker symbol of the fundamental discriminant $D=\chi(-1)\,q$, and
+    $\tau(\chi)$ is $\sqrt{q}$ or $i\sqrt{q}$ by Gauss's theorem
+    CITE{formula-quadratic}; the part of the value that is zero is written
+    as an exact $0$.
+  comment-pure: >-
+    $\tau(\chi)$ is $\sqrt{q}$ times a root of unity for exactly those
+    characters here whose component at every prime $p$ dividing $q$ is
+    either quadratic or of conductor $p^e$ with $e\geq 2$
+    (CITE{formula-prime-power} with CITE{formula-multiplicative}): the
+    trivial character, the $30$ real characters, and $92$ others, all of
+    conductor $9$, $16$, $25$, $27$, $32$, $36$, $45$, $48$ or $49$, whose
+    comments give the root of unity, as in
+    $\tau(\chi_{16}(5,\cdot))=4\zeta_{16}^{15}$. For each of the other
+    $348$ characters the root number $\varepsilon(\chi)$ of
+    CITE{formula-functional-equation} is not a root of unity, so
+    $\tau(\chi)$ is neither real nor purely imaginary.
+  comment-entries: >-
+    Each entry's comment gives the order and the parity of $\chi$ and the
+    degree of $\tau(\chi)$ over $\mathbb{Q}$, the value as
+    $\sqrt{q}\,\zeta_m^k$ with $\zeta_m=e^{2\pi i/m}$ when it is a root of
+    unity times $\sqrt{q}$, and the minimal polynomial when the degree is
+    at most $12$; for a real character it gives $D$ and the closed form.
+    $\tau(\chi)$ is an algebraic integer in $\mathbb{Q}(\zeta_q,\zeta_d)$,
+    $d$ the order of $\chi$, and for a prime conductor its degree is given
+    by CITE{formula-degree}.
+  comment-requested: Asked for in CITE{issue12}.
+Formulas:
+  formula-absolute-value: >-
+    $\tau(\chi)\,\overline{\tau(\chi)}=q$ for every primitive character
+    $\chi$ of conductor $q$, so $|\tau(\chi)|=\sqrt{q}$ CITE{Davenport}.
+  formula-conjugate: >-
+    $\tau(\bar\chi)=\chi(-1)\,\overline{\tau(\chi)}$, and so
+    $\tau(\chi)\,\tau(\bar\chi)=\chi(-1)\,q$.
+  formula-twist: >-
+    $\tau_m(\chi)=\sum_{a=1}^{q}\chi(a)\,e^{2\pi i am/q}=\bar\chi(m)\,\tau(\chi)$
+    for every integer $m$ and primitive $\chi$; in particular
+    $\tau_m(\chi)=0$ when $\gcd(m,q)>1$.
+  formula-quadratic: >-
+    For the quadratic character $\chi=\left(\frac{D}{\cdot}\right)$ of
+    conductor $q=|D|$, $D$ a fundamental discriminant:
+    $\tau(\chi)=\sqrt{q}$ if $D>0$ and $\tau(\chi)=i\sqrt{q}$ if $D<0$
+    (Gauss) CITE{IrelandRosen}.
+  formula-multiplicative: >-
+    For $q=q_1q_2$ with $\gcd(q_1,q_2)=1$,
+    $\chi_q(n,\cdot)=\chi_{q_1}(n,\cdot)\,\chi_{q_2}(n,\cdot)$ and
+    $\tau(\chi_q(n,\cdot))=\chi_{q_1}(n,q_2)\,\chi_{q_2}(n,q_1)\,
+    \tau(\chi_{q_1}(n,\cdot))\,\tau(\chi_{q_2}(n,\cdot))$.
+  formula-imprimitive: >-
+    For a character $\chi$ modulo $q$ induced by the primitive character
+    $\chi^*$ of conductor $f$:
+    $\tau(\chi)=\mu(q/f)\,\chi^*(q/f)\,\tau(\chi^*)$, with $\mu$ the Möbius
+    function CITE{MV}; it is zero unless $q/f$ is squarefree and coprime to
+    $f$.
+  formula-functional-equation: >-
+    With $\mathfrak a=0$ for even $\chi$ and $\mathfrak a=1$ for odd $\chi$,
+    the completed $L$-function
+    $\Lambda(s,\chi)=(q/\pi)^{s/2}\,\Gamma\!\left(\frac{s+\mathfrak a}{2}\right)L(s,\chi)$
+    satisfies $\Lambda(s,\chi)=\varepsilon(\chi)\,\Lambda(1-s,\bar\chi)$ with
+    the root number $\varepsilon(\chi)=\tau(\chi)/(i^{\mathfrak a}\sqrt{q})$,
+    $|\varepsilon(\chi)|=1$ CITE{Davenport}.
+  formula-L-values: >-
+    For odd primitive $\chi$, $L(1,\chi)=\frac{\pi i\,\tau(\chi)}{q}\,B_{1,\bar\chi}$;
+    for even primitive $\chi$, $L(2,\chi)=\frac{\pi^2\,\tau(\chi)}{q^2}\,B_{2,\bar\chi}$;
+    with $B_{k,\chi}$ the generalized Bernoulli numbers. Both are
+    CITE{formula-functional-equation} at $s=1$ and $s=2$ together with
+    $L(1-k,\bar\chi)=-B_{k,\bar\chi}/k$.
+  formula-jacobi: >-
+    For a prime $p$ and characters $\chi$, $\psi$ modulo $p$ with $\chi$,
+    $\psi$ and $\chi\psi$ nontrivial, the Jacobi sum
+    $J(\chi,\psi)=\sum_{a=0}^{p-1}\chi(a)\,\psi(1-a)$ is
+    $\tau(\chi)\tau(\psi)/\tau(\chi\psi)$; hence for $\chi$ of order $d$
+    modulo $p$, $\tau(\chi)^d=\chi(-1)\,p\prod_{j=1}^{d-2}J(\chi,\chi^j)$,
+    an element of $\mathbb{Z}[\zeta_d]$ CITE{IrelandRosen}.
+  formula-degree: >-
+    For $\chi$ of order $d$ modulo a prime $p$,
+    $[\mathbb{Q}(\tau(\chi)):\mathbb{Q}]=d\,\varphi(d)$: $\mathbb{Q}(\tau(\chi))$
+    is the compositum of $\mathbb{Q}(\zeta_d)$ and the subfield of degree
+    $d$ of $\mathbb{Q}(\zeta_p)$ CITE{OEISdeg}.
+  formula-prime-power: >-
+    For a primitive character $\chi$ modulo a prime power $q=p^e$ with
+    $e\geq 2$, $\tau(\chi)=\sqrt{q}\,\zeta$ for a root of unity $\zeta$,
+    given explicitly in CITE{BEW}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      chi = [c for c in DirichletGroup(7) if c.conrey_number() == 2][0]   # chi_7(2, .)
+      chi.gauss_sum()                          # exact, in a cyclotomic field
+      CBF = ComplexBallField(400)
+      sum(CBF(chi(a)) * (2*CBF.pi()*CBF(0,1)*a/7).exp() for a in range(1, 7))   # 2.3704694... - 1.1751062...i
+  program-pari:
+    language: PARI/GP
+    code: |-
+      znchargauss(znstar(7, 1), 2)      \\ tau(chi_7(2, .)); the second argument is the Conrey index
+Similar tables:
+  - table: HREF{Zeros_of_Dirichlet_L_functions}[Zeros of Dirichlet $L$-functions]
+    relation: zeros of $L(s,\chi)$ for the same characters under the same Conrey labels
+  - table: HREF{Generalized_Bernoulli_numbers}[Generalized Bernoulli numbers]
+    relation: $B_{k,\chi}$ under the same labels; $L(1,\chi)$ and $L(2,\chi)$ are $\tau(\chi)$ times $B_{1,\bar\chi}$ or $B_{2,\bar\chi}$ times a power of $\pi$
+  - table: HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[Residues of Dedekind zeta functions of quadratic fields]
+    relation: $L(1,\chi)$ for the real characters, whose root number is $1$
+  - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
+    relation: holds $\tau(\chi)$ for $q=3,4,5$, the roots of $x^2+3$, $x^2+4$ and $x^2-5$
+  - table: HREF{Roots_of_unity}[Roots of unity]
+    relation: the values $\chi(a)$ and $e^{2\pi i a/q}$ that are summed
+  - table: HREF{Cyclotomic_polynomials}[Cyclotomic polynomials]
+    relation: $\Phi_q$, whose roots are the $e^{2\pi i a/q}$ with $\gcd(a,q)=1$
+Links:
+  Wiki:
+    title: 'Wikipedia: Gauss sum'
+    url: https://en.wikipedia.org/wiki/Gauss_sum
+  MathWorld:
+    title: 'MathWorld: Gaussian Sum'
+    url: https://mathworld.wolfram.com/GaussianSum.html
+  LMFDB:
+    title: 'LMFDB: Dirichlet characters'
+    url: https://www.lmfdb.org/Character/Dirichlet/
+  LMFDBGauss:
+    title: 'LMFDB knowl: Gauss sum'
+    url: https://www.lmfdb.org/knowledge/show/character.dirichlet.gauss_sum
+  CL:
+    title: 'LMFDB knowl: Conrey label'
+    url: https://www.lmfdb.org/knowledge/show/character.dirichlet.conrey
+  OEISdeg:
+    title: 'OEIS A396254: degree of the Gauss sum of a character modulo a prime'
+    url: https://oeis.org/A396254
+  OEIScubic:
+    title: 'OEIS A396260: real part of the Gauss sum of the cubic character modulo 7'
+    url: https://oeis.org/A396260
+References:
+  Davenport:
+    bib: >-
+      H. Davenport, Multiplicative Number Theory, third edition, Graduate
+      Texts in Mathematics 74, Springer, 2000, Chapter 9.
+  IrelandRosen:
+    bib: >-
+      K. Ireland and M. Rosen, A Classical Introduction to Modern Number
+      Theory, second edition, Graduate Texts in Mathematics 84, Springer,
+      1990, Chapters 6 and 8.
+  BEW:
+    bib: >-
+      B. C. Berndt, R. J. Evans and K. S. Williams, Gauss and Jacobi Sums,
+      Canadian Mathematical Society Series of Monographs and Advanced Texts
+      21, Wiley, 1998, Chapter 1.
+  MV:
+    bib: >-
+      H. L. Montgomery and R. C. Vaughan, Multiplicative Number Theory I.
+      Classical Theory, Cambridge Studies in Advanced Mathematics 97,
+      Cambridge University Press, 2007, Chapter 9.
+  issue12:
+    bib: >-
+      numberdb-data issue #12, "Gauss sums of Dirichlet characters",
+      https://github.com/numberdb/numberdb-data/issues/12
+Tags:
+  - algebraic
+  - number theory
+Data properties:
+  type: C
+  rigour: proven
+  complete: 'no'
+  complete-note: every primitive character of conductor $q\leq 50$ is here, 471 entries
+  rigour details: >-
+    Each value is a complex ball at 397 bits: the sum of the $q$ terms
+    $e^{2\pi i r}$, $r$ the exact rational with $\chi(a)e^{2\pi i a/q}=e^{2\pi i r}$,
+    each term arb's exponential of a ball containing $r$. The character is
+    built from Conrey's definition (discrete logarithms modulo the prime
+    powers dividing $q$), not from a library; the generator requires every
+    value to overlap an enclosure of Sage's exact `gauss_sum()` of the
+    character Sage numbers $(q,n)$, and $\tau(\chi)\overline{\tau(\chi)}$
+    to contain $q$, before returning it, and decides primitivity by hand and
+    by Sage's `is_primitive()`, which must agree. The digits written are
+    those the ball supports (the widest ball, at $q=47$, supports 116). The
+    degree in each comment is the number of distinct Galois conjugates of
+    $\tau(\chi)$, enclosed in balls and compared exactly where two overlap;
+    a minimal polynomial is the product over them, rounded to integers and
+    required to vanish at the exact value; a root of unity in a comment was
+    read off the ball and confirmed exactly in the cyclotomic field, and
+    its absence proven by a ball for $(\tau^2/q)^z$ excluding $1$, $z$ the
+    number of roots of unity in that field. Outside the generator, the
+    hand-built characters were compared with Sage's on every value of every
+    character of modulus at most 60; every value was compared with PARI's
+    `znchargauss` at its Conrey index; the values the LMFDB computes for
+    $(7,2)$, $(16,3)$, $(45,2)$ and the imprimitive $(50,3)$, and the
+    hundred-digit expansions OEIS A396258 to A396261 for the characters
+    modulo $7$, agree; and the formulas listed were checked on every entry.
+    The controls that must fail fail.
+Display properties:
+  number-header: $\tau(\chi_q(n,\cdot))$
