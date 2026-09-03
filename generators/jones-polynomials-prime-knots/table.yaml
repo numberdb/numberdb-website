@@ -1,0 +1,255 @@
+# The table document for the Jones polynomials of the prime knots up to ten
+# crossings and their mirror images, proposal 2 of
+# agents/table-ideas/BATCH-2026-09-03T0305.md. Created as a draft through the
+# API (X-Draft: yes) and filled by generate.py beside it; publishing is a
+# person's act on the site.
+Title: Jones polynomials of the prime knots with at most ten crossings
+Definition: >-
+  The Jones polynomial $V_K(t)\in\mathbb{Z}[t,t^{-1}]$ CITE{Wiki} of the
+  unknot, of every prime knot $K=n_k$ with at most ten crossings, named as in
+  the Rolfsen table CITE{Rolfsen} with Perko's correction CITE{Perko}, and
+  of its mirror image $\bar K$, listed as the polynomial $t^{-m}V_K(t)$ with
+  nonzero constant term.
+Parameters:
+  n:
+    type: Z
+    title: crossing number
+    display: $n$
+    constraints: $n=0$ or $3\leq n\leq 10$
+  k:
+    type: Z
+    title: index in the Rolfsen table
+    display: $k$
+    constraints: >-
+      $1\leq k\leq N(n)$, where $N(n)$ is the number of knots listed with $n$
+      crossings, $1,1,1,2,3,7,21,49,165$ for $n=0,3,4,\ldots,10$
+  knot:
+    type: Symbolic
+    title: the knot $K=n_k$ as KnotInfo draws it, or its mirror image $\bar K$
+    values:
+      K: $K$
+      mirror: $\bar K$
+    constraints: >-
+      $\bar K$ is listed for the 229 chiral knots only; the unknot and the 20
+      amphichiral knots are their own mirror images
+Comments:
+  comment-normalisation: >-
+    $V_K$ is a Laurent polynomial and the table holds polynomials, so the
+    entry is $t^{-m}V_K(t)$ with $m$ the lowest exponent of $V_K$, and each
+    entry's comment gives $m$. The right-handed trefoil has $V=t+t^3-t^4$
+    and the entry $-t^3+t^2+1$ with $m=1$; the left-handed trefoil has
+    $V=-t^{-4}+t^{-3}+t^{-1}$ and the entry $t^3+t-1$ with $m=-4$. The
+    variable is Jones's $t$, with $V(0_1)=1$ and the skein relation
+    CITE{formula-skein}; the Knot Atlas CITE{KnotAtlas} writes $q$ for it,
+    and Kauffman's bracket variable $A$ CITE{Wiki} is $t^{-1/4}$. Sage's
+    jones_polynomial() CITE{Sage} and KnotInfo CITE{KnotInfo} use the same
+    $t$, and Sage returns $V_K$ as a symbolic expression rather than a
+    Laurent polynomial, because a link can have half-integer exponents.
+  comment-mirror: >-
+    The name $n_k$ names a knot only up to mirror image, and
+    $V_{\bar K}(t)=V_K(t^{-1})$, so a table of Jones polynomials has to say
+    which mirror image it draws. Here $K$ is the knot as KnotInfo
+    CITE{KnotInfo} draws it, the closure of the braid in its braid notation,
+    and $\bar K$ is its mirror image. The Knot Atlas CITE{KnotAtlas}, and
+    Sage's Knots().from_table CITE{Sage}, which takes its braid words from
+    the Knot Atlas, draw $\bar K$ for 137 of the 249 knots: their $3_1$ is
+    the left-handed trefoil where KnotInfo's is the right-handed one.
+    Neither choice is wrong, which is why both mirror images are listed; the
+    HREF{Alexander_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Alexander polynomial]
+    does not see the difference.
+  comment-chirality: >-
+    An amphichiral knot is isotopic to its mirror image, and its Jones
+    polynomial satisfies $V(t)=V(t^{-1})$ CITE{Wiki}. Twenty knots here are
+    amphichiral, $4_1$, $6_3$, $8_3$, $8_9$, $8_{12}$, $8_{17}$, $8_{18}$,
+    $10_{17}$, $10_{33}$, $10_{37}$, $10_{43}$, $10_{45}$, $10_{79}$,
+    $10_{81}$, $10_{88}$, $10_{99}$, $10_{109}$, $10_{115}$, $10_{118}$ and
+    $10_{123}$, which is $1,1,5,13$ of them for $n=4,6,8,10$ CITE{OEISamph},
+    and each has a single entry. The converse fails: $9_{42}$, $10_{48}$,
+    $10_{71}$, $10_{91}$, $10_{104}$ and $10_{125}$ are chiral although
+    $V(t)=V(t^{-1})$ CITE{WikiChiral}, so their two entries are equal.
+  comment-signature: >-
+    The signature in each entry's comment is that of the knot listed, in the
+    sign convention of KnotInfo CITE{KnotInfo}, where the right-handed
+    trefoil has signature $-2$; the mirror image has the opposite signature.
+    The signature and the Jones polynomial are the two invariants here that
+    see the mirror image; the determinant $|V(-1)|$ does not.
+  comment-numbering: >-
+    The numbering is Rolfsen's after Perko's correction CITE{Perko}: the
+    knots Rolfsen listed as $10_{161}$ and $10_{162}$ are one knot, so there
+    are $165$ prime knots with ten crossings rather than $166$ CITE{OEIS},
+    and Rolfsen's $10_{163}$ to $10_{166}$ are $10_{162}$ to $10_{165}$ here
+    CITE{WikiList}. Sage's knot table, the Knot Atlas and KnotInfo all use
+    this numbering. Within each crossing number the alternating knots come
+    first: the non-alternating ones are $8_{19}$ to $8_{21}$, $9_{42}$ to
+    $9_{49}$ and $10_{124}$ to $10_{165}$, and every prime knot with fewer
+    than eight crossings is alternating.
+  comment-collisions: >-
+    The Jones polynomial does not determine the knot. Up to mirror image the
+    249 prime knots take 235 distinct polynomials, and 14 pairs share one:
+    with the knots as KnotInfo draws them, $V_{8_{16}}=V_{10_{156}}$,
+    $V_{10_{25}}=V_{10_{56}}$, $V_{10_{40}}=V_{10_{103}}$,
+    $V_{10_{41}}=V_{10_{94}}$, $V_{10_{43}}=V_{10_{91}}$,
+    $V_{10_{59}}=V_{10_{106}}$, $V_{10_{71}}=V_{10_{104}}$,
+    $V_{10_{73}}=V_{10_{83}}$ and $V_{10_{81}}=V_{10_{109}}$, while
+    $V_{5_1}(t)=V_{10_{132}}(t^{-1})$, $V_{8_8}(t)=V_{10_{129}}(t^{-1})$,
+    $V_{10_{22}}(t)=V_{10_{35}}(t^{-1})$, $V_{10_{60}}(t)=V_{10_{86}}(t^{-1})$
+    and $V_{10_{137}}(t)=V_{10_{155}}(t^{-1})$. The 479 entries hold 448
+    distinct polynomials, and each entry's comment names the other entries
+    with the same one. The unknot is the only knot here with $V=1$; whether
+    a nontrivial knot with $V=1$ exists is an open question, and none has up
+    to 24 crossings CITE{TuzunSikora}.
+  comment-range: >-
+    The Rolfsen table ends at ten crossings, and so do the names $n_k$. The
+    552 prime knots with eleven crossings are named $11a_1$ to $11a_{367}$
+    and $11n_1$ to $11n_{185}$ after Hoste and Thistlethwaite, alternating
+    and non-alternating separately CITE{KnotInfo}, which the parameters here
+    cannot express; among them the Conway knot $11n_{34}$ and the
+    Kinoshita–Terasaka knot $11n_{42}$ have the same Jones polynomial
+    CITE{Wiki}. The Alexander polynomials of the knots listed here are in
+    HREF{Alexander_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[their own table];
+    the HOMFLY-PT polynomials, asked for together with these in
+    CITE{issue91}, are not listed.
+Formulas:
+  formula-skein: >-
+    $V(0_1)=1$ and $t^{-1}V(L_+)-t\,V(L_-)=(t^{1/2}-t^{-1/2})\,V(L_0)$ for
+    three oriented link diagrams $L_+$, $L_-$ and $L_0$ that agree except at
+    one crossing, which is positive in $L_+$, negative in $L_-$ and smoothed
+    in $L_0$ CITE{Jones} CITE{Wiki}. For a knot every exponent of $V$ is an
+    integer.
+  formula-bracket: >-
+    $V_K(t)=\bigl((-A^3)^{-w(D)}\langle D\rangle\bigr)\big|_{A=t^{-1/4}}$
+    for any diagram $D$ of $K$, where $w(D)$ is the writhe of $D$ and
+    $\langle D\rangle$ its Kauffman bracket CITE{Kauffman} CITE{Wiki}.
+  formula-mirror: >-
+    $V_{\bar K}(t)=V_K(t^{-1})$ for the mirror image $\bar K$ CITE{Wiki}.
+    If the entry of $K$ is $P(t)=t^{-m}V_K(t)$, of degree $d$, the entry of
+    $\bar K$ is $t^dP(t^{-1})$, the same coefficients in the opposite order,
+    and its $m$ is $-m-d$.
+  formula-values: >-
+    $V_K(1)=1$, $V_K(\omega)=1$ for $\omega$ a primitive
+    HREF{Roots_of_unity}[cube root of unity], and $|V_K(-1)|=\det K=|\Delta_K(-1)|$,
+    where $\det K$ is the determinant of the knot and $\Delta_K$ its
+    HREF{Alexander_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Alexander polynomial]
+    CITE{MathWorld}.
+  formula-alternating: >-
+    For an alternating knot the span of $V_K$, the difference between its
+    highest and lowest exponents, is the crossing number $n$, its extreme
+    coefficients are $\pm1$, and its coefficients $a_e$ satisfy
+    $(-1)^ea_e\geq0$ for all $e$ or $(-1)^ea_e\leq0$ for all $e$
+    CITE{Kauffman} CITE{Murasugi} CITE{Thistlethwaite}; for a prime
+    non-alternating knot the span is less than $n$ CITE{Murasugi}. So the
+    entry of an alternating knot has degree $n$.
+  formula-torus: >-
+    $V_{T(p,q)}(t)=t^{(p-1)(q-1)/2}\,\dfrac{1-t^{p+1}-t^{q+1}+t^{p+q}}{1-t^2}$
+    for the right-handed torus knot $T(p,q)$ CITE{WikiTorus}. The torus
+    knots here are $3_1=T(2,3)$, $5_1=T(2,5)$, $7_1=T(2,7)$, $9_1=T(2,9)$,
+    $8_{19}=T(3,4)$ and $10_{124}=T(3,5)$, right-handed as KnotInfo draws
+    them, so that $V_{3_1}=t+t^3-t^4$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      B = BraidGroup(4)
+      K = Link(B([1, 1, 1, -2, -1, -1, -2, -3, 2, -3, -3]))   # 10_132, from KnotInfo's braid notation
+      V = K.jones_polynomial()                                # -t^(-7) + t^(-6) - t^(-5) + t^(-4) + t^(-2)
+      R.<t> = ZZ[]
+      c = V.coefficients(V.default_variable())               # [[coefficient, exponent], ...]
+      m = min(e for _, e in c)                                # -7
+      P = sum(ZZ(a) * t^(e - m) for a, e in c)                # t^5 + t^3 - t^2 + t - 1, the entry for K
+      Q = P.reverse()                                         # -t^5 + t^4 - t^3 + t^2 + 1, the entry for its mirror image
+Similar tables:
+  - table: HREF{Alexander_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Alexander polynomials of the prime knots with at most ten crossings]
+    relation: the same knots; $|V_K(-1)|=|\Delta_K(-1)|$, and the Alexander polynomial does not see the mirror image
+Links:
+  Wiki:
+    title: 'Wikipedia: Jones polynomial'
+    url: https://en.wikipedia.org/wiki/Jones_polynomial
+  WikiChiral:
+    title: 'Wikipedia: Chiral knot'
+    url: https://en.wikipedia.org/wiki/Chiral_knot
+  WikiTorus:
+    title: 'Wikipedia: Torus knot'
+    url: https://en.wikipedia.org/wiki/Torus_knot
+  WikiList:
+    title: 'Wikipedia: List of prime knots'
+    url: https://en.wikipedia.org/wiki/List_of_prime_knots
+  MathWorld:
+    title: 'MathWorld: Jones Polynomial'
+    url: https://mathworld.wolfram.com/JonesPolynomial.html
+  KnotAtlas:
+    title: 'The Knot Atlas: The Rolfsen Knot Table'
+    url: http://katlas.org/wiki/The_Rolfsen_Knot_Table
+  KnotInfo:
+    title: 'KnotInfo: Table of Knot Invariants (C. Livingston and A. H. Moore)'
+    url: https://knotinfo.math.indiana.edu/
+  Sage:
+    title: 'SageMath reference: Links, jones_polynomial'
+    url: https://doc.sagemath.org/html/en/reference/knots/sage/knots/link.html
+  OEIS:
+    title: 'OEIS A002863: number of prime knots with n crossings'
+    url: https://oeis.org/A002863
+  OEISamph:
+    title: 'OEIS A052401: number of amphichiral prime knots with n crossings'
+    url: https://oeis.org/A052401
+References:
+  Jones:
+    bib: >-
+      V. F. R. Jones, A polynomial invariant for knots via von Neumann
+      algebras, Bull. Amer. Math. Soc. 12 (1985), 103–111.
+  Kauffman:
+    bib: >-
+      L. H. Kauffman, State models and the Jones polynomial, Topology 26
+      (1987), 395–407.
+  Murasugi:
+    bib: >-
+      K. Murasugi, Jones polynomials and classical conjectures in knot
+      theory, Topology 26 (1987), 187–194.
+  Thistlethwaite:
+    bib: >-
+      M. B. Thistlethwaite, A spanning tree expansion of the Jones
+      polynomial, Topology 26 (1987), 297–309.
+  Rolfsen:
+    bib: >-
+      D. Rolfsen, Knots and Links, Publish or Perish, 1976, Appendix C: Table
+      of knots and links.
+  Perko:
+    bib: >-
+      K. A. Perko, On the classification of knots, Proc. Amer. Math. Soc. 45
+      (1974), 262–266.
+  TuzunSikora:
+    bib: >-
+      R. E. Tuzun and A. S. Sikora, Verification of the Jones unknot
+      conjecture up to 24 crossings, J. Knot Theory Ramifications 30 (2021),
+      2150020.
+  issue91:
+    bib: >-
+      numberdb-data issue #91, "Knot polynomials",
+      https://github.com/numberdb/numberdb-data/issues/91
+Tags:
+  - polynomial
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'yes'
+  rigour details: >-
+    Each polynomial is Sage's jones_polynomial() of the closure of KnotInfo's
+    braid word for the knot, which evaluates a representation of the braid
+    group. Before it is written the generator requires it to agree exactly
+    with the Kauffman bracket state sum on the planar diagram of the same
+    closure, and up to $t\mapsto t^{-1}$ with the Jones polynomial of Sage's
+    Knots().from_table, whose braid word comes from the Knot Atlas; the entry
+    of $\bar K$ is computed from the mirror image of the link and must equal
+    $V_K(t^{-1})$. The value must satisfy $V(1)=1$, $V(\omega)=1$,
+    $|V(-1)|=\det K$, the span and sign conditions for alternating and
+    non-alternating knots, $V(t)=V(t^{-1})$ exactly for the 20 amphichiral
+    and the six symmetric chiral knots, and the closed form for the six
+    torus knots. Outside the generator all 249 polynomials of $K$ were
+    compared with the jones_polynomial column of KnotInfo (package
+    database_knotinfo 2026.9.1, computed from KnotInfo's own diagrams) and
+    agree exactly, so the mirror entries agree with it under
+    $t\mapsto t^{-1}$; $|V(-1)|$ was compared with $|\Delta(-1)|$ for
+    KnotInfo's Alexander polynomials and $V(i)=(-1)^{\mathrm{Arf}}$ with
+    its Arf invariants; and the determinant, signature, amphichirality and
+    alternating facts in the comments were compared with KnotInfo's columns.
+Display properties:
+  number-header: $t^{-m}V_K(t)$
