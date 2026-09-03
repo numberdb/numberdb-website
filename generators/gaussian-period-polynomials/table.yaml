@@ -1,0 +1,190 @@
+# The table document for the Gaussian period polynomials, proposal 5 of
+# agents/table-ideas/BATCH-2026-09-03T1011.md. Created as a draft through the
+# API (X-Draft: yes) and filled by generate.py beside it; publishing is a
+# person's act on the site.
+Title: Gaussian period polynomials
+Definition: >-
+  For a prime $p$ and a divisor $k$ of $p-1$ with $1<k<p-1$, let
+  $f=(p-1)/k$, let $g$ be a primitive root modulo $p$ and
+  $\zeta_p=e^{2\pi i/p}$. The $k$ Gaussian periods CITE{Wiki} of length $f$
+  are $\eta_j=\sum_{i=0}^{f-1}\zeta_p^{\,g^{j+ki}}$ for $0\leq j<k$, and
+  the Gaussian period polynomial is
+  $\Psi_{p,k}(x)=\prod_{j=0}^{k-1}(x-\eta_j)$, a polynomial in
+  $\mathbb{Z}[x]$.
+Parameters:
+  p:
+    type: Z
+    title: prime
+    display: $p$
+    constraints: $p$ prime, $p\geq 5$
+  k:
+    type: Z
+    title: number of periods, the degree
+    display: $k$
+    constraints: $k\mid p-1$, $1<k<p-1$
+Comments:
+  comment-canonical: >-
+    $\Psi_{p,k}$ depends on neither $g$ nor the numbering of the periods:
+    another primitive root permutes the $\eta_j$. It is monic with integer
+    coefficients and irreducible over $\mathbb{Q}$ of degree $k$, and its
+    roots generate the unique subfield $K_k$ of degree $k$ of the
+    cyclotomic field $\mathbb{Q}(\zeta_p)$; each $\eta_j$ is the trace of
+    $\zeta_p^{\,g^j}$ from $\mathbb{Q}(\zeta_p)$ to $K_k$ CITE{Davenport}.
+    The roots are real when $f$ is even and none of them is real when $f$
+    is odd, because $-1$ is a $k$-th power modulo $p$ exactly when $f$ is
+    even. The name $\Psi_{p,k}$ is this table's; Gauss CITE{Gauss} and the
+    literature after him call it the period equation, or period polynomial,
+    of $k$ terms for $p$.
+  comment-excluded: >-
+    Two divisors of $p-1$ are left out. $k=1$ gives the single period
+    $\eta_0=-1$ and $\Psi_{p,1}=x+1$; $k=p-1$ gives the periods
+    $\zeta_p^{\,a}$ themselves, the HREF{Roots_of_unity}[roots of unity],
+    and $\Psi_{p,p-1}=\Phi_p$, the HREF{Cyclotomic_polynomials}[cyclotomic
+    polynomial], by CITE{formula-cyclotomic}.
+  comment-quadratic: >-
+    For $k=2$ the two periods are the sums over the quadratic residues and
+    the non-residues, and $\Psi_{p,2}=x^2+x+\frac{1-p^*}{4}$ with
+    $p^*=(-1)^{(p-1)/2}p$ by CITE{formula-quadratic}, so its roots
+    $\frac{-1\pm\sqrt{p^*}}{2}$ generate $\mathbb{Q}(\sqrt{p^*})$. For
+    $p\leq 19$ those roots are entries of
+    HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2],
+    and the entry comments link them.
+  comment-heptadecagon: >-
+    For $p=17$ the three rows $k=2,4,8$ are the equations of Gauss's
+    construction of the regular $17$-gon CITE{Gauss}: the periods of
+    length $8$, $4$ and $2$ are reached from $\mathbb{Q}$ by three
+    successive quadratic extensions, and $2\cos(2\pi/17)=\zeta_{17}+\zeta_{17}^{16}$
+    is a root of $\Psi_{17,8}$.
+  comment-entries: >-
+    An entry's comment gives, for $k=2$, the discriminant $p^*$ and the
+    roots; for $k=3$, the $L$ and $M$ with $4p=L^2+27M^2$ that Gauss's
+    formula CITE{formula-cubic} uses; for $f=2$, the roots as
+    $2\cos(2\pi a/p)$; and for $p=17$ the construction of the $17$-gon.
+    PARI's polsubcyclo(p, k), which returns a polynomial defining $K_k$,
+    returns $\Psi_{p,k}$ itself on every entry here.
+Formulas:
+  formula-trace: >-
+    $\sum_{j=0}^{k-1}\eta_j=\sum_{a=1}^{p-1}\zeta_p^{\,a}=-1$, so
+    $\Psi_{p,k}(x)=x^k+x^{k-1}+\cdots$; and since every
+    $\eta_j\equiv f\pmod{1-\zeta_p}$,
+    $\Psi_{p,k}(x)\equiv(x-f)^k\pmod p$.
+  formula-quadratic: >-
+    $\Psi_{p,2}(x)=x^2+x+\frac{1-p^*}{4}$ with $p^*=(-1)^{(p-1)/2}p$, that
+    is, $\eta_0-\eta_1=\pm\sqrt{p^*}$ (Gauss) CITE{Wiki}.
+  formula-cubic: >-
+    For $p\equiv 1\pmod 3$, writing $4p=L^2+27M^2$ with $L\equiv 1\pmod 3$,
+    which determines $L$ and $M^2$:
+    $\Psi_{p,3}(x)=x^3+x^2-\frac{p-1}{3}x-\frac{p(L+3)-1}{27}$ (Gauss
+    CITE{Gauss}, art. 358). The constant terms are the negatives of
+    OEIS A394567 CITE{OEIScubic}, the products of the three cubic periods.
+  formula-cosines: >-
+    For $f=2$, that is $k=(p-1)/2$, the periods are
+    $\zeta_p^{\,a}+\zeta_p^{-a}=2\cos(2\pi a/p)$ and
+    $\Psi_{p,(p-1)/2}(x)=\prod_{a=1}^{(p-1)/2}\bigl(x-2\cos(2\pi a/p)\bigr)$,
+    the minimal polynomial of $2\cos(2\pi/p)$. The cosines are in
+    HREF{Cos_pi_times_x_at_rational_numbers}[$\cos(\pi x)$ for rational $x$]
+    at $x=2a/p$.
+  formula-gauss-sums: >-
+    For a Dirichlet character $\chi$ modulo $p$ whose order $d>1$ divides
+    $k$, the HREF{Gauss_sums_of_primitive_Dirichlet_characters}[Gauss sum]
+    $\tau(\chi)=\sum_{a=1}^{p-1}\chi(a)\zeta_p^{\,a}$ is
+    $\sum_{j=0}^{k-1}\chi(g)^j\eta_j$, and conversely
+    $\eta_j=\frac1k\sum_{\chi^k=1}\overline{\chi(g)}^{\,j}\tau(\chi)$ with
+    $\tau(\chi_0)=-1$ for the trivial character CITE{Wiki}. With $g$ the
+    least primitive root, the character with $\chi(g)=e^{2\pi i/d}$ has
+    Conrey label $(p,n)$, $n\equiv g^{(p-1)/d}\pmod p$.
+  formula-discriminant: >-
+    $\operatorname{disc}\Psi_{p,k}=(-1)^{r_2}p^{k-1}m^2$, where
+    $(-1)^{r_2}p^{k-1}$ is the discriminant of $K_k$, with $r_2=k/2$ when
+    $f$ is odd and $r_2=0$ when $f$ is even, and $m$ is the index of
+    $\mathbb{Z}[\eta_0]$ in the ring of integers of $K_k$. For $f=2$, $m=1$
+    and $\operatorname{disc}\Psi_{p,(p-1)/2}=p^{(p-3)/2}$ CITE{Brillhart},
+    OEIS A203411 CITE{OEISdisc}.
+  formula-cyclotomic: >-
+    $\Psi_{p,1}(x)=x+1$ and
+    $\Psi_{p,p-1}(x)=\prod_{a=1}^{p-1}(x-\zeta_p^{\,a})=\Phi_p(x)=x^{p-1}+\cdots+x+1$,
+    the two rows not listed.
+Programs:
+  program-pari:
+    language: PARI/GP
+    code: |-
+      polsubcyclo(31, 5)      \\ x^5 + x^4 - 12*x^3 - 21*x^2 + x + 5
+  program-sage:
+    language: Sage
+    code: |-
+      p, k = 31, 5
+      f = (p - 1) // k; g = primitive_root(p)
+      K.<z> = CyclotomicField(p); R.<x> = ZZ[]
+      R(prod(x - sum(z^(g^(j + k*i) % p) for i in range(f)) for j in range(k)))   # x^5 + x^4 - 12*x^3 - 21*x^2 + x + 5
+Similar tables:
+  - table: HREF{Cyclotomic_polynomials}[Cyclotomic polynomials]
+    relation: $\Phi_p$ is the row $k=p-1$, not listed here
+  - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
+    relation: holds the roots $\frac{-1\pm\sqrt{p^*}}{2}$ of $\Psi_{p,2}$ for $p\leq 19$
+  - table: HREF{Cos_pi_times_x_at_rational_numbers}[$\cos(\pi x)$ for rational $x$]
+    relation: for $f=2$ the roots are $2\cos(2\pi a/p)$, twice its entries at $x=2a/p$
+  - table: HREF{Gauss_sums_of_primitive_Dirichlet_characters}[Gauss sums of primitive Dirichlet characters]
+    relation: the Gauss sums modulo $p$ and the periods are each other's Fourier transforms, CITE{formula-gauss-sums}
+  - table: HREF{Roots_of_unity}[Roots of unity]
+    relation: the $\zeta_p^{\,a}$ that are summed into the periods
+  - table: HREF{Hilbert_class_polynomials}[Hilbert class polynomials $H_\Delta$]
+    relation: the other family of exact polynomials here defining abelian extensions, of imaginary quadratic fields rather than of $\mathbb{Q}$
+Links:
+  Wiki:
+    title: 'Wikipedia: Gaussian period'
+    url: https://en.wikipedia.org/wiki/Gaussian_period
+  OEIScubic:
+    title: 'OEIS A394567: product of the three cubic Gaussian periods for primes $p\equiv 1\pmod 3$, the negative of the constant term of $\Psi_{p,3}$'
+    url: https://oeis.org/A394567
+  OEISdisc:
+    title: 'OEIS A203411: discriminant $p^{(p-3)/2}$ of $\Psi_{p,(p-1)/2}$, the period polynomial with $f=2$'
+    url: https://oeis.org/A203411
+References:
+  Gauss:
+    bib: >-
+      C. F. Gauss, Disquisitiones Arithmeticae, 1801, Section VII, arts.
+      343–358; English translation by A. A. Clarke, Yale University Press,
+      1966.
+  Davenport:
+    bib: >-
+      H. Davenport, Multiplicative Number Theory, third edition, Graduate
+      Texts in Mathematics 74, Springer, 2000, Chapter 3.
+  Brillhart:
+    bib: >-
+      J. Brillhart, Note on the discriminant of certain cyclotomic period
+      polynomials, Pacific Journal of Mathematics 152 (1992), no. 1, 15–19.
+Tags:
+  - polynomial
+  - number theory
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: every prime $p<200$ and every divisor $k$ of $p-1$ with $2\leq k\leq 12$ and $k<p-1$ is here, 158 entries
+  rigour details: >-
+    Each polynomial is the product $\prod(x-\eta_j)$ computed exactly in
+    Sage's cyclotomic field $\mathbb{Q}(\zeta_p)$, with every coefficient
+    required to be a rational integer. The generator requires it to equal
+    PARI's polsubcyclo(p, k), a different algorithm, and requires the same
+    product computed in ComplexBallField at 256 bits to enclose every
+    coefficient in a ball of radius below $1/2$ (the worst radius over the
+    table is $1.7\cdot 10^{-66}$), which determines an integer coefficient
+    on its own. Before an entry is returned it must be monic, irreducible
+    of degree $k$, with $x^{k-1}$ coefficient $1$; congruent to $(x-f)^k$
+    modulo $p$; equal to the closed forms of CITE{formula-quadratic} and
+    CITE{formula-cubic} when $k=2$ or $3$; have discriminant
+    $(-1)^{r_2}p^{k-1}$ times a perfect square, and $p^{k-1}$ exactly when
+    $f=2$; and have no root ball meeting the real axis when $f$ is odd.
+    Outside the generator, the 21 cubic constant terms agree with OEIS
+    A394567, the seven $f=2$ discriminants with OEIS A203411, the field
+    each $\Psi_{p,k}$ defines is isomorphic to Sage's subfield of degree
+    $k$ of $\mathbb{Q}(\zeta_p)$ for $p\leq 61$ (52 rows), the relation
+    CITE{formula-gauss-sums} holds exactly against Sage's Gauss sums for
+    every character of order dividing $k$ with $p\leq 61$ (91 pairs) and in
+    balls against the stored digits of the table of Gauss sums for $p\leq
+    50$ (71 pairs), the $f=2$ rows have the roots $2\cos(2\pi a/p)$ in
+    balls, and $\Psi_{7,6}$, computed as a control and not stored, is
+    $\Phi_7$. Two controls that must fail did: $\Psi_{7,3}$ is not
+    polsubcyclo(7, 2), and $\Psi_{13,3}$ is not $(x-3)^3$ modulo $13$.
+Display properties:
+  number-header: $\Psi_{p,k}(x)$
