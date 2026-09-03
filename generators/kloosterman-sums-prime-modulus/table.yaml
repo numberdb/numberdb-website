@@ -1,0 +1,213 @@
+# The table document for the Kloosterman sums modulo a prime, proposal 4 of
+# agents/table-ideas/BATCH-2026-09-03T1011.md. Created as a draft through the
+# API (X-Draft: yes) and filled by generate.py beside it; publishing is a
+# person's act on the site.
+Title: Kloosterman sums modulo a prime
+Definition: >-
+  The Kloosterman sum $K(a;p)=\sum_{x=1}^{p-1}e^{2\pi i(ax+\bar x)/p}$
+  CITE{Wiki} of a prime $p$ and an integer $a$ with $1\leq a\leq p-1$,
+  where $\bar x$ is the inverse of $x$ modulo $p$.
+Parameters:
+  p:
+    type: Z
+    title: prime modulus
+    display: $p$
+    constraints: $p$ prime
+  a:
+    type: Z
+    title: coefficient of $x$ in the exponent
+    display: $a$
+    constraints: $1\leq a\leq p-1$
+Comments:
+  comment-two-parameters: >-
+    Kloosterman's sum CITE{Kloosterman} has two parameters and any modulus,
+    $K(a,b;m)=\sum_{x\in(\mathbb{Z}/m\mathbb{Z})^\times}e^{2\pi i(ax+b\bar x)/m}$,
+    and $K(a;p)=K(a,1;p)$. By CITE{formula-two-parameters},
+    $K(a,b;p)=K(ab;p)$ whenever $p\nmid b$, so the entries here are every
+    $K(a,b;p)$ with $p\nmid ab$; the remaining ones are $K(a,0;p)=K(0,a;p)=-1$
+    for $p\nmid a$ and $K(0,0;p)=p-1$.
+  comment-prime: >-
+    Only prime moduli are listed. $K(a,b;m)$ is multiplicative in $m$ by
+    CITE{formula-multiplicative}, and for a prime power $m=p^k$ with
+    $k\geq 2$ and $p\nmid 2ab$ Salié CITE{Salie} evaluated it in closed
+    form, CITE{formula-salie}, so the sums modulo a prime are the ones that
+    are not given by a formula. Modulo $2$ and $3$ they are integers,
+    $K(1;2)=1$, $K(1;3)=-1$ and $K(2;3)=2$, and the entries start at $p=5$.
+  comment-algebraic: >-
+    $K(a;p)$ is a real algebraic integer: it lies in $\mathbb{Z}[\zeta_p]$,
+    $\zeta_p=e^{2\pi i/p}$ a HREF{Roots_of_unity}[root of unity], and equals
+    its complex conjugate by CITE{formula-real}. Its Galois conjugates are
+    the $K(ac^2;p)$ by CITE{formula-conjugates}, so the $p-1$ values at a
+    prime fall into two classes, the $a$ that are squares modulo $p$ and the
+    $a$ that are not, and the product of $x-K(a;p)$ over a class is a monic
+    polynomial in $\mathbb{Z}[x]$ of degree $(p-1)/2$. For every prime listed
+    here the $p-1$ values $K(a;p)$ are pairwise distinct, so each has degree
+    exactly $(p-1)/2$ over $\mathbb{Q}$ and the two polynomials are
+    irreducible; both are congruent to $(x+1)^{(p-1)/2}$ modulo $p$ by
+    CITE{formula-congruence}. Each entry's comment gives the Legendre symbol
+    $\left(\frac{a}{p}\right)$, which names its class, the degree, and for
+    $p\leq 23$ the polynomial. At $p=5$ the polynomials are $x^2-3x+1$ and
+    $x^2+2x-4$, and the four values $\frac{3\pm\sqrt{5}}{2}$ and
+    $-1\pm\sqrt{5}$ are HREF{Algebraic_numbers_of_degree_2}[algebraic
+    numbers of degree 2] on this site.
+  comment-angle: >-
+    Weil's bound CITE{formula-weil} writes $K(a;p)=2\sqrt{p}\cos\theta_{a,p}$
+    with a Kloosterman angle $\theta_{a,p}\in[0,\pi]$. As $a$ runs over
+    $1,\ldots,p-1$ and $p\to\infty$, the angles are equidistributed for the
+    Sato-Tate measure $\frac{2}{\pi}\sin^2\theta\,d\theta$ CITE{Katz}; no
+    entry here is $\pm 2\sqrt{p}$, and no simple closed form for $K(a;p)$
+    at a prime is known.
+  comment-twisted: >-
+    The issue this table answers CITE{issue13} asks for Kloosterman sums of
+    Dirichlet characters, $K(a,b,\chi;p)=\sum_{x=1}^{p-1}\chi(x)\,e^{2\pi
+    i(ax+b\bar x)/p}$, which for the trivial character $\chi$ is $K(a,b;p)$
+    and for a nontrivial $\chi$ is in general not real; for the quadratic
+    character it is a Salié sum. The entries here are the sums for the
+    trivial character. The LMFDB's page for a character CITE{LMFDB}
+    computes its twisted sums to ten decimals, and the values it gives for
+    the trivial character agree with the entries.
+Formulas:
+  formula-two-parameters: >-
+    $K(a,b;m)=K(b,a;m)$, and $K(ac,b;m)=K(a,bc;m)$ for $\gcd(c,m)=1$; in
+    particular $K(a,b;p)=K(ab,1;p)=K(ab;p)$ for a prime $p\nmid b$.
+  formula-real: >-
+    $\overline{K(a,b;m)}=K(-a,-b;m)=K(a,b;m)$, the second equality by
+    $x\mapsto -x$; so $K(a;p)=\sum_{x=1}^{p-1}\cos\frac{2\pi(ax+\bar x)}{p}$
+    is real.
+  formula-conjugates: >-
+    For $\gcd(c,p)=1$ the automorphism $\sigma_c$ of $\mathbb{Q}(\zeta_p)$
+    with $\sigma_c(\zeta_p)=\zeta_p^c$ satisfies $\sigma_c(K(a;p))=K(a,c^2;p)
+    =K(ac^2;p)$, by $x\mapsto cx$ in the sum.
+  formula-congruence: >-
+    $K(a;p)\equiv -1\pmod{(1-\zeta_p)}$ in $\mathbb{Z}[\zeta_p]$, since
+    each of the $p-1$ terms is $\equiv 1$; hence the minimal polynomial of
+    $K(a;p)$ is congruent to $(x+1)^{(p-1)/2}$ modulo $p$.
+  formula-moments: >-
+    $\sum_{a=1}^{p-1}K(a;p)=1$,
+    $\sum_{a=1}^{p-1}K(a;p)^2=p^2-p-1$,
+    $\sum_{a=1}^{p-1}K(a;p)^3=\left(\frac{-3}{p}\right)p^2+2p+1$, and
+    $\sum_{a=1}^{p-1}K(a;p)^4=2p^3-3p^2-3p-1$.
+  formula-weil: >-
+    $|K(a;p)|\leq 2\sqrt{p}$ for $p\nmid a$ CITE{Weil}; for a general
+    modulus, $|K(a,b;m)|\leq\tau(m)\sqrt{\gcd(a,b,m)}\sqrt{m}$ with $\tau(m)$
+    the number of divisors of $m$ CITE{IK}.
+  formula-gauss: >-
+    For a Dirichlet character $\chi$ modulo $p$ with Gauss sum
+    $\tau(\chi)=\sum_{a=1}^{p-1}\chi(a)e^{2\pi ia/p}$,
+    $\sum_{a=1}^{p-1}\chi(a)K(a;p)=\tau(\chi)^2$; so
+    $K(a;p)=\frac{1}{p-1}\sum_{\chi}\bar\chi(a)\tau(\chi)^2$, the sum over
+    all $p-1$ characters. The Gauss sums of the primitive characters are the
+    HREF{Gauss_sums_of_primitive_Dirichlet_characters}[Gauss sums of primitive
+    Dirichlet characters] on this site; for the trivial character
+    $\tau(\chi)=-1$.
+  formula-legendre: >-
+    $K(a^2;p)=\sum_{m=0}^{p-1}\left(\frac{m^2-4a^2}{p}\right)e^{2\pi im/p}$
+    for $p\nmid a$, with $\left(\frac{\cdot}{p}\right)$ the Legendre symbol.
+  formula-multiplicative: >-
+    For $m=m_1m_2$ with $\gcd(m_1,m_2)=1$ and $n_1m_1\equiv 1\pmod{m_2}$,
+    $n_2m_2\equiv 1\pmod{m_1}$:
+    $K(a,b;m)=K(n_2a,n_2b;m_1)\,K(n_1a,n_1b;m_2)$ CITE{IK}.
+  formula-salie: >-
+    For $m=p^k$ with $p$ an odd prime, $k\geq 2$ and $p\nmid ab$:
+    $K(a,b;m)=0$ if $\left(\frac{a}{p}\right)\neq\left(\frac{b}{p}\right)$,
+    and otherwise
+    $K(a,b;m)=2\left(\frac{\ell}{m}\right)\sqrt{m}\,\operatorname{Re}
+    \!\left(\varepsilon_m e^{4\pi i\ell/m}\right)$ with $\ell^2\equiv ab
+    \pmod m$, $\varepsilon_m=1$ for $m\equiv 1\pmod 4$ and
+    $\varepsilon_m=i$ for $m\equiv 3\pmod 4$ CITE{Salie}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      trivial_character(11).kloosterman_sum(1, 1)      # K(1;11), exact, in Q(zeta_22)
+      CBF = ComplexBallField(400)
+      sum((2*CBF.pi()*CBF(0,1)*(x + inverse_mod(x, 11))/11).exp() for x in range(1, 11)).real()   # -2.35787226287...
+  program-pari:
+    language: PARI/GP
+    code: |-
+      p = 11; a = 1; real(sum(x = 1, p-1, exp(2*Pi*I*(a*x + lift(1/Mod(x, p)))/p)))   \\ K(1;11)
+Similar tables:
+  - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
+    relation: holds the four entries at $p=5$, the roots of $x^2-3x+1$ and $x^2+2x-4$
+  - table: HREF{Gauss_sums_of_primitive_Dirichlet_characters}[Gauss sums of primitive Dirichlet characters]
+    relation: $\tau(\chi)^2$ is the transform $\sum_a\chi(a)K(a;p)$ of the entries, and the entries are the inverse transform of the $\tau(\chi)^2$
+  - table: HREF{Cos_pi_times_x_at_rational_numbers}[$\cos(\pi x)$ for rational $x$]
+    relation: $K(a;p)$ is a sum of $p-1$ values $\cos(2\pi k/p)$
+  - table: HREF{Roots_of_unity}[Roots of unity]
+    relation: the terms $e^{2\pi i(ax+\bar x)/p}$ that are summed
+  - table: HREF{Cyclotomic_polynomials}[Cyclotomic polynomials]
+    relation: $\Phi_p$, whose roots are the $p$-th roots of unity summed here
+Links:
+  Wiki:
+    title: 'Wikipedia: Kloosterman sum'
+    url: https://en.wikipedia.org/wiki/Kloosterman_sum
+  MathWorld:
+    title: "MathWorld: Kloosterman's Sum"
+    url: https://mathworld.wolfram.com/KloostermansSum.html
+  LMFDBKnowl:
+    title: 'LMFDB knowl: Kloosterman sum'
+    url: https://www.lmfdb.org/knowledge/show/character.dirichlet.kloosterman_sum
+  LMFDB:
+    title: 'LMFDB: Dirichlet characters'
+    url: https://www.lmfdb.org/Character/Dirichlet/
+References:
+  Kloosterman:
+    bib: >-
+      H. D. Kloosterman, On the representation of numbers in the form
+      $ax^2+by^2+cz^2+dt^2$, Acta Mathematica 49 (1926), 407-464.
+  Weil:
+    bib: >-
+      A. Weil, On some exponential sums, Proceedings of the National Academy
+      of Sciences of the USA 34 (1948), 204-207.
+  Salie:
+    bib: >-
+      H. Salié, Über die Kloostermanschen Summen $S(u,v;q)$, Mathematische
+      Zeitschrift 34 (1932), 91-109.
+  Katz:
+    bib: >-
+      N. M. Katz, Gauss Sums, Kloosterman Sums, and Monodromy Groups, Annals
+      of Mathematics Studies 116, Princeton University Press, 1988.
+  IK:
+    bib: >-
+      H. Iwaniec and E. Kowalski, Analytic Number Theory, American
+      Mathematical Society Colloquium Publications 53, 2004.
+  issue13:
+    bib: >-
+      numberdb-data issue #13, "Kloosterman sums of Dirichlet characters",
+      https://github.com/numberdb/numberdb-data/issues/13
+Tags:
+  - algebraic
+  - number theory
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: every prime $5\leq p\leq 71$ with every $a$ is here, 616 entries
+  rigour details: >-
+    Each value is a real ball at 397 bits: the sum of the $p-1$ terms
+    $e^{2\pi ir}$, $r$ the exact rational $(ax+\bar x)/p$ reduced modulo
+    $1$, each term arb's exponential of a ball containing $r$; the imaginary
+    part of the sum must contain $0$ and the real part is the value. A
+    hundred digits are written; the widest ball, at $p=47$, $a=4$, supports
+    115. Before any entry of a prime is returned the generator requires
+    every value to overlap an enclosure of Sage's exact Kloosterman sum of
+    the trivial character, computed in $\mathbb{Q}(\zeta_{2p})$ by a routine
+    sharing no code with the sum; the
+    exact value to equal its conjugate; $K^2<4p$; the $p-1$ balls to be
+    pairwise disjoint; the four moment identities to hold exactly; and the
+    product of $x-K(a;p)$ over each class to round to an integer polynomial
+    that is monic of degree $(p-1)/2$, vanishes exactly at Sage's value of
+    every member of its class and at none of the other, and is
+    $(x+1)^{(p-1)/2}$ modulo $p$. Outside the generator, the values the
+    LMFDB computes for $(7,1)$, $(11,1)$, $(13,5)$, $(23,7)$, $(47,1)$,
+    $(53,2)$, $(67,1)$ and $(71,3)$ agree to their ten decimals; the
+    transform $\sum_a\chi(a)K(a;p)=\tau(\chi)^2$ was checked in balls
+    against Sage's exact Gauss sum for every character of every prime here;
+    the Legendre-symbol form and the two-parameter reduction were checked
+    by brute force at every prime here, the multiplicativity at $792$
+    coprime pairs of moduli up to $15\cdot 23$, and Salié's evaluation at
+    $445$ cases with $m\leq 343$. Two controls that must fail did:
+    $K(1;7)$ against the LMFDB's $K(1;11)$, and Salié's formula at $m=25$
+    with the wrong $\varepsilon_m$.
+Display properties:
+  number-header: $K(a;p)$
