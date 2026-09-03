@@ -645,3 +645,26 @@ enough for every corpus lookup and stored-table fetch this run made.
 What to do instead: read the skill from the repository, and let the prompt
 say so; keep `WebFetch` out of a build run's plan and fetch outside sources
 with `curl` into `/tmp` under the table's prefix.
+
+## Rendering a draft's page as its owner sees it, without a session
+
+What happened: a critique has to read the *rendered* page, and a draft is
+Not Found to an anonymous `curl`. The T136 and T137 critiques rendered it
+in the throwaway with Django's `RequestFactory`: `django.setup()`, get the
+`Table` and its `created_by`, build `rf.get('/T137', HTTP_HOST=
+'numberdb.org')`, attach `request.user = table.created_by` and an unsaved
+`SessionStore()`, and call `views.table_by_tid(request, 'T137')`. The
+response body is the page the author sees, `status` 200, nothing is
+written, and no login or cookie is involved. The same script runs
+`call_command('audit_table', tid, '--links')` and prints `tree_of(head)`
+between markers, so one run gives audit, document and rendering.
+
+What to do instead: the script only existed as `/tmp/crit136.py` and was
+copied with `sed s/T136/T137/`; it should live in the repository as
+`agents/render_draft.py` or take the tid from the environment. Split the
+output on the `=== HTML ===` markers rather than reading it whole: the
+page is 750 KB and the tool result is truncated at about 100 KB.
+
+Evidence: `/tmp/crit137.py` and `/tmp/crit137_out.txt`, 2026-09-03; the
+three `label:`/`properties:` lines at the top of the HTML block are the
+view's stdout noise, not part of the page.
