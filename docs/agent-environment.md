@@ -1118,3 +1118,19 @@ the throwaway. Either is cheaper than the audit run.
 
 Evidence: `/tmp/tables_1.html` to `/tmp/tables_6.html` and
 `/tmp/crit146_titles_raw.txt`, 2026-09-03.
+
+## T146 links to draft T142 as well; the same publishing order
+
+T146's formula on Gauss sums and its Similar tables link
+`Gauss_sums_of_primitive_Dirichlet_characters`, draft T142, as T143, T144
+and T145 do. `audit_table` reports nothing, by design, while T146 is a
+draft, and the two links answer 404 until T142 is public. The T146 repair
+left them in, as the three earlier repairs did: the decision is which
+draft to publish first, and it is the same decision for all four. A
+critique of the next table that links T142 need not report it again
+unless the order has been settled.
+
+Evidence: `agents/critiques/T146.md` finding 1 and
+`agents/critiques/T146-repaired.md`, 2026-09-03; `curl -o /dev/null -w
+'%{http_code}' https://numberdb.org/Gauss_sums_of_primitive_Dirichlet_characters`
+through the proxy answers 404.
