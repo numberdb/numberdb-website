@@ -1,0 +1,226 @@
+# The table document for the Gauss-Kronrod nodes and weights, proposal 4 of
+# agents/table-ideas/BATCH-2026-09-02.md. Created as a draft through the API
+# (X-Draft: yes) and filled by generate.py beside it; publishing is a person's
+# act on the site.
+Title: Nodes and weights of Gauss–Kronrod quadrature
+Definition: >-
+  For $n\geq 1$ the Gauss–Kronrod rule with $2n+1$ points,
+  $\int_{-1}^{1} f(x)\,dx \approx \sum_{k=1}^{2n+1} w_k f(x_k)$, extends the
+  Gauss–Legendre rule with $n$ points by $n+1$ nodes so as to be exact for
+  every polynomial of degree at most $3n+1$ CITE{Wiki}. Listed are its nodes
+  $x_1<\cdots<x_{2n+1}$ and its weights $w_k$.
+Parameters:
+  n:
+    type: Z
+    title: number of points of the embedded Gauss rule; the Kronrod rule has $2n+1$ points
+    display: $n$
+    constraints: $n\geq 1$
+  k:
+    type: Z
+    title: index of the node, in increasing order
+    display: $k$
+    constraints: $1\leq k\leq 2n+1$
+  expression:
+    type: Symbolic
+    title: node or weight
+    values:
+      x: $x_k$
+      w: $w_k$
+    show-in-parameter-list: 'no'
+Comments:
+  comment-nodes: >-
+    The nodes are the roots of $\omega_n=P_n E_{n+1}$, where $P_n$ is the
+    HREF{Legendre_polynomials}[Legendre polynomial] of degree $n$ and
+    $E_{n+1}$ is the Stieltjes polynomial CITE{Wiki-Stieltjes}: the monic
+    polynomial of degree $n+1$ with $\int_{-1}^{1}P_n(x)E_{n+1}(x)\,x^j\,dx=0$
+    for $0\leq j\leq n$. Its roots are real, simple, lie in $(-1,1)$ and
+    interlace with the roots of $P_n$ CITE{Szego}, so in increasing order the
+    Gauss nodes are $x_2,x_4,\ldots,x_{2n}$ and the new nodes are
+    $x_1,x_3,\ldots,x_{2n+1}$; the entries $x_{2j}$ link to the corresponding
+    entries of
+    HREF{Nodes_and_weights_of_Gauss_Legendre_quadrature}[the table of Gauss–Legendre nodes and weights].
+    $E_{n+1}$ is not the Stieltjes–Wigert polynomial and not a Heine–Stieltjes
+    polynomial, which share the name.
+  comment-embedded: >-
+    At a Gauss node the weight $w_{2j}$ of the Kronrod rule is smaller than the
+    weight $\lambda_j$ of the Gauss rule, so the two rules are different rules
+    on a common set of points, and the Gauss weights are in the Gauss–Legendre
+    table, not here. Evaluating $f$ once at the $2n+1$ nodes gives both
+    $K=\sum_{k}w_kf(x_k)$ and $G=\sum_{j}\lambda_jf(x_{2j})$, and $|K-G|$
+    is used as an estimate of the error of $K$ CITE{Wiki}; that is how the
+    rules are used in adaptive integration.
+  comment-software: >-
+    The rules with $n=7,10,15,20,25,30$ ($15$, $21$, $31$, $41$, $51$ and
+    $61$ points) are the constants of QUADPACK's routines qk15 to qk61
+    CITE{QUADPACK}, and so of every library built on it: scipy's quad, the
+    GNU Scientific Library, Octave, R's integrate. The pair $G_7$, $K_{15}$
+    is the textbook example CITE{KMN}; Boost and Julia's QuadGK ship the same
+    six rules, and Kronrod's tables CITE{Kronrod} list them to sixteen places.
+  comment-both-halves: >-
+    Every rule is symmetric, $x_{2n+2-k}=-x_k$ and $w_{2n+2-k}=w_k$, and both
+    halves are listed rather than the nonnegative one: a reader holding
+    $-0.9914553711\ldots$ finds it with its sign.
+  comment-exact-entries: >-
+    Every value here is an algebraic number, and those that are rational are
+    written exactly rather than to a hundred digits: the central node
+    $x_{n+1}=0$ of every rule, its weight $w_{n+1}=q_{\omega_n}(0)/\omega_n'(0)$,
+    all weights of the rules with $n\leq 2$, and the weights $12500/46557$
+    at the Gauss nodes $\pm\sqrt{3/5}$ of $n=3$. The rules with $n\leq 3$
+    have closed forms in square roots, given in the comments on their
+    entries; $\pm 1/\sqrt{3}$ and $\pm\sqrt{3/5}$ are also in
+    HREF{Algebraic_numbers_of_degree_2}[the table of quadratic algebraic numbers].
+  comment-first-rule: >-
+    For $n=1$, $\omega_1=x(x^2-3/5)=\tfrac25P_3$, so the Kronrod extension
+    of the midpoint rule is the three-point Gauss rule, entry by entry. For
+    $n\geq 2$ the $(2n+1)$-point Gauss rule has degree $4n+1$ and the Kronrod
+    rule at most $3n+2$, and they share no node but $0$.
+  comment-other-rules: >-
+    The same extension of the Gauss–Lobatto and Gauss–Radau rules, and
+    Patterson's repeated extensions of the Kronrod rules
+    (the $2^m(n+1)-1$-point rules) CITE{Patterson}, are not listed.
+Formulas:
+  formula-stieltjes: >-
+    $E_2=x^2-\tfrac35$, $E_3=x^3-\tfrac67x$,
+    $E_4=x^4-\tfrac{10}{9}x^2+\tfrac{155}{891}$,
+    $E_5=x^5-\tfrac{15}{11}x^3+\tfrac{615}{1573}x$,
+    $E_6=x^6-\tfrac{21}{13}x^4+\tfrac{567}{845}x^2-\tfrac{8043}{186745}$.
+    $E_{n+1}$ has the parity of $n+1$, so $x=0$ is a root of $E_{n+1}$ for
+    even $n$ and of $P_n$ for odd $n$.
+  formula-weights: >-
+    $w_k=\dfrac{q_{\omega_n}(x_k)}{\omega_n'(x_k)}$ with
+    $q_{\omega_n}(x)=\int_{-1}^{1}\dfrac{\omega_n(t)-\omega_n(x)}{t-x}\,dt$,
+    and $q_{\omega_n}=c_n+E_{n+1}\,q_n$, where
+    $c_n=\int_{-1}^{1}P_n(x)\,x^n\,dx=\dfrac{2^{n+1}(n!)^2}{(2n+1)!}$ and
+    $q_n$ is the
+    HREF{Secondary_polynomials_of_the_Legendre_polynomials}[secondary polynomial of $P_n$].
+    Hence at a Gauss node
+    $w_{2j}=\lambda_j+\dfrac{c_n}{P_n'(x_{2j})\,E_{n+1}(x_{2j})}$ with
+    $\lambda_j=\dfrac{2}{(1-x_{2j}^2)P_n'(x_{2j})^2}$ the Gauss weight, and at
+    a new node $w_k=\dfrac{c_n}{P_n(x_k)\,E_{n+1}'(x_k)}$ CITE{Monegato}. The
+    correction to $\lambda_j$ is negative because $P_n'$ and $E_{n+1}$ take
+    opposite signs at every root of $P_n$, by the interlacing.
+  formula-exactness: >-
+    $\sum_{k=1}^{2n+1} w_k x_k^m=\int_{-1}^{1}x^m\,dx=\dfrac{1+(-1)^m}{m+1}$
+    for $0\leq m\leq 3n+1$ CITE{Laurie}, and by the symmetry also for
+    $m=3n+2$ when $n$ is odd; it fails at the next even $m$. So the degree
+    of exactness is $3n+1$ for even $n$ and $3n+2$ for odd $n$.
+  formula-symmetry: >-
+    $x_{2n+2-k}=-x_k$, $w_{2n+2-k}=w_k$, $w_k>0$ and $\sum_{k=1}^{2n+1}w_k=2$.
+  formula-central-weight: >-
+    $x_{n+1}=0$ and $w_{n+1}=\dfrac{q_{\omega_n}(0)}{\omega_n'(0)}$ is
+    rational: $\tfrac89$, $\tfrac{28}{45}$, $\tfrac{22016}{48825}$,
+    $\tfrac{201344}{581175}$, $\tfrac{118298624}{418034925}$ for
+    $n=1,\ldots,5$.
+  formula-lagrange: >-
+    $w_k=\int_{-1}^{1}\ell_k(x)\,dx$ with
+    $\ell_k(x)=\prod_{j\neq k}\frac{x-x_j}{x_k-x_j}$ the Lagrange basis
+    polynomial of the $2n+1$ nodes, as for every interpolatory rule; on
+    HREF{Lagrange_basis_polynomials_for_equally_spaced_nodes}[equally spaced nodes]
+    the same integrals are the Newton–Cotes weights.
+  formula-interval: >-
+    On $[a,b]$ the rule is $\int_a^b f \approx \frac{b-a}{2}\sum_k w_k\,
+    f\bigl(\frac{b-a}{2}x_k+\frac{a+b}{2}\bigr)$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x> = QQ[]
+      n = 7
+      P = R(legendre_P(n, x))
+      I = lambda p: sum(c*(1 + (-1)^m)/(m + 1) for m, c in enumerate(p.list()))      # int_{-1}^1 p(x) dx
+      M = matrix(QQ, [[I(P*x^(i + j)) for i in range(n + 1)] for j in range(n + 1)])
+      c = M.solve_right(vector(QQ, [-I(P*x^(n + 1 + j)) for j in range(n + 1)]))
+      E = x^(n + 1) + sum(c[i]*x^i for i in range(n + 1))                            # the Stieltjes polynomial E_8
+      omega = P*E
+      nodes = omega.roots(RealIntervalField(400), multiplicities=False)              # x_1 = -0.99145537112081263920...
+      S = PolynomialRing(RealIntervalField(400), 'x')
+      weights = [I(S(omega).quo_rem(S([-r, 1]))[0])/omega.derivative()(r) for r in nodes]   # w_1 = 0.02293532201052922496...
+Similar tables:
+  - table: HREF{Nodes_and_weights_of_Gauss_Legendre_quadrature}[Nodes and weights of Gauss–Legendre quadrature]
+    relation: the embedded rule; its nodes are $x_2,x_4,\ldots,x_{2n}$ here, with different weights
+  - table: HREF{Legendre_polynomials}[Legendre polynomials]
+    relation: $P_n$ is a factor of $\omega_n$, the polynomial whose roots are the nodes
+  - table: HREF{Secondary_polynomials_of_the_Legendre_polynomials}[Secondary polynomials of the Legendre polynomials]
+    relation: $q_{\omega_n}=c_n+E_{n+1}q_n$ in the weight formula
+  - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
+    relation: holds the nodes $\pm\sqrt{3/5}$ of $n=1,3$ and $\pm 1/\sqrt{3}$ of $n=2$
+  - table: HREF{Lagrange_basis_polynomials_for_equally_spaced_nodes}[Lagrange basis polynomials for equally spaced nodes]
+    relation: the weights are the integrals of the Lagrange basis of the nodes; on equally spaced nodes that gives Newton–Cotes
+Links:
+  Wiki:
+    title: 'Wikipedia: Gauss–Kronrod quadrature formula'
+    url: https://en.wikipedia.org/wiki/Gauss%E2%80%93Kronrod_quadrature_formula
+  Wiki-Stieltjes:
+    title: 'Wikipedia: Stieltjes polynomials'
+    url: https://en.wikipedia.org/wiki/Stieltjes_polynomials
+  Wiki-QUADPACK:
+    title: 'Wikipedia: QUADPACK'
+    url: https://en.wikipedia.org/wiki/QUADPACK
+  MathWorld:
+    title: 'MathWorld: Gauss-Kronrod Quadrature'
+    url: https://mathworld.wolfram.com/Gauss-KronrodQuadrature.html
+References:
+  Kronrod:
+    bib: >-
+      A. S. Kronrod, Nodes and weights of quadrature formulas. Sixteen-place
+      tables, Consultants Bureau, New York, 1965.
+  Szego:
+    bib: >-
+      G. Szegő, Über gewisse orthogonale Polynome, die zu einer oszillierenden
+      Belegungsfunktion gehören, Math. Ann. 110 (1935), 501–513.
+  Monegato:
+    bib: >-
+      G. Monegato, A note on extended Gaussian quadrature rules, Math. Comp.
+      30 (1976), 812–817.
+  Patterson:
+    bib: >-
+      T. N. L. Patterson, The optimum addition of points to quadrature
+      formulae, Math. Comp. 22 (1968), 847–856.
+  Laurie:
+    bib: >-
+      D. P. Laurie, Calculation of Gauss–Kronrod quadrature rules, Math. Comp.
+      66 (1997), 1133–1145.
+  QUADPACK:
+    bib: >-
+      R. Piessens, E. de Doncker-Kapenga, C. W. Überhuber and D. K. Kahaner,
+      QUADPACK, A subroutine package for automatic integration, Springer,
+      1983; the routines dqk15 to dqk61 at https://www.netlib.org/quadpack/.
+  KMN:
+    bib: >-
+      D. Kahaner, C. Moler and S. Nash, Numerical Methods and Software,
+      Prentice-Hall, 1989, §5.5.
+Tags:
+  - zero
+  - algebraic
+  - analysis
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: every rule with $n\leq 15$ (3 to 31 points) and the three larger rules of QUADPACK, $n=20,25,30$ (41, 51 and 61 points), nodes and weights, both halves
+  rigour details: >-
+    $P_n$ is built exactly in $\mathbb{Q}[x]$ and $E_{n+1}$ by solving its
+    defining linear system exactly over $\mathbb{Q}$; the roots of each are
+    isolated by Sage's real root isolation over the interval field, so each
+    node is an interval provably containing one root, carried on as an arb
+    ball at 493 bits; $w_k$ is $q_{\omega_n}(x_k)/\omega_n'(x_k)$ in ball
+    arithmetic, and the digits written are those the ball supports (the
+    widest, a weight of the 61-point rule, supports 124; the working
+    precision is what it is because $q_{\omega_n}$ and $\omega_n'$ for a
+    polynomial of degree 61 cancel about twenty digits near the ends of the
+    interval). Before a rule is written it must also satisfy the second
+    weight formula through $c_n$, $P_n$ and $E_{n+1}$, the interlacing, the
+    symmetry, $\sum w_k=2$, and exactness on $x^m$ for $m\leq 3n+1$ with
+    failure at the first even $m$ beyond. Outside the generator the values
+    were compared with the 33-digit constants of QUADPACK's six routines
+    (281 values; the central weight of the 51-point rule is printed there
+    one unit too large in its 33rd digit, the rational value being
+    $0.0615808180678329350787598242400645531\ldots$), with Wikipedia's
+    fifteen-point row, with closed forms for $n\leq 3$ computed in
+    $\mathbb{Q}$ and $\mathbb{Q}(\sqrt{330})$, with the Stieltjes polynomials
+    from a second linear system in the Legendre basis, with the weights as
+    integrals of the Lagrange basis polynomials, and with the stored
+    Gauss–Legendre nodes and weights, with the controls that must fail
+    failing.
+Display properties:
+  number-header: $x_k$ or $w_k$

@@ -68,3 +68,29 @@ with the computed weight. A last-digit rounding slip in a table transcribed
 from a longer computation is the ordinary way this happens.
 
 **Reported:** no.
+
+## QUADPACK dqk51.f: the central weight of the 51-point Gauss–Kronrod rule is misrounded in its last digit
+
+**Found:** building T136, *Nodes and weights of Gauss–Kronrod quadrature*
+(proposal 4 of `agents/table-ideas/BATCH-2026-09-02.md`), on 2026-09-03. The
+281 constants of netlib's `dqk15.f` to `dqk61.f` (`xgk`, `wgk`, `wg`, 33
+digits each) were compared with the computed balls, each printed value read
+as its last digit $\pm 1$; 280 agreed and this one did not.
+
+**Evidence:** `dqk51.f` gives `wgk(26)`, the weight at the central node
+$x=0$ of the 51-point rule, as
+`0.061580818067832935078759824240066`. That weight is a rational number,
+$q_{\omega}(0)/\omega'(0)$ for $\omega=P_{25}E_{26}$, and it was computed
+exactly in three independent ways (two in Sage over $\mathbb{Q}$, one in
+plain Python with `fractions`): it is
+$0.0615808180678329350787598242400645531904\ldots$, so correctly rounded to
+33 places the last three digits are `065`, not `066`; the printed value
+exceeds the true one by $1.45$ units in its last place. Every other constant
+in the six files, the ball at 493 bits, and the rule's exactness on $x^m$ for
+$m\leq 77$ with the rational weight all agree.
+
+**Confidence:** high; an exact rational against a printed rounding. For us
+to be wrong, the rule's exactness would have to fail with our weight, and
+it holds. Harmless in use: the constant is read into a double.
+
+**Reported:** no.
