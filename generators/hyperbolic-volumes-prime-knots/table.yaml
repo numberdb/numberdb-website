@@ -1,0 +1,212 @@
+# The table document for the hyperbolic volumes of the prime knots up to ten
+# crossings, proposal 3 of agents/table-ideas/BATCH-2026-09-03T0305.md.
+# Created as a draft through the API (X-Draft: yes) and filled by generate.py
+# beside it; publishing is a person's act on the site.
+Title: Hyperbolic volumes of the prime knots with at most ten crossings
+Definition: >-
+  The volume $\mathrm{Vol}(S^3\setminus K)$ of the complete hyperbolic metric
+  on the complement of a hyperbolic knot $K$ CITE{Wiki}, for every hyperbolic
+  prime knot $n_k$ with at most ten crossings, numbered as in the Rolfsen
+  table CITE{Rolfsen} after Perko's correction CITE{Perko}.
+Parameters:
+  n:
+    type: Z
+    title: crossing number
+    display: $n$
+    constraints: $4\leq n\leq 10$
+  k:
+    type: Z
+    title: index in the Rolfsen table
+    display: $k$
+    constraints: >-
+      $1\leq k\leq N(n)$, where $N(n)$ is the number of prime knots with $n$
+      crossings, $1,2,3,7,21,49,165$ for $n=4,\ldots,10$, and $n_k$ is not
+      one of the torus knots $5_1$, $7_1$, $9_1$, $8_{19}$, $10_{124}$
+Comments:
+  comment-which-knots: >-
+    A prime knot is a torus knot, a satellite knot or hyperbolic (Thurston),
+    and no satellite knot has fewer than thirteen crossings CITE{KnotInfo}. Of
+    the 249 prime knots with at most ten crossings, 243 are therefore
+    hyperbolic and are listed here; the six torus knots $3_1=T(2,3)$,
+    $5_1=T(2,5)$, $7_1=T(2,7)$, $9_1=T(2,9)$, $8_{19}=T(3,4)$ and
+    $10_{124}=T(3,5)$ have Seifert fibred complements, carry no hyperbolic
+    metric, and are left out rather than given the value $0$. The unknot is
+    left out for the same reason.
+  comment-numbering: >-
+    The numbering is Rolfsen's after Perko's correction CITE{Perko}: the
+    knots Rolfsen listed as $10_{161}$ and $10_{162}$ are one knot, so there
+    are $165$ prime knots with ten crossings rather than $166$ CITE{OEIS}, and
+    Rolfsen's $10_{163}$ to $10_{166}$ are $10_{162}$ to $10_{165}$ here
+    CITE{WikiList}. KnotInfo CITE{KnotInfo}, the Knot Atlas CITE{KnotAtlas}
+    and Sage's knot table use this numbering. SnapPy's own table of Rolfsen
+    knots, Manifold('n_k') CITE{SnapPy}, does not: it keeps Rolfsen's 166
+    ten-crossing knots, with 10_161 and 10_162 isometric, so its 10_{k+1} is
+    $10_k$ here for $k\geq 162$; and its 10_83 and 10_86 are each other's,
+    neither being isometric to the exterior of KnotInfo's or the Knot Atlas's
+    diagram of the knot of that name. The volumes here are of the knots as
+    KnotInfo and the Knot Atlas name them.
+  comment-invariance: >-
+    The volume of the complement does not depend on the orientation of the
+    knot or on the choice between a knot and its mirror image, so it is well
+    defined for the name $n_k$, which names a knot only up to mirror image.
+    It does not determine the knot: $\mathrm{Vol}(9_{42})$ and
+    $\mathrm{Vol}(10_{132})$ agree to the hundred digits listed, and eleven
+    of the volumes here agree to the hundred digits listed with the volume of
+    a knot with eleven to thirteen crossings, among them $5_2$ and the
+    $(-2,3,7)$ pretzel knot $12n_{242}$; each entry's comment names the other
+    knot. Mutant knots have the same volume CITE{Ruberman}, but the first
+    mutant pair, the Conway knot $11n_{34}$ and the Kinoshita–Terasaka knot
+    $11n_{42}$, has eleven crossings.
+  comment-entries: >-
+    Each entry's comment gives the knot's common name where it has one, the
+    name of its complement in the SnapPy census of orientable cusped
+    hyperbolic 3-manifolds where the complement has a triangulation with at
+    most nine tetrahedra (67 of the 243 do; m004 is the figure-eight knot
+    complement), whether the knot is alternating, and the knots with the same
+    volume. The Chern–Simons invariant, the cusp volume and the cusp shape,
+    which KnotInfo lists beside the volume, are not listed.
+  comment-range: >-
+    The Rolfsen table ends at ten crossings, and so do the names $n_k$. The
+    552 prime knots with eleven crossings are named $11a_1$ to $11a_{367}$ and
+    $11n_1$ to $11n_{185}$ after Hoste and Thistlethwaite, alternating and
+    non-alternating separately, which the two parameters here cannot express;
+    KnotInfo carries the volumes of all prime knots to thirteen crossings, to
+    ten decimals. The HREF{Alexander_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Alexander],
+    HREF{Jones_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Jones]
+    and HREF{Conway_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Conway polynomials]
+    of the same knots are listed separately. Asked for in CITE{issue134}.
+Formulas:
+  formula-triangulation: >-
+    $\mathrm{Vol}(S^3\setminus K)=\sum_{i=1}^{m}D(z_i)$ for any ideal
+    triangulation of the complement by $m$ positively oriented tetrahedra of
+    shapes $z_1,\ldots,z_m$, $\operatorname{Im}z_i>0$, where
+    $D(z)=\operatorname{Im}\mathrm{Li}_2(z)+\arg(1-z)\log|z|$ is the
+    Bloch–Wigner dilogarithm, the volume of the ideal tetrahedron of shape $z$
+    CITE{NeumannZagier}. The shapes satisfy the polynomial gluing equations
+    of the triangulation, so they are algebraic numbers and the volume is a
+    period.
+  formula-figure-eight: >-
+    $\mathrm{Vol}(4_1)=2D(e^{i\pi/3})=2\,\mathrm{Cl}_2(\pi/3)=3\,\mathrm{Cl}_2(2\pi/3)
+    =-6\int_0^{\pi/3}\log|2\sin\theta|\,d\theta$, where $\mathrm{Cl}_2$ is the
+    Clausen function CITE{WikiClausen}; it is twice the Gieseking constant
+    CITE{WikiGieseking}, and it is the smallest volume of any orientable
+    cusped hyperbolic 3-manifold CITE{CaoMeyerhoff}, hence of any hyperbolic
+    knot complement. Its digits are OEIS A091518 CITE{OEISFigureEight}.
+  formula-symmetry: >-
+    $\mathrm{Vol}(S^3\setminus\bar K)=\mathrm{Vol}(S^3\setminus K)$ for the
+    mirror image $\bar K$, and $\mathrm{Vol}(S^3\setminus K')=\mathrm{Vol}(S^3\setminus K)$
+    for any mutant $K'$ of $K$ CITE{Ruberman}.
+Programs:
+  program-snappy:
+    language: Sage
+    code: |-
+      from snappy import Link, Manifold       # sage -pip install snappy
+      Manifold('4_1').volume()                          # 2.02988321281931, a double
+      Manifold('4_1').high_precision().volume()         # 60 digits, not verified
+      Manifold('4_1').volume(verified=True, bits_prec=400)   # an interval, inside Sage only
+      # SnapPy's names are Rolfsen's before Perko, and its 10_83 and 10_86 are interchanged;
+      # the braid word of Sage's knot table names the knot as this table does:
+      Link(braid_closure=[-1, 2, -1, 2]).exterior().volume()   # 4_1 again
+Similar tables:
+  - table: HREF{Alexander_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Alexander polynomials of the prime knots with at most ten crossings]
+    relation: the same knots; $\Delta(9_{42})\neq\Delta(10_{132})$ although the two volumes agree
+  - table: HREF{Jones_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Jones polynomials of the prime knots with at most ten crossings]
+    relation: the same knots
+  - table: HREF{Conway_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Conway polynomials of the prime knots with at most ten crossings]
+    relation: the same knots
+Links:
+  Wiki:
+    title: 'Wikipedia: Hyperbolic volume'
+    url: https://en.wikipedia.org/wiki/Hyperbolic_volume
+  MathWorld:
+    title: 'MathWorld: Hyperbolic Volume'
+    url: https://mathworld.wolfram.com/HyperbolicVolume.html
+  WikiClausen:
+    title: 'Wikipedia: Clausen function'
+    url: https://en.wikipedia.org/wiki/Clausen_function
+  WikiGieseking:
+    title: 'Wikipedia: Gieseking manifold'
+    url: https://en.wikipedia.org/wiki/Gieseking_manifold
+  WikiList:
+    title: 'Wikipedia: List of prime knots'
+    url: https://en.wikipedia.org/wiki/List_of_prime_knots
+  KnotAtlas:
+    title: 'The Knot Atlas: The Rolfsen Knot Table'
+    url: http://katlas.org/wiki/The_Rolfsen_Knot_Table
+  KnotInfo:
+    title: 'KnotInfo: Table of Knot Invariants (C. Livingston and A. H. Moore)'
+    url: https://knotinfo.math.indiana.edu/
+  SnapPy:
+    title: 'SnapPy documentation: Verified computations'
+    url: https://snappy.computop.org/verify.html
+  OEIS:
+    title: 'OEIS A002863: number of prime knots with n crossings'
+    url: https://oeis.org/A002863
+  OEISFigureEight:
+    title: 'OEIS A091518: decimal expansion of the hyperbolic volume of the figure-eight knot complement'
+    url: https://oeis.org/A091518
+References:
+  Rolfsen:
+    bib: >-
+      D. Rolfsen, Knots and Links, Publish or Perish, 1976, Appendix C: Table
+      of knots and links.
+  Perko:
+    bib: >-
+      K. A. Perko, On the classification of knots, Proc. Amer. Math. Soc. 45
+      (1974), 262–266.
+  NeumannZagier:
+    bib: >-
+      W. D. Neumann and D. Zagier, Volumes of hyperbolic three-manifolds,
+      Topology 24 (1985), 307–332.
+  CaoMeyerhoff:
+    bib: >-
+      C. Cao and G. R. Meyerhoff, The orientable cusped hyperbolic 3-manifolds
+      of minimum volume, Invent. Math. 146 (2001), 451–478.
+  Ruberman:
+    bib: >-
+      D. Ruberman, Mutation and volumes of knots in S^3, Invent. Math. 90
+      (1987), 189–215.
+  HIKMOT:
+    bib: >-
+      N. Hoffman, K. Ichihara, M. Kashiwagi, H. Masai, S. Oishi and A. Takayasu,
+      Verified computations for hyperbolic 3-manifolds, Exp. Math. 25 (2016),
+      66–78.
+  issue134:
+    bib: >-
+      numberdb-data issue #134, "Volumes of hyperbolic manifolds",
+      https://github.com/numberdb/numberdb-data/issues/134
+Tags:
+  - volume
+  - period
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'yes'
+  rigour details: >-
+    Each volume is a ball computed in arb at 397 bits from an ideal
+    triangulation of the knot exterior that SnapPy CITE{SnapPy} builds from
+    the braid word of Sage's knot table, the closure of which is the knot
+    $n_k$. SnapPy supplies the gluing equations of the triangulation, which
+    are integers, and a floating-point solution; the generator then proves,
+    in ball arithmetic and without SnapPy's verify module, that a box of
+    complex balls contains a solution of a square subset of the rectangular
+    gluing equations (a Krawczyk test on $m-1$ edge equations and the
+    meridian, the last edge equation being implied because the edge
+    equations multiply to the identity), that every shape ball has positive
+    imaginary part, and that every logarithmic gluing equation evaluated on
+    the balls is within $0.1$ of $2\pi i$ (edges) or $0$ (meridian and
+    longitude), which pins each to its exact value. That is the criterion of
+    CITE{HIKMOT}: the triangulation is then a geometric triangulation of the
+    complete hyperbolic structure, unique by Mostow–Prasad rigidity, and the
+    volume is the sum of the Bloch–Wigner dilogarithms of the shape balls,
+    arb's polylog; the digits written are those the ball supports (the widest
+    ball, $10_{122}$, supports 113). Outside the generator all 243 balls were compared with
+    SnapPy's quad-double volumes, which agree to 62 digits, and with
+    KnotInfo's ten decimals, $\mathrm{Vol}(4_1)$ with $2\,\mathrm{Cl}_2(\pi/3)$ in arb and
+    with OEIS A091518, and the exterior of each braid closure was checked to
+    be isometric to the exterior of KnotInfo's diagram of the same knot. All
+    agree, and the controls that must fail fail. The identification of the
+    manifold with the complement of the knot named $n_k$ rests on those
+    tables, not on a proof.
+Display properties:
+  number-header: $\mathrm{Vol}(S^3\setminus n_k)$
