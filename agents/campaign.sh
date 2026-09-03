@@ -94,7 +94,27 @@ while [ "$made" -lt "$builds" ]; do
 	#The build checked its own numbers and cannot see its own prose; three
 	#faults this year lived only in the rendered page. It reports and changes
 	#nothing, so a critique that goes wrong costs a file nobody acts on.
-	tid=$(git show --stat HEAD | grep -oE 'T1[0-9]{2}' | head -1)
+	#Which table was built. This must never be fatal: `grep` finding nothing
+	#exits 1, and under `set -euo pipefail` that killed a campaign inside the
+	#command substitution -- after a build it had paid $10.43 for, before the
+	#critique, and without printing a reason at all.
+	#
+	#Taken from the generator the build commits, whose docstring names the
+	#table on its first line ("... -- numberdb.org/T135"), a convention every
+	#generator in the corpus follows. The alternatives were tried and are
+	#worse: HEAD by then is `run.sh`'s own COSTS.tsv commit; the build's commit
+	#subjects name the directory rather than the number; and the transcript
+	#mentions every table the build compared itself with, as well as a `T182`
+	#hiding inside the run stamp 20260902T182455Z.
+	generator=$(git diff --name-only "$before"..HEAD -- generators/ \
+	            | grep -E 'generate\.py$' | head -1 || true)
+	tid=''
+	if [ -n "$generator" ] && [ -f "$generator" ]; then
+		tid=$(grep -aoE '\bT[0-9]{2,4}\b' "$generator" | head -1 || true)
+	fi
+	if [ -z "$tid" ]; then
+		say "built something, but found no T-number in ${generator:-no committed generator}; skipping the critique"
+	fi
 	if [ -n "$tid" ]; then
 		say "reading $tid as a reader would"
 		agents/run.sh critique "Read $tid. Fetch the rendered page, read the document, run audit_table on it, and write agents/critiques/$tid.md. Change nothing else." \
