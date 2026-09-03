@@ -951,3 +951,47 @@ docstring says or say what it does.
 
 Evidence: `agents/critiques/T143.md`, findings 1 and 2; `/tmp/audit143_out.txt`
 2026-09-03: the repaired T143 renders with no `?entry=CL`.
+
+## A run that dies between writing its generator and creating its draft leaves a generator claiming a T-number it never got
+
+What happened: the Kloosterman build of 2026-09-03 found
+`generators/dirichlet-l-values-positive-integers/generate.py` untracked in
+the working tree, with `table = 'T144'` in it and no `table.yaml` beside
+it. `api/table?id=T144` answered "does not exist", which a draft also
+answers to an anonymous request, so the file looked like a finished
+proposal 3. Creating the Kloosterman draft then returned `tid = T144`: the
+earlier run had written the number it expected and stopped before the
+creation call, so no L-values draft exists and the number now belongs to
+another table. The Kloosterman generator had done the same thing in the
+other direction -- it was written with `T145` as a guess and had to be
+edited after the answer came back.
+
+What to do instead: a generator carries no T-number until the creation
+answer supplies one (write `TBD`, which `dry_run.py` accepts, and let the
+fill script refuse a mismatch, as the `*_fill.py` scripts already do); a
+stage-two prompt that asks "which proposals have a generator" should also
+ask whether the generator's table exists, with the key, before counting
+the proposal as built; and a run that ends early should commit what it has
+with a note saying the draft was not created. The L-values file is left
+untouched for a person: it is somebody else's uncommitted work, and its
+tid line is wrong.
+
+Evidence: `git status` at the start of the run (`?? generators/dirichlet-l-values-positive-integers/`),
+`grep -n T144 generators/dirichlet-l-values-positive-integers/generate.py`,
+`/tmp/kl_create_out.txt`: `tid = T144`, 2026-09-03.
+
+## LMFDB's Kloosterman calculator answered eight of ten `curl` requests today, and the two that failed left no page at all
+
+What happened: `Character/calc-kloosterman/Dirichlet/<p>/1?val=<a>,1`
+answered eight values with ten decimals in two batches of four and six,
+and `5/1?val=1,1` and `13/1?val=1,1` in the second batch answered nothing
+that matched the value pattern -- presumably the reCAPTCHA gate the notes
+above describe, arriving mid-batch. The eight were enough for the outside
+check and are in T144's rigour details.
+
+What to do instead: as the note on the character calculators says, a
+handful of values per batch, saved to `/tmp` as they arrive, and do not
+count a blank answer as a disagreement.
+
+Evidence: the shell output of the two `curl` loops, 2026-09-03; `LMFDB =
+{...}` in `/tmp/kl_probe.py` holds the eight.
