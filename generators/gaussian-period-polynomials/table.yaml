@@ -126,7 +126,7 @@ Similar tables:
   - table: HREF{Roots_of_unity}[Roots of unity]
     relation: the $\zeta_p^{\,a}$ that are summed into the periods
   - table: HREF{Hilbert_class_polynomials}[Hilbert class polynomials $H_\Delta$]
-    relation: the other family of exact polynomials here defining abelian extensions, of imaginary quadratic fields rather than of $\mathbb{Q}$
+    relation: its roots generate the ring class field of $\mathbb{Q}(\sqrt{\Delta})$, an abelian extension of an imaginary quadratic field, as the roots of $\Psi_{p,k}$ generate abelian extensions of $\mathbb{Q}$
 Links:
   Wiki:
     title: 'Wikipedia: Gaussian period'
