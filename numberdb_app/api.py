@@ -331,7 +331,6 @@ def _may_see_draft(request, table):
 	return may_see(table, key.user)
 
 
-@rate_limited
 def _ordered_document(table):
 	"""A table's document with its keys in the order the table stores them.
 
@@ -374,6 +373,7 @@ def _ordered_document(table):
 	return data.json or {}
 
 
+@rate_limited
 def table(request):
 	tid = request.GET.get('id',default=None)
 	url = request.GET.get('url',default=None)

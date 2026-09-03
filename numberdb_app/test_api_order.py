@@ -76,7 +76,14 @@ class TheDocumentKeepsItsOrder(TestCase):
 		}
 		served = self.served(tree)
 
+		#Writing through the API opens after five accepted edits. The board
+		#has that standing from the start, which is what the concurrency
+		#tests use; the point here is the 409, not the 403.
+		from django.contrib.auth.models import Group
+
 		from .models import ApiKey
+		from .permissions import BOARD_GROUP
+		self.user.groups.add(Group.objects.get_or_create(name=BOARD_GROUP)[0])
 		_key, token = ApiKey.issue(user=self.user, label='round trip')
 		import yaml
 		response = Client().post(
