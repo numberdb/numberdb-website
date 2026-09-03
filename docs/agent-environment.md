@@ -631,3 +631,17 @@ from named imports plus `Integer` (and `RealNumber` if the program has a
 decimal literal), and print the values the program's comments claim. A
 name the throwaway cannot import is a limitation of this environment, not
 of the program; substitute it, and say in the report which name it was.
+
+## `WebFetch` is refused for numberdb.org too; the skill is in the repository
+
+What happened: the build prompt opens with "Read <https://numberdb.org/skill>
+first", and `WebFetch` on that address answered "Unable to verify if domain
+numberdb.org is safe to fetch", as it did for Wikipedia in the Hermite run.
+The skill is the file `.claude/skills/numberdb-table/SKILL.md` in this
+repository, which is what the site serves; reading it there took one call and
+no network. `curl` through the proxy reaches the site as before, and was
+enough for every corpus lookup and stored-table fetch this run made.
+
+What to do instead: read the skill from the repository, and let the prompt
+say so; keep `WebFetch` out of a build run's plan and fetch outside sources
+with `curl` into `/tmp` under the table's prefix.
