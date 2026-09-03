@@ -786,6 +786,14 @@ def _carries_its_own_error(value) -> bool:
             return lower() != upper()
         except TypeError:
             return lower != upper
+    #A complex interval or ball has no endpoints of its own; its real and
+    #imaginary parts do, and it is a point only when both of them are. The
+    #first complex-ball generator to reach here, the Gauss sums of T142, was
+    #refused on every entry as "a point", because only real endpoints were
+    #looked for.
+    parts = _complex_parts(value)
+    if parts is not None:
+        return any(_carries_its_own_error(part) for part in parts)
     #A Sage Integer, Rational or polynomial. `is_exact()` lives on the parent
     #rather than on the element -- ZZ(2) has no such attribute, ZZ does -- and
     #asking the element instead is how the first version of this refused every
@@ -802,6 +810,27 @@ def _carries_its_own_error(value) -> bool:
         except (TypeError, AttributeError):
             pass
     return False
+
+
+def _complex_parts(value):
+    """The real and imaginary parts of a complex interval or ball, or None.
+
+    Sage's complex intervals and balls have ``real()`` and ``imag()`` methods;
+    this package's own ``ComplexInterval`` has them as attributes. Anything
+    whose parts are not themselves intervals -- a Python ``complex``, whose
+    parts are floats -- is not a complex interval and is left to the caller.
+    """
+    real, imag = getattr(value, 'real', None), getattr(value, 'imag', None)
+    if real is None or imag is None:
+        return None
+    if callable(real) and callable(imag):
+        try:
+            real, imag = real(), imag()
+        except TypeError:
+            return None
+    if all(getattr(part, 'lower', None) is not None for part in (real, imag)):
+        return real, imag
+    return None
 
 
 def _check_rigour(generator, table, identity, value, bounded=None):
