@@ -24,8 +24,9 @@ Parameters:
       one of the torus knots $5_1$, $7_1$, $9_1$, $8_{19}$, $10_{124}$
 Comments:
   comment-which-knots: >-
-    A prime knot is a torus knot, a satellite knot or hyperbolic (Thurston),
-    and no satellite knot has fewer than thirteen crossings CITE{KnotInfo}. Of
+    A prime knot is a torus knot, a satellite knot or hyperbolic
+    CITE{Thurston}, and no satellite knot has fewer than thirteen crossings
+    CITE{KnotInfo}. Of
     the 249 prime knots with at most ten crossings, 243 are therefore
     hyperbolic and are listed here; the six torus knots $3_1=T(2,3)$,
     $5_1=T(2,5)$, $7_1=T(2,7)$, $9_1=T(2,9)$, $8_{19}=T(3,4)$ and
@@ -40,9 +41,9 @@ Comments:
     CITE{WikiList}. KnotInfo CITE{KnotInfo}, the Knot Atlas CITE{KnotAtlas}
     and Sage's knot table use this numbering. SnapPy's own table of Rolfsen
     knots, Manifold('n_k') CITE{SnapPy}, does not: it keeps Rolfsen's 166
-    ten-crossing knots, with 10_161 and 10_162 isometric, so its 10_{k+1} is
-    $10_k$ here for $k\geq 162$; and its 10_83 and 10_86 are each other's,
-    neither being isometric to the exterior of KnotInfo's or the Knot Atlas's
+    ten-crossing knots, with $10_{161}$ and $10_{162}$ isometric, so its
+    $10_{k+1}$ is $10_k$ here for $k\geq 162$; and its $10_{83}$ and $10_{86}$
+    are each other's, neither being isometric to the exterior of KnotInfo's or the Knot Atlas's
     diagram of the knot of that name. The volumes here are of the knots as
     KnotInfo and the Knot Atlas name them.
   comment-invariance: >-
@@ -62,9 +63,10 @@ Comments:
     name of its complement in the SnapPy census of orientable cusped
     hyperbolic 3-manifolds where the complement has a triangulation with at
     most nine tetrahedra (67 of the 243 do; m004 is the figure-eight knot
-    complement), whether the knot is alternating, and the knots with the same
-    volume. The Chern–Simons invariant, the cusp volume and the cusp shape,
-    which KnotInfo lists beside the volume, are not listed.
+    complement), whether the knot is alternating, and the knots with at most
+    thirteen crossings whose volume agrees with the entry's to the hundred
+    digits listed. The Chern–Simons invariant, the cusp volume and the cusp
+    shape, which KnotInfo lists beside the volume, are not listed.
   comment-range: >-
     The Rolfsen table ends at ten crossings, and so do the names $n_k$. The
     552 prime knots with eleven crossings are named $11a_1$ to $11a_{367}$ and
@@ -74,7 +76,7 @@ Comments:
     ten decimals. The HREF{Alexander_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Alexander],
     HREF{Jones_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Jones]
     and HREF{Conway_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Conway polynomials]
-    of the same knots are listed separately. Asked for in CITE{issue134}.
+    of the same knots are listed separately.
 Formulas:
   formula-triangulation: >-
     $\mathrm{Vol}(S^3\setminus K)=\sum_{i=1}^{m}D(z_i)$ for any ideal
@@ -175,6 +177,10 @@ References:
     bib: >-
       numberdb-data issue #134, "Volumes of hyperbolic manifolds",
       https://github.com/numberdb/numberdb-data/issues/134
+  Thurston:
+    bib: >-
+      W. P. Thurston, Three-dimensional manifolds, Kleinian groups and
+      hyperbolic geometry, Bull. Amer. Math. Soc. (N.S.) 6 (1982), 357–381.
 Tags:
   - volume
   - period
