@@ -716,3 +716,21 @@ campaign ends, or rotate the key.
 
 Evidence: `agents/runs/20260903T030506Z-ideas.log`,
 `agents/runs/campaign-20260903T030422Z.log`; `.gitignore` lines 162-163.
+
+## `audit_table --links` reports KnotInfo as `URLError`; that is this network, not the link
+
+What happened: the audit of draft T138 returned one finding,
+`Links[KnotInfo] answered URLError: https://knotinfo.math.indiana.edu/`.
+The note above says the site gives `curl` no status from here; the audit
+runs on the same server and sees the same thing. The link is the right one
+-- KnotInfo is the reference every knot table cites, and its data reached
+the build as the `database_knotinfo` package -- so the finding was left
+standing rather than the link removed.
+
+What to do instead: a reviewer reading that audit line should treat it as
+the known outage of one route rather than a dead link, and check the
+address from another network before acting on it. The dry run and the fill
+of T138 needed one wrapper each around `agents/sage.sh`, as the T128 note
+says (`/tmp/kn_dry.py`), and the `Knots().from_table` computation of all
+249 knots took about fifteen seconds in the throwaway, so nothing else in
+this environment stood in the way of a knot table.
