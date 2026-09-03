@@ -4,6 +4,7 @@
 #     agents/run.sh ideas                 # stage one: propose a batch
 #     agents/run.sh build "proposal 1 of agents/table-ideas/BATCH-2026-08-30.md"
 #     agents/run.sh repair "Act on agents/critiques/T136.md"
+#     NUMBERDB_RESUME=<session> agents/run.sh build "..."   # continue a run
 #
 # The point of this file is that the session doing the work is not the session
 # that asked for it. Everything the run needs -- the prompt, the environment,
@@ -107,6 +108,48 @@ export NUMBERDB_KEY_FILE="$key_file"
 # the client already reads. It never reaches a transcript.
 export NUMBERDB_API_KEY="$(cat "$key_file")"
 
+# The access token lasts eight hours and is refreshed when a process starts,
+# not while one is running. A build takes half an hour to an hour and a half,
+# so one that begins near the end of a window crosses it and dies on a 401
+# mid-flight -- which happened twice on 2026-09-03. The second started at
+# 16:57 with thirteen minutes of token left and died at 17:10, thirty-nine
+# turns in, having spent most of a build.
+#
+# `expiresAt` is a timestamp, not a secret. A short call refreshes the token,
+# which is what rewrote the credentials two minutes after that run died, so
+# the fix is to make that call deliberately before a long one rather than by
+# accident afterwards.
+token_minutes_left() {
+	python3 - <<'TOKEN' 2>/dev/null || echo unknown
+import json, os, time
+try:
+	with open(os.path.expanduser('~/.claude/.credentials.json')) as handle:
+		at = json.load(handle)['claudeAiOauth']['expiresAt']
+except Exception:
+	print('unknown')
+else:
+	seconds = at / 1000 if at > 1e11 else at
+	print(int((seconds - time.time()) / 60))
+TOKEN
+}
+
+if [ "$engine" = "claude" ]; then
+	floor="${NUMBERDB_TOKEN_FLOOR:-90}"
+	left=$(token_minutes_left)
+	if [ "$left" != "unknown" ] && [ "$left" -lt "$floor" ] 2>/dev/null; then
+		echo "=== $left minutes of token left, under the $floor-minute floor; refreshing"
+		timeout 120 claude -p "Reply with exactly: ok" >/dev/null 2>&1 || true
+		left=$(token_minutes_left)
+		if [ "$left" != "unknown" ] && [ "$left" -lt "$floor" ] 2>/dev/null; then
+			echo "Refusing: $left minutes of token left and the refresh did not" >&2
+			echo "take. Re-authenticate (claude auth login), or lower" >&2
+			echo "NUMBERDB_TOKEN_FLOOR if this run is a short one." >&2
+			exit 6
+		fi
+		echo "=== refreshed; $left minutes now"
+	fi
+fi
+
 # A run that cannot reach what the prompt requires should stop now rather
 # than spend an hour and ten dollars finding out. Each of these is something
 # the prompt tells the run to do.
@@ -208,37 +251,78 @@ echo "=== $stage run $started, engine $engine" | tee "$log"
 #
 # Off around the call only, and PIPESTATUS[0] is read immediately after,
 # so it is the agent's status and not tee's.
-set +e
-case "$engine" in
-	claude)
-		# An allowlist of command prefixes does not survive contact with a
-		# shell: the run composed `(curl ...; curl ...)`, `which a b c && ...`
-		# and `sed -i ...`, none of which match a prefix, and nine commands
-		# were refused for shape rather than for substance. So Bash is allowed
-		# and the few things that could do harm are denied by name.
-		#
-		# This is a guard against drift, not against an adversary -- anything
-		# here can be worked around by a run that means to. What cannot be
-		# worked around is on the server: zeta3 may not publish, whatever it
-		# runs locally.
-		claude -p "$briefing" \
-			--permission-mode acceptEdits \
-			--allowed-tools \
-				"Bash" "Read" "Write" "Edit" "Glob" "Grep" "WebFetch" "TodoWrite" \
-			--disallowed-tools \
-				"Bash(ssh:*)" "Bash(scp:*)" "Bash(rsync:*)" "Bash(docker:*)" \
-				"Bash(git push:*)" "Bash(scripts/ship.sh:*)" \
-			--max-turns "$turns" \
-			--output-format stream-json --verbose 2>&1 | tee -a "$log"
-		;;
-	codex)
-		codex exec --full-auto "$briefing" 2>&1 | tee -a "$log"
-		;;
-	*)
-		echo "unknown engine $engine" >&2; exit 2 ;;
-esac
+# The session is chosen here rather than read out of the transcript
+# afterwards, because the transcripts are not kept and the ledger is: a run
+# from last week is still resumable after its log is gone.
+session="$(python3 -c 'import uuid; print(uuid.uuid4())')"
+if [ -n "${NUMBERDB_RESUME:-}" ]; then
+	session="$NUMBERDB_RESUME"
+	start_flags=(--resume "$session")
+	echo "=== resuming session $session"
+else
+	start_flags=(--session-id "$session")
+fi
 
-status=${PIPESTATUS[0]}
+agent_status=0
+
+run_agent() {
+	case "$engine" in
+		claude)
+			# An allowlist of command prefixes does not survive contact with a
+			# shell: the run composed `(curl ...; curl ...)`, `which a b c && ...`
+			# and `sed -i ...`, none of which match a prefix, and nine commands
+			# were refused for shape rather than for substance. So Bash is allowed
+			# and the few things that could do harm are denied by name.
+			#
+			# This is a guard against drift, not against an adversary -- anything
+			# here can be worked around by a run that means to. What cannot be
+			# worked around is on the server: zeta3 may not publish, whatever it
+			# runs locally.
+			claude -p "$briefing" \
+				--permission-mode acceptEdits \
+				--allowed-tools \
+					"Bash" "Read" "Write" "Edit" "Glob" "Grep" "WebFetch" "TodoWrite" \
+				--disallowed-tools \
+					"Bash(ssh:*)" "Bash(scp:*)" "Bash(rsync:*)" "Bash(docker:*)" \
+					"Bash(git push:*)" "Bash(scripts/ship.sh:*)" \
+				--max-turns "$turns" \
+				"$@" \
+				--output-format stream-json --verbose 2>&1 | tee -a "$log"
+			agent_status=${PIPESTATUS[0]}
+			;;
+		codex)
+			codex exec --full-auto "$briefing" 2>&1 | tee -a "$log"
+			agent_status=${PIPESTATUS[0]}
+			;;
+		*)
+			echo "unknown engine $engine" >&2; exit 2 ;;
+	esac
+}
+
+# Whether the run died of something that trying again could survive: an API
+# error, an expired token, an overload. Not a refusal and not running out of
+# turns, where a second attempt spends the same money to be told the same
+# thing.
+worth_resuming() {
+	tail -c 4000 "$log" 2>/dev/null | tr -d '\000' | grep -qE \
+		'"api_error_status":[0-9]|OAuth access token has expired|overloaded_error|Internal server error'
+}
+
+set +e
+run_agent "${start_flags[@]}"
+status=$agent_status
+resumed=no
+if [ "$status" -ne 0 ] && [ "${NUMBERDB_NO_RETRY:-0}" != "1" ] && worth_resuming; then
+	#The token first, because the commonest transient failure here is the
+	#eight-hour boundary, and resuming into an expired token just fails again.
+	if [ "$engine" = "claude" ]; then
+		timeout 120 claude -p "Reply with exactly: ok" >/dev/null 2>&1 || true
+	fi
+	echo "=== $stage failed and looks resumable; continuing session $session once"
+	run_agent --resume "$session"
+	status=$agent_status
+	resumed=yes
+fi
 set -e
 
 # What the run cost, in one line, appended to a ledger.
@@ -249,11 +333,11 @@ set -e
 # of number worth knowing before deciding to make eighty tables.
 ledger="agents/runs/COSTS.tsv"
 if [ ! -f "$ledger" ]; then
-	printf 'started\tstage\tengine\tturns\tcost_usd\tresult\tlog\tmodel\tprompt\n' > "$ledger"
+	printf 'started\tstage\tengine\tturns\tcost_usd\tresult\tlog\tmodel\tprompt\tsession\tresumed\n' > "$ledger"
 fi
-python3 - "$log" "$started" "$stage" "$engine" "$prompt_version" >> "$ledger" <<'LEDGER' || true
+python3 - "$log" "$started" "$stage" "$engine" "$prompt_version" "$session" "$resumed" >> "$ledger" <<'LEDGER' || true
 import json, os, sys
-path, started, stage, engine, prompt = sys.argv[1:6]
+path, started, stage, engine, prompt, session, resumed = sys.argv[1:8]
 last = None
 #Which model actually answered. Known only now: the CLI chooses it, and the
 #first assistant message in the transcript says which. This is the durable
@@ -277,8 +361,9 @@ try:
 except OSError:
 	pass
 if last is None:
-	print('%s\t%s\t%s\t\t\tno result record\t%s\t%s\t%s'
-	      % (started, stage, engine, os.path.basename(path), model, prompt))
+	print('%s\t%s\t%s\t\t\tno result record\t%s\t%s\t%s\t%s\t%s'
+	      % (started, stage, engine, os.path.basename(path), model, prompt,
+	         session, resumed))
 else:
 	#`subtype` says "success" even when the run ended on an API error: the
 	#401 that stopped the campaign on 2026-09-03 was recorded as a success by
@@ -287,10 +372,10 @@ else:
 	if last.get('is_error'):
 		outcome = 'error %s' % (last.get('api_error_status')
 		                        or last.get('subtype') or '',)
-	print('%s\t%s\t%s\t%s\t%.2f\t%s\t%s\t%s\t%s'
+	print('%s\t%s\t%s\t%s\t%.2f\t%s\t%s\t%s\t%s\t%s\t%s'
 	      % (started, stage, engine, last.get('num_turns', ''),
 	         last.get('total_cost_usd', 0) or 0, outcome.strip(),
-	         os.path.basename(path), model, prompt))
+	         os.path.basename(path), model, prompt, session, resumed))
 LEDGER
 
 #The ledger is tracked, so appending to it leaves the tree dirty -- and the
