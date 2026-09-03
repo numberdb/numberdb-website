@@ -1099,3 +1099,22 @@ seventeenth.
 Evidence: `/tmp/gp_create_out.txt`, 2026-09-03: `tid = T146`,
 `drafts_remaining = 9`, `drafts_held = 6`; the rate-limit answers at the
 start of the same run's transcript.
+
+## The corpus title list for a critique: `/tables` shows fifty a page, and `Table` has no `id`
+
+What happened: the T146 critique needed every published title, to see
+whether a family the page names is a table the page should link.
+`curl https://numberdb.org/tables` through the proxy answers the first
+fifty tables and a `page=2` link; walking `/tables?page=1` to `page=6`
+gave all 140 published titles in six seconds, drafts excluded as they
+should be. The Django route in the throwaway,
+`Table.objects.all().order_by('id')`, fails with `FieldError: Cannot
+resolve keyword 'id'`: the model's key is `tid`, with `tid_int` for
+sorting, and a listing that wants drafts too should order by `tid_int`.
+
+What to do instead: for published titles, walk the paginated `/tables`
+anonymously; for drafts as well, `Table.objects.order_by('tid_int')` in
+the throwaway. Either is cheaper than the audit run.
+
+Evidence: `/tmp/tables_1.html` to `/tmp/tables_6.html` and
+`/tmp/crit146_titles_raw.txt`, 2026-09-03.
