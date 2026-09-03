@@ -1,4 +1,4 @@
-"""Gaussian period polynomials -- numberdb.org/TBD
+"""Gaussian period polynomials -- numberdb.org/T146
 
     Psi_{p,k}(x) = prod_{j=0}^{k-1} (x - eta_j),    eta_j = sum_{i=0}^{f-1} zeta_p^(g^(j+ki)),
 
@@ -252,7 +252,7 @@ def comment(p, k):
 
 class GaussianPeriodPolynomials(numberdb.Generator):
 
-    table = 'TBD'
+    table = 'T146'
     parameters = ('p', 'k')
     type = 'Z[]'
     rigour = 'exact'

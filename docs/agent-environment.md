@@ -1077,3 +1077,25 @@ Evidence: `/tmp/repair145_check.py` and `/tmp/repair145_audit.py` output,
 2026-09-03: "stored Numbers shape: dict", "previous revision: 8b1a2cb8…
 shape list", "flatten before/after: 503 503", "changed_params between
 them: 0".
+
+## The draft ceiling of fifteen is deployed; a sixth draft went through with nine to spare
+
+What happened: the T146 build began with zeta3 holding five drafts (T136,
+T142 to T145), which is the number the run prompt still gives as the
+limit ("may hold up to five drafts"). `permissions.py` says fifteen since
+commit 93f0ee8, and whether that commit was deployed could not be read
+from here. The creation call was the test: it answered `drafts_held = 6`,
+`drafts_remaining = 9`. The anonymous lookup budget, on the other hand,
+was already spent when the run started -- the first sixteen `curl` lookups
+of the run answered "Rate limit exceeded" -- because earlier runs of the
+same day share the address; every corpus call after that carried the key
+with `curl -K -`.
+
+What to do instead: the run prompt should say fifteen, or say to read
+`drafts_remaining` from the last creation answer in `/tmp/*_create_out.txt`;
+and a run should carry the key on its first lookup rather than its
+seventeenth.
+
+Evidence: `/tmp/gp_create_out.txt`, 2026-09-03: `tid = T146`,
+`drafts_remaining = 9`, `drafts_held = 6`; the rate-limit answers at the
+start of the same run's transcript.

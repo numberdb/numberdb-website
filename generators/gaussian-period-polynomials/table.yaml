@@ -4,13 +4,11 @@
 # person's act on the site.
 Title: Gaussian period polynomials
 Definition: >-
-  For a prime $p$ and a divisor $k$ of $p-1$ with $1<k<p-1$, let
-  $f=(p-1)/k$, let $g$ be a primitive root modulo $p$ and
-  $\zeta_p=e^{2\pi i/p}$. The $k$ Gaussian periods CITE{Wiki} of length $f$
-  are $\eta_j=\sum_{i=0}^{f-1}\zeta_p^{\,g^{j+ki}}$ for $0\leq j<k$, and
-  the Gaussian period polynomial is
-  $\Psi_{p,k}(x)=\prod_{j=0}^{k-1}(x-\eta_j)$, a polynomial in
-  $\mathbb{Z}[x]$.
+  The Gaussian period polynomial $\Psi_{p,k}(x)=\prod_{j=0}^{k-1}(x-\eta_j)$
+  of a prime $p$ and a divisor $k$ of $p-1$, where
+  $\eta_j=\sum_{i=0}^{f-1}\zeta_p^{\,g^{j+ki}}$, $0\leq j<k$, are the $k$
+  Gaussian periods CITE{Wiki} of length $f=(p-1)/k$, with $g$ a primitive
+  root modulo $p$ and $\zeta_p=e^{2\pi i/p}$.
 Parameters:
   p:
     type: Z
