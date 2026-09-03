@@ -785,3 +785,42 @@ the ones under review and the two repairs are already committed.
 
 Evidence: `/tmp/t140_edit.py`, 2026-09-03; `grep -n issue91
 generators/*/table.yaml`.
+
+## SnapPy installs on the runner's machine in a minute; the container never needed it
+
+What happened: the 2026-09-03 ideas run wrote that the volume table "cannot
+be built here" because the Sage behind `agents/sage.sh` has no SnapPy.
+`python3 -m pip install --user snappy` on this machine, through the proxy
+in `ALL_PROXY`, installed SnapPy 3.3.2 with spherogram in about a minute
+(manylinux wheels for the local Python 3.10). Triangulating all 249
+exteriors from Sage's braid words, taking quad-double shapes, and checking
+isometry against SnapPy's own table and KnotInfo's diagrams took 20 s
+locally (`/tmp/hv_export2.py`); the gluing equations and shapes went to the
+container as a 1.3 MB JSON mounted as an extra file to `agents/sage.sh`,
+and everything proven happened in arb there. The generator itself calls
+SnapPy, so a person running it needs `sage -pip install snappy`; the run's
+fill and dry run substituted the JSON for that call (`/tmp/hv_fill.py`,
+`/tmp/hv_dry.py`).
+
+What to do instead: when a proposal says a package is missing from the
+container, try `pip install --user` locally first; the local Python is a
+fine place for a library's combinatorics, and the container is for what
+must be certified with the site's Sage.
+
+Evidence: `python3 -c "import snappy; print(snappy.__version__)"` -> 3.3.2;
+`/tmp/hv_export2.py` output, 2026-09-03.
+
+## `dry_run.load` does not register the module it loads
+
+What happened: the volume generator's data source had to be replaced for
+the dry run. `agents/table-build/dry_run.py` builds its module with
+`importlib.util.module_from_spec` under the name `generator_under_test` and
+never puts it in `sys.modules`, so `sys.modules[type(gen).__module__]`
+raised `KeyError`. Patching the function's globals worked:
+`type(gen).value.__globals__['triangulation'] = from_export`. Also worth
+knowing: the dry run computes every entry, and a wrapper that then loops
+over `gen.value` for its own checks computes them all again -- the volume
+dry run took seven minutes for that reason, where the fill took four.
+
+Evidence: `/tmp/hv_dry.py`, 2026-09-03, its first traceback and the second
+run's output.
