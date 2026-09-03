@@ -581,3 +581,53 @@ quote the number in the generator.
 Evidence: `/tmp/la_dry_out.txt`, 2026-09-03, first run: `worst relative
 radius: (3.03e-104, '30,21,w')`; second run with `WORKING_GUARD = 128`:
 `(1.63e-123, '30,21,w')`.
+
+## A chain of `sage.sh` runs in one shell command can stall; run the writes alone, with `NUMBERDB_TIMEOUT` set, and check the digest before retrying
+
+What happened: after filling T136, one Bash command chained four
+`agents/sage.sh` runs: read the stored tree with Django, write the
+shortened document back through the client, audit, verify. The read, which
+takes 25 seconds on its own, returned after about nine minutes, and the
+write that followed was killed by the Bash tool's ten-minute limit with an
+empty output file. Nothing said why: the site answered in a second
+throughout, the lock message ("another run held the lock") never printed,
+and a fresh read a minute later took 25 seconds and showed the head
+revision unchanged. The write was retried alone and landed in 26 seconds.
+The same shape as the "timeout kills the ssh, not the work" note above; the
+new part is that a stall can sit in front of the step that matters and eat
+its budget, and that a killed write leaves no way of knowing from this side
+whether it happened.
+
+What to do instead: one `sage.sh` run per Bash call for anything that
+writes, with `NUMBERDB_TIMEOUT` set to a few minutes rather than the default
+half hour, so a stall fails here rather than at the tool's limit; and after
+any interrupted write, read the head revision's digest before retrying, and
+retry only with `X-Base-Revision` set to what was read, so a write that did
+land is refused rather than repeated.
+
+Evidence: 2026-09-03, the chained command (`read exit 0` printed, then the
+tool's `Command timed out after 10m 0s`); `/tmp/gk_tree2_out.txt` with the
+old digest `6848c4fd…` 25 seconds later; `/tmp/gk_write_out.txt` on the
+retry, `revision = 1f2f43a5…` after 26 seconds.
+
+## Testing a `Programs` snippet under `sage -python`: preparse it and hand it `Integer`
+
+What happened: the Sage program offered under T136's `Programs` uses the
+preparser's syntax (`R.<x> = QQ[]`, `x^2`), which `sage -python` does not
+read. `sage.repl.preparse.preparse` turns it into Python, but the result
+calls `Integer(7)` for every literal, and the namespace it runs in has to
+supply `Integer` (from `sage.rings.integer`), `QQ`, `matrix`, `vector`,
+`RealIntervalField` and `PolynomialRing` by hand -- the first attempt died
+with `NameError: name 'Integer' is not defined`. `legendre_P` is not
+importable in the throwaway at all (`sage.functions.orthogonal_polys`
+raises `AttributeError` before Sage is fully initialised), so the test
+substituted Bonnet's recurrence for that one name and said so. The rest of
+the program ran as written and reproduced $x_1$, $w_1$, the central weight
+and $E_8$.
+
+What to do instead: `/tmp/gk_programs.py` is the harness -- read the
+`code:` block out of `table.yaml`, preparse, run it in a namespace built
+from named imports plus `Integer` (and `RealNumber` if the program has a
+decimal literal), and print the values the program's comments claim. A
+name the throwaway cannot import is a limitation of this environment, not
+of the program; substitute it, and say in the report which name it was.
