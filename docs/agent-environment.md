@@ -995,3 +995,22 @@ count a blank answer as a disagreement.
 
 Evidence: the shell output of the two `curl` loops, 2026-09-03; `LMFDB =
 {...}` in `/tmp/kl_probe.py` holds the eight.
+
+## zbMATH answers through the proxy, and its reviews are enough to confirm a citation but not always a theorem's scope
+
+What happened: the T144 critique proposed attributing the distinctness of
+the $K(a;p)$ to Fisher (1992) and Wan (1995) and could not reach a source.
+`curl https://zbmath.org/?q=au%3AFisher+ti%3Adistinctness+kloosterman`
+answered through the proxy with the full record and review: both papers
+exist with the titles, journals and pages the critique gave. But the
+reviews state the results for $p$ "sufficiently large", so the question the
+critique actually asked -- does it hold for every prime? -- is not settled
+by them, and the repair left the sentence scoped to the table.
+
+What to do instead: use zbMATH from a run to confirm that a reference
+exists and what it is called; treat a review's statement of a theorem's
+hypotheses as the strongest thing a run can claim from it, and leave the
+rest for a person with the paper.
+
+Evidence: `/tmp/zb_fisher.html`, `/tmp/zb_wan.html`, 2026-09-03;
+`agents/critiques/T144-repaired.md` item 3.

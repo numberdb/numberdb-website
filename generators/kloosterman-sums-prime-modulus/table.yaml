@@ -44,9 +44,9 @@ Comments:
     here the $p-1$ values $K(a;p)$ are pairwise distinct, so each has degree
     exactly $(p-1)/2$ over $\mathbb{Q}$ and the two polynomials are
     irreducible; both are congruent to $(x+1)^{(p-1)/2}$ modulo $p$ by
-    CITE{formula-congruence}. Each entry's comment gives the Legendre symbol
-    $\left(\frac{a}{p}\right)$, which names its class, the degree, and for
-    $p\leq 23$ the polynomial. At $p=5$ the polynomials are $x^2-3x+1$ and
+    CITE{formula-congruence}. Each entry's comment gives three things: the
+    Legendre symbol $\left(\frac{a}{p}\right)$, which names its class; the
+    degree; and for $p\leq 23$ the polynomial. At $p=5$ the polynomials are $x^2-3x+1$ and
     $x^2+2x-4$, and the four values $\frac{3\pm\sqrt{5}}{2}$ and
     $-1\pm\sqrt{5}$ are HREF{Algebraic_numbers_of_degree_2}[algebraic
     numbers of degree 2] on this site.
@@ -54,9 +54,13 @@ Comments:
     Weil's bound CITE{formula-weil} writes $K(a;p)=2\sqrt{p}\cos\theta_{a,p}$
     with a Kloosterman angle $\theta_{a,p}\in[0,\pi]$. As $a$ runs over
     $1,\ldots,p-1$ and $p\to\infty$, the angles are equidistributed for the
-    Sato-Tate measure $\frac{2}{\pi}\sin^2\theta\,d\theta$ CITE{Katz}; no
-    entry here is $\pm 2\sqrt{p}$, and no simple closed form for $K(a;p)$
-    at a prime is known.
+    Sato-Tate measure $\frac{2}{\pi}\sin^2\theta\,d\theta$ CITE{Katz}. No
+    $K(a;p)$ is $\pm 2\sqrt{p}$: if one were, its square $4p$ would be fixed
+    by every $\sigma_c$, so by CITE{formula-conjugates} all $(p-1)/2$ values
+    in its class would have square $4p$ and their squares alone would sum to
+    $2p(p-1)$, more than the second moment $p^2-p-1$ in
+    CITE{formula-moments}. No simple closed form for $K(a;p)$ at a prime is
+    known.
   comment-twisted: >-
     The issue this table answers CITE{issue13} asks for Kloosterman sums of
     Dirichlet characters, $K(a,b,\chi;p)=\sum_{x=1}^{p-1}\chi(x)\,e^{2\pi
@@ -101,7 +105,7 @@ Formulas:
     Dirichlet characters] on this site; for the trivial character
     $\tau(\chi)=-1$.
   formula-legendre: >-
-    $K(a^2;p)=\sum_{m=0}^{p-1}\left(\frac{m^2-4a^2}{p}\right)e^{2\pi im/p}$
+    $K(a;p)=\sum_{m=0}^{p-1}\left(\frac{m^2-4a}{p}\right)e^{2\pi im/p}$
     for $p\nmid a$, with $\left(\frac{\cdot}{p}\right)$ the Legendre symbol.
   formula-multiplicative: >-
     For $m=m_1m_2$ with $\gcd(m_1,m_2)=1$ and $n_1m_1\equiv 1\pmod{m_2}$,
@@ -113,7 +117,8 @@ Formulas:
     and otherwise
     $K(a,b;m)=2\left(\frac{\ell}{m}\right)\sqrt{m}\,\operatorname{Re}
     \!\left(\varepsilon_m e^{4\pi i\ell/m}\right)$ with $\ell^2\equiv ab
-    \pmod m$, $\varepsilon_m=1$ for $m\equiv 1\pmod 4$ and
+    \pmod m$, $\left(\frac{\ell}{m}\right)=\left(\frac{\ell}{p}\right)^k$
+    the Jacobi symbol, $\varepsilon_m=1$ for $m\equiv 1\pmod 4$ and
     $\varepsilon_m=i$ for $m\equiv 3\pmod 4$ CITE{Salie}.
 Programs:
   program-sage:
@@ -193,7 +198,7 @@ Data properties:
     every value to overlap an enclosure of Sage's exact Kloosterman sum of
     the trivial character, computed in $\mathbb{Q}(\zeta_{2p})$ by a routine
     sharing no code with the sum; the
-    exact value to equal its conjugate; $K^2<4p$; the $p-1$ balls to be
+    exact value to equal its complex conjugate; $K^2<4p$; the $p-1$ balls to be
     pairwise disjoint; the four moment identities to hold exactly; and the
     product of $x-K(a;p)$ over each class to round to an integer polynomial
     that is monic of degree $(p-1)/2$, vanishes exactly at Sage's value of
@@ -203,8 +208,8 @@ Data properties:
     $(53,2)$, $(67,1)$ and $(71,3)$ agree to their ten decimals; the
     transform $\sum_a\chi(a)K(a;p)=\tau(\chi)^2$ was checked in balls
     against Sage's exact Gauss sum for every character of every prime here;
-    the Legendre-symbol form and the two-parameter reduction were checked
-    by brute force at every prime here, the multiplicativity at $792$
+    the Legendre-symbol form for every $a$ and the two-parameter reduction
+    were checked by brute force at every prime here, the multiplicativity at $792$
     coprime pairs of moduli up to $15\cdot 23$, and Salié's evaluation at
     $445$ cases with $m\leq 343$. Two controls that must fail did:
     $K(1;7)$ against the LMFDB's $K(1;11)$, and Salié's formula at $m=25$
