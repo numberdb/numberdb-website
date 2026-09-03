@@ -332,6 +332,48 @@ def _may_see_draft(request, table):
 
 
 @rate_limited
+def _ordered_document(table):
+	"""A table's document with its keys in the order the table stores them.
+
+	`TableData.json` is a `jsonb` column, and Postgres jsonb does not keep the
+	order of an object's keys: it stores them by length and then bytewise. So
+	a table whose parameters are `n, k, expression` is served as
+	`k, n, expression`, and one whose entries run 5, 8, -3, -4, 12 is served
+	5, 8, -3, -4, 12 reordered by width -- which is exactly the order T128 was
+	found in.
+
+	That matters because it is not only cosmetic. Anything that reads a table
+	here, changes it and writes it back sends the reordered parameters, and
+	the write is refused: the identity of every entry is its parameter values,
+	so reordering them reassigns all of them. A generator outside this
+	repository doing read-modify-write hits a 409 it cannot fix. T128 shows
+	the other half of the same fault -- an order that came back through the
+	API and was stored.
+
+	`full_yaml` is the same document written to a text column by the same
+	code, in the order the author wrote it, so it is the one to serve. The
+	json column is left as it is: it is what the search index and the number
+	build read, neither of which cares about order, and rewriting it is a
+	migration over every table for no gain.
+	"""
+	import yaml
+
+	data = getattr(table, 'data', None)
+	if data is None:
+		return {}
+	if data.full_yaml:
+		try:
+			loaded = yaml.safe_load(data.full_yaml)
+		except yaml.YAMLError:
+			loaded = None
+		if isinstance(loaded, dict):
+			return loaded
+	#A table written before `full_yaml` was filled, or one whose YAML will not
+	#parse: the reordered document is still the document, and answering with
+	#it beats answering with nothing.
+	return data.json or {}
+
+
 def table(request):
 	tid = request.GET.get('id',default=None)
 	url = request.GET.get('url',default=None)
@@ -373,7 +415,7 @@ def table(request):
 			{'error': "Table with id '%s' does not exist." % (table.tid,)},
 			safe=True)
 
-	result = table.data.json
+	result = _ordered_document(table)
 
 	return JsonResponse(result,safe=True)
     
