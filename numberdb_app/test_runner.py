@@ -338,11 +338,19 @@ class AFailedRunIsStillRecorded(TestCase):
 
 	def test_errexit_is_off_around_the_agent_call(self):
 		body = script('agents/run.sh')
-		self.assertIn('\nset +e\ncase "$engine" in', body)
+		self.assertIn('set +e\nrun_agent "${start_flags[@]}"', body)
 
-	def test_it_is_back_on_immediately_after(self):
+	def test_the_status_is_the_agents_and_not_tees(self):
 		body = script('agents/run.sh')
-		self.assertIn('status=${PIPESTATUS[0]}\nset -e\n', body)
+		self.assertIn('| tee -a "$log"\n\t\t\tagent_status=${PIPESTATUS[0]}',
+		              body)
+
+	def test_it_is_back_on_before_the_ledger(self):
+		body = script('agents/run.sh')
+		self.assertLess(body.index('\nset -e\n'),
+		                body.index('ledger="agents/runs/COSTS.tsv"'))
+		self.assertLess(body.index('set +e\nrun_agent'),
+		                body.index('\nset -e\n'))
 
 	def test_the_ledger_is_written_after_the_status_is_known(self):
 		body = script('agents/run.sh')
@@ -352,3 +360,87 @@ class AFailedRunIsStillRecorded(TestCase):
 	def test_the_runner_still_exits_with_the_agents_status(self):
 		body = script('agents/run.sh')
 		self.assertIn('exit "$status"', body)
+
+
+class ARunSurvivesTheEightHourBoundary(TestCase):
+	"""The access token lasts eight hours and refreshes when a process starts.
+
+	Not while one is running. A build takes half an hour to an hour and a
+	half, so one beginning near the end of a window crosses it and dies on a
+	401 mid-flight. It happened twice on 2026-09-03; the second started at
+	16:57 with thirteen minutes of token left and died at 17:10, thirty-nine
+	turns in. The credentials were rewritten at 17:12 by the next process to
+	start, which is the refresh that would have prevented it.
+	"""
+
+	def test_it_reads_the_expiry_before_a_long_run(self):
+		body = script('agents/run.sh')
+		self.assertIn('token_minutes_left()', body)
+		self.assertIn("['claudeAiOauth']['expiresAt']", body)
+
+	def test_it_refreshes_rather_than_only_complaining(self):
+		body = flat('agents/run.sh')
+		self.assertIn('minutes of token left, under the', body)
+		self.assertIn('timeout 120 claude -p "Reply with exactly: ok"', body)
+
+	def test_it_refuses_when_the_refresh_did_not_take(self):
+		#Better to stop than to spend twelve dollars discovering it.
+		body = flat('agents/run.sh')
+		self.assertIn('Refusing: $left minutes of token left', body)
+		self.assertIn('exit 6', body)
+
+	def test_the_floor_can_be_lowered_for_a_short_run(self):
+		body = script('agents/run.sh')
+		self.assertIn('${NUMBERDB_TOKEN_FLOOR:-90}', body)
+
+	def test_the_check_does_not_read_the_token_itself(self):
+		#`expiresAt` is a timestamp. Nothing here should touch a secret.
+		body = script('agents/run.sh')
+		block = body[body.index('token_minutes_left()'):]
+		block = block[:block.index('\n}\n')]
+		for word in ('accessToken', 'refreshToken', 'access_token'):
+			self.assertNotIn(word, block)
+
+
+class ARunCanBeResumed(TestCase):
+	"""A build that dies thirty-nine turns in should not start again at one."""
+
+	def test_the_session_is_chosen_not_scraped(self):
+		#The transcripts are not tracked; the ledger is.
+		body = script('agents/run.sh')
+		self.assertIn("import uuid; print(uuid.uuid4())", body)
+		self.assertIn('--session-id "$session"', body)
+
+	def test_a_session_can_be_continued(self):
+		body = script('agents/run.sh')
+		self.assertIn('${NUMBERDB_RESUME:-}', body)
+		self.assertIn('--resume "$session"', body)
+
+	def test_it_retries_once_and_only_once(self):
+		body = flat('agents/run.sh')
+		self.assertEqual(body.count('run_agent --resume "$session"'), 1)
+
+	def test_it_retries_only_what_a_retry_could_survive(self):
+		body = script('agents/run.sh')
+		self.assertIn('worth_resuming()', body)
+		for transient in ('api_error_status', 'OAuth access token has expired',
+		                  'overloaded_error'):
+			self.assertIn(transient, body)
+
+	def test_it_refreshes_the_token_before_resuming(self):
+		#The commonest transient failure here is the eight-hour boundary, and
+		#resuming into an expired token just fails again.
+		body = flat('agents/run.sh')
+		at = body.index('looks resumable')
+		before = body[:at]
+		self.assertIn('timeout 120 claude -p "Reply with exactly: ok"',
+		              before[before.rindex('if [ "$status" -ne 0 ]'):])
+
+	def test_the_retry_can_be_turned_off(self):
+		body = script('agents/run.sh')
+		self.assertIn('${NUMBERDB_NO_RETRY:-0}', body)
+
+	def test_the_ledger_records_the_session_and_the_retry(self):
+		body = script('agents/run.sh')
+		self.assertIn('session\\tresumed', body)
+		self.assertIn('"$session" "$resumed"', body)
