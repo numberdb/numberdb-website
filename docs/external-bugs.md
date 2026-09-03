@@ -94,3 +94,25 @@ to be wrong, the rule's exactness would have to fail with our weight, and
 it holds. Harmless in use: the constant is read into a double.
 
 **Reported:** no.
+
+## KnotInfo `determinant` of the unknot `0_1`: listed as 0, the determinant is 1
+
+**Found:** building T140, *Conway polynomials of the prime knots with at
+most ten crossings*, on 2026-09-03, comparing the entry comments'
+determinants with the `determinant` column of `database_knotinfo`
+2026.9.1 (`knotinfo_data_complete.csv`).
+
+**Evidence:** the row for `0_1` has `determinant` = `0`, while its
+`alexander_polynomial`, `conway_polynomial` and `jones_polynomial` columns
+are `1`; the determinant is $|\Delta(-1)|=|V(-1)|=|\nabla(2i)|=1$, and the
+double branched cover of the unknot is $S^3$, whose first homology has
+order $1$. The 249 other rows to ten crossings agree with all three
+formulas.
+
+**Confidence:** high that the value is not the determinant; it may be a
+placeholder for "not computed" rather than an error, since the `arf_invariant`
+and `unknotting_number` columns of the same row are empty rather than
+`0`. Either way a reader of the CSV who takes the column at its word gets
+$0$.
+
+**Reported:** no.
