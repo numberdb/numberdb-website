@@ -1,0 +1,254 @@
+# The table document for the values of Dirichlet L-functions at positive
+# integers, proposal 3 of agents/table-ideas/BATCH-2026-09-03T1011.md.
+# Created as a draft through the API (X-Draft: yes) and filled by
+# generate.py beside it; publishing is a person's act on the site.
+Title: Values of Dirichlet L-functions at positive integers
+Definition: >-
+  The value $L(s,\chi)=\sum_{m=1}^{\infty}\chi(m)\,m^{-s}$ CITE{Wiki} of the
+  Dirichlet $L$-function of a primitive Dirichlet character $\chi$ of
+  conductor $q$ at a positive integer $s$, listed for every primitive
+  character, each indexed by its Conrey label $(q,n)$ CITE{CL},
+  $\chi=\chi_q(n,\cdot)$.
+Parameters:
+  q:
+    type: Z
+    title: conductor of $\chi$
+    display: $q$
+    constraints: $q\geq 1$, $q\not\equiv 2\pmod 4$
+  n:
+    type: Z
+    title: Conrey index of $\chi$
+    display: $n$
+    constraints: >-
+      $1\leq n\leq\max(q-1,1)$, $\gcd(n,q)=1$, and $\chi_q(n,\cdot)$ primitive
+  s:
+    type: Z
+    title: argument of $L$
+    display: $s$
+    constraints: $s\geq 1$, and $s\geq 2$ when $q=1$
+Comments:
+  comment-conrey: >-
+    The Conrey label $(q,n)$ CITE{CL} names the character $\chi_q(n,\cdot)$
+    with $\chi_q(n,m)=\prod_{p^e\parallel q}\chi_{p^e}(n,m)$, where for an odd
+    prime power $p^e$, with $g$ the least positive integer generating
+    $(\mathbb{Z}/p^k\mathbb{Z})^\times$ for every $k\geq 1$,
+    $\chi_{p^e}(g^a,g^b)=e^{2\pi i ab/\varphi(p^e)}$; for $2^e$ with $e\geq 2$
+    and the units written as $(-1)^a5^b$,
+    $\chi_{2^e}\big((-1)^a5^b,(-1)^{a'}5^{b'}\big)=e^{2\pi i(aa'/2+bb'/2^{e-2})}$;
+    and $\chi_q(n,m)=0$ when $\gcd(m,q)>1$. So the trivial character is
+    $\chi_q(1,\cdot)$, $\chi_q(n,\cdot)\chi_q(n',\cdot)=\chi_q(nn',\cdot)$,
+    and $\overline{\chi_q(n,\cdot)}=\chi_q(n',\cdot)$ with $nn'\equiv 1\pmod
+    q$. The HREF{Zeros_of_Dirichlet_L_functions}[zeros of $L(s,\chi)$], the
+    HREF{Generalized_Bernoulli_numbers}[generalized Bernoulli numbers
+    $B_{k,\chi}$] and the HREF{Gauss_sums_of_primitive_Dirichlet_characters}[Gauss
+    sums $\tau(\chi)$] on this site, and the characters in the LMFDB
+    CITE{LMFDB}, are indexed the same way; the LMFDB's page for the
+    $L$-function of $\chi_q(n,\cdot)$, among its $L$-functions of degree
+    one CITE{LMFDBL}, is reached from its page for the character.
+  comment-primitive: >-
+    Only primitive characters are listed, and for $q=1$ only $s\geq 2$,
+    since $L(s,1)=\zeta(s)$ has its pole at $s=1$. No primitive character
+    has conductor $q\equiv 2\pmod 4$, because the only character modulo $2$
+    is trivial. The $L$-function of an imprimitive character is that of the
+    primitive character inducing it with finitely many Euler factors
+    removed, by CITE{formula-imprimitive}.
+  comment-parity: >-
+    Write $\mathfrak a=0$ if $\chi$ is even, $\chi(-1)=1$, and $\mathfrak
+    a=1$ if $\chi$ is odd. When $s\equiv\mathfrak a\pmod 2$, the value is an
+    algebraic multiple of $\pi^s$, given by CITE{formula-closed-form} in
+    terms of the Gauss sum $\tau(\chi)$ and the generalized Bernoulli number
+    $B_{s,\bar\chi}$; for a real character it is then a rational multiple of
+    $\pi^s/\sqrt{q}$, CITE{formula-real}. When $s\not\equiv\mathfrak
+    a\pmod 2$ no such expression is known: $L(1,\chi)$ for even $\chi$ is a
+    combination of logarithms of cyclotomic units, CITE{formula-logarithm},
+    and $L(2,\chi_4(3,\cdot))=G$ is Catalan's constant, for which not even
+    irrationality is known.
+  comment-real: >-
+    For a real character, $\chi=\left(\frac{D}{\cdot}\right)$ is the
+    Kronecker symbol of the fundamental discriminant $D=\chi(-1)\,q$, and
+    every value $L(s,\chi)$ is real; the imaginary part is written as an
+    exact $0$. At $s=1$ the value is $\kappa_D$, the residue of the
+    Dedekind zeta function of $\mathbb{Q}(\sqrt{D})$, and is the entry $D$
+    of the HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[residues
+    of Dedekind zeta functions of quadratic fields], which gives its closed
+    form by the class number formula.
+  comment-conjugate: >-
+    The values of a character and of its complex conjugate $\bar\chi=
+    \chi_q(n',\cdot)$ are complex conjugates, CITE{formula-conjugate}, so
+    a value with a nonzero imaginary part is listed twice, once with each
+    sign; $\chi\neq\bar\chi$ exactly when $\chi$ is not real.
+  comment-entries: >-
+    Each entry's comment gives the order and the parity of $\chi$; for a
+    real character, the discriminant $D$ and, when $s\equiv\mathfrak
+    a\pmod 2$, the value as a rational multiple of $\pi^s/\sqrt{q}$; for a
+    character of order $d$ with $s\equiv\mathfrak a\pmod 2$ and
+    $\varphi(d)\leq 6$, the exact $B_{s,\bar\chi}\in\mathbb{Q}(\zeta_d)$,
+    $\zeta_d=e^{2\pi i/d}$, from which CITE{formula-closed-form} and the
+    Gauss sum give the value.
+  comment-pentagon: >-
+    For the quartic characters modulo $5$, CITE{formula-cotangent} gives
+    $L(1,\chi_5(2,\cdot))=\frac{\pi}{5}\left(\cot\frac{\pi}{5}+i\cot\frac{2\pi}{5}\right)$
+    and its conjugate for $\chi_5(3,\cdot)$; the real part
+    $\frac{\pi}{5}\cot\frac{\pi}{5}=0.8648062659\ldots$ is the isoperimetric
+    quotient $4\pi A/P^2$ of the regular pentagon, CITE{OEISpentagon}.
+  comment-requested: >-
+    Asked for in CITE{issue22}, of which this is the Dirichlet case; the
+    real characters at $s=1$ were answered first by the table of residues
+    $\kappa_D$.
+Formulas:
+  formula-hurwitz: >-
+    $L(s,\chi)=q^{-s}\sum_{a=1}^{q}\chi(a)\,\zeta(s,a/q)$ for $s\geq 2$, with
+    $\zeta(s,x)=\sum_{m=0}^{\infty}(m+x)^{-s}$ the
+    HREF{Values_of_the_Hurwitz_zeta_function_at_pairs_of_rational_numbers}[Hurwitz
+    zeta function]; and for $\chi\neq 1$,
+    $L(1,\chi)=-\frac{1}{q}\sum_{a=1}^{q}\chi(a)\,\psi(a/q)$ with $\psi$ the
+    digamma function, the poles of $\zeta(s,a/q)$ at $s=1$ cancelling
+    because $\sum_a\chi(a)=0$.
+  formula-euler: >-
+    $L(s,\chi)=\prod_{p}\left(1-\chi(p)\,p^{-s}\right)^{-1}$ over the primes,
+    for $s\geq 2$; for $s=1$ and $\chi\neq 1$ the Dirichlet series converges
+    conditionally and the product converges to the same value CITE{Davenport}.
+  formula-conjugate: >-
+    $L(s,\bar\chi)=\overline{L(s,\chi)}$ for real $s$, since $\bar\chi(m)=
+    \overline{\chi(m)}$; in Conrey's labels, the entry $(q,n',s)$ is the
+    conjugate of $(q,n,s)$ when $nn'\equiv 1\pmod q$.
+  formula-imprimitive: >-
+    For a character $\chi$ modulo $m$ induced by the primitive character
+    $\chi^*$ of conductor $q\mid m$:
+    $L(s,\chi)=L(s,\chi^*)\prod_{p\mid m}\left(1-\chi^*(p)\,p^{-s}\right)$.
+  formula-closed-form: >-
+    For primitive $\chi$ of conductor $q$ with $\chi(-1)=(-1)^s$:
+    $L(s,\chi)=(-1)^{s-1}\,\frac{\tau(\chi)}{2}\left(\frac{2\pi i}{q}\right)^{s}
+    \frac{B_{s,\bar\chi}}{s!}$, with $\tau(\chi)=\sum_{a=1}^{q}\chi(a)e^{2\pi
+    ia/q}$ the HREF{Gauss_sums_of_primitive_Dirichlet_characters}[Gauss sum]
+    and $B_{k,\chi}$ the HREF{Generalized_Bernoulli_numbers}[generalized
+    Bernoulli numbers], $\sum_{a=1}^{q}\chi(a)\frac{te^{at}}{e^{qt}-1}
+    =\sum_{k\geq 0}B_{k,\chi}\frac{t^k}{k!}$ CITE{Washington}. It is the
+    functional equation CITE{formula-functional-equation} at $s$ together
+    with $L(1-s,\bar\chi)=-B_{s,\bar\chi}/s$.
+  formula-real: >-
+    For the real character $\chi=\left(\frac{D}{\cdot}\right)$ of conductor
+    $q=|D|$ with $\chi(-1)=(-1)^s$, where $\tau(\chi)=i^{\mathfrak a}\sqrt{q}$
+    and $B_{s,\chi}$ is rational:
+    $L(s,\chi)=(-1)^{s-1+(\mathfrak a+s)/2}\,\frac{2^{s-1}B_{s,\chi}}{s!\,q^{s-1/2}}\,\pi^s$.
+    At $s=1$ and $D<0$ this is Dirichlet's class number formula
+    $L(1,\chi)=\frac{2\pi h}{w\sqrt{q}}$, $h$ the class number and $w$ the
+    number of roots of unity of $\mathbb{Q}(\sqrt{D})$.
+  formula-cotangent: >-
+    For odd primitive $\chi$:
+    $L(1,\chi)=\frac{\pi}{2q}\sum_{a=1}^{q-1}\chi(a)\cot\frac{\pi a}{q}$,
+    from CITE{formula-hurwitz} and $\psi(1-x)-\psi(x)=\pi\cot\pi x$.
+  formula-logarithm: >-
+    For even primitive $\chi\neq 1$:
+    $L(1,\chi)=-\frac{\tau(\chi)}{q}\sum_{a=1}^{q-1}\bar\chi(a)\log\left|1-e^{2\pi
+    ia/q}\right|=-\frac{\tau(\chi)}{q}\sum_{a=1}^{q-1}\bar\chi(a)\log\left(2\sin\frac{\pi
+    a}{q}\right)$ CITE{Washington}.
+  formula-functional-equation: >-
+    With $\mathfrak a=0$ for even $\chi$ and $\mathfrak a=1$ for odd $\chi$,
+    $\Lambda(s,\chi)=(q/\pi)^{s/2}\,\Gamma\!\left(\frac{s+\mathfrak a}{2}\right)L(s,\chi)$
+    satisfies $\Lambda(s,\chi)=\varepsilon(\chi)\,\Lambda(1-s,\bar\chi)$ with
+    the root number $\varepsilon(\chi)=\tau(\chi)/(i^{\mathfrak a}\sqrt{q})$
+    CITE{Davenport}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      chi = [c for c in DirichletGroup(7) if c.conrey_number() == 2][0]   # chi_7(2, .)
+      CBF = ComplexBallField(400)
+      sum(CBF(chi(a)) * CBF(2).zeta(CBF(a/7)) for a in range(1, 7)) / 7^2            # L(2, chi) = 0.79921874... - 0.10184729...i
+      -sum(CBF(chi(a)) * CBF(RealBallField(400)(a/7).psi()) for a in range(1, 7)) / 7  # L(1, chi) = 0.53774738... - 0.10529754...i
+  program-pari:
+    language: PARI/GP
+    code: |-
+      L = lfuncreate([znstar(7, 1), 2]); lfun(L, 2)      \\ L(2, chi_7(2, .)); the 2 in the label is the Conrey index
+Similar tables:
+  - table: HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[Residues of Dedekind zeta functions of quadratic fields]
+    relation: holds every entry here with $\chi$ real and $s=1$, as $\kappa_D=L(1,\chi_D)$, indexed by $D$
+  - table: HREF{Generalized_Bernoulli_numbers}[Generalized Bernoulli numbers]
+    relation: $B_{s,\bar\chi}$ under the same labels, one factor of the closed form when $\chi(-1)=(-1)^s$; $L(1-k,\chi)=-B_{k,\chi}/k$ gives the values at $s\leq 0$
+  - table: HREF{Gauss_sums_of_primitive_Dirichlet_characters}[Gauss sums of primitive Dirichlet characters]
+    relation: $\tau(\chi)$ under the same labels, the other factor of the closed form
+  - table: HREF{Zeros_of_Dirichlet_L_functions}[Zeros of Dirichlet $L$-functions]
+    relation: zeros of the same $L(s,\chi)$ under the same labels
+  - table: HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[Values of the Riemann zeta function at rational numbers]
+    relation: holds the entries $q=1$, $L(s,1)=\zeta(s)$
+  - table: HREF{Values_of_the_Hurwitz_zeta_function_at_pairs_of_rational_numbers}[Values of the Hurwitz zeta function at pairs of rational numbers]
+    relation: $\zeta(s,a/q)$, of which every entry with $s\geq 2$ is the combination $q^{-s}\sum_a\chi(a)\zeta(s,a/q)$
+  - table: HREF{Rational_multiples_of_pi}[Rational multiples of pi]
+    relation: holds $L(1,\chi_4(3,\cdot))=\pi/4$ as its entry $a=1/4$
+Links:
+  Wiki:
+    title: 'Wikipedia: Dirichlet L-function'
+    url: https://en.wikipedia.org/wiki/Dirichlet_L-function
+  MathWorld:
+    title: 'MathWorld: Dirichlet L-Series'
+    url: https://mathworld.wolfram.com/DirichletL-Series.html
+  LMFDB:
+    title: 'LMFDB: Dirichlet characters'
+    url: https://www.lmfdb.org/Character/Dirichlet/
+  LMFDBL:
+    title: 'LMFDB: L-functions of degree 1'
+    url: https://www.lmfdb.org/L/degree1/
+  CL:
+    title: 'LMFDB knowl: Conrey label'
+    url: https://www.lmfdb.org/knowledge/show/character.dirichlet.conrey
+  OEISpentagon:
+    title: 'OEIS A381152: isoperimetric quotient of a regular pentagon'
+    url: https://oeis.org/A381152
+References:
+  Washington:
+    bib: >-
+      L. C. Washington, Introduction to Cyclotomic Fields, second edition,
+      Graduate Texts in Mathematics 83, Springer, 1997, Theorems 4.2 and 4.9.
+  Davenport:
+    bib: >-
+      H. Davenport, Multiplicative Number Theory, third edition, Graduate
+      Texts in Mathematics 74, Springer, 2000, Chapters 4, 6 and 9.
+  issue22:
+    bib: >-
+      numberdb-data issue #22, "Special values of various L-functions at
+      integers", https://github.com/numberdb/numberdb-data/issues/22
+Tags:
+  - number theory
+  - L-function
+  - special values
+Data properties:
+  type: C
+  rigour: proven
+  complete: 'no'
+  complete-note: every primitive character of conductor $q\leq 30$ at $s=1,2,3$ is here, 503 entries
+  rigour details: >-
+    Each value is a complex ball at $397$ bits: the sum CITE{formula-hurwitz}
+    with arb's Hurwitz zeta function at $s=2,3$ and arb's digamma function
+    at $s=1$, the character value $\chi(a)=e^{2\pi ir}$ being arb's
+    exponential of a ball containing the exact rational $r$, which is
+    computed from Conrey's definition of the label by discrete logarithms.
+    A hundred digits are written; the widest ball, at $(29,27,1)$, supports
+    $117$. Before any entry is returned the generator requires, for every
+    character of every modulus in range, that the hand-built character
+    agree with Sage's character of the same Conrey number at every argument
+    and in primitivity; and for the entry, that the ball overlap a second
+    enclosure computed from Sage's exact character values by a hand-written
+    Euler-Maclaurin summation of each $\zeta(s,a/q)$ or $\psi(a/q)$, whose
+    remainder is bounded by the first omitted term; that
+    CITE{formula-closed-form}, with Sage's exact Gauss sum and exact
+    $B_{s,\bar\chi}$ enclosed in balls, CITE{formula-cotangent} and
+    CITE{formula-logarithm} hold where they apply; and, for a real
+    character, that the imaginary part contain $0$ and the value contain
+    the rational multiple of $\pi^s/\sqrt{q}$ of CITE{formula-real}.
+    Outside the generator, every one of the $501$ entries with $q>1$ agrees
+    with PARI's `lfun` at $120$ digits, the character handed to PARI as its
+    Conrey label; the $19$ real characters at $s=1$ reproduce the stored
+    digits of the residues $\kappa_D$; $\zeta(2)$, $\zeta(3)$ and $\pi/4$
+    reproduce their stored digits; for $q\leq 11$ the closed form assembled
+    from the stored digits of the Gauss sums and of the generalized
+    Bernoulli numbers on this site reproduces every entry of matching
+    parity; $L(2,\chi_4(3,\cdot))$ contains arb's Catalan constant,
+    $L(3,\chi_4(3,\cdot))$ contains $\pi^3/32$, and the real part of
+    $L(1,\chi_5(2,\cdot))$ contains the $300$ digits of OEIS A381152.
+    Controls that must fail did: a value against PARI's value for the
+    conjugate character, $\kappa_{-3}$ against $\kappa_{-4}$, the closed
+    form with $B_{1,\bar\chi}$ in place of $B_{2,\bar\chi}$, and the
+    constants shifted by $10^{-90}$.
+Display properties:
+  number-header: $L(s,\chi)$
