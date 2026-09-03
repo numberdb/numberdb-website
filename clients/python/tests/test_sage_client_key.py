@@ -10,6 +10,24 @@ corpus at all, which the skill asks it to do.
 import unittest
 
 
+def _sage_is_here():
+	"""Whether `numberdb.sage` can be imported at all.
+
+	It refuses with an ImportError when SageMath is not installed, which is
+	the right behaviour for the package and means these tests cannot run.
+	They were added without this guard and failed -- not skipped -- in the
+	CI job that deliberately installs no Sage, which would have stopped the
+	next release at its own test step.
+	"""
+	try:
+		from numberdb import sage                     # noqa: F401
+	except ImportError:
+		return False
+	return True
+
+
+@unittest.skipUnless(_sage_is_here(),
+                     'numberdb.sage needs SageMath, which is not installed')
 class TheSageWrappersFollowConfigure(unittest.TestCase):
 
 	def setUp(self):
