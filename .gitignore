@@ -161,3 +161,6 @@ clients/python/docs/
 #negation below would never be reached.
 agents/runs/*
 !agents/runs/COSTS.tsv
+#A verdict is a decision, not a transcript: SKIPPED.md cites one, and a
+#citation of a file nobody keeps is worth nothing to anybody else.
+!agents/runs/*-verdict
