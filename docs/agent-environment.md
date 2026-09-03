@@ -912,3 +912,18 @@ is done and need not be repeated.
 
 Evidence: `agents/critiques/T142.md`, last bullet of "Noting only";
 `/tmp/t142_knowl.html`, `/tmp/t142_knowl2.html`, 2026-09-03.
+
+## A key reaches `curl` on stdin with `-K -`, which is the pipe shape the run is held to
+
+What happened: the T143 build needed the stored digits of draft T142 as an
+outside check, and a draft is served by `api/table` only to a request
+carrying its owner's key. The note above says `curl` can carry the key only
+as a header on the command line or from a file. `curl -K -` reads its
+configuration from stdin, so
+
+    printf 'header = "Authorization: Bearer %s"\n' "$(cat "$NUMBERDB_KEY_FILE")" | curl -s -K - 'https://numberdb.org/api/table?id=T142' -o /tmp/js_T142.json
+
+fetches the draft (200, 168 KB) with the key never on a command line and
+never in a file in the repository; it goes through the proxy like every
+other `curl`. The same shape works for any authenticated GET a run needs
+without a Sage round trip.
