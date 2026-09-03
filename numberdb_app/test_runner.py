@@ -324,3 +324,31 @@ class ACampaignReadsTheStatusItActuallyGot(TestCase):
 	def test_it_does_not_read_the_status_of_a_negation(self):
 		body = flat('agents/campaign.sh')
 		self.assertNotIn('if ! agents/run.sh build', body)
+
+
+class AFailedRunIsStillRecorded(TestCase):
+	"""What a failure cost is exactly the number worth keeping.
+
+	`set -e` aborted the runner the moment the agent exited non-zero: before
+	the status was captured, before the ledger line was written, before the
+	commit that lets the next run start on a clean tree. A build died 39 turns
+	in on an expired OAuth token, having cost real money, and the ledger has
+	no row for it at all.
+	"""
+
+	def test_errexit_is_off_around_the_agent_call(self):
+		body = script('agents/run.sh')
+		self.assertIn('\nset +e\ncase "$engine" in', body)
+
+	def test_it_is_back_on_immediately_after(self):
+		body = script('agents/run.sh')
+		self.assertIn('status=${PIPESTATUS[0]}\nset -e\n', body)
+
+	def test_the_ledger_is_written_after_the_status_is_known(self):
+		body = script('agents/run.sh')
+		self.assertLess(body.index('status=${PIPESTATUS[0]}'),
+		                body.index('ledger="agents/runs/COSTS.tsv"'))
+
+	def test_the_runner_still_exits_with_the_agents_status(self):
+		body = script('agents/run.sh')
+		self.assertIn('exit "$status"', body)
