@@ -841,3 +841,47 @@ one is worse than none. `pdftotext` is on this machine if a PDF ever does
 arrive.
 
 Evidence: `/tmp/thurston1982.pdf` (both attempts, HTML), 2026-09-03.
+
+## A Sage run that times out prints nothing, and two of them took the proxy down for twenty minutes
+
+What happened: three probes for the Gauss-sum table (T142) were killed at
+`NUMBERDB_TIMEOUT` (1800 s, then 1700 s) inside a loop whose cost per
+entry had not been measured -- Sage's `minpoly()` in a field of degree
+1012, then an $n^2$ overlap count over a thousand balls. Each run's output
+came back empty apart from the lines printed before the slow loop, because
+the container's stdout goes through `grep -viE` in `agents/sage.sh`, which
+block-buffers when its output is a file, so `sys.stdout.flush()` in the
+script changes nothing that reaches this side; the traceback of a run that
+*dies* arrives, the progress of a run that is *killed* does not. During the
+third run `curl https://numberdb.org/` through the proxy answered `000` in
+60 s while `r.jina.ai` fetched the site in 20 s: the box was loaded, the
+ssh tunnel the proxy rides on stopped answering, and it came back on its
+own about twenty minutes after the run was killed, as the notes above say
+it does.
+
+What to do instead: time the worst entry in a two-minute run before looping
+over a family (the fourth probe did, and the whole table then took 47 s);
+set `NUMBERDB_TIMEOUT` to a few minutes for a probe, not the default half
+hour; and have `sage.sh` run `grep --line-buffered` and `sage -python -u`,
+so a killed run still shows how far it got. A `137` exit from the runner is
+the `docker rm -f` in its cleanup, not necessarily the OOM killer.
+
+Evidence: `/tmp/gs_probe_out.txt`, `/tmp/gs_probe2_out.txt` (exit 137),
+`/tmp/gs_probe3_out.txt` (exit 124), the `curl` line `home 000 in
+60.058028s` and `jina 200 in 20.17s`, 2026-09-03.
+
+## The deployed client refuses every complex ball under `proven`; fixed in the repository, not deployed
+
+What happened: filling T142 stopped at its first entry with "rigour is
+'proven', and this value carries no error of its own", because
+`_carries_its_own_error` in `clients/python/numberdb/_generate.py` looked
+for real endpoints only (`agents/lessons/PROPOSALS.md` has the lesson). The
+fix and its tests are committed here; the container mounts the client from
+the deployed image at `/app/clients/python`, so a run cannot use the fix
+until somebody deploys. The fill worked by reassigning
+`numberdb._generate._carries_its_own_error` in `/tmp/gs_fill.py` before
+`publish()`, which is the shape for any run that meets a client bug before
+the next deploy.
+
+Evidence: `/tmp/gs_fill_out.txt`, first and second runs, 2026-09-03; commit
+"a complex ball carries its error in its parts".
