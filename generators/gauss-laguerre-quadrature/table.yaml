@@ -1,0 +1,204 @@
+# The table document for the Gauss-Laguerre nodes and weights, proposal 3 of
+# agents/table-ideas/BATCH-2026-09-02.md. Created as a draft through the API
+# (X-Draft: yes) and filled by generate.py beside it; publishing is a person's
+# act on the site.
+Title: Nodes and weights of Gauss–Laguerre quadrature
+Definition: >-
+  For $n\geq 1$ the Gauss–Laguerre quadrature rule with $n$ points is the
+  unique rule $\int_{0}^{\infty} f(x)\,e^{-x}\,dx \approx
+  \sum_{k=1}^{n} w_k f(x_k)$ that is exact for every polynomial $f$ of degree
+  at most $2n-1$ CITE{Wiki}. Listed are its nodes $x_1<\cdots<x_n$ and its
+  weights $w_k$.
+Parameters:
+  n:
+    type: Z
+    title: number of nodes
+    display: $n$
+    constraints: $n\geq 1$
+  k:
+    type: Z
+    title: index of the node, in increasing order
+    display: $k$
+    constraints: $1\leq k\leq n$
+  expression:
+    type: Symbolic
+    title: node or weight
+    values:
+      x: $x_k$
+      w: $w_k$
+    show-in-parameter-list: 'no'
+Comments:
+  comment-nodes: >-
+    The nodes are the roots of $L_n$, the HREF{Laguerre_polynomials}[Laguerre
+    polynomial] of degree $n$, orthogonal for the weight $e^{-x}$ on
+    $[0,\infty)$ and normalised by $L_n(0)=1$ (the roots do not depend on the
+    normalisation). Its $n$ roots are real, simple and positive, and
+    $x_1<\cdots<x_n$ is their increasing order. Placing the nodes at these
+    roots is what lets a rule with $n$ points reach degree $2n-1$; no other
+    $n$ points do, and $n$ points in general position reach only $n-1$.
+  comment-alpha: >-
+    This is the generalised Gauss–Laguerre rule for the weight
+    $x^{\alpha}e^{-x}$ at $\alpha=0$ only, the case of Abramowitz–Stegun
+    Table 25.9, DLMF Tables 3.5.6–3.5.9 and `numpy`'s `laggauss`. The rules
+    for $\alpha=\pm\frac12$ are the
+    HREF{Nodes_and_weights_of_Gauss_Hermite_quadrature}[Gauss–Hermite rules]
+    folded onto the half-line, by the formula CITE{formula-half-integer};
+    other $\alpha$ are not listed.
+  comment-exact-entries: >-
+    Every value here is an algebraic number: the one-point rule is $x_1=1$,
+    $w_1=1$, written exactly; the two-point rule is $x=2\mp\sqrt{2}$ with
+    $w=(2\pm\sqrt{2})/4$, and its nodes are also in
+    HREF{Algebraic_numbers_of_degree_2}[the table of quadratic algebraic numbers].
+    For $n\geq 2$ no node is rational, since $n!\,L_n$ has integer
+    coefficients with constant term $n!$ and leading coefficient $\pm 1$ and
+    no integer is a root. The nodes of the rules with $n=3,4$ are the roots of
+    $x^3-9x^2+18x-6$ and $x^4-16x^3+72x^2-96x+24$, and the polynomials whose
+    roots are the weights are OEIS A387347 CITE{OEIS-weight-polynomials}; the
+    comments on those entries say which root each is.
+  comment-weights-not-monotone: >-
+    The weights are not monotone in $k$ for every rule. For $n\leq 6$ they
+    decrease from $w_1$ to $w_n$; for $7\leq n\leq 23$ the largest weight is
+    $w_2$ ($w_1=0.4093\ldots$, $w_2=0.4218\ldots$ at $n=7$), and for
+    $24\leq n\leq 30$ it is $w_3$. Beyond the largest weight they decrease,
+    the last one being of the size of $e^{-x_n}$.
+  comment-size: >-
+    The nodes are unbounded above; the largest at $n=30$ is $104.15\ldots$,
+    and the weight there, $8.7\cdot 10^{-45}$, is small because $e^{-x}$ is.
+  comment-other-rules: >-
+    HREF{Nodes_and_weights_of_Gauss_Legendre_quadrature}[Gauss–Legendre quadrature]
+    is the same construction for the weight $1$ on $[-1,1]$, and
+    Gauss–Hermite quadrature for $e^{-x^2}$ on the real line.
+  comment-requested: >-
+    Asked for in CITE{issue11}, which wants the roots of the classical
+    orthogonal polynomials; this is the Laguerre case.
+Formulas:
+  formula-weights: >-
+    $w_k=\dfrac{x_k}{(n+1)^2\,L_{n+1}(x_k)^2}=\dfrac{1}{x_k\,L_n'(x_k)^2}$
+    CITE{AS}, the two equal because $x L_n'(x)=n L_n(x)-n L_{n-1}(x)$ and
+    $(n+1)L_{n+1}(x_k)=-nL_{n-1}(x_k)$ at a root of $L_n$. Also
+    $\dfrac{1}{w_k}=\sum_{j=0}^{n-1}L_j(x_k)^2$, the Christoffel function at
+    the node, the $L_j$ being orthonormal for $e^{-x}$.
+  formula-exactness: >-
+    $\sum_{k=1}^{n} w_k x_k^m=\int_{0}^{\infty}x^m e^{-x}\,dx=m!$ for
+    $0\leq m\leq 2n-1$, and not for $m=2n$; the moments are in
+    HREF{Factorial}[the table of factorials]. In particular $w_k>0$ and
+    $\sum_{k=1}^{n}w_k=1$.
+  formula-secondary: >-
+    $w_k=\dfrac{q_n(x_k)}{L_n'(x_k)}$ with
+    $q_n(x)=\int_{0}^{\infty}\dfrac{L_n(t)-L_n(x)}{t-x}\,e^{-t}\,dt$ the
+    secondary polynomial of $L_n$ for the density $e^{-x}$, a polynomial of
+    degree $n-1$ with rational coefficients; the same construction for the
+    Legendre polynomials is
+    HREF{Secondary_polynomials_of_the_Legendre_polynomials}[the table of their secondary polynomials].
+  formula-half-integer: >-
+    For the weight $x^{-1/2}e^{-x}$ the $n$-point Gauss rule has nodes
+    $t_k^2$ and weights $2u_k$, where $t_1<\cdots<t_n$ are the positive nodes
+    of the Gauss–Hermite rule with $2n$ points and $u_k$ their weights; for
+    $x^{1/2}e^{-x}$ it has nodes $t_k^2$ and weights $2u_k t_k^2$, taken from
+    the Gauss–Hermite rule with $2n+1$ points. Both follow from
+    $\int_{0}^{\infty}g(x)\,x^{\mp 1/2}e^{-x}\,dx=\int_{-\infty}^{\infty}
+    g(t^2)\,t^{1\mp 1}\,e^{-t^2}\,dt$ and the uniqueness of the Gauss rule.
+  formula-whole-half-line: >-
+    $\int_{0}^{\infty}f(x)\,dx\approx\sum_{k=1}^{n}w_k\,e^{x_k}f(x_k)$ CITE{Wiki},
+    and on $[a,\infty)$ with the weight $e^{-x}$,
+    $\int_{a}^{\infty}f(x)\,e^{-x}\,dx\approx e^{-a}\sum_{k=1}^{n}w_k\,f(x_k+a)$.
+  formula-interlacing: >-
+    The nodes of the rules with $n$ and $n-1$ points interlace:
+    $x_k^{(n)}<x_k^{(n-1)}<x_{k+1}^{(n)}$ for $1\leq k\leq n-1$, as the
+    roots of consecutive orthogonal polynomials do.
+  formula-bounds: >-
+    $\dfrac{j_{0,k}^2}{4n+2}<x_k<\dfrac{(4k+2)\bigl(2k+1+\sqrt{(2k+1)^2+\frac14}\bigr)}{4n+2}$
+    for $1\leq k\leq n$ CITE{DLMF-zeros}, where $j_{0,k}$ is the $k$-th
+    positive zero of the Bessel function $J_0$, in
+    HREF{Zeros_of_Bessel_J_functions}[the table of zeros of $J_\alpha$];
+    the ratio of $x_k$ to the lower bound tends to $1$ as $n\to\infty$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x> = QQ[]
+      p = R(laguerre(8, x))
+      nodes = p.roots(RealIntervalField(400), multiplicities=False)   # x_1 = 0.17027963230510099978...
+      weights = [r/(81*R(laguerre(9, x))(r)^2) for r in nodes]        # w_1 = 0.36918858934163752992...
+  program-numpy:
+    language: Python
+    code: |-
+      import numpy.polynomial.laguerre as L
+      nodes, weights = L.laggauss(8)      # double precision: 0.17027963, 0.36918859
+Similar tables:
+  - table: HREF{Laguerre_polynomials}[Laguerre polynomials]
+    relation: the nodes are the roots of $L_n$
+  - table: HREF{Nodes_and_weights_of_Gauss_Legendre_quadrature}[Nodes and weights of Gauss–Legendre quadrature]
+    relation: the same construction for the weight $1$ on $[-1,1]$
+  - table: HREF{Nodes_and_weights_of_Gauss_Hermite_quadrature}[Nodes and weights of Gauss–Hermite quadrature]
+    relation: the same construction for $e^{-x^2}$ on the real line; folded onto the half-line it gives the rules for $x^{\pm 1/2}e^{-x}$
+  - table: HREF{Factorial}[Factorial of natural numbers]
+    relation: the moments $\int_0^\infty x^m e^{-x}\,dx=m!$ that the rule reproduces for $m\leq 2n-1$
+  - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
+    relation: holds the nodes $2\pm\sqrt{2}$ of $n=2$
+  - table: HREF{Zeros_of_Bessel_J_functions}[Zeros of Bessel functions of the first kind]
+    relation: $j_{0,k}^2/(4n+2)$ is a lower bound for $x_k$, sharp as $n\to\infty$
+  - table: HREF{Secondary_polynomials_of_the_Legendre_polynomials}[Secondary polynomials of the Legendre polynomials]
+    relation: the Legendre analogue of the polynomial $q_n$ with $w_k=q_n(x_k)/L_n'(x_k)$
+Links:
+  Wiki:
+    title: 'Wikipedia: Gauss–Laguerre quadrature'
+    url: https://en.wikipedia.org/wiki/Gauss%E2%80%93Laguerre_quadrature
+  Wiki-Gaussian:
+    title: 'Wikipedia: Gaussian quadrature'
+    url: https://en.wikipedia.org/wiki/Gaussian_quadrature
+  MathWorld:
+    title: 'MathWorld: Laguerre-Gauss Quadrature'
+    url: https://mathworld.wolfram.com/Laguerre-GaussQuadrature.html
+  DLMF:
+    title: 'DLMF 3.5(v): Gauss quadrature, the Gauss–Laguerre formula and Tables 3.5.6–3.5.9'
+    url: https://dlmf.nist.gov/3.5#v
+  DLMF-zeros:
+    title: 'DLMF 18.16(iv): zeros of Laguerre polynomials, the bounds 18.16.10 and 18.16.11'
+    url: https://dlmf.nist.gov/18.16#iv
+  OEIS-zeros:
+    title: 'OEIS A384277–A384281, A384586–A384587: the zeros of L_3 and L_4; A384463–A384467, A384588–A384589: the matching weights'
+    url: https://oeis.org/A384277
+  OEIS-weight-polynomials:
+    title: 'OEIS A387347: minimal polynomials of the weights, by n'
+    url: https://oeis.org/A387347
+References:
+  AS:
+    bib: >-
+      M. Abramowitz and I. A. Stegun, Handbook of Mathematical Functions,
+      Dover, 1972, §25.4.45 and Table 25.9.
+  issue11:
+    bib: >-
+      numberdb-data issue #11, "Roots of important families of orthogonal
+      polynomials", https://github.com/numberdb/numberdb-data/issues/11
+Tags:
+  - zero
+  - algebraic
+  - analysis
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: every rule with $n\leq 30$ is here, nodes and weights
+  rigour details: >-
+    $L_n$ is built exactly in $\mathbb{Q}[x]$; its roots are isolated by
+    Sage's real root isolation over the interval field, so each node is an
+    interval provably containing one root, carried on as an arb ball at 461
+    bits; $w_k$ is $x_k/((n+1)^2L_{n+1}(x_k)^2)$ in ball arithmetic, and the
+    digits written are those the ball supports (every entry supports more
+    than 120; the evaluation of $L_{31}$ near $x=40$ loses about fifteen
+    digits to cancellation, which is why the working precision is what it
+    is). Before a rule is written it must also satisfy the Christoffel
+    formula for the weights, $\sum w_k=1$, exactness on $x^m$ for
+    $m\leq 2n-1$ with failure at $m=2n$, and the polynomials named in the
+    entry comments. Outside the generator the values were compared with the
+    closed forms for $n\leq 2$, with the stored polynomials $L_n$, with
+    fourteen OEIS expansions to 100 digits, with the OEIS A387347 weight
+    polynomials for $n\leq 6$, with all hundred values of DLMF Tables
+    3.5.6–3.5.9 ($n=5,10,15,20$; one printed weight at $n=10$ differs from
+    the ball by one unit in its eighteenth digit, the other ninety-nine
+    agree to the last digit), with MathWorld's rows for $n\leq 5$, and with
+    the folded Gauss–Hermite rules of the stored table, with the controls
+    that must fail failing.
+Display properties:
+  number-header: $x_k$ or $w_k$
