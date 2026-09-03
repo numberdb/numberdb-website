@@ -1,0 +1,191 @@
+# The table document for the Alexander polynomials of the prime knots up to
+# ten crossings, proposal 1 of agents/table-ideas/BATCH-2026-09-03T0305.md.
+# Created as a draft through the API (X-Draft: yes) and filled by generate.py
+# beside it; publishing is a person's act on the site.
+Title: Alexander polynomials of the prime knots with at most ten crossings
+Definition: >-
+  The Alexander polynomial $\Delta_K(t)\in\mathbb{Z}[t]$ of a knot $K$
+  CITE{Wiki}, defined up to a unit $\pm t^m$ and normalised so that its
+  constant term is nonzero and positive, for the unknot $0_1$ and for every
+  prime knot $n_k$ with at most ten crossings, named as in the Rolfsen table
+  CITE{Rolfsen}.
+Parameters:
+  n:
+    type: Z
+    title: crossing number
+    display: $n$
+    constraints: $n=0$ or $3\leq n\leq 10$
+  k:
+    type: Z
+    title: index in the Rolfsen table
+    display: $k$
+    constraints: >-
+      $1\leq k\leq N(n)$, where $N(n)$ is the number of prime knots with $n$
+      crossings, $1,1,1,2,3,7,21,49,165$ for $n=0,3,4,\ldots,10$
+Comments:
+  comment-normalisation: >-
+    The Alexander polynomial is determined only up to a unit $\pm t^m$ of
+    $\mathbb{Z}[t,t^{-1}]$. Rolfsen's table CITE{Rolfsen}, the Knot Atlas
+    CITE{KnotAtlas}, KnotInfo CITE{KnotInfo} and MathWorld CITE{MathWorld}
+    write it as a polynomial with nonzero positive constant term, and so does
+    this table; by the symmetry $\Delta(t)=t^{2g}\Delta(1/t)$ the leading
+    coefficient is then positive too. Sage's alexander_polynomial() CITE{Sage} returns
+    instead the Conway-normalised Laurent polynomial $\epsilon\,t^{-g}\Delta(t)$
+    with $\epsilon=\Delta(1)=\pm1$, which is symmetric under $t\mapsto 1/t$
+    and equal to $1$ at $t=1$: for $4_1$ it gives $-t^{-1}+3-t$ where this
+    table has $t^2-3t+1$. Of the 249 prime knots here, 110 have $\epsilon=-1$.
+  comment-numbering: >-
+    The numbering is Rolfsen's after Perko's correction CITE{Perko}: the
+    knots Rolfsen listed as $10_{161}$ and $10_{162}$ are one knot, so there
+    are $165$ prime knots with ten crossings rather than $166$ CITE{OEIS}, and Rolfsen's
+    $10_{163}$ to $10_{166}$ are $10_{162}$ to $10_{165}$ here CITE{WikiList}.
+    Sage's knot table, the Knot Atlas and KnotInfo all use this numbering.
+    Within each crossing number the alternating knots come first: the
+    non-alternating ones are $8_{19}$ to $8_{21}$, $9_{42}$ to $9_{49}$ and
+    $10_{124}$ to $10_{165}$, and every prime knot with fewer than eight
+    crossings is alternating.
+  comment-knots: >-
+    This is the one-variable Alexander polynomial of a knot, not the
+    multivariable Alexander polynomial of a link. It does not depend on the
+    orientation of the knot or on the choice between a knot and its mirror
+    image, so it is well defined for the name $n_k$, which names a knot only
+    up to mirror image; invariants that do see the mirror image, such as the
+    signature and the Jones polynomial, are not listed here.
+  comment-what-it-says: >-
+    The degree of $\Delta$ is at most twice the genus $g$, with equality for
+    alternating knots and for fibred knots CITE{Wiki}, and $|\Delta(-1)|$ is
+    the determinant of the knot. For every knot here the degree is exactly
+    $2g$, and $\Delta$ is monic exactly when the knot is fibred (KnotInfo's
+    genus and fibred columns). Each entry's comment gives the knot's common
+    name where it has one, its determinant and genus, whether it is
+    alternating, the torus knot it is if it is one, and every other knot in
+    the table with the same polynomial.
+  comment-collisions: >-
+    The Alexander polynomial does not determine the knot: the 249 prime
+    knots here take 211 distinct values, and 36 of those values are shared
+    by two or three knots each, 74 knots in all, among them $\Delta(5_1)=\Delta(10_{132})=\Phi_{10}$,
+    $\Delta(6_1)=\Delta(9_{46})$, $\Delta(8_{20})=\Delta(10_{140})=\Phi_6^2$
+    and the triples $8_{14},9_8,10_{131}$ and $9_{28},9_{29},10_{163}$, where
+    $\Phi_d$ is the HREF{Cyclotomic_polynomials}[cyclotomic polynomial].
+    No knot here has $\Delta=1$ apart from the unknot; the first that do,
+    the Conway knot $11n_{34}$ and the Kinoshita–Terasaka knot $11n_{42}$,
+    have eleven crossings.
+  comment-range: >-
+    The Rolfsen table ends at ten crossings, and so do the names $n_k$. The
+    552 prime knots with eleven crossings are named $11a_1$ to $11a_{367}$
+    and $11n_1$ to $11n_{185}$ after Hoste and Thistlethwaite, alternating
+    and non-alternating separately CITE{KnotInfo}, which the two parameters
+    here cannot express; KnotInfo carries the Alexander polynomials of all
+    prime knots to thirteen crossings. The Jones and HOMFLY-PT polynomials
+    of the same knots, asked for together with this one in CITE{issue91},
+    are not listed here.
+Formulas:
+  formula-seifert: >-
+    $\Delta_K(t)\doteq\det(V-tV^{\mathsf T})$ for any Seifert matrix $V$ of
+    $K$, where $\doteq$ is equality up to a unit $\pm t^m$ CITE{Wiki}. The
+    polynomial listed is the representative with nonzero positive constant
+    term.
+  formula-symmetry: >-
+    $\Delta(t)=t^{2g}\Delta(1/t)$ with $2g=\deg\Delta$, $\Delta(1)=\pm1$, and
+    $|\Delta(-1)|=\det K$, the determinant of the knot, the order of the
+    first homology of its double branched cover.
+  formula-conway: >-
+    $\Delta(s^2)=\epsilon\,s^{2g}\,\nabla(s-s^{-1})$, where
+    $\nabla(z)\in\mathbb{Z}[z]$ is the Conway polynomial, $\nabla(0_1)=1$ and
+    $\nabla(L_+)-\nabla(L_-)=z\,\nabla(L_0)$, and $\epsilon=\Delta(1)$ is
+    the sign of the leading coefficient of $\nabla$ CITE{Wiki}.
+  formula-burau: >-
+    For the closure of a braid $\beta$ on $n$ strands,
+    $\Delta(t)\doteq\det\bigl(I-\psi(\beta)\bigr)\dfrac{1-t}{1-t^n}$ with
+    $\psi$ the reduced Burau representation of the braid group $B_n$
+    CITE{WikiBurau}.
+  formula-torus: >-
+    $\Delta_{T(p,q)}(t)=\dfrac{(t^{pq}-1)(t-1)}{(t^p-1)(t^q-1)}
+    =\prod_{d\mid pq,\ d\nmid p,\ d\nmid q}\Phi_d(t)$ for the torus knot
+    $T(p,q)$, $\gcd(p,q)=1$ CITE{WikiTorus}. The torus knots here are
+    $3_1=T(2,3)$, $5_1=T(2,5)$, $7_1=T(2,7)$, $9_1=T(2,9)$, $8_{19}=T(3,4)$
+    and $10_{124}=T(3,5)$, with $\Delta=\Phi_6$, $\Phi_{10}$, $\Phi_{14}$,
+    $\Phi_6\Phi_{18}$, $\Phi_6\Phi_{12}$ and $\Phi_{15}$.
+  formula-sum-and-mirror: >-
+    $\Delta_{K_1\#K_2}=\Delta_{K_1}\Delta_{K_2}$ for the connected sum, and
+    $\Delta_{\bar K}=\Delta_K$ for the mirror image; so the granny knot
+    $3_1\#3_1$ and the square knot $3_1\#\bar 3_1$ both have
+    $\Delta=\Phi_6^2$, the value of $8_{20}$ and $10_{140}$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      K = Knots().from_table(10, 132)
+      A = K.alexander_polynomial()        # t^-2 - t^-1 + 1 - t + t^2, Sage's Conway-normalised form
+      R.<t> = ZZ[]
+      D = R({e - A.valuation(): c for e, c in A.dict().items()})
+      D if D[0] > 0 else -D               # t^4 - t^3 + t^2 - t + 1, the form listed here
+Similar tables:
+  - table: HREF{Cyclotomic_polynomials}[Cyclotomic polynomials]
+    relation: the Alexander polynomial of a torus knot is a product of cyclotomic polynomials; $\Delta(3_1)$, $\Delta(5_1)$, $\Delta(7_1)$ and $\Delta(10_{124})$ are $\Phi_6$, $\Phi_{10}$, $\Phi_{14}$ and $\Phi_{15}$
+Links:
+  Wiki:
+    title: 'Wikipedia: Alexander polynomial'
+    url: https://en.wikipedia.org/wiki/Alexander_polynomial
+  WikiTorus:
+    title: 'Wikipedia: Torus knot'
+    url: https://en.wikipedia.org/wiki/Torus_knot
+  WikiBurau:
+    title: 'Wikipedia: Burau representation'
+    url: https://en.wikipedia.org/wiki/Burau_representation
+  WikiList:
+    title: 'Wikipedia: List of prime knots'
+    url: https://en.wikipedia.org/wiki/List_of_prime_knots
+  MathWorld:
+    title: 'MathWorld: Alexander Polynomial'
+    url: https://mathworld.wolfram.com/AlexanderPolynomial.html
+  KnotAtlas:
+    title: 'The Knot Atlas: The Rolfsen Knot Table'
+    url: http://katlas.org/wiki/The_Rolfsen_Knot_Table
+  KnotInfo:
+    title: 'KnotInfo: Table of Knot Invariants (C. Livingston and A. H. Moore)'
+    url: https://knotinfo.math.indiana.edu/
+  Sage:
+    title: 'SageMath reference: Knots, from_table'
+    url: https://doc.sagemath.org/html/en/reference/knots/sage/knots/knot.html
+  OEIS:
+    title: 'OEIS A002863: number of prime knots with n crossings'
+    url: https://oeis.org/A002863
+References:
+  Rolfsen:
+    bib: >-
+      D. Rolfsen, Knots and Links, Publish or Perish, 1976, Appendix C: Table
+      of knots and links.
+  Perko:
+    bib: >-
+      K. A. Perko, On the classification of knots, Proc. Amer. Math. Soc. 45
+      (1974), 262–266.
+  issue91:
+    bib: >-
+      numberdb-data issue #91, "Knot polynomials",
+      https://github.com/numberdb/numberdb-data/issues/91
+Tags:
+  - polynomial
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'yes'
+  rigour details: >-
+    Each polynomial is Sage's alexander_polynomial() of Knots().from_table(n, k),
+    the determinant $\det(V-tV^{\mathsf T})$ of a Seifert matrix of the braid
+    closure, normalised. Before it is written the generator requires it to
+    agree with $\det(I-\psi(\beta))(1-t)/(1-t^n)$ computed from the reduced
+    Burau matrix of the same braid word, with the matrices, their product and
+    a Bareiss determinant written out in the generator rather than taken
+    from a library; to satisfy $\Delta(1)=\pm1$, the symmetry
+    $\Delta(t)=t^{2g}\Delta(1/t)$ and $|\Delta(-1)|=\det K$; to equal the
+    closed form for the six torus knots; and the counts per crossing number
+    must be $1,1,2,3,7,21,49,165$. Outside the generator all 250 values were
+    compared with the alexander_polynomial column of KnotInfo (package
+    database_knotinfo 2026.9.1, computed from KnotInfo's own diagrams), with
+    the stored cyclotomic polynomials for the torus knots, and through the
+    Conway substitution with Sage's conway_polynomial(); the genus,
+    alternating, fibred and torus facts in the comments were compared with
+    KnotInfo's columns. All agree, and the controls that must fail fail.
+Display properties:
+  number-header: $\Delta_{n_k}(t)$
