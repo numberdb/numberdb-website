@@ -2013,3 +2013,34 @@ class NothingFromTheStandardLibraryIsReExported(unittest.TestCase):
         readme = open('README.md').read()
         self.assertIn('from fractions import Fraction', readme)
         self.assertNotIn('numberdb.Fraction', readme)
+
+
+class TheTestsDoNotReadTheDevelopersKey(unittest.TestCase):
+    """A test that fails should not print somebody's credential.
+
+    `api_key()` looks in the environment and in ~/.config/numberdb/env, both
+    of which belong to whoever is running the suite. On 2026-09-03 that made
+    `test_no_key_sends_no_authorization_header` fail on a laptop that had one,
+    and the assertion printed it.
+    """
+
+    def test_no_key_is_found_here(self):
+        #The lookup itself, not the public wrapper: an earlier test's
+        #`configure()` leaves a key on the module, and that is not what this
+        #is about.
+        from numberdb import _key
+
+        self.assertEqual(_key.api_key(), '')
+
+    def test_the_environment_variable_is_not_set(self):
+        import os
+
+        self.assertIsNone(os.environ.get('NUMBERDB_API_KEY'))
+
+    def test_the_user_config_is_not_the_real_one(self):
+        import os
+
+        config = os.environ.get('XDG_CONFIG_HOME', '')
+        self.assertTrue(config)
+        self.assertFalse(os.path.exists(
+            os.path.join(config, 'numberdb', 'env')))
