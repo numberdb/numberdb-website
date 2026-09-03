@@ -39,7 +39,7 @@ Comments:
   comment-alpha: >-
     This is the generalised Gauss–Laguerre rule for the weight
     $x^{\alpha}e^{-x}$ at $\alpha=0$ only, the case of Abramowitz–Stegun
-    Table 25.9, DLMF Tables 3.5.6–3.5.9 and `numpy`'s `laggauss`. The rules
+    Table 25.9, DLMF Tables 3.5.6–3.5.9 and numpy's laggauss. The rules
     for $\alpha=\pm\frac12$ are the
     HREF{Nodes_and_weights_of_Gauss_Hermite_quadrature}[Gauss–Hermite rules]
     folded onto the half-line, by the formula CITE{formula-half-integer};
@@ -88,8 +88,8 @@ Formulas:
     $q_n(x)=\int_{0}^{\infty}\dfrac{L_n(t)-L_n(x)}{t-x}\,e^{-t}\,dt$ the
     secondary polynomial of $L_n$ for the density $e^{-x}$, a polynomial of
     degree $n-1$ with rational coefficients; the same construction for the
-    Legendre polynomials is
-    HREF{Secondary_polynomials_of_the_Legendre_polynomials}[the table of their secondary polynomials].
+    HREF{Legendre_polynomials}[Legendre polynomials] gives
+    HREF{Secondary_polynomials_of_the_Legendre_polynomials}[their secondary polynomials].
   formula-half-integer: >-
     For the weight $x^{-1/2}e^{-x}$ the $n$-point Gauss rule has nodes
     $t_k^2$ and weights $2u_k$, where $t_1<\cdots<t_n$ are the positive nodes
@@ -154,7 +154,7 @@ Links:
     title: 'DLMF 3.5(v): Gauss quadrature, the Gauss–Laguerre formula and Tables 3.5.6–3.5.9'
     url: https://dlmf.nist.gov/3.5#v
   DLMF-zeros:
-    title: 'DLMF 18.16(iv): zeros of Laguerre polynomials, the bounds 18.16.10 and 18.16.11'
+    title: 'DLMF 18.16(iv): the bounds 18.16.10 and 18.16.11 on the zeros of L_n'
     url: https://dlmf.nist.gov/18.16#iv
   OEIS-zeros:
     title: 'OEIS A384277–A384281, A384586–A384587: the zeros of L_3 and L_4; A384463–A384467, A384588–A384589: the matching weights'
