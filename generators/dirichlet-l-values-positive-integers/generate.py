@@ -1,4 +1,4 @@
-"""Values of Dirichlet L-functions at positive integers -- numberdb.org/T144
+"""Values of Dirichlet L-functions at positive integers -- numberdb.org/T145
 
     L(s, chi) = sum_{n >= 1} chi(n) n^(-s),
 
@@ -474,7 +474,7 @@ ZETA = 'Values_of_the_Riemann_zeta_function_at_rational_numbers'
 
 class DirichletLValues(numberdb.Generator):
 
-    table = 'TBD'                # the creation answer supplies the number
+    table = 'T145'
     parameters = ('q', 'n', 's')
     type = 'C'
     digits = 100
