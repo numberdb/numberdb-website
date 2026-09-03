@@ -262,9 +262,11 @@ function scrollTo(event, id) {
 {{  table_html | safe }}
 
 
-<!--
-<hr>Data: {{ table.data.json }}
--->
+{% comment %}A commented-out copy of the whole document used to be printed
+here. It was 167 KB of T128's 566 KB page -- 30% of every byte served, to
+every reader, for a debugging aid nobody reads in a browser. `/api/table?id=`
+serves the same document, in order, to anyone who wants it.
+{% endcomment %}
 
 <script>
 /*
