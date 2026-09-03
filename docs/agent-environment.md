@@ -734,3 +734,30 @@ of T138 needed one wrapper each around `agents/sage.sh`, as the T128 note
 says (`/tmp/kn_dry.py`), and the `Knots().from_table` computation of all
 249 knots took about fifteen seconds in the throwaway, so nothing else in
 this environment stood in the way of a knot table.
+
+## An edit sent with `agents/api_edit.py` is recorded as assisted but the history shows no tool name
+
+What happened: the T138 repair's two revisions, sent through
+`edit_over_api` with `assistant='Claude Fable 5.1'`, print `assisted_by`
+as empty in the throwaway (`rev assisted_by` blank, where the build's
+revision shows `claude (agent run 20260…)`). `_produced_by` in `api.py`
+stores the `X-Produced-By` header as sent, `assisted by Claude Fable 5.1`.
+The trust counter in `permissions.py` looks for `assisted by` with
+`icontains`, so the revision counts as assisted there. The display
+property `TableRevision.assisted_by` in `models.py` splits on
+`', assisted by '` -- with a leading comma, because the package writes
+`<generator>, assisted by <tool>` -- and returns nothing when the marker
+stands alone at the start of the string. So `revision-history.html` and
+`entry-blame.html` print no "with …" note for these edits, which is the
+disclosure they exist to make. The T137 repair, sent the same way, will
+show the same.
+
+What to do instead: nothing for a run; the record is right and the counter
+sees it. For a person: either have `assisted_by` accept the marker at the
+start of `produced_by` as well as after a comma, or have `api_edit.py` send
+`edit, assisted by <tool>`; one line either way, with a test that a bare
+`assisted by X` renders as "with X".
+
+Evidence: `/tmp/crit138_after.txt` and `/tmp/crit138_final.txt`, 2026-09-03;
+`numberdb_app/models.py` `assisted_by`, `numberdb_app/api.py`
+`_produced_by`, `agents/api_edit.py` `edit_request`.
