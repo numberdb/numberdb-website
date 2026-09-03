@@ -1400,6 +1400,48 @@ class TestRigour:
         assert 'carries no error of its own' in message
         assert 'heuristic' in message          # names what to say instead
 
+    class RigorousComplex(Rigorous):
+        type = 'C'
+
+        def value(inner, params, digits):
+            from fractions import Fraction
+            return numberdb.ComplexInterval(
+                numberdb.RealInterval(Fraction(31415, 10000), Fraction(31416, 10000)),
+                numberdb.RealInterval(Fraction(27182, 10000), Fraction(27183, 10000)))
+
+    def test_a_complex_box_satisfies_proven(self):
+        """A complex interval has no endpoints of its own; its parts do. The
+        first complex-ball generator, the Gauss sums, was refused on every
+        entry as a point because only real endpoints were looked for."""
+        outcome = self.RigorousComplex().publish(client=Server(entries={}).client())
+        assert outcome.added == ['1']
+
+    def test_a_complex_box_with_one_exact_part_satisfies_proven(self):
+        """i sqrt(3): the real part is exactly zero, and the value still
+        carries an error, in its imaginary part."""
+
+        class HalfExact(TestRigour.RigorousComplex):
+            def value(inner, params, digits):
+                from fractions import Fraction
+                return numberdb.ComplexInterval(
+                    numberdb.RealInterval(Fraction(0), Fraction(0)),
+                    numberdb.RealInterval(Fraction(17320, 10000), Fraction(17321, 10000)))
+
+        outcome = HalfExact().publish(client=Server(entries={}).client())
+        assert outcome.added == ['1']
+
+    def test_a_complex_point_is_refused_under_proven(self):
+        class ComplexPoint(TestRigour.RigorousComplex):
+            def value(inner, params, digits):
+                from fractions import Fraction
+                return numberdb.ComplexInterval(
+                    numberdb.RealInterval(Fraction(31415, 10000), Fraction(31415, 10000)),
+                    numberdb.RealInterval(Fraction(27182, 10000), Fraction(27182, 10000)))
+
+        with pytest.raises(numberdb.DisagreementError) as raised:
+            ComplexPoint().publish(client=Server(entries={}).client())
+        assert 'carries no error of its own' in str(raised.value)
+
     def test_a_string_is_refused_under_proven(self):
         """A string carries digits, not an error. mpmath prints a hundred of
         them for a value computed to thirty."""
