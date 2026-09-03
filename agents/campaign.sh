@@ -71,18 +71,23 @@ while [ "$made" -lt "$builds" ]; do
 		exit "$status"
 	fi
 
-	#Did it build anything? Every build commits its generator, so an unmoved
-	#HEAD means the batch is finished. Asked this way rather than by counting
-	#proposals against directories, which needs a mapping between a heading
-	#and a folder name that nothing maintains.
+	#Did it build anything? A build that built a table commits a generator for
+	#it, so that is the question to ask. It used to ask whether HEAD had moved,
+	#which looks equivalent and is not: `run.sh` commits its own COSTS.tsv line
+	#at the end of every run, so HEAD moves even when the agent built nothing
+	#and said so. On 2026-09-03 the exhausted BATCH-2026-09-02 was answered by
+	#a six-turn run costing $0.95 that correctly built nothing, and the loop
+	#read the cost commit as a table.
 	#
-	#Without this the loop would ask the same exhausted batch for another
-	#table until it ran out of turns -- eight runs at nine dollars each,
-	#building nothing.
-	if [ "$(git rev-parse HEAD)" = "$before" ]; then
+	#The generator is also where the T-number comes from below, so the two
+	#questions have one answer.
+	generator=$(git diff --name-only "$before"..HEAD -- generators/ \
+	            | grep -E 'generate\.py$' | head -1 || true)
+	if [ -z "$generator" ]; then
 		say "$(basename "$batch") is finished; proposing the next batch"
+		before_batch=$(git rev-parse HEAD)
 		propose_a_batch || exit $?
-		if [ "$(git rev-parse HEAD)" = "$before" ]; then
+		if [ "$(git rev-parse HEAD)" = "$before_batch" ]; then
 			say "stopping: the stage-one run committed nothing either"
 			exit 4
 		fi
@@ -94,31 +99,35 @@ while [ "$made" -lt "$builds" ]; do
 	#The build checked its own numbers and cannot see its own prose; three
 	#faults this year lived only in the rendered page. It reports and changes
 	#nothing, so a critique that goes wrong costs a file nobody acts on.
-	#Which table was built. This must never be fatal: `grep` finding nothing
-	#exits 1, and under `set -euo pipefail` that killed a campaign inside the
-	#command substitution -- after a build it had paid $10.43 for, before the
-	#critique, and without printing a reason at all.
-	#
-	#Taken from the generator the build commits, whose docstring names the
-	#table on its first line ("... -- numberdb.org/T135"), a convention every
-	#generator in the corpus follows. The alternatives were tried and are
-	#worse: HEAD by then is `run.sh`'s own COSTS.tsv commit; the build's commit
-	#subjects name the directory rather than the number; and the transcript
-	#mentions every table the build compared itself with, as well as a `T182`
-	#hiding inside the run stamp 20260902T182455Z.
-	generator=$(git diff --name-only "$before"..HEAD -- generators/ \
-	            | grep -E 'generate\.py$' | head -1 || true)
-	tid=''
-	if [ -n "$generator" ] && [ -f "$generator" ]; then
-		tid=$(grep -aoE '\bT[0-9]{2,4}\b' "$generator" | head -1 || true)
-	fi
+	#The table's number, from the generator the build just committed: its
+	#docstring names it on the first line ("... -- numberdb.org/T135"), a
+	#convention every generator in the corpus follows. Nothing here may be
+	#fatal -- `grep` finding nothing exits 1, and under `set -euo pipefail`
+	#that killed a campaign inside a command substitution after a build it had
+	#paid $10.43 for, with no message. Two cheaper guesses were tried on a real
+	#transcript and both were wrong: the highest T-number mentioned gives T139,
+	#and without word boundaries the run stamp 20260902T182455Z gives T182.
+	tid=$(grep -aoE '\bT[0-9]{2,4}\b' "$generator" | head -1 || true)
 	if [ -z "$tid" ]; then
-		say "built something, but found no T-number in ${generator:-no committed generator}; skipping the critique"
+		say "no T-number in $generator; skipping the critique and the repair"
 	fi
 	if [ -n "$tid" ]; then
 		say "reading $tid as a reader would"
 		agents/run.sh critique "Read $tid. Fetch the rendered page, read the document, run audit_table on it, and write agents/critiques/$tid.md. Change nothing else." \
 			|| say "the critique run failed; the table stands and somebody should look"
+
+		#Stage four acts on what stage three found, having checked it first.
+		#Kept apart from the critique on purpose: a reader who may not change
+		#anything reads differently from one who is about to, and the ten
+		#critiques written by hand needed judgement four times -- two findings
+		#already fixed, one claim that had to be narrowed, three that had to be
+		#run before they could be written.
+		#
+		#Safe to leave unattended because an operated account's edits are never
+		#published as reviewed: whatever it writes waits in the queue.
+		say "acting on the critique of $tid"
+		agents/run.sh repair "Act on agents/critiques/$tid.md, for $tid. Check every finding against the live table before you change anything, verify what can be verified, and write agents/critiques/$tid-repaired.md saying what you did with each." \
+			|| say "the repair run failed; the critique stands and somebody should read it"
 	fi
 
 	#The ceiling is the intended stopping point and it announces itself: the

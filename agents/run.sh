@@ -3,6 +3,7 @@
 #
 #     agents/run.sh ideas                 # stage one: propose a batch
 #     agents/run.sh build "proposal 1 of agents/table-ideas/BATCH-2026-08-30.md"
+#     agents/run.sh repair "Act on agents/critiques/T136.md"
 #
 # The point of this file is that the session doing the work is not the session
 # that asked for it. Everything the run needs -- the prompt, the environment,
@@ -34,7 +35,8 @@ case "$stage" in
 	ideas) prompt_file="agents/table-ideas/PROMPT.md" ;;
 	build) prompt_file="agents/table-build/PROMPT.md" ;;
 	critique) prompt_file="agents/table-critique/PROMPT.md" ;;
-	*) echo "usage: $0 {ideas|build|critique} [task]" >&2; exit 2 ;;
+	repair) prompt_file="agents/table-repair/PROMPT.md" ;;
+	*) echo "usage: $0 {ideas|build|critique|repair} [task]" >&2; exit 2 ;;
 esac
 
 engine="${NUMBERDB_AGENT:-claude}"
