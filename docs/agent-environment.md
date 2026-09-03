@@ -716,6 +716,12 @@ campaign ends, or rotate the key.
 
 Evidence: `agents/runs/20260903T030506Z-ideas.log`,
 `agents/runs/campaign-20260903T030422Z.log`; `.gitignore` lines 162-163.
+It happened again in the T142 repair run of 2026-09-03 (run
+`20260903T125530Z`), with a `sed` mask on "key" after the `=` that
+matched the `NUMBERDB_KEY_FILE` line and not `NUMBERDB_API_KEY`: the same
+mistake in a different spelling, so the rule is to never print values from
+the environment at all, masked or not. That run's log is a third one to
+scrub, and a third reason to rotate the key.
 
 ## `audit_table --links` reports KnotInfo as `URLError`; that is this network, not the link
 
@@ -885,3 +891,24 @@ the next deploy.
 
 Evidence: `/tmp/gs_fill_out.txt`, first and second runs, 2026-09-03; commit
 "a complex ball carries its error in its parts".
+
+## The LMFDB sometimes answers `curl` through the proxy with a reCAPTCHA page, and sometimes with the page
+
+What happened: the T142 critique could not compare comment (12) with the
+Conrey knowl it cites, because `curl` through the proxy to
+`lmfdb.org/knowledge/show/character.dirichlet.conrey` answered a reCAPTCHA
+page, and the 2026-09-03 ideas run met the same gate on the per-character
+calculators. Three hours later the T142 repair fetched the same knowl and
+`/Character/Dirichlet/7/2` the same way and got both pages whole (status
+200, 28 KB and 51 KB, the knowl's full definition in the text). Both pages
+carry the word reCAPTCHA in an embedded script even when they are not the
+gate, so the word is not the test.
+
+What to do instead: test for the content you came for (the knowl's
+definition, the calculator's form), not for "reCAPTCHA"; if the gate is up,
+try again later in the run rather than recording the page as unreachable.
+The knowl's definition agrees with T142's comment (12), so that comparison
+is done and need not be repeated.
+
+Evidence: `agents/critiques/T142.md`, last bullet of "Noting only";
+`/tmp/t142_knowl.html`, `/tmp/t142_knowl2.html`, 2026-09-03.

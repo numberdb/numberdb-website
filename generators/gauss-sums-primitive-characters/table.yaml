@@ -55,8 +55,8 @@ Comments:
   comment-pure: >-
     $\tau(\chi)$ is $\sqrt{q}$ times a root of unity for exactly those
     characters here whose component at every prime $p$ dividing $q$ is
-    either quadratic or of conductor $p^e$ with $e\geq 2$
-    (CITE{formula-prime-power} with CITE{formula-multiplicative}): the
+    either quadratic or of conductor $p^e$ with $e\geq 2$, by
+    CITE{formula-prime-power} with CITE{formula-multiplicative}: the
     trivial character, the $30$ real characters, and $92$ others, all of
     conductor $9$, $16$, $25$, $27$, $32$, $36$, $45$, $48$ or $49$, whose
     comments give the root of unity, as in
@@ -73,7 +73,6 @@ Comments:
     $\tau(\chi)$ is an algebraic integer in $\mathbb{Q}(\zeta_q,\zeta_d)$,
     $d$ the order of $\chi$, and for a prime conductor its degree is given
     by CITE{formula-degree}.
-  comment-requested: Asked for in CITE{issue12}.
 Formulas:
   formula-absolute-value: >-
     $\tau(\chi)\,\overline{\tau(\chi)}=q$ for every primitive character
@@ -147,7 +146,7 @@ Similar tables:
   - table: HREF{Zeros_of_Dirichlet_L_functions}[Zeros of Dirichlet $L$-functions]
     relation: zeros of $L(s,\chi)$ for the same characters under the same Conrey labels
   - table: HREF{Generalized_Bernoulli_numbers}[Generalized Bernoulli numbers]
-    relation: $B_{k,\chi}$ under the same labels; $L(1,\chi)$ and $L(2,\chi)$ are $\tau(\chi)$ times $B_{1,\bar\chi}$ or $B_{2,\bar\chi}$ times a power of $\pi$
+    relation: $B_{k,\chi}$ under the same labels; $L(1,\chi)$ is $\tau(\chi)B_{1,\bar\chi}$ times $\pi i/q$ and $L(2,\chi)$ is $\tau(\chi)B_{2,\bar\chi}$ times $\pi^2/q^2$
   - table: HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[Residues of Dedekind zeta functions of quadratic fields]
     relation: $L(1,\chi)$ for the real characters, whose root number is $1$
   - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
@@ -216,11 +215,11 @@ Data properties:
     each term arb's exponential of a ball containing $r$. The character is
     built from Conrey's definition (discrete logarithms modulo the prime
     powers dividing $q$), not from a library; the generator requires every
-    value to overlap an enclosure of Sage's exact `gauss_sum()` of the
+    value to overlap an enclosure of Sage's exact Gauss sum of the
     character Sage numbers $(q,n)$, and $\tau(\chi)\overline{\tau(\chi)}$
     to contain $q$, before returning it, and decides primitivity by hand and
-    by Sage's `is_primitive()`, which must agree. The digits written are
-    those the ball supports (the widest ball, at $q=47$, supports 116). The
+    by Sage's primitivity test, which must agree. A hundred digits are
+    written; the widest ball, at $q=47$, supports 116. The
     degree in each comment is the number of distinct Galois conjugates of
     $\tau(\chi)$, enclosed in balls and compared exactly where two overlap;
     a minimal polynomial is the product over them, rounded to integers and
@@ -230,10 +229,12 @@ Data properties:
     number of roots of unity in that field. Outside the generator, the
     hand-built characters were compared with Sage's on every value of every
     character of modulus at most 60; every value was compared with PARI's
-    `znchargauss` at its Conrey index; the values the LMFDB computes for
+    znchargauss at its Conrey index; the values the LMFDB computes for
     $(7,2)$, $(16,3)$, $(45,2)$ and the imprimitive $(50,3)$, and the
     hundred-digit expansions OEIS A396258 to A396261 for the characters
     modulo $7$, agree; and the formulas listed were checked on every entry.
-    The controls that must fail fail.
+    Two controls that must fail did: the sum for $\chi_7(2,\cdot)$ does not
+    overlap Sage's Gauss sum of $\chi_7(3,\cdot)$, and a value shifted by
+    $10^{-60}$ does not agree with OEIS A396260 CITE{OEIScubic}.
 Display properties:
   number-header: $\tau(\chi_q(n,\cdot))$
