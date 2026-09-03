@@ -895,7 +895,18 @@ def write_table(request, tid):
 			 'conflicts': [str(c) for c in stale.conflicts],
 			 'head': stale.head.digest if stale.head else None}, status=409)
 
-	if outcome.revision and edits_are_reviewed(user):
+	#A draft is the exception, as it is when one is created: reviewing a
+	#draft is what publishing it means, so marking it reviewed here would
+	#skip the only look anybody gets at a new table. Worse than skipping
+	#it: the queue lists a table with something outstanding, or one never
+	#reviewed at all, and a draft marked reviewed up to its head is in
+	#neither state. It stops being listed while staying unpublished --
+	#invisible to readers and to reviewers at the same time.
+	#
+	#T136 spent a morning like that, after a board member repaired it
+	#through this endpoint between the build that made it and the review
+	#that would have published it.
+	if outcome.revision and table.published and edits_are_reviewed(user):
 		table.reviewed_at_revision = outcome.revision
 		#The author, by virtue of being trusted: this path publishes their
 		#edits as already reviewed. Recording it is what lets the trust ladder
@@ -1203,7 +1214,10 @@ def _write_entries_locked(request, table, entries, user):
 			{'error': 'The entries are over a size limit.',
 			 'detail': [b.message for b in big.breaches]}, status=413)
 
-	if outcome.revision and edits_are_reviewed(user):
+	#Not a draft: see the same guard in `write_table`. Filling a draft
+	#through this endpoint marked it reviewed too, which took it out of
+	#the queue without publishing it.
+	if outcome.revision and table.published and edits_are_reviewed(user):
 		table.reviewed_at_revision = outcome.revision
 		#The author, by virtue of being trusted: this path publishes their
 		#edits as already reviewed. Recording it is what lets the trust ladder
