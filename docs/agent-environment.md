@@ -761,3 +761,27 @@ start of `produced_by` as well as after a comma, or have `api_edit.py` send
 Evidence: `/tmp/crit138_after.txt` and `/tmp/crit138_final.txt`, 2026-09-03;
 `numberdb_app/models.py` `assisted_by`, `numberdb_app/api.py`
 `_produced_by`, `agents/api_edit.py` `edit_request`.
+
+## A repair edits the live document; the `table.yaml` beside the generator is not touched unless the repair does it
+
+What happened: the T140 repair changed four passages of the draft through
+the API, and then found that `generators/conway-polynomials-prime-knots/
+table.yaml`, the document the draft was created from, still carried the old
+text. The T138 and T139 repairs made the same kind of edit and left their
+`table.yaml` files as they were: on 2026-09-03 both
+`generators/alexander-polynomials-prime-knots/table.yaml` and
+`generators/jones-polynomials-prime-knots/table.yaml` still cite `issue91`,
+which the live T138 and T139 no longer do, and the Alexander file still has
+the Definition without Perko. `verify()` compares values, not prose, so
+nothing reports the drift; a later `create` from the file would bring the
+repaired findings back.
+
+What to do instead: a repair that changes a table's prose changes the
+generator's `table.yaml` in the same commit, and checks the two agree
+section for section (a dozen lines: `GET /api/table?id=<TID>` against
+`yaml.safe_load` of the file, `Numbers` excluded). The T140 repair did this;
+the T138 and T139 files are left for a person, since the live documents are
+the ones under review and the two repairs are already committed.
+
+Evidence: `/tmp/t140_edit.py`, 2026-09-03; `grep -n issue91
+generators/*/table.yaml`.

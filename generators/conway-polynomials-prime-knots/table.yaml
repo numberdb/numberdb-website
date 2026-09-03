@@ -4,11 +4,11 @@
 # beside it; publishing is a person's act on the site.
 Title: Conway polynomials of the prime knots with at most ten crossings
 Definition: >-
-  The Conway polynomial $\nabla_K(z)\in\mathbb{Z}[z]$ of a knot $K$
-  CITE{Wiki}, defined by $\nabla(0_1)=1$ and the skein relation
-  $\nabla(L_+)-\nabla(L_-)=z\,\nabla(L_0)$, for the unknot $0_1$ and for
-  every prime knot $n_k$ with at most ten crossings, named as in the Rolfsen
-  table CITE{Rolfsen}.
+  The Conway polynomial $\nabla_K(z)$ of a knot $K$ CITE{Wiki}, defined by
+  $\nabla(0_1)=1$ and the skein relation
+  $\nabla(L_+)-\nabla(L_-)=z\,\nabla(L_0)$, for the unknot $0_1$ and every
+  prime knot $n_k$ with at most ten crossings, named as in the Rolfsen table
+  CITE{Rolfsen} with Perko's correction CITE{Perko}.
 Parameters:
   n:
     type: Z
@@ -20,7 +20,7 @@ Parameters:
     title: index in the Rolfsen table
     display: $k$
     constraints: >-
-      $1\leq k\leq N(n)$, where $N(n)$ is the number of prime knots with $n$
+      $1\leq k\leq N(n)$, where $N(n)$ is the number of knots listed with $n$
       crossings, $1,1,1,2,3,7,21,49,165$ for $n=0,3,4,\ldots,10$
 Comments:
   comment-convention: >-
@@ -87,8 +87,7 @@ Comments:
     here cannot express; KnotInfo carries the Conway polynomials of all
     prime knots to thirteen crossings. The Alexander polynomials of the
     knots listed here are in their own table, and so are the
-    HREF{Jones_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Jones polynomials],
-    which were asked for together in CITE{issue91}.
+    HREF{Jones_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Jones polynomials].
 Formulas:
   formula-skein: >-
     $\nabla(0_1)=1$ and $\nabla(L_+)-\nabla(L_-)=z\,\nabla(L_0)$ for three
@@ -218,10 +217,6 @@ References:
     bib: >-
       H. Murakami, On derivatives of the Jones polynomial, Kobe J. Math. 3
       (1986), 61–64.
-  issue91:
-    bib: >-
-      numberdb-data issue #91, "Knot polynomials",
-      https://github.com/numberdb/numberdb-data/issues/91
 Tags:
   - polynomial
 Data properties:
@@ -231,20 +226,18 @@ Data properties:
   rigour details: >-
     Each polynomial is Sage's conway_polynomial() of Knots().from_table(n, k),
     which substitutes into the determinant $\det(V-tV^{\mathsf T})$ of a
-    Seifert matrix of the braid closure. Before it is written the generator
-    requires it to agree with the polynomial obtained from
-    $\det(I-\psi(\beta))(1-t)/(1-t^r)$, computed from the reduced Burau
-    matrix $\psi(\beta)$ of the same braid word on $r$ strands, with the
-    matrices, their product and a Bareiss determinant written out in the
-    generator rather than taken from a library, and converted to $\nabla$
+    Seifert matrix of the braid closure. The generator requires it to agree
+    with the polynomial obtained from $\det(I-\psi(\beta))(1-t)/(1-t^r)$,
+    computed from the reduced Burau matrix $\psi(\beta)$ of the same braid
+    word on $r$ strands, with the matrix arithmetic and the determinant
+    written out rather than taken from a library, and converted to $\nabla$
     by writing the symmetric Laurent polynomial $\epsilon t^{-d}\Delta(t)$
     as a polynomial in $t+t^{-1}=z^2+2$; to have only even powers and
     constant term $1$; to satisfy $|\nabla(2i)|=\det K$; to have $a_2$
     modulo $2$ equal to the Arf invariant both as Robertello's sum of
-    Alexander coefficients and by Murasugi's criterion; to equal $F_q$ for
-    the torus knots $T(2,q)$ and $10_{132}$, and $\Phi_4$, $\Phi_{12}$,
-    $\Phi_8$ for $3_1$, $7_7$, $9_{44}$; and the counts per crossing number
-    must be $1,1,2,3,7,21,49,165$. Outside the generator all 250 values were
+    Alexander coefficients and by Murasugi's criterion; and to equal $F_q$
+    for the torus knots $T(2,q)$ and $10_{132}$, and $\Phi_4$, $\Phi_{12}$,
+    $\Phi_8$ for $3_1$, $7_7$, $9_{44}$. Outside the generator all 250 values were
     compared with the conway_polynomial column of KnotInfo (package
     database_knotinfo 2026.9.1, computed from KnotInfo's own diagrams) and
     the Arf invariants with its arf_invariant column; the stored Alexander
@@ -252,7 +245,6 @@ Data properties:
     the stored Jones polynomials $V''(1)=-6a_2$, $V(i)=(-1)^{\mathrm{Arf}}$
     and $|V(-1)|=|\nabla(2i)|$ on every knot; the linked Fibonacci and
     cyclotomic entries hold the same polynomials, and no other entry of
-    those two tables coincides with a value here. All agree, and the
-    controls that must fail fail.
+    those two tables coincides with a value here. All agree.
 Display properties:
   number-header: $\nabla_{n_k}(z)$
