@@ -237,7 +237,9 @@ def latex_cyclotomic(coefficients, d):
 #: the anchors of its entries (a2, a1, a0, n): the roots -1 -+ 2i of x^2 + 2x + 5.
 IN_DEGREE_TWO = {
     (5, 2, 2): r'HREF{Algebraic_numbers_of_degree_2#1,2,5,1}[$-1-2i$]',
+    (5, 2, 4): r'HREF{Algebraic_numbers_of_degree_2#1,-2,5,2}[$1+2i$]',
     (5, 3, 3): r'HREF{Algebraic_numbers_of_degree_2#1,2,5,2}[$-1+2i$]',
+    (5, 3, 4): r'HREF{Algebraic_numbers_of_degree_2#1,-2,5,1}[$1-2i$]',
 }
 
 

@@ -927,3 +927,27 @@ fetches the draft (200, 168 KB) with the key never on a command line and
 never in a file in the repository; it goes through the proxy like every
 other `curl`. The same shape works for any authenticated GET a run needs
 without a Sage round trip.
+
+## `_reference_href` promises `?entry=x#x` for a same-table `#x` and returns `?entry=x`; and a parameter `comments` key is accepted and never rendered
+
+What happened: the T143 critique found two site-side gaps behind two
+table faults. `views._reference_href`'s docstring says `#CL` becomes
+`?entry=CL#CL`; the code returns the query alone, so a same-table `HREF{#x}`
+can never scroll to an anchor and always asks the server for entry `x`.
+Whether an in-page anchor should be reachable through `HREF` at all is a
+design question -- the docstring says these are entry addresses -- but the
+docstring and the code should agree. Separately, `validate.py` lists
+`comments` in `KNOWN_ANNOTATIONS` and the parameter renderer reads `title`,
+`display` and `constraints` only, so a `comments` key under a parameter is
+stored and shown nowhere, on the page or in the editor. T142 and T143 were
+the only tables carrying it; T143's is moved into Comments by the repair,
+T142's is still there.
+
+What to do instead: for the table, write `CITE{label}` or nothing (lesson in
+`agents/lessons/PROPOSALS.md`). For the site, either render a parameter's
+`comments` under the parameter line or have `audit_table` report a
+parameter key nothing reads; and make `_reference_href` do what its
+docstring says or say what it does.
+
+Evidence: `agents/critiques/T143.md`, findings 1 and 2; `/tmp/audit143_out.txt`
+2026-09-03: the repaired T143 renders with no `?entry=CL`.
