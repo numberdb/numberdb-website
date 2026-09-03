@@ -65,10 +65,32 @@ log="agents/runs/$started-$stage.log"
 # know -- and the preflight below tests the same path the run will use.
 export ALL_PROXY="${NUMBERDB_PROXY:-socks5h://127.0.0.1:1080}"
 export NUMBERDB_AGENT_RUN=1
-# The tool's name only. The client writes "<generator>, assisted by <this>",
-# so including the phrase here produced "assisted by assisted by claude", and
-# the field is capped at 100 characters so the doubling cost the run id.
-export NUMBERDB_ASSISTED_BY="$engine (agent run $started)"
+# What made this revision, at the granularity where it can change without
+# anybody noticing: the harness, which agent, the version of that agent's
+# prompt, and the run.
+#
+# Deliberately not the model. This is exported before the run and the CLI
+# picks the model afterwards -- every campaign run so far has been
+# claude-fable-5-1 while the record said "claude" -- so naming one here would
+# be a claim this script cannot check. The model is read back from the
+# transcript into COSTS.tsv below, where it is a fact rather than a guess.
+#
+# The prompt's own commit rather than HEAD: HEAD moves every run, because
+# this script commits the cost line, and "which prompt was it running" is the
+# question a reader of an old revision actually has.
+#
+# The phrase "assisted by" is not included: the client writes
+# "<generator>, assisted by <this>", and putting it here produced "assisted
+# by assisted by claude". The field is capped at 100 characters and that
+# prefix spends about 45 of them, so there are roughly 50 to work with.
+case "$engine" in
+	claude) harness="Claude Code" ;;
+	codex)  harness="Codex CLI" ;;
+	*)      harness="$engine" ;;
+esac
+prompt_commit=$(git log -1 --format=%h -- "$prompt_file" 2>/dev/null || true)
+prompt_version="$(basename "$(dirname "$prompt_file")")@${prompt_commit:-uncommitted}"
+export NUMBERDB_ASSISTED_BY="$harness, $prompt_version, run $started"
 export NUMBERDB_KEY_FILE="$key_file"
 
 # And the key itself, for reading.
@@ -216,12 +238,17 @@ status=${PIPESTATUS[0]}
 # of number worth knowing before deciding to make eighty tables.
 ledger="agents/runs/COSTS.tsv"
 if [ ! -f "$ledger" ]; then
-	printf 'started\tstage\tengine\tturns\tcost_usd\tresult\tlog\n' > "$ledger"
+	printf 'started\tstage\tengine\tturns\tcost_usd\tresult\tlog\tmodel\tprompt\n' > "$ledger"
 fi
-python3 - "$log" "$started" "$stage" "$engine" >> "$ledger" <<'LEDGER' || true
+python3 - "$log" "$started" "$stage" "$engine" "$prompt_version" >> "$ledger" <<'LEDGER' || true
 import json, os, sys
-path, started, stage, engine = sys.argv[1:5]
+path, started, stage, engine, prompt = sys.argv[1:6]
 last = None
+#Which model actually answered. Known only now: the CLI chooses it, and the
+#first assistant message in the transcript says which. This is the durable
+#record of it -- the ledger is tracked and the transcripts are not.
+model = ''
+
 try:
 	for line in open(path, errors='replace'):
 		line = line.strip()
@@ -230,18 +257,29 @@ try:
 				record = json.loads(line)
 			except Exception:
 				continue
+			if not model:
+				named = (record.get('message') or {}).get('model')
+				if isinstance(named, str) and named:
+					model = named
 			if record.get('type') == 'result':
 				last = record
 except OSError:
 	pass
 if last is None:
-	print('%s\t%s\t%s\t\t\tno result record\t%s'
-	      % (started, stage, engine, os.path.basename(path)))
+	print('%s\t%s\t%s\t\t\tno result record\t%s\t%s\t%s'
+	      % (started, stage, engine, os.path.basename(path), model, prompt))
 else:
-	print('%s\t%s\t%s\t%s\t%.2f\t%s\t%s'
+	#`subtype` says "success" even when the run ended on an API error: the
+	#401 that stopped the campaign on 2026-09-03 was recorded as a success by
+	#every field except this one.
+	outcome = last.get('subtype', '')
+	if last.get('is_error'):
+		outcome = 'error %s' % (last.get('api_error_status')
+		                        or last.get('subtype') or '',)
+	print('%s\t%s\t%s\t%s\t%.2f\t%s\t%s\t%s\t%s'
 	      % (started, stage, engine, last.get('num_turns', ''),
-	         last.get('total_cost_usd', 0) or 0, last.get('subtype', ''),
-	         os.path.basename(path)))
+	         last.get('total_cost_usd', 0) or 0, outcome.strip(),
+	         os.path.basename(path), model, prompt))
 LEDGER
 
 #The ledger is tracked, so appending to it leaves the tree dirty -- and the
