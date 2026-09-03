@@ -19,7 +19,7 @@ Parameters:
       character modulo $2$ is trivial; so there is no row $q=2,6,10,\ldots$.
   n:
     type: Z
-    title: HREF{#CL}[Conrey index] of $\chi$
+    title: Conrey index of $\chi$
     display: $n$
     constraints: >-
       $1\leq n\leq\max(q-1,1)$, $\gcd(n,q)=1$, and $\chi_q(n,\cdot)$ primitive

@@ -14,28 +14,16 @@ Parameters:
     title: prime modulus
     display: $p$
     constraints: $p$ prime, $p\geq 5$
-    comments: >-
-      Modulo $2$ there is no nontrivial character, and modulo $3$ the only
-      one is the Legendre symbol, whose square is trivial; so the first prime
-      with an admissible pair is $5$.
   m:
     type: Z
-    title: HREF{#CL}[Conrey index] of $\chi$
+    title: Conrey index of $\chi$
     display: $m$
     constraints: $2\leq m\leq p-1$
-    comments: >-
-      $\chi=\chi_p(m,\cdot)$ is nontrivial exactly when $m\neq 1$, and its
-      order is the multiplicative order of $m$ modulo $p$.
   n:
     type: Z
-    title: HREF{#CL}[Conrey index] of $\psi$
+    title: Conrey index of $\psi$
     display: $n$
     constraints: $m\leq n\leq p-1$, $mn\not\equiv 1\pmod p$
-    comments: >-
-      $\chi\psi=\chi_p(mn,\cdot)$ is trivial exactly when $mn\equiv 1\pmod p$,
-      that is when $\psi=\bar\chi$, and those pairs have
-      $J(\chi,\bar\chi)=-\chi(-1)$ by CITE{formula-conjugate}. Since
-      $J(\chi,\psi)=J(\psi,\chi)$, each pair is listed once, with $m\leq n$.
 Comments:
   comment-conrey: >-
     The Conrey label $(p,n)$ CITE{CL} names the character $\chi_p(n,\cdot)$
@@ -46,14 +34,24 @@ Comments:
     trivial character is $\chi_p(1,\cdot)$,
     $\chi_p(m,\cdot)\chi_p(n,\cdot)=\chi_p(mn,\cdot)$,
     $\overline{\chi_p(n,\cdot)}=\chi_p(n',\cdot)$ with $nn'\equiv 1\pmod p$,
-    and the quadratic character $\left(\frac{\cdot}{p}\right)$ is
-    $\chi_p(p-1,\cdot)$. The
+    the quadratic character $\left(\frac{\cdot}{p}\right)$ is
+    $\chi_p(p-1,\cdot)$, and the order of $\chi_p(m,\cdot)$ is the
+    multiplicative order of $m$ modulo $p$. The
     HREF{Gauss_sums_of_primitive_Dirichlet_characters}[Gauss sums $\tau(\chi)$],
     the HREF{Zeros_of_Dirichlet_L_functions}[zeros of $L(s,\chi)$] and the
     HREF{Generalized_Bernoulli_numbers}[generalized Bernoulli numbers] on this
     site, and the characters in the LMFDB CITE{LMFDB}, are indexed the same
     way; the LMFDB's page for $\chi_p(m,\cdot)$ computes its Jacobi sums
     exactly.
+  comment-listed: >-
+    Modulo $2$ there is no nontrivial character, and modulo $3$ the only one
+    is the Legendre symbol, whose square is trivial, so the first prime with
+    an admissible pair is $5$. The product $\chi\psi=\chi_p(mn,\cdot)$ is
+    trivial exactly when $mn\equiv 1\pmod p$, that is when $\psi=\bar\chi$;
+    those pairs are left out, and their sums are $J(\chi,\bar\chi)=-\chi(-1)$
+    by CITE{formula-conjugate}. Since $J(\chi,\psi)=J(\psi,\chi)$ by
+    CITE{formula-symmetric}, each pair is listed once, with $m\leq n$, which
+    leaves $(p-1)(p-3)/2$ pairs for each $p$.
   comment-zero: >-
     The characters listed are nontrivial, so $\chi(0)=\psi(0)=0$, the terms
     $a=0$ and $a=1$ vanish, and the sum runs over $2\leq a\leq p-1$. What the
@@ -77,11 +75,12 @@ Comments:
   comment-real: >-
     No entry is real or purely imaginary: $J\bar J=p$ with $p$ prime makes
     $J$ irrational, and a purely imaginary $J$ would put $\sqrt{-p}$ into
-    $\mathbb{Q}(\zeta_{p-1})$, in which $p$ is unramified. The two entries at
-    $p=5$, $-1\mp 2i$, are the roots of $x^2+2x+5$ in the table of
-    HREF{Algebraic_numbers_of_degree_2}[algebraic numbers of degree 2]; every
-    other entry has degree at least $2$ over $\mathbb{Q}$ and absolute value
-    $\sqrt{p}$ with $p\geq 7$, so is a root of no polynomial there.
+    $\mathbb{Q}(\zeta_{p-1})$, in which $p$ is unramified. Every entry at
+    $p=5$ and $p=7$ has degree $2$ over $\mathbb{Q}$, and an entry of degree
+    $2$ is a root of $x^2-tx+p$ with $t=J+\bar J$ an integer; the four
+    entries at $p=5$, $1\pm 2i$ and $-1\pm 2i$, are the roots of $x^2-2x+5$
+    and of $x^2+2x+5$ in the table of
+    HREF{Algebraic_numbers_of_degree_2}[algebraic numbers of degree 2].
   comment-norms: >-
     For $p\equiv 1\pmod 3$ and $\chi$ of order $3$, the entry
     $J(\chi,\chi)=a+b\zeta_3$ writes $p=a^2-ab+b^2$ as a norm from
@@ -134,11 +133,13 @@ Formulas:
   formula-legendre: >-
     For the quadratic character $\chi=\left(\frac{\cdot}{p}\right)=\chi_p(p-1,\cdot)$
     and every nontrivial $\psi\neq\chi$: $J(\chi,\psi)=\psi(4)\,J(\psi,\psi)$,
-    so the row $n=p-1$ is the diagonal $m=n$ twisted by $\psi(4)$ CITE{BEW}.
+    so for $\psi=\chi_p(m,\cdot)$ with $2\leq m\leq p-2$ the entry at
+    $(p,m,p-1)$ is $\psi(4)$ times the entry at $(p,m,m)$ CITE{BEW}.
   formula-gauss-power: >-
     For $\chi$ of order $d\geq 3$:
     $\tau(\chi)^d=\chi(-1)\,p\prod_{j=1}^{d-2}J(\chi,\chi^j)$, the
-    $J(\chi,\chi^j)$ being the entries at $(p,m,m^j)$ CITE{IrelandRosen}.
+    $J(\chi,\chi^j)$ being the entries at $(p,m,m^j)$, the indices reduced
+    modulo $p$ and ordered CITE{IrelandRosen}.
 Programs:
   program-sage:
     language: Sage
@@ -151,7 +152,7 @@ Programs:
   program-pari:
     language: PARI/GP
     code: |-
-      p = 7; G = znstar(p, 1); chi1 = znconreychar(G, 2); chi2 = znconreychar(G, 2);   \\ chi_7(2, .) twice; psi is PARI's digamma
+      p = 7; G = znstar(p, 1); chi1 = znconreychar(G, 2); chi2 = znconreychar(G, 2);   \\ chi_7(2, .) twice; chi2 rather than psi, which is PARI's digamma
       z = exp(2*Pi*I/(p-1)); sum(a = 2, p-1, z^((chareval(G, chi1, a) + chareval(G, chi2, 1-a)) * (p-1)))   \\ 0.5 - 2.598...*I
 Similar tables:
   - table: HREF{Gauss_sums_of_primitive_Dirichlet_characters}[Gauss sums of primitive Dirichlet characters]
@@ -163,7 +164,7 @@ Similar tables:
   - table: HREF{Roots_of_unity}[Roots of unity]
     relation: the values $\chi(a)\psi(1-a)$ that are summed, and the $\zeta_d$ the exact values are written in
   - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
-    relation: holds the two entries at $p=5$, the roots $-1\mp 2i$ of $x^2+2x+5$
+    relation: holds the four entries at $p=5$, the roots $\pm 1\pm 2i$ of $x^2-2x+5$ and $x^2+2x+5$
 Links:
   Wiki:
     title: 'Wikipedia: Jacobi sum'
@@ -232,7 +233,7 @@ Data properties:
     them entries here and one at $p=23$, agree exactly with Sage's; the
     number of solutions of $x^k+y^l=1$ over $\mathbb{F}_p$ for every $k$
     and $l$ dividing $p-1$, found by enumeration, agrees with the sum of
-    CITE{formula-fermat} in all $132$ cases and disagrees for every $p$
+    CITE{formula-fermat} in all $138$ cases and disagrees for every $p$
     when the trivial character is given the value $0$ at $0$; the cubic
     entries $J(\chi,\chi)$ reproduce OEIS A001479 and A001480
     CITE{OEIScubic} and, through $L$, OEIS A394567 CITE{OEISperiods}, and
