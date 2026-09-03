@@ -1134,3 +1134,65 @@ Evidence: `agents/critiques/T146.md` finding 1 and
 `agents/critiques/T146-repaired.md`, 2026-09-03; `curl -o /dev/null -w
 '%{http_code}' https://numberdb.org/Gauss_sums_of_primitive_Dirichlet_characters`
 through the proxy answers 404.
+
+## `source_names_it` fails a name made of common nouns when the page says it another way
+
+What happened: the lattice batch of 2026-09-03 proposed a table of
+covering densities, SPLAG's name for $V_n R^n/\sqrt{\det L}$, and the
+screen failed "Covering density" on every page tried: Wikipedia *Sphere
+packing* never says "covering", Wikipedia *Covering problem* is set cover,
+and the arXiv abstracts of the two papers that are about exactly this
+(math/0403272, math/0405441) say "covering" and "least dense" but never
+"density". The word check is honest -- the pages do not contain the word
+-- but a real, standard name failed in the same way an invented one would,
+and the batch had to say in prose that the source is a book.
+
+What to do instead: when the screen fails a name on the page that most
+obviously defines the thing, try a page that lists it (an OEIS entry, a
+catalogue) before concluding the name is wrong, and if none passes, write
+the failure into the proposal with the pages tried, as
+`BATCH-2026-09-03T1730.md` proposal 4 does. A screen that took a list of
+synonyms ("thickness" for "density") would have passed the Springer
+abstract, had it been readable -- see the next note.
+
+Evidence: the `source_names_it` lines in the run's transcript for
+`Covering density`, `Lattice covering thickness`, and the `curl` keyword
+scans of the same pages, 2026-09-03.
+
+## Springer article pages answer `urllib` with a gate and `curl` with the abstract
+
+What happened: `curl` of
+`https://link.springer.com/article/10.1007/s00454-005-1202-2` through
+the proxy returned the abstract (the word "thickness" is in it);
+`screen.source_names_it` on the same URL, which uses `urllib` with the
+`numberdb-proposal-screen` user agent, got a 200 whose text contained
+neither "covering" nor "thickness" -- a bot-check page. The screen
+reported the source as not naming the family. Wikipedia, MathWorld, OEIS,
+arXiv and the Nebe-Sloane catalogue answer `urllib` normally.
+
+What to do instead: do not cite a Springer (or other publisher) page as
+the source the screen checks; cite the arXiv abstract or the Wikipedia
+page and give the DOI in the proposal's prose. If a publisher page is the
+only source, say the screen could not read it rather than that it failed.
+
+Evidence: the `curl` scan (`200 ... :: thickness covering`) against the
+screen's `does not mention lattice, covering, thickness`, 2026-09-03.
+
+## Neither LattE nor Normaliz is in the container's Sage
+
+What happened: `Polyhedron.ehrhart_polynomial()` answers "Executable
+'count' not found on PATH" and `engine='normaliz'` needs a polyhedron
+built with the normaliz backend, which is not installed either. The same
+absence stops `Polyhedron.integrate`, so a Voronoi-cell second moment (the
+quantizer constant) cannot be had from the library and would need a
+simplex decomposition written by hand. Vertex enumeration itself works:
+the $E_8$ Voronoi cell (480 half-spaces, 19440 vertices) took 128 s with
+the default ppl backend.
+
+What to do instead: issue #94 (Ehrhart polynomials) and a quantizer table
+wait on `sage -i latte_int` or `pynormaliz` in the image, which is a
+person's decision; a proposal that needs either should say so.
+
+Evidence: `/tmp/lat_probe.py` (`ehrhart ERR count is not available`) and
+`/tmp/lat_probe3.py` (`['E', 8] R^2, #vecs, #vertices (1, 1200, 19440)
+[128.4s]`), 2026-09-03.
