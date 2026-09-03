@@ -1014,3 +1014,40 @@ rest for a person with the paper.
 
 Evidence: `/tmp/zb_fisher.html`, `/tmp/zb_wan.html`, 2026-09-03;
 `agents/critiques/T144-repaired.md` item 3.
+
+## The orphaned L-values generator was taken over, and the stage-two test is "does its table exist", not "does a file exist"
+
+What happened: the stage-two prompt of 2026-09-03 asks for the
+highest-ranked proposal "that no generator in generators/ answers yet".
+`generators/dirichlet-l-values-positive-integers/generate.py` existed,
+untracked, with `T144` in it, from the run that died before creating its
+draft (the note above). Read literally the prompt would have skipped
+proposal 3 and built proposal 5. This run listed the unpublished tables
+with Django (`/tmp/lv_drafts.py`: T136, T142, T143, T144 -- the four
+`drafts_held` the Kloosterman creation answer reported), found no
+L-values table, and took the file over: `TBD` in place of `T144`, the dry
+run and the outside checks it had never had, then the draft, which
+became T145. The earlier note said the file was "left untouched for a
+person"; the person's campaign asked for the next unbuilt proposal, and
+that was this one.
+
+What to do instead: the stage-two prompt should say "no *table* answers
+yet", and the check is one Django query for unpublished tables (or the
+`drafts_held` count from the last creation answer) rather than `ls
+generators/`. A run that inherits such a file owes it the whole order of
+work, since nothing in it was checked by the run that wrote it.
+
+Evidence: `git status` at the start of the run, `/tmp/lv_drafts.py`
+output ("T145 exists: False"), `/tmp/lv_create_out.txt`: `tid = T145`,
+`drafts_held = 5`.
+
+## T145 links to draft T142; publish the Gauss sums first
+
+T145's closed-form formula and its Similar tables link
+`Gauss_sums_of_primitive_Dirichlet_characters`, which is draft T142.
+`audit_table` reports nothing, by design (the note on T144 above), and
+the link answers 404 until T142 is public. The same publishing-order
+decision as for T144, for the same reason: the closed form is where
+those numbers are used. T145's outside checks used T142's stored digits
+through the API with the key (`/tmp/lv_T142.json`), so the two tables
+have been checked against each other in both directions.
