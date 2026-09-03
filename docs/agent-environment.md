@@ -824,3 +824,20 @@ dry run took seven minutes for that reason, where the fill took four.
 
 Evidence: `/tmp/hv_dry.py`, 2026-09-03, its first traceback and the second
 run's output.
+
+## Journal PDFs are not fetchable from here, so a citation's internal numbering goes unchecked
+
+What happened: the T141 critique offered a reference for Thurston's
+trichotomy with a corollary number, "Bull. Amer. Math. Soc. 6 (1982),
+357–381, Corollary 2.5". The repair wanted to read the page before writing
+the number in. `curl` through the proxy to the AMS PDF answers 403 with an
+HTML body, and Project Euclid's download route answers 200 with a 1 KB HTML
+page, not the PDF. The reference went in with the bibliographic data only,
+which is settled, and without the corollary number, which was not checked.
+
+What to do instead: cite a reference at the level you could verify. A
+person with a library login can add the theorem number afterwards; a wrong
+one is worse than none. `pdftotext` is on this machine if a PDF ever does
+arrive.
+
+Evidence: `/tmp/thurston1982.pdf` (both attempts, HTML), 2026-09-03.
