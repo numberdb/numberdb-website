@@ -694,3 +694,25 @@ proposal says so.
 Evidence: `/tmp/kn_pkg/database_knotinfo-2026.9.1.tar.gz`; probe output
 `snappy NOT importable: ModuleNotFoundError`, `database_knotinfo NOT
 importable: ModuleNotFoundError`, 2026-09-03.
+
+## `env | grep -i numberdb` prints the key into the transcript log
+
+What happened: the 2026-09-03 ideas run listed its environment with
+`env | grep -i -E 'proxy|numberdb'` to see the proxy and the key file's
+name, with a `sed` meant to mask anything containing `KEY`. The mask did
+not match the line `NUMBERDB_API_KEY=...` (it looked for `KEY` after the
+`=`), and the key went into the tool output, hence into
+`agents/runs/<started>-ideas.log` and the campaign log, which `tee` was
+holding open. Both are under `agents/runs/*` and gitignored, so nothing
+tracked carries it (checked with `grep -rlF "$(cat "$NUMBERDB_KEY_FILE")"`
+before committing), and the files are readable only by the same user, as
+`/proc/<pid>/environ` already is. Rewriting a log that `tee` still has open
+would lose the rest of the run, so they were left as they are.
+
+What to do instead: never grep the environment for values; `env | cut
+-d= -f1 | grep -i numberdb` shows which variables are set and nothing
+else. A person may want to scrub the two logs of 2026-09-03 after the
+campaign ends, or rotate the key.
+
+Evidence: `agents/runs/20260903T030506Z-ideas.log`,
+`agents/runs/campaign-20260903T030422Z.log`; `.gitignore` lines 162-163.
