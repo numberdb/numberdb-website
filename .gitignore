@@ -159,8 +159,15 @@ clients/python/docs/
 #is a fact about the project worth keeping. Written as `runs/*` rather than
 #`runs/`, because git does not descend into an excluded directory and the
 #negation below would never be reached.
-agents/runs/*
-!agents/runs/COSTS.tsv
-#A verdict is a decision, not a transcript: SKIPPED.md cites one, and a
-#citation of a file nobody keeps is worth nothing to anybody else.
-!agents/runs/*-verdict
+#This repository is for code. What the agents *are* -- the runner, the
+#campaign, the prompts -- is code and is here. What they produced on a
+#particular afternoon is data, and lives outside it: the transcripts, what
+#they cost, the verdicts, the critiques they wrote, the lessons they
+#proposed, and the batches of ideas they worked from.
+agents/runs/
+agents/critiques/
+agents/lessons/
+#`table-ideas` holds both: the prompt and the screening code are code, the
+#batches it produced and the record of what to skip are data.
+agents/table-ideas/BATCH-*.md
+agents/table-ideas/SKIPPED.md

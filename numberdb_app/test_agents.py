@@ -100,12 +100,26 @@ class BuildingATableCarriesEveryLessonSoFar(TestCase):
 		self.assertIn('Do not edit the skill yourself', self.body)
 
 
+#: The lessons an agent proposed are data, not code, and live outside this
+#: repository since 2026-09-04. These checks still run wherever the file is --
+#: Benjamin's machine, and every agent run, which is where lessons are
+#: written and therefore where a bad one would be caught.
+def _proposals():
+	path = os.path.join(settings.BASE_DIR, 'agents', 'lessons',
+	                    'PROPOSALS.md')
+	if not os.path.exists(path):
+		return None
+	with open(path, encoding='utf8') as handle:
+		return handle.read()
+
+
 class TheLessonsLoopSaysHowALessonLands(TestCase):
 
 	def test_a_lesson_must_arrive_with_a_test(self):
-		with open(os.path.join(settings.BASE_DIR, 'agents', 'lessons',
-		                       'PROPOSALS.md'), encoding='utf8') as handle:
-			body = ' '.join(handle.read().split())
+		raw = _proposals()
+		if raw is None:
+			self.skipTest('the proposed lessons are data and not in the repo')
+		body = ' '.join(raw.split())
 		self.assertIn('test_skill.py', body)
 		self.assertIn('Nothing in this file is in force', body)
 
@@ -419,19 +433,18 @@ class LessonsAreSortedByWhoCouldHitThem(TestCase):
 		self.assertIn('on their own laptop, hit what you hit', body)
 
 	def test_the_proposals_file_states_the_rule(self):
-		path = os.path.join(settings.BASE_DIR, 'agents', 'lessons',
-		                    'PROPOSALS.md')
-		with open(path, encoding='utf-8') as handle:
-			body = ' '.join(handle.read().split())
+		raw = _proposals()
+		if raw is None:
+			self.skipTest('the proposed lessons are data and not in the repo')
+		body = ' '.join(raw.split())
 		self.assertIn('docs/agent-environment.md', body)
 		self.assertIn('only if it would still be true for that person', body)
 
 	def test_no_deployment_detail_leaks_into_the_proposals(self):
 		#The words that mean "this is about our machines, not about tables".
-		path = os.path.join(settings.BASE_DIR, 'agents', 'lessons',
-		                    'PROPOSALS.md')
-		with open(path, encoding='utf-8') as handle:
-			body = handle.read()
+		body = _proposals()
+		if body is None:
+			self.skipTest('the proposed lessons are data and not in the repo')
 		body = body[body.index('---'):]          # past the header, which names them
 		for word in ('docker', 'ssh ', 'sage.sh', 'ALL_PROXY', 'container'):
 			self.assertNotIn(word, body,
