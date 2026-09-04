@@ -1,0 +1,16 @@
+[Unit]
+Description=Daily keep of the agent residue
+
+[Timer]
+# After the database backup at 03:00, not beside it: both walk the same disk
+# and the link, and neither is urgent.
+OnCalendar=*-*-* 04:00:00
+
+# A laptop is asleep at four in the morning and cron skips what it slept
+# through. Persistent runs the missed one at the next opportunity, so the
+# transcripts are pruned on the days the machine was off too.
+Persistent=true
+RandomizedDelaySec=20m
+
+[Install]
+WantedBy=timers.target

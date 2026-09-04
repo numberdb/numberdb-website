@@ -1,0 +1,25 @@
+[Unit]
+Description=Keep the agent runs' residue, and prune their transcripts
+Documentation=file:///home/matschke/projects/numberdb/numberdb-website/scripts/agent-log.sh
+# It pushes to GitHub, so a run before the link is up would fail for a reason
+# that is not a failure.
+After=network-online.target
+
+[Service]
+Type=oneshot
+
+# A timer has no ssh agent, and this pushes over ssh. The same key and the
+# same reasoning as numberdb-backup.service.
+Environment=GIT_SSH_COMMAND=ssh -i %h/.ssh/id_rsa_matschke -o IdentitiesOnly=yes -o BatchMode=yes
+
+ExecStart=%h/projects/numberdb/numberdb-website/scripts/agent-log.sh
+
+# The script refuses to push if a transcript or anything shaped like a
+# credential reached the checkout, and it prunes only after that. A non-zero
+# exit means the residue was not kept -- worth seeing in `systemctl --user
+# status` rather than swallowed.
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

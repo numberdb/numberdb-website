@@ -93,7 +93,12 @@ case "$engine" in
 esac
 prompt_commit=$(git log -1 --format=%h -- "$prompt_file" 2>/dev/null || true)
 prompt_version="$(basename "$(dirname "$prompt_file")")@${prompt_commit:-uncommitted}"
-export NUMBERDB_ASSISTED_BY="$harness, $prompt_version, run $started"
+# Without the run stamp. It pointed into the run log and the cost ledger,
+# which are data and no longer published, so on a public page it was a
+# citation of something nobody outside can read. What is left resolves
+# against this repository: the prompt's commit is here. The stamp is still
+# written to the ledger, where it belongs and where it can be followed.
+export NUMBERDB_ASSISTED_BY="$harness, $prompt_version"
 export NUMBERDB_KEY_FILE="$key_file"
 
 # And the key itself, for reading.
