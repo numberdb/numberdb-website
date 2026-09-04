@@ -432,8 +432,10 @@ def _as_real_endpoints(value: Any) -> Optional[tuple]:
 def _as_complex_corners(value: Any) -> Optional[tuple]:
     """The corners of a whole complex box, or None if it is not one."""
     if isinstance(value, ComplexInterval):
-        return (value.real.lower, value.real.upper,
-                value.imag.lower, value.imag.upper)
+        #Through `bounds()`, because a component may be an exact rational
+        #rather than an interval and then has no `.lower`.
+        (re_low, re_high), (im_low, im_high) = value.bounds()
+        return (re_low, re_high, im_low, im_high)
     if _sage_parent_kind(value) == 'complex interval':
         return (value.real().lower(), value.real().upper(),
                 value.imag().lower(), value.imag().upper())
@@ -857,8 +859,9 @@ def _record_for(value) -> Dict[str, Any]:
         low, high = bound_interval(value.lower, value.upper)
         return {'kind': 'RIF', 'lower': str(low), 'upper': str(high)}
     if isinstance(value, ComplexInterval):
-        real = bound_interval(value.real.lower, value.real.upper)
-        imaginary = bound_interval(value.imag.lower, value.imag.upper)
+        (re_low, re_high), (im_low, im_high) = value.bounds()
+        real = bound_interval(re_low, re_high)
+        imaginary = bound_interval(im_low, im_high)
         return {'kind': 'CIF', 're_lower': str(real[0]),
                 're_upper': str(real[1]), 'im_lower': str(imaginary[0]),
                 'im_upper': str(imaginary[1])}

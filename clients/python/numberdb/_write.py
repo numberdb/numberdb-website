@@ -125,8 +125,15 @@ def to_text(value: Any, digits: int = DIGITS,
     if isinstance(value, RealInterval):
         return _interval_text(value, digits, form)
     if isinstance(value, ComplexInterval):
-        return _complex_text(_interval_text(value.real, digits, form),
-                             _interval_text(value.imag, digits, form))
+        #Each component by its own rule, not both through the interval
+        #writer. A component given as a Fraction is exact and is written
+        #exactly; one given as an interval is written to `digits` with the
+        #last uncertain. Forcing both through the interval writer is what
+        #wrote the real part of (3 + i*sqrt(3))/2 as ninety-nine digits of
+        #1.5 -- a decimal expansion means plus or minus one unit in the last
+        #place, so no number of digits makes it say "exact".
+        return _complex_text(to_text(value.real, digits, form),
+                             to_text(value.imag, digits, form))
     if isinstance(value, PAdic):
         return str(value)
     if isinstance(value, Polynomial):

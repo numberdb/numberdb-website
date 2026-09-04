@@ -81,23 +81,75 @@ class RealInterval:
         return self.lower == self.upper
 
 
+def _as_part(value):
+    """One component of a complex value: exact, or an interval.
+
+    A pair of *existing* types, which is what the database stores: an exact
+    rational for a component that is known exactly, a ``RealInterval`` for one
+    that is not. Nothing new is invented, and the two are told apart by type
+    rather than by measuring a width.
+
+    That distinction is the point. A zero-width interval and an exact rational
+    bound the same set, but they are not the same claim: wrapping a
+    fixed-precision result in an interval field gives width zero and says the
+    value is exact, which is how twenty-nine tables came to promise digits
+    nobody had proved. So exactness is something a generator *declares*, by
+    handing over a Fraction, and never something inferred here.
+    """
+    from fractions import Fraction
+
+    if isinstance(value, RealInterval):
+        return value
+    if isinstance(value, bool):
+        raise TypeError('a boolean is not a number')
+    if isinstance(value, (int, Fraction)):
+        return Fraction(value)
+    raise TypeError(
+        'a component of a complex number is an exact rational -- int or '
+        'Fraction -- or a RealInterval. Got %s. A Sage interval or ball can '
+        'be given as the whole value instead, or converted with '
+        'RealInterval(lower, upper).' % (type(value).__name__,))
+
+
+def _part_bounds(part):
+    """A component's endpoints, as exact Fractions."""
+    from fractions import Fraction
+
+    if isinstance(part, RealInterval):
+        return part.lower, part.upper
+    return Fraction(part), Fraction(part)
+
+
 class ComplexInterval:
-    """A complex number known to lie in a rectangle.
+    """A complex number, as a pair of components.
 
-    ``real`` and ``imag`` are each a ``RealInterval``. Named as Python's own
-    ``complex`` names them, and as Sage does, so the abbreviation is the one
-    already in the reader's fingers.
+    ``real`` and ``imag`` are each either an exact rational -- ``int`` or
+    ``Fraction`` -- or a ``RealInterval``. Named as Python's own ``complex``
+    names them, and as Sage does, so the abbreviation is the one already in
+    the reader's fingers.
 
-    The same shape as Sage's complex interval -- a real interval for each
-    component -- but a record rather than an arithmetic type, with exact
-    rational corners instead of floats at a fixed precision.
+    The pair is what lets the two halves differ in what is known about them.
+    ``ComplexInterval(Fraction(-1, 2), RealInterval(lo, hi))`` is written
+    ``-1/2 + i * 0.86602540378?``: exact on one axis and an approximation on
+    the other, which is what a Jacobi sum or a quadratic algebraic number
+    actually is. Forcing both through one interval wrote the real part of
+    (3 + i*sqrt(3))/2 as ninety-nine digits of 1.5, in the one notation --
+    a decimal expansion -- that cannot say a value is exact, because it means
+    plus or minus one unit in the last place however many digits it carries.
+
+    A record rather than an arithmetic type, with exact rational corners
+    instead of floats at a fixed precision.
     """
 
     __slots__ = ('real', 'imag')
 
-    def __init__(self, real: 'RealInterval', imag: 'RealInterval') -> None:
-        self.real = real
-        self.imag = imag
+    def __init__(self, real, imag) -> None:
+        self.real = _as_part(real)
+        self.imag = _as_part(imag)
+
+    def bounds(self):
+        """``((re_low, re_high), (im_low, im_high))`` as exact Fractions."""
+        return _part_bounds(self.real), _part_bounds(self.imag)
 
     def __repr__(self):
         return 'ComplexInterval(%r, %r)' % (self.real, self.imag)
@@ -111,11 +163,19 @@ class ComplexInterval:
 
     def __complex__(self):
         """The centre. Lossy, as for a real interval."""
-        return complex(float(self.real), float(self.imag))
+        (re_low, re_high), (im_low, im_high) = self.bounds()
+        return complex(float(re_low + (re_high - re_low) / 2),
+                       float(im_low + (im_high - im_low) / 2))
 
     @property
     def is_exact(self) -> bool:
-        return self.real.is_exact and self.imag.is_exact
+        """True when the box is a single point, so nothing is unknown.
+
+        A component given as a Fraction is exact by declaration; one given as
+        an interval is a point only if its endpoints agree.
+        """
+        (re_low, re_high), (im_low, im_high) = self.bounds()
+        return re_low == re_high and im_low == im_high
 
 
 class PAdic:
