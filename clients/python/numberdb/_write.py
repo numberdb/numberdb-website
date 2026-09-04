@@ -166,7 +166,18 @@ def _interval_text(interval, digits, form='decimal'):
 
     lower, upper = interval.lower, interval.upper
     if lower == upper:
-        return to_text(Fraction(lower))
+        #An interval that landed on a point is still an interval, and says so.
+        #Writing the bare rational would put a declaration on the page that
+        #nobody made: the generator computed a range and it came out narrow.
+        #Both assert the same number, and only one of them is a rational --
+        #which is the difference between "I know this is 3/2" and "interval
+        #arithmetic pinned this to 3/2".
+        #
+        #In interval form even when the table is written as balls: `3/2 +/- 0`
+        #is not something the search parser reads, and a value it cannot read
+        #is a value nobody can find by its digits.
+        point = to_text(Fraction(lower))
+        return '[%s, %s]' % (point, point)
 
     if form == 'ball':
         return _ball_text(Fraction(lower), Fraction(upper), digits)
