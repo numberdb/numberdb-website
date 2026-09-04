@@ -848,12 +848,17 @@ class OneWrittenFormForApproximateReals(unittest.TestCase):
                          wanted)
         self.assertEqual(to_text(RealBallField(precision)(zeta(3)), 20),
                          wanted)
+        #The imaginary part here is exactly 1, and it arrived as a component
+        #of an interval -- so it is written as one, `[1, 1]`. An interval that
+        #lands on a point is still an interval: writing `1` would put a
+        #declaration on the page that the caller never made. Only a component
+        #handed over as a Fraction is written as a rational.
         self.assertEqual(
             to_text(ComplexIntervalField(precision)(zeta(3), 1), 20),
-            wanted + ' + i * 1')
+            wanted + ' + i * [1, 1]')
         self.assertEqual(
             to_text(ComplexBallField(precision)(zeta(3), 1), 20),
-            wanted + ' + i * 1')
+            wanted + ' + i * [1, 1]')
 
     def test_it_is_a_plain_decimal_and_carries_no_marker(self):
         """`3.14` IS the interval (3.13, 3.15). Sage writes `3.14?` for that;
