@@ -49,6 +49,33 @@ def parse_rational_number(s):
     
     return None;        
 
+def _interval_endpoint(text, RIF=RIF):
+    """One endpoint of an explicit interval, or None.
+
+    A decimal or an integer, which `RIF` reads itself, or an exact rational,
+    which it does not: `RIF('3/2')` raises, so `[3/2, 3/2]` was refused
+    outright. The exact layer accepts that spelling and stores it faithfully,
+    so a value written that way was kept and never indexed -- present on its
+    page and unfindable by its digits, which is the shape of fault that once
+    hid 101 numbers.
+    """
+    try:
+        return RIF(text)
+    except (TypeError, ValueError, ArithmeticError):
+        pass
+    try:
+        rational = parse_rational_number(text)
+    except ArithmeticError:
+        #`[1/0, 2]` divides in the parser rather than returning None.
+        return None
+    if rational is None:
+        return None
+    try:
+        return RIF(rational)
+    except (TypeError, ValueError, ArithmeticError):
+        return None
+
+
 def parse_real_interval(s, RIF=RIF, allow_rationals=True):
 
     #First try _exact_ rational numbers:
@@ -118,13 +145,10 @@ def parse_real_interval(s, RIF=RIF, allow_rationals=True):
             l, u = l_u
             l = l.strip()
             u = u.strip()
-            try:
-                l = RIF(l)
-                u = RIF(u)
-                r = l.union(u)
-                return r
-            except TypeError:
-                pass                
+            l = _interval_endpoint(l, RIF)
+            u = _interval_endpoint(u, RIF)
+            if l is not None and u is not None:
+                return l.union(u)
                 
             '''
             lower = parse_real_interval(l)
