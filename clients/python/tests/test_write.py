@@ -1802,3 +1802,89 @@ class TestWhoRanThePublish:
         server = Server()
         self.Probe().publish(client=server.client())
         assert len(self._produced_by(server)) <= 100
+
+
+class TestAComplexNumberIsAPairOfComponents:
+    """Each half of a complex value says for itself what is known about it.
+
+    A Jacobi sum is exactly -1 - 2i; a quadratic algebraic number is exactly
+    3/2 on one axis and irrational on the other. Forcing both halves through
+    the interval writer wrote the real part of (3 + i*sqrt(3))/2 as ninety-nine
+    digits of 1.5 -- in a notation that cannot say "exact", because a decimal
+    expansion means plus or minus one unit in the last place however many
+    digits it carries. T35 has been storing it that way since it was made by
+    hand.
+    """
+
+    def sqrt3_over_2(self):
+        return numberdb.RealInterval(
+            Fraction(-8660254037844387, 10 ** 16),
+            Fraction(-8660254037844386, 10 ** 16))
+
+    def test_both_halves_exact(self):
+        value = numberdb.ComplexInterval(2, -1)
+        assert to_text(value) == '2 + i * -1'
+
+    def test_one_half_exact_and_one_not(self):
+        value = numberdb.ComplexInterval(Fraction(3, 2), self.sqrt3_over_2())
+        assert to_text(value, digits=12) == '3/2 + i * -0.866025403784'
+
+    def test_a_fraction_is_written_in_lowest_terms(self):
+        value = numberdb.ComplexInterval(Fraction(5, 65), 0)
+        assert to_text(value) == '1/13 + i * 0'
+
+    def test_an_integer_component_stays_an_integer(self):
+        value = numberdb.ComplexInterval(0, -1)
+        assert to_text(value) == '0 + i * -1'
+
+    def test_neither_half_exact_is_unchanged(self):
+        part = self.sqrt3_over_2()
+        value = numberdb.ComplexInterval(part, part)
+        assert to_text(value, digits=12) == (
+            '-0.866025403784 + i * -0.866025403784')
+
+    def test_an_exact_half_does_not_grow_digits(self):
+        #The fault this fixes: exactness expressed by making the implied
+        #uncertainty small, rather than by saying it.
+        value = numberdb.ComplexInterval(Fraction(3, 2), self.sqrt3_over_2())
+        assert '1.500000' not in to_text(value, digits=99)
+
+    def test_the_corners_are_still_available(self):
+        value = numberdb.ComplexInterval(Fraction(3, 2), self.sqrt3_over_2())
+        (re_low, re_high), (im_low, im_high) = value.bounds()
+        assert re_low == re_high == Fraction(3, 2)
+        assert im_low < im_high
+
+    def test_a_point_is_a_point_whichever_way_it_is_given(self):
+        assert numberdb.ComplexInterval(2, -1).is_exact
+        assert numberdb.ComplexInterval(
+            numberdb.RealInterval(2, 2), numberdb.RealInterval(-1, -1)
+        ).is_exact
+        assert not numberdb.ComplexInterval(
+            Fraction(3, 2), self.sqrt3_over_2()).is_exact
+
+    def test_the_midpoint_still_works(self):
+        value = numberdb.ComplexInterval(Fraction(3, 2), self.sqrt3_over_2())
+        assert abs(complex(value) - (1.5 - 0.8660254037844386j)) < 1e-15
+
+    def test_a_component_must_be_a_number(self):
+        with pytest.raises(TypeError):
+            numberdb.ComplexInterval('3/2', 1)
+        with pytest.raises(TypeError):
+            numberdb.ComplexInterval(True, 1)
+
+    def test_a_float_component_is_refused(self):
+        #A float does not say how precise it is, which is the whole point.
+        with pytest.raises(TypeError):
+            numberdb.ComplexInterval(1.5, 1)
+
+    def test_what_it_writes_is_what_the_database_parses(self):
+        #The front page documents this grammar: "sums or differences of the
+        #form A or i*A or A*i, where A is a real number in the above format
+        #or a rational number", with -1/2 + i * 0.86602 as the example.
+        value = numberdb.ComplexInterval(Fraction(-1, 2), self.sqrt3_over_2())
+        written = to_text(value, digits=5)
+        #-0.86603 at five significant digits, not the front page's -0.86602,
+        #which is the same number written to five digits by a person rounding
+        #down. The half that matters here is the exact one.
+        assert written.startswith('-1/2 + i * -0.866')

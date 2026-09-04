@@ -396,6 +396,26 @@ The careful things happen without being asked for:
   known and the last is uncertain by one. No marker, and in particular not
   Sage's `3.14159?`. Set `format = 'ball'` on the generator for a table that
   records its radius instead;
+- **a complex number is a pair, and the halves may differ.** `ComplexInterval`
+  takes each component as either an exact rational — `int` or `Fraction` — or
+  a `RealInterval`, and writes each by its own rule:
+
+  ```python
+  >>> from fractions import Fraction
+  >>> numberdb.ComplexInterval(2, -1)                    # a Jacobi sum
+  ... # -> '2 + i * -1'
+  >>> numberdb.ComplexInterval(Fraction(3, 2), root)     # (3 + i*sqrt 3)/2
+  ... # -> '3/2 + i * -0.866025403784'
+  ```
+
+  Exactness is *declared*, by handing over a `Fraction`, and never inferred
+  from a width. A zero-width interval and an exact rational bound the same
+  set but make different claims: wrapping a fixed-precision result in an
+  interval field gives width zero and thereby says the value is exact, which
+  is how twenty-nine tables came to promise digits nobody had proved. Note
+  also that no number of digits makes a decimal expansion exact — `1.5000…`
+  still means plus or minus one unit in the last place — so an exact half
+  must be written as a fraction to be exact at all;
 - **the digits you asked for are the digits you get**: `digits` is decimal,
   Sage's fields are binary, and `RealIntervalField(digits)` — which reads
   perfectly well — delivers about a third of what was meant. `numberdb.bits()`
