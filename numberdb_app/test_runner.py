@@ -282,11 +282,17 @@ class WhatARunRecordsAboutItself(TestCase):
 		body = flat('agents/run.sh')
 		self.assertIn('git log -1 --format=%h -- "$prompt_file"', body)
 
-	def test_produced_by_carries_harness_prompt_and_run(self):
+	def test_produced_by_carries_harness_and_prompt(self):
 		body = flat('agents/run.sh')
-		self.assertIn(
-			'export NUMBERDB_ASSISTED_BY="$harness, $prompt_version, '
-			'run $started"', body)
+		self.assertIn('export NUMBERDB_ASSISTED_BY="$harness, '
+		              '$prompt_version"', body)
+
+	def test_it_does_not_cite_what_a_reader_cannot_follow(self):
+		#The run stamp pointed into the log and the ledger, which are data and
+		#are not published. The prompt's commit is in this repository.
+		body = flat('agents/run.sh')
+		exported = body.split('export NUMBERDB_ASSISTED_BY=')[1][:60]
+		self.assertNotIn('run $started', exported)
 
 	def test_produced_by_does_not_claim_a_model(self):
 		"""It is exported before the run; the CLI picks the model after."""
