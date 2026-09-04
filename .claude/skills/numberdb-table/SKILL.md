@@ -518,8 +518,15 @@ responsibility for a table existing.
   attribute to a person: chose the convention, the range or the
   parameterisation, wrote the definition, wrote the generator. Not for
   formatting or renaming.
-- A table made from a "table wanted" issue should cite the issue in its
-  References. That is provenance of the idea, and it is owed to whoever asked.
+- A "table wanted" issue is answered **in the issue**, not in the table. Say
+  there that the table exists, what it covers and what it does not; that is
+  what the person who asked is waiting to read. The table carries no trace of
+  the request: it is encyclopedic, and who asked for it is not a fact about
+  the mathematics. Cite the issue only in the rare case that it contains
+  something a reader of the mathematics needs -- a derivation, a convention,
+  a source -- and then cite that content, not the request. Discussion of a
+  table has its own home besides the issue: every table has a discussion
+  page.
 - Values are held out of search by number until a board member reviews them.
   That is deliberate: a reader looking at a table can see an entry is
   unreviewed, and somebody typing digits into a search box cannot.
