@@ -46,10 +46,10 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Pinned rather than relying on the runner's default, because `tomllib`
       # is 3.11 and up and the default is not something this workflow chooses.
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: The release is a release of this package
@@ -82,8 +82,8 @@ jobs:
     needs: check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       # The package itself needs nothing installed, which is the point of it.
@@ -120,8 +120,8 @@ jobs:
   passagemath:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: python -m pip install --upgrade pytest passagemath-symbolics passagemath-pari
@@ -147,8 +147,8 @@ jobs:
   types:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: python -m pip install --upgrade mypy
@@ -190,7 +190,7 @@ jobs:
       # The image runs as `sage`; the workspace arrives owned by root.
       options: --user root
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run the package's tests against a full SageMath
         run: |
           cd clients/python
@@ -201,8 +201,8 @@ jobs:
     needs: [test, types, passagemath, sagemath]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: python -m pip install --upgrade build twine
@@ -212,7 +212,7 @@ jobs:
       # during it.
       - run: python -m twine check dist/*
         working-directory: clients/python
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: numberdb-dist
           path: clients/python/dist/
@@ -220,11 +220,21 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
+
+    # Only a release publishes. Without this, a `workflow_dispatch` run --
+    # which is how you check the workflow itself still works -- reaches the
+    # `pypi` environment and parks a second approval beside any real one.
+    # Approving the wrong one uploads that build: 0.0.2 went to PyPI from
+    # 65ad6c0 rather than the newer 242bc76 exactly that way, and the newer
+    # run then failed with "400 File already exists". Two dispatch runs have
+    # had to be cancelled by hand since.
+    if: github.event_name == 'release'
+
     environment: pypi
     permissions:
       id-token: write   # required for Trusted Publishing
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: numberdb-dist
           path: dist/
