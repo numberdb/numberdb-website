@@ -409,13 +409,18 @@ The careful things happen without being asked for:
   ```
 
   Exactness is *declared*, by handing over a `Fraction`, and never inferred
-  from a width. A zero-width interval and an exact rational bound the same
-  set but make different claims: wrapping a fixed-precision result in an
-  interval field gives width zero and thereby says the value is exact, which
-  is how twenty-nine tables came to promise digits nobody had proved. Note
-  also that no number of digits makes a decimal expansion exact — `1.5000…`
-  still means plus or minus one unit in the last place — so an exact half
-  must be written as a fraction to be exact at all;
+  from a width. An interval that lands on a point is still an interval and is
+  written as one — `[3/2, 3/2]`, not `3/2` — so the page says which of the two
+  it is. Both assert the same number; only one of them is a rational, and the
+  difference is between *"I know this is 3/2"* and *"interval arithmetic
+  pinned this to 3/2"*. The reverse reading is the dangerous one: wrapping a
+  fixed-precision result in an interval field gives width zero and would
+  thereby claim exactness, which is how twenty-nine tables came to promise
+  digits nobody had proved.
+
+  Note also that no number of digits makes a decimal expansion exact —
+  `1.5000…` still means plus or minus one unit in the last place — so an
+  exact component must be written as a fraction to be exact at all;
 - **the digits you asked for are the digits you get**: `digits` is decimal,
   Sage's fields are binary, and `RealIntervalField(digits)` — which reads
   perfectly well — delivers about a third of what was meant. `numberdb.bits()`

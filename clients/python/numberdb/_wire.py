@@ -77,24 +77,44 @@ class RealInterval:
 
     @property
     def is_exact(self) -> bool:
-        """True when the interval is a single point, so nothing is unknown."""
+        """True when the interval is a single point, so nothing is unknown.
+
+        The value is known exactly; the *representation* is still an interval.
+        A zero-width interval is not a rational, and asking this must not be
+        read as permission to treat it as one.
+        """
         return self.lower == self.upper
 
 
 def _as_part(value):
     """One component of a complex value: exact, or an interval.
 
-    A pair of *existing* types, which is what the database stores: an exact
-    rational for a component that is known exactly, a ``RealInterval`` for one
-    that is not. Nothing new is invented, and the two are told apart by type
-    rather than by measuring a width.
+    A pair of *existing* types, which is what the database stores: a rational
+    for a component given exactly, a ``RealInterval`` for one given as a
+    range. Nothing new is invented.
 
-    That distinction is the point. A zero-width interval and an exact rational
-    bound the same set, but they are not the same claim: wrapping a
-    fixed-precision result in an interval field gives width zero and says the
-    value is exact, which is how twenty-nine tables came to promise digits
-    nobody had proved. So exactness is something a generator *declares*, by
-    handing over a Fraction, and never something inferred here.
+    Two different questions live near this word, and they must not be run
+    together:
+
+    * **Is the value known exactly?** A property of the number. A
+      ``RealInterval`` whose endpoints agree pins the value to a point, so the
+      answer is *yes*, and ``is_exact`` says so. Interval arithmetic that
+      lands on a point has proved the value.
+    * **Is this an exact type?** A property of the representation, which is
+      what this function decides. A zero-width interval is *not* an exact
+      type; it is an interval that happens to be narrow.
+
+    The second question has teeth only where the rational is not dyadic.
+    ``Fraction(1, 13)`` is written ``1/13``; no binary interval can ever pin
+    1/13 to zero width, so an interval there is a decimal however hard it
+    tries. Where the value *is* dyadic the two coincide on the page, and
+    should: both assert the same number.
+
+    What is never done is the reverse -- reading a measured width as a
+    declaration. Wrapping a fixed-precision result in an interval field gives
+    width zero without any interval arithmetic having happened, which is how
+    twenty-nine tables came to promise digits nobody had proved; the
+    ``proven`` check refuses such a value rather than believing it.
     """
     from fractions import Fraction
 
@@ -169,10 +189,13 @@ class ComplexInterval:
 
     @property
     def is_exact(self) -> bool:
-        """True when the box is a single point, so nothing is unknown.
+        """True when the value is known exactly: the box is a single point.
 
-        A component given as a Fraction is exact by declaration; one given as
-        an interval is a point only if its endpoints agree.
+        A statement about the number, not about how it is written. A
+        component given as a ``RealInterval`` whose endpoints agree is exact
+        in this sense and is still not an exact *type* -- which is a separate
+        question, answered by ``isinstance(part, Fraction)``, and the one that
+        decides whether it is written ``1/13`` or as a decimal.
         """
         (re_low, re_high), (im_low, im_high) = self.bounds()
         return re_low == re_high and im_low == im_high

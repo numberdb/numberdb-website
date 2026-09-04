@@ -1888,3 +1888,59 @@ class TestAComplexNumberIsAPairOfComponents:
         #which is the same number written to five digits by a person rounding
         #down. The half that matters here is the exact one.
         assert written.startswith('-1/2 + i * -0.866')
+
+
+class TestExactMeansTwoDifferentThings:
+    """"Known exactly" and "an exact type" are different questions.
+
+    A RealInterval whose endpoints agree pins the value to a point: the value
+    is known exactly, and `is_exact` says so. It is still not a rational, and
+    asking `is_exact` must not be read as permission to treat it as one.
+
+    The distinction has teeth only where the rational is not dyadic. 1/13
+    cannot be pinned by any binary interval, so an interval there stays a
+    decimal however hard it tries.
+    """
+
+    def test_a_zero_width_interval_is_known_exactly(self):
+        assert numberdb.RealInterval(2, 2).is_exact
+        assert numberdb.ComplexInterval(
+            numberdb.RealInterval(2, 2), numberdb.RealInterval(-1, -1)
+        ).is_exact
+
+    def test_and_is_still_not_a_rational(self):
+        value = numberdb.ComplexInterval(numberdb.RealInterval(2, 2), 0)
+        assert isinstance(value.real, numberdb.RealInterval)
+        assert not isinstance(value.real, Fraction)
+        assert isinstance(value.imag, Fraction)
+
+    def test_the_page_says_which_of_the_two_it_is(self):
+        #They assert the same number and are not the same claim, so they are
+        #not spelled the same. An interval that landed on a point is written
+        #as an interval; only a declared rational is written as one.
+        declared = numberdb.ComplexInterval(Fraction(3, 2), 0)
+        computed = numberdb.ComplexInterval(
+            numberdb.RealInterval(Fraction(3, 2), Fraction(3, 2)), 0)
+        assert to_text(declared) == '3/2 + i * 0'
+        assert to_text(computed) == '[3/2, 3/2] + i * 0'
+
+    def test_a_zero_width_interval_alone_is_written_as_one(self):
+        assert to_text(numberdb.RealInterval(2, 2)) == '[2, 2]'
+        assert to_text(Fraction(2)) == '2'
+
+    def test_where_it_is_not_dyadic_only_the_declaration_can_say_it(self):
+        #No binary interval pins 1/13, so an interval around it is a decimal.
+        declared = numberdb.ComplexInterval(Fraction(1, 13), 0)
+        assert to_text(declared) == '1/13 + i * 0'
+        near = numberdb.ComplexInterval(
+            numberdb.RealInterval(Fraction(76923, 10 ** 6),
+                                  Fraction(76924, 10 ** 6)), 0)
+        assert '1/13' not in to_text(near)
+
+    def test_a_width_is_never_read_as_a_declaration(self):
+        #The reverse direction, which is the dangerous one: a fixed-precision
+        #result wrapped in an interval field has width zero without any
+        #interval arithmetic having happened.
+        point = numberdb.ComplexInterval(numberdb.RealInterval(2, 2), 0)
+        assert point.is_exact
+        assert not isinstance(point.real, Fraction)
