@@ -840,7 +840,7 @@ values &mdash; integers, fractions, polynomials &mdash; are written out in full.
 <tr><th>Definition</th><td>What these numbers are, in a sentence or two. LaTeX is allowed anywhere prose is.</td></tr>
 <tr><th>Parameters</th><td>The names, <em>in the order the entries use them</em>, each with a <code>type</code>, optional <code>constraints</code> and how it is <code>display</code>ed.</td></tr>
 <tr><th>Numbers</th><td>The entries. Called <code>Data</code> in a few older tables; both are read.</td></tr>
-<tr><th>Data properties</th><td><code>type</code>, <code>complete</code>, <code>sources</code>, <code>reliability</code>.</td></tr>
+<tr><th>Data properties</th><td><code>type</code>, <code>complete</code>, <code>sources</code>, <code>reliability</code>, and <code>restates</code> &mdash; written as <code>HREF{Table_address}</code>, it says that where this table's values coincide with that one's, the other states them first, so a search answers with the original rather than twice. Only for a table that repeats another's computation; two tables whose values agree by a theorem are both worth being told about.</td></tr>
 <tr><th>Display properties</th><td>How the table is laid out &mdash; <code>number-header</code>, <code>group parameters</code>.</td></tr>
 <tr><th>Comments, Formulas, References, Links, Keywords, Tags, Similar tables</th><td>Prose and pointers. <code>CITE{key}</code> refers to a reference, <code>HREF{Table_name}</code> to another table.</td></tr>
 </table>

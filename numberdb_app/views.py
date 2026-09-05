@@ -966,6 +966,10 @@ def table_context(table, preview=False):
 			#was assumed. Optional, and worth more than the single word when
 			#the single word is "assumed-bound".
 			'rigour details': 'How they were obtained',
+			#Where this table repeats another's values, that table states them
+			#first. Search folds the repeat into the original; see
+			#docs/design/same-construction.md.
+			'restates': 'Repeats values from',
 			#'accuracy': 'Accuracy',
 		}
 

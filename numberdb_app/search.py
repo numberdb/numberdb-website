@@ -36,7 +36,7 @@ from django.db.models.expressions import RawSQL
 
 from .models import Number, NumberComplex, NumberPAdic, searchable_range
 
-__all__ = ['one_per_table', 'search_real_numbers', 'search_fractional_parts',
+__all__ = ['one_per_table', 'fold_restatements', 'search_real_numbers', 'search_fractional_parts',
            'search_complex_numbers', 'search_p_adic_numbers',
            'real_query_range', 'full_text_query', 'search_metadata',
            'METADATA_LIMIT', 'MIN_RANK']
@@ -152,10 +152,65 @@ def one_per_table(queryset, limit, order=()):
 	from django.db.models import Count
 
 	counts = dict(queryset.values_list('table_id').annotate(n=Count('id')))
-	rows = list(queryset.order_by('table_id', *order).distinct('table_id')[:limit])
+	#`select_related`, because the fold below asks each row's table what it
+	#restates, and a hundred rows would otherwise be a hundred queries.
+	rows = list(queryset.select_related('table')
+	            .order_by('table_id', *order).distinct('table_id')[:limit])
 	for row in rows:
 		row.occurrences_in_table = counts.get(row.table_id, 1)
-	return rows
+	return fold_restatements(rows)
+
+
+def fold_restatements(rows):
+	"""One row per number, where two tables hold it for the same reason.
+
+	`one_per_table` stops one family filling the page; this stops several
+	families saying the same thing. Three lattice tables hold the centre
+	density of the Leech lattice, and two of them hold it because the third
+	does -- the densest-known table's value for dimension 24 *is* the value
+	the family table lists for $\\Lambda_{24}$, transcribed. A reader who
+	types those digits wants to know what the number is, and is not helped by
+	being told twice.
+
+	What is not folded is the far more interesting case: Hermite's constant
+	$\\gamma_8$ equals the Hermite number of $E_8$ because Blichfeldt proved
+	the supremum is attained there. That is two different constructions
+	meeting, which is most of what a database of constants is for. Nothing in
+	the values distinguishes the two cases -- both are exact equality -- so
+	the tables declare it and this reads the declaration.
+
+	Only equal values fold. A result set answers a query, not a single number,
+	so two rows from tables that do restate each other stay separate unless
+	they hold the same value; the stored text is compared, which never merges
+	two numbers that differ.
+
+	The folded row is not lost: the table it came from is attached to the
+	surviving row as `also_in`, so the page can still say where else the
+	number is written down. Folding decides what leads, not what exists.
+	"""
+	#Which tables are present holding which value, so a fold happens only when
+	#the original is actually one of the answers.
+	present = {}
+	for row in rows:
+		text = getattr(row, 'exact_text', None)
+		if text:
+			present.setdefault(text, {})[row.table_id] = row
+
+	kept = []
+	for row in rows:
+		text = getattr(row, 'exact_text', None)
+		original = None
+		if text:
+			restates_id = getattr(row.table, 'restates_id', None)
+			if restates_id is not None:
+				original = present.get(text, {}).get(restates_id)
+		if original is None or original is row:
+			kept.append(row)
+			continue
+		also_in = list(getattr(original, 'also_in', ()))
+		also_in.append(row.table)
+		original.also_in = also_in
+	return kept
 
 
 def search_real_numbers(r_query, limit, per_table=False):
@@ -393,8 +448,13 @@ def search_by_term(term, limit = PAGE_SIZE):
 	groups = []
 
 	def add(kind, label, numbers):
+		#Folded here as well as in `one_per_table`, because this panel does not
+		#collapse per table -- it is the surface a reader actually types a
+		#number into, and it is where three tables holding one value for one
+		#reason would be three lines saying the same thing.
+		numbers = fold_restatements(list(numbers)) if numbers else []
 		if numbers:
-			groups.append({'kind': kind, 'label': label, 'numbers': list(numbers)})
+			groups.append({'kind': kind, 'label': label, 'numbers': numbers})
 
 	#Each parser is tried independently and may raise on input meant for
 	#another: parse_polynomial on "3.14" and parse_p_adic on a decimal both

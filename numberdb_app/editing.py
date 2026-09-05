@@ -424,6 +424,7 @@ def apply_revision(table, revision=None):
 
 	_sync_title(table, normalised)
 	_sync_tags(table, normalised)
+	_sync_restates(table, normalised)
 	build_number_table(only_table=table)
 	reindex_for_search(table, normalised)
 	#After the rebuild, not before: the rows it writes take the model default,
@@ -471,6 +472,71 @@ def _sync_title(table, document):
 			table.url = slug
 			fields.append('url')
 	table.save(update_fields=fields)
+
+
+def _restates_slug(value):
+	"""The table address in a `Data properties: restates`, or None.
+
+	Written as the corpus writes every internal reference, `HREF{slug}`, so
+	that it renders as a link and is checked by the same tooling. The optional
+	`[caption]` after it is a reader's name for the table and says nothing
+	about which table is meant.
+	"""
+	import re
+
+	match = re.match(r'^\s*HREF\{([^}]*)\}', str(value or ''))
+	if not match:
+		return None
+	#Only a table, never an entry: the claim is about two tables, so a `#entry`
+	#here would be describing something narrower than the field can mean.
+	slug = match.group(1).strip().partition('#')[0].strip()
+	return slug or None
+
+
+def _sync_restates(table, document):
+	"""Keep `Table.restates` in step with the document's declaration.
+
+	A table that repeats another's values says so once, at the top, rather
+	than on each of the two hundred entries that repeat one. The reason it is
+	a table-level claim is that no rule on the values can decide it: T136
+	holds the nodes of the Gauss rule embedded in each Kronrod rule, which are
+	the Gauss-Legendre nodes computed the same way, and T149 holds Hermite's
+	constants, nine of which equal a Hermite number in T147 because somebody
+	proved it. Both are exact equality between two tables. Only the first is
+	one table repeating another, and only a person reading both definitions
+	can say so.
+
+	Refused rather than recorded when it would make the relation deeper than
+	one hop: a table that some other table restates may not itself restate a
+	third. Depth one is what lets search resolve a fold with a single lookup,
+	and it is also what makes a cycle impossible -- every table in a cycle
+	would have to both restate and be restated. A refusal leaves the field
+	null, which costs nothing but the fold; `audit_table` reports it.
+	"""
+	from .models import Table
+
+	if not isinstance(document, dict):
+		return
+
+	properties = document.get('Data properties')
+	declared = _restates_slug(
+		properties.get('restates') if isinstance(properties, dict) else None)
+
+	original = None
+	if declared:
+		original = Table.objects.filter(url=declared).first()
+		if original is not None:
+			#A table cannot restate itself, cannot restate one that is itself
+			#a restatement, and cannot become a restatement while another
+			#table is pointing here. Each of the three would leave a chain.
+			if (original.pk == table.pk
+					or original.restates_id is not None
+					or table.restated_by.exists()):
+				original = None
+
+	if table.restates_id != (original.pk if original else None):
+		table.restates = original
+		table.save(update_fields=['restates'])
 
 
 def _sync_tags(table, document):
