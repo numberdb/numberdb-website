@@ -1364,3 +1364,21 @@ keep the throwaway for the audit and the rendering, which need Django.
 
 Evidence: `/tmp/t148_live.yaml`, `/tmp/t148_after.json` and
 `/tmp/repair148.py`, 2026-09-05; revision `78a8b78b…` of T148.
+
+## `sage.sh` forwards no environment variable but `PYTHONPATH` and `NUMBERDB_ASSISTED_BY`
+
+What happened: the T149 build wrote its stored-check, audit and offer
+scripts to read the table id from `HC_TID`, set on the near side as
+`HC_TID=T149 agents/sage.sh script.py`. Inside the container the variable
+was unset and each script stopped at its own guard, "set HC_TID". The
+`docker compose run` line in `agents/sage.sh` passes exactly two `-e`
+flags, and nothing else crosses the ssh and the container boundary.
+
+What to do instead: write the tid into the script, as the `dl_*.py` scripts
+of the T148 build did, or read it from a small mounted file; a `TID = 'TBD'`
+guard that refuses to run is the right shape, since the alternative is a
+script that quietly works on the wrong table. `sage.sh` could take
+`NUMBERDB_TID` through as a third `-e` if this keeps happening.
+
+Evidence: `/tmp/hc_stored_out.txt`, first run, 2026-09-05: `set HC_TID`,
+exit 1; the same script with `TID = 'T149'` written in: 67 PASS.
