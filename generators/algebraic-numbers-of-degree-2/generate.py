@@ -6,6 +6,7 @@ predates the `numberdb` package: it wrote `numbers.yaml` in the data
 repository by hand and formatted each root with
 `complex_interval_to_sage_string(...).replace('?', '')`.
 
+    $ sage -pip install numberdb          # once
     $ sage -python generate.py            # verify against what is stored
     $ sage -python generate.py --diff     # what it would write, against it
     $ sage -python generate.py --publish  # send it, with NUMBERDB_API_KEY set
