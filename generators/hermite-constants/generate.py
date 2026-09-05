@@ -116,6 +116,15 @@ LATTICE = {
 #: attaining lattice L (address read off the stored document).
 CLASSICAL = 'Packing_densities_and_Hermite_numbers_of_the_classical_lattices'
 
+#: The two constants that are quadratic irrationals are rows of the table of
+#: algebraic numbers of degree 2, whose anchor is (a2, a1, a0, n) for the n-th
+#: root of a2 x^2 + a1 x + a0 in increasing order: 2/sqrt(3) is the larger
+#: root of 3x^2 - 4 and sqrt(2) the larger root of x^2 - 2. The `equals` of
+#: those entries is spent on the classical-lattices row, so the comment
+#: carries this link.
+DEGREE_TWO = 'Algebraic_numbers_of_degree_2'
+IN_DEGREE_TWO = {2: '3,0,-4,2', 4: '1,0,-2,2'}
+
 
 def cartan(kind, n):
     """The Cartan matrix of A_n, D_n or E_n as an integer matrix: 2 on the
@@ -211,6 +220,9 @@ def comment(n, values):
         n, CLOSED_FORM[n], n, n, latex_power(n, power), LATTICE[n])
     if who:
         text += ' CITE{%s}' % who
+    if n in IN_DEGREE_TWO:
+        text += ('; the same number is in the HREF{%s#%s}[table of algebraic '
+                 'numbers of degree 2]' % (DEGREE_TWO, IN_DEGREE_TWO[n]))
     return text
 
 

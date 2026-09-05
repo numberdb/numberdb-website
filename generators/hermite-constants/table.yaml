@@ -21,8 +21,9 @@ Comments:
     the greatest length a shortest nonzero vector of a lattice of covolume
     $1$ in $\mathbb{R}^n$ can have; in the language of quadratic forms,
     $\gamma_n$ is the least constant such that every positive definite
-    quadratic form in $n$ variables with discriminant $d$ takes a value at
-    most $\gamma_n d^{1/n}$ at some nonzero integer point CITE{Cassels}. The
+    quadratic form $\sum_{i,j}a_{ij}x_ix_j$ in $n$ variables with determinant
+    $d=\det(a_{ij})$ takes a value at most $\gamma_n d^{1/n}$ at some nonzero
+    integer point CITE{Cassels}. The
     supremum is attained CITE{Cassels}. Some authors call $\sqrt{\gamma_n}$
     Hermite's constant, the ratio of lengths rather than of norms
     CITE{WikiHermite}, and $\gamma(L)$ is also called the Hermite invariant
@@ -63,16 +64,19 @@ Formulas:
     $\gamma_n=\max_L\gamma(L)$ with $\gamma(L)=\mu(L)/(\det L)^{1/n}$, so
     $\gamma_n^{\,n}=\mu(L)^n/\det L$ for a lattice $L$ attaining it:
     $\gamma_n^{\,n}=2^n/\det L$ for the root lattices $A_2$, $A_3$, $D_4$,
-    $D_5$, $E_6$, $E_7$, $E_8$ of minimal norm $2$ and determinant $3$, $4$,
-    $4$, $4$, $3$, $2$, $1$, and $\gamma_{24}^{\,24}=4^{24}$ for the Leech
-    lattice, of minimal norm $4$ and determinant $1$.
+    $D_5$, $E_6$, $E_7$, $E_8$, all of minimal norm $2$, with
+    $\det A_n=n+1$, $\det D_n=4$, $\det E_6=3$, $\det E_7=2$ and
+    $\det E_8=1$, and $\gamma_{24}^{\,24}=4^{24}$ for the Leech lattice, of
+    minimal norm $4$ and determinant $1$.
   formula-density: >-
     $\gamma_n=4\,\delta_n^{2/n}=4\,(\Delta_n/V_n)^{2/n}$, where $\Delta_n$
     and $\delta_n$ are the density and the centre density of the densest
-    lattice sphere packing in $\mathbb{R}^n$, in the
-    HREF{Densities_of_the_densest_known_lattice_sphere_packings}[table of the densest known lattice packings],
-    and $V_n=\pi^{n/2}/\Gamma(n/2+1)$ is the
-    HREF{Volume_of_the_unit_ball}[volume of the unit ball].
+    lattice sphere packing in $\mathbb{R}^n$ and $V_n=\pi^{n/2}/\Gamma(n/2+1)$
+    is the HREF{Volume_of_the_unit_ball}[volume of the unit ball]. The
+    HREF{Densities_of_the_densest_known_lattice_sphere_packings}[table of the densest known lattice packings]
+    holds $\Delta_n$ and $\delta_n$ for $n\leq 8$ and $n=24$; in every other
+    dimension its densities are those of the densest lattice known, and its
+    $4\,\delta_n^{2/n}$ is a lower bound for $\gamma_n$.
   formula-bounds: >-
     Hermite's inequality $\gamma_n\leq\left(\frac{4}{3}\right)^{(n-1)/2}$
     CITE{Hermite}, an equality for $n=1,2$; Minkowski's bound
@@ -89,16 +93,16 @@ Programs:
       hermite = {1: 1, 2: 4/3, 3: 2, 4: 4, 5: 8, 6: 64/3, 7: 64, 8: 256, 24: 4^24}   # gamma_n^n
       {n: N(g^(1/n), digits=30) for n, g in hermite.items()}                        # gamma_n
       G = CartanMatrix(['E', 6]); n = 6
-      IntegralLattice(G).minimum() / G.det()^(1/n)                                  # 2/3^(1/6) = gamma_6
+      ZZ(IntegralLattice(G).minimum())^n / G.det()                                   # 64/3 = gamma_6^6
 Similar tables:
   - table: HREF{Packing_densities_and_Hermite_numbers_of_the_classical_lattices}[Packing densities and Hermite numbers of the classical lattices]
-    relation: the Hermite numbers $\gamma(L)$ of 133 lattices, among them the nine attaining $\gamma_n$, which every entry here links
+    relation: the Hermite numbers $\gamma(L)$ of the classical lattices, among them the nine attaining $\gamma_n$, which every entry here links
   - table: HREF{Densities_of_the_densest_known_lattice_sphere_packings}[Densities of the densest known lattice sphere packings]
     relation: $4\,\delta_n^{2/n}$ is $\gamma_n$ where the record is proven and the best lower bound known for $\gamma_n$ elsewhere, $n\leq 48$
   - table: HREF{Volume_of_the_unit_ball}[Volume of the $d$-dimensional unit ball]
     relation: $V_n$ in $\gamma_n=4\,(\Delta_n/V_n)^{2/n}$ and in Minkowski's bound $\gamma_n\leq 4\,V_n^{-2/n}$
   - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
-    relation: holds $\gamma_2=2/\sqrt{3}$ and $\gamma_4=\sqrt{2}$
+    relation: holds $\gamma_2=2/\sqrt{3}$ and $\gamma_4=\sqrt{2}$, which the entries for $n=2$ and $n=4$ link
 Links:
   WikiHermite:
     title: 'Wikipedia: Hermite constant'
