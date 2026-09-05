@@ -103,5 +103,9 @@ ssh "${ssh_opts[@]}" "$REMOTE" \
 		-e PYTHONPATH=/app/clients/python \
 		-e NUMBERDB_ASSISTED_BY='${NUMBERDB_ASSISTED_BY:-assisted by an agent}' \
 		${mounts[*]} \
-		web sage -python /work/$(basename "$main")" \
-	2>&1 | grep -viE 'collecting static|static files copied|Starting command as|^ Container |remote port forwarding'
+		web sage -python -u /work/$(basename "$main")" \
+	2>&1 | grep --line-buffered -viE 'collecting static|static files copied|Starting command as|^ Container |remote port forwarding'
+#`-u` and `--line-buffered`: without them a run that is killed at its
+#timeout shows only whole 4 KB blocks of what it printed, and three runs of
+#the lattice checks on 2026-09-05 each stopped at the same block boundary,
+#so nothing said which step had stalled.

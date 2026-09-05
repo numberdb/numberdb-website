@@ -272,16 +272,21 @@ Data properties:
     Gram matrices transcribed from the catalogue were compared entry by
     entry with the catalogue pages fetched again, and their determinants,
     minimal norms and kissing numbers with the pages' DET, MINIMAL_NORM and
-    KISSING_NUMBER lines; the Leech lattice built from the extended Golay
-    code and $\Lambda_{16}$ built from the Reed–Muller code $RM(1,4)$ were
-    found isometric to the catalogue's Gram matrices by PARI's qfisom; the
-    Cartan matrices were compared with Sage's; $\Delta(A_2)$, $\Delta(A_3)$,
+    KISSING_NUMBER lines; $\Lambda_{16}$ built from the Reed–Muller code
+    $RM(1,4)$ was found isometric to the catalogue's Gram matrix by PARI's
+    qfisom, and the catalogue's Gram matrix of $\Lambda_{24}$, like the
+    lattice built from the extended Golay code, is even, unimodular and
+    without vectors of norm $2$, hence the Leech lattice by Conway's
+    uniqueness theorem; the Cartan matrices were compared with Sage's; $\Delta(A_2)$, $\Delta(A_3)$,
     $\Delta(D_4)$, $\Delta(D_5)$, $\Delta(E_6)$, $\Delta(E_7)$, $\Delta(E_8)$,
     $\Delta(\Lambda_{24})$, $\delta(D_5)$, $\delta(E_6)$, $\gamma(E_6)$ and
     $\gamma(E_7)$ agree with OEIS A093766, A093825, A222068, A222069, A222070,
     A222071, A222072, A260646, A222066, A222067, A246184 and A246722 to every
-    digit those entries give; the twelve HERMITE_NUMBER and two DENSITY
-    lines of the catalogue pages agree to their twelve digits; the
+    digit those entries give; eleven of the fourteen HERMITE_NUMBER lines
+    and both DENSITY lines of the catalogue pages agree to their twelve
+    digits, and the lines of $\Lambda_{13}$, $\Lambda_{20}$ and
+    $\Lambda_{22}$ to eight, those three being off in their ninth or tenth
+    digit; the
     determinants of $\Lambda_n$ at minimal norm $4$ are OEIS A028921 and the
     kissing numbers OEIS A002336 for $1\leq n\leq 24$; the largest
     $\gamma^n$ in each dimension $n\leq 8$ is OEIS A007361/A007362 and the

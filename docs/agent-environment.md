@@ -1196,3 +1196,30 @@ person's decision; a proposal that needs either should say so.
 Evidence: `/tmp/lat_probe.py` (`ehrhart ERR count is not available`) and
 `/tmp/lat_probe3.py` (`['E', 8] R^2, #vecs, #vertices (1, 1200, 19440)
 [128.4s]`), 2026-09-03.
+
+## A generator committed at `TBD` counted as "built" by the task line; the table is the test, again
+
+What happened: the stage-two task line of 2026-09-05 asked for "the
+highest-ranked proposal in `BATCH-2026-09-03T1730.md` that no generator in
+`generators/` answers yet". `generators/lattice-packing-densities/generate.py`
+existed, with `table = 'TBD'` and no `table.yaml`, written by a build run on
+2026-09-03 that died before creating its draft and swept into a person's
+commit (29860f0) two days later. Read literally the task line would have
+skipped proposal 1, the batch's top-ranked table and the one two issues
+ask for, and built proposal 2, which depends on it. A Django listing of the
+tables with `tid_int >= 130` (`/tmp/lp2_drafts.py`, 25 seconds) showed no
+lattice table, published or draft, so the run took the file over and gave
+it the whole order of work, as the T145 note says to. The dry run then
+counted 399 entries where the proposal and the generator's own docstring
+said 414 and 138 lattices; the generator lists 133, which is right, and
+the proposal's count was never recounted.
+
+What to do instead: `agents/campaign.sh` line 76 should say "that no
+*table* answers yet -- list the drafts with Django before deciding", and a
+build run that dies after writing a generator should commit it with a
+message saying the draft was not created, so the next run does not have to
+infer that from a `TBD`.
+
+Evidence: `/tmp/lp2_drafts_out.txt` (T130 to T146, no lattice table);
+`git log --stat -- generators/lattice-packing-densities` (one commit, not
+about lattices); `/tmp/lp2_dry_out.txt`: `399 entries computed`.
