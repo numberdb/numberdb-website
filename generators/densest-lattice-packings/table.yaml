@@ -119,7 +119,7 @@ Programs:
       n = 9; delta = sqrt(2)/32                             # Lambda_9: 1/sqrt(det) at minimal norm 4, det 512
       Delta = pi^(n/2) / gamma(n/2 + 1) * delta             # 1/945*sqrt(2)*pi^4
       n = 32; delta = 3^16 / 2^24                           # Q_32: rho^2 = 3/2, det 2^16
-      Delta = pi^(n/2) / gamma(n/2 + 1) * delta             # 43046721/351184270839628800000*pi^16
+      Delta = pi^(n/2) / gamma(n/2 + 1) * delta             # 59049/481517373489152000*pi^16
 Similar tables:
   - table: HREF{Packing_densities_and_Hermite_numbers_of_the_classical_lattices}[Packing densities and Hermite numbers of the classical lattices]
     relation: the same numbers for $n\leq 24$, indexed by the lattice, beside every other classical lattice

@@ -1,4 +1,4 @@
-"""Densities of the densest known lattice sphere packings -- numberdb.org/TBD
+"""Densities of the densest known lattice sphere packings -- numberdb.org/T148
 
 For each dimension n, the packing density Delta_n and the centre density
 delta_n of the densest lattice sphere packing known in R^n, per the table of
@@ -469,7 +469,7 @@ def equals_link(n, expression, value):
 
 class DensestLatticePackings(numberdb.Generator):
 
-    table = 'TBD'
+    table = 'T148'
     parameters = ('n', 'expression')
     type = 'R'
     digits = 100
