@@ -46,8 +46,9 @@ NOTES = {
 	'T136': ('it holds every rule with $n\\leq 15$, from 3 to 31 points, '
 	         'together with the three larger rules that QUADPACK uses, '
 	         '$n=20,25,30$, of 41, 51 and 61 points; $n$ is the number of '
-	         'points of the embedded Gauss rule and the Kronrod rule has '
-	         '$2n+1$. Each rule is listed in full, every node with its '
+	         'points of the embedded Gauss rule, and the Kronrod rule built '
+	         'on it has $2n+1$ points. Each rule is listed in full, every '
+	         'node with its '
 	         'weight, and both halves of the symmetric set'),
 	'T137': ('it holds every rule with $2\\leq n\\leq 30$, where $n$ is the '
 	         'number of nodes, the two endpoints included; each rule is '
