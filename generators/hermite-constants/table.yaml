@@ -5,7 +5,8 @@
 Title: Hermite's constants $\gamma_n$
 Definition: >-
   Hermite's constant $\gamma_n$ CITE{WikiHermite} is the supremum of the
-  Hermite number $\gamma(L)=\mu(L)/(\det L)^{1/n}$ over all lattices
+  HREF{Packing_densities_and_Hermite_numbers_of_the_classical_lattices}[Hermite number]
+  $\gamma(L)=\mu(L)/(\det L)^{1/n}$ over all lattices
   $L\subset\mathbb{R}^n$, where $\mu(L)$ is the squared length of a shortest
   nonzero vector of $L$ and $\det L$ is the determinant of a Gram matrix of
   $L$.

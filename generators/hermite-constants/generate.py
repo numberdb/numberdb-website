@@ -1,4 +1,4 @@
-"""Hermite's constants gamma_n -- numberdb.org/TBD
+"""Hermite's constants gamma_n -- numberdb.org/T149
 
 Hermite's constant gamma_n is the supremum, over all lattices L in R^n, of
 the Hermite number
@@ -221,7 +221,7 @@ def equals_link(n):
 
 class HermiteConstants(numberdb.Generator):
 
-    table = 'TBD'
+    table = 'T149'
     parameters = ('n',)
     type = 'R'
     digits = 100
