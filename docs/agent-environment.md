@@ -1245,3 +1245,32 @@ memory on the 961 MB box.
 Evidence: `/tmp/lp2_check_out.txt` (8408 bytes, three times),
 `/tmp/lp2_check_out2.txt` with the `[5 s]` stamps, `/tmp/lp2_codes_out.txt`,
 2026-09-05.
+
+## The site accepts a document whose `Parameters` order no longer matches the nesting of `Numbers`
+
+What happened: T147's fourth revision (2026-09-05) arrived with every
+mapping key-sorted, `Parameters` as `expression, family, n` over a
+`Numbers` block nested `family, n, expression`. `POST /api/table/147`
+accepted it and reported 399 entries; `audit_table T147 --links` reported
+only the Definition's length. The rendered page has its column headers
+shifted one column to the right, the Symbolic `values` displays are not
+applied, and the rows run `A 1, A 10, …, A 19, A 2`. The `_ordered_document`
+docstring in `api.py` says a write with reordered parameters "is refused"
+because entry identity is positional; that refusal did not fire here,
+presumably because the base revision matched and the nesting itself was
+unchanged. The lesson for a contributor is in `agents/lessons/PROPOSALS.md`
+(`yaml.dump` sorts keys); this note is about the two checks that were
+silent.
+
+What to do instead: until the API compares the `Parameters` order with the
+first levels of `Numbers`, or `audit_table` does, a critique should print
+the header row of the rendered numbers block and the first six row ids,
+which is one grep on the HTML (`/tmp/crit147.py` prints the page;
+`class="table-param-group-header"` is the header). The render helper still
+lives only in `/tmp` and was rewritten from this file's notes for the
+third time today; `agents/render_draft.py` is overdue.
+
+Evidence: `/tmp/crit147_out.txt` (rendering, audit and document in one
+run), `/tmp/crit147_hist.py` (the four revisions and their key orders),
+`/tmp/crit147_params.py` (`TableData.full_yaml` parameter order
+`expression, family, n`; jsonb order `n, family, expression`), 2026-09-05.
