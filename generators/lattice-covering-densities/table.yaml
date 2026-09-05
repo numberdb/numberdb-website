@@ -87,21 +87,28 @@ Comments:
     halves for odd $n$, which gives $R^2=n/8$ and $R^2=(2n-1)/16$. The
     covering radii of $E_6^{*}$ and $E_7^{*}$, $R^2=2/3$ at minimal norm
     $4/3$ and $R^2=7/8$ at minimal norm $3/2$, were computed exactly from
-    their Voronoi cells, as were those of every lattice listed of dimension
-    $n\leq 8$.
+    their Voronoi cells.
   comment-thinnest: >-
     $A_n^{*}$ is the thinnest lattice covering of $\mathbb{R}^n$ for
     $n\leq 5$: the hexagonal lattice $A_2=A_2^{*}$ is the thinnest covering
     of the plane by equal discs of any kind CITE{Kershner}, and the lattice
     covering problem was solved by Bambah for $n=3$ CITE{Bambah}, by Delone
     and Ryshkov for $n=4$ CITE{DeloneRyshkov} and by Ryshkov and Baranovskii
-    for $n=5$ CITE{RyshkovBaranovskii}. In dimensions $6$, $7$ and $8$
-    lattice coverings thinner than $A_n^{*}$ were found by Schürmann and
-    Vallentin CITE{SV}, and in dimensions $9$ CITE{Baranovskii}, $11$ and
-    $14$ CITE{Anzin}, $13$ and $15$ CITE{Anzin2006} the lattices $A_9^{5}$,
-    $A_{11}^{4}$, $A_{14}^{5}$, $A_{13}^{7}$ and $A_{15}^{8}$, sublattices of
-    $A_n^{*}$ containing $A_n$, are thinner than $A_n^{*}$. The Leech lattice
-    is a locally thinnest lattice covering and $E_8$ is not CITE{SVLeech}.
+    for $n=5$ CITE{RyshkovBaranovskii}. In every dimension $6\leq n\leq 24$
+    other than $16$ and $18$ a lattice covering thinner than $A_n^{*}$ is
+    known, and Table 2 of Dutour Sikirić, Schürmann and Vallentin CITE{DSV}
+    lists the thinnest known in each dimension $n\leq 24$: lattices found by
+    Schürmann and Vallentin in dimensions $6$, $7$ and $8$ CITE{SV} and by
+    Dutour Sikirić, Schürmann and Vallentin in dimensions $9$ to $15$
+    CITE{DSV}, the Coxeter lattices $A_{17}^{9}$, $A_{19}^{10}$, $A_{20}^{7}$
+    and $A_{21}^{11}$, sublattices of $A_n^{*}$ containing $A_n$, in
+    dimensions $17$, $19$, $20$ and $21$, the duals $\Lambda_{22}^{*}$ and
+    $\Lambda_{23}^{*}$ of the laminated lattices, and the Leech lattice in
+    dimension $24$. Before them the Coxeter lattices $A_9^{5}$
+    CITE{Baranovskii}, $A_{11}^{4}$ and $A_{14}^{5}$ CITE{Anzin}, $A_{13}^{7}$
+    and $A_{15}^{8}$ CITE{Anzin2006} were the thinnest known in their
+    dimensions. The Leech lattice is a locally thinnest lattice covering and
+    $E_8$ is not CITE{SVLeech}.
   comment-entries: >-
     The comment on each entry gives its value in closed form, $R/\rho$ as
     the square root of a rational number and $\Theta(L)$ as
@@ -233,6 +240,11 @@ References:
       A. Schürmann and F. Vallentin, Local covering optimality of lattices:
       Leech lattice versus root lattice $E_8$, International Mathematics
       Research Notices 2005, no. 32, 1937–1955; arXiv:math/0405441.
+  DSV:
+    bib: >-
+      M. Dutour Sikirić, A. Schürmann and F. Vallentin, A generalization of
+      Voronoi's reduction theory and its application, Duke Mathematical
+      Journal 142 (2008), 127–164, Table 2; arXiv:math/0601084.
   Baranovskii:
     bib: >-
       E. P. Baranovskii, The perfect lattices $\Gamma(\mathfrak{A}^n)$, and
@@ -277,15 +289,24 @@ Data properties:
     norm at most $B$ with $B$ raised until $4R^2\leq B$, which proves that
     every Voronoi-relevant vector was used; a disagreement with the formula
     is an error rather than an entry. Outside the generator, before any
-    entry was written, the same computation was made for every lattice of
-    dimension $7$ and $8$ except $A_7^{*}$ and $A_8^{*}$, and from the
-    catalogue's own Gram matrices CITE{Catalogue} of $A_3^{*}$, $D_5^{*}$, $D_7^{*}$,
-    $E_6^{*}$ and $E_7^{*}$ (two versions), giving the same $R/\rho$; the
-    closed form of $\Theta(A_n^{*})$ holds in balls for $2\leq n\leq 24$;
-    $\Theta(A_n^{*})$ for $n=2,3,4,5,10,12$ and $16\leq n\leq 21$ and
-    $\Theta(\Lambda_{24})$ agree with the six decimals of Tables 1 and 2 of
-    Schürmann and Vallentin CITE{SV}, whose thinner coverings in dimensions
-    $6$ to $9$, $11$ and $13$ to $15$ are below the $\Theta(A_n^{*})$ here;
+    entry was written, $R^2$ was recomputed for every lattice of dimension
+    $7$ and $8$ except $A_7^{*}$ and $A_8^{*}$ as the largest vertex norm
+    of the polytope cut by the lattice vectors of norm at most $2\mu$ (the
+    cell of $E_8$ has $19440$ vertices), and the vertex attaining it was
+    proven a deep hole by an exact enumeration, with qfminim on an augmented
+    form, of the lattice vectors nearer to it than $R$, of which there is
+    none; and $R/\rho$ was recomputed from the catalogue's own Gram matrices
+    CITE{Catalogue} of $A_3^{*}$, $D_5^{*}$, $D_7^{*}$, $E_6^{*}$ and
+    $E_7^{*}$ (two versions), giving the same values. The closed form of
+    $\Theta(A_n^{*})$ holds in balls for $2\leq n\leq 24$; $\Theta(A_n^{*})$
+    for $n=2,4,5,10,12$ and $16\leq n\leq 21$ and $\Theta(\Lambda_{24})$
+    agree with the six decimals of Table 1 of Schürmann and Vallentin
+    CITE{SV}, and the table of the thinnest lattice coverings known to
+    dimension $24$ of Dutour Sikirić, Schürmann and Vallentin CITE{DSV}
+    agrees with $\Theta(A_n^{*})$ where it lists $A_n^{*}$ ($n=2,4,5,16,18$)
+    and lies below it in every other dimension from $6$ to $24$; both tables
+    print $1.463505$ for $\Theta(A_3^{*})=5\sqrt{5}\,\pi/24=1.4635031\ldots$,
+    which the Voronoi cell of the catalogue's Gram matrix confirms;
     $\Theta(A_2)$ and $\Theta(E_8)$ agree with OEIS A248897 and A164108 to
     every digit those entries give; $\Theta=(R/\rho)^n\Delta$ holds in balls
     for all 117 lattices against the stored densities of the table of the
@@ -293,9 +314,10 @@ Data properties:
     $\Theta(E_8)=V_8$ and $\Theta(\Lambda_{24})=2^{12}V_{24}$ against the
     stored digits of the table of unit-ball volumes, and the entries linked
     to other tables agree with the stored digits there. Controls that must
-    fail did: $E_7^{*}$ offered with $R^2=3/4$ and $D_7^{*}$ with the
+    fail did: a point of $A_3$ that is not a hole is refused by the
+    enumeration, $E_7^{*}$ offered with $R^2=3/4$ and $D_7^{*}$ with the
     even-dimensional formula are refused by the Voronoi cell, and
-    $\Theta(A_3^{*})$ moved by $2\cdot 10^{-6}$ no longer matches the table
-    of Schürmann and Vallentin.
+    $\Theta(A_4^{*})$ moved by $2\cdot 10^{-6}$ no longer matches the
+    tables.
 Display properties:
   number-header: $R/\rho$ or $\Theta(L)$

@@ -468,8 +468,14 @@ HEXAGONAL = ('A', 2)
 
 #: Dimensions in which a lattice covering thinner than A_n^* is known, with
 #: the reference key of the table document: Schuermann and Vallentin for
-#: 6, 7, 8; Baranovskii for 9; Anzin for 11 and 14, and for 13 and 15.
-BEATEN = {6: 'SV', 7: 'SV', 8: 'SV', 9: 'Baranovskii', 11: 'Anzin', 13: 'Anzin2006', 14: 'Anzin', 15: 'Anzin2006'}
+#: 6, 7, 8, and Table 2 of Dutour Sikiric, Schuermann and Vallentin (the
+#: least dense lattice coverings known up to dimension 24) for the rest --
+#: their own lattices in 9 to 15, Coxeter lattices in 17, 19, 20, 21 and the
+#: duals of the laminated lattices in 22 and 23. In dimensions 16 and 18 that
+#: table lists A_n^* itself, and in 24 the Leech lattice.
+BEATEN = {6: 'SV', 7: 'SV', 8: 'SV'}
+BEATEN.update({n: 'DSV' for n in (9, 10, 11, 12, 13, 14, 15, 17, 19, 20, 21, 22, 23)})
+LISTED_THINNEST = (16, 18)
 
 #: Where the corpus already holds a value: pi/2 and 2pi/3 in the table of
 #: rational multiples of pi, and the quadratic irrationals among the R/rho in
@@ -516,6 +522,11 @@ def status_note(family, n):
         return 'the thinnest lattice covering in dimension %d CITE{%s}' % (n, who)
     if family == 'A*' and n in BEATEN:
         return 'a thinner lattice covering in dimension %d is known CITE{%s}' % (n, BEATEN[n])
+    if family == 'A*' and n in LISTED_THINNEST:
+        return ('the thinnest lattice covering in dimension %d listed by Dutour Sikirić, '
+                'Schürmann and Vallentin CITE{DSV}' % n)
+    if family == 'A*' and n == TOP:
+        return r'the Leech lattice $\Lambda_{24}$ is a thinner lattice covering CITE{DSV}'
     if (family, n) == ('E', 8):
         return 'not a locally thinnest lattice covering CITE{SVLeech}'
     if (family, n) == ('Lambda', 24):
