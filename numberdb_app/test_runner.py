@@ -389,11 +389,24 @@ class ARunSurvivesTheEightHourBoundary(TestCase):
 		self.assertIn('minutes of token left, under the', body)
 		self.assertIn('timeout 120 claude -p "Reply with exactly: ok"', body)
 
-	def test_it_refuses_when_the_refresh_did_not_take(self):
-		#Better to stop than to spend twelve dollars discovering it.
+	def test_it_refuses_only_under_the_hard_floor(self):
+		#Refusing at the soft floor blocked everything: the CLI renews the
+		#token when it needs to, not when asked, so between the floor and its
+		#own threshold no refresh takes and every run refused.
 		body = flat('agents/run.sh')
-		self.assertIn('Refusing: $left minutes of token left', body)
+		self.assertIn('${NUMBERDB_TOKEN_HARD_FLOOR:-15}', body)
+		self.assertIn('under the $hard-minute', body)
 		self.assertIn('exit 6', body)
+
+	def test_otherwise_it_starts_anyway(self):
+		body = flat('agents/run.sh')
+		self.assertIn('starting anyway, and the run is resumable', body)
+
+	def test_triage_is_never_blocked_by_the_floor(self):
+		#It is short, and its whole job is to run when something else failed.
+		body = flat('agents/run.sh')
+		self.assertIn('[ "$engine" = "claude" ] && [ "$stage" != "triage" ]',
+		              body)
 
 	def test_the_floor_can_be_lowered_for_a_short_run(self):
 		body = script('agents/run.sh')
