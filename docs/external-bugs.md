@@ -166,3 +166,33 @@ page states, and two independent computations of it agree to fifteen
 digits.
 
 **Reported:** no.
+
+## Schürmann–Vallentin (2006) Table 1 and Dutour Sikirić–Schürmann–Vallentin (2008) Table 2: the covering density of $A_3^{*}$ is printed as 1.463505; it is 1.4635031
+
+**Found:** building the table of covering radii and covering densities of
+the classical lattices (proposal 4 of `BATCH-2026-09-03T1730.md`) on
+2026-09-05, comparing $\Theta(A_n^{*})$ with the six-decimal tables of
+A. Schürmann and F. Vallentin, *Computational approaches to lattice packing
+and covering problems*, Discrete Comput. Geom. 35 (2006), Table 1
+(arXiv:math/0403272), and M. Dutour Sikirić, A. Schürmann and F. Vallentin,
+*A generalization of Voronoi's reduction theory and its application*, Duke
+Math. J. 142 (2008), Table 2 (arXiv:math/0601084, the line `3 A3∗ 1.463505`).
+
+**Evidence:** $\Theta(A_3^{*})$, the covering density of the body-centred
+cubic lattice, is $5\sqrt{5}\,\pi/24=1.46350306896\ldots$ (Bambah 1954;
+Conway and Sloane, SPLAG Table 2.1, print $1.4635$). It was recomputed
+exactly from the Voronoi cell of the adjugate of the $A_3$ Cartan matrix and
+of the catalogue's own `A3*` Gram matrix ($R^2=5/16$ at minimal norm $3/4$,
+determinant $1/4$, $24$ vertices), and from the stored packing density of
+$A_3^{*}$ in T147 through $\Theta=(R/\rho)^3\Delta$. The printed $1.463505$
+is $2\cdot 10^{-6}$ above it, beyond any rounding of six decimals. The
+eleven other $A_n^{*}$ rows of the 2006 table ($n=2,4,5,10,12,16$ to $21$)
+and the four other $A_n^{*}$ rows of the 2008 table agree with the computed
+values to all six decimals, so this is a misprint in one row, copied from
+the earlier table into the later one.
+
+**Confidence:** high; the closed form is classical and three independent
+computations agree with it. `/tmp/cv2_check_out.txt` and
+`/tmp/cv2_dsv_out.txt`, 2026-09-05.
+
+**Reported:** no.
