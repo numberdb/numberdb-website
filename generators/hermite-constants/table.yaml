@@ -1,0 +1,216 @@
+# The table document for Hermite's constants, proposal 3 of
+# agents/table-ideas/BATCH-2026-09-03T1730.md. Created as a draft through the
+# API (X-Draft: yes) and filled by generate.py beside it; publishing is a
+# person's act on the site.
+Title: Hermite's constants $\gamma_n$
+Definition: >-
+  Hermite's constant $\gamma_n$ CITE{WikiHermite} is the supremum of the
+  Hermite number $\gamma(L)=\mu(L)/(\det L)^{1/n}$ over all lattices
+  $L\subset\mathbb{R}^n$, where $\mu(L)$ is the squared length of a shortest
+  nonzero vector of $L$ and $\det L$ is the determinant of a Gram matrix of
+  $L$.
+Parameters:
+  n:
+    type: Z
+    title: dimension
+    display: $n$
+    constraints: $n\geq 1$
+Comments:
+  comment-conventions: >-
+    $\det L$ is the square of the covolume of $L$, so $\sqrt{\gamma_n}$ is
+    the greatest length a shortest nonzero vector of a lattice of covolume
+    $1$ in $\mathbb{R}^n$ can have; in the language of quadratic forms,
+    $\gamma_n$ is the least constant such that every positive definite
+    quadratic form in $n$ variables with discriminant $d$ takes a value at
+    most $\gamma_n d^{1/n}$ at some nonzero integer point CITE{Cassels}. The
+    supremum is attained CITE{Cassels}. Some authors call $\sqrt{\gamma_n}$
+    Hermite's constant, the ratio of lengths rather than of norms
+    CITE{WikiHermite}, and $\gamma(L)$ is also called the Hermite invariant
+    of $L$; the Hermite numbers of $\mathbb{Z}^n$, the root lattices, their
+    duals, the laminated lattices and the Coxeter–Todd lattice are in the
+    HREF{Packing_densities_and_Hermite_numbers_of_the_classical_lattices}[table of the classical lattices],
+    whose notation this table follows.
+  comment-known: >-
+    $\gamma_n$ is known for $n\leq 8$ and $n=24$ and in no other dimension
+    CITE{WikiHermite}: by Lagrange for $n=2$ CITE{Lagrange}, Gauss for
+    $n=3$ CITE{Gauss}, Korkine and Zolotareff for $n=4,5$ CITE{KZ},
+    Blichfeldt for $n=6,7,8$ CITE{Blichfeldt} and Cohn and Kumar for $n=24$
+    CITE{CohnKumar}, attained by $\mathbb{Z}$, $A_2$, $A_3$, $D_4$, $D_5$,
+    $E_6$, $E_7$, $E_8$ and the Leech lattice $\Lambda_{24}$. In every other
+    dimension the best lower bound known is the Hermite number
+    $4\,\delta_n^{2/n}$ of the densest lattice known, whose centre density
+    $\delta_n$ is in the
+    HREF{Densities_of_the_densest_known_lattice_sphere_packings}[table of the densest known lattice packings]
+    for $n\leq 48$, and upper bounds come from the linear programming bound
+    of Cohn and Elkies CITE{CohnElkies}. $\gamma_n$ grows linearly in $n$:
+    $\frac{1}{2\pi e}\leq\frac{\gamma_n}{n}\leq\frac{1.744\ldots}{2\pi e}$
+    for all sufficiently large $n$ CITE{MathWorld}, the lower bound from
+    Minkowski and Hlawka and the upper bound from Kabatiansky and
+    Levenshtein CITE{KL}.
+  comment-entries: >-
+    The comment on each entry gives $\gamma_n$ in closed form, the rational
+    number $\gamma_n^{\,n}$ and the lattice attaining $\gamma_n$, and every
+    entry links the row of the
+    HREF{Packing_densities_and_Hermite_numbers_of_the_classical_lattices}[table of the classical lattices]
+    holding the Hermite number of that lattice.
+Formulas:
+  formula-values: >-
+    $\gamma_n^{\,n}=1,\ \frac{4}{3},\ 2,\ 4,\ 8,\ \frac{64}{3},\ 64,\ 256$ for
+    $n=1,\ldots,8$ CITE{OEISnum} CITE{OEISden} and $\gamma_{24}^{\,24}=4^{24}$,
+    so $\gamma_n=1,\ \frac{2}{\sqrt{3}},\ 2^{1/3},\ \sqrt{2},\ 2^{3/5},\ \frac{2}{3^{1/6}},\ 2^{6/7},\ 2$
+    for $n=1,\ldots,8$ and $\gamma_{24}=4$.
+  formula-lattices: >-
+    $\gamma_n=\max_L\gamma(L)$ with $\gamma(L)=\mu(L)/(\det L)^{1/n}$, so
+    $\gamma_n^{\,n}=\mu(L)^n/\det L$ for a lattice $L$ attaining it:
+    $\gamma_n^{\,n}=2^n/\det L$ for the root lattices $A_2$, $A_3$, $D_4$,
+    $D_5$, $E_6$, $E_7$, $E_8$ of minimal norm $2$ and determinant $3$, $4$,
+    $4$, $4$, $3$, $2$, $1$, and $\gamma_{24}^{\,24}=4^{24}$ for the Leech
+    lattice, of minimal norm $4$ and determinant $1$.
+  formula-density: >-
+    $\gamma_n=4\,\delta_n^{2/n}=4\,(\Delta_n/V_n)^{2/n}$, where $\Delta_n$
+    and $\delta_n$ are the density and the centre density of the densest
+    lattice sphere packing in $\mathbb{R}^n$, in the
+    HREF{Densities_of_the_densest_known_lattice_sphere_packings}[table of the densest known lattice packings],
+    and $V_n=\pi^{n/2}/\Gamma(n/2+1)$ is the
+    HREF{Volume_of_the_unit_ball}[volume of the unit ball].
+  formula-bounds: >-
+    Hermite's inequality $\gamma_n\leq\left(\frac{4}{3}\right)^{(n-1)/2}$
+    CITE{Hermite}, an equality for $n=1,2$; Minkowski's bound
+    $\gamma_n\leq 4\,V_n^{-2/n}$, since $\Delta_n\leq 1$, an equality for
+    $n=1$; Blichfeldt's bound
+    $\gamma_n\leq\frac{2}{\pi}\,\Gamma\!\left(2+\frac{n}{2}\right)^{2/n}$
+    CITE{Blichfeldt1929}; and Mordell's inequality
+    $\gamma_n^{\,n-2}\leq\gamma_{n-1}^{\,n-1}$ for $n\geq 3$ CITE{Mordell},
+    an equality for $n=4$ and $n=8$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      hermite = {1: 1, 2: 4/3, 3: 2, 4: 4, 5: 8, 6: 64/3, 7: 64, 8: 256, 24: 4^24}   # gamma_n^n
+      {n: N(g^(1/n), digits=30) for n, g in hermite.items()}                        # gamma_n
+      G = CartanMatrix(['E', 6]); n = 6
+      IntegralLattice(G).minimum() / G.det()^(1/n)                                  # 2/3^(1/6) = gamma_6
+Similar tables:
+  - table: HREF{Packing_densities_and_Hermite_numbers_of_the_classical_lattices}[Packing densities and Hermite numbers of the classical lattices]
+    relation: the Hermite numbers $\gamma(L)$ of 133 lattices, among them the nine attaining $\gamma_n$, which every entry here links
+  - table: HREF{Densities_of_the_densest_known_lattice_sphere_packings}[Densities of the densest known lattice sphere packings]
+    relation: $4\,\delta_n^{2/n}$ is $\gamma_n$ where the record is proven and the best lower bound known for $\gamma_n$ elsewhere, $n\leq 48$
+  - table: HREF{Volume_of_the_unit_ball}[Volume of the $d$-dimensional unit ball]
+    relation: $V_n$ in $\gamma_n=4\,(\Delta_n/V_n)^{2/n}$ and in Minkowski's bound $\gamma_n\leq 4\,V_n^{-2/n}$
+  - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
+    relation: holds $\gamma_2=2/\sqrt{3}$ and $\gamma_4=\sqrt{2}$
+Links:
+  WikiHermite:
+    title: 'Wikipedia: Hermite constant'
+    url: https://en.wikipedia.org/wiki/Hermite_constant
+  MathWorld:
+    title: 'MathWorld: Hermite Constants'
+    url: https://mathworld.wolfram.com/HermiteConstants.html
+  OEISnum:
+    title: 'OEIS A007361: numerator of $\gamma_n^{\,n}$'
+    url: https://oeis.org/A007361
+  OEISden:
+    title: 'OEIS A007362: denominator of $\gamma_n^{\,n}$'
+    url: https://oeis.org/A007362
+  OEISg6:
+    title: 'OEIS A246184: decimal expansion of $\gamma_6=2/3^{1/6}$'
+    url: https://oeis.org/A246184
+  OEISg7:
+    title: 'OEIS A246722: decimal expansion of $\gamma_7=2^{6/7}$'
+    url: https://oeis.org/A246722
+References:
+  Hermite:
+    bib: >-
+      C. Hermite, Extraits de lettres de M. Ch. Hermite à M. Jacobi sur
+      différents objets de la théorie des nombres, Journal für die reine und
+      angewandte Mathematik 40 (1850), 261–315.
+  Cassels:
+    bib: >-
+      J. W. S. Cassels, An Introduction to the Geometry of Numbers, Classics
+      in Mathematics, Springer, 1997 (reprint of the 1971 edition), chapter
+      II.
+  SPLAG:
+    bib: >-
+      J. H. Conway and N. J. A. Sloane, Sphere Packings, Lattices and Groups,
+      third edition, Grundlehren der mathematischen Wissenschaften 290,
+      Springer, 1999, chapter 1, section 1.5.
+  Lagrange:
+    bib: >-
+      J. L. Lagrange, Recherches d'arithmétique, Nouveaux Mémoires de
+      l'Académie royale des Sciences et Belles-Lettres de Berlin (1773),
+      265–312.
+  Gauss:
+    bib: >-
+      C. F. Gauss, Untersuchungen über die Eigenschaften der positiven
+      ternären quadratischen Formen von Ludwig August Seeber, Göttingische
+      gelehrte Anzeigen (1831); Werke II, 188–196.
+  KZ:
+    bib: >-
+      A. Korkine and G. Zolotareff, Sur les formes quadratiques positives
+      quaternaires, Mathematische Annalen 5 (1872), 581–583; Sur les formes
+      quadratiques positives, Mathematische Annalen 11 (1877), 242–292.
+  Blichfeldt:
+    bib: >-
+      H. F. Blichfeldt, The minimum values of positive quadratic forms in
+      six, seven and eight variables, Mathematische Zeitschrift 39 (1935),
+      1–15.
+  Blichfeldt1929:
+    bib: >-
+      H. F. Blichfeldt, The minimum value of quadratic forms, and the closest
+      packing of spheres, Mathematische Annalen 101 (1929), 605–608.
+  Mordell:
+    bib: >-
+      L. J. Mordell, Observation on the minimum of a positive quadratic form
+      in eight variables, Journal of the London Mathematical Society 19
+      (1944), 3–6.
+  CohnKumar:
+    bib: >-
+      H. Cohn and A. Kumar, Optimality and uniqueness of the Leech lattice
+      among lattices, Annals of Mathematics 170 (2009), 1003–1050.
+  CohnElkies:
+    bib: >-
+      H. Cohn and N. Elkies, New upper bounds on sphere packings I, Annals of
+      Mathematics 157 (2003), 689–714.
+  KL:
+    bib: >-
+      G. A. Kabatiansky and V. I. Levenshtein, On bounds for packings on a
+      sphere and in space, Problems of Information Transmission 14 (1978),
+      1–17.
+Tags:
+  - discrete geometry
+  - number theory
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    every dimension in which $\gamma_n$ is known is here, $1\leq n\leq 8$
+    and $n=24$
+  rigour details: >-
+    The datum for each entry is the rational number $\gamma_n^{\,n}$, a
+    theorem in each dimension listed; $\gamma_n$ is written exactly where
+    that rational is an $n$-th power ($n=1$, $8$, $24$) and otherwise as the
+    ball for its $n$-th root in arb, computed with 64 guard bits beyond the
+    100 digits written; the widest ball relative to its value, $\gamma_7$,
+    has radius $1.4\cdot 10^{-119}$. Before a value is returned the generator
+    recomputes $\gamma_n^{\,n}$ for $n\leq 8$ as $\mu^n/\det L$ from the Gram
+    matrix of the attaining lattice, the identity matrix or the Cartan
+    matrix, with $\mu$ from PARI's qfminim. Before any entry was written,
+    $\gamma_n^{\,n}$ was compared with OEIS A007361/A007362 for $n\leq 8$;
+    $\gamma_2$ to $\gamma_7$ with OEIS A020832 (ten times $\gamma_2$),
+    A002580, A002193, A011093, A246184 and A246722 to every digit those
+    entries give; the nine closed forms with those of the Wikipedia and
+    MathWorld pages, evaluated in balls; $\gamma_n$ with the largest stored
+    Hermite number in dimension $n$ of the table of the classical lattices,
+    whose linked row holds the same hundred digits, and with
+    $4\,\delta_n^{2/n}$ from the stored centre densities of the table of the
+    densest known lattice packings; $\gamma_{24}^{\,24}$ with $\mu^{24}/\det$
+    of the Leech lattice's Gram matrix from the Catalogue of Lattices, with
+    $\mu=4$ and $196560$ minimal vectors from qfminim; and Hermite's,
+    Minkowski's, Blichfeldt's and Mordell's inequalities, with the stated
+    equality cases, on every entry, Minkowski's against the stored digits of
+    the table of unit-ball volumes as well. Controls that must fail did:
+    $\gamma_4$ moved by $10^{-50}$ no longer matches A002193, and
+    $\Lambda_{23}$ offered as the lattice attaining $\gamma_{24}$ is refused.
+Display properties:
+  number-header: $\gamma_n$
