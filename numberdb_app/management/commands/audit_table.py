@@ -144,6 +144,35 @@ class Command(BaseCommand):
 		if not found_any:
 			self.stdout.write('Nothing to report.')
 
+	def _shared_values(self, table, original):
+		"""How many stored values the two tables write identically.
+
+		A restatement that shares nothing is not a restatement. The comparison
+		is on the stored text rather than on parsed values, because that is
+		what search compares: two tables holding one number to different
+		precision do not collide there and will not fold here either, which is
+		worth being told.
+
+		Returns (shared, mine), so a table with no values of these kinds says
+		nothing rather than complaining.
+		"""
+		from numberdb_app.models import Number, NumberComplex
+
+		shared = 0
+		mine = 0
+		for model in (Number, NumberComplex):
+			ours = set(model.objects.filter(table=table)
+			           .exclude(exact_text='')
+			           .values_list('exact_text', flat=True))
+			mine += len(ours)
+			if not ours:
+				continue
+			theirs = set(model.objects.filter(table=original)
+			             .exclude(exact_text='')
+			             .values_list('exact_text', flat=True))
+			shared += len(ours & theirs)
+		return shared, mine
+
 	def _check(self, table, tree, urls, titles, fetch=False, public=None):
 		from numberdb_app.validate import DATA_TYPES, RIGOUR_LEVELS
 
@@ -186,6 +215,43 @@ class Command(BaseCommand):
 					yield ('HREF{%s} points at a draft, which answers 404 to '
 					       'everybody; a published table must not link to one'
 					       % target)
+
+		#A restatement that was declared and did not take. `_sync_restates`
+		#refuses a declaration that would leave a chain -- a table that some
+		#other table restates may not itself restate a third -- and refuses
+		#silently, because a save must not fail over what is in the end a
+		#presentation hint. This is where the refusal becomes visible.
+		from numberdb_app.editing import _restates_slug
+
+		properties = tree.get('Data properties')
+		properties = properties if isinstance(properties, dict) else {}
+		raw = str(properties.get('restates') or '')
+		declared = _restates_slug(raw)
+		if raw and not declared:
+			yield ('Data properties: restates is not a table reference; write '
+			       'it as HREF{slug}, the way every other reference here is '
+			       'written')
+		elif declared:
+			if '#' in raw:
+				yield ('Data properties: restates names an entry. The claim is '
+				       'that one table repeats another, so it takes a table '
+				       'address and no entry')
+			if declared == table.url:
+				yield 'Data properties: restates names this table itself'
+			elif table.restates_id is None:
+				yield ('Data properties: restates was not recorded. Either %s '
+				       'is itself a restatement or another table restates this '
+				       'one; the relation is kept one hop deep, so point at '
+				       'the table that states the values first'
+				       % (declared,))
+			else:
+				shared, mine = self._shared_values(table, table.restates)
+				if mine and not shared:
+					yield ('Data properties: restates %s, and the two tables '
+					       'hold no value in common, so the declaration folds '
+					       'nothing. Either it names the wrong table or the '
+					       'values are written to different precision'
+					       % (declared,))
 
 		#An external link to something the database holds itself.
 		for name, link in (tree.get('Links') or {}).items():
