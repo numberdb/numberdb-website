@@ -817,8 +817,14 @@ def _complex_parts(value):
 
     Sage's complex intervals and balls have ``real()`` and ``imag()`` methods;
     this package's own ``ComplexInterval`` has them as attributes. Anything
-    whose parts are not themselves intervals -- a Python ``complex``, whose
+    whose parts are not themselves components -- a Python ``complex``, whose
     parts are floats -- is not a complex interval and is left to the caller.
+
+    A component is an interval *or an exact number*. Requiring both to be
+    intervals made a value whose real part was declared exact invisible here,
+    so `2 + i * -1` -- a Gaussian integer, as exact as a value gets -- was
+    read as a point and refused under `proven`, with an error telling the
+    caller to do the thing they had just done.
     """
     real, imag = getattr(value, 'real', None), getattr(value, 'imag', None)
     if real is None or imag is None:
@@ -828,9 +834,22 @@ def _complex_parts(value):
             real, imag = real(), imag()
         except TypeError:
             return None
-    if all(getattr(part, 'lower', None) is not None for part in (real, imag)):
+    if all(_is_component(part) for part in (real, imag)):
         return real, imag
     return None
+
+
+def _is_component(part) -> bool:
+    """Whether ``part`` can be half of a complex value here."""
+    from fractions import Fraction
+
+    if getattr(part, 'lower', None) is not None:
+        return True
+    if isinstance(part, bool):
+        return False
+    #An exact rational, which is how exactness is declared. Not a float: a
+    #Python `complex` has float parts and is not a complex interval.
+    return isinstance(part, (int, Fraction))
 
 
 def _check_rigour(generator, table, identity, value, bounded=None):
