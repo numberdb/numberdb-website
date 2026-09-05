@@ -1,4 +1,4 @@
-"""Covering radii and covering densities of the classical lattices -- numberdb.org/TBD
+"""Covering radii and covering densities of the classical lattices -- numberdb.org/T150
 
 For a lattice L in R^n with Gram matrix G, minimal norm mu = min v^T G v over
 nonzero v in Z^n, packing radius rho = sqrt(mu)/2, covering radius
@@ -45,7 +45,9 @@ min(sum x_i^2, sum (1/2 - x_i)^2) for x in [0, 1/2]^n, a maximum of a convex
 function over the polytope sum x_i <= n/4, attained at (1/2^(n/2), 0^(n/2))
 for even n and ((1/2)^((n-1)/2), 1/4, 0^((n-1)/2)) for odd n. The values
 for E_6^* and E_7^* were computed exactly from their Voronoi cells, as were
-all the values with n <= 8, in the checks run when the table was made.
+all the values of dimension 7 and 8 other than A_7^* and A_8^*, in the checks
+run when the table was made: the polytope cut by the vectors of norm <= 2 mu
+and its deepest vertex proven a hole by an exact closest-vector enumeration.
 
 **What is certified inside this file.** For every lattice of dimension
 n <= CERTIFY_TO the covering radius is recomputed before use, exactly, as
@@ -566,7 +568,7 @@ def equals_link(family, n, expression, values):
 
 class LatticeCoveringDensities(numberdb.Generator):
 
-    table = 'TBD'
+    table = 'T150'
     parameters = ('family', 'n', 'expression')
     type = 'R'
     digits = 100
