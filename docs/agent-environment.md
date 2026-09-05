@@ -1382,3 +1382,51 @@ script that quietly works on the wrong table. `sage.sh` could take
 
 Evidence: `/tmp/hc_stored_out.txt`, first run, 2026-09-05: `set HC_TID`,
 exit 1; the same script with `TID = 'T149'` written in: 67 PASS.
+
+## A generator committed at `TBD` counted as "built" for the third time; the previous run's `/tmp` scratch was the fastest way to finish its table
+
+What happened: the stage-two task line of 2026-09-05 (afternoon) again asked
+for "the highest-ranked proposal ... that no generator in `generators/`
+answers yet". `generators/lattice-covering-densities/` existed with
+`table = 'TBD'`, committed by the run before with a message saying the draft
+was not created; read literally the line would have skipped proposal 4 and
+built proposal 5. `/tmp/cv_programs.py` (Django, tables with `tid_int >= 140`)
+showed T147 to T149 and no covering table, so proposal 4 was the next one.
+That run's scratch was all still in `/tmp` under the `cv_` prefix -- the
+sources it had fetched (`cv_sources.json`, `cv_src/`, `cv_zb/`), its dry run,
+and a check script rewritten at 14:42 that had never been run, because the
+earlier version of it had been killed at 14:44 after 367 s in one Voronoi
+cell. Rerunning the dry run, the rewritten check (192 s), a new check against
+the 2008 table, and the create, fill, stored-check, audit and offer scripts
+with the tid written in took about an hour; nothing had to be fetched twice.
+
+What to do instead: the campaign line should say "no *table* answers yet"
+(the two notes above ask the same); a run that rewrites a check and dies
+before running it should say "not yet run" in the commit, as this one's
+predecessor did; and a run that inherits a table should read `/tmp/<prefix>*`
+before writing anything, since `/tmp` outlives a run (note above) and the
+sources are the expensive part.
+
+Evidence: `/tmp/cv2_programs_out.txt` (T147–T149, no T150),
+`/tmp/cv_check_out.txt` ending in `Terminated`, `git log -1 1adc250`,
+2026-09-05.
+
+## After a whole-document write, `cv_audit.py`'s "entries in the head revision" counts families, not rows
+
+What happened: T150's one-word repair through `agents/api_edit.edit_over_api`
+(the document as `api/table` returns it, `Numbers` nested by parameter
+value) stored the nested shape, as the T145 note says it does, and the audit
+script's `len(tree['Numbers'])` printed 8 (the families) where the fill's
+revision had printed 234. The anchors loop in the same script already
+accepted both shapes and found 27 of 27, the rendered page was 5 bytes
+longer (the length of the changed phrase), and `/tmp/cv2_stored.py` through
+the client read 234 entries and passed 732 checks; nothing was lost.
+
+What to do instead: count entries with the client (`numberdb.table(tid)`
+nests them; walk three levels) or flatten the stored tree before counting;
+and after any whole-document write, run the stored check rather than trust
+a count printed from the tree's first level.
+
+Evidence: `/tmp/cv2_audit_out.txt` (`entries in the head revision: 234`),
+`/tmp/cv2_audit_out2.txt` (`8`), `/tmp/cv2_stored_out2.txt` (`stored
+entries: 234`, `PASS 732, FAIL 0`), 2026-09-05.
