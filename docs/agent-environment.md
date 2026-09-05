@@ -1223,3 +1223,25 @@ infer that from a `TBD`.
 Evidence: `/tmp/lp2_drafts_out.txt` (T130 to T146, no lattice table);
 `git log --stat -- generators/lattice-packing-densities` (one commit, not
 about lattices); `/tmp/lp2_dry_out.txt`: `399 entries computed`.
+
+## `sage.sh` is line-buffered now, and a killed run that shows only the first 4 KB was the reason
+
+What happened: three runs of the lattice checks were killed at their
+timeout, and each output file stopped at the same place, a few lines after
+the Leech lattice's first `qfminim`, so three different stalls (one in
+`qfisom`, two never explained) looked identical. The note above on the T142
+probes had already asked for `grep --line-buffered` and `sage -python -u`;
+both are in `agents/sage.sh` now, and the fourth run's output showed the
+section timestamps up to the moment it was killed. What the timestamps then
+showed: every section of the checks but the code constructions takes five
+seconds, so a 560-second run that died was not slow, it was stuck. The
+standalone rewrite of that section (`/tmp/lp2_codes.py`, lists and
+`echelon_form` instead of `vector` and `span`, one `qfminim` per matrix)
+passes in four seconds; the lesson in `agents/lessons/PROPOSALS.md` has the
+details, and the cause of the two unexplained stalls is still open -- a
+person watching `docker stats` during a repeat would settle whether it is
+memory on the 961 MB box.
+
+Evidence: `/tmp/lp2_check_out.txt` (8408 bytes, three times),
+`/tmp/lp2_check_out2.txt` with the `[5 s]` stamps, `/tmp/lp2_codes_out.txt`,
+2026-09-05.
