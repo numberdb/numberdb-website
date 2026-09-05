@@ -243,6 +243,48 @@ IN_DEGREE_TWO = {
 }
 
 
+def written(in_d, d, field, ball):
+    """The value as the table should hold it.
+
+    The Jacobi sum is already here as an exact element of Q(zeta_d), and the
+    ball has already been checked against it. When both of its parts are
+    rational the value is a Gaussian integer and can be said outright:
+    J(chi, psi) = -1 - 2i, rather than -1.000...0 - 2.000...0i to a hundred
+    digits, where a decimal expansion means plus or minus one unit in the last
+    place however long it runs.
+
+    Conjugation is an automorphism of Q(zeta_d), so both parts can be had
+    inside the field and QQbar is not needed -- which matters here, because
+    this generator imports the pieces of Sage it uses rather than sage.all,
+    and qqbar does not finish initialising that way.
+
+    A rational imaginary part forces 4 | d: if Im(z) = q is rational and
+    nonzero then (z - conj z)/2 = i*q lies in the field, so i does. Nothing
+    with 4 not dividing d can qualify, and the run refuses real and purely
+    imaginary sums anyway.
+
+    Exactness is declared from the algebraic value and never read off the
+    ball's width: a ball's radius is not zero even when the number is an
+    integer, which is why these have been written as decimals all along.
+    """
+    from fractions import Fraction
+
+    if d % 4:
+        return ball
+    imaginary_unit = field.gen() ** (d // 4)
+    conjugate = in_d.conjugate()
+    real = (in_d + conjugate) / 2
+    imaginary = (in_d - conjugate) / (2 * imaginary_unit)
+    if real not in QQ or imaginary not in QQ:
+        return ball
+
+    def fraction(value):
+        value = QQ(value)
+        return Fraction(int(value.numerator()), int(value.denominator()))
+
+    return numberdb.ComplexInterval(fraction(real), fraction(imaginary))
+
+
 class JacobiSums(numberdb.Generator):
 
     table = 'T143'
@@ -303,7 +345,7 @@ class JacobiSums(numberdb.Generator):
         del product
         comment = (r'$\chi$ of order $%d$, $\psi$ of order $%d$; $J(\chi,\psi)=%s$'
                    % (d1, d2, latex_cyclotomic(coefficients, d)))
-        entry = {'number': ball, 'comment': comment}
+        entry = {'number': written(in_d, d, Kd, ball), 'comment': comment}
         if (p, m, n) in IN_DEGREE_TWO:
             entry['equals'] = IN_DEGREE_TWO[(p, m, n)]
         return entry

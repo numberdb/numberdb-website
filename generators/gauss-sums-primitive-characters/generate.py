@@ -473,6 +473,45 @@ IN_DEGREE_TWO = {
 }
 
 
+def as_interval(ball):
+    """A Sage real ball as this package's interval, with exact endpoints."""
+    from fractions import Fraction
+
+    interval = ball.union(ball)                     # a ball has no .lower()
+    lower, upper = interval.lower(), interval.upper()
+
+    def exactly(endpoint):
+        #By hand: Sage's Rational registers as numbers.Rational but spells
+        #numerator and denominator as methods, so Fraction(rational) builds a
+        #Fraction holding two bound methods and fails much later.
+        rational = endpoint.exact_rational()
+        return Fraction(int(rational.numerator()),
+                        int(rational.denominator()))
+
+    return numberdb.RealInterval(exactly(lower), exactly(upper))
+
+
+def written(chi, tau):
+    """The value as the table should hold it.
+
+    For a quadratic character Gauss proved the sum is real when chi is even
+    and purely imaginary when it is odd, and the run has already checked that
+    the vanishing part contains zero. That part is then exactly zero -- a
+    theorem, not a measurement -- so it is said as `0` rather than written as
+    a ball that happens to be narrow. The other part is sqrt(q), irrational,
+    and stays an interval: the entry reads `0 + i * 4.35889...` rather than
+    `[0, 0] + i * 4.35889...`.
+
+    Every other character's sum has both parts irrational, and the ball is
+    what there is to write.
+    """
+    if chi.order() != 2:
+        return tau
+    if chi.is_even():
+        return numberdb.ComplexInterval(as_interval(tau.real()), 0)
+    return numberdb.ComplexInterval(0, as_interval(tau.imag()))
+
+
 class GaussSums(numberdb.Generator):
 
     table = 'T142'
@@ -527,7 +566,8 @@ class GaussSums(numberdb.Generator):
                 tau = C(R(0), tau.imag())
         degree, minpoly = degree_and_polynomial(q, n, chi, exact)
         root_form = root_of_unity_form(q, chi, exact, tau) if chi.order() > 2 else None
-        entry = {'number': tau, 'comment': comment(q, n, chi, degree, minpoly, root_form)}
+        entry = {'number': written(chi, tau),
+                 'comment': comment(q, n, chi, degree, minpoly, root_form)}
         if (q, n) in IN_DEGREE_TWO:
             entry['equals'] = IN_DEGREE_TWO[(q, n)]
         return entry
