@@ -1944,3 +1944,48 @@ class TestExactMeansTwoDifferentThings:
         point = numberdb.ComplexInterval(numberdb.RealInterval(2, 2), 0)
         assert point.is_exact
         assert not isinstance(point.real, Fraction)
+
+
+class TestProvenSeesAnExactComponent:
+    """`proven` refuses a point, and a declared exact value is not one.
+
+    The check looks for a value that carries its own error. It found the two
+    halves of a complex value only when both were intervals, so a component
+    handed over as a Fraction made the whole value invisible: `2 + i * -1`,
+    a Gaussian integer, was read as a wrapped float and refused -- with an
+    error telling the caller to return an exact number, which is what they
+    had done.
+    """
+
+    def carries(self, value):
+        from numberdb._generate import _carries_its_own_error
+
+        return _carries_its_own_error(value)
+
+    def root(self):
+        return numberdb.RealInterval(
+            Fraction(-8660254037844387, 10 ** 16),
+            Fraction(-8660254037844386, 10 ** 16))
+
+    def test_both_halves_declared_exact_is_accepted(self):
+        assert self.carries(numberdb.ComplexInterval(2, -1))
+
+    def test_one_half_exact_and_one_an_interval(self):
+        assert self.carries(
+            numberdb.ComplexInterval(Fraction(3, 2), self.root()))
+
+    def test_two_genuine_intervals(self):
+        assert self.carries(
+            numberdb.ComplexInterval(self.root(), self.root()))
+
+    def test_two_zero_width_intervals_are_still_refused(self):
+        #The case the check exists for: a fixed-precision result wrapped in
+        #an interval field, which claims exactness without proving it.
+        assert not self.carries(numberdb.ComplexInterval(
+            numberdb.RealInterval(2, 2), numberdb.RealInterval(-1, -1)))
+
+    def test_a_python_complex_is_not_a_complex_interval(self):
+        assert not self.carries(complex(1, 2))
+
+    def test_a_float_is_still_refused(self):
+        assert not self.carries(1.5)
