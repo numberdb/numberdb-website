@@ -1316,3 +1316,29 @@ memory, and look at what the last stamped line was building; do not store
 a list of more than about $10^5$ lattice vectors in a run on this box.
 
 Evidence: `/tmp/dl_check_out2.txt`, 2026-09-05.
+
+## Checking that an `equals` anchor lands: `views._entry_address` under `RequestFactory`, and a missing entry raises rather than returns
+
+What happened: the T148 critique had to know whether 44 `equals` links of
+the form `HREF{slug#Z,1,density}` into the draft T147 find a row, and
+whether they would survive the alphabetical re-sort of T147's head
+revision. Fetching the target anonymously cannot answer for a draft. In
+the throwaway, `views._entry_address(request, table,
+views.table_context(table))` with a `RequestFactory` request carrying
+`{'entry': 'Z,1,density'}` returns `entry_found: True` and the canonical
+URL in a second per anchor (`/tmp/crit148_t147.py`). Two things to know:
+the positional identity is the row's `params_id`, which follows the
+nesting of the `Numbers` block and not the order of the `Parameters`
+section, so T147's sorted head still resolves `family,n,expression`
+anchors; and for an entry that does not exist the view calls
+`messages.warning`, which under `RequestFactory` raises `MessageFailure`
+("cannot add messages without MessageMiddleware"). The exception is the
+"not found" answer, not a fault in the script; catch it, or attach a
+`FallbackStorage` to the request first.
+
+What to do instead: check anchors this way rather than by fetching pages,
+and wrap the call in `try/except MessageFailure` so one dead anchor does
+not end the run.
+
+Evidence: `/tmp/crit148_t147_out.txt`, 2026-09-05: seven anchors found,
+then the traceback on `K,11,density`.
