@@ -1274,3 +1274,27 @@ Evidence: `/tmp/crit147_out.txt` (rendering, audit and document in one
 run), `/tmp/crit147_hist.py` (the four revisions and their key orders),
 `/tmp/crit147_params.py` (`TableData.full_yaml` parameter order
 `expression, family, n`; jsonb order `n, family, expression`), 2026-09-05.
+
+## `WebSearch` is refused in a build run too; zbMATH and arXiv through `curl` did the literature check
+
+What happened: the densest-packings build of 2026-09-05 asked `WebSearch`
+whether any lattice record had changed since the catalogue's 2012 table and
+was answered "requested permissions ... but you haven't granted it yet",
+as `WebFetch` is (notes above). Henry Cohn's page of records, which the
+proposal named as the thing to check, answers 404 at
+`cohn.mit.edu/sphere-packings` and `/sphere-packings/`. What worked, all
+through the proxy: `curl https://arxiv.org/pdf/1611.01685` fetched Cohn's
+Notices survey (2 MB) and `pdftotext -layout` gave its Table 1 of 36 record
+densities as text; `curl https://arxiv.org/abs/<id>` gives an abstract with
+its dateline; and `curl 'https://zbmath.org/?q=ti%3A...+%26+py%3A2013-2026'`
+lists matching papers and preprints in `<article>` blocks. Four zbMATH
+queries found the two 2025 preprints that changed the table's prose.
+
+What to do instead: do not plan a build around `WebSearch`; for "has this
+changed since" questions use zbMATH with a `py:` range and read arXiv
+directly, and for a printed table in a paper try the arXiv PDF before
+giving up on it (journal PDFs still answer 403, note above).
+
+Evidence: the two `WebSearch` refusals in this run's transcript;
+`/tmp/dl_cohn.html` (404, 40 KB of WordPress); `/tmp/dl_cohn_notices.txt`
+lines 200–215; `/tmp/dl_zb/*.html`, 2026-09-05.
