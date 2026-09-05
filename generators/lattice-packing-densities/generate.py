@@ -1,4 +1,4 @@
-"""Packing densities and Hermite numbers of the classical lattices -- numberdb.org/TBD
+"""Packing densities and Hermite numbers of the classical lattices -- numberdb.org/T147
 
 For a lattice L in R^n with Gram matrix G, minimal norm mu = min v^T G v over
 nonzero v in Z^n and determinant det L = det G:
@@ -812,7 +812,7 @@ def comment(family, n, expression, values):
 
 class LatticePackingDensities(numberdb.Generator):
 
-    table = 'TBD'
+    table = 'T147'
     parameters = ('family', 'n', 'expression')
     type = 'R'
     digits = 100
