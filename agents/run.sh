@@ -140,20 +140,36 @@ else:
 TOKEN
 }
 
-if [ "$engine" = "claude" ]; then
+# Not for triage, which is short and whose whole job is to run when
+# something else has gone wrong. Blocking it on the same floor left a failed
+# build with no verdict, and the campaign stopped without ever asking.
+if [ "$engine" = "claude" ] && [ "$stage" != "triage" ]; then
 	floor="${NUMBERDB_TOKEN_FLOOR:-90}"
+	#Below this a run would die almost at once, and resuming would meet the
+	#same wall, so there is nothing to be gained by starting.
+	hard="${NUMBERDB_TOKEN_HARD_FLOOR:-15}"
 	left=$(token_minutes_left)
 	if [ "$left" != "unknown" ] && [ "$left" -lt "$floor" ] 2>/dev/null; then
 		echo "=== $left minutes of token left, under the $floor-minute floor; refreshing"
 		timeout 120 claude -p "Reply with exactly: ok" >/dev/null 2>&1 || true
 		left=$(token_minutes_left)
-		if [ "$left" != "unknown" ] && [ "$left" -lt "$floor" ] 2>/dev/null; then
-			echo "Refusing: $left minutes of token left and the refresh did not" >&2
-			echo "take. Re-authenticate (claude auth login), or lower" >&2
-			echo "NUMBERDB_TOKEN_FLOOR if this run is a short one." >&2
+		if [ "$left" != "unknown" ] && [ "$left" -lt "$hard" ] 2>/dev/null; then
+			echo "Refusing: $left minutes of token left, under the $hard-minute" >&2
+			echo "hard floor, and the refresh did not take. Re-authenticate" >&2
+			echo "with 'claude auth login'." >&2
 			exit 6
 		fi
-		echo "=== refreshed; $left minutes now"
+		if [ "$left" != "unknown" ] && [ "$left" -lt "$floor" ] 2>/dev/null; then
+			#The refresh does not take at will: the CLI renews the token when
+			#it needs to, not when asked, so between the floor and its own
+			#threshold there is a window where nothing can be done about it.
+			#Refusing there blocked every run for an hour and a quarter --
+			#worse than the failure it was guarding against, now that a run
+			#that crosses the boundary is resumable and triage will say so.
+			echo "=== still $left minutes; starting anyway, and the run is resumable"
+		else
+			echo "=== refreshed; $left minutes now"
+		fi
 	fi
 fi
 
