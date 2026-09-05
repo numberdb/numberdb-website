@@ -1298,3 +1298,21 @@ giving up on it (journal PDFs still answer 403, note above).
 Evidence: the two `WebSearch` refusals in this run's transcript;
 `/tmp/dl_cohn.html` (404, 40 KB of WordPress); `/tmp/dl_cohn_notices.txt`
 lines 200–215; `/tmp/dl_zb/*.html`, 2026-09-05.
+
+## Exit 137 from `sage.sh` after ten seconds is the box running out of memory, not the timeout
+
+What happened: the T148 check run ended with `exit 137` in the output
+file eleven seconds in, right after `Q31 done`, while PARI's `qfminim` was
+returning the 261120 minimal vectors of $Q_{32}$. `NUMBERDB_TIMEOUT` was
+1500 s and the Bash tool's limit ten minutes, so neither killed it; the
+container was killed, presumably by the kernel's OOM killer on the 961 MB
+box, and nothing in the output says so. The note above on the T142 probes
+already says a 137 from the runner is its own `docker rm -f`; this one is
+a third meaning. `qfrep` in place of `qfminim` (lesson in
+`agents/lessons/PROPOSALS.md`) finished the same section in 34 s.
+
+What to do instead: treat a 137 that arrives long before the timeout as
+memory, and look at what the last stamped line was building; do not store
+a list of more than about $10^5$ lattice vectors in a run on this box.
+
+Evidence: `/tmp/dl_check_out2.txt`, 2026-09-05.
