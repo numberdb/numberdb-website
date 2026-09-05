@@ -4,17 +4,14 @@
 # filled by generate.py beside it; publishing is a person's act on the site.
 Title: Packing densities and Hermite numbers of the classical lattices
 Definition: >-
-  For a lattice $L\subset\mathbb{R}^n$ with minimal norm
-  $\mu=\min\{v\cdot v : v\in L,\ v\neq 0\}$, packing radius
-  $\rho=\sqrt{\mu}/2$ and determinant $\det L$, the square of the volume of
-  a fundamental domain, the packing density $\Delta(L)=V_n\rho^n/\sqrt{\det L}$
-  of the sphere packing CITE{Wiki} with centres at the points of $L$, its
-  centre density $\delta(L)=\rho^n/\sqrt{\det L}$ and its Hermite number
-  $\gamma(L)=\mu/(\det L)^{1/n}$ CITE{SPLAG}, where
-  $V_n=\pi^{n/2}/\Gamma(n/2+1)$ is the volume of the unit ball, for $L$ one
-  of $\mathbb{Z}^n$, the root lattices $A_n$, $D_n$, $E_6$, $E_7$, $E_8$,
-  their duals $A_n^{*}$, $D_n^{*}$, $E_6^{*}$, $E_7^{*}$, the laminated
-  lattices $\Lambda_n$ and the Coxeter–Todd lattice $K_{12}$.
+  For a lattice $L\subset\mathbb{R}^n$ with minimal norm $\mu$, packing
+  radius $\rho=\sqrt{\mu}/2$ and determinant $\det L$, the packing density
+  $\Delta(L)=V_n\rho^n/\sqrt{\det L}$ of the sphere packing CITE{Wiki} with
+  centres at the points of $L$, its centre density
+  $\delta(L)=\rho^n/\sqrt{\det L}$ and its Hermite number
+  $\gamma(L)=\mu/(\det L)^{1/n}$ CITE{SPLAG}, with $V_n$ the volume of the
+  unit ball, for $\mathbb{Z}^n$, the root lattices, their duals, the
+  laminated lattices $\Lambda_n$ and the Coxeter–Todd lattice $K_{12}$.
 Parameters:
   family:
     type: Symbolic
@@ -47,9 +44,12 @@ Parameters:
     show-in-parameter-list: 'no'
 Comments:
   comment-conventions: >-
-    The three quantities are those of Conway and Sloane CITE{SPLAG}, chapter 1,
-    and all three are unchanged when $L$ is scaled, so no scaling of a named
-    lattice has to be chosen. $\gamma(L)$ is also called the Hermite invariant
+    The minimal norm is $\mu=\min\{v\cdot v : v\in L,\ v\neq 0\}$, the
+    determinant $\det L$ is the determinant of a Gram matrix of $L$, the
+    square of the volume of a fundamental domain, and
+    $V_n=\pi^{n/2}/\Gamma(n/2+1)$. The three quantities are those of Conway
+    and Sloane CITE{SPLAG}, chapter 1, and all three are unchanged when $L$
+    is scaled, so no scaling of a named lattice has to be chosen. $\gamma(L)$ is also called the Hermite invariant
     of $L$, and some authors write $\gamma$ for its square root, the ratio of
     the length of a shortest vector to the $n$-th root of the covolume. Its
     supremum over all lattices in $\mathbb{R}^n$ is Hermite's constant
