@@ -31,7 +31,11 @@ ssh_opts=(-o BatchMode=yes -o ExitOnForwardFailure=no
           -o ControlPersist=60)
 
 mounted=""
-for dir in numberdb_app data_pipeline agents docs utils scripts numberdb clients .claude; do
+#`generators` among them because test_skill asserts things about those
+#files -- that each says how to install the package it imports, and says
+#it near the top. Unmounted, the suite read the image's copy and a fix in
+#the working tree could not be tested until it had been shipped.
+for dir in numberdb_app data_pipeline agents docs utils scripts numberdb clients generators .claude; do
 	mounted="$mounted -v $RPATH/$dir:/app/$dir:ro"
 done
 
