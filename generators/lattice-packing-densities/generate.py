@@ -44,8 +44,8 @@ exact rational V_n / pi^floor(n/2). No division of Python integers occurs
 anywhere in this file; every quotient is between Sage rationals.
 
 **These digits are proven.** With the guard below, the widest ball in the
-table, relative to its value, has radius 2e-118 (measured at 100 digits over
-every entry), so 100 digits are supported with room.
+table, relative to its value, has radius 4.5e-119 (measured at 100 digits
+over every entry: Delta(Lambda_22)), so 100 digits are supported with room.
 
 **What is checked before anything is returned.** For every lattice, the
 kissing number from `qfminim` must equal the known value (2n for Z^n,
@@ -76,8 +76,8 @@ from sage.libs.pari.all import pari
 
 #: Bits of working precision beyond what the written digits need. Measured
 #: over the whole table at 100 digits: the widest ball, relative to its
-#: value, is Delta(A_24) with relative radius 2e-118; every entry supports
-#: more than 117 digits.
+#: value, is Delta(Lambda_22) with relative radius 4.5e-119; every entry
+#: supports more than 118 digits.
 WORKING_GUARD = 64
 
 #: The largest dimension listed. The Leech lattice is where the laminated
@@ -722,7 +722,7 @@ def latex_hermite(n, mu, det):
 OPTIMAL = {
     ('Z', 1): ('all', None),
     ('A', 1): ('all', None),
-    ('A', 2): ('all', 'Thue'),
+    ('A', 2): ('all', 'ThueFejesToth'),
     ('A', 3): ('all', 'Hales'),
     ('D', 4): ('lattice', 'KZ'),
     ('D', 5): ('lattice', 'KZ'),
@@ -731,6 +731,11 @@ OPTIMAL = {
     ('E', 8): ('all', 'Viazovska'),
     ('Lambda', 24): ('all', 'CKMRV'),
 }
+
+#: Who proved that the lattice attaining Hermite's constant gamma_n is the
+#: one listed, by dimension: the reference keys of the table document.
+HERMITE_PROOF = {1: None, 2: 'Lagrange', 3: 'Gauss', 4: 'KZ', 5: 'KZ',
+                 6: 'Blichfeldt', 7: 'Blichfeldt', 8: 'Blichfeldt', 24: 'CohnKumar'}
 
 #: Lambda_n for n <= 8, by name.
 LAMINATED_ALIAS = {('Z', 1): 1, ('A', 2): 2, ('A', 3): 3, ('D', 4): 4, ('D', 5): 5,
@@ -799,7 +804,8 @@ def comment(family, n, expression, values):
     else:
         parts.append(r'$\gamma(%s)=%s$' % (name, latex_hermite(n, mu, det)))
         if (family, n) in OPTIMAL and OPTIMAL[(family, n)][0] in ('all', 'lattice'):
-            parts.append(r"Hermite's constant $\gamma_{%d}$" % n)
+            who = HERMITE_PROOF[n]
+            parts.append(r"Hermite's constant $\gamma_{%d}$" % n + (' CITE{%s}' % who if who else ''))
     parts.extend(alias_note(family, n))
     return '; '.join(parts)
 

@@ -1,0 +1,299 @@
+# The table document for the packing densities and Hermite numbers of the
+# classical lattices, proposal 1 of agents/table-ideas/BATCH-2026-09-03T1730.md
+# (issues #29 and #30). Created as a draft through the API (X-Draft: yes) and
+# filled by generate.py beside it; publishing is a person's act on the site.
+Title: Packing densities and Hermite numbers of the classical lattices
+Definition: >-
+  For a lattice $L\subset\mathbb{R}^n$ with minimal norm
+  $\mu=\min\{v\cdot v : v\in L,\ v\neq 0\}$, packing radius
+  $\rho=\sqrt{\mu}/2$ and determinant $\det L$, the square of the volume of
+  a fundamental domain, the packing density $\Delta(L)=V_n\rho^n/\sqrt{\det L}$
+  of the sphere packing CITE{Wiki} with centres at the points of $L$, its
+  centre density $\delta(L)=\rho^n/\sqrt{\det L}$ and its Hermite number
+  $\gamma(L)=\mu/(\det L)^{1/n}$ CITE{SPLAG}, where
+  $V_n=\pi^{n/2}/\Gamma(n/2+1)$ is the volume of the unit ball, for $L$ one
+  of $\mathbb{Z}^n$, the root lattices $A_n$, $D_n$, $E_6$, $E_7$, $E_8$,
+  their duals $A_n^{*}$, $D_n^{*}$, $E_6^{*}$, $E_7^{*}$, the laminated
+  lattices $\Lambda_n$ and the Coxeter–Todd lattice $K_{12}$.
+Parameters:
+  family:
+    type: Symbolic
+    title: family of the lattice
+    values:
+      Z: $\mathbb{Z}^n$
+      A: $A_n$
+      D: $D_n$
+      E: $E_n$
+      A*: $A_n^{*}$
+      D*: $D_n^{*}$
+      E*: $E_n^{*}$
+      Lambda: $\Lambda_n$
+      K: $K_n$
+  n:
+    type: Z
+    title: dimension
+    display: $n$
+    constraints: >-
+      $n\geq 1$ for $\mathbb{Z}^n$ and $A_n$; $n\geq 4$ for $D_n$; $n\in\{6,7,8\}$
+      for $E_n$; $n\geq 3$ for $A_n^{*}$; $n\geq 5$ for $D_n^{*}$; $n\in\{6,7\}$
+      for $E_n^{*}$; $n\geq 9$ for $\Lambda_n$; $n=12$ for $K_n$
+  expression:
+    type: Symbolic
+    title: density, centre density or Hermite number
+    values:
+      density: $\Delta(L)$
+      centre: $\delta(L)$
+      hermite: $\gamma(L)$
+    show-in-parameter-list: 'no'
+Comments:
+  comment-conventions: >-
+    The three quantities are those of Conway and Sloane CITE{SPLAG}, chapter 1,
+    and all three are unchanged when $L$ is scaled, so no scaling of a named
+    lattice has to be chosen. $\gamma(L)$ is also called the Hermite invariant
+    of $L$, and some authors write $\gamma$ for its square root, the ratio of
+    the length of a shortest vector to the $n$-th root of the covolume. Its
+    supremum over all lattices in $\mathbb{R}^n$ is Hermite's constant
+    $\gamma_n$ CITE{WikiHermite}, known for $n\leq 8$ and $n=24$ and attained
+    by lattices listed here, CITE{formula-hermite-constant}. The densest
+    lattice packing in $\mathbb{R}^n$ is the lattice with the largest
+    $\gamma(L)$, equivalently the largest $\Delta(L)$ or $\delta(L)$.
+  comment-which-lattices: >-
+    $\mathbb{Z}^n$ is the cubic lattice; $A_n$, $D_n$ and $E_n$ are the root
+    lattices CITE{SPLAG}, chapter 4, with $A_2$ the hexagonal lattice, $A_3=D_3$
+    the face-centred cubic lattice and $A_3^{*}$ the body-centred cubic
+    lattice; $\Lambda_n$ are the laminated lattices of Conway and Sloane
+    CITE{Laminated}, with $\Lambda_{16}$ the Barnes–Wall lattice $BW_{16}$
+    CITE{BarnesWall} and $\Lambda_{24}$ the Leech lattice CITE{Leech}; $K_{12}$
+    is the Coxeter–Todd lattice CITE{CoxeterTodd}. A lattice with two names
+    is listed once: $D_3$ under $A_3$; $\Lambda_n$ for $n\leq 8$, which is
+    $\mathbb{Z}$, $A_2$, $A_3$, $D_4$, $D_5$, $E_6$, $E_7$, $E_8$, under those
+    names; and $A_1^{*}$, $A_2^{*}$ and $D_4^{*}$ not at all, being similar to
+    $A_1$, $A_2$ and $D_4$. $E_8^{*}=E_8$. Every family stops at $n=24$, where
+    the laminated sequence and the proven optimality results end. The
+    lattices $\Lambda_{11}$, $\Lambda_{12}$ and $\Lambda_{13}$ are not the
+    densest lattices known in their dimensions: $K_{12}$ and its laminations
+    $K_{11}$ and $K_{13}$, which are not listed, are denser CITE{Catalogue-density}.
+  comment-gram-matrices: >-
+    Each lattice is given by an integral Gram matrix, and every value is a
+    function of its dimension, determinant and minimal norm alone: the
+    identity matrix for $\mathbb{Z}^n$, the Cartan matrix for a root lattice,
+    so that $\mu=2$ and $\det A_n=n+1$, $\det D_n=4$, $\det E_6=3$,
+    $\det E_7=2$, $\det E_8=1$; the inverse Gram matrix for a dual, so that
+    $\det L^{*}=1/\det L$; and the Gram matrices of the Catalogue of
+    Lattices CITE{Catalogue} for $\Lambda_9$ to $\Lambda_{24}$ and $K_{12}$,
+    scaled to $\mu=4$, whose determinants $\det\Lambda_n$ are OEIS A028921
+    CITE{OEISdet} and $\det K_{12}=729$.
+  comment-entries: >-
+    The comment on each entry gives its value in closed form, always
+    $\pi^{\lfloor n/2\rfloor}$ times an algebraic number of degree at most
+    $n$; on the centre density, the determinant, the minimal norm and the
+    kissing number of the lattice, its number of shortest vectors, which for
+    $\Lambda_n$ and $K_{12}$ are OEIS A002336 CITE{OEISkissing}; and, where it
+    is known, whether the lattice is the densest lattice packing of its
+    dimension, the densest packing of any kind, or the densest lattice
+    packing known, the last according to the catalogue's table of densest
+    packings CITE{Catalogue-density}, last revised in February 2012. The
+    densest lattice packing is known for $n\leq 8$, $\Lambda_n$ in each case
+    (Lagrange for $n=2$ CITE{Lagrange}, Gauss for $n=3$ CITE{Gauss},
+    Korkine and Zolotareff for $n=4,5$ CITE{KZ}, Blichfeldt for $n=6,7,8$
+    CITE{Blichfeldt}), and for $n=24$, the Leech lattice CITE{CohnKumar}; the
+    densest packing of any kind is known for $n=1$, $2$ CITE{ThueFejesToth},
+    $3$ CITE{Hales}, $8$ CITE{Viazovska} and $24$ CITE{CKMRV}, and is the
+    lattice packing in each case. In dimensions $10$, $11$, $13$, $18$, $20$
+    and $22$ a nonlattice packing denser than every lattice packing known
+    exists CITE{Catalogue-density}.
+Formulas:
+  formula-relations: >-
+    $\delta(L)=\bigl(\gamma(L)/4\bigr)^{n/2}$ and $\Delta(L)=V_n\,\delta(L)$,
+    where $V_n=\pi^{n/2}/\Gamma(n/2+1)$ is the
+    HREF{Volume_of_the_unit_ball}[volume of the unit ball]; in particular
+    $\Delta(\mathbb{Z}^n)=V_n/2^n$ and $\gamma(\mathbb{Z}^n)=1$.
+  formula-root-lattices: >-
+    $\gamma(A_n)=2\,(n+1)^{-1/n}$, $\gamma(D_n)=2\cdot 4^{-1/n}$,
+    $\gamma(E_6)=2\cdot 3^{-1/6}$, $\gamma(E_7)=2^{6/7}$, $\gamma(E_8)=2$,
+    from $\mu=2$ and the determinants $n+1$, $4$, $3$, $2$, $1$.
+  formula-duals: >-
+    $\gamma(A_n^{*})=n\,(n+1)^{1/n-1}$ for $n\geq 2$, $\gamma(D_n^{*})=4^{1/n}$
+    for $n\geq 4$, $\gamma(E_6^{*})=\frac{4}{3}\cdot 3^{1/6}$ and
+    $\gamma(E_7^{*})=\frac{3}{2}\cdot 2^{1/7}$, from $\det L^{*}=1/\det L$
+    and the minimal norms $n/(n+1)$, $1$, $4/3$ and $3/2$ when the root
+    lattice has $\mu=2$ CITE{SPLAG}, chapter 4.
+  formula-laminated: >-
+    With $\Lambda_n$ scaled to $\mu=4$, $\delta(\Lambda_n)=1/\sqrt{\det\Lambda_n}$
+    and $\gamma(\Lambda_n)=4\,(\det\Lambda_n)^{-1/n}$, where
+    $\det\Lambda_n$ for $n=0,1,\ldots,24$ is $1$, $4$, $12$, $32$, $64$,
+    $128$, $192$, $256$, $256$, $512$, $768$, $1024$, $1024$, $1024$, $768$,
+    $512$, $256$, $256$, $192$, $128$, $64$, $32$, $12$, $4$, $1$
+    CITE{OEISdet}; so $\det\Lambda_{24-n}=\det\Lambda_n$ and
+    $\delta(\Lambda_{24-n})=\delta(\Lambda_n)$ for $0\leq n\leq 24$.
+    $\delta(K_{12})=1/27$ and $\gamma(K_{12})=4/\sqrt{3}$.
+  formula-hermite-constant: >-
+    $\gamma_n=\max_L\gamma(L)$ satisfies $\gamma_n^{\,n}=1,\ \frac{4}{3},\ 2,\ 4,\ 8,\ \frac{64}{3},\ 64,\ 256$
+    for $n=1,\ldots,8$, attained by $\mathbb{Z}$, $A_2$, $A_3$, $D_4$, $D_5$,
+    $E_6$, $E_7$, $E_8$, and $\gamma_{24}=4$, attained by $\Lambda_{24}$
+    CITE{CohnKumar}; these are the only dimensions in which $\gamma_n$ is
+    known CITE{WikiHermite}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      G = CartanMatrix(['E', 8]); n = G.nrows()
+      det = G.det(); mu = IntegralLattice(G).minimum()      # 1, 2
+      hermite = mu / det^(1/n)                               # 2
+      delta = (sqrt(mu)/2)^n / sqrt(det)                     # 1/16
+      Delta = pi^(n/2) / gamma(n/2 + 1) * delta              # pi^4/384
+      pari(G).qfminim()[0]                                   # 240, the kissing number
+Similar tables:
+  - table: HREF{Volume_of_the_unit_ball}[Volume of the $d$-dimensional unit ball]
+    relation: $V_n$, the factor by which $\Delta(L)$ and $\delta(L)$ differ
+  - table: HREF{Rational_multiples_of_pi}[Rational multiples of pi]
+    relation: holds $\Delta(\mathbb{Z}^2)=\pi/4$ and $\Delta(\mathbb{Z}^3)=\pi/6$
+  - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
+    relation: holds $\gamma(A_2)=2/\sqrt{3}$ and $\gamma(D_4)=\sqrt{2}$
+Links:
+  Wiki:
+    title: 'Wikipedia: Sphere packing'
+    url: https://en.wikipedia.org/wiki/Sphere_packing
+  WikiHermite:
+    title: 'Wikipedia: Hermite constant'
+    url: https://en.wikipedia.org/wiki/Hermite_constant
+  WikiLeech:
+    title: 'Wikipedia: Leech lattice'
+    url: https://en.wikipedia.org/wiki/Leech_lattice
+  MathWorld:
+    title: 'MathWorld: Hypersphere Packing'
+    url: https://mathworld.wolfram.com/HyperspherePacking.html
+  Catalogue:
+    title: 'G. Nebe and N. J. A. Sloane, A Catalogue of Lattices'
+    url: https://www.math.rwth-aachen.de/~Gabriele.Nebe/LATTICES/
+  Catalogue-density:
+    title: 'A Catalogue of Lattices: Table of densest packings presently known'
+    url: https://www.math.rwth-aachen.de/~Gabriele.Nebe/LATTICES/density.html
+  OEISdet:
+    title: 'OEIS A028921: determinant of the laminated lattice $\Lambda_n$ with minimal norm $4$'
+    url: https://oeis.org/A028921
+  OEISkissing:
+    title: 'OEIS A002336: kissing number of the laminated lattice $\Lambda_n$'
+    url: https://oeis.org/A002336
+References:
+  SPLAG:
+    bib: >-
+      J. H. Conway and N. J. A. Sloane, Sphere Packings, Lattices and Groups,
+      third edition, Grundlehren der mathematischen Wissenschaften 290,
+      Springer, 1999.
+  Laminated:
+    bib: >-
+      J. H. Conway and N. J. A. Sloane, Laminated lattices, Annals of
+      Mathematics 116 (1982), 593–620.
+  Leech:
+    bib: >-
+      J. Leech, Notes on sphere packings, Canadian Journal of Mathematics 19
+      (1967), 251–267.
+  BarnesWall:
+    bib: >-
+      E. S. Barnes and G. E. Wall, Some extreme forms defined in terms of
+      Abelian groups, Journal of the Australian Mathematical Society 1
+      (1959), 47–63.
+  CoxeterTodd:
+    bib: >-
+      H. S. M. Coxeter and J. A. Todd, An extreme duodenary form, Canadian
+      Journal of Mathematics 5 (1953), 384–392.
+  Lagrange:
+    bib: >-
+      J. L. Lagrange, Recherches d'arithmétique, Nouveaux Mémoires de
+      l'Académie royale des Sciences et Belles-Lettres de Berlin (1773),
+      265–312.
+  Gauss:
+    bib: >-
+      C. F. Gauss, Untersuchungen über die Eigenschaften der positiven
+      ternären quadratischen Formen von Ludwig August Seeber, Göttingische
+      gelehrte Anzeigen (1831); Werke II, 188–196.
+  KZ:
+    bib: >-
+      A. Korkine and G. Zolotareff, Sur les formes quadratiques positives
+      quaternaires, Mathematische Annalen 5 (1872), 581–583; Sur les formes
+      quadratiques positives, Mathematische Annalen 11 (1877), 242–292.
+  Blichfeldt:
+    bib: >-
+      H. F. Blichfeldt, The minimum values of positive quadratic forms in
+      six, seven and eight variables, Mathematische Zeitschrift 39 (1935),
+      1–15.
+  ThueFejesToth:
+    bib: >-
+      A. Thue, Über die dichteste Zusammenstellung von kongruenten Kreisen in
+      einer Ebene, Norske Videnskabs-Selskabets Skrifter 1 (1910), 1–9;
+      L. Fejes Tóth, Über einen geometrischen Satz, Mathematische Zeitschrift
+      46 (1940), 83–85.
+  Hales:
+    bib: >-
+      T. C. Hales, A proof of the Kepler conjecture, Annals of Mathematics
+      162 (2005), 1065–1185.
+  Viazovska:
+    bib: >-
+      M. S. Viazovska, The sphere packing problem in dimension 8, Annals of
+      Mathematics 185 (2017), 991–1015.
+  CKMRV:
+    bib: >-
+      H. Cohn, A. Kumar, S. D. Miller, D. Radchenko and M. Viazovska, The
+      sphere packing problem in dimension 24, Annals of Mathematics 185
+      (2017), 1017–1033.
+  CohnKumar:
+    bib: >-
+      H. Cohn and A. Kumar, Optimality and uniqueness of the Leech lattice
+      among lattices, Annals of Mathematics 170 (2009), 1003–1050.
+Tags:
+  - discrete geometry
+  - number theory
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    every family to $n=24$ is here: $\mathbb{Z}^n$ and $A_n$ for $1\leq n\leq 24$,
+    $D_n$ for $4\leq n\leq 24$, $E_6$, $E_7$, $E_8$, $A_n^{*}$ for
+    $3\leq n\leq 24$, $D_n^{*}$ for $5\leq n\leq 24$, $E_6^{*}$, $E_7^{*}$,
+    $\Lambda_n$ for $9\leq n\leq 24$ and $K_{12}$, 133 lattices and 399
+    entries
+  rigour details: >-
+    For each lattice the determinant of its integral Gram matrix is an exact
+    integer and the minimal norm and the number of shortest vectors come from
+    PARI's qfminim, so $\delta^2=(\mu/4)^n/\det L$ and $\gamma^n=\mu^n/\det L$
+    are exact rationals; a value that is rational is written exactly, and
+    the rest are balls in arb, a square root, an $n$-th root, and for
+    $\Delta$ the product with $\pi^{\lfloor n/2\rfloor}$ and the exact
+    rational $V_n/\pi^{\lfloor n/2\rfloor}$, computed with 64 guard bits
+    beyond the 100 digits written; the widest ball relative to its value,
+    $\Delta(\Lambda_{22})$, has radius $4.5\cdot 10^{-119}$. Before a lattice
+    is accepted its kissing number and determinant must equal the known
+    values ($2n$, $n(n+1)$, $2n(n-1)$, $72$, $126$, $240$ for
+    $\mathbb{Z}^n$, $A_n$, $D_n$, $E_6$, $E_7$, $E_8$; $2(n+1)$, $2n$, $54$,
+    $56$ for the duals; the catalogue's lines for $\Lambda_n$ and $K_{12}$),
+    and $\delta^2=(\gamma/4)^n$ must hold exactly. Outside the generator, the
+    Gram matrices transcribed from the catalogue were compared entry by
+    entry with the catalogue pages fetched again, and their determinants,
+    minimal norms and kissing numbers with the pages' DET, MINIMAL_NORM and
+    KISSING_NUMBER lines; the Leech lattice built from the extended Golay
+    code and $\Lambda_{16}$ built from the Reed–Muller code $RM(1,4)$ were
+    found isometric to the catalogue's Gram matrices by PARI's qfisom; the
+    Cartan matrices were compared with Sage's; $\Delta(A_2)$, $\Delta(A_3)$,
+    $\Delta(D_4)$, $\Delta(D_5)$, $\Delta(E_6)$, $\Delta(E_7)$, $\Delta(E_8)$,
+    $\Delta(\Lambda_{24})$, $\delta(D_5)$, $\delta(E_6)$, $\gamma(E_6)$ and
+    $\gamma(E_7)$ agree with OEIS A093766, A093825, A222068, A222069, A222070,
+    A222071, A222072, A260646, A222066, A222067, A246184 and A246722 to every
+    digit those entries give; the twelve HERMITE_NUMBER and two DENSITY
+    lines of the catalogue pages agree to their twelve digits; the
+    determinants of $\Lambda_n$ at minimal norm $4$ are OEIS A028921 and the
+    kissing numbers OEIS A002336 for $1\leq n\leq 24$; the largest
+    $\gamma^n$ in each dimension $n\leq 8$ is OEIS A007361/A007362 and the
+    largest $\delta$ in each dimension $n\leq 24$ is the catalogue's table of
+    densest packings; $\Delta=V_n\delta$ holds in balls against the stored
+    digits of the table of unit-ball volumes and against $V_n$ from arb's
+    Gamma function; the closed forms of CITE{formula-root-lattices},
+    CITE{formula-duals} and CITE{formula-laminated} hold in balls; the entries
+    linked to other tables agree with the stored digits there; and the
+    closed form in every entry's comment, evaluated in balls, encloses the
+    entry. Controls that must fail did: the Gram matrix of $\Lambda_{12}$
+    offered as $K_{12}$ is refused, and $\Delta(D_4)$ moved by $10^{-50}$ no
+    longer matches A222068.
+Display properties:
+  number-header: $\Delta(L)$, $\delta(L)$ or $\gamma(L)$

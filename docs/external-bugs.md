@@ -140,3 +140,29 @@ first formula are unaffected, and the Lean verification linked from the
 entry is of the sequence, not of this line.
 
 **Reported:** no.
+
+## Catalogue of Lattices, LAMBDA13, LAMBDA20, LAMBDA22: the HERMITE_NUMBER lines are wrong in their ninth or tenth digit
+
+**Found:** building the table of packing densities and Hermite numbers of the
+classical lattices (proposal 1 of `agents/table-ideas/BATCH-2026-09-03T1730.md`)
+on 2026-09-05, comparing every HERMITE_NUMBER line of the catalogue pages
+`LAMBDA9.html` to `LAMBDA23.html` and `K12.html` with the value computed from
+the page's own DET and MINIMAL_NORM.
+
+**Evidence:** each page prints twelve significant digits. From DET and
+MINIMAL_NORM, $\gamma=\mu/\det^{1/n}$ is $4\cdot 1024^{-1/13}=2.34692092001\ldots$
+for LAMBDA13, $4\cdot 64^{-1/20}=3.24900958542\ldots$ for LAMBDA20 and
+$4\cdot 12^{-1/22}=3.57278019514\ldots$ for LAMBDA22 (arb at 400 bits, and
+Python floats to fifteen digits). The pages print `.234692093077E+01`,
+`.324900958600E+01` and `.357278019600E+01`: off by $4.6\cdot 10^{-9}$,
+$1.8\cdot 10^{-10}$ and $2.4\cdot 10^{-10}$ relative, and the last two end in
+`600`, as a nine-digit value padded to twelve would. The other eleven
+HERMITE_NUMBER lines and both DENSITY lines agree with the computed values
+to all twelve digits, so the DET and MINIMAL_NORM lines those three pages
+carry are not in doubt, only the Hermite number printed from them.
+
+**Confidence:** high. The quantity is a formula in two integers the same
+page states, and two independent computations of it agree to fifteen
+digits.
+
+**Reported:** no.
