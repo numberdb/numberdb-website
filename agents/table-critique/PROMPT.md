@@ -21,6 +21,12 @@ mathematics ate the rest of a section, a parameter list showed
 `argument ()`, and a formula printed "Math input error" because a JSON escape
 had eaten a backslash. None of them is visible in the stored YAML.
 
+**Does it read as prose?** Everything on the page is read as English, and a
+field can be comprehensible while not being a sentence. "every rule with
+$n\leq 30$ is here, nodes and weights, both halves" is four fragments, and a
+reader cannot tell what the last two modify. Quote the sentence and say what a
+reader would have to guess.
+
 **Does the definition define?** It should say what the object is, precisely
 enough that two people would build the same table, and then stop. A property,
 a consequence, a piece of history and a remark about the range are four other

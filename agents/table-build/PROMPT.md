@@ -146,9 +146,10 @@ partial Bell polynomials stop at n = 7 because B(8,2) has seven variables.
 odd integer`, not `$s\in\{-1,-3,-5\}$`; `$D$ a fundamental discriminant,
 $D>1$`, not `$1<D\leq 1000$`. What you actually computed goes in
 `Data properties` as `complete: no` with a `complete-note` saying which part
-is finished, which renders as "complete: no (every real fundamental
-discriminant with $D\leq 1000$ is here)". Otherwise extending the table later
-means editing the definition of the family.
+is finished. The note is read *inside* a sentence -- "Table is complete: no
+(...)" -- so write a clause that finishes it: "it holds every real
+fundamental discriminant with $D\leq 1000$". Otherwise extending the table
+later means editing the definition of the family.
 
 **Cite what you already declared.** If `Links` holds the Wikipedia article for
 the object, put `CITE{Wiki}` at its first mention in the definition. The
@@ -177,6 +178,21 @@ apology -- *we did not prove this, we looked* -- and the field for them
 already exists: `rigour details`, under "How they were obtained". Put what
 you verified there, once, and let the formula be a formula. `audit_table`
 refuses this too.
+
+**Write sentences, not notes to yourself.** Everything a reader sees is read
+as English -- a comment, a formula's gloss, a data property. Five tables said
+"every rule with $n\leq 30$ is here, nodes and weights, both halves", which is
+four fragments stapled together: a reader cannot tell whether both halves of
+every rule are listed, or both halves of something else, or whether "nodes and
+weights" is a second thing the table holds. It says "it holds every rule with
+$n\leq 30$, where $n$ is the number of nodes; each rule is listed in full,
+every node with its weight, and both halves of the symmetric set."
+
+The register is an encyclopedia's: precise, unhurried, and answering the
+question a reader actually has. Name what a symbol indexes the first time the
+field uses it, and use the table's own word for it -- if the parameter is
+titled "number of nodes", write nodes, not points. Telegraphic is not concise;
+it is unfinished.
 
 **A comment states a fact.** Not how useful a search hit would be, not how
 distinctive the value is, not what a reader should conclude -- those are
