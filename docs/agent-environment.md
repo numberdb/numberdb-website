@@ -1342,3 +1342,25 @@ not end the run.
 
 Evidence: `/tmp/crit148_t147_out.txt`, 2026-09-05: seven anchors found,
 then the traceback on `K,11,density`.
+
+## Reading a draft as its owner needs only curl: the key goes in through `-H @-`
+
+What happened: a repair has to re-read the live document of a draft, which
+answers Not Found anonymously, and every earlier run reached it through
+Python with the SOCKS bootstrap or through the throwaway. `GET
+/api/table?id=T148` with the owner's key answers 200 to curl through the
+proxy, and curl reads a header from stdin when told `-H @-`, so
+
+    { printf 'Authorization: Bearer '; cat "$NUMBERDB_KEY_FILE"; } | curl -s -H @- 'https://numberdb.org/api/table?id=T148'
+
+fetches the document in a second with the key in no argument, no process
+list and no file outside its own. The answer is JSON in the stored key
+order, and `json.load` keeps that order, so the same object can be edited
+and handed to `agents/api_edit.edit_over_api`, which accepted it and
+recorded `via api`, `merged false`, `reviewed false`.
+
+What to do instead: use this for the re-read the repair prompt asks for;
+keep the throwaway for the audit and the rendering, which need Django.
+
+Evidence: `/tmp/t148_live.yaml`, `/tmp/t148_after.json` and
+`/tmp/repair148.py`, 2026-09-05; revision `78a8b78b…` of T148.

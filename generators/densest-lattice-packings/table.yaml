@@ -32,9 +32,10 @@ Comments:
     the fraction of $\mathbb{R}^n$ covered by balls of radius $\rho$ centred
     at the points of $L$, and $\delta_n$ is $\Delta_n$ with the ball's
     volume divided out, the quantity Conway and Sloane CITE{SPLAG} tabulate;
-    both are unchanged when $L$ is scaled. $\gamma_n=4\,\delta_n^{2/n}$ is the
-    Hermite number of the record lattice, the best lower bound known for
-    Hermite's constant in dimension $n$.
+    both are unchanged when $L$ is scaled. $\gamma(L)=4\,\delta_n^{2/n}$ is the
+    Hermite number of the record lattice $L$, the best lower bound known for
+    Hermite's constant $\gamma_n$ in dimension $n$, and equal to $\gamma_n$
+    where the record is proven.
   comment-known: >-
     "Known" means listed in the catalogue's table of densest packings
     CITE{Catalogue-density} as revised in February 2012, which gives the
@@ -57,9 +58,11 @@ Comments:
     $K_{11}$ and $K_{13}$ are denser; $\Lambda_n$ for $n\leq 8$ is
     $\mathbb{Z}$, $A_2$, $A_3$, $D_4$, $D_5$, $E_6$, $E_7$, $E_8$,
     $\Lambda_{16}$ is the Barnes–Wall lattice and $\Lambda_{24}$ the Leech
-    lattice. The densities of all of these are also in the
+    lattice. The densities of $\Lambda_n$ for $n\leq 24$ and of $K_{12}$ are
+    also in the
     HREF{Packing_densities_and_Hermite_numbers_of_the_classical_lattices}[table of the classical lattices],
-    which the entries for $n\leq 24$ link. Beyond $n=24$ the records are
+    which the entries for $n\leq 24$ other than $n=11$ and $13$ link. Beyond
+    $n=24$ the records are
     $\Lambda_{25}$ and $\Lambda_{26}$, Bacher's lattices $B_{27}$, $B_{28}$
     and $B_{29}$ CITE{Bacher}, Quebbemann's lattice $Q_{32}$
     CITE{Quebbemann} and its sections $Q_{30}$ and $Q_{31}$, lattices
@@ -84,16 +87,17 @@ Comments:
     that the table of 2012 names. Their densities are not entries, since a
     nonlattice packing has no Gram matrix and this table is about lattices.
   comment-entries: >-
-    The comment on each entry gives its value in closed form, always
-    $\pi^{\lfloor n/2\rfloor}$ times an algebraic number of degree at most
-    $2$, and names the lattice; on a centre density for $n\leq 24$ it also
+    The comment on each entry gives its value in closed form, for $\Delta_n$
+    always $\pi^{\lfloor n/2\rfloor}$ times an algebraic number of degree at
+    most $2$ and for $\delta_n$ that algebraic number, and names the lattice;
+    on a centre density for $n\leq 24$ it also
     gives the determinant of the lattice scaled to minimal norm $4$, which
     for $\Lambda_n$ is OEIS A028921 CITE{OEISdet}.
 Formulas:
   formula-relation: >-
     $\Delta_n=V_n\,\delta_n$ with $V_n=\pi^{n/2}/\Gamma(n/2+1)$ the
     HREF{Volume_of_the_unit_ball}[volume of the unit ball], and
-    $\delta_n=(\gamma_n/4)^{n/2}$ where $\gamma_n=\mu/(\det L)^{1/n}$ is the
+    $\delta_n=(\gamma(L)/4)^{n/2}$ where $\gamma(L)=\mu/(\det L)^{1/n}$ is the
     Hermite number of the record lattice $L$ of minimal norm $\mu$.
   formula-laminated: >-
     $\delta_n=1/\sqrt{\det\Lambda_n}$ for $1\leq n\leq 24$, $n\neq 11,12,13$,
@@ -122,7 +126,7 @@ Programs:
       Delta = pi^(n/2) / gamma(n/2 + 1) * delta             # 59049/481517373489152000*pi^16
 Similar tables:
   - table: HREF{Packing_densities_and_Hermite_numbers_of_the_classical_lattices}[Packing densities and Hermite numbers of the classical lattices]
-    relation: the same numbers for $n\leq 24$, indexed by the lattice, beside every other classical lattice
+    relation: the same numbers for $n\leq 24$, $n\neq 11,13$, indexed by the lattice, beside every other classical lattice
   - table: HREF{Volume_of_the_unit_ball}[Volume of the $d$-dimensional unit ball]
     relation: $V_n$, the factor by which $\Delta_n$ and $\delta_n$ differ
   - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
@@ -249,9 +253,9 @@ Data properties:
   rigour: proven
   complete: 'no'
   complete-note: >-
-    every dimension $1\leq n\leq 48$ is here, the range in which the
-    catalogue's table gives the centre density in closed form; its entries
-    for $n=54$, $56$, $64$, $72$, $80$ and $128$ are not listed
+    every dimension $1\leq n\leq 48$ is here, the contiguous range of the
+    catalogue's table; its six entries beyond, for $n=54$, $56$, $64$, $72$,
+    $80$ and $128$, are not listed
   rigour details: >-
     $\delta_n^2$ is a rational number for every $n\leq 48$, transcribed from
     the closed forms of the catalogue's table; $\delta_n$ is written exactly
@@ -262,12 +266,15 @@ Data properties:
     its value, $\Delta_{46}$, has radius $6.7\cdot 10^{-119}$. Before any
     entry was written the 48 rationals were compared with the same page
     parsed by a separate program and with the page's own decimals; for
-    $n\leq 26$ and $n=30$, $31$, $32$, $36$, $48$ they were recomputed as
+    $n\leq 26$ and $n=30$, $31$, $32$, $36$ they were recomputed as
     $(\mu/4)^n/\det L$ from a Gram matrix of the record lattice (the Cartan
-    matrices, the catalogue's GRAM blocks for $\Lambda_9$ to $\Lambda_{26}$,
-    $K_{11}$, $K_{12}$, $K_{13}$, $Q_{30}$, $Q_{31}$, $Q_{32}$, $KP_{36}$
-    and $P_{48p}$), with the minimal norm and the number of minimal vectors
-    from PARI's qfminim and the determinant exact; $\Delta_2$ to $\Delta_8$,
+    matrices and the catalogue's GRAM blocks for $\Lambda_9$ to
+    $\Lambda_{26}$, $K_{11}$, $K_{12}$, $K_{13}$, $Q_{30}$, $Q_{31}$,
+    $Q_{32}$ and $KP_{36}$), with the minimal norm and the number of minimal
+    vectors from PARI's qfminim, or from qfrep for $Q_{32}$ and $KP_{36}$,
+    and the determinant exact; for $n=48$ the Gram matrices of $P_{48p}$ and
+    $P_{48q}$ were checked to be even of determinant $1$, and the minimal
+    norm $6$ is taken from the page; $\Delta_2$ to $\Delta_8$,
     $\Delta_{24}$, $\delta_5$ and $\delta_6$ agree with OEIS A093766,
     A093825, A222068 to A222072, A260646, A222066 and A222067 to every digit
     those entries give; the 36 record densities of Table 1 of Cohn's survey
