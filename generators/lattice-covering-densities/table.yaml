@@ -304,7 +304,7 @@ Data properties:
     CITE{SV}, and the table of the thinnest lattice coverings known to
     dimension $24$ of Dutour Sikirić, Schürmann and Vallentin CITE{DSV}
     agrees with $\Theta(A_n^{*})$ where it lists $A_n^{*}$ ($n=2,4,5,16,18$)
-    and lies below it in every other dimension from $6$ to $24$; both tables
+    and is smaller than it in every other dimension from $6$ to $24$; both tables
     print $1.463505$ for $\Theta(A_3^{*})=5\sqrt{5}\,\pi/24=1.4635031\ldots$,
     which the Voronoi cell of the catalogue's Gram matrix confirms;
     $\Theta(A_2)$ and $\Theta(E_8)$ agree with OEIS A248897 and A164108 to
