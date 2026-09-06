@@ -1684,3 +1684,57 @@ should expect them to share one row in search.
 
 Evidence: 2026-09-06, `/tmp/rep152_count.py` (62 rows, `square,2,bond` the
 one `q 1/2`), `data_pipeline/build.py` at "exact_numbers".
+
+## `check.exactness` did not accept a plain decimal string, the first spelling of a real in the skill
+
+What happened: the dry run of the entropy-constants generator reported
+"coefficient of unexpected type str" for the two transcribed Baxter values,
+`1.5030480824753322643220663294755536893857810` and the honeycomb constant:
+`check.py` accepted the integer interval `[a, b]` and the ball
+`c +/- r` and nothing else in text. Extended in this run with
+`_is_decimal_text` (plain `str`, digits on both sides of a point, optional
+sign and exponent; a string without a point is an integer and is refused, as
+are a `str` subclass and `1.` or `.5`), with two tests beside the ball-text
+ones in `numberdb_app/test_agents.py`, exercised directly since Django is not
+installed here.
+
+What to do instead: nothing now; the check accepts the three strings a table
+returns on purpose.
+
+Evidence: `/tmp/ec_dry_out.txt` (two complaints), `/tmp/ec_dry_out2.txt`
+(clean), 2026-09-06.
+
+## `audit_table`'s Definition-length note fires on a 328-character, one-sentence definition
+
+What happened: T153's Definition, one sentence defining $\kappa$ and $h$
+with the limit written out, drew "Definition is 328 characters (median here
+is 195); check whether part of it belongs in Comments or Formulas" after the
+list of the four models had already been moved out of it (459 characters
+before). The T152 critique disputed the same note on that table. A
+definition that names a limit and two symbols is over the median by
+construction, so the note is advice, not a finding, and the run left it.
+
+What to do instead: the note could stay silent when the Definition is a
+single sentence, or state the threshold it fires at; a run reading it as a
+finding would cut the mathematics to reach a number.
+
+Evidence: `/tmp/ec_audit_out2.txt`, 2026-09-06.
+
+## A draft's whole document can be rewritten as zeta3 with one `POST /api/table/<n>` pinned to the head revision
+
+What happened: the two audit findings on T153 were applied by sending the
+repository's `table.yaml` with the stored `Numbers` attached, through
+`client.submit('/api/table/153', yaml.dump(document), headers={'X-Base-Revision': head, ...})`
+with the zeta3 key on stdin (`/tmp/ec_write_doc.py`, after
+`/tmp/lp2_write_doc.py`), rather than through `agents/api_edit`, which
+signs as bmatschke. The script refuses unless exactly the sections it
+expects differ, and the answer carries `merged`, `reviewed`, `revision`,
+`unchanged`; the numbers came back intact (34, re-checked by
+`/tmp/ec_stored.py`). The head digest to pin comes from
+`Table.head_revision.digest` in the audit script, since `GET /api/table`
+carries none.
+
+What to do instead: keep this shape for a draft's prose repair; the
+`api_edit` route is for a person's session edit.
+
+Evidence: `/tmp/ec_write_doc.py` answer `revision = a2506f1a...`, 2026-09-06.
