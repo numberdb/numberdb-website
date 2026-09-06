@@ -213,6 +213,29 @@ class TheCheckingToolkitCatchesWhatItWasBuiltFor(TestCase):
 		self.assertTrue(self.toolkit().exactness({1: '0.5 +/- -1e-3'}))
 		self.assertTrue(self.toolkit().exactness({1: '0.5 +- 1e-3'}))
 
+	def test_a_plain_decimal_string_is_an_enclosure(self):
+		#`1.5030480824753322643220663294755536893857810` is what the table of
+		#entropy constants stores for the hard-square constant: Baxter's 43
+		#decimals, transcribed, in the first of the skill's four spellings
+		#of a real -- the last digit uncertain by one. The client writes it
+		#verbatim and counts its digits, so the check must accept it as it
+		#accepts the other two strings a table returns on purpose.
+		self.assertEqual(self.toolkit().exactness({'sq': '1.5030480824753322643220663294755536893857810'}), [])
+		self.assertEqual(self.toolkit().exactness({'sq': {'number': '1.54644070878756141848902270530472278'}}), [])
+		self.assertEqual(self.toolkit().exactness({'e': '-2.5029078750958928222839e-1'}), [])
+
+	def test_a_plain_decimal_must_be_a_plain_string_with_a_point(self):
+		class Disguised(str):
+			pass
+
+		self.assertTrue(self.toolkit().exactness({1: Disguised('1.5030480824753')}))
+		#A string of digits alone is an exact integer written as text, and
+		#`1.` or `.5` is not how a value is written here.
+		self.assertTrue(self.toolkit().exactness({1: '15030480824753'}))
+		self.assertTrue(self.toolkit().exactness({1: '1.'}))
+		self.assertTrue(self.toolkit().exactness({1: '.5'}))
+		self.assertTrue(self.toolkit().exactness({1: '1.5 apples'}))
+
 	def test_it_measures_the_longest_entry(self):
 		measured = self.toolkit().measure({1: 'x', 2: 'x^2 + 3*x + 1'})
 		self.assertEqual(measured['entries'], 2)

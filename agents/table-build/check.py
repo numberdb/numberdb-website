@@ -59,6 +59,17 @@ def exactness(values):
                 #claims from the radius. Plain `str` and a positive radius,
                 #for the same reasons as the integer interval above.
                 continue
+            if _is_decimal_text(coefficient):
+                #And the first spelling of the four in the skill: a plain
+                #decimal, `1.5030480824753322643220663294755536893857810`,
+                #which denotes the interval one unit of its last place wide.
+                #It is what a table returns for a value transcribed from a
+                #paper that states its digits and no separate uncertainty --
+                #Baxter's 43 decimals of the hard-square constant -- and the
+                #client stores it verbatim and counts the digits it carries.
+                #Plain `str`, with a point, for the same reasons as above; a
+                #string without a point is an exact integer and is not this.
+                continue
             if isinstance(coefficient, float) or 'float' in name.lower():
                 complaints.append(
                     '%s: coefficient %r is a %s, not exact -- something '
@@ -117,6 +128,17 @@ def _is_ball_text(value):
         return Decimal(found.group(2)) > 0
     except InvalidOperation:
         return False
+
+
+def _is_decimal_text(value):
+    """Whether this is a plain decimal string, `1.5030480824753322`, with
+    digits on both sides of the point and at most a sign and an exponent:
+    the interval a written real denotes, its last digit uncertain by one.
+    Must be a plain string, as above, and must carry a point, since a string
+    of digits alone is an exact integer."""
+    if type(value) is not str:
+        return False
+    return bool(re.fullmatch(r'-?\d+\.\d+(?:[eE]-?\d+)?', value))
 
 
 def _is_enclosure(value):
