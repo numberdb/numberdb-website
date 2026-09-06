@@ -1,0 +1,233 @@
+# The table document for the regulators of cubic fields, proposal 2 of
+# agents/table-ideas/BATCH-2026-09-06T1042.md. Created as a draft through the
+# API (X-Draft: yes) and filled by generate.py beside it; publishing is a
+# person's act on the site.
+Title: Regulators of cubic fields
+Definition: >-
+  Let $K$ be a cubic field CITE{Wiki-cubic} of discriminant $D$,
+  $\varepsilon_1,\ldots,\varepsilon_r$ fundamental units of $K$ ($r=1$ for
+  $D<0$, $2$ for $D>0$) and $\sigma_1,\ldots,\sigma_r$ distinct real
+  embeddings. Listed is the regulator CITE{Wiki-unit-theorem}
+  $R_K=|\det(\log|\sigma_i(\varepsilon_j)|)_{i,j\leq r}|$.
+Parameters:
+  D:
+    type: Z
+    title: discriminant of $K$
+    display: $D$
+    constraints: $D$ the discriminant of a cubic field
+  k:
+    type: Z
+    title: index of $K$ among the cubic fields of discriminant $D$
+    display: $k$
+    constraints: $k\geq 1$
+Comments:
+  comment-regulator: >-
+    For a number field with $r_1$ real and $r_2$ complex places the regulator
+    is the absolute value of any $r\times r$ minor of the $r\times(r+1)$
+    matrix $(N_i\log|\sigma_i(\varepsilon_j)|)$, where $r=r_1+r_2-1$ is the
+    unit rank and $N_i=1$ at a real place and $2$ at a complex one; every
+    unit has norm $\pm1$, so the rows sum to zero and the minor depends
+    neither on the column left out nor on the choice of fundamental units.
+    A complex cubic field has $r_1=r_2=1$: leaving out the complex place
+    gives $R_K=|\log|\sigma(\varepsilon)||$ for the real embedding $\sigma$,
+    and leaving out the real place gives $2|\log|\tau(\varepsilon)||$ for a
+    complex embedding $\tau$, the same number because
+    $|\sigma(\varepsilon)|\,|\tau(\varepsilon)|^2=1$. A totally real cubic
+    field has $r_1=3$, and any two of its three embeddings give the
+    determinant listed. There is no other factor: this is the convention of
+    the LMFDB CITE{LMFDB-knowl} and of PARI's bnfinit, and the one under
+    which the class number formula CITE{formula-class-number} holds as
+    written.
+  comment-index: >-
+    Non-isomorphic cubic fields can share a discriminant, which quadratic
+    fields never do. The fields of discriminant $D$ are numbered
+    $k=1,2,\ldots$ in lexicographic order of the coefficient vectors
+    $(a_2,a_1,a_0)$ of their reduced defining polynomials
+    $x^3+a_2x^2+a_1x+a_0$, the polynomial PARI's polredabs returns for the
+    field and the LMFDB displays as its defining polynomial. Seven
+    discriminants with $|D|\leq 3000$ carry more than one field: $D=-972$
+    and $-1836$ two each, and $D=-1228$, $-1356$, $-2075$, $-2188$ and
+    $-2891$ three each; so for $D=-1228$, $k=1$ is $x^3-x^2+x-7$, $k=2$ is
+    $x^3-x^2+7x-1$ and $k=3$ is $x^3+4x-6$. Every other negative $D$ here,
+    and every positive one, carries a single field, with $k=1$. The LMFDB's
+    own index for fields sharing a discriminant is not this order (for
+    $D=-2891$ its first field is $k=3$ here), and its label knowl states no
+    rule for it; the label in each entry's comment was read from that
+    field's LMFDB page.
+  comment-entries: >-
+    The comment on each entry gives the reduced polynomial $f$, so that
+    $K=\mathbb{Q}(a)$ with $f(a)=0$; the Galois group of the Galois closure,
+    $C_3$ or $S_3$; the class number $h_K$; the fundamental unit or pair, as
+    polynomials in $a$; and the LMFDB label. For $D<0$ the unit
+    $\varepsilon$ shown is the one of $\pm\varepsilon^{\pm1}$ whose real
+    embedding exceeds $1$, so that $R_K=\log\sigma(\varepsilon)$ with no
+    absolute value; its coordinates can run to a dozen digits ($D=-2991$).
+    For $D>0$ no fundamental pair is canonical, and the pair shown is the one
+    PARI's bnfinit returned, each unit with the sign that makes its leading
+    coefficient positive; Wikipedia and the LMFDB give other pairs for
+    $D=49$, and they generate the same group. Cohen's tables B.3 and B.4
+    CITE{Cohen1993} list these fields with their class numbers and units.
+  comment-galois: >-
+    $D$ is a perfect square exactly for the cyclic cubic fields, those with
+    Galois group $C_3$, and $\sqrt{D}$ is then the conductor: the seven
+    cyclic fields here have conductors $7$, $9$, $13$, $19$, $31$, $37$ and
+    $43$, and each is the cubic subfield of the cyclotomic field of that
+    conductor, for $7$ and $9$ its maximal real subfield. For a cyclic field
+    $\zeta_K(s)=\zeta(s)L(s,\chi)L(s,\bar\chi)$ with $\chi$ a cubic Dirichlet
+    character of that conductor, so $R_K$ is a rational multiple of
+    $|L(1,\chi)|^2$, formula CITE{formula-cyclic}; $L(1,\chi)$ is held in
+    HREF{Values_of_Dirichlet_L-functions_at_positive_integers}[the table of Dirichlet $L$-values]
+    for conductors up to $29$. The other 508 fields have Galois group $S_3$,
+    and their Galois closure contains the quadratic field of discriminant
+    $d$, where $D=df^2$ with $d$ a fundamental discriminant CITE{Wiki-cubic};
+    the pure cubic fields $\mathbb{Q}(\sqrt[3]{m})$ are those with $d=-3$.
+  comment-class-number: >-
+    $h_K=1$ for 423 of the 515 fields, $h_K=2$ for 41, $h_K=3$ for 36,
+    $h_K=4$ for 6, $h_K=5$ for 8, and $h_K=7$ for one, the field of
+    $x^3-x^2+9x-21$ with $D=-2856$. The three fields of $D=-1228$ all have
+    $h_K=3$.
+  comment-named: >-
+    A few entries are constants a reader may hold under another name. For
+    $D=-23$, the cubic field of smallest $|D|$, $\varepsilon$ is the plastic
+    number $\rho=1.3247\ldots$, the real root of $x^3-x-1$ (OEIS A060006
+    CITE{OEIS-plastic}), and $R_K=\log\rho$ is OEIS A202539
+    CITE{OEIS-A202539}, listed there as the solution of $e^{2x}-e^{-x}=1$,
+    which is $\rho^3=\rho+1$ in disguise. For $D=49$, $K=\mathbb{Q}(\zeta_7)^+$
+    and $R_K=0.5254\ldots$ is the worked example of CITE{Wiki-unit-theorem}.
+    The pure cubic fields whose reduced polynomial is $x^3-m$ are named
+    $\mathbb{Q}(\sqrt[3]{m})$ in their comments; $\mathbb{Q}(\sqrt[3]{2})$ is
+    $D=-108$, the pure cubic field of smallest $|D|$.
+  comment-quadratic: >-
+    The regulators of real quadratic fields, a single logarithm each, are in
+    HREF{Regulators_of_real_quadratic_fields}[the table for degree two]; an
+    imaginary quadratic field, like $\mathbb{Q}$, has regulator $1$. A cubic
+    field has unit rank $1$ or $2$ and never $0$, which is why both
+    signatures are listed here.
+  comment-different-regulator: >-
+    The regulator of an elliptic curve, held in
+    HREF{Regulators_of_elliptic_curves_over_Q_of_rank_1}[the tables of regulators of elliptic curves],
+    is the determinant of the canonical height pairing on the Mordell–Weil
+    group, a different object under the same name.
+Formulas:
+  formula-class-number: >-
+    $\kappa_K=\frac{2\pi\,h_KR_K}{\sqrt{|D|}}$ for $D<0$ and
+    $\kappa_K=\frac{4\,h_KR_K}{\sqrt{D}}$ for $D>0$, where $\kappa_K$ is the
+    residue at $s=1$ of the Dedekind zeta function of $K$ and $h_K$ its class
+    number: the class number formula CITE{WikiCNF}
+    $\kappa_K=\frac{2^{r_1}(2\pi)^{r_2}h_KR_K}{w_K\sqrt{|D|}}$ with $w_K=2$,
+    since a cubic field contains no root of unity other than $\pm1$. The
+    quadratic case is
+    HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[the table of residues of quadratic fields].
+  formula-cyclic: >-
+    $R_K=\frac{\sqrt{D}\,|L(1,\chi)|^2}{4h_K}$ for a cyclic cubic field,
+    where $\chi$ is either cubic Dirichlet character of conductor $\sqrt{D}$:
+    $\zeta_K(s)=\zeta(s)L(s,\chi)L(s,\bar\chi)$ gives
+    $\kappa_K=L(1,\chi)L(1,\bar\chi)=|L(1,\chi)|^2$, and formula
+    CITE{formula-class-number} does the rest. For $D=49$ and
+    $\chi=\chi_7(2,\cdot)$ in Conrey's notation,
+    $|L(1,\chi)|^2=0.3002598183\ldots$ and $R_K=\frac{7}{4}|L(1,\chi)|^2$.
+  formula-complex: >-
+    $R_K=\log\sigma(\varepsilon)=-2\log|\tau(\varepsilon)|$ for $D<0$, where
+    $\sigma$ is the real embedding, $\tau$ a complex one and $\varepsilon$
+    the fundamental unit with $\sigma(\varepsilon)>1$, because
+    $\sigma(\varepsilon)\,|\tau(\varepsilon)|^2=|N(\varepsilon)|=1$. For
+    $D>0$ every unit satisfies
+    $\log|\sigma_1(\varepsilon)|+\log|\sigma_2(\varepsilon)|+\log|\sigma_3(\varepsilon)|=0$,
+    which is why any two of the embeddings give the same determinant.
+Programs:
+  program-pari:
+    language: PARI/GP
+    code: |-
+      default(realprecision, 60); bnfinit(x^3 - x^2 - 2*x + 1, 1).reg    \\ D = 49: 0.525454682122572388338826045448324509541055046011794785067649
+  program-sage:
+    language: Sage
+    code: |-
+      K.<a> = NumberField(x^3 - x^2 - 2*x + 1)     # D = 49
+      K.units(proof=True)                          # (-a^2 + a + 1, -a), a fundamental pair
+      K.regulator(proof=True)                      # 0.525454682122572, a 53-bit float
+Similar tables:
+  - table: HREF{Regulators_of_real_quadratic_fields}[Regulators of real quadratic fields]
+    relation: the same regulator for degree two, $R_K=\log\varepsilon_K$; its entry comments carry $\varepsilon_K$ the same way
+  - table: HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[Residues of Dedekind zeta functions of quadratic fields]
+    relation: the other side of the class number formula, for degree two; its entry comments carry $h_K$
+  - table: HREF{Values_of_Dirichlet_L-functions_at_positive_integers}[Values of Dirichlet $L$-functions at positive integers]
+    relation: $R_K=\sqrt{D}\,|L(1,\chi)|^2/(4h_K)$ for the seven cyclic fields, $\chi$ a cubic character of conductor $\sqrt{D}$
+  - table: HREF{Regulators_of_elliptic_curves_over_Q_of_rank_1}[Regulators of elliptic curves over $\mathbb{Q}$ of rank 1]
+    relation: a different regulator, of the height pairing on an elliptic curve; likewise the tables for rank 2 and rank 3
+Links:
+  Wiki-cubic:
+    title: 'Wikipedia: Cubic field'
+    url: https://en.wikipedia.org/wiki/Cubic_field
+  Wiki-unit-theorem:
+    title: "Wikipedia: Dirichlet's unit theorem"
+    url: https://en.wikipedia.org/wiki/Dirichlet%27s_unit_theorem
+  WikiCNF:
+    title: 'Wikipedia: Class number formula'
+    url: https://en.wikipedia.org/wiki/Class_number_formula
+  LMFDB-complex:
+    title: 'LMFDB: cubic number fields of signature (1,1)'
+    url: https://www.lmfdb.org/NumberField/?degree=3&signature=%5B1%2C1%5D
+  LMFDB-real:
+    title: 'LMFDB: cubic number fields of signature (3,0)'
+    url: https://www.lmfdb.org/NumberField/?degree=3&signature=%5B3%2C0%5D
+  LMFDB-knowl:
+    title: 'LMFDB: regulator of a number field'
+    url: https://www.lmfdb.org/knowledge/show/nf.regulator
+  OEIS-neg:
+    title: 'OEIS A023679: discriminants of complex cubic fields, negated'
+    url: https://oeis.org/A023679
+  OEIS-pos:
+    title: 'OEIS A006832: discriminants of totally real cubic fields'
+    url: https://oeis.org/A006832
+  OEIS-A202539:
+    title: 'OEIS A202539: the number $x$ with $e^{2x}-e^{-x}=1$, the regulator of the cubic field of discriminant $-23$'
+    url: https://oeis.org/A202539
+  OEIS-plastic:
+    title: 'OEIS A060006: the plastic number, the real root of $x^3-x-1$'
+    url: https://oeis.org/A060006
+References:
+  Cohen1993:
+    bib: >-
+      H. Cohen, A Course in Computational Algebraic Number Theory, Graduate
+      Texts in Mathematics 138, Springer, 1993; Theorem 6.4.2 (Hunter) and
+      Tables B.3, B.4
+Tags:
+  - number theory
+  - transcendental
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every cubic field with $|D|\leq 3000$, the 419 complex and the
+    96 totally real ones
+  rigour details: >-
+    The fundamental units are PARI's, from bnfinit and certified by
+    bnfcertify on every field, which removes the generalised Riemann
+    hypothesis that bnfinit assumes. Each unit is taken exactly, as a
+    polynomial in $a$ with rational coefficients, and checked to be an
+    algebraic integer of norm $\pm1$; the real roots of the reduced
+    polynomial are isolated in interval arithmetic at 461 bits, the unit is
+    evaluated at them by Horner's rule in balls, and the logarithms and the
+    determinant are arb's, so the digits written are those the ball supports
+    (the worst entry, $D=1772$, supports 133). PARI's floating regulator is
+    not used for the value. The enumeration rests on Hunter's theorem
+    CITE{Cohen1993}: every cubic field with $|D|\leq 3000$ is generated by an
+    algebraic integer of trace $0$ or $1$ whose minimal polynomial
+    $x^3+a_2x^2+a_1x+a_0$ has $|a_1|\leq 18$ and $|a_0|\leq 43$, the bound
+    using Hermite's constant $\gamma_2=2/\sqrt3$; the fields found in that
+    box, 419 complex and 96 totally real, are exactly the terms of OEIS
+    A023679 and A006832 up to 3000 counted with multiplicity, and the
+    totally real ones are also those of Sage's enumerate_totallyreal_fields_prim.
+    Outside the generator, when this was written, the class number formula
+    from $h_K$ and each value was compared on all 515 fields with the residue
+    that PARI's lfunrootres computes from the Dedekind zeta function, a
+    computation sharing no code with bnfinit; 21 values with the twelve
+    digits on their LMFDB pages; the entry for $D=-23$ with the 34 digits of
+    OEIS A202539 and with the logarithm of A060006; the four cyclic fields
+    of conductor at most $29$ with $|L(1,\chi)|^2$ for both cubic characters
+    from the stored table of Dirichlet $L$-values; and the pairs of units that Wikipedia and the
+    LMFDB give for $D=49$ were shown to have the same regulator as the pair
+    here. The controls that must fail failed.
+Display properties:
+  number-header: $R_K$
