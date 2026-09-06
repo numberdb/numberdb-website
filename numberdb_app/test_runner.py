@@ -217,9 +217,20 @@ class TheCampaignSequencesRunsAndStops(TestCase):
 		self.assertIn('git rev-parse HEAD', body)
 		self.assertIn('is finished; proposing the next batch', body)
 
-	def test_the_campaign_stops_if_stage_one_commits_nothing(self):
+	def test_the_campaign_stops_if_stage_one_proposes_no_batch(self):
 		#Otherwise it would spin between two runs that each do nothing.
-		self.assertIn('committed nothing either', script('agents/campaign.sh'))
+		#
+		#Asked of the file rather than of HEAD: batches are data and
+		#.gitignore has excluded them since the code and the data were
+		#separated, so a stage-one run cannot commit one however well it goes.
+		#On 2026-09-06 one wrote a 580-line batch, said out loud that it would
+		#not force-add against that decision, and was called a failure.
+		body = script('agents/campaign.sh')
+		self.assertIn('proposed no new batch', body)
+		self.assertNotIn('committed nothing either', body)
+
+	def test_stage_one_is_not_asked_to_commit_what_it_cannot(self):
+		self.assertIn('Do not commit it', script('agents/campaign.sh'))
 
 	def test_a_campaign_can_be_stopped_between_tables(self):
 		#Twice a campaign was stopped by killing the process, and both times
