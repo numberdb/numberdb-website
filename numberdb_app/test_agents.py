@@ -236,6 +236,28 @@ class TheCheckingToolkitCatchesWhatItWasBuiltFor(TestCase):
 		self.assertTrue(self.toolkit().exactness({1: '.5'}))
 		self.assertTrue(self.toolkit().exactness({1: '1.5 apples'}))
 
+	def test_a_comment_with_a_backslash_before_a_quote_is_refused(self):
+		#The Ising couplings: two entry comments were written in raw strings
+		#with an escaped apostrophe, r"Onsager\'s", and the client stored the
+		#backslash. The dry run, the fill, verify() and audit_table all
+		#passed; the rendered page showed "Onsager\'s". A comment is prose,
+		#and this is the check the values cannot make.
+		complaints = self.toolkit().prose({'sq': {'number': '0.44', 'comment': "confirmed by Onsager\\'s solution"}})
+		self.assertTrue(complaints)
+		self.assertIn('backslash', complaints[0])
+		self.assertEqual(self.toolkit().prose({'sq': {'number': '0.44', 'comment': "confirmed by Onsager's solution"}}), [])
+		self.assertEqual(self.toolkit().prose({'sq': '0.44', 'tri': 3}), [])
+
+	def test_a_comment_pointing_below_or_above_is_refused(self):
+		#audit_table refuses "below" and "above" in the document, where the
+		#page draws the sections in its own order; an entry comment is shown
+		#under its value and can be just as wrong.
+		complaints = self.toolkit().prose({'sq': {'number': '0.44', 'comment': 'by the formula below'}})
+		self.assertTrue(complaints)
+		self.assertIn('below', complaints[0])
+		self.assertTrue(self.toolkit().prose({'sq': {'number': '0.44', 'comment': 'the value is above the bound'}}))
+		self.assertEqual(self.toolkit().prose({'sq': {'number': '0.44', 'comment': 'an abovementioned bound'}}), [])
+
 	def test_it_measures_the_longest_entry(self):
 		measured = self.toolkit().measure({1: 'x', 2: 'x^2 + 3*x + 1'})
 		self.assertEqual(measured['entries'], 2)
