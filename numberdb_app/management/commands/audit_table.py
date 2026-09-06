@@ -147,7 +147,7 @@ class Command(BaseCommand):
 	def _shared_values(self, table, original):
 		"""How many stored values the two tables write identically.
 
-		A restatement that shares nothing is not a restatement. The comparison
+		A repetition that shares nothing is not a repetition. The comparison
 		is on the stored text rather than on parsed values, because that is
 		what search compares: two tables holding one number to different
 		precision do not collide there and will not fold here either, which is
@@ -216,38 +216,38 @@ class Command(BaseCommand):
 					       'everybody; a published table must not link to one'
 					       % target)
 
-		#A restatement that was declared and did not take. `_sync_restates`
+		#A repetition that was declared and did not take. `_sync_repeats`
 		#refuses a declaration that would leave a chain -- a table that some
-		#other table restates may not itself restate a third -- and refuses
+		#other table repeats may not itself repeat a third -- and refuses
 		#silently, because a save must not fail over what is in the end a
 		#presentation hint. This is where the refusal becomes visible.
-		from numberdb_app.editing import _restates_slug
+		from numberdb_app.editing import _repeats_slug
 
 		properties = tree.get('Data properties')
 		properties = properties if isinstance(properties, dict) else {}
-		raw = str(properties.get('restates') or '')
-		declared = _restates_slug(raw)
+		raw = str(properties.get('repeats') or '')
+		declared = _repeats_slug(raw)
 		if raw and not declared:
-			yield ('Data properties: restates is not a table reference; write '
+			yield ('Data properties: repeats is not a table reference; write '
 			       'it as HREF{slug}, the way every other reference here is '
 			       'written')
 		elif declared:
 			if '#' in raw:
-				yield ('Data properties: restates names an entry. The claim is '
+				yield ('Data properties: repeats names an entry. The claim is '
 				       'that one table repeats another, so it takes a table '
 				       'address and no entry')
 			if declared == table.url:
-				yield 'Data properties: restates names this table itself'
-			elif table.restates_id is None:
-				yield ('Data properties: restates was not recorded. Either %s '
-				       'is itself a restatement or another table restates this '
+				yield 'Data properties: repeats names this table itself'
+			elif table.repeats_id is None:
+				yield ('Data properties: repeats was not recorded. Either %s '
+				       'is itself a repetition or another table repeats this '
 				       'one; the relation is kept one hop deep, so point at '
 				       'the table that states the values first'
 				       % (declared,))
 			else:
-				shared, mine = self._shared_values(table, table.restates)
+				shared, mine = self._shared_values(table, table.repeats)
 				if mine and not shared:
-					yield ('Data properties: restates %s, and the two tables '
+					yield ('Data properties: repeats %s, and the two tables '
 					       'hold no value in common, so the declaration folds '
 					       'nothing. Either it names the wrong table or the '
 					       'values are written to different precision'

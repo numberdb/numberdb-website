@@ -969,7 +969,7 @@ def table_context(table, preview=False):
 			#Where this table repeats another's values, that table states them
 			#first. Search folds the repeat into the original; see
 			#docs/design/same-construction.md.
-			'restates': 'Repeats values from',
+			'repeats': 'Repeats values from',
 			#'accuracy': 'Accuracy',
 		}
 
@@ -3203,9 +3203,9 @@ def _metadata_form_page(request, table, base):
 	context.update(fields_from(tree))
 	#Supplied here rather than by fields_from, which answers about a document
 	#and should not also be querying the corpus.
-	from .metadata_form import known_other_types, restates_choices
+	from .metadata_form import known_other_types, repeats_choices
 	context['known_other_types'] = known_other_types()
-	context['restates_options'] = restates_choices(table)
+	context['repeats_options'] = repeats_choices(table)
 	return render(request, 'edit-metadata.html', context)
 
 

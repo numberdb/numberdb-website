@@ -840,7 +840,7 @@ values &mdash; integers, fractions, polynomials &mdash; are written out in full.
 <tr><th>Definition</th><td>What these numbers are, in a sentence or two. LaTeX is allowed anywhere prose is.</td></tr>
 <tr><th>Parameters</th><td>The names, <em>in the order the entries use them</em>, each with a <code>type</code>, optional <code>constraints</code> and how it is <code>display</code>ed.</td></tr>
 <tr><th>Numbers</th><td>The entries. Called <code>Data</code> in a few older tables; both are read.</td></tr>
-<tr><th>Data properties</th><td><code>type</code>, <code>complete</code>, <code>sources</code>, <code>reliability</code>, and <a href="#format-restates"><code>restates</code></a>.</td></tr>
+<tr><th>Data properties</th><td><code>type</code>, <code>complete</code>, <code>sources</code>, <code>reliability</code>, and <a href="#format-repeats"><code>repeats</code></a>.</td></tr>
 <tr><th>Display properties</th><td>How the table is laid out &mdash; <code>number-header</code>, <code>group parameters</code>.</td></tr>
 <tr><th>Comments, Formulas, References, Links, Keywords, Tags, Similar tables</th><td>Prose and pointers. <code>CITE{key}</code> refers to a reference, <code>HREF{Table_name}</code> to another table.</td></tr>
 </table>
@@ -879,7 +879,7 @@ to justify its size, since truncating a complete table does not make it smaller,
 it makes it wrong.
 </p>
 
-<div id="format-restates" class="li-header">When a table repeats another</div>
+<div id="format-repeats" class="li-header">When a table repeats another</div>
 <p class="help-text">
 Two tables can hold the same number for two very different reasons. The
 Gauss&ndash;Kronrod table stores, for each rule, the nodes of the Gauss rule
@@ -897,7 +897,7 @@ separates the two cases &mdash; each is exact equality &mdash; so a table that
 repeats another says so, once, under <code>Data properties</code>:
 </p>
 <pre class="help-code">Data properties:
-  restates: HREF{Nodes_and_weights_of_Gauss_Legendre_quadrature}</pre>
+  repeats: HREF{Nodes_and_weights_of_Gauss_Legendre_quadrature}</pre>
 <p class="help-text">
 It means: <em>where this table's values coincide with that one's, that table
 states them first.</em> A search that finds the number in both then answers

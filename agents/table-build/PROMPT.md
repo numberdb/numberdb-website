@@ -152,7 +152,7 @@ fundamental discriminant with $D\leq 1000$". Otherwise extending the table
 later means editing the definition of the family.
 
 **If the table repeats another's values, declare it.** `Data properties:
-restates: HREF{Other_table}` says that where the two hold the same number,
+repeats: HREF{Other_table}` says that where the two hold the same number,
 that table states it first, and search then answers with the original instead
 of twice. Only where this table repeats that one's computation: the
 Gauss-Kronrod table stores the nodes of the embedded Gauss rule, which are the
