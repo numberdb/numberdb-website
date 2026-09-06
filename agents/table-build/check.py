@@ -49,6 +49,16 @@ def exactness(values):
                 #mappings. A check that refuses the right answer teaches
                 #people to disguise it.
                 continue
+            if _is_ball_text(coefficient):
+                #The other string a table returns on purpose: `0.7478008 +/-
+                #2e-7`, a published estimate with the paper's uncertainty as
+                #its radius, in the database's own spelling -- what the table
+                #of the fine-structure constant stores and what a `measured`
+                #table of percolation thresholds returns for each transcribed
+                #row. The client writes it verbatim and reads the digits it
+                #claims from the radius. Plain `str` and a positive radius,
+                #for the same reasons as the integer interval above.
+                continue
             if isinstance(coefficient, float) or 'float' in name.lower():
                 complaints.append(
                     '%s: coefficient %r is a %s, not exact -- something '
@@ -89,6 +99,24 @@ def _is_integer_interval_text(value):
         return False
     found = re.fullmatch(r'\[(-?\d+), (-?\d+)\]', value)
     return bool(found) and int(found.group(1)) < int(found.group(2))
+
+
+def _is_ball_text(value):
+    """Whether this is the string `centre +/- radius` with a decimal centre
+    and a positive radius: the form a measured value is stored in. Must be
+    a plain string, and the radius must be positive, since `x +/- 0` is a
+    point pretending to be an enclosure."""
+    if type(value) is not str:
+        return False
+    found = re.fullmatch(
+        r'(-?\d+(?:\.\d+)?(?:[eE]-?\d+)?) \+/- (\d+(?:\.\d+)?(?:[eE]-?\d+)?)', value)
+    if not found:
+        return False
+    from decimal import Decimal, InvalidOperation
+    try:
+        return Decimal(found.group(2)) > 0
+    except InvalidOperation:
+        return False
 
 
 def _is_enclosure(value):
