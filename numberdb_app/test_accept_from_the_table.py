@@ -122,3 +122,63 @@ class TheAcceptBar(TestCase):
 		self.assertEqual(response.status_code, 404)
 		self.table.refresh_from_db()
 		self.assertFalse(self.table.published)
+
+	def test_the_table_leaves_the_review_queue(self):
+		"""Accepting is what takes a table off the queue, from either route.
+
+		The button publishes and confirms in one act, and confirming is what
+		the queue is a list of. A table that publishes and stays listed would
+		mean the two had come apart.
+		"""
+		client = Client()
+		client.force_login(self.board)
+		client.post('/review/T710',
+		            {'head': self.table.head_revision.digest, 'then': 'table'},
+		            HTTP_HOST='numberdb.org')
+		queue = client.get('/review', HTTP_HOST='numberdb.org')
+		listed = [row['table'].tid for row in queue.context['waiting']]
+		self.assertNotIn('T710', listed)
+
+	def test_it_is_in_the_queue_before_that(self):
+		#So the test above is testing something.
+		self.table.ready_for_review = True
+		self.table.save(update_fields=['ready_for_review'])
+		client = Client()
+		client.force_login(self.board)
+		queue = client.get('/review', HTTP_HOST='numberdb.org')
+		listed = [row['table'].tid for row in queue.context['waiting']]
+		self.assertIn('T710', listed)
+
+
+class ATagPageSortsBySomethingItHas(TestCase):
+	"""`entry_count` is the name of a sort; the column is `number_count`.
+
+	The fallback branch passed the sort's name straight to `order_by`, so an
+	unrecognised `sort_by` answered 500 instead of sorting the default way.
+	Tag pages are public and crawled, and /tags/set+theory?sort_by=name was
+	raising FieldError in the log.
+	"""
+
+	def setUp(self):
+		from .models import Tag
+
+		self.tag = Tag.objects.create(name='probe', name_lowercase='probe')
+		table = Table.objects.create(
+			tid='T711', tid_int=711, url='t711', title='In the tag',
+			title_lowercase='in the tag', published=True, number_count=3)
+		table.tags.add(self.tag)
+
+	def get(self, query=''):
+		return Client().get('/tags/%s%s' % (self.tag.url(), query),
+		                    HTTP_HOST='numberdb.org')
+
+	def test_the_plain_page_answers(self):
+		self.assertEqual(self.get().status_code, 200)
+
+	def test_an_unknown_sort_falls_back_instead_of_crashing(self):
+		self.assertEqual(self.get('?sort_by=name').status_code, 200)
+
+	def test_the_sorts_it_offers_all_answer(self):
+		for sort in ('entry_count', 'id', 'title'):
+			with self.subTest(sort=sort):
+				self.assertEqual(self.get('?sort_by=%s' % sort).status_code, 200)
