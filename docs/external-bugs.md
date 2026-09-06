@@ -196,3 +196,29 @@ computations agree with it. `/tmp/cv2_check_out.txt` and
 `/tmp/cv2_dsv_out.txt`, 2026-09-05.
 
 **Reported:** no.
+
+## Parviainen (2005) thesis, Table 4.2: the bond estimates of $(3^3,4^2)$ and $(3^2,4,3,4)$, and of their duals, are printed the wrong way round
+
+**Found:** building the table of site and bond percolation thresholds on
+2026-09-06, while reading the thesis (Uppsala Dissertations in Mathematics 34,
+`uu.diva-portal.org/smash/get/diva2:164546/FULLTEXT01`) for the standard error
+of its Laves site estimates.
+
+**Evidence:** Table 4.2 (bond percolation results) lists $(3^3,4^2)$ with the
+estimate $0.4141374$ and $(3^2,4,3,4)$ with $0.4196419$, and their duals
+$D(3^2,4,3,4)$ with $0.5803581$ and $D(3^3,4^2)$ with $0.5858626$. The text
+beside it says "the estimate for $(3^3,4^2)$ is higher than the estimate for
+$(3^2,4,3,4)$", the opposite of the table. Parviainen's own paper with these
+estimates (J. Phys. A 40 (2007) 9253, arXiv:0704.2098) lists $(3^3,4^2)$ as
+$0.41964191$; Jacobsen 2014 (arXiv:1401.7847, Tables 10 and 19) gives the
+frieze lattice $(3^3,4^2)$ $0.41964044(1)$ and the snub square lattice
+$(3^2,4,3,4)$ $0.4141378476(7)$, quoting Parviainen's $0.4196419(4)$ and
+$0.4141374(5)$ beside them; Scullard and Jacobsen 2020 (arXiv:1910.12376,
+Table I) agree. Table 4.3 of the thesis (site percolation) has the two
+lattices the right way round. The percolation-threshold table takes its
+Laves bond values from Scullard and Jacobsen by duality and is unaffected.
+
+**Confidence:** high. Three later papers, the thesis's own text and its own
+site table all put the smaller bond threshold on the snub square lattice.
+
+**Reported:** no.

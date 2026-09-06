@@ -191,6 +191,28 @@ class TheCheckingToolkitCatchesWhatItWasBuiltFor(TestCase):
 		self.assertTrue(self.toolkit().exactness({5: '[40, 40]'}))
 		self.assertTrue(self.toolkit().exactness({5: '[4.0, 4.4]'}))
 
+	def test_a_measured_ball_string_is_an_enclosure(self):
+		#`0.0072973525675 +/- 1.09e-11` is what T10 stores for the
+		#fine-structure constant and `0.7478008 +/- 2e-7` what the table of
+		#percolation thresholds stores for a published estimate: a centre
+		#with the paper's uncertainty as radius, in the database's own
+		#spelling. The client writes it verbatim and counts the digits the
+		#radius supports, so a plain string is the right return for a
+		#`measured` row, and the check must not send a run looking for a
+		#disguise.
+		self.assertEqual(self.toolkit().exactness({'sq': '0.7478008 +/- 2e-7'}), [])
+		self.assertEqual(self.toolkit().exactness({'sq': {'number': '0.639447 +/- 5e-6'}}), [])
+		self.assertEqual(self.toolkit().exactness({'a': '137.035999113 +/- 2.03e-7'}), [])
+
+	def test_a_measured_ball_must_be_a_plain_string_with_positive_radius(self):
+		class Disguised(str):
+			pass
+
+		self.assertTrue(self.toolkit().exactness({1: Disguised('0.5 +/- 1e-3')}))
+		self.assertTrue(self.toolkit().exactness({1: '0.5 +/- 0'}))
+		self.assertTrue(self.toolkit().exactness({1: '0.5 +/- -1e-3'}))
+		self.assertTrue(self.toolkit().exactness({1: '0.5 +- 1e-3'}))
+
 	def test_it_measures_the_longest_entry(self):
 		measured = self.toolkit().measure({1: 'x', 2: 'x^2 + 3*x + 1'})
 		self.assertEqual(measured['entries'], 2)
