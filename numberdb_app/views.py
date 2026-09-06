@@ -1309,8 +1309,16 @@ def table_context(table, preview=False):
 		current_job = 'parsing numbers'
 		if 'Numbers' in data and len(data['Numbers']) > 0:
 			numbers = data['Numbers']
+			#A polynomial is not a number. The `Data` branch below has said
+			#"Polynomials" for a table of them since it was written; this
+			#branch, which every table written since uses, said "Numbers"
+			#whatever the table held -- so T123 has been calling its
+			#polynomials numbers, and so has every other polynomial table.
+			#The test is the same one that branch uses: a type with a bracket
+			#in it, Z[] or Q[].
+			kind = 'Polynomial' if '[' in (data_type or '') else 'Number'
 			number_section = {
-				'title': pluralize('Number',table.number_count),
+				'title': pluralize(kind, table.number_count),
 				'param_groups': param_groups_display,
 				'number_header': number_header,
 				'show_entry_notes': show_entry_notes,

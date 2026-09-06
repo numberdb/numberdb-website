@@ -11,7 +11,10 @@ derived thing matches the document it was derived from. A new derived column
 that nobody remembers to update fails here rather than in somebody's face.
 """
 
-from django.test import TestCase
+from django.contrib.auth import get_user_model
+from django.test import Client, TestCase
+
+from .models import Table
 
 
 class DerivedStateAgreesWithTheDocument(TestCase):
@@ -111,3 +114,71 @@ class DerivedStateAgreesWithTheDocument(TestCase):
 		self.assertTrue(made.search_vector)
 		self.assertEqual(made.table_count, 1)
 		self.assertIn(self.table, list(made.tables.all()))
+
+
+class TheNavigationCountsWhatTheQueueLists(TestCase):
+	"""The number and the list are the same list.
+
+	A count computed separately from what it counts is a count that will one
+	day disagree with it, and the number in the navigation is the one a reader
+	believes -- they only open the queue when it says something is there.
+	"""
+
+	def setUp(self):
+		from django.contrib.auth.models import Group
+
+		from .permissions import BOARD_GROUP
+
+		User = get_user_model()
+		self.board = User.objects.create_user('navboard', password='x')
+		group, _ = Group.objects.get_or_create(name=BOARD_GROUP)
+		self.board.groups.add(group)
+		self.other = User.objects.create_user('navother', password='x')
+		self.author = User.objects.create_user('navauthor')
+
+	def a_table(self, tid, published, ready):
+		from .editing import commit_table
+
+		table = Table.objects.create(
+			tid=tid, tid_int=int(tid[1:]), url=tid.lower(), title='Table ' + tid,
+			published=published, ready_for_review=ready, created_by=self.author)
+		commit_table(table, {'Title': 'Table ' + tid, 'Numbers': {'1': '2'},
+		                     'Data properties': {'type': 'Z'}},
+		             author=self.author, message='m', via='orm')
+		table.refresh_from_db()
+		return table
+
+	def nav(self, user):
+		client = Client()
+		client.force_login(user)
+		return client.get('/', HTTP_HOST='numberdb.org')
+
+	def test_the_count_is_the_length_of_the_queue(self):
+		from .review import waiting_for_review
+
+		self.a_table('T730', published=False, ready=True)
+		self.a_table('T731', published=True, ready=False)
+		response = self.nav(self.board)
+		self.assertEqual(response.context['tables_waiting_for_review'],
+		                 len(waiting_for_review()))
+
+	def test_it_shows_in_the_bar(self):
+		self.a_table('T732', published=False, ready=True)
+		body = self.nav(self.board).content.decode()
+		self.assertIn('Review&nbsp;(1)', body)
+
+	def test_a_draft_nobody_offered_is_not_counted(self):
+		#It would put every half-made table in the queue, which is what the
+		#ready_for_review flag exists to stop.
+		self.a_table('T733', published=False, ready=False)
+		self.assertEqual(self.nav(self.board).context['tables_waiting_for_review'], 0)
+
+	def test_nothing_waiting_shows_no_number(self):
+		body = self.nav(self.board).content.decode()
+		self.assertIn('>Review</a>', body.replace('\n', '').replace('  ', ''))
+
+	def test_somebody_who_cannot_review_is_told_nothing(self):
+		self.a_table('T734', published=False, ready=True)
+		response = self.nav(self.other)
+		self.assertEqual(response.context['tables_waiting_for_review'], 0)
+		self.assertNotIn('db:review-queue', response.content.decode())
