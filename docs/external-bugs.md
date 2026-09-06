@@ -222,3 +222,47 @@ Laves bond values from Scullard and Jacobsen by duality and is unaffected.
 site table all put the smaller bond threshold on the snub square lattice.
 
 **Reported:** no.
+
+## Shrock and Wu (2000), eq. (5.1.5) and Table 1: the spanning-tree constant of the simple cubic lattice, $1.6741481(1)$, is wrong in the fourth decimal
+
+**Found:** building the table of entropy constants of lattice models (T153)
+on 2026-09-06, when the generator's evaluation of the paper's own integral
+disagreed with the number printed beside it.
+
+**Evidence:** $z_{\mathrm{sc}}=\ln 6+(2\pi)^{-3}\int_{[-\pi,\pi]^3}\ln\left(1-\tfrac13(\cos\theta_1+\cos\theta_2+\cos\theta_3)\right)d^3\theta$,
+eq. (5.1.3) of arXiv:cond-mat/0004341 (J. Phys. A 33 (2000) 3881). After
+the $\theta_3$ integration it is $\pi^{-2}\int_0^\pi\!\int_0^\pi\operatorname{arccosh}(3-\cos\theta_1-\cos\theta_2)$;
+nested tanh-sinh quadrature in mpmath at 30, 45 and 55 decimal digits gives
+$1.67338930297019673228343062165559807525770712\ldots$, and the closed-walk
+series $\ln 6-\sum_{m\geq1}W_{2m}/(2m\cdot36^m)$ with $W_{2m}$ from OEIS
+A002896's recurrence, summed to $1.6\cdot10^6$ terms and Richardson-
+extrapolated on the $M^{-3/2}$ tail, gives $1.673389302970196732283\ldots$:
+two methods sharing nothing agree to 22 digits. The paper prints
+$z(L_3)=1.6741481(1)$ "(numerical evaluation)" in (5.1.5) and Table 1, and
+$z_{\mathrm{bcc}}=1.9902(1)$ beside it; the difference is $7.6\cdot10^{-4}$,
+far outside the stated $10^{-7}$. The paper's other values checked here
+($z_{(4,8^2)}=0.786684(1)$ against arb's rigorous integral
+$0.78668427537883\ldots$, $z_{(3,12^2)}=0.7205633$, and the closed forms)
+are right. T153 stores the computed value and says so in the entry comment.
+
+**Confidence:** high; two independent computations to 22 digits.
+
+**Reported:** no.
+
+## OEIS A085851 (hard hexagon entropy constant): the last listed digit is one too small
+
+**Found:** the same build, comparing the hard-hexagon constant computed from
+Baxter's exact solution at $z=1$ with the 105 digits the entry lists.
+
+**Evidence:** the entry ends $\ldots 0852754279\mathbf{01}$; the constant is
+$1.3954859724793027352295006635668880689541037281446611908174721561357608803586977746898378730852754279\mathbf{026689686}\ldots$,
+computed in ball arithmetic with radius $8\cdot10^{-120}$, agreeing with
+Baxter's 55 decimals (Annals of Combinatorics 3 (1999) 191) and with the
+density $\rho(1)$ he gives beside it, and satisfying Joyce's degree-24
+polynomial as MathWorld prints it to $10^{-114}$. The entry's digits are
+right through $\ldots 42790$; a truncation would end in $2$, a rounding in
+$3$, and $1$ is neither. `/tmp/ec_preflight_out2.txt`, 2026-09-06.
+
+**Confidence:** high.
+
+**Reported:** no.
