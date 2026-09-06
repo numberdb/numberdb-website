@@ -1,0 +1,309 @@
+# The table document for the percolation thresholds, proposal 1 of
+# agents/table-ideas/BATCH-2026-09-06T0326.md. Created as a draft through the
+# API (X-Draft: yes) and filled by generate.py beside it; publishing is a
+# person's act on the site.
+Title: Site and bond percolation thresholds of lattices
+Definition: >-
+  For an infinite lattice graph $L$, site percolation with parameter $p$ keeps
+  each vertex of $L$ independently with probability $p$ and bond percolation
+  keeps each edge; the percolation threshold $p_c$ CITE{Wiki} is the value of
+  $p$ above which an infinite connected component of kept vertices, or of kept
+  edges, exists almost surely and below which it does not.
+Parameters:
+  lattice:
+    type: Symbolic
+    title: lattice
+    display: lattice
+    values:
+      square: 'square $(4^4)$'
+      triangular: 'triangular $(3^6)$'
+      honeycomb: 'honeycomb $(6^3)$'
+      kagome: 'kagome $(3,6,3,6)$'
+      3-12-12: '$(3,12^2)$'
+      4-6-12: '$(4,6,12)$'
+      4-8-8: '$(4,8^2)$'
+      3-4-6-4: '$(3,4,6,4)$'
+      3-3-3-3-6: '$(3^4,6)$'
+      3-3-4-3-4: '$(3^2,4,3,4)$'
+      3-3-3-4-4: '$(3^3,4^2)$'
+      D-3-3-4-3-4: 'Cairo pentagonal $D(3^2,4,3,4)$'
+      D-3-3-3-4-4: 'prismatic pentagonal $D(3^3,4^2)$'
+      D-3-3-3-3-6: 'floret pentagonal $D(3^4,6)$'
+      D-3-6-3-6: 'rhombille $D(3,6,3,6)$'
+      D-3-4-6-4: 'deltoidal trihexagonal $D(3,4,6,4)$'
+      D-4-8-8: 'tetrakis square $D(4,8^2)$'
+      D-4-6-12: 'kisrhombille $D(4,6,12)$'
+      D-3-12-12: 'triakis triangular $D(3,12^2)$'
+      sc: 'simple cubic'
+      bcc: 'body-centred cubic'
+      fcc: 'face-centred cubic'
+      diamond: 'diamond'
+      hypercubic: 'hypercubic $\mathbb{Z}^d$'
+  d:
+    type: Z
+    title: dimension
+    display: $d$
+    constraints: >-
+      $d=2$ for the Archimedean and Laves lattices, $d=3$ for the cubic
+      lattices, $d\geq 4$ for the hypercubic lattice $\mathbb{Z}^d$
+  percolation:
+    type: Symbolic
+    title: site or bond percolation
+    display: percolation
+    values:
+      site: site
+      bond: bond
+Comments:
+  comment-conventions: >-
+    The lattices are the nearest-neighbour graphs of the tilings and crystal
+    structures named. An Archimedean lattice is named by its vertex
+    configuration in the notation of Grünbaum and Shephard, the cycle of
+    polygons around a vertex, so that $(3,12^2)$ has a triangle and two
+    dodecagons at every vertex; the eight Laves lattices are the planar duals
+    of the Archimedean lattices other than the square lattice, which is
+    self-dual, and the triangular and honeycomb lattices, which are dual to
+    each other, and $D(3^2,4,3,4)$ denotes the dual of $(3^2,4,3,4)$. The
+    hypercubic lattices $\mathbb{Z}^2$ and $\mathbb{Z}^3$ are the square and
+    simple cubic rows. Some lattices have several names: $(3,12^2)$ is the
+    three-twelve or truncated hexagonal lattice, $(4,6,12)$ the cross or
+    truncated trihexagonal lattice, $(4,8^2)$ the four-eight, bathroom-tile or
+    truncated square lattice, $(3,4,6,4)$ the ruby or rhombitrihexagonal
+    lattice, $(3^4,6)$ the snub hexagonal or maple-leaf lattice,
+    $(3^2,4,3,4)$ the snub square, puzzle or Shastry–Sutherland lattice and
+    $(3^3,4^2)$ the frieze, trellis or elongated triangular lattice; among the
+    Laves lattices, $D(3,6,3,6)$ is the rhombille or dice lattice,
+    $D(4,8^2)$ the tetrakis square or union-jack lattice, $D(4,6,12)$ the
+    kisrhombille or bisected-hexagon lattice and $D(3,12^2)$ the triakis
+    triangular or asanoha lattice.
+  comment-exact: >-
+    Eleven of the thresholds are known exactly. Sykes and Essam
+    CITE{SykesEssam} found the bond thresholds $\frac12$ of the square
+    lattice, $2\sin\frac{\pi}{18}$ of the triangular lattice and
+    $1-2\sin\frac{\pi}{18}$ of the honeycomb lattice and the site thresholds
+    $\frac12$ of the triangular lattice and $1-2\sin\frac{\pi}{18}$ of the
+    kagome lattice, the last because the kagome lattice is the line graph of
+    the honeycomb lattice; the square-lattice value is Kesten's theorem
+    CITE{Kesten} and the triangular and honeycomb values are Wierman's
+    CITE{Wierman}. The site threshold $\sqrt{1-2\sin\frac{\pi}{18}}$ of
+    $(3,12^2)$ follows from the kagome value by contracting the edges that
+    lie in no triangle CITE{SudingZiff}, and the site threshold $\frac12$ of
+    the three Laves lattices $D(4,8^2)$, $D(4,6,12)$ and $D(3,12^2)$ holds
+    because every face of each is a triangle, so the lattice is self-matching
+    CITE{SykesEssam}. The bond threshold of each Laves lattice is $1$ minus the
+    bond threshold of its Archimedean dual, by the duality theorem of
+    Bollobás and Riordan CITE{BollobasRiordan}; where the dual's threshold is
+    an estimate the Laves value inherits its uncertainty.
+  comment-estimates: >-
+    The other thresholds are numerical estimates, each written as
+    $p_c\pm\varepsilon$ with $\varepsilon$ the uncertainty stated in the
+    paper cited in the entry, usually one standard deviation, and in the
+    notation $0.7478008(2)$ the digits in parentheses are that uncertainty in
+    the last digits written. They are the most precise published values as of
+    6 September 2026, taken from the table in CITE{Wiki}, which carries a
+    reference for every value, and compared with the papers: for the planar
+    lattices the critical-polynomial values of Scullard and Jacobsen
+    CITE{ScullardJacobsen} and Jacobsen CITE{Jacobsen14}, the hull-walk
+    values of Suding and Ziff CITE{SudingZiff} and Parviainen's simulations
+    CITE{Parviainen}; for the cubic lattices the Monte Carlo analysis of Xu,
+    Wang, Lv and Deng CITE{XuWangLvDeng}; for the hypercubic lattices the
+    invasion-percolation values of Mertens and Moore CITE{MertensMoore}. An
+    estimate is a record: a later determination may narrow it, and an entry
+    then becomes out of date rather than wrong. The site threshold of the
+    square lattice is the one row whose published determinations disagree
+    beyond their stated errors, in the twelfth decimal, and its entry is an
+    interval holding all of them; the first ten decimals, $0.5927460507$, are
+    OEIS A377420 CITE{OEISsquare}. The bond threshold of the kagome lattice
+    is not known exactly: the conjectured polynomial $3p^2+6p^3-12p^4+6p^5-p^6=1$
+    has its root at $0.52442971\ldots$, which differs from the estimate in
+    the fifth decimal.
+Formulas:
+  formula-exact: >-
+    $p_c^{\mathrm{bond}}(4^4)=\frac12$, $p_c^{\mathrm{bond}}(3^6)=2\sin\frac{\pi}{18}$,
+    $p_c^{\mathrm{bond}}(6^3)=p_c^{\mathrm{site}}(3,6,3,6)=1-2\sin\frac{\pi}{18}$,
+    $p_c^{\mathrm{site}}(3^6)=\frac12$ CITE{SykesEssam} and
+    $p_c^{\mathrm{site}}(3,12^2)=\sqrt{1-2\sin\frac{\pi}{18}}$ CITE{SudingZiff},
+    where $2\sin\frac{\pi}{18}=2\cos\frac{4\pi}{9}=0.3472963553\ldots$ is the
+    root in $(0,1)$ of $x^3-3x+1$ CITE{OEIStri}, $1-2\sin\frac{\pi}{18}$ the root
+    in $(0,1)$ of $x^3-3x^2+1$ CITE{OEISkagome} and $\sqrt{1-2\sin\frac{\pi}{18}}$
+    the root in $(0,1)$ of $x^6-3x^4+1$ CITE{OEIStt}.
+  formula-duality: >-
+    $p_c^{\mathrm{bond}}(L)+p_c^{\mathrm{bond}}(L^{*})=1$ for a planar lattice
+    $L$ with sufficient symmetry and its dual $L^{*}$ CITE{BollobasRiordan}; in
+    particular for each Archimedean lattice and its Laves dual, and for the
+    self-dual square lattice, where it gives $p_c^{\mathrm{bond}}(4^4)=\frac12$.
+  formula-line-graph: >-
+    $p_c^{\mathrm{site}}(\mathcal{L}(G))=p_c^{\mathrm{bond}}(G)$ for the line
+    graph $\mathcal{L}(G)$ of a graph $G$, since a set of edges of $G$ is a
+    set of vertices of $\mathcal{L}(G)$ with the same connectivity; the kagome
+    lattice is the line graph of the honeycomb lattice.
+  formula-inequalities: >-
+    $\frac{1}{z-1}\leq p_c^{\mathrm{bond}}(L)\leq p_c^{\mathrm{site}}(L)\leq
+    1-\left(1-p_c^{\mathrm{bond}}(L)\right)^{z}$ for a lattice $L$ whose vertices
+    have degree at most $z$ CITE{Grimmett}.
+  formula-series: >-
+    $p_c^{\mathrm{site}}(\mathbb{Z}^d)=\sigma^{-1}+\frac32\sigma^{-2}+\frac{15}{4}\sigma^{-3}+\frac{83}{4}\sigma^{-4}+\frac{6577}{48}\sigma^{-5}+\frac{119077}{96}\sigma^{-6}+O(\sigma^{-7})$
+    and
+    $p_c^{\mathrm{bond}}(\mathbb{Z}^d)=\sigma^{-1}+\frac52\sigma^{-3}+\frac{15}{2}\sigma^{-4}+57\sigma^{-5}+\frac{4855}{12}\sigma^{-6}+O(\sigma^{-7})$
+    with $\sigma=2d-1$, as $d\to\infty$ CITE{MertensMooreSeries}; the six terms
+    of the bond series are within $10^{-6}$ of the entry for $d=13$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      p = 2*sin(pi/18)                                   # bond threshold of the triangular lattice
+      N(p, digits=30), N(1 - p, digits=30), N(sqrt(1 - p), digits=30)   # and of the honeycomb lattice, and the site threshold of (3,12^2)
+      R.<x> = QQ[]
+      (x^3 - 3*x + 1).roots(RealIntervalField(200))     # 2 sin(pi/18) is the root in (0, 1)
+Similar tables:
+  - table: HREF{Cos_pi_times_x_at_rational_numbers}[$\cos(\pi x)$ for rational $x$]
+    relation: holds $\cos\frac{4\pi}{9}=\sin\frac{\pi}{18}$, half the bond threshold of the triangular lattice
+  - table: HREF{Rational_numbers}[Rational numbers]
+    relation: holds $\frac12$, the threshold of five entries here, which link it
+  - table: HREF{Polya's_random_walk_constants}[Pólya's random walk constants]
+    relation: the return probability of the simple random walk on $\mathbb{Z}^d$, the other lattice probability tabulated by dimension
+Links:
+  Wiki:
+    title: 'Wikipedia: Percolation threshold'
+    url: https://en.wikipedia.org/wiki/Percolation_threshold
+  OEISsquare:
+    title: 'OEIS A377420: site percolation threshold for the square lattice'
+    url: https://oeis.org/A377420
+  OEISkagome:
+    title: 'OEIS A178959: site percolation threshold for the kagome lattice, $1-2\sin(\pi/18)$'
+    url: https://oeis.org/A178959
+  OEIStt:
+    title: 'OEIS A174849: site percolation threshold for the $(3,12^2)$ lattice, $\sqrt{1-2\sin(\pi/18)}$'
+    url: https://oeis.org/A174849
+  OEIStri:
+    title: 'OEIS A130880: decimal expansion of $2\sin(\pi/18)$'
+    url: https://oeis.org/A130880
+References:
+  SykesEssam:
+    bib: >-
+      M. F. Sykes and J. W. Essam, Exact critical percolation probabilities
+      for site and bond problems in two dimensions, Journal of Mathematical
+      Physics 5 (1964), 1117–1127.
+  Kesten:
+    bib: >-
+      H. Kesten, The critical probability of bond percolation on the square
+      lattice equals 1/2, Communications in Mathematical Physics 74 (1980),
+      41–59.
+  Wierman:
+    bib: >-
+      J. C. Wierman, Bond percolation on honeycomb and triangular lattices,
+      Advances in Applied Probability 13 (1981), 298–313.
+  BollobasRiordan:
+    bib: >-
+      B. Bollobás and O. Riordan, Percolation on dual lattices with k-fold
+      symmetry, Random Structures and Algorithms 32 (2008), 463–472.
+  Grimmett:
+    bib: >-
+      G. Grimmett, Percolation, second edition, Grundlehren der mathematischen
+      Wissenschaften 321, Springer, 1999, chapter 1.
+  SudingZiff:
+    bib: >-
+      P. N. Suding and R. M. Ziff, Site percolation thresholds for Archimedean
+      lattices, Physical Review E 60 (1999), 275–283, arXiv:cond-mat/9811416.
+  Jacobsen14:
+    bib: >-
+      J. L. Jacobsen, High-precision percolation thresholds and Potts-model
+      critical manifolds from graph polynomials, Journal of Physics A 47
+      (2014), 135001, arXiv:1401.7847.
+  Jacobsen15:
+    bib: >-
+      J. L. Jacobsen, Critical points of Potts and O(N) models from
+      eigenvalue identities in periodic Temperley–Lieb algebras, Journal of
+      Physics A 48 (2015), 454003, arXiv:1507.03027.
+  ScullardJacobsen:
+    bib: >-
+      C. R. Scullard and J. L. Jacobsen, Bond percolation thresholds on
+      Archimedean lattices from critical polynomial roots, Physical Review
+      Research 2 (2020), 012050, arXiv:1910.12376.
+  Parviainen:
+    bib: >-
+      R. Parviainen, Connectivity Properties of Archimedean and Laves
+      Lattices, Uppsala Dissertations in Mathematics 34, Uppsala University,
+      2005, Table 4.3.
+  XuWangLvDeng:
+    bib: >-
+      X. Xu, J. Wang, J.-P. Lv and Y. Deng, Simultaneous analysis of
+      three-dimensional percolation models, Frontiers of Physics 9 (2014),
+      113–119, arXiv:1310.5399.
+  WangEtAl:
+    bib: >-
+      J. Wang, Z. Zhou, W. Zhang, T. M. Garoni and Y. Deng, Bond and site
+      percolation in three dimensions, Physical Review E 87 (2013), 052107,
+      arXiv:1302.0421.
+  MertensMoore:
+    bib: >-
+      S. Mertens and C. Moore, Percolation thresholds and Fisher exponents in
+      hypercubic lattices, Physical Review E 98 (2018), 022120,
+      arXiv:1806.08067.
+  MertensMooreSeries:
+    bib: >-
+      S. Mertens and C. Moore, Series expansion of the percolation threshold
+      on hypercubic lattices, Journal of Physics A 51 (2018), 475001,
+      arXiv:1805.02701.
+  Mertens22:
+    bib: >-
+      S. Mertens, Exact site-percolation probability on the square lattice,
+      Journal of Physics A 55 (2022), 334002, arXiv:2109.12102.
+  YangZhou24:
+    bib: >-
+      Y. Yang and S. Zhou, Comment on ‘Critical points of Potts and O(N)
+      models from eigenvalue identities in periodic Temperley–Lieb algebras’,
+      Journal of Physics A 57 (2024), 258001.
+  Jacobsen24:
+    bib: >-
+      J. L. Jacobsen, Reply to Comment on ‘Critical points of Potts and O(N)
+      models from eigenvalue identities in periodic Temperley–Lieb algebras’,
+      Journal of Physics A 57 (2024), 258002.
+Tags:
+  - probability theory
+  - physics
+Data properties:
+  type: R
+  rigour: measured
+  sources:
+    - CITE{Wiki}
+  complete: 'no'
+  complete-note: >-
+    it holds site and bond percolation on the eleven Archimedean lattices,
+    the eight Laves lattices, the simple cubic, body-centred cubic,
+    face-centred cubic and diamond lattices and the hypercubic lattices
+    $\mathbb{Z}^d$ for $4\leq d\leq 13$, the most precise published value of
+    each as of 6 September 2026
+  rigour details: >-
+    Mixed, and labelled by its weakest entries. Eleven entries are exact and
+    are computed in ball arithmetic in arb at 100 digits from their closed
+    forms, with 64 guard bits: $\frac12$, written as the rational, for the
+    site thresholds of the triangular lattice and of $D(4,8^2)$, $D(4,6,12)$
+    and $D(3,12^2)$ and the bond threshold of the square lattice;
+    $2\sin\frac{\pi}{18}$ for the bond threshold of the triangular lattice;
+    $1-2\sin\frac{\pi}{18}$ for the bond threshold of the honeycomb lattice
+    and the site threshold of the kagome lattice; and
+    $\sqrt{1-2\sin\frac{\pi}{18}}$ for the site threshold of $(3,12^2)$. The
+    other 55 entries were not computed: each is a published estimate,
+    written as centre and radius with the paper's stated uncertainty as the
+    radius, and the eight Laves bond thresholds are $1$ minus the value of
+    the Archimedean dual, in exact decimal arithmetic with the same radius.
+    The three site thresholds taken from Suding and Ziff carry the
+    uncertainty $3\cdot 10^{-6}$ listed for them in the Wikipedia table
+    rather than the $2\cdot 10^{-6}$ printed in the paper, because the
+    values that paper gives for the lattices since measured more precisely
+    lie two to three of its standard errors from the later values.
+    Before any entry was written, the three closed forms were compared with
+    OEIS A130880, A178959 and A174849 to every digit those entries give and
+    with their minimal polynomials by a sign change across each written
+    enclosure; every estimate was compared with the table of the paper
+    cited, read from its arXiv version, and with the Wikipedia table on 6
+    September 2026; the inequalities
+    $\frac{1}{z-1}\leq p_c^{\mathrm{bond}}\leq p_c^{\mathrm{site}}\leq 1-(1-p_c^{\mathrm{bond}})^z$
+    were checked on every lattice with $z$ its largest vertex degree, and
+    the $1/(2d-1)$ series against the hypercubic entries. The square-lattice
+    site threshold is the one entry whose interval was chosen here, to
+    contain four published determinations that disagree beyond their stated
+    errors; the values from the 2024 comment and reply were taken from the
+    Wikipedia table and not read from those papers.
+Display properties:
+  number-header: $p_c$
