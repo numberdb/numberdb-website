@@ -1,4 +1,4 @@
-"""Minimal discriminants of number fields by degree and signature -- numberdb.org/TBD
+"""Minimal discriminants of number fields by degree and signature -- numberdb.org/T160
 
 For each degree n >= 2 and each number r2 of complex places, 0 <= r2 <= n/2,
 the discriminant d_K of the number field K of degree n and signature
@@ -341,7 +341,7 @@ def comment(record, galois, h, degrees, quadratic):
 
 class MinimalDiscriminants(numberdb.Generator):
 
-    table = 'TBD'
+    table = 'T160'
     parameters = ('n', 'r2')
     type = 'Z'
     rigour = 'exact'
