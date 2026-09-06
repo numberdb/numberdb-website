@@ -49,7 +49,7 @@ Comments:
     $\kappa_K$ is the constant in the ideal count of $K$: the number of
     nonzero ideals of $\mathcal{O}_K$ of norm at most $x$ is asymptotically
     $\kappa_K\,x$. For $D=-23$ there are $11045$ ideals of norm at most
-    $30000$, and $11045/30000=0.3682\ldots$ against $\kappa_K=0.3684\ldots$.
+    $30000$, and $11045/30000=0.3681\ldots$ against $\kappa_K=0.3684\ldots$.
   comment-galois: >-
     $D$ is a perfect square exactly for the cyclic cubic fields, those with
     Galois group $C_3$, and $\sqrt{D}$ is then the conductor: the seven
@@ -78,9 +78,9 @@ Comments:
     the largest $3.5819\ldots$ for $D=-2991$, whose fundamental unit has
     coefficients of thirteen digits and regulator $15.37\ldots$; 184 of the
     515 values are less than $1$. For every cubic field $w_K=2$, since a cubic
-    field contains no root of unity other than $\pm1$, which is why the
-    class number formula CITE{formula-class-number} has no other
-    denominator.
+    field contains no root of unity other than $\pm1$, which is why $w_K$
+    does not appear in the two cases of the class number formula
+    CITE{formula-class-number}.
   comment-named: >-
     A few entries are constants a reader may hold under another name. For
     $D=-23$, the cubic field of smallest $|D|$, $h_K=1$ and the fundamental
@@ -108,8 +108,8 @@ Formulas:
     $\kappa_K=\frac{2\pi\,h_KR_K}{\sqrt{|D|}}$ for $D<0$ and
     $\kappa_K=\frac{4\,h_KR_K}{\sqrt{D}}$ for $D>0$, where $h_K$ is the class
     number and $R_K$ the regulator of $K$, held in
-    HREF{Regulators_of_cubic_fields}[the table of regulators of cubic fields]:
-    the class number formula CITE{WikiCNF} CITE{LMFDB-knowl}
+    HREF{Regulators_of_cubic_fields}[the table of regulators of cubic fields].
+    Both are the class number formula CITE{WikiCNF} CITE{LMFDB-knowl}
     $\kappa_K=\frac{2^{r_1}(2\pi)^{r_2}h_KR_K}{w_K\sqrt{|D|}}$ with $w_K=2$
     and signature $(r_1,r_2)=(1,1)$ for $D<0$, $(3,0)$ for $D>0$.
   formula-cyclic: >-
@@ -204,9 +204,9 @@ Data properties:
     each unit taken exactly as a polynomial in $a$, checked to be an
     algebraic integer of norm $\pm1$, and evaluated by Horner's rule in
     balls at the real roots of the reduced polynomial isolated in interval
-    arithmetic, the logarithms and the determinant being arb's. The digits
-    written are those the ball supports (the worst entry, $D=1772$, supports
-    133). The generator refuses a value unless it agrees to 50 digits with
+    arithmetic, the logarithms and the determinant being arb's. Each value
+    is written to 100 significant digits, fewer than any ball supports (the
+    worst, $D=1772$, supports 133). The generator refuses a value unless it agrees to 50 digits with
     the residue that PARI's lfunrootres computes from the Dirichlet
     coefficients and functional equation of $\zeta_K$, a computation sharing
     nothing with bnfinit; all 515 do. The enumeration rests on Hunter's
