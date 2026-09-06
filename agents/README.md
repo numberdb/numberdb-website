@@ -49,9 +49,14 @@ the claude branch carries; the guards that actually hold are elsewhere anyway
 cannot publish from any harness.
 
 **What the ledger can say about each.** Claude reports a cost in dollars and
-the model that answered; codex reports neither, but prints one `turn.completed`
-per turn with token counts, so its rows carry turns, tokens and the model it
-was told to use, and leave the cost column empty rather than inventing a rate.
+the model that answered; codex reports neither, but prints `turn.completed`
+with token counts, so its rows carry the model it was told to use and the
+tokens it spent, and leave the cost column empty rather than inventing a rate.
+
+**The `turns` column does not mean the same thing on both.** Claude counts one
+per assistant message -- a build is 84 of them. Codex counts one per `exec`,
+so a critique that made 119 tool calls is recorded as 1. Compare tokens across
+engines, not turns.
 
 ## The agent account
 

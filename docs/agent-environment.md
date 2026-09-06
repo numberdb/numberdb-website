@@ -38,6 +38,32 @@ Evidence: `curl https://numberdb.org/T94` returned 502 in 36s while
 with `docker compose up -d --force-recreate web`, which puts the image's own
 code back.
 
+## Working in the repository while a campaign runs is not free
+
+What happened: a `git add -A`, run to stage an unrelated change, staged the
+build's half-finished generator along with it. `agents/run.sh` refuses to
+start on a tree with uncommitted changes -- deliberately, so that what a run
+changed is what it committed -- and staged changes count. The critique and
+repair of T160 both refused, before writing any log at all, so the campaign
+reported "the critique run failed" with nothing to read. The table was left
+built and unread.
+
+Two smaller versions of the same thing: editing `agents/campaign.sh` or
+`agents/run.sh` while either is executing corrupts the running shell, because
+bash reads a script from its open inode as it goes and resumes at a byte
+offset into whatever the file now says. Writing the new version to a temporary
+file and renaming it over the old one is safe -- the running processes keep
+the inode they opened -- and that is how the engine changes were installed
+under a running build.
+
+What to do instead: stage by name, never `-A`, while a campaign is running;
+and install changes to the runner scripts by rename. If a stage fails with no
+log, look at the tree before looking at the agent.
+
+Evidence: `agents/runs/campaign-20260906T132003Z.log` ends "the critique run
+failed; the table stands and somebody should look" with no
+`*-critique.log` for T160 anywhere, 2026-09-06.
+
 ## A file deleted in git stays on the server
 
 What happened: a test module was renamed with `git mv`. The code was uploaded
