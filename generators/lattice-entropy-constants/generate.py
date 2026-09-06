@@ -95,7 +95,9 @@ BAXTER_SQUARE = '1.5030480824753322643220663294755536893857810'
 BAXTER_HONEYCOMB = '1.54644070878756141848902270530472278'
 
 #: Liang's rigorous bounds on the hard-square constant (arXiv:2507.04007,
-#: eq. 27), which prove Baxter's first 27 decimals.
+#: eq. 27), which prove Baxter's first 25 decimals: the two agree through
+#: ...20663 and part in the 26th place, and the paper prints them with a
+#: space before "four non-exact digits".
 LIANG_BOUNDS = ('1.50304808247533226432206632947', '1.50304808247533226432206633030')
 
 GOLDEN = 'Golden_ratio'
@@ -371,7 +373,7 @@ COMMENT = {
         r'HREF{%s#5}[regulator of $\mathbb{Q}(\sqrt5)$].' % REGULATORS),
     ('hard-core', 'square'): (
         r'The hard-square entropy constant, OEIS A085850 CITE{OEIShs}: not known in closed form; the $43$ decimals '
-        r"are Baxter's corner-transfer-matrix value CITE{Baxter99}, and the first $27$ are proved by the bounds "
+        r"are Baxter's corner-transfer-matrix value CITE{Baxter99}, and the first $25$ are proved by the bounds "
         r'$1.50304808247533226432206632947<\kappa<1.50304808247533226432206633030$ of Liang CITE{Liang}.',
         r"$h=\ln\kappa$ from Baxter's $43$ decimals CITE{Baxter99}, OEIS A379041 CITE{OEIShsh}; the topological "
         r'entropy of the two-dimensional golden-mean shift, the standard $\mathbb{Z}^2$ shift of finite type '
@@ -389,20 +391,20 @@ COMMENT = {
         r"$h=\ln\kappa$ from the $35$ decimals kept of Baxter's value CITE{Baxter99}."),
     ('ice', 'square'): (
         r"$\kappa=\left(\frac43\right)^{3/2}=\frac{8\sqrt3}{9}$, Lieb's square ice constant CITE{Lieb}, "
-        r'OEIS A118273 CITE{OEISice}; the residual entropy of square ice, and the growth rate of the '
-        r'proper $3$-colourings of the square lattice.',
-        r'$h=\frac32\ln\frac43$ CITE{Lieb}.'),
+        r'OEIS A118273 CITE{OEISice}; the growth rate of the proper $3$-colourings of the square lattice.',
+        r'$h=\frac32\ln\frac43$, the residual entropy of square ice per vertex in units of '
+        r"Boltzmann's constant CITE{Lieb}."),
     ('dimer', 'square'): (
         r"$\kappa=e^{G/\pi}$ with $G$ Catalan's constant CITE{Kasteleyn} CITE{TemperleyFisher}, OEIS A097469 "
-        r'CITE{OEISdimer}; the number of domino tilings per cell. Per dimer the constant is $\kappa^2=e^{2G/\pi}'
-        r'=1.7916228\ldots$, OEIS A130834.',
+        r'CITE{OEISdimer}; the number of domino tilings per cell of the board, that is per vertex of the lattice. '
+        r'Per dimer the constant is $\kappa^2=e^{2G/\pi}=1.7916228\ldots$, OEIS A130834 CITE{OEISdimer2}.',
         r'$h=G/\pi$ CITE{Kasteleyn}, OEIS A143233 CITE{OEISdimerh}; $G=L(2,\chi_{-4})$ is in the '
         r'HREF{%s}[table of Dirichlet $L$-values].' % L_VALUES),
     ('dimer', 'triangular'): (
         r'$\kappa=e^{h}$ with $h$ the Kasteleyn integral CITE{formula-dimer-triangular} of Fendley, Moessner '
         r'and Sondhi CITE{FMS}; per dimer the constant is $\kappa^2=2.3565273\ldots$, OEIS A247548 CITE{OEISdimertri}.',
         r'$h=\frac{1}{16\pi^2}\int_{-\pi}^{\pi}\!\int_{-\pi}^{\pi}\ln\left(6+2\cos u+2\cos v+2\cos(u+v)\right)du\,dv$ '
-        r'CITE{FMS}, who give $0.4286$; the integral is evaluated here after integrating $v$ in closed form.'),
+        r'CITE{FMS}, who give $0.4286$.'),
     ('dimer', 'honeycomb'): (
         r'$\kappa=e^{h}$; the number of lozenge tilings per vertex of the honeycomb lattice CITE{Kasteleyn63}.',
         r'$h=\frac{3\sqrt3}{8\pi}L(2,\chi_{-3})=\frac12 m(1+x+y)$, half the Mahler measure of $1+x+y$ '
