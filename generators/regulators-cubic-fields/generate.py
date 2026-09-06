@@ -305,10 +305,27 @@ def named(D, f):
         return r'$K=\mathbb{Q}(\zeta_9)^+$'
     if ZZ(D).is_square():
         return r'the cubic subfield of $\mathbb{Q}(\zeta_{%d})$' % ZZ(D).sqrt()
-    coefficients = f.list()
-    if coefficients[1] == 0 and coefficients[2] == 0:
-        return r'$K=\mathbb{Q}(\sqrt[3]{%d})$, a pure cubic field' % (-coefficients[0])
+    if D < 0 and D % 3 == 0 and ZZ(-D // 3).is_square():
+        return r'$K=\mathbb{Q}(\sqrt[3]{%d})$, a pure cubic field' % pure_cubic_radicand(D, f)
     return None
+
+
+def pure_cubic_radicand(D, f):
+    """The least m with K = Q(m^(1/3)), for a field K of discriminant -3 f^2.
+
+    Those are exactly the pure cubic fields, and the reduced polynomial of
+    five of the thirteen here (m = 10, 17, 19, 28, 44) is not x^3 - m, so the
+    field is recognised by nfisisom rather than read off the polynomial;
+    reading it off left those five unnamed on the first fill.
+    """
+    for m in range(2, 1000):
+        if any(m % p ** 3 == 0 for p in range(2, 10)):
+            continue
+        g = pari('x^3-%d' % m)
+        if pari.nfdisc(g) == D and pari.nfisisom(g, pari(f)) != 0:
+            return m
+    raise ArithmeticError('D = %s is -3 times a square, but no x^3 - m with m < 1000 gives the field of %s'
+                          % (D, f))
 
 
 def comment(D, k, f, h, units, order, multiplicity):

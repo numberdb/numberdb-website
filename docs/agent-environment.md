@@ -1862,3 +1862,20 @@ nothing for a table stored nested.
 
 Evidence: `/tmp/cc_after.py` run of 2026-09-06 listing both shapes across
 the four revisions of T152 and T157.
+
+## `audit_table --links` from the throwaway can time out on oeis.org, and the next run may not
+
+What happened: the critique of T158 ran `audit_table T158 --links` in the
+throwaway on 2026-09-06 and got `Links[OEIS-neg] answered TimeoutError:
+https://oeis.org/A023679` while the same link answered 200 through the
+proxy from the workstation; the repair ran the same command in the same
+container two hours later and got "Nothing to report" with all four OEIS
+links checked. The KnotInfo `URLError` recorded above is the same kind of
+thing.
+
+What to do instead: treat a `TimeoutError` or `URLError` from `--links` as
+the container's network and not as the link, confirm the URL from outside
+the container, and run `--links` once more before writing the finding down.
+
+Evidence: `agents/critiques/T158.md` and `/tmp/rep158_audit_before.txt`,
+`/tmp/rep158_audit_after.txt`, 2026-09-06.
