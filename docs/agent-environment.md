@@ -1738,3 +1738,28 @@ What to do instead: keep this shape for a draft's prose repair; the
 `api_edit` route is for a person's session edit.
 
 Evidence: `/tmp/ec_write_doc.py` answer `revision = a2506f1a...`, 2026-09-06.
+
+## The two `/tmp` whole-document write scripts sorted every mapping; T147 is published that way
+
+What happened: `/tmp/lp2_write_doc.py` (T147, 2026-09-05) and
+`/tmp/ec_write_doc.py` (T153, 2026-09-06) both called `yaml.dump(document, ...)`
+without `sort_keys=False`, so the revision each wrote has its top-level keys,
+parameters, formulas, comments, links, references and numbers alphabetised.
+On T153, a draft, the critique caught it and the repair rewrote the document
+in the repository's order (`/tmp/rep153_write.py`). T147 is published with
+its five formulas in alphabetical order (duals, hermite-constant, laminated,
+relations, root-lattices) against the yaml's relations, root-lattices, duals,
+laminated, hermite-constant; its parameters `family, n` survived only because
+that is alphabetical. The `agents/api_edit` module has always dumped with
+`sort_keys=False`. Neither `audit_table` nor the API notices a parameter
+order that disagrees with the nesting of the numbers.
+
+What to do instead: any whole-document write script dumps with
+`sort_keys=False` and reads the order back; T147's formula order is a repair
+somebody may still want to make (one API edit, pinned to its head, changing
+no text). The lesson for a contributor's own laptop is in
+`agents/lessons/PROPOSALS.md`.
+
+Evidence: `/tmp/rep153_audit_before.txt` (T153 head `a2506f1a…`, every
+mapping sorted), `GET /api/table?id=T147` on 2026-09-06 (top-level keys
+`Comments, Data properties, Definition, …`).

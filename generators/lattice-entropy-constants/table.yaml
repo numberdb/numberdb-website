@@ -58,13 +58,15 @@ Comments:
     square lattice CITE{WikiDomino} and the lozenge tilings of the honeycomb
     lattice. The spanning-tree constant $z_L=\lim|\Lambda|^{-1}\ln
     N_{\mathrm{ST}}(\Lambda)$ of Shrock and Wu CITE{ShrockWu} is the entropy
-    $h$ of the last model, and their notation $z_{\mathrm{sq}}$,
+    $h$ of the spanning-tree model, $N_{\mathrm{ST}}(\Lambda)$ being the
+    number of spanning trees of $\Lambda$, and their notation $z_{\mathrm{sq}}$,
     $z_{\mathrm{tri}}$, $z_{\mathrm{hc}}$, $z_{\mathrm{kag}}$ is used in the
     entry comments.
   comment-conventions: >-
     Every constant is per site, that is per vertex of the lattice, and $h$
     is the natural logarithm of $\kappa$. Finch's dimer constant
-    CITE{Finch} and OEIS A130834 are per dimer, which is $\kappa^2$ here, and
+    CITE{Finch} and OEIS A130834 CITE{OEISdimer2} are per dimer, which is
+    $\kappa^2$ here, and
     the square-ice constant is sometimes given per vertex of the dual
     lattice, which is the same number on the square lattice; the entry
     comments say where a source normalises differently. The limit is taken
@@ -76,14 +78,15 @@ Comments:
     lattice $D(4,8^2)$ as the planar duals of the kagome lattice and of
     $(4,8^2)$.
   comment-status: >-
-    Nine of the seventeen constants are known in closed form: the
+    Ten of the seventeen constants are known in closed form: the
     HREF{Golden_ratio}[golden ratio] for the line, Lieb's
     $\left(\frac43\right)^{3/2}$ for square ice
     CITE{Lieb}, $e^{G/\pi}$ for dimers on the square lattice with $G$
     Catalan's constant CITE{Kasteleyn}, the honeycomb dimer constant and the
     spanning-tree constants of the square, triangular, honeycomb, kagome,
     diced and $(3,12^2)$ lattices, which are exponentials of rational
-    multiples of $G/\pi$ and of $\sqrt3L(2,\chi_{-3})/\pi$ CITE{Wu77}
+    multiples of $G/\pi$ and of $\sqrt3L(2,\chi_{-3})/\pi$, times $6^{1/3}$
+    for the kagome and diced lattices and $15^{1/6}$ for $(3,12^2)$ CITE{Wu77}
     CITE{ShrockWu}. The hard-hexagon constant is algebraic of degree $24$
     CITE{Joyce}, from Baxter's exact solution CITE{Baxter80}. The dimer
     constant of the triangular lattice and the spanning-tree constants of
@@ -91,7 +94,7 @@ Comments:
     integrals with no known closed form. The hard-square and honeycomb
     hard-core constants are not known exactly; the entries are Baxter's
     corner-transfer-matrix values CITE{Baxter99}, and for hard squares the
-    first $27$ decimals are proved by the bounds of Liang CITE{Liang}. The
+    first $25$ decimals are proved by the bounds of Liang CITE{Liang}. The
     hard-core models have a phase transition at activity
     $z_c=\frac{11+5\sqrt5}{2}=\varphi^5$ on the triangular lattice
     CITE{Baxter80}, at $z_c\approx 3.7962$ on the square lattice and at
@@ -112,8 +115,8 @@ Formulas:
     $\prod_{j=1}^{\lceil m/2\rceil}\prod_{k=1}^{\lceil n/2\rceil}\left(4\cos^2\frac{\pi j}{m+1}+4\cos^2\frac{\pi k}{n+1}\right)$.
   formula-dimer-honeycomb: >-
     $h(\text{dimer},6^3)=\frac{1}{16\pi^2}\int_{-\pi}^{\pi}\!\int_{-\pi}^{\pi}\ln\left(3+2\cos u+2\cos v+2\cos(u+v)\right)du\,dv=\frac{3\sqrt3}{8\pi}L(2,\chi_{-3})$
-    CITE{Kasteleyn63}, half the Mahler measure of $1+x+y$ CITE{Smyth}; in
-    particular $h(\text{dimer},6^3)=\frac1{10}z_{\mathrm{tri}}$.
+    CITE{Kasteleyn63}, half the Mahler measure of $1+x+y$ CITE{Smyth}, and
+    $h(\text{dimer},6^3)=\frac1{10}z_{\mathrm{tri}}$.
   formula-dimer-triangular: >-
     $h(\text{dimer},3^6)=\frac{1}{16\pi^2}\int_{-\pi}^{\pi}\!\int_{-\pi}^{\pi}\ln\left(6+2\cos u+2\cos v+2\cos(u+v)\right)du\,dv=\frac{1}{8\pi}\int_{-\pi}^{\pi}\ln\frac{A+\sqrt{A^2-B^2}}{2}\,du$
     with $A=6+2\cos u$ and $B=4\cos\frac u2$ CITE{FMS}.
@@ -168,7 +171,7 @@ Similar tables:
   - table: HREF{Polya's_random_walk_constants}[Pólya's random walk constants]
     relation: the return probability of the simple random walk on $\mathbb{Z}^d$; the closed walks $W_{2m}$ of the series for $z_{\mathrm{sc}}$ are the walks it counts
   - table: HREF{Feigenbaum_constants}[Feigenbaum constants]
-    relation: the other constants of dynamical systems here; $h$ is the topological entropy of the shift of finite type each model defines
+    relation: the other constants of dynamical systems here; $h$ is the topological entropy of the shift of finite type the hard-core, ice and dimer models define
 Links:
   Wiki:
     title: 'Wikipedia: Hard hexagon model'
@@ -200,6 +203,9 @@ Links:
   OEISdimerh:
     title: 'OEIS A143233: the dimer constant $G/\pi$'
     url: https://oeis.org/A143233
+  OEISdimer2:
+    title: 'OEIS A130834: $e^{2G/\pi}$, the dimer constant of the square lattice per dimer'
+    url: https://oeis.org/A130834
   OEISdimertri:
     title: 'OEIS A247548: $D^2$, the dimer constant of the triangular lattice per dimer'
     url: https://oeis.org/A247548
@@ -317,7 +323,7 @@ Data properties:
     quadrature in mpmath at 40 and 55 decimal digits, and the digits the two
     agree on are written. Four entries are transcribed from Baxter
     CITE{Baxter99}: the hard-square constant with the 43 decimals he states
-    are correct, of which Liang's bounds CITE{Liang} prove 27, and the
+    are correct, of which Liang's bounds CITE{Liang} prove 25, and the
     honeycomb constant with 35 of his 38 decimals, since he says the last
     two or three should be treated with caution; their logarithms are
     computed from those intervals and carry the same precision. Before any
