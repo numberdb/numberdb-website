@@ -36,7 +36,7 @@ from .validate import (OTHER_TYPES, PARAMETER_TYPES, SEARCHABLE_TYPES,
                        TYPE_NAME_KEY)
 
 __all__ = ['fields_from', 'apply_to', 'COMPLETENESS_ANSWERS', 'OTHER',
-           'known_other_types']
+           'known_other_types', 'restates_choices']
 
 #: The value the select carries for "something else".
 OTHER = '__other__'
@@ -65,6 +65,8 @@ def fields_from(tree):
 	display = tree.get('Display properties')
 	display = display if isinstance(display, dict) else {}
 
+	from .editing import _restates_slug
+
 	answer = _leading_word(properties.get('complete'))
 	declared = str(properties.get('type') or '')
 	is_other = bool(declared) and declared not in SEARCHABLE_TYPES
@@ -88,6 +90,12 @@ def fields_from(tree):
 		'complete_condition': completeness_qualifier(tree),
 		'complete_is_odd': bool(properties.get('complete')) and
 		                   answer not in COMPLETENESS_ANSWERS,
+		#Which table states this one's shared values first, as a slug. The
+		#field holds `HREF{slug}` so that it renders as a link like every
+		#other reference; the form works in slugs and puts the markup back.
+		'restates': _restates_slug(properties.get('restates')) or '',
+		#Filled by the view, for the same reason as `known_other_types`.
+		'restates_options': [],
 		'layout': str(display.get('layout') or ''),
 		'parameters': _parameters_of(tree),
 		'parameter_types': sorted(PARAMETER_TYPES),
@@ -155,6 +163,17 @@ def apply_to(tree, data, allow_key_changes=False):
 				#A searchable type needs no name, and leaving a stale one
 				#behind would describe the table as something it is not.
 				properties.pop(TYPE_NAME_KEY, None)
+
+	if 'restates' in data:
+		#A table repeating another says so once, here, rather than on each of
+		#the entries that repeat one -- and it is a claim about two tables
+		#that no rule on the values could make, so a person makes it. See
+		#docs/design/same-construction.md.
+		chosen = (data.get('restates') or '').strip()
+		if chosen:
+			properties['restates'] = 'HREF{%s}' % (chosen,)
+		else:
+			properties.pop('restates', None)
 
 	if 'complete' in data:
 		answer = (data.get('complete') or '').strip()
@@ -226,6 +245,28 @@ def _leading_word(value):
 	from .limits import _leading_word as leading
 
 	return leading(value)
+
+
+def restates_choices(table=None):
+	"""Every other table, as (slug, title) pairs for the select.
+
+	Drafts included, and deliberately: T148 restates T147 and both were drafts
+	when the declaration was made. What is excluded is the table being edited,
+	so the form cannot offer a table itself -- which is refused further down
+	anyway, but an option that can only produce an error should not be shown.
+
+	Read straight from the table rows rather than from documents, which is why
+	this is cheap where `known_other_types` had to be careful.
+	"""
+	from .models import Table
+
+	rows = Table.objects.all()
+	if table is not None and table.pk:
+		rows = rows.exclude(pk=table.pk)
+	return [{'url': url, 'title': title, 'published': published}
+	        for url, title, published
+	        in rows.order_by('title_lowercase')
+	                .values_list('url', 'title', 'published')]
 
 
 def known_other_types():

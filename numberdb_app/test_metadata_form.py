@@ -22,6 +22,7 @@ class ARoundTripChangesNothing(SimpleTestCase):
 		        'data_type': fields['data_type'],
 		        'complete': fields['complete'],
 		        'complete_condition': fields['complete_condition'],
+		        'restates': fields['restates'],
 		        'layout': fields['layout']}
 		for parameter in fields['parameters']:
 			for field in ('type', 'constraints', 'display'):
@@ -547,3 +548,73 @@ class TheSettingsPageDoesNotReadEveryTable(TestCase):
 		from .metadata_form import known_other_types
 
 		self.assertNotIn('R', {row['symbol'] for row in known_other_types()})
+
+
+class TheTableThisOneRepeats(TestCase):
+	"""`Data properties: restates`, through the form.
+
+	A claim about two tables that no rule on the values could make -- two
+	tables can hold one number because one copied the other, or because a
+	theorem says the constructions agree -- so a person makes it, and the form
+	is where a person is.
+	"""
+
+	def setUp(self):
+		from .models import Table
+
+		self.table = Table.objects.create(
+			tid='T702', tid_int=702, url='t702', title='This one',
+			title_lowercase='this one', published=True)
+		self.other = Table.objects.create(
+			tid='T703', tid_int=703, url='t703', title='That one',
+			title_lowercase='that one', published=True)
+		self.draft = Table.objects.create(
+			tid='T704', tid_int=704, url='t704', title='A draft',
+			title_lowercase='a draft', published=False)
+
+	def test_it_is_read_out_of_the_reference(self):
+		fields = metadata_form.fields_from(
+			{'Data properties': {'restates': 'HREF{t703}'}})
+		self.assertEqual(fields['restates'], 't703')
+
+	def test_nothing_declared_reads_as_empty(self):
+		fields = metadata_form.fields_from({'Data properties': {'type': 'R'}})
+		self.assertEqual(fields['restates'], '')
+
+	def test_choosing_one_writes_the_reference(self):
+		out = metadata_form.apply_to({'Title': 'This one'},
+		                             {'restates': 't703'})
+		self.assertEqual(out['Data properties']['restates'], 'HREF{t703}')
+
+	def test_choosing_none_clears_it(self):
+		out = metadata_form.apply_to(
+			{'Title': 'This one',
+			 'Data properties': {'type': 'R', 'restates': 'HREF{t703}'}},
+			{'restates': ''})
+		self.assertNotIn('restates', out['Data properties'])
+		self.assertEqual(out['Data properties']['type'], 'R')
+
+	def test_a_form_that_never_showed_it_cannot_delete_it(self):
+		"""The rule the whole module is arranged around."""
+		tree = {'Title': 'This one',
+		        'Data properties': {'restates': 'HREF{t703}'}}
+		out = metadata_form.apply_to(tree, {'title': 'This one'})
+		self.assertEqual(out['Data properties']['restates'], 'HREF{t703}')
+
+	def test_the_options_do_not_offer_this_table(self):
+		offered = {row['url']
+		           for row in metadata_form.restates_choices(self.table)}
+		self.assertNotIn('t702', offered)
+		self.assertIn('t703', offered)
+
+	def test_the_options_include_drafts(self):
+		#T148 restates T147 and both were drafts when it was declared.
+		offered = {row['url']
+		           for row in metadata_form.restates_choices(self.table)}
+		self.assertIn('t704', offered)
+
+	def test_a_draft_is_marked_as_one(self):
+		rows = {row['url']: row
+		        for row in metadata_form.restates_choices(self.table)}
+		self.assertFalse(rows['t704']['published'])
+		self.assertTrue(rows['t703']['published'])
