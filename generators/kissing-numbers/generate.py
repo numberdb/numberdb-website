@@ -1,4 +1,4 @@
-"""Kissing numbers tau_n -- numberdb.org/TBD
+"""Kissing numbers tau_n -- numberdb.org/T151
 
 The kissing number tau_n of R^n is the largest number of non-overlapping unit
 balls that can touch one unit ball; equivalently, the largest number of
@@ -278,7 +278,7 @@ def compute(n):
 
 class KissingNumbers(numberdb.Generator):
 
-    table = 'TBD'
+    table = 'T151'
     parameters = ('n',)
     type = 'Z'
     rigour = 'exact'
