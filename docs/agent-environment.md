@@ -1820,3 +1820,21 @@ without an arXiv version stays unreadable from here, as before.
 
 Evidence: `/tmp/lc1710.txt` line 442, `βc = 0.1573725(5) [7, 27, 30]`;
 `/tmp/bc0112.txt` line 1477, Table II, `0.1573725(10)`; 2026-09-06.
+
+## The table view prints two debug lines to stdout on every render
+
+What happened: rendering T155 in the throwaway for its critique, the
+output carried `label: program-sage` and `properties: {'type': 'Q', …}`
+before the HTML. They are `print("label:",label)` at
+`numberdb_app/views.py:697` and `print("properties:",properties)` at
+line 1039, in the view that builds every table page, and they have been
+there since 64c41cf of 2021-03-10. In production they go to the web
+container's log on every page view; in a critique run they land in the
+captured output ahead of `STATUS 200`, where a script that takes "the
+first line is the HTML" would be wrong.
+
+What to do instead: in a critique script, print a marker before the HTML
+and cut at it, as `/tmp/crit155.py` does. On the site, delete the two
+prints; nothing reads them.
+
+Evidence: `/tmp/crit155.out` lines 217–218, 2026-09-06.
