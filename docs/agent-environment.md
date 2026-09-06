@@ -1838,3 +1838,27 @@ and cut at it, as `/tmp/crit155.py` does. On the site, delete the two
 prints; nothing reads them.
 
 Evidence: `/tmp/crit155.out` lines 217–218, 2026-09-06.
+
+## A whole-document write through the API stores Numbers nested, and a Django check must flatten it
+
+What happened: T157 was filled by `generate.py` (revision `5d6d15cb…`,
+`Numbers` a flat list of 16 `{params, number, comment}` records in
+`tree_of(head_revision)`), then its definition was trimmed with
+`agents.api_edit` by sending the document back as the API had served it.
+The API serves `Numbers` nested by parameter value, and the new head
+(`9bc0bf7e…`) stores it that way: a dict of 12 lattices with the five
+hypercubic rows under one key. `len(tree['Numbers'])` then says 12, and a
+check script that loops `for entry in numbers: entry.get(...)` crashes on
+a string key. T152 has the same shape since its repair (24 first-level
+items, 66 leaves). The page renders all 16 values, `audit_table` reports
+nothing, and `verify(sample=None)` through the client matches 16 of 16, so
+the shape is only a fact about the stored tree, not a fault.
+
+What to do instead: in a Django-side check, flatten `Numbers` whether it is
+a list or a nested dict (`/tmp/cc_after.py` has a `leaves()` that walks
+both) and count leaves, not first-level items; `check.stored()` in
+`agents/table-build/check.py` still assumes the flat list and returns
+nothing for a table stored nested.
+
+Evidence: `/tmp/cc_after.py` run of 2026-09-06 listing both shapes across
+the four revisions of T152 and T157.
