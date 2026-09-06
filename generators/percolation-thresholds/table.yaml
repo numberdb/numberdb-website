@@ -12,7 +12,7 @@ Definition: >-
 Parameters:
   lattice:
     type: Symbolic
-    title: lattice
+    title: lattice, named by its tiling, crystal structure or vertex configuration
     display: lattice
     values:
       square: 'square $(4^4)$'
@@ -76,15 +76,15 @@ Comments:
     kisrhombille or bisected-hexagon lattice and $D(3,12^2)$ the triakis
     triangular or asanoha lattice.
   comment-exact: >-
-    Eleven of the thresholds are known exactly. Sykes and Essam
+    Nine of the thresholds are known exactly. Sykes and Essam
     CITE{SykesEssam} found the bond thresholds $\frac12$ of the square
     lattice, $2\sin\frac{\pi}{18}$ of the triangular lattice and
-    $1-2\sin\frac{\pi}{18}$ of the honeycomb lattice and the site thresholds
-    $\frac12$ of the triangular lattice and $1-2\sin\frac{\pi}{18}$ of the
-    kagome lattice, the last because the kagome lattice is the line graph of
-    the honeycomb lattice; the square-lattice value is Kesten's theorem
-    CITE{Kesten} and the triangular and honeycomb values are Wierman's
-    CITE{Wierman}. The site threshold $\sqrt{1-2\sin\frac{\pi}{18}}$ of
+    $1-2\sin\frac{\pi}{18}$ of the honeycomb lattice, proved by Kesten
+    CITE{Kesten} for the square lattice and by Wierman CITE{Wierman} for the
+    triangular and honeycomb lattices, and the site thresholds $\frac12$ of
+    the triangular lattice and $1-2\sin\frac{\pi}{18}$ of the kagome lattice,
+    the kagome value because the kagome lattice is the line graph of the
+    honeycomb lattice. The site threshold $\sqrt{1-2\sin\frac{\pi}{18}}$ of
     $(3,12^2)$ follows from the kagome value by contracting the edges that
     lie in no triangle CITE{SudingZiff}, and the site threshold $\frac12$ of
     the three Laves lattices $D(4,8^2)$, $D(4,6,12)$ and $D(3,12^2)$ holds
@@ -99,23 +99,22 @@ Comments:
     paper cited in the entry, usually one standard deviation, and in the
     notation $0.7478008(2)$ the digits in parentheses are that uncertainty in
     the last digits written. They are the most precise published values as of
-    6 September 2026, taken from the table in CITE{Wiki}, which carries a
-    reference for every value, and compared with the papers: for the planar
+    6 September 2026, as listed in the table in CITE{Wiki}: for the planar
     lattices the critical-polynomial values of Scullard and Jacobsen
     CITE{ScullardJacobsen} and Jacobsen CITE{Jacobsen14}, the hull-walk
     values of Suding and Ziff CITE{SudingZiff} and Parviainen's simulations
     CITE{Parviainen}; for the cubic lattices the Monte Carlo analysis of Xu,
     Wang, Lv and Deng CITE{XuWangLvDeng}; for the hypercubic lattices the
-    invasion-percolation values of Mertens and Moore CITE{MertensMoore}. An
-    estimate is a record: a later determination may narrow it, and an entry
-    then becomes out of date rather than wrong. The site threshold of the
-    square lattice is the one row whose published determinations disagree
-    beyond their stated errors, in the twelfth decimal, and its entry is an
-    interval holding all of them; the first ten decimals, $0.5927460507$, are
-    OEIS A377420 CITE{OEISsquare}. The bond threshold of the kagome lattice
-    is not known exactly: the conjectured polynomial $3p^2+6p^3-12p^4+6p^5-p^6=1$
-    has its root at $0.52442971\ldots$, which differs from the estimate in
-    the fifth decimal.
+    invasion-percolation values of Mertens and Moore CITE{MertensMoore}. The
+    site threshold of the square lattice is the one row whose published
+    determinations disagree beyond their stated errors, in the twelfth
+    decimal, and its entry is an interval holding all of them; the first ten
+    decimals, $0.5927460507$, are OEIS A377420 CITE{OEISsquare}. The bond
+    threshold of the kagome lattice is not known exactly: Wu CITE{Wu}
+    conjectured it to be the root in $(0,1)$ of
+    $3p^2+6p^3-12p^4+6p^5-p^6=1$, which is $0.52442971\ldots$, and the
+    estimate, like the earlier $0.5244053(3)$ of Ziff and Suding
+    CITE{ZiffSuding}, differs from it in the fifth decimal.
 Formulas:
   formula-exact: >-
     $p_c^{\mathrm{bond}}(4^4)=\frac12$, $p_c^{\mathrm{bond}}(3^6)=2\sin\frac{\pi}{18}$,
@@ -128,7 +127,8 @@ Formulas:
     the root in $(0,1)$ of $x^6-3x^4+1$ CITE{OEIStt}.
   formula-duality: >-
     $p_c^{\mathrm{bond}}(L)+p_c^{\mathrm{bond}}(L^{*})=1$ for a planar lattice
-    $L$ with sufficient symmetry and its dual $L^{*}$ CITE{BollobasRiordan}; in
+    $L$ with a $2$-fold or $3$-fold rotational symmetry and its dual $L^{*}$
+    CITE{BollobasRiordan}; in
     particular for each Archimedean lattice and its Laves dual, and for the
     self-dual square lattice, where it gives $p_c^{\mathrm{bond}}(4^4)=\frac12$.
   formula-line-graph: >-
@@ -144,8 +144,8 @@ Formulas:
     $p_c^{\mathrm{site}}(\mathbb{Z}^d)=\sigma^{-1}+\frac32\sigma^{-2}+\frac{15}{4}\sigma^{-3}+\frac{83}{4}\sigma^{-4}+\frac{6577}{48}\sigma^{-5}+\frac{119077}{96}\sigma^{-6}+O(\sigma^{-7})$
     and
     $p_c^{\mathrm{bond}}(\mathbb{Z}^d)=\sigma^{-1}+\frac52\sigma^{-3}+\frac{15}{2}\sigma^{-4}+57\sigma^{-5}+\frac{4855}{12}\sigma^{-6}+O(\sigma^{-7})$
-    with $\sigma=2d-1$, as $d\to\infty$ CITE{MertensMooreSeries}; the six terms
-    of the bond series are within $10^{-6}$ of the entry for $d=13$.
+    with $\sigma=2d-1$, as $d\to\infty$ CITE{MertensMooreSeries}; the bond
+    series through $\sigma^{-6}$ is within $10^{-6}$ of the entry for $d=13$.
 Programs:
   program-sage:
     language: Sage
@@ -219,6 +219,15 @@ References:
       C. R. Scullard and J. L. Jacobsen, Bond percolation thresholds on
       Archimedean lattices from critical polynomial roots, Physical Review
       Research 2 (2020), 012050, arXiv:1910.12376.
+  Wu:
+    bib: >-
+      F. Y. Wu, Critical point of planar Potts models, Journal of Physics C
+      12 (1979), L645–L650.
+  ZiffSuding:
+    bib: >-
+      R. M. Ziff and P. N. Suding, Determination of the bond percolation
+      threshold for the kagome lattice, Journal of Physics A 30 (1997),
+      5351–5359, arXiv:cond-mat/9707110.
   Parviainen:
     bib: >-
       R. Parviainen, Connectivity Properties of Archimedean and Laves
@@ -274,7 +283,7 @@ Data properties:
     $\mathbb{Z}^d$ for $4\leq d\leq 13$, the most precise published value of
     each as of 6 September 2026
   rigour details: >-
-    Mixed, and labelled by its weakest entries. Eleven entries are exact and
+    Mixed, and labelled by its weakest entries. Nine entries are exact and
     are computed in ball arithmetic in arb at 100 digits from their closed
     forms, with 64 guard bits: $\frac12$, written as the rational, for the
     site thresholds of the triangular lattice and of $D(4,8^2)$, $D(4,6,12)$
@@ -283,7 +292,7 @@ Data properties:
     $1-2\sin\frac{\pi}{18}$ for the bond threshold of the honeycomb lattice
     and the site threshold of the kagome lattice; and
     $\sqrt{1-2\sin\frac{\pi}{18}}$ for the site threshold of $(3,12^2)$. The
-    other 55 entries were not computed: each is a published estimate,
+    other 57 entries were not computed: each is a published estimate,
     written as centre and radius with the paper's stated uncertainty as the
     radius, and the eight Laves bond thresholds are $1$ minus the value of
     the Archimedean dual, in exact decimal arithmetic with the same radius.

@@ -16,10 +16,10 @@ Run it with SageMath:
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # send it, with NUMBERDB_API_KEY set
 
-**Two kinds of entry.** Eleven thresholds are known exactly and are
+**Two kinds of entry.** Nine thresholds are known exactly and are
 computed here in ball arithmetic at 100 digits from their closed forms:
 1/2 (five rows, returned as the exact rational), 2 sin(pi/18),
-1 - 2 sin(pi/18) (two rows) and sqrt(1 - 2 sin(pi/18)). The other 55 are
+1 - 2 sin(pi/18) (two rows) and sqrt(1 - 2 sin(pi/18)). The other 57 are
 the most precise published estimates as of 6 September 2026, transcribed
 with the paper's stated uncertainty and written as `centre +/- radius`, the
 form the table of the fine-structure constant uses; each such entry
@@ -162,7 +162,9 @@ RATIONALS = 'Rational_numbers'
 #: The table of cos(pi x) holds cos(4 pi / 9) = sin(pi / 18) at x = 4/9.
 COSINES = 'Cos_pi_times_x_at_rational_numbers'
 
-#: What each Archimedean or Laves lattice is also called, for the comments.
+#: What each Archimedean or Laves lattice is also called, for the comments:
+#: names the parameter label does not already give, so the three pentagonal
+#: Laves lattices, labelled by their one name, are absent.
 ALSO = {
     '3-12-12': 'the three-twelve or truncated hexagonal lattice',
     '4-6-12': 'the cross or truncated trihexagonal lattice',
@@ -171,14 +173,11 @@ ALSO = {
     '3-3-3-3-6': 'the snub hexagonal or maple-leaf lattice',
     '3-3-4-3-4': 'the snub square, puzzle or Shastry–Sutherland lattice',
     '3-3-3-4-4': 'the frieze, trellis or elongated triangular lattice',
-    'D-3-3-4-3-4': 'the Cairo pentagonal lattice',
-    'D-3-3-3-4-4': 'the prismatic pentagonal lattice',
-    'D-3-3-3-3-6': 'the floret pentagonal lattice',
-    'D-3-6-3-6': 'the rhombille or dice lattice',
-    'D-3-4-6-4': 'the deltoidal trihexagonal or ruby-dual lattice',
-    'D-4-8-8': 'the tetrakis square or union-jack lattice',
-    'D-4-6-12': 'the kisrhombille or bisected-hexagon lattice',
-    'D-3-12-12': 'the triakis triangular or asanoha lattice',
+    'D-3-6-3-6': 'the dice lattice',
+    'D-3-4-6-4': 'the ruby-dual lattice',
+    'D-4-8-8': 'the union-jack lattice',
+    'D-4-6-12': 'the bisected-hexagon lattice',
+    'D-3-12-12': 'the asanoha lattice',
 }
 
 #: The Archimedean lattice each Laves lattice is dual to, as a phrase.
@@ -249,8 +248,8 @@ COMMENT = {
         r'planar dual.'),
     ('kagome', 'bond'): (
         r'%s CITE{ScullardJacobsen}, from the eigenvalue formulation of critical polynomials; '
-        r'not known exactly: the conjectured polynomial $3p^2+6p^3-12p^4+6p^5-p^6=1$ has its '
-        r'root at $0.52442971\ldots$, which differs from the estimate in the fifth decimal.'
+        r'not known exactly, and the value $0.52442971\ldots$ conjectured by Wu CITE{Wu} '
+        r'differs from it in the fifth decimal.'
         % quoted('0.52440499916744820', '1e-17')),
     ('D-4-8-8', 'site'): (
         r'$p_c=\frac12$, exact CITE{SykesEssam}: every face of the tetrakis square lattice is '
@@ -329,7 +328,7 @@ class Threshold(object):
             return r'%s CITE{MertensMoore}, %s.' % (quoted(self.centre, self.radius), METHOD['MertensMoore'])
         if self.lattice in DUAL and self.kind == 'bond':
             return (r'$1-p_c^{\mathrm{bond}}$ of %s, its planar dual, whose bond threshold '
-                    r'%s is CITE{%s}.' % (DUAL_NAME[self.dual.lattice],
+                    r'is %s CITE{%s}.' % (DUAL_NAME[self.dual.lattice],
                                           quoted(self.dual.centre, self.dual.radius), self.source))
         text = '%s CITE{%s}, %s' % (quoted(self.centre, self.radius), self.source, METHOD[self.source])
         if self.source == 'SudingZiff':

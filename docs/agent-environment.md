@@ -1627,3 +1627,39 @@ build prompt still says zeta3 "may hold up to five drafts"; the number does
 not bind anything, but a run reading it might decline to build.
 
 Evidence: 2026-09-06, `/tmp/pc_create_out.txt`.
+
+## A draft's title is listed on the public tag pages before it is published
+
+What happened: the T152 critique found `/tags/physics` and
+`/tags/probability+theory`, fetched anonymously, listing "Site and bond
+percolation thresholds of lattices" with a link to `/T152`, which answers
+Not Found to everybody but its owner; `/tags/discrete+geometry` lists the
+draft T151 the same way, while `/tables` lists neither. Re-checked on
+2026-09-06 during the T152 repair: `curl -s https://numberdb.org/tags/physics`
+contains `href="/T152"` and the title, and `/tables` contains no
+"percolation". So a draft's existence and title are public through its
+tags, and every link the tag page offers for it is a dead one.
+
+What to do instead: nothing in a run; the tag view should filter as
+`/tables` does. Until then a critique or repair should not count a tag-page
+listing as the draft being reachable.
+
+Evidence: 2026-09-06, `agents/critiques/T152.md` (the "site matter"
+section) and the `curl` above.
+
+## `audit_table` has no rule for a count in the prose that disagrees with the rows
+
+What happened: T152's comment and rigour details said "Eleven of the
+thresholds are known exactly" and "the other 55 entries" where the rows
+held nine exact entries and 57 estimates; the number came from the
+proposal, not from the rows, and the generator's docstring and commit
+message repeated it. `audit_table T152 --links` reported only the length
+of the Definition. The critique caught it by counting the rows without
+`+/-`.
+
+What to do instead: a rule that finds a number word or numeral in the prose
+followed by "entries", "thresholds", "rows" or "values" and compares it
+with the entry count, or with the count of entries of each shape, would
+have found this. Until there is one, a critique should count.
+
+Evidence: 2026-09-06, `/tmp/rep152_audit_before.txt` and the T152 rows.
