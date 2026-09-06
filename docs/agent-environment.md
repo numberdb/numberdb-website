@@ -1763,3 +1763,41 @@ no text). The lesson for a contributor's own laptop is in
 Evidence: `/tmp/rep153_audit_before.txt` (T153 head `a2506f1a…`, every
 mapping sorted), `GET /api/table?id=T147` on 2026-09-06 (top-level keys
 `Comments, Data properties, Definition, …`).
+
+## The T154 build: what was reachable, and the drafts count
+
+What happened: the primary sources for the cubic Ising couplings are
+partly out of reach. APS abstract pages (`journals.aps.org/pre/abstract/...`)
+answer 403 with a JavaScript challenge, so Deng and Blöte 2003 could not be
+read; the arXiv export API (`export.arxiv.org/api/query?id_list=...` and
+`search_query=au:...+AND+ti:...`) answers title, journal reference and
+abstract for anything with an arXiv version, and the PDF downloads for
+`pdftotext`; and Crossref's REST API
+(`api.crossref.org/works?query.bibliographic=...&select=DOI,title,...`)
+resolves 1950s physics papers to title, volume, pages and DOI, which is
+how Thompson–Wardrop 1974, Utiyama 1951, Kano–Naya 1953, Houtappel 1950
+and the Philosophical Magazine and JPSJ papers were confirmed. The
+creation answer for T154 reported `drafts_held = 4` and
+`drafts_remaining = 11` (T151, T152, T153, T154).
+
+What to do instead: for a paper without an arXiv version, confirm it on
+Crossref and say in the table that the value was taken from the secondary
+source, as the fcc and diamond rows of T154 do.
+
+Evidence: `/tmp/ic_db2003.html` (403), the Crossref answers in the run
+transcript, `/tmp/ic_create_out.txt`, 2026-09-06.
+
+## The rendered-page word count in the audit scripts sees the site's own text
+
+What happened: the audit scripts for T152, T153 and T154 strip the tags
+from the table page as the owner sees it and count "below" and "above";
+every table reports `below occurs 2 times` (T152: 3) with no "below" in
+its document or entries, so the count comes from the page's own text and
+not from the table.
+
+What to do instead: count the words in the document and the entries
+(`check.prose` does the entries now), and read the page for the rendering
+of the entries, not for those words.
+
+Evidence: `/tmp/ic_audit_out3.txt`, `/tmp/rep153_audit_after.txt`,
+`/tmp/pc_audit_out.txt`, 2026-09-06.

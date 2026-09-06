@@ -100,6 +100,36 @@ def exactness(values):
     return complaints
 
 
+def prose(values):
+    """Refuse an entry comment that will read wrongly on the page.
+
+    Two things the value checks cannot see. A comment written in a raw
+    Python string with an escaped apostrophe, ``r"Onsager\\'s"``, keeps the
+    backslash: the client stores it as written, every check passed, and the
+    page of the Ising couplings showed "Onsager\\'s" until a person read it.
+    And "below" or "above" in a comment points at a position the page does
+    not keep, which `audit_table` refuses in the document but not in the
+    entries.
+
+    Returns a list of complaints; empty means nothing was found.
+    """
+    complaints = []
+    for key, value in _pairs(values):
+        if not isinstance(value, dict):
+            continue
+        comment = value.get('comment')
+        if not isinstance(comment, str):
+            continue
+        if "\\'" in comment or '\\"' in comment:
+            complaints.append('%s: the comment carries a backslash before a quote -- an escaped '
+                              'apostrophe in a raw string is stored as written' % key)
+        for word in ('below', 'above'):
+            if re.search(r'\b%s\b' % word, comment):
+                complaints.append('%s: the comment says "%s", which points at a position the page '
+                                  'does not keep' % (key, word))
+    return complaints
+
+
 def _is_integer_interval_text(value):
     """Whether this is the string `[a, b]` with integers a < b: the interval
     an exact table stores for an integer that is only known to lie between

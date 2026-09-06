@@ -20,7 +20,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from check import exactness, measure, names_its_rings          # noqa: E402
+from check import exactness, measure, names_its_rings, prose   # noqa: E402
 
 
 def load(path):
@@ -63,6 +63,15 @@ def main(argv):
         print('  ', complaint)
     if not complaints:
         print('   every value is exact, or carries its own error bound')
+
+    print()
+    print('== prose ==')
+    remarks = prose(values)
+    for remark in remarks[:5]:
+        print('  ', remark)
+    if not remarks:
+        print('   no comment carries a backslash before a quote, or says below or above')
+    complaints.extend(remarks)
 
     print()
     print('== size ==')
