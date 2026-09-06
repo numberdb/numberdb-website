@@ -291,3 +291,59 @@ def sync_review_flags(table):
 		if reviewed_ids:
 			model.objects.filter(id__in=reviewed_ids).update(reviewed=True)
 	return marked
+
+
+def waiting_for_review():
+	"""The tables the review queue lists, in the order it lists them.
+
+	Here rather than in the view because two places ask the question now: the
+	queue itself, and the navigation, which says how many are waiting. A count
+	computed separately from the list it counts is a count that will one day
+	disagree with it, and the number in the navigation is the one a reader
+	believes.
+
+	Counted from the `reviewed` flag on the rows rather than by diffing the
+	documents. `sync_review_flags` maintains that flag after every commit and
+	every review, so the answer is on an indexed column; the view used to
+	recompute it and spent forty seconds proving that 107 of 108 tables had
+	not changed.
+	"""
+	from django.db.models import Count
+
+	from .models import (Number, NumberComplex, NumberPAdic, Polynomial,
+	                     Table)
+
+	outstanding = {}
+	for model in (Number, NumberComplex, NumberPAdic, Polynomial):
+		rows = (model.objects.filter(reviewed=False)
+		        .values('table_id').annotate(n=Count('id')))
+		for row in rows:
+			outstanding[row['table_id']] = (outstanding.get(row['table_id'], 0)
+			                                + row['n'])
+
+	waiting = []
+	for table in (Table.objects.exclude(head_revision=None)
+	                           .select_related('head_revision',
+	                                           'reviewed_at_revision')):
+		#A draft asks for attention only when its author says it is finished.
+		#Otherwise every table entered the queue the moment it was created,
+		#and a queue that is mostly half-built tables trains its reader to
+		#skim -- which costs exactly the attention it exists to get.
+		if not table.published and not table.ready_for_review:
+			continue
+		count = outstanding.get(table.pk, 0)
+		whole = table.reviewed_at_revision_id is None
+		if not count and not whole:
+			continue
+		if whole:
+			count = count or table.number_count
+		waiting.append({
+			'table': table,
+			'count': count,
+			'whole_table': whole,
+			'head': table.head_revision,
+			'since': table.reviewed_at_revision,
+		})
+
+	waiting.sort(key=lambda one: one['head'].created, reverse=True)
+	return waiting
