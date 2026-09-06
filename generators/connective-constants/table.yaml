@@ -1,0 +1,292 @@
+# The table document for the connective constants, proposal 3 of
+# agents/table-ideas/BATCH-2026-09-06T0326.md. Created as a draft through the
+# API (X-Draft: yes) and filled by generate.py beside it; publishing is a
+# person's act on the site.
+Title: Connective constants of lattices
+Definition: >-
+  For an infinite lattice graph $L$, let $c_n$ be the number of self-avoiding
+  walks of $n$ steps on $L$ that start at a fixed vertex, a walk being
+  self-avoiding if it visits no vertex twice; the connective constant of $L$
+  CITE{Wiki} is $\mu(L)=\lim_{n\to\infty}c_n^{1/n}$.
+Parameters:
+  lattice:
+    type: Symbolic
+    title: lattice, named by its tiling, crystal structure or vertex configuration
+    display: lattice
+    values:
+      honeycomb: 'honeycomb $(6^3)$'
+      square: 'square $(4^4)$'
+      triangular: 'triangular $(3^6)$'
+      kagome: 'kagome $(3,6,3,6)$'
+      3-12-12: '$(3,12^2)$'
+      4-8-8: '$(4,8^2)$'
+      manhattan: 'Manhattan'
+      L: 'L-lattice'
+      sc: 'simple cubic'
+      bcc: 'body-centred cubic'
+      fcc: 'face-centred cubic'
+      hypercubic: 'hypercubic $\mathbb{Z}^d$'
+  d:
+    type: Z
+    title: dimension
+    display: $d$
+    constraints: >-
+      $d=2$ for the planar lattices, $d=3$ for the cubic lattices, $d\geq 4$
+      for the hypercubic lattice $\mathbb{Z}^d$
+Comments:
+  comment-conventions: >-
+    The lattices are the nearest-neighbour graphs of the tilings and crystal
+    structures named. An Archimedean lattice is named by its vertex
+    configuration in the notation of Grünbaum and Shephard, the cycle of
+    polygons around a vertex, so that $(3,12^2)$ has a triangle and two
+    dodecagons at every vertex; $(3,12^2)$ is also called the three-twelve or
+    truncated hexagonal lattice and $(4,8^2)$ the four-eight, bathroom-tile
+    or truncated square lattice. The honeycomb lattice $(6^3)$ is the
+    hexagonal lattice of many authors, a name that others give to the
+    triangular lattice $(3^6)$; this table uses honeycomb and triangular.
+    The Manhattan lattice and the L-lattice are the square lattice with
+    every edge directed, and a walk on them follows the directions. On the
+    Manhattan lattice all edges of a row point the same way and consecutive
+    rows point in opposite ways, and the same holds for the columns, like
+    one-way streets; a walk may go straight or turn. On the L-lattice the
+    vertices form a checkerboard of two kinds: at a vertex of the first kind
+    both horizontal edges point in and both vertical edges point out, at a
+    vertex of the second kind both vertical edges point in and both
+    horizontal edges point out, so that a walk turns at every step and its
+    consecutive steps trace the letter L. The hypercubic lattices
+    $\mathbb{Z}^2$ and $\mathbb{Z}^3$ are the square and simple cubic rows.
+    Every lattice here is vertex-transitive, so $c_n$ does not depend on the
+    starting vertex.
+  comment-exact: >-
+    Two of the constants are known exactly. The honeycomb constant
+    $\sqrt{2+\sqrt2}=2\cos\frac{\pi}{8}$ was conjectured by Nienhuis
+    CITE{Nienhuis} from the Coulomb-gas description of the $O(n)$ model at
+    $n=0$ and proved by Duminil-Copin and Smirnov CITE{DuminilCopinSmirnov}
+    with a parafermionic observable; it is the largest root of $x^4-4x^2+2$,
+    OEIS A179260 CITE{OEIShoneycomb}, and its square $2+\sqrt2$ is in the
+    HREF{Algebraic_numbers_of_degree_2}[table of algebraic numbers of degree
+    2]. The $(3,12^2)$ constant follows from it, as Jensen and Guttmann
+    CITE{JensenGuttmann98} observed: replacing every vertex of the honeycomb
+    lattice by a triangle gives $(3,12^2)$, a walk on $(3,12^2)$ crosses
+    each triangle it visits by one edge or by two, and so a honeycomb step
+    of weight $y$ becomes $x^2+x^3$ in the step weight $x$ of $(3,12^2)$.
+    The two constants therefore satisfy
+    $\frac{1}{\mu(6^3)}=\frac{1}{\mu(3,12^2)^2}+\frac{1}{\mu(3,12^2)^3}$,
+    and $\mu(3,12^2)$ is the largest real root of the polynomial of degree
+    $12$ in CITE{formula-three-twelve}, OEIS A249776 CITE{OEIStt}. Guttmann,
+    Parviainen and Rechnitzer CITE{GuttmannParviainenRechnitzer} give the
+    full generating function, correcting an error in the earlier count of
+    walks that does not affect the constant. No connective constant of a
+    lattice in three or more dimensions is known exactly, and no connective
+    constant of a planar lattice other than these two.
+  comment-estimates: >-
+    The other constants are numerical estimates, each written as
+    $\mu\pm\varepsilon$ with $\varepsilon$ the uncertainty stated in the
+    paper cited in the entry, and in the notation $4.150797226(26)$ the
+    digits in parentheses are that uncertainty in the last digits written.
+    They are the most precise published values as of 6 September 2026, read
+    from the papers cited: the topological transfer-matrix value of
+    Jacobsen, Scullard and Guttmann CITE{JSG16} for the square lattice, the
+    series values of Jensen CITE{Jensen04} CITE{Jensen04bounds}, of Jensen
+    and Guttmann CITE{JensenGuttmann98} and of Bennett-Wood, Cardy, Enting,
+    Guttmann and Owczarek CITE{BennettWood98} for the triangular, kagome,
+    $(4,8^2)$ and Manhattan lattices, and the pivot-algorithm values of
+    Clisby CITE{Clisby13} CITE{Clisby22} and of Owczarek and Prellberg
+    CITE{OwczarekPrellberg} for the cubic and hypercubic lattices. The
+    L-lattice value is the one in the table in CITE{Wiki}, which names no
+    source for it. The square-lattice constant was long conjectured to be
+    the positive root of $13x^4-7x^2-581$, which is $2.63815853034\ldots$,
+    OEIS A156816 CITE{OEISconjecture}; the estimate of CITE{JSG16} differs
+    from it in the twelfth digit, and the first thirteen digits of the
+    estimate are OEIS A387897 CITE{OEISsquare}. Rigorous bounds are known
+    for every lattice here: for the planar lattices those of Jensen
+    CITE{Jensen04bounds} and Alm CITE{Alm}, for example
+    $2.625622<\mu(4^4)<2.679193$, and for $\mathbb{Z}^d$ those quoted by
+    Owczarek and Prellberg CITE{OwczarekPrellberg}; every estimate lies
+    inside its bounds.
+Formulas:
+  formula-fekete: >-
+    $c_{n+m}\leq c_n c_m$ for all $n,m\geq 0$, since cutting an $(n+m)$-step
+    self-avoiding walk after $n$ steps gives an $n$-step and an $m$-step
+    walk; hence $\mu=\lim_{n\to\infty}c_n^{1/n}=\inf_{n\geq 1}c_n^{1/n}$
+    exists CITE{Hammersley} and $c_n\geq\mu^n$ for every $n\geq 1$.
+  formula-honeycomb: >-
+    $\mu(6^3)=\sqrt{2+\sqrt2}=2\cos\frac{\pi}{8}=1.8477590650\ldots$
+    CITE{DuminilCopinSmirnov}, the largest root of $x^4-4x^2+2$.
+  formula-three-twelve: >-
+    $\mu(3,12^2)^3=\mu(6^3)\left(\mu(3,12^2)+1\right)$ CITE{JensenGuttmann98},
+    so that $\mu(3,12^2)=1.7110412968\ldots$ is the largest real root of
+    $x^{12}-4x^8-8x^7-4x^6+2x^4+8x^3+12x^2+8x+2$, which is
+    $(x+1)^4\left(y^4-4y^2+2\right)$ with $y=\frac{x^3}{x+1}$.
+  formula-degree: >-
+    $\mu(L)\leq z-1$ for a lattice $L$ in which every vertex has degree $z$,
+    since a self-avoiding walk never reverses a step, and $\mu\leq 2$ on the
+    Manhattan and L lattices, where every vertex has two outgoing edges.
+  formula-series: >-
+    $\mu(\mathbb{Z}^d)=\sigma-\frac{1}{\sigma}-\frac{2}{\sigma^2}-\frac{11}{\sigma^3}-\frac{62}{\sigma^4}+O(\sigma^{-5})$
+    with $\sigma=2d-1$, as $d\to\infty$, as quoted in CITE{OwczarekPrellberg}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      mu = sqrt(2 + sqrt(2))                             # honeycomb lattice, exact
+      N(mu, digits=30)
+      R.<x> = QQ[]
+      p = x^12 - 4*x^8 - 8*x^7 - 4*x^6 + 2*x^4 + 8*x^3 + 12*x^2 + 8*x + 2
+      p.roots(RealIntervalField(200))                    # (3,12^2): the largest real root
+Similar tables:
+  - table: HREF{Site_and_bond_percolation_thresholds_of_lattices}[Site and bond percolation thresholds of lattices]
+    relation: the percolation thresholds of the same lattices
+  - table: HREF{Critical_exponents_of_the_two-dimensional_universality_classes}[Critical exponents of the two-dimensional universality classes]
+    relation: holds the exponents $\gamma=\frac{43}{32}$ and $\nu=\frac34$ of the planar self-avoiding walk, with $c_n\sim A\mu^n n^{\gamma-1}$
+  - table: HREF{Cos_pi_times_x_at_rational_numbers}[$\cos(\pi x)$ for rational $x$]
+    relation: holds $\cos\frac{\pi}{8}$, half the honeycomb constant
+  - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
+    relation: holds $2+\sqrt2$, the square of the honeycomb constant
+  - table: HREF{Polya's_random_walk_constants}[Pólya's random walk constants]
+    relation: the return probability of the simple random walk on $\mathbb{Z}^d$, the other walk constant tabulated by dimension
+Links:
+  Wiki:
+    title: 'Wikipedia: Connective constant'
+    url: https://en.wikipedia.org/wiki/Connective_constant
+  MathWorld:
+    title: 'MathWorld: Self-Avoiding Walk Connective Constant'
+    url: https://mathworld.wolfram.com/Self-AvoidingWalkConnectiveConstant.html
+  OEIShoneycomb:
+    title: 'OEIS A179260: decimal expansion of the connective constant of the honeycomb net'
+    url: https://oeis.org/A179260
+  OEIStt:
+    title: 'OEIS A249776: decimal expansion of the connective constant of the $(3,12^2)$ lattice'
+    url: https://oeis.org/A249776
+  OEISsquare:
+    title: 'OEIS A387897: decimal expansion of the connective constant of the square lattice'
+    url: https://oeis.org/A387897
+  OEISconjecture:
+    title: 'OEIS A156816: decimal expansion of the positive root of $13x^4-7x^2-581$'
+    url: https://oeis.org/A156816
+  OEISL:
+    title: 'OEIS A322419: number of $n$-step self-avoiding walks on the L-lattice'
+    url: https://oeis.org/A322419
+References:
+  Hammersley:
+    bib: >-
+      J. M. Hammersley, Percolation processes II. The connective constant,
+      Proceedings of the Cambridge Philosophical Society 53 (1957), 642–645.
+  Nienhuis:
+    bib: >-
+      B. Nienhuis, Exact critical point and critical exponents of O(n) models
+      in two dimensions, Physical Review Letters 49 (1982), 1062–1065.
+  DuminilCopinSmirnov:
+    bib: >-
+      H. Duminil-Copin and S. Smirnov, The connective constant of the
+      honeycomb lattice equals $\sqrt{2+\sqrt2}$, Annals of Mathematics 175
+      (2012), 1653–1665, arXiv:1007.0575.
+  JensenGuttmann98:
+    bib: >-
+      I. Jensen and A. J. Guttmann, Self-avoiding walks, neighbour-avoiding
+      walks and trails on semiregular lattices, Journal of Physics A 31
+      (1998), 8137–8145.
+  GuttmannParviainenRechnitzer:
+    bib: >-
+      A. J. Guttmann, R. Parviainen and A. Rechnitzer, Self-avoiding walks
+      and trails on the $3.12^2$ lattice, Journal of Physics A 38 (2005),
+      543–554, arXiv:cond-mat/0410241.
+  JSG16:
+    bib: >-
+      J. L. Jacobsen, C. R. Scullard and A. J. Guttmann, On the growth
+      constant for square-lattice self-avoiding walks, Journal of Physics A
+      49 (2016), 494004, arXiv:1607.02984.
+  Jensen04:
+    bib: >-
+      I. Jensen, Self-avoiding walks and polygons on the triangular lattice,
+      Journal of Statistical Mechanics: Theory and Experiment (2004),
+      P10008, arXiv:cond-mat/0409039.
+  Jensen04bounds:
+    bib: >-
+      I. Jensen, Improved lower bounds on the connective constants for
+      two-dimensional self-avoiding walks, Journal of Physics A 37 (2004),
+      11521–11529, arXiv:cond-mat/0409381.
+  Alm:
+    bib: >-
+      S. E. Alm, Upper and lower bounds for the connective constants of
+      self-avoiding walks on the Archimedean and Laves lattices, Journal of
+      Physics A 38 (2005), 2055–2080.
+  BennettWood98:
+    bib: >-
+      D. Bennett-Wood, J. L. Cardy, I. G. Enting, A. J. Guttmann and A. L.
+      Owczarek, On the non-universality of a critical exponent for
+      self-avoiding walks, Nuclear Physics B 528 (1998), 533–552,
+      arXiv:cond-mat/9805146.
+  Clisby13:
+    bib: >-
+      N. Clisby, Calculation of the connective constant for self-avoiding
+      walks via the pivot algorithm, Journal of Physics A 46 (2013), 245001,
+      arXiv:1302.2106.
+  Clisby22:
+    bib: >-
+      N. Clisby, The growth constant for self-avoiding walks on the fcc and
+      bcc lattices, Journal of Physics A 55 (2022), 465003.
+  SchramBarkemaBisseling:
+    bib: >-
+      R. D. Schram, G. T. Barkema and R. H. Bisseling, Exact enumeration of
+      self-avoiding walks, Journal of Statistical Mechanics: Theory and
+      Experiment (2011), P06019, arXiv:1104.2184.
+  SchramEtAl17:
+    bib: >-
+      R. D. Schram, G. T. Barkema, R. H. Bisseling and N. Clisby, Exact
+      enumeration of self-avoiding walks on BCC and FCC lattices, Journal of
+      Statistical Mechanics: Theory and Experiment (2017), 083208,
+      arXiv:1703.09340.
+  OwczarekPrellberg:
+    bib: >-
+      A. L. Owczarek and T. Prellberg, Scaling of self-avoiding walks in
+      high dimensions, Journal of Physics A 34 (2001), 5773–5780,
+      arXiv:cond-mat/0104135.
+Tags:
+  - probability theory
+  - combinatorics
+  - random walks
+Data properties:
+  type: R
+  rigour: measured
+  sources:
+    - CITE{Wiki}
+  complete: 'no'
+  complete-note: >-
+    it holds the honeycomb, square, triangular, kagome, $(3,12^2)$ and
+    $(4,8^2)$ lattices, the Manhattan and L lattices, the simple cubic,
+    body-centred cubic and face-centred cubic lattices and the hypercubic
+    lattices $\mathbb{Z}^d$ for $4\leq d\leq 8$, the most precise published
+    value of each as of 6 September 2026
+  rigour details: >-
+    Mixed, and labelled by its weakest entries. Two entries are exact and
+    are computed in ball arithmetic in arb at 100 digits, with 64 guard
+    bits: the honeycomb constant from $\sqrt{2+\sqrt2}$, and the $(3,12^2)$
+    constant as the one real root of $x^3-\mu(6^3)x-\mu(6^3)$, whose
+    discriminant $\mu(6^3)^2(4\mu(6^3)-27)$ is negative, bracketed by
+    bisection on the sign of the cubic with every sign decided in ball
+    arithmetic, a sign change checked across the written enclosure, and
+    the polynomial of degree $12$ checked to vanish on it. The other 14
+    entries were not computed: each is a published estimate, written as
+    centre and radius with the paper's stated uncertainty as the radius.
+    The L-lattice value is taken from the table in the Wikipedia article,
+    which names no source for it, since no paper stating it could be read
+    for this table; the Manhattan entry carries the uncertainty
+    $2\cdot 10^{-6}$ printed in the paper rather than the $3$ in the last
+    digit listed in that table; the $(4,8^2)$ value of Jensen and Guttmann
+    was read as quoted by Jensen 2004 and Alm 2005, since the 1998 paper
+    itself could not be read. Before any entry was written, the two closed
+    forms were compared with OEIS A179260 and A249776 to every digit those
+    entries give and with $x^4-4x^2+2$ and the polynomial of degree $12$ by
+    a sign change across each written enclosure, and the polynomial of
+    degree $12$ with the cubic relation by exact polynomial arithmetic;
+    every estimate was compared with the text of the paper cited, read from
+    its arXiv version or, for Clisby 2022, from its abstract, and with the
+    Wikipedia table on 6 September 2026; the inequality $c_n\geq\mu^n$ was
+    checked against the published counts $c_n$ of eleven of the lattices
+    for every $n$ available, at most $51$; each estimate was checked to
+    lie inside the rigorous bounds of Jensen 2004, Alm 2005 and Owczarek
+    and Prellberg 2001; and the $1/(2d-1)$ series against the hypercubic
+    entries.
+Display properties:
+  number-header: $\mu$
