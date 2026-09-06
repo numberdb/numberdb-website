@@ -170,6 +170,27 @@ class TheCheckingToolkitCatchesWhatItWasBuiltFor(TestCase):
 
 		self.assertEqual(self.toolkit().exactness({1: 3, 2: 4}), [])
 
+	def test_an_integer_interval_string_is_an_enclosure(self):
+		#`[43, 48]` is what T6 stores for R(5,5) and `[40, 44]` what T151
+		#stores for the kissing number of R^5: an integer known to lie
+		#between two integers, in the database's own spelling. The client
+		#writes a plain string verbatim, so a plain string is the only way
+		#an exact table can return one; the first version of this check
+		#called it "unexpected type str", and the run that met that wrapped
+		#it in a str subclass to get past the check -- which the client's
+		#YAML writer then stored as a Python object, eighteen times.
+		self.assertEqual(self.toolkit().exactness({5: '[40, 44]', 8: 240}), [])
+		self.assertEqual(self.toolkit().exactness({5: {'number': '[40, 44]'}}), [])
+
+	def test_an_integer_interval_must_be_a_plain_string_of_nonzero_width(self):
+		class Disguised(str):
+			pass
+
+		self.assertTrue(self.toolkit().exactness({5: Disguised('[40, 44]')}))
+		self.assertTrue(self.toolkit().exactness({5: '[44, 40]'}))
+		self.assertTrue(self.toolkit().exactness({5: '[40, 40]'}))
+		self.assertTrue(self.toolkit().exactness({5: '[4.0, 4.4]'}))
+
 	def test_it_measures_the_longest_entry(self):
 		measured = self.toolkit().measure({1: 'x', 2: 'x^2 + 3*x + 1'})
 		self.assertEqual(measured['entries'], 2)
