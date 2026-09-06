@@ -420,88 +420,14 @@ set -e
 # of number worth knowing before deciding to make eighty tables.
 ledger="agents/runs/COSTS.tsv"
 if [ ! -f "$ledger" ]; then
-	printf 'started\tstage\tengine\tturns\tcost_usd\tresult\tlog\tmodel\tprompt\tsession\tresumed\n' > "$ledger"
+	python3 agents/ledger.py --header > "$ledger"
 fi
-python3 - "$log" "$started" "$stage" "$engine" "$prompt_version" "$session" "$resumed" "$codex_model" >> "$ledger" <<'LEDGER' || true
-import json, os, sys
-path, started, stage, engine, prompt, session, resumed, codex_model = sys.argv[1:9]
-#Codex reports neither a cost nor the model in its stream: it prints one
-#`turn.completed` per turn carrying token counts, and the model is the one it
-#was told to use. So its row records turns and the model asked for, and
-#leaves the cost empty rather than inventing a rate.
-if engine == 'codex':
-	turns = 0
-	thread = ''
-	failed = False
-	tokens = 0
-	try:
-		for line in open(path, errors='replace'):
-			line = line.strip()
-			if not line.startswith('{'):
-				continue
-			try:
-				record = json.loads(line)
-			except Exception:
-				continue
-			kind = record.get('type', '')
-			if kind == 'thread.started' and not thread:
-				thread = record.get('thread_id', '') or ''
-			elif kind == 'turn.completed':
-				turns += 1
-				usage = record.get('usage') or {}
-				tokens += (usage.get('input_tokens', 0)
-				           + usage.get('output_tokens', 0))
-			elif kind in ('turn.failed', 'error'):
-				failed = True
-	except OSError:
-		pass
-	print('%s\t%s\t%s\t%s\t\t%s\t%s\t%s\t%s\t%s\t%s'
-	      % (started, stage, engine, turns,
-	         'error' if failed else ('%d tokens' % tokens if turns else
-	                                 'no turn recorded'),
-	         os.path.basename(path), codex_model, prompt,
-	         session or thread, resumed))
-	raise SystemExit
-
-last = None
-#Which model actually answered. Known only now: the CLI chooses it, and the
-#first assistant message in the transcript says which. This is the durable
-#record of it -- the ledger is tracked and the transcripts are not.
-model = ''
-
-try:
-	for line in open(path, errors='replace'):
-		line = line.strip()
-		if line.startswith('{'):
-			try:
-				record = json.loads(line)
-			except Exception:
-				continue
-			if not model:
-				named = (record.get('message') or {}).get('model')
-				if isinstance(named, str) and named:
-					model = named
-			if record.get('type') == 'result':
-				last = record
-except OSError:
-	pass
-if last is None:
-	print('%s\t%s\t%s\t\t\tno result record\t%s\t%s\t%s\t%s\t%s'
-	      % (started, stage, engine, os.path.basename(path), model, prompt,
-	         session, resumed))
-else:
-	#`subtype` says "success" even when the run ended on an API error: the
-	#401 that stopped the campaign on 2026-09-03 was recorded as a success by
-	#every field except this one.
-	outcome = last.get('subtype', '')
-	if last.get('is_error'):
-		outcome = 'error %s' % (last.get('api_error_status')
-		                        or last.get('subtype') or '',)
-	print('%s\t%s\t%s\t%s\t%.2f\t%s\t%s\t%s\t%s\t%s\t%s'
-	      % (started, stage, engine, last.get('num_turns', ''),
-	         last.get('total_cost_usd', 0) or 0, outcome.strip(),
-	         os.path.basename(path), model, prompt, session, resumed))
-LEDGER
+# In a file of its own rather than a heredoc, because what it does is now
+# arithmetic worth testing: two harnesses bill in different currencies -- one
+# reports dollars, the other tokens -- and the ledger's job is to make the
+# comparison possible at all. See agents/ledger.py and agents/model-rates.tsv.
+python3 agents/ledger.py "$log" "$started" "$stage" "$engine" \
+	"$prompt_version" "$session" "$resumed" "$codex_model" >> "$ledger" || true
 
 #The ledger is tracked, so appending to it leaves the tree dirty -- and the
 #next run refuses a dirty tree, by design. Committing the line here is what

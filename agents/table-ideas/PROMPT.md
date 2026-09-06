@@ -24,6 +24,30 @@ numberdb-data#128 argues against itself: *"Monomials. Trivial but maybe should
 be included?"* A table of monomials would match everything and tell nobody
 anything. Every entry you propose should survive that test.
 
+**Where this database is stronger than OEIS.** OEIS is very good at integer
+sequences and at two-dimensional integer tables, it is popular, and it is
+where somebody with an integer sequence looks first. That is not the ground to
+compete on. It holds a real number only one sequence at a time, as the digits
+of that one constant, which is cumbersome for a *family* of reals; it has no
+natural home for a family of polynomials, or of rationals, or of algebraic
+numbers; and it is indexed by the integers, so a family indexed by a lattice,
+a number field, a signature, a character, a knot or a graph has to be
+flattened into an order somebody invented before it can be stored at all.
+
+So prefer, in rough order:
+
+* families of **real or complex numbers** -- constants, special values, zeros,
+  invariants -- where a reader has digits and wants a name;
+* families of **polynomials, rationals or algebraic numbers**;
+* families whose **index is not an integer**: a lattice, a field, a knot, a
+  graph, a character, a signature, a pair.
+
+This is a preference and not a rule. An integer table is still worth making,
+particularly when its index is not an integer -- and if a family is genuinely
+interesting and OEIS happens to hold it too, that is not an argument against
+it. What it argues against is proposing a table *because* it is an integer
+sequence, which is the case where somebody is already served better elsewhere.
+
 Prefer **breadth over depth**. Fifty families with their first dozen members
 answer "is this number known" better than one family with a thousand, because
 the question is not "give me more of this sequence".

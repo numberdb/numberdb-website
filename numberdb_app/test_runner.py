@@ -313,16 +313,17 @@ class WhatARunRecordsAboutItself(TestCase):
 			self.assertNotIn(guess, exported.lower())
 
 	def test_the_ledger_records_the_model_and_the_prompt(self):
-		body = script('agents/run.sh')
-		self.assertIn('model\\tprompt', body)
-		self.assertIn("named = (record.get('message') or {}).get('model')",
-		              body)
+		#The arithmetic moved into agents/ledger.py when a second engine
+		#arrived and the two had to be priced the same way; what run.sh owes
+		#it is the run's own facts.
+		self.assertIn('model', script('agents/ledger.py'))
+		self.assertIn('"$prompt_version" "$session" "$resumed"',
+		              script('agents/run.sh'))
 
 	def test_the_ledger_does_not_call_an_api_error_a_success(self):
 		#A 401 ended a build with subtype "success" and is_error true, and
 		#the ledger believed the subtype.
-		body = script('agents/run.sh')
-		self.assertIn("if last.get('is_error'):", body)
+		self.assertIn("if last.get('is_error'):", script('agents/ledger.py'))
 
 
 class ACampaignReadsTheStatusItActuallyGot(TestCase):
@@ -475,9 +476,8 @@ class ARunCanBeResumed(TestCase):
 		self.assertIn('${NUMBERDB_NO_RETRY:-0}', body)
 
 	def test_the_ledger_records_the_session_and_the_retry(self):
-		body = script('agents/run.sh')
-		self.assertIn('session\\tresumed', body)
-		self.assertIn('"$session" "$resumed"', body)
+		self.assertIn("'session', 'resumed'", script('agents/ledger.py'))
+		self.assertIn('"$session" "$resumed"', script('agents/run.sh'))
 
 
 class WhatToDoAboutAFailureIsAsked(TestCase):
@@ -594,12 +594,13 @@ class EitherEngineCanRunAnyStage(TestCase):
 		self.assertIn('codex exec resume', body)
 		self.assertIn('thread_id', body)
 
-	def test_the_ledger_knows_codex_reports_no_cost(self):
-		#It reports tokens per turn and no price, so the row says tokens and
-		#leaves the cost empty rather than inventing a rate.
-		body = script('agents/run.sh')
-		self.assertIn("engine == 'codex'", body)
+	def test_the_ledger_prices_codex_from_its_tokens(self):
+		#It reports tokens per turn and no price, so the row is priced from
+		#agents/model-rates.tsv -- the same money the other engine reports,
+		#which is the only figure that compares across the two.
+		body = script('agents/ledger.py')
 		self.assertIn('turn.completed', body)
+		self.assertIn('model-rates.tsv', body)
 
 	def test_the_campaign_routes_each_stage(self):
 		body = script('agents/campaign.sh')
