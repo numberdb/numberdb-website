@@ -189,3 +189,56 @@ class FormulasThatDescribeTheRun(TestCase):
 		#saying it there must not be flagged wherever it appears.
 		self.assertFalse(self.narration(
 			'each value was computed in ball arithmetic at 400 bits'))
+
+
+class AnIdentifierInTheSentenceIsNotALink(TestCase):
+	"""A reference may carry `arxiv`, `doi`, `zbl` or `mr` beside its `bib`.
+
+	The page renders each as a link. Nine tables built in three days put the
+	arXiv number in the sentence instead -- fifty-two references whose number
+	a reader could see and not click, and could only use by retyping it.
+	"""
+
+	def setUp(self):
+		self.person = get_user_model().objects.create_user('reader2')
+		self.table = Table.objects.create(
+			tid='T402', tid_int=402, url='t402', title='Another family',
+			published=True)
+		TableRevision.objects.create(table=self.table, author=self.person,
+		                             content='Title: Another family\n')
+
+	def complaints(self, references):
+		from .management.commands.audit_table import Command
+
+		tree = {'Title': 'Another family', 'References': references}
+		titles = {t.title.lower(): t for t in Table.objects.all()}
+		urls = {t.url for t in Table.objects.all()}
+		return list(Command()._check(self.table, tree, urls, titles))
+
+	def test_an_arxiv_number_in_the_text_is_reported(self):
+		found = self.complaints({'SalasSokal': {
+			'bib': 'J. Salas and A. D. Sokal, Logarithmic corrections, '
+			       'Journal of Statistical Physics 88 (1997), 567-615, '
+			       'arXiv:hep-lat/9607030.'}})
+		self.assertTrue(any('arxiv' in f and 'not a link' in f for f in found),
+		                found)
+
+	def test_the_same_reference_with_the_field_is_not(self):
+		found = self.complaints({'SalasSokal': {
+			'bib': 'J. Salas and A. D. Sokal, Logarithmic corrections, '
+			       'Journal of Statistical Physics 88 (1997), 567-615.',
+			'arxiv': 'hep-lat/9607030'}})
+		self.assertFalse([f for f in found if 'not a link' in f], found)
+
+	def test_a_doi_in_the_text_is_reported_too(self):
+		found = self.complaints({'Someone': {
+			'bib': 'A. Person, A paper, A Journal 1 (2020), 1-2, '
+			       'https://doi.org/10.1000/x.'}})
+		self.assertTrue(any('doi' in f and 'not a link' in f for f in found),
+		                found)
+
+	def test_a_plain_reference_is_left_alone(self):
+		found = self.complaints({'Onsager': {
+			'bib': 'L. Onsager, Crystal statistics I, Physical Review 65 '
+			       '(1944), 117-149.'}})
+		self.assertFalse([f for f in found if 'not a link' in f], found)

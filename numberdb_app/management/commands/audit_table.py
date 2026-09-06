@@ -267,6 +267,26 @@ class Command(BaseCommand):
 					       'database holds as %s -- prefer HREF{%s}'
 					       % (name, other.title[:40], other.tid, other.url))
 
+		#An identifier a reader can see and cannot click. A reference may
+		#carry `arxiv`, `doi`, `zbl` or `mr` beside its `bib`, and the page
+		#renders each as a link. Nine tables built in three days put the arXiv
+		#number in the sentence instead -- fifty-two references, every one of
+		#them a number the reader has to retype.
+		for name, reference in (tree.get('References') or {}).items():
+			if not isinstance(reference, dict):
+				continue
+			fields = {key.lower() for key in reference}
+			bib = str(reference.get('bib') or '').lower()
+			for spelling, field in (('arxiv:', 'arxiv'), ('doi.org', 'doi'),
+			                        ('doi:', 'doi'), ('zbl ', 'zbl'),
+			                        ('mr ', 'mr')):
+				if spelling in bib and field not in fields:
+					yield ('References[%s] gives its %s in the text, where it '
+					       'is not a link. Put it in a `%s:` field beside the '
+					       'bib and the page renders it as one'
+					       % (name, field, field))
+					break
+
 		#Tags that lead nowhere.
 		#
 		#Not "the tag does not exist": committing a table creates its tags, so
