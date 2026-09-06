@@ -73,6 +73,14 @@ log="agents/runs/$started-$stage.log"
 # client both honour ALL_PROXY, so setting it here means the run never has to
 # know -- and the preflight below tests the same path the run will use.
 export ALL_PROXY="${NUMBERDB_PROXY:-socks5h://127.0.0.1:1080}"
+# But not the harness's own traffic. The proxy is here because numberdb.org is
+# blocked from this network; chatgpt.com is not, and routing codex's control
+# plane through it printed seven "failed to refresh available models" errors
+# into the first run's log while the model itself answered perfectly well.
+# Noise in a transcript is not free: it is the first thing read when a run
+# goes wrong.
+export NO_PROXY="${NO_PROXY:+$NO_PROXY,}chatgpt.com,.chatgpt.com,openai.com,.openai.com"
+export no_proxy="$NO_PROXY"
 export NUMBERDB_AGENT_RUN=1
 # What made this revision, at the granularity where it can change without
 # anybody noticing: the harness, which agent, the version of that agent's
