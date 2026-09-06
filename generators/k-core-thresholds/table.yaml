@@ -8,7 +8,8 @@ Definition: >-
   degree at least $k$. For $k\geq3$, the $k$-core threshold $c_k$ is the
   number such that the Erdős–Rényi random graph CITE{WikiER} $G(n,p)$ with
   $p=c/n$ has, with probability tending to $1$ as $n\to\infty$, an empty
-  $k$-core when $c<c_k$ and a $k$-core of order $n$ when $c>c_k$; it equals
+  $k$-core when $c<c_k$ and a $k$-core on a positive fraction of the vertices
+  when $c>c_k$; it equals
   $\min_{\lambda>0}\lambda/\mathbb{P}(\mathrm{Po}(\lambda)\geq k-1)$, with
   $\mathrm{Po}(\lambda)$ a Poisson variable of mean $\lambda$ CITE{PSW}.
 Parameters:
@@ -24,8 +25,8 @@ Comments:
     CITE{JansonLuczak}. The $2$-core is different: a giant $2$-core grows
     together with the giant component from $c=1$ on, and the quotient
     $\lambda/\mathbb{P}(\mathrm{Po}(\lambda)\geq1)=\lambda/(1-e^{-\lambda})$
-    increases from $1$ at $\lambda\to0$, so $c_2=1$ is an infimum that is
-    not attained CITE{CainWormald} CITE{JansonLuczak}. For $k\geq3$ the
+    tends to $1$ as $\lambda\to0$ and increases with $\lambda$, so $c_2=1$ is
+    an infimum that is not attained CITE{CainWormald} CITE{JansonLuczak}. For $k\geq3$ the
     minimum is attained at a unique $\lambda_k$ CITE{formula-minimiser}, and
     the $k$-core appears suddenly: at $c=c_k$ it already has about
     $\mathbb{P}(\mathrm{Po}(\lambda_k)\geq k)\,n$ vertices, $0.2676\,n$ for
@@ -35,12 +36,13 @@ Comments:
     the newborn core.
   comment-history: >-
     Łuczak showed that for $k\geq3$ the $k$-core of $G(n,m)$ is either empty
-    or of order $n$ CITE{Luczak}; Pittel, Spencer and Wormald located the
-    threshold and proved the formula for $c_k$ CITE{PSW}, and shorter proofs
-    were given by Cain and Wormald CITE{CainWormald} and by Janson and
-    Łuczak CITE{JansonLuczak}. The same recipe gives the thresholds of
-    $k$-cores in random $d$-uniform hypergraphs: with $m\sim cn/d$ edges the
-    $k$-core appears at
+    or on a positive fraction of the vertices CITE{Luczak}; Pittel, Spencer
+    and Wormald located the threshold and proved the formula for $c_k$
+    CITE{PSW}, and shorter proofs were given by Cain and Wormald
+    CITE{CainWormald} and by Janson and Luczak CITE{JansonLuczak}. The same
+    minimisation, with the Poisson tail raised to the power $d-1$, gives the
+    thresholds of $k$-cores in random $d$-uniform hypergraphs: with
+    $m\sim cn/d$ edges the $k$-core appears at
     $c_{d,k}=\min_{\lambda>0}\lambda/\mathbb{P}(\mathrm{Po}(\lambda)\geq k-1)^{d-1}$
     CITE{Molloy} CITE{CainWormald}, a minimum that is attained for every
     $k\geq2$ when $d\geq3$; for $d=3$ and $k=2$ it is
