@@ -1,4 +1,4 @@
-"""Regulators of cubic fields -- numberdb.org/TBD
+"""Regulators of cubic fields -- numberdb.org/T158
 
     R_K = | det( log|sigma_i(eps_j)| )_{i,j <= r} |
 
@@ -38,7 +38,7 @@ reduced polynomial. The generator refuses to run unless it finds 419 complex
 and 96 totally real fields, the counts of OEIS A023679 and A006832 up to 3000
 read from their b-files with multiplicity; the per-discriminant comparison
 with the b-files, Sage's own enumerate_totallyreal_fields_prim, PARI's
-lfunrootres through the class number formula on every field, eighteen
+lfunrootres through the class number formula on every field, 21
 regulators on LMFDB pages, OEIS A202539 and Wikipedia's example were run
 outside the generator when this was written (see the table's rigour details).
 
@@ -328,7 +328,7 @@ def comment(D, k, f, h, units, order, multiplicity):
 
 class CubicRegulators(numberdb.Generator):
 
-    table = 'TBD'
+    table = 'T158'
     parameters = ('D', 'k')
     type = 'R'
     digits = 100
