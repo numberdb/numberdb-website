@@ -7,12 +7,10 @@ Definition: >-
   The $k$-core of a graph CITE{WikiCore} is its largest subgraph of minimum
   degree at least $k$. For $k\geq3$, the $k$-core threshold $c_k$ is the
   number such that the Erdős–Rényi random graph CITE{WikiER} $G(n,p)$ with
-  $p=c/n$, or $G(n,m)$ with $m\sim cn/2$ edges, has with probability tending
-  to $1$ as $n\to\infty$ an empty $k$-core when $c<c_k$ and a $k$-core with a
-  positive fraction of the $n$ vertices when $c>c_k$; it is
-  $c_k=\min_{\lambda>0}\lambda/\mathbb{P}(\mathrm{Po}(\lambda)\geq k-1)$,
-  where $\mathrm{Po}(\lambda)$ is a Poisson random variable of mean
-  $\lambda$ CITE{PSW}.
+  $p=c/n$ has, with probability tending to $1$ as $n\to\infty$, an empty
+  $k$-core when $c<c_k$ and a $k$-core of order $n$ when $c>c_k$; it equals
+  $\min_{\lambda>0}\lambda/\mathbb{P}(\mathrm{Po}(\lambda)\geq k-1)$, with
+  $\mathrm{Po}(\lambda)$ a Poisson variable of mean $\lambda$ CITE{PSW}.
 Parameters:
   k:
     type: Z
@@ -31,7 +29,7 @@ Comments:
     minimum is attained at a unique $\lambda_k$ CITE{formula-minimiser}, and
     the $k$-core appears suddenly: at $c=c_k$ it already has about
     $\mathbb{P}(\mathrm{Po}(\lambda_k)\geq k)\,n$ vertices, $0.2676\,n$ for
-    $k=3$ CITE{PSW}, and above $c_k$ its order is given by
+    $k=3$ CITE{PSW}, and for $c>c_k$ its order is given by
     CITE{formula-size}. The comment on each entry gives $\lambda_k$ and the
     fraction $\mathbb{P}(\mathrm{Po}(\lambda_k)\geq k)$ of the vertices in
     the newborn core.
