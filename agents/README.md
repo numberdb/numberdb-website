@@ -48,6 +48,17 @@ the claude branch carries; the guards that actually hold are elsewhere anyway
 -- `scripts/ship.sh` refuses an agent run whatever started it, and zeta3
 cannot publish from any harness.
 
+**What every row says, whichever engine wrote it: a cost in USD.** Tokens do
+not compare -- a cached input token on Fable 5.1 costs a fortieth of a fresh
+one, the two harnesses cache differently, and one counts a whole `exec` as a
+turn where the other counts a message. So `agents/ledger.py` prices every run
+at list API rates from `agents/model-rates.tsv`, and `agents/spend.py` adds it
+up by engine, model, stage or day. Claude reports its own `costUSD` per model
+at list basis and that is what is used; the rate table reproduces it to the
+cent on a real build, and exists for the engine that reports no price at all.
+
+    python3 agents/spend.py --since 20260906
+
 **What the ledger can say about each.** Claude reports a cost in dollars and
 the model that answered; codex reports neither, but prints `turn.completed`
 with token counts, so its rows carry the model it was told to use and the
