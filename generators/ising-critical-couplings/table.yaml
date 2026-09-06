@@ -8,7 +8,7 @@ Definition: >-
   infinite lattice $L$, with energy $E=-J\sum_{\langle ij\rangle}s_is_j$ over
   the edges $\langle ij\rangle$ of $L$ and spins $s_i=\pm1$, the critical
   coupling is $K_c=J/(k_BT_c)$, where $T_c$ is the Curie temperature at which
-  the model orders; listed are $K_c$ and its reciprocal $k_BT_c/J$.
+  the model orders.
 Parameters:
   lattice:
     type: Symbolic
@@ -51,18 +51,21 @@ Comments:
     over each edge, so that $K=J/(k_BT)$ is the coupling in units of the
     temperature and $k_BT_c/J$ is the Curie temperature in units of $J/k_B$;
     the values are read as $\beta_cJ$ in a paper that writes $\beta=1/(k_BT)$
-    and as $T_c/J$ in one that sets $k_B=1$. With spins $\pm\frac12$, or with
-    the energy written as $-2J\sum s_is_j$, the same transition is at
-    $4K_c$ or $2K_c$. The lattices are the nearest-neighbour graphs of the
+    and as $T_c/J$ in one that sets $k_B=1$. With spins $\pm\frac12$ and the
+    same energy the transition is at $J/(k_BT_c)=4K_c$; with the energy
+    written as $-2J\sum s_is_j$ it is at $K_c/2$ for spins $\pm1$ and at
+    $2K_c$ for spins $\pm\frac12$. The lattices are the nearest-neighbour graphs of the
     tilings and crystal structures named, under the names of the
     HREF{Site_and_bond_percolation_thresholds_of_lattices}[table of
     percolation thresholds]: an Archimedean lattice by its vertex
     configuration in the notation of Grünbaum and Shephard, and each Laves
     lattice as $D(\ldots)$ of the Archimedean lattice it is the planar dual
     of; the square lattice is self-dual and the triangular and honeycomb
-    lattices are dual to each other. $(3,12^2)$ is also called the extended
-    kagome or three-twelve lattice, $(4,8^2)$ the bathroom-tile or four-eight
-    lattice, $(3,4,6,4)$ the ruby lattice, $(3^4,6)$ the maple-leaf lattice,
+    lattices are dual to each other. $(3,12^2)$ is also called the truncated
+    hexagonal, extended kagome or three-twelve lattice, $(4,8^2)$ the
+    truncated square, bathroom-tile or four-eight lattice, $(4,6,12)$ the
+    truncated trihexagonal lattice, $(3,4,6,4)$ the rhombitrihexagonal or
+    ruby lattice, $(3^4,6)$ the snub hexagonal or maple-leaf lattice,
     $(3^2,4,3,4)$ the snub square or Shastry–Sutherland lattice, $(3^3,4^2)$
     the elongated triangular or trellis lattice, $D(3,6,3,6)$ the dice
     lattice and $D(4,8^2)$ the union-jack lattice.
@@ -100,11 +103,15 @@ Comments:
     entry; in the notation $0.221654626(5)$ the digits in parentheses are
     that uncertainty in the last digits written. They are the most precise
     published values as of 6 September 2026: the simple cubic coupling from
-    the Monte Carlo study of Ferrenberg, Xu and Landau CITE{FXL}, the
-    body-centred cubic coupling from the high-temperature series of Butera and
-    Comi CITE{ButeraComi}, and the face-centred cubic and diamond couplings
-    as quoted by Lundow and Campbell CITE{LundowCampbell} from Monte Carlo
-    studies CITE{LMR} CITE{MuraseIto} CITE{DengBlote}. The reciprocal
+    the Monte Carlo study of Ferrenberg, Xu and Landau CITE{FXL}, and the
+    three others as quoted by Lundow and Campbell CITE{LundowCampbell}. They
+    quote the body-centred cubic coupling from the high-temperature series
+    of Butera and Comi CITE{ButeraComi} and the Monte Carlo studies of
+    Lundow, Markström and Rosengren CITE{LMR} and of Murase and Ito
+    CITE{MuraseIto}, the face-centred cubic coupling from those two Monte
+    Carlo studies, and the diamond coupling from the Monte Carlo studies of
+    Deng and Blöte CITE{DengBlote} and of Lundow, Markström and Rosengren.
+    The reciprocal
     $k_BT_c/J$ of each carries the uncertainty of $K_c$ propagated through
     the reciprocal.
 Formulas:
@@ -269,9 +276,10 @@ Tags:
   - transcendental
 Data properties:
   type: R
-  rigour: measured
+  rigour: heuristic
   sources:
     - CITE{Codello}
+    - CITE{FXL}
     - CITE{LundowCampbell}
   complete: 'no'
   complete-note: >-
@@ -306,9 +314,11 @@ Data properties:
     Monte Carlo estimates of Malarz, Zborek and Wróbel and of Lima,
     Mostowicz and Malarz; the duality $\sinh2K_c\sinh2K_c^{*}=1$ on every
     dual pair; the mean-field bound $K_c>1/z$, $z$ the coordination number,
-    on every lattice; and the simple cubic and body-centred cubic estimates
-    with the text of the papers cited. The face-centred cubic and diamond
-    values were taken from Lundow and Campbell, who quote them from papers
-    without an arXiv version that were not read here.
+    on every lattice; and the simple cubic estimate with the text of the
+    paper cited. The body-centred cubic, face-centred cubic and diamond
+    values were taken from Lundow and Campbell; of the papers they quote,
+    Butera and Comi's was read here and prints the body-centred cubic value
+    with an uncertainty of $10$ in the last digit where Lundow and Campbell
+    quote $5$, and the others have no arXiv version and were not read.
 Display properties:
   number-header: $K_c$ or $k_BT_c/J$
