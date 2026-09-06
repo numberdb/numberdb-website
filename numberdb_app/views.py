@@ -2499,57 +2499,15 @@ def review_queue(request):
 	than it could, which is exactly the sort of decay that needs to be visible
 	somewhere.
 	"""
-	from django.db.models import Count, Q
-
-	from .models import Number, NumberComplex, NumberPAdic, Polynomial
 	from .permissions import is_board_member
+	from .review import waiting_for_review
 
 	if not is_board_member(request.user):
 		raise Http404()
 
-	#Counted from the rows rather than by diffing the documents.
-	#
-	#`sync_review_flags` already works out which entries are unreviewed and
-	#marks them, after every commit and every review, so the answer is in the
-	#database on an indexed column. This view used to recompute it: two YAML
-	#parses and a full entry comparison for every table whose head had moved
-	#since its last review -- which, after a run that touched the metadata of
-	#every table in the corpus, was 108 of 109. Forty seconds, most of it
-	#spent proving that nothing had changed, and gunicorn killed the worker
-	#before the page arrived.
-	outstanding = {}
-	for model in (Number, NumberComplex, NumberPAdic, Polynomial):
-		rows = (model.objects.filter(reviewed=False)
-		        .values('table_id').annotate(n=Count('id')))
-		for row in rows:
-			outstanding[row['table_id']] = (outstanding.get(row['table_id'], 0)
-			                                + row['n'])
-
-	waiting = []
-	for table in (Table.objects.exclude(head_revision=None)
-	                           .select_related('head_revision',
-	                                           'reviewed_at_revision')):
-		#A draft asks for attention only when its author says it is finished.
-		#Otherwise every table entered the queue the moment it was created,
-		#and a queue that is mostly half-built tables trains its reader to
-		#skim -- which costs exactly the attention it exists to get.
-		if not table.published and not table.ready_for_review:
-			continue
-		count = outstanding.get(table.pk, 0)
-		whole = table.reviewed_at_revision_id is None
-		if not count and not whole:
-			continue
-		if whole:
-			count = count or table.number_count
-		waiting.append({
-			'table': table,
-			'count': count,
-			'whole_table': whole,
-			'head': table.head_revision,
-			'since': table.reviewed_at_revision,
-		})
-
-	waiting.sort(key=lambda w: w['head'].created, reverse=True)
+	#The list and the number in the navigation are the same list, counted
+	#once. See review.waiting_for_review.
+	waiting = waiting_for_review()
 	return render(request, 'review-queue.html', {'waiting': waiting})
 
 

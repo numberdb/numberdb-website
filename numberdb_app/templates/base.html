@@ -123,7 +123,15 @@ concludes the site is broken.
           <a class="navbar-field" href="{% url 'db:drafts' %}">Drafts&nbsp;({{ drafts_in_progress }})</a>
         {% endif %}
         {% if is_board_member %}
-          <a class="navbar-field" href="{% url 'db:review-queue' %}">Review</a>
+          {% comment %}
+          With its count, like the drafts link beside it. Without one the
+          queue said only that it existed, so the way to learn whether
+          anything was waiting was to open it and find out -- and an empty
+          page is what teaches somebody to stop opening it. No number when
+          nothing is waiting, so the quiet case stays quiet.
+          {% endcomment %}
+          <a class="navbar-field" href="{% url 'db:review-queue' %}"
+            >Review{% if tables_waiting_for_review %}&nbsp;({{ tables_waiting_for_review }}){% endif %}</a>
         {% endif %}
         <a class="navbar-field" href="{% url 'db:profile' %}"><img class="profile" src="{% static '/img/profile3.png' %}">&nbsp;{% user_display user %}</a>
 

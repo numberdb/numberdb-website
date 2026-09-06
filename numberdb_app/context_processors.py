@@ -7,7 +7,7 @@ without either a query per render or a tag that hides one.
 
 from .permissions import is_board_member
 
-__all__ = ['review_access']
+__all__ = ['review_access', 'waiting_for_review']
 
 
 def review_access(request):
@@ -50,3 +50,23 @@ def drafts_in_progress(request):
 	from .models import Table
 
 	return {'drafts_in_progress': Table.objects.filter(published=False).count()}
+
+
+def waiting_for_review(request):
+	"""How many tables are waiting to be confirmed, for the navbar.
+
+	The queue told a board member it existed and not whether anything was in
+	it, so the only way to find out was to open it -- and an empty page is
+	what teaches somebody to stop looking. The drafts link beside it has
+	carried its count since it was added.
+
+	Board members only, because only they can act on it, and the same list the
+	queue itself renders rather than a second count of it.
+	"""
+	from .permissions import is_board_member
+	from .review import waiting_for_review as waiting
+
+	user = getattr(request, 'user', None)
+	if not user or not is_board_member(user):
+		return {'tables_waiting_for_review': 0}
+	return {'tables_waiting_for_review': len(waiting())}
