@@ -161,6 +161,13 @@ constant in dimension 8 is the Hermite number of $E_8$ -- both should answer,
 and declaring it would throw away the more interesting fact. See
 docs/design/same-construction.md.
 
+**An identifier goes in its field, not in the sentence.** A reference carries
+`arxiv:`, `doi:`, `zbl:` or `mr:` beside its `bib`, and the page renders each
+as a link to the paper. Ending the bib with "..., 567-615, arXiv:hep-lat/9607030"
+puts the number where a reader can see it and not click it, and can only use it
+by retyping. Nine tables did it in three days, fifty-two references between
+them. `audit_table` refuses it now.
+
 **Cite what you already declared.** If `Links` holds the Wikipedia article for
 the object, put `CITE{Wiki}` at its first mention in the definition. The
 reference is there; the reader should not have to scroll for it.
