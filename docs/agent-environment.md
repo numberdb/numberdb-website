@@ -1915,3 +1915,57 @@ both.
 
 Evidence: `/tmp/cr_create_out.txt` (`published = False`) against
 `/tmp/cr_audit_out.txt` and `/tmp/cr_revs.py`, 2026-09-06.
+
+## The LMFDB's API gates after a handful of calls; its list pages did not
+
+What happened: the T160 build needed the two smallest fields of each of 28
+signatures from the LMFDB. `api/nf_fields/?degree=..&r2=..&_sort=disc_abs`
+answered the first eight calls, then every call for the next twenty minutes
+was the reCAPTCHA page; after a pause it answered three to five more, then
+gated again, and so on through the run. The search page
+`NumberField/?degree=n&signature=[r1,r2]` answered for seven signatures in a
+row on the first try and the eighth on the third, with the labels, the
+polynomials (in `$...$`, LaTeX) and the discriminant in the stripped HTML,
+which is all the API had been asked for. Battistoni's Theorem 1 and OEIS's
+example lines were the other copies, so nothing waited on the gate.
+
+What to do instead: ask the API in batches of three or four with a minute
+between, save every answer to `/tmp` as it arrives, and fall back to the
+HTML list page for whatever is still missing; the labels parse with one
+regular expression and the polynomial sits in the first `$...$` after the
+label.
+
+Evidence: the `GATED` lines in this run's transcript against
+`/tmp/md_lmfdb/n*_r*.json` and `/tmp/md_lmfdb/html_*.html`, 2026-09-06.
+
+## Odlyzko's discriminant tables are at `unpublished/discr.bound.table1` to `table4`
+
+What happened: the batch named Odlyzko's page as a source, and the URL that
+comes to mind, `unpublished/discr.bound.table`, answers 404. The index page
+`www-users.cse.umn.edu/~odlyzko/unpublished/index.html` links
+`discr.bound.table1` (GRH), `discr.bound.table2` (unconditional),
+`discr.bound.table3` and `discr.bound.table4` (the same as
+$D>A^{r_1}B^{2r_2}e^{-E}$ per $b$), and `discr.bound.tables.txt` describing
+them; all five answer `curl` through the proxy. The best unconditional bound
+for a signature is the maximum over the 162 rows of Table 4, which is what
+T160's comment on the open rows quotes.
+
+Evidence: `/tmp/md_odlyzko_table4`, `/tmp/md_odlyzko_tables.txt`, and the
+Python that reads them in `/tmp/md_check.py`, 2026-09-06.
+
+## `enumerate_totallyreal_fields_all(8, 282300416)` took 41 s in a probe and 233 s in the dry run
+
+What happened: the same call, in the same container, on the same day. The
+dry run's wrapper computes every entry twice (the T138 note explains why),
+so the octic enumeration ran twice in that run and the second took four
+minutes; the probe had the box to itself. A fill plus a full verify of T160
+is therefore about nine minutes on this box, all of it that one call, and
+`NUMBERDB_TIMEOUT` for it was set to 1500 s.
+
+What to do instead: budget a `sage.sh` run for a table whose generator
+enumerates something by the loaded time, not the probe's; and if the
+generator's own check is ever too slow for a person's `verify()`, the octic
+enumeration is the one line to move behind a flag.
+
+Evidence: `/tmp/md_probe2_out.txt` (`41.5 s`), `/tmp/md_dry_out.txt`
+(`[233.2 s]` on the (8,0) entry), `/tmp/md_fill_out.txt`, 2026-09-06.
