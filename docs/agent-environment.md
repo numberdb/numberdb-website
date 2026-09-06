@@ -1879,3 +1879,39 @@ the container, and run `--links` once more before writing the finding down.
 
 Evidence: `agents/critiques/T158.md` and `/tmp/rep158_audit_before.txt`,
 `/tmp/rep158_audit_after.txt`, 2026-09-06.
+
+## `sys.path.insert(0, '/app')` before the client is imported hides `numberdb.sage`
+
+What happened: the dry run of T159 listed the drafts with Django at the top
+of the script, inserting `/app` at the front of `sys.path` as
+`/tmp/cf_audit.py` does, and then imported the generator: `import
+numberdb.sage` failed with `No module named 'numberdb.sage'`, because
+`/app/numberdb` is the Django project package and it now shadowed
+`/app/clients/python/numberdb`, the client. `cf_audit.py` never noticed
+because it uses no client.
+
+What to do instead: keep the Django part of a throwaway script last, after
+every client call, and before `django.setup()` delete every `numberdb*`
+entry from `sys.modules` as well as inserting `/app`; `/tmp/cr_dry.py` does
+that and both halves ran in one container. Or use two scripts, which costs
+a second run of `agents/sage.sh`.
+
+Evidence: the first `/tmp/cr_dry_out.txt` of 2026-09-06 (traceback at
+`generate.py` line 64) and the second, which lists T158 and computes 515
+entries.
+
+## A draft can be published while the run is still checking it
+
+What happened: T159 was created as a draft at 12:42 UTC, filled at 12:43,
+and by the time the audit ran in the throwaway a few minutes later the
+table had `published=True`, `ready_for_review=False` and `reviewed_by =
+bmatschke`, with the anonymous page answering 200; a person had accepted it
+from the table page without it ever being offered. The offer script would
+have posted to a published table.
+
+What to do instead: read `published` and `reviewed_by` before offering, and
+skip the offer when a person has already acted; `/tmp/cr_revs.py` prints
+both.
+
+Evidence: `/tmp/cr_create_out.txt` (`published = False`) against
+`/tmp/cr_audit_out.txt` and `/tmp/cr_revs.py`, 2026-09-06.
