@@ -1538,3 +1538,39 @@ Django test run to CI or to a person. A test that needs the database
 cannot be run from a build run at all.
 
 Evidence: 2026-09-06, the commit "T151 repaired after the stored check".
+
+## arXiv's HTML search page answers `curl` when `export.arxiv.org` does not
+
+What happened: the stage-one run of 2026-09-06 needed the arXiv number of
+a paper it knew only by title (Codello, "Exact Curie temperature for the
+Ising model on Archimedean and Laves lattices"). `export.arxiv.org/api`
+returns empty bodies from here (noted above, 2026-09-06 build run).
+`https://arxiv.org/search/?query=Codello+Curie+temperature+Archimedean&searchtype=all&abstracts=hide&size=25`
+answers plain `curl` with an HTML list; the abstract links are
+`arxiv.org/abs/NNNN.NNNNN` in it and the titles follow each "arXiv:" line
+in the stripped text. That found 1008.4720 in one call, and the `abs` page
+then passed `source_names_it`.
+
+What to do instead: search `arxiv.org/search/` by title words, strip the
+HTML, and read the `abs` page; do not wait on the API.
+
+Evidence: 2026-09-06, `/tmp/search_codello.html` and `/tmp/abs_1008.4720.html`.
+
+## The task line "write the batch and commit it" cannot be followed for `agents/table-ideas/BATCH-*.md`
+
+What happened: `.gitignore` line 172 (commit 74d29f7, 2026-09-04) ignores
+every batch file, `git ls-files agents/table-ideas` lists only `PROMPT.md`
+and `screen.py`, and no earlier batch is in the history either. The
+stage-one prompt of 2026-09-06 still said "write it to
+agents/table-ideas/BATCH-2026-09-06T0326.md and commit it". The batch was
+written and left uncommitted, like the batch of 2026-09-03T1730 before it;
+only this note is committed.
+
+What to do instead: write the batch, do not `git add -f` it (the ignore is
+the owner's decision that agent output is data), append the lessons to
+`agents/lessons/PROPOSALS.md` (also ignored), and commit the environment
+note alone. The stage-one task line should drop "and commit it" or name
+this file as the thing to commit.
+
+Evidence: 2026-09-06, `git check-ignore -v agents/table-ideas/BATCH-2026-09-06T0326.md`
+-> `.gitignore:172`.
