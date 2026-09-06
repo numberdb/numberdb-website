@@ -43,6 +43,12 @@ case "$stage" in
 esac
 
 engine="${NUMBERDB_AGENT:-claude}"
+# Codex takes its model and its effort from the user's config unless it is
+# told. A run says both out loud instead, so that the ledger records what
+# actually answered rather than whatever the config happened to say that day,
+# and so that the same campaign is the same campaign tomorrow.
+codex_model="${NUMBERDB_CODEX_MODEL:-gpt-5.5}"
+codex_effort="${NUMBERDB_CODEX_EFFORT:-xhigh}"
 key_file="${NUMBERDB_KEY:-$HOME/.config/numberdb/zeta3-key}"
 turns="${NUMBERDB_TURNS:-300}"
 
@@ -277,20 +283,29 @@ echo "=== $stage run $started, engine $engine" | tee "$log"
 # The session is chosen here rather than read out of the transcript
 # afterwards, because the transcripts are not kept and the ledger is: a run
 # from last week is still resumable after its log is gone.
-session="$(python3 -c 'import uuid; print(uuid.uuid4())')"
+# Claude is told which session to be. Codex mints its own thread id and
+# announces it in the first event it prints, so for codex this stays empty
+# until the run has started and is read back out of the log afterwards.
+session=""
+if [ "$engine" = "claude" ]; then
+	session="$(python3 -c 'import uuid; print(uuid.uuid4())')"
+fi
 if [ -n "${NUMBERDB_RESUME:-}" ]; then
 	session="$NUMBERDB_RESUME"
-	start_flags=(--resume "$session")
 	echo "=== resuming session $session"
-else
-	start_flags=(--session-id "$session")
 fi
 
 agent_status=0
 
 run_agent() {
+	# `start` or `resume`; each engine spells resuming its own way, and the
+	# flags differ enough that composing one list for both is how the codex
+	# branch came to be handed `--session-id`, which it does not know.
+	local mode="$1"
 	case "$engine" in
 		claude)
+			local flags=(--session-id "$session")
+			[ "$mode" = "resume" ] && flags=(--resume "$session")
 			# An allowlist of command prefixes does not survive contact with a
 			# shell: the run composed `(curl ...; curl ...)`, `which a b c && ...`
 			# and `sed -i ...`, none of which match a prefix, and nine commands
@@ -309,12 +324,38 @@ run_agent() {
 					"Bash(ssh:*)" "Bash(scp:*)" "Bash(rsync:*)" "Bash(docker:*)" \
 					"Bash(git push:*)" "Bash(scripts/ship.sh:*)" \
 				--max-turns "$turns" \
-				"$@" \
+				"${flags[@]}" \
 				--output-format stream-json --verbose 2>&1 | tee -a "$log"
 			agent_status=${PIPESTATUS[0]}
 			;;
 		codex)
-			codex exec --full-auto "$briefing" 2>&1 | tee -a "$log"
+			# Everything through `-c` rather than through the flags that only
+			# `codex exec` takes, because `codex exec resume` accepts a smaller
+			# set and the two invocations must be configured the same way. Note
+			# `--full-auto` is not among them at all: it does not exist in
+			# codex-cli 0.150.1, so the branch that used it could never have run.
+			#
+			# `workspace-write` rather than the config's `danger-full-access`:
+			# the repository and /tmp are writable and the network is open,
+			# which is what a build needs and is the nearest thing codex has to
+			# the deny list the claude branch above carries. Probed rather than
+			# assumed -- /tmp and an outbound request both work under it.
+			local flags=(--json --skip-git-repo-check
+			             -m "$codex_model"
+			             -c "model_reasoning_effort=$codex_effort"
+			             -c "approval_policy=never"
+			             -c "sandbox_mode=workspace-write"
+			             -c "sandbox_workspace_write.network_access=true")
+			if [ "$mode" = "resume" ]; then
+				codex exec resume "${flags[@]}" "$session" \
+					"Continue where you left off." \
+					</dev/null 2>&1 | tee -a "$log"
+			else
+				# stdin closed: with it open codex prints "Reading additional
+				# input from stdin..." and waits for a prompt it already has.
+				codex exec "${flags[@]}" "$briefing" \
+					</dev/null 2>&1 | tee -a "$log"
+			fi
 			agent_status=${PIPESTATUS[0]}
 			;;
 		*)
@@ -328,12 +369,23 @@ run_agent() {
 # thing.
 worth_resuming() {
 	tail -c 4000 "$log" 2>/dev/null | tr -d '\000' | grep -qE \
-		'"api_error_status":[0-9]|OAuth access token has expired|overloaded_error|Internal server error'
+		'"api_error_status":[0-9]|OAuth access token has expired|overloaded_error|Internal server error|"type":"error"|stream disconnected|rate limit'
 }
 
 set +e
-run_agent "${start_flags[@]}"
+if [ -n "${NUMBERDB_RESUME:-}" ]; then
+	run_agent resume
+else
+	run_agent start
+fi
 status=$agent_status
+# Codex names its thread in the first event it prints, and that name is what
+# resumes it -- here rather than in the ledger alone, because the retry below
+# needs it too.
+if [ "$engine" = "codex" ] && [ -z "$session" ]; then
+	session=$(grep -ao '"thread_id":"[^"]*"' "$log" 2>/dev/null \
+	          | head -1 | cut -d'"' -f4 || true)
+fi
 resumed=no
 #Not for triage. Deciding whether a run is worth resuming is exactly the
 #judgement this shell should not be making, and a triage run that fails
@@ -346,7 +398,7 @@ if [ "$status" -ne 0 ] && [ "$stage" != "triage" ] \
 		timeout 120 claude -p "Reply with exactly: ok" >/dev/null 2>&1 || true
 	fi
 	echo "=== $stage failed and looks resumable; continuing session $session once"
-	run_agent --resume "$session"
+	run_agent resume
 	status=$agent_status
 	resumed=yes
 fi
@@ -362,9 +414,47 @@ ledger="agents/runs/COSTS.tsv"
 if [ ! -f "$ledger" ]; then
 	printf 'started\tstage\tengine\tturns\tcost_usd\tresult\tlog\tmodel\tprompt\tsession\tresumed\n' > "$ledger"
 fi
-python3 - "$log" "$started" "$stage" "$engine" "$prompt_version" "$session" "$resumed" >> "$ledger" <<'LEDGER' || true
+python3 - "$log" "$started" "$stage" "$engine" "$prompt_version" "$session" "$resumed" "$codex_model" >> "$ledger" <<'LEDGER' || true
 import json, os, sys
-path, started, stage, engine, prompt, session, resumed = sys.argv[1:8]
+path, started, stage, engine, prompt, session, resumed, codex_model = sys.argv[1:9]
+#Codex reports neither a cost nor the model in its stream: it prints one
+#`turn.completed` per turn carrying token counts, and the model is the one it
+#was told to use. So its row records turns and the model asked for, and
+#leaves the cost empty rather than inventing a rate.
+if engine == 'codex':
+	turns = 0
+	thread = ''
+	failed = False
+	tokens = 0
+	try:
+		for line in open(path, errors='replace'):
+			line = line.strip()
+			if not line.startswith('{'):
+				continue
+			try:
+				record = json.loads(line)
+			except Exception:
+				continue
+			kind = record.get('type', '')
+			if kind == 'thread.started' and not thread:
+				thread = record.get('thread_id', '') or ''
+			elif kind == 'turn.completed':
+				turns += 1
+				usage = record.get('usage') or {}
+				tokens += (usage.get('input_tokens', 0)
+				           + usage.get('output_tokens', 0))
+			elif kind in ('turn.failed', 'error'):
+				failed = True
+	except OSError:
+		pass
+	print('%s\t%s\t%s\t%s\t\t%s\t%s\t%s\t%s\t%s\t%s'
+	      % (started, stage, engine, turns,
+	         'error' if failed else ('%d tokens' % tokens if turns else
+	                                 'no turn recorded'),
+	         os.path.basename(path), codex_model, prompt,
+	         session or thread, resumed))
+	raise SystemExit
+
 last = None
 #Which model actually answered. Known only now: the CLI chooses it, and the
 #first assistant message in the transcript says which. This is the durable

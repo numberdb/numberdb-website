@@ -14,6 +14,45 @@ a run cannot do the work from <https://numberdb.org/skill> alone, the skill is
 incomplete, and a long session would hide that behind conversational memory
 rather than fixing it. `docs/design/two-stage-tables.md` argues this out.
 
+## Which engine runs which stage
+
+Two harnesses run these prompts: Claude Code and the Codex CLI. Either can run
+any stage, and the campaign takes one engine per *kind of work* rather than one
+per campaign:
+
+    NUMBERDB_WRITER   builds and repairs
+    NUMBERDB_CRITIC   reads the finished table and triages a failed run
+    NUMBERDB_MINER    proposes the batch
+    NUMBERDB_AGENT    what any of the three falls back to (default: claude)
+
+So the four pairings are two variables:
+
+    agents/campaign.sh                                   # claude throughout
+    NUMBERDB_WRITER=codex agents/campaign.sh             # codex writes, claude reads
+    NUMBERDB_CRITIC=codex agents/campaign.sh             # claude writes, codex reads
+    NUMBERDB_AGENT=codex agents/campaign.sh              # codex throughout
+
+The immediate reason is a weekly quota: when one vendor's is spent the campaign
+should carry on rather than stop. The better reason is that a critique is worth
+more from a reader that did not write the table, and that is truer still when
+it is not the same model -- which of the four is actually best is a question
+this makes askable, and the answer is in `agents/runs/COSTS.tsv` and in what
+the critiques catch.
+
+**Codex is told its model and effort** rather than taking them from
+`~/.codex/config.toml`, so a run is reproducible and the ledger records what
+answered: `NUMBERDB_CODEX_MODEL` (default `gpt-5.5`) and
+`NUMBERDB_CODEX_EFFORT` (default `xhigh`). It runs under `workspace-write`
+with the network open, which is the nearest thing codex has to the deny list
+the claude branch carries; the guards that actually hold are elsewhere anyway
+-- `scripts/ship.sh` refuses an agent run whatever started it, and zeta3
+cannot publish from any harness.
+
+**What the ledger can say about each.** Claude reports a cost in dollars and
+the model that answered; codex reports neither, but prints one `turn.completed`
+per turn with token counts, so its rows carry turns, tokens and the model it
+was told to use, and leave the cost column empty rather than inventing a rate.
+
 ## The agent account
 
 Stage two writes as **zeta3**, not as a person. GitHub:
