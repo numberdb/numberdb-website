@@ -436,7 +436,42 @@ def render_table(request, table, context=None):
 	context = dict(context or {})
 	context.update(table_context(table))
 	context.update(_entry_address(request, table, context))
+	context.update(_review_bar(request, table))
 	return render(request, 'table.html', context)
+
+
+def _review_bar(request, table):
+	"""What a reviewer can do about this table, from the table itself.
+
+	A table waiting for review is read on its own page long before anybody
+	opens the queue: the page is where the prose renders, where a formula is
+	wrong in a way no diff shows, and where somebody notices. Until now the
+	only way to act on what you had just seen was to remember the number and
+	go and find the table again in the queue.
+
+	Shown to board members and nobody else, because it offers something only
+	they can do. A reader of a published table already learns that a value is
+	unconfirmed from the mark beside the value, which is the honest place for
+	it; a banner would be telling everybody about somebody else's queue.
+
+	The button posts to the review page's own endpoint rather than to a second
+	one of its own. That is what keeps the two honest: confirming is recorded
+	against the revision that was on screen, so accepting from here carries
+	the same guard against approving work that arrived while you were reading.
+	"""
+	from .permissions import is_board_member
+
+	head = table.head_revision
+	if head is None or not is_board_member(request.user):
+		return {}
+	#A draft is waiting by existing; a published table waits when its head has
+	#moved past the revision somebody last confirmed.
+	if table.published and table.reviewed_at_revision_id == head.pk:
+		return {}
+	return {
+		'may_accept': True,
+		'review_head': head.digest,
+	}
 
 
 def _parameter_order(table):
@@ -2578,6 +2613,13 @@ def review_table(request, tid):
 				'Confirmed. %s'
 				% ('Nothing is now waiting on this table.' if not marked
 				   else '%d entries are still marked.' % (marked,))))
+		#Back to the table when that is where the accept came from. A reviewer
+		#who read the page and confirmed it from there is still reading it;
+		#sending them to the queue loses their place in the one case where
+		#they were not working from the queue to begin with.
+		if request.POST.get('then') == 'table':
+			return HttpResponseRedirect(reverse('db:table',
+			                                    kwargs={'tid': table.tid}))
 		return HttpResponseRedirect(reverse('db:review-queue'))
 
 	outstanding = unreviewed_params(table)
