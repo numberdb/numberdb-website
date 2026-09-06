@@ -1574,3 +1574,56 @@ this file as the thing to commit.
 
 Evidence: 2026-09-06, `git check-ignore -v agents/table-ideas/BATCH-2026-09-06T0326.md`
 -> `.gitignore:172`.
+
+## `pdftotext -layout` puts a paper's table beside its figure's axis labels, and the last row of a wikitext table ends at `|}`
+
+What happened: the outside check of the percolation table parsed Mertens
+and Moore's Table II out of the arXiv PDF. Half the rows were missed:
+`pdftotext -layout` lays the table's columns beside the figure on the same
+page, so the row for $d=4$ begins with the caption of Figure 1 and the rows
+for $d=10$ to $13$ begin with the axis label `10−5`, and a regex anchored at
+the start of the line saw nothing. Likewise the last row of the Laves table
+in the Wikipedia wikitext is followed by `|}` rather than `|-`, so a parser
+splitting rows on `|-` handed the check `}` as the bond cell, and cite
+templates inside a cell begin lines with `  | last = ...`, which a split on
+`\n|` takes for new cells. Each was a parser fault that first read as a
+missing value in the source.
+
+What to do instead: search for a table row anywhere in the line rather than
+anchoring it; strip the closing `|}` before splitting rows; split cells only
+at `|` not followed by `key =`; and when a parsed source shows a value
+"missing", print the raw lines before concluding the source lacks it.
+
+Evidence: 2026-09-06, `/tmp/pc_check_out.txt` (ten "is None as printed in
+MertensMoore" and `D-3-12-12 bond: Wikipedia derives None`) against
+`/tmp/pc_check_out3.txt` after the fixes in `/tmp/pc_sources.py`.
+
+## An Uppsala thesis is one `curl` away through DiVA's urn resolver; IOP comment-and-reply papers are not, and zbMATH confirms them
+
+What happened: Wikipedia cites Parviainen's 2005 dissertation for three Laves
+site thresholds, one of them without an error bar. `curl -L
+http://urn.kb.se/resolve?urn=urn:nbn:se:uu:diva-4251` answers a DiVA record
+page whose `FULLTEXT01` link gives the PDF (386 KB), and `pdftotext` of it
+has the table and the sentence stating the standard error. The 2024 comment
+and reply in J. Phys. A that Wikipedia quotes for the square-lattice site
+threshold have no arXiv version and IOP's pages do not answer here; zbMATH
+(`zbmath.org/?q=ti%3A...`) confirmed both exist with the titles and pages
+Wikipedia gives, and the table cites them for the numbers "as quoted in"
+the Wikipedia table.
+
+What to do instead: for a dissertation cited by a Wikipedia table, try the
+urn resolver and DiVA first; for a journal item without an arXiv copy,
+confirm it on zbMATH and say in the table that the value was taken from the
+secondary source.
+
+Evidence: 2026-09-06, `/tmp/pc_src/parviainen_thesis.txt` lines 2660-2700,
+`/tmp/pc_src/zb_comment.html`.
+
+## The draft ceiling is fifteen and the run prompt still says five; T152 was the second draft held
+
+What happened: the creation answer for the percolation table reported
+`drafts_held = 2` and `drafts_remaining = 13` (T151 being the other). The
+build prompt still says zeta3 "may hold up to five drafts"; the number does
+not bind anything, but a run reading it might decline to build.
+
+Evidence: 2026-09-06, `/tmp/pc_create_out.txt`.
