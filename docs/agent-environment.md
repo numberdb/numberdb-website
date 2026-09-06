@@ -1663,3 +1663,24 @@ with the entry count, or with the count of entries of each shape, would
 have found this. Until there is one, a critique should count.
 
 Evidence: 2026-09-06, `/tmp/rep152_audit_before.txt` and the T152 rows.
+
+## Stored `Number` rows are fewer than entries when exact values repeat
+
+What happened: after the T152 repair, `Number.objects.filter(table=t)` in
+the throwaway counted 62 rows for a document of 66 entries, and the same
+run showed the revision's `Numbers` stored as the nested mapping the read
+endpoint serves rather than the flat list the package wrote (T151's did the
+same after its repair). Both read as a write that had lost entries. The
+read-back document had all 66, and the missing four were the second to
+fifth `1/2` entries: `data_pipeline/build.py` skips a row whose exact value
+already has one in the same table ("don't save duplicate exact numbers"),
+and balls and intervals are never deduplicated, so the count was right
+before the edit too.
+
+What to do instead: check a write by comparing the `GET /api/table`
+document with what was sent; if rows are counted, subtract repeated exact
+values first. A critique that finds an `equals` link on several entries
+should expect them to share one row in search.
+
+Evidence: 2026-09-06, `/tmp/rep152_count.py` (62 rows, `square,2,bond` the
+one `q 1/2`), `data_pipeline/build.py` at "exact_numbers".
