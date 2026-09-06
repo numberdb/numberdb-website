@@ -20,6 +20,64 @@ a.link-below-title:hover {
 <div id="table-title" class="table-title">{{ table.title }}</div>
 
 {% comment %}
+For the board, and only for the board: it offers something only they can do.
+A table waiting for review is read on its page long before anybody opens the
+queue -- the page is where the prose renders and where a wrong formula is
+visible -- and the accept belongs where the reading happens. The link beside
+it goes to the diff, because "accept" and "what am I accepting" are one
+question.
+{% endcomment %}
+{% if may_accept and not preview %}
+  <style>
+.review-bar {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0.4rem 0 0.6rem 0;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #b0be90;
+  background: #f2f6e8;
+  border-radius: 3px;
+}
+.review-bar form { margin: 0; }
+button.review-bar-accept {
+  font-size: 0.9rem;
+  padding: 0.25rem 0.8rem;
+  border: 1px solid #7d8c5e;
+  border-radius: 3px;
+  background: #e5eecc;
+  cursor: pointer;
+}
+button.review-bar-accept:hover { background: #d9e5b8; }
+.review-bar-what {
+  font-size: 0.8rem;
+  color: #555;
+}
+  </style>
+  <div class="review-bar">
+    <form method="post" action="{% url 'db:review-table' table.tid %}">
+      {% csrf_token %}
+      <input type="hidden" name="head" value="{{ review_head }}">
+      <input type="hidden" name="then" value="table">
+      <button type="submit" class="review-bar-accept">
+        {% if table.published %}Accept the changes{% else %}Accept and publish{% endif %}
+      </button>
+    </form>
+    <a class="link-below-title" href="{% url 'db:review-table' table.tid %}"
+      >see what changed</a>
+    <span class="review-bar-what">
+      {% if table.published %}
+        This table carries changes nobody has confirmed, so they answer no
+        search by number yet.
+      {% else %}
+        This is a draft. Accepting publishes it.
+      {% endif %}
+    </span>
+  </div>
+{% endif %}
+
+{% comment %}
 One place to edit, one place to read the history.
 
 There were two of each. Editing was "edit here" beside a "source on github"
