@@ -38,6 +38,39 @@ Evidence: `curl https://numberdb.org/T94` returned 502 in 36s while
 with `docker compose up -d --force-recreate web`, which puts the image's own
 code back.
 
+## A test run can make the server unreachable while the site stays up
+
+What happened: `agents/on-server.sh manage.py test numberdb_app` was started
+in the ordinary way. Load average reached **83.94** on the one vCPU, and ssh
+stopped answering -- "Connection timed out during banner exchange" on every
+attempt for about twenty minutes. The SOCKS proxy is an `ssh -N -D` tunnel to
+that same host, so it died with it, and from this machine numberdb.org
+answered nothing at all. It looked exactly like the site being down.
+
+The site was fine throughout. Asked from the server itself, `https://127.0.0.1/`
+and `/T7` both answered 200 in under 60 ms, and every container was up and
+healthy. What was saturated was everything *outside* the running containers:
+sshd could not complete a handshake, so no tool that reaches the box over ssh
+could report anything.
+
+Two things follow. **A test container is not free on this box**: `docker
+compose run` starts a second Sage and Django beside the live ones with 961 MB
+to share, and a six-second test run costs eight and a half minutes of wall
+clock even when nothing goes wrong. Run the suite once, not per module, and
+never beside anything else. **And when the box goes quiet, do not conclude the
+site is down.** Ask the server: an ssh that eventually connects can curl
+127.0.0.1 with a `Host:` header, which separates "the site is broken" from
+"I cannot reach the box".
+
+The proxy does not recover on its own. The `ssh -N -D` process stays alive
+with a dead connection, still listening on 1080 and timing out every request,
+so it has to be killed and started again.
+
+Evidence: load average 83.94/80.28/70.12 at 01:18 UTC on 2026-09-06, six
+users, 137 MB free; `docker ps` showing web healthy; localhost 200 while the
+proxy returned nothing. The container was removed by hand, after which load
+fell to 5.82 within three minutes.
+
 ## A pipeline that swallows the verdict reports nothing
 
 What happened: the suite was run as `manage.py test ... | tail -30`. The

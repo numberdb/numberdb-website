@@ -202,7 +202,7 @@ had to be taken apart again.
 | **Links** | sources outside: Wikipedia, LMFDB, OEIS, MathWorld | anything the database holds itself |
 | **References** | papers and books, cited from the prose with `CITE{}` | uncited decoration |
 | **Programs** | the standard incantation for a reader who wants one more value | the generator |
-| **Data properties** | `type`, `rigour`, and how the digits were obtained | anything else |
+| **Data properties** | `type`, `rigour`, how the digits were obtained, and `restates` if this table repeats another's | anything else |
 
 Two rules that follow from the table above and are worth stating alone:
 
@@ -213,10 +213,21 @@ negative odd integer* -- writing `$s\in\{-1,-3,-5\}$` describes this
 afternoon's run, and the next person to extend the table has to edit the
 definition of the family to add a row. The range that is actually here belongs
 under `Data properties`: `complete: no`, with `complete-note` saying which part
-is finished -- "every real fundamental discriminant with $D\leq 1000$ is
-here, at $s=-1,-3,-5$". It renders as "complete: no (...)", and it is the
+is finished. It renders inside "complete: no (...)", so write a clause that
+finishes that sentence -- "it holds every real fundamental discriminant with
+$D\leq 1000$, at $s=-1,-3,-5$" -- and it is the
 sentence a reader wants: not that the table is incomplete, which is true of
 almost all of them, but what it *does* cover.
+
+**If the table repeats another's values, say so.** `restates:
+HREF{Other_table}` under `Data properties` means: where these two tables hold
+the same number, that one states it first. Search then answers with the
+original and names this table beside it, instead of saying the same thing
+twice. Only where this table repeats that one's computation -- the same
+quantity of the same object, transcribed. Two tables whose values agree
+because of a theorem are both worth being told about, and that is the
+commoner and more interesting case: Hermite's constant in dimension 8 equals
+the Hermite number of $E_8$, and both tables should answer.
 
 **Link the first mention of a thing to what explains it.** A table if the
 corpus holds one; otherwise a reference the table already declares --

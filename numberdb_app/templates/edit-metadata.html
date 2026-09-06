@@ -162,6 +162,32 @@ table.parameter-table th { font-weight: 400; color: #555; font-size: 0.9em; }
   </div>
 
   {% comment %}
+  A table that repeats another's values says so once, here. It cannot be
+  worked out from the values: two tables can hold the same number because one
+  copied the other, or because a theorem says the two constructions agree, and
+  only the second is worth telling a reader twice. So it is a person's claim
+  about two tables, and this is where a person makes it.
+  {% endcomment %}
+  <div class="form-row">
+    <label for="restates">Does this table repeat another table's values?</label>
+    <select id="restates" name="restates">
+      <option value="">(no)</option>
+      {% for option in restates_options %}
+        <option value="{{ option.url }}"
+          {% if option.url == restates %}selected{% endif %}
+          >{{ option.title|safe }}{% if not option.published %} (draft){% endif %}</option>
+      {% endfor %}
+    </select>
+    <span class="hint">
+      Only where this table repeats that one's computation &mdash; the same
+      quantity of the same object, transcribed. Search then answers with the
+      original and names this table beside it, instead of saying the same thing
+      twice. Two tables whose values agree because of a theorem are both worth
+      being told about, so leave this at "no" for those.
+    </span>
+  </div>
+
+  {% comment %}
   Two fields, because two tables answer with a condition attached and the
   condition is mathematics. A text box welds it to the value where no code can
   read it; a bare dropdown throws it away.
