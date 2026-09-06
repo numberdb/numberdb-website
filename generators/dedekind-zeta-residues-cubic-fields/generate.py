@@ -29,7 +29,9 @@ table of regulators computes it: each unit taken exactly as a polynomial in
 a root a of the reduced polynomial, checked to be an algebraic integer of
 norm +-1, and evaluated by Horner's rule at the real root(s) isolated in
 interval arithmetic; the logarithms, the determinant, pi and the square root
-are arb's, so the digits written are those the ball supports.
+are arb's. Every value is written to 100 significant digits, and every ball
+supports more: the client writes the digits the ball's endpoints agree on,
+capped at 100, and the worst ball supports 133.
 
 **Every value is checked against PARI's lfunrootres before it is returned.**
 lfunrootres computes the residue of zeta_K from its Dirichlet coefficients and
