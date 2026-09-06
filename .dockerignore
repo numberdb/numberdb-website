@@ -13,11 +13,16 @@ env
 # else. A secret does not stop being one when it is renamed.
 .env.*
 *.env
-# Credentials for the other service sharing that box.
+# Credentials for the other service sharing that box. Both spellings, because
+# a pattern here is matched against the path from the build context and a bare
+# `*.htpasswd` covers only the top level -- the first attempt left
+# deploy/nginx/garden.htpasswd in the image.
 *.htpasswd
+**/*.htpasswd
 # Hand-made backups of configuration, which are somebody's working copies and
-# have no business in an image.
+# have no business in an image. Same reason for the second line.
 *.bak-*
+**/*.bak-*
 # Agent transcripts, critiques and proposals: data, kept out of the repository
 # on purpose, and no more part of the image than of it.
 agents/runs
