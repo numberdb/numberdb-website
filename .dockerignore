@@ -7,6 +7,25 @@ __pycache__
 staticfiles
 env
 .env
+# Every shape of it, not the exact name: the image built on 2026-09-06 held
+# .env.bak-20260803, .env.prod.bak-20260803 and .env.prod.UNUSED-see-env-file,
+# because `.env` matches one file and somebody's backup is called something
+# else. A secret does not stop being one when it is renamed.
+.env.*
+*.env
+# Credentials for the other service sharing that box.
+*.htpasswd
+# Hand-made backups of configuration, which are somebody's working copies and
+# have no business in an image.
+*.bak-*
+# Agent transcripts, critiques and proposals: data, kept out of the repository
+# on purpose, and no more part of the image than of it.
+agents/runs
+agents/critiques
+agents/lessons
+agents/table-ideas/BATCH-*.md
+agents/table-ideas/SKIPPED.md
+agents/campaign.stop
 venv
 .venv
 node_modules
