@@ -11,11 +11,13 @@ Definition: >-
   $M\sim(-t)^{\beta}$, $\chi=\partial M/\partial h\sim|t|^{-\gamma}$,
   $M\sim h^{1/\delta}$ at $t=0$, $\xi\sim|t|^{-\nu}$ for the correlation
   length and $\langle\psi(0)\psi(r)\rangle\sim r^{-\eta}$ at $t=0$ for the
-  correlation function of the order parameter. For percolation and the
-  self-avoiding walk, where the occupation probability $p$ and the step
-  fugacity $x$ take the place of the temperature, $\tau$ and $\sigma$
-  describe the distribution of cluster sizes and $d_f$ is the fractal
-  dimension of the critical cluster, respectively of the walk.
+  correlation function of the order parameter. For percolation, with the
+  occupation probability $p$ in place of the temperature, $n_s\sim s^{-\tau}$
+  is the number of clusters of size $s$ per site at $p_c$,
+  $s_{\max}\sim|p-p_c|^{-1/\sigma}$ the cutoff of the cluster sizes and
+  $M(L)\sim L^{d_f}$ the mass of the critical cluster within distance $L$ of
+  a site; for the self-avoiding walk, with the step fugacity $x$ in place of
+  the temperature, $d_f=1/\nu$ is the fractal dimension of the walk.
 Parameters:
   class:
     type: Symbolic
@@ -52,8 +54,8 @@ Comments:
     function at $T_c$, which in $d=2$ is $r^{-\eta}$. For every class here
     the exponents are the same on both sides of the transition, and
     hyperscaling holds, so that only two of the six are independent
-    CITE{formula-scaling}: each row is determined by the scaling dimensions
-    $x_T$ of the thermal and $x_H$ of the magnetic operator
+    CITE{formula-scaling}: the six exponents of a class are determined by the
+    scaling dimensions $x_T$ of its thermal and $x_H$ of its magnetic operator
     CITE{formula-exponents}, and the class is characterised by its
     Coulomb-gas coupling $g$ CITE{Nienhuis1987} CITE{formula-coulomb-potts}
     CITE{formula-coulomb-on}, or equivalently by the parameter $\kappa=4/g$ of
@@ -113,10 +115,15 @@ Comments:
     the dimension of the one-leg operator, the same value as the one-arm
     exponent of percolation.
   comment-status: >-
-    The Ising exponents are theorems of the exact solution: $\alpha=0$ and
-    $\nu=1$ from Onsager's free energy CITE{Onsager}, $\beta=\frac18$ from
-    Yang's spontaneous magnetisation CITE{Yang}, and $\eta=\frac14$ and
-    $\gamma=\frac74$ from the correlation functions CITE{WMTB}. For
+    The Ising exponents are theorems: $\alpha=0$ and $\nu=1$ from Onsager's
+    free energy CITE{Onsager}, $\beta=\frac18$ from Yang's spontaneous
+    magnetisation CITE{Yang}, $\eta=\frac14$ and $\gamma=\frac74$ from the
+    correlation functions CITE{WMTB}, and $\delta=15$ from the two-sided
+    bound $\langle\sigma_0\rangle_{\beta_c,h}\asymp h^{1/15}$ of Camia,
+    Garban and Newman on the magnetisation in a field CITE{CGN}, proved from
+    the Griffiths–Hurst–Sherman inequality and the Russo–Seymour–Welsh
+    theorem of the random-cluster model together with Wu's asymptotics of the
+    two-point function. For
     percolation, $\beta$, $\gamma$, $\nu$ and $\eta$ are theorems for site
     percolation on the triangular lattice CITE{SmirnovWerner}, combining
     Kesten's scaling relations CITE{Kesten}, the one-arm and four-arm
@@ -130,7 +137,8 @@ Comments:
     CITE{Dotsenko}; they are accepted as exact and are not theorems. The
     self-avoiding-walk exponents are Nienhuis's conjecture CITE{Nienhuis1982}
     and would follow from the scaling limit of the walk being
-    $\mathrm{SLE}_{8/3}$ CITE{LSW2004}; the one theorem in the family is the
+    $\mathrm{SLE}_{8/3}$ CITE{LSW2004}; none of the walk's exponents is a
+    theorem, and the one exact critical quantity proved on this branch is the
     connective constant $\mu=\sqrt{2+\sqrt2}$ of the honeycomb lattice
     CITE{DuminilCopinSmirnov}.
 Formulas:
@@ -303,6 +311,11 @@ References:
       H. Duminil-Copin and S. Smirnov, The connective constant of the
       honeycomb lattice equals $\sqrt{2+\sqrt2}$, Annals of Mathematics 175
       (2012), 1653–1665, arXiv:1007.0575.
+  CGN:
+    bib: >-
+      F. Camia, C. Garban and C. M. Newman, The Ising magnetization exponent
+      on $\mathbb{Z}^2$ is $1/15$, Probability Theory and Related Fields 160
+      (2014), 175–187, arXiv:1205.6612.
 Tags:
   - physics
   - probability theory
@@ -318,8 +331,8 @@ Data properties:
     Ising, 3-state Potts, 4-state Potts, percolation and self-avoiding-walk
     classes, with $\sigma$, $\tau$ and $d_f$ for percolation and $d_f$ for the
     walk; the Potts classes at other $q\le4$, the $O(n)$ classes at other
-    $n$, the tricritical classes and the three-dimensional classes, whose
-    exponents are not known exactly, are not here
+    $n$ and the tricritical classes are not here, nor are the
+    three-dimensional classes, whose exponents are not known exactly
   rigour details: >-
     Every entry is a rational computed from the Coulomb-gas coupling $g$ of
     its class, $\frac34$, $\frac56$, $1$ and $\frac23$ on the Potts branch and
@@ -337,11 +350,13 @@ Data properties:
     Before any entry was written, all 30 exponents $\alpha$ to $\eta$ were
     compared with the table on Wikipedia's page on universality classes and
     $\sigma$, $\tau$, $d_f$ with its page on percolation exponents; the
-    thermal and magnetic dimensions with the Kac formula of the minimal
-    models, $h_{2,1}=\frac12$ and $h_{1,2}=\frac{1}{16}$ for $M(4,3)$,
-    $h_{2,1}=\frac25$ and $h_{3,3}=\frac{1}{15}$ for $M(6,5)$, $h_{2,1}=\frac58$
-    and $h_{1,3}=\frac13$ at $c=0$, which shares nothing with the Coulomb
-    gas; the percolation values with the theorem of Smirnov and Werner and
+    thermal and magnetic dimensions of the Ising and 3-state Potts classes
+    with the Kac formula of the minimal models, $h_{2,1}=\frac12$ and
+    $h_{1,2}=\frac{1}{16}$ for $M(4,3)$ and $h_{2,1}=\frac25$ and
+    $h_{3,3}=\frac{1}{15}$ for $M(6,5)$, and the thermal dimensions of
+    percolation and of the walk with $h_{2,1}=\frac58$ and $h_{1,3}=\frac13$
+    at $c=0$, a computation sharing nothing with the Coulomb gas; the
+    percolation values with the theorem of Smirnov and Werner and
     the one-arm exponent of Lawler, Schramm and Werner; $d_f=\frac{91}{48}$
     with a Monte Carlo measurement of the largest cluster of site percolation
     on the triangular lattice at $p_c=\frac12$, which gave $1.88$ between
