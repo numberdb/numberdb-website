@@ -543,3 +543,78 @@ class WhatToDoAboutAFailureIsAsked(TestCase):
 		self.assertIn('You do not publish, review, or edit a table', prompt)
 		for verdict in ('`resume`', '`restart`', '`skip`', '`stop`'):
 			self.assertIn(verdict, prompt)
+
+
+class EitherEngineCanRunAnyStage(TestCase):
+	"""One weekly quota should not be the end of the campaign.
+
+	The stages differ in what they ask for -- building a table, reading one
+	as a stranger, deciding whether a failure is worth retrying -- and there
+	is no reason all three must come from the same vendor. Pairing them the
+	other way round is also worth trying on its own merits: a reader who did
+	not write the table is worth more when it is not even the same model.
+	"""
+
+	def test_both_engines_are_dispatched(self):
+		body = script('agents/run.sh')
+		self.assertIn('claude)', body)
+		self.assertIn('codex)', body)
+
+	def test_codex_is_told_the_model_and_the_effort(self):
+		#Otherwise the run takes whatever the user's config says that day,
+		#and the ledger records a model nobody chose.
+		body = script('agents/run.sh')
+		self.assertIn('NUMBERDB_CODEX_MODEL', body)
+		self.assertIn('NUMBERDB_CODEX_EFFORT', body)
+		self.assertIn('model_reasoning_effort', body)
+
+	def test_codex_is_not_asked_for_a_flag_it_does_not_have(self):
+		"""`--full-auto` is not an option of `codex exec` in 0.150.1."""
+		body = script('agents/run.sh')
+		self.assertNotIn('--full-auto', body)
+
+	def test_codex_is_asked_for_machine_readable_output(self):
+		#The ledger reads turns, tokens and the thread id out of it.
+		self.assertIn('--json', script('agents/run.sh'))
+
+	def test_codex_is_configured_the_same_way_when_resumed(self):
+		#`codex exec resume` takes a smaller set of flags than `codex exec`,
+		#so everything that matters goes through `-c`, which both accept.
+		body = script('agents/run.sh')
+		self.assertIn('codex exec resume', body)
+		self.assertIn('thread_id', body)
+
+	def test_the_ledger_knows_codex_reports_no_cost(self):
+		#It reports tokens per turn and no price, so the row says tokens and
+		#leaves the cost empty rather than inventing a rate.
+		body = script('agents/run.sh')
+		self.assertIn("engine == 'codex'", body)
+		self.assertIn('turn.completed', body)
+
+	def test_the_campaign_routes_each_stage(self):
+		body = script('agents/campaign.sh')
+		for name in ('NUMBERDB_WRITER', 'NUMBERDB_CRITIC', 'NUMBERDB_MINER'):
+			with self.subTest(variable=name):
+				self.assertIn(name, body)
+
+	def test_the_writer_builds_and_repairs_and_the_critic_reads(self):
+		body = script('agents/campaign.sh')
+		self.assertIn('NUMBERDB_AGENT="$writer" agents/run.sh build', body)
+		self.assertIn('NUMBERDB_AGENT="$writer" agents/run.sh repair', body)
+		self.assertIn('NUMBERDB_AGENT="$critic" agents/run.sh critique', body)
+		self.assertIn('NUMBERDB_AGENT="$critic" agents/run.sh triage', body)
+
+	def test_the_miner_can_be_pointed_at_either(self):
+		#"the table topic miner should be optionally run via codex cli"
+		self.assertIn('NUMBERDB_AGENT="$miner" agents/run.sh ideas',
+		              script('agents/campaign.sh'))
+
+	def test_each_falls_back_to_one_engine_for_everything(self):
+		body = script('agents/campaign.sh')
+		self.assertIn('default_engine="${NUMBERDB_AGENT:-claude}"', body)
+
+	def test_the_campaign_says_which_engine_is_doing_what(self):
+		#It is written to the log, so a run that produced a bad table can be
+		#read back to see what made it.
+		self.assertIn('say "writer $writer, critic $critic, miner $miner"',
+		              script('agents/campaign.sh'))

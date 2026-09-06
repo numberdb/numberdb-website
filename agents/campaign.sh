@@ -5,6 +5,18 @@
 #     agents/campaign.sh                  # until the draft ceiling stops it
 #     agents/campaign.sh 3                # at most three builds
 #
+# Which engine does what, so that a weekly quota on one of them is not the end
+# of the campaign, and so the pairing can be tried both ways round:
+#
+#     NUMBERDB_WRITER=codex  agents/campaign.sh   # codex builds and repairs
+#     NUMBERDB_CRITIC=codex  agents/campaign.sh   # codex reads and judges
+#     NUMBERDB_MINER=codex   agents/campaign.sh   # codex proposes the batch
+#     NUMBERDB_AGENT=codex   agents/campaign.sh   # codex throughout
+#
+# The writer builds and repairs, the critic reads and triages, the miner
+# proposes the batch. Each falls back to NUMBERDB_AGENT and then to claude, so
+# the four writer/critic combinations are two variables.
+#
 # Everything here already existed; this only sequences it. One run at a time,
 # because `agents/sage.sh` holds a lock and this machine has 961 MB.
 #
@@ -26,6 +38,13 @@ cd "$here"
 
 builds="${1:-999}"
 made=0
+# One engine per kind of work rather than one per campaign: the stages differ
+# in what they are good at, and a reader who did not write the table is worth
+# more when it is also not the same model.
+default_engine="${NUMBERDB_AGENT:-claude}"
+writer="${NUMBERDB_WRITER:-$default_engine}"
+critic="${NUMBERDB_CRITIC:-$default_engine}"
+miner="${NUMBERDB_MINER:-$default_engine}"
 #Attempts at the table currently being built. Policy, not judgement: however
 #good a reason triage gives, the same table is not tried a third time.
 attempted=0
@@ -35,10 +54,12 @@ batch_file() {
 }
 
 propose_a_batch() {
-	agents/run.sh ideas "Propose a batch from the open 'table wanted' issues, screening every candidate, in an area the corpus does not already cover. Write it to agents/table-ideas/BATCH-$(date -u +%Y-%m-%dT%H%M).md. Do not commit it: batches are data and .gitignore excludes them."
+	NUMBERDB_AGENT="$miner" agents/run.sh ideas "Propose a batch from the open 'table wanted' issues, screening every candidate, in an area the corpus does not already cover. Write it to agents/table-ideas/BATCH-$(date -u +%Y-%m-%dT%H%M).md. Do not commit it: batches are data and .gitignore excludes them."
 }
 
 say() { printf '\n=== %s\n' "$*"; }
+
+say "writer $writer, critic $critic, miner $miner"
 
 while [ "$made" -lt "$builds" ]; do
 	#Asked for between tables, so a campaign can be stopped without killing a
@@ -73,7 +94,7 @@ while [ "$made" -lt "$builds" ]; do
 	#failed campaign that looked like a finished one. It said exactly that
 	#when an expired OAuth token stopped a build on 2026-09-03.
 	status=0
-	agents/run.sh build "Build the highest-ranked proposal in $batch that no generator in generators/ answers yet. Say at the start which one you chose and why it is the next one. Follow the order of work in the prompt. Do not publish. If every proposal in that batch is already built, say so and stop without building anything, and do not commit." || status=$?
+	NUMBERDB_AGENT="$writer" agents/run.sh build "Build the highest-ranked proposal in $batch that no generator in generators/ answers yet. Say at the start which one you chose and why it is the next one. Follow the order of work in the prompt. Do not publish. If every proposal in that batch is already built, say so and stop without building anything, and do not commit." || status=$?
 	if [ "$status" -ne 0 ]; then
 		#What to do about a failure is a judgement, and it has been made four
 		#times today by a line of shell and been wrong each time: HEAD moving
@@ -91,7 +112,7 @@ while [ "$made" -lt "$builds" ]; do
 		if [ -n "$stamp" ] && [ "$attempted" -lt 2 ]; then
 			timeout 120 claude -p "Reply with exactly: ok" >/dev/null 2>&1 || true
 			say "the build run exited $status; asking what to do about it"
-			agents/run.sh triage "The build run $stamp failed with status $status. Its log is agents/runs/$stamp-build.log and the campaign was at $before before it. Decide what happens next and write agents/runs/$stamp-verdict." \
+			NUMBERDB_AGENT="$critic" agents/run.sh triage "The build run $stamp failed with status $status. Its log is agents/runs/$stamp-build.log and the campaign was at $before before it. Decide what happens next and write agents/runs/$stamp-verdict." \
 				|| say "the triage run failed too"
 			if [ -f "agents/runs/$stamp-verdict" ]; then
 				verdict=$(head -1 "agents/runs/$stamp-verdict" | tr -d '[:space:]')
@@ -107,7 +128,7 @@ while [ "$made" -lt "$builds" ]; do
 					say "stopping: no session recorded for $stamp to resume"
 					exit "$status"
 				fi
-				NUMBERDB_RESUME="$session" agents/run.sh build "Continue where you left off." \
+				NUMBERDB_RESUME="$session" NUMBERDB_AGENT="$writer" agents/run.sh build "Continue where you left off." \
 					|| { say "stopping: the resumed run failed too"; exit 1; }
 				;;
 			restart)
@@ -176,7 +197,7 @@ while [ "$made" -lt "$builds" ]; do
 	fi
 	if [ -n "$tid" ]; then
 		say "reading $tid as a reader would"
-		agents/run.sh critique "Read $tid. Fetch the rendered page, read the document, run audit_table on it, and write agents/critiques/$tid.md. Change nothing else." \
+		NUMBERDB_AGENT="$critic" agents/run.sh critique "Read $tid. Fetch the rendered page, read the document, run audit_table on it, and write agents/critiques/$tid.md. Change nothing else." \
 			|| say "the critique run failed; the table stands and somebody should look"
 
 		#Stage four acts on what stage three found, having checked it first.
@@ -189,7 +210,7 @@ while [ "$made" -lt "$builds" ]; do
 		#Safe to leave unattended because an operated account's edits are never
 		#published as reviewed: whatever it writes waits in the queue.
 		say "acting on the critique of $tid"
-		agents/run.sh repair "Act on agents/critiques/$tid.md, for $tid. Check every finding against the live table before you change anything, verify what can be verified, and write agents/critiques/$tid-repaired.md saying what you did with each." \
+		NUMBERDB_AGENT="$writer" agents/run.sh repair "Act on agents/critiques/$tid.md, for $tid. Check every finding against the live table before you change anything, verify what can be verified, and write agents/critiques/$tid-repaired.md saying what you did with each." \
 			|| say "the repair run failed; the critique stands and somebody should read it"
 	fi
 
