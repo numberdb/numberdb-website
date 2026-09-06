@@ -34,6 +34,21 @@ def exactness(values):
     for key, value in _pairs(values):
         for coefficient in _coefficients(value):
             name = type(coefficient).__name__
+            if _is_integer_interval_text(coefficient):
+                #The one string an exact table returns on purpose: `[43, 48]`
+                #for a Ramsey number, `[40, 44]` for a kissing number -- an
+                #integer known to lie between two integers. It is an
+                #enclosure in the database's own spelling, and the client
+                #writes a string verbatim, which is the only way to store it:
+                #a RealInterval with those endpoints is written in decimal
+                #form. The first version of this check reported it as
+                #"unexpected type str", and the run that met that wrapped
+                #the string in a subclass carrying its endpoints so that the
+                #check would pass -- which the client's YAML writer then
+                #serialised as a Python object, storing eighteen entries as
+                #mappings. A check that refuses the right answer teaches
+                #people to disguise it.
+                continue
             if isinstance(coefficient, float) or 'float' in name.lower():
                 complaints.append(
                     '%s: coefficient %r is a %s, not exact -- something '
@@ -62,6 +77,18 @@ def exactness(values):
                                   % (key, name))
                 break
     return complaints
+
+
+def _is_integer_interval_text(value):
+    """Whether this is the string `[a, b]` with integers a < b: the interval
+    an exact table stores for an integer that is only known to lie between
+    two others. Must be a plain string -- a subclass is what the client
+    serialises as an object -- and must have nonzero width, since `[2, 2]`
+    is an integer pretending to be uncertain."""
+    if type(value) is not str:
+        return False
+    found = re.fullmatch(r'\[(-?\d+), (-?\d+)\]', value)
+    return bool(found) and int(found.group(1)) < int(found.group(2))
 
 
 def _is_enclosure(value):

@@ -44,9 +44,13 @@ dimensions are in `KNOWN` and `BOUNDS` below, with the sources in
 **Exact type.** The table is of type Z with rigour `exact`: an integer or an
 interval with integer endpoints. The client writes an interval with exact
 integer endpoints in decimal form, which for [40, 44] would be wrong, so an
-interval is returned as the string `[40, 44]` -- carried in a class that
-knows its endpoints, so that a check can read them, and writes itself in
-the form the database stores.
+interval is returned as the plain string `[40, 44]`, the form the database
+stores. Plain: the first fill returned it as a subclass of `str` carrying
+its endpoints, and the client's YAML writer serialised that as a Python
+object, so eighteen entries were stored as a mapping of `args` and `state`,
+rendered as two sub-entries each and absent from the search index -- and
+`verify()` matched all twenty-four, since it compares the same serialisation
+on both sides. The stored table read back through the API is what caught it.
 """
 
 import sys
@@ -182,23 +186,26 @@ EISENSTEIN_E4 = 'Q-expansion_of_the_Eisenstein_series_E4'
 EQUALS = {8: 'HREF{%s#1}' % EISENSTEIN_E4}
 
 
-class IntegerInterval(str):
-    """The string `[a, b]` the database stores for an integer known to lie
-    between a and b, carrying its endpoints so that a check can read them.
+class IntegerInterval(object):
+    """An integer known to lie between `lower` and `upper`, both integers.
 
-    A string, because that is what the client writes verbatim for an exact
-    type; its own class, because a bare string says nothing about what it
-    encloses, and the checks on this table read `lower` and `upper`.
+    `str()` of it is the text the database stores, `[40, 44]`, and that
+    plain string -- not this object, and not a subclass of `str` -- is what
+    `value()` returns, because the client writes a string verbatim and
+    serialises anything else as it sees fit.
     """
 
-    def __new__(cls, lower, upper):
+    def __init__(self, lower, upper):
         lower, upper = ZZ(lower), ZZ(upper)
         if not lower < upper:
             raise ValueError('[%s, %s] is not an interval of nonzero width' % (lower, upper))
-        self = str.__new__(cls, '[%s, %s]' % (lower, upper))
         self.lower = lower
         self.upper = upper
-        return self
+
+    def __str__(self):
+        return '[%s, %s]' % (self.lower, self.upper)
+
+    __repr__ = __str__
 
 
 def cartan(kind, n):
@@ -289,7 +296,10 @@ class KissingNumbers(numberdb.Generator):
 
     def value(self, params, digits):
         n = int(params['n'])
-        entry = {'number': compute(n), 'comment': COMMENT[n]}
+        number = compute(n)
+        if isinstance(number, IntegerInterval):
+            number = str(number)
+        entry = {'number': number, 'comment': COMMENT[n]}
         if n in EQUALS:
             entry['equals'] = EQUALS[n]
         return entry
