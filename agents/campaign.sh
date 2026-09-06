@@ -35,7 +35,7 @@ batch_file() {
 }
 
 propose_a_batch() {
-	agents/run.sh ideas "Propose a batch from the open 'table wanted' issues, screening every candidate, in an area the corpus does not already cover. Write it to agents/table-ideas/BATCH-$(date -u +%Y-%m-%dT%H%M).md and commit it."
+	agents/run.sh ideas "Propose a batch from the open 'table wanted' issues, screening every candidate, in an area the corpus does not already cover. Write it to agents/table-ideas/BATCH-$(date -u +%Y-%m-%dT%H%M).md. Do not commit it: batches are data and .gitignore excludes them."
 }
 
 say() { printf '\n=== %s\n' "$*"; }
@@ -142,10 +142,16 @@ while [ "$made" -lt "$builds" ]; do
 	            | grep -E 'generate\.py$' | head -1 || true)
 	if [ -z "$generator" ]; then
 		say "$(basename "$batch") is finished; proposing the next batch"
-		before_batch=$(git rev-parse HEAD)
+		#Whether a *new batch file exists*, not whether HEAD moved. Batches
+		#are data and `.gitignore` has excluded them since the code and the
+		#data were separated, so a stage-one run cannot commit one however
+		#well it goes. On 2026-09-06 a run wrote a 580-line batch of five
+		#proposals, said out loud that it would not force-add against that
+		#decision, and was called a failure by this line: the campaign
+		#stopped with a good batch sitting in the working tree.
 		propose_a_batch || exit $?
-		if [ "$(git rev-parse HEAD)" = "$before_batch" ]; then
-			say "stopping: the stage-one run committed nothing either"
+		if [ "$(batch_file)" = "$batch" ] || [ -z "$(batch_file)" ]; then
+			say "stopping: the stage-one run proposed no new batch"
 			exit 4
 		fi
 		continue
