@@ -1,0 +1,147 @@
+# The table document for the k-core thresholds, proposal 6 of
+# agents/table-ideas/BATCH-2026-09-06T0326.md. Created as a draft through the
+# API (X-Draft: yes) and filled by generate.py beside it; publishing is a
+# person's act on the site.
+Title: k-core thresholds of the Erdős–Rényi random graph
+Definition: >-
+  The $k$-core of a graph CITE{WikiCore} is its largest subgraph of minimum
+  degree at least $k$. For $k\geq3$, the $k$-core threshold $c_k$ is the
+  number such that the Erdős–Rényi random graph CITE{WikiER} $G(n,p)$ with
+  $p=c/n$, or $G(n,m)$ with $m\sim cn/2$ edges, has with probability tending
+  to $1$ as $n\to\infty$ an empty $k$-core when $c<c_k$ and a $k$-core with a
+  positive fraction of the $n$ vertices when $c>c_k$; it is
+  $c_k=\min_{\lambda>0}\lambda/\mathbb{P}(\mathrm{Po}(\lambda)\geq k-1)$,
+  where $\mathrm{Po}(\lambda)$ is a Poisson random variable of mean
+  $\lambda$ CITE{PSW}.
+Parameters:
+  k:
+    type: Z
+    title: minimum degree of the core
+    display: $k$
+    constraints: $k\geq3$
+Comments:
+  comment-models: >-
+    In $G(n,p)$ with $p=c/n$ and in $G(n,m)$ with $m=cn/2$ the average degree
+    is about $c$, and the threshold is the same in both models CITE{PSW}
+    CITE{JansonLuczak}. The $2$-core is different: a giant $2$-core grows
+    together with the giant component from $c=1$ on, and the quotient
+    $\lambda/\mathbb{P}(\mathrm{Po}(\lambda)\geq1)=\lambda/(1-e^{-\lambda})$
+    increases from $1$ at $\lambda\to0$, so $c_2=1$ is an infimum that is
+    not attained CITE{CainWormald} CITE{JansonLuczak}. For $k\geq3$ the
+    minimum is attained at a unique $\lambda_k$ CITE{formula-minimiser}, and
+    the $k$-core appears suddenly: at $c=c_k$ it already has about
+    $\mathbb{P}(\mathrm{Po}(\lambda_k)\geq k)\,n$ vertices, $0.2676\,n$ for
+    $k=3$ CITE{PSW}, and above $c_k$ its order is given by
+    CITE{formula-size}. The comment on each entry gives $\lambda_k$ and the
+    fraction $\mathbb{P}(\mathrm{Po}(\lambda_k)\geq k)$ of the vertices in
+    the newborn core.
+  comment-history: >-
+    Łuczak showed that for $k\geq3$ the $k$-core of $G(n,m)$ is either empty
+    or of order $n$ CITE{Luczak}; Pittel, Spencer and Wormald located the
+    threshold and proved the formula for $c_k$ CITE{PSW}, and shorter proofs
+    were given by Cain and Wormald CITE{CainWormald} and by Janson and
+    Łuczak CITE{JansonLuczak}. The same recipe gives the thresholds of
+    $k$-cores in random $d$-uniform hypergraphs: with $m\sim cn/d$ edges the
+    $k$-core appears at
+    $c_{d,k}=\min_{\lambda>0}\lambda/\mathbb{P}(\mathrm{Po}(\lambda)\geq k-1)^{d-1}$
+    CITE{Molloy} CITE{CainWormald}, a minimum that is attained for every
+    $k\geq2$ when $d\geq3$; for $d=3$ and $k=2$ it is
+    $c_{3,2}=2.4554074822\ldots$, so the $2$-core of the random $3$-uniform
+    hypergraph appears at $m/n=0.8184691607\ldots$.
+Formulas:
+  formula-min: >-
+    $c_k=\min_{\lambda>0}\frac{\lambda}{\mathbb{P}(\mathrm{Po}(\lambda)\geq k-1)}
+    =\min_{\lambda>0}\frac{\lambda}{1-e^{-\lambda}\sum_{j=0}^{k-2}\lambda^j/j!}$
+    for $k\geq3$ CITE{PSW}.
+  formula-minimiser: >-
+    The minimiser $\lambda_k$ is the unique positive zero of
+    $g(\lambda)=\mathbb{P}(\mathrm{Po}(\lambda)\geq k-1)-\frac{e^{-\lambda}\lambda^{k-1}}{(k-2)!}$,
+    the numerator of the derivative of $\lambda/\mathbb{P}(\mathrm{Po}(\lambda)\geq k-1)$,
+    and $\lambda_k>k-2$: $g(0)=0$, $g(\lambda)\to1$ as $\lambda\to\infty$,
+    and $g'(\lambda)=\frac{e^{-\lambda}\lambda^{k-2}(\lambda-k+2)}{(k-2)!}$,
+    so $g$ decreases on $(0,k-2)$ and increases on $(k-2,\infty)$.
+  formula-size: >-
+    For $c>c_k$ the equation $\mu/\mathbb{P}(\mathrm{Po}(\mu)\geq k-1)=c$
+    has two positive roots, and with $\mu$ the larger one the $k$-core of
+    $G(n,m)$, $m\sim cn/2$, has $\mathbb{P}(\mathrm{Po}(\mu)\geq k)\,n\,(1+o(1))$
+    vertices and $\frac{\mu}{2}\mathbb{P}(\mathrm{Po}(\mu)\geq k-1)\,n\,(1+o(1))$
+    edges with probability tending to $1$ CITE{PSW} CITE{CainWormald}.
+Programs:
+  program-mpmath:
+    language: Python
+    code: |-
+      from mpmath import mp, gammainc, findroot, exp, factorial
+      mp.dps = 30; k = 3
+      T = lambda x: gammainc(k - 1, 0, x, regularized=True)   # P(Po(x) >= k-1)
+      x = findroot(lambda x: T(x) - exp(-x)*x**(k-1)/factorial(k-2), k)
+      print(x / T(x))                                          # c_k
+Similar tables:
+  - table: HREF{Polya's_random_walk_constants}[Pólya's random walk constants]
+    relation: probabilities of the simple random walk on lattices, indexed by dimension as this table is by the degree of the core
+  - table: HREF{Diagonal_Ramsey_numbers}[Diagonal Ramsey numbers]
+    relation: the extremal graph quantities in the database, with intervals where a value is known only to lie between two integers
+  - table: HREF{Site_and_bond_percolation_thresholds_of_lattices}[Site and bond percolation thresholds of lattices]
+    relation: the thresholds at which a giant cluster appears in a random subgraph of a lattice, the lattice counterpart of the giant component of $G(n,c/n)$ at $c=1$
+Links:
+  WikiCore:
+    title: 'Wikipedia: Degeneracy (graph theory)'
+    url: https://en.wikipedia.org/wiki/Degeneracy_(graph_theory)
+  WikiER:
+    title: 'Wikipedia: Erdős–Rényi model'
+    url: https://en.wikipedia.org/wiki/Erd%C5%91s%E2%80%93R%C3%A9nyi_model
+References:
+  PSW:
+    bib: >-
+      B. Pittel, J. Spencer and N. Wormald, Sudden emergence of a giant
+      $k$-core in a random graph, Journal of Combinatorial Theory, Series B
+      67 (1996), 111–151.
+  Luczak:
+    bib: >-
+      T. Łuczak, Size and connectivity of the $k$-core of a random graph,
+      Discrete Mathematics 91 (1991), 61–68.
+  JansonLuczak:
+    bib: >-
+      S. Janson and M. J. Luczak, A simple solution to the $k$-core problem,
+      Random Structures & Algorithms 30 (2007), 50–62, arXiv:math/0508453.
+  CainWormald:
+    bib: >-
+      J. Cain and N. Wormald, Encores on cores, Electronic Journal of
+      Combinatorics 13 (2006), R81.
+  Molloy:
+    bib: >-
+      M. Molloy, Cores in random hypergraphs and Boolean formulas, Random
+      Structures & Algorithms 27 (2005), 124–135.
+Tags:
+  - probability theory
+  - combinatorics
+Data properties:
+  type: R
+  rigour: proven
+  sources:
+    - CITE{PSW}
+  complete: 'no'
+  complete-note: >-
+    it holds $c_k$ for every $k$ with $3\leq k\leq12$
+  rigour details: >-
+    Each entry is the value at the minimiser $\lambda_k$ of
+    $f(\lambda)=\lambda/\mathbb{P}(\mathrm{Po}(\lambda)\geq k-1)$, computed
+    in ball arithmetic with 64 guard bits beyond the 100 digits written. That
+    $\lambda_k$ is the unique minimiser and the minimum is global follows
+    from the sign of $f'$, which is the sign of $g$ in
+    CITE{formula-minimiser}: $g$ is negative on $(0,\lambda_k)$ and positive
+    on $(\lambda_k,\infty)$, so $f$ decreases and then increases. The
+    computation encloses $\lambda_k$ by bisection on the sign of $g$ between
+    $k-2$ and $4k+10$, each sign decided in ball arithmetic, down to a
+    bracket of half-width $10^{-106}$ whose ends are then checked to give
+    $g$ opposite signs, and evaluates $f$ on that bracket as a ball; the
+    Poisson tail is the finite sum $1-e^{-\lambda}\sum_{j<k-1}\lambda^j/j!$.
+    Every ball has radius about $6\cdot10^{-106}$. Before any entry was
+    written, all ten values were compared with a computation in mpmath at
+    120 digits that writes the tail as the regularised incomplete gamma
+    function $\gamma(k-1,\lambda)/\Gamma(k-1)$ and finds the minimiser as a
+    root of the numerical derivative of $f$, which agreed to the last
+    written digit in every row; $c_3\approx3.35$ and the size $0.27\,n$ of
+    the newborn $3$-core were compared with the values Pittel, Spencer and
+    Wormald state.
+Display properties:
+  number-header: $c_k$
