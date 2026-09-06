@@ -354,8 +354,12 @@ class AFailedRunIsStillRecorded(TestCase):
 	"""
 
 	def test_errexit_is_off_around_the_agent_call(self):
+		#The call is a start or a resume now, since the two engines spell
+		#resuming differently, so what matters is that `set +e` is what comes
+		#immediately before whichever it is.
 		body = script('agents/run.sh')
-		self.assertIn('set +e\nrun_agent "${start_flags[@]}"', body)
+		self.assertIn('set +e\nif [ -n "${NUMBERDB_RESUME:-}" ]; then\n\trun_agent resume',
+		              body)
 
 	def test_the_status_is_the_agents_and_not_tees(self):
 		body = script('agents/run.sh')
@@ -366,7 +370,7 @@ class AFailedRunIsStillRecorded(TestCase):
 		body = script('agents/run.sh')
 		self.assertLess(body.index('\nset -e\n'),
 		                body.index('ledger="agents/runs/COSTS.tsv"'))
-		self.assertLess(body.index('set +e\nrun_agent'),
+		self.assertLess(body.index('set +e\n'),
 		                body.index('\nset -e\n'))
 
 	def test_the_ledger_is_written_after_the_status_is_known(self):
@@ -448,7 +452,7 @@ class ARunCanBeResumed(TestCase):
 
 	def test_it_retries_once_and_only_once(self):
 		body = flat('agents/run.sh')
-		self.assertEqual(body.count('run_agent --resume "$session"'), 1)
+		self.assertEqual(body.count('run_agent resume'), 2)
 
 	def test_it_retries_only_what_a_retry_could_survive(self):
 		body = script('agents/run.sh')
@@ -569,9 +573,15 @@ class EitherEngineCanRunAnyStage(TestCase):
 		self.assertIn('model_reasoning_effort', body)
 
 	def test_codex_is_not_asked_for_a_flag_it_does_not_have(self):
-		"""`--full-auto` is not an option of `codex exec` in 0.150.1."""
+		"""`--full-auto` is not an option of `codex exec` in 0.150.1.
+
+		The branch that used it could never have run. Asserted on the
+		invocation rather than on the file, since the comment above it says
+		the word while explaining why.
+		"""
 		body = script('agents/run.sh')
-		self.assertNotIn('--full-auto', body)
+		self.assertNotIn('codex exec --full-auto', body)
+		self.assertIn('approval_policy=never', body)
 
 	def test_codex_is_asked_for_machine_readable_output(self):
 		#The ledger reads turns, tokens and the thread id out of it.
