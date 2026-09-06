@@ -4,10 +4,11 @@
 # person's act on the site.
 Title: Connective constants of lattices
 Definition: >-
-  For an infinite lattice graph $L$, let $c_n$ be the number of self-avoiding
-  walks of $n$ steps on $L$ that start at a fixed vertex, a walk being
-  self-avoiding if it visits no vertex twice; the connective constant of $L$
-  CITE{Wiki} is $\mu(L)=\lim_{n\to\infty}c_n^{1/n}$.
+  For an infinite lattice graph $L$, let $c_n$ be the number of $n$-step
+  self-avoiding walks on $L$ from a fixed vertex, following the directions of
+  the edges if $L$ is directed, a walk being self-avoiding if it visits no
+  vertex twice; the connective constant of $L$ CITE{Wiki} is
+  $\mu(L)=\lim_{n\to\infty}c_n^{1/n}$.
 Parameters:
   lattice:
     type: Symbolic
@@ -75,8 +76,9 @@ Comments:
     and $\mu(3,12^2)$ is the largest real root of the polynomial of degree
     $12$ in CITE{formula-three-twelve}, OEIS A249776 CITE{OEIStt}. Guttmann,
     Parviainen and Rechnitzer CITE{GuttmannParviainenRechnitzer} give the
-    full generating function, correcting an error in the earlier count of
-    walks that does not affect the constant. No connective constant of a
+    full generating function, correcting an error in the count of walks by
+    Jensen and Guttmann CITE{JensenGuttmann98} that does not affect the
+    constant. No connective constant of a
     lattice in three or more dimensions is known exactly, and no connective
     constant of a planar lattice other than these two.
   comment-estimates: >-
@@ -87,10 +89,11 @@ Comments:
     They are the most precise published values as of 6 September 2026, read
     from the papers cited: the topological transfer-matrix value of
     Jacobsen, Scullard and Guttmann CITE{JSG16} for the square lattice, the
-    series values of Jensen CITE{Jensen04} CITE{Jensen04bounds}, of Jensen
-    and Guttmann CITE{JensenGuttmann98} and of Bennett-Wood, Cardy, Enting,
-    Guttmann and Owczarek CITE{BennettWood98} for the triangular, kagome,
-    $(4,8^2)$ and Manhattan lattices, and the pivot-algorithm values of
+    series values of Jensen CITE{Jensen04} for the triangular lattice and
+    CITE{Jensen04bounds} for the kagome lattice, of Jensen and Guttmann
+    CITE{JensenGuttmann98} for the $(4,8^2)$ lattice and of Bennett-Wood,
+    Cardy, Enting, Guttmann and Owczarek CITE{BennettWood98} for the
+    Manhattan lattice, and the pivot-algorithm values of
     Clisby CITE{Clisby13} CITE{Clisby22} and of Owczarek and Prellberg
     CITE{OwczarekPrellberg} for the cubic and hypercubic lattices. The
     L-lattice value is the one in the table in CITE{Wiki}, which names no
@@ -250,7 +253,16 @@ Data properties:
   type: R
   rigour: measured
   sources:
+    - CITE{DuminilCopinSmirnov}
+    - CITE{JSG16}
+    - CITE{Jensen04}
+    - CITE{Jensen04bounds}
+    - CITE{JensenGuttmann98}
+    - CITE{BennettWood98}
     - CITE{Wiki}
+    - CITE{Clisby13}
+    - CITE{Clisby22}
+    - CITE{OwczarekPrellberg}
   complete: 'no'
   complete-note: >-
     it holds the honeycomb, square, triangular, kagome, $(3,12^2)$ and
