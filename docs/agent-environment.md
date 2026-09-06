@@ -38,6 +38,29 @@ Evidence: `curl https://numberdb.org/T94` returned 502 in 36s while
 with `docker compose up -d --force-recreate web`, which puts the image's own
 code back.
 
+## A file deleted in git stays on the server
+
+What happened: a test module was renamed with `git mv`. The code was uploaded
+the way everything is uploaded -- `tar c ... | ssh "tar x -C /opt"` -- which
+writes the new file and knows nothing about the old one. The suite then found
+both, and the fourteen errors were the stale copy calling functions that had
+been renamed out of existence.
+
+`scripts/ship.sh` copies the same way, so this is not only about tests: a
+module deleted in git remains at `/opt/numberdb-website`, is copied into the
+next image built there, and stays importable indefinitely. Nothing has been
+bitten by that yet beyond a confusing test run, but the shape of it -- old
+code running because nobody removed it -- is worth knowing about before it
+matters.
+
+What to do meanwhile: after renaming or deleting a file, remove it on the
+server by hand before running anything, and treat an unexplained failure in
+a module you have just renamed as this until proved otherwise.
+
+Evidence: `Ran 1400 tests ... FAILED (errors=14)` on 2026-09-06, every error
+in `test_search_restatements`, a file that existed only at `/opt`; the local
+tree had `test_search_repeats.py` and 1385 tests.
+
 ## A test run can make the server unreachable while the site stays up
 
 What happened: `agents/on-server.sh manage.py test numberdb_app` was started
