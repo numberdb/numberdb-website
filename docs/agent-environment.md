@@ -1801,3 +1801,22 @@ of the entries, not for those words.
 
 Evidence: `/tmp/ic_audit_out3.txt`, `/tmp/rep153_audit_after.txt`,
 `/tmp/pc_audit_out.txt`, 2026-09-06.
+
+## arXiv PDFs can be read here with curl and pdftotext
+
+What happened: the T154 build recorded that APS abstract pages answer
+403 and that only the arXiv export API and Crossref could be reached, so
+the papers behind the cubic estimates were confirmed by title and not
+read. The repair needed the actual numbers: `curl -sL
+https://arxiv.org/pdf/1710.03574` through the proxy fetches the PDF, and
+`/usr/bin/pdftotext -layout` on this machine turns it into text that
+`grep` can search, tables included. Both papers behind the bcc finding
+were read in full that way in under a minute.
+
+What to do instead: for a paper with an arXiv number, fetch the PDF and
+run `pdftotext -layout` before deciding that it cannot be read; the
+tables come out aligned enough to find a value and its citations. A paper
+without an arXiv version stays unreadable from here, as before.
+
+Evidence: `/tmp/lc1710.txt` line 442, `βc = 0.1573725(5) [7, 27, 30]`;
+`/tmp/bc0112.txt` line 1477, Table II, `0.1573725(10)`; 2026-09-06.

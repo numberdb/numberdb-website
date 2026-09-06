@@ -40,7 +40,9 @@ couplings against OEIS A245592 and A329247 and against half the regulators
 of Q(sqrt 2) and Q(sqrt 3) in the corpus; the values Codello found first,
 for (4,6,12), (3,4,6,4) and (3^4,6), against the Monte Carlo estimates of
 Malarz, Zborek and Wrobel and of Lima, Mostowicz and Malarz; and the cubic
-estimates against the text of the paper cited.
+estimates against the text of the paper cited, the body-centred cubic one
+against Lundow and Campbell, who quote 0.1573725(5) from Butera and Comi's
+series (whose own Table II prints (10)) and two Monte Carlo studies.
 """
 
 import sys
@@ -116,7 +118,7 @@ COORDINATION = {
 #: the paper's value with its stated uncertainty in the last digits.
 MEASURED = {
     'sc': ('0.221654626', '5e-9', 'FXL'),
-    'bcc': ('0.1573725', '1e-6', 'ButeraComi'),
+    'bcc': ('0.1573725', '5e-7', 'LundowCampbell'),
     'fcc': ('0.102069', '1e-6', 'LundowCampbell'),
     'diamond': ('0.3697398', '1e-7', 'LundowCampbell'),
 }
@@ -363,7 +365,8 @@ COMMENT = {
         r'$K_c=\frac12\ln(2+\sqrt3)=\frac12\operatorname{arcosh}2$ CITE{Houtappel}, OEIS A329247 CITE{OEIShc}; '
         r'$\tanh K_c=1/\sqrt3$ is in the HREF{%s#3,0,-1,2}[table of quadratic irrationals], and $K_c$ is '
         r'half the HREF{%s#12}[regulator of $\mathbb{Q}(\sqrt3)$].' % (QUADRATIC, REGULATORS),
-        r'$k_BT_c/J=2/\ln(2+\sqrt3)$; the honeycomb lattice is also called the hexagonal lattice.'),
+        r'$k_BT_c/J=2/\ln(2+\sqrt3)$; the honeycomb lattice is also called the hexagonal lattice, a name that in '
+        r'crystallography belongs to the triangular lattice.'),
     'kagome': (
         r'$K_c=\frac14\ln(3+2\sqrt3)$ CITE{KanoNaya}, so that $e^{4K_c}=3+2\sqrt3$ and '
         r'$\tanh K_c=\frac12-\sqrt{\frac{\sqrt3}{2}}+\frac{\sqrt3}{2}$; the same value as on $(3,4,6,4)$ CITE{Codello}.',
@@ -413,8 +416,9 @@ COMMENT = {
         % quoted('0.221654626', '5e-9'),
         r'$k_BT_c/J=1/K_c$, the reciprocal of the entry for $K_c$ with its uncertainty propagated.'),
     'bcc': (
-        r'%s CITE{ButeraComi}, from high-temperature series; Lundow and Campbell CITE{LundowCampbell} '
-        r'quote $0.1573725(5)$ from CITE{LMR} and CITE{MuraseIto}.' % quoted('0.1573725', '10e-7'),
+        r'%s as quoted by Lundow and Campbell CITE{LundowCampbell} from the high-temperature series of '
+        r'Butera and Comi CITE{ButeraComi} and the Monte Carlo simulations CITE{LMR} CITE{MuraseIto}; '
+        r"Butera and Comi's own Table II prints $0.1573725(10)$." % quoted('0.1573725', '5e-7'),
         r'$k_BT_c/J=1/K_c$, the reciprocal of the entry for $K_c$ with its uncertainty propagated.'),
     'fcc': (
         r'%s from Monte Carlo simulations CITE{LMR} CITE{MuraseIto}, as quoted by Lundow and Campbell '
@@ -435,7 +439,11 @@ class IsingCriticalCouplings(numberdb.Generator):
     parameters = ('lattice', 'expression')
     type = 'R'
     digits = 100
-    rigour = 'measured'
+    #: `heuristic` for the four transcribed cubic estimates, each one
+    #: computation in its paper with an uncertainty chosen by its authors;
+    #: `measured` is for values that come from experiment. The 38 planar
+    #: entries are proven enclosures, and the rigour details say which is which.
+    rigour = 'heuristic'
 
     def enumerate(self):
         for lattice in LATTICES:
