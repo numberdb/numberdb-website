@@ -1486,3 +1486,55 @@ a count printed from the tree's first level.
 Evidence: `/tmp/cv2_audit_out.txt` (`entries in the head revision: 234`),
 `/tmp/cv2_audit_out2.txt` (`8`), `/tmp/cv2_stored_out2.txt` (`stored
 entries: 234`, `PASS 732, FAIL 0`), 2026-09-05.
+
+## `export.arxiv.org` answers `curl` with an empty body here; `arxiv.org/abs/<id>` answers with the page
+
+What happened: the T151 build fetched ten arXiv abstracts to check the
+number each cited paper claims. The Atom API
+(`export.arxiv.org/api/query?id_list=...`) returned zero bytes for every
+request, with no error, through the proxy and without it. The abstract
+pages (`https://arxiv.org/abs/2411.04916`) answered at once, and the
+abstract sits in `<blockquote class="abstract ...">`, which a regex reads.
+
+What to do instead: fetch the `/abs/` page and read the blockquote; do not
+spend a turn on the API. Ten pages took a few seconds in one loop.
+
+Evidence: 2026-09-06, `/tmp/kn_arxiv1.xml` (0 bytes) against
+`/tmp/kn_abs_2411.04916.html`.
+
+## `audit_table` saying "N values are written but only M are in the search index" can mean the values are not numbers
+
+What happened: after the first fill of T151 the audit said 24 values were
+written and 6 were in the index, and suggested rebuilding the index. The
+cause was in the values: eighteen had been stored as YAML mappings (a
+`str` subclass serialised as a Python object by the client, see the
+lessons file), which the indexer rightly skipped. `verify()` had reported
+24/24 matched. The table read back through `numberdb.table(tid)` showed
+the shape, and the rendered page showed each as two sub-entries,
+`args` and `state`.
+
+What to do instead: when the audit reports an index gap on a table just
+filled, read the stored values back through the API before rebuilding
+anything; if a value is a mapping, the fill is wrong, not the index. The
+integer intervals themselves index fine: after the repair the audit said
+"Nothing to report", and T6's audit, run beside it for comparison, says
+nothing about its intervals either.
+
+Evidence: 2026-09-06, `/tmp/kn_audit_out.txt` before and
+`/tmp/kn_audit_out3.txt` after; `/tmp/kn_stored_out2.txt`.
+
+## Django is not installed on the runner's machine, so a new test in `numberdb_app` cannot be run here
+
+What happened: two tests were added to `test_agents.py` beside the
+`check.py` ones, and `python3 manage.py test` failed with "Couldn't import
+Django"; there is no virtualenv in the repository (`env/` holds no
+`bin/python`). The toolkit under test needs no Django, so the assertions
+were run directly against `check.py` with `importlib`, which is what the
+test class itself does.
+
+What to do instead: for a change to `agents/table-build/check.py`,
+exercise it directly as the test does and say so in the commit; leave the
+Django test run to CI or to a person. A test that needs the database
+cannot be run from a build run at all.
+
+Evidence: 2026-09-06, the commit "T151 repaired after the stored check".
