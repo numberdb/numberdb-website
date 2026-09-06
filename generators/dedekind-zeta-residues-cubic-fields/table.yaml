@@ -1,0 +1,229 @@
+# The table document for the residues of Dedekind zeta functions of cubic
+# fields, proposal 3 of agents/table-ideas/BATCH-2026-09-06T1042.md. Created
+# as a draft through the API (X-Draft: yes) and filled by generate.py beside
+# it; publishing is a person's act on the site.
+Title: Residues of Dedekind zeta functions of cubic fields
+Definition: >-
+  Let $K$ be a cubic field CITE{Wiki-cubic} of discriminant $D$ and
+  $\zeta_K(s)=\sum_{\mathfrak{a}}N(\mathfrak{a})^{-s}$ its Dedekind zeta
+  function CITE{Wiki}, summed over the nonzero ideals of $\mathcal{O}_K$.
+  Listed is $\kappa_K=\lim_{s\to 1}(s-1)\zeta_K(s)$, the residue of
+  $\zeta_K$ at its pole $s=1$.
+Parameters:
+  D:
+    type: Z
+    title: discriminant of $K$
+    display: $D$
+    constraints: $D$ the discriminant of a cubic field
+  k:
+    type: Z
+    title: index of $K$ among the cubic fields of discriminant $D$
+    display: $k$
+    constraints: $k\geq 1$
+Comments:
+  comment-index: >-
+    Non-isomorphic cubic fields can share a discriminant, which quadratic
+    fields never do. The fields of discriminant $D$ are numbered
+    $k=1,2,\ldots$ in lexicographic order of the coefficient vectors
+    $(a_2,a_1,a_0)$ of their reduced defining polynomials
+    $x^3+a_2x^2+a_1x+a_0$, the polynomial PARI's polredabs returns for the
+    field and the LMFDB displays as its defining polynomial; this is the
+    index of HREF{Regulators_of_cubic_fields}[the table of regulators of cubic fields],
+    which holds the same 515 fields. Seven discriminants with $|D|\leq 3000$
+    carry more than one field: $D=-972$ and $-1836$ two each, and $D=-1228$,
+    $-1356$, $-2075$, $-2188$ and $-2891$ three each; so for $D=-1228$, $k=1$
+    is $x^3-x^2+x-7$, $k=2$ is $x^3-x^2+7x-1$ and $k=3$ is $x^3+4x-6$. Every
+    other negative $D$ here, and every positive one, carries a single field,
+    with $k=1$. The LMFDB's own index for fields sharing a discriminant is
+    not this order (for $D=-2891$ its first field is $k=3$ here), and its
+    label knowl states no rule for it; the label in each entry's comment was
+    read from that field's LMFDB page.
+  comment-entries: >-
+    The comment on each entry gives the reduced polynomial $f$, so that
+    $K=\mathbb{Q}(a)$ with $f(a)=0$; the Galois group of the Galois closure,
+    $C_3$ or $S_3$; the class number $h_K$; and the LMFDB label. The
+    fundamental units and the regulator $R_K$, the other factor of the class
+    number formula CITE{formula-class-number}, are in the entry of the same
+    $D$ and $k$ in HREF{Regulators_of_cubic_fields}[the table of regulators].
+  comment-ideal-count: >-
+    $\kappa_K$ is the constant in the ideal count of $K$: the number of
+    nonzero ideals of $\mathcal{O}_K$ of norm at most $x$ is asymptotically
+    $\kappa_K\,x$. For $D=-23$ there are $11045$ ideals of norm at most
+    $30000$, and $11045/30000=0.3682\ldots$ against $\kappa_K=0.3684\ldots$.
+  comment-galois: >-
+    $D$ is a perfect square exactly for the cyclic cubic fields, those with
+    Galois group $C_3$, and $\sqrt{D}$ is then the conductor: the seven
+    cyclic fields here have conductors $7$, $9$, $13$, $19$, $31$, $37$ and
+    $43$, and each is the cubic subfield of the cyclotomic field of that
+    conductor, for $7$ and $9$ its maximal real subfield. For a cyclic field
+    $\zeta_K(s)=\zeta(s)L(s,\chi)L(s,\bar\chi)$ with $\chi$ a cubic Dirichlet
+    character of that conductor, so $\kappa_K=|L(1,\chi)|^2$, formula
+    CITE{formula-cyclic}; the comment on each of the seven names such a
+    $\chi$ by its Conrey label, and $L(1,\chi)$ itself is held in
+    HREF{Values_of_Dirichlet_L-functions_at_positive_integers}[the table of Dirichlet $L$-values]
+    for conductors up to $29$, that is for $D=49$, $81$, $169$ and $361$. The
+    other 508 fields have Galois group $S_3$, and for them $\kappa_K$ is the
+    value at $1$ of the Artin $L$-function of the two-dimensional
+    representation of $S_3$, formula CITE{formula-artin}; the Galois closure
+    contains the quadratic field of discriminant $d$, where $D=df^2$ with
+    $d$ a fundamental discriminant CITE{Wiki-cubic}, and the pure cubic
+    fields $\mathbb{Q}(\sqrt[3]{m})$ are those with $d=-3$.
+  comment-class-number: >-
+    $h_K=1$ for 423 of the 515 fields, $h_K=2$ for 41, $h_K=3$ for 36,
+    $h_K=4$ for 6, $h_K=5$ for 8, and $h_K=7$ for one, the field of
+    $x^3-x^2+9x-21$ with $D=-2856$. The three fields of $D=-1228$ all have
+    $h_K=3$.
+  comment-values: >-
+    The smallest residue here is $\kappa_K=0.2768\ldots$ for $D=-2879$ and
+    the largest $3.5819\ldots$ for $D=-2991$, whose fundamental unit has
+    coefficients of thirteen digits and regulator $15.37\ldots$; 184 of the
+    515 values are less than $1$. For every cubic field $w_K=2$, since a cubic
+    field contains no root of unity other than $\pm1$, which is why the
+    class number formula CITE{formula-class-number} has no other
+    denominator.
+  comment-named: >-
+    A few entries are constants a reader may hold under another name. For
+    $D=-23$, the cubic field of smallest $|D|$, $h_K=1$ and the fundamental
+    unit is the plastic number $\rho=1.3247\ldots$, the real root of
+    $x^3-x-1$ (OEIS A060006 CITE{OEIS-plastic}), so
+    $\kappa_K=2\pi\log\rho/\sqrt{23}$. For $D=49$, $K=\mathbb{Q}(\zeta_7)^+$
+    and $\kappa_K=|L(1,\chi)|^2$ for the cubic character
+    $\chi=\chi_7(2,\cdot)$ of conductor $7$ in Conrey's notation. The
+    thirteen pure cubic fields here, those with $D=-3f^2$, are named
+    $\mathbb{Q}(\sqrt[3]{m})$ in their comments with the least $m$ for which
+    that holds; $\mathbb{Q}(\sqrt[3]{2})$ is $D=-108$.
+  comment-not-completed: >-
+    The residue is that of $\zeta_K$ itself. The completed function
+    $\Lambda_K(s)$, which carries the Gamma factors and a power of $|D|$,
+    has a different residue at $s=1$.
+  comment-quadratic: >-
+    The residues for quadratic fields are in
+    HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[the table for degree two],
+    where $\kappa_K=L(1,\chi_D)$ is a single Dirichlet $L$-value; for a
+    cubic field the corresponding $L$-function has degree two, formula
+    CITE{formula-artin}, and only splits into Dirichlet $L$-functions when
+    the field is cyclic.
+Formulas:
+  formula-class-number: >-
+    $\kappa_K=\frac{2\pi\,h_KR_K}{\sqrt{|D|}}$ for $D<0$ and
+    $\kappa_K=\frac{4\,h_KR_K}{\sqrt{D}}$ for $D>0$, where $h_K$ is the class
+    number and $R_K$ the regulator of $K$, held in
+    HREF{Regulators_of_cubic_fields}[the table of regulators of cubic fields]:
+    the class number formula CITE{WikiCNF} CITE{LMFDB-knowl}
+    $\kappa_K=\frac{2^{r_1}(2\pi)^{r_2}h_KR_K}{w_K\sqrt{|D|}}$ with $w_K=2$
+    and signature $(r_1,r_2)=(1,1)$ for $D<0$, $(3,0)$ for $D>0$.
+  formula-cyclic: >-
+    $\kappa_K=L(1,\chi)L(1,\bar\chi)=|L(1,\chi)|^2$ for a cyclic cubic field,
+    where $\chi$ is either cubic Dirichlet character of conductor $\sqrt{D}$,
+    since $\zeta_K(s)=\zeta(s)L(s,\chi)L(s,\bar\chi)$ and $\zeta$ has residue
+    $1$. For $D=49$ and $\chi=\chi_7(2,\cdot)$ in Conrey's notation,
+    $L(1,\chi)=0.5377\ldots-0.1052\ldots i$ and
+    $\kappa_K=|L(1,\chi)|^2=0.3002598183\ldots$.
+  formula-artin: >-
+    $\zeta_K(s)=\zeta(s)\,L(s,\rho)$ and so $\kappa_K=L(1,\rho)$ for a
+    cubic field with Galois closure $L$ and $\mathrm{Gal}(L/\mathbb{Q})=S_3$,
+    where $\rho$ is the irreducible two-dimensional representation of $S_3$,
+    because the permutation representation of $S_3$ on the three embeddings
+    of $K$ is $1\oplus\rho$. The Dedekind zeta function of the closure is
+    $\zeta_L(s)=\zeta(s)\,L(s,\chi_d)\,L(s,\rho)^2$, with $\chi_d$ the
+    Kronecker character of the quadratic subfield of $L$, of discriminant $d$
+    with $D=df^2$.
+Programs:
+  program-pari:
+    language: PARI/GP
+    code: |-
+      default(realprecision, 60);
+      bnf = bnfinit(x^3 - x^2 + 1, 1); 2*Pi*bnf.no*bnf.reg/sqrt(abs(bnf.disc))   \\ D = -23: 0.368409320715826821111868466628885269857933981303601980446211
+      lfun(lfuncreate(x^3 - x^2 + 1), 1)   \\ the polar part 0.3684093207...*x^-1 + O(x^0), from the L-function alone
+  program-sage:
+    language: Sage
+    code: |-
+      K.<a> = NumberField(x^3 - x^2 + 1)                                # D = -23
+      (2*pi*K.class_number()*K.regulator(proof=True)/sqrt(23)).n()    # 0.368409320715827, the regulator being a 53-bit float
+Similar tables:
+  - table: HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[Residues of Dedekind zeta functions of quadratic fields]
+    relation: the same residue for degree two, $\kappa_K=L(1,\chi_D)$; its entry comments carry $h_K$ the same way
+  - table: HREF{Regulators_of_cubic_fields}[Regulators of cubic fields]
+    relation: the other factor of the class number formula, for the same 515 fields under the same $D$ and $k$; its entry comments carry the fundamental units
+  - table: HREF{Values_of_Dirichlet_L-functions_at_positive_integers}[Values of Dirichlet $L$-functions at positive integers]
+    relation: $\kappa_K=|L(1,\chi)|^2$ for the seven cyclic fields, $\chi$ a cubic character of conductor $\sqrt{D}$
+  - table: HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[Values of the Riemann zeta function at rational numbers]
+    relation: the factor $\zeta(s)$ of $\zeta_K(s)=\zeta(s)L(s,\rho)$, whose residue $1$ is why $\kappa_K=L(1,\rho)$
+Links:
+  Wiki:
+    title: 'Wikipedia: Dedekind zeta function'
+    url: https://en.wikipedia.org/wiki/Dedekind_zeta_function
+  Wiki-cubic:
+    title: 'Wikipedia: Cubic field'
+    url: https://en.wikipedia.org/wiki/Cubic_field
+  WikiCNF:
+    title: 'Wikipedia: Class number formula'
+    url: https://en.wikipedia.org/wiki/Class_number_formula
+  LMFDB-knowl:
+    title: 'LMFDB: analytic class number formula'
+    url: https://www.lmfdb.org/knowledge/show/nf.class_number_formula
+  LMFDB-complex:
+    title: 'LMFDB: cubic number fields of signature (1,1)'
+    url: https://www.lmfdb.org/NumberField/?degree=3&signature=%5B1%2C1%5D
+  LMFDB-real:
+    title: 'LMFDB: cubic number fields of signature (3,0)'
+    url: https://www.lmfdb.org/NumberField/?degree=3&signature=%5B3%2C0%5D
+  OEIS-neg:
+    title: 'OEIS A023679: discriminants of complex cubic fields, negated'
+    url: https://oeis.org/A023679
+  OEIS-pos:
+    title: 'OEIS A006832: discriminants of totally real cubic fields'
+    url: https://oeis.org/A006832
+  OEIS-plastic:
+    title: 'OEIS A060006: the plastic number, the real root of $x^3-x-1$'
+    url: https://oeis.org/A060006
+References:
+  Cohen1993:
+    bib: >-
+      H. Cohen, A Course in Computational Algebraic Number Theory, Graduate
+      Texts in Mathematics 138, Springer, 1993; Theorem 6.4.2 (Hunter)
+Tags:
+  - number theory
+  - L-function
+  - special values
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every cubic field with $|D|\leq 3000$, the 419 complex and the
+    96 totally real ones
+  rigour details: >-
+    Each value is a real ball from the class number formula
+    $\kappa_K=2^{r_1}(2\pi)^{r_2}h_KR_K/(2\sqrt{|D|})$ at 461 bits, with
+    $\pi$ and the square root arb's. The class number and the fundamental
+    units are PARI's, from bnfinit and certified by bnfcertify on every
+    field, which removes the generalised Riemann hypothesis that bnfinit
+    assumes; the regulator is computed as
+    HREF{Regulators_of_cubic_fields}[the table of regulators] computes it,
+    each unit taken exactly as a polynomial in $a$, checked to be an
+    algebraic integer of norm $\pm1$, and evaluated by Horner's rule in
+    balls at the real roots of the reduced polynomial isolated in interval
+    arithmetic, the logarithms and the determinant being arb's. The digits
+    written are those the ball supports (the worst entry, $D=1772$, supports
+    133). The generator refuses a value unless it agrees to 50 digits with
+    the residue that PARI's lfunrootres computes from the Dirichlet
+    coefficients and functional equation of $\zeta_K$, a computation sharing
+    nothing with bnfinit; all 515 do. The enumeration rests on Hunter's
+    theorem CITE{Cohen1993}: every cubic field with $|D|\leq 3000$ is
+    generated by an algebraic integer of trace $0$ or $1$ whose minimal
+    polynomial $x^3+a_2x^2+a_1x+a_0$ has $|a_1|\leq 18$ and $|a_0|\leq 43$,
+    and the fields found in that box, 419 complex and 96 totally real, are
+    exactly the terms of OEIS A023679 CITE{OEIS-neg} and A006832
+    CITE{OEIS-pos} up to 3000 counted with multiplicity. Outside the
+    generator, when this was written, every value was compared with the
+    class number formula evaluated from the regulator stored in the table of
+    regulators; with lfunrootres at 70 digits; with the eleven digits of the
+    analytic class number formula on 21 LMFDB field pages CITE{LMFDB-complex}
+    CITE{LMFDB-real}; for the seven cyclic fields with $|L(1,\chi)|^2$ from
+    a digamma sum in ball arithmetic, and for the four of conductor at most
+    $29$ with the $L(1,\chi)$ stored in the table of Dirichlet $L$-values for
+    both cubic characters; and for $D=-23$ with $2\pi\log\rho/\sqrt{23}$.
+    The controls that must fail failed.
+Display properties:
+  number-header: $\kappa_K$

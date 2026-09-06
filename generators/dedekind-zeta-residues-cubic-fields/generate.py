@@ -376,7 +376,7 @@ def comment(D, k, f, h, order, multiplicity):
 
 class CubicResidues(numberdb.Generator):
 
-    table = 'TBD'
+    table = 'T159'
     parameters = ('D', 'k')
     type = 'R'
     digits = 100
