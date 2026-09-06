@@ -9,8 +9,7 @@ Definition: >-
   $Z_\Lambda$, the entropy constant is
   $\kappa=\lim_{\Lambda\to L}Z_\Lambda^{1/|\Lambda|}$, the number of
   configurations per site, and the entropy per site is $h=\ln\kappa$
-  CITE{Finch}; here $Z_\Lambda$ counts the independent sets of $\Lambda$, its
-  Eulerian orientations, its perfect matchings or its spanning trees.
+  CITE{Finch}.
 Parameters:
   model:
     type: Symbolic
@@ -77,8 +76,9 @@ Comments:
     lattice $D(4,8^2)$ as the planar duals of the kagome lattice and of
     $(4,8^2)$.
   comment-status: >-
-    Nine of the seventeen constants are known in closed form: the golden
-    ratio for the line, Lieb's $\left(\frac43\right)^{3/2}$ for square ice
+    Nine of the seventeen constants are known in closed form: the
+    HREF{Golden_ratio}[golden ratio] for the line, Lieb's
+    $\left(\frac43\right)^{3/2}$ for square ice
     CITE{Lieb}, $e^{G/\pi}$ for dimers on the square lattice with $G$
     Catalan's constant CITE{Kasteleyn}, the honeycomb dimer constant and the
     spanning-tree constants of the square, triangular, honeycomb, kagome,
