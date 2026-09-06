@@ -169,12 +169,12 @@ table.parameter-table th { font-weight: 400; color: #555; font-size: 0.9em; }
   about two tables, and this is where a person makes it.
   {% endcomment %}
   <div class="form-row">
-    <label for="restates">Does this table repeat another table's values?</label>
-    <select id="restates" name="restates">
+    <label for="repeats">Does this table repeat another table's values?</label>
+    <select id="repeats" name="repeats">
       <option value="">(no)</option>
-      {% for option in restates_options %}
+      {% for option in repeats_options %}
         <option value="{{ option.url }}"
-          {% if option.url == restates %}selected{% endif %}
+          {% if option.url == repeats %}selected{% endif %}
           >{{ option.title|safe }}{% if not option.published %} (draft){% endif %}</option>
       {% endfor %}
     </select>

@@ -360,7 +360,7 @@ class Table(models.Model):
 		related_name = 'reviewed_head_of',
 	)
 
-	#: The table this one restates: where the two hold the same number, that
+	#: The table this one repeats: where the two hold the same number, that
 	#: table states it first and this one repeats it.
 	#:
 	#: Three tables can hold the centre density of the Leech lattice, and a
@@ -371,19 +371,19 @@ class Table(models.Model):
 	#: coincidence is the most interesting thing search can say. Whether a
 	#: table repeats another or agrees with it by a theorem cannot be decided
 	#: from the values -- both look like equality -- so it is declared, in
-	#: `Data properties: restates`, and a person judging one table against
+	#: `Data properties: repeats`, and a person judging one table against
 	#: another is the right granularity for the judgement.
 	#:
-	#: Kept shallow on purpose: a table that is itself restated may not
-	#: restate a third. That makes the relation a set of stars rather than a
+	#: Kept shallow on purpose: a table that is itself repeated may not
+	#: repeat a third. That makes the relation a set of stars rather than a
 	#: graph, so the chain a reader is folded into is one hop long and no
-	#: cycle can form. See `_sync_restates`.
-	restates = models.ForeignKey(
+	#: cycle can form. See `_sync_repeats`.
+	repeats = models.ForeignKey(
 		'self',
 		null = True,
 		blank = True,
 		on_delete = models.SET_NULL,
-		related_name = 'restated_by',
+		related_name = 'repeated_by',
 	)
 
 	#: Whether this draft's author says it is finished and wants it looked at.

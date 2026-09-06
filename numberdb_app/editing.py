@@ -424,7 +424,7 @@ def apply_revision(table, revision=None):
 
 	_sync_title(table, normalised)
 	_sync_tags(table, normalised)
-	_sync_restates(table, normalised)
+	_sync_repeats(table, normalised)
 	build_number_table(only_table=table)
 	reindex_for_search(table, normalised)
 	#After the rebuild, not before: the rows it writes take the model default,
@@ -474,8 +474,8 @@ def _sync_title(table, document):
 	table.save(update_fields=fields)
 
 
-def _restates_slug(value):
-	"""The table address in a `Data properties: restates`, or None.
+def _repeats_slug(value):
+	"""The table address in a `Data properties: repeats`, or None.
 
 	Written as the corpus writes every internal reference, `HREF{slug}`, so
 	that it renders as a link and is checked by the same tooling. The optional
@@ -493,8 +493,8 @@ def _restates_slug(value):
 	return slug or None
 
 
-def _sync_restates(table, document):
-	"""Keep `Table.restates` in step with the document's declaration.
+def _sync_repeats(table, document):
+	"""Keep `Table.repeats` in step with the document's declaration.
 
 	A table that repeats another's values says so once, at the top, rather
 	than on each of the two hundred entries that repeat one. The reason it is
@@ -507,10 +507,10 @@ def _sync_restates(table, document):
 	can say so.
 
 	Refused rather than recorded when it would make the relation deeper than
-	one hop: a table that some other table restates may not itself restate a
+	one hop: a table that some other table repeats may not itself repeat a
 	third. Depth one is what lets search resolve a fold with a single lookup,
 	and it is also what makes a cycle impossible -- every table in a cycle
-	would have to both restate and be restated. A refusal leaves the field
+	would have to both repeat and be repeated. A refusal leaves the field
 	null, which costs nothing but the fold; `audit_table` reports it.
 	"""
 	from .models import Table
@@ -519,24 +519,24 @@ def _sync_restates(table, document):
 		return
 
 	properties = document.get('Data properties')
-	declared = _restates_slug(
-		properties.get('restates') if isinstance(properties, dict) else None)
+	declared = _repeats_slug(
+		properties.get('repeats') if isinstance(properties, dict) else None)
 
 	original = None
 	if declared:
 		original = Table.objects.filter(url=declared).first()
 		if original is not None:
-			#A table cannot restate itself, cannot restate one that is itself
-			#a restatement, and cannot become a restatement while another
+			#A table cannot repeat itself, cannot repeat one that is itself
+			#a repetition, and cannot become a repetition while another
 			#table is pointing here. Each of the three would leave a chain.
 			if (original.pk == table.pk
-					or original.restates_id is not None
-					or table.restated_by.exists()):
+					or original.repeats_id is not None
+					or table.repeated_by.exists()):
 				original = None
 
-	if table.restates_id != (original.pk if original else None):
-		table.restates = original
-		table.save(update_fields=['restates'])
+	if table.repeats_id != (original.pk if original else None):
+		table.repeats = original
+		table.save(update_fields=['repeats'])
 
 
 def _sync_tags(table, document):

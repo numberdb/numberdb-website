@@ -67,7 +67,7 @@ should stop needing one.
 The claim is made once per table, by a person, in `Data properties`:
 
     Data properties:
-      restates: HREF{Nodes_and_weights_of_Gauss_Legendre_quadrature}
+      repeats: HREF{Nodes_and_weights_of_Gauss_Legendre_quadrature}
 
 meaning: *where this table's values coincide with that table's, that table
 states them first.* At the granularity of two tables the question is
@@ -81,8 +81,8 @@ theorem or not. It is not narrowed and not migrated.
 
 ## What search does with it
 
-`fold_restatements` in `numberdb_app/search.py`. A row is dropped when its
-table restates another table that is **also among the answers** and holds the
+`fold_repeats` in `numberdb_app/search.py`. A row is dropped when its
+table repeats another table that is **also among the answers** and holds the
 **same stored text**. The folded table is attached to the surviving row as
 `also_in` and named on the page, so a fold decides what leads rather than what
 exists.
@@ -94,12 +94,12 @@ never remove the only answer.
 
 ## Why the relation is kept one hop deep
 
-`Table.restates` is a foreign key to another table, and `_sync_restates`
+`Table.repeats` is a foreign key to another table, and `_sync_repeats`
 refuses a declaration that would make a chain: a table that some other table
-restates may not itself restate a third.
+repeats may not itself repeat a third.
 
 That is what makes cycles impossible rather than merely rare. Every table in a
-cycle would have to both restate and be restated, so the depth rule excludes
+cycle would have to both repeat and be repeated, so the depth rule excludes
 them; the graph is a disjoint union of stars. It also means a fold resolves in
 one lookup, with no recursive query and no visited-set.
 

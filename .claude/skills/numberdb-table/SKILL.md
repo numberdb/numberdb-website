@@ -202,7 +202,7 @@ had to be taken apart again.
 | **Links** | sources outside: Wikipedia, LMFDB, OEIS, MathWorld | anything the database holds itself |
 | **References** | papers and books, cited from the prose with `CITE{}` | uncited decoration |
 | **Programs** | the standard incantation for a reader who wants one more value | the generator |
-| **Data properties** | `type`, `rigour`, how the digits were obtained, and `restates` if this table repeats another's | anything else |
+| **Data properties** | `type`, `rigour`, how the digits were obtained, and `repeats` if this table repeats another's | anything else |
 
 Two rules that follow from the table above and are worth stating alone:
 
@@ -219,7 +219,7 @@ $D\leq 1000$, at $s=-1,-3,-5$" -- and it is the
 sentence a reader wants: not that the table is incomplete, which is true of
 almost all of them, but what it *does* cover.
 
-**If the table repeats another's values, say so.** `restates:
+**If the table repeats another's values, say so.** `repeats:
 HREF{Other_table}` under `Data properties` means: where these two tables hold
 the same number, that one states it first. Search then answers with the
 original and names this table beside it, instead of saying the same thing

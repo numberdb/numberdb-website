@@ -36,7 +36,7 @@ from .validate import (OTHER_TYPES, PARAMETER_TYPES, SEARCHABLE_TYPES,
                        TYPE_NAME_KEY)
 
 __all__ = ['fields_from', 'apply_to', 'COMPLETENESS_ANSWERS', 'OTHER',
-           'known_other_types', 'restates_choices']
+           'known_other_types', 'repeats_choices']
 
 #: The value the select carries for "something else".
 OTHER = '__other__'
@@ -65,7 +65,7 @@ def fields_from(tree):
 	display = tree.get('Display properties')
 	display = display if isinstance(display, dict) else {}
 
-	from .editing import _restates_slug
+	from .editing import _repeats_slug
 
 	answer = _leading_word(properties.get('complete'))
 	declared = str(properties.get('type') or '')
@@ -93,9 +93,9 @@ def fields_from(tree):
 		#Which table states this one's shared values first, as a slug. The
 		#field holds `HREF{slug}` so that it renders as a link like every
 		#other reference; the form works in slugs and puts the markup back.
-		'restates': _restates_slug(properties.get('restates')) or '',
+		'repeats': _repeats_slug(properties.get('repeats')) or '',
 		#Filled by the view, for the same reason as `known_other_types`.
-		'restates_options': [],
+		'repeats_options': [],
 		'layout': str(display.get('layout') or ''),
 		'parameters': _parameters_of(tree),
 		'parameter_types': sorted(PARAMETER_TYPES),
@@ -164,16 +164,16 @@ def apply_to(tree, data, allow_key_changes=False):
 				#behind would describe the table as something it is not.
 				properties.pop(TYPE_NAME_KEY, None)
 
-	if 'restates' in data:
+	if 'repeats' in data:
 		#A table repeating another says so once, here, rather than on each of
 		#the entries that repeat one -- and it is a claim about two tables
 		#that no rule on the values could make, so a person makes it. See
 		#docs/design/same-construction.md.
-		chosen = (data.get('restates') or '').strip()
+		chosen = (data.get('repeats') or '').strip()
 		if chosen:
-			properties['restates'] = 'HREF{%s}' % (chosen,)
+			properties['repeats'] = 'HREF{%s}' % (chosen,)
 		else:
-			properties.pop('restates', None)
+			properties.pop('repeats', None)
 
 	if 'complete' in data:
 		answer = (data.get('complete') or '').strip()
@@ -247,10 +247,10 @@ def _leading_word(value):
 	return leading(value)
 
 
-def restates_choices(table=None):
+def repeats_choices(table=None):
 	"""Every other table, as (slug, title) pairs for the select.
 
-	Drafts included, and deliberately: T148 restates T147 and both were drafts
+	Drafts included, and deliberately: T148 repeats T147 and both were drafts
 	when the declaration was made. What is excluded is the table being edited,
 	so the form cannot offer a table itself -- which is refused further down
 	anyway, but an option that can only produce an error should not be shown.

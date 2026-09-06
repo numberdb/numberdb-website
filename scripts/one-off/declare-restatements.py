@@ -1,5 +1,11 @@
 """Two tables say which table states their shared values first.
 
+Superseded: the field was renamed `restates` -> `repeats` the next day,
+because the Python client already had `publish(restating=True)` for
+something else. `rename-restates-to-repeats.py` moved the two documents;
+this script is kept as the record of what was declared and why, and
+would write the old key if it were run again.
+
     ALL_PROXY=socks5h://127.0.0.1:1080 python3 scripts/one-off/declare-restatements.py [apply]
 
 T136 stores, for each Gauss-Kronrod rule, the nodes and weights of the Gauss
