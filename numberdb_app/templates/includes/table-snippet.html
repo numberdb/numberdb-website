@@ -68,7 +68,16 @@ div.table-param-group-header {
   text-align: right;
   width: 1rem;
   scroll-margin-top: 30vh;
-  white-space: nowrap;
+  /* Wrapping, not `nowrap`. An identity is short -- `17`, `6,18/11` -- and
+     for those this changes nothing, because the identities are built with
+     non-breaking spaces already and cannot break wherever they are told they
+     may. What it changes is a parameter whose values are named rather than
+     numbered: "deltoidal trihexagonal $D(3,4,6,4)$" could not break, so it
+     set the width of the whole column and pushed the digits out of the half
+     of the page the numbers get. Now it takes two lines and the numbers get
+     their room back. It still cannot break inside the mathematics: MathJax
+     typesets `$D(3,4,6,4)$` into one element. */
+  white-space: normal;
 }
 div.table-cell-right,
 div.table-cell-right-header,
