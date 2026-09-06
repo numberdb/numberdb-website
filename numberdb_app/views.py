@@ -392,14 +392,19 @@ def tag(request, tag_url):
 	tables = tag.tables.all()
 	sortby_default = 'entry_count'
 	sortby = request.GET.get('sort_by',default=sortby_default)
+	#`entry_count` is the name of a sort, not of a column -- the column is
+	#`number_count`. The fallback passed the name straight to `order_by`, so
+	#any unrecognised `sort_by` answered 500 rather than sorting the default
+	#way: /tags/set+theory?sort_by=name raised FieldError, and a tag page is
+	#public and crawled. The default is spelt once, here, as the sort it is.
+	if sortby not in ('entry_count', 'id', 'title'):
+		sortby = sortby_default
 	if sortby == 'entry_count':
 		tables = tables.order_by('-number_count')
 	elif sortby == 'id':
 		tables = tables.order_by('tid_int')
-	elif sortby == 'title':
-		tables = tables.order_by('title_lowercase')
 	else:
-		tables = tables.order_by(sortby_default)
+		tables = tables.order_by('title_lowercase')
 	paginator = Paginator(tables, 50)
 	try:
 		shown_tables = paginator.page(page)
