@@ -465,13 +465,19 @@ def _review_bar(request, table):
 	the same guard against approving work that arrived while you were reading.
 	"""
 	from .permissions import is_board_member
+	from .review import is_waiting_for_review
 
 	head = table.head_revision
 	if head is None or not is_board_member(request.user):
 		return {}
-	#A draft is waiting by existing; a published table waits when its head has
-	#moved past the revision somebody last confirmed.
-	if table.published and table.reviewed_at_revision_id == head.pk:
+	#The queue's own question, not one of its own. The first version asked
+	#whether the head had moved past the confirmed revision, which is a
+	#different question and a wider one: a prose edit -- a tag, a reference, a
+	#field added to Data properties -- moves the head and changes no value, so
+	#the queue does not list it and there is nothing for a reviewer to admit
+	#to search. T7 offered "Accept the changes" while appearing in no queue,
+	#and so did every table edited by hand since.
+	if not is_waiting_for_review(table):
 		return {}
 	return {
 		'may_accept': True,
