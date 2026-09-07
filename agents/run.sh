@@ -354,12 +354,23 @@ run_agent() {
 			# which is what a build needs and is the nearest thing codex has to
 			# the deny list the claude branch above carries. Probed rather than
 			# assumed -- /tmp and an outbound request both work under it.
+			# `.git` among the writable roots, because workspace-write makes
+			# it read-only and a run that cannot commit cannot follow the one
+			# instruction the campaign depends on. Two builds were read as
+			# "nothing built" for this: T161 filled 519 entries and T162 filled
+			# 515, and both reported
+			#
+			#     fatal: Unable to create '.git/index.lock': Read-only file system
+			#
+			# which nobody saw, because the campaign only looked at whether a
+			# generator had been committed. It was not disobedience.
 			local flags=(--json --skip-git-repo-check
 			             -m "$codex_model"
 			             -c "model_reasoning_effort=$codex_effort"
 			             -c "approval_policy=never"
 			             -c "sandbox_mode=workspace-write"
-			             -c "sandbox_workspace_write.network_access=true")
+			             -c "sandbox_workspace_write.network_access=true"
+			             -c "sandbox_workspace_write.writable_roots=[\"$here/.git\"]")
 			if [ "$mode" = "resume" ]; then
 				codex exec resume "${flags[@]}" "$session" \
 					"Continue where you left off." \
