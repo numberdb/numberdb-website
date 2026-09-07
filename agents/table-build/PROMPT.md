@@ -168,6 +168,13 @@ puts the number where a reader can see it and not click it, and can only use it
 by retyping. Nine tables did it in three days, fifty-two references between
 them. `audit_table` refuses it now.
 
+**Tags: prefer an existing one, and say so when none fits.** The tag list is a
+way through the corpus. It is also unfinished, so if this table shares a
+subject with two or more others and there is no tag for it, write that down in
+your report -- naming the tables -- rather than settling for "physics". A tag
+is proposed by the batch that needs it, since one table alone cannot show that
+three would use it. `audit_table` refuses a tag that reaches only this table.
+
 **Cite what you already declared.** If `Links` holds the Wikipedia article for
 the object, put `CITE{Wiki}` at its first mention in the definition. The
 reference is there; the reader should not have to scroll for it.
