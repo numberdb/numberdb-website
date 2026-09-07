@@ -196,7 +196,8 @@ def codex_run(path, model):
 	}
 
 
-def row(log, started, stage, engine, prompt, session, resumed, model):
+def row(log, started, stage, engine, prompt, session, resumed, model,
+        unfinished=''):
 	found = codex_run(log, model) if engine == 'codex' else claude_run(log)
 	if found is None:
 		return '\t'.join([started, stage, engine, '', '', 'no result record',
@@ -204,6 +205,11 @@ def row(log, started, stage, engine, prompt, session, resumed, model):
 		                  '', '', '', ''])
 	cost = found['cost']
 	outcome = found['outcome']
+	if unfinished:
+		#A run that stopped in the middle reports success, because the agent
+		#exited normally: it said "waiting on the dry run" and stopped. What
+		#it left behind is the fact worth recording beside the price.
+		outcome = '%s, %s' % (outcome, unfinished)
 	if cost is None:
 		#Said out loud rather than left blank: a missing rate is a thing to
 		#fix in agents/model-rates.tsv, not a run that cost nothing.
@@ -225,4 +231,4 @@ if __name__ == '__main__':
 	if sys.argv[1:2] == ['--header']:
 		print('\t'.join(COLUMNS))
 	else:
-		print(row(*sys.argv[1:9]))
+		print(row(*sys.argv[1:10]))

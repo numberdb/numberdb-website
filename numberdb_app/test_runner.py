@@ -657,3 +657,37 @@ class ARunThatCommitsNothingSaysSo(TestCase):
 		body = script('agents/run.sh')
 		self.assertLess(body.index('did not commit'),
 		                body.index('=== finished with status'))
+
+
+class AnUnfinishedRunIsNotASuccess(TestCase):
+	"""Two builds this week ended having done nothing, and looked fine.
+
+	A codex build wrote a 519-entry table and left it untracked; a claude
+	build stopped after 40 turns and $10.05 saying "waiting on the dry run".
+	Both exited 0, and the campaign reads a build that exits 0 and commits no
+	generator as an exhausted batch -- so both were recorded as "the batch is
+	finished" and their tables were never critiqued.
+
+	A run that declines leaves a clean tree; one that stopped in the middle
+	leaves the work it had done. That difference is the signal.
+	"""
+
+	def test_uncommitted_work_makes_the_run_fail(self):
+		body = script('agents/run.sh')
+		self.assertIn('status=7', body)
+		self.assertIn('unfinished="left work uncommitted"', body)
+
+	def test_a_clean_tree_is_left_alone(self):
+		#Declining is a good outcome and must stay one.
+		body = script('agents/run.sh')
+		guard = body[body.index('unfinished=""'):]
+		self.assertIn('if [ "$status" -eq 0 ]; then', guard)
+
+	def test_the_ledger_is_told_before_it_writes_the_row(self):
+		body = script('agents/run.sh')
+		self.assertLess(body.index('unfinished="left work uncommitted"'),
+		                body.index('python3 agents/ledger.py "$log"'))
+
+	def test_the_row_says_so_beside_the_price(self):
+		self.assertIn('outcome = \'%s, %s\' % (outcome, unfinished)',
+		              script('agents/ledger.py'))
