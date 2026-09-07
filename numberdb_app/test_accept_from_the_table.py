@@ -29,9 +29,12 @@ class TheAcceptBar(TestCase):
 		group, _ = Group.objects.get_or_create(name=BOARD_GROUP)
 		self.board.groups.add(group)
 
+		#Offered for review, which is how a draft leaves the builder: the
+		#queue lists a draft only when its author says it is finished, and
+		#the button follows the queue.
 		self.table = Table.objects.create(
 			tid='T710', tid_int=710, url='t710', title='A draft table',
-			published=False, created_by=self.author)
+			published=False, ready_for_review=True, created_by=self.author)
 		commit_table(self.table,
 		             {'Title': 'A draft table', 'Numbers': {'1': '2'},
 		              'Data properties': {'type': 'Z'}},
@@ -52,6 +55,13 @@ class TheAcceptBar(TestCase):
 		body = self.page(self.board).content.decode()
 		self.assertIn('/review/T710', body)
 		self.assertIn('see what changed', body)
+
+	def test_a_draft_nobody_has_offered_yet_shows_nothing(self):
+		"""Half-built is not waiting, and inviting somebody to publish it is
+		how an unfinished table goes public."""
+		self.table.ready_for_review = False
+		self.table.save(update_fields=['ready_for_review'])
+		self.assertNotIn('Accept', self.page(self.board).content.decode())
 
 	def test_the_author_is_not(self):
 		"""It offers something only the board can do."""
@@ -208,9 +218,7 @@ class TheButtonAppearsExactlyWhenTheQueueLists(TestCase):
 		self.table = Table.objects.create(
 			tid='T740', tid_int=740, url='t740', title='A published table',
 			published=True, created_by=self.author)
-		commit_table(self.table,
-		             {'Title': 'A published table', 'Numbers': {'1': '2'},
-		              'Data properties': {'type': 'Z'}},
+		commit_table(self.table, self.tree({'1': '2'}),
 		             author=self.author, message='m', via='orm')
 		self.table.refresh_from_db()
 		#Confirmed at its head, as a reviewed table is.
@@ -219,6 +227,14 @@ class TheButtonAppearsExactlyWhenTheQueueLists(TestCase):
 		from .review import sync_review_flags
 
 		sync_review_flags(self.table)
+
+	def tree(self, numbers, **extra):
+		document = {'Title': 'A published table',
+		            'Parameters': {'n': {'type': 'Z'}},
+		            'Data properties': {'type': 'Z'},
+		            'Numbers': numbers}
+		document.update(extra)
+		return document
 
 	def page(self):
 		client = Client()
@@ -237,9 +253,7 @@ class TheButtonAppearsExactlyWhenTheQueueLists(TestCase):
 	def test_a_prose_edit_alone_offers_nothing(self):
 		"""The case that showed the bug: the head moves, no value changes."""
 		commit_table(self.table,
-		             {'Title': 'A published table', 'Numbers': {'1': '2'},
-		              'Data properties': {'type': 'Z'},
-		              'Tags': ['statistical mechanics']},
+		             self.tree({'1': '2'}, Tags=['statistical mechanics']),
 		             author=self.author, message='a tag', via='orm')
 		self.table.refresh_from_db()
 		self.assertNotEqual(self.table.head_revision_id,
@@ -248,9 +262,7 @@ class TheButtonAppearsExactlyWhenTheQueueLists(TestCase):
 		self.assertNotIn('Accept', self.page())
 
 	def test_a_changed_value_offers_it(self):
-		commit_table(self.table,
-		             {'Title': 'A published table', 'Numbers': {'1': '3'},
-		              'Data properties': {'type': 'Z'}},
+		commit_table(self.table, self.tree({'1': '3'}),
 		             author=self.author, message='a value', via='orm')
 		self.table.refresh_from_db()
 		self.assertTrue(self.listed())
@@ -260,11 +272,9 @@ class TheButtonAppearsExactlyWhenTheQueueLists(TestCase):
 		from .review import is_waiting_for_review, waiting_for_review
 
 		for tree, message in (
-				({'Title': 'A published table', 'Numbers': {'1': '2'},
-				  'Tags': ['physics']}, 'prose'),
-				({'Title': 'A published table', 'Numbers': {'1': '9'}}, 'value'),
-				({'Title': 'A published table', 'Numbers': {'1': '9', '2': '4'}},
-				 'another value')):
+				(self.tree({'1': '2'}, Tags=['physics']), 'prose'),
+				(self.tree({'1': '9'}), 'value'),
+				(self.tree({'1': '9', '2': '4'}), 'another value')):
 			commit_table(self.table, tree, author=self.author, message=message,
 			             via='orm')
 			self.table.refresh_from_db()
