@@ -277,6 +277,12 @@ ${task:-Follow the prompt above.}
 BRIEF
 )
 
+# The tree as it stands before the agent touches it. `run.sh` refuses to start
+# on uncommitted *tracked* changes but says nothing about untracked files, so
+# a previous run's leftovers are here at the start -- and the check at the end
+# must not blame this run for them.
+tree_before=$(git status --porcelain --untracked-files=normal | sort)
+
 echo "=== $stage run $started, engine $engine" | tee "$log"
 
 # `set -e` would abort here the moment the agent exits non-zero: before
@@ -424,10 +430,16 @@ set -e
 # committing somebody else's work automatically is how a half-finished change
 # becomes a commit nobody wrote.
 unfinished=""
-if [ -n "$(git status --porcelain --untracked-files=normal)" ]; then
+#`campaign.stop` is a person asking the campaign to stop between tables. It
+#is never a run's work, and a run that happened to be going when somebody
+#created it should not be called unfinished for it.
+left=$(comm -13 <(printf '%s\n' "$tree_before") \
+                <(git status --porcelain --untracked-files=normal | sort) \
+       | grep -v 'agents/campaign\.stop$' || true)
+if [ -n "$left" ]; then
 	unfinished="left work uncommitted"
 	echo "=== this run left changes it did not commit:"
-	git status --short --untracked-files=normal | sed 's/^/===   /'
+	printf '%s\n' "$left" | sed 's/^/===   /'
 	echo "===   the prompt asks a run to commit each change as it makes it."
 	#And it did not finish, whatever it exited with. A run that declines --
 	#"every proposal in that batch is already built, so I built nothing" --
