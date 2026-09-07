@@ -412,6 +412,40 @@ if [ "$status" -ne 0 ] && [ "$stage" != "triage" ] \
 fi
 set -e
 
+# A run that changed files and committed none of them looks, to everything
+# downstream, like a run that did nothing. On 2026-09-06 a codex build wrote a
+# 458-line generator, filled a 519-entry table and left both untracked; the
+# campaign looks for a committed generator to decide a table was built, so it
+# read that as an exhausted batch, went to propose a new one, and stopped on
+# the dirty tree the build had left. Seven hours and $42.89, reported as
+# nothing built.
+#
+# Said here, where the run's own status is reported, and left for a person:
+# committing somebody else's work automatically is how a half-finished change
+# becomes a commit nobody wrote.
+unfinished=""
+if [ -n "$(git status --porcelain --untracked-files=normal)" ]; then
+	unfinished="left work uncommitted"
+	echo "=== this run left changes it did not commit:"
+	git status --short --untracked-files=normal | sed 's/^/===   /'
+	echo "===   the prompt asks a run to commit each change as it makes it."
+	#And it did not finish, whatever it exited with. A run that declines --
+	#"every proposal in that batch is already built, so I built nothing" --
+	#leaves a clean tree; one that stopped in the middle leaves the work it
+	#had done. Both exited 0 and the campaign could not tell them apart, so
+	#it read the second as the first: on 2026-09-06 a codex build wrote a
+	#519-entry table and was recorded as an exhausted batch, and on 2026-09-07
+	#a claude build stopped with "waiting on the dry run" after 40 turns and
+	#$10.05 and was recorded the same way.
+	#
+	#Non-zero sends it to triage, which is where the judgement belongs: a run
+	#waiting on a computation it started is exactly what `resume` is for.
+	if [ "$status" -eq 0 ]; then
+		status=7
+		echo "===   treating that as an unfinished run (exit 7)."
+	fi
+fi
+
 # What the run cost, in one line, appended to a ledger.
 #
 # Every run's result record carries `total_cost_usd`, and until this existed
@@ -427,7 +461,8 @@ fi
 # reports dollars, the other tokens -- and the ledger's job is to make the
 # comparison possible at all. See agents/ledger.py and agents/model-rates.tsv.
 python3 agents/ledger.py "$log" "$started" "$stage" "$engine" \
-	"$prompt_version" "$session" "$resumed" "$codex_model" >> "$ledger" || true
+	"$prompt_version" "$session" "$resumed" "$codex_model" "$unfinished" \
+	>> "$ledger" || true
 
 #The ledger is tracked, so appending to it leaves the tree dirty -- and the
 #next run refuses a dirty tree, by design. Committing the line here is what
@@ -437,23 +472,6 @@ python3 agents/ledger.py "$log" "$started" "$stage" "$engine" \
 if [ -n "$(git status --porcelain -- "$ledger")" ]; then
 	git add "$ledger"
 	git commit -q -m "$stage run $started: $(tail -1 "$ledger" | awk -F'\t' '{printf "%s turns, $%s", $4, $5}')" -- "$ledger" || true
-fi
-
-# A run that changed files and committed none of them looks, to everything
-# downstream, like a run that did nothing. On 2026-09-06 a codex build wrote a
-# 458-line generator, filled a 519-entry table and left both untracked; the
-# campaign looks for a committed generator to decide a table was built, so it
-# read that as an exhausted batch, went to propose a new one, and stopped on
-# the dirty tree the build had left. Seven hours and $42.89, reported as
-# nothing built.
-#
-# Said here, where the run's own status is reported, and left for a person:
-# committing somebody else's work automatically is how a half-finished change
-# becomes a commit nobody wrote.
-if [ -n "$(git status --porcelain --untracked-files=normal)" ]; then
-	echo "=== this run left changes it did not commit:"
-	git status --short --untracked-files=normal | sed 's/^/===   /'
-	echo "===   the prompt asks a run to commit each change as it makes it."
 fi
 
 echo "=== finished with status $status; transcript in $log"
