@@ -439,6 +439,23 @@ if [ -n "$(git status --porcelain -- "$ledger")" ]; then
 	git commit -q -m "$stage run $started: $(tail -1 "$ledger" | awk -F'\t' '{printf "%s turns, $%s", $4, $5}')" -- "$ledger" || true
 fi
 
+# A run that changed files and committed none of them looks, to everything
+# downstream, like a run that did nothing. On 2026-09-06 a codex build wrote a
+# 458-line generator, filled a 519-entry table and left both untracked; the
+# campaign looks for a committed generator to decide a table was built, so it
+# read that as an exhausted batch, went to propose a new one, and stopped on
+# the dirty tree the build had left. Seven hours and $42.89, reported as
+# nothing built.
+#
+# Said here, where the run's own status is reported, and left for a person:
+# committing somebody else's work automatically is how a half-finished change
+# becomes a commit nobody wrote.
+if [ -n "$(git status --porcelain --untracked-files=normal)" ]; then
+	echo "=== this run left changes it did not commit:"
+	git status --short --untracked-files=normal | sed 's/^/===   /'
+	echo "===   the prompt asks a run to commit each change as it makes it."
+fi
+
 echo "=== finished with status $status; transcript in $log"
 tail -1 "$ledger" | awk -F'\t' '{printf "=== %s turns, $%s\n", $4, $5}'
 exit "$status"

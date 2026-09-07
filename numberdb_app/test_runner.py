@@ -629,3 +629,31 @@ class EitherEngineCanRunAnyStage(TestCase):
 		#read back to see what made it.
 		self.assertIn('say "writer $writer, critic $critic, miner $miner"',
 		              script('agents/campaign.sh'))
+
+
+class ARunThatCommitsNothingSaysSo(TestCase):
+	"""Changed files and no commit looks exactly like no work.
+
+	A codex build wrote a 458-line generator, filled a 519-entry table and
+	left both untracked. The campaign decides a table was built by looking for
+	a committed generator, so it read that as an exhausted batch, went to
+	propose a new one, and stopped on the dirty tree the build had left --
+	seven hours and $42.89 reported as nothing built.
+	"""
+
+	def test_the_runner_notices_and_says_what_is_uncommitted(self):
+		body = script('agents/run.sh')
+		self.assertIn('did not commit', body)
+		self.assertIn("git status --short --untracked-files=normal", body)
+
+	def test_it_does_not_commit_the_work_itself(self):
+		#Committing somebody else's half-finished change is how a commit
+		#nobody wrote gets into the history.
+		body = script('agents/run.sh')
+		leftovers = body[body.index('did not commit'):]
+		self.assertNotIn('git add -A', leftovers)
+
+	def test_it_is_reported_where_the_status_is(self):
+		body = script('agents/run.sh')
+		self.assertLess(body.index('did not commit'),
+		                body.index('=== finished with status'))
