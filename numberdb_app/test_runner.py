@@ -644,14 +644,18 @@ class ARunThatCommitsNothingSaysSo(TestCase):
 	def test_the_runner_notices_and_says_what_is_uncommitted(self):
 		body = script('agents/run.sh')
 		self.assertIn('did not commit', body)
-		self.assertIn("git status --short --untracked-files=normal", body)
+		self.assertIn('printf \'%s\\n\' "$left"', body)
 
 	def test_it_does_not_commit_the_work_itself(self):
 		#Committing somebody else's half-finished change is how a commit
 		#nobody wrote gets into the history.
+		#The guard block itself, not everything after it: the ledger's own
+		#commit follows, and that one is this script's work rather than the
+		#agent's.
 		body = script('agents/run.sh')
-		leftovers = body[body.index('did not commit'):]
-		self.assertNotIn('git add -A', leftovers)
+		guard = body[body.index('did not commit'):body.index('# What the run cost')]
+		self.assertNotIn('git add', guard)
+		self.assertNotIn('git commit', guard)
 
 	def test_it_is_reported_where_the_status_is(self):
 		body = script('agents/run.sh')
@@ -714,3 +718,30 @@ class TheUnfinishedCheckBlamesOnlyThisRun(TestCase):
 
 	def test_the_stop_file_is_never_a_runs_work(self):
 		self.assertIn('agents/campaign\\.stop$', script('agents/run.sh'))
+
+
+class CodexCanCommitWhatItWrites(TestCase):
+	"""`workspace-write` makes `.git` read-only, and nobody noticed for a day.
+
+	Two codex builds filled tables of 519 and 515 entries and left their
+	generators untracked. It was read as an agent ignoring the instruction to
+	commit; it was the sandbox this runner chose. Both runs reported
+
+	    fatal: Unable to create '.git/index.lock': Read-only file system
+
+	in their own final messages, and the campaign, which only looks at whether
+	a generator was committed, recorded both as an exhausted batch.
+	"""
+
+	def test_git_is_writable_for_codex(self):
+		body = script('agents/run.sh')
+		self.assertIn('writable_roots', body)
+		self.assertIn('$here/.git', body)
+
+	def test_the_sandbox_is_still_a_sandbox(self):
+		#Writable: the workspace, /tmp and now .git. Not the whole disk.
+		body = script('agents/run.sh')
+		self.assertIn('sandbox_mode=workspace-write', body)
+		#The flag, not the word: the comment above it explains why the
+		#config's danger-full-access is not what a run gets.
+		self.assertNotIn('sandbox_mode=danger-full-access', body)
