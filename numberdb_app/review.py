@@ -293,6 +293,61 @@ def sync_review_flags(table):
 	return marked
 
 
+def _unreviewed_counts(table=None):
+	"""table id -> how many of its rows nobody has confirmed.
+
+	One table or all of them, from the same indexed column either way.
+	"""
+	from django.db.models import Count
+
+	from .models import Number, NumberComplex, NumberPAdic, Polynomial
+
+	counts = {}
+	for model in (Number, NumberComplex, NumberPAdic, Polynomial):
+		rows = model.objects.filter(reviewed=False)
+		if table is not None:
+			rows = rows.filter(table=table)
+		for row in rows.values('table_id').annotate(n=Count('id')):
+			counts[row['table_id']] = counts.get(row['table_id'], 0) + row['n']
+	return counts
+
+
+def _waiting(table, unreviewed):
+	"""Whether the queue lists this table, and with what count.
+
+	The one definition. What waits is **entries** nobody has confirmed, not a
+	head that has moved: a prose edit -- a tag, a reference, a field added to
+	Data properties -- moves the head and changes no value, and there is
+	nothing about it for a reviewer to admit to search. The table page offered
+	to accept exactly those until it was made to ask this question instead,
+	and offered it on tables the queue did not list.
+
+	A draft asks for attention only when its author says it is finished.
+	Otherwise every table entered the queue the moment it was created, and a
+	queue that is mostly half-built tables trains its reader to skim -- which
+	costs exactly the attention it exists to get.
+	"""
+	if table.head_revision_id is None:
+		return False, 0, False
+	if not table.published and not table.ready_for_review:
+		return False, 0, False
+	whole = table.reviewed_at_revision_id is None
+	if not unreviewed and not whole:
+		return False, 0, False
+	return True, (unreviewed or (table.number_count if whole else 0)), whole
+
+
+def is_waiting_for_review(table):
+	"""Whether the review queue lists this one table.
+
+	For the table's own page, which offers a board member the accept button
+	and must offer it exactly when the queue would.
+	"""
+	counts = _unreviewed_counts(table)
+	waiting, _, _ = _waiting(table, counts.get(table.pk, 0))
+	return waiting
+
+
 def waiting_for_review():
 	"""The tables the review queue lists, in the order it lists them.
 
@@ -308,35 +363,17 @@ def waiting_for_review():
 	recompute it and spent forty seconds proving that 107 of 108 tables had
 	not changed.
 	"""
-	from django.db.models import Count
+	from .models import Table
 
-	from .models import (Number, NumberComplex, NumberPAdic, Polynomial,
-	                     Table)
-
-	outstanding = {}
-	for model in (Number, NumberComplex, NumberPAdic, Polynomial):
-		rows = (model.objects.filter(reviewed=False)
-		        .values('table_id').annotate(n=Count('id')))
-		for row in rows:
-			outstanding[row['table_id']] = (outstanding.get(row['table_id'], 0)
-			                                + row['n'])
+	outstanding = _unreviewed_counts()
 
 	waiting = []
 	for table in (Table.objects.exclude(head_revision=None)
 	                           .select_related('head_revision',
 	                                           'reviewed_at_revision')):
-		#A draft asks for attention only when its author says it is finished.
-		#Otherwise every table entered the queue the moment it was created,
-		#and a queue that is mostly half-built tables trains its reader to
-		#skim -- which costs exactly the attention it exists to get.
-		if not table.published and not table.ready_for_review:
+		listed, count, whole = _waiting(table, outstanding.get(table.pk, 0))
+		if not listed:
 			continue
-		count = outstanding.get(table.pk, 0)
-		whole = table.reviewed_at_revision_id is None
-		if not count and not whole:
-			continue
-		if whole:
-			count = count or table.number_count
 		waiting.append({
 			'table': table,
 			'count': count,

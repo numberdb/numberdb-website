@@ -182,3 +182,93 @@ class ATagPageSortsBySomethingItHas(TestCase):
 		for sort in ('entry_count', 'id', 'title'):
 			with self.subTest(sort=sort):
 				self.assertEqual(self.get('?sort_by=%s' % sort).status_code, 200)
+
+
+class TheButtonAppearsExactlyWhenTheQueueLists(TestCase):
+	"""T7 offered "Accept the changes" and appeared in no queue.
+
+	The bar asked whether the head had moved past the confirmed revision. The
+	queue asks whether any *entry* is unconfirmed, which is a narrower and a
+	better question: a prose edit -- a tag, a reference, a field added to Data
+	properties -- moves the head and changes no value, so there is nothing
+	about it for a reviewer to admit to search. Every table edited by hand
+	since carried a button that led to an empty diff.
+	"""
+
+	def setUp(self):
+		from django.contrib.auth.models import Group
+
+		from .permissions import BOARD_GROUP
+
+		User = get_user_model()
+		self.board = User.objects.create_user('queueboard', password='x')
+		group, _ = Group.objects.get_or_create(name=BOARD_GROUP)
+		self.board.groups.add(group)
+		self.author = User.objects.create_user('queueauthor')
+		self.table = Table.objects.create(
+			tid='T740', tid_int=740, url='t740', title='A published table',
+			published=True, created_by=self.author)
+		commit_table(self.table,
+		             {'Title': 'A published table', 'Numbers': {'1': '2'},
+		              'Data properties': {'type': 'Z'}},
+		             author=self.author, message='m', via='orm')
+		self.table.refresh_from_db()
+		#Confirmed at its head, as a reviewed table is.
+		self.table.reviewed_at_revision = self.table.head_revision
+		self.table.save(update_fields=['reviewed_at_revision'])
+		from .review import sync_review_flags
+
+		sync_review_flags(self.table)
+
+	def page(self):
+		client = Client()
+		client.force_login(self.board)
+		return client.get('/T740', HTTP_HOST='numberdb.org').content.decode()
+
+	def listed(self):
+		from .review import waiting_for_review
+
+		return 'T740' in [row['table'].tid for row in waiting_for_review()]
+
+	def test_a_confirmed_table_offers_nothing(self):
+		self.assertNotIn('Accept', self.page())
+		self.assertFalse(self.listed())
+
+	def test_a_prose_edit_alone_offers_nothing(self):
+		"""The case that showed the bug: the head moves, no value changes."""
+		commit_table(self.table,
+		             {'Title': 'A published table', 'Numbers': {'1': '2'},
+		              'Data properties': {'type': 'Z'},
+		              'Tags': ['statistical mechanics']},
+		             author=self.author, message='a tag', via='orm')
+		self.table.refresh_from_db()
+		self.assertNotEqual(self.table.head_revision_id,
+		                    self.table.reviewed_at_revision_id)
+		self.assertFalse(self.listed())
+		self.assertNotIn('Accept', self.page())
+
+	def test_a_changed_value_offers_it(self):
+		commit_table(self.table,
+		             {'Title': 'A published table', 'Numbers': {'1': '3'},
+		              'Data properties': {'type': 'Z'}},
+		             author=self.author, message='a value', via='orm')
+		self.table.refresh_from_db()
+		self.assertTrue(self.listed())
+		self.assertIn('Accept the changes', self.page())
+
+	def test_the_two_never_disagree(self):
+		from .review import is_waiting_for_review, waiting_for_review
+
+		for tree, message in (
+				({'Title': 'A published table', 'Numbers': {'1': '2'},
+				  'Tags': ['physics']}, 'prose'),
+				({'Title': 'A published table', 'Numbers': {'1': '9'}}, 'value'),
+				({'Title': 'A published table', 'Numbers': {'1': '9', '2': '4'}},
+				 'another value')):
+			commit_table(self.table, tree, author=self.author, message=message,
+			             via='orm')
+			self.table.refresh_from_db()
+			with self.subTest(edit=message):
+				self.assertEqual(
+					is_waiting_for_review(self.table),
+					'T740' in [row['table'].tid for row in waiting_for_review()])
