@@ -218,6 +218,77 @@ Evidence: 2026-08-31, `/tmp/diag_net.py`: `numberdb.org 45.33.90.86 AF_INET:
 FAILED in 8.13s`, `api.github.com: TLS ok in 0.09s`; after the bootstrap,
 `search_text` answered in 0.2-1.8 s per term.
 
+## `agents/sage.sh` mounts extra files; it does not pass script arguments
+
+What happened: a table-build dry run was started as
+
+    agents/sage.sh agents/table-build/dry_run.py generators/.../generate.py
+
+following the plain-Sage command in the table-building prompt. The wrapper
+copied both files to `/work`, but ran only `/work/dry_run.py` with no
+arguments. It also did not mount `check.py`, so the first visible failure was
+`ModuleNotFoundError: No module named 'check'`; after that, the missing
+generator argument would have been next.
+
+What to do instead: for tools that need neighbouring helper modules and
+arguments, run a small `/tmp` shim as the wrapper's main script, mount the
+helpers and target files beside it, put `/work` on `sys.path`, and call the
+tool's `main()` with `/work/...` paths. For `dry_run.py`, that is the shape:
+
+    agents/sage.sh /tmp/run_dry.py agents/table-build/dry_run.py \
+      agents/table-build/check.py generators/.../generate.py
+
+where `/tmp/run_dry.py` imports `dry_run` and calls
+`dry_run.main(['/work/generate.py'])`.
+
+Evidence: on 2026-09-06, the failed command returned
+`ModuleNotFoundError: No module named 'check'`; the wrapper source says
+`agents/sage.sh path/to/script.py [more files to mount...]` and the final
+remote command runs only `/work/$(basename "$main")`.
+
+## The Sage wrapper's `$$`-based container name can collide after interrupts
+
+What happened: after interrupting a long Sage dry run, a traced smoke test
+reached the wrapper's final remote command and then Docker refused to start:
+
+    Error response from daemon: Conflict. The container name
+    "/numberdb-agent-run-2" is already in use
+
+In this sandbox, each separate shell command can run with `$$ == 2`, so
+`agents/sage.sh` repeatedly chose the same remote copy prefix
+`/tmp/agent-run-2.*` and the same Docker container name
+`numberdb-agent-run-2`. The wrapper's cleanup hook on the failed traced run
+removed the stale container, and the next one-line `agents/sage.sh` smoke
+test printed `smoke ok`.
+
+What to do meanwhile: when a one-line Sage smoke test is silent, trace the
+wrapper once before assuming the mathematical script is slow. If Docker
+reports a name conflict, let the wrapper's own cleanup hook run; do not
+remove containers by hand unless a person with server access is deliberately
+repairing the environment.
+
+Evidence: 2026-09-06, `bash -x agents/sage.sh /tmp/sage_smoke.py` showed
+the final `docker compose run --name 'numberdb-agent-run-2'` command and then
+the Docker conflict above; the immediate retry of `agents/sage.sh
+/tmp/sage_smoke.py` returned `smoke ok`.
+
+## Some sessions can edit the worktree but not commit
+
+What happened: a stage-two table build was asked to commit every repository
+change as it was made. The worktree was writable, but `.git` was mounted
+read-only in the Codex sandbox. Staging a documentation-only change failed
+with:
+
+    fatal: Unable to create '.git/index.lock': Read-only file system
+
+What to do meanwhile: treat commits as unavailable when `.git` is read-only,
+say so in the run output, and keep the file changes as the durable record.
+Do not work around it with `git push`, copying a repository elsewhere, or
+rewriting `.git`; those would defeat the runner's permission boundary.
+
+Evidence: 2026-09-06, `git add docs/agent-environment.md` failed with the
+index-lock error above while file edits under the repository root succeeded.
+
 ## `already_asked` cannot see an issue more general than the name
 
 What happened: `already_asked('Regulators of real quadratic fields')`
