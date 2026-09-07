@@ -691,3 +691,26 @@ class AnUnfinishedRunIsNotASuccess(TestCase):
 	def test_the_row_says_so_beside_the_price(self):
 		self.assertIn('outcome = \'%s, %s\' % (outcome, unfinished)',
 		              script('agents/ledger.py'))
+
+
+class TheUnfinishedCheckBlamesOnlyThisRun(TestCase):
+	"""It looked at the whole tree, and the tree is not this run's alone.
+
+	`run.sh` refuses to start on uncommitted *tracked* changes and says
+	nothing about untracked files, so a previous run's leftovers are already
+	there when this one starts. The first version of the check counted them:
+	an ideas run was recorded as unfinished for a generator a build had
+	abandoned an hour earlier, and for the stop file a person had just made.
+	"""
+
+	def test_it_compares_against_the_tree_it_started_with(self):
+		body = script('agents/run.sh')
+		self.assertIn('tree_before=$(git status --porcelain', body)
+		self.assertIn('comm -13', body)
+
+	def test_the_snapshot_is_taken_before_the_agent_runs(self):
+		body = script('agents/run.sh')
+		self.assertLess(body.index('tree_before='), body.index('run_agent start'))
+
+	def test_the_stop_file_is_never_a_runs_work(self):
+		self.assertIn('agents/campaign\\.stop$', script('agents/run.sh'))
