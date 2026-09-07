@@ -183,6 +183,26 @@ builder could run this afternoon:
 four families were looked at and left this week for exactly this reason, and
 saying which were left, and what would settle each, is a useful result.
 
+## A batch may need a tag that does not exist
+
+You propose five tables at once, so you are the one who can see that they
+share a subject. A builder sees one table and cannot.
+
+If three or more of the corpus's tables -- including the ones in this batch --
+would carry a tag that is not in the tag list, **propose it**, name the tables,
+and say what it means. The list has 66 tags and is not finished: 26 of them
+reach a single table already, so the bar is not that a tag be common, only
+that it lead somewhere.
+
+The case that prompted this: T152 to T157 are percolation thresholds, lattice
+entropy constants, Ising critical couplings, two-dimensional critical
+exponents, $k$-core thresholds and connective constants. Every one of them is
+statistical mechanics, and they went in tagged "physics" and "combinatorics",
+which does not distinguish them from anything.
+
+Do not propose a tag for one table you happen to like. The question is whether
+somebody following it would find more than they started with.
+
 ## Shape of the batch
 
 Propose **four to eight related families**, not a list of unrelated ideas. A

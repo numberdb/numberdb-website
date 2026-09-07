@@ -267,8 +267,13 @@ a formula or a comment, its definition belongs in the same table.
 earns its place; a bibliography nobody points at is furniture.
 
 Every table has at least Title, Definition, Tags (two is typical), Links and
-Data properties. Use existing tags rather than inventing one -- the tag list is
-a way through the corpus, and a tag with one table on it is not. Use `$...$`
+Data properties. Prefer an existing tag; a tag list is a way through the
+corpus and a tag with one table on it is not. But the list is not finished and
+was never meant to be: propose a new one when **three or more tables would
+carry it**, counting the others in the same batch, and say which they are. Six
+tables on percolation, the Ising model, critical exponents, lattice entropy and
+self-avoiding walks were filed under "physics" and "combinatorics" for want of
+this, which tells a reader almost nothing about any of them. Use `$...$`
 for mathematics, `CITE{key}` for a reference or link, and
 `HREF{slug}[caption]` for a table here. Link outward only to sources that will
 still exist: Wikipedia, LMFDB, OEIS, MathWorld, mpmath, or a paper.
