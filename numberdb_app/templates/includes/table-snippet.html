@@ -61,6 +61,20 @@ div.table-label {
   text-align: center;
   width: 2rem;
 }
+/* `rigour details` is the one metadata field with something long to say, so
+   it gets paragraphs, bullets, and a fold for the tail. Everything else in
+   that list is a single line and keeps looking like one. */
+p.prose-paragraph { margin: 0 0 0.5rem 0; }
+p.prose-paragraph:last-child { margin-bottom: 0; }
+ul.prose-list { margin: 0 0 0.5rem 0; padding-left: 1.2rem; }
+ul.prose-list li { margin: 0.15rem 0; }
+code.prose-code { background: #f4f4f4; padding: 0 0.2rem; font-size: 0.92em; }
+details.prose-more > summary {
+  cursor: pointer; color: #555; font-size: 0.85rem;
+  text-decoration: dotted underline; margin-bottom: 0.4rem;
+}
+details.prose-more[open] > summary { margin-bottom: 0.6rem; }
+
 div.table-param-group,
 div.table-param-group-header {
   display: table-cell;

@@ -203,6 +203,7 @@ had to be taken apart again.
 | **References** | papers and books, cited from the prose with `CITE{}` | uncited decoration |
 | **Programs** | the standard incantation for a reader who wants one more value | the generator |
 | **Data properties** | `type`, `rigour`, how the digits were obtained, and `repeats` if this table repeats another's | anything else |
+| **`rigour details`** | how the digits were obtained, at whatever length that needs: blank lines make paragraphs, `- ` makes a list, backticks mark code, and a long note folds after its first paragraph | a second copy of the definition |
 | **References** | `bib`, and the identifiers beside it: `arxiv`, `doi`, `zbl`, `mr` -- each renders as a link | an identifier written into the bib text, where it is not one |
 
 Two rules that follow from the table above and are worth stating alone:

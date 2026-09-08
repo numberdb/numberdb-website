@@ -1066,6 +1066,23 @@ def table_context(table, preview=False):
 						note = properties.get('complete-note')
 						if note:
 							text += " (%s)" % (escape_maths(note),)
+					elif key == 'rigour details':
+						#The one metadata field with something long to say:
+						#139 tables carry it, and the longest five run to
+						#three thousand characters in a list whose other
+						#lines are one sentence each. Paragraphs and bullets
+						#where the author wrote them, and the tail folded, so
+						#it can be as long as it needs to be without becoming
+						#the page. See numberdb_app/prose.py.
+						from .prose import render as render_prose
+
+						head, rest = render_prose(escape_maths(value),
+						                          render_text)
+						text += head
+						if rest:
+							text += ('<details class="prose-more">'
+							         '<summary>more</summary>%s</details>'
+							         % (rest,))
 					else:
 						text += escape_maths(value)
 				else:
