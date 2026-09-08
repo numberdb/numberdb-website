@@ -469,6 +469,23 @@ if [ -n "$left" ]; then
 	fi
 fi
 
+# Which table this run was about, so the money can be attributed to one.
+#
+# The task names it for every stage that reads or repairs an existing table.
+# A build does not know it in advance -- the number is allocated when the draft
+# is created -- so it is read afterwards out of the generator the run
+# committed, whose first docstring line names it by convention.
+about=$(printf '%s' "${task:-}" | grep -oE '\bT[0-9]{2,4}\b' | head -1 || true)
+if [ -z "$about" ]; then
+	generator=$(git diff --name-only "$before"..HEAD -- generators/ 2>/dev/null \
+	            | grep -E 'generate\.py$' | head -1 || true)
+	if [ -n "$generator" ] && [ -f "$generator" ]; then
+		about=$(head -3 "$generator" \
+		        | grep -oE 'numberdb\.org/T[0-9]{2,4}' | head -1 \
+		        | grep -oE 'T[0-9]{2,4}' || true)
+	fi
+fi
+
 # What the run cost, in one line, appended to a ledger.
 #
 # Every run's result record carries `total_cost_usd`, and until this existed
@@ -485,7 +502,7 @@ fi
 # comparison possible at all. See agents/ledger.py and agents/model-rates.tsv.
 python3 agents/ledger.py "$log" "$started" "$stage" "$engine" \
 	"$prompt_version" "$session" "$resumed" "$codex_model" "$unfinished" \
-	>> "$ledger" || true
+	"$about" >> "$ledger" || true
 
 #The ledger is tracked, so appending to it leaves the tree dirty -- and the
 #next run refuses a dirty tree, by design. Committing the line here is what
