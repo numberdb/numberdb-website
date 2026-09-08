@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block head-title %}Overview{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'db:home' %}">Home</a></li>
+  <li class="breadcrumb-item active">Overview</li>
+{% endblock %}
+
+{% block content %}
+<style>
+.overview-summary { color: #555; font-size: 0.9rem; margin: 0.4rem 0 1rem 0; }
+table.overview { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+table.overview th {
+  text-align: left; font-weight: 400; color: #555;
+  border-bottom: 1px solid #aaa; padding: 0.3rem 0.6rem 0.3rem 0;
+}
+table.overview td { padding: 0.25rem 0.6rem 0.25rem 0; border-bottom: 1px solid #f0f0f0; }
+table.overview td.right, table.overview th.right { text-align: right; }
+table.overview tr:hover td { background: #f7f9f2; }
+.overview-cost { color: #555; }
+.overview-zero { color: #bbb; }
+.breakdown { margin: 1rem 0 1.5rem 0; }
+.breakdown td { padding: 0.15rem 0.8rem 0.15rem 0; font-size: 0.9rem; }
+.breakdown td.bar div { background: #d9e5b8; height: 0.7rem; }
+.granularity a { font-size: 0.85rem; margin-right: 0.6rem; }
+.granularity a.on { font-weight: 600; text-decoration: none; color: #000; }
+</style>
+
+<div class="table-title">Overview</div>
+
+<div class="overview-summary">
+  {{ table_count }} table{{ table_count|pluralize }},
+  {{ entry_total }} entries, ${{ total_cost|floatformat:2 }} of agent time.
+</div>
+
+{% comment %}
+The same money, asked three ways. What a table cost, what a model has cost,
+and what a role costs are three different questions, which is why the cost is
+stored split rather than totalled: a single number answers none of them.
+{% endcomment %}
+<div class="granularity">
+  by
+  <a class="{% if by == 'role' %}on{% endif %}" href="?by=role&amp;sort_by={{ sortby }}">role</a>
+  <a class="{% if by == 'model' %}on{% endif %}" href="?by=model&amp;sort_by={{ sortby }}">model</a>
+  <a class="{% if by == 'engine' %}on{% endif %}" href="?by=engine&amp;sort_by={{ sortby }}">engine</a>
+</div>
+
+<table class="breakdown">
+  {% for item in breakdown %}
+    <tr>
+      <td>{{ item.name }}</td>
+      <td class="right">${{ item.cost|floatformat:2 }}</td>
+      <td class="right overview-cost">{{ item.runs }} run{{ item.runs|pluralize }}</td>
+      <td class="bar" style="width: 40%">
+        <div style="width: {% widthratio item.cost total_cost 100 %}%"></div>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="4" class="overview-zero">No costs imported yet.</td></tr>
+  {% endfor %}
+</table>
+
+<table class="overview">
+  <thead>
+    <tr>
+      <th><a href="?sort_by=id&amp;by={{ by }}">ID</a></th>
+      <th><a href="?sort_by=title&amp;by={{ by }}">Title</a></th>
+      <th class="right"><a href="?sort_by=entries&amp;by={{ by }}">Entries</a></th>
+      <th class="right"><a href="?sort_by=edits&amp;by={{ by }}">Edits</a></th>
+      <th><a href="?sort_by=type&amp;by={{ by }}">Type</a></th>
+      <th class="right"><a href="?sort_by=cost&amp;by={{ by }}">Cost</a></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+      <tr>
+        <td><a href="{% url 'db:table' row.table.tid %}">{{ row.table.tid }}</a></td>
+        <td><a href="{% url 'db:table_by_url' row.table.url %}">{{ row.table.title|safe }}</a>
+          {% if not row.table.published %}<span class="overview-zero">(draft)</span>{% endif %}</td>
+        <td class="right">{{ row.entry_count }}</td>
+        <td class="right">{{ row.edit_count }}</td>
+        <td>{{ row.data_type }}</td>
+        <td class="right">
+          {% if row.agent_cost_usd %}
+            ${{ row.agent_cost_usd|floatformat:2 }}
+          {% else %}
+            <span class="overview-zero">&mdash;</span>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<p class="overview-summary">
+  Cost is API-equivalent US dollars at list prices, which is the only figure
+  comparable across harnesses that bill differently. A dash means no agent run
+  is recorded against that table &mdash; most of the corpus was made by hand.
+</p>
+{% endblock %}

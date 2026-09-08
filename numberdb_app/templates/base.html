@@ -122,6 +122,11 @@ concludes the site is broken.
           {% endcomment %}
           <a class="navbar-field" href="{% url 'db:drafts' %}">Drafts&nbsp;({{ drafts_in_progress }})</a>
         {% endif %}
+        {% comment %}
+        For any editor, not only the board: it is a way of seeing the corpus,
+        not a queue of work. See views.overview.
+        {% endcomment %}
+        <a class="navbar-field" href="{% url 'db:overview' %}">Overview</a>
         {% if is_board_member %}
           {% comment %}
           With its count, like the drafts link beside it. Without one the
