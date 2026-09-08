@@ -26,7 +26,7 @@ RATES = os.path.join(HERE, 'model-rates.tsv')
 
 COLUMNS = ('started', 'stage', 'engine', 'turns', 'cost_usd', 'result', 'log',
            'model', 'prompt', 'session', 'resumed', 'tokens_in',
-           'tokens_cached', 'tokens_out', 'cost_by_model')
+           'tokens_cached', 'tokens_out', 'cost_by_model', 'table')
 
 
 def load_rates(path=RATES):
@@ -197,12 +197,12 @@ def codex_run(path, model):
 
 
 def row(log, started, stage, engine, prompt, session, resumed, model,
-        unfinished=''):
+        unfinished='', table=''):
 	found = codex_run(log, model) if engine == 'codex' else claude_run(log)
 	if found is None:
 		return '\t'.join([started, stage, engine, '', '', 'no result record',
 		                  os.path.basename(log), '', prompt, session, resumed,
-		                  '', '', '', ''])
+		                  '', '', '', '', table])
 	cost = found['cost']
 	outcome = found['outcome']
 	if unfinished:
@@ -223,7 +223,7 @@ def row(log, started, stage, engine, prompt, session, resumed, model,
 		outcome, os.path.basename(log), found['model'], prompt,
 		session or found.get('thread', ''), resumed,
 		str(found['tokens_in']), str(found['tokens_cached']),
-		str(found['tokens_out']), breakdown,
+		str(found['tokens_out']), breakdown, table,
 	])
 
 
@@ -231,4 +231,4 @@ if __name__ == '__main__':
 	if sys.argv[1:2] == ['--header']:
 		print('\t'.join(COLUMNS))
 	else:
-		print(row(*sys.argv[1:10]))
+		print(row(*sys.argv[1:11]))
