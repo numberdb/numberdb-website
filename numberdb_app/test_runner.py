@@ -767,3 +767,29 @@ class ADeployDoesNotCopyTheRunsData(TestCase):
 		body = script('scripts/ship.sh')
 		self.assertNotIn("--exclude='agents'", body)
 		self.assertNotIn("--exclude='numberdb_app'", body)
+
+
+class ABuildIsAttributedToTheTableItMade(TestCase):
+	"""The stage that costs the most was the one with no table against it.
+
+	A build cannot know its table in advance -- the number is allocated when
+	the draft is created -- so run.sh reads it afterwards from the generator
+	the run committed. The first version diffed against `$before`, which is a
+	variable of campaign.sh and unset in run.sh; `set -u` would have said so
+	but the error was inside a command substitution ending in `|| true`. So
+	every build row carried an empty table, and the overview's per-table cost
+	was missing its largest component.
+	"""
+
+	def test_it_remembers_where_the_history_stood(self):
+		body = script('agents/run.sh')
+		self.assertIn('head_before=$(git rev-parse HEAD)', body)
+		self.assertIn('"$head_before"..HEAD', body)
+
+	def test_the_snapshot_is_taken_before_the_agent_runs(self):
+		body = script('agents/run.sh')
+		self.assertLess(body.index('head_before='), body.index('run_agent start'))
+
+	def test_it_does_not_use_the_campaigns_variable(self):
+		body = script('agents/run.sh')
+		self.assertNotIn('"$before"..HEAD', body)
