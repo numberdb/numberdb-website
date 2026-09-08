@@ -202,11 +202,21 @@ class HowBigTheValuesAre(TestCase):
 		self.assertIsNone(self.p_adic_digits('3.14159'))
 
 	def test_a_polynomial_gives_its_degree_and_terms(self):
-		self.assertEqual(self.polynomial_shape('x^2 - 2*x*a'), (2, 2))
-		self.assertEqual(self.polynomial_shape('x'), (1, 1))
-		self.assertEqual(self.polynomial_shape('1'), (0, 1))
-		#Stored with the variable count in front, which is not part of it.
-		self.assertEqual(self.polynomial_shape('2,x^12 + 3*x^2 - 1'), (12, 3))
+		#The stored canonical form, not the readable one: `<variables>;` then
+		#`<coefficient>:<monomial>` between bars.
+		self.assertEqual(self.polynomial_shape('1;-1/1:|1/1:x0^1'), (1, 2))
+		self.assertEqual(self.polynomial_shape('1;1/1:x0^2'), (2, 1))
+		self.assertEqual(
+			self.polynomial_shape('1;1/1:|-1/1:x0^2|1/1:x0^4|-1/1:x0^6'),
+			(6, 4))
+		#A term's degree is the sum of its exponents, over every variable.
+		self.assertEqual(
+			self.polynomial_shape('5;6/1:x0^1,x1^1|15/1:x2^1,x3^1|10/1:x4^2'),
+			(2, 3))
+
+	def test_something_that_is_not_a_polynomial_gives_nothing(self):
+		self.assertEqual(self.polynomial_shape('3.14159'), (None, None))
+		self.assertEqual(self.polynomial_shape(''), (None, None))
 
 	def test_quartiles_are_values_that_occur(self):
 		#Nearest-rank: the median of a table of integers is one of them.
