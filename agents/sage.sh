@@ -62,12 +62,12 @@ control="/tmp/numberdb-ssh-%r@%h:%p"
 ssh_opts=(-o BatchMode=yes -o ExitOnForwardFailure=no
           -o ControlMaster=auto -o "ControlPath=$control" -o ControlPersist=60)
 
-remote_dir="/tmp/agent-run-$$"
+remote_dir="/tmp/agent-run-$(date +%s)-$$"
 mounts=()
 for file in "$@"; do
 	[ -f "$file" ] || { echo "no such file: $file" >&2; exit 2; }
 	base=$(basename "$file")
-	scp -q "${ssh_opts[@]}" "$file" "$REMOTE:$remote_dir.$base"
+	scp -q "${ssh_opts[@]}" "$file" "$REMOTE:$remote_dir.$base" </dev/null
 	mounts+=(-v "$remote_dir.$base:/work/$base:ro")
 done
 
@@ -86,7 +86,7 @@ cleanup() {
 	#local ssh and leaves the remote work running, and an abandoned Sage
 	#process is what takes the machine down.
 	ssh -n "${ssh_opts[@]}" "$REMOTE" \
-		"rm -f $remote_dir.*; docker rm -f 'numberdb-agent-run-$$' >/dev/null 2>&1" \
+		"rm -rf $remote_dir.*; docker rm -f 'numberdb-agent-run-$$' >/dev/null 2>&1" \
 		>/dev/null 2>&1 || true
 }
 trap cleanup EXIT
