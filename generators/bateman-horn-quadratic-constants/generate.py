@@ -219,15 +219,20 @@ def entry_comment(b, c):
     delta = discriminant(b, c)
     if not root_count_identity_holds(b, c):
         raise ArithmeticError('%s failed the root-count check' % polynomial_text(b, c))
-    facts = [r'the polynomial discriminant is $\Delta=%s$' % delta]
-    if b == 1:
-        facts.append(r'the local factor at $p=2$ is $2$')
+    facts = [r'The discriminant is $\Delta=%s$' % delta]
     if b == 0 and c == 1:
         facts.append(
-            r'OEIS A199401 gives this normalization and A331941 gives half of it')
+            r"primes of the form $n^2+1$ are Landau's fourth problem "
+            r'CITE{WikiLandau}')
+        facts.append(
+            r'OEIS A199401 gives this normalization, A331941 gives half of '
+            r'it, and A206709 counts such primes CITE{OEISCountsX2Plus1}')
     if b == 1 and c == 41:
-        facts.append(r'OEIS A221712 gives half of this normalization')
-    return 'Here %s.' % '; '.join(facts)
+        facts.append(
+            r'OEIS A221712 gives half of this normalization, and OEIS '
+            r'A331940 lists $41$ as a record addend '
+            r'CITE{OEISRecordQuadratics}')
+    return '; '.join(facts) + '.'
 
 
 class BatemanHornQuadraticConstants(numberdb.Generator):
