@@ -74,9 +74,18 @@ notice on "\"Updating the site; it may be slow or briefly unavailable.\""
 
 # 3 ---------------------------------------------------------------------------
 say "copying the code"
+# The code, and not the agent runs' data. `agents/runs` holds the transcripts,
+# and a campaign writes to one of them continuously: tar exits non-zero when a
+# file changes while it is being read, so a deploy attempted during a campaign
+# failed at this line with "file changed as we read it" and got no further.
+# The server has no use for a transcript in any case -- what it needs from
+# there is COSTS.tsv, which `manage.py import_agent_costs` is given
+# deliberately.
 tar cz --exclude='.git' --exclude='__pycache__' --exclude='staticfiles' \
        --exclude='data_pipeline/oeis-data' --exclude='.env' --exclude='.env.prod' \
        --exclude='docker-compose.override.yml' --exclude='clients/python/docs' \
+       --exclude='agents/runs' --exclude='agents/critiques' \
+       --exclude='agents/lessons' --exclude='agents/table-ideas/BATCH-*' \
        -C "$here" . | ssh -o BatchMode=yes "$REMOTE" "tar xz -C '$RPATH'"
 # So the server can answer "what is running here" without anybody guessing.
 on_remote "printf '%s\n' '$commit' > .deployed-commit"

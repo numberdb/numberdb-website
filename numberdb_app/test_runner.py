@@ -745,3 +745,25 @@ class CodexCanCommitWhatItWrites(TestCase):
 		#The flag, not the word: the comment above it explains why the
 		#config's danger-full-access is not what a run gets.
 		self.assertNotIn('sandbox_mode=danger-full-access', body)
+
+
+class ADeployDoesNotCopyTheRunsData(TestCase):
+	"""tar exits non-zero when a file changes while it is being read.
+
+	A campaign writes to its log continuously, the log lives in the tree, and
+	ship.sh copied the whole tree -- so a deploy attempted during a campaign
+	died at "file changed as we read it" and got no further. The server has no
+	use for a transcript: what it wants from there is COSTS.tsv, handed to
+	import_agent_costs on purpose.
+	"""
+
+	def test_the_transcripts_are_not_shipped(self):
+		body = script('scripts/ship.sh')
+		for data in ('agents/runs', 'agents/critiques', 'agents/lessons'):
+			with self.subTest(path=data):
+				self.assertIn("--exclude='%s'" % data, body)
+
+	def test_the_code_still_is(self):
+		body = script('scripts/ship.sh')
+		self.assertNotIn("--exclude='agents'", body)
+		self.assertNotIn("--exclude='numberdb_app'", body)
