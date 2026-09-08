@@ -1,0 +1,129 @@
+# The table document for densities of primes with a given primitive root,
+# proposal 3 of agents/table-ideas/BATCH-2026-09-07T0207.md. It is intended
+# to be created as an unpublished draft through the API and filled by
+# generate.py beside it; publishing is a person's act on the site.
+Title: Densities of primes with a given primitive root
+Definition: >-
+  Let $a\in\mathbb Z\setminus\{-1,0,1\}$ be not a square in $\mathbb Q$.
+  This table stores Hooley's Artin density $\delta(a)$ CITE{Hooley}
+  CITE{Moree} CITE{Stevenhagen}, the conjectural natural density of primes
+  $p$ for which $a$ is a primitive root modulo $p$, in the normalization of
+  CITE{formula-density}.
+Parameters:
+  a:
+    type: Z
+    title: integer base
+    display: $a$
+    constraints: $a\notin\{-1,0,1\}$ and $a$ is not a square in $\mathbb Q$
+Comments:
+  comment-range: >-
+    The table holds every integer base $a$ with $-50\leq a\leq 50$ satisfying
+    the parameter constraint. Squares and $-1$ are omitted because their
+    densities are $0$; perfect powers such as $8$ are included because their
+    maximal exponent changes the rational factor in CITE{formula-density}.
+  comment-conditional: >-
+    Hooley proved the asymptotic formula under the generalized Riemann
+    hypothesis for the fields $\mathbb Q(\zeta_k,a^{1/k})$ CITE{Hooley}
+    CITE{Moree}. Unconditionally, Artin's primitive-root conjecture remains
+    open for each fixed base $a$ in this table.
+  comment-multiples: >-
+    Every entry is an exact rational multiple of Artin's constant $A=\delta(2)$
+    CITE{OEISArtin} CITE{MathWorldArtin}. The entry comment gives that
+    multiple and the discriminant $d$ used in CITE{formula-density}.
+Formulas:
+  formula-density: >-
+    Let $h$ be the largest positive integer for which $a=a_0^h$ with
+    $a_0\in\mathbb Z$, and let $d$ be the discriminant of
+    $\mathbb Q(\sqrt a)$. With products over primes $q$,
+    $A(h)=\prod_{q\nmid h}(1-\frac{1}{q(q-1)})
+    \prod_{q\mid h}(1-\frac{1}{q-1})$, and
+    $\delta(a)=A(h)$ if $d\not\equiv1\pmod4$, while
+    $\delta(a)=A(h)\left(1-\mu(|d|)
+    \prod_{\substack{q\mid d\\q\mid h}}\frac{1}{q-2}
+    \prod_{\substack{q\mid d\\q\nmid h}}\frac{1}{q^2-q-1}\right)$ if
+    $d\equiv1\pmod4$ CITE{Moree} CITE{Stevenhagen}.
+  formula-artin: >-
+    $A=\delta(2)=\prod_q\left(1-\frac{1}{q(q-1)}\right)$, where $q$ runs over
+    the primes CITE{OEISArtin} CITE{MathWorldArtin}.
+  formula-asymptotic: >-
+    Under Hooley's generalized Riemann hypothesis assumption,
+    $\#\{p\leq x:a\text{ is a primitive root modulo }p\}\sim
+    \delta(a)x/\log x$ CITE{Hooley} CITE{Moree}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from generate import ArtinPrimitiveRootDensities
+      g = ArtinPrimitiveRootDensities()
+      g.value({'a': 5}, 100)      # 0.39363769854652872426...
+  program-pari:
+    language: PARI/GP
+    code: |-
+      default(realprecision, 140)
+      A = prodeulerrat(1 - 1/(p*(p - 1)))
+      A                              \\ a = 2
+      (20/19) * A                    \\ a = 5
+      (3/5) * A                      \\ a = 8
+Similar tables:
+  - table: HREF{Values_of_the_prime_zeta_function_at_rational_numbers}[Values of the prime zeta function at rational numbers]
+    relation: Artin's constant and the Euler products in CITE{formula-density} can be expanded through prime zeta values
+  - table: HREF{Twin_prime_constant}[Twin prime constant]
+    relation: another named Euler product over primes defining a conjectural prime-density constant
+  - table: HREF{Hardy-Littlewood_singular_series_of_prime_tuples}[Hardy-Littlewood singular series of prime tuples]
+    relation: another table of constants in conjectural asymptotics for prime patterns
+Links:
+  WikiArtin:
+    title: "Wikipedia: Artin's conjecture on primitive roots"
+    url: https://en.wikipedia.org/wiki/Artin%27s_conjecture_on_primitive_roots
+  MathWorldArtin:
+    title: "MathWorld: Artin's Constant"
+    url: https://mathworld.wolfram.com/ArtinsConstant.html
+  OEISArtin:
+    title: "OEIS A005596: decimal expansion of Artin's constant"
+    url: https://oeis.org/A005596
+  OEISPrimitiveRoot2:
+    title: 'OEIS A001122: primes for which 2 is a primitive root'
+    url: https://oeis.org/A001122
+References:
+  Hooley:
+    bib: >-
+      C. Hooley, On Artin's conjecture, Journal fuer die reine und angewandte
+      Mathematik 225 (1967), 209-220.
+    doi: 10.1515/crll.1967.225.209
+  Moree:
+    bib: >-
+      P. Moree, Artin's primitive root conjecture--a survey, Integers 12A
+      (2012), A13.
+    arxiv: math/0412262
+  Stevenhagen:
+    bib: >-
+      P. Stevenhagen, The correction factor in Artin's primitive root
+      conjecture, Journal de theorie des nombres de Bordeaux 15 (2003),
+      no. 1, 383-391.
+    doi: 10.5802/jtnb.408
+    zbl: '1043.11078'
+    mr: '2019022'
+Tags:
+  - number theory
+  - probability theory
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: >-
+    it holds every integer base $a$ with $-50\leq a\leq 50$ satisfying the
+    parameter constraint
+  rigour details: >-
+    Artin's constant $A$ was computed with PARI's prodeulerrat at $140$
+    decimal digits, and $100$ digits are written. Each value is then an exact
+    rational multiple of $A$, with the multiplier computed in $\mathbb Q$ from
+    the maximal exponent $h$ and the discriminant $d$ in
+    CITE{formula-density}. Before the draft was filled, the value of $A$
+    agreed with OEIS A005596 CITE{OEISArtin} through the digits written here;
+    the same generator run at $160$ decimal digits gave identical stored
+    decimals; the multipliers for every row were checked by a second
+    implementation of Hooley's formula; and direct counts of primes up to
+    $3\cdot10^6$ gave the expected ratios for $a=2,5,8,-3,21$ to the accuracy
+    expected at that range.
+Display properties:
+  number-header: $\delta(a)$
