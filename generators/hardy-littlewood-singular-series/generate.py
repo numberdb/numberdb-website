@@ -1,4 +1,4 @@
-"""Hardy-Littlewood singular series of prime tuples -- numberdb.org/TBD
+"""Hardy-Littlewood singular series of prime tuples -- numberdb.org/T163
 
 For an admissible tuple H = (0, h_2, ..., h_k), this computes
 
@@ -203,7 +203,7 @@ def constellation_comment(H):
 
 class HardyLittlewoodSingularSeries(numberdb.Generator):
 
-    table = os.environ.get('NUMBERDB_TABLE', 'TBD')
+    table = os.environ.get('NUMBERDB_TABLE', 'T163')
     parameters = ('H',)
     type = 'R'
     digits = DIGITS
