@@ -1,8 +1,8 @@
 """Densities of primes with a given primitive root -- numberdb.org/T165
 
-For an integer a that is neither -1, 0, 1 nor a square, this computes Hooley's
-Artin density delta(a), the conjectural natural density of primes p for which
-a is a primitive root modulo p.
+For an integer a that is not -1 and is not a perfect square, this computes
+Artin's density delta(a), the conjectural natural density of primes p for
+which a is a primitive root modulo p under the generalized Riemann hypothesis.
 
 Run it with SageMath:
 
@@ -61,7 +61,7 @@ def is_rational_square(a):
 def in_domain(a):
     """Whether a is one of the table's parameters."""
     a = ZZ(a)
-    return int(a) not in (-1, 0, 1) and not is_rational_square(a)
+    return a != -1 and not is_rational_square(a)
 
 
 def core_and_exponent(a):
@@ -188,12 +188,28 @@ def entry_comment(a):
     a = ZZ(a)
     base, h = core_and_exponent(a)
     d = quadratic_discriminant(a)
-    multiple = multiplier_text(density_multiplier(a))
-    if h == 1:
-        return (r'This is $%s$; the quadratic-field discriminant is $d=%s$.'
-                % (multiple, d))
-    return (r'This is $%s$; $%s=%s^%s$ and the quadratic-field discriminant '
-            r'is $d=%s$.' % (multiple, a, tex_integer(base), h, d))
+    multiple = density_multiplier(a)
+
+    if multiple == 1:
+        lead = r"This is Artin's constant $A$"
+    else:
+        lead = (r"This is $%s$, where $A$ is Artin's constant"
+                % multiplier_text(multiple))
+
+    facts = []
+    if a == 2:
+        facts.append(
+            r'the primes for which $2$ is a primitive root form OEIS A001122 '
+            r'CITE{OEISPrimitiveRoot2}')
+    if h != 1:
+        facts.append(r'$%s=%s^%s$' % (a, tex_integer(base), h))
+    facts.append(r'the quadratic-field discriminant is $d=%s$' % d)
+
+    if len(facts) == 1:
+        tail = facts[0]
+    else:
+        tail = '%s and %s' % (', '.join(facts[:-1]), facts[-1])
+    return '%s; %s.' % (lead, tail)
 
 
 class ArtinPrimitiveRootDensities(numberdb.Generator):
