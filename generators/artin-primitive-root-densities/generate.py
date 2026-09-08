@@ -1,4 +1,4 @@
-"""Densities of primes with a given primitive root -- numberdb.org/TBD
+"""Densities of primes with a given primitive root -- numberdb.org/T165
 
 For an integer a that is neither -1, 0, 1 nor a square, this computes Hooley's
 Artin density delta(a), the conjectural natural density of primes p for which
@@ -198,7 +198,7 @@ def entry_comment(a):
 
 class ArtinPrimitiveRootDensities(numberdb.Generator):
 
-    table = os.environ.get('NUMBERDB_TABLE', 'TBD')
+    table = os.environ.get('NUMBERDB_TABLE', 'T165')
     parameters = ('a',)
     type = 'R'
     digits = DIGITS

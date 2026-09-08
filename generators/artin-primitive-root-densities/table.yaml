@@ -1,6 +1,6 @@
 # The table document for densities of primes with a given primitive root,
-# proposal 3 of agents/table-ideas/BATCH-2026-09-07T0207.md. It is intended
-# to be created as an unpublished draft through the API and filled by
+# proposal 3 of agents/table-ideas/BATCH-2026-09-07T0207.md. It was created
+# as unpublished draft T165 through the API (X-Draft: yes) and is filled by
 # generate.py beside it; publishing is a person's act on the site.
 Title: Densities of primes with a given primitive root
 Definition: >-
