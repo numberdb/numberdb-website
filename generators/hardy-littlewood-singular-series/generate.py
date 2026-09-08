@@ -76,11 +76,20 @@ NAMES = {
 }
 
 OEIS_NOTES = {
-    (0, 2, 6): 'OEIS A271886 stores this full normalisation; A065418 omits the factor $9/2$',
-    (0, 4, 6): 'OEIS A271886 stores this full normalisation; A065418 omits the factor $9/2$',
-    (0, 2, 6, 8): 'OEIS A061642 stores this full normalisation; A065419 omits the factor $27/2$',
+    (0, 2, 6): 'OEIS A271886 stores this full normalization; A065418 omits the factor $9/2$',
+    (0, 4, 6): 'OEIS A271886 stores this full normalization; A065418 omits the factor $9/2$',
+    (0, 2, 6, 8): 'OEIS A061642 stores this full normalization; A065419 omits the factor $27/2$',
     (0, 2, 6, 8, 12): 'OEIS A269843 stores only the generic tail, so the full singular series multiplies it by $50625/2048$',
     (0, 4, 6, 10, 12): 'OEIS A269843 stores only the generic tail, so the full singular series multiplies it by $50625/2048$',
+}
+
+OEIS_REFERENCES = {
+    (0, 2, 6, 8, 12, 18, 20, 26, 30, 32): 'OEISDecaplet1',
+    (0, 2, 6, 12, 14, 20, 24, 26, 30, 32): 'OEISDecaplet2',
+    (0, 4, 6, 10, 16, 18, 24, 28, 30, 34, 36): 'OEISEleven1',
+    (0, 2, 6, 8, 12, 18, 20, 26, 30, 32, 36): 'OEISEleven2',
+    (0, 2, 6, 8, 12, 18, 20, 26, 30, 32, 36, 42): 'OEISTwelve2',
+    (0, 6, 10, 12, 16, 22, 24, 30, 34, 36, 40, 42): 'OEISTwelve1',
 }
 
 _TAILS = {}
@@ -190,11 +199,16 @@ def constellation_comment(H):
     H = tuple(ZZ(h) for h in H)
     name = NAMES.get(tuple(int(h) for h in H),
                      'prime %d-tuplet' % len(H))
+    reference = OEIS_REFERENCES.get(tuple(int(h) for h in H))
+    if reference:
+        return (r'This is a %s CITE{%s}; the finite factor in '
+                r'CITE{formula-tail} is included in the value.'
+                % (name, reference))
     start = tail_start(H)
     factor = finite_factor(H, start)
     comment = (r'This is a %s; the finite factor before the generic tail '
-               r'from primes $p\geq%d$ is $%s$'
-               % (name, start, tex_rational(factor)))
+               r'over primes $p>%d$ is $%s$'
+               % (name, max(H), tex_rational(factor)))
     note = OEIS_NOTES.get(tuple(int(h) for h in H))
     if note:
         comment += '; %s' % note
