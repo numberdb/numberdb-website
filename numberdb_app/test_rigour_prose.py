@@ -131,3 +131,32 @@ class OneLongParagraphStillFolds(TestCase):
 	def test_a_short_note_is_untouched(self):
 		head, rest = render('Exact integers from a recurrence.', self.renderer)
 		self.assertEqual(rest, '')
+
+
+class AFirstSentenceLongerThanTheWindow(TestCase):
+	"""T147's opening sentence is 621 characters and there is no earlier one.
+
+	Looking only inside the fold threshold found no break and gave up, so the
+	longest note in the corpus rendered whole -- which is the note the fold
+	exists for. Over all 139, that left 55 unfolded that should not have been.
+	"""
+
+	def renderer(self, text, line_breaks=True):
+		return text
+
+	def test_it_takes_the_first_break_when_none_fits_the_window(self):
+		opening = 'A' + 'a' * 600 + '. '
+		text = opening + 'Then a second sentence. ' * 20
+		head, rest = render(text, self.renderer)
+		self.assertTrue(rest)
+		self.assertIn(opening.strip(), head)
+		self.assertNotIn('Then a second sentence.', head)
+
+	def test_it_still_prefers_a_break_inside_the_window(self):
+		#Where there is a short opening sentence, that is the summary and the
+		#reader should get it without unfolding anything.
+		text = 'Short opening. ' + 'Filler sentence here. ' * 40
+		head, rest = render(text, self.renderer)
+		self.assertIn('Short opening.', head)
+		self.assertLess(len(head), 500)
+		self.assertTrue(rest)
