@@ -4,13 +4,11 @@
 # publishing is a person's act on the site.
 Title: Hardy-Littlewood singular series of prime tuples
 Definition: >-
-  For an admissible prime $k$-tuple with offset set
-  $H=(0,h_2,\ldots,h_k)$ CITE{WikiTuple}, let $w_H(p)$ be the number of
-  distinct residue classes occupied by $H$ modulo the prime $p$. The
-  Hardy-Littlewood singular series CITE{WikiHL} CITE{MathWorldHL} is
-  $\mathfrak S(H)=\prod_p\frac{1-w_H(p)/p}{(1-1/p)^k}$. This table stores
-  that full product, including the factors at $p=2$ and at the small primes
-  for which the offsets are not all distinct modulo $p$.
+  For an admissible prime $k$-tuple with offsets
+  $H=(0,h_2,\ldots,h_k)$ CITE{WikiTuple}, ordered by
+  $0<h_2<\cdots<h_k$, this table stores the Hardy-Littlewood singular series
+  $\mathfrak S(H)$ CITE{WikiHL} CITE{MathWorldHL} in the full Euler-product
+  normalization of CITE{formula-product}.
 Parameters:
   H:
     type: Symbolic
