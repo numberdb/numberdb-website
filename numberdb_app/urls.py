@@ -53,6 +53,7 @@ urlpatterns = [
     path('drafts', views.drafts, name='drafts'),
     re_path(r'^drafts/(?P<tid>(T\d+))/offer$', views.offer_draft,
             name='offer-draft'),
+    path('overview', views.overview, name='overview'),
     path('review', views.review_queue, name='review-queue'),
     re_path(r'^review/(?P<tid>(T\d+))$', views.review_table, name='review-table'),
     re_path(r'^preview/(?P<tid>(T\d+))$', views.preview, name='preview-table'),

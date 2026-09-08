@@ -2503,6 +2503,72 @@ def offer_draft(request, tid):
 	return HttpResponseRedirect(reverse('db:drafts'))
 
 
+@login_required
+def overview(request):
+	"""One row per table, for somebody deciding where to look next.
+
+	The corpus is 163 tables and growing by a handful a night, and the only
+	way to see the shape of it was to open them one at a time. This is the
+	numbers an editor asks for before opening anything: how big it is, how
+	often it has been edited, what it holds, and what it cost to make.
+
+	The cost is API-equivalent USD at list prices, which is the only figure
+	comparable across two harnesses that bill differently, and it is stored
+	split by model and by role -- `?by=model`, `?by=role`, `?by=engine` -- so
+	that "what did this table cost", "what has that model cost us" and "what
+	does critiquing cost against building" are all answerable from the same
+	page. See docs/design/table-overview.md.
+
+	Read from `TableMetrics` and `TableCost` rather than computed here: the
+	page asks about every table at once, and the review queue's forty-second
+	afternoon is the argument against doing that per request.
+	"""
+	from django.db.models import Sum
+
+	from .models import TableCost, TableMetrics
+	from .permissions import may_edit
+
+	if not may_edit(request.user):
+		raise Http404()
+
+	sortby = request.GET.get('sort_by', 'id')
+	rows = (TableMetrics.objects
+	        .select_related('table')
+	        .filter(table__isnull=False))
+	order = {
+		'id': 'table__tid_int',
+		'title': 'table__title_lowercase',
+		'entries': '-entry_count',
+		'edits': '-edit_count',
+		'cost': '-agent_cost_usd',
+		'type': 'data_type',
+	}.get(sortby, 'table__tid_int')
+	rows = rows.order_by(order)
+
+	#The breakdown, at whichever granularity was asked for. `table` is the
+	#default because that is what the rows are; the others answer a question
+	#about the corpus rather than about one table.
+	granularity = request.GET.get('by', 'role')
+	field = {'model': 'model', 'role': 'role', 'engine': 'engine'}.get(
+		granularity, 'role')
+	breakdown = (TableCost.objects.values(field)
+	             .annotate(cost=Sum('cost_usd'), runs=Sum('runs'))
+	             .order_by('-cost'))
+	breakdown = [{'name': item[field] or '(none)', 'cost': item['cost'],
+	              'runs': item['runs']} for item in breakdown]
+	spent = sum(item['cost'] for item in breakdown) or 0
+
+	return render(request, 'overview.html', {
+		'rows': rows,
+		'sortby': sortby,
+		'by': field,
+		'breakdown': breakdown,
+		'total_cost': spent,
+		'table_count': rows.count(),
+		'entry_total': sum(row.entry_count for row in rows),
+	})
+
+
 def review_queue(request):
 	"""Tables carrying changes nobody has confirmed.
 
