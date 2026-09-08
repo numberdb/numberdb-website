@@ -172,3 +172,92 @@ class ImportingTheLedger(TestCase):
 		]))
 		self.assertEqual(TableMetrics.objects.get(table=self.table)
 		                 .agent_cost_usd, Decimal('13'))
+
+
+class HowBigTheValuesAre(TestCase):
+	"""Entries is half the story: a hundred polynomials and a hundred
+	hundred-digit constants are the same count and not the same table."""
+
+	def setUp(self):
+		from .measure import (p_adic_digits, polynomial_shape, quartiles,
+		                      significant_digits)
+
+		self.significant_digits = significant_digits
+		self.p_adic_digits = p_adic_digits
+		self.polynomial_shape = polynomial_shape
+		self.quartiles = quartiles
+
+	def test_digits_are_counted_from_the_value_not_its_width(self):
+		#An interval's two ends are the same length; a ball's radius is not
+		#the value.
+		self.assertEqual(self.significant_digits('3.14159'), 6)
+		self.assertEqual(self.significant_digits('[1.41, 1.42]'), 3)
+		self.assertEqual(self.significant_digits('3.14 +/- 2e-2'), 3)
+
+	def test_a_p_adic_is_measured_in_decimal_digits(self):
+		#So that tables over different primes compare: O(2^167) and O(3^105)
+		#carry about the same information.
+		self.assertEqual(self.p_adic_digits('1 + O(2^167)'), 50)
+		self.assertEqual(self.p_adic_digits('1 + O(3^105)'), 50)
+		self.assertIsNone(self.p_adic_digits('3.14159'))
+
+	def test_a_polynomial_gives_its_degree_and_terms(self):
+		self.assertEqual(self.polynomial_shape('x^2 - 2*x*a'), (2, 2))
+		self.assertEqual(self.polynomial_shape('x'), (1, 1))
+		self.assertEqual(self.polynomial_shape('1'), (0, 1))
+		#Stored with the variable count in front, which is not part of it.
+		self.assertEqual(self.polynomial_shape('2,x^12 + 3*x^2 - 1'), (12, 3))
+
+	def test_quartiles_are_values_that_occur(self):
+		#Nearest-rank: the median of a table of integers is one of them.
+		found = self.quartiles([1, 2, 3, 4, 5, 100])
+		self.assertEqual(found['min'], 1)
+		self.assertEqual(found['max'], 100)
+		self.assertEqual(found['median'], 3)
+		self.assertEqual(found['count'], 6)
+
+	def test_nothing_measurable_gives_nothing(self):
+		self.assertIsNone(self.quartiles([]))
+		self.assertIsNone(self.quartiles([None, None]))
+
+
+class TheOverviewShowsTheShapeOfTheCorpus(TestCase):
+
+	def setUp(self):
+		User = get_user_model()
+		self.editor = User.objects.create_user('shape_editor', password='x')
+		self.author = User.objects.create_user('shape_author')
+		self.table = Table.objects.create(
+			tid='T760', tid_int=760, url='t760', title='Measured',
+			title_lowercase='measured', published=True)
+		commit_table(self.table,
+		             {'Title': 'Measured',
+		              'Parameters': {'n': {'type': 'Z'}},
+		              'Data properties': {'type': 'R'},
+		              'Numbers': {'1': '3.14159265358979',
+		                          '2': '2.71828182845904'}},
+		             author=self.author, message='m', via='orm')
+
+	def test_it_measures_digits_and_size(self):
+		from .management.commands.refresh_table_metrics import refresh
+
+		metrics = refresh(self.table)
+		self.assertEqual(metrics.digits_median, 15)
+		self.assertGreater(metrics.document_bytes, 0)
+		self.assertGreater(metrics.value_chars_median, 10)
+		self.assertIsNone(metrics.degree_median)
+
+	def test_the_distributions_are_on_the_page(self):
+		from .management.commands.refresh_table_metrics import refresh
+
+		refresh(self.table)
+		client = Client()
+		client.force_login(self.editor)
+		response = client.get('/overview', HTTP_HOST='numberdb.org')
+		names = {name for name, _, _ in response.context['distributions']}
+		self.assertIn('entries', names)
+		self.assertIn('digits', names)
+		self.assertIn('kb', names)
+		for _, _, found in response.context['distributions']:
+			self.assertIn('median', found)
+			self.assertIn('q1', found)

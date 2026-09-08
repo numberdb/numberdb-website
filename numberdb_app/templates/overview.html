@@ -25,14 +25,52 @@ table.overview tr:hover td { background: #f7f9f2; }
 .breakdown td.bar div { background: #d9e5b8; height: 0.7rem; }
 .granularity a { font-size: 0.85rem; margin-right: 0.6rem; }
 .granularity a.on { font-weight: 600; text-decoration: none; color: #000; }
+table.distribution { border-collapse: collapse; margin: 0.5rem 0 1.5rem 0; font-size: 0.9rem; }
+table.distribution th {
+  font-weight: 400; color: #888; font-size: 0.8rem;
+  padding: 0 0.9rem 0.2rem 0; border-bottom: 1px solid #ddd;
+}
+table.distribution td { padding: 0.2rem 0.9rem 0.2rem 0; }
+table.distribution td:first-child { color: #555; }
 </style>
 
 <div class="table-title">Overview</div>
 
 <div class="overview-summary">
   {{ table_count }} table{{ table_count|pluralize }},
-  {{ entry_total }} entries, ${{ total_cost|floatformat:2 }} of agent time.
+  {{ entry_total }} entries, {{ total_kb|floatformat:0 }} kB of documents,
+  ${{ total_cost|floatformat:2 }} of agent time.
 </div>
+
+{% comment %}
+The shape of the corpus, not only its total. A mean on its own hides what is
+worth seeing: the median table has a few dozen entries and the largest has
+thousands, so an average halfway between describes no table at all. Quartiles
+say that in one line.
+{% endcomment %}
+<table class="distribution">
+  <thead>
+    <tr>
+      <th></th>
+      <th class="right">min</th><th class="right">q1</th>
+      <th class="right">median</th><th class="right">q3</th>
+      <th class="right">max</th><th class="right">mean</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for name, label, d in distributions %}
+      <tr>
+        <td>{{ label }}</td>
+        <td class="right">{{ d.min|floatformat:"-1" }}</td>
+        <td class="right">{{ d.q1|floatformat:"-1" }}</td>
+        <td class="right"><b>{{ d.median|floatformat:"-1" }}</b></td>
+        <td class="right">{{ d.q3|floatformat:"-1" }}</td>
+        <td class="right">{{ d.max|floatformat:"-1" }}</td>
+        <td class="right overview-cost">{{ d.mean|floatformat:1 }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
 
 {% comment %}
 The same money, asked three ways. What a table cost, what a model has cost,
@@ -69,6 +107,9 @@ stored split rather than totalled: a single number answers none of them.
       <th class="right"><a href="?sort_by=entries&amp;by={{ by }}">Entries</a></th>
       <th class="right"><a href="?sort_by=edits&amp;by={{ by }}">Edits</a></th>
       <th><a href="?sort_by=type&amp;by={{ by }}">Type</a></th>
+      <th class="right"><a href="?sort_by=digits&amp;by={{ by }}">Digits</a></th>
+      <th class="right"><a href="?sort_by=degree&amp;by={{ by }}">Degree</a></th>
+      <th class="right"><a href="?sort_by=size&amp;by={{ by }}">kB</a></th>
       <th class="right"><a href="?sort_by=cost&amp;by={{ by }}">Cost</a></th>
     </tr>
   </thead>
@@ -81,6 +122,9 @@ stored split rather than totalled: a single number answers none of them.
         <td class="right">{{ row.entry_count }}</td>
         <td class="right">{{ row.edit_count }}</td>
         <td>{{ row.data_type }}</td>
+        <td class="right">{% if row.digits_median %}{{ row.digits_median }}{% else %}<span class="overview-zero">&mdash;</span>{% endif %}</td>
+        <td class="right">{% if row.degree_median != None %}{{ row.degree_median }}{% if row.terms_median %} <span class="overview-cost">/{{ row.terms_median }}</span>{% endif %}{% else %}<span class="overview-zero">&mdash;</span>{% endif %}</td>
+        <td class="right">{% widthratio row.document_bytes 1024 1 %}</td>
         <td class="right">
           {% if row.agent_cost_usd %}
             ${{ row.agent_cost_usd|floatformat:2 }}
@@ -94,6 +138,10 @@ stored split rather than totalled: a single number answers none of them.
 </table>
 
 <p class="overview-summary">
+  Digits is the significant digits of the median entry &mdash; for a p-adic
+  table, the precision converted to decimal digits, so that $O(2^{167})$ and
+  $O(3^{105})$ both read as about fifty. Degree is the median polynomial's
+  degree, with its number of terms after the slash. kB is the stored document.
   Cost is API-equivalent US dollars at list prices, which is the only figure
   comparable across harnesses that bill differently. A dash means no agent run
   is recorded against that table &mdash; most of the corpus was made by hand.
