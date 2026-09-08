@@ -2097,3 +2097,23 @@ enumeration is the one line to move behind a flag.
 
 Evidence: `/tmp/md_probe2_out.txt` (`41.5 s`), `/tmp/md_dry_out.txt`
 (`[233.2 s]` on the (8,0) entry), `/tmp/md_fill_out.txt`, 2026-09-06.
+
+## An extra `agents/sage.sh` mount named `generate.py` can arrive as a directory
+
+What happened: the T165 repair tried to verify the updated attached
+generator by running
+`agents/sage.sh /tmp/t165_verify_generator.py generators/artin-primitive-root-densities/generate.py`.
+Inside the container, importing `generate` failed, and loading
+`/work/generate.py` directly raised `IsADirectoryError`: the path existed as
+a directory. A uniquely named scratch copy,
+`/tmp/t165_generate_verify_source.py`, mounted and verified the table:
+`<VerifyReport T165: 92/92 matched, 0 differing, 0 missing, 0 extra>`.
+
+What to do instead: when a secondary mount must be imported, give the
+scratch file a unique basename rather than `generate.py`, or check
+`/work` before assuming the mount is a file. The likely wrapper-side cause
+is a stale remote directory with the same basename; `agents/sage.sh` removes
+remote scratch paths with `rm -f`, which does not remove directories.
+
+Evidence: `/tmp/t165_verify_generator.py` and the failed and successful
+verification outputs, 2026-09-09.
