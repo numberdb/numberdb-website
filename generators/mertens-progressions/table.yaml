@@ -4,15 +4,17 @@
 # generate.py beside it; publishing is a person's act on the site.
 Title: Mertens constants of primes in arithmetic progressions
 Definition: >-
-  For integers $q\geq 3$ and $a$ with $\gcd(a,q)=1$, this table stores the
-  constants $M(q,a)$, $B(q,a)$ and $C(q,a)$ CITE{LZ2010} CITE{LZ2009}
-  attached to primes $p\equiv a\pmod q$ by CITE{formula-definitions}.
+  For $q\geq 1$ and $\gcd(a,q)=1$, $M(q,a)$, $B(q,a)$ and $C(q,a)$ are the
+  Mertens and Meissel-Mertens constants of the primes $p\equiv a\pmod q$
+  CITE{LZ2007} CITE{LZ2010} CITE{LZ2009}. The reciprocal-prime sum, the
+  $B(q,a)$ series and the Mertens product define them in
+  CITE{formula-definitions}.
 Parameters:
   q:
     type: Z
     title: modulus
     display: $q$
-    constraints: $q\geq 3$
+    constraints: $q\geq 1$
   a:
     type: Z
     title: reduced residue class modulo $q$
@@ -24,11 +26,6 @@ Parameters:
     display: $X$
     constraints: $X$ is $M$, $B$ or $C$
 Comments:
-  comment-normalization: >-
-    The product constant $C(q,a)$ is normalized by
-    $\prod_{p\leq x,\ p\equiv a\pmod q}(1-1/p)\sim
-    C(q,a)(\log x)^{-1/\varphi(q)}$. With this convention
-    $M(q,a)=B(q,a)-\log C(q,a)$.
   comment-range: >-
     The table holds all three constants for every reduced residue class modulo
     $q$ with $3\leq q\leq 30$. The cases $q=1$ and $q=2$ are omitted: $M(1,1)$
@@ -37,7 +34,7 @@ Comments:
   comment-source: >-
     Languasco and Zaccagnini computed the constants for $3\leq q\leq 100$ to
     at least $100$ decimal digits CITE{LZ2010}; their computation page
-    CITE{LZData} gives the matrices used as an external check for these rows.
+    CITE{LZData} lists the values as matrices indexed by $q$ and $a$.
 Formulas:
   formula-definitions: >-
     $\sum_{\substack{p\leq x\\p\equiv a\pmod q}}\frac1p
@@ -53,10 +50,12 @@ Formulas:
     HREF{Meissel-Mertens_constant}[the Meissel-Mertens constant] CITE{LZ2010}.
   formula-sum-B: >-
     $\sum_{\substack{1\leq a\leq q\\\gcd(a,q)=1}}B(q,a)
-    =M-\gamma-\sum_{p\mid q}\left(\log(1-1/p)+1/p\right)$ CITE{LZ2010}.
+    =M-\gamma-\sum_{p\mid q}\left(\log(1-1/p)+1/p\right)$, where $\gamma$ is
+    the Euler-Mascheroni constant CITE{LZ2010}.
   formula-product-C: >-
     $\prod_{\substack{1\leq a\leq q\\\gcd(a,q)=1}}C(q,a)
-    =e^{-\gamma}q/\varphi(q)$ CITE{LZ2009}.
+    =e^{-\gamma}q/\varphi(q)$, where $\gamma$ is the Euler-Mascheroni constant
+    CITE{LZ2009}.
   formula-subdivision-M: >-
     If $q_1\mid q_2$, $\gcd(a,q_1)=1$ and $n=q_2/q_1$, then
     $M(q_1,a)=\sum_{\substack{0\leq j<n\\\gcd(a+jq_1,q_2)=1}}
@@ -71,24 +70,24 @@ Programs:
       g.value({'q': 5, 'a': 1, 'constant': 'C'}, 95)    # 1.2252384385...
 Similar tables:
   - table: HREF{Meissel-Mertens_constant}[Meissel-Mertens constant]
-    relation: this is the case $q=1$ for the reciprocal-prime sum constant $M(q,a)$
+    relation: the reciprocal-prime sum constant $M(q,a)$ is the Meissel-Mertens constant when $q=1$
   - table: HREF{Values_of_Dirichlet_L-functions_at_positive_integers}[Values of Dirichlet L-functions at positive integers]
-    relation: the accelerated formulas use $L(1,\chi)$ and $L(n,\chi)$ for Dirichlet characters modulo $q$
+    relation: the formulas of CITE{LZ2010} and CITE{LZ2009} express $M(q,a)$, $B(q,a)$ and $C(q,a)$ through $L(1,\chi)$ and $L(n,\chi)$ for Dirichlet characters modulo $q$
   - table: HREF{Values_of_the_prime_zeta_function_at_rational_numbers}[Values of the prime zeta function at rational numbers]
-    relation: the principal-character parts are combinations of prime zeta values
+    relation: the formulas of CITE{LZ2010} and CITE{LZ2009} express the principal-character terms through prime zeta values
   - table: HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[Residues of Dedekind zeta functions of quadratic fields]
-    relation: for real quadratic characters, the $L(1,\chi)$ factors used in the formulas are the residues of quadratic Dedekind zeta functions
+    relation: for a real quadratic character $\chi_D$, the $L(1,\chi_D)$ factor in the formulas of CITE{LZ2010} and CITE{LZ2009} is the residue at $s=1$ of the Dedekind zeta function of $\mathbb Q(\sqrt D)$
   - table: HREF{Regulators_of_real_quadratic_fields}[Regulators of real quadratic fields]
-    relation: the class-number formula for real quadratic residues uses these regulators
+    relation: for a real quadratic character $\chi_D$, the class-number formula expresses $L(1,\chi_D)$ using the regulator of $\mathbb Q(\sqrt D)$
 Links:
   WikiMertens:
-    title: 'Wikipedia: Mertens theorems'
+    title: "Wikipedia: Mertens' theorems"
     url: https://en.wikipedia.org/wiki/Mertens%27_theorems
   LZData:
     title: 'Alessandro Languasco: Computation of the Mertens and Meissel-Mertens constants for sums over arithmetic progressions'
     url: https://www.dei.unipd.it/~languasco/Mertens-comput.html
   OEISM31:
-    title: 'OEIS A161529: Mertens constant M(3,1)'
+    title: 'OEIS A161529: $-M(3,1)$'
     url: https://oeis.org/A161529
   OEISM32:
     title: 'OEIS A368644: Mertens constant M(3,2)'
@@ -104,14 +103,14 @@ References:
       Appendix by K. K. Norton, Experimental Mathematics 19 (2010), no. 3,
       279-284.
     doi: 10.1080/10586458.2010.10390624
-    arxiv: 0906.2132
+    arxiv: '0906.2132'
   LZ2009:
     bib: >-
       A. Languasco and A. Zaccagnini, On the constant in the Mertens formula
       for arithmetic progressions. II. Numerical values, Mathematics of
       Computation 78 (2009), 315-326.
     doi: 10.1090/S0025-5718-08-02148-0
-    arxiv: 0712.1665
+    arxiv: '0712.1665'
   LZ2007:
     bib: >-
       A. Languasco and A. Zaccagnini, A note on Mertens' formula for
@@ -128,16 +127,16 @@ Data properties:
     it holds every reduced residue class modulo $q$ with $3\leq q\leq 30$, for
     the three constants $M(q,a)$, $B(q,a)$ and $C(q,a)$
   rigour details: >-
-    Values are computed from the accelerated formulas of CITE{LZ2010} and
-    CITE{LZ2009}, with cutoff $X=9600$ and truncations $K=M=26$. The
-    computation uses arb ball arithmetic for the Dirichlet $L$-values and
-    logarithms, but the truncation bounds from the papers are not carried as
-    intervals in the returned values, so the table is not marked proven. The
-    draft writes $95$ significant digits; before it was filled, every stored
-    value was compared with the corresponding row of Languasco and
-    Zaccagnini's published $100$-decimal-place matrices CITE{LZData}; the
-    identities CITE{formula-relation},
-    CITE{formula-sum-M}, CITE{formula-sum-B}, CITE{formula-product-C} and
-    CITE{formula-subdivision-M} were checked over the whole computed range.
+    Values were computed from the accelerated formulas of CITE{LZ2010} and
+    CITE{LZ2009}, with cutoff $X=9600$ and both truncation parameters set to
+    $26$. The computation used arb ball arithmetic for the Dirichlet
+    $L$-values and logarithms, but the truncation bounds from the papers were
+    not carried as intervals in the returned values, so the table is not marked
+    proven. The table gives $95$ significant digits. Every value agrees to all
+    of them with the corresponding entry of Languasco and Zaccagnini's
+    published $100$-decimal-place matrices CITE{LZData}, and the identities
+    CITE{formula-relation}, CITE{formula-sum-M}, CITE{formula-sum-B},
+    CITE{formula-product-C} and CITE{formula-subdivision-M} hold over the whole
+    computed range.
 Display properties:
-  number-header: value
+  number-header: $X(q,a)$
