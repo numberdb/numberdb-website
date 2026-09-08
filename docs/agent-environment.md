@@ -218,6 +218,33 @@ network and Python call in it ends in "This command requires approval" or
 resulted is `agents/table-ideas/BATCH-2026-08-31.md`, whose first section
 lists what was and was not done.
 
+## `agents/sage.sh` setup must not read the key pipe
+
+What happened: filling draft T167 followed the documented shape,
+`cat "$NUMBERDB_KEY_FILE" | agents/sage.sh generate.py`, but the script
+mounted `/work/generate.py` as a directory rather than as the copied file.
+Running the same command without a pipe mounted the file correctly. The setup
+`scp` calls were still attached to the script's stdin, so the API-key pipe
+could be consumed or disturbed before the final `ssh` command forwarded it to
+the container. The failed run also left a directory at the would-be bind-mount
+source, and the cleanup used `rm -f`, so a later run reusing the same local PID
+mounted that stale directory again.
+
+What to do instead: every setup copy in `agents/sage.sh` must read from
+`/dev/null`, just as the setup `ssh -n` calls already do. Its remote temporary
+prefix should also be unique per run, and cleanup must remove both files and
+directories below that generated prefix. The only command in the wrapper that
+may read stdin is the final `ssh` that runs Sage, because that is the one a
+fill script expects to receive the key.
+
+Evidence: on 2026-09-09, `agents/sage.sh /tmp/inspect.py
+generators/named-euler-products/generate.py` listed `/work/generate.py` as a
+file, while `cat "$NUMBERDB_KEY_FILE" | agents/sage.sh /tmp/inspect.py
+generators/named-euler-products/generate.py` listed it as a directory. Adding
+`</dev/null` to the `scp` command, making the temporary prefix include a
+timestamp, and cleaning with `rm -rf` fixed the mounted file before the T167
+fill.
+
 ## Python does not see the proxy that curl sees
 
 What happened: with the allowlist in place, `curl https://numberdb.org/skill`
