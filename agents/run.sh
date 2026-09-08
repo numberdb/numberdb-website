@@ -282,6 +282,13 @@ BRIEF
 # a previous run's leftovers are here at the start -- and the check at the end
 # must not blame this run for them.
 tree_before=$(git status --porcelain --untracked-files=normal | sort)
+# And where the history stood, so that what this run committed can be told
+# from what was already here. A build learns which table it made from the
+# generator it commits, and the first attempt at that read `$before` -- a
+# variable belonging to campaign.sh, unset here, swallowed by `|| true`. So
+# no build has ever been attributed to its table, which is the stage that
+# costs the most.
+head_before=$(git rev-parse HEAD)
 
 echo "=== $stage run $started, engine $engine" | tee "$log"
 
@@ -477,10 +484,13 @@ fi
 # committed, whose first docstring line names it by convention.
 about=$(printf '%s' "${task:-}" | grep -oE '\bT[0-9]{2,4}\b' | head -1 || true)
 if [ -z "$about" ]; then
-	generator=$(git diff --name-only "$before"..HEAD -- generators/ 2>/dev/null \
-	            | grep -E 'generate\.py$' | head -1 || true)
+	generator=$(git diff --name-only "$head_before"..HEAD -- generators/ \
+	            2>/dev/null | grep -E 'generate\.py$' | head -1 || true)
 	if [ -n "$generator" ] && [ -f "$generator" ]; then
-		about=$(head -3 "$generator" \
+		#The convention is the first line -- "... -- numberdb.org/T164" -- but
+		#read the whole docstring, since a generator that says it lower down
+		#still says it.
+		about=$(head -40 "$generator" \
 		        | grep -oE 'numberdb\.org/T[0-9]{2,4}' | head -1 \
 		        | grep -oE 'T[0-9]{2,4}' || true)
 	fi
