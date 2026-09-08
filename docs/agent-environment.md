@@ -64,6 +64,37 @@ Evidence: `agents/runs/campaign-20260906T132003Z.log` ends "the critique run
 failed; the table stands and somebody should look" with no
 `*-critique.log` for T160 anywhere, 2026-09-06.
 
+## One minified file made every repo-wide search cost a fortune
+
+What happened: a codex build cost $42.89, and 82% of that -- $35.32 -- was
+re-reading its own context on 399 model calls. The context had reached 200k
+tokens by call 40 and stayed there. Two ordinary orientation searches were
+responsible:
+
+    rg -n "class .*Generator|def publish|def create|X-Draft" -S .
+    rg -n "T160|Values of Dedekind zeta functions of totally real cubic" -S .
+
+Each returned over two megabytes. Not because the repository is large: because
+`static/vendor/mathjax/tex-svg.js` is **one line of 2,108,617 bytes**, and any
+search matching it prints the whole line. Both searches matched it. The rest of
+the output was 17 KB and 1.7 KB respectively.
+
+What that costs is not the one command. Tool output enters the context and is
+then re-read on every model call for the remainder of the run, so a single
+2 MB line early on is billed hundreds of times.
+
+What to do instead: the repository now has an `.ignore` file -- honoured by
+ripgrep and fd, and not the same thing as `.gitignore`, because these files
+belong in the repository and are only searched by accident. It excludes
+`static/vendor/`, `staticfiles/` and the built copies of the client. The two
+searches above now return 17 KB and 1.7 KB.
+
+Evidence: `agents/runs/20260906T161625Z-build.log`, 151 commands totalling
+3.2 MB of output, two of them 1,048,607 bytes each after truncation; the same
+build's session file gives 399 calls at a median context of 188k tokens. The
+next codex build, after this, made 117 calls at a median of 111k and cost
+$10.85.
+
 ## A file deleted in git stays on the server
 
 What happened: a test module was renamed with `git mv`. The code was uploaded

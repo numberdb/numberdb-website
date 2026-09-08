@@ -1,0 +1,15 @@
+# For ripgrep, fd and anything else that honours it. Not .gitignore: these
+# files belong in the repository and are searched by accident.
+#
+# `static/vendor/mathjax/tex-svg.js` is one line of 2,108,617 bytes. Any
+# repo-wide search matching it prints the whole line, and two of them turned a
+# build's ordinary orientation greps -- "how do I create a draft", "does this
+# table exist" -- into 2 MB each. That output goes into an agent's context and
+# is then re-read on every model call for the rest of the run: it is most of
+# why one build cost $42.89 and the next, without them, cost $10.85.
+static/vendor/
+staticfiles/
+# Built copies of the client, which answer every question its source already
+# answers, twice.
+clients/python/build/
+clients/python/dist/
