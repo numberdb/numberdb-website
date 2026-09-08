@@ -2009,6 +2009,27 @@ class TableMetrics(models.Model):
 		max_digits = 12, decimal_places = 4, default = 0,
 	)
 
+	#: The stored document, in bytes. What a reader downloads, and the one
+	#: measure of size that means the same for every kind of table.
+	document_bytes = models.IntegerField(default = 0)
+
+	#: The median entry's length in characters. Null where a table has no
+	#: entries. Kept beside the counts because a hundred Fibonacci polynomials
+	#: and a hundred hundred-digit constants are the same count and not the
+	#: same table.
+	value_chars_median = models.IntegerField(null = True, blank = True)
+
+	#: Significant digits of the median entry, for a table of numbers. For a
+	#: p-adic table it is the precision in decimal digits -- O(2^167) and
+	#: O(3^105) are both about fifty -- so that tables over different primes
+	#: can be compared at all.
+	digits_median = models.IntegerField(null = True, blank = True)
+
+	#: Degree and number of terms of the median entry, for a table of
+	#: polynomials. Null for every other kind.
+	degree_median = models.IntegerField(null = True, blank = True)
+	terms_median = models.IntegerField(null = True, blank = True)
+
 	updated = models.DateTimeField(auto_now = True)
 
 	class Meta:

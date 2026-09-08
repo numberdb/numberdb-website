@@ -2542,6 +2542,9 @@ def overview(request):
 		'edits': '-edit_count',
 		'cost': '-agent_cost_usd',
 		'type': 'data_type',
+		'digits': '-digits_median',
+		'degree': '-degree_median',
+		'size': '-document_bytes',
 	}.get(sortby, 'table__tid_int')
 	rows = rows.order_by(order)
 
@@ -2558,14 +2561,45 @@ def overview(request):
 	              'runs': item['runs']} for item in breakdown]
 	spent = sum(item['cost'] for item in breakdown) or 0
 
+	#The shape of the corpus, not only its total. A mean on its own hides the
+	#thing worth seeing here: the median table has a few dozen entries and the
+	#largest has thousands, and an average halfway between describes no table
+	#at all.
+	from .measure import quartiles
+
+	measured = list(rows)
+	polynomials = [row for row in measured if row.degree_median is not None]
+	numeric = [row for row in measured if row.digits_median is not None]
+	distributions = [
+		('entries', 'entries per table', quartiles(
+			[row.entry_count for row in measured])),
+		('edits', 'edits per table', quartiles(
+			[row.edit_count for row in measured])),
+		('chars', 'characters in the median entry', quartiles(
+			[row.value_chars_median for row in measured])),
+		('digits', 'significant digits, over %d tables of numbers'
+		 % len(numeric), quartiles(
+			[row.digits_median for row in numeric])),
+		('degree', 'polynomial degree, over %d tables of polynomials'
+		 % len(polynomials), quartiles(
+			[row.degree_median for row in polynomials])),
+		('terms', 'terms in a polynomial, over the same tables', quartiles(
+			[row.terms_median for row in polynomials])),
+		('kb', 'kilobytes of document', quartiles(
+			[row.document_bytes / 1024.0 for row in measured])),
+	]
+
 	return render(request, 'overview.html', {
 		'rows': rows,
 		'sortby': sortby,
 		'by': field,
 		'breakdown': breakdown,
 		'total_cost': spent,
-		'table_count': rows.count(),
-		'entry_total': sum(row.entry_count for row in rows),
+		'table_count': len(measured),
+		'entry_total': sum(row.entry_count for row in measured),
+		'distributions': [(name, label, found)
+		                  for name, label, found in distributions if found],
+		'total_kb': sum(row.document_bytes for row in measured) / 1024.0,
 	})
 
 
