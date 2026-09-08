@@ -85,3 +85,49 @@ class TheTablePageShowsIt(TestCase):
 	def test_mathematics_still_works_inside_it(self):
 		body = self.page('Balls in arb, so $\\delta^2$ is exact.')
 		self.assertIn('\\delta^2', body)
+
+
+class OneLongParagraphStillFolds(TestCase):
+	"""Every note that exists is a single paragraph.
+
+	All 139 of them were written before the field had any structure, so a fold
+	that needs a second block would never fire on the notes it was built for --
+	T147's three thousand characters among them.
+	"""
+
+	def renderer(self, text, line_breaks=True):
+		return text
+
+	def test_it_cuts_after_a_sentence(self):
+		text = ('The determinant is an exact integer. '
+		        + 'The rest goes on at length. ' * 30)
+		head, rest = render(text, self.renderer)
+		self.assertIn('The determinant is an exact integer.', head)
+		self.assertTrue(rest)
+		self.assertIn('The rest goes on at length.', rest)
+
+	def test_both_halves_are_paragraphs(self):
+		text = 'First sentence here. ' + 'And more text. ' * 40
+		head, rest = render(text, self.renderer)
+		self.assertTrue(head.startswith('<p class="prose-paragraph">'))
+		self.assertTrue(head.endswith('</p>'))
+		self.assertTrue(rest.startswith('<p class="prose-paragraph">'))
+		self.assertTrue(rest.endswith('</p>'))
+
+	def test_a_decimal_point_is_not_a_sentence(self):
+		#"3.14159" and "qfminim." inside a clause must not become a cut.
+		text = ('The value 3.14159 and the constant 2.71828 are computed with '
+		        'arb and pari. ') + ('More prose follows here. ' * 40)
+		head, _ = render(text, self.renderer)
+		self.assertNotIn('<p class="prose-paragraph">The value 3</p>', head)
+		self.assertIn('2.71828', head)
+
+	def test_a_paragraph_with_no_sentence_break_is_left_whole(self):
+		#One thought, cut mid-clause, is worse than the space it saves.
+		head, rest = render('x' * 900, self.renderer)
+		self.assertEqual(rest, '')
+		self.assertIn('x' * 900, head)
+
+	def test_a_short_note_is_untouched(self):
+		head, rest = render('Exact integers from a recurrence.', self.renderer)
+		self.assertEqual(rest, '')

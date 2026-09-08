@@ -68,7 +68,41 @@ def render(text, render_text, fold_above=FOLD_ABOVE):
 	head, rest = pieces[0], ''.join(pieces[1:])
 	if len(head) + len(rest) <= fold_above:
 		return head + rest, ''
+	if not rest:
+		#One long paragraph, which is what all 139 existing notes are: they
+		#were written before the field had any structure, so there is no
+		#second block to fold and the fold would never fire on the very notes
+		#it was built for. Cut after a sentence instead.
+		return _split_sentence(head, fold_above)
 	return head, rest
+
+
+def _split_sentence(paragraph, fold_above):
+	"""(opening sentences, the rest) of a single long paragraph.
+
+	Cut at a full stop followed by a capital, which is a sentence end and not
+	a decimal point, an abbreviation, or the dot in `qfminim`. If no such
+	place exists in the first part of the paragraph it is left whole: a
+	paragraph with no sentence break is one thought, and cutting it mid-clause
+	to save space would be worse than the space.
+	"""
+	import re
+
+	inner = paragraph
+	prefix = suffix = ''
+	opening = re.match(r'^<p[^>]*>', paragraph)
+	if opening and paragraph.endswith('</p>'):
+		prefix, suffix = opening.group(0), '</p>'
+		inner = paragraph[len(prefix):-len(suffix)]
+	best = None
+	for match in re.finditer(r'\.\s+(?=[A-Z$])', inner):
+		if match.end() > fold_above:
+			break
+		best = match.end()
+	if best is None or best >= len(inner):
+		return paragraph, ''
+	return (prefix + inner[:best].rstrip() + suffix,
+	        prefix + inner[best:].lstrip() + suffix)
 
 
 def _inline(line, render_text):
