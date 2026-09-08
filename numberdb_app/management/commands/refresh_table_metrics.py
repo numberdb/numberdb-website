@@ -69,15 +69,16 @@ def sizes(table):
 		if found:
 			digits.append(found)
 
-	for text in (Polynomial.objects.filter(table=table)
-	             .values_list('number_string', flat=True)):
-		if not text:
+	#Two texts per polynomial: the canonical one the index is built on, which
+	#is what the shape is read from, and the one a reader sees, which is what
+	#its length should be measured in. `1;1/1:|-1/1:x0^2` is not how long
+	#`1 - x^2` looks.
+	for canonical, shown in (Polynomial.objects.filter(table=table)
+	                         .values_list('number_string', 'exact_text')):
+		if not canonical:
 			continue
-		#Without the "<variables>," prefix, which is how it is stored and not
-		#how it is read.
-		body = text.split(',', 1)[1] if ',' in text[:4] else text
-		chars.append(len(body))
-		degree, count = polynomial_shape(text)
+		chars.append(len(shown or canonical))
+		degree, count = polynomial_shape(canonical)
 		if degree is not None:
 			degrees.append(degree)
 			terms.append(count)

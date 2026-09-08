@@ -64,27 +64,42 @@ def p_adic_digits(text):
 
 
 def polynomial_shape(text):
-	"""(degree, terms) for canonical polynomial text, or (None, None).
+	"""(total degree, number of terms) for a stored polynomial, or (None, None).
 
-	`Polynomial.number_string` is "<variables>,<polynomial>"; this accepts
-	either that or the polynomial alone.
+	`Polynomial.number_string` is the canonical form the search index uses:
+
+	    <variables>;<coefficient>:<monomial>|<coefficient>:<monomial>|...
+
+	with each monomial a comma-separated list of `x<i>^<e>`, and an empty
+	monomial for the constant term:
+
+	    1;-1/1:|1/1:x0^1                           is  -1 + x
+	    5;6/1:x0^1,x1^1|15/1:x2^1,x3^1|10/1:x4^2   is  6ab + 15cd + 10e^2
+
+	Terms are the parts between the bars; the degree of a term is the sum of
+	its exponents, and the polynomial's is the largest of those. Written for
+	this format rather than for readable text, because the readable form is
+	rendered from the document and never stored.
 	"""
 	body = (text or '').strip()
-	if not body:
+	if not body or ';' not in body:
 		return None, None
-	if ',' in body[:4] and body.split(',', 1)[0].strip().isdigit():
-		body = body.split(',', 1)[1]
-	powers = [int(match) for match in _POWER.findall(body)]
-	#Terms: the top-level summands. Canonical text separates them with a
-	#spaced sign, so a negative exponent or a sign inside a coefficient does
-	#not split a term in two.
-	terms = len(re.split(r'\s[-+]\s', body.strip()))
-	if powers:
-		degree = max(powers)
-	elif _VARIABLE.search(body):
-		degree = 1
-	else:
-		degree = 0
+	body = body.split(';', 1)[1]
+	if not body:
+		return 0, 0
+	degree = 0
+	terms = 0
+	for term in body.split('|'):
+		terms += 1
+		monomial = term.split(':', 1)[1] if ':' in term else ''
+		total = 0
+		for factor in monomial.split(','):
+			if '^' in factor:
+				try:
+					total += int(factor.rsplit('^', 1)[1])
+				except ValueError:
+					pass
+		degree = max(degree, total)
 	return degree, terms
 
 
