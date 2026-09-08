@@ -1970,3 +1970,101 @@ class SiteNotice(models.Model):
 		"""The notice to show, or None. Cheap enough for every request."""
 		notice = cls.objects.filter(showing=True).first()
 		return notice if notice and notice.message.strip() else None
+
+
+class TableMetrics(models.Model):
+	"""What an editor wants to know about a table without opening it.
+
+	Derived from things the database already holds -- the number rows, the
+	revisions, the document -- and kept here rather than computed per request
+	because the overview asks for all of them at once, and computing them per
+	request is how the review queue came to take forty seconds over 108
+	tables.
+
+	Refreshed by `manage.py refresh_table_metrics`, and after every commit.
+	Nothing here is a source of truth: if a row disagrees with the table, the
+	table is right and this is stale.
+	"""
+
+	table = models.OneToOneField(
+		Table,
+		on_delete = models.CASCADE,
+		related_name = 'metrics',
+	)
+
+	#: Entries, counted from the stored rows rather than from the document,
+	#: because that is what search answers from.
+	entry_count = models.IntegerField(default = 0)
+
+	#: Revisions. Every edit is one, whoever made it and however it arrived.
+	edit_count = models.IntegerField(default = 0)
+
+	#: `Data properties: type` -- R, Q, Z[], and so on. Held as text because
+	#: the vocabulary is open: a table may declare a type this database cannot
+	#: parse, and say what it means.
+	data_type = models.CharField(max_length = 32, blank = True, default = '')
+
+	#: The sum of `TableCost`, denormalised so the overview can sort by it.
+	agent_cost_usd = models.DecimalField(
+		max_digits = 12, decimal_places = 4, default = 0,
+	)
+
+	updated = models.DateTimeField(auto_now = True)
+
+	class Meta:
+		verbose_name_plural = 'table metrics'
+
+	def __str__(self):
+		return '%s: %d entries, %d edits' % (
+			self.table.tid, self.entry_count, self.edit_count)
+
+
+class TableCost(models.Model):
+	"""What making one table cost, split by model and by the role it played.
+
+	One row per (table, model, role), because "how much have we spent on this
+	table" and "how much has that model cost us" and "what does critiquing
+	cost compared with building" are three questions about the same money, and
+	a single total answers none of them.
+
+	The figure is API-equivalent USD at list prices, which is the only number
+	comparable across harnesses that bill differently -- see
+	`agents/ledger.py`. Imported from that ledger by
+	`manage.py import_agent_costs`; nothing writes it from the web.
+	"""
+
+	table = models.ForeignKey(
+		Table,
+		on_delete = models.CASCADE,
+		related_name = 'costs',
+	)
+
+	#: The model that answered, as the run recorded it: `claude-fable-5-1`,
+	#: `gpt-5.5`, `claude-haiku-4-5-20251001`. Not the harness -- one run bills
+	#: a little haiku beside its main model, and that is worth seeing.
+	model = models.CharField(max_length = 64)
+
+	#: Which stage of the pipeline spent it: build, critique, repair, triage,
+	#: ideas. The word the runner uses.
+	role = models.CharField(max_length = 16)
+
+	#: claude or codex. Derivable from the model today and not tomorrow.
+	engine = models.CharField(max_length = 16, blank = True, default = '')
+
+	cost_usd = models.DecimalField(max_digits = 12, decimal_places = 4,
+	                               default = 0)
+
+	#: How many runs are behind this figure, so a large number can be read as
+	#: one expensive run or ten cheap ones.
+	runs = models.IntegerField(default = 0)
+
+	class Meta:
+		unique_together = ('table', 'model', 'role')
+		indexes = [
+			models.Index(fields = ['model']),
+			models.Index(fields = ['role']),
+		]
+
+	def __str__(self):
+		return '%s %s %s $%s' % (self.table.tid, self.role, self.model,
+		                         self.cost_usd)
