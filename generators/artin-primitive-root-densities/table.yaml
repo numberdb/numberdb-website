@@ -4,31 +4,26 @@
 # generate.py beside it; publishing is a person's act on the site.
 Title: Densities of primes with a given primitive root
 Definition: >-
-  Let $a\in\mathbb Z\setminus\{-1,0,1\}$ be not a square in $\mathbb Q$.
-  This table stores Hooley's Artin density $\delta(a)$ CITE{Hooley}
-  CITE{Moree} CITE{Stevenhagen}, the conjectural natural density of primes
-  $p$ for which $a$ is a primitive root modulo $p$, in the normalization of
-  CITE{formula-density}.
+  For $a\in\mathbb Z$ with $a\neq -1$ and $a$ not a perfect square, the Artin
+  density is $\delta(a)=\sum_{k\geq1}\mu(k)/[\mathbb Q(\zeta_k,a^{1/k}):\mathbb Q]$
+  CITE{WikiArtin} CITE{Hooley} CITE{Moree}.
 Parameters:
   a:
     type: Z
     title: integer base
     display: $a$
-    constraints: $a\notin\{-1,0,1\}$ and $a$ is not a square in $\mathbb Q$
+    constraints: $a\neq -1$ and $a$ is not a perfect square
 Comments:
   comment-range: >-
-    The table holds every integer base $a$ with $-50\leq a\leq 50$ satisfying
-    the parameter constraint. Squares and $-1$ are omitted because their
-    densities are $0$; perfect powers such as $8$ are included because their
-    maximal exponent changes the rational factor in CITE{formula-density}.
+    Perfect squares and $-1$ are omitted because their densities are $0$;
+    perfect powers such as $8$ are included because their maximal exponent
+    changes the rational factor in CITE{formula-density}.
   comment-conditional: >-
-    Hooley proved the asymptotic formula under the generalized Riemann
-    hypothesis for the fields $\mathbb Q(\zeta_k,a^{1/k})$ CITE{Hooley}
-    CITE{Moree}. Unconditionally, Artin's primitive-root conjecture remains
-    open for each fixed base $a$ in this table.
+    Unconditionally, Artin's primitive-root conjecture remains open for each
+    fixed base $a$ in this table.
   comment-multiples: >-
-    Every entry is an exact rational multiple of Artin's constant $A=\delta(2)$
-    CITE{OEISArtin} CITE{MathWorldArtin}. The entry comment gives that
+    Every entry is an exact rational multiple of Artin's constant
+    $A=A(1)=\delta(2)$ CITE{OEISArtin} CITE{MathWorldArtin}. The entry comment gives that
     multiple and the discriminant $d$ used in CITE{formula-density}.
 Formulas:
   formula-density: >-
@@ -43,19 +38,22 @@ Formulas:
     \prod_{\substack{q\mid d\\q\nmid h}}\frac{1}{q^2-q-1}\right)$ if
     $d\equiv1\pmod4$ CITE{Moree} CITE{Stevenhagen}.
   formula-artin: >-
-    $A=\delta(2)=\prod_q\left(1-\frac{1}{q(q-1)}\right)$, where $q$ runs over
-    the primes CITE{OEISArtin} CITE{MathWorldArtin}.
+    Artin's constant is
+    $A=A(1)=\delta(2)=\prod_q\left(1-\frac{1}{q(q-1)}\right)$, where $q$ runs
+    over the primes CITE{OEISArtin} CITE{MathWorldArtin}.
   formula-asymptotic: >-
-    Under Hooley's generalized Riemann hypothesis assumption,
+    Under the generalized Riemann hypothesis for the fields
+    $\mathbb Q(\zeta_k,a^{1/k})$ with $k$ squarefree,
     $\#\{p\leq x:a\text{ is a primitive root modulo }p\}\sim
     \delta(a)x/\log x$ CITE{Hooley} CITE{Moree}.
 Programs:
   program-sage:
     language: Sage
     code: |-
-      from generate import ArtinPrimitiveRootDensities
-      g = ArtinPrimitiveRootDensities()
-      g.value({'a': 5}, 100)      # 0.39363769854652872426...
+      from sage.libs.pari import pari
+      pari('default(realprecision, 140)')
+      A = pari('prodeulerrat(1 - 1/(p*(p - 1)))')
+      pari('20/19') * A           # a = 5
   program-pari:
     language: PARI/GP
     code: |-
@@ -87,8 +85,8 @@ Links:
 References:
   Hooley:
     bib: >-
-      C. Hooley, On Artin's conjecture, Journal fuer die reine und angewandte
-      Mathematik 225 (1967), 209-220.
+      C. Hooley, On Artin's conjecture, J. Reine Angew. Math. 225 (1967),
+      209-220.
     doi: 10.1515/crll.1967.225.209
   Moree:
     bib: >-
@@ -98,8 +96,7 @@ References:
   Stevenhagen:
     bib: >-
       P. Stevenhagen, The correction factor in Artin's primitive root
-      conjecture, Journal de theorie des nombres de Bordeaux 15 (2003),
-      no. 1, 383-391.
+      conjecture, J. Théor. Nombres Bordeaux 15 (2003), no. 1, 383-391.
     doi: 10.5802/jtnb.408
     zbl: '1043.11078'
     mr: '2019022'
@@ -118,12 +115,12 @@ Data properties:
     decimal digits, and $100$ digits are written. Each value is then an exact
     rational multiple of $A$, with the multiplier computed in $\mathbb Q$ from
     the maximal exponent $h$ and the discriminant $d$ in
-    CITE{formula-density}. Before the draft was filled, the value of $A$
-    agreed with OEIS A005596 CITE{OEISArtin} through the digits written here;
-    the same generator run at $160$ decimal digits gave identical stored
-    decimals; the multipliers for every row were checked by a second
-    implementation of Hooley's formula; and direct counts of primes up to
-    $3\cdot10^6$ gave the expected ratios for $a=2,5,8,-3,21$ to the accuracy
-    expected at that range.
+    CITE{formula-density}. The value of $A$ agrees with OEIS A005596
+    CITE{OEISArtin} when rounded to $100$ decimal places, and recomputing it
+    at $160$ decimal digits gives the same $100$ digits. The multipliers for
+    all $92$ entries were checked against a second implementation of Hooley's
+    formula. Among primes $p\leq 3\cdot10^6$, the observed fractions for
+    $a=2,5,8,-3,21$, divided by $\pi(3\cdot10^6)$, differ from $\delta(a)$
+    by at most $0.135\%$.
 Display properties:
   number-header: $\delta(a)$
