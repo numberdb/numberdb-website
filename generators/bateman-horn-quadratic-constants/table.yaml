@@ -1,0 +1,141 @@
+# The table document for Bateman-Horn constants of monic quadratic
+# polynomials, proposal 2 of agents/table-ideas/BATCH-2026-09-07T0207.md.
+# It was created as draft T166 through the API (X-Draft: yes) and is filled by
+# generate.py beside it; publishing is a person's act on the site.
+Title: Bateman-Horn constants of monic quadratic polynomials
+Definition: >-
+  For a monic irreducible quadratic polynomial $f\in\mathbb Z[x]$ with no
+  fixed prime divisor, this table stores the Bateman-Horn constant $C(f)$
+  CITE{WikiBH} CITE{BH1962} in the normalization of CITE{formula-product}.
+Parameters:
+  f:
+    type: Symbolic
+    title: polynomial
+    display: $f$
+    constraints: >-
+      $f=x^2+bx+c$ with $b,c\in\mathbb Z$, $f$ irreducible over
+      $\mathbb Q$, and no prime divides every value $f(n)$
+Comments:
+  comment-normalization: >-
+    The table stores $C(f)$ itself. Since every polynomial here has degree
+    $2$, the Bateman-Horn asymptotic in CITE{formula-asymptotic} has the
+    leading constant $C(f)/2$.
+  comment-range: >-
+    The table holds every polynomial $x^2+a$ with $-30\leq a\leq30$ and
+    $-a$ not a square, and every polynomial $x^2+x+a$ with $1\leq a\leq41$
+    and $a$ odd. The even values of $a$ in $x^2+x+a$ are omitted because
+    all values of the polynomial are then even.
+  comment-conjectural: >-
+    The Euler product defining $C(f)$ converges for every polynomial in the
+    parameter domain. The asymptotic interpretation as a density of prime
+    values remains conjectural.
+  comment-examples: >-
+    For $f=x^2+1$, OEIS A199401 gives $C(f)$ CITE{OEISx2plus1}, while OEIS
+    A331941 gives $C(f)/2$ CITE{OEISx2plus1Half}. For
+    $f=x^2+x+41$, OEIS A221712 gives $C(f)/2$ CITE{OEISEuler41}.
+Formulas:
+  formula-product: >-
+    $C(f)=\prod_p\dfrac{1-N_f(p)/p}{1-1/p}$, where $N_f(p)$ is the number
+    of roots of $f$ modulo $p$.
+  formula-quadratic: >-
+    If $\Delta=b^2-4c$ for $f=x^2+bx+c$, then
+    $N_f(p)=1+\left(\frac{\Delta}{p}\right)$ and therefore
+    $C(f)=\prod_p\left(1-\dfrac{1}{p-1}\left(\frac{\Delta}{p}\right)\right)$,
+    with the Kronecker symbol $\left(\frac{\Delta}{p}\right)$.
+  formula-asymptotic: >-
+    The Bateman-Horn conjecture predicts
+    $\#\{n\leq x:f(n)\text{ is prime}\}\sim
+    \dfrac{C(f)}{2}\int_2^x\dfrac{dt}{\log t}$ for the quadratic
+    polynomials in this table CITE{WikiBH} CITE{BH1962}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from generate import BatemanHornQuadraticConstants
+      g = BatemanHornQuadraticConstants()
+      g.value({'f': 'x^2+1'}, 100)         # 1.3728134628182460091...
+      g.value({'f': 'x^2+x+41'}, 100)      # 6.6395463549428433306...
+  program-pari:
+    language: PARI/GP
+    code: |-
+      \\ Load HardyLittlewood2 from the Belabas-Cohen script CITE{BelabasCohenGP}.
+      default(realprecision, 140)
+      HardyLittlewood2(x^2+1)              \\ 1.3728134628182460091...
+      HardyLittlewood2(x^2+x+41)           \\ 6.6395463549428433306...
+Similar tables:
+  - table: HREF{Hardy-Littlewood_singular_series_of_prime_tuples}[Hardy-Littlewood singular series of prime tuples]
+    relation: linear Bateman-Horn systems give the Hardy-Littlewood singular series for prime tuples
+  - table: HREF{Twin_prime_constant}[Twin prime constant]
+    relation: the Bateman-Horn constant of the system $(x,x+2)$ is $2C_2$
+  - table: HREF{Values_of_the_prime_zeta_function_at_rational_numbers}[Values of the prime zeta function at rational numbers]
+    relation: Cohen's acceleration rewrites the prime-indexed products through prime sums computed from zeta values
+  - table: HREF{Values_of_Dirichlet_L-functions_at_positive_integers}[Values of Dirichlet L-functions at positive integers]
+    relation: CITE{formula-quadratic} is evaluated through Dirichlet $L$-values of quadratic characters
+  - table: HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[Residues of Dedekind zeta functions of quadratic fields]
+    relation: for a fundamental discriminant $D$, $L(1,\left(\frac{D}{\cdot}\right))$ is the residue at $s=1$ of the Dedekind zeta function of $\mathbb Q(\sqrt D)$
+Links:
+  WikiBH:
+    title: 'Wikipedia: Bateman-Horn conjecture'
+    url: https://en.wikipedia.org/wiki/Bateman%E2%80%93Horn_conjecture
+  WikiLandau:
+    title: "Wikipedia: Landau's problems"
+    url: https://en.wikipedia.org/wiki/Landau%27s_problems
+  OEISx2plus1:
+    title: 'OEIS A199401: Hardy-Littlewood constant of $x^2+1$'
+    url: https://oeis.org/A199401
+  OEISx2plus1Half:
+    title: 'OEIS A331941: half the Hardy-Littlewood constant of $x^2+1$'
+    url: https://oeis.org/A331941
+  OEISEuler41:
+    title: 'OEIS A221712: Hardy-Littlewood constant for $x^2+x+41$'
+    url: https://oeis.org/A221712
+  OEISCountsX2Plus1:
+    title: 'OEIS A206709: number of primes of the form $b^2+1$ for $b\leq10^n$'
+    url: https://oeis.org/A206709
+  OEISRecordQuadratics:
+    title: 'OEIS A331940: record addends for Hardy-Littlewood constants of $x^2+x+k$'
+    url: https://oeis.org/A331940
+  BelabasCohenGP:
+    title: 'Karim Belabas and Henri Cohen: Computation of the Hardy-Littlewood constant for quadratic polynomials'
+    url: https://oeis.org/A221712/a221712.gp.txt
+  CohenPDF:
+    title: 'Henri Cohen: High-precision computation of Hardy-Littlewood constants'
+    url: https://oeis.org/A221712/a221712.pdf
+References:
+  BH1962:
+    bib: >-
+      Paul T. Bateman and Roger A. Horn, A heuristic asymptotic formula
+      concerning the distribution of prime numbers, Mathematics of
+      Computation 16 (1962), no. 79, 363-367.
+    doi: 10.2307/2004056
+    zbl: '0105.03302'
+    mr: '0148632'
+  Cohen1998:
+    bib: >-
+      Henri Cohen, High-precision computation of Hardy-Littlewood constants,
+      1998.
+    url: https://oeis.org/A221712/a221712.pdf
+Tags:
+  - number theory
+  - probability theory
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: >-
+    it holds every polynomial $x^2+a$ with $-30\leq a\leq30$ satisfying the
+    parameter constraint, and every polynomial $x^2+x+a$ with
+    $1\leq a\leq41$ satisfying the parameter constraint
+  rigour details: >-
+    Values were computed with the Belabas-Cohen PARI/GP algorithm
+    CITE{BelabasCohenGP}, which implements Cohen's accelerated computation
+    of Hardy-Littlewood constants CITE{Cohen1998}. PARI was run at $140$
+    decimal digits, and $100$ digits are written. Before the draft was
+    filled, the root-count identity in CITE{formula-quadratic} was checked
+    directly modulo every prime $p\leq97$ for every row; $C(x^2+1)$ and
+    $C(x^2+x+41)$ were compared with OEIS A199401 CITE{OEISx2plus1} and
+    twice OEIS A221712 CITE{OEISEuler41}; the same two values were recomputed
+    with an independent Sage character-split zeta expansion; and the
+    generator was rerun at $160$ decimal digits on the displayed examples.
+Display properties:
+  number-header: $C(f)$
