@@ -2114,6 +2114,12 @@ scratch file a unique basename rather than `generate.py`, or check
 `/work` before assuming the mount is a file. The likely wrapper-side cause
 is a stale remote directory with the same basename; `agents/sage.sh` removes
 remote scratch paths with `rm -f`, which does not remove directories.
+The same symptom can occur when the main script itself is named `generate.py`
+and a key is being piped on stdin; a uniquely named scratch main that writes a
+transient attachment copy named `generate.py` inside the container let T166 be
+filled while still attaching the expected filename.
 
 Evidence: `/tmp/t165_verify_generator.py` and the failed and successful
-verification outputs, 2026-09-09.
+verification outputs, 2026-09-09; the T166 fill first failed with
+`can't find '__main__' module in '/work/generate.py'`, then succeeded through
+`/tmp/fill_bh_with_attachment.py`.
