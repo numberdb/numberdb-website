@@ -94,11 +94,14 @@ def _split_sentence(paragraph, fold_above):
 	if opening and paragraph.endswith('</p>'):
 		prefix, suffix = opening.group(0), '</p>'
 		inner = paragraph[len(prefix):-len(suffix)]
-	best = None
-	for match in re.finditer(r'\.\s+(?=[A-Z$])', inner):
-		if match.end() > fold_above:
-			break
-		best = match.end()
+	#The last break that fits the window, so the opening is as much as can be
+	#read without unfolding. Failing that the first break anywhere: T147's
+	#opening sentence is 621 characters and there is no earlier one, and
+	#folding two and a half thousand characters behind a long first sentence
+	#is still worth doing.
+	breaks = [match.end() for match in re.finditer(r'\.\s+(?=[A-Z$])', inner)]
+	fitting = [end for end in breaks if end <= fold_above]
+	best = fitting[-1] if fitting else (breaks[0] if breaks else None)
 	if best is None or best >= len(inner):
 		return paragraph, ''
 	return (prefix + inner[:best].rstrip() + suffix,
