@@ -20,7 +20,13 @@
 #
 # The key, if the script needs one, arrives on stdin and never as an argument:
 #
-#     cat ~/.config/numberdb/zeta3-key | agents/sage.sh fill.py
+#     cat ~/.config/numberdb/zeta3-key | NUMBERDB_KEY_FROM_STDIN=1 \
+#         agents/sage.sh fill.py
+#
+# The flag is forwarded into the container. Without it the script never reads
+# the pipe, and a generator then goes to the API with no key: reads of a
+# *draft* answer "does not exist", which reads like the table was never
+# created.
 #
 # Nothing here can publish a table. That is enforced on the server by the
 # account the key belongs to, not by this script.
@@ -103,6 +109,7 @@ ssh "${ssh_opts[@]}" "$REMOTE" \
 	 cd '$RPATH' && timeout $TIMEOUT docker compose run --rm --no-deps -T --name '$name' \
 		-e PYTHONPATH=/app/clients/python \
 		-e NUMBERDB_ASSISTED_BY='${NUMBERDB_ASSISTED_BY:-assisted by an agent}' \
+		-e NUMBERDB_KEY_FROM_STDIN='${NUMBERDB_KEY_FROM_STDIN:-0}' \
 		${mounts[*]} \
 		web sage -python -u /work/$(basename "$main")" \
 	2>&1 | grep --line-buffered -viE 'collecting static|static files copied|Starting command as|^ Container |remote port forwarding'

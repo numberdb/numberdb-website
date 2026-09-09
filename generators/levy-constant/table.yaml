@@ -34,7 +34,8 @@ Comments:
     $e^\beta$ is the limit of $q_n^{1/n}$ itself and is the one usually meant
     by "Lévy's constant" CITE{MathWorldLevy} CITE{OEISA086702}. The row
     $\beta$ is its logarithm, the almost-sure limit of $\frac{1}{n}\log q_n$,
-    and is usually called the Khinchin-Lévy constant CITE{OEISA100199}.
+    and is usually called the Khinchin-Lévy constant CITE{OEISA100199}. Lévy
+    proved the limit in CITE{Levy1929}.
   comment-gauss-map: >-
     For the Gauss map $x\mapsto 1/x-\lfloor 1/x\rfloor$, which is what shifts
     a continued fraction expansion by one term CITE{WikiGaussMap}, the
@@ -69,9 +70,6 @@ Links:
   MathWorldLevy:
     title: 'MathWorld: Levy Constant'
     url: https://mathworld.wolfram.com/LevyConstant.html
-  WikiKhinchin:
-    title: "Wikipedia: Khinchin's constant"
-    url: https://en.wikipedia.org/wiki/Khinchin%27s_constant
   WikiGaussMap:
     title: 'Wikipedia: Gauss map'
     url: https://en.wikipedia.org/wiki/Gauss_map
