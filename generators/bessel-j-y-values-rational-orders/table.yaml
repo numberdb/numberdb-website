@@ -5,8 +5,8 @@
 Title: Values of Bessel functions $J_\nu(x)$ and $Y_\nu(x)$
 Definition: >-
   This table gives the real principal values of the Bessel functions
-  $J_\nu(x)$ and $Y_\nu(x)$ CITE{Wiki} CITE{DLMFBesselDefinitions}, for
-  rational order $\nu$ and positive rational argument $x$.
+  $J_\nu(x)$ and $Y_\nu(x)$ CITE{Wiki} CITE{DLMFBesselDefinitions}, where
+  $\nu\in\mathbb{Q}$ and $x\in\mathbb{Q}$ with $x>0$.
 Keywords:
   - Bessel values
   - Bessel function values
