@@ -4658,3 +4658,28 @@ list`, `PASS Wikipedia derivative recurrence (Wikipedia convention)`,
 = Wikipedia egf ... and vs MathWorld: False`, `PASS Mott (MathWorld egf) vs
 OEIS A137378 rows 0..10`; and the inverse of $-2t/(1-t^2)$ worked by hand
 in `BATCH-2026-09-09T1518.md`, proposal 6.
+
+## OEIS b-files can reject Python's default urllib request
+
+What happened: the Mahler-polynomial check read OEIS b-files from a Sage
+script with `urllib.request.urlopen("https://oeis.org/A137375/b137375.txt")`.
+OEIS answered `HTTP Error 403: Forbidden`, although the same URL was
+reachable with `curl`. Changing the code to build a `urllib.request.Request`
+with a plain User-Agent header made the same check pass, and it then
+compared A137375 through $n=12$, A008299 through $n=50$, and A000296
+through $n=50$.
+
+What the skill says now: search OEIS for coefficient triangles and check new
+values against something independent. It does not say how to fetch an OEIS
+b-file from a Python check.
+
+What it should say: when a check downloads an OEIS b-file with Python, send
+a User-Agent header or use `curl` to fetch the file outside the Sage run and
+mount it. A 403 from OEIS is not mathematical evidence and should be fixed
+before falling back to copied terms.
+
+Evidence: `/tmp/mahler_checks.py`, 2026-09-09; the first run failed at
+`urllib.error.HTTPError: HTTP Error 403: Forbidden`, and the rerun with
+`headers={"User-Agent": "numberdb table check (https://numberdb.org)"}`
+reported `checks: printed, egf, A137375 through n=12, A008299 through n=50,
+A000296, Touchard relation`.
