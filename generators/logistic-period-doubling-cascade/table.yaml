@@ -1,0 +1,167 @@
+# The table document for the bifurcation points of the period-doubling
+# cascade of the logistic map, proposal 1 of
+# agents/table-ideas/BATCH-2026-09-09T0015.md. Created as draft T168 through
+# the API (X-Draft: yes), filled by generate.py beside it, and then offered
+# for review; publishing is a person's act on the site.
+Title: Bifurcation points of the period-doubling cascade of the logistic map
+Definition: >-
+  For the logistic map $f_r(x)=rx(1-x)$ on $[0,1]$ CITE{WikiLogistic}
+  CITE{MathWorldLogistic}, the table gives $a_n$, $s_n$, $m_n$ and
+  $r_\infty$ for the period-doubling cascade, in the normalisations related by
+  CITE{formula-conversion}.
+Parameters:
+  point:
+    type: Symbolic
+    title: cascade point
+    display: point
+    values:
+      a1: '$a_1$'
+      a2: '$a_2$'
+      a3: '$a_3$'
+      a4: '$a_4$'
+      a5: '$a_5$'
+      a6: '$a_6$'
+      a7: '$a_7$'
+      a8: '$a_8$'
+      a9: '$a_9$'
+      s1: '$s_1$'
+      s2: '$s_2$'
+      s3: '$s_3$'
+      s4: '$s_4$'
+      s5: '$s_5$'
+      s6: '$s_6$'
+      s7: '$s_7$'
+      s8: '$s_8$'
+      s9: '$s_9$'
+      m1: '$m_1$'
+      m2: '$m_2$'
+      m3: '$m_3$'
+      m4: '$m_4$'
+      m5: '$m_5$'
+      r-infinity: '$r_\infty$'
+  expression:
+    type: Symbolic
+    title: normalisation of the parameter
+    display: expression
+    values:
+      r: '$r$'
+      c: '$c=-r(r-2)/4$'
+Comments:
+  comment-normalisation: >-
+    The $r$-normalisation is the logistic map parameter. The $c$-normalisation
+    is the corresponding real parameter of the quadratic polynomial
+    $z\mapsto z^2+c$, related by $c=-r(r-2)/4$ in
+    CITE{formula-conversion}; it is stored because references to the real
+    Mandelbrot set often use $c$ rather than $r$ CITE{WikiMisiurewicz}.
+  comment-interlacing: >-
+    The first superstable point is $s_1=2$. For $n\geq1$, $s_{n+1}$ lies
+    between $a_n$ and $a_{n+1}$, in the interval where the attracting
+    $2^n$-cycle exists. The values $m_n$ lie to the right of $r_\infty$ and
+    decrease toward it.
+  comment-misiurewicz: >-
+    The points $m_n$ are Misiurewicz parameters: the critical point $1/2$ is
+    strictly preperiodic, with preperiod $2^n+1$ and period $2^{n-1}$
+    CITE{WikiMisiurewicz}. The point $m_1$ is Sprott's first Misiurewicz
+    point of the logistic map CITE{SprottMisiurewicz}.
+  comment-sources: >-
+    OEIS gives decimal expansions for $a_2=1+\sqrt6$ CITE{OEISA086180},
+    $a_3$ CITE{OEISA086181}, $a_4$ CITE{OEISA091517}, and $r_\infty$
+    CITE{OEISA098587}. The algebraic degrees of the first bifurcation points
+    are recorded in OEIS A087046 CITE{OEISA087046}.
+Formulas:
+  formula-conversion: >-
+    $c=-\frac{r(r-2)}{4}$, so $r=4$ corresponds to $c=-2$ and $r=2$
+    corresponds to $c=0$.
+  formula-bifurcation: >-
+    $a_n$ satisfies $f_r^p(x)=x$ and
+    $\prod_{j=0}^{p-1}r(1-2f_r^j(x))=-1$, with $p=2^{n-1}$.
+  formula-superstable: >-
+    $s_n$ satisfies $f_r^p(\frac12)=\frac12$, with $p=2^{n-1}$.
+  formula-misiurewicz: >-
+    $m_n$ satisfies
+    $f_r^{2^n+1+2^{n-1}}(\frac12)=f_r^{2^n+1}(\frac12)$.
+  formula-feigenbaum: >-
+    $\lim_{n\to\infty}\frac{a_n-a_{n-1}}{a_{n+1}-a_n}=\delta$, where
+    $\delta$ is HREF{Feigenbaum_constants}[the Feigenbaum constant]
+    CITE{MathWorldFeigenbaum}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      def f(r, x):
+          return r*x*(1 - x)
+      def iterate(r, x, k):
+          for _ in range(k):
+              x = f(r, x)
+          return x
+
+      N(1 + sqrt(6), digits=30)                                      # a_2
+      find_root(lambda r: iterate(r, 1/2, 4) - 1/2, 3.49, 3.50)       # s_3
+      find_root(lambda r: iterate(r, 1/2, 4) - iterate(r, 1/2, 3),
+                3.67, 3.69)                                         # m_1
+      r = 3.5699456718709449018420051513864989367638369115148
+      N(-r*(r - 2)/4, digits=30)                                     # c for r_infinity
+Similar tables:
+  - table: HREF{Feigenbaum_constants}[Feigenbaum constants]
+    relation: the ratios of consecutive gaps between the $a_n$ tend to $\delta$, the first Feigenbaum constant
+Links:
+  WikiLogistic:
+    title: 'Wikipedia: Logistic map'
+    url: https://en.wikipedia.org/wiki/Logistic_map
+  WikiMisiurewicz:
+    title: 'Wikipedia: Misiurewicz point'
+    url: https://en.wikipedia.org/wiki/Misiurewicz_point
+  MathWorldLogistic:
+    title: 'MathWorld: Logistic Map'
+    url: https://mathworld.wolfram.com/LogisticMap.html
+  MathWorldFeigenbaum:
+    title: 'MathWorld: Feigenbaum Constant'
+    url: https://mathworld.wolfram.com/FeigenbaumConstant.html
+  SprottMisiurewicz:
+    title: 'Sprott: Misiurewicz Point of the Logistic Map'
+    url: https://sprott.physics.wisc.edu/chaos/mispoint.htm
+  OEISA086180:
+    title: 'OEIS A086180: decimal expansion of $1+\sqrt6$'
+    url: https://oeis.org/A086180
+  OEISA086181:
+    title: 'OEIS A086181: bifurcation point $a_3$'
+    url: https://oeis.org/A086181
+  OEISA091517:
+    title: 'OEIS A091517: bifurcation point $a_4$'
+    url: https://oeis.org/A091517
+  OEISA098587:
+    title: 'OEIS A098587: accumulation point of the logistic map'
+    url: https://oeis.org/A098587
+  OEISA087046:
+    title: 'OEIS A087046: algebraic degrees of logistic-map bifurcation points'
+    url: https://oeis.org/A087046
+Tags:
+  - dynamical systems
+  - bifurcation theory
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: >-
+    it holds $a_n$ and $s_n$ for $1\leq n\leq9$, $m_n$ for
+    $1\leq n\leq5$, and $r_\infty$, each in the $r$ and $c$ normalisations
+  rigour details: >-
+    The finite $a_n$, $s_n$ and $m_n$ rows were computed by Newton iteration
+    with $650$ guard bits beyond the $100$ written digits. The bifurcation
+    rows solved the two equations in CITE{formula-bifurcation}; the
+    superstable and Misiurewicz rows solved CITE{formula-superstable} and
+    CITE{formula-misiurewicz}. The finite rows were recomputed at $760$ and
+    $980$ working bits, and the $100$ written digits agreed.
+
+    The rows $a_1$, $a_2$, $a_3$, $s_1$, $s_2$ and $m_1$ were checked against
+    their exact polynomial equations. The rows $a_1,\ldots,a_8$ were compared
+    with the decimal values listed by Wikipedia CITE{WikiLogistic}, and
+    $a_2$, $a_3$, $a_4$, $m_1$ and $r_\infty$ were compared with the external
+    sources named in the links. The interlacing $a_n<s_{n+1}<a_{n+1}$, the
+    monotonicity $m_{n+1}<m_n$, and the last two Feigenbaum ratios against
+    HREF{Feigenbaum_constants}[the Feigenbaum constants] were also checked.
+    The rows for $r_\infty$ and its $c$-value are transcribed constants and
+    carry $95$ significant digits; all other entries carry $100$ significant
+    digits.
+Display properties:
+  number-header: value
