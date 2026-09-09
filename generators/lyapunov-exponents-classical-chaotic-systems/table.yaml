@@ -1,0 +1,176 @@
+# The table document for Lyapunov exponents of classical chaotic systems,
+# proposal 5 of agents/table-ideas/BATCH-2026-09-09T0015.md. Created as draft
+# T171 through the API (X-Draft: yes), filled by generate.py beside it, and
+# offered for review; publishing is a person's act on the site.
+Title: Lyapunov exponents of classical chaotic systems
+Definition: >-
+  For each listed chaotic map, flow or random recurrence, this table gives the
+  Lyapunov exponent $\lambda_i$ CITE{WikiLyapunov}, ordered
+  $\lambda_1\geq\lambda_2\geq\cdots$, in natural-log units per iteration for
+  maps, per recurrence step for the random recurrence, and per unit time for
+  flows.
+Parameters:
+  system:
+    type: Symbolic
+    title: system
+    display: system
+    constraints: >-
+      the map, flow or random recurrence is one of the systems listed here,
+      with the displayed parameter values
+    values:
+      logistic-4: 'logistic map $x_{n+1}=4x_n(1-x_n)$'
+      tent-2: 'tent map $x_{n+1}=2\min(x_n,1-x_n)$'
+      doubling-2: 'doubling map $x_{n+1}=2x_n\bmod 1$'
+      gauss: 'continued-fraction Gauss map $x_{n+1}=1/x_n-\lfloor1/x_n\rfloor$'
+      cat: 'Arnold''s cat map, matrix $\begin{pmatrix}2&1\\1&1\end{pmatrix}$'
+      baker: 'baker''s map, stretch factor $2$'
+      henon-1.4-0.3: 'Henon map $x_{n+1}=1+y_n-1.4x_n^2$, $y_{n+1}=0.3x_n$'
+      chirikov-1: 'Chirikov standard map $K=1$'
+      lorenz-10-28-8/3: 'Lorenz system $(\sigma,\rho,\beta)=(10,28,8/3)$'
+      rossler-0.2-0.2-5.7: 'Rossler system $(a,b,c)=(0.2,0.2,5.7)$'
+      ueda-7.5-0.05: 'Ueda oscillator $B=7.5$, $k=0.05$'
+      sprott-quadratic-2.017: 'Sprott''s simplest quadratic flow $A=2.017$'
+      sprott-piecewise-0.6: 'Sprott''s simplest piecewise-linear flow $A=0.6$'
+      random-fibonacci: 'random Fibonacci recurrence $f_n=f_{n-1}\pm f_{n-2}$'
+  i:
+    type: Z
+    title: Lyapunov exponent number
+    display: $i$
+    constraints: >-
+      $1\leq i\leq d$, where $d$ is the dimension of the listed map or flow;
+      the random Fibonacci recurrence has only $i=1$
+Comments:
+  comment-units: >-
+    The logarithm is the natural logarithm. For maps, one time unit is one
+    iterate of the map. For flows, one time unit is the time variable in the
+    displayed differential equations. The rows for autonomous flows include
+    the zero exponent in the flow direction.
+  comment-sources: >-
+    The nonzero Henon, Chirikov, Lorenz, Rossler, Ueda and Sprott-flow rows are
+    the estimates printed by Sprott CITE{SprottCommon}; Sprott states that the
+    least significant digit is only a best estimate. The exact map rows use
+    the closed forms in CITE{formula-exact}.
+  comment-entropy: >-
+    For the measure-preserving examples with the standard invariant measure,
+    the Kolmogorov-Sinai entropy is the sum of the positive Lyapunov
+    exponents. Thus the logistic, tent, doubling and baker maps have entropy
+    $\log2$, Arnold's cat map has entropy
+    $\log\frac{3+\sqrt5}{2}$, and the continued-fraction Gauss map has entropy
+    $\pi^2/(6\log2)$.
+  comment-random-fibonacci: >-
+    The random Fibonacci row is the Lyapunov exponent of the random matrix
+    product for $f_n=f_{n-1}\pm f_{n-2}$ with independent fair signs
+    CITE{WikiRandomFibonacci}. Its exponential is Viswanath's constant
+    CITE{OEISA078416}.
+Formulas:
+  formula-one-dimensional: >-
+    For a one-dimensional map $x_{n+1}=f(x_n)$,
+    $\lambda(x_0)=\lim_{n\to\infty}\frac1n
+    \sum_{j=0}^{n-1}\log|f'(x_j)|$ when the limit exists
+    CITE{WikiLyapunov}.
+  formula-exact: >-
+    For the logistic, tent and doubling maps, $\lambda_1=\log2$. For the
+    continued-fraction Gauss map, $\lambda_1=\frac{\pi^2}{6\log2}$, where
+    $\pi$ is HREF{Pi}[$\pi$]. For Arnold's cat map,
+    $\lambda_1=-\lambda_2=\log\frac{3+\sqrt5}{2}$. For the baker's map,
+    $\lambda_1=-\lambda_2=\log2$.
+  formula-sums: >-
+    For a map or flow with constant Jacobian determinant, the sum of the
+    Lyapunov exponents is the logarithm of the absolute value of that
+    determinant per iterate or unit time. Hence the Henon sum is $\log0.3$,
+    the Chirikov, Arnold-cat and baker sums are $0$, the Lorenz sum is
+    $-(\sigma+1+\beta)$, the Ueda sum is $-k$, and the two Sprott-flow sums
+    are $-A$.
+  formula-random-fibonacci: >-
+    For the random Fibonacci recurrence,
+    $\lambda_1=\log V$, where $V$ is Viswanath's constant CITE{Viswanath}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R = RealBallField(400)
+      log2 = R(2).log()
+      log2                                      # logistic, tent, doubling
+      R.pi()^2 / (6 * log2)                    # continued-fraction Gauss map
+      ((R(3) + R(5).sqrt()) / 2).log()         # Arnold's cat map
+      -log2                                    # second baker exponent
+Similar tables:
+  - table: HREF{Feigenbaum_constants}[Feigenbaum constants]
+    relation: the logistic map at $r=4$ is the endpoint of the period-doubling route governed by the Feigenbaum constants
+  - table: HREF{Hausdorff_dimension_of_fractals}[Hausdorff dimension of some fractals]
+    relation: Sprott's source gives Kaplan-Yorke dimensions for the same attractors whose Lyapunov exponents are listed here
+  - table: HREF{Entropy_constants_of_lattice_models}[Entropy constants of lattice models]
+    relation: both tables store entropy constants, for dynamical systems here and for lattice models there
+  - table: HREF{T170}[Constants of the regular continued fraction]
+    relation: the continued-fraction Gauss map has Lyapunov exponent $2\beta$, where $\beta$ is the Khinchin-Levy constant
+  - table: HREF{Golden_ratio}[Golden ratio]
+    relation: Arnold's cat-map exponent is $\log\varphi^2$
+Links:
+  WikiLyapunov:
+    title: 'Wikipedia: Lyapunov exponent'
+    url: https://en.wikipedia.org/wiki/Lyapunov_exponent
+  SprottCommon:
+    title: 'Sprott: Common Chaotic Systems'
+    url: https://sprott.physics.wisc.edu/chaos/comchaos.htm
+  WikiLogistic:
+    title: 'Wikipedia: Logistic map'
+    url: https://en.wikipedia.org/wiki/Logistic_map
+  WikiTent:
+    title: 'Wikipedia: Tent map'
+    url: https://en.wikipedia.org/wiki/Tent_map
+  WikiDyadic:
+    title: 'Wikipedia: Dyadic transformation'
+    url: https://en.wikipedia.org/wiki/Dyadic_transformation
+  WikiContinuedFraction:
+    title: 'Wikipedia: Simple continued fraction, dynamical systems'
+    url: https://en.wikipedia.org/wiki/Simple_continued_fraction#Dynamical_systems
+  WikiCatMap:
+    title: "Wikipedia: Arnold's cat map"
+    url: https://en.wikipedia.org/wiki/Arnold%27s_cat_map
+  WikiBakerMap:
+    title: "Wikipedia: Baker's map"
+    url: https://en.wikipedia.org/wiki/Baker%27s_map
+  WikiRandomFibonacci:
+    title: 'Wikipedia: Random Fibonacci sequence'
+    url: https://en.wikipedia.org/wiki/Random_Fibonacci_sequence
+  OEISA078416:
+    title: "OEIS A078416: decimal expansion of Viswanath's constant"
+    url: https://oeis.org/A078416
+References:
+  Viswanath:
+    bib: >-
+      D. Viswanath, Random Fibonacci sequences and the number
+      1.13198824..., Mathematics of Computation 69 (2000), 1131-1155.
+    doi: 10.1090/S0025-5718-99-01145-X
+Tags:
+  - dynamical systems
+  - special values
+Data properties:
+  type: R
+  rigour: heuristic
+  complete: 'no'
+  complete-note: >-
+    it holds the exact spectra of six standard maps, Sprott's printed spectra
+    for seven classical numerical examples, and the random Fibonacci exponent
+    derived from Viswanath's constant
+  rigour details: >-
+    The logistic, tent, doubling, continued-fraction Gauss, Arnold-cat and
+    baker-map rows were computed from CITE{formula-exact} in real ball
+    arithmetic with $64$ guard bits beyond the $100$ written digits.
+
+    The Henon, Chirikov, Lorenz, Rossler, Ueda and Sprott-flow rows were
+    transcribed from Sprott's table CITE{SprottCommon}. Each printed decimal
+    is stored with the precision it claims under NumberDB's decimal
+    convention, so $0.41922$ denotes the interval with the last digit
+    uncertain. The zero flow-direction rows are exact zeros. The random
+    Fibonacci row was computed as $\log V$ from
+    $V=1.1319882487943\ldots$ CITE{OEISA078416} and stored with radius
+    $10^{-12}$, wider than the uncertainty from the last published digit of
+    $V$.
+
+    The exact closed forms were compared with direct derivative and matrix
+    calculations. The transcribed rows were compared with Sprott's printed
+    values, and the sums in CITE{formula-sums} were checked on the stored
+    intervals for the Henon, Chirikov, Lorenz, Ueda and Sprott-flow rows.
+Display properties:
+  number-header: $\lambda_i$
