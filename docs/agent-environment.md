@@ -2241,3 +2241,24 @@ shorter controlled test can be written instead.
 Evidence: the failed `/tmp/cf_zeta_test.py` run on 2026-09-09 immediately
 after stopping `/tmp/cf_compute_test.py`; `agents/sage.sh` now includes a
 timestamp and random suffix in both the remote scratch path and Docker name.
+
+## `audit_table` has no rule for an `HREF` or `CITE` inside `$...$`
+
+What happened: the T170 critique found formula (5) written as
+`$e^\beta=HREF{E}[$e$]^{\beta}$`. The view renders `HREF` as an `<a>` and
+MathJax (v3, `static/vendor/mathjax/tex-svg.js`, default
+`includeHtmlTags`) will not typeset across an element, so the formula
+falls apart on the page while `audit_table T170` and `audit_table T170
+--links` both say "Nothing to report": the slug resolves, which is all the
+rule checks. Same shape as the asterisk and backtick faults of T169: the
+document is valid and the rendering is not, and no rule looks at the
+rendering.
+
+What to do instead: add a rule that flags `HREF{` or `CITE{` preceded in
+the same field by an odd number of unescaped `$` (or inside `\(...\)`),
+in `numberdb_app/management/commands/audit_table.py`; a `<a>` from
+`_reference_href` inside math can never render. The lesson for the table
+author is in `agents/lessons/PROPOSALS.md`.
+
+Evidence: T170 head 4ee3f1b0, 2026-09-09; `/tmp/crit170_out.txt` has the
+audit output and the HTML; `agents/critiques/T170.md` finding 1.
