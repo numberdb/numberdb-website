@@ -186,7 +186,7 @@ def entry_comment(constant):
 
 class KhinchinMeans(numberdb.Generator):
 
-    table = os.environ.get("NUMBERDB_TABLE", "T170")
+    table = os.environ.get("NUMBERDB_TABLE") or "T170"
     parameters = ("constant",)
     type = "R"
     digits = DIGITS

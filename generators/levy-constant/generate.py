@@ -61,7 +61,7 @@ def closed_form(normalisation, digits):
 
 class LevysConstant(numberdb.Generator):
 
-    table = os.environ.get("NUMBERDB_TABLE", "T172")
+    table = os.environ.get("NUMBERDB_TABLE") or "T172"
     parameters = ("normalisation",)
     type = "R"
     digits = DIGITS

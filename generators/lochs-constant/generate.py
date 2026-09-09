@@ -44,7 +44,7 @@ def lochs(digits):
 
 class LochssConstant(numberdb.Generator):
 
-    table = os.environ.get("NUMBERDB_TABLE", "T173")
+    table = os.environ.get("NUMBERDB_TABLE") or "T173"
     parameters = ()
     type = "R"
     digits = DIGITS
