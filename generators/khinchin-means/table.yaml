@@ -22,8 +22,8 @@ Keywords:
 Parameters:
   constant:
     type: Symbolic
-    title: order of the mean
-    display: constant
+    title: the mean
+    display: mean
     values:
       K0: '$K_0$'
       K-1: '$K_{-1}$'
