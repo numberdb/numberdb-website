@@ -4,48 +4,41 @@
 # offered for review; publishing is a person's act on the site.
 Title: Named rational Euler products over primes
 Definition: >-
-  This table stores selected constants defined by rational Euler products over
-  primes CITE{WikiEulerProduct} CITE{MathWorldPrimeProducts}
-  CITE{Finch2003} CITE{Mathar2009}.
+  The entries are constants given by rational Euler products
+  $\prod_{p\in S}F(p)$, where $F(x)\in\mathbb Q(x)$ and
+  $F(p)=1+O(p^{-2})$ as $p\to\infty$ CITE{MathWorldPrimeProducts}.
 Parameters:
   product:
     type: Symbolic
     title: product
     display: $P$
     constraints: >-
-      $P$ is one of the rational Euler products or affine products named in
-      this table
+      $P$ is one of the products listed with the entries; the Feller-Tornier
+      constant is $\frac12+\frac12$ times one of those products
     values:
-      artin: $\prod_p(1-\frac{1}{p(p-1)})$
-      stephens: $\prod_p(1-\frac{p}{p^3-1})$
-      artin-rank-2: $\prod_p(1-\frac{1}{p^2(p-1)})$
-      feller-tornier-product: $\prod_p(1-\frac{2}{p^2})$
-      feller-tornier: $\frac12+\frac12\prod_p(1-\frac{2}{p^2})$
-      heath-brown-moroz: $\prod_p(1-\frac1p)^7(1+\frac{7p+1}{p^2})$
-      taniguchi: $\prod_p(1-\frac{3}{p^3}+\frac{2}{p^4}+\frac{1}{p^5}-\frac{1}{p^6})$
-      barban: $\prod_p(1+\frac{3p^2-1}{p(p+1)(p^2-1)})$
-      sarnak: $\prod_{p\geq3}(1-\frac{p+2}{p^3})$
-      squarefree-density: $\prod_p(1-\frac{1}{p^2})$
-      ramanujan: $\prod_p(1+\frac{1}{p^2})$
-      landau-totient: $\prod_p(1+\frac{1}{p(p-1)})$
+      artin: Artin's constant, $\prod_p(1-\frac{1}{p(p-1)})$
+      stephens: Stephens' constant, $\prod_p(1-\frac{p}{p^3-1})$
+      artin-rank-2: rank-$2$ Artin constant, $\prod_p(1-\frac{1}{p^2(p-1)})$
+      feller-tornier-product: Feller-Tornier product part, $\prod_p(1-\frac{2}{p^2})$
+      feller-tornier: Feller-Tornier constant, $\frac12+\frac12\prod_p(1-\frac{2}{p^2})$
+      heath-brown-moroz: Heath-Brown-Moroz constant, $\prod_p(1-\frac1p)^7(1+\frac{7p+1}{p^2})$
+      taniguchi: Taniguchi's constant, $\prod_p(1-\frac{3}{p^3}+\frac{2}{p^4}+\frac{1}{p^5}-\frac{1}{p^6})$
+      barban: Barban's constant, $\prod_p(1+\frac{3p^2-1}{p(p+1)(p^2-1)})$
+      sarnak: Sarnak's constant, $\prod_{p\geq3}(1-\frac{p+2}{p^3})$
+      squarefree-density: squarefree density, $\prod_p(1-\frac{1}{p^2})$
+      ramanujan: $15/\pi^2$, $\prod_p(1+\frac{1}{p^2})$
+      landau-totient: Landau's totient constant, $\prod_p(1+\frac{1}{p(p-1)})$
 Comments:
   comment-scope: >-
-    The product named in the parameter is the value stored. Each product is
-    either $\prod_{p\in S}F(p)$ for a rational function
-    $F(x)\in\mathbb Q(x)$ with $F(p)=1+O(p^{-2})$, or the stated affine
-    transform of such a product. The Feller-Tornier row stores
-    $\frac12+\frac12\prod_p(1-2/p^2)$ while the product part
-    $\prod_p(1-2/p^2)$ is stored separately.
-  comment-existing: >-
-    HREF{Hafner-Sarnak-McCurley_constant}[The Hafner-Sarnak-McCurley constant]
-    and HREF{Twin_prime_constant}[the twin prime constant] are similar named
-    Euler products already held by the corpus, so they are linked here rather
-    than repeated as rows.
+    All entries are themselves products except the Feller-Tornier constant,
+    which is $\frac12+\frac12\prod_p(1-2/p^2)$. For all entries except
+    Sarnak's constant, $S$ is the set of all primes; for Sarnak's constant,
+    $S$ is the primes $p\geq3$. The condition $F(p)=1+O(p^{-2})$ gives
+    absolute convergence because $\sum_p p^{-2}$ converges CITE{WikiEulerProduct}
+    CITE{Finch2003}.
   comment-zeta: >-
-    The squarefree-density, Ramanujan and Landau-totient rows have the
-    closed forms in CITE{formula-zeta-controls}. They are included because
-    these prime products are commonly met in that form and because they are
-    controls for the computation of the other rows.
+    The squarefree density, $\prod_p(1+p^{-2})$, and Landau's totient constant
+    have the closed forms in CITE{formula-zeta-controls}.
 Formulas:
   formula-zeta-controls: >-
     The Euler product for the Riemann zeta function gives
@@ -59,7 +52,7 @@ Formulas:
     $\log\prod_pF(p)=\sum_{j\geq2}c_jP(j)$ when
     $\log F(x)=\sum_{j\geq2}c_jx^{-j}$ and $P(j)$ is
     HREF{Values_of_the_prime_zeta_function_at_rational_numbers}[the prime
-    zeta function].
+    zeta function] CITE{Mathar2009}.
 Programs:
   program-pari:
     language: PARI/GP
@@ -139,9 +132,15 @@ Links:
   OEISSarnak:
     title: "OEIS A065476: Sarnak's constant"
     url: https://oeis.org/A065476
+  OEISSquarefreeDensity:
+    title: 'OEIS A059956: $6/\pi^2$'
+    url: https://oeis.org/A059956
   OEISRamanujan:
     title: 'OEIS A082020: $\prod_p(1+p^{-2})$'
     url: https://oeis.org/A082020
+  OEISLandauTotient:
+    title: "OEIS A082695: Landau's totient constant"
+    url: https://oeis.org/A082695
 References:
   Finch2003:
     bib: >-
@@ -161,19 +160,19 @@ Data properties:
   rigour: heuristic (agreement-checked)
   complete: 'no'
   complete-note: >-
-    it holds the Artin, Stephens, rank-$2$ Artin, Feller-Tornier,
-    Heath-Brown-Moroz, Taniguchi, Barban, Sarnak, squarefree-density,
-    Ramanujan and Landau-totient products listed in the parameter values
+    it holds Artin's constant, Stephens' constant, the rank-$2$ Artin
+    constant, the Feller-Tornier product part, the Feller-Tornier constant,
+    the Heath-Brown-Moroz constant, Taniguchi's constant, Barban's constant,
+    Sarnak's constant, the squarefree density, $\prod_p(1+p^{-2})=15/\pi^2$,
+    and Landau's totient constant
   rigour details: >-
     Values were computed with PARI's prodeulerrat CITE{PARI} at $140$ decimal
-    digits, and $100$ digits are written. The same values were recomputed at
-    $160$ decimal digits before the draft was filled, with the same stored
-    digits.
+    digits, and $100$ digits are written. The values were recomputed at $160$
+    decimal digits, and the $100$ written digits agree.
 
-    The Artin, Stephens, rank-$2$ Artin, Feller-Tornier, Heath-Brown-Moroz,
-    Taniguchi, Barban, Sarnak and Ramanujan rows were compared with the
-    corresponding OEIS decimal expansions named in the links. The
-    squarefree-density, Ramanujan and Landau-totient rows were also compared
-    with the closed forms in CITE{formula-zeta-controls}.
+    Each row was compared with the corresponding OEIS decimal expansion named
+    in the links. The squarefree density, $\prod_p(1+p^{-2})$, and Landau's
+    totient constant were also compared with the closed forms in
+    CITE{formula-zeta-controls}.
 Display properties:
   number-header: value
