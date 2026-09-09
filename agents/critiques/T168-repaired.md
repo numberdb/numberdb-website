@@ -1,0 +1,6 @@
+1. *done* -- rewrote the Definition and clarified formula-bifurcation after confirming the old definition was still live; checked the period-doubling onsets against MathWorld/OEIS and the exact/special cases, interlacing, and $m_n$ ordering in Sage.
+2. *done* -- changed the $s_1$ entry in the $c$ normalisation from signed zero to `0` after checking in Sage that $c=-2(2-2)/4=0$ exactly.
+3. *done* -- replaced the storage-focused normalisation comment and the source-list comment; checked OEIS A087046 gives degrees $1,2,12,240,65280,\ldots$ and narrowed the Mandelbrot/Misiurewicz sentence to the $c$-normalised $m_n$ here.
+4. *done* -- made the $a_1,\ldots,a_9$ row comments use one stability/onset phrasing, keeping the closed forms, polynomial, and row citations after checking the finite exact cases and source onsets.
+5. *done* -- changed the rigour details and shortened the $r_\infty$ $c$-value to $94$ significant digits after checking OEIS A098587 has $95$ digits and recomputing $-r(r-2)/4$ from that string in Sage.
+6. *declined* -- the remaining notes were not T168 repair requests: the title/URL and rigour level are defensible, the T100 row belongs to T100, and the parameter rendering is site behaviour.
