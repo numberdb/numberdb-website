@@ -1,0 +1,1 @@
+left for a person -- `agents/critiques/T181.md` is absent from this checkout, so no original finding could be checked or acted on; checked the authenticated live API document for draft T181 (`Faulhaber polynomials $F_p(a)$`), confirmed `https://numberdb.org/T181` returns 404 as a draft page, and `audit_table T181` reported nothing.
