@@ -218,6 +218,33 @@ network and Python call in it ends in "This command requires approval" or
 resulted is `agents/table-ideas/BATCH-2026-08-31.md`, whose first section
 lists what was and was not done.
 
+## Django scratch scripts under `agents/sage.sh` must put the app before the client
+
+What happened: a repair script for T176 needed to render a private draft as
+its owner and call `audit_table`. Run through `agents/sage.sh`, it set
+`DJANGO_SETTINGS_MODULE=numberdb.settings.dev` and called `django.setup()`,
+but failed with `ModuleNotFoundError: No module named 'numberdb.settings'`.
+The wrapper sets `PYTHONPATH=/app/clients/python`, so `import numberdb`
+resolved to the client package instead of the Django project. The script had
+to run `sys.path.insert(0, "/app")` before importing Django.
+
+A smaller version in the same run: a dry-run guard used
+`SEND_T176_REPAIR=1`, but the wrapper only forwards selected environment
+variables. The flag never reached the container, so the script printed the
+dry run again and wrote nothing. `NUMBERDB_PUBLISH=1` did reach it, because
+the wrapper explicitly forwards that name.
+
+What the skill says now: nothing. This is only true of the deployment wrapper.
+
+What it should say: when a scratch script under `agents/sage.sh` imports
+Django, put `/app` first on `sys.path` before `django.setup()`. If the script
+needs a switch inside the container, use stdin or one of the variables the
+wrapper forwards, or change the wrapper deliberately.
+
+Evidence: `/tmp/t176_live.py` and `/tmp/t176_repair.py`, 2026-09-09; the
+first failed before the path insert, and the write script stayed in dry-run
+mode until it used `NUMBERDB_PUBLISH=1`.
+
 ## `agents/sage.sh` setup must not read the key pipe
 
 What happened: filling draft T167 followed the documented shape,
