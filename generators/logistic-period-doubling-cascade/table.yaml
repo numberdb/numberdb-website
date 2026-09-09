@@ -45,7 +45,7 @@ Parameters:
     display: expression
     values:
       r: '$r$'
-      c: '$c=-r(r-2)/4$'
+      c: '$c$'
 Comments:
   comment-normalisation: >-
     The $r$-normalisation is the logistic map parameter. The $c$-normalisation
@@ -146,22 +146,9 @@ Data properties:
     it holds $a_n$ and $s_n$ for $1\leq n\leq9$, $m_n$ for
     $1\leq n\leq5$, and $r_\infty$, each in the $r$ and $c$ normalisations
   rigour details: >-
-    The finite $a_n$, $s_n$ and $m_n$ rows were computed by Newton iteration
-    with $650$ guard bits beyond the $100$ written digits. The bifurcation
-    rows solved the two equations in CITE{formula-bifurcation}; the
-    superstable and Misiurewicz rows solved CITE{formula-superstable} and
-    CITE{formula-misiurewicz}. The finite rows were recomputed at $760$ and
-    $980$ working bits, and the $100$ written digits agreed.
+    The rows other than $r_\infty$ were computed by Newton iteration with $650$ guard bits beyond the $100$ written digits. The bifurcation rows solved CITE{formula-bifurcation}; the superstable and Misiurewicz rows solved CITE{formula-superstable} and CITE{formula-misiurewicz}. The rows other than $r_\infty$ were recomputed at $760$ and $980$ working bits, and the $100$ written digits agreed.
+    The rows $a_1$, $a_2$, $a_3$, $s_1$, $s_2$ and $m_1$ were checked against their exact polynomial equations. The rows $a_1,\ldots,a_8$ were compared with the decimal values listed by Wikipedia CITE{WikiLogistic}, and $a_2$, $a_3$, $a_4$, $m_1$ and $r_\infty$ were compared with the external sources named in the links. The interlacing $a_n<s_{n+1}<a_{n+1}$, the monotonicity $m_{n+1}<m_n$, and the last two Feigenbaum ratios against HREF{Feigenbaum_constants}[the Feigenbaum constants] were also checked. The $r$-normalised row for $r_\infty$ is transcribed from OEIS A098587 and carries its $95$ digits; its $c$-value is computed from that string by CITE{formula-conversion} and written to $94$ significant digits. Except for the exact zero at $s_1$ in the $c$-normalisation, the finite-index entries carry $100$ significant digits.
 
-    The rows $a_1$, $a_2$, $a_3$, $s_1$, $s_2$ and $m_1$ were checked against
-    their exact polynomial equations. The rows $a_1,\ldots,a_8$ were compared
-    with the decimal values listed by Wikipedia CITE{WikiLogistic}, and
-    $a_2$, $a_3$, $a_4$, $m_1$ and $r_\infty$ were compared with the external
-    sources named in the links. The interlacing $a_n<s_{n+1}<a_{n+1}$, the
-    monotonicity $m_{n+1}<m_n$, and the last two Feigenbaum ratios against
-    HREF{Feigenbaum_constants}[the Feigenbaum constants] were also checked.
-    The rows for $r_\infty$ and its $c$-value are transcribed constants and
-    carry $95$ significant digits; all other entries carry $100$ significant
-    digits.
+    Six rows are exact rather than computed to a hundred places: $a_1$ and $s_1$ in $r$, and $a_1$, $a_2$, $s_1$ and $s_2$ in $c$. A decimal means plus or minus one unit in the last place however long it is, so writing $3.000\ldots$ for $a_1$ would say a number known to be $3$ is known to a hundred places. Each of the six is checked against the same solve as the rows around it, and each entry comment says which argument makes it exact -- in $c$ the surd cancels, since $r=1+\sqrt6$ gives $-r(r-2)/4=-(6-1)/4$.
 Display properties:
   number-header: value

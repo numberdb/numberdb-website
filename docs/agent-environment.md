@@ -2197,7 +2197,7 @@ batch is not a result.
 Evidence: `/tmp/run_dry_repo_logistic.py`, `/tmp/stored_logistic_checks.py`
 and T168, 2026-09-09.
 
-## `agents/sage.sh` does not forward arbitrary environment variables
+## `agents/sage.sh` did not forward arbitrary environment variables (fixed)
 
 What happened: filling T169 first ran
 
@@ -2211,8 +2211,12 @@ so it took the default verification path and reported
 `Table with id 'T169' does not exist` for the still-private draft. The wrapper
 only passes `PYTHONPATH` and `NUMBERDB_ASSISTED_BY` explicitly.
 
-What to do instead: when a Sage script needs a flag other than
-`NUMBERDB_ASSISTED_BY`, run a scratch wrapper as the main script, mount the
+Fixed on 2026-09-09: `sage.sh` forwards `NUMBERDB_KEY_FROM_STDIN` and
+`NUMBERDB_PUBLISH` as well, which are the two a generator's `__main__` reads.
+It still forwards nothing else, so the rest of this entry stands.
+
+What to do instead, for any other flag: when a Sage script needs one, run a
+scratch wrapper as the main script, mount the
 real generator beside it, and have the wrapper read stdin and call the wanted
 function directly. For a fill, import `/work/generate.py`, put the piped key
 in `NUMBERDB_API_KEY`, and call `generator.publish(...)`.

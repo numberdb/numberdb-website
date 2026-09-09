@@ -21,6 +21,7 @@ import os
 import sys
 
 import numberdb.sage as numberdb
+from sage.rings.rational_field import QQ
 from sage.rings.real_mpfr import RealField
 
 
@@ -216,6 +217,56 @@ def solve_misiurewicz(n, digits=DIGITS):
     return r
 
 
+#: The rows a theorem gives exactly, and why.
+#:
+#: A decimal means plus or minus one unit in the last place however long it
+#: is, so `3.000000000000000000000000000000` says a number known to *be* 3 is
+#: known to thirty places -- which understates it, and understates it exactly
+#: where the family is most interesting. The digits cannot decide this: what
+#: decides it is the argument, so each row names one.
+#:
+#:   a1 in r   the nonzero fixed point 1 - 1/r has multiplier 2 - r, which is
+#:             -1 at r = 3;
+#:   a1 in c   -3(3 - 2)/4;
+#:   a2 in c   r = 1 + sqrt(6), so -r(r - 2)/4 = -(1 + sqrt 6)(sqrt 6 - 1)/4
+#:             = -(6 - 1)/4, and the surd cancels;
+#:   s1 in r   the critical point x = 1/2 is fixed when r/4 = 1/2;
+#:   s1 in c   -2(2 - 2)/4;
+#:   s2 in c   r = 1 + sqrt(5), so the same cancellation gives -(5 - 1)/4.
+#:
+#: Each is still checked against the numerical solve every other row uses, so
+#: what is written is verified rather than asserted.
+EXACT = {
+    ("a1", "r"): "3",
+    ("a1", "c"): "-3/4",
+    ("a2", "c"): "-5/4",
+    ("s1", "r"): "2",
+    ("s1", "c"): "0",
+    ("s2", "c"): "-1",
+}
+
+#: Only the `c` rows: an `r` row that is exact already says so in
+#: `point_comment`, which is where every other `r` row's remark is.
+EXACT_COMMENTS = {
+    ("a1", "c"): r"Exactly $-3/4$, from $r=3$ in CITE{formula-conversion}.",
+    ("a2", "c"): (r"Exactly $-5/4$: $r=1+\sqrt6$, so "
+                  r"$-r(r-2)/4=-(6-1)/4$ and the surd cancels."),
+    ("s1", "c"): r"Exactly $0$, from $r=2$ in CITE{formula-conversion}.",
+    ("s2", "c"): (r"Exactly $-1$: $r=1+\sqrt5$, so "
+                  r"$-r(r-2)/4=-(5-1)/4$ and the surd cancels."),
+}
+
+
+def agrees_with_the_solve(exact, computed):
+    """Whether an exact row matches what the numerical row would have been.
+
+    Half the working precision: the solve carries 650 guard bits beyond the
+    hundred digits written, and asking for all of them would be asking the
+    check to be tighter than the thing it checks.
+    """
+    return abs(RR(QQ(exact)) - RR(computed)) < RR(2) ** (-(WORKING_BITS // 2))
+
+
 def r_value(point, digits=DIGITS):
     key = (point, int(digits), WORKING_BITS)
     if key in _CACHE:
@@ -300,10 +351,21 @@ class LogisticPeriodDoublingCascade(numberdb.Generator):
         wanted = self.digits_for(params)
         r = r_value(point, wanted)
         value = r if expression == "r" else c_parameter(r)
-        entry = {"number": decimal(value, wanted)}
-        if wanted != digits:
-            entry["digits"] = wanted
-        comment = point_comment(point) if expression == "r" else ""
+
+        exact = EXACT.get((point, expression))
+        if exact is None:
+            entry = {"number": decimal(value, wanted)}
+            if wanted != digits:
+                entry["digits"] = wanted
+        else:
+            if not agrees_with_the_solve(exact, value):
+                raise ValueError(
+                    "%s in %s is written exactly as %s, and the solve does "
+                    "not agree" % (point, expression, exact))
+            entry = {"number": exact}
+
+        comment = (EXACT_COMMENTS.get((point, expression))
+                   or (point_comment(point) if expression == "r" else ""))
         if comment:
             entry["comment"] = comment
         return entry
