@@ -2173,3 +2173,26 @@ verdict is legible; it is the scheduling that hides it.
 Evidence: `/tmp/claude-1000/.../tasks/bqh8aunkl.output`, 2026-09-09: ten
 `URLError` lines followed by two verdicts; the same twelve URLs rerun at
 00:40 UTC in one process, all answered.
+
+## `agents/sage.sh` mounts extra files; it does not forward ordinary argv
+
+What happened: T168's dry run was first invoked as
+`agents/sage.sh agents/table-build/dry_run.py generators/.../generate.py`.
+Inside the container `dry_run.py` saw no generator path, because the wrapper
+uses additional command words as files to mount under `/work`, not as
+arguments to pass to the script. A small wrapper that set
+`sys.argv = ["/work/dry_run.py", "/work/generate.py"]` and then ran
+`/work/dry_run.py` worked.
+
+The same run also showed that launching several `agents/sage.sh` checks at
+once can give exit code 1 with no useful output, while the same scripts run
+one at a time either pass or show the real failure. The meaningful checks were
+therefore rerun serially before the draft was offered.
+
+What to do instead: write a scratch wrapper when a script needs arguments, and
+refer to mounted files by their `/work/<basename>` names. Run the final audit,
+stored-value checks and `verify()` serially; a silent failure from a parallel
+batch is not a result.
+
+Evidence: `/tmp/run_dry_repo_logistic.py`, `/tmp/stored_logistic_checks.py`
+and T168, 2026-09-09.
