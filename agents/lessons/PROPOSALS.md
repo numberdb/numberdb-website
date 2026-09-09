@@ -4589,3 +4589,72 @@ incantation stops working.
 Evidence: `/tmp/crit178b_out.txt` and `/tmp/crit178c_out.txt` (the second
 is the `r=2,3,4,5,6,7,8,12,16` grid), 2026-09-09; T178 head
 `cd9f59be…`, rigour note and program (P1).
+
+## Sage's `binomial` of two Python ints is a Python int, and dividing it gives a float
+
+What happened: the stage-one probe for the Mott polynomials built the
+series $(\sqrt{1-t^2}-1)/t=-\sum_k C_k(t/2)^{2k+1}$ with
+`catal = lambda k: binomial(2*k, k)/(k+1)` and `k` from `range`. In Sage
+10.9 `binomial(8, 4)` on Python ints returns a Python `int`, so `/(k+1)` is
+Python's true division and `catal(4)` is the float `14.0`. Everything
+downstream stayed exact-looking: the polynomials printed with rational
+coefficients, the checks against Wikipedia's and MathWorld's printed lists
+($n\leq6$) passed, and the three checks that went to $n=31$ failed, with a
+coefficient $137922738588260608/5864062014807$ where $23520$ belonged. The
+denominator near $2^{53}$ is the signature of a float coerced back to
+`QQ`. `QQ(binomial(2*k, k))/(k+1)`, or `binomial(Integer(2*k), k)`, is
+exact, and `parent(binomial(8, 4))` printed `<class 'int'>` when asked.
+The same run had earlier been contaminated by `0/j` in a hand-written
+`log(1+v)` accumulator initialised with Python `0`: `0/1` is `0.0`, and
+one float in a list of rationals turns the rest to floats.
+
+What the skill says now: nothing about the return types of Sage's
+top-level integer functions on Python ints.
+
+What it should say: inside Sage, `binomial`, `factorial` and friends
+return a Sage `Integer` only when given one; on Python ints from `range`
+they may return a Python `int`, and any division then leaves the exact
+world silently. Initialise accumulators with `QQ(0)` and wrap the first
+operand of a quotient in `QQ(...)` or `Integer(...)`; and when a check
+passes on the printed small cases and fails beyond them, suspect a type
+before suspecting the mathematics.
+
+Evidence: `/tmp/dbg2.py`, 2026-09-09: `0 -0.5 <class 'float'>` for
+`-catal(0)*(-1)**0/QQ(2)**1`; `/tmp/mott3.py`: `binomial(8,4) parent:
+<class 'int'>  binomial(8,4)/5 -> 14.0 <class 'float'>  binomial(Integer(8),4)/5
+-> Rational Field`, after which all nine Mott checks pass to $n=31$.
+
+## A source can state a generating function and a Sheffer pair that define different sequences; define the table by the statement the printed values satisfy
+
+What happened: Wikipedia's *Mott polynomials* gives the egf
+$\exp(x(\sqrt{1-t^2}-1)/t)$, a list $s_0..s_6$, a derivative recurrence, a
+${}_3F_0$ form, and the sentence "the associated Sheffer sequence for
+$-2t/(1-t^2)$". Computed separately, the egf, the list, the recurrence and
+the ${}_3F_0$ form all agree with each other; the Sheffer pair does not
+agree with any of them, because the compositional inverse of $-2t/(1-t^2)$
+is $(1-\sqrt{1+s^2})/s$, which is MathWorld's and OEIS A137378's egf. The
+two sequences differ by the sign $(-1)^{(n-k)/2}$ on the coefficient of
+$x^k$, so $s_3$ is $-\tfrac18x^3-\tfrac34x$ in one and
+$-\tfrac18x^3+\tfrac34x$ in the other. A table defined by the sentence
+would have held the other family under the article's list.
+
+What the skill says now: "Which normalisation, branch, and indexing";
+"verify a claim before writing it into a table". The lesson above on
+mirror-image knot tables says the objects can have two representatives a
+name does not distinguish.
+
+What it should say: when a source defines a family two ways (a generating
+function and a Sheffer or Riordan pair, a recurrence and a closed form, an
+integral and a series), compute the first ten members from each statement
+separately and compare them before choosing the definition; a source can
+be inconsistent with itself, and the printed list is the statement its
+author actually used. Write the table's definition as that one statement,
+give the other in a comment with the exact map between them, and cite an
+OEIS triangle only after applying the map it needs.
+
+Evidence: `/tmp/mott3.py`, 2026-09-09: `PASS Wikipedia egf = Wikipedia
+list`, `PASS Wikipedia derivative recurrence (Wikipedia convention)`,
+`FAIL same recurrence under MathWorld convention`, `PASS Wikipedia 3F0 form
+= Wikipedia egf ... and vs MathWorld: False`, `PASS Mott (MathWorld egf) vs
+OEIS A137378 rows 0..10`; and the inverse of $-2t/(1-t^2)$ worked by hand
+in `BATCH-2026-09-09T1518.md`, proposal 6.
