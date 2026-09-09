@@ -1,0 +1,5 @@
+done -- Replaced the outside-range sentence with a fact about principal-branch values for $x<-1$ and the $s=2$ reduction through CITE{formula-inversion}; checked DLMF's branch cut statement and mpmath at 120 digits for $x=-3/2,-2,-10$.
+done -- Simplified the three $x=-1$ row comments and named the endpoint as $-\eta(s)$; checked $\mathrm{Li}_2(-1)=-\zeta(2)/2$, $\mathrm{Li}_3(-1)=-3\zeta(3)/4$ and $\mathrm{Li}_4(-1)=-7\zeta(4)/8=-7\pi^4/720$ numerically, and searched NumberDB for a Dirichlet eta table before leaving it unlinked.
+done -- Rewrote the $\mathrm{Li}_2(-1/2)$ comment to say OEIS A355234 lists the negation, and removed the tautological $\mathrm{Li}_4(1/2)$ comment; checked OEIS A355234's title and mpmath's sign for $\mathrm{Li}_2(-1/2)$, and did not add the unverified "no closed form is known" claim.
+done -- Moved the convergence/no-analytic-continuation sentence out of the Definition and into the range comment; checked the live formula and parameter range before moving it.
+done -- Changed "Jonquiere's" to "Jonquière's"; checked DLMF's spelling.
