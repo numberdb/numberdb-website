@@ -1,0 +1,173 @@
+# The table document for proposal 4 of
+# agents/table-ideas/BATCH-2026-09-09T1518.md. Created as draft T186 through
+# the API (X-Draft: yes), filled by generate.py beside it, and offered for
+# review; publishing is a person's act on the site.
+Title: Stirling convolution polynomials $\sigma_n(x)$
+Definition: >-
+  For an integer $n\geq 1$, the Stirling convolution polynomial
+  $\sigma_n(x)$ is the polynomial in $\mathbb{Q}[x]$ determined by
+  $[z^n]\left(\frac{ze^z}{e^z-1}\right)^x=x\sigma_n(x)$ CITE{Wiki}
+  CITE{Knuth}.
+Parameters:
+  n:
+    type: Z
+    title: index
+    display: $n$
+    constraints: $n\geq 1$
+Comments:
+  comment-polynomial-range: >-
+    The same generating function gives $\sigma_0(x)=1/x$, which is not a
+    polynomial. This table starts at $n=1$ and stores the polynomial entries.
+  comment-convention: >-
+    Knuth writes these as Stirling polynomials CITE{Concrete}. This title
+    includes "convolution" to distinguish them from
+    HREF{T180}[Stirling polynomials] $S_k(x)$ and from the Gessel-Stanley
+    polynomials $S(n+k,n)$ and $c(n,n-k)$.
+Formulas:
+  formula-generating-function: >-
+    $\left(\frac{ze^z}{e^z-1}\right)^x
+    =\sum_{n=0}^{\infty}x\sigma_n(x)z^n$, with $\sigma_0(x)=1/x$.
+  formula-stirling-polynomials: >-
+    $S_n(x)=n!(x+1)\sigma_n(x+1)$, where $S_n(x)$ is the
+    HREF{T180}[Stirling polynomial] in the Sheffer-sequence convention.
+  formula-recurrence: >-
+    $(x+1)\sigma_n(x+1)=(x-n)\sigma_n(x)+x\sigma_{n-1}(x)$ for $n\geq1$,
+    with $\sigma_0(x)=1/x$ CITE{Wiki}.
+  formula-first-kind: >-
+    If $m$ and $n$ are integers with $m>n\geq1$, then
+    $m(m-1)\cdots(m-n)\sigma_n(m)=\left[{m\atop m-n}\right]$, where
+    $\left[{a\atop b}\right]$ is an unsigned Stirling number of the first
+    kind CITE{Wiki}.
+  formula-second-kind: >-
+    If $m$ and $n$ are integers with $m>n\geq1$, then
+    $m(m-1)\cdots(m-n)(-1)^{n+1}\sigma_n(n-m)=\left\{{m\atop m-n}\right\}$,
+    where $\left\{{a\atop b}\right\}$ is a Stirling number of the second
+    kind. These numbers are the coefficients of the
+    HREF{Touchard_polynomials}[Touchard polynomials].
+  formula-bernoulli-value: >-
+    $\sigma_n(0)=-B_n/(n\,n!)$, where $B_n$ is the
+    HREF{Bernoulli_numbers}[Bernoulli number] with $B_1=-\tfrac12$.
+  formula-noerlund: >-
+    If $B_n^{(a)}$ is defined by
+    $\left(\frac{t}{e^t-1}\right)^a=\sum_{n=0}^{\infty}B_n^{(a)}t^n/n!$,
+    then $B_n^{(x)}=(-1)^n n!x\sigma_n(x)$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.arith.misc import factorial
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+      from sage.rings.rational_field import QQ
+
+      R = PolynomialRing(QQ, 'x')
+      x = R.gen()
+
+      def mul(a, b, order):
+          out = [R.zero() for _ in range(order + 1)]
+          for i, ai in enumerate(a):
+              for j, bj in enumerate(b[:order + 1 - i]):
+                  out[i + j] += ai * bj
+          return out
+
+      def base_series(order):
+          a = [QQ(0) for _ in range(order + 1)]
+          a[0] = QQ(1)
+          for r in range(2, order + 2):
+              total = QQ(0)
+              for m in range(2, r + 1):
+                  total += a[r - m] * QQ((-1)**(m + 1)) / QQ(factorial(m))
+              a[r - 1] = -total
+          return a
+
+      def binomial_x(m):
+          value = R.one()
+          for j in range(m):
+              value *= x - QQ(j)
+              value /= QQ(j + 1)
+          return value
+
+      def stirling_convolution_polynomial(n):
+          base = [R(c) for c in base_series(n)]
+          base[0] = R.zero()
+          coefficients = [R.zero() for _ in range(n + 1)]
+          coefficients[0] = R.one()
+          power = [R.zero() for _ in range(n + 1)]
+          power[0] = R.one()
+          for m in range(1, n + 1):
+              power = mul(power, base, n)
+              factor = binomial_x(m)
+              for j in range(n + 1):
+                  coefficients[j] += factor*power[j]
+          quotient, remainder = coefficients[n].quo_rem(x)
+          if remainder:
+              raise ArithmeticError('coefficient is not divisible by x')
+          return quotient
+
+      stirling_convolution_polynomial(26)      # the next one after this table
+Similar tables:
+  - table: HREF{T180}[Stirling polynomials]
+    relation: are the same Stirling family in the Sheffer-sequence normalisation of CITE{formula-stirling-polynomials}
+  - table: HREF{Bernoulli_numbers}[Bernoulli numbers]
+    relation: give the value at $x=0$ in CITE{formula-bernoulli-value}
+  - table: HREF{Touchard_polynomials}[Touchard polynomials]
+    relation: have Stirling numbers of the second kind as coefficients, which give CITE{formula-second-kind}
+Links:
+  Wiki:
+    title: "Wikipedia: Stirling polynomials"
+    url: https://en.wikipedia.org/wiki/Stirling_polynomials
+  OEISNorlundNumerators:
+    title: "OEIS A100655: coefficients of Bernoulli polynomials after multiplication by common denominators"
+    url: https://oeis.org/A100655
+  OEISNorlundDenominators:
+    title: "OEIS A001898: denominators of Bernoulli polynomials"
+    url: https://oeis.org/A001898
+  OEISFirstKind:
+    title: "OEIS A008275: triangle of unsigned Stirling numbers of the first kind"
+    url: https://oeis.org/A008275
+  OEISSecondKind:
+    title: "OEIS A008277: triangle of Stirling numbers of the second kind"
+    url: https://oeis.org/A008277
+References:
+  Knuth:
+    bib: >-
+      Donald E. Knuth, Convolution polynomials, The Mathematica Journal 2
+      (1992), no. 4, 67-78.
+    arxiv: math/9207221
+  Concrete:
+    bib: >-
+      R. L. Graham, D. E. Knuth and O. Patashnik, Concrete Mathematics,
+      second edition, Addison-Wesley, 1994, Sections 6.2 and 7.4.
+Keywords:
+  - Stirling convolution polynomial
+  - Stirling convolution polynomials
+  - Stirling polynomial
+  - Stirling polynomials
+  - Knuth Stirling polynomial
+  - convolution polynomials
+  - Stirling numbers
+  - umbral calculus
+Tags:
+  - polynomial
+  - combinatorics
+  - generating function
+Data properties:
+  type: Q[]
+  rigour: exact
+  complete: 'no'
+  complete-note: it holds every index $n$ with $1\leq n\leq25$
+  rigour details: >-
+    The generator expands $\left(z/(1-e^{-z})\right)^x$ as
+    $(1+b(z))^x$ over Sage's rational polynomial ring and divides the
+    coefficient of $z^n$ by $x$. Every division is made in Sage's rational
+    field. Before the draft was created, the entries were checked against the
+    polynomials $\sigma_1$ through $\sigma_{10}$ printed by CITE{Wiki},
+    against CITE{formula-recurrence}, CITE{formula-first-kind},
+    CITE{formula-second-kind}, CITE{formula-bernoulli-value}, and
+    CITE{formula-stirling-polynomials} on every entry, using the stored
+    values of HREF{T180}[Stirling polynomials] for the last comparison. The
+    Noerlund relation in CITE{formula-noerlund} was checked against OEIS
+    A100655 CITE{OEISNorlundNumerators} and A001898
+    CITE{OEISNorlundDenominators} through $n=8$.
+Display properties:
+  number-header: $\sigma_n(x)$
