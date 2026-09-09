@@ -100,7 +100,9 @@ class Command(BaseCommand):
 			          cost_usd=cost, runs=runs)
 			for (table_pk, model, role), (cost, runs) in totals.items()])
 
-		from numberdb_app.management.commands.refresh_table_metrics import refresh
+		#The overview reads TableMetrics, and the cost it shows is summed
+		#from the rows just written.
+		from numberdb_app.metrics import refresh
 
 		for table_pk in {pk for pk, _, _ in totals}:
 			refresh(Table.objects.get(pk=table_pk))
