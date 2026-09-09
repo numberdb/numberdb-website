@@ -1,0 +1,152 @@
+# The table document for T175, the values of the Clausen functions at rational
+# multiples of pi. It began as proposal 1 of
+# agents/table-ideas/BATCH-2026-09-09T1055.md. Created as a draft through the
+# API (X-Draft: yes) and filled by generate.py beside it; publishing is a
+# person's act on the site.
+Title: Values of the Clausen functions $\mathrm{Cl}_s$ at rational multiples of $\pi$
+Definition: >-
+  The Clausen function $\mathrm{Cl}_s$ CITE{MathWorldClausen} is defined here
+  for an integer $s\geq 2$ by
+  $\mathrm{Cl}_s(\theta)=\operatorname{Im}\mathrm{Li}_s(e^{i\theta})$ when
+  $s$ is even, and by
+  $\mathrm{Cl}_s(\theta)=\operatorname{Re}\mathrm{Li}_s(e^{i\theta})$ when
+  $s$ is odd, where $\mathrm{Li}_s(z)=\sum_{k=1}^{\infty}z^k/k^s$ is the
+  polylogarithm CITE{DLMFPolylog}. This table lists
+  $\mathrm{Cl}_s(\pi t)$ for rational $t$ in the stated domain; no analytic
+  continuation or branch choice is used for these values.
+Keywords:
+  - Catalan's constant
+  - Catalan constant
+  - Gieseking's constant
+  - Gieseking constant
+  - Lobachevsky function
+  - Clausen integral
+  - log sine integral
+  - polylogarithm at roots of unity
+  - dilogarithm
+Parameters:
+  s:
+    type: Z
+    title: order of the Clausen function
+    display: $s$
+    constraints: $s\geq 2$
+  t:
+    type: Q
+    title: angle divided by $\pi$
+    display: $t$
+    constraints: >-
+      $0<t<1$ when $s$ is even, and $0<t\leq 1$ when $s$ is odd
+Comments:
+  comment-index: >-
+    The index is $t=\theta/\pi$, the same rational parameter used by
+    HREF{Cos_pi_times_x_at_rational_numbers}[$\cos(\pi t)$]. If the unit
+    circle is parameterised by $u=\theta/(2\pi)$, then $u=t/2$.
+  comment-endpoints: >-
+    For even $s$, $t=0$ and $t=1$ give $0$ and are omitted. For odd $s$,
+    $t=0$ gives $\zeta(s)$, which belongs to
+    HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[the Riemann
+    zeta table], and $t=1$ gives the alternating value
+    $-(1-2^{1-s})\zeta(s)$.
+  comment-hyperbolic: >-
+    The entry $\mathrm{Cl}_2(\pi/3)$ is Gieseking's constant
+    CITE{MathWorldGieseking}; twice it is the volume of the figure-eight knot
+    complement, the entry
+    HREF{Hyperbolic_volumes_of_the_prime_knots_with_at_most_ten_crossings#4,1}[$4_1$]
+    in the hyperbolic knot volume table.
+  comment-lobachevsky: >-
+    The Lobachevsky function is
+    $\Lambda(\theta)=\frac12\mathrm{Cl}_2(2\theta)$, so its rational multiples
+    of $\pi$ are half of entries with $s=2$ and doubled rational parameter.
+Formulas:
+  formula-series: >-
+    For $m\geq 1$,
+    $\mathrm{Cl}_{2m}(\theta)=\sum_{k=1}^{\infty}\sin(k\theta)/k^{2m}$ and
+    $\mathrm{Cl}_{2m+1}(\theta)=\sum_{k=1}^{\infty}\cos(k\theta)/k^{2m+1}$.
+  formula-hurwitz: >-
+    If $\alpha=p/q$ in lowest terms, then
+    $\mathrm{Li}_s(e^{2\pi i\alpha})=
+    q^{-s}\sum_{r=1}^{q}e^{2\pi i p r/q}\zeta(s,r/q)$, where $\zeta(s,x)$ is
+    HREF{Values_of_the_Hurwitz_zeta_function_at_pairs_of_rational_numbers}[the
+    Hurwitz zeta function].
+  formula-special-values: >-
+    $\mathrm{Cl}_2(\pi/2)=G$, Catalan's constant CITE{WikiCatalan};
+    $\mathrm{Cl}_2(\pi/3)=V$, Gieseking's constant CITE{MathWorldGieseking};
+    $\mathrm{Cl}_2(2\pi/3)=2V/3$; $\mathrm{Cl}_3(\pi/2)=
+    -3\zeta(3)/32$; $\mathrm{Cl}_3(2\pi/3)=-4\zeta(3)/9$; and
+    $\mathrm{Cl}_3(\pi)=-3\zeta(3)/4$.
+  formula-derivative: >-
+    On $0<\theta<2\pi$,
+    $\frac{d}{d\theta}\mathrm{Cl}_2(\theta)=-\log|2\sin(\theta/2)|$; hence
+    $\mathrm{Cl}_2$ has its maximum on $[0,\pi]$ at $\theta=\pi/3$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.complex_arb import ComplexBallField
+      from sage.rings.rational_field import QQ
+
+      s = 2
+      t = QQ(1) / QQ(3)
+      CBF = ComplexBallField(numberdb.bits(100, losing=96))
+      z = (CBF.gen(0) * CBF.pi() * CBF(t)).exp()
+      z.polylog(s).imag()       # Cl_2(pi/3), Gieseking's constant
+Similar tables:
+  - table: HREF{Hyperbolic_volumes_of_the_prime_knots_with_at_most_ten_crossings}[Hyperbolic volumes of the prime knots with at most ten crossings]
+    relation: the figure-eight knot complement volume is $2\,\mathrm{Cl}_2(\pi/3)$, and hyperbolic volumes are built from Bloch-Wigner dilogarithms
+  - table: HREF{Values_of_Dirichlet_L-functions_at_positive_integers}[Values of Dirichlet L-functions at positive integers]
+    relation: $\mathrm{Cl}_2(\pi/2)=L(2,\chi_4(3,\cdot))$ and $\mathrm{Cl}_2(2\pi/3)=(\sqrt3/2)L(2,\chi_3(2,\cdot))$
+  - table: HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[Values of the Riemann zeta function at rational numbers]
+    relation: odd-order endpoint and symmetry values include rational multiples of $\zeta(s)$
+  - table: HREF{Values_of_the_Hurwitz_zeta_function_at_pairs_of_rational_numbers}[Values of the Hurwitz zeta function at pairs of rational numbers]
+    relation: every rational-angle entry is a finite linear combination of Hurwitz zeta values by CITE{formula-hurwitz}
+  - table: HREF{Cos_pi_times_x_at_rational_numbers}[$\cos(\pi x)$ for rational $x$]
+    relation: uses the same normalisation of the rational angle
+Links:
+  MathWorldClausen:
+    title: 'MathWorld: Clausen Function'
+    url: https://mathworld.wolfram.com/ClausenFunction.html
+  WikiClausen:
+    title: 'Wikipedia: Clausen function'
+    url: https://en.wikipedia.org/wiki/Clausen_function
+  DLMFPolylog:
+    title: 'DLMF 25.12: Polylogarithms'
+    url: https://dlmf.nist.gov/25.12
+  MathWorldGieseking:
+    title: "MathWorld: Gieseking's Constant"
+    url: https://mathworld.wolfram.com/GiesekingsConstant.html
+  WikiCatalan:
+    title: "Wikipedia: Catalan's constant"
+    url: https://en.wikipedia.org/wiki/Catalan%27s_constant
+  OEISCatalan:
+    title: "OEIS A006752: Catalan's constant"
+    url: https://oeis.org/A006752
+  OEISGieseking:
+    title: "OEIS A143298: Gieseking's constant"
+    url: https://oeis.org/A143298
+  OEISClausenTwoThirds:
+    title: 'OEIS A261024: $\mathrm{Cl}_2(2\pi/3)$'
+    url: https://oeis.org/A261024
+Tags:
+  - special values
+  - special functions
+  - period
+Data properties:
+  type: R
+  rigour: proven
+  rigour details: >-
+    Each value was computed as a Sage complex ball with arb at
+    `numberdb.bits(digits, losing=96)` bits by evaluating
+    $\mathrm{Li}_s(e^{i\pi t})$ and taking the real or imaginary part specified
+    in the definition. Before the draft was created, all 538 entries agreed as
+    written with the Hurwitz-zeta decomposition CITE{formula-hurwitz}; the
+    special values in CITE{formula-special-values} agreed with independent
+    zeta and Hurwitz-zeta computations, and the decimal prefixes for
+    Catalan's constant, Gieseking's constant and $\mathrm{Cl}_2(2\pi/3)$ agreed
+    with CITE{OEISCatalan}, CITE{OEISGieseking} and CITE{OEISClausenTwoThirds}.
+    The dry run measured 538 entries, a longest written entry of 105
+    characters, and a 76.4 KB entries block.
+  complete: no
+  complete-note: >-
+    it holds every entry with $s\in\{2,3,4\}$ and $t=a/b$ in lowest terms with
+    $b\leq 24$ that satisfies the stated parameter constraints
