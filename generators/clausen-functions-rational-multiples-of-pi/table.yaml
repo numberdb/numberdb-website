@@ -5,15 +5,10 @@
 # person's act on the site.
 Title: Values of the Clausen functions $\mathrm{Cl}_s$ at rational multiples of $\pi$
 Definition: >-
-  The Clausen function $\mathrm{Cl}_s$ CITE{MathWorldClausen} is defined here
-  for an integer $s\geq 2$ by
-  $\mathrm{Cl}_s(\theta)=\operatorname{Im}\mathrm{Li}_s(e^{i\theta})$ when
-  $s$ is even, and by
-  $\mathrm{Cl}_s(\theta)=\operatorname{Re}\mathrm{Li}_s(e^{i\theta})$ when
-  $s$ is odd, where $\mathrm{Li}_s(z)=\sum_{k=1}^{\infty}z^k/k^s$ is the
-  polylogarithm CITE{DLMFPolylog}. This table lists
-  $\mathrm{Cl}_s(\pi t)$ for rational $t$ in the stated domain; no analytic
-  continuation or branch choice is used for these values.
+  This table gives $\mathrm{Cl}_s(\pi t)$, with $\mathrm{Cl}_s$ the Clausen
+  function in the polylogarithmic convention CITE{MathWorldClausen}, for
+  $s\in\mathbb Z$, $s\geq 2$, and $t\in\mathbb Q$ in the stated domain. The
+  parity convention is CITE{formula-polylog}.
 Keywords:
   - Catalan's constant
   - Catalan constant
@@ -47,6 +42,10 @@ Comments:
     HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[the Riemann
     zeta table], and $t=1$ gives the alternating value
     $-(1-2^{1-s})\zeta(s)$.
+  comment-branch: >-
+    The arguments lie on the unit circle and $s>1$, so the series in
+    CITE{formula-polylog} converges at every listed row. No analytic
+    continuation or branch choice is used for these values.
   comment-hyperbolic: >-
     The entry $\mathrm{Cl}_2(\pi/3)$ is Gieseking's constant
     CITE{MathWorldGieseking}; twice it is the volume of the figure-eight knot
@@ -58,6 +57,13 @@ Comments:
     $\Lambda(\theta)=\frac12\mathrm{Cl}_2(2\theta)$, so its rational multiples
     of $\pi$ are half of entries with $s=2$ and doubled rational parameter.
 Formulas:
+  formula-polylog: >-
+    $\mathrm{Li}_s(z)=\sum_{k=1}^{\infty}z^k/k^s$ is the polylogarithm
+    CITE{DLMFPolylog}; for $s\geq 2$,
+    $\mathrm{Cl}_s(\theta)=\operatorname{Im}\mathrm{Li}_s(e^{i\theta})$ when
+    $s$ is even, and
+    $\mathrm{Cl}_s(\theta)=\operatorname{Re}\mathrm{Li}_s(e^{i\theta})$ when
+    $s$ is odd.
   formula-series: >-
     For $m\geq 1$,
     $\mathrm{Cl}_{2m}(\theta)=\sum_{k=1}^{\infty}\sin(k\theta)/k^{2m}$ and
