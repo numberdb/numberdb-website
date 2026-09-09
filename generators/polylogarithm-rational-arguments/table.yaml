@@ -1,0 +1,128 @@
+# The table document for T176, the values of the polylogarithm at rational
+# arguments. It began as proposal 2 of
+# agents/table-ideas/BATCH-2026-09-09T1055.md. Created as a draft through the
+# API (X-Draft: yes), filled by generate.py beside it, and offered for review;
+# publishing is a person's act.
+Title: Values of the polylogarithm $\mathrm{Li}_s$ at rational arguments
+Definition: >-
+  This table gives the polylogarithm
+  $\mathrm{Li}_s(x)=\sum_{n=1}^{\infty}x^n/n^s$ CITE{DLMFPolylog}, for an
+  integer $s\geq2$ and a rational argument $x$ with $-1\leq x\leq1$ and
+  $x\neq0$. The rows use the real value given by the convergent defining
+  series; no analytic continuation is needed for the listed arguments.
+Keywords:
+  - dilogarithm
+  - trilogarithm
+  - quadrilogarithm
+  - Spence's function
+  - Spence function
+  - Jonquiere function
+Parameters:
+  s:
+    type: Z
+    title: order of the polylogarithm
+    display: $s$
+    constraints: $s\geq 2$
+  x:
+    type: Q
+    title: argument
+    display: $x$
+    constraints: $-1\leq x\leq 1$ and $x\neq 0$
+Comments:
+  comment-names: >-
+    The case $s=2$ is the dilogarithm, also called Spence's function, and
+    $s=3$ is the trilogarithm. The name Jonquiere's function is also used for
+    the polylogarithm CITE{DLMFPolylog}.
+  comment-range: >-
+    Arguments $x>1$ are complex on the principal branch. Arguments $x<-1$ are
+    real for these integer orders, but the dilogarithm inversion formula in
+    CITE{formula-inversion} illustrates why that region belongs to a later
+    table extension rather than to this real-segment table.
+  comment-endpoints: >-
+    The endpoint $x=1$ gives
+    HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[the Riemann
+    zeta values] by CITE{formula-endpoints}. The endpoint $x=-1$ gives the
+    corresponding alternating zeta values. The argument $x=0$ is omitted
+    because $\mathrm{Li}_s(0)=0$.
+Formulas:
+  formula-series: >-
+    $\mathrm{Li}_s(x)=\sum_{n=1}^{\infty}x^n/n^s$ for $|x|<1$, and the series
+    also converges at $x=\pm1$ when $s>1$.
+  formula-endpoints: >-
+    $\mathrm{Li}_s(1)=\zeta(s)$ and
+    $\mathrm{Li}_s(-1)=-(1-2^{1-s})\zeta(s)$.
+  formula-reflection: >-
+    For $0<x<1$,
+    $\mathrm{Li}_2(x)+\mathrm{Li}_2(1-x)=\pi^2/6-\log(x)\log(1-x)$.
+  formula-inversion: >-
+    For $x>0$,
+    $\mathrm{Li}_2(-x)+\mathrm{Li}_2(-1/x)=-\pi^2/6-\log^2(x)/2$.
+  formula-half: >-
+    $\mathrm{Li}_2(1/2)=\pi^2/12-\log^2(2)/2$, and
+    $\mathrm{Li}_3(1/2)=7\zeta(3)/8-\pi^2\log(2)/12+\log^3(2)/6$.
+  formula-landen: >-
+    $\mathrm{Li}_2(1/3)-\mathrm{Li}_2(1/9)/6=\pi^2/18-\log^2(3)/6$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.complex_arb import ComplexBallField
+      from sage.rings.rational_field import QQ
+
+      s = 2
+      x = QQ(1) / QQ(2)
+      CBF = ComplexBallField(numberdb.bits(100, losing=96))
+      CBF(x).polylog(s).real()       # Li_2(1/2)
+Similar tables:
+  - table: HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[Values of the Riemann zeta function at rational numbers]
+    relation: holds the $x=1$ endpoint values in CITE{formula-endpoints}
+  - table: HREF{Multiple_zeta_values_of_length_2}[Multiple zeta values of length 2]
+    relation: multiple zeta values are multiple polylogarithms at argument $1$
+  - table: HREF{Multiple_zeta_values_of_length_3}[Multiple zeta values of length 3]
+    relation: multiple zeta values are multiple polylogarithms at argument $1$
+  - table: HREF{Hyperbolic_volumes_of_the_prime_knots_with_at_most_ten_crossings}[Hyperbolic volumes of the prime knots with at most ten crossings]
+    relation: the hyperbolic volumes are sums of Bloch-Wigner dilogarithms, which are built from $\mathrm{Li}_2$
+  - table: HREF{Values_of_Dedekind_zeta_functions_of_cubic_fields_at_2}[Values of Dedekind zeta functions of cubic fields at 2]
+    relation: its formulas use Zagier's theorem expressing the values through dilogarithms
+  - table: HREF{Values_of_the_Clausen_functions_at_rational_multiples_of}[Values of the Clausen functions at rational multiples of $\pi$]
+    relation: gives real and imaginary parts of the same polylogarithm on roots of unity
+Links:
+  DLMFPolylog:
+    title: 'DLMF 25.12: Polylogarithms'
+    url: https://dlmf.nist.gov/25.12
+  OEISLi2Half:
+    title: 'OEIS A076788: $\mathrm{Li}_2(1/2)$'
+    url: https://oeis.org/A076788
+  OEISLi3Half:
+    title: 'OEIS A099217: $\mathrm{Li}_3(1/2)$'
+    url: https://oeis.org/A099217
+  OEISLi4Half:
+    title: 'OEIS A099218: $\mathrm{Li}_4(1/2)$'
+    url: https://oeis.org/A099218
+  OEISNegLi2MinusHalf:
+    title: 'OEIS A355234: $\mathrm{Li}_2(-1/2)$'
+    url: https://oeis.org/A355234
+Tags:
+  - special values
+  - special functions
+Data properties:
+  type: R
+  rigour: proven
+  rigour details: >-
+    Each value was computed as a Sage complex ball with arb at
+    `numberdb.bits(digits, losing=96)` bits by evaluating
+    $\mathrm{Li}_s(x)$ at the exact rational argument $x$ and taking the real
+    part. The values with $-1<x<1$ were checked against a separately summed
+    defining series with an explicit tail bound, while the endpoints were
+    checked against the zeta identities in CITE{formula-endpoints}. The
+    dilogarithm identities in CITE{formula-reflection}, CITE{formula-inversion}
+    and CITE{formula-landen}, the half-argument formulas in
+    CITE{formula-half}, and the decimal prefixes for
+    $\mathrm{Li}_2(1/2)$, $\mathrm{Li}_3(1/2)$, $\mathrm{Li}_4(1/2)$ and
+    $\mathrm{Li}_2(-1/2)$ were checked against CITE{OEISLi2Half},
+    CITE{OEISLi3Half}, CITE{OEISLi4Half} and CITE{OEISNegLi2MinusHalf}.
+  complete: no
+  complete-note: >-
+    it holds every entry with $s\in\{2,3,4\}$ and $x=a/b$ in lowest terms with
+    $1\leq b\leq 20$, $-1\leq x\leq1$ and $x\neq0$
