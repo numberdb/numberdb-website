@@ -2356,3 +2356,19 @@ loading `/work/generate.py` with `No module named 'numberdb.sage'`, then
 failed during `django.setup()` with `No module named 'numberdb.settings'`.
 The final version read T182 through Django only and reported `stored checks:
 Touchard relation and A000296 through n=50`.
+
+## A repair can see a private draft through the API but not its rendered page
+
+What happened: the T182 repair prompt required both `GET /api/table?id=T182`
+and the rendered page at `/T182`. The zeta3 bearer token read the private
+draft through the API, but the rendered page and `/preview/T182` use the
+site-session `request.user` guard rather than bearer authentication, so both
+answered 404 from this unattended repair environment.
+
+What to do instead: for private drafts, use the authenticated API document and
+`audit_table`/generator verification as the checkable sources, and record that
+the rendered page was unreachable unless the run has a browser login session.
+Do not infer that the draft does not exist from a 404 on the rendered route.
+
+Evidence: T182, 2026-09-09; authenticated `GET /api/table?id=T182` returned
+the Mahler polynomial draft, while authenticated `GET /T182` returned 404.
