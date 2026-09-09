@@ -272,7 +272,12 @@ or use the parameter's `display` symbol.
 that value indexes, so a conversion rule put there is repeated once per row:
 one table carried `$c=-r(r-2)/4$` on all twenty-four of its $c$ rows where
 `$c$` was wanted, and the rule belongs in `Formulas`. The same for a closed
-form the entry's comment already gives.
+form the entry's comment already gives. The value column has a label too,
+`Display properties: number-header`, and it is a claim about every value under
+it: T174 stored $\lambda_n$ and went on heading the column $|\lambda_n|$,
+which says the table holds something it does not. When what a table stores
+changes, three places say what it holds -- the title, the definition and that
+header -- and the header is the one nobody rereads.
 
 **Entries are shown in the order the document writes them**, so the order the
 generator enumerates in is what a reader sees. For an index running over the
