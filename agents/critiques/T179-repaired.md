@@ -1,0 +1,1 @@
+left for a person -- `agents/critiques/T179.md` is absent from this checkout, so no original finding could be checked or acted on; checked the authenticated live API document for draft T179, confirmed `https://numberdb.org/T179` and `/preview/T179` return 404 as draft pages, and `audit_table T179` reported nothing.
