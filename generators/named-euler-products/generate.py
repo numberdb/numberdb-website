@@ -2,7 +2,7 @@
 
 This table stores a finite shelf of constants of the form product_p F(p),
 where F is a rational function and F(p) = 1 + O(p^-2), together with three
-zeta-quotient rows used as controls.
+zeta-quotient rows with closed forms.
 
 Run it with SageMath:
 
@@ -13,7 +13,7 @@ Run it with SageMath:
 The values are computed with PARI's prodeulerrat at guarded working precision.
 PARI does not return a ball or an interval for this computation, so the digits
 are not marked proven. The draft records the agreement checks against OEIS and
-closed-form zeta values that were run before filling it.
+closed-form zeta values.
 """
 
 import os
@@ -31,13 +31,15 @@ PRODUCTS = {
     'artin': {
         'expression': '1 - 1/(p*(p - 1))',
         'comment': (r"Artin's constant is the density factor in Artin's "
-                    r'primitive-root conjecture CITE{OEISArtin}.'),
+                    r'primitive-root conjecture CITE{OEISArtin} '
+                    r'CITE{MathWorldArtin}.'),
     },
     'stephens': {
         'expression': '1 - p/(p^3 - 1)',
         'comment': (r"Stephens' constant is the density factor for primes "
                     r"dividing terms $a^k-b$ in Stephens' two-variable "
-                    r'Artin problem CITE{OEISStephens}.'),
+                    r'Artin problem CITE{OEISStephens} '
+                    r'CITE{MathWorldStephens}.'),
     },
     'artin-rank-2': {
         'expression': '1 - 1/(p^2*(p - 1))',
@@ -53,46 +55,51 @@ PRODUCTS = {
         'expression': '(1 + prodeulerrat(1 - 2/p^2))/2',
         'comment': (r'The Feller-Tornier constant is '
                     r'$\frac12(1+\prod_p(1-2/p^2))$, the affine transform '
-                    r'of the product part CITE{OEISFellerTornier}.'),
+                    r'of the product part CITE{OEISFellerTornier} '
+                    r'CITE{MathWorldFellerTornier}.'),
     },
     'heath-brown-moroz': {
         'expression': '(1 - 1/p)^7*(1 + (7*p + 1)/p^2)',
         'comment': (r'The Heath-Brown-Moroz constant is from '
                     r'the density of rational points on '
-                    r'$X_0^3=X_1X_2X_3$ CITE{OEISHBM}.'),
+                    r'$X_0^3=X_1X_2X_3$ CITE{OEISHBM} '
+                    r'CITE{MathWorldHBM}.'),
     },
     'taniguchi': {
         'expression': '1 - 3/p^3 + 2/p^4 + 1/p^5 - 1/p^6',
         'comment': (r"Taniguchi's constant is from a mean "
                     r'value theorem for class numbers and regulators of '
-                    r'quadratic extensions CITE{OEISTaniguchi}.'),
+                    r'quadratic extensions CITE{OEISTaniguchi} '
+                    r'CITE{MathWorldTaniguchi}.'),
     },
     'barban': {
         'expression': '1 + (3*p^2 - 1)/(p*(p + 1)*(p^2 - 1))',
         'comment': (r"Barban's constant CITE{OEISBarban} has local factors "
-                    r'$29/18,61/48,397/360,\ldots$.'),
+                    r'$29/18,61/48,397/360,\ldots$ '
+                    r'CITE{MathWorldBarban}.'),
     },
     'sarnak': {
         'expression': '1 - (p + 2)/p^3',
         'start': 3,
-        'comment': (r"Sarnak's constant starts at the odd primes "
-                    r'CITE{OEISSarnak}.'),
+        'comment': (r"Sarnak's constant is the product over the odd primes "
+                    r'$p\geq3$ CITE{OEISSarnak} CITE{MathWorldSarnak}.'),
     },
     'squarefree-density': {
         'expression': '1 - 1/p^2',
         'comment': (r'This is the squarefree density '
-                    r'$\prod_p(1-p^{-2})=1/\zeta(2)=6/\pi^2$.'),
+                    r'$\prod_p(1-p^{-2})=1/\zeta(2)=6/\pi^2$ '
+                    r'CITE{OEISSquarefreeDensity}.'),
     },
     'ramanujan': {
         'expression': '1 + 1/p^2',
-        'comment': (r"Ramanujan's prime product identity gives "
-                    r'$\prod_p(1+p^{-2})=\zeta(2)/\zeta(4)=15/\pi^2$; '
-                    r'OEIS A082020 stores this value CITE{OEISRamanujan}.'),
+        'comment': (r'$\prod_p(1+p^{-2})=15/\pi^2$, an identity of '
+                    r'Ramanujan CITE{OEISRamanujan}.'),
     },
     'landau-totient': {
         'expression': '1 + 1/(p*(p - 1))',
         'comment': (r"Landau's totient constant is "
-                    r'$\prod_p(1+1/(p(p-1)))=\zeta(2)\zeta(3)/\zeta(6)$.'),
+                    r'$\prod_p(1+1/(p(p-1)))=\zeta(2)\zeta(3)/\zeta(6)$ '
+                    r'CITE{OEISLandauTotient}.'),
     },
 }
 
