@@ -169,6 +169,26 @@ where the client package path is the important one.
 Evidence: `/tmp/audit_t179.py`, 2026-09-09, failed before the path insert and
 then ran `audit_table T179`, reporting `Nothing to report.`
 
+## `agents/sage.sh` mounts extra files rather than passing arguments
+
+What happened: `agents/sage.sh agents/table-build/dry_run.py /tmp/boole_generate.py`
+copied both files to `/work`, but executed only `/work/dry_run.py`. The
+first run failed before that mattered, because `dry_run.py` imports its
+sibling `check.py` and only the main script plus the generator had been
+mounted. Mounting `check.py` as a third file would make the import work, but
+`dry_run.py` would still receive no command-line path to the generator.
+
+What to do instead: run a tiny wrapper under `agents/sage.sh` that puts
+`/work` on `sys.path`, imports `dry_run`, and calls
+`dry_run.main(['/work/generate.py'])`. Mount the wrapper, `dry_run.py`,
+`check.py`, and the generator. That still uses the shared dry-run checks and
+keeps the computation in the throwaway Sage container.
+
+Evidence: the Boole polynomial draft T184, 2026-09-09, used
+`/tmp/run_boole_dry.py` after the direct `agents/sage.sh
+agents/table-build/dry_run.py /tmp/boole_generate.py` run failed with
+`ModuleNotFoundError: No module named 'check'`.
+
 ## A pipeline that swallows the verdict reports nothing
 
 What happened: the suite was run as `manage.py test ... | tail -30`. The
