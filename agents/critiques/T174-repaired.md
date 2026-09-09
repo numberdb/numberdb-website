@@ -1,0 +1,8 @@
+1. done -- Stored $|\lambda_n|$ instead of signed $\lambda_n$, changed the header, Definition, sign comment, complete note and attached generator; checked OEIS and MathWorld give the positive constant, published lookup is sign-sensitive on T32, and the TSV signs satisfy $(-1)^{n+1}\lambda_n>0$ for $2\leq n\leq50$.
+2. done -- Replaced P1 with a 400-bit Briggs computation returning magnitudes for $n=2,3,4$; ran the old and revised matrix computations and checked the revised output matches those rows while later truncation eigenvalues include artifacts.
+3. done -- Deleted the website-search sentence from the $\lambda_1=1$ comment; checked the remaining sentence still names the invariant density.
+4. done -- Moved the eigenvalue ordering into the Definition and left only $n\geq2$ in the parameter constraint; after `audit_table` flagged the first repair's length, shortened the Definition and reran audit.
+5. done -- Rewrote the Lévy similar-table relation; checked T172 defines the denominator growth rate and T174 defines the Gauss-map transfer operator.
+6. done -- Put the ratio check in the same $\lambda_n/\lambda_{n+1}$ shape as formula (3), set $K=1024$ and $K=512$ as math, and replaced "Galerkin centres" with a reader-facing description; checked the signed source-row ratios against $-\varphi^2$.
+7. declined -- The history is true from Alkauskas and Wikipedia, but the existing formula citation identifies the source and adding a new history note or reference costs more than it gains here.
+8. done -- Removed duplicate constant and ordering statements by deleting `comment-constant`, scoping `comment-ordering`, and keeping the row-2 comment for the named constant; reread the rendered page for pronoun and ordering seams.

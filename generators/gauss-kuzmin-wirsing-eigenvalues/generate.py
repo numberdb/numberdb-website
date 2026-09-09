@@ -2,8 +2,8 @@
 
 The Gauss-Kuzmin-Wirsing transfer operator for the Gauss continued-fraction
 map has real eigenvalues lambda_n ordered by decreasing absolute value, with
-lambda_1 = 1. This generator stores the certified signed eigenvalues
-lambda_2, ..., lambda_50 from Nisoli's K = 1024 spectral data.
+lambda_1 = 1. This generator stores the magnitudes of the certified
+eigenvalues lambda_2, ..., lambda_50 from Nisoli's K = 1024 spectral data.
 
 Run it with SageMath:
 
@@ -73,8 +73,8 @@ def eigenvalue(n, digits):
 def entry_comment(n):
     if int(n) == 2:
         return (
-            "The absolute value $|\\lambda_2|$ is the "
-            "Gauss-Kuzmin-Wirsing constant CITE{OEISA038517} "
+            "$|\\lambda_2|$ is the Gauss-Kuzmin-Wirsing constant "
+            "CITE{OEISA038517} "
             "CITE{MathWorldGKW}."
         )
     return ""
@@ -98,7 +98,7 @@ class GaussKuzminWirsingEigenvalues(numberdb.Generator):
         if n < FIRST_STORED or n > LAST_STORED:
             raise ValueError("n must satisfy %d <= n <= %d" %
                              (FIRST_STORED, LAST_STORED))
-        out = {"number": eigenvalue(n, digits)}
+        out = {"number": abs(eigenvalue(n, digits))}
         comment = entry_comment(n)
         if comment:
             out["comment"] = comment
