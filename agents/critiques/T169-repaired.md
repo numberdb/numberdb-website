@@ -1,0 +1,6 @@
+1. done -- replaced the Definition and rewrote comments (6) and (7) so the window, kneading word, onset, superstable point, period-doubling point and entropy are defined; checked the live API document, rendered draft page, and formulas (2)--(4) before changing.
+2. done -- changed the `expression` parameter display to `quantity`; checked the live parameter block still had keys `W`, `expression` in that order and the API write did not change parameter identities.
+3. done -- rewrote all 34 entropy comments as statements about $\lambda$ and removed the seven Sage `*` multiplication signs; checked in Sage that all 34 listed polynomials are irreducible over $\mathbb{Q}$ and that $\exp(h_{\mathrm{top}})$ from the stored value is the largest real root.
+4. done -- rewrote comment (8) to keep the entropy-zero and Feigenbaum-gap fact without repeating the complete-note; checked T168 live and did not add a link because `https://numberdb.org/T168` still returns 404.
+5. done -- replaced the T153 Similar-tables relation with the shared $\log\varphi$ / golden-mean-shift fact; checked live T153 before changing.
+6. left for a person -- the notes about adding $c$ rows, moving source/layout prose, replacing Program (P1), per-row rigour, and draft lookup indexing are design decisions or observations, not repairs I could make safely here.
