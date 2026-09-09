@@ -365,7 +365,9 @@ def drafts(request):
 
 def tags(request):
 	page = request.GET.get('page', 1)
-	tags = Tag.objects.all()
+	#A tag reaches no table anybody may see when the only tables that asked
+	#for it are drafts. It is not a tag yet, and listing it announces one.
+	tags = Tag.objects.filter(table_count__gt=0)
 	sortby_default = 'entry_count'
 	sortby = request.GET.get('sort_by',default=sortby_default)
 	if sortby == 'table_count':
@@ -389,7 +391,7 @@ def tag(request, tag_url):
 	page = request.GET.get('page', 1)
 	tag = Tag.from_url(tag_url)
 	#tag = Tag.objects.get(name=tag_name)
-	tables = tag.tables.all()
+	tables = tag.public_tables
 	sortby_default = 'entry_count'
 	sortby = request.GET.get('sort_by',default=sortby_default)
 	#`entry_count` is the name of a sort, not of a column -- the column is

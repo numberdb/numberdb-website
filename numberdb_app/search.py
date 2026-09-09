@@ -682,7 +682,9 @@ def search_metadata(term, limit=METADATA_LIMIT):
 		return list(manager.annotate(rank=rank)
 		            .filter(rank__gte=MIN_RANK).order_by('-rank')[:limit])
 
-	tags = best(Tag.objects)
+	#Same rule as for tables below: a tag whose only tables are drafts is not
+	#an answer, because following it leads to an empty page.
+	tags = best(Tag.objects.filter(table_count__gt=0))
 	#Drafts are their author's until published, so they do not answer a search
 	#by name any more than they answer one by number.
 	tables = [row.table for row in best(

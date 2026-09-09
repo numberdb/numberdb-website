@@ -1,0 +1,82 @@
+# The table document for Lochs's constant. Split out of T170, which was
+# "Constants of the regular continued fraction" and held this constant,
+# Lévy's constant and Khinchin's means together: a table answers a search by
+# its title, and that title named none of the three.
+Title: Lochs's constant
+Definition: >-
+  Lochs's theorem CITE{Lochs} says that for almost every real number the first
+  $n$ decimal digits determine, asymptotically, $Ln$ terms of the regular
+  continued fraction expansion CITE{MathWorldRegularCF}, where
+  $L=\frac{6\log 2\log 10}{\pi^2}$. This table holds $L$.
+Keywords:
+  - Lochs constant
+  - Lochs theorem
+  - regular continued fraction
+  - decimal digits per partial quotient
+Parameters: ''
+Comments:
+  comment-levy: >-
+    Writing $\beta=\frac{\pi^2}{12\log 2}$ for the Khinchin-Lévy constant
+    HREF{Lévy's_constant}[$\beta$], the constant is
+    $L=\frac{\log 10}{2\beta}$: a decimal digit is worth $L$ partial
+    quotients because the denominators of the convergents grow like
+    $e^{\beta n}$.
+  comment-other-use: >-
+    MathWorld records a second, nonstandard use of the name for a constant
+    related to Porter's constant CITE{MathWorldLochs}. This table holds the
+    constant of Lochs's theorem, which is the usual one.
+Formulas:
+  formula-lochs: >-
+    $L=\frac{6\log 2\log 10}{\pi^2}=\frac{\log 10}{2\beta}$, where $\pi$ is
+    HREF{Pi}[$\pi$].
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R = RealBallField(400)
+      6 * R(2).log() * R(10).log() / R.pi()^2
+Similar tables:
+  - table: HREF{Lévy's_constant}[Lévy's constant]
+    relation: $L=\frac{\log 10}{2\beta}$, so this constant is that one read as a rate of conversion between decimal digits and partial quotients
+  - table: HREF{Khinchin's_means}[Khinchin's means $K_p$]
+    relation: the almost-sure limits of the power means of the partial quotients of the same expansion
+  - table: HREF{Pi}[$\pi$]
+    relation: appears in the closed form CITE{formula-lochs}
+Links:
+  MathWorldRegularCF:
+    title: 'MathWorld: Regular Continued Fraction'
+    url: https://mathworld.wolfram.com/RegularContinuedFraction.html
+  MathWorldLochs:
+    title: "MathWorld: Lochs' Constant"
+    url: https://mathworld.wolfram.com/LochsConstant.html
+  OEISA086819:
+    title: "OEIS A086819: decimal expansion of Lochs's constant"
+    url: https://oeis.org/A086819
+References:
+  Lochs:
+    bib: >-
+      G. Lochs, Vergleich der Genauigkeit von Dezimalbruch und Kettenbruch,
+      Abhandlungen aus dem Mathematischen Seminar der Universität Hamburg 27
+      (1964), 142-144.
+    doi: 10.1007/BF02993063
+    mr: '0162753'
+Tags:
+  - number theory
+  - continued fractions
+  - dynamical systems
+  - special values
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'yes'
+  rigour details: >-
+    The value follows from CITE{formula-lochs} and was computed in real ball
+    arithmetic, with $\pi$, $\log 2$ and $\log 10$ taken as balls rather than
+    as rounded constants, so every stored digit is covered by the enclosure.
+
+    It was compared with the decimal expansion in OEIS A086819
+    CITE{OEISA086819}, and the identity $L=\frac{\log 10}{2\beta}$ was checked
+    against the Khinchin-Lévy constant in HREF{Lévy's_constant}[Lévy's
+    constant].
+Display properties:
+  number-header: $L$

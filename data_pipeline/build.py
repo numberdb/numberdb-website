@@ -551,9 +551,19 @@ def build_number_table(only_table=None):
 			#numbers is an entry for a number now, either a string or a dict:
 			if isinstance(numbers,str):
 				count += save_number(c, numbers, params_so_far)
-			elif isinstance(numbers,list):           
+			elif isinstance(numbers,list):
+				#Back through the top of this function rather than straight to
+				#`save_number`, because a table with no parameters writes its
+				#entries as a list and an entry in it may be a mapping --
+				#`{number: ..., comment: ...}` is what `to_nested` produces
+				#for one carrying anything besides its value. Passing that
+				#mapping to `parse_integer` raised TypeError, which the write
+				#reported as an invalid document: Lochs's constant could not
+				#be created with a comment on its only entry. The recursion
+				#unwraps it the same way it unwraps every other entry.
 				for number in numbers:
-					count += save_number(c, number, params_so_far)
+					count += traverse_number_table(
+						c, number, params_so_far, groups_left)
 			elif isinstance(numbers,dict):
 				#The loop only saves keys that hold digits, so the presence of
 				#`equals` beside them is not a reason to skip the entry. See

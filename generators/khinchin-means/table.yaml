@@ -1,17 +1,28 @@
-# The table document for constants of the regular continued fraction, proposal
-# 3 of agents/table-ideas/BATCH-2026-09-09T0015.md. Created as draft T170
-# through the API (X-Draft: yes); publishing is a person's act on the site.
-Title: Constants of the regular continued fraction
+# The table document for Khinchin's means, T170. It began as proposal 3 of
+# agents/table-ideas/BATCH-2026-09-09T0015.md, "Constants of the regular
+# continued fraction", which held Levy's constant and Lochs's constant as
+# well; those are now Levys_constant and Lochss_constant, because a table
+# answers a search by its title and this one's title named neither of them.
+Title: Khinchin's means $K_p$
 Definition: >-
-  Let $x=[a_0;a_1,\ldots]$ have convergents $p_n/q_n$
-  CITE{MathWorldRegularCF}. This table gives almost-sure limits:
-  $K_p=\lim M_p(a_1,\ldots,a_n)$, with $M_p$ the power mean and $M_0$
-  geometric CITE{WikiKhinchin}; Levy's constant $e^\beta=\lim q_n^{1/n}$, its
-  logarithm $\beta$, and Lochs's constant $L$ CITE{Lochs}.
+  Let $x=[a_0;a_1,a_2,\ldots]$ be the regular continued fraction expansion of
+  a real number CITE{MathWorldRegularCF}. For $p<1$ the power mean of order
+  $p$ of the partial quotients has, for almost every $x$, a limit that does
+  not depend on $x$:
+  $K_p=\lim_{n\to\infty}M_p(a_1,\ldots,a_n)$, where $M_p$ is the power mean
+  and $M_0$ the geometric mean CITE{WikiKhinchin}. This table gives $K_p$ for
+  the orders $p$ listed. The order $p=0$ gives Khinchin's constant.
+Keywords:
+  - Khinchin's constant
+  - Khinchin constant
+  - Khinchin harmonic mean
+  - power mean of the partial quotients
+  - regular continued fraction
+  - Gauss-Kuzmin distribution
 Parameters:
   constant:
     type: Symbolic
-    title: constant
+    title: order of the mean
     display: constant
     values:
       K0: '$K_0$'
@@ -27,9 +38,6 @@ Parameters:
       K-10: '$K_{-10}$'
       K1/2: '$K_{1/2}$'
       K-1/2: '$K_{-1/2}$'
-      levy: '$e^\beta$'
-      khinchin-levy: '$\beta$'
-      lochs: '$L$'
 Comments:
   comment-distribution: >-
     Under the Gauss measure, whose density is
@@ -39,20 +47,13 @@ Comments:
     constants $K_p$ are the power means of this distribution.
   comment-conventions: >-
     The row $K_0$ is Khinchin's constant CITE{WikiKhinchin}
-    CITE{MathWorldKhinchin}, and $K_{-1}$ is the Khinchin harmonic mean. The
-    arithmetic mean $K_1$ is infinite, so it is not a finite entry. The row
-    $e^\beta$ stores the exponential form usually called Levy's constant; the
-    row $\beta$ stores its logarithm, which is also called the Khinchin-Levy
-    constant CITE{MathWorldLevy}.
-  comment-lochs: >-
-    Lochs's constant is the limit in Lochs's theorem CITE{Lochs}
-    CITE{MathWorldLochs}. This table uses
-    $L=\frac{6\log 2\log 10}{\pi^2}$, so that
-    $L=\frac{\log 10}{2\beta}$; MathWorld notes a different, nonstandard use
-    of the name for a constant related to Porter's constant CITE{MathWorldLochs}.
-  comment-gauss-map: >-
-    For the Gauss map $x\mapsto 1/x-\lfloor 1/x\rfloor$, the Lyapunov exponent
-    with respect to the Gauss measure is $2\beta=\frac{\pi^2}{6\log 2}$.
+    CITE{MathWorldKhinchin}, and $K_{-1}$ is the Khinchin harmonic mean
+    CITE{MathWorldHarmonic}. The arithmetic mean $K_1$ is infinite, and $K_p$
+    is finite exactly for $p<1$, so the table stops there rather than by
+    choice.
+  comment-monotonic: >-
+    The power mean increases with its order, so
+    $K_{-10}<K_{-9}<\cdots<K_{-1}<K_{-1/2}<K_0<K_{1/2}$.
 Formulas:
   formula-probability: >-
     $\Pr(a_i=k)=\log_2\left(1+\frac{1}{k(k+2)}\right)$ for $k\geq1$.
@@ -72,19 +73,7 @@ Formulas:
     c_n(p)\left(\zeta(n-p)-1\right)$, where
     $c_n(p)=\sum_{j=1}^{\lfloor n/2\rfloor}
     \frac{(-1)^{n-2j}}{j}{p\choose n-2j}$.
-  formula-levy-lochs: >-
-    $\beta=\frac{\pi^2}{12\log 2}$,
-    $e^\beta=\exp\left(\frac{\pi^2}{12\log 2}\right)$, and
-    $L=\frac{6\log 2\log 10}{\pi^2}=\frac{\log 10}{2\beta}$, where
-    $e$ is HREF{E}[$e$] and $\pi$ is HREF{Pi}[$\pi$].
 Programs:
-  program-sage:
-    language: Sage
-    code: |-
-      R = RealBallField(400)
-      beta = R.pi()^2 / (12 * R(2).log())
-      beta.exp()                                    # Levy's constant
-      6 * R(2).log() * R(10).log() / R.pi()^2       # Lochs's constant
   program-python:
     language: Python
     code: |-
@@ -97,12 +86,12 @@ Programs:
                      [1, mp.inf]) / mp.log(2))                     # K_0
       mp.nsum(lambda k: prob(k)/k, [1, mp.inf]) ** -1              # K_{-1}
 Similar tables:
+  - table: HREF{Lévy's_constant}[Lévy's constant]
+    relation: the other almost-sure limit of the regular continued fraction, taken over the denominators of the convergents rather than over the partial quotients
+  - table: HREF{Lochs's_constant}[Lochs's constant]
+    relation: how many partial quotients a decimal digit determines, for almost every real number
   - table: HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[Values of the Riemann zeta function at rational numbers]
     relation: the zeta values $\zeta(2n)$ and $\zeta(n-p)$ in CITE{formula-k0-zeta} and CITE{formula-kp-zeta}
-  - table: HREF{Pi}[$\pi$]
-    relation: appears in the closed forms for $\beta$, $e^\beta$ and $L$ in CITE{formula-levy-lochs}
-  - table: HREF{E}[$e$]
-    relation: the base of Levy's constant $e^\beta$
 Links:
   WikiKhinchin:
     title: "Wikipedia: Khinchin's constant"
@@ -119,12 +108,6 @@ Links:
   MathWorldHarmonic:
     title: 'MathWorld: Khinchin Harmonic Mean'
     url: https://mathworld.wolfram.com/KhinchinHarmonicMean.html
-  MathWorldLevy:
-    title: 'MathWorld: Levy Constant'
-    url: https://mathworld.wolfram.com/LevyConstant.html
-  MathWorldLochs:
-    title: "MathWorld: Lochs' Constant"
-    url: https://mathworld.wolfram.com/LochsConstant.html
   OEISA002210:
     title: "OEIS A002210: decimal expansion of Khinchin's constant"
     url: https://oeis.org/A002210
@@ -158,30 +141,15 @@ Links:
   OEISA087500:
     title: 'OEIS A087500: decimal expansion of the Khinchin mean $K_{-10}$'
     url: https://oeis.org/A087500
-  OEISA086702:
-    title: "OEIS A086702: decimal expansion of Levy's constant"
-    url: https://oeis.org/A086702
-  OEISA100199:
-    title: 'OEIS A100199: decimal expansion of $\pi^2/(12\log 2)$'
-    url: https://oeis.org/A100199
-  OEISA086819:
-    title: "OEIS A086819: decimal expansion of Lochs's constant"
-    url: https://oeis.org/A086819
 References:
   BBC:
     bib: >-
       D. H. Bailey, J. M. Borwein and R. E. Crandall, On the Khintchine
       constant, Mathematics of Computation 66 (1997), 417-431.
     doi: 10.1090/S0025-5718-97-00800-4
-  Lochs:
-    bib: >-
-      G. Lochs, Vergleich der Genauigkeit von Dezimalbruch und Kettenbruch,
-      Abhandlungen aus dem Mathematischen Seminar der Universitat Hamburg 27
-      (1964), 142-144.
-    doi: 10.1007/BF02993063
-    mr: '0162753'
 Tags:
   - number theory
+  - continued fractions
   - dynamical systems
   - special values
 Data properties:
@@ -190,29 +158,24 @@ Data properties:
   complete: 'no'
   complete-note: >-
     it holds $K_p$ for
-    $p=0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-10,\frac12,-\frac12$, together with
-    Levy's constant $e^\beta$, the Khinchin-Levy constant $\beta$, and
-    Lochs's constant $L$
+    $p=0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-10,\frac12,-\frac12$, and $K_p$ is
+    finite for every $p<1$
   rigour details: >-
-    The rows $K_p$ were computed from CITE{formula-k0-zeta} for $p=0$ and
-    from CITE{formula-kp-zeta} for $p\ne0$. Each row was computed twice,
-    once at $150$ working decimal digits with $680$ grouped zeta terms and
-    once at $210$ working decimal digits with $920$ grouped zeta terms; the
-    values agreed in their first $105$ significant digits, and the interval
-    stored is the union of the two decimal values.
+    Each row was computed from CITE{formula-k0-zeta} for $p=0$ and from
+    CITE{formula-kp-zeta} for $p\ne0$, twice: once at $150$ working decimal
+    digits with $680$ grouped zeta terms, and once at $210$ working decimal
+    digits with $920$ grouped zeta terms. The two values agreed in their
+    first $105$ significant digits, and what is stored is the union of the
+    two decimal values. Agreement between two truncations is evidence and not
+    a proof, which is what the rigour says.
 
-    The rows $e^\beta$, $\beta$ and $L$ were computed from
-    CITE{formula-levy-lochs} in real ball arithmetic with $64$ guard bits.
     The rows $K_0,K_{-1},\ldots,K_{-10}$ were compared with the decimal
-    expansions in the OEIS links named in their entry comments and with the
-    table on MathWorld's Khinchin harmonic mean page CITE{MathWorldHarmonic}.
-    The two half-integer rows were checked against direct partial sums of
-    CITE{formula-kp}, with the positive tail bounded by
-    $\sum_{k>N} k^{p-2}/\log 2$; at $N=200000$ the resulting intervals
-    contain the stored values. The rows $e^\beta$, $\beta$ and $L$ were
-    compared with OEIS A086702, A100199 and A086819, and the identity
-    $L=\frac{\log 10}{2\beta}$ was checked on the stored values. The
-    monotonicity
-    $K_{-10}<K_{-9}<\cdots<K_{-1}<K_{-1/2}<K_0<K_{1/2}$ was also checked.
+    expansions in the OEIS entries named in their comments and with the table
+    on MathWorld's Khinchin harmonic mean page CITE{MathWorldHarmonic}. The
+    two half-integer rows have no OEIS entry to compare with and were checked
+    against direct partial sums of CITE{formula-kp}, with the positive tail
+    bounded by $\sum_{k>N}k^{p-2}/\log 2$; at $N=200000$ the resulting
+    intervals contain the stored values. The monotonicity in
+    CITE{comment-monotonic} was checked on the stored values.
 Display properties:
   number-header: value
