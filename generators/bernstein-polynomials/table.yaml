@@ -48,8 +48,8 @@ Comments:
     polynomials comparable here.
   comment-approximation: >-
     The Bernstein polynomial of a function $f$, $\sum_{v} f(v/n)\, b_{v,n}$,
-    converges uniformly to $f$ on $[0,1]$ for continuous $f$ -- Bernstein's
-    proof of the Weierstrass approximation theorem CITE{Wiki}.
+    converges uniformly to $f$ on $[0,1]$ for continuous $f$, which is
+    Bernstein's proof of the Weierstrass approximation theorem CITE{Wiki}.
 Links:
   Wiki:
     title: 'Wikipedia: Bernstein polynomial'

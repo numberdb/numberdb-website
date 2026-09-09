@@ -9,6 +9,11 @@ written by an agent reading a page, without running anything, possibly hours
 ago. On the ten critiques written so far, acting on them needed judgement four
 separate times, in four different ways. Each of those is a rule below.
 
+Read <https://numberdb.org/skill> first. You are about to write prose and
+values into a table that a reader will meet, under the same rules the build
+was held to; a repair that fixes one fault and introduces another is a
+critique's worth of work spent for nothing. Fetch it rather than remember it.
+
 ## Before you change anything
 
 **Re-read the live document.** `GET /api/table?id=<TID>` and the rendered page

@@ -150,14 +150,14 @@ Data properties:
   complete: 'no'
   complete-note: every $n\leq 50$ is here, the range of the table of Legendre polynomials
   rigour details: >-
-    An exact value -- a polynomial with rational coefficients -- so there is
-    no precision to choose. Each entry is built by the recurrence and, before
-    it is written, must equal the defining integral evaluated exactly from the
-    moments and the sum of CITE{DLMF}, and must have degree $n-1$, the parity
-    of $n-1$ and $q_n(1)=2H_n$. Outside the generator the same polynomials
-    were compared with a computation in plain Python fractions, with the
-    Legendre function of the second kind in ball arithmetic at rational
-    points, with the Padé property for $\operatorname{artanh}$, and with
-    every Gauss–Legendre weight for $n\leq 30$.
+    Every value is exact, a polynomial with rational coefficients, so there
+    is no precision to choose. Each entry is built by the recurrence and,
+    before it is written, must equal the defining integral evaluated exactly
+    from the moments and the sum of CITE{DLMF}, and must have degree $n-1$,
+    the parity of $n-1$ and $q_n(1)=2H_n$. Outside the generator the same
+    polynomials were compared with a computation in plain Python fractions,
+    with the Legendre function of the second kind in ball arithmetic at
+    rational points, with the Padé property for $\operatorname{artanh}$, and
+    with every Gauss–Legendre weight for $n\leq 30$.
 Display properties:
   number-header: $q_n(x)$
