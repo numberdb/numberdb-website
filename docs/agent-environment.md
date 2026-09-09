@@ -2293,3 +2293,25 @@ author is in `agents/lessons/PROPOSALS.md`.
 
 Evidence: T170 head 4ee3f1b0, 2026-09-09; `/tmp/crit170_out.txt` has the
 audit output and the HTML; `agents/critiques/T170.md` finding 1.
+
+## A generator directory name is not enough to skip a proposal
+
+What happened: this run was asked for the highest-ranked proposal in
+`agents/table-ideas/BATCH-2026-09-09T1518.md` that no generator answered yet.
+It first treated `generators/power-sum-polynomials/` as answering proposal 1,
+because the directory name matched the batch heading. Reading the generator
+and table document showed that it fills T119, the power sum symmetric
+polynomials $p_k(x_1,\ldots,x_n)$, while proposal 1 was for
+$S_p(n)=\sum_{k=1}^{n}k^p$ as a polynomial in $n$. The run corrected course
+before writing the wrong table, but only because the docstring and
+`table.yaml` were read.
+
+What to do instead: when the stage-two task says "no generator answers yet",
+read the candidate generator's docstring, table id and `table.yaml` title
+before counting it as coverage. A path is an aid to finding the file, not a
+claim about the family it answers.
+
+Evidence: `generators/power-sum-polynomials/generate.py` begins "Power sum
+symmetric polynomials" and points to T119 at
+`Power_sum_symmetric_polynomials`; proposal 1 in the 2026-09-09T1518 batch
+names the sums $S_p(n)=\sum_{k=1}^{n}k^p$.
