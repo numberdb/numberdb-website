@@ -214,7 +214,12 @@ T168 carries `$c=-r(r-2)/4$` on all twenty-four of its $c$ rows, where `$c$`
 was wanted and the formula belongs in `Formulas`. The same for a closed form
 that the entry's comment already gives -- T167's Ramanujan row was labelled
 `$15/\pi^2$, ...` and its comment says the identity in the sentence that
-names it.
+names it. The value column has a label too,
+`Display properties: number-header`, and it is a claim about every value under
+it: T174 stored $\lambda_n$ and went on heading the column $|\lambda_n|$,
+which says the table holds something it does not. When what a table stores
+changes, three places say what it holds -- the title, the definition and that
+header -- and the header is the one nobody rereads.
 
 **Do not name a parameter by its key in prose.** T169's definition said "the
 periodic-window quantity named by the parameter `expression`", which tells a

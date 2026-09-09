@@ -145,4 +145,4 @@ Data properties:
     in CITE{comment-sign} and the approach of $\lambda_n/\lambda_{n+1}$
     toward $-\varphi^2$ were checked on the stored range.
 Display properties:
-  number-header: $|\lambda_n|$
+  number-header: $\lambda_n$
