@@ -221,7 +221,17 @@ class ArtinPrimitiveRootDensities(numberdb.Generator):
     rigour = 'heuristic (agreement-checked)'
 
     def enumerate(self, bound=BOUND):
-        for a in range(-bound, bound + 1):
+        #By |a|, positive before negative, and not in the order of ZZ. Entries
+        #are shown in the order the document writes them, so -1000 led the
+        #table and 2 -- Artin's own constant, and the row anybody arrives
+        #wanting -- was halfway down. Small bases are the interesting ones and
+        #belong at the top, and a and -a belong next to each other because
+        #their densities are what a reader compares.
+        #
+        #The two are not paired everywhere: 4 is a square and -4 is not, so
+        #|a| = 4 contributes one row. Sorting handles that without a special
+        #case.
+        for a in sorted(range(-bound, bound + 1), key=lambda a: (abs(a), -a)):
             if in_domain(a):
                 yield {'a': str(a)}
 

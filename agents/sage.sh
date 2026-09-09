@@ -23,10 +23,17 @@
 #     cat ~/.config/numberdb/zeta3-key | NUMBERDB_KEY_FROM_STDIN=1 \
 #         agents/sage.sh fill.py
 #
-# The flag is forwarded into the container. Without it the script never reads
-# the pipe, and a generator then goes to the API with no key: reads of a
-# *draft* answer "does not exist", which reads like the table was never
-# created.
+# NUMBERDB_KEY_FROM_STDIN and NUMBERDB_PUBLISH are forwarded into the
+# container, because a generator's `__main__` reads both and this script
+# passes no arguments, so `--publish` cannot be given. Without the first the
+# script never reads the pipe and goes to the API with no key: a read of a
+# *draft* then answers "does not exist", which reads like the table was never
+# created rather than like a missing credential. Filling T169 and verifying
+# T172 each lost a run to that.
+#
+# NUMBERDB_PUBLISH sends a generator's *numbers* to a table its key may
+# already write. It does not make a table public: that is `publish_table`,
+# which is on the site, behind review, and reachable from nothing here.
 #
 # Nothing here can publish a table. That is enforced on the server by the
 # account the key belongs to, not by this script.
@@ -110,6 +117,7 @@ ssh "${ssh_opts[@]}" "$REMOTE" \
 		-e PYTHONPATH=/app/clients/python \
 		-e NUMBERDB_ASSISTED_BY='${NUMBERDB_ASSISTED_BY:-assisted by an agent}' \
 		-e NUMBERDB_KEY_FROM_STDIN='${NUMBERDB_KEY_FROM_STDIN:-0}' \
+		-e NUMBERDB_PUBLISH='${NUMBERDB_PUBLISH:-0}' \
 		${mounts[*]} \
 		web sage -python -u /work/$(basename "$main")" \
 	2>&1 | grep --line-buffered -viE 'collecting static|static files copied|Starting command as|^ Container |remote port forwarding'
