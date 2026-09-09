@@ -160,3 +160,43 @@ class AFirstSentenceLongerThanTheWindow(TestCase):
 		self.assertIn('Short opening.', head)
 		self.assertLess(len(head), 500)
 		self.assertTrue(rest)
+
+
+class BackticksMeanCodeEverywhere(TestCase):
+	"""They were taught in one field and used in another.
+
+	The help and the skill say backticks mark code; only `rigour details`
+	implemented them, so the first author to reach for one put it in a
+	Definition -- T169's says "the quantity named by the parameter
+	`expression`" -- where it rendered as two literal backticks. The corpus
+	had none before that table, so allowing them everywhere reinterprets
+	nothing.
+	"""
+
+	def setUp(self):
+		self.user = get_user_model().objects.create_user('tick_author')
+		self.table = Table.objects.create(
+			tid='T780', tid_int=780, url='t780', title='A table',
+			published=True)
+
+	def page(self, tree):
+		commit_table(self.table, tree, author=self.user, message='m',
+		             via='orm')
+		return Client().get('/T780', HTTP_HOST='numberdb.org').content.decode()
+
+	def test_a_definition_renders_them(self):
+		body = self.page({'Title': 'A table', 'Numbers': {'1': '2'},
+		                  'Definition': 'The quantity named by `expression`.'})
+		self.assertIn('<code class="prose-code">expression</code>', body)
+		self.assertNotIn('`expression`', body)
+
+	def test_a_comment_renders_them(self):
+		body = self.page({'Title': 'A table', 'Numbers': {'1': '2'},
+		                  'Comments': {'c': 'Computed with `qfminim`.'}})
+		self.assertIn('<code class="prose-code">qfminim</code>', body)
+
+	def test_a_lone_backtick_is_left_alone(self):
+		#Nothing to close, so nothing to mark up.
+		body = self.page({'Title': 'A table', 'Numbers': {'1': '2'},
+		                  'Comments': {'c': 'A lone ` backtick here.'}})
+		self.assertNotIn('<code class="prose-code">', body)

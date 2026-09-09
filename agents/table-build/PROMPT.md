@@ -175,6 +175,33 @@ your report -- naming the tables -- rather than settling for "physics". A tag
 is proposed by the batch that needs it, since one table alone cannot show that
 three would use it. `audit_table` refuses a tag that reaches only this table.
 
+**A value that is exactly a rational is written exactly.** Not
+`3.000000000000000000000000000000`: a decimal means plus or minus one unit in
+the last place however long it is, so that spelling says a number known to be
+3 is known to thirty places. The exactly-known members of a family are usually
+its most interesting rows -- the logistic map's $r=3$ and $r=2$, and the
+$c=-3/4$, $-5/4$, $-1$ that go with them.
+
+**Decide it from the definition, never from the digits.** A run of zeros is
+evidence and not proof: 3.000000000000000000 may be 3, or 3 + 10^-40 rounded,
+and no number of zeros separates them. $r=3$ is exact because the fixed point
+loses stability where $|f'|=1$, which is an argument. Where there is no such
+argument the zeros mean the opposite thing -- a rounding presented as sixty
+significant places -- and the fix is fewer digits, or a ball. `dry_run.py`
+reports the run of zeros and leaves the reading to you.
+
+**Do not name a parameter by its key in prose.** T169's definition said "the
+periodic-window quantity named by the parameter `expression`", which tells a
+reader nothing: `expression` is how the document addresses a column, not a
+word anybody outside it knows. Name the quantities, or use the parameter's
+`display` symbol.
+
+**And prefer a specific key to `expression`.** Twenty-two tables use that one
+name for three unrelated things -- which form of a constant, which quantity of
+an object, which length is normalised to 1. For a new table say which:
+`quantity`, `form`, `normalisation`. The existing ones stay as they are,
+because a key appears in entry addresses and renaming one breaks citations.
+
 **Cite what you already declared.** If `Links` holds the Wikipedia article for
 the object, put `CITE{Wiki}` at its first mention in the definition. The
 reference is there; the reader should not have to scroll for it.
