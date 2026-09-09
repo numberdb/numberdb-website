@@ -2150,3 +2150,26 @@ Evidence: `/tmp/t165_verify_generator.py` and the failed and successful
 verification outputs, 2026-09-09; the T166 fill first failed with
 `can't find '__main__' module in '/work/generate.py'`, then succeeded through
 `/tmp/fill_bh_with_attachment.py`.
+
+## A burst of outbound fetches through the proxy fails as a batch, then works one at a time
+
+What happened: a stage-one run fired twelve `screen.source_names_it` calls
+in one Python process while three other background jobs (an OEIS loop, a
+Wikipedia scrape and a Sage run's ssh) were fetching at the same time. Ten
+of the twelve came back `source could not be read (URLError)` for
+Wikipedia, MathWorld, OEIS and arXiv pages that had answered a minute
+earlier; the last two in the list, reached after the other jobs finished,
+passed. Re-run alone a few minutes later, every one of the ten passed or
+failed for a real reason.
+
+What the skill says now: nothing; this is the proxy, not the corpus.
+
+What to do instead: run the source screens in one process, one at a time,
+with nothing else fetching; and read a `could not be read` from a busy run
+as "not yet screened", never as a failed source. `screen.py` already
+distinguishes an unreadable source from a source that names nothing, so the
+verdict is legible; it is the scheduling that hides it.
+
+Evidence: `/tmp/claude-1000/.../tasks/bqh8aunkl.output`, 2026-09-09: ten
+`URLError` lines followed by two verdicts; the same twelve URLs rerun at
+00:40 UTC in one process, all answered.
