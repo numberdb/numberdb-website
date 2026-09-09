@@ -1,0 +1,9 @@
+1. done -- added `formula-symmetry` and cited it from the Lobachevsky comment; checked period and reflection identities in Sage against all 538 live rows, then narrowed the reduction claim to $0\leq t\leq1$ because endpoint zeros are omitted.
+2. done -- replaced the deferred definition with an explicit standard-Clausen definition and the even/odd polylog parts; checked MathWorld/Wikipedia against the convention and reran `audit_table` after shortening the definition below the length warning.
+3. done -- added $\mathrm{Cl}_3(\pi/3)=\zeta(3)/3$, the even-order Dirichlet $L$-value identities, and row comments for $(3,1/3)$, $(4,1/2)$ and $(4,2/3)$; checked the zeta and $L$-value claims in Sage balls against the live written intervals.
+4. done -- rewrote the Lobachevsky comment to say $\Lambda(\pi t)=\frac12\mathrm{Cl}_2(2\pi t)$ with modulo-2 reduction, sign symmetry and omitted endpoints; checked the sign and period reductions in Sage across all live rows.
+5. done -- added $\alpha=t/2$ to the Hurwitz-zeta formula; checked the relation from $e^{i\pi t}=e^{2\pi i(t/2)}$ in the Sage verification script.
+6. done -- replaced the rigour note's build-process sentence with the verification actually run for the expanded formulas and removed the dry-run size sentence; reran `audit_table`.
+7. done -- changed the Catalan mention in `formula-special-values` to link the NumberDB entry `Values_of_Dirichlet_L-functions_at_positive_integers#4,3,2` and removed the unused Wikipedia Catalan link; checked the HREF in the rendered page and with `audit_table --links`.
+8. left for a person -- the slug ending in `of` was an owner call before publication and the table is now published, so I did not rename it during a prose/value repair.
+9. done -- removed the repeated Gieseking-name clause from `formula-special-values` by writing $\mathrm{Cl}_2(2\pi/3)=2\mathrm{Cl}_2(\pi/3)/3$ instead; checked the value identity in Sage.

@@ -49,6 +49,8 @@ def _comment(s, t):
         return "Gieseking's constant, the volume of the regular ideal tetrahedron."
     if s == 2 and t == '2/3':
         return "$2/3$ of Gieseking's constant."
+    if s == 3 and t == '1/3':
+        return "$\\zeta(3)/3$."
     if s == 3 and t == '1/2':
         return "$-3\\zeta(3)/32$."
     if s == 3 and t == '2/3':
@@ -56,7 +58,9 @@ def _comment(s, t):
     if s == 3 and t == '1':
         return "$-3\\zeta(3)/4$."
     if s == 4 and t == '1/2':
-        return "Dirichlet's beta value $\\beta(4)$."
+        return "$L(4,\\chi_4(3,\\cdot))$, Dirichlet's $\\beta(4)$."
+    if s == 4 and t == '2/3':
+        return "$(\\sqrt3/2)L(4,\\chi_3(2,\\cdot))$."
     return ''
 
 
