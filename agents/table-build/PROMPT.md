@@ -175,6 +175,20 @@ your report -- naming the tables -- rather than settling for "physics". A tag
 is proposed by the batch that needs it, since one table alone cannot show that
 three would use it. `audit_table` refuses a tag that reaches only this table.
 
+**A value's display is a label, not a formula.** It is printed on every row
+that value indexes, so a conversion rule put there is repeated once per row:
+T168 carries `$c=-r(r-2)/4$` on all twenty-four of its $c$ rows, where `$c$`
+was wanted and the formula belongs in `Formulas`. The same for a closed form
+that the entry's comment already gives -- T167's Ramanujan row was labelled
+`$15/\pi^2$, ...` and its comment says the identity in the sentence that
+names it.
+
+**The first line of the generator's docstring names the table**, as
+`... -- numberdb.org/T164`. It is not decoration: the campaign reads it to
+know which table to critique, and the cost ledger reads it to know what the
+run was about. A generator that omitted it sent a critique and a repair at
+the wrong table, which had been finished an hour earlier.
+
 **Cite what you already declared.** If `Links` holds the Wikipedia article for
 the object, put `CITE{Wiki}` at its first mention in the definition. The
 reference is there; the reader should not have to scroll for it.
