@@ -4556,3 +4556,36 @@ entries: 0` on 2026-09-09. Revision
 `0268499f30aa5c92cca226c29135a0bbea0443c0033ed2d9efd9cd525accb1c4`
 flattened the same 538 entries, after which `stored('T175')` saw all 538 and
 the Hurwitz, zeta and beta checks passed.
+
+## arb's ${}_2F_1$ answers nan near $x=1$ when $c-a-b$ is an integer only up to the ball's radius
+
+What happened: reading T178, the `Programs` incantation
+`CBF(x).hypergeometric([a, 1 - a], [CBF(1)])` with `a = CBF(QQ(1)/3)`
+returns `nan` for every $x\geq4/5$ (and $7/9$, $10/13$, $13/17$, $15/19$:
+everything above about $0.76$), while the same call with $a=1/2$ or $1/4$
+is finite with radius $10^{-136}$ all the way to $19/20$. The split is
+exactly `a.is_exact()`: $1/2$, $1/4$, $1/8$, $1/16$ are exact balls and
+$1/3$, $1/5$, $1/6$, $1/7$, $1/12$ are not. Near $x=1$ arb switches to the
+$x\mapsto1-x$ connection formula, which has a $\Gamma(c-a-b)$ in it; for an
+inexact $a$ the ball $c-a-(1-a)$ contains zero without being zero, arb
+cannot take the logarithmic limit it takes for an exact integer, and the
+result is nan. The generator that built T178 avoided it by summing the
+$c=a+b$ connection series (DLMF 15.8.10) itself with a hand tail bound,
+which is the right workaround and is why its rigour note says the arb
+check covered "448 rows where that call returned a finite value".
+
+What the skill says now: a nan ball overlaps everything, so check both
+sides are finite before believing a comparison; arb takes a power as
+$\exp(y\log x)$.
+
+What it should say: the same, plus: arb decides which ${}_2F_1$
+transformation to apply from the balls it is given, and a parameter
+relation that holds exactly in the mathematics ($c=a+b$, or $c-a-b\in\mathbb Z$)
+is invisible to it when a parameter is not a dyadic rational. Expect nan
+for $|x|$ above about $3/4$ in that case, and sum the connection series for
+the exact case yourself, with a tail bound, or say in `Programs` where the
+incantation stops working.
+
+Evidence: `/tmp/crit178b_out.txt` and `/tmp/crit178c_out.txt` (the second
+is the `r=2,3,4,5,6,7,8,12,16` grid), 2026-09-09; T178 head
+`cd9f59be…`, rigour note and program (P1).
