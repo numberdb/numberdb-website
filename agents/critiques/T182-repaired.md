@@ -1,0 +1,1 @@
+left for a person -- `agents/critiques/T182.md` is absent from this checkout, so there were no findings to check line by line; I made no table edit after authenticated `GET /api/table?id=T182`, a failed rendered-page read at `/T182` without a login session, `audit_table T182` reporting nothing, and generator verification matching 51/51 entries.
