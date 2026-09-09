@@ -1,0 +1,196 @@
+# The table document for proposal 5 of
+# agents/table-ideas/BATCH-2026-09-09T1936.md. Created as draft T188 through
+# the API (X-Draft: yes), filled by generate.py beside it, and offered for
+# review; publishing is a person's act on the site.
+Title: Values of exponential, logarithmic, sine and cosine integrals
+Definition: >-
+  This table gives the real principal values, as defined in
+  CITE{DLMFIntegralDefinitions}, of $\operatorname{Ei}(x)$, $E_1(x)$,
+  $\operatorname{li}(x)$, $\operatorname{Si}(x)$, $\operatorname{Ci}(x)$,
+  $\operatorname{Shi}(x)$ and $\operatorname{Chi}(x)$, where $x$ is a positive
+  rational number.
+Keywords:
+  - exponential integral
+  - logarithmic integral
+  - trigonometric integral
+  - sine integral
+  - cosine integral
+  - hyperbolic sine integral
+  - hyperbolic cosine integral
+  - Theis well function
+  - offset logarithmic integral
+  - Ei(1)
+  - li(2)
+  - Si(1)
+  - Ci(1)
+Parameters:
+  function:
+    type: Symbolic
+    title: integral function
+    display: function
+    constraints: $\operatorname{Ei}$, $E_1$, $\operatorname{li}$, $\operatorname{Si}$, $\operatorname{Ci}$, $\operatorname{Shi}$ or $\operatorname{Chi}$
+    values:
+      Ei: $\operatorname{Ei}(x)$
+      E1: $E_1(x)$
+      li: $\operatorname{li}(x)$
+      Si: $\operatorname{Si}(x)$
+      Ci: $\operatorname{Ci}(x)$
+      Shi: $\operatorname{Shi}(x)$
+      Chi: $\operatorname{Chi}(x)$
+  x:
+    type: Q
+    title: argument
+    display: $x$
+    constraints: $x>0$, with $x\ne1$ for $\operatorname{li}$
+Comments:
+  comment-names: >-
+    The functions listed here are the exponential integral CITE{WikiExponential},
+    the logarithmic integral CITE{WikiLogarithmic}, the sine and cosine
+    integrals CITE{WikiTrigonometric}, and their hyperbolic analogues.
+  comment-branches: >-
+    The branch choices are the real branches on $x>0$. The logarithmic
+    integral $\operatorname{li}(x)$ is taken as the Cauchy principal value
+    through the pole at $1$ when $x>1$ CITE{WikiLogarithmic}; the point $x=1$
+    is omitted because it is singular. The functions $\operatorname{Ci}$ and
+    $\operatorname{Chi}$ use the real logarithm in the definitions in
+    CITE{DLMFIntegralDefinitions}.
+  comment-e1: >-
+    The function $E_1$ is the first member of the generalized exponential
+    integrals $E_n$. For $x>0$, the relation in CITE{formula-e1} makes it the
+    real value of $-\operatorname{Ei}(-x)$.
+  comment-offset-li: >-
+    Riemann's offset logarithmic integral is
+    $\operatorname{Li}(x)=\operatorname{li}(x)-\operatorname{li}(2)$ for
+    $x>1$ CITE{WikiLogarithmic}. It is not stored as a separate function.
+  comment-gibbs: >-
+    HREF{Gibbs_constant}[The Wilbraham-Gibbs constant] stores
+    $\operatorname{Si}(\pi)$ and its normalisations. The argument $\pi$ is not
+    rational, so that value is not a row of this table.
+Formulas:
+  formula-ei-series: >-
+    For $x>0$,
+    $\operatorname{Ei}(x)=\gamma+\log x+\sum_{k=1}^{\infty}x^k/(k\,k!)$,
+    where $\gamma$ is
+    HREF{Stieltjes_constants#0}[the Euler-Mascheroni constant]
+    CITE{DLMFIntegralDefinitions}.
+  formula-e1: >-
+    For $x>0$, $E_1(x)=-\operatorname{Ei}(-x)$ CITE{DLMFIntegralDefinitions}.
+  formula-li: >-
+    For $x>0$ and $x\ne1$,
+    $\operatorname{li}(x)=\operatorname{Ei}(\log x)$
+    CITE{DLMFIntegralDefinitions}.
+  formula-si-ci: >-
+    For $x>0$, $\operatorname{Si}(x)=\int_0^x\sin(t)/t\,dt$ and
+    $\operatorname{Ci}(x)=\gamma+\log x+\int_0^x(\cos(t)-1)/t\,dt$
+    CITE{DLMFIntegralDefinitions}.
+  formula-shi-chi: >-
+    For $x>0$, $\operatorname{Shi}(x)=\int_0^x\sinh(t)/t\,dt$ and
+    $\operatorname{Chi}(x)=\gamma+\log x+\int_0^x(\cosh(t)-1)/t\,dt$
+    CITE{DLMFIntegralDefinitions}.
+  formula-ei-shi-chi: >-
+    For $x>0$, $\operatorname{Ei}(x)=\operatorname{Shi}(x)+\operatorname{Chi}(x)$
+    CITE{DLMFIntegralDefinitions}.
+  formula-parity: >-
+    The functions $\operatorname{Si}$ and $\operatorname{Shi}$ are odd. The
+    real continuation satisfies
+    $\operatorname{Ci}(-x)=\operatorname{Ci}(x)+i\pi$ and
+    $\operatorname{Chi}(-x)=\operatorname{Chi}(x)+i\pi$ across the principal
+    branch cut CITE{DLMFIntegralDefinitions}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.rational_field import QQ
+      from sage.rings.real_arb import RealBallField
+
+      RBF = RealBallField(numberdb.bits(100, losing=64))
+      x = RBF(QQ(1))
+      x.Ei()
+      -RBF(-QQ(1)).Ei()
+      RBF(QQ(2)).log_integral()
+      x.Si()
+      x.Ci()
+      x.Shi()
+      x.Chi()
+  program-python:
+    language: Python
+    code: |-
+      import mpmath
+
+      mpmath.mp.dps = 100
+      mpmath.ei(1)
+      mpmath.e1(1)
+      mpmath.li(2)
+      mpmath.si(1)
+      mpmath.ci(1)
+      mpmath.shi(1)
+      mpmath.chi(1)
+Similar tables:
+  - table: HREF{Gibbs_constant}[Wilbraham-Gibbs constant]
+    relation: stores $\operatorname{Si}(\pi)$ and its normalisations
+  - table: HREF{Values_of_the_prime_zeta_function_at_rational_numbers}[Values of the prime zeta function at rational numbers]
+    relation: is another table of real values connected to the prime number theorem
+  - table: HREF{Stieltjes_constants}[Stieltjes constants]
+    relation: contains $\gamma_0$, the Euler-Mascheroni constant used in the series definitions
+Links:
+  WikiExponential:
+    title: "Wikipedia: Exponential integral"
+    url: https://en.wikipedia.org/wiki/Exponential_integral
+  WikiLogarithmic:
+    title: "Wikipedia: Logarithmic integral function"
+    url: https://en.wikipedia.org/wiki/Logarithmic_integral_function
+  WikiTrigonometric:
+    title: "Wikipedia: Trigonometric integral"
+    url: https://en.wikipedia.org/wiki/Trigonometric_integral
+  DLMFIntegralDefinitions:
+    title: "DLMF 6.2: Definitions and Basic Properties"
+    url: https://dlmf.nist.gov/6.2
+  OEISEiOne:
+    title: 'OEIS A091725: decimal expansion of $\operatorname{Ei}(1)$'
+    url: https://oeis.org/A091725
+  OEISEOne:
+    title: "OEIS A099285: decimal expansion of $E_1(1)$"
+    url: https://oeis.org/A099285
+  OEISLiTwo:
+    title: 'OEIS A069284: decimal expansion of $\operatorname{li}(2)$'
+    url: https://oeis.org/A069284
+  OEISSiOne:
+    title: 'OEIS A099281: decimal expansion of $\operatorname{Si}(1)$'
+    url: https://oeis.org/A099281
+  OEISCiOne:
+    title: 'OEIS A099282: decimal expansion of $\operatorname{Ci}(1)$'
+    url: https://oeis.org/A099282
+  OEISShiOne:
+    title: 'OEIS A099283: decimal expansion of $\operatorname{Shi}(1)$'
+    url: https://oeis.org/A099283
+  OEISChiOne:
+    title: 'OEIS A099284: decimal expansion of $\operatorname{Chi}(1)$'
+    url: https://oeis.org/A099284
+Tags:
+  - special values
+  - special functions
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every listed function at every rational $x=a/b$ in lowest terms
+    with $b\leq6$ and $0<x\leq5$, except for the singular value
+    $\operatorname{li}(1)$
+  rigour details: >-
+    Each value was computed as a Sage real ball with arb at
+    `numberdb.bits(digits, losing=64)` bits. Before the draft was created, the
+    entries were checked against mpmath at 150 decimal digits, against the
+    identities in CITE{formula-e1}, CITE{formula-li} and
+    CITE{formula-ei-shi-chi} wherever the relevant values are stored, against
+    HREF{Gibbs_constant}[the Wilbraham-Gibbs constant] by evaluating
+    $\operatorname{Si}(\pi)$ with the same ball method, and against the OEIS
+    values for $\operatorname{Ei}(1)$ CITE{OEISEiOne}, $E_1(1)$
+    CITE{OEISEOne}, $\operatorname{li}(2)$ CITE{OEISLiTwo},
+    $\operatorname{Si}(1)$ CITE{OEISSiOne}, $\operatorname{Ci}(1)$
+    CITE{OEISCiOne}, $\operatorname{Shi}(1)$ CITE{OEISShiOne} and
+    $\operatorname{Chi}(1)$ CITE{OEISChiOne}. The widest returned ball had
+    radius less than $10^{-117}$ for 100 requested digits.
+Display properties:
+  number-header: value
