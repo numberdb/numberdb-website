@@ -1,7 +1,7 @@
 # The table document for proposal 6 of
 # agents/table-ideas/BATCH-2026-09-09T1518.md. Created as draft T185 through
-# the API (X-Draft: yes) and filled by generate.py beside it; publishing is a
-# person's act on the site.
+# the API (X-Draft: yes), filled by generate.py beside it, and offered for
+# review; publishing is a person's act on the site.
 Title: Mott polynomials $s_n(x)$
 Definition: >-
   For an integer $n\geq 0$, the Mott polynomial $s_n(x)$ is the coefficient
