@@ -1,0 +1,150 @@
+# The table document for the eigenvalues of the Gauss-Kuzmin-Wirsing
+# operator, proposal 4 of agents/table-ideas/BATCH-2026-09-09T0015.md.
+# Created as draft T174 through the API (X-Draft: yes). It uses the certified
+# 2026 spectral data of Nisoli, which was not accounted for by the proposal's
+# original rigour note.
+Title: Eigenvalues of the Gauss-Kuzmin-Wirsing operator
+Definition: >-
+  Let $\mathcal L$ be the Gauss-Kuzmin-Wirsing transfer operator for the
+  Gauss continued-fraction map, acting on analytic functions by
+  CITE{formula-operator} CITE{Alkauskas} CITE{Nisoli}. This table gives its
+  signed eigenvalues $\lambda_n$ for the indices listed, omitting the leading
+  eigenvalue $\lambda_1=1$.
+Keywords:
+  - Gauss-Kuzmin-Wirsing constant
+  - Wirsing constant
+  - Kuzmin-Wirsing constant
+  - GKW operator
+  - transfer operator of the Gauss map
+  - Gauss-Kuzmin distribution
+Parameters:
+  n:
+    type: Z
+    title: eigenvalue number
+    display: $n$
+    constraints: >-
+      $n\geq2$; the eigenvalues are ordered by decreasing absolute value, with
+      $\lambda_1=1$
+Comments:
+  comment-ordering: >-
+    The nonzero eigenvalues are real and are ordered by decreasing absolute
+    value, with $\lambda_1=1$ and
+    $|\lambda_1|>|\lambda_2|>\cdots$ CITE{Nisoli}.
+  comment-leading: >-
+    The leading eigenvalue $\lambda_1=1$ corresponds to the invariant density
+    $\frac{1}{(1+x)\log2}$ of the Gauss map. It is not stored as a row because
+    the exact value $1$ would not identify this family.
+  comment-constant: >-
+    The eigenvalue $\lambda_2$ is negative. MathWorld and OEIS call
+    $|\lambda_2|$ the Gauss-Kuzmin-Wirsing constant CITE{MathWorldGKW}
+    CITE{OEISA038517}.
+  comment-sign: >-
+    The signs alternate: $(-1)^{n+1}\lambda_n>0$. The table stores the signed
+    eigenvalues rather than their absolute values.
+Formulas:
+  formula-operator: >-
+    $(\mathcal L f)(x)=\sum_{m=1}^{\infty}
+    \frac{1}{(x+m)^2}f\left(\frac{1}{x+m}\right)$.
+  formula-briggs-matrix: >-
+    Briggs's Taylor-basis approximation has entries
+    $M_{jk}=\frac{(-1)^j}{j!(-2)^k}\sum_{i=0}^k {k\choose i}(-2)^i
+    (i+2)_j\left(\zeta(i+j+2)(2^{i+j+2}-1)-2^{i+j+2}\right)$, with
+    $0\leq j,k\leq N$ CITE{MathWorldGKW} CITE{Briggs}.
+  formula-ratio: >-
+    $\lim_{n\to\infty}\lambda_n/\lambda_{n+1}=-\varphi^2$, where
+    $\varphi$ is HREF{Golden_ratio#phi}[the golden ratio] CITE{Alkauskas}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R = RealField(160)
+
+      def rising(a, j):
+          out = R(1)
+          for t in range(j):
+              out *= a + t
+          return out
+
+      def M_entry(j, k):
+          total = R(0)
+          for i in range(k + 1):
+              total += binomial(k, i) * (-2)^i * rising(i + 2, j) * (
+                  zeta(i + j + 2) * (2^(i + j + 2) - 1) - 2^(i + j + 2))
+          return (-1)^j * total / (factorial(j) * (-2)^k)
+
+      N = 40
+      M = matrix(R, N + 1, N + 1,
+                 lambda j, k: M_entry(j, k))
+      sorted(M.eigenvalues(), key=lambda z: -abs(z))[1:8]
+Similar tables:
+  - table: HREF{Khinchin's_means}[Khinchin's means]
+    relation: the invariant density for the leading eigenvalue gives the Gauss-Kuzmin distribution whose partial-quotient means are listed there
+  - table: HREF{T172}[Lévy's constant]
+    relation: both tables concern almost-sure limits of the regular continued fraction under the Gauss map
+  - table: HREF{Lyapunov_exponents_of_classical_chaotic_systems}[Lyapunov exponents of classical chaotic systems]
+    relation: the Gauss-map row there gives the Lyapunov exponent with respect to the same invariant measure
+  - table: HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[Values of the Riemann zeta function at rational numbers]
+    relation: zeta values occur in Briggs's matrix formula CITE{formula-briggs-matrix}
+  - table: HREF{Golden_ratio}[Golden ratio]
+    relation: the asymptotic ratio of consecutive eigenvalues is $-\varphi^2$
+Links:
+  WikiGKW:
+    title: 'Wikipedia: Gauss-Kuzmin-Wirsing operator'
+    url: https://en.wikipedia.org/wiki/Gauss%E2%80%93Kuzmin%E2%80%93Wirsing_operator
+  MathWorldGKW:
+    title: 'MathWorld: Gauss-Kuzmin-Wirsing Constant'
+    url: https://mathworld.wolfram.com/Gauss-Kuzmin-WirsingConstant.html
+  OEISA038517:
+    title: 'OEIS A038517: decimal expansion of the Gauss-Kuzmin-Wirsing constant'
+    url: https://oeis.org/A038517
+References:
+  Nisoli:
+    bib: >-
+      I. Nisoli, Certified spectral approximation of transfer operators and
+      the Gauss map, arXiv preprint, 2026.
+    arxiv: 2602.19435
+  NisoliData:
+    bib: >-
+      I. Nisoli, Eigenvalue, eigenvectors, projection coefficients and data
+      for the GKW map, Harvard Dataverse, 2026.
+    doi: 10.7910/DVN/HKM3Y2
+  Alkauskas:
+    bib: >-
+      G. Alkauskas, Transfer operator for the Gauss continued fraction map. I.
+      Structure of the eigenvalues and trace formulas, arXiv preprint, 2012.
+    arxiv: 1210.4083
+  Briggs:
+    bib: >-
+      K. Briggs, A precise computation of the Gauss-Kuzmin-Wirsing constant,
+      preliminary report, 2003.
+Tags:
+  - number theory
+  - continued fractions
+  - dynamical systems
+  - special values
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds $\lambda_n$ for $2\leq n\leq50$; the leading eigenvalue
+    $\lambda_1=1$ is omitted, and the sequence continues for all $n\geq2$
+  rigour details: >-
+    The values were read from Nisoli's certified spectral data set
+    CITE{NisoliData}, file `gkw_spectral_coefficients_K1024.tsv`. That file
+    gives K=1024 Galerkin centres, eigenvalue enclosure radii, and resolvent
+    certification data from a 2048-bit ball-arithmetic computation. The source
+    states that the first 50 nonzero eigenvalues are real and simple and that
+    each certified enclosure carries at least 90 decimal digits CITE{Nisoli}.
+
+    The generator returns each stored row as a real ball centred at the
+    source value and enlarged by the source column `eval_encl`. The K=1024
+    intervals were compared with the independent K=512 intervals in the same
+    data set, and all stored rows overlap. The row $|\lambda_2|$ was compared
+    with OEIS A038517 CITE{OEISA038517}; the rows $2\leq n\leq24$ were
+    compared with Alkauskas's 16-digit table CITE{Alkauskas}. The alternating
+    sign pattern in CITE{comment-sign} and the approach of
+    $\lambda_{n+1}/\lambda_n$ toward $-\varphi^{-2}$ were checked on the
+    stored range.
+Display properties:
+  number-header: $\lambda_n$
