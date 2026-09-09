@@ -24,6 +24,31 @@ from django.core.management.base import BaseCommand, CommandError
 from numberdb_app.models import Table, TableCost
 
 
+def attributions(path):
+	"""Run start -> table, from the file beside the ledger, or {}.
+
+	`run.sh` writes the table into the ledger itself, and for a stretch of
+	runs it wrote nothing: the cost was recorded and what it was spent on was
+	not. That is recoverable after the fact -- from the revisions the run
+	wrote and the files it committed -- but it is a judgement made by reading
+	evidence, so it is kept apart from the ledger, which is what a machine
+	measured. See agents/runs/ATTRIBUTION.tsv for the evidence per run.
+	"""
+	found = {}
+	try:
+		handle = open(path, encoding='utf8', newline='')
+	except OSError:
+		return found
+	with handle:
+		for line in handle:
+			if line.startswith('#') or not line.strip():
+				continue
+			fields = line.rstrip('\n').split('\t')
+			if len(fields) >= 2 and fields[0].strip() and fields[1].strip():
+				found[fields[0].strip()] = fields[1].strip().upper()
+	return found
+
+
 def parse_breakdown(row):
 	"""(model, cost) pairs for one run.
 
@@ -64,6 +89,14 @@ class Command(BaseCommand):
 			raise CommandError(str(problem))
 
 		known = {table.tid: table for table in Table.objects.all()}
+		#Beside the ledger, and only consulted for a row that names no table:
+		#the ledger is what a run said about itself and wins where it spoke.
+		import os
+
+		attributed = attributions(
+			os.path.join(os.path.dirname(options['ledger']),
+			             'ATTRIBUTION.tsv'))
+		rescued = 0
 		#(table, model, role) -> [cost, runs]
 		totals = defaultdict(lambda: [Decimal('0'), 0])
 		engines = {}
@@ -71,6 +104,10 @@ class Command(BaseCommand):
 		with handle:
 			for row in csv.DictReader(handle, delimiter='\t'):
 				tid = (row.get('table') or '').strip().upper()
+				if not tid:
+					tid = attributed.get((row.get('started') or '').strip(), '')
+					if tid:
+						rescued += 1
 				table = known.get(tid)
 				if table is None:
 					skipped += 1
@@ -106,6 +143,9 @@ class Command(BaseCommand):
 
 		for table_pk in {pk for pk, _, _ in totals}:
 			refresh(Table.objects.get(pk=table_pk))
-		self.stdout.write('%d cost rows over %d tables; %d runs named no table'
-		                  % (len(totals), len({pk for pk, _, _ in totals}),
-		                     skipped))
+		self.stdout.write(
+			'%d cost rows over %d tables; %d runs named no table'
+			'%s'
+			% (len(totals), len({pk for pk, _, _ in totals}), skipped,
+			   '; %d attributed from ATTRIBUTION.tsv' % rescued if rescued
+			   else ''))
