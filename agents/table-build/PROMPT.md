@@ -182,6 +182,15 @@ the last place however long it is, so that spelling says a number known to be
 its most interesting rows -- the logistic map's $r=3$ and $r=2$, and the
 $c=-3/4$, $-5/4$, $-1$ that go with them.
 
+**Do not discard what the source certified.** T174 read a certified spectral
+data set whose eigenvalues alternate in sign -- the file even carries a
+`sign_certified` column -- and stored $|\lambda_n|$. The sign is not
+recoverable from the table: a reader cannot see an alternation in a column of
+positive numbers, and a search for the number they hold does not match its
+negative. Where the literature quotes a magnitude, as it does for the
+Gauss-Kuzmin-Wirsing constant $|\lambda_2|$, that convention is about one
+value; say so in that entry's comment and store the rest as they are.
+
 **Decide it from the definition, never from the digits.** A run of zeros is
 evidence and not proof: 3.000000000000000000 may be 3, or 3 + 10^-40 rounded,
 and no number of zeros separates them. $r=3$ is exact because the fixed point

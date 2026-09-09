@@ -2,8 +2,17 @@
 
 The Gauss-Kuzmin-Wirsing transfer operator for the Gauss continued-fraction
 map has real eigenvalues lambda_n ordered by decreasing absolute value, with
-lambda_1 = 1. This generator stores the magnitudes of the certified
-eigenvalues lambda_2, ..., lambda_50 from Nisoli's K = 1024 spectral data.
+lambda_1 = 1. This generator stores the certified eigenvalues lambda_2, ...,
+lambda_50 from Nisoli's K = 1024 spectral data.
+
+Signed, as the source gives them. They alternate -- lambda_2 = -0.30366...,
+lambda_3 = +0.10088..., and in general the sign is (-1)^(n+1) -- and the
+source certifies the sign in a column of its own. Storing |lambda_n| threw
+that away and could not be undone from the table: a reader cannot see an
+alternation in a column of positive numbers. The one place the magnitude is
+the conventional quantity is lambda_2, whose absolute value is what the
+literature calls the Gauss-Kuzmin-Wirsing constant, and the entry comment for
+that row says so.
 
 Run it with SageMath:
 
@@ -73,9 +82,9 @@ def eigenvalue(n, digits):
 def entry_comment(n):
     if int(n) == 2:
         return (
-            "$|\\lambda_2|$ is the Gauss-Kuzmin-Wirsing constant "
-            "CITE{OEISA038517} "
-            "CITE{MathWorldGKW}."
+            "The Gauss-Kuzmin-Wirsing constant is $|\\lambda_2|$, and the "
+            "literature quotes it positive CITE{OEISA038517} "
+            "CITE{MathWorldGKW}; the eigenvalue itself is negative."
         )
     return ""
 
@@ -98,7 +107,7 @@ class GaussKuzminWirsingEigenvalues(numberdb.Generator):
         if n < FIRST_STORED or n > LAST_STORED:
             raise ValueError("n must satisfy %d <= n <= %d" %
                              (FIRST_STORED, LAST_STORED))
-        out = {"number": abs(eigenvalue(n, digits))}
+        out = {"number": eigenvalue(n, digits)}
         comment = entry_comment(n)
         if comment:
             out["comment"] = comment

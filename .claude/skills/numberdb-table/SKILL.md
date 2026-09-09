@@ -125,6 +125,15 @@ that word, put it in `Keywords`, which is the same weight -- that is also how
 an accent is handled, since the index has no `unaccent`: the title is
 "Lévy's constant" and `Keywords` carries "Levy constant".
 
+**Do not discard what the source certified.** T174 read a certified spectral
+data set whose eigenvalues alternate in sign -- the file even carries a
+`sign_certified` column -- and stored $|\lambda_n|$. The sign is not
+recoverable from the table: a reader cannot see an alternation in a column of
+positive numbers, and a search for the number they hold does not match its
+negative. Where the literature quotes a magnitude, as it does for the
+Gauss-Kuzmin-Wirsing constant $|\lambda_2|$, that convention is about one
+value; say so in that entry's comment and store the rest as they are.
+
 **Decide exactness from the definition, never from the digits.** A run of
 zeros is evidence and not proof: `3.000000000000000000` may be 3, or
 3 + 10^-40 rounded, and no number of zeros separates them. The logistic map's
