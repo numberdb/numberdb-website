@@ -26,7 +26,9 @@ __all__ = ['BOARD_GROUP', 'is_board_member', 'may_edit', 'board_group',
            'is_vouched_for',
            'TRUSTED_AFTER', 'accepted_edit_count', 'is_trusted',
            'edits_are_reviewed', 'may_write_through_api',
-           'may_create_tables_through_api']
+           'may_create_tables_through_api',
+           'BULK_DRAFTS_GROUP', 'BULK_DRAFTS_IN_FLIGHT', 'bulk_drafts_group',
+           'is_bulk_drafter', 'draft_ceiling', 'draft_allowance']
 
 #: Accepted edits after which an account is trusted. Five is enough to have
 #: made and had confirmed a handful of real corrections, and few enough that
@@ -265,6 +267,46 @@ def may_write_through_api(user):
 #: theirs is one step from being a table.
 DRAFTS_IN_FLIGHT = getattr(settings, 'NUMBERDB_DRAFTS_IN_FLIGHT', 15)
 
+#: The group whose members may hold BULK_DRAFTS_IN_FLIGHT at once.
+#:
+#: The ceiling above bounds a runaway, and it has to be low enough to do that
+#: for an account nobody has looked at. A campaign is the other thing that
+#: reaches it: fifteen tables built in a night, held as drafts until they are
+#: reviewed in a sitting, is a real workflow and hits the same wall on the
+#: sixteenth table -- with the difference that somebody chose to run it.
+#:
+#: A group rather than a list of names in the settings, for the same reason
+#: TRUSTED_GROUP is one: adding an account is then an act somebody performs
+#: and can take back, in a place that shows who is in it, and it does not
+#: need a deploy. What it grants is only headroom -- publishing stays a
+#: person's act, review stays the board's, and a draft is still invisible.
+BULK_DRAFTS_GROUP = 'bulk drafts'
+
+#: How many a member of that group may hold. Still a bound: a loop that meant
+#: to make three tables and makes three hundred is stopped, and what it leaves
+#: behind is a hundred invisible drafts somebody can clear in one pass.
+BULK_DRAFTS_IN_FLIGHT = getattr(
+	settings, 'NUMBERDB_BULK_DRAFTS_IN_FLIGHT', 100)
+
+
+def bulk_drafts_group():
+	"""The bulk-drafts group, created on first use."""
+	group, _ = Group.objects.get_or_create(name=BULK_DRAFTS_GROUP)
+	return group
+
+
+def is_bulk_drafter(user):
+	"""Whether ``user`` may hold the larger number of drafts."""
+	if not getattr(user, 'is_authenticated', False):
+		return False
+	return user.groups.filter(name=BULK_DRAFTS_GROUP).exists()
+
+
+def draft_ceiling(user):
+	"""How many unpublished drafts ``user`` may hold at once."""
+	return (BULK_DRAFTS_IN_FLIGHT if is_bulk_drafter(user)
+	        else DRAFTS_IN_FLIGHT)
+
 
 def draft_allowance(user):
 	"""How many more drafts ``user`` may create, and how many they hold.
@@ -277,7 +319,7 @@ def draft_allowance(user):
 		return (None, Table.objects.filter(created_by=user,
 		                                   published=False).count())
 	held = Table.objects.filter(created_by=user, published=False).count()
-	return (max(0, DRAFTS_IN_FLIGHT - held), held)
+	return (max(0, draft_ceiling(user) - held), held)
 
 
 def may_create_drafts_through_api(user):
