@@ -583,20 +583,7 @@ def _sync_tags(table, document):
 	table.tags.set(tags)
 
 	#Every tag this table joined or left, counted again from the join table.
-	#Both counts, because both are shown: on /tags, on a tag's own page, and
-	#in the suggestions under the search bar.
-	from django.db.models import Sum
-
-	for tag in set(tags) | had:
-		#Published only: these two numbers are printed on /tags, and a count
-		#that includes a draft says a table exists that nobody may look at.
-		count = tag.public_tables.count()
-		numbers = (tag.public_tables.aggregate(total=Sum('number_count'))
-		           ['total'] or 0)
-		if tag.table_count != count or tag.number_count != numbers:
-			tag.table_count = count
-			tag.number_count = numbers
-			tag.save(update_fields=['table_count', 'number_count'])
+	recount_tags(set(tags) | had)
 
 	#And the vector the tag search reads. Only the data pipeline set this, so
 	#a tag created here existed, was joined to its table, was counted -- and
@@ -695,6 +682,31 @@ Display properties:
 Numbers:
 - 3.14159
 """
+
+
+def recount_tags(tags):
+	"""Set each tag's two counters from the tables anybody may see.
+
+	Both counts, because both are shown: on /tags, on a tag's own page, and in
+	the suggestions under the search bar. Published only -- a count that
+	includes a draft says a table exists that nobody may look at.
+
+	Counted from the join table rather than adjusted by a difference. The
+	number pipeline used to adjust (`tag.number_count += count - previous`),
+	which is where the two writers disagreed: it moved the counter for every
+	tag of every table, drafts included, so a tag `sync_tags` had just counted
+	over published tables came back holding a draft's numbers as well.
+	"""
+	from django.db.models import Sum
+
+	for tag in tags:
+		count = tag.public_tables.count()
+		numbers = (tag.public_tables.aggregate(total=Sum('number_count'))
+		           ['total'] or 0)
+		if tag.table_count != count or tag.number_count != numbers:
+			tag.table_count = count
+			tag.number_count = numbers
+			tag.save(update_fields=['table_count', 'number_count'])
 
 
 def slug_for(title, taken=None):
@@ -977,6 +989,11 @@ def publish_table(table):
 			'Add at least one value; a program can add the rest afterwards.')
 	table.published = True
 	table.save(update_fields=['published'])
+	#What its tags reach has just changed, and nothing else will notice until
+	#the next edit: a table published today would otherwise be missing from
+	#its own tags' counts, and a tag no published table had yet would stay off
+	#/tags until somebody edited the table again.
+	recount_tags(set(table.tags.all()))
 	return table
 
 

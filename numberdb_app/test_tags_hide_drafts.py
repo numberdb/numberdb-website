@@ -68,12 +68,33 @@ class ADraftDoesNotReachThePublicThroughItsTags(TestCase):
 		self.assertEqual([tag.name for tag in tags], [])
 
 	def test_publishing_the_draft_brings_its_tag_back(self):
-		from .editing import commit_table, publish_table, tree_of
+		"""Publishing is what changes the answer, and nothing else has to
+		happen afterwards. Before this, a table published today was missing
+		from its own tags' counts until somebody edited it again."""
+		from .editing import publish_table
 
 		publish_table(self.draft)
-		commit_table(self.draft, tree_of(self.draft.head_revision),
-		             author=self.user, message='recount', via='orm')
-		tag = Tag.objects.get(name='secret subject')
-		self.assertEqual(tag.table_count, 1)
+		self.assertEqual(Tag.objects.get(name='secret subject').table_count, 1)
+		self.assertEqual(Tag.objects.get(name='ring').table_count, 2)
 		body = self.client.get('/tags').content.decode('utf8')
 		self.assertIn('secret subject', body)
+
+	def test_editing_a_draft_does_not_move_its_tags_counters(self):
+		"""The root cause, pinned where it happened.
+
+		`sync_tags` counted a tag over published tables and then the number
+		pipeline added the difference back for every tag of every table,
+		drafts included -- two writers of the same two columns, disagreeing.
+		Editing a draft is what ran the second one.
+		"""
+		from .editing import commit_table, tree_of
+
+		before = Tag.objects.get(name='ring').number_count
+		tree = dict(tree_of(self.draft.head_revision))
+		tree['Numbers'] = [{'params': {'n': '1'}, 'number': '2.72'},
+		                   {'params': {'n': '2'}, 'number': '1.41'},
+		                   {'params': {'n': '3'}, 'number': '1.73'}]
+		commit_table(self.draft, tree, author=self.user, message='more',
+		             via='orm')
+		self.assertEqual(Tag.objects.get(name='ring').number_count, before)
+		self.assertEqual(Tag.objects.get(name='ring').table_count, 1)
