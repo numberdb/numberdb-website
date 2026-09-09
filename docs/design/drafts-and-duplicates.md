@@ -75,11 +75,22 @@ prompt to the author before the board acts is the next step, not a cron job.
    reader typing digits cannot.
 
 2. **Draft creation through the API**, with `X-Draft: yes`, open to any account
-   that may write with a program and capped at five drafts in flight. The cap
-   is on drafts *held*, not drafts made: publish one and the allowance comes
-   back. The board is not capped. A refusal says how many are held and why the
-   limit exists, and every successful creation reports `drafts_held` and
-   `drafts_remaining` so a caller need not be refused to find out.
+   that may write with a program and capped at `NUMBERDB_DRAFTS_IN_FLIGHT`
+   drafts in flight. The cap is on drafts *held*, not drafts made: publish one
+   and the allowance comes back. The board is not capped. A refusal says how
+   many are held and why the limit exists, and every successful creation
+   reports `drafts_held` and `drafts_remaining` so a caller need not be
+   refused to find out.
+
+   The number has to be low enough to bound a runaway for an account nobody
+   has looked at, and a campaign reaches it legitimately: fifteen tables built
+   in a night and held until they are reviewed together is a workflow
+   somebody chose to run, and it hits the same wall as the loop the cap is
+   for. So membership of the `bulk drafts` group raises the ceiling to
+   `NUMBERDB_BULK_DRAFTS_IN_FLIGHT` and grants nothing else --
+   `manage.py allow_drafts <account>` puts an account in it, `--list` says who
+   is. A group rather than names in the settings, so adding an account is an
+   act somebody performs, can take back, and does not need a deploy.
 
    `X-Draft` is explicit rather than inferred, because creating a table and
    proposing one are different acts with different consequences.

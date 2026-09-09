@@ -371,6 +371,13 @@ NUMBERDB_MAX_RELATIVE_WIDTH = float(
 NUMBERDB_DRAFTS_IN_FLIGHT = int(
     os.environ.get('NUMBERDB_DRAFTS_IN_FLIGHT', '15'))
 
+#: How many a member of the `bulk drafts` group may hold. See
+#: permissions.BULK_DRAFTS_GROUP: an account running a campaign holds a batch
+#: of drafts until they are reviewed together, which is what the ordinary
+#: ceiling is too low for.
+NUMBERDB_BULK_DRAFTS_IN_FLIGHT = int(
+    os.environ.get('NUMBERDB_BULK_DRAFTS_IN_FLIGHT', '100'))
+
 NUMBERDB_ANONYMOUS_RATE_LIMIT = int(
     os.environ.get('NUMBERDB_ANONYMOUS_RATE_LIMIT', '60'))
 NUMBERDB_IDENTIFIED_RATE_LIMIT = int(
