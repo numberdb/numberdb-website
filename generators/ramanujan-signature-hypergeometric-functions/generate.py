@@ -12,7 +12,7 @@ Run it with SageMath:
     $ sage -python generate.py --publish  # send it, with NUMBERDB_API_KEY set
 
 Values are computed as real balls. The Gauss series is used for x <= 1/2; the
-logarithmic connection series at x = 1 is used for x > 1/2.
+logarithmic connection series in 1 - x is used for x > 1/2.
 """
 
 import os
@@ -137,14 +137,6 @@ def _value_ball(r, x_text, digits):
 def _comment(r, x):
     if x == "1/2":
         return "A Gauss second-summation value, equal to $2/B((r+1)/(2r),(2r-1)/(2r))$."
-    if r == 2:
-        return (
-            "It equals $2K(x)/\\pi$, with "
-            "HREF{Complete_elliptic_integral_of_the_first_kind_K}[$K$] the "
-            "complete elliptic integral of the first kind."
-        )
-    if r == 3 and x in ("1/4", "9/10"):
-        return "$1/\\mathrm{AGM}_3(1,(1-x)^{1/3})$."
     return ""
 
 
