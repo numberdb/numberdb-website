@@ -2196,3 +2196,27 @@ batch is not a result.
 
 Evidence: `/tmp/run_dry_repo_logistic.py`, `/tmp/stored_logistic_checks.py`
 and T168, 2026-09-09.
+
+## `agents/sage.sh` does not forward arbitrary environment variables
+
+What happened: filling T169 first ran
+
+    cat "$NUMBERDB_KEY_FILE" | NUMBERDB_KEY_FROM_STDIN=1 \
+      NUMBERDB_PUBLISH=1 NUMBERDB_ASSISTED_BY=codex-cli \
+      agents/sage.sh generators/logistic-periodic-windows/generate.py
+
+The generator's `__main__` branch looks for `NUMBERDB_PUBLISH` and
+`NUMBERDB_KEY_FROM_STDIN`, but inside the container neither variable was set,
+so it took the default verification path and reported
+`Table with id 'T169' does not exist` for the still-private draft. The wrapper
+only passes `PYTHONPATH` and `NUMBERDB_ASSISTED_BY` explicitly.
+
+What to do instead: when a Sage script needs a flag other than
+`NUMBERDB_ASSISTED_BY`, run a scratch wrapper as the main script, mount the
+real generator beside it, and have the wrapper read stdin and call the wanted
+function directly. For a fill, import `/work/generate.py`, put the piped key
+in `NUMBERDB_API_KEY`, and call `generator.publish(...)`.
+
+Evidence: T169, 2026-09-09; the failed run entered
+`LogisticPeriodicWindows().verify(sample=None)`, and
+`/tmp/publish_windows_generator.py` filled the same draft successfully.
