@@ -151,6 +151,24 @@ users, 137 MB free; `docker ps` showing web healthy; localhost 200 while the
 proxy returned nothing. The container was removed by hand, after which load
 fell to 5.82 within three minutes.
 
+## A `/tmp` Sage wrapper that imports Django needs `/app` on `sys.path`
+
+What happened: a repair run needed `manage.py audit_table T179` after finding
+that the local checkout had no Django installed. The first wrapper run through
+`agents/sage.sh` set `DJANGO_SETTINGS_MODULE` and called
+`execute_from_command_line`, but failed with `ModuleNotFoundError: No module
+named 'numberdb.settings'`. The script was mounted and executed from `/work`,
+so Python's script directory was `/work`; the application code in the
+container was not importable until the wrapper added `/app` to `sys.path`.
+
+What to do instead: when a temporary script run under `agents/sage.sh` needs
+to import the Django project, put `sys.path.insert(0, '/app')` before importing
+Django or calling a management command. This is separate from generator runs,
+where the client package path is the important one.
+
+Evidence: `/tmp/audit_t179.py`, 2026-09-09, failed before the path insert and
+then ran `audit_table T179`, reporting `Nothing to report.`
+
 ## A pipeline that swallows the verdict reports nothing
 
 What happened: the suite was run as `manage.py test ... | tail -30`. The
