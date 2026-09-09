@@ -656,10 +656,39 @@ mechanism applied everywhere.
     complex <-> real and imaginary parts, and modulus
     polynomial: reversal, monic scaling, x -> ax + b
 
+`x -> -x` and `x -> |x|` are the same question asked from the two sides, and
+T174 is the case that made it concrete. The eigenvalues of the
+Gauss-Kuzmin-Wirsing operator alternate in sign, and the literature quotes
+$|\lambda_2|$ positive because that magnitude has a name. Whichever the table
+stores, somebody arrives holding the other. It was built storing the
+magnitudes and now stores the eigenvalues, which is the right way round --
+the sign was information the source certified -- but it does not answer the
+search question, it only moves it.
+
+**And a question the shape above leaves open: what is transformed, the stored
+entry or the search term, or both?** The two are not equivalent. Transforming
+the *term* costs nothing to store, keeps the index the size it is, and lets a
+searcher's guess stay a guess; it cannot know that a modulus is the natural
+thing to try for one table and meaningless for another. Transforming the
+*entry* is what carries the table's own knowledge, and it is what the index
+has to grow for. The likely answer is both, meeting in the middle: the table
+declares which transformations are worth trying, and the search applies them
+to the term rather than storing every image of every value. That is cheaper
+than it looks -- a declared transformation with an inverse is applied to one
+number instead of to 56,000 -- and it keeps a hit meaning what it says,
+because the answer knows which form matched. It does not work for
+transformations with no usable inverse, which is where storing the image is
+the only option.
+
 ### For now
 
 Each table should hold the most natural form of its objects, so that the
-question arises as rarely as possible.
+question arises as rarely as possible -- and, before that, should not throw
+information away. A magnitude where the source gave a signed value, a real
+part where the source gave a complex number, is a transformation already
+applied and not recorded, and no later mechanism recovers it. Keep what the
+source certified; the transformations are for the forms a reader might hold,
+not for the ones the table decided not to store.
 
 The polynomial tables here do. Worth being exact about why: a family does not
 live "on an interval" -- the interval is where it is orthogonal, which is a
