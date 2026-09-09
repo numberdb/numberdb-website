@@ -1,0 +1,124 @@
+# The table document for proposal 5 of
+# agents/table-ideas/BATCH-2026-09-09T1518.md. It was created as draft T182
+# through the API (X-Draft: yes) and is filled by generate.py beside it;
+# publishing is a person's act on the site.
+Title: Mahler polynomials $g_n(x)$
+Definition: >-
+  For an integer $n\geq 0$, the Mahler polynomial $g_n(x)$ is the
+  coefficient polynomial in $\mathbb{Z}[x]$ defined by
+  $\sum_{n=0}^{\infty}g_n(x)\frac{t^n}{n!}
+  =\exp(x(1+t-e^t))$ CITE{Wiki} CITE{MathWorld}.
+Parameters:
+  n:
+    type: Z
+    title: index
+    display: $n$
+    constraints: $n\geq 0$
+Comments:
+  comment-notation: >-
+    This table uses the notation $g_n(x)$ from CITE{Wiki}. MathWorld writes
+    $s_n(x)$ for the same polynomials CITE{MathWorld}.
+  comment-associated-stirling: >-
+    The coefficient of $(-x)^k$ counts partitions of an $n$-element set into
+    $k$ blocks, each of size at least two. These numbers are the associated
+    Stirling numbers of the second kind CITE{OEISassociated}.
+Formulas:
+  formula-generating-function: >-
+    $\sum_{n=0}^{\infty}g_n(x)\frac{t^n}{n!}=\exp(x(1+t-e^t))$.
+  formula-coefficients: >-
+    $g_n(x)=\sum_{k=0}^{\lfloor n/2\rfloor}(-1)^k A(n,k)x^k$, where
+    $A(n,k)$ is the number of partitions of an $n$-element set into $k$
+    blocks of size at least two. Equivalently,
+    $A(n,k)=B_{n,k}(0,1,1,\dots)$ for the
+    HREF{Partial_Bell_polynomials}[partial Bell polynomials].
+  formula-coefficient-recurrence: >-
+    The numbers $A(n,k)$ in CITE{formula-coefficients} satisfy
+    $A(0,0)=1$ and
+    $A(n,k)=kA(n-1,k)+(n-1)A(n-2,k-1)$ for $n\geq1$, with
+    $A(n,k)=0$ outside $0\leq k\leq\lfloor n/2\rfloor$.
+  formula-touchard: >-
+    $g_n(x)=\sum_{j=0}^{n}\binom{n}{j}x^{n-j}T_j(-x)$, where $T_j(y)$ is the
+    HREF{Touchard_polynomials}[Touchard polynomial].
+  formula-no-singletons: >-
+    $g_n(-1)$ is the number of partitions of an $n$-element set with no
+    singleton block CITE{OEISnosingletons}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.integer_ring import ZZ
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+      R = PolynomialRing(ZZ, 'x')
+      x = R.gen()
+
+      def mahler_polynomial(n):
+          rows = [[ZZ(0) for _ in range(n // 2 + 2)] for _ in range(n + 1)]
+          rows[0][0] = ZZ(1)
+          for m in range(1, n + 1):
+              for k in range(1, m // 2 + 1):
+                  rows[m][k] = ZZ(k) * rows[m - 1][k]
+                  if m >= 2:
+                      rows[m][k] += ZZ(m - 1) * rows[m - 2][k - 1]
+          return sum(ZZ((-1)**k) * rows[n][k] * x**k
+                     for k in range(n // 2 + 1))
+
+      mahler_polynomial(51)      # the next one after this table
+Similar tables:
+  - table: HREF{Touchard_polynomials}[Touchard polynomials]
+    relation: give the convolution identity in CITE{formula-touchard}
+  - table: HREF{Partial_Bell_polynomials}[Partial Bell polynomials]
+    relation: give the associated Stirling numbers in CITE{formula-coefficients}
+Links:
+  Wiki:
+    title: "Wikipedia: Mahler polynomial"
+    url: https://en.wikipedia.org/wiki/Mahler_polynomial
+  MathWorld:
+    title: "MathWorld: Mahler Polynomial"
+    url: https://mathworld.wolfram.com/MahlerPolynomial.html
+  OEISsigned:
+    title: "OEIS A137375: signed second-order Stirling set numbers"
+    url: https://oeis.org/A137375
+  OEISassociated:
+    title: "OEIS A008299: associated Stirling numbers of the second kind"
+    url: https://oeis.org/A008299
+  OEISnosingletons:
+    title: "OEIS A000296: partitions of a set with no singleton blocks"
+    url: https://oeis.org/A000296
+References:
+  Mahler:
+    bib: >-
+      Kurt Mahler, Ueber die Nullstellen der unvollstaendigen
+      Gammafunktionen, Rendiconti del Circolo Matematico di Palermo 54
+      (1930), 1-41.
+    doi: 10.1007/BF03021175
+Keywords:
+  - Mahler polynomial
+  - associated Stirling numbers
+  - second-order Stirling set numbers
+  - singleton-free set partitions
+  - Sheffer sequence
+  - umbral calculus
+Tags:
+  - polynomial
+  - combinatorics
+  - generating function
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: it holds every index $n$ with $0\leq n\leq50$
+  rigour details: >-
+    The generator computes the coefficients from the recurrence in
+    CITE{formula-coefficient-recurrence}, with every coefficient in Sage's
+    integer ring. Before the draft was created, the entries were checked
+    against the exponential generating function in
+    CITE{formula-generating-function}, against the polynomials printed by
+    CITE{Wiki} and CITE{MathWorld}, against OEIS A137375
+    CITE{OEISsigned} through $n=12$, against OEIS A008299
+    CITE{OEISassociated} through $n=50$, against the values $g_n(-1)$ in
+    OEIS A000296 CITE{OEISnosingletons} through $n=50$, and against
+    CITE{formula-touchard} on every entry.
+Display properties:
+  number-header: $g_n(x)$
