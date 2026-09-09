@@ -98,10 +98,13 @@ class DerivedStateAgreesWithTheDocument(TestCase):
 		self.commit({'Tags': ['analysis']})
 		for tag in Tag.objects.all():
 			with self.subTest(tag=tag.name):
-				self.assertEqual(tag.table_count, tag.tables.count())
+				#Published tables: a draft is not part of what a tag says it
+				#reaches. See test_tags_hide_drafts.
+				self.assertEqual(tag.table_count, tag.public_tables.count())
 				self.assertEqual(
 					tag.number_count,
-					tag.tables.aggregate(t=Sum('number_count'))['t'] or 0)
+					tag.public_tables.aggregate(t=Sum('number_count'))['t']
+					or 0)
 
 	def test_a_tag_created_here_is_as_complete_as_one_the_pipeline_built(self):
 		"""The test that would have caught the reported bug, stated as what it

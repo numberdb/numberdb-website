@@ -1,8 +1,9 @@
-"""Constants of the regular continued fraction.
+"""Khinchin's means of the partial quotients -- numberdb.org/T170
 
-For almost every real number, this generator stores Khinchin's power means of
-the partial quotients for the selected values of p, Levy's constant, the
-Khinchin-Levy constant, and Lochs's constant.
+For almost every real number the power mean of order $p<1$ of the partial
+quotients of its regular continued fraction expansion has a limit that does
+not depend on the number. This generator stores that limit for the orders the
+table lists; the order 0 is Khinchin's constant.
 
 Run it with SageMath:
 
@@ -10,9 +11,15 @@ Run it with SageMath:
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # send it, with NUMBERDB_API_KEY set
 
-The Khinchin mean rows use the zeta-series expansion of the Gauss-Kuzmin
-distribution, computed twice with different precision and truncation. The
-closed-form rows are computed in real ball arithmetic.
+The rows use the zeta-series expansion of the Gauss-Kuzmin distribution,
+computed twice with different precision and truncation, and what is stored is
+what the two agree on. Agreement is evidence and not a proof, which is what
+the table's rigour says.
+
+This was the Khinchin part of T170 when T170 was "Constants of the regular
+continued fraction"; Levy's constant and Lochs's constant were in it too and
+are now numberdb.org/T172 and numberdb.org/T173, because a table answers a
+search by its title and that title named none of the three.
 """
 
 import os
@@ -20,18 +27,16 @@ import sys
 
 import numberdb.sage as numberdb
 from mpmath import mp
-from sage.rings.real_arb import RealBallField
 
 
 DIGITS = 100
 
-# Measured at 100 digits: the K_p rows computed at 150 and 210 working decimal
+# Measured at 100 digits: the rows computed at 150 and 210 working decimal
 # digits agree in their first 105 significant digits. The corresponding series
 # truncations use 680 and 920 grouped zeta terms.
 AGREEMENT_DIGITS = (150, 210)
 TERM_MULTIPLIER = 4
 TERM_GUARD = 80
-CLOSED_FORM_GUARD = 64
 
 CONSTANTS = (
     "K0",
@@ -47,9 +52,6 @@ CONSTANTS = (
     "K-10",
     "K1/2",
     "K-1/2",
-    "levy",
-    "khinchin-levy",
-    "lochs",
 )
 
 OEIS_FOR_K = {
@@ -167,20 +169,6 @@ def khinchin_mean(constant):
     )
 
 
-def closed_form(constant, digits):
-    R = RealBallField(numberdb.bits(digits, losing=CLOSED_FORM_GUARD))
-    log2 = R(2).log()
-    pi = R.pi()
-    beta = pi * pi / (12 * log2)
-    if constant == "khinchin-levy":
-        return beta
-    if constant == "levy":
-        return beta.exp()
-    if constant == "lochs":
-        return 6 * log2 * R(10).log() / (pi * pi)
-    raise ValueError("unknown closed-form row %r" % (constant,))
-
-
 def entry_comment(constant):
     if constant in OEIS_FOR_K:
         if constant == "K0":
@@ -193,16 +181,10 @@ def entry_comment(constant):
         return "The Khinchin mean of order $1/2$."
     if constant == "K-1/2":
         return "The Khinchin mean of order $-1/2$."
-    if constant == "levy":
-        return "Levy's constant $e^\\beta$, the almost-sure limit of $q_n^{1/n}$ CITE{MathWorldLevy} CITE{OEISA086702}."
-    if constant == "khinchin-levy":
-        return "The Khinchin-Levy constant $\\beta=\\log(e^\\beta)$ CITE{MathWorldLevy} CITE{OEISA100199}; the Gauss map has Lyapunov exponent $2\\beta$."
-    if constant == "lochs":
-        return "Lochs's constant, the almost-sure number of continued-fraction terms determined per decimal digit CITE{MathWorldLochs} CITE{OEISA086819}."
     return ""
 
 
-class RegularContinuedFractionConstants(numberdb.Generator):
+class KhinchinMeans(numberdb.Generator):
 
     table = os.environ.get("NUMBERDB_TABLE", "T170")
     parameters = ("constant",)
@@ -218,20 +200,16 @@ class RegularContinuedFractionConstants(numberdb.Generator):
         constant = str(params["constant"])
         if constant not in CONSTANTS:
             raise ValueError("constant must be one of the listed keys")
-        if constant.startswith("K"):
-            value = khinchin_mean(constant)
-        else:
-            value = closed_form(constant, digits)
-        return {"number": value, "comment": entry_comment(constant)}
+        return {"number": khinchin_mean(constant),
+                "comment": entry_comment(constant)}
 
 
 if __name__ == "__main__":
     if os.environ.get("NUMBERDB_KEY_FROM_STDIN") == "1":
         os.environ["NUMBERDB_API_KEY"] = sys.stdin.read().strip()
-    generator = RegularContinuedFractionConstants()
+    generator = KhinchinMeans()
     if "--publish" in sys.argv or os.environ.get("NUMBERDB_PUBLISH") == "1":
-        print(generator.publish(
-            message="regular continued-fraction constants"))
+        print(generator.publish(message="Khinchin's means"))
     else:
         report = generator.verify(sample=None)
         print(report)

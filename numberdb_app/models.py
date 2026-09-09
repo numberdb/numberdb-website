@@ -144,6 +144,21 @@ class Tag(models.Model):
 	def __str__(self):
 		return 'Tag %s (%s/%s)' % (self.name,self.table_count,self.number_count)
 		
+	@property
+	def public_tables(self):
+		"""The tables under this tag that anybody may see.
+
+		A draft is its author's until it is published: it appears in no
+		listing and answers no search. It was reaching the public through its
+		tags anyway -- /tags/continued+fractions and the tag API listed three
+		unpublished tables by title and T-number, and the tag itself appeared
+		on /tags because a draft had asked for it. The counts said so too.
+
+		Every public reading of a tag goes through here, so there is one
+		place to be right rather than four.
+		"""
+		return self.tables.filter(published=True)
+
 	def to_serializable_dict(self,order_tables_by='-number_count'):
 		return {
 			'name': self.name,
@@ -151,7 +166,7 @@ class Tag(models.Model):
 			'number_count': self.number_count,
 			'tables': [
 				table.to_serializable_dict()
-				for table in self.tables.all().order_by(order_tables_by)
+				for table in self.public_tables.order_by(order_tables_by)
 			],
 		}
 

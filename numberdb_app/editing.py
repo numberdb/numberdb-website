@@ -588,8 +588,11 @@ def _sync_tags(table, document):
 	from django.db.models import Sum
 
 	for tag in set(tags) | had:
-		count = tag.tables.count()
-		numbers = tag.tables.aggregate(total=Sum('number_count'))['total'] or 0
+		#Published only: these two numbers are printed on /tags, and a count
+		#that includes a draft says a table exists that nobody may look at.
+		count = tag.public_tables.count()
+		numbers = (tag.public_tables.aggregate(total=Sum('number_count'))
+		           ['total'] or 0)
 		if tag.table_count != count or tag.number_count != numbers:
 			tag.table_count = count
 			tag.number_count = numbers
