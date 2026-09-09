@@ -190,6 +190,15 @@ argument the zeros mean the opposite thing -- a rounding presented as sixty
 significant places -- and the fix is fewer digits, or a ball. `dry_run.py`
 reports the run of zeros and leaves the reading to you.
 
+**Entries are shown in the order the document writes them**, so
+`enumerate` decides what a reader sees first. For an index that runs over the
+negative numbers as well, that is not the order of $\mathbb Z$: T165 led with
+$a=-50$ and put $a=2$ -- Artin's own constant, the row anybody arrives wanting
+-- halfway down. Enumerate by $|a|$, positive before negative, so the small
+cases are at the top and $a$ and $-a$ are next to each other, which is what a
+reader compares. Sorting does this without a special case where the two are
+not a pair, as at $|a|=4$, where $4$ is a square and $-4$ is not.
+
 **A value's display is a label, not a formula.** It is printed on every row
 that value indexes, so a conversion rule put there is repeated once per row:
 T168 carries `$c=-r(r-2)/4$` on all twenty-four of its $c$ rows, where `$c$`

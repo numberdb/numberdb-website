@@ -244,11 +244,17 @@ class ArtinPrimitiveRootDensities(numberdb.Generator):
 
 
 if __name__ == '__main__':
+    #The environment as well as the argument: `agents/sage.sh` runs a script
+    #with no arguments, so `--publish` cannot be given through it, and this
+    #generator silently verified ten sampled rows where a rewrite was meant.
+    #The other generators here already read both.
+    if os.environ.get('NUMBERDB_KEY_FROM_STDIN') == '1':
+        os.environ['NUMBERDB_API_KEY'] = sys.stdin.read().strip()
     generator = ArtinPrimitiveRootDensities()
-    if '--publish' in sys.argv:
+    if '--publish' in sys.argv or os.environ.get('NUMBERDB_PUBLISH') == '1':
         print(generator.publish(
             message='Artin primitive-root densities for small integer bases'))
     else:
-        report = generator.verify()
+        report = generator.verify(sample=None)
         print(report)
         sys.exit(0 if report.ok else 1)
