@@ -3,11 +3,11 @@
 # through the API (X-Draft: yes); publishing is a person's act on the site.
 Title: Constants of the regular continued fraction
 Definition: >-
-  For $x=[a_0;a_1,a_2,\ldots]$ with convergents $p_n/q_n$
-  CITE{MathWorldRegularCF}, this table gives almost-sure limits: Khinchin's
-  partial-quotient means $K_p$ CITE{WikiKhinchin}, Levy's constant
-  $e^\beta=\lim q_n^{1/n}$ and its logarithm $\beta$, and Lochs's constant
-  $L$, the term-per-decimal-digit limit CITE{Lochs}.
+  Let $x=[a_0;a_1,\ldots]$ have convergents $p_n/q_n$
+  CITE{MathWorldRegularCF}. This table gives almost-sure limits:
+  $K_p=\lim M_p(a_1,\ldots,a_n)$, with $M_p$ the power mean and $M_0$
+  geometric CITE{WikiKhinchin}; Levy's constant $e^\beta=\lim q_n^{1/n}$, its
+  logarithm $\beta$, and Lochs's constant $L$ CITE{Lochs}.
 Parameters:
   constant:
     type: Symbolic
