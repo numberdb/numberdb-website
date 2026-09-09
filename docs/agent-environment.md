@@ -2372,3 +2372,24 @@ Do not infer that the draft does not exist from a 404 on the rendered route.
 
 Evidence: T182, 2026-09-09; authenticated `GET /api/table?id=T182` returned
 the Mahler polynomial draft, while authenticated `GET /T182` returned 404.
+
+## A repair cannot infer findings when the critique file is missing
+
+What happened: the T183 repair task named `agents/critiques/T183.md`, but the
+checkout did not contain that file and no run artifact contained a T183
+critique. The authenticated API read of draft T183 succeeded, the rendered
+route still answered 404 because the draft was private, `audit_table T183`
+reported nothing, and the generator verified 31/31 stored entries. There was
+therefore no original finding list to line up with the required repaired
+report.
+
+What to do instead: check that `agents/critiques/<TID>.md` exists before
+repairing. If it is absent, do not reconstruct a critique from memory, logs or
+the local generator; read the live table if possible, run the mechanical
+checks that still apply, and write a single `left for a person` line in
+`agents/critiques/<TID>-repaired.md` saying the original report is missing.
+
+Evidence: T183, 2026-09-09; `agents/critiques/T183.md` was absent,
+authenticated `GET /api/table?id=T183` returned the Bateman polynomial draft,
+`GET /T183` returned 404, `audit_table T183` printed "Nothing to report", and
+`generators/bateman-polynomials/generate.py` verified 31/31 entries.
