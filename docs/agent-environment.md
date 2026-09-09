@@ -2333,3 +2333,26 @@ Evidence: `generators/power-sum-polynomials/generate.py` begins "Power sum
 symmetric polynomials" and points to T119 at
 `Power_sum_symmetric_polynomials`; proposal 1 in the 2026-09-09T1518 batch
 names the sums $S_p(n)=\sum_{k=1}^{n}k^p$.
+
+## Django and the client package both use the top-level name `numberdb`
+
+What happened: a stored-value check for draft T182 needed Django models to
+read the private draft and also tried to import the table generator, which
+imports `numberdb.sage`. With `sys.path.insert(0, "/app")`, Django settings
+were importable but `import numberdb.sage` resolved to the Django project
+package and failed with `ModuleNotFoundError: No module named
+'numberdb.sage'`. With `/app` appended after the client path, the client
+package won the name and Django could not import `numberdb.settings`.
+
+What to do instead: keep those checks in separate processes when using
+`agents/sage.sh`: run the generator's `verify()` with the client package and
+the API key, then run database-readback checks through Django without
+importing the generator or `numberdb.sage`. If one process truly needs both,
+handle `sys.modules["numberdb"]` deliberately rather than relying on
+`sys.path` order.
+
+Evidence: `/tmp/mahler_stored_check.py`, 2026-09-09, first failed while
+loading `/work/generate.py` with `No module named 'numberdb.sage'`, then
+failed during `django.setup()` with `No module named 'numberdb.settings'`.
+The final version read T182 through Django only and reported `stored checks:
+Touchard relation and A000296 through n=50`.
