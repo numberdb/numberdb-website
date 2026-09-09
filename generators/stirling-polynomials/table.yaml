@@ -28,10 +28,11 @@ Formulas:
     $\left(\frac{t}{1-e^{-t}}\right)^{x+1}
     =\sum_{k=0}^{\infty}S_k(x)\frac{t^k}{k!}$.
   formula-norlund: >-
-    $S_k(x)=B_k^{(x+1)}(x+1)$, where the generalized Bernoulli polynomials
-    are defined by
+    $S_k(x)=B_k^{(x+1)}(x+1)$, where the Noerlund polynomials
+    $B_k^{(a)}(z)$ are defined by
     $\left(\frac{t}{e^t-1}\right)^a e^{zt}
-    =\sum_{k=0}^{\infty}B_k^{(a)}(z)\frac{t^k}{k!}$ CITE{Wiki}.
+    =\sum_{k=0}^{\infty}B_k^{(a)}(z)\frac{t^k}{k!}$ CITE{Wiki}. At $a=1$,
+    these are the HREF{Bernoulli_polynomials}[Bernoulli polynomials].
   formula-special-values: >-
     $S_k(-1)=\delta_{k,0}$, $S_k(0)=(-1)^kB_k$, and $S_k(k)=k!$.
   formula-first-kind: >-
