@@ -1,0 +1,1 @@
+left for a person -- `agents/critiques/T180.md` is absent from this checkout, so no original finding could be checked or acted on; checked the authenticated live API document for draft T180 (`Stirling polynomials $S_k(x)$`), confirmed `https://numberdb.org/T180` and `/preview/T180` return 404 as draft pages, and `audit_table T180` reported nothing.
