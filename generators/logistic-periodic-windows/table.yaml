@@ -8,10 +8,10 @@ Definition: >-
   an interval of $r$ where $f_r$ has an attracting orbit of exact period
   $p$. The parameter $W$ is the critical orbit\'s kneading word
   CITE{WikiKneading}. For each window the table holds where it opens, where
-  it is superstable and where it first period-doubles -- each in both the
+  it is superstable and where it first period-doubles, each in both the
   logistic parameter $r$ and the quadratic parameter $c$ of $z\mapsto z^2+c$
-  CITE{formula-conversion} -- and the topological entropy $h_{\mathrm{top}}$
-  of $f_r$ on the window CITE{WikiTopologicalEntropy}.
+  CITE{formula-conversion}. It also holds the topological entropy
+  $h_{\mathrm{top}}$ of $f_r$ on the window CITE{WikiTopologicalEntropy}.
 Parameters:
   W:
     type: Symbolic

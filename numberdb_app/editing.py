@@ -427,6 +427,14 @@ def apply_revision(table, revision=None):
 	_sync_repeats(table, normalised)
 	build_number_table(only_table=table)
 	reindex_for_search(table, normalised)
+	#The overview reads TableMetrics rows, so a table with no row is a table
+	#missing from the page. It used to get one when somebody remembered to run
+	#`manage.py refresh_table_metrics`, which meant every table built overnight
+	#was absent until then. After the number rebuild, because the entry count
+	#is counted from the rows it writes.
+	from .metrics import refresh as refresh_metrics
+
+	refresh_metrics(table)
 	#After the rebuild, not before: the rows it writes take the model default,
 	#which is reviewed, and this is what corrects them.
 	return sync_review_flags(table)

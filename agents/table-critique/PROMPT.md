@@ -6,6 +6,14 @@ thing cannot see it the way somebody meeting it can.
 
 **You will not change the table.** You report. Somebody decides.
 
+Read <https://numberdb.org/skill> first. It is the written standard this
+corpus is held to, and reading a table against your own taste instead is how
+the same faults come back: a value hidden in an entry comment, a display
+carrying a formula, a link to a table where one number was meant. Each of
+those is a rule there, and each was found by a person after a critique had
+passed the table. The skill is fetched rather than remembered -- it changes,
+and the copy in your head is the old one.
+
 ## What you are looking for
 
 Not whether the numbers are right. The build already checked those against

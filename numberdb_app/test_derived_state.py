@@ -90,6 +90,22 @@ class DerivedStateAgreesWithTheDocument(TestCase):
 		self.table.refresh_from_db()
 		self.assertIn('Findable', self.table.search.weight_A_text)
 
+	def test_the_overview_row_exists_and_matches(self):
+		"""The overview page reads TableMetrics, so a table without a row is
+		a table missing from the page. Every table built overnight was
+		missing until somebody ran `refresh_table_metrics` by hand."""
+		from .models import TableMetrics
+
+		metrics = TableMetrics.objects.get(table=self.table)
+		self.assertEqual(metrics.entry_count, 2)
+		self.assertEqual(metrics.edit_count, self.table.revisions.count())
+		self.assertEqual(metrics.data_type, 'R')
+
+		self.commit({'Numbers': [{'params': {'n': '1'}, 'number': '9.99'}]})
+		metrics.refresh_from_db()
+		self.assertEqual(metrics.entry_count, 1)
+		self.assertEqual(metrics.edit_count, self.table.revisions.count())
+
 	def test_every_tag_counter_matches(self):
 		from django.db.models import Sum
 

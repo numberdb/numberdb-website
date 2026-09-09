@@ -58,8 +58,9 @@ Comments:
     why the table holds $\mathbb{Q}[x]$ and not $\mathbb{Z}[x]$.
   comment-conditioning: >-
     Equally spaced nodes are the classical example of interpolation behaving
-    badly as the degree grows -- Runge's phenomenon -- so these are useful for
-    seeing that happen rather than as a way to interpolate at high degree.
+    badly as the degree grows, which is Runge's phenomenon, so these are
+    useful for seeing that happen rather than as a way to interpolate at
+    high degree.
 Links:
   Wiki:
     title: 'Wikipedia: Lagrange polynomial'

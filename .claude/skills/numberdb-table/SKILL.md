@@ -354,6 +354,21 @@ entry", "both were computed and agree" are facts about your run, and in a
 `rigour details`. Put what you verified there, once, and let the formula be a
 formula.
 
+**Write in sentences, not in dashes.** A `--` in a definition or a comment is
+a parenthesis the reader has to hold open, and the renderer makes no
+typographic substitution, so it reaches the page as two hyphens: in a field
+full of minus signs that reads as mathematics. Say it with a comma, a colon
+or a full stop. "converges uniformly for continuous $f$, which is Bernstein's
+proof of the Weierstrass approximation theorem"; "each entry comment says
+which argument makes it exact. In $c$ the surd cancels: $r=1+\sqrt6$ gives
+$-r(r-2)/4=-(6-1)/4$."
+
+The em dashes a reader does see, in the parameter list and in `Similar
+tables`, are the site's own: it sets one between a parameter and its title,
+and between a table and the relation glossing it. Those are punctuation the
+page supplies, not something an author writes. A hyphen inside a word or a
+key is a third thing again and is right as it is: period-doubling, `onset-c`.
+
 **Write sentences, not notes to yourself.** Everything a reader sees is read
 as English. "every rule with $n\leq 30$ is here, nodes and weights, both
 halves" is four fragments stapled together, and a reader cannot tell whether
