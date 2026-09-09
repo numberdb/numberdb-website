@@ -31,6 +31,33 @@ class TheAuditReadsTheProse(TestCase):
 		urls = {t.url for t in Table.objects.all()}
 		return list(Command()._prose_faults(self.table, tree, urls, titles))
 
+	def test_it_reads_the_provenance_note(self):
+		"""`rigour details` is prose a reader meets, and no check read it.
+
+		T110 said its values were transcribed rather than computed, "which is
+		the difference between this table and the twin prime constant beside
+		it": a table this corpus holds, named, unlinked, and pointed at with
+		a word that means nothing on a page showing one table.
+		"""
+		found = self.complaints(
+			{'Title': 'A family of numbers',
+			 'Data properties': {
+				 'rigour details': 'Transcribed rather than computed, which '
+				                   'is the difference between this table and '
+				                   'the Bernoulli numbers beside it.'}})
+		self.assertTrue(any('does not link it' in f for f in found), found)
+		self.assertTrue(any('beside it' in f for f in found), found)
+
+	def test_a_provenance_note_may_say_what_was_done(self):
+		"""The one check that does not apply there: "computed twice and they
+		agreed" is a fact about the build, and this is the field for it."""
+		found = self.complaints(
+			{'Title': 'A family of numbers',
+			 'Data properties': {
+				 'rigour details': 'Each value was computed twice, at 150 and '
+				                   'at 210 digits, and the two agreed.'}})
+		self.assertEqual(found, [])
+
 	def test_it_notices_editorial(self):
 		found = self.complaints({'Title': 'A family of numbers',
 		                         'Comments': {'c': 'This value identifies '

@@ -427,6 +427,13 @@ class Command(BaseCommand):
 	POSITIONAL = (
 		'the first factor', 'the second factor', 'the former', 'the latter',
 		'the first one', 'the second one', 'as above', 'the latter two',
+		#"beside it" points at a *table*, not at a term in a formula, and a
+		#reader has no "beside": the page is one table and the corpus is not
+		#laid out. T110's provenance note said its transcription was "the
+		#difference between this table and the twin prime constant beside it",
+		#which names a table here, does not link it, and tells a reader
+		#nothing about where to look.
+		'beside it', 'beside this', 'next to it',
 	)
 
 	def _prose_faults(self, table, tree, urls, titles):
@@ -445,6 +452,21 @@ class Command(BaseCommand):
 				             for key, value in blob.items()
 				             if isinstance(value, str))
 
+		#`rigour details` and `complete-note` are prose too -- the reader
+		#meets them under "How they were obtained" and beside "complete: no"
+		#-- and they were not read at all. That is where T110 named the twin
+		#prime constant without linking it and pointed at it as "beside it",
+		#and neither check saw the sentence. Kept apart from `texts` because
+		#one check does not apply to them: a fact about the build reads as
+		#narration in a comment and is the whole point of a provenance note.
+		provenance = []
+		properties = tree.get('Data properties')
+		if isinstance(properties, dict):
+			for key in ('rigour details', 'complete-note'):
+				value = properties.get(key)
+				if isinstance(value, str) and value.strip():
+					provenance.append(('Data properties[%s]' % key, value))
+
 		#And the comment on each entry, which is prose a reader meets more
 		#often than the sections: it sits under the value they came for. This
 		#read only the sections at first, so entry comments saying a value
@@ -456,7 +478,7 @@ class Command(BaseCommand):
 				where = 'entry %s' % (record.get('params') or '')
 				texts.append((where.strip(), note))
 
-		for where, text in texts:
+		for where, text in texts + provenance:
 			lowered = text.lower()
 			for phrase in self.EDITORIAL:
 				if phrase in lowered:
@@ -474,6 +496,9 @@ class Command(BaseCommand):
 				       'reader who looks where they are told may not find it. '
 				       'Name it, or CITE its label, which renders as its '
 				       'number' % (where, match.group(0)))
+			if (where, text) in provenance:
+				#"computed twice and they agreed" is what this field is for.
+				continue
 			for match in _NARRATION.finditer(text):
 				yield ('%s says %r. That is a fact about the build, not about '
 				       'the mathematics; "rigour details" is the field for '
@@ -495,7 +520,7 @@ class Command(BaseCommand):
 				continue
 			if name.lower() in own.lower() or own.lower() in name.lower():
 				continue
-			for where, text in texts:
+			for where, text in texts + provenance:
 				if 'HREF{%s}' % slug in text:
 					continue
 				masked = re.sub(r'HREF\{[^}]*\}(\[[^\]]*\])?', ' ', text)
@@ -506,7 +531,7 @@ class Command(BaseCommand):
 					break
 
 		#A link sitting after the name instead of on it.
-		for where, text in texts:
+		for where, text in texts + provenance:
 			by_slug = {other.url: _bare_title(other.title)
 			           for other in titles.values()}
 			for match in re.finditer(r'HREF\{([^}]*)\}(?!\[)', text):
