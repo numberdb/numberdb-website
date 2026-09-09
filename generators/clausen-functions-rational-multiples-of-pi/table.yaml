@@ -5,10 +5,11 @@
 # person's act on the site.
 Title: Values of the Clausen functions $\mathrm{Cl}_s$ at rational multiples of $\pi$
 Definition: >-
-  This table gives $\mathrm{Cl}_s(\pi t)$, with $\mathrm{Cl}_s$ the Clausen
-  function in the polylogarithmic convention CITE{MathWorldClausen}, for
-  $s\in\mathbb Z$, $s\geq 2$, and $t\in\mathbb Q$ in the stated domain. The
-  parity convention is CITE{formula-polylog}.
+  This table gives the standard Clausen function $\mathrm{Cl}_s(\pi t)$:
+  $\operatorname{Im}\mathrm{Li}_s(e^{i\pi t})$ for even $s$ and
+  $\operatorname{Re}\mathrm{Li}_s(e^{i\pi t})$ for odd $s$
+  CITE{MathWorldClausen}. Here $s\geq2$ is an integer and $t$ is rational, with
+  $0<t<1$ for even $s$ and $0<t\leq1$ for odd $s$.
 Keywords:
   - Catalan's constant
   - Catalan constant
@@ -54,30 +55,40 @@ Comments:
     in the hyperbolic knot volume table.
   comment-lobachevsky: >-
     The Lobachevsky function is
-    $\Lambda(\theta)=\frac12\mathrm{Cl}_2(2\theta)$, so its rational multiples
-    of $\pi$ are half of entries with $s=2$ and doubled rational parameter.
+    $\Lambda(\theta)=\frac12\mathrm{Cl}_2(2\theta)$. To read
+    $\Lambda(\pi t)$ from this table, reduce $2t$ modulo $2$ to
+    $u\in[-1,1]$; the value is $\frac12\mathrm{Cl}_2(\pi u)$, using the sign
+    symmetry in CITE{formula-symmetry} when $u<0$ and the omitted zero endpoint
+    when $u=0$ or $|u|=1$.
 Formulas:
   formula-polylog: >-
     $\mathrm{Li}_s(z)=\sum_{k=1}^{\infty}z^k/k^s$ is the polylogarithm
-    CITE{DLMFPolylog}; for $s\geq 2$,
-    $\mathrm{Cl}_s(\theta)=\operatorname{Im}\mathrm{Li}_s(e^{i\theta})$ when
-    $s$ is even, and
-    $\mathrm{Cl}_s(\theta)=\operatorname{Re}\mathrm{Li}_s(e^{i\theta})$ when
-    $s$ is odd.
+    CITE{DLMFPolylog}.
   formula-series: >-
     For $m\geq 1$,
     $\mathrm{Cl}_{2m}(\theta)=\sum_{k=1}^{\infty}\sin(k\theta)/k^{2m}$ and
     $\mathrm{Cl}_{2m+1}(\theta)=\sum_{k=1}^{\infty}\cos(k\theta)/k^{2m+1}$.
+  formula-symmetry: >-
+    $\mathrm{Cl}_s(\theta+2\pi)=\mathrm{Cl}_s(\theta)$. Under reflection,
+    $\mathrm{Cl}_s(-\theta)=-\mathrm{Cl}_s(\theta)$ for even $s$, and
+    $\mathrm{Cl}_s(-\theta)=\mathrm{Cl}_s(\theta)$ for odd $s$. These
+    identities reduce every rational multiple of $\pi$ to a value with
+    $0\leq t\leq 1$, with a sign change only in even order.
   formula-hurwitz: >-
-    If $\alpha=p/q$ in lowest terms, then
+    If $\alpha=p/q$ is in lowest terms, with $\alpha=t/2$ for the rows in this
+    table, then
     $\mathrm{Li}_s(e^{2\pi i\alpha})=
     q^{-s}\sum_{r=1}^{q}e^{2\pi i p r/q}\zeta(s,r/q)$, where $\zeta(s,x)$ is
     HREF{Values_of_the_Hurwitz_zeta_function_at_pairs_of_rational_numbers}[the
     Hurwitz zeta function].
   formula-special-values: >-
-    $\mathrm{Cl}_2(\pi/2)=G$, Catalan's constant CITE{WikiCatalan};
-    $\mathrm{Cl}_2(\pi/3)=V$, Gieseking's constant CITE{MathWorldGieseking};
-    $\mathrm{Cl}_2(2\pi/3)=2V/3$; $\mathrm{Cl}_3(\pi/2)=
+    For $m\geq 1$, $\mathrm{Cl}_{2m}(\pi/2)=L(2m,\chi_4(3,\cdot))$ and
+    $\mathrm{Cl}_{2m}(2\pi/3)=(\sqrt3/2)L(2m,\chi_3(2,\cdot))$. In the rows
+    listed here,
+    HREF{Values_of_Dirichlet_L-functions_at_positive_integers#4,3,2}[$G$] is
+    Catalan's constant with $\mathrm{Cl}_2(\pi/2)=G$;
+    $\mathrm{Cl}_2(2\pi/3)=2\mathrm{Cl}_2(\pi/3)/3$;
+    $\mathrm{Cl}_3(\pi/3)=\zeta(3)/3$; $\mathrm{Cl}_3(\pi/2)=
     -3\zeta(3)/32$; $\mathrm{Cl}_3(2\pi/3)=-4\zeta(3)/9$; and
     $\mathrm{Cl}_3(\pi)=-3\zeta(3)/4$.
   formula-derivative: >-
@@ -101,7 +112,7 @@ Similar tables:
   - table: HREF{Hyperbolic_volumes_of_the_prime_knots_with_at_most_ten_crossings}[Hyperbolic volumes of the prime knots with at most ten crossings]
     relation: the figure-eight knot complement volume is $2\,\mathrm{Cl}_2(\pi/3)$, and hyperbolic volumes are built from Bloch-Wigner dilogarithms
   - table: HREF{Values_of_Dirichlet_L-functions_at_positive_integers}[Values of Dirichlet L-functions at positive integers]
-    relation: $\mathrm{Cl}_2(\pi/2)=L(2,\chi_4(3,\cdot))$ and $\mathrm{Cl}_2(2\pi/3)=(\sqrt3/2)L(2,\chi_3(2,\cdot))$
+    relation: holds the $s=2$ cases of the Dirichlet $L$-value identities at $t=1/2$ and $t=2/3$ in CITE{formula-special-values}
   - table: HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[Values of the Riemann zeta function at rational numbers]
     relation: odd-order endpoint and symmetry values include rational multiples of $\zeta(s)$
   - table: HREF{Values_of_the_Hurwitz_zeta_function_at_pairs_of_rational_numbers}[Values of the Hurwitz zeta function at pairs of rational numbers]
@@ -121,9 +132,6 @@ Links:
   MathWorldGieseking:
     title: "MathWorld: Gieseking's Constant"
     url: https://mathworld.wolfram.com/GiesekingsConstant.html
-  WikiCatalan:
-    title: "Wikipedia: Catalan's constant"
-    url: https://en.wikipedia.org/wiki/Catalan%27s_constant
   OEISCatalan:
     title: "OEIS A006752: Catalan's constant"
     url: https://oeis.org/A006752
@@ -144,14 +152,13 @@ Data properties:
     Each value was computed as a Sage complex ball with arb at
     `numberdb.bits(digits, losing=96)` bits by evaluating
     $\mathrm{Li}_s(e^{i\pi t})$ and taking the real or imaginary part specified
-    in the definition. Before the draft was created, all 538 entries agreed as
-    written with the Hurwitz-zeta decomposition CITE{formula-hurwitz}; the
-    special values in CITE{formula-special-values} agreed with independent
-    zeta and Hurwitz-zeta computations, and the decimal prefixes for
-    Catalan's constant, Gieseking's constant and $\mathrm{Cl}_2(2\pi/3)$ agreed
-    with CITE{OEISCatalan}, CITE{OEISGieseking} and CITE{OEISClausenTwoThirds}.
-    The dry run measured 538 entries, a longest written entry of 105
-    characters, and a 76.4 KB entries block.
+    in the definition. The 538 entries were checked against the Hurwitz-zeta
+    decomposition CITE{formula-hurwitz}; the special values in
+    CITE{formula-special-values} were checked against independent zeta,
+    Hurwitz-zeta and Dirichlet $L$-value computations, and the decimal prefixes
+    for Catalan's constant, Gieseking's constant and $\mathrm{Cl}_2(2\pi/3)$
+    agreed with CITE{OEISCatalan}, CITE{OEISGieseking} and
+    CITE{OEISClausenTwoThirds}.
   complete: no
   complete-note: >-
     it holds every entry with $s\in\{2,3,4\}$ and $t=a/b$ in lowest terms with
