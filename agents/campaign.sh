@@ -191,7 +191,18 @@ while [ "$made" -lt "$builds" ]; do
 	#paid $10.43 for, with no message. Two cheaper guesses were tried on a real
 	#transcript and both were wrong: the highest T-number mentioned gives T139,
 	#and without word boundaries the run stamp 20260902T182455Z gives T182.
-	tid=$(grep -aoE '\bT[0-9]{2,4}\b' "$generator" | head -1 || true)
+	#The number the generator gives itself, "... -- numberdb.org/T164", and not
+	#the first T-number in the file: T171's docstring omitted its own number and
+	#mentioned T170 in a cross-reference, so a critique and a repair were spent
+	#on a table finished an hour earlier. Failing that the highest number in the
+	#file, which is the newest table and so almost always this one; failing that
+	#nothing, and the loud skip below.
+	tid=$(grep -aoE 'numberdb\.org/T[0-9]{2,4}' "$generator" \
+	      | grep -oE 'T[0-9]{2,4}' | head -1 || true)
+	if [ -z "$tid" ]; then
+		tid=$(grep -aoE '\bT[0-9]{2,4}\b' "$generator" \
+		      | sort -t T -k2 -n | tail -1 || true)
+	fi
 	if [ -z "$tid" ]; then
 		say "no T-number in $generator; skipping the critique and the repair"
 	fi

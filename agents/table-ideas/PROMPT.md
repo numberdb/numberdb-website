@@ -183,6 +183,32 @@ builder could run this afternoon:
 four families were looked at and left this week for exactly this reason, and
 saying which were left, and what would settle each, is a useful result.
 
+## The title is what a search reaches
+
+The text index has four weights: the title and keywords first, then tags, then
+the definition, then the table's `Comments`. **An entry's own comment is in
+none of them.** So a constant that appears only as a row, with its name in
+that row's comment, cannot be found by its name at all -- not weakly, not at
+all.
+
+That decides how finely to divide a subject, more than tidiness does. T18
+*Feigenbaum constants* works: somebody looking for $\delta$ types
+"Feigenbaum", and the word is in the title. T170 *Constants of the regular
+continued fraction* does not: nobody types that phrase to find Khinchin's
+constant, and Lévy and Lochs are not in the title at all, so three named
+constants sit in a table that answers none of their names.
+
+**Where several named constants share a subject but not a name, propose
+several tables.** Not because a one-constant table is good in itself, though
+the corpus has ten -- T7, T8, T37, T38, T39, T43 -- but because the title is
+the only field a reader's search reliably reaches. **Where the members share
+an index, one table however few**: Khinchin's means $K_p$ are indexed by $p$,
+and belong together under a title with "Khinchin" in it.
+
+The test to apply to a proposed title: *what would somebody type who is
+holding one of these numbers and wants to know what it is?* If the answer is
+a word the title does not contain, the table is either misnamed or too big.
+
 ## A batch may need a tag that does not exist
 
 You propose five tables at once, so you are the one who can see that they
