@@ -62,7 +62,8 @@ control="/tmp/numberdb-ssh-%r@%h:%p"
 ssh_opts=(-o BatchMode=yes -o ExitOnForwardFailure=no
           -o ControlMaster=auto -o "ControlPath=$control" -o ControlPersist=60)
 
-remote_dir="/tmp/agent-run-$(date +%s)-$$"
+run_id="$(date +%s)-$$-${RANDOM:-0}"
+remote_dir="/tmp/agent-run-$run_id"
 mounts=()
 for file in "$@"; do
 	[ -f "$file" ] || { echo "no such file: $file" >&2; exit 2; }
@@ -96,7 +97,7 @@ trap cleanup EXIT
 # wants, and a refusal would only be retried by hand. `--rm` and a name let the
 # cleanup below reach the container if this end dies first, which is the other
 # half of the problem -- `timeout` here kills the ssh, never the work.
-name="numberdb-agent-run-$$"
+name="numberdb-agent-run-$run_id"
 ssh "${ssh_opts[@]}" "$REMOTE" \
 	"exec 9>'$LOCK'; flock -w 3600 9 || { echo 'another run held the lock for an hour' >&2; exit 75; }; \
 	 cd '$RPATH' && timeout $TIMEOUT docker compose run --rm --no-deps -T --name '$name' \

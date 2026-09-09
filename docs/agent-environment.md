@@ -2220,3 +2220,24 @@ in `NUMBERDB_API_KEY`, and call `generator.publish(...)`.
 Evidence: T169, 2026-09-09; the failed run entered
 `LogisticPeriodicWindows().verify(sample=None)`, and
 `/tmp/publish_windows_generator.py` filled the same draft successfully.
+
+## Interrupting `agents/sage.sh` can leave its container name occupied
+
+What happened: a slow direct `mpmath.nsum` probe was stopped with Ctrl-C.
+The remote container continued long enough that the next `agents/sage.sh`
+call failed before running the script, with Docker reporting that
+`/numberdb-agent-run-2` was already in use. In this Codex environment the
+local shell PID seen by the wrapper can be reused, so the fixed container
+name based on `$$` is not unique across calls.
+
+What the skill says now: nothing; this is the runner and this deployment's
+remote Docker cleanup, not a table-building convention.
+
+What to do instead: make the runner's container name unique per call, not
+only per local shell PID, so an interrupted or slow-to-clean container does
+not block the next unrelated Sage run. Avoid interrupting Sage probes when a
+shorter controlled test can be written instead.
+
+Evidence: the failed `/tmp/cf_zeta_test.py` run on 2026-09-09 immediately
+after stopping `/tmp/cf_compute_test.py`; `agents/sage.sh` now includes a
+timestamp and random suffix in both the remote scratch path and Docker name.
