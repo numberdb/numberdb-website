@@ -3,16 +3,9 @@
 # through the API (X-Draft: yes); publishing is a person's act on the site.
 Title: Constants of the regular continued fraction
 Definition: >-
-  For the regular continued fraction
-  $x=[a_0;a_1,a_2,\ldots]$ CITE{MathWorldRegularCF}, the table gives
-  Khinchin's power means $K_p$ of the partial quotients $a_i$ CITE{WikiKhinchin}
-  CITE{MathWorldKhinchin}, Levy's constant $e^\beta$, the Khinchin-Levy
-  constant $\beta$, and Lochs's constant $L$. For $p<1$, $K_p$ is the
-  almost-sure limit of
-  $\left(\frac1n\sum_{i=1}^n a_i^p\right)^{1/p}$ for $p\ne0$, with $K_0$
-  the limiting geometric mean; $e^\beta$ is the almost-sure limit of
-  $q_n^{1/n}$ for the denominators of the convergents, and $L$ is the
-  almost-sure number of continued-fraction terms determined per decimal digit.
+  Regular continued fraction constants CITE{MathWorldRegularCF}: Khinchin's
+  means $K_p$, Levy's constant $e^\beta$, the Khinchin-Levy constant $\beta$,
+  and Lochs's constant $L$.
 Parameters:
   constant:
     type: Symbolic
@@ -43,11 +36,12 @@ Comments:
     that a partial quotient is $k$ is CITE{formula-probability}. The
     constants $K_p$ are the power means of this distribution.
   comment-conventions: >-
-    The row $K_0$ is Khinchin's constant, and $K_{-1}$ is the Khinchin
-    harmonic mean. The arithmetic mean $K_1$ is infinite, so it is not a
-    finite entry. The row $e^\beta$ stores the exponential form usually
-    called Levy's constant; the row $\beta$ stores its logarithm, which is
-    also called the Khinchin-Levy constant CITE{MathWorldLevy}.
+    The row $K_0$ is Khinchin's constant CITE{WikiKhinchin}
+    CITE{MathWorldKhinchin}, and $K_{-1}$ is the Khinchin harmonic mean. The
+    arithmetic mean $K_1$ is infinite, so it is not a finite entry. The row
+    $e^\beta$ stores the exponential form usually called Levy's constant; the
+    row $\beta$ stores its logarithm, which is also called the Khinchin-Levy
+    constant CITE{MathWorldLevy}.
   comment-lochs: >-
     Lochs's constant is the limit in Lochs's theorem CITE{Lochs}
     CITE{MathWorldLochs}. This table uses
