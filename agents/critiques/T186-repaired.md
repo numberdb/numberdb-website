@@ -1,0 +1,10 @@
+1. left for a person -- T180 is still a private draft, checked anonymously at `/api/table?id=T180`, `/T180`, and `/Stirling_polynomials`; the T186 relation was checked in Sage and left alone because the fix is publishing T180 before or with T186, not editing T186.
+2. done -- rewrote `comment-convention` to cite Knuth's convolution-polynomial name, Concrete Mathematics' Stirling-polynomial name, the Sheffer-sequence relation, and the Gessel-Stanley notation without undefined `S(n+k,n)` or `c(n,n-k)`; checked the old comment was still live on the owner-rendered page before changing it.
+3. done -- replaced the 50-line generator-like `program-sage` with an 8-line Sage snippet; checked the exact snippet through Sage's preparser against all 25 stored polynomials and checked it produces $\sigma_{26}$.
+4. done -- cited the first- and second-kind OEIS links from the formulas, and corrected `OEISFirstKind` from A008275 to A132393 after checking OEIS because A008275 is the signed first-kind triangle; checked the first- and second-kind identities in Sage on four $m$ values for every stored $n$.
+5. done -- rewrote the Stirling-polynomial and Touchard-polynomial Similar-tables glosses; checked `audit_table T186 --links` after the edit.
+6. declined -- left the extra $\sigma_0(x)=1/x$ statement in formula (1), because the formula sums from $n=0$ and the caveat is local to that displayed identity.
+7. declined -- left the Noerlund spelling and OEIS Nørlund-caption suggestion for a person, because it is a source-caption/style decision rather than a correctness repair.
+8. declined -- left the rigour note's equivalent $\left(z/(1-e^{-z})\right)^x$ form, because it describes the generator's actual expansion and was checked against the defining form.
+9. done -- removed the $S_k(x)$ versus $S_n(x)$ mismatch while rewriting `comment-convention`.
+10. declined -- left the Stirling-polynomial keywords unchanged, because the critique says the search behavior is defensible and I confirmed both T186 and T180 should answer that term once T180 is public.

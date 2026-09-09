@@ -19,10 +19,13 @@ Comments:
     The same generating function gives $\sigma_0(x)=1/x$, which is not a
     polynomial. This table starts at $n=1$ and stores the polynomial entries.
   comment-convention: >-
-    Knuth writes these as Stirling polynomials CITE{Concrete}. This title
-    includes "convolution" to distinguish them from
-    HREF{Stirling_polynomials}[Stirling polynomials] $S_k(x)$ and from the
-    Gessel-Stanley polynomials $S(n+k,n)$ and $c(n,n-k)$.
+    Knuth CITE{Knuth} calls these convolution polynomials, and Concrete
+    Mathematics CITE{Concrete} calls them Stirling polynomials. The same name
+    is also used for the Sheffer sequence $S_n(x)$ of
+    HREF{Stirling_polynomials}[Stirling polynomials], related by
+    CITE{formula-stirling-polynomials}, and for the Gessel-Stanley
+    polynomials formed from $\left\{{n+k\atop n}\right\}$ and
+    $\left[{n\atop n-k}\right]$ as polynomials in $n$ for fixed $k$.
 Formulas:
   formula-generating-function: >-
     $\left(\frac{ze^z}{e^z-1}\right)^x
@@ -38,12 +41,12 @@ Formulas:
     If $m$ and $n$ are integers with $m>n\geq1$, then
     $m(m-1)\cdots(m-n)\sigma_n(m)=\left[{m\atop m-n}\right]$, where
     $\left[{a\atop b}\right]$ is an unsigned Stirling number of the first
-    kind CITE{Wiki}.
+    kind CITE{Wiki} CITE{OEISFirstKind}.
   formula-second-kind: >-
     If $m$ and $n$ are integers with $m>n\geq1$, then
     $m(m-1)\cdots(m-n)(-1)^{n+1}\sigma_n(n-m)=\left\{{m\atop m-n}\right\}$,
     where $\left\{{a\atop b}\right\}$ is a Stirling number of the second
-    kind. These numbers are the coefficients of the
+    kind CITE{OEISSecondKind}. These numbers are the coefficients of the
     HREF{Touchard_polynomials}[Touchard polynomials].
   formula-bernoulli-value: >-
     $\sigma_n(0)=-B_n/(n\,n!)$, where $B_n$ is the
@@ -56,63 +59,21 @@ Programs:
   program-sage:
     language: Sage
     code: |-
-      import numberdb.sage as numberdb
-      from sage.arith.misc import factorial
-      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
-      from sage.rings.rational_field import QQ
-
-      R = PolynomialRing(QQ, 'x')
-      x = R.gen()
-
-      def mul(a, b, order):
-          out = [R.zero() for _ in range(order + 1)]
-          for i, ai in enumerate(a):
-              for j, bj in enumerate(b[:order + 1 - i]):
-                  out[i + j] += ai * bj
-          return out
-
-      def base_series(order):
-          a = [QQ(0) for _ in range(order + 1)]
-          a[0] = QQ(1)
-          for r in range(2, order + 2):
-              total = QQ(0)
-              for m in range(2, r + 1):
-                  total += a[r - m] * QQ((-1)**(m + 1)) / QQ(factorial(m))
-              a[r - 1] = -total
-          return a
-
-      def binomial_x(m):
-          value = R.one()
-          for j in range(m):
-              value *= x - QQ(j)
-              value /= QQ(j + 1)
-          return value
+      R.<x> = QQ[]
 
       def stirling_convolution_polynomial(n):
-          base = [R(c) for c in base_series(n)]
-          base[0] = R.zero()
-          coefficients = [R.zero() for _ in range(n + 1)]
-          coefficients[0] = R.one()
-          power = [R.zero() for _ in range(n + 1)]
-          power[0] = R.one()
-          for m in range(1, n + 1):
-              power = mul(power, base, n)
-              factor = binomial_x(m)
-              for j in range(n + 1):
-                  coefficients[j] += factor*power[j]
-          quotient, remainder = coefficients[n].quo_rem(x)
-          if remainder:
-              raise ArithmeticError('coefficient is not divisible by x')
-          return quotient
+          S.<z> = PowerSeriesRing(R, default_prec=n + 2)
+          f = (x * (z / (1 - exp(-z))).log()).exp()
+          return R(f[n] / x)
 
       stirling_convolution_polynomial(26)      # the next one after this table
 Similar tables:
   - table: HREF{Stirling_polynomials}[Stirling polynomials]
-    relation: are the same Stirling family in the Sheffer-sequence normalisation of CITE{formula-stirling-polynomials}
+    relation: hold the same polynomials in the Sheffer-sequence convention, related by CITE{formula-stirling-polynomials}
   - table: HREF{Bernoulli_numbers}[Bernoulli numbers]
     relation: give the value at $x=0$ in CITE{formula-bernoulli-value}
   - table: HREF{Touchard_polynomials}[Touchard polynomials]
-    relation: have Stirling numbers of the second kind as coefficients, which give CITE{formula-second-kind}
+    relation: have as coefficients the Stirling numbers of the second kind in CITE{formula-second-kind}
 Links:
   Wiki:
     title: "Wikipedia: Stirling polynomials"
@@ -124,8 +85,8 @@ Links:
     title: "OEIS A001898: denominators of Bernoulli polynomials"
     url: https://oeis.org/A001898
   OEISFirstKind:
-    title: "OEIS A008275: triangle of unsigned Stirling numbers of the first kind"
-    url: https://oeis.org/A008275
+    title: "OEIS A132393: triangle of unsigned Stirling numbers of the first kind"
+    url: https://oeis.org/A132393
   OEISSecondKind:
     title: "OEIS A008277: triangle of Stirling numbers of the second kind"
     url: https://oeis.org/A008277
