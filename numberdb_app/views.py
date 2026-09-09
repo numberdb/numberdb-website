@@ -713,6 +713,16 @@ def table_context(table, preview=False):
 			new_text += '<a class="HREF" href="%s">%s</a>%s' % (
 				_reference_href(ref), caption, part2)
 				
+		#`backticks` mark code, here as in `rigour details`. They were taught
+		#in the help and the skill and implemented in one field only, so the
+		#first author to reach for one put it in a Definition -- T169's says
+		#"the quantity named by the parameter `expression`" -- where it
+		#rendered as two literal backticks. Either they mean code everywhere
+		#prose is written or nowhere; the corpus had none before that table,
+		#so nothing is reinterpreted by allowing them.
+		new_text = re.sub(r'`([^`\n]+)`',
+		                  r'<code class="prose-code">\1</code>', new_text)
+
 		if line_breaks:
 			#Parse '\n's:
 			new_text = new_text.replace("\n","<br>")
