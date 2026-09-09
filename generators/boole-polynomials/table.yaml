@@ -106,7 +106,8 @@ Data properties:
     $s_0(x;1)$ through $s_2(x;1)$ with
     $r_n(x)=2s_n(x;1)$, against CITE{formula-finite-difference} and
     CITE{formula-special-value} on every entry, and against
-    CITE{formula-euler-transform} with the Euler polynomials computed from
-    their derivative and reflection identities.
+    CITE{formula-euler-transform} with the
+    HREF{Euler_polynomials}[Euler polynomials] computed from their derivative
+    and reflection identities.
 Display properties:
   number-header: $r_n(x)$
