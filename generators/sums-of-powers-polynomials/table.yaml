@@ -1,0 +1,117 @@
+# The table document for proposal 1 of
+# agents/table-ideas/BATCH-2026-09-09T1518.md. Created as a draft through the
+# API (X-Draft: yes) and filled by generate.py beside it; publishing is a
+# person's act on the site.
+Title: Sums of powers $S_p(n)$
+Definition: >-
+  For an integer $p\geq 0$, $S_p(n)$ is the polynomial in $\mathbb{Q}[n]$
+  with $S_p(N)=\sum_{k=1}^{N} k^p$ for every positive integer $N$
+  CITE{Wiki}.
+Parameters:
+  p:
+    type: Z
+    title: exponent
+    display: $p$
+    constraints: $p\geq 0$
+Comments:
+  comment-convention: >-
+    The summation starts at $k=1$ and ends at $N$. Thus $S_0(n)=n$, not
+    $n+1$, and the constant term of every $S_p(n)$ is zero.
+  comment-power-sum-symmetric: >-
+    The HREF{Power_sum_symmetric_polynomials}[power sum symmetric
+    polynomials] share the words "power sum" but hold a different family:
+    $p_k(x_1,\dots,x_m)=x_1^k+\cdots+x_m^k$.
+  comment-odd-powers: >-
+    For odd $p\geq 3$, $S_p(n)$ is a polynomial in the triangular number
+    $n(n+1)/2$ and is divisible by $n^2(n+1)^2$.
+Formulas:
+  formula-bernoulli-polynomials: >-
+    $S_p(n)=\frac{B_{p+1}(n+1)-B_{p+1}(1)}{p+1}$, where $B_m(x)$ are the
+    HREF{Bernoulli_polynomials}[Bernoulli polynomials].
+  formula-coefficients: >-
+    $S_p(n)=\frac{1}{p+1}\sum_{j=0}^{p}(-1)^j\binom{p+1}{j}B_j n^{p+1-j}$,
+    where $B_j$ are the HREF{Bernoulli_numbers}[Bernoulli numbers] with
+    $B_1=-\tfrac12$ CITE{Concrete}.
+  formula-finite-difference: >-
+    $S_p(n)-S_p(n-1)=n^p$ and $S_p(0)=0$.
+  formula-divisibility: >-
+    For $p\geq 1$, $S_p(n)/(n(n+1))\in\mathbb{Q}[n]$; for odd $p\geq 3$,
+    $S_p(n)/(n^2(n+1)^2)\in\mathbb{Q}[n]$.
+  formula-exponential-generating-function: >-
+    For positive integers $N$,
+    $\sum_{p=0}^{\infty}S_p(N)\frac{t^p}{p!}
+    =\sum_{k=1}^{N} e^{kt}
+    =\frac{e^t(e^{Nt}-1)}{e^t-1}$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.arith.misc import bernoulli, binomial
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+      from sage.rings.rational_field import QQ
+
+      R = PolynomialRing(QQ, 'n')
+      n = R.gen()
+
+      def sums_of_powers_polynomial(p):
+          value = R.zero()
+          for j in range(p + 1):
+              value += (QQ((-1)**j) * QQ(binomial(p + 1, j))
+                        * QQ(bernoulli(j)) * n**(p + 1 - j))
+          return value / QQ(p + 1)
+
+      sums_of_powers_polynomial(51)      # the next one after this table
+Similar tables:
+  - table: HREF{Bernoulli_polynomials}[Bernoulli polynomials]
+    relation: give $S_p(n)$ by the shifted difference in CITE{formula-bernoulli-polynomials}
+  - table: HREF{Bernoulli_numbers}[Bernoulli numbers]
+    relation: give the coefficients in CITE{formula-coefficients}
+  - table: HREF{Euler_polynomials}[Euler polynomials]
+    relation: give the corresponding polynomials for alternating sums of powers
+  - table: HREF{Power_sum_symmetric_polynomials}[Power sum symmetric polynomials]
+    relation: share the phrase "power sum" but hold symmetric polynomials in several variables
+Links:
+  Wiki:
+    title: "Wikipedia: Faulhaber's formula"
+    url: https://en.wikipedia.org/wiki/Faulhaber%27s_formula
+  MathWorld:
+    title: "MathWorld: Faulhaber's Formula"
+    url: https://mathworld.wolfram.com/FaulhabersFormula.html
+  OEISnumerators:
+    title: 'OEIS A162298: numerators of Faulhaber''s triangle for $\sum_{x=1}^{m}x^{k-1}$'
+    url: https://oeis.org/A162298
+  OEISdenominators:
+    title: 'OEIS A162299: denominators of Faulhaber''s triangle for $\sum_{x=1}^{m}x^{k-1}$'
+    url: https://oeis.org/A162299
+References:
+  Concrete:
+    bib: >-
+      R. L. Graham, D. E. Knuth and O. Patashnik, Concrete Mathematics,
+      second edition, Addison-Wesley, 1994, Section 6.5.
+Keywords:
+  - Faulhaber formula
+  - Faulhaber's formula
+  - power sum polynomials
+  - sums of powers of integers
+Tags:
+  - polynomial
+  - number theory
+  - combinatorics
+Data properties:
+  type: Q[]
+  rigour: exact
+  complete: 'no'
+  complete-note: it holds every exponent $p$ with $0\leq p\leq 50$
+  rigour details: >-
+    The generator uses the Bernoulli-number formula in
+    CITE{formula-coefficients}, with every division made in Sage's rational
+    field. Before the draft was created, the entries were checked against
+    brute-force sums for $1\leq N\leq 12$, interpolated independently from
+    $p+2$ integer values for each $p$, and compared coefficient by
+    coefficient with OEIS A162298 CITE{OEISnumerators} and A162299
+    CITE{OEISdenominators} through $p=50$. The finite-difference identity
+    CITE{formula-finite-difference} and the divisibility statements in
+    CITE{formula-divisibility} were checked on every entry.
+Display properties:
+  number-header: $S_p(n)$
