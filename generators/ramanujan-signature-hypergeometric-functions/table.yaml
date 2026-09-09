@@ -1,0 +1,170 @@
+# The table document for draft T178, Ramanujan's signature hypergeometric
+# functions. It began as proposal 4 of
+# agents/table-ideas/BATCH-2026-09-09T1055.md. Created, filled, and offered
+# for review as a draft through the API; publishing is a person's act on the site.
+Title: Values of Ramanujan's signature hypergeometric functions $F_r(x)$
+Definition: >-
+  This table gives the real values
+  $F_r(x)={}_2F_1(1/r,1-1/r;1;x)$ of Gauss's hypergeometric function
+  CITE{DLMFHypergeometric} for signatures $r\in\{2,3,4,6\}$ and rational
+  arguments $0<x<1$. The argument $x$ is Gauss's hypergeometric variable.
+Keywords:
+  - Ramanujan signature
+  - Ramanujan alternative bases
+  - hypergeometric function
+  - Gauss hypergeometric function
+  - ordinary hypergeometric function
+  - cubic AGM
+  - quartic AGM
+  - sextic theory
+Parameters:
+  r:
+    type: Z
+    title: signature
+    display: $r$
+    constraints: $r\in\{2,3,4,6\}$
+  x:
+    type: Q
+    title: hypergeometric argument
+    display: $x$
+    constraints: $0<x<1$
+Comments:
+  comment-signatures: >-
+    Signature $2$ is the classical elliptic-integral case, related to
+    HREF{Complete_elliptic_integral_of_the_first_kind_K}[$K(m)$] by
+    CITE{formula-elliptic}. Signatures $3$, $4$ and $6$ are the
+    alternative-base theories of Ramanujan developed by Berndt, Bhargava and
+    Garvan CITE{BBG1995}; in these four cases the two upper hypergeometric
+    parameters are $a$ and $1-a$, with $a=1/r$.
+  comment-range: >-
+    Negative arguments are not listed. Pfaff's transformation sends a negative
+    argument to one in $(0,1)$, multiplied by an elementary factor, so those
+    values belong to a later extension with an explicit convention for that
+    reduction.
+  comment-endpoints: >-
+    The endpoint $x=0$ gives $F_r(0)=1$ and is omitted. The endpoint $x=1$ is
+    logarithmically divergent, as in CITE{formula-near-one}, and is not an
+    entry.
+  comment-half: >-
+    At $x=1/2$, Gauss's second summation theorem gives the Gamma and Beta
+    quotients in CITE{formula-half}. The entries for signatures $2$ and $3$
+    agree with CITE{OEISSignatureTwoHalf} and CITE{OEISSignatureThreeHalf}.
+Formulas:
+  formula-series: >-
+    With $(a)_n$ denoting the Pochhammer symbol,
+    $F_r(x)=\sum_{n=0}^{\infty}
+    ((1/r)_n(1-1/r)_n/(n!)^2)x^n$ for $|x|<1$ CITE{DLMFHypergeometric}.
+  formula-connection: >-
+    For $y=1-x$ and $0<x<1$,
+    $F_r(x)=\frac{\sin(\pi/r)}{\pi}\sum_{n=0}^{\infty}
+    \frac{(1/r)_n(1-1/r)_n}{(n!)^2}
+    \bigl(2\psi(n+1)-\psi(n+1/r)-\psi(n+1-1/r)-\log y\bigr)y^n$,
+    where $\psi$ is the digamma function. This is the $c=a+b$ case of the
+    continuation formula CITE{DLMFTransformations}.
+  formula-near-one: >-
+    As $x\to1^-$,
+    $F_r(x)/(-\log(1-x))\to\sin(\pi/r)/\pi$.
+  formula-elliptic: >-
+    $F_2(x)=2K(x)/\pi$, where $K(m)$ is
+    HREF{Complete_elliptic_integral_of_the_first_kind_K}[the complete
+    elliptic integral of the first kind].
+  formula-agm: >-
+    $F_2(1-b^2)=1/\operatorname{AGM}(1,b)$. The cubic analogue is
+    $F_3(1-b^3)=1/\operatorname{AGM}_3(1,b)$, where
+    $\operatorname{AGM}_3$ is the common limit of
+    $a_{n+1}=(a_n+2b_n)/3$ and
+    $b_{n+1}=\sqrt[3]{b_n(a_n^2+a_nb_n+b_n^2)/3}$ CITE{Borwein1991}.
+  formula-quartic: >-
+    $F_4(x)=\sqrt{1+z}\,F_2(z)$ with
+    $z=(1-\sqrt{1-x})/(1+\sqrt{1-x})$ CITE{DLMFTransformations}.
+  formula-half: >-
+    For $r\in\{2,3,4,6\}$,
+    $F_r(1/2)=2/B((r+1)/(2r),(2r-1)/(2r))=
+    \sqrt{\pi}/(\Gamma((r+1)/(2r))\Gamma((2r-1)/(2r)))$
+    CITE{DLMFSpecialCases}, with $B(a,b)$ as in CITE{DLMFBeta}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.complex_arb import ComplexBallField
+      from sage.rings.rational_field import QQ
+
+      r = 3
+      x = QQ(1) / QQ(2)
+      CBF = ComplexBallField(numberdb.bits(100, losing=128))
+      a = CBF(QQ(1) / QQ(r))
+      CBF(x).hypergeometric([a, 1 - a], [CBF(1)]).real()
+Similar tables:
+  - table: HREF{Complete_elliptic_integral_of_the_first_kind_K}[Complete elliptic integral of the first kind $K(m)$]
+    relation: signature $2$ is related to $K(m)$ by CITE{formula-elliptic}
+  - table: HREF{Arithmetic-geometric_mean}[Values of the arithmetic-geometric mean]
+    relation: signature $2$ has the AGM expression in CITE{formula-agm}, and signature $3$ has the cubic analogue in the same formula
+  - table: HREF{Values_of_the_Beta_function_at_pairs_of_rational_numbers}[Values of the Beta function $B(a,b)$ at pairs of rational numbers]
+    relation: the entries with $x=1/2$ are reciprocal Beta values by CITE{formula-half}
+  - table: HREF{Values_of_the_Gamma_function_at_rational_numbers}[Values of the Gamma function at rational numbers]
+    relation: the entries with $x=1/2$ are Gamma quotients by CITE{formula-half}
+Links:
+  DLMFHypergeometric:
+    title: 'DLMF 15.2: Hypergeometric Function'
+    url: https://dlmf.nist.gov/15.2
+  DLMFSpecialCases:
+    title: 'DLMF 15.4: Special Cases'
+    url: https://dlmf.nist.gov/15.4
+  DLMFTransformations:
+    title: 'DLMF 15.8: Transformations of Variable'
+    url: https://dlmf.nist.gov/15.8
+  DLMFBeta:
+    title: 'DLMF 5.12: Beta Function'
+    url: https://dlmf.nist.gov/5.12
+  OEISSignatureTwoHalf:
+    title: 'OEIS A175574: ${}_2F_1(1/2,1/2;1;1/2)$'
+    url: https://oeis.org/A175574
+  OEISSignatureThreeHalf:
+    title: 'OEIS A355178: ${}_2F_1(1/3,2/3;1;1/2)$'
+    url: https://oeis.org/A355178
+References:
+  BBG1995:
+    bib: >-
+      Bruce C. Berndt, S. Bhargava and Frank G. Garvan, Ramanujan's theories
+      of elliptic functions to alternative bases, Trans. Amer. Math. Soc. 347
+      (1995), no. 11, 4163-4244.
+    doi: 10.1090/S0002-9947-1995-1311903-0
+    zbl: '0843.33012'
+    mr: '1311903'
+  Borwein1991:
+    bib: >-
+      J. M. Borwein and P. B. Borwein, A cubic counterpart of Jacobi's identity
+      and the AGM, Trans. Amer. Math. Soc. 323 (1991), no. 2, 691-701.
+    doi: 10.1090/S0002-9947-1991-1010408-0
+    mr: '1010408'
+Tags:
+  - special values
+  - special functions
+  - elliptic curves
+Data properties:
+  type: R
+  rigour: proven
+  rigour details: >-
+    Each value was computed as a Sage real ball with arb at
+    `numberdb.bits(digits, losing=128)` bits. For $x\leq1/2$ the generator
+    sums the Gauss series in CITE{formula-series} and adds the tail bound
+    $x^N/(1-x)$, using $0<(a)_n(1-a)_n/(n!)^2\leq1$ for $0<a<1$. For
+    $x>1/2$ it sums the connection series in CITE{formula-connection} and
+    bounds the tail by a geometric series in $1-x$ times the largest digamma
+    bracket, which occurs at $n=0$. The measured worst cases used 433 Gauss
+    terms and 402 connection-series terms; the widest returned ball had
+    radius less than $6\cdot10^{-130}$ for 100 requested digits. The 508
+    entries were checked against arb's hypergeometric function on all 448
+    rows where that call returned a finite value, against CITE{formula-elliptic}
+    for all 127 signature-$2$ rows, against CITE{formula-quartic} for all 127
+    signature-$4$ rows, against the cubic AGM in CITE{formula-agm} for all 127
+    signature-$3$ rows, against the corresponding signature-$6$ quadratic
+    transformation for all 64 rows with $x\leq1/2$, and against the Gamma and
+    Beta values in CITE{formula-half} for all four signatures at $x=1/2$.
+  complete: no
+  complete-note: >-
+    it holds every entry with $r\in\{2,3,4,6\}$ and $x=a/b$ in lowest terms
+    with $1\leq a<b$ and $b\leq20$
+Display properties:
+  number-header: $F_r(x)$
