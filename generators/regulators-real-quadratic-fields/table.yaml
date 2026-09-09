@@ -53,7 +53,7 @@ Comments:
     $R_K$ is transcendental, being the logarithm of an algebraic number other
     than $0$ and $1$, but a few entries are constants a reader may hold under
     another name: $R_K=\log\varphi$ for $D=5$, with $\varphi$
-    HREF{Golden_ratio}[the golden ratio], $\log(1+\sqrt{2})=\operatorname{arsinh}(1)$
+    HREF{Golden_ratio#phi}[the golden ratio], $\log(1+\sqrt{2})=\operatorname{arsinh}(1)$
     for $D=8$, $\log(2+\sqrt{3})=\operatorname{arcosh}(2)$ for $D=12$. In
     general $R_K$ is $\operatorname{arcosh}$ or $\operatorname{arsinh}$ of
     half the trace of $\varepsilon_K$, by the formula below.

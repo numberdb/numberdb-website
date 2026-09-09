@@ -79,7 +79,7 @@ Comments:
     $(4,8^2)$.
   comment-status: >-
     Ten of the seventeen constants are known in closed form: the
-    HREF{Golden_ratio}[golden ratio] for the line, Lieb's
+    HREF{Golden_ratio#phi}[golden ratio] for the line, Lieb's
     $\left(\frac43\right)^{3/2}$ for square ice
     CITE{Lieb}, $e^{G/\pi}$ for dimers on the square lattice with $G$
     Catalan's constant CITE{Kasteleyn}, the honeycomb dimer constant and the

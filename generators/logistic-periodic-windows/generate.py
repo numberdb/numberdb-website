@@ -16,6 +16,7 @@ import os
 import sys
 
 import numberdb.sage as numberdb
+from sage.rings.rational_field import QQ
 from sage.rings.real_mpfr import RealField
 
 
@@ -71,7 +72,35 @@ WINDOWS = tuple(row[0] for row in WINDOW_DATA)
 PERIOD = {word: period for word, period, _seed in WINDOW_DATA}
 SUPERSTABLE_SEEDS = {word: seed for word, _period, seed in WINDOW_DATA}
 
-EXPRESSIONS = ("onset", "superstable", "doubling", "entropy")
+#: What the table holds for each window, in the order it is shown.
+#:
+#: The three parameter values are held in both normalisations, because a
+#: reader who works in $z^2+c$ should not have to convert: c was in the entry
+#: comments, which is not a place a value can be searched for or cited.
+#:
+#: One parameter with seven values rather than a `normalisation` parameter
+#: beside a `quantity` one, as T168 has: T168's grid is a rectangle and this
+#: is not. The topological entropy has no normalisation -- it is a property of
+#: the map, the same number whichever coordinate names it -- and a
+#: normalisation parameter would have to claim either that it has both or
+#: that it has one.
+QUANTITIES = (
+    "onset", "onset-c",
+    "superstable", "superstable-c",
+    "doubling", "doubling-c",
+    "entropy",
+)
+
+#: The `r` row each `c` row converts.
+BASE_OF = {q: q[:-2] for q in QUANTITIES if q.endswith("-c")}
+
+#: The one row a theorem gives exactly. The period-3 window opens at
+#: r = 1 + 2 sqrt 2, so c = -r(r-2)/4 = -(1 + 2 sqrt 2)(2 sqrt 2 - 1)/4
+#: = -(8 - 1)/4 and the surd cancels. A decimal would say a number known to be
+#: -7/4 is known to a hundred places. Checked against the solve below.
+EXACT = {
+    ("RLC", "onset-c"): "-7/4",
+}
 
 HARMONIC_ONSETS = {
     "RLLRLC": "RLC",
@@ -368,8 +397,17 @@ def endpoint_comment(word, expression, value):
             r"$r_{\mathrm{on}}$ is the first period-doubling point of "
             r"$\mathtt{%s}$" % parent
         )
-    parts.append(r"$c=-r(r-2)/4=%s$" % decimal(c_parameter(value), 24))
     return "; ".join(parts) + "."
+
+
+def normalisation_comment(word, base):
+    """The remark on a `c` row: which `r` row it converts."""
+    symbol = {"onset": r"r_{\mathrm{on}}",
+              "superstable": "r_W",
+              "doubling": r"r_{\mathrm{pd}}"}[base]
+    return (r"period $%d$; the same window's $%s$ in the $z\mapsto z^2+c$ "
+            r"normalisation CITE{formula-conversion}."
+            % (PERIOD[word], symbol))
 
 
 def entropy_comment(word):
@@ -380,7 +418,8 @@ def entropy_comment(word):
         r"$h_{\mathrm{top}}=\log\lambda$",
     ]
     if word == "RLC":
-        pieces.append(r"$\lambda$ is HREF{Golden_ratio}[the golden ratio]")
+        pieces.append(
+            r"$\lambda$ is HREF{Golden_ratio#phi}[the golden ratio $\varphi$]")
     if word == "RLRRRC":
         pieces.append(r"$h_{\mathrm{top}}$ is half the entropy of $\mathtt{RLC}$")
     if word in HARMONIC_ONSETS:
@@ -391,29 +430,44 @@ def entropy_comment(word):
 
 class LogisticPeriodicWindows(numberdb.Generator):
 
-    table = os.environ.get("NUMBERDB_TABLE", "T169")
-    parameters = ("W", "expression")
+    table = os.environ.get("NUMBERDB_TABLE") or "T169"
+    parameters = ("W", "quantity")
     type = "R"
     digits = DIGITS
     rigour = "heuristic (agreement-checked)"
 
     def enumerate(self):
         for word in WINDOWS:
-            for expression in EXPRESSIONS:
-                yield {"W": word, "expression": expression}
+            for quantity in QUANTITIES:
+                yield {"W": word, "quantity": quantity}
 
     def value(self, params, digits):
         word = str(params["W"])
-        expression = str(params["expression"])
+        quantity = str(params["quantity"])
         if word not in WINDOWS:
             raise ValueError("W must be one of the listed kneading words")
-        if expression not in EXPRESSIONS:
-            raise ValueError("expression must be one of %s" %
-                             ", ".join(EXPRESSIONS))
-        value = r_value(word, expression, digits)
-        comment = (entropy_comment(word) if expression == "entropy"
-                   else endpoint_comment(word, expression, value))
-        return {"number": decimal(value, digits), "comment": comment}
+        if quantity not in QUANTITIES:
+            raise ValueError("quantity must be one of %s" %
+                             ", ".join(QUANTITIES))
+
+        base = BASE_OF.get(quantity, quantity)
+        value = r_value(word, base, digits)
+        if quantity in BASE_OF:
+            value = c_parameter(value)
+            comment = normalisation_comment(word, base)
+        elif quantity == "entropy":
+            comment = entropy_comment(word)
+        else:
+            comment = endpoint_comment(word, quantity, value)
+
+        exact = EXACT.get((word, quantity))
+        if exact is None:
+            return {"number": decimal(value, digits), "comment": comment}
+        if abs(RR(QQ(exact)) - RR(value)) >= RR(2) ** (-(WORKING_BITS // 2)):
+            raise ValueError(
+                "%s in %s is written exactly as %s, and the solve does not "
+                "agree" % (word, quantity, exact))
+        return {"number": exact, "comment": comment}
 
 
 if __name__ == "__main__":
