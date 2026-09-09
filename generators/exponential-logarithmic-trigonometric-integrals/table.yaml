@@ -4,11 +4,10 @@
 # review; publishing is a person's act on the site.
 Title: Values of exponential, logarithmic, sine and cosine integrals
 Definition: >-
-  This table gives the real principal values, as defined in
-  CITE{DLMFIntegralDefinitions}, of $\operatorname{Ei}(x)$, $E_1(x)$,
+  This table gives values of $\operatorname{Ei}(x)$, $E_1(x)$,
   $\operatorname{li}(x)$, $\operatorname{Si}(x)$, $\operatorname{Ci}(x)$,
-  $\operatorname{Shi}(x)$ and $\operatorname{Chi}(x)$, where $x$ is a positive
-  rational number.
+  $\operatorname{Shi}(x)$ and $\operatorname{Chi}(x)$ at positive rational
+  arguments $x$, with $\operatorname{li}(1)$ omitted.
 Keywords:
   - exponential integral
   - logarithmic integral
@@ -43,30 +42,25 @@ Parameters:
     display: $x$
     constraints: $x>0$, with $x\ne1$ for $\operatorname{li}$
 Comments:
-  comment-names: >-
-    The functions listed here are the exponential integral CITE{WikiExponential},
-    the logarithmic integral CITE{WikiLogarithmic}, the sine and cosine
-    integrals CITE{WikiTrigonometric}, and their hyperbolic analogues.
-  comment-branches: >-
-    The branch choices are the real branches on $x>0$. The logarithmic
-    integral $\operatorname{li}(x)$ is taken as the Cauchy principal value
-    through the pole at $1$ when $x>1$ CITE{WikiLogarithmic}; the point $x=1$
-    is omitted because it is singular. The functions $\operatorname{Ci}$ and
-    $\operatorname{Chi}$ use the real logarithm in the definitions in
-    CITE{DLMFIntegralDefinitions}.
   comment-e1: >-
-    The function $E_1$ is the first member of the generalized exponential
-    integrals $E_n$. For $x>0$, the relation in CITE{formula-e1} makes it the
-    real value of $-\operatorname{Ei}(-x)$.
+    For positive real $x$, $E_1$ is the case $n=1$ of the generalized
+    exponential integral $E_n(x)=\int_1^{\infty} e^{-xt}t^{-n}\,\mathrm{d}t$
+    CITE{DLMFGeneralizedExponential}.
   comment-offset-li: >-
-    Riemann's offset logarithmic integral is
+    Riemann's offset logarithmic integral satisfies
     $\operatorname{Li}(x)=\operatorname{li}(x)-\operatorname{li}(2)$ for
-    $x>1$ CITE{WikiLogarithmic}. It is not stored as a separate function.
+    $x>1$ CITE{WikiLogarithmic}.
   comment-gibbs: >-
-    HREF{Gibbs_constant}[The Wilbraham-Gibbs constant] stores
-    $\operatorname{Si}(\pi)$ and its normalisations. The argument $\pi$ is not
-    rational, so that value is not a row of this table.
+    $\operatorname{Si}(\pi)=1.8519\ldots$ is
+    HREF{Gibbs_constant#WG}[the Wilbraham-Gibbs constant].
 Formulas:
+  formula-ei-definition: >-
+    For $x>0$,
+    $\operatorname{Ei}(x)=-\operatorname{PV}\!\int_{-x}^{\infty}
+    e^{-t}\,\mathrm{d}t/t=\operatorname{PV}\!\int_{-\infty}^x
+    e^t\,\mathrm{d}t/t$ and
+    $\operatorname{Ei}(-x)=-\int_x^{\infty} e^{-t}\,\mathrm{d}t/t$
+    CITE{DLMFIntegralDefinitions}.
   formula-ei-series: >-
     For $x>0$,
     $\operatorname{Ei}(x)=\gamma+\log x+\sum_{k=1}^{\infty}x^k/(k\,k!)$,
@@ -74,10 +68,11 @@ Formulas:
     HREF{Stieltjes_constants#0}[the Euler-Mascheroni constant]
     CITE{DLMFIntegralDefinitions}.
   formula-e1: >-
-    For $x>0$, $E_1(x)=-\operatorname{Ei}(-x)$ CITE{DLMFIntegralDefinitions}.
+    For $x>0$, $E_1(x)=\int_x^{\infty} e^{-t}\,\mathrm{d}t/t=-\operatorname{Ei}(-x)$
+    CITE{DLMFIntegralDefinitions}.
   formula-li: >-
     For $x>0$ and $x\ne1$,
-    $\operatorname{li}(x)=\operatorname{Ei}(\log x)$
+    $\operatorname{li}(x)=\operatorname{PV}\!\int_0^x \mathrm{d}t/\log t=\operatorname{Ei}(\log x)$
     CITE{DLMFIntegralDefinitions}.
   formula-si-ci: >-
     For $x>0$, $\operatorname{Si}(x)=\int_0^x\sin(t)/t\,dt$ and
@@ -91,11 +86,12 @@ Formulas:
     For $x>0$, $\operatorname{Ei}(x)=\operatorname{Shi}(x)+\operatorname{Chi}(x)$
     CITE{DLMFIntegralDefinitions}.
   formula-parity: >-
-    The functions $\operatorname{Si}$ and $\operatorname{Shi}$ are odd. The
-    real continuation satisfies
+    The functions $\operatorname{Si}$ and $\operatorname{Shi}$ are odd
+    CITE{DLMFIntegralDefinitions}. With the principal branch of the logarithm,
+    for $x>0$,
     $\operatorname{Ci}(-x)=\operatorname{Ci}(x)+i\pi$ and
-    $\operatorname{Chi}(-x)=\operatorname{Chi}(x)+i\pi$ across the principal
-    branch cut CITE{DLMFIntegralDefinitions}.
+    $\operatorname{Chi}(-x)=\operatorname{Chi}(x)+i\pi$
+    CITE{DLMFAnalyticContinuation}.
 Programs:
   program-sage:
     language: Sage
@@ -129,10 +125,8 @@ Programs:
 Similar tables:
   - table: HREF{Gibbs_constant}[Wilbraham-Gibbs constant]
     relation: stores $\operatorname{Si}(\pi)$ and its normalisations
-  - table: HREF{Values_of_the_prime_zeta_function_at_rational_numbers}[Values of the prime zeta function at rational numbers]
-    relation: is another table of real values connected to the prime number theorem
   - table: HREF{Stieltjes_constants}[Stieltjes constants]
-    relation: contains $\gamma_0$, the Euler-Mascheroni constant used in the series definitions
+    relation: contains $\gamma_0$, the Euler-Mascheroni constant appearing in $\operatorname{Ei}$, $\operatorname{Ci}$ and $\operatorname{Chi}$
 Links:
   WikiExponential:
     title: "Wikipedia: Exponential integral"
@@ -146,6 +140,12 @@ Links:
   DLMFIntegralDefinitions:
     title: "DLMF 6.2: Definitions and Basic Properties"
     url: https://dlmf.nist.gov/6.2
+  DLMFAnalyticContinuation:
+    title: "DLMF 6.4: Analytic Continuation"
+    url: https://dlmf.nist.gov/6.4
+  DLMFGeneralizedExponential:
+    title: "DLMF 8.19: Generalized Exponential Integral"
+    url: https://dlmf.nist.gov/8.19
   OEISEiOne:
     title: 'OEIS A091725: decimal expansion of $\operatorname{Ei}(1)$'
     url: https://oeis.org/A091725
@@ -180,13 +180,14 @@ Data properties:
     $\operatorname{li}(1)$
   rigour details: >-
     Each value was computed as a Sage real ball with arb at
-    `numberdb.bits(digits, losing=64)` bits. Before the draft was created, the
-    entries were checked against mpmath at 150 decimal digits, against the
-    identities in CITE{formula-e1}, CITE{formula-li} and
-    CITE{formula-ei-shi-chi} wherever the relevant values are stored, against
-    HREF{Gibbs_constant}[the Wilbraham-Gibbs constant] by evaluating
-    $\operatorname{Si}(\pi)$ with the same ball method, and against the OEIS
-    values for $\operatorname{Ei}(1)$ CITE{OEISEiOne}, $E_1(1)$
+    `numberdb.bits(digits, losing=64)` bits. The entries were checked against
+    mpmath at 150 decimal digits, against
+    CITE{formula-ei-shi-chi} on the stored rows, and against CITE{formula-e1}
+    and CITE{formula-li} by recomputing the needed values of
+    $\operatorname{Ei}(-x)$ and $\operatorname{Ei}(\log x)$. They were also
+    checked against HREF{Gibbs_constant}[the Wilbraham-Gibbs constant] by
+    evaluating $\operatorname{Si}(\pi)$ with the same ball method, and against
+    the OEIS values for $\operatorname{Ei}(1)$ CITE{OEISEiOne}, $E_1(1)$
     CITE{OEISEOne}, $\operatorname{li}(2)$ CITE{OEISLiTwo},
     $\operatorname{Si}(1)$ CITE{OEISSiOne}, $\operatorname{Ci}(1)$
     CITE{OEISCiOne}, $\operatorname{Shi}(1)$ CITE{OEISShiOne} and
