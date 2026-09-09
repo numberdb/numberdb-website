@@ -524,6 +524,11 @@ if [ -n "$(git status --porcelain -- "$ledger")" ]; then
 	git commit -q -m "$stage run $started: $(tail -1 "$ledger" | awk -F'\t' '{printf "%s turns, $%s", $4, $5}')" -- "$ledger" || true
 fi
 
+#And into the database, so the overview shows what this run cost without
+#anybody remembering a command. Never fatal: a ledger that did not reach the
+#site is worth a warning, not a failed run.
+agents/sync-costs.sh || true
+
 echo "=== finished with status $status; transcript in $log"
 tail -1 "$ledger" | awk -F'\t' '{printf "=== %s turns, $%s\n", $4, $5}'
 exit "$status"
