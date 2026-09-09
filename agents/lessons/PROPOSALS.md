@@ -4683,3 +4683,32 @@ Evidence: `/tmp/mahler_checks.py`, 2026-09-09; the first run failed at
 `headers={"User-Agent": "numberdb table check (https://numberdb.org)"}`
 reported `checks: printed, egf, A137375 through n=12, A008299 through n=50,
 A000296, Touchard relation`.
+
+## A power series over $\mathbb{Q}[x]$ has `.exp()` and `.log()`, but not with named imports alone, and `**x` is refused
+
+What happened: the T186 critique looked for a short `Programs` entry for
+the Stirling convolution polynomials, $[z^n](ze^z/(e^z-1))^x/x$. Sage's
+`PowerSeriesRing(QQ['x'], 'z')` refuses `series ** x` outright
+("exponent must be a rational number or power series"), so a polynomial
+exponent has to be written as `(x * series.log()).exp()`. That works, and
+agreed with the table's 45-line binomial expansion on all 25 entries, but
+only with `from sage.all import *`: with the skill's named ring imports
+(`numberdb.sage`, then `PolynomialRing`, `PowerSeriesRing`, `QQ`) the
+same `.exp()` fails inside `solve_linear_de` with `AttributeError: cannot
+access submodule 'function' of module 'sage.symbolic' (most likely due to a
+circular import)`, because the series constructor imports `lazy_series`,
+which imports `sage.functions`, which needs `sage.symbolic` initialised.
+
+What the skill says now: name the rings rather than importing `sage.all`,
+and lists root finding, `RealBall.str` and `QQ('1.25')` as things the
+named imports do not bring.
+
+What it should say: add power-series `exp` and `log` to that list, and
+say that a series with a polynomial exponent is `(x * s.log()).exp()`
+since `s ** x` is not accepted. A generator that needs them either
+imports `sage.all` (and then does not run on a modular passagemath) or
+raises the series by hand, as T186's generator does.
+
+Evidence: `/tmp/crit186c.py` (named imports, traceback ending in
+`sage.symbolic.function`), `/tmp/crit186d.py` and `/tmp/crit186e.py`
+(`sage.all`, "short vs P1 disagreements over 1..25: []"), 2026-09-09.
