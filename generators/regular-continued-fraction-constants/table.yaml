@@ -3,9 +3,11 @@
 # through the API (X-Draft: yes); publishing is a person's act on the site.
 Title: Constants of the regular continued fraction
 Definition: >-
-  Regular continued fraction constants CITE{MathWorldRegularCF}: Khinchin's
-  means $K_p$, Levy's constant $e^\beta$, the Khinchin-Levy constant $\beta$,
-  and Lochs's constant $L$.
+  For $x=[a_0;a_1,a_2,\ldots]$ with convergents $p_n/q_n$
+  CITE{MathWorldRegularCF}, this table gives almost-sure limits: Khinchin's
+  partial-quotient means $K_p$ CITE{WikiKhinchin}, Levy's constant
+  $e^\beta=\lim q_n^{1/n}$ and its logarithm $\beta$, and Lochs's constant
+  $L$, the term-per-decimal-digit limit CITE{Lochs}.
 Parameters:
   constant:
     type: Symbolic
@@ -72,9 +74,9 @@ Formulas:
     \frac{(-1)^{n-2j}}{j}{p\choose n-2j}$.
   formula-levy-lochs: >-
     $\beta=\frac{\pi^2}{12\log 2}$,
-    $e^\beta=HREF{E}[$e$]^{\beta}$, and
-    $L=\frac{6\log 2\log 10}{\pi^2}=\frac{\log 10}{2\beta}$, with
-    $\pi=HREF{Pi}[$\pi$]$.
+    $e^\beta=\exp\left(\frac{\pi^2}{12\log 2}\right)$, and
+    $L=\frac{6\log 2\log 10}{\pi^2}=\frac{\log 10}{2\beta}$, where
+    $e$ is HREF{E}[$e$] and $\pi$ is HREF{Pi}[$\pi$].
 Programs:
   program-sage:
     language: Sage
@@ -89,8 +91,11 @@ Programs:
       from mpmath import mp
       mp.dps = 80
       prob = lambda k: mp.log(1 + 1/(k*(k + 2))) / mp.log(2)
-      mp.e ** mp.nsum(lambda k: mp.log(k) * prob(k), [1, mp.inf])   # K_0
-      mp.nsum(lambda k: prob(k)/k, [1, mp.inf]) ** -1               # K_{-1}
+      mp.exp(mp.nsum(lambda n: (mp.zeta(2*n) - 1)/n
+                     * mp.fsum((-1)**(j+1)/mp.mpf(j)
+                               for j in range(1, 2*int(n))),
+                     [1, mp.inf]) / mp.log(2))                     # K_0
+      mp.nsum(lambda k: prob(k)/k, [1, mp.inf]) ** -1              # K_{-1}
 Similar tables:
   - table: HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[Values of the Riemann zeta function at rational numbers]
     relation: the zeta values $\zeta(2n)$ and $\zeta(n-p)$ in CITE{formula-k0-zeta} and CITE{formula-kp-zeta}
