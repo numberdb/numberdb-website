@@ -325,7 +325,14 @@ def point_comment(point):
 
 class LogisticPeriodDoublingCascade(numberdb.Generator):
 
-    table = os.environ.get("NUMBERDB_TABLE", "T168")
+    table = os.environ.get("NUMBERDB_TABLE") or "T168"
+    #The key stays `expression`. It is the wrong word -- twenty-two tables
+    #use it for three unrelated things, and this axis is the normalisation --
+    #but the table was published while it was being fixed, and a key is an
+    #entry's address: renaming one leaves every citation resolving, and
+    #resolving to a different number. The column *reads* "normalisation",
+    #which is the parameter's `title` and `display`, and those are
+    #presentation rather than identity.
     parameters = ("point", "expression")
     type = "R"
     digits = DIGITS

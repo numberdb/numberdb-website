@@ -109,6 +109,34 @@ none was caught by a test.
   approximation. Exact values are stronger and shorter — return them exactly
   rather than as a hundred digits of an integer.
 
+**A title is what a search reaches.** The text index has four weights: the
+title and `Keywords` first, then `Tags`, then the `Definition`, then the
+table's `Comments`. **An entry's own comment is in none of them** -- a
+constant that appears only as a row, with its name in that row's comment,
+cannot be found by its name at all. So the title decides how finely to divide
+a subject. "Feigenbaum constants" answers somebody typing "Feigenbaum";
+"Constants of the regular continued fraction" answers nobody looking for
+Khinchin, Levy or Lochs, and those were three tables pretending to be one.
+Where several named constants share a subject but not a name, make several
+tables; where the members share an index, as Khinchin's means $K_p$ do, one
+table however few. The test: *what would somebody type who is holding one of
+these numbers and wants to know what it is?* If the title does not contain
+that word, put it in `Keywords`, which is the same weight -- that is also how
+an accent is handled, since the index has no `unaccent`: the title is
+"Lévy's constant" and `Keywords` carries "Levy constant".
+
+**Decide exactness from the definition, never from the digits.** A run of
+zeros is evidence and not proof: `3.000000000000000000` may be 3, or
+3 + 10^-40 rounded, and no number of zeros separates them. The logistic map's
+$r=3$ is exact because the fixed point loses stability where $|f'|=1$, which
+is an argument. Where there is such an argument, write the integer or the
+rational -- a decimal means plus or minus one unit in its last place however
+long it is, so `3.000...` says a number known to *be* 3 is known to a hundred
+places, and it understates exactly the rows a reader came for. Where there is
+no such argument the zeros mean the opposite thing, a rounding presented as
+sixty significant places, and the fix is fewer digits or a ball. Surds cancel
+more often than one expects: $r=1+2\sqrt2$ gives $c=-r(r-2)/4=-7/4$ exactly.
+
 ## 3. How much to include
 
 **A table is a reference, not a dump.** NumberDB exists so that somebody who
@@ -221,6 +249,35 @@ $D\leq 1000$, at $s=-1,-3,-5$" -- and it is the
 sentence a reader wants: not that the table is incomplete, which is true of
 almost all of them, but what it *does* cover.
 
+**A parameter's key is an address, not a word.** It identifies every entry
+under it, so it is frozen when the table is published and a citation resolves
+on it. Two things follow. Choose a specific one while you still can --
+twenty-two tables here call a parameter `expression` for three unrelated
+things, and `quantity`, `form` or `normalisation` each say which. And never
+name a parameter by its key in prose: "the quantity named by the parameter
+`expression`" tells a reader nothing, because the key is how the document
+addresses a column, not a word anybody outside it knows. Name the quantities,
+or use the parameter's `display` symbol.
+
+**A value's display is a label, not a formula.** It is printed on every row
+that value indexes, so a conversion rule put there is repeated once per row:
+one table carried `$c=-r(r-2)/4$` on all twenty-four of its $c$ rows where
+`$c$` was wanted, and the rule belongs in `Formulas`. The same for a closed
+form the entry's comment already gives.
+
+**Entries are shown in the order the document writes them**, so the order the
+generator enumerates in is what a reader sees. For an index running over the
+negatives that is not the order of $\mathbb Z$: a table led with $a=-50$ and
+put $a=2$ -- the row anybody arrives wanting -- halfway down. Enumerate by
+$|a|$, positive first, so the small cases are at the top and $a$ and $-a$ are
+adjacent, which is what a reader compares.
+
+**A value belongs in a row, not in a comment.** If the table holds a quantity
+in two normalisations, both are entries. A number written into an entry
+comment answers no search, carries no type, and cannot be cited -- one table
+gave each window's $c$ as `$c=-r(r-2)/4=-1.75000000000000000000000$` inside
+the comment, where none of that is true of it.
+
 **If the table repeats another's values, say so.** `repeats:
 HREF{Other_table}` under `Data properties` means: where these two tables hold
 the same number, that one states it first. Search then answers with the
@@ -290,6 +347,20 @@ this, which tells a reader almost nothing about any of them. Use `$...$`
 for mathematics, `CITE{key}` for a reference or link, and
 `HREF{slug}[caption]` for a table here. Link outward only to sources that will
 still exist: Wikipedia, LMFDB, OEIS, MathWorld, mpmath, or a paper.
+
+**A formula states a relation, not who checked it.** "Checked on every
+entry", "both were computed and agree" are facts about your run, and in a
+`Formulas` section they read as an apology. The field for them exists:
+`rigour details`. Put what you verified there, once, and let the formula be a
+formula.
+
+**Write sentences, not notes to yourself.** Everything a reader sees is read
+as English. "every rule with $n\leq 30$ is here, nodes and weights, both
+halves" is four fragments stapled together, and a reader cannot tell whether
+both halves of every rule are listed or both halves of something else. The
+register is an encyclopedia's: precise, unhurried, and using the table's own
+word for a thing -- if the parameter is titled "number of nodes", write nodes,
+not points. Telegraphic is not concise; it is unfinished.
 
 **`Programs` and `generate.py` answer different questions.** `Programs` is the
 standard incantation in Sage, PARI or mpmath for a reader who wants one more

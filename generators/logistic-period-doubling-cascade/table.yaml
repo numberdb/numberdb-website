@@ -41,8 +41,8 @@ Parameters:
       r-infinity: '$r_\infty$'
   expression:
     type: Symbolic
-    title: normalisation of the parameter
-    display: expression
+    title: normalisation
+    display: normalisation
     values:
       r: '$r$'
       c: '$c$'
