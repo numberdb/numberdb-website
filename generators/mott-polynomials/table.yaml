@@ -1,0 +1,155 @@
+# The table document for proposal 6 of
+# agents/table-ideas/BATCH-2026-09-09T1518.md. Created as draft T185 through
+# the API (X-Draft: yes) and filled by generate.py beside it; publishing is a
+# person's act on the site.
+Title: Mott polynomials $s_n(x)$
+Definition: >-
+  For an integer $n\geq 0$, the Mott polynomial $s_n(x)$ is the coefficient
+  polynomial in $\mathbb{Q}[x]$ defined by
+  $\sum_{n=0}^{\infty}s_n(x)\frac{t^n}{n!}
+  =\exp\!\left(x\frac{\sqrt{1-t^2}-1}{t}\right)$, where the square root is
+  the formal power series with constant term $1$ CITE{Wiki} CITE{HTF}.
+Parameters:
+  n:
+    type: Z
+    title: index
+    display: $n$
+    constraints: $n\geq 0$
+Comments:
+  comment-convention: >-
+    This table uses the convention with $\sqrt{1-t^2}$. MathWorld and OEIS
+    A137378 CITE{MathWorld} CITE{OEISscaled} use the convention
+    $\sum_{n=0}^{\infty}\widetilde{s}_n(x)t^n/n!
+    =\exp(x(1-\sqrt{1+t^2})/t)$. The two conventions are related by
+    $[x^k]\widetilde{s}_n(x)=(-1)^{(n-k)/2}[x^k]s_n(x)$ when $n-k$ is even,
+    and both coefficients are zero when $n-k$ is odd.
+  comment-source: >-
+    Mott introduced the polynomials in a calculation about electron
+    scattering CITE{Mott1932}. Roman treats them as a Sheffer sequence
+    CITE{Roman}.
+Formulas:
+  formula-generating-function: >-
+    $\sum_{n=0}^{\infty}s_n(x)\frac{t^n}{n!}
+    =\exp\!\left(x\frac{\sqrt{1-t^2}-1}{t}\right)$.
+  formula-catalan-series: >-
+    $\frac{\sqrt{1-t^2}-1}{t}
+    =-\sum_{j=0}^{\infty}C_j\left(\frac{t}{2}\right)^{2j+1}$, where
+    $C_j$ is the Catalan number CITE{OEISCatalan}.
+  formula-partial-bell: >-
+    $s_n(x)=\sum_{k=0}^{n}B_{n,k}(a_1,a_2,\ldots)x^k$, where
+    $B_{n,k}$ is the
+    HREF{Partial_Bell_polynomials}[partial Bell polynomial],
+    $a_{2j}=0$, and $a_{2j+1}=-(2j+1)!C_j/2^{2j+1}$.
+  formula-derivative-recurrence: >-
+    $s_0(x)=1$, $s_n(0)=0$ for $n>0$, and
+    $\frac{d}{dx}s_n(x)=-\sum_{j=0}^{\lfloor(n-1)/2\rfloor}
+    \frac{n!C_j}{(n-1-2j)!2^{2j+1}}s_{n-1-2j}(x)$ for $n\geq1$.
+  formula-hypergeometric: >-
+    $s_n(x)=(-x/2)^n\,{}_3F_0\left(-n,\frac{1-n}{2},1-\frac n2;;
+    -\frac{4}{x^2}\right)$, interpreted as its terminating polynomial
+    expansion CITE{Wiki} CITE{HTF}.
+  formula-leading-coefficients: >-
+    $[x^n]s_n(x)=(-1)^n/2^n$, and for $n\geq2$,
+    $[x^{n-2}]s_n(x)=(-1)^n n(n-1)(n-2)/2^n$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.arith.misc import factorial
+      from sage.rings.integer_ring import ZZ
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+      from sage.rings.rational_field import QQ
+
+      R = PolynomialRing(QQ, 'x')
+      x = R.gen()
+
+      def catalan(k):
+          value = QQ(factorial(ZZ(2*k)))
+          value /= QQ(factorial(ZZ(k))) * QQ(factorial(ZZ(k + 1)))
+          return value
+
+      def integral_zero_constant(polynomial):
+          out = R.zero()
+          for degree, coefficient in enumerate(polynomial.list()):
+              out += coefficient*x**(degree + 1)/QQ(degree + 1)
+          return out
+
+      def mott_polynomial(n):
+          values = [R.one()]
+          for m in range(1, n + 1):
+              derivative = R.zero()
+              for j in range((m - 1)//2 + 1):
+                  r = m - 1 - 2*j
+                  scale = QQ(factorial(ZZ(m)))
+                  scale /= QQ(factorial(ZZ(r))) * QQ(2**(2*j + 1))
+                  derivative -= scale*catalan(j)*values[r]
+              values.append(integral_zero_constant(derivative))
+          return values[n]
+
+      mott_polynomial(46)      # the next one after this table
+Similar tables:
+  - table: HREF{Partial_Bell_polynomials}[Partial Bell polynomials]
+    relation: give the coefficient formula in CITE{formula-partial-bell}
+Links:
+  Wiki:
+    title: 'Wikipedia: Mott polynomials'
+    url: https://en.wikipedia.org/wiki/Mott_polynomials
+  MathWorld:
+    title: 'MathWorld: Mott Polynomial'
+    url: https://mathworld.wolfram.com/MottPolynomial.html
+  OEISscaled:
+    title: 'OEIS A137378: coefficients of $2^n\widetilde{s}_n(x)$'
+    url: https://oeis.org/A137378
+  OEISCatalan:
+    title: 'OEIS A000108: Catalan numbers'
+    url: https://oeis.org/A000108
+References:
+  Mott1932:
+    bib: >-
+      N. F. Mott, The polarisation of electrons by double scattering,
+      Proceedings of the Royal Society of London. Series A 135 (1932), no.
+      827, 429-458.
+    doi: 10.1098/rspa.1932.0044
+  HTF:
+    bib: >-
+      A. Erdelyi, W. Magnus, F. Oberhettinger and F. G. Tricomi, Higher
+      Transcendental Functions, Vol. III, McGraw-Hill, New York, 1955.
+    mr: '0066496'
+  Roman:
+    bib: >-
+      Steven Roman, The Umbral Calculus, Pure and Applied Mathematics 111,
+      Academic Press, New York, 1984.
+    mr: '0741185'
+Keywords:
+  - Mott polynomial
+  - Mott polynomials
+  - Sheffer sequence
+  - umbral calculus
+  - generalized Appell polynomials
+  - Catalan numbers
+Tags:
+  - polynomial
+  - combinatorics
+  - generating function
+  - special functions
+Data properties:
+  type: Q[]
+  rigour: exact
+  complete: 'no'
+  complete-note: it holds every index $n$ with $0\leq n\leq45$
+  rigour details: >-
+    The generator computes the derivative recurrence in
+    CITE{formula-derivative-recurrence} over Sage's rational polynomial ring,
+    with every division made in Sage's rational field. Before the draft was
+    created, the entries were checked against
+    CITE{formula-generating-function}, against the partial Bell formula
+    CITE{formula-partial-bell}, against the hypergeometric formula
+    CITE{formula-hypergeometric}, against the polynomials $s_0$ through
+    $s_6$ printed by CITE{Wiki}, against the polynomials $s_0$ through
+    $s_5$ printed by CITE{MathWorld} after applying the sign map in
+    comment-convention, against OEIS A137378 CITE{OEISscaled} through
+    $n=10$ after applying the same sign map, and against
+    CITE{formula-leading-coefficients} on every entry.
+Display properties:
+  number-header: $s_n(x)$
