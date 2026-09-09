@@ -1,0 +1,134 @@
+# The table document for proposal 2 of
+# agents/table-ideas/BATCH-2026-09-09T1518.md. It was created as draft T181
+# through the API (X-Draft: yes) and is filled by generate.py beside it;
+# publishing is a person's act on the site.
+Title: Faulhaber polynomials $F_p(a)$
+Definition: >-
+  For a positive odd integer $p$, the Faulhaber polynomial $F_p(a)$ is the
+  polynomial in $\mathbb{Q}[a]$ with
+  $F_p(N(N+1)/2)=\sum_{k=1}^{N}k^p$ for every positive integer $N$, where
+  $a=N(N+1)/2$ is the triangular number CITE{Wiki}.
+Parameters:
+  p:
+    type: Z
+    title: odd exponent
+    display: $p$
+    constraints: $p$ is a positive odd integer
+Comments:
+  comment-index: >-
+    The table is indexed by the exponent $p=2m-1$, rather than by $m$,
+    because the exponent is what names the power sum. With $m=(p+1)/2$, the
+    polynomial $F_p(a)$ has degree $m$.
+  comment-variable: >-
+    This table uses the triangular number $a=N(N+1)/2$. Knuth writes
+    $u=N(N+1)=2a$ CITE{Knuth}; the conversion from his coefficients is stated
+    in CITE{formula-knuth}.
+  comment-even-powers: >-
+    Even power sums are not entries here, because they are not polynomials in
+    $a$ alone. They are polynomials in $N$ and $a$, as in
+    CITE{formula-even-powers}.
+Formulas:
+  formula-defining: >-
+    $F_p(N(N+1)/2)=\sum_{k=1}^{N}k^p$ for positive odd $p$.
+  formula-sums-of-powers: >-
+    $F_p(N(N+1)/2)=S_p(N)$, where $S_p(N)$ is the
+    HREF{T179}[sum of powers] polynomial evaluated at $N$.
+  formula-bernoulli-polynomials: >-
+    $F_p(N(N+1)/2)=\frac{B_{p+1}(N+1)-B_{p+1}(1)}{p+1}$, where $B_j(x)$ are
+    the HREF{Bernoulli_polynomials}[Bernoulli polynomials].
+  formula-knuth: >-
+    If $p=2m-1$ and $A(m,j)$ are Knuth's coefficients, then
+    $F_p(a)=\frac{1}{2m}\sum_{j=0}^{m-1}A(m,j)(2a)^{m-j}$ CITE{OEISnumerators}.
+  formula-even-powers: >-
+    For $m\geq 1$,
+    $\sum_{k=1}^{N}k^{2m}=\frac{N+\frac12}{2m+1}F_{2m+1}'(N(N+1)/2)$, where
+    the prime denotes differentiation with respect to $a$ CITE{Wiki}.
+  formula-inverse-small: >-
+    $4a^3=3F_5(a)+F_3(a)$, $8a^4=4F_7(a)+4F_5(a)$, and
+    $16a^5=5F_9(a)+10F_7(a)+F_5(a)$ CITE{Wiki}.
+  formula-divisibility: >-
+    $F_1(a)=a$, and for every odd $p\geq 3$ the quotient
+    $F_p(a)/a^2$ belongs to $\mathbb{Q}[a]$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+      from sage.rings.rational_field import QQ
+
+      R = PolynomialRing(QQ, 'a')
+      a = R.gen()
+
+      def faulhaber_polynomial(p):
+          degree = (p + 1) // 2
+          points = []
+          for N in range(degree + 1):
+              x = QQ(N * (N + 1)) / QQ(2)
+              y = sum(QQ(k) ** p for k in range(1, N + 1))
+              points.append((x, y))
+          value = R.zero()
+          for i, (xi, yi) in enumerate(points):
+              term = R(yi)
+              for j, (xj, _) in enumerate(points):
+                  if i != j:
+                      term *= (a - QQ(xj)) / QQ(xi - xj)
+              value += term
+          return value
+
+      faulhaber_polynomial(51)      # the next odd exponent after this table
+Similar tables:
+  - table: HREF{T179}[Sums of powers]
+    relation: are the same odd sums written as polynomials in $N$, rather than as polynomials in $a=N(N+1)/2$
+  - table: HREF{Bernoulli_polynomials}[Bernoulli polynomials]
+    relation: give the shifted-difference formula in CITE{formula-bernoulli-polynomials}
+  - table: HREF{Bernoulli_numbers}[Bernoulli numbers]
+    relation: give the coefficients of the Bernoulli-polynomial formula
+Links:
+  Wiki:
+    title: "Wikipedia: Faulhaber's formula"
+    url: https://en.wikipedia.org/wiki/Faulhaber%27s_formula
+  MathWorld:
+    title: "MathWorld: Faulhaber's Formula"
+    url: https://mathworld.wolfram.com/FaulhabersFormula.html
+  OEISnumerators:
+    title: "OEIS A093556: numerators of coefficients of Faulhaber polynomials in Knuth's version"
+    url: https://oeis.org/A093556
+  OEISdenominators:
+    title: "OEIS A093557: denominators of coefficients of Faulhaber polynomials in Knuth's version"
+    url: https://oeis.org/A093557
+  OEIScubes:
+    title: "OEIS A000537: square of triangular numbers"
+    url: https://oeis.org/A000537
+References:
+  Knuth:
+    bib: >-
+      Donald E. Knuth, Johann Faulhaber and sums of powers, Mathematics of
+      Computation 61 (1993), no. 203, 277-294.
+    doi: 10.1090/S0025-5718-1993-1197512-7
+Keywords:
+  - Faulhaber formula
+  - Faulhaber's formula
+  - sums of odd powers
+  - triangular number
+  - Nicomachus's theorem
+Tags:
+  - polynomial
+  - number theory
+  - combinatorics
+Data properties:
+  type: Q[]
+  rigour: exact
+  complete: 'no'
+  complete-note: it holds every odd exponent $p$ with $1\leq p\leq 49$
+  rigour details: >-
+    The generator constructs $F_p(a)$ by exact interpolation at
+    $a=N(N+1)/2$ for $0\leq N\leq (p+1)/2$, with exact integer sums as the
+    ordinates. Before the draft was created, the entries were checked against
+    CITE{formula-bernoulli-polynomials} for every odd $p\leq 49$, against
+    OEIS A093556 CITE{OEISnumerators} and A093557 CITE{OEISdenominators} for
+    $m\leq 11$, against the small polynomials and inverse identities in
+    CITE{Wiki}, against CITE{formula-even-powers} for $m\leq 12$, and against
+    OEIS A000537 CITE{OEIScubes} for the cubic-sum values with $N\leq 100$.
+Display properties:
+  number-header: $F_p(a)$
