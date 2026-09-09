@@ -114,5 +114,8 @@ def _inline(line, render_text):
 	The backticks are replaced after rendering, not before: `render_text`
 	escapes its input, so a tag put in first arrives as text.
 	"""
+	#Backticks are `render_text`'s job now, so that they mean the same thing
+	#in a definition as in a rigour note. Applied here too, harmlessly, for a
+	#caller that passes a renderer of its own -- the tests do.
 	rendered = render_text(line, line_breaks=False)
 	return _CODE.sub(r'<code class="prose-code">\1</code>', rendered)

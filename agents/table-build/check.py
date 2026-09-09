@@ -100,6 +100,53 @@ def exactness(values):
     return complaints
 
 
+def exact_in_disguise(values):
+    """Decimals whose digits suggest the value may be known exactly.
+
+    `3.000000000000000000000000000000` is *evidence* and not proof: the value
+    could be 3, or it could be 3 + 10^-40 rounded, and no number of zeros
+    decides between them. What decides it is the mathematics -- the logistic
+    map's first bifurcation is at r = 3 because the fixed point loses
+    stability when |f'| = 1, which is an argument and not a measurement.
+
+    So this reports and does not conclude. Both readings are worth a person's
+    attention before the table exists, and they need opposite fixes:
+
+    * the value is exactly a rational, and a decimal understates what is
+      known -- return it exactly;
+    * the value is not exact, and the digits are a rounding presented as
+      sixty significant places -- return fewer digits, or a ball.
+
+    A run of trailing zeros is what makes either likely: a genuine irrational
+    computed to sixty places does not end in ten of them by chance.
+
+    Returns a list of remarks; empty means nothing looked suspicious.
+    """
+    import re
+    from fractions import Fraction
+
+    suspect = re.compile(r'^-?\d+\.\d*?0{10,}$')
+    remarks = []
+    for key, value in _pairs(values):
+        for text in _flatten(value):
+            text = str(text).strip()
+            if not suspect.match(text):
+                continue
+            try:
+                nearby = Fraction(text).limit_denominator(10 ** 6)
+            except (ValueError, ZeroDivisionError):
+                nearby = None
+            remarks.append(
+                '%s: %s ends in a run of zeros%s. Either it is exact, and a '
+                'decimal understates it -- return the exact value; or it is '
+                'not, and sixty places claim more than is known -- return '
+                'fewer digits or a ball. The digits cannot tell you which: '
+                'the definition can.'
+                % (key, text[:24] + '...',
+                   ', suggesting %s' % (nearby,) if nearby is not None else ''))
+    return remarks
+
+
 def prose(values):
     """Refuse an entry comment that will read wrongly on the page.
 

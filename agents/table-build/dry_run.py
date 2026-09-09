@@ -20,7 +20,8 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from check import exactness, measure, names_its_rings, prose   # noqa: E402
+from check import (exact_in_disguise, exactness, measure,   # noqa: E402
+                   names_its_rings, prose)
 
 
 def load(path):
@@ -65,6 +66,13 @@ def main(argv):
         print('   every value is exact, or carries its own error bound')
 
     print()
+    print('== exact in disguise ==')
+    disguised = exact_in_disguise(values)
+    for complaint in disguised:
+        print('  ' + complaint)
+    if not disguised:
+        print('  none')
+
     print('== prose ==')
     remarks = prose(values)
     for remark in remarks[:5]:
