@@ -1,0 +1,10 @@
+1. *done* -- Shortened the definition so it defines $J_\nu$ and $Y_\nu$ by the Bessel equation and moved the displayed $J_\nu$ series and $Y_\nu$ connection formula into Formulas; checked the $J_\nu$ series in balls for $\nu=0,1/3,1/2,5/2$ and $x=1,7/4,5$, and re-ran `audit_table` after it objected to the first longer draft.
+2. *done* -- Changed the order constraint to $\nu\in\mathbb{Q}$, $\nu\geq0$, replaced the negative-integer-only formula with the full negative-order connection formulas, and checked them in balls at $\nu=1/3,2/3,5/2$ and $x=1,7/4$.
+3. *done* -- Expanded the branch comment to explain the exclusion of $x<0$ and added the integer-order formula $J_n(-x)=(-1)^nJ_n(x)$; checked the parity formula for $n=0,1,2,3$ and $x=1,2,7/4$, and inspected sample principal values on the negative real axis.
+4. *done* -- Rewrote the half-integer comment, added the Bessel-polynomial identity for $J_{n+1/2}+iY_{n+1/2}$, and changed the Bessel-polynomial similar-table gloss; checked the identity in balls for $0\leq n\leq4$ and $x=1/4,1,7/4$.
+5. *done* -- Removed the 60 duplicate $\nu=1/2$ entry comments after confirming the half-order formula remains in Formulas; a keyed re-read showed 540 entries and no remaining half-order comments.
+6. *done* -- Removed the back-to-back Definition citations while keeping the DLMF citation on the definition and Wikipedia in Links.
+7. *done* -- Changed the four zero/extrema similar-table glosses from "real order $\alpha$" to "order $\alpha$" after checking the linked tables have parameter $\alpha$ typed as complex and comments restricting the current entries to half-integers.
+8. *done* -- Changed the OEIS A334380 caption to name $J_0(1)=\sum_{k\geq0}(-1)^k/((2k)!!)^2$ after fetching the OEIS entry and checking that name.
+9. *declined* -- Left the all-$J$ then all-$Y$ row order alone because it follows the frozen parameter order and the critique agreed the anchors are the remedy.
+10. *declined* -- Left "These are the ordinary cylindrical Bessel functions" alone because the referent is the whole table and the wording is clear in its comment.
