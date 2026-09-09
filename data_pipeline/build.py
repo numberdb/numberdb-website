@@ -632,9 +632,15 @@ def build_number_table(only_table=None):
 			#Update counts:
 			c.number_count = count
 			c.save()
-			for tag in c.tags.all():
-				tag.number_count += count - previous_count
-				tag.save()
+			#Published tables only, and by difference only for them. A tag's
+			#counters are what /tags prints, and `sync_tags` computes them
+			#over the tables anybody may see; incrementing here for a draft
+			#put the draft's numbers back into the number a tag shows, which
+			#is how a tag came to claim more than its page could list.
+			if c.published:
+				for tag in c.tags.all():
+					tag.number_count += count - previous_count
+					tag.save()
 			total_number_count += count
 			
 	print(" === total_number_count:",total_number_count)
