@@ -4712,3 +4712,35 @@ raises the series by hand, as T186's generator does.
 Evidence: `/tmp/crit186c.py` (named imports, traceback ending in
 `sage.symbolic.function`), `/tmp/crit186d.py` and `/tmp/crit186e.py`
 (`sage.all`, "short vs P1 disagreements over 1..25: []"), 2026-09-09.
+
+## Sage's ball Bessel, Airy and hypergeometric methods take the argument as `self`, and a swapped call returns a plausible number
+
+What happened: probing arb for a batch of special-function values, the
+first script wrote `CBF(0).bessel_J(CBF(1))` for $J_0(1)$, following the
+notation $J_\nu(x)$ and mpmath's `besselj(nu, x)`. Sage's
+`ComplexBall.bessel_J(nu)` computes $J_\nu(\mathrm{self})$: the call was
+$J_1(0)$, which is $0$, and `CBF(0).bessel_K(CBF(1))` was $K_1(0)$, which
+is `nan`. Nothing raised. The output read as "arb's Bessel functions do not
+work on this input", and the batch nearly recorded that. The same shape
+holds for `bessel_Y`, `bessel_I`, `hypergeometric([a], [b])` (self is $z$)
+and `hypergeometric_U(a, b)`; the Airy methods take no parameter and are
+`CBF(x).airy_ai()`.
+
+What the skill says now: "arb implements a great deal (`elliptic_k`, ...,
+`bessel_J`, ...)", naming the functions and not their calling shape.
+
+What it should say: in Sage's ball fields the *argument* is `self` and the
+order or parameters are the method's arguments, so $J_\nu(x)$ is
+`CBF(x).bessel_J(nu)` and ${}_1F_1(a;b;z)$ is `CBF(z).hypergeometric([a], [b])`;
+mpmath reads the other way round, `besselj(nu, x)`. A swapped call does
+not raise; it returns the function at the wrong point, and a zero or a
+`nan` from arb on an ordinary argument is the sign of it. Check one value
+against a known digit ($J_0(1) = 0.7651976865579665$) before believing
+either the library or the swap. These methods are on `ComplexBall` only,
+which the lesson above already says.
+
+Evidence: `/tmp/arb_probe2.py`, 2026-09-09, printed `I_0(1) 0`,
+`K_0(1) nan + nan*I`, `J_0(2) 0`; `/tmp/arb_probe3.py` with the argument as
+`self` printed `J_0(1) [0.76519768655796655144971752610266322...]` and
+`I_0(1) [1.26606587775200833559824462521471753...]`, both agreeing with
+mpmath 1.3.0 to 40 digits.
