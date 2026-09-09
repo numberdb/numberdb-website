@@ -253,6 +253,18 @@ linking the same name four times in one comment is noise. First mention in a
 section, `HREF{Bernoulli_numbers}[the Bernoulli numbers]`; afterwards, plain
 text.
 
+**Link the number, not the table, when the sentence means one number.**
+`HREF{Feigenbaum_constants}` points at a table of six constants where the
+sentence said $\delta$, and `HREF{Golden_ratio}` at three where it said
+$\varphi$. A link may name an entry: `HREF{Feigenbaum_constants#delta}[$\delta$]`
+and `HREF{Golden_ratio#phi}[$\varphi$]` land on the row. The address after the
+`#` is the entry's identity -- its parameter values, comma separated, as a
+citation writes them -- so a row of a three-parameter table is
+`HREF{slug#Z,1,density}`, and a row of this same table is `HREF{#delta}`.
+Read the keys out of the table rather than inventing them; they are the keys
+of `Numbers`, not the labels the page prints. Link the whole table when the
+sentence means the whole family, which is the commoner case.
+
 **A comment states a fact about the mathematics.** How strong a search hit
 would be, how distinctive a value is, what a reader ought to conclude: those
 are remarks about the website, and a table full of them reads as apology.

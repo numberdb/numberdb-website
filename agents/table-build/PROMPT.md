@@ -225,6 +225,15 @@ know which table to critique, and the cost ledger reads it to know what the
 run was about. A generator that omitted it sent a critique and a repair at
 the wrong table, which had been finished an hour earlier.
 
+**Link the number, not the table, when the sentence means one number.**
+A link may name an entry, `HREF{Feigenbaum_constants#delta}[$\delta$]` rather
+than `HREF{Feigenbaum_constants}`, and the address after the `#` is the
+entry's identity -- its parameter values as a citation writes them, so
+`HREF{Golden_ratio#phi}` and `HREF{slug#Z,1,density}`. T169 sent a reader to
+a table of six Feigenbaum constants where it meant $\delta$, and to three
+golden-ratio rows where it meant $\varphi$. Read the keys out of `Numbers`
+rather than inventing them.
+
 **Cite what you already declared.** If `Links` holds the Wikipedia article for
 the object, put `CITE{Wiki}` at its first mention in the definition. The
 reference is there; the reader should not have to scroll for it.

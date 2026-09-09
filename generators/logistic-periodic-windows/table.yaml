@@ -4,10 +4,14 @@
 # review; publishing is a person's act on the site.
 Title: Periodic windows of the logistic map by kneading word
 Definition: >-
-  For the logistic map $f_r(x)=rx(1-x)$ on $[0,1]$ CITE{WikiLogistic}
-  CITE{MathWorldLogistic}, the table gives the periodic-window quantity named
-  by the parameter `expression` for the listed superstable kneading word $W$
-  CITE{WikiKneading}.
+  For $f_r(x)=rx(1-x)$ on $[0,1]$ CITE{WikiLogistic}, a period-$p$ window is
+  an interval of $r$ where $f_r$ has an attracting orbit of exact period
+  $p$. The parameter $W$ is the critical orbit\'s kneading word
+  CITE{WikiKneading}. For each window the table holds where it opens, where
+  it is superstable and where it first period-doubles -- each in both the
+  logistic parameter $r$ and the quadratic parameter $c$ of $z\mapsto z^2+c$
+  CITE{formula-conversion} -- and the topological entropy $h_{\mathrm{top}}$
+  of $f_r$ on the window CITE{WikiTopologicalEntropy}.
 Parameters:
   W:
     type: Symbolic
@@ -48,14 +52,17 @@ Parameters:
       RLLLLRRC: '$\mathtt{RLLLLRRC}$'
       RLLLLLRC: '$\mathtt{RLLLLLRC}$'
       RLLLLLLC: '$\mathtt{RLLLLLLC}$'
-  expression:
+  quantity:
     type: Symbolic
     title: quantity
-    display: expression
+    display: quantity
     values:
       onset: '$r_{\mathrm{on}}$'
+      onset-c: '$c_{\mathrm{on}}$'
       superstable: '$r_W$'
+      superstable-c: '$c_W$'
       doubling: '$r_{\mathrm{pd}}$'
+      doubling-c: '$c_{\mathrm{pd}}$'
       entropy: '$h_{\mathrm{top}}$'
 Comments:
   comment-kneading-word: >-
@@ -70,9 +77,9 @@ Comments:
     and the topological entropy $h_{\mathrm{top}}$
     CITE{WikiTopologicalEntropy} of the periodic window.
   comment-range: >-
-    The main period-doubling cascade words are not listed. They have entropy
-    $0$ and are the cascade whose gap ratios tend to
-    HREF{Feigenbaum_constants}[the Feigenbaum constant] $\delta$.
+    The omitted main period-doubling cascade windows have entropy $0$, and
+    the ratios of successive parameter gaps in the cascade tend to
+    HREF{Feigenbaum_constants#delta}[the Feigenbaum constant $\delta$].
   comment-harmonics: >-
     If $W$ is the doubled harmonic of a shorter word $V$, its onset is the
     first period-doubling point of $V$. Thus $\mathtt{RLLRLC}$ begins at the
@@ -83,10 +90,12 @@ Comments:
     The window $\mathtt{RLRRRC}$ is the period-$3$ window of the second
     iterate $f_r^2$; its topological entropy is half that of $\mathtt{RLC}$.
   comment-normalisation: >-
-    The values of $r$ use the logistic-map normalisation. The corresponding
-    real quadratic-polynomial parameter $c$ for $z\mapsto z^2+c$ is
-    $c=-r(r-2)/4$ by CITE{formula-conversion}; each endpoint entry gives this
-    $c$-value in its comment.
+    The two normalisations are the same window in different coordinates:
+    $c=-r(r-2)/4$ by CITE{formula-conversion}, so $r=4$ is $c=-2$ and $r=2$
+    is $c=0$. Both are rows rather than remarks, because a number written in
+    a comment answers no search and cannot be cited. The entropy has no
+    normalisation: it is a property of the map, and the same number
+    whichever coordinate names the map.
   comment-sources: >-
     OEIS gives the period-$3$ onset CITE{OEISA086178}, the first
     period-doubling point of that window CITE{OEISA086179}, and the first
@@ -110,9 +119,9 @@ Formulas:
     matrix of the partition by the critical orbit of the superstable map and
     $\rho(A_W)$ is its Perron root CITE{MilnorThurston}.
   formula-rlc: >-
-    For $W=\mathtt{RLC}$, $r_{\mathrm{on}}=1+2\sqrt2$ and
-    $h_{\mathrm{top}}=\log\varphi$, where $\varphi$ is
-    HREF{Golden_ratio}[the golden ratio].
+    For $W=\mathtt{RLC}$, $r_{\mathrm{on}}=1+2\sqrt2$, so
+    $c_{\mathrm{on}}=-7/4$ exactly, and $h_{\mathrm{top}}=\log\varphi$ where
+    $\varphi$ is HREF{Golden_ratio#phi}[the golden ratio $\varphi$].
 Programs:
   program-sage:
     language: Sage
@@ -191,30 +200,35 @@ Data properties:
   complete: 'no'
   complete-note: >-
     it holds every primitive superstable kneading word with period at most
-    $8$, except the main period-doubling cascade words, with four quantities
-    for each word
+    $8$, except the main period-doubling cascade words, with seven
+    quantities for each word
   rigour details: >-
     The superstable rows were computed by Newton iteration on
     CITE{formula-superstable}. The onset and first period-doubling rows were
     computed by Newton continuation in the multiplier $\mu$ in
-    CITE{formula-endpoints}; for the two harmonic windows
-    $\mathtt{RLLRLC}$ and $\mathtt{RLLLRLLC}$, the onset is the parent's first
-    period-doubling point because the multiplier-$1$ continuation is singular
-    there. The entropy rows were computed as $\log\rho(A_W)$ from the integer
-    Markov transition matrix in CITE{formula-entropy}.
-
-    Every row was recomputed with $760$ and $980$ guard bits beyond the $100$
-    written digits, and the written digits agreed. An independent check built
-    the superstable polynomials $f_r^p(1/2)-1/2$ exactly, found the real roots
-    of exact period $p$ for $3\leq p\leq8$, recovered the same $34$ retained
-    kneading words, and checked the counts $1,2,3,5,9,16$ against OEIS
-    A000048 CITE{OEISA000048}. The period-$3$ onset was checked against
-    $1+2\sqrt2$ CITE{OEISA086178}; the period-$3$ first period-doubling point
-    was checked against its sextic equation CITE{OEISA086179}; the first
-    period-$5$, $6$ and $7$ onsets were checked against the OEIS digits named
-    in the links; and the entropy controls
+    CITE{formula-endpoints}; for the two harmonic windows $\mathtt{RLLRLC}$
+    and $\mathtt{RLLLRLLC}$, the onset is the parent's first period-doubling
+    point because the multiplier-$1$ continuation is singular there. The
+    entropy rows were computed as $\log\rho(A_W)$ from the integer Markov
+    transition matrix in CITE{formula-entropy}. Every row was recomputed
+    with $760$ and $980$ guard bits beyond the $100$ written digits, and the
+    written digits agreed. An independent check built the superstable
+    polynomials $f_r^p(1/2)-1/2$ exactly, found the real roots of exact
+    period $p$ for $3\leq p\leq8$, recovered the same $34$ retained kneading
+    words, and checked the counts $1,2,3,5,9,16$ against OEIS A000048
+    CITE{OEISA000048}. The period-$3$ onset was checked against $1+2\sqrt2$
+    CITE{OEISA086178}; the period-$3$ first period-doubling point was
+    checked against its sextic equation CITE{OEISA086179}; the first
+    period-$5$, $6$ and $7$ onsets were checked against the OEIS digits
+    named in the links; and the entropy controls
     $h_{\mathrm{top}}(\mathtt{RLC})=\log\varphi$,
     $h_{\mathrm{top}}(\mathtt{RLRRRC})=\frac12\log\varphi$, and the two
     harmonic entropy equalities were checked.
+
+    The $c$ rows are $-r(r-2)/4$ applied to the $r$ row beside them, in the
+    same arithmetic, so they are no weaker and no stronger than it. One of
+    them is exact: $\mathtt{RLC}$ opens at $r=1+2\sqrt2$, so
+    $c_{\mathrm{on}}=-(1+2\sqrt2)(2\sqrt2-1)/4=-(8-1)/4=-7/4$ and the surd
+    cancels; it is written as the rational and checked against the solve.
 Display properties:
   number-header: value
