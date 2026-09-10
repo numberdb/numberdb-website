@@ -1,0 +1,4 @@
+* done -- Replaced `formula-recurrence` with the $I_\nu$ recurrence only; checked DLMF 10.29, all 90 stored $I_\nu$ triples in Sage/arb, and the $K_\nu$ sign at $\nu=1$, $x=7/4$.
+* left for a person -- The live $\nu=1/2$ rows still repeat formula (3), but the critique calls this marginal and shared with T187/T190; I did not make only T196 diverge from its siblings.
+* done -- Added `comment-von-mises` and the `WikiVonMises` link; checked the cited density formula and compared $\int_{-\pi}^{\pi}\exp(\kappa\cos\theta)\,d\theta/(2\pi)$ with all 30 stored $I_0(\kappa)$ entries.
+* left for a person -- The proposed Bessel-polynomial identity checked on the 90 stored half-integer rows, but the critique says the useful rewrite belongs with T187/T190 too; I did not make only T196 diverge from its siblings.
