@@ -175,6 +175,16 @@ your report -- naming the tables -- rather than settling for "physics". A tag
 is proposed by the batch that needs it, since one table alone cannot show that
 three would use it. `audit_table` refuses a tag that reaches only this table.
 
+**One table per named object; the connection goes elsewhere.** T20 and T21
+are the zeros of the Bessel functions of the first and second kind, T22 and
+T23 their extrema, T25, T26 and T59 the three complete elliptic integrals.
+Several named objects are several tables; one object at a sequence of index
+values is one table; one object in two conventions is one table. That the
+objects belong together is said in `Similar tables` (the relation, in words),
+in `HREF` at first mention, in `equals` where two entries are the same
+number, and in shared `Tags` -- not by putting them in one table, which is
+the one place the relation cannot be written down.
+
 **A value that is exactly a rational is written exactly.** Not
 `3.000000000000000000000000000000`: a decimal means plus or minus one unit in
 the last place however long it is, so that spelling says a number known to be

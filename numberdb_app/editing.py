@@ -736,8 +736,32 @@ def slug_for(title, taken=None):
 	#`Fibonacci_polynomials_F_n`. The slug is what people paste into papers.
 	plain = re.sub(r'\$[^$]*\$', ' ', title or '')
 
+	#Mathematics at the end of a title is an ornament and drops; mathematics
+	#in the middle of a phrase is a term and cannot. "Values of Bessel
+	#functions $J_\\nu(x)$ and $Y_\\nu(x)$" lost both variables and became
+	#`Values_of_Bessel_functions_and`, an address ending in a conjunction that
+	#says nothing about which two. When what is left dangles, the symbols come
+	#back, transliterated: `J_nu` for `$J_\\nu(x)$`.
+	dangling = r'(?:and|or|of|at|for|in|with|to|the|a|an)'
+	left = plain.strip()
+	if (not left
+			or re.search(r'(?:^|\s)%s\s*$' % dangling, left, re.I)
+			or re.match(r'%s(?:\s|$)' % dangling, left, re.I)
+			#`$abc$-triples of high merit` leaves `-triples ...`, a word with
+			#its head cut off.
+			or not left[0].isalnum()):
+		def spell(match):
+			inner = match.group(0)
+			inner = re.sub(r'\\left|\\right', ' ', inner)
+			inner = re.sub(r'\\([A-Za-z]+)', r'\1', inner)   # \nu -> nu
+			inner = re.sub(r'[$^{}()\\,]+', ' ', inner)
+			return ' ' + inner + ' '
+		plain = re.sub(r'\$[^$]*\$', spell, title or '')
+
 	base = re.sub(r"[^\w'()-]+", '_', plain.strip()).strip('_')
 	base = re.sub(r'_+', '_', base) or 'table'
+	#`abc -triples` is one word with a symbol in front of it, not two.
+	base = re.sub(r'_(?=-)', '', base)
 	base = base[:90]
 
 	taken = taken if taken is not None else set(
