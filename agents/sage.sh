@@ -100,7 +100,7 @@ cleanup() {
 	#local ssh and leaves the remote work running, and an abandoned Sage
 	#process is what takes the machine down.
 	ssh -n "${ssh_opts[@]}" "$REMOTE" \
-		"rm -rf $remote_dir.*; docker rm -f 'numberdb-agent-run-$$' >/dev/null 2>&1" \
+		"rm -rf $remote_dir.*; docker rm -f '$name' >/dev/null 2>&1" \
 		>/dev/null 2>&1 || true
 }
 trap cleanup EXIT
