@@ -2421,3 +2421,26 @@ Evidence: T183, 2026-09-09; `agents/critiques/T183.md` was absent,
 authenticated `GET /api/table?id=T183` returned the Bateman polynomial draft,
 `GET /T183` returned 404, `audit_table T183` printed "Nothing to report", and
 `generators/bateman-polynomials/generate.py` verified 31/31 entries.
+
+## A silent `agents/sage.sh` run can be blocked before the remote command starts
+
+What happened: after an interrupted Kummer draft-create attempt, a one-line
+smoke test through `agents/sage.sh` printed nothing for more than thirty
+minutes. Tracing the wrapper showed that it had not reached the remote lock,
+Docker or Sage at all; it was blocked at the first `scp` that copies the
+mounted script. At the same time, `curl https://numberdb.org/` through the
+configured SOCKS proxy failed with "Failed to receive SOCKS5 connect request
+ack", and the same curl with proxy variables unset timed out. No database
+write could be checked from this session, because the allowed route to the
+server never got as far as starting.
+
+What to do instead: when a smoke test is silent, trace one no-key
+`agents/sage.sh` call before assuming a Sage computation or a table lock is
+slow. If the trace stops at `scp`, no throwaway container or database action
+has begun; interrupt the diagnostic, report remote connectivity as the
+blocker, and do not invent a draft id from the surrounding context.
+
+Evidence: 2026-09-10, `bash -x agents/sage.sh /tmp/sage_smoke_kummer.py`
+stopped after printing the `scp -q ... linode:/tmp/agent-run-...` command;
+the earlier untraced smoke test was interrupted after more than thirty minutes
+with no output.
