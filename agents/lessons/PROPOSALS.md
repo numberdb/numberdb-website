@@ -4813,3 +4813,31 @@ Evidence: `/tmp/crit199c.py` through `agents/sage.sh`, 2026-09-10:
 `guard 80 bits 413 widest radius (2.5062758e-120, ('1/3', '5'))`;
 `generators/modified-bessel-k-values-rational-orders/generate.py`
 line 38; `agents/critiques/T199.md`, finding 1.
+
+## `mpmath.hyp1f1` can need `zeroprec` when the transformed Kummer row terminates
+
+What happened: the Kummer $M(a;b;z)$ generator was checked against
+`mpmath.hyp1f1` at 90 decimal digits. Some ordinary half-integer rows, such as
+$M(3/2;1/2;-1/2)$, raised `NoConvergence` even with large `maxterms` and
+`maxprec`. By Kummer's transformation the same value is
+$e^{-1/2}M(-1;1/2;1/2)$, so the transformed hypergeometric series terminates;
+the problem was the independent checker's convergence test, not the table
+value. Passing `zeroprec=200` made all 384 mpmath comparisons converge and
+agree with the arb balls.
+
+What the skill says now: check a generator against something outside the
+family. It does not say what to do when the outside library refuses a row
+for numerical convergence rather than mathematical ambiguity.
+
+What it should say: when mpmath is the independent check for
+`${}_1F_1(a;b;z)` or a related generalized hypergeometric value, a
+`NoConvergence` row is not evidence against the generator until a known
+identity has explained it. Try a transformed or terminating form, and if the
+issue is cancellation to zero inside mpmath's summation, pass an explicit
+`zeroprec` along with the precision and term limits. Record the reason rather
+than silently dropping the row from the check.
+
+Evidence: `/tmp/kummer_private_checks.py`, 2026-09-10: the first mpmath pass
+failed at rows including `('3/2', '1/2', '-1/2')`; with
+`hyp1f1(..., maxterms=20000, maxprec=20000, zeroprec=200)` it printed
+`mpmath agreements 384` and `all checks passed`.
