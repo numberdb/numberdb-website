@@ -1,4 +1,4 @@
-"""Values of Kummer's confluent hypergeometric function M -- numberdb.org/TBD
+"""Values of Kummer's confluent hypergeometric function M -- numberdb.org/T210
 
 The standard real values of M(a;b;z) = 1F1(a;b;z), for rational parameters.
 This draft stores a half-integer grid in a and b, with z in
@@ -78,7 +78,7 @@ def _value_ball(a_text, b_text, z_text, digits):
 
 class KummerMValues(numberdb.Generator):
 
-    table = os.environ.get("NUMBERDB_TABLE") or "TBD"
+    table = os.environ.get("NUMBERDB_TABLE") or "T210"
     parameters = ("a", "b", "z")
     type = "R"
     digits = 100

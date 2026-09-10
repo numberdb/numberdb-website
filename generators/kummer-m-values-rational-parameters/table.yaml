@@ -1,7 +1,6 @@
-# The table document prepared from proposal 6 of
-# agents/table-ideas/BATCH-2026-09-09T1936.md. It is meant to be created
-# through the API as a draft, filled by generate.py beside it, and offered for
-# review.
+# The table document for T210, prepared from proposal 6 of
+# agents/table-ideas/BATCH-2026-09-09T1936.md. It was created through the API
+# as a draft, filled by generate.py beside it, and offered for review.
 Title: Values of Kummer's confluent hypergeometric function $M(a;b;z)$
 Definition: >-
   This table gives the real values of Kummer's confluent hypergeometric
