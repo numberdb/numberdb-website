@@ -125,6 +125,15 @@ that word, put it in `Keywords`, which is the same weight -- that is also how
 an accent is handled, since the index has no `unaccent`: the title is
 "Lévy's constant" and `Keywords` carries "Levy constant".
 
+**Do not discard what the source certified.** T174 read a certified spectral
+data set whose eigenvalues alternate in sign -- the file even carries a
+`sign_certified` column -- and stored $|\lambda_n|$. The sign is not
+recoverable from the table: a reader cannot see an alternation in a column of
+positive numbers, and a search for the number they hold does not match its
+negative. Where the literature quotes a magnitude, as it does for the
+Gauss-Kuzmin-Wirsing constant $|\lambda_2|$, that convention is about one
+value; say so in that entry's comment and store the rest as they are.
+
 **Decide exactness from the definition, never from the digits.** A run of
 zeros is evidence and not proof: `3.000000000000000000` may be 3, or
 3 + 10^-40 rounded, and no number of zeros separates them. The logistic map's
@@ -263,7 +272,12 @@ or use the parameter's `display` symbol.
 that value indexes, so a conversion rule put there is repeated once per row:
 one table carried `$c=-r(r-2)/4$` on all twenty-four of its $c$ rows where
 `$c$` was wanted, and the rule belongs in `Formulas`. The same for a closed
-form the entry's comment already gives.
+form the entry's comment already gives. The value column has a label too,
+`Display properties: number-header`, and it is a claim about every value under
+it: T174 stored $\lambda_n$ and went on heading the column $|\lambda_n|$,
+which says the table holds something it does not. When what a table stores
+changes, three places say what it holds -- the title, the definition and that
+header -- and the header is the one nobody rereads.
 
 **Entries are shown in the order the document writes them**, so the order the
 generator enumerates in is what a reader sees. For an index running over the
