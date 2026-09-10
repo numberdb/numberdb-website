@@ -54,11 +54,27 @@ def _entry_records(tree):
 	return list(walk(numbers)) if numbers is not None else []
 
 
+#: Words a title cannot begin or end with once its mathematics is stripped.
+#: T61 is "$\\cos(\\pi x)$ for rational $x$", which bares to "for rational" --
+#: a fragment, not a name. Matching prose against it reported that every
+#: definition saying "for rational order" names a table and fails to link it.
+_FRAGMENT = ('for', 'of', 'at', 'in', 'with', 'to', 'and', 'or', 'the', 'a',
+             'an')
+
+
 def _bare_title(title):
-	"""A title without its LaTeX, for matching against prose."""
+	"""A title without its LaTeX, for matching against prose.
+
+	Empty when what is left does not read as a name on its own: the caller
+	skips those rather than matching a fragment against every table's prose.
+	"""
 	import re
 
-	return ' '.join(re.sub(r'\$[^$]*\$', ' ', title).split()).strip(' ,.')
+	bare = ' '.join(re.sub(r'\$[^$]*\$', ' ', title).split()).strip(' ,.')
+	words = bare.lower().split()
+	if words and (words[0] in _FRAGMENT or words[-1] in _FRAGMENT):
+		return ''
+	return bare
 
 
 #: Prose that points down or up the page. The document has Comments before
