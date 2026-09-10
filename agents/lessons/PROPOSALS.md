@@ -961,6 +961,18 @@ interval and the KnotInfo value `2.0298832128` does too, while both
 controls fail as they must -- the 58th digit changed by 3, and
 `2.0298832130`.
 
+Further evidence, 2026-09-10, reading T199: `k` is the number of digits
+after the point, not the table's `digits`. A check that widened every
+stored string by `10**(-100)` because the table says `digits: 100`
+reported three rows as not overlapping the recomputed ball --
+$K_{5/2}(1)=3.22\ldots$, $K_{5/2}(1/4)=119.08\ldots$ and
+$K_3(1/4)=508.03\ldots$, whose hundred significant digits end at the
+99th, 98th and 97th decimal -- while every row below $1$ passed. All
+three agree with mpmath at 130 digits and are correctly rounded. The
+same slip in the other direction, on a value like $0.0037\ldots$, widens
+by too much and passes a wrong digit. Take `k` from the string:
+`len(s) - s.index('.') - 1`.
+
 ## `RealBall` has no `str` method, with or without `sage.all`
 
 What happened: `ball.str(60)` raised `AttributeError: 'RealBall' object has
@@ -4772,3 +4784,32 @@ generators/modified-bessel-i-values-rational-orders/generate.py` failed in
 `check_writable()` with the error above. `/tmp/fill_modified_bessel_i_direct.py`
 used `Entries`, `submit_entries` and `attach` with one run id; the API answered
 `"entries": 270`, and the generator then verified `270/270 matched`.
+
+## A rigour note is a claim to measure, not prose to copy from the sibling table
+
+What happened: T199's `rigour details` said every value was computed at
+`numberdb.bits(digits, losing=64)` and that the widest ball had radius below
+$10^{-119}$; the generator attached to the same revision said
+`WORKING_GUARD = 80`. Measured over all 270 entries in the throwaway, the
+widest radius at a guard of 64 bits is $1.6\cdot10^{-115}$ and at 80 bits
+$2.5\cdot10^{-120}$, both at $\nu=1/3$, $x=5$. The note was the sibling
+table's sentence, T196's, with its radius updated and its guard not. The
+digits were right; the account of how they were obtained was not, and
+nothing on the site compares the two.
+
+What the skill says now: "state the guard as a constant with the measurement
+behind it: how many digits the worst entry actually retained." That is about
+the generator. It does not say that the rigour note and the generator must
+name the same guard, or that a reader of the note can check it.
+
+What it should say: the guard in `rigour details` and the guard in the
+generator are one number; write the note from the constant, not from the
+previous table's note. A critique can check it in one loop: recompute every
+entry at the guard the note names and compare the widest radius with the
+figure the note gives.
+
+Evidence: `/tmp/crit199c.py` through `agents/sage.sh`, 2026-09-10:
+`guard 64 bits 397 widest radius (1.6228328e-115, ('1/3', '5'))`,
+`guard 80 bits 413 widest radius (2.5062758e-120, ('1/3', '5'))`;
+`generators/modified-bessel-k-values-rational-orders/generate.py`
+line 38; `agents/critiques/T199.md`, finding 1.
