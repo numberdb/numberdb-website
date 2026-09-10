@@ -4868,3 +4868,96 @@ and `3,2,-2`; after adding the terminating-polynomial check to
 `generators/kummer-m-values-rational-parameters/generate.py`, the private
 dry run reported 384 entries and all mpmath, Kummer-transformation,
 elementary, error-function and Bessel-I checks passed.
+
+## `roots(ring=CBF)` refuses a polynomial with a repeated root, and every non-simple isogeny class has one
+
+What happened: the Frobenius angles of the 35 isogeny classes of abelian
+surfaces over $\mathbb{F}_2$ were to be the arguments of the roots of each
+Weil polynomial in `ComplexBallField(400)`. The first class in Sage's
+enumeration, $t^4+4t^3+8t^2+8t+4=(t^2+2t+2)^2$, raised `ValueError: unable
+to isolate the roots (try using proof=False or increasing the precision)`.
+Raising the precision cannot help: arb isolates roots by separating them,
+and a double root has no separation. Every class that is a product of two
+isogenous factors, and every supersingular class $(t^2\pm q)^2$, has this
+shape, so the loop dies on the ninth line of any table of them.
+
+What the skill says now: prefer balls for anything transcendental; nothing
+about which inputs a ball root finder cannot take.
+
+What it should say: factor over $\mathbb{Z}$ first and take the roots of
+each irreducible factor in balls, carrying the multiplicity along, since an
+irreducible factor over $\mathbb{Q}$ is squarefree and its roots isolate at
+any precision. The same applies to `roots(ring=RIF)`. Sage's `QQbar` route
+tolerates a repeated root but returns exact algebraic numbers that must then
+be coerced into a ball of the wanted width.
+
+Evidence: `/tmp/av_probe3.py`, 2026-09-11, the traceback above at the
+first polynomial; `/tmp/av_probe4.py` the same hour, `P.factor()` and
+`F.roots(ring=CBF)` per factor, all 35 classes with radii below
+$2\times10^{-120}$, agreeing with the LMFDB's `angles` field to its 15
+digits.
+
+## PARI's `lfungenus2` returns a wrong value at even conductor, and says so only in a warning
+
+What happened: the genus 2 $L$-values of 169.a.169.1 and 277.a.277.1 from
+`lfungenus2([P, Q])` and `lfun(L, 1)` agreed with the LMFDB's leading
+coefficients to 40 and 55 digits. The third curve tried, 196.a.21952.1 of
+conductor $196=2^2\cdot7^2$, returned $0.04054\ldots$ where the LMFDB has
+$0.10905\ldots$, with `lfuncheckfeq` still reporting a small number, and
+the only sign of trouble was a line on stderr, `*** lfungenus2: Warning:
+unknown valuation of conductor at 2.`, which a script that reads the
+returned value never sees. PARI's manual says the same: the Euler factor
+and conductor exponent at $2$ are not computed, and the function guesses.
+
+What the skill says now: check new values against something independent;
+a control that returns a known answer. Nothing about a library that
+returns a plausible number and a warning.
+
+What it should say: for a genus 2 $L$-function, the conductor PARI reports
+(`lfunconductor`) must equal the curve's, and for a curve with bad
+reduction at $2$ the local data at $2$ has to be supplied to `lfuncreate`
+by hand (the LMFDB's `bad_lfactors` field has the Euler factors) or the
+curve left out and the omission written in `complete-note`. More
+generally, run library calls with stderr captured and treat a warning as a
+failed row.
+
+Evidence: `/tmp/av_probe4.py`, 2026-09-11: `169.a.169.1 order 0
+L^(r)(1)/r! 0.09049039083242962911358975725801541226473`, `277.a.277.1 ...
+0.1431366605510114901557152099923829602232`, both matching the LMFDB, and
+`196.a.21952.1 ... 0.04054153214621337192648392300463915804610` against
+the LMFDB's `0.109047665190859529223076770287488695296415160221137294`,
+with the warning on the line above it.
+
+## The LMFDB's JSON API answers a paced request with chosen fields, and gates a burst
+
+What happened: an earlier lesson here says the LMFDB API "does not answer"
+(`api/nf_fields/?degree=2&...` was Page Not Found). Today
+`https://www.lmfdb.org/api/ec_curvedata?_format=json&lmfdb_label=11.a2`
+returned the curve's row as JSON, with `faltings_height` as a decimal
+string of 29 digits and its precision in bits, and the same URL shape
+answered for `g2c_curves` (`label=169.a.169.1`, or `_sort=cond&_limit=3`
+for the first curves by conductor), `av_fq_isog` (`g=2&q=2`),
+`maass_rigor`, `maass_newforms` and `mf_newforms` (`level=1`). Three things
+decide whether it answers: a `_fields=a,b,c` list keeps the answer small
+enough to read; a gap of about 90 seconds between requests kept eleven in
+a row answering, while the third request of a burst of three was the
+reCAPTCHA page; and a range written as `conductor=le:100` is Page Not
+Found, so a range is done by `_sort` and `_limit` instead. The table names
+are the ones the LMFDB's `/api/` index page lists, and `nf_fields` needs no
+trailing slash either.
+
+What the skill says now: that the LMFDB is a link target and an outside
+check; the lesson above says its API does not answer.
+
+What it should say: the LMFDB's API is a source for a few hundred rows in
+one request, fetched with `_fields` and `_sort` and `_limit`, at one
+request a minute or slower; not a source to loop over, and not one to
+fetch during a build that also fetches from elsewhere. Save each answer
+to a file as it arrives. A `RealLiteral` in the answer is a decimal
+string with the number of digits its `prec` supports, and its last digit
+is rounded.
+
+Evidence: `/tmp/lmfdb_paced.out`, `/tmp/lmfdb_paced2.out`, 2026-09-11:
+eleven requests 75 to 90 seconds apart, every one JSON or the object's
+page; the three rapid requests at 21:13 UTC the same day, the third
+`RecaptchaChallengePageUi`; the `le:100` request, "LMFDB Page Not Found".
