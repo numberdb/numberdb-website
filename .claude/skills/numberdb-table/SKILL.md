@@ -146,6 +146,28 @@ $E_1(x)=-\operatorname{Ei}(-x)$, $\beta$ and $e^\beta$ for Lévy's constant,
 $r$ and $c$ for the logistic map: those are normalisations, and a reader
 holding either should land in the same place.
 
+**Splitting does not lose the connection; it puts it where it belongs.** The
+argument for one table is usually that the objects belong together, and this
+corpus has four ways to say that, each saying something different:
+
+* **`Similar tables`** states the *relation*, in words: "the same expansion's
+  limits, taken over the denominators of the convergents rather than over the
+  partial quotients". That sentence is the valuable part, and one table cannot
+  hold it, because inside one table there is nothing to relate.
+* **`HREF{slug}`** in the prose links at first mention, and
+  `HREF{slug#entry}` links the one value a sentence means.
+* **`equals`** says the two entries *are the same number*, which is stronger
+  than related and which search reads: it answers with the original and names
+  the other beside it. Related is not equal, and saying equal where only
+  related is true is worse than saying nothing.
+* **`Tags`** say the two are about the same subject, which is how a reader
+  browses sideways rather than by name.
+
+$\operatorname{Ei}$, $\operatorname{li}$, $\operatorname{Si}$,
+$\operatorname{Ci}$, $\operatorname{Shi}$ and $\operatorname{Chi}$ are
+similar and are not the same. Six tables, each defining its own function,
+tagged alike, linked to one another, and each findable by its own name.
+
 **Decide exactness from the definition, never from the digits.** A run of
 zeros is evidence and not proof: `3.000000000000000000` may be 3, or
 3 + 10^-40 rounded, and no number of zeros separates them. The logistic map's
