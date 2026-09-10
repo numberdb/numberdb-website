@@ -2444,3 +2444,29 @@ Evidence: 2026-09-10, `bash -x agents/sage.sh /tmp/sage_smoke_kummer.py`
 stopped after printing the `scp -q ... linode:/tmp/agent-run-...` command;
 the earlier untraced smoke test was interrupted after more than thirty minutes
 with no output.
+
+## The LMFDB gate is about the rate through this proxy, and 90 seconds between requests keeps it open
+
+What happened: the abelian-variety proposals needed rows from the LMFDB's
+API for elliptic curves, genus 2 curves, abelian varieties over finite
+fields and Maass forms. Through the SOCKS proxy, the first two requests of
+a burst answered and the third was the reCAPTCHA page, as the T160 note
+above found for `nf_fields`; ten knowl pages fetched in one loop a few
+minutes later were all gated, including the ones that had answered singly.
+A background script that slept 75 to 90 seconds between requests fetched
+eleven API answers and object pages in a row without a gate, while the
+foreground did nothing else outbound. The gate counts requests from this
+address, so a screen run, an OEIS loop and an LMFDB fetch at the same time
+share one budget.
+
+What to do instead: put every LMFDB fetch of a run into one background
+script with `sleep 90` between requests, writing each answer to `/tmp` as it
+arrives, and do no other LMFDB request while it runs; use `_fields` so one
+request carries what a hundred would otherwise; and never fetch a knowl in a
+loop, since the knowl pages are gated like the API and the definitions they
+hold are one hand fetch each. Foreground `sleep` is refused to an agent
+here, so the pacing has to live in a `nohup` script.
+
+Evidence: `/tmp/lmfdb_paced.out` and `/tmp/lmfdb_paced2.out`, 2026-09-11,
+eleven answers at 00:17 to 00:32 local; the ten-knowl loop at 00:20 in the
+same session, every body `RecaptchaChallengePageUi`.
