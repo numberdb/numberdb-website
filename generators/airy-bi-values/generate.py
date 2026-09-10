@@ -1,6 +1,6 @@
-"""Values of Airy functions at rational arguments -- numberdb.org/T198
+"""Values of Bi at rational arguments -- numberdb.org/T202
 
-The standard real values of Ai, Ai', Bi and Bi' at rational arguments.
+The standard real values of Bi at rational arguments.
 This draft stores every x = a/b in lowest terms with b <= 4 and |x| <= 5,
 including x = 0.
 
@@ -13,6 +13,12 @@ Run it with SageMath:
 Values are computed as complex balls with arb and returned as real balls.
 Sage's real ball field does not expose Airy functions, but its complex ball
 field does.
+
+One function per table, as T55 and T56 are the zeros of Ai and Bi and
+T57 and T58 their extrema. These four were one table until it was
+split: that they solve the same equation, and that two of them are the
+derivatives of the other two, is said in each table's `Similar tables`,
+which is where a relation can be written down.
 """
 
 import os
@@ -24,7 +30,8 @@ from sage.rings.complex_arb import ComplexBallField
 from sage.rings.rational_field import QQ
 
 
-FUNCTIONS = ("Ai", "Ai-prime", "Bi", "Bi-prime")
+#: Which of the four this table holds.
+FUNCTION = "Bi"
 MAX_DENOMINATOR = 4
 MAX_ABS_ARGUMENT = 5
 
@@ -83,33 +90,30 @@ def _real_airy_value(function, x_text, digits):
     return value.real()
 
 
-class AiryFunctionValues(numberdb.Generator):
+class AiryBiValues(numberdb.Generator):
 
-    table = os.environ.get("NUMBERDB_TABLE") or "T198"
-    parameters = ("function", "x")
+    table = os.environ.get("NUMBERDB_TABLE") or "T202"
+    parameters = ("x",)
     type = "R"
     digits = 100
     rigour = "proven"
 
-    def enumerate(self, functions=FUNCTIONS, denominator=MAX_DENOMINATOR,
+    def enumerate(self, denominator=MAX_DENOMINATOR,
                   maximum=MAX_ABS_ARGUMENT):
-        arguments = tuple(_arguments(denominator, maximum))
-        for function in functions:
-            for x in arguments:
-                yield {"function": function, "x": x}
+        for x in _arguments(denominator, maximum):
+            yield {"x": x}
 
     def value(self, params, digits):
-        function = str(params["function"])
         x_text = str(params["x"])
-        return _real_airy_value(function, x_text, digits)
+        return _real_airy_value(FUNCTION, x_text, digits)
 
 
 if __name__ == "__main__":
     _key_from_stdin()
-    generator = AiryFunctionValues()
+    generator = AiryBiValues()
     if os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
         print(generator.publish(
-            message="Airy function values at rational arguments"))
+            message="values of Bi at rational arguments"))
     else:
         report = generator.verify(sample=None)
         print(report)

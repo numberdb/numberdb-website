@@ -447,6 +447,40 @@ class SendingEntriesOneAtATime(WriteBase):
 		self.table.refresh_from_db()
 		return tree_of(self.table.head_revision)['Numbers']
 
+	def test_an_upsert_merges_into_entries_stored_nested(self):
+		"""The commonest storage form, and the commonest way to lose values.
+
+		A generator sends only the entries that changed. Against a table whose
+		entries are stored in the nested form the server replaced rather than
+		merged, so re-running one deleted everything the payload did not
+		mention: T197 went from 121 entries to the 61 that had moved.
+		"""
+		nested = Table.objects.create(tid='T952', tid_int=952,
+		                              title='Nested probe', url='API952')
+		commit_table(nested, {'Title': 'Nested probe',
+		                      'Parameters': {'n': {'type': 'Z'}},
+		                      'Numbers': {'1': '1.1', '2': '2.2', '3': '3.3'}},
+		             author=self.chair, via='orm')
+		nested.refresh_from_db()
+		self.assertIsInstance(tree_of(nested.head_revision)['Numbers'], dict)
+
+		answer = self.client.post(
+			'/api/table/%s/entries' % (nested.tid,),
+			yaml.dump([{'params': {'n': '2'}, 'number': '2.9'}]),
+			content_type='application/yaml',
+			HTTP_AUTHORIZATION='Bearer %s' % (self.token,),
+			HTTP_X_ENTRIES_MODE='upsert', HTTP_X_RUN_ID='run-nested')
+		self.assertEqual(answer.status_code, 200, answer.content)
+
+		nested.refresh_from_db()
+		stored = tree_of(nested.head_revision)['Numbers']
+		values = {r['params']['n']: r['number'] for r in stored} \
+			if isinstance(stored, list) else stored
+		self.assertEqual(len(values), 3, values)
+		self.assertEqual(values['2'], '2.9')
+		self.assertIn('1', values)
+		self.assertIn('3', values)
+
 	def test_an_empty_upsert_changes_nothing(self):
 		"""It is how the client asks whether it may write here at all.
 

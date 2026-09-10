@@ -1267,10 +1267,21 @@ def _upsert_entries(existing, arriving, tree):
 	if not arriving:
 		return existing, 0, 0
 
-	if isinstance(existing, dict) or isinstance(arriving, dict):
-		#The nested form has no records to key on. Replacing is the honest
-		#answer rather than guessing at a merge.
+	if isinstance(arriving, dict):
+		#What arrives nested is a whole table; there is nothing to merge it
+		#into it by.
 		return arriving, None, None
+
+	if isinstance(existing, dict):
+		#The nested form *does* have records to key on -- `to_records` is what
+		#makes them -- and replacing here threw away every entry the payload
+		#did not mention. A generator sends only what changed, so re-running
+		#one against a table stored this way deleted the rest: T197 went from
+		#121 entries to the 61 that had moved. This is the commonest storage
+		#form in the corpus, so it was the commonest way to lose values.
+		from .flatten import to_records
+
+		existing = to_records(dict(tree, **{'Numbers': existing}))
 
 	#A table with no parameters writes its entries as bare values -- T7 holds
 	#one string, T67 holds 442 -- and those have no identity to merge on.
