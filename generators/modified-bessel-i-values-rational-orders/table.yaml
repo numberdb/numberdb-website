@@ -1,0 +1,148 @@
+# The table document for T196, the modified Bessel function of the first
+# kind. It is the first table built from proposal 2 of
+# agents/table-ideas/BATCH-2026-09-09T1936.md. The same proposal also names
+# the modified Bessel function of the second kind K_nu, which belongs in a
+# companion table rather than in this one.
+Title: Values of modified Bessel functions of the first kind $I_\nu(x)$
+Definition: This table gives the real principal values of the modified Bessel
+  function of the first kind $I_\nu(x)$ CITE{Wiki} CITE{DLMFModifiedDefinitions},
+  for rational order $\nu\geq0$ and rational argument $x>0$.
+Keywords:
+- Bessel I
+- modified Bessel I
+- modified Bessel function of the first kind
+- I0(1)
+- cylinder functions
+- von Mises distribution
+Parameters:
+  nu:
+    type: Q
+    title: order
+    display: $\nu$
+    constraints: $\nu\in\mathbb{Q}$, $\nu\geq0$
+  x:
+    type: Q
+    title: argument
+    display: $x$
+    constraints: $x>0$
+Comments:
+  comment-branches: The principal branch is that of CITE{DLMFModifiedDefinitions}.
+    For real $\nu$ and $x>0$, $I_\nu(x)$ is real. At the origin, $I_0(0)=1$
+    and $I_\nu(0)=0$ for $\nu>0$; the table begins above $x=0$ so that it
+    uses the same argument range as HREF{Values_of_Bessel_functions_of_the_first_kind}[the
+    table of $J_\nu$] and HREF{Values_of_Bessel_functions_of_the_second_kind}[the
+    table of $Y_\nu$].
+  comment-negative-orders: Negative integer orders are not listed separately;
+    they reduce to positive integer orders by CITE{formula-negative-integer-orders}.
+    For nonintegral negative orders, the connection formulas in CITE{DLMFModifiedConnections}
+    express the values through $I_\nu(x)$ and $K_\nu(x)$.
+  comment-spherical: These are the ordinary cylindrical modified Bessel functions.
+    The modified spherical Bessel function of the first kind is $\mathrm{i}_n(x)=\sqrt{\pi/(2x)}I_{n+1/2}(x)$
+    CITE{DLMFSpherical}.
+  comment-half-integers: Half-integer orders are elementary. HREF{Bessel_polynomials}[The
+    Bessel polynomials] occur in explicit formulas for the associated spherical
+    and modified spherical functions CITE{DLMFSphericalExplicit}.
+Formulas:
+  formula-recurrence: If $Z_\nu$ is either $I_\nu$ or $K_\nu$, then $Z_{\nu-1}(x)-Z_{\nu+1}(x)=2\nu
+    Z_\nu(x)/x$ CITE{DLMFModifiedRecurrences}.
+  formula-negative-integer-orders: For an integer $n$, $I_{-n}(x)=I_n(x)$ CITE{DLMFModifiedConnections}.
+  formula-half-order: $I_{1/2}(x)=\sqrt{2/(\pi x)}\sinh x$ CITE{DLMFModifiedElementary}.
+Programs:
+  program-sage:
+    language: Sage
+    code: 'import numberdb.sage as numberdb
+
+      from sage.rings.complex_arb import ComplexBallField
+
+      from sage.rings.rational_field import QQ
+
+
+      CBF = ComplexBallField(numberdb.bits(100, losing=64))
+
+      nu = CBF(QQ(0))
+
+      x = CBF(QQ(1))
+
+      # Sage''s arb method is called on the argument and takes the order.
+
+      x.bessel_I(nu).real()'
+  program-python:
+    language: Python
+    code: 'import mpmath
+
+
+      mpmath.mp.dps = 100
+
+      mpmath.besseli(0, 1)'
+Similar tables:
+- table: HREF{Values_of_Bessel_functions_of_the_first_kind}[Values of Bessel
+    functions of the first kind $J_\nu(x)$]
+  relation: stores the ordinary Bessel function $J_\nu$ over the same orders
+    and arguments
+- table: HREF{Values_of_Bessel_functions_of_the_second_kind}[Values of Bessel
+    functions of the second kind $Y_\nu(x)$]
+  relation: stores the ordinary Bessel function $Y_\nu$ over the same orders
+    and arguments
+- table: HREF{Zeros_of_Bessel_J_functions}[Zeros of Bessel functions of the first
+    kind $J_\alpha$]
+  relation: stores zeros of the ordinary Bessel function $J_\alpha$ for real
+    order $\alpha$
+- table: HREF{Zeros_of_Bessel_Y_functions}[Zeros of Bessel functions of the second
+    kind $Y_\alpha$]
+  relation: stores zeros of the ordinary Bessel function $Y_\alpha$ for real
+    order $\alpha$
+- table: HREF{Local_extrema_of_Bessel_J_functions}[Local extrema of Bessel functions
+    of the first kind $J_\alpha$]
+  relation: stores extrema of the ordinary Bessel function $J_\alpha$ for real
+    order $\alpha$
+- table: HREF{Local_extrema_of_Bessel_Y_functions}[Local extrema of Bessel functions
+    of the second kind $Y_\alpha$]
+  relation: stores extrema of the ordinary Bessel function $Y_\alpha$ for real
+    order $\alpha$
+- table: HREF{Bessel_polynomials}[Bessel polynomials $y_n$]
+  relation: occur in explicit formulas for half-integer spherical and modified
+    spherical Bessel functions
+Links:
+  Wiki:
+    title: 'Wikipedia: Bessel function'
+    url: https://en.wikipedia.org/wiki/Bessel_function
+  DLMFModifiedDefinitions:
+    title: 'DLMF 10.25: Modified Bessel Functions, Definitions'
+    url: https://dlmf.nist.gov/10.25
+  DLMFModifiedConnections:
+    title: 'DLMF 10.27: Modified Bessel Functions, Connection Formulas'
+    url: https://dlmf.nist.gov/10.27
+  DLMFModifiedRecurrences:
+    title: 'DLMF 10.29: Modified Bessel Functions, Recurrence Relations and Derivatives'
+    url: https://dlmf.nist.gov/10.29
+  DLMFModifiedElementary:
+    title: 'DLMF 10.39: Modified Bessel Functions, Relations to Other Functions'
+    url: https://dlmf.nist.gov/10.39
+  DLMFSpherical:
+    title: 'DLMF 10.47: Definitions and Basic Properties'
+    url: https://dlmf.nist.gov/10.47
+  DLMFSphericalExplicit:
+    title: 'DLMF 10.49: Explicit Formulas'
+    url: https://dlmf.nist.gov/10.49
+  OEISIZeroOne:
+    title: 'OEIS A197036: decimal expansion of $I_0(1)$'
+    url: https://oeis.org/A197036
+Tags:
+- special values
+- special functions
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: it holds $I_\nu(x)$ for $\nu\in\{0,1/3,1/2,2/3,1,3/2,2,5/2,3\}$
+    and for every positive rational $x=a/b$ in lowest terms with $b\leq4$ and
+    $x\leq5$
+  rigour details: Each value was computed as a Sage real ball with arb at `numberdb.bits(digits,
+    losing=64)` bits. The entries were checked against mpmath at 150 decimal
+    digits, against the recurrence in CITE{formula-recurrence} wherever all three
+    orders are stored, against the negative integer order formula in CITE{formula-negative-integer-orders}
+    for $n=0,1,2,3$, against the elementary half-order formula in CITE{formula-half-order},
+    and against the OEIS value for $I_0(1)$ CITE{OEISIZeroOne}. The widest returned
+    ball had radius less than $10^{-115}$ for 100 requested digits.
+Display properties:
+  number-header: value
