@@ -39,7 +39,15 @@ FUNCTION = "erf"
 #: Its value at x = 0, exact, and stored as the integer rather than as
 #: a hundred places of one.
 AT_ZERO = "0"
-MAX_DENOMINATOR = 6
+# A thousand values, which is the scale this corpus's own function tables
+# hold: T20's Bessel zeros and T9's Gamma values are about 1050 each, at some
+# 120 KB per document, and 60 was an order of magnitude short of that.
+#
+# The knob is the denominator, not the range. Raising it refines the grid
+# between the points already there rather than stretching it further out,
+# which is what somebody interpolating wants -- and every value the table
+# already had stays exactly where it was.
+MAX_DENOMINATOR = 18
 MAX_ARGUMENT = 10
 
 # Bits of working precision beyond what the written digits need.
