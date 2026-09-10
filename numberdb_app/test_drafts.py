@@ -320,6 +320,38 @@ class TitlesWithMathematicsGetReadableAddresses(DraftBase):
 			slug_for('Chebyshev polynomials of the first kind $T_n$', taken=set()),
 			'Chebyshev_polynomials_of_the_first_kind')
 
+	def test_the_symbols_stay_when_the_words_alone_do_not_read(self):
+		"""Dropping the mathematics is right where it is an ornament at the
+		end, and wrong where it is a term in the sentence.
+
+		"Values of Bessel functions $J_\\nu(x)$ and $Y_\\nu(x)$" lost both
+		variables and became `Values_of_Bessel_functions_and`: an address
+		ending in a conjunction, saying nothing about which two functions.
+		"""
+		from .editing import slug_for
+
+		self.assertEqual(
+			slug_for('Values of Bessel functions $J_\\nu(x)$ and $Y_\\nu(x)$',
+			         taken=set()),
+			'Values_of_Bessel_functions_J_nu_x_and_Y_nu_x')
+		#Leading, not only trailing: this one left "for rational".
+		self.assertEqual(
+			slug_for('$\\cos(\\pi x)$ for rational $x$', taken=set()),
+			'cos_pi_x_for_rational_x')
+		#And a word whose head was cut off, rather than a dangling word.
+		self.assertEqual(slug_for('$abc$-triples of high merit', taken=set()),
+		                 'abc-triples_of_high_merit')
+
+	def test_mathematics_at_the_end_is_still_dropped(self):
+		"""The common case is unchanged, which is most of the corpus."""
+		from .editing import slug_for
+
+		for title, want in (
+				("Khinchin's means $K_p$", "Khinchin's_means"),
+				('Values of the Beta function $B(a,b)$ at rational arguments',
+				 'Values_of_the_Beta_function_at_rational_arguments')):
+			self.assertEqual(slug_for(title, taken=set()), want)
+
 	def test_a_title_that_is_only_mathematics_still_gets_an_address(self):
 		from .editing import slug_for
 

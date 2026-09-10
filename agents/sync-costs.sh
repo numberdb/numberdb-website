@@ -27,6 +27,7 @@ cd "$here"
 REMOTE="${NUMBERDB_REMOTE:-linode}"
 RPATH="${NUMBERDB_RPATH:-/opt/numberdb-website}"
 LEDGER="agents/runs/COSTS.tsv"
+ATTRIBUTION="agents/runs/ATTRIBUTION.tsv"
 
 [ -f "$LEDGER" ] || { echo "no ledger at $LEDGER" >&2; exit 0; }
 
@@ -38,5 +39,12 @@ ssh -n "${ssh_opts[@]}" "$REMOTE" "mkdir -p '$RPATH/agents/runs'" || {
 	echo "sync-costs: could not reach $REMOTE" >&2; exit 0; }
 scp "${ssh_opts[@]}" -q "$LEDGER" "$REMOTE:$RPATH/$LEDGER" || {
 	echo "sync-costs: could not copy the ledger" >&2; exit 0; }
+#Beside it, where the importer looks: which table a run was about, for the
+#runs whose ledger row could not say. Optional -- a corpus whose runs all
+#named their table has no such file.
+if [ -f "$ATTRIBUTION" ]; then
+	scp "${ssh_opts[@]}" -q "$ATTRIBUTION" "$REMOTE:$RPATH/$ATTRIBUTION" || \
+		echo "sync-costs: could not copy the attributions" >&2
+fi
 "$here/agents/on-server.sh" manage.py import_agent_costs "$LEDGER" \
 	2>&1 | tail -1
