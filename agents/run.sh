@@ -327,6 +327,18 @@ run_agent() {
 		claude)
 			local flags=(--session-id "$session")
 			[ "$mode" = "resume" ] && flags=(--resume "$session")
+			#Which model, and how hard it thinks. Unset by default, so the
+			#CLI chooses as it always has and the ledger keeps reading the
+			#answer back out of the transcript.
+			#
+			#Set when a run has hit a quota: the marker below outlives the run
+			#that wrote it, so a campaign whose first model ran out carries on
+			#with the fallback instead of failing the same way fifteen times.
+			#Delete `agents/runs/claude-fallback` to go back.
+			[ -n "${NUMBERDB_CLAUDE_MODEL:-}" ] \
+				&& flags+=(--model "$NUMBERDB_CLAUDE_MODEL")
+			[ -n "${NUMBERDB_CLAUDE_EFFORT:-}" ] \
+				&& flags+=(--effort "$NUMBERDB_CLAUDE_EFFORT")
 			# An allowlist of command prefixes does not survive contact with a
 			# shell: the run composed `(curl ...; curl ...)`, `which a b c && ...`
 			# and `sed -i ...`, none of which match a prefix, and nine commands
@@ -395,6 +407,14 @@ run_agent() {
 	esac
 }
 
+# Whether the run ran out of quota rather than hitting a passing error. The
+# same session resumed on the same model would be refused again, so this is
+# the one failure where trying again means trying something else.
+out_of_quota() {
+	tail -c 4000 "$log" 2>/dev/null | tr -d '\000' | grep -qiE \
+		'"api_error_status":429|rate.?limit|quota|usage limit|too many requests'
+}
+
 # Whether the run died of something that trying again could survive: an API
 # error, an expired token, an overload. Not a refusal and not running out of
 # turns, where a second attempt spends the same money to be told the same
@@ -403,6 +423,16 @@ worth_resuming() {
 	tail -c 4000 "$log" 2>/dev/null | tr -d '\000' | grep -qE \
 		'"api_error_status":[0-9]|OAuth access token has expired|overloaded_error|Internal server error|"type":"error"|stream disconnected|rate limit'
 }
+
+#A quota is remembered between runs, because it lasts longer than one.
+fallback_marker="agents/runs/claude-fallback"
+if [ "$engine" = "claude" ] && [ -z "${NUMBERDB_CLAUDE_MODEL:-}" ] \
+		&& [ -f "$fallback_marker" ]; then
+	NUMBERDB_CLAUDE_MODEL=$(sed -n 1p "$fallback_marker")
+	NUMBERDB_CLAUDE_EFFORT=$(sed -n 2p "$fallback_marker")
+	export NUMBERDB_CLAUDE_MODEL NUMBERDB_CLAUDE_EFFORT
+	echo "=== a previous run hit a quota; running $NUMBERDB_CLAUDE_MODEL at effort $NUMBERDB_CLAUDE_EFFORT"
+fi
 
 set +e
 if [ -n "${NUMBERDB_RESUME:-}" ]; then
@@ -428,6 +458,19 @@ if [ "$status" -ne 0 ] && [ "$stage" != "triage" ] \
 	#eight-hour boundary, and resuming into an expired token just fails again.
 	if [ "$engine" = "claude" ]; then
 		timeout 120 claude -p "Reply with exactly: ok" >/dev/null 2>&1 || true
+		#A quota is not a passing error: the same model would refuse again.
+		#So the resumed session runs on the fallback, at the highest effort
+		#the CLI offers, and says so in the log -- the ledger reads the model
+		#back out of the transcript, so the cost lands under whichever model
+		#actually did the work.
+		if out_of_quota; then
+			NUMBERDB_CLAUDE_MODEL="${NUMBERDB_CLAUDE_FALLBACK:-opus}"
+			NUMBERDB_CLAUDE_EFFORT="${NUMBERDB_CLAUDE_FALLBACK_EFFORT:-max}"
+			export NUMBERDB_CLAUDE_MODEL NUMBERDB_CLAUDE_EFFORT
+			printf '%s\n%s\n' "$NUMBERDB_CLAUDE_MODEL" \
+				"$NUMBERDB_CLAUDE_EFFORT" > "$fallback_marker"
+			echo "=== out of quota; resuming on $NUMBERDB_CLAUDE_MODEL at effort $NUMBERDB_CLAUDE_EFFORT (and for the runs after this one)"
+		fi
 	fi
 	echo "=== $stage failed and looks resumable; continuing session $session once"
 	run_agent resume
