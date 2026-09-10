@@ -4988,3 +4988,30 @@ Sage source around `sage/rings/qqbar.py` defines `AA_hash_offset` and
 `QQbar_hash_offset` inside that function, and the checked generator
 `generators/faltings-heights-elliptic-curves-q/generate.py` uses that
 initialisation before computing the period-lattice area.
+
+## `\Sha` is the LMFDB's macro, not MathJax's
+
+What happened: T212 copied the BSD formula from the LMFDB knowl in the
+LMFDB's notation, `|\Sha(A)|`, and used `$\Sha$` again in its rigour
+note. The LMFDB defines `\Sha` in its own MathJax configuration; the
+MathJax that numberdb.org serves is the stock `tex-svg` bundle with no
+macros configured, so `\Sha` is an undefined control sequence there and
+the `noundefined` extension prints it in red in the middle of the
+formula. The stored YAML is valid, `audit_table --links` says "Nothing
+to report", and the fault is visible only on the rendered page.
+
+What the skill says now: use `$...$` for mathematics; nothing about
+which macros the renderer knows.
+
+What it should say: the page typesets plain LaTeX plus the AMS
+packages, and no site-specific macros. A macro copied from another
+site's mathematics (the LMFDB's `\Sha`, `\Q`, `\Z`, `\F`, `\C`) will not
+render here; write `\text{Sha}`, `\mathbb{Q}` and so on, as T69 already
+does with `|\text{Sha}(E)|`. When a formula is copied from a source that
+renders its own LaTeX, check every control sequence in it against a
+plain MathJax before trusting the page.
+
+Evidence: `/tmp/T212.json` formula `formula-bsd`, 2026-09-11;
+`grep -c Sha static/vendor/mathjax/tex-svg.js` is 0 and
+`static/js/load-mathjax.js` defines `inlineMath` only;
+`agents/critiques/T212.md` finding 1.
