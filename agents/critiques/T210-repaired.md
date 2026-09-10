@@ -1,0 +1,9 @@
+1. done: added the transformed-polynomial formula and the exact-zero sentence in comment (8); checked the live zeros were still present, and Sage verified all 48 stored rows with $b-a\in\mathbb{Z}_{\leq0}$ against $e^zM(b-a;b;-z)$, with exactly the three named rows having zero polynomial factor.
+2. done: replaced "standard solution" with analyticity at $z=0$ and added Kummer's equation as a formula; checked DLMF 13.2.E1 and verified the coefficient recurrence of the hypergeometric series for all 54 grid $(a,b)$ pairs through twelve coefficients in Sage.
+3. done: rewrote comment (8) to say the elementary rows are omitted, including rows with $a$ a non-positive integer; checked the live 384-row Numbers block has no $z=0$, no $a=b$, and no non-positive integer $a$ row.
+4. done: removed the "Coulomb wave function" keyword and added the Whittaker $M_{\kappa,\mu}$ conversion; checked DLMF 33.2.E4 has Coulomb values through complex Kummer arguments, and checked DLMF 13.14.E2 plus two mpmath Whittaker comparisons in the Sage wrapper.
+5. declined: the semicolon convention remains the public title and value header, while comment (7) explicitly names Olver's comma notation; changing only the comment would lose that distinction, and changing the public title is not a T210 repair.
+6. left for a person: live T209 still does not link back to T210, but this is a T209 edit and no T210 change can add the reverse similar-table row.
+7. declined: the pointer to $e$ is true for the $z=1$ omitted row and the critique identifies the other exponential values as a corpus-coverage decision, not a fault of this page.
+8. declined: the Beta and Ramanujan similar-table glosses are broad but true sideways pointers, and the critique itself calls them fair browsing links.
+9. declined: the repeated values are genuine rows of the family; the exact-zero repeat is now explained by the transformed-polynomial formula rather than deduplicated away.
