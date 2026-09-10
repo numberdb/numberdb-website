@@ -1,12 +1,10 @@
-# The table document for the draft Values of the error function family. It began
-# as proposal 4 of agents/table-ideas/BATCH-2026-09-09T1936.md.
+# The table document for T197, Values of the error function family. It began as
+# proposal 4 of agents/table-ideas/BATCH-2026-09-09T1936.md.
 Title: Values of the error function, Dawson's function and Fresnel integrals
-Definition: This table gives the standard real values of the error function
-  $\operatorname{erf}(x)$, its complementary and imaginary normalisations
-  $\operatorname{erfc}(x)$ and $\operatorname{erfi}(x)$ CITE{WikiError} CITE{DLMFDefinitions},
+Definition: This table gives standard real values of $\operatorname{erf}(x)$,
+  $\operatorname{erfc}(x)$, $\operatorname{erfi}(x)$ CITE{WikiError},
   Dawson's integral $F(x)$ CITE{WikiDawson}, and the Fresnel integrals $S(x)$
-  and $C(x)$ CITE{WikiFresnel}, for rational $x>0$. The Fresnel integrals use
-  $S(x)=\int_0^x\sin(\pi t^2/2)\,\mathrm{d}t$ and $C(x)=\int_0^x\cos(\pi t^2/2)\,\mathrm{d}t$.
+  and $C(x)$ CITE{WikiFresnel}, for rational $x>0$ CITE{DLMFDefinitions}.
 Keywords:
 - error function
 - erf

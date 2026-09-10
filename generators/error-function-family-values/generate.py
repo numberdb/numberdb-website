@@ -1,4 +1,4 @@
-"""Values of the error function family -- numberdb.org/TBD
+"""Values of the error function family -- numberdb.org/T197
 
 The standard real values of erf, erfc, erfi, Dawson's integral and the
 Fresnel integrals at positive rational arguments. This draft stores every
@@ -104,7 +104,7 @@ def _value_ball(function, x_text, digits):
 
 class ErrorFunctionFamilyValues(numberdb.Generator):
 
-    table = os.environ.get("NUMBERDB_TABLE") or "TBD"
+    table = os.environ.get("NUMBERDB_TABLE") or "T197"
     parameters = ("function", "x")
     type = "R"
     digits = 100
