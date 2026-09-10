@@ -483,7 +483,11 @@ class SendingEntriesOneAtATime(WriteBase):
 		self.assertEqual(tree_of(bare.head_revision)['Numbers'],
 		                 ['3.14159', '2.71828'])
 
-		#And an upsert that does carry a record keeps them too.
+		#An upsert that does carry something replaces them, which is the
+		#same answer the nested form gets and for the same reason: with no
+		#parameters every record has the same identity, so a merge would
+		#collapse 442 values into one. Replacing is honest; half-merging is
+		#not.
 		answer = self.client.post(
 			'/api/table/%s/entries' % (bare.tid,),
 			yaml.dump([{'params': {}, 'number': '1.41421'}]),
@@ -492,9 +496,7 @@ class SendingEntriesOneAtATime(WriteBase):
 			HTTP_X_ENTRIES_MODE='upsert', HTTP_X_RUN_ID='run-3')
 		self.assertEqual(answer.status_code, 200, answer.content)
 		bare.refresh_from_db()
-		stored = tree_of(bare.head_revision)['Numbers']
-		self.assertIn('3.14159', stored)
-		self.assertIn('2.71828', stored)
+		self.assertEqual(tree_of(bare.head_revision)['Numbers'], ['1.41421'])
 
 	def test_one_entry_is_added_without_replacing_the_rest(self):
 		self.send([{'params': {'n': '2'}, 'number': '2.2'}])
