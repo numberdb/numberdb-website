@@ -447,6 +447,35 @@ class SendingEntriesOneAtATime(WriteBase):
 		self.table.refresh_from_db()
 		return tree_of(self.table.head_revision)['Numbers']
 
+	def test_an_empty_upsert_changes_nothing(self):
+		"""It is how the client asks whether it may write here at all.
+
+		`check_writable` sends an empty upsert before a generator starts, so
+		that a run of hours does not discover a missing key at the end. It is
+		documented as touching nothing, and for a table with no parameters it
+		removed the table's only value -- and a generator that then failed on
+		its first entry left the table empty. T189 lost its value that way.
+		"""
+		before = self.entries()
+		answer = self.send([])
+		self.assertEqual(answer.status_code, 200, answer.content)
+		self.assertEqual(self.entries(), before)
+
+	def test_an_upsert_keeps_values_it_cannot_key(self):
+		"""A table with no parameters writes bare values, which have no
+		identity to merge on. They were dropped by every upsert, not only an
+		empty one: T7 holds one such value and T67 holds 442."""
+		commit_table(self.table, {
+			'Title': 'API probe',
+			'Parameters': '',
+			'Numbers': ['3.14159', '2.71828'],
+		}, author=self.chair, base=self.table.head_revision, via='orm')
+		self.table.refresh_from_db()
+
+		answer = self.send([], run='run-2')
+		self.assertEqual(answer.status_code, 200, answer.content)
+		self.assertEqual(self.entries(), ['3.14159', '2.71828'])
+
 	def test_one_entry_is_added_without_replacing_the_rest(self):
 		self.send([{'params': {'n': '2'}, 'number': '2.2'}])
 		self.assertEqual([e['params']['n'] for e in self.entries()], ['1', '2'])

@@ -28,15 +28,24 @@ Formulas:
 Programs:
   program-sage:
     language: Sage
-    code: "import numberdb.sage as numberdb\nfrom sage.rings.rational_field import\
-      \ QQ\nfrom sage.rings.real_arb import RealBallField\n\nRBF = RealBallField(numberdb.bits(100,\
-      \ losing=64))\nx = RBF(QQ(1))\nx.Ei()\n-RBF(-QQ(1)).Ei()\nRBF(QQ(2)).log_integral()\n\
-      x.Si()\nx.Ci()\nx.Shi()\nx.Chi()\n      RBF(QQ(2)).log_integral()"
+    code: 'import numberdb.sage as numberdb
+
+      from sage.rings.rational_field import QQ
+
+      from sage.rings.real_arb import RealBallField
+
+
+      RBF = RealBallField(numberdb.bits(100, losing=64))
+
+      RBF(QQ(2)).log_integral()'
   program-python:
     language: Python
-    code: "import mpmath\n\nmpmath.mp.dps = 100\nmpmath.ei(1)\nmpmath.e1(1)\n\
-      mpmath.li(2)\nmpmath.si(1)\nmpmath.ci(1)\nmpmath.shi(1)\nmpmath.chi(1)\n\
-      \      mpmath.li(2)"
+    code: 'import mpmath
+
+
+      mpmath.mp.dps = 100
+
+      mpmath.li(2)'
 Similar tables:
 - table: HREF{Values_of_the_exponential_integral}[Values of the exponential integral]
   relation: $\operatorname{li}(x)=\operatorname{Ei}(\log x)$ CITE{formula-li}
