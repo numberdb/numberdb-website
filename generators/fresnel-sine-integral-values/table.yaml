@@ -125,7 +125,7 @@ Data properties:
   rigour: proven
   complete: 'no'
   complete-note: it holds $S(x)$ at every rational $x=a/b$ in lowest terms with
-    $b\leq6$ and $0\leq x\leq10$
+    $b\leq18$ and $0\leq x\leq10$
   rigour details: Each value was computed as a ball with arb at `numberdb.bits(digits,
     losing=64)` bits, and checked against mpmath at 150 decimal digits, against
     the identities in CITE{formula-parity} and against the OEIS value at $x=1$,

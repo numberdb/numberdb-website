@@ -32,8 +32,16 @@ from sage.rings.rational_field import QQ
 
 #: Which of the four this table holds.
 FUNCTION = "Bi-prime"
-MAX_DENOMINATOR = 4
-MAX_ABS_ARGUMENT = 5
+# A thousand values, which is the scale this corpus's own function tables
+# hold: T20's Bessel zeros and T9's Gamma values are about 1050 each, at some
+# 120 KB per document, and 61 was an order of magnitude short of that.
+#
+# The knob is the denominator, not the range. Raising it refines the grid
+# between the points already there rather than stretching it further out,
+# which is what somebody interpolating wants -- and every value the table
+# already had stays exactly where it was.
+MAX_DENOMINATOR = 12
+MAX_ABS_ARGUMENT = 8
 
 # Bits of working precision beyond what the written digits need.
 #
