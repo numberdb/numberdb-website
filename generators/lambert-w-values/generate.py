@@ -1,4 +1,4 @@
-"""Values of the Lambert W function -- numberdb.org/TBD
+"""Values of the Lambert W function -- numberdb.org/T200
 
 The real values of the Lambert W function at rational arguments. This draft
 stores the principal branch W_0(x) for positive rational x = a/b in lowest
@@ -94,7 +94,7 @@ def _comment(branch_text, x_text):
 
 class LambertWValues(numberdb.Generator):
 
-    table = os.environ.get("NUMBERDB_TABLE") or "TBD"
+    table = os.environ.get("NUMBERDB_TABLE") or "T200"
     parameters = ("branch", "x")
     type = "R"
     digits = 100
