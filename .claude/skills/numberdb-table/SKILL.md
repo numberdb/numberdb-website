@@ -117,13 +117,34 @@ cannot be found by its name at all. So the title decides how finely to divide
 a subject. "Feigenbaum constants" answers somebody typing "Feigenbaum";
 "Constants of the regular continued fraction" answers nobody looking for
 Khinchin, Levy or Lochs, and those were three tables pretending to be one.
-Where several named constants share a subject but not a name, make several
-tables; where the members share an index, as Khinchin's means $K_p$ do, one
-table however few. The test: *what would somebody type who is holding one of
+See the three rules below. The test: *what would somebody type who is holding one of
 these numbers and wants to know what it is?* If the title does not contain
 that word, put it in `Keywords`, which is the same weight -- that is also how
 an accent is handled, since the index has no `unaccent`: the title is
 "Lévy's constant" and `Keywords` carries "Levy constant".
+
+**Where several named objects share a subject but not a name, make several
+tables.** Objects, not only constants: this corpus splits one table per
+function and has done so consistently -- T20 and T21 are the zeros of the
+Bessel functions of the first and second kind, T22 and T23 their extrema,
+T55 to T58 the same for Airy Ai and Bi, and T25, T26, T59 are the three
+complete elliptic integrals. Not one of them is "Values of the Bessel
+functions". A table holding $\operatorname{Ei}$, $\operatorname{li}$,
+$\operatorname{Si}$, $\operatorname{Ci}$, $\operatorname{Shi}$ and
+$\operatorname{Chi}$ together is six tables wearing one title, and two of the
+six are not findable by name in it.
+
+**Where the members share an index, one table however few.** Khinchin's means
+$K_p$ are one object at a sequence of orders, and belong together. A shared
+*argument* is not that: seven functions evaluated at the same rational $x$ are
+still seven functions, and $x$ is the index of each of them separately. The
+question to ask is whether the parameter enumerates values of one thing or
+names of several.
+
+**Where two entries are one object in two conventions, one table.**
+$E_1(x)=-\operatorname{Ei}(-x)$, $\beta$ and $e^\beta$ for Lévy's constant,
+$r$ and $c$ for the logistic map: those are normalisations, and a reader
+holding either should land in the same place.
 
 **Decide exactness from the definition, never from the digits.** A run of
 zeros is evidence and not proof: `3.000000000000000000` may be 3, or
