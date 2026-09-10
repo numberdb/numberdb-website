@@ -4,16 +4,12 @@
 # review; publishing is a person's act on the site.
 Title: Faltings heights of elliptic curves over $\mathbb{Q}$
 Definition: >-
-  For an elliptic curve $E/\mathbb{Q}$ with global minimal model
-  $y^2+a_1xy+a_3y=x^3+a_2x^2+a_4x+a_6$, Neron differential
-  $\omega=dx/(2y+a_1x+a_3)$, period lattice $\Lambda_E\subset\mathbb{C}$ and
-  minimal discriminant $\Delta_{\min}$, this table gives the Faltings height
-  $h(E)$ CITE{Wiki} and the stable Faltings height $h_{\mathrm{st}}(E)$ in the
-  LMFDB and Sage normalisation CITE{LMFDBHeight} CITE{SageFaltings}. If $A$
-  is the area of a fundamental parallelogram for $\Lambda_E$ and
-  $j=j(E)$, then $h(E)=-\frac12\log A$ and
-  $h_{\mathrm{st}}(E)=h(E)+\frac1{12}
-  (\log\operatorname{denom}(j)-\log|\Delta_{\min}|)$.
+  For an elliptic curve $E/\mathbb{Q}$ with global minimal model and Neron
+  differential $\omega=dx/(2y+a_1x+a_3)$, this table gives the Faltings height
+  $h(E)$ CITE{Wiki} and the stable Faltings height $h_{\mathrm{st}}(E)$,
+  defined by CITE{formula-area} and CITE{formula-stable-height} with the
+  period lattice of $\omega$, in the LMFDB and Sage normalisation
+  CITE{LMFDBHeight} CITE{SageFaltings}.
 Parameters:
   N:
     type: Z
