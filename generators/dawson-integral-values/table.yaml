@@ -1,0 +1,130 @@
+# The table document for T206, Values of Dawson's integral $F(x)$. It began as proposal 5 of
+# agents/table-ideas/BATCH-2026-09-09T1936.md, which put six
+# functions in one table; they are six tables now, one per
+# function, on a grid that reaches to 10 and includes 0.
+Title: Values of Dawson's integral $F(x)$
+Definition: Dawson's integral is $F(x)=e^{-x^2}\int_0^x e^{t^2}\,\mathrm{d}t$
+  CITE{WikiDawson}, the function written $D_+$. This table gives its values at
+  rational $x$ with $0\leq x\leq10$.
+Keywords:
+- Dawson's integral
+- Dawson function
+- Dawson F
+- D_+
+- dawsn
+Parameters:
+  x:
+    type: Q
+    title: argument
+    display: $x$
+    constraints: $x\geq0$
+Comments:
+  comment-dawson-normalisation: Dawson's integral $F(x)$ is the function written
+    $D_+(x)$ in CITE{WikiDawson}. The variant $D_-(x)=e^{x^2}\int_0^x e^{-t^2}\,\mathrm{d}t$
+    is not stored; it is $(\sqrt{\pi}/2)e^{x^2}\operatorname{erf}(x)$.
+  comment-negative-arguments: Negative arguments are not listed separately. Values
+    at negative arguments follow from CITE{formula-parity}.
+  comment-at-zero: At $x=0$ the value is exact, $F(0)=0$, and is stored as the
+    integer rather than as a hundred places of one.
+Formulas:
+  formula-dawson-erfi: Dawson's integral is $F(x)=e^{-x^2}\int_0^x e^{t^2}\,\mathrm{d}t=(\sqrt{\pi}/2)e^{-x^2}\operatorname{erfi}(x)$
+    CITE{WikiDawson}.
+  formula-parity: The functions $\operatorname{erf}$, $\operatorname{erfi}$, $F$,
+    $S$ and $C$ are odd, and $\operatorname{erfc}(-x)=2-\operatorname{erfc}(x)$.
+Programs:
+  program-sage:
+    language: Sage
+    code: 'import numberdb.sage as numberdb
+
+      from sage.rings.rational_field import QQ
+
+      from sage.rings.real_arb import RealBallField
+
+
+      field = RealBallField(numberdb.bits(100, losing=64))
+
+      x = field(QQ(1))
+
+      field.pi().sqrt() * (-x * x).exp() * x.erfi() / field(2)'
+  program-python:
+    language: Python
+    code: 'import mpmath
+
+
+      mpmath.mp.dps = 100
+
+      mpmath.dawsn(1)'
+Similar tables:
+- table: HREF{Values_of_the_error_function}[Values of the error function $\operatorname{erf}(x)$]
+  relation: the same Gaussian integrand, with $e^{+t^2}$
+- table: HREF{Values_of_the_complementary_error_function}[Values of the complementary
+    error function $\operatorname{erfc}(x)$]
+  relation: another member of the error-function family
+- table: HREF{Values_of_the_imaginary_error_function}[Values of the imaginary
+    error function $\operatorname{erfi}(x)$]
+  relation: $F(x)=(\sqrt{\pi}/2)e^{-x^2}\operatorname{erfi}(x)$
+- table: HREF{Values_of_the_Fresnel_sine_integral}[Values of the Fresnel sine
+    integral $S(x)$]
+  relation: another member of the error-function family
+- table: HREF{Values_of_the_Fresnel_cosine_integral}[Values of the Fresnel cosine
+    integral $C(x)$]
+  relation: another member of the error-function family
+- table: HREF{Values_of_the_exponential_integral}[Values of the exponential integral]
+  relation: stores $\operatorname{Ei}(x)$ and $E_1(x)$, with exponential kernels
+    $e^t/t$ and $e^{-t}/t$ rather than the Gaussian kernel $e^{-t^2}$
+- table: HREF{Values_of_the_sine_integral}[Values of the sine integral $\operatorname{Si}(x)$]
+  relation: stores $\operatorname{Si}(x)=\int_0^x\sin(t)/t\,\mathrm{d}t$, with
+    linear phase in place of the Fresnel quadratic phase
+- table: HREF{Values_of_the_cosine_integral}[Values of the cosine integral $\operatorname{Ci}(x)$]
+  relation: stores $\operatorname{Ci}(x)=\gamma+\log x+\int_0^x(\cos(t)-1)/t\,\mathrm{d}t$,
+    with linear phase in place of the Fresnel quadratic phase
+- table: HREF{Values_of_the_hyperbolic_sine_integral}[Values of the hyperbolic
+    sine integral $\operatorname{Shi}(x)$]
+  relation: stores $\operatorname{Shi}(x)=\int_0^x\sinh(t)/t\,\mathrm{d}t$ at
+    rational arguments
+- table: HREF{Values_of_the_hyperbolic_cosine_integral}[Values of the hyperbolic
+    cosine integral $\operatorname{Chi}(x)$]
+  relation: stores $\operatorname{Chi}(x)=\gamma+\log x+\int_0^x(\cosh(t)-1)/t\,\mathrm{d}t$
+    at rational arguments
+- table: HREF{Values_of_the_Gamma_function_at_rational_numbers}[Values of the
+    Gamma function at rational numbers]
+  relation: contains HREF{Values_of_the_Gamma_function_at_rational_numbers#1/2}[$\Gamma(1/2)=\sqrt{\pi}$],
+    the normalising constant in $\operatorname{erf}$ and $\operatorname{erfc}$
+Links:
+  WikiError:
+    title: 'Wikipedia: Error function'
+    url: https://en.wikipedia.org/wiki/Error_function
+  WikiDawson:
+    title: 'Wikipedia: Dawson function'
+    url: https://en.wikipedia.org/wiki/Dawson_function
+  WikiFresnel:
+    title: 'Wikipedia: Fresnel integral'
+    url: https://en.wikipedia.org/wiki/Fresnel_integral
+  DLMFDefinitions:
+    title: 'DLMF 7.2: Definitions'
+    url: https://dlmf.nist.gov/7.2
+  OEISDawsonOne:
+    title: 'OEIS A087654: decimal expansion of Dawson''s function at 1'
+    url: https://oeis.org/A087654
+  MathWorldProbabilityIntegral:
+    title: 'MathWorld: Probability Integral'
+    url: https://mathworld.wolfram.com/ProbabilityIntegral.html
+  DLMFGraphics:
+    title: 'DLMF 7.3: Graphics'
+    url: https://dlmf.nist.gov/7.3
+Tags:
+- special values
+- special functions
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: it holds $F(x)$ at every rational $x=a/b$ in lowest terms with
+    $b\leq6$ and $0\leq x\leq10$
+  rigour details: Each value was computed as a ball with arb at `numberdb.bits(digits,
+    losing=64)` bits, and checked against mpmath at 150 decimal digits, against
+    the identities in CITE{formula-parity} and against the OEIS value at $x=1$,
+    $F(1)$ CITE{OEISDawsonOne}. The value at $x=0$ is exact and is checked to
+    lie in the computed ball rather than taken from it.
+Display properties:
+  number-header: $F(x)$
