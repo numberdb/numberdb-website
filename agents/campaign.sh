@@ -59,6 +59,42 @@ propose_a_batch() {
 
 say() { printf '\n=== %s\n' "$*"; }
 
+# Is the site there? Every stage needs it -- the build writes a draft, the
+# critique fetches the page, the repair reads the document -- and `run.sh`
+# refuses with status 5 rather than spending anything when it is not.
+#
+# So an outage should make a campaign wait, not stop and not spend. On
+# 2026-09-10 the server was down for half an hour and the campaign started a
+# build against it, which is ten dollars to be told the site is not there.
+site_is_up() {
+	#The same proxy `run.sh` exports for the runs themselves: numberdb.org is
+	#blocked from here and curl reaches it only through the tunnel. Without
+	#this the probe reports the site down for ever and the campaign waits for
+	#a site that is answering perfectly well.
+	ALL_PROXY="${ALL_PROXY:-${NUMBERDB_PROXY:-socks5h://127.0.0.1:1080}}" \
+		curl -sS --max-time 20 -o /dev/null \
+			"${NUMBERDB_HOST:-https://numberdb.org}/skill" 2>/dev/null
+}
+
+# Wait for it, and say so once rather than every minute. Returns 1 when the
+# wait has gone on long enough that somebody should look: a site that has not
+# come back in two hours is not a passing network fault.
+wait_for_the_site() {
+	local waited=0 limit="${NUMBERDB_OUTAGE_WAIT:-7200}" step=60
+	site_is_up && return 0
+	say "the site is not answering; waiting for it rather than spending a run"
+	while ! site_is_up; do
+		if [ "$waited" -ge "$limit" ]; then
+			say "the site has not answered for $((limit / 60)) minutes; stopping"
+			return 1
+		fi
+		sleep "$step"
+		waited=$((waited + step))
+	done
+	say "the site answers again after $((waited / 60)) minute(s); carrying on"
+	return 0
+}
+
 say "writer $writer, critic $critic, miner $miner"
 
 while [ "$made" -lt "$builds" ]; do
@@ -73,6 +109,9 @@ while [ "$made" -lt "$builds" ]; do
 		rm -f agents/campaign.stop
 		exit 0
 	fi
+
+	#Before anything is spent on this table.
+	wait_for_the_site || exit 7
 
 	if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
 		say "stopping: the tree has uncommitted changes"
@@ -95,6 +134,16 @@ while [ "$made" -lt "$builds" ]; do
 	#when an expired OAuth token stopped a build on 2026-09-03.
 	status=0
 	NUMBERDB_AGENT="$writer" agents/run.sh build "Build the highest-ranked proposal in $batch that no generator in generators/ answers yet. Say at the start which one you chose and why it is the next one. Follow the order of work in the prompt. Do not publish. If every proposal in that batch is already built, say so and stop without building anything, and do not commit." || status=$?
+	if [ "$status" -ne 0 ] && { [ "$status" -eq 5 ] || ! site_is_up; }; then
+		#Not a judgement at all: the site went away under the run. Asking
+		#triage would spend a second run to be told the same thing, and
+		#`run.sh` exits 5 from its own preflight without spending anything.
+		#Wait for the site and build this table again.
+		say "the run stopped because the site is unreachable, not because of the table"
+		wait_for_the_site || exit 7
+		continue
+	fi
+
 	if [ "$status" -ne 0 ]; then
 		#What to do about a failure is a judgement, and it has been made four
 		#times today by a line of shell and been wrong each time: HEAD moving
