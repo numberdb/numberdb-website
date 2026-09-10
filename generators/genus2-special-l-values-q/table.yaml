@@ -1,8 +1,8 @@
 # The table document for proposal 3 of
 # agents/table-ideas/BATCH-2026-09-10T2109.md. Created as draft T212 through
 # the API (X-Draft: yes) with URL Special-values_of_genus_2_curves_over, and
-# to be filled by generate.py beside it; publishing is a person's act on the
-# site.
+# filled by generate.py beside it, then offered for review; publishing is a
+# person's act on the site.
 Title: Special $L$-values of genus 2 curves over $\mathbb{Q}$
 Definition: >-
   Let $C/\mathbb{Q}$ be a genus $2$ curve and let $A=\operatorname{Jac}(C)$.
@@ -105,7 +105,6 @@ Keywords:
   - LMFDB label
 Tags:
   - number theory
-  - curves
   - L-function
   - special values
 Data properties:
