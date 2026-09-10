@@ -4841,3 +4841,30 @@ Evidence: `/tmp/kummer_private_checks.py`, 2026-09-10: the first mpmath pass
 failed at rows including `('3/2', '1/2', '-1/2')`; with
 `hyp1f1(..., maxterms=20000, maxprec=20000, zeroprec=200)` it printed
 `mpmath agreements 384` and `all checks passed`.
+
+## A hypergeometric value can be exactly zero after a transformation
+
+What happened: the Kummer $M(a;b;z)$ draft first stored
+$M(2;1;-1)$ and $M(3;2;-2)$ as zero-width real intervals, `[0, 0]`.
+The arb computation had found a tiny ball around zero, but the definition
+decides more: Kummer's transformation gives
+$M(a;b;z)=e^zM(b-a;b;-z)$, and in these two rows the transformed first
+parameter is a non-positive integer. The transformed series terminates and
+the resulting polynomial is exactly zero, so the table should store the
+integer `0`.
+
+What the skill says now: a value that is exactly rational should be written
+exactly, and exactness is decided from the definition rather than the digits.
+It does not say that a non-polynomial-looking hypergeometric row can become
+an exact zero only after applying a connection formula.
+
+What it should say: when a hypergeometric family keeps rows related by a
+transformation, check whether the transformed row terminates. If the
+terminating polynomial vanishes at the listed argument, return the exact
+integer zero, not a ball or decimal approximation around zero.
+
+Evidence: T210, 2026-09-10. The first fill stored `[0, 0]` at `2,1,-1`
+and `3,2,-2`; after adding the terminating-polynomial check to
+`generators/kummer-m-values-rational-parameters/generate.py`, the private
+dry run reported 384 entries and all mpmath, Kummer-transformation,
+elementary, error-function and Bessel-I checks passed.
