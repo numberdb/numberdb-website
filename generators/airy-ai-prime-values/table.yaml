@@ -1,8 +1,8 @@
-# The table document for T201, Derivatives of the Airy function of the first kind $\operatorname{Ai}'(x)$. It began as proposal 3 of
+# The table document for T201, Values of the derivative of the Airy function of the first kind $\operatorname{Ai}'(x)$. It began as proposal 3 of
 # agents/table-ideas/BATCH-2026-09-09T1936.md, which put four
 # functions in one table; they are four tables now, one per
 # function, and the relations are in `Similar tables`.
-Title: Derivatives of the Airy function of the first kind $\operatorname{Ai}'(x)$
+Title: Values of the derivative of the Airy function of the first kind $\operatorname{Ai}'(x)$
 Definition: The derivative $\operatorname{Ai}'$ of the Airy function of the first
   kind CITE{DLMFAiryEquation}. This table gives its values at rational $x$.
 Keywords:
@@ -61,8 +61,8 @@ Similar tables:
 - table: HREF{Values_of_the_Airy_function_of_the_second_kind}[Values of the Airy
     function of the second kind $\operatorname{Bi}(x)$]
   relation: the other solution of the same equation
-- table: HREF{Derivatives_of_the_Airy_function_of_the_second_kind}[Derivatives
-    of the Airy function of the second kind $\operatorname{Bi}'(x)$]
+- table: HREF{Values_of_the_derivative_of_the_Airy_function_of_the_second_kind}[Values
+    of the derivative of the Airy function of the second kind $\operatorname{Bi}'(x)$]
   relation: the other solution of the same equation; their Wronskian is CITE{formula-wronskian}
 - table: HREF{Zeros_of_the_Airy_function_Ai}[Zeros of the Airy function of the
     first kind Ai]
