@@ -100,8 +100,10 @@ Similar tables:
       gives Kummer's equation
   - table: HREF{Values_of_modified_Bessel_functions_of_the_first_kind}[Values of modified Bessel functions of the first kind $I_\nu(x)$]
     relation: stores the modified Bessel functions appearing in CITE{formula-bessel-i}
-  - table: HREF{Values_of_error_functions_Dawson's_integral_and_Fresnel_integrals}[Values of error functions, Dawson's integral and Fresnel integrals]
+  - table: HREF{Values_of_the_error_function}[Values of the error function $\operatorname{erf}(x)$]
     relation: stores the error function appearing in CITE{formula-error}
+  - table: HREF{Values_of_Tricomi's_confluent_hypergeometric_function}[Values of Tricomi's confluent hypergeometric function $U(a,b,z)$]
+    relation: stores the other standard solution of Kummer's equation
   - table: HREF{Values_of_the_Beta_function_at_pairs_of_rational_numbers}[Values of the Beta function $B(a,b)$ at pairs of rational numbers]
     relation: the moment generating function of the Beta distribution is
       $M(\alpha;\alpha+\beta;t)$
