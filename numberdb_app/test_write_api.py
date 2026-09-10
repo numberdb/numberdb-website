@@ -465,16 +465,36 @@ class SendingEntriesOneAtATime(WriteBase):
 		"""A table with no parameters writes bare values, which have no
 		identity to merge on. They were dropped by every upsert, not only an
 		empty one: T7 holds one such value and T67 holds 442."""
-		commit_table(self.table, {
-			'Title': 'API probe',
-			'Parameters': '',
-			'Numbers': ['3.14159', '2.71828'],
-		}, author=self.chair, base=self.table.head_revision, via='orm')
-		self.table.refresh_from_db()
+		bare = Table.objects.create(tid='T951', tid_int=951,
+		                            title='No parameters', url='API951')
+		commit_table(bare, {'Title': 'No parameters',
+		                    'Parameters': '',
+		                    'Numbers': ['3.14159', '2.71828']},
+		             author=self.chair, via='orm')
+		bare.refresh_from_db()
 
-		answer = self.send([], run='run-2')
+		answer = self.client.post(
+			'/api/table/%s/entries' % (bare.tid,), yaml.dump([]),
+			content_type='application/yaml',
+			HTTP_AUTHORIZATION='Bearer %s' % (self.token,),
+			HTTP_X_ENTRIES_MODE='upsert', HTTP_X_RUN_ID='run-2')
 		self.assertEqual(answer.status_code, 200, answer.content)
-		self.assertEqual(self.entries(), ['3.14159', '2.71828'])
+		bare.refresh_from_db()
+		self.assertEqual(tree_of(bare.head_revision)['Numbers'],
+		                 ['3.14159', '2.71828'])
+
+		#And an upsert that does carry a record keeps them too.
+		answer = self.client.post(
+			'/api/table/%s/entries' % (bare.tid,),
+			yaml.dump([{'params': {}, 'number': '1.41421'}]),
+			content_type='application/yaml',
+			HTTP_AUTHORIZATION='Bearer %s' % (self.token,),
+			HTTP_X_ENTRIES_MODE='upsert', HTTP_X_RUN_ID='run-3')
+		self.assertEqual(answer.status_code, 200, answer.content)
+		bare.refresh_from_db()
+		stored = tree_of(bare.head_revision)['Numbers']
+		self.assertIn('3.14159', stored)
+		self.assertIn('2.71828', stored)
 
 	def test_one_entry_is_added_without_replacing_the_rest(self):
 		self.send([{'params': {'n': '2'}, 'number': '2.2'}])
