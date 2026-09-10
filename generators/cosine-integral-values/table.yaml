@@ -4,8 +4,8 @@
 # function, and the relations between them are in `Similar tables`.
 Title: Values of the cosine integral $\operatorname{Ci}(x)$
 Definition: The cosine integral is $\operatorname{Ci}(x)=\gamma+\log x+\int_0^x(\cos
-  t-1)/t\,\mathrm{d}t$ CITE{DLMFIntegralDefinitions}, where $\gamma$ is HREF{Stieltjes_constants#0}[the
-  Euler-Mascheroni constant]. This table holds it at rational $x>0$.
+  t-1)/t\,\mathrm{d}t$ CITE{DLMFIntegralDefinitions}. This table holds it at rational
+  $x>0$.
 Keywords:
 - cosine integral
 - Ci
@@ -17,7 +17,9 @@ Parameters:
     title: argument
     display: $x$
     constraints: $x>0$
-Comments: {}
+Comments:
+  comment-gamma: The constant $\gamma$ in the definition is HREF{Stieltjes_constants#0}[the
+    Euler-Mascheroni constant].
 Formulas:
   formula-si-ci: For $x>0$, $\operatorname{Si}(x)=\int_0^x\sin(t)/t\,\mathrm{d}t$
     and $\operatorname{Ci}(x)=\gamma+\log x+\int_0^x(\cos(t)-1)/t\,\mathrm{d}t$

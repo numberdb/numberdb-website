@@ -4,9 +4,8 @@
 # function, and the relations between them are in `Similar tables`.
 Title: Values of the hyperbolic cosine integral $\operatorname{Chi}(x)$
 Definition: The hyperbolic cosine integral is $\operatorname{Chi}(x)=\gamma+\log
-  x+\int_0^x(\cosh t-1)/t\,\mathrm{d}t$ CITE{DLMFIntegralDefinitions}, where $\gamma$
-  is HREF{Stieltjes_constants#0}[the Euler-Mascheroni constant]. This table holds
-  it at rational $x>0$.
+  x+\int_0^x(\cosh t-1)/t\,\mathrm{d}t$ CITE{DLMFIntegralDefinitions}. This table
+  holds it at rational $x>0$.
 Keywords:
 - hyperbolic cosine integral
 - Chi
@@ -17,7 +16,9 @@ Parameters:
     title: argument
     display: $x$
     constraints: $x>0$
-Comments: {}
+Comments:
+  comment-gamma: The constant $\gamma$ in the definition is HREF{Stieltjes_constants#0}[the
+    Euler-Mascheroni constant].
 Formulas:
   formula-shi-chi: For $x>0$, $\operatorname{Shi}(x)=\int_0^x\sinh(t)/t\,\mathrm{d}t$
     and $\operatorname{Chi}(x)=\gamma+\log x+\int_0^x(\cosh(t)-1)/t\,\mathrm{d}t$
