@@ -42,9 +42,10 @@ Comments:
   comment-half-integers: Half-integer orders are elementary. HREF{Bessel_polynomials}[The
     Bessel polynomials] occur in explicit formulas for the associated spherical
     and modified spherical functions CITE{DLMFSphericalExplicit}.
+  comment-von-mises: The von Mises distribution on a circle has density $\exp(\kappa\cos(\theta-\mu))/(2\pi
+    I_0(\kappa))$ CITE{WikiVonMises}.
 Formulas:
-  formula-recurrence: If $Z_\nu$ is either $I_\nu$ or $K_\nu$, then $Z_{\nu-1}(x)-Z_{\nu+1}(x)=2\nu
-    Z_\nu(x)/x$ CITE{DLMFModifiedRecurrences}.
+  formula-recurrence: $I_{\nu-1}(x)-I_{\nu+1}(x)=2\nu I_\nu(x)/x$ CITE{DLMFModifiedRecurrences}.
   formula-negative-integer-orders: For an integer $n$, $I_{-n}(x)=I_n(x)$ CITE{DLMFModifiedConnections}.
   formula-half-order: $I_{1/2}(x)=\sqrt{2/(\pi x)}\sinh x$ CITE{DLMFModifiedElementary}.
 Programs:
@@ -127,6 +128,9 @@ Links:
   OEISIZeroOne:
     title: 'OEIS A197036: decimal expansion of $I_0(1)$'
     url: https://oeis.org/A197036
+  WikiVonMises:
+    title: 'Wikipedia: von Mises distribution'
+    url: https://en.wikipedia.org/wiki/Von_Mises_distribution
 Tags:
 - special values
 - special functions
