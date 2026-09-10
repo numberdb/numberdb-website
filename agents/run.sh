@@ -49,6 +49,12 @@ engine="${NUMBERDB_AGENT:-claude}"
 # and so that the same campaign is the same campaign tomorrow.
 codex_model="${NUMBERDB_CODEX_MODEL:-gpt-5.5}"
 codex_effort="${NUMBERDB_CODEX_EFFORT:-xhigh}"
+# What to fall back to, best first, when the model above runs out of quota.
+# Not gpt-5.5-pro: that is dearer than the default rather than cheaper, and
+# "the next best one" means down the list, not up it. Every name here is
+# priced in agents/model-rates.tsv, so the ledger can still say what a run
+# cost after it has moved.
+codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-gpt-5.4,gpt-5.2,gpt-5.1}"
 key_file="${NUMBERDB_KEY:-$HOME/.config/numberdb/zeta3-key}"
 turns="${NUMBERDB_TURNS:-300}"
 
@@ -424,14 +430,38 @@ worth_resuming() {
 		'"api_error_status":[0-9]|OAuth access token has expired|overloaded_error|Internal server error|"type":"error"|stream disconnected|rate limit'
 }
 
+#The model after this one in the fallback chain, or nothing at the end of it.
+next_codex_model() {
+	local current="$1" chain=",$codex_fallbacks," rest
+	#If the current model is in the chain, continue after it; otherwise start
+	#at the beginning, which is the case for the default model.
+	case "$chain" in
+		*",$current,"*) rest="${chain#*,$current,}" ;;
+		*) rest="${chain#,}" ;;
+	esac
+	printf '%s' "${rest%%,*}"
+}
+
 #A quota is remembered between runs, because it lasts longer than one.
-fallback_marker="agents/runs/claude-fallback"
-if [ "$engine" = "claude" ] && [ -z "${NUMBERDB_CLAUDE_MODEL:-}" ] \
-		&& [ -f "$fallback_marker" ]; then
-	NUMBERDB_CLAUDE_MODEL=$(sed -n 1p "$fallback_marker")
-	NUMBERDB_CLAUDE_EFFORT=$(sed -n 2p "$fallback_marker")
-	export NUMBERDB_CLAUDE_MODEL NUMBERDB_CLAUDE_EFFORT
-	echo "=== a previous run hit a quota; running $NUMBERDB_CLAUDE_MODEL at effort $NUMBERDB_CLAUDE_EFFORT"
+fallback_marker="agents/runs/$engine-fallback"
+if [ -f "$fallback_marker" ]; then
+	remembered_model=$(sed -n 1p "$fallback_marker")
+	remembered_effort=$(sed -n 2p "$fallback_marker")
+	if [ "$engine" = "claude" ] && [ -z "${NUMBERDB_CLAUDE_MODEL:-}" ]; then
+		NUMBERDB_CLAUDE_MODEL="$remembered_model"
+		NUMBERDB_CLAUDE_EFFORT="$remembered_effort"
+		export NUMBERDB_CLAUDE_MODEL NUMBERDB_CLAUDE_EFFORT
+	elif [ "$engine" = "codex" ] && [ -z "${NUMBERDB_CODEX_MODEL:-}" ]; then
+		codex_model="$remembered_model"
+		codex_effort="$remembered_effort"
+	else
+		remembered_model=""
+	fi
+	#An `if`, not a `&&` list: this is the last command in the block and
+	#`set -e` is still on, so a false test here would end the run.
+	if [ -n "$remembered_model" ]; then
+		echo "=== a previous run hit a quota; running $remembered_model at effort $remembered_effort"
+	fi
 fi
 
 set +e
@@ -470,6 +500,19 @@ if [ "$status" -ne 0 ] && [ "$stage" != "triage" ] \
 			printf '%s\n%s\n' "$NUMBERDB_CLAUDE_MODEL" \
 				"$NUMBERDB_CLAUDE_EFFORT" > "$fallback_marker"
 			echo "=== out of quota; resuming on $NUMBERDB_CLAUDE_MODEL at effort $NUMBERDB_CLAUDE_EFFORT (and for the runs after this one)"
+		fi
+	elif [ "$engine" = "codex" ] && out_of_quota; then
+		#The next model down, and the one after that if this happens again.
+		#Nothing left in the chain is worth saying out loud rather than
+		#quietly resuming on a model that will be refused too.
+		next=$(next_codex_model "$codex_model")
+		if [ -n "$next" ]; then
+			echo "=== out of quota on $codex_model; resuming on $next at effort $codex_effort (and for the runs after this one)"
+			codex_model="$next"
+			printf '%s\n%s\n' "$codex_model" "$codex_effort" \
+				> "$fallback_marker"
+		else
+			echo "=== out of quota on $codex_model and the fallback chain is exhausted"
 		fi
 	fi
 	echo "=== $stage failed and looks resumable; continuing session $session once"
