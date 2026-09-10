@@ -4961,3 +4961,30 @@ Evidence: `/tmp/lmfdb_paced.out`, `/tmp/lmfdb_paced2.out`, 2026-09-11:
 eleven requests 75 to 90 seconds apart, every one JSON or the object's
 page; the three rapid requests at 21:13 UTC the same day, the third
 `RecaptchaChallengePageUi`; the `le:100` request, "LMFDB Page Not Found".
+
+## Elliptic period lattices need QQbar's hash offsets under named imports
+
+What happened: the Faltings-height generator followed the skill and named
+its Sage imports instead of importing `sage.all`. Building
+`E.period_lattice()` then failed with `NameError: AA_hash_offset is not
+defined`, from Sage's algebraic-real hashing code. The missing globals are
+created by `sage.rings.qqbar._init_qqbar()`, which `sage.all` calls during
+its broad startup but a named import sequence does not.
+
+What the skill says now: import `numberdb.sage` first and name the Sage
+objects you use; expect some Sage machinery to be missing, with examples
+from power series, determinants and symmetric functions.
+
+What it should say: when a named-import generator uses elliptic
+`period_lattice()` or otherwise asks for roots in `AA` or `QQbar`, add
+`import sage.rings.qqbar as qqbar` and call `qqbar._init_qqbar()` before
+the first such computation. Constructing elliptic curves from a base ring,
+as `EllipticCurve(QQ, ainvs)`, also avoids some broader constructor paths
+that pull in uninitialised symbolic or Singular machinery.
+
+Evidence: `/tmp/faltings_probe.py`, 2026-09-11, failed at
+`E.period_lattice()` until it called `qqbar._init_qqbar()`; the installed
+Sage source around `sage/rings/qqbar.py` defines `AA_hash_offset` and
+`QQbar_hash_offset` inside that function, and the checked generator
+`generators/faltings-heights-elliptic-curves-q/generate.py` uses that
+initialisation before computing the period-lattice area.
