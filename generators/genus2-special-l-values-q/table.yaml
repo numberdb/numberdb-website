@@ -1,0 +1,135 @@
+# The table document for proposal 3 of
+# agents/table-ideas/BATCH-2026-09-10T2109.md. Created as draft T212 through
+# the API (X-Draft: yes) with URL Special-values_of_genus_2_curves_over, and
+# to be filled by generate.py beside it; publishing is a person's act on the
+# site.
+Title: Special $L$-values of genus 2 curves over $\mathbb{Q}$
+Definition: >-
+  Let $C/\mathbb{Q}$ be a genus $2$ curve and let $A=\operatorname{Jac}(C)$.
+  This table gives the leading Taylor coefficient
+  $L^{(r)}(A,1)/r!$ CITE{LMFDBBSD} of the Hasse-Weil $L$-function
+  $L(A,s)$ CITE{WikiHasseWeil} in the arithmetic normalisation, where $r$
+  is the analytic rank of $A$.
+Parameters:
+  label:
+    type: Symbolic
+    title: LMFDB isogeny class label
+    display: label
+  rank:
+    type: Z
+    title: analytic rank
+    display: $r$
+    constraints: $r\geq 0$
+Comments:
+  comment-class-labels: >-
+    The label is the LMFDB isogeny class label for the Jacobian of $C$
+    CITE{LMFDBGenus2}. There is one row for each isogeny class, because
+    $L(A,s)$ is an isogeny invariant; each entry comment names one
+    representative curve and its model $y^2+h(x)y=f(x)$.
+  comment-normalisation: >-
+    The arithmetic normalisation has centre $s=1$ and functional equation
+    $s\leftrightarrow 2-s$, as in the LMFDB genus $2$ data and PARI's
+    `lfungenus2` CITE{PARILfun}.
+  comment-rank: >-
+    When $r=0$ the stored value is $L(A,1)$, and when $r=1$ it is
+    $L'(A,1)$. The factor $1/r!$ is part of the definition for every rank.
+  comment-even-conductors: >-
+    Only odd conductors are listed. PARI's documentation for `lfungenus2`
+    says that when the conductor is even, its valuation at $2$ may be
+    incorrect CITE{PARILfun}; those classes need the local Euler factor at
+    $2$ supplied separately before their values can be computed by this
+    method.
+Formulas:
+  formula-leading-coefficient: >-
+    If $L(A,s)=\sum_{m\geq r} c_m(s-1)^m$ with $c_r\neq 0$, then the table
+    stores $c_r=L^{(r)}(A,1)/r!$.
+  formula-euler-product: >-
+    At a prime $p$ of good reduction, the local factor is
+    $P_p(p^{-s})^{-1}$, where
+    $P_p(t)=\det(1-t\operatorname{Frob}_p\mid T_\ell A)$.
+  formula-bsd: >-
+    The Birch and Swinnerton-Dyer conjecture predicts
+    $L^{(r)}(A,1)/r! = \Omega_A R_A |\Sha(A)|\prod_p c_p /
+    |A(\mathbb{Q})_{\mathrm{tors}}|^2$, with the factors named as in the
+    LMFDB BSD invariants CITE{LMFDBBSD}.
+Programs:
+  program-pari:
+    language: PARI/GP
+    code: |-
+      default(realbitprecision, 320);
+      P = x^5 + x^4;
+      Q = x^3 + x + 1;
+      L = lfungenus2([P, Q]);        \\ L-function of 169.a.169.1
+      r = lfunorderzero(L, 1);
+      lfun(L, 1, r) / r!             \\ 0.090490390832429629113589757258...
+      lfuncheckfeq(L)                \\ about -320
+Similar tables:
+  - table: HREF{Special_value_of_L-function_of_elliptic_curves_over_Q_of_rank_1}[Special $L$-value of elliptic curves over $\mathbb{Q}$ of rank $1$]
+    relation: stores the same leading Taylor coefficient for elliptic curves of rank $1$
+  - table: HREF{Special_value_of_L-function_of_elliptic_curves_over_Q_of_rank_2}[Special $L$-value of elliptic curves over $\mathbb{Q}$ of rank $2$]
+    relation: stores the same leading Taylor coefficient for elliptic curves of rank $2$
+  - table: HREF{Special_value_of_L-function_of_elliptic_curves_over_Q_of_rank_3}[Special $L$-value of elliptic curves over $\mathbb{Q}$ of rank $3$]
+    relation: stores the same leading Taylor coefficient for elliptic curves of rank $3$
+  - table: HREF{Values_of_Dirichlet_L-functions_at_positive_integers}[Values of Dirichlet $L$-functions at positive integers]
+    relation: stores special values for degree-one $L$-functions
+  - table: HREF{Zeros_of_Dirichlet_L_functions}[Zeros of Dirichlet L-series]
+    relation: stores zeros of another family of arithmetic $L$-functions
+  - table: HREF{Equations_of_Igusa_invariants_of_split_Jacobians}[Equations satisfied by Igusa invariants of split Jacobians]
+    relation: stores equations that recognise genus $2$ curves whose Jacobians split
+Links:
+  WikiHasseWeil:
+    title: 'Wikipedia: Hasse-Weil zeta function'
+    url: https://en.wikipedia.org/wiki/Hasse%E2%80%93Weil_zeta_function
+  LMFDBGenus2:
+    title: 'LMFDB: genus 2 curves over $\mathbb{Q}$'
+    url: https://www.lmfdb.org/Genus2Curve/Q/
+  LMFDBBSD:
+    title: 'LMFDB knowl: BSD invariants for genus 2 curves'
+    url: https://www.lmfdb.org/knowledge/show/g2c.bsd_invariants
+  LMFDBData169:
+    title: 'LMFDB JSON data: genus 2 curve 169.a.169.1'
+    url: https://www.lmfdb.org/Genus2Curve/Q/data/169.a.169.1?_format=json
+  PARILfun:
+    title: 'PARI/GP reference: L-functions'
+    url: https://pari.math.u-bordeaux.fr/dochtml/html-stable/_L_minusfunctions.html
+Keywords:
+  - genus 2
+  - genus 2 curve
+  - hyperelliptic curve
+  - Jacobian
+  - Hasse-Weil L-function
+  - special L-value
+  - leading coefficient
+  - Birch and Swinnerton-Dyer
+  - BSD
+  - LMFDB label
+Tags:
+  - number theory
+  - curves
+  - L-function
+  - special values
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: >-
+    it holds every LMFDB genus $2$ isogeny class of odd conductor
+    $N\leq1000$ whose analytic rank and leading coefficient are recorded in
+    the LMFDB genus $2$ curve data
+  rigour details: >-
+    The generator uses the $41$ odd-conductor LMFDB genus $2$ isogeny classes
+    with conductor $N\leq1000$, grouped from $56$ curve rows. For each class
+    it builds the PARI L-function CITE{PARILfun} with `lfungenus2([P,Q])`
+    from the representative curve $y^2+Q(x)y=P(x)$, computes
+    `lfun(L,1,r,bitprec)/r!` at $60$ and $80$ decimal working digits using
+    explicit bit precision, and stores the digits that agree. Before the
+    draft was created, PARI's `lfunorderzero` agreed with the LMFDB analytic
+    rank on all $41$ classes, `lfuncheckfeq(L,None,330)` returned between
+    $-339$ and $-331$, and the computed values agreed with the LMFDB
+    `leading_coeff` fields, including CITE{LMFDBData169}. The BSD quotient
+    from the LMFDB period, regulator, Tamagawa product, analytic order of
+    $\Sha$, and torsion order agreed to the precision those source fields
+    carry.
+Display properties:
+  number-header: leading coefficient
+  group parameters: [['label'], ['rank']]
