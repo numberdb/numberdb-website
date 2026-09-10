@@ -534,7 +534,11 @@ class Command(BaseCommand):
 		for slug, name in families:
 			if len(name) < 9 or name.lower() in _GENERIC_TITLES:
 				continue
-			if name.lower() in own.lower() or own.lower() in name.lower():
+			#`own` is empty when this table's own title bares to a fragment,
+			#and `'' in anything` is true -- which skipped every family and
+			#turned the check off altogether for such a table.
+			if own and (name.lower() in own.lower()
+			            or own.lower() in name.lower()):
 				continue
 			for where, text in texts + provenance:
 				if 'HREF{%s}' % slug in text:
