@@ -1,0 +1,125 @@
+# The table document for T202, Values of the Airy function of the second kind $\operatorname{Bi}(x)$. It began as proposal 3 of
+# agents/table-ideas/BATCH-2026-09-09T1936.md, which put four
+# functions in one table; they are four tables now, one per
+# function, and the relations are in `Similar tables`.
+Title: Values of the Airy function of the second kind $\operatorname{Bi}(x)$
+Definition: The Airy function of the second kind $\operatorname{Bi}$ is the solution
+  of $w{=}xw$ that grows as $x\to+\infty$, the companion of $\operatorname{Ai}$
+  in the standard pair CITE{DLMFAiryEquation}. This table gives its values at
+  rational $x$.
+Keywords:
+- Airy function of the second kind
+- Airy Bi
+- AiryBi
+- Bi(0)
+- Airy function values
+Parameters:
+  x:
+    type: Q
+    title: argument
+    display: $x$
+    constraints: $x\in\mathbb{Q}$
+Comments:
+  comment-standard-solutions: 'The normalisation is the standard pair of solutions
+    of Airy\''s differential equation CITE{DLMFAiryEquation}. Values on both sides
+    of the origin are listed: $\operatorname{Ai}$ decays and $\operatorname{Bi}$
+    grows for positive $x$, while both oscillate for negative $x$.'
+  comment-initial-value: At $x=0$ the value is a Gamma-function value, $\operatorname{Bi}(0)=1/(3^{1/6}\Gamma(2/3))$
+    CITE{DLMFInitialValues}, and $\Gamma(1/3)$ and $\Gamma(2/3)$ are in HREF{Values_of_the_Gamma_function_at_rational_numbers}[the
+    table of Gamma values].
+Formulas:
+  formula-initial-value: $\operatorname{Bi}(0)=1/(3^{1/6}\Gamma(2/3))$ CITE{DLMFInitialValues}.
+  formula-wronskian: For real $x$, $\operatorname{Ai}(x)\operatorname{Bi}'(x)-\operatorname{Ai}'(x)\operatorname{Bi}(x)=1/\pi$
+    CITE{DLMFWronskian}.
+Programs:
+  program-sage:
+    language: Sage
+    code: 'import numberdb.sage as numberdb
+
+      from sage.rings.complex_arb import ComplexBallField
+
+      from sage.rings.rational_field import QQ
+
+
+      CBF = ComplexBallField(numberdb.bits(100, losing=64))
+
+      x = CBF(QQ(1))
+
+      x.airy_bi().real()'
+  program-python:
+    language: Python
+    code: 'import mpmath
+
+
+      mpmath.mp.dps = 100
+
+      x = mpmath.mpf(1)
+
+      mpmath.airybi(x)'
+Similar tables:
+- table: HREF{Values_of_the_Airy_function_of_the_first_kind}[Values of the Airy
+    function of the first kind $\operatorname{Ai}(x)$]
+  relation: the other solution of the same equation; their Wronskian is CITE{formula-wronskian}
+- table: HREF{Derivatives_of_the_Airy_function_of_the_first_kind}[Derivatives
+    of the Airy function of the first kind $\operatorname{Ai}'(x)$]
+  relation: the derivative of the other solution of the same equation
+- table: HREF{Derivatives_of_the_Airy_function_of_the_second_kind}[Derivatives
+    of the Airy function of the second kind $\operatorname{Bi}'(x)$]
+  relation: its derivative
+- table: HREF{Zeros_of_the_Airy_function_Ai}[Zeros of the Airy function of the
+    first kind Ai]
+  relation: stores the zeros of $\operatorname{Ai}$
+- table: HREF{Zeros_of_the_Airy_function_Bi}[Zeros of the Airy function of the
+    second kind Bi]
+  relation: stores the zeros of $\operatorname{Bi}$
+- table: HREF{Local_extrema_of_the_Airy_function_Ai}[Local extrema of the Airy
+    function of the first kind Ai]
+  relation: stores the zeros of $\operatorname{Ai}'$, where $\operatorname{Ai}$
+    has local extrema
+- table: HREF{Local_extrema_of_the_Airy_function_Bi}[Local extrema of the Airy
+    function of the second kind Bi]
+  relation: stores the zeros of $\operatorname{Bi}'$, where $\operatorname{Bi}$
+    has local extrema
+- table: HREF{Values_of_the_Gamma_function_at_rational_numbers}[Values of the
+    Gamma function at rational numbers]
+  relation: contains the Gamma values in the initial values at $x=0$
+- table: HREF{Values_of_Bessel_functions_of_the_first_kind}[Values of Bessel functions
+    of the first kind $J_\nu(x)$]
+  relation: Airy functions at negative arguments are related to Bessel functions
+    of orders $1/3$ and $2/3$
+- table: HREF{Values_of_Bessel_functions_of_the_second_kind}[Values of Bessel
+    functions of the second kind $Y_\nu(x)$]
+  relation: gives the companion Bessel solution appearing in the connection formulas
+    for negative Airy arguments
+Links:
+  Wiki:
+    title: 'Wikipedia: Airy function'
+    url: https://en.wikipedia.org/wiki/Airy_function
+  DLMFAiryEquation:
+    title: 'DLMF 9.2: Airy''s equation'
+    url: https://dlmf.nist.gov/9.2
+  DLMFInitialValues:
+    title: 'DLMF 9.2: Initial values'
+    url: https://dlmf.nist.gov/9.2.ii
+  DLMFWronskian:
+    title: 'DLMF 9.2: Wronskians'
+    url: https://dlmf.nist.gov/9.2.iv
+  OEISBiZero:
+    title: 'OEIS A358559: decimal expansion of $\operatorname{Bi}(0)$'
+    url: https://oeis.org/A358559
+Tags:
+- special values
+- special functions
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: it holds $\operatorname{Bi}$ at every rational $x=a/b$ in lowest
+    terms with $b\leq4$ and $|x|\leq5$, including $x=0$
+  rigour details: Each value was computed as a Sage complex ball with arb at `numberdb.bits(digits,
+    losing=64)` bits and returned as its real part, the imaginary part being checked
+    to contain zero. The value at $x=0$ was checked against CITE{formula-initial-value}
+    and against OEIS $\operatorname{Bi}(0)$ CITE{OEISBiZero}, and CITE{formula-wronskian}
+    was checked across the four tables on every stored argument.
+Display properties:
+  number-header: $\operatorname{Bi}$

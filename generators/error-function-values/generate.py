@@ -1,8 +1,6 @@
-"""Values of the error function family -- numberdb.org/T197
+"""Values of %s at rational arguments -- numberdb.org/TID_%s
 
-The standard real values of erf, erfc, erfi, Dawson's integral and the
-Fresnel integrals at positive rational arguments. This draft stores every
-x = a/b in lowest terms with b <= 6 and 0 < x <= 5.
+Every x = a/b in lowest terms with b <= 6 and 0 <= x <= 10.
 
 Run it with SageMath:
 
@@ -10,10 +8,18 @@ Run it with SageMath:
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # send it, with NUMBERDB_API_KEY set
 
-Values are computed as real or complex balls with arb. Sage has direct real
-ball methods for erf and erfi. The complementary error function is computed as
-1 - erf(x), Dawson's integral from its relation with erfi, and the Fresnel
-integrals from their standard relation with erf at a complex argument.
+Values are computed as balls with arb.
+
+One function per table, as T192 and T193 are the sine and cosine
+integrals and T198 and T202 the two Airy functions. These six were one
+table until it was split: how each is written in terms of the others
+is in `Formulas`, and that they belong together is in `Similar
+tables`, which is where a relation can be written down.
+
+The grid is wider than it was, 0 <= x <= 10 rather than 0 < x <= 5.
+Zero is the one argument where every one of the six is exact, and the
+table that left it out left out the only entry a reader can check by
+hand.
 """
 
 import os
@@ -22,13 +28,19 @@ from math import gcd
 
 import numberdb.sage as numberdb
 from sage.rings.complex_arb import ComplexBallField
+from sage.rings.integer_ring import ZZ
 from sage.rings.rational_field import QQ
 from sage.rings.real_arb import RealBallField
 
 
-FUNCTIONS = ("erf", "erfc", "erfi", "dawson", "fresnel-S", "fresnel-C")
+#: Which of the six this table holds.
+FUNCTION = "erf"
+
+#: Its value at x = 0, exact, and stored as the integer rather than as
+#: a hundred places of one.
+AT_ZERO = "0"
 MAX_DENOMINATOR = 6
-MAX_ARGUMENT = 5
+MAX_ARGUMENT = 10
 
 # Bits of working precision beyond what the written digits need.
 #
@@ -48,7 +60,8 @@ def _key_from_stdin():
 
 
 def _arguments(max_denominator=MAX_DENOMINATOR, maximum=MAX_ARGUMENT):
-    values = set()
+    #Zero included: see the note at the top.
+    values = {QQ(0)}
     for denominator in range(1, max_denominator + 1):
         for numerator in range(1, maximum * denominator + 1):
             if gcd(numerator, denominator) == 1:
@@ -102,33 +115,40 @@ def _value_ball(function, x_text, digits):
     return value
 
 
-class ErrorFunctionFamilyValues(numberdb.Generator):
+class ErrorFunctionValues(numberdb.Generator):
 
     table = os.environ.get("NUMBERDB_TABLE") or "T197"
-    parameters = ("function", "x")
+    parameters = ("x",)
     type = "R"
     digits = 100
     rigour = "proven"
 
-    def enumerate(self, functions=FUNCTIONS, denominator=MAX_DENOMINATOR,
+    def enumerate(self, denominator=MAX_DENOMINATOR,
                   maximum=MAX_ARGUMENT):
-        arguments = tuple(_arguments(denominator, maximum))
-        for function in functions:
-            for x in arguments:
-                yield {"function": function, "x": x}
+        for x in _arguments(denominator, maximum):
+            yield {"x": x}
 
     def value(self, params, digits):
-        function = str(params["function"])
         x_text = str(params["x"])
-        return _value_ball(function, x_text, digits)
+        if QQ(x_text) == 0:
+            #A theorem, not a measurement: every one of the six is 0 at the
+            #origin except erfc, which is 1. Checked against the computed
+            #ball all the same, so the exact value is verified rather than
+            #asserted.
+            ball = _value_ball(FUNCTION, x_text, digits)
+            if not ball.contains_exact(QQ(AT_ZERO)):
+                raise ValueError("%s(0) is written as %s and the computation "
+                                 "does not agree" % (FUNCTION, AT_ZERO))
+            return ZZ(AT_ZERO)
+        return _value_ball(FUNCTION, x_text, digits)
 
 
 if __name__ == "__main__":
     _key_from_stdin()
-    generator = ErrorFunctionFamilyValues()
+    generator = ErrorFunctionValues()
     if os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
         print(generator.publish(
-            message="error function family values at rational arguments"))
+            message="values of erf(x) at rational arguments"))
     else:
         report = generator.verify(sample=None)
         print(report)
