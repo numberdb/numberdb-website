@@ -2470,3 +2470,23 @@ here, so the pacing has to live in a `nohup` script.
 Evidence: `/tmp/lmfdb_paced.out` and `/tmp/lmfdb_paced2.out`, 2026-09-11,
 eleven answers at 00:17 to 00:32 local; the ten-knowl loop at 00:20 in the
 same session, every body `RecaptchaChallengePageUi`.
+
+## `audit_table` has no rule for an undefined TeX control sequence
+
+What happened: the T212 critique found `\Sha` in a formula and in the
+rigour note. It is the LMFDB's macro, absent from the bundle in
+`static/vendor/mathjax/tex-svg.js` and from `static/js/load-mathjax.js`,
+so MathJax's `noundefined` extension prints it in red on the page.
+`audit_table T212 --links` says "Nothing to report": the document is
+valid and no rule looks at what the typesetter knows.
+
+What to do instead: a rule in
+`numberdb_app/management/commands/audit_table.py` that extracts
+`\word` control sequences from every `$...$` span and compares them
+against the macro names the served bundle defines (the bundle is one
+line; the names can be listed once and kept beside the rule) would have
+caught this, and would catch the other LMFDB shorthands `\Q`, `\Z`,
+`\F`, `\C` the moment somebody copies a knowl.
+
+Evidence: `/tmp/crit212_out.txt`, 2026-09-11, audit output and rendered
+HTML; `agents/critiques/T212.md` finding 1.
