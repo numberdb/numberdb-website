@@ -15,8 +15,6 @@ Keywords:
 - Basset function
 - K0(1)
 - cylinder functions
-- Matern covariance
-- Yukawa potential
 Parameters:
   nu:
     type: Q
@@ -31,22 +29,21 @@ Parameters:
 Comments:
   comment-branches: The principal branch is that of CITE{DLMFModifiedDefinitions}.
     For real $\nu$ and $x>0$, $K_\nu(x)$ is real. The point $x=0$ is excluded
-    because $K_\nu$ has a branch point there, which distinguishes it from
-    HREF{Values_of_modified_Bessel_functions_of_the_first_kind}[the table of
-    $I_\nu$].
+    because $K_\nu(x)\to+\infty$ as $x\to0^+$ for every rational $\nu\geq0$
+    CITE{DLMFModifiedLimits}.
   comment-negative-orders: Negative orders are not listed separately because
     $K_{-\nu}(x)=K_\nu(x)$ for every order $\nu$.
   comment-spherical: These are the ordinary cylindrical modified Bessel functions.
     The modified spherical Bessel function of the second kind is
     $\mathrm{k}_n(x)=\sqrt{\pi/(2x)}K_{n+1/2}(x)$ CITE{DLMFSpherical}.
-  comment-half-integers: Half-integer orders are elementary. HREF{Bessel_polynomials}[The
-    Bessel polynomials] occur in explicit formulas for the associated spherical
-    and modified spherical functions CITE{DLMFSphericalExplicit}.
+  comment-half-integers: The half-integer orders are elementary, as CITE{formula-half-integer-orders}
+    shows.
 Formulas:
   formula-recurrence: $K_{\nu+1}(x)-K_{\nu-1}(x)=2\nu K_\nu(x)/x$
     CITE{DLMFModifiedRecurrences}.
   formula-negative-order: $K_{-\nu}(x)=K_\nu(x)$ CITE{DLMFModifiedConnections}.
-  formula-half-order: $K_{1/2}(x)=\sqrt{\pi/(2x)}e^{-x}$ CITE{DLMFModifiedElementary}.
+  formula-half-integer-orders: For every integer $n\geq0$, $K_{n+1/2}(x)=\sqrt{\pi/(2x)}e^{-x}y_n(1/x)$,
+    where $y_n$ is the HREF{Bessel_polynomials}[Bessel polynomial] CITE{DLMFSphericalExplicit}.
   formula-tricomi: $K_\nu(x)=\sqrt{\pi}(2x)^\nu e^{-x}U(\nu+1/2,2\nu+1,2x)$
     CITE{DLMFModifiedElementary}, where $U$ is Tricomi's confluent hypergeometric
     function.
@@ -60,7 +57,7 @@ Programs:
       from sage.rings.rational_field import QQ
 
 
-      CBF = ComplexBallField(numberdb.bits(100, losing=64))
+      CBF = ComplexBallField(numberdb.bits(100, losing=80))
 
       nu = CBF(QQ(0))
 
@@ -122,6 +119,9 @@ Links:
   DLMFModifiedRecurrences:
     title: 'DLMF 10.29: Modified Bessel Functions, Recurrence Relations and Derivatives'
     url: https://dlmf.nist.gov/10.29
+  DLMFModifiedLimits:
+    title: 'DLMF 10.30: Modified Bessel Functions, Limiting Forms'
+    url: https://dlmf.nist.gov/10.30
   DLMFModifiedElementary:
     title: 'DLMF 10.39: Modified Bessel Functions, Relations to Other Functions'
     url: https://dlmf.nist.gov/10.39
@@ -145,11 +145,11 @@ Data properties:
     and for every positive rational $x=a/b$ in lowest terms with $b\leq4$ and
     $x\leq5$
   rigour details: Each value was computed as a Sage real ball with arb at
-    `numberdb.bits(digits, losing=64)` bits. The entries were checked against
+    `numberdb.bits(digits, losing=80)` bits. The entries were checked against
     mpmath at 150 decimal digits, against the recurrence in CITE{formula-recurrence}
     wherever all three orders are stored, against the negative-order formula
-    in CITE{formula-negative-order}, against the elementary half-order formula
-    in CITE{formula-half-order}, and against the Tricomi-function identity in
+    in CITE{formula-negative-order}, against the elementary half-integer formula
+    in CITE{formula-half-integer-orders}, and against the Tricomi-function identity in
     CITE{formula-tricomi}. The widest returned ball had radius less than
     $10^{-119}$ for 100 requested digits.
 Display properties:

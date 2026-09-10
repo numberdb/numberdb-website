@@ -71,12 +71,6 @@ def _modified_bessel_k(nu_text, x_text, digits):
     return value.real()
 
 
-def _comment(nu_text):
-    if nu_text != "1/2":
-        return ""
-    return r"$K_{1/2}(x)=\sqrt{\pi/(2x)}e^{-x}$."
-
-
 class ModifiedBesselKValues(numberdb.Generator):
 
     table = os.environ.get("NUMBERDB_TABLE") or "T199"
@@ -95,11 +89,7 @@ class ModifiedBesselKValues(numberdb.Generator):
     def value(self, params, digits):
         nu_text = str(params["nu"])
         x_text = str(params["x"])
-        value = _modified_bessel_k(nu_text, x_text, digits)
-        comment = _comment(nu_text)
-        if comment:
-            return {"number": value, "comment": comment}
-        return value
+        return _modified_bessel_k(nu_text, x_text, digits)
 
 
 if __name__ == "__main__":
