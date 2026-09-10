@@ -2299,17 +2299,25 @@ call failed before running the script, with Docker reporting that
 local shell PID seen by the wrapper can be reused, so the fixed container
 name based on `$$` is not unique across calls.
 
+A later run had the unique name in place, but found the cleanup still using
+the old literal `numberdb-agent-run-$$` while the started container was named
+`numberdb-agent-run-$run_id`. Interrupting a write attempt could therefore
+leave exactly the container the cleanup was meant to remove.
+
 What the skill says now: nothing; this is the runner and this deployment's
 remote Docker cleanup, not a table-building convention.
 
 What to do instead: make the runner's container name unique per call, not
 only per local shell PID, so an interrupted or slow-to-clean container does
-not block the next unrelated Sage run. Avoid interrupting Sage probes when a
-shorter controlled test can be written instead.
+not block the next unrelated Sage run, and have cleanup remove that exact
+name. Avoid interrupting Sage probes when a shorter controlled test can be
+written instead.
 
 Evidence: the failed `/tmp/cf_zeta_test.py` run on 2026-09-09 immediately
 after stopping `/tmp/cf_compute_test.py`; `agents/sage.sh` now includes a
 timestamp and random suffix in both the remote scratch path and Docker name.
+On 2026-09-10 the cleanup command was changed from
+`docker rm -f 'numberdb-agent-run-$$'` to `docker rm -f "$name"`.
 
 ## `audit_table` has no rule for an `HREF` or `CITE` inside `$...$`
 
