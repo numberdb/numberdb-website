@@ -39,14 +39,17 @@ Comments:
     $(-\infty,0]$ in the $z$-plane, and the values in this table are real
     because $a$ and $b$ are real and $z>0$.
   comment-elementary-rows: >-
-    Elementary rows are not listed separately. When $a$ is a non-positive
-    integer, $U(a,b,z)$ is a polynomial in $z$ by CITE{formula-polynomial-a}.
+    Rows whose value is an elementary function are omitted. When $a$ is a
+    non-positive integer, $U(a,b,z)$ is a polynomial in $z$ by
+    CITE{formula-polynomial-a}.
     When $b=a+n+1$ with $n\in\mathbb{Z}_{\geq0}$, it is $z^{-a}$ times a
     polynomial in $1/z$ by CITE{formula-elementary-b}; the case $n=0$ is
     $U(a,a+1,z)=z^{-a}$.
   comment-other-functions: >-
-    This is Tricomi's function $U(a,b,z)$, not the parabolic cylinder function
-    $U(a,z)$ or the Whittaker function $W_{\kappa,\mu}(z)$.
+    The parabolic cylinder function $U(A,x)$ and the Whittaker function
+    $W_{\kappa,\mu}(z)$ are different functions. They are expressed through
+    Tricomi's function by CITE{formula-parabolic-cylinder} and
+    CITE{formula-whittaker}.
 Formulas:
   formula-differential-equation: >-
     The function $U(a,b,z)$ is a solution of Kummer's equation
@@ -59,8 +62,8 @@ Formulas:
     $m$ CITE{DLMFDefinitions}.
   formula-elementary-b: >-
     For $n\in\mathbb{Z}_{\geq0}$,
-    $U(a,a+n+1,z)=z^{-a}\sum_{s=0}^n {n\choose s}(a)_s z^{-s}$
-    CITE{DLMFDefinitions}.
+    $U(a,a+n+1,z)=z^{-a}\sum_{s=0}^n {n\choose s}(a)_s z^{-s}$,
+    where $(a)_s$ is the Pochhammer symbol CITE{DLMFDefinitions}.
   formula-exponential-integral: >-
     $U(1,1,z)=e^z E_1(z)$, where $E_1$ is
     HREF{Values_of_the_exponential_integral}[the exponential integral]
@@ -72,6 +75,14 @@ Formulas:
     $U(\nu+1/2,2\nu+1,2z)=\pi^{-1/2}e^z(2z)^{-\nu}K_\nu(z)$, where
     $K_\nu$ is HREF{Values_of_modified_Bessel_functions_of_the_second_kind}[the
     modified Bessel function of the second kind] CITE{DLMFRelations}.
+  formula-parabolic-cylinder: >-
+    For the parabolic cylinder function,
+    $U(A,x)=2^{-1/4-A/2}e^{-x^2/4}\,U(A/2+1/4,1/2,x^2/2)$
+    CITE{DLMFParabolicCylinder}.
+  formula-whittaker: >-
+    The Whittaker function satisfies
+    $W_{\kappa,\mu}(z)=e^{-z/2}z^{\mu+1/2}\,U(1/2+\mu-\kappa,1+2\mu,z)$
+    CITE{DLMFWhittaker}.
 Programs:
   program-sage:
     language: Sage
@@ -116,6 +127,12 @@ Links:
   DLMFRelations:
     title: 'DLMF 13.6: Relations to Other Functions'
     url: https://dlmf.nist.gov/13.6
+  DLMFParabolicCylinder:
+    title: 'DLMF 12.7: Relations to Other Functions'
+    url: https://dlmf.nist.gov/12.7.E14
+  DLMFWhittaker:
+    title: 'DLMF 13.14: Whittaker Functions'
+    url: https://dlmf.nist.gov/13.14.E3
 Tags:
   - special values
   - special functions
@@ -130,9 +147,9 @@ Data properties:
     wherever the transformed row is also stored, against
     CITE{formula-exponential-integral} for every stored row with $(a,b)=(1,1)$,
     against CITE{formula-erfc} for every stored row with $(a,b)=(1/2,1/2)$,
-    and against CITE{formula-bessel-k} wherever $b=2a$ and the corresponding
-    Bessel value could be computed. The widest returned ball had radius less
-    than $4\cdot10^{-115}$ for 100 requested digits.
+    and against CITE{formula-bessel-k} on the twelve rows in this table with
+    $b=2a$. The widest returned ball had radius less than $4\cdot10^{-115}$
+    for 100 requested digits.
   complete: no
   complete-note: >-
     it holds every non-elementary entry with
