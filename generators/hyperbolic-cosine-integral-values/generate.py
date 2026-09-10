@@ -1,6 +1,6 @@
-"""Values of exponential, logarithmic and trigonometric integrals -- numberdb.org/T188
+"""Values of the hyperbolic cosine integral -- numberdb.org/T195
 
-The real values of Ei(x), E_1(x), li(x), Si(x), Ci(x), Shi(x) and Chi(x) at
+The real values of Chi(x) at
 positive rational arguments. This draft stores every x = a/b in lowest terms
 with b <= 6 and 0 < x <= 5, except that li(1) is omitted.
 
@@ -12,6 +12,12 @@ Run it with SageMath:
 
 Values are computed as real balls with arb. Sage's real ball methods use the
 same branch conventions as the table for positive real arguments.
+
+One function per table, as T20 and T21 are the zeros of the two kinds
+of Bessel function and T22 and T23 their extrema. These seven values
+were one table until it was split: that they are all integrals of an
+elementary function is said in each table's `Similar tables`, which is
+where a relation can be written down.
 """
 
 import os
@@ -23,7 +29,8 @@ from sage.rings.rational_field import QQ
 from sage.rings.real_arb import RealBallField
 
 
-FUNCTIONS = ("Ei", "E1", "li", "Si", "Ci", "Shi", "Chi")
+#: Which integral this table holds.
+FUNCTION = "Chi"
 MAX_DENOMINATOR = 6
 MAX_ARGUMENT = 5
 
@@ -87,25 +94,20 @@ def _comment(function, x_text):
     return ""
 
 
-class ExponentialLogarithmicTrigonometricIntegrals(numberdb.Generator):
+class HyperbolicCosineIntegralValues(numberdb.Generator):
 
-    table = os.environ.get("NUMBERDB_TABLE", "T188")
-    parameters = ("function", "x")
+    table = os.environ.get("NUMBERDB_TABLE") or "T195"
+    parameters = ("x",)
     type = "R"
     digits = 100
     rigour = "proven"
 
-    def enumerate(self, functions=FUNCTIONS, denominator=MAX_DENOMINATOR,
-                  maximum=MAX_ARGUMENT):
-        arguments = tuple(_arguments(denominator, maximum))
-        for function in functions:
-            for x in arguments:
-                if function == "li" and x == "1":
-                    continue
-                yield {"function": function, "x": x}
+    def enumerate(self, denominator=MAX_DENOMINATOR, maximum=MAX_ARGUMENT):
+        for x in _arguments(denominator, maximum):
+            yield {"x": x}
 
     def value(self, params, digits):
-        function = str(params["function"])
+        function = FUNCTION
         x_text = str(params["x"])
         value = _value_ball(function, x_text, digits)
         comment = _comment(function, x_text)
@@ -116,10 +118,10 @@ class ExponentialLogarithmicTrigonometricIntegrals(numberdb.Generator):
 
 if __name__ == "__main__":
     _key_from_stdin()
-    generator = ExponentialLogarithmicTrigonometricIntegrals()
+    generator = HyperbolicCosineIntegralValues()
     if "--publish" in sys.argv or os.environ.get("NUMBERDB_PUBLISH") == "1":
         print(generator.publish(
-            message="exponential, logarithmic and trigonometric integral values"))
+            message="values of the hyperbolic cosine integral"))
     else:
         report = generator.verify(sample=None)
         print(report)

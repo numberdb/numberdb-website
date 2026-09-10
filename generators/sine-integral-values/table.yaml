@@ -1,0 +1,90 @@
+# The table document for T192, Values of the sine integral $\operatorname{Si}(x)$. It began as proposal 5 of
+# agents/table-ideas/BATCH-2026-09-09T1936.md, which put seven
+# functions in one table; they are six tables now, one per named
+# function, and the relations between them are in `Similar tables`.
+Title: Values of the sine integral $\operatorname{Si}(x)$
+Definition: The sine integral is $\operatorname{Si}(x)=\int_0^x\sin(t)/t\,\mathrm{d}t$
+  CITE{DLMFIntegralDefinitions}. This table holds it at rational $x>0$.
+Keywords:
+- sine integral
+- Si
+- trigonometric integral
+- Si(1)
+- Gibbs phenomenon
+Parameters:
+  x:
+    type: Q
+    title: argument
+    display: $x$
+    constraints: $x>0$
+Comments:
+  comment-gibbs: $\operatorname{Si}(\pi)=1.8519\ldots$ is HREF{Gibbs_constant#WG}[the
+    Wilbraham-Gibbs constant].
+Formulas:
+  formula-si-ci: For $x>0$, $\operatorname{Si}(x)=\int_0^x\sin(t)/t\,dt$ and $\operatorname{Ci}(x)=\gamma+\log
+    x+\int_0^x(\cos(t)-1)/t\,dt$ CITE{DLMFIntegralDefinitions}.
+  formula-parity: The functions $\operatorname{Si}$ and $\operatorname{Shi}$ are
+    odd CITE{DLMFIntegralDefinitions}. With the principal branch of the logarithm,
+    for $x>0$, $\operatorname{Ci}(-x)=\operatorname{Ci}(x)+i\pi$ and $\operatorname{Chi}(-x)=\operatorname{Chi}(x)+i\pi$
+    CITE{DLMFAnalyticContinuation}.
+Programs:
+  program-sage:
+    language: Sage
+    code: "import numberdb.sage as numberdb\nfrom sage.rings.rational_field import\
+      \ QQ\nfrom sage.rings.real_arb import RealBallField\n\nRBF = RealBallField(numberdb.bits(100,\
+      \ losing=64))\nx = RBF(QQ(1))\nx.Ei()\n-RBF(-QQ(1)).Ei()\nRBF(QQ(2)).log_integral()\n\
+      x.Si()\nx.Ci()\nx.Shi()\nx.Chi()\n      x.Si()"
+  program-python:
+    language: Python
+    code: "import mpmath\n\nmpmath.mp.dps = 100\nmpmath.ei(1)\nmpmath.e1(1)\n\
+      mpmath.li(2)\nmpmath.si(1)\nmpmath.ci(1)\nmpmath.shi(1)\nmpmath.chi(1)\n\
+      \      mpmath.si(1)"
+Similar tables:
+- table: HREF{Values_of_the_cosine_integral}[Values of the cosine integral $\operatorname{Ci}(x)$]
+  relation: the companion trigonometric integral
+- table: HREF{Values_of_the_hyperbolic_sine_integral}[Values of the hyperbolic
+    sine integral $\operatorname{Shi}(x)$]
+  relation: $\operatorname{Shi}$ is the same integral with $\sinh$ in place of
+    $\sin$
+- table: HREF{Gibbs_constant}[Wilbraham-Gibbs constant]
+  relation: stores $\operatorname{Si}(\pi)$ and its normalisations
+- table: HREF{Stieltjes_constants}[Stieltjes constants]
+  relation: contains $\gamma_0$, the Euler-Mascheroni constant appearing in $\operatorname{Ei}$,
+    $\operatorname{Ci}$ and $\operatorname{Chi}$
+Links:
+  WikiExponential:
+    title: 'Wikipedia: Exponential integral'
+    url: https://en.wikipedia.org/wiki/Exponential_integral
+  WikiLogarithmic:
+    title: 'Wikipedia: Logarithmic integral function'
+    url: https://en.wikipedia.org/wiki/Logarithmic_integral_function
+  WikiTrigonometric:
+    title: 'Wikipedia: Trigonometric integral'
+    url: https://en.wikipedia.org/wiki/Trigonometric_integral
+  DLMFIntegralDefinitions:
+    title: 'DLMF 6.2: Definitions and Basic Properties'
+    url: https://dlmf.nist.gov/6.2
+  DLMFAnalyticContinuation:
+    title: 'DLMF 6.4: Analytic Continuation'
+    url: https://dlmf.nist.gov/6.4
+  DLMFGeneralizedExponential:
+    title: 'DLMF 8.19: Generalized Exponential Integral'
+    url: https://dlmf.nist.gov/8.19
+  OEISSiOne:
+    title: 'OEIS A099281: decimal expansion of $\operatorname{Si}(1)$'
+    url: https://oeis.org/A099281
+Tags:
+- special values
+- special functions
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: it holds $\operatorname{Si}(x)$ at every rational $x=a/b$ in
+    lowest terms with $b\leq6$ and $0<x\leq5$
+  rigour details: Each value was computed as a Sage real ball with arb at `numberdb.bits(digits,
+    losing=64)` bits, and checked against mpmath at 150 decimal digits and against
+    the OEIS value for $\operatorname{Si}(1)$ CITE{OEISSiOne}. The widest returned
+    ball had radius less than $10^{-117}$ for 100 requested digits.
+Display properties:
+  number-header: $\operatorname{Si}(x)$
