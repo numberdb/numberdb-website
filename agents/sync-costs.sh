@@ -31,19 +31,29 @@ ATTRIBUTION="agents/runs/ATTRIBUTION.tsv"
 
 [ -f "$LEDGER" ] || { echo "no ledger at $LEDGER" >&2; exit 0; }
 
-ssh_opts=(-o BatchMode=yes -o ExitOnForwardFailure=no
+#Bounded, because this runs at the end of every agent run and a server that
+#has stopped answering must not stop the campaign: on 2026-09-10 this hung on
+#an unreachable host with no connect timeout, and the run behind it waited
+#with it. A ledger that did not reach the site is worth a warning, so every
+#step here fails fast and carries on.
+ssh_opts=(-o BatchMode=yes -o ExitOnForwardFailure=no -o ConnectTimeout=15
+          -o ServerAliveInterval=15 -o ServerAliveCountMax=4
           -o ControlMaster=auto -o ControlPath=/tmp/numberdb-ssh-%r@%h:%p
           -o ControlPersist=60)
+STEP_TIMEOUT="${NUMBERDB_SYNC_TIMEOUT:-120}"
 
-ssh -n "${ssh_opts[@]}" "$REMOTE" "mkdir -p '$RPATH/agents/runs'" || {
+timeout "$STEP_TIMEOUT" ssh -n "${ssh_opts[@]}" "$REMOTE" \
+	"mkdir -p '$RPATH/agents/runs'" || {
 	echo "sync-costs: could not reach $REMOTE" >&2; exit 0; }
-scp "${ssh_opts[@]}" -q "$LEDGER" "$REMOTE:$RPATH/$LEDGER" || {
+timeout "$STEP_TIMEOUT" scp "${ssh_opts[@]}" -q "$LEDGER" \
+	"$REMOTE:$RPATH/$LEDGER" || {
 	echo "sync-costs: could not copy the ledger" >&2; exit 0; }
 #Beside it, where the importer looks: which table a run was about, for the
 #runs whose ledger row could not say. Optional -- a corpus whose runs all
 #named their table has no such file.
 if [ -f "$ATTRIBUTION" ]; then
-	scp "${ssh_opts[@]}" -q "$ATTRIBUTION" "$REMOTE:$RPATH/$ATTRIBUTION" || \
+	timeout "$STEP_TIMEOUT" scp "${ssh_opts[@]}" -q "$ATTRIBUTION" \
+		"$REMOTE:$RPATH/$ATTRIBUTION" || \
 		echo "sync-costs: could not copy the attributions" >&2
 fi
 "$here/agents/on-server.sh" manage.py import_agent_costs "$LEDGER" \

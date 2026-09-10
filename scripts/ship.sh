@@ -52,7 +52,39 @@ ALLOW_DIRTY="${ALLOW_DIRTY:-0}"
 [ -n "$REMOTE" ] || { echo "No remote. Set DEPLOY_REMOTE in .env or pass one." >&2; exit 2; }
 
 say() { printf '\n=== %s\n' "$*"; }
-on_remote() { ssh -o BatchMode=yes "$REMOTE" "cd '$RPATH' && $*"; }
+# Every remote step is bounded, in three ways, because on 2026-09-10 the very
+# first one -- putting up the banner -- hung for sixty-six minutes and took the
+# site down with it. sshd on a loaded box accepts the connection and never
+# completes the handshake, which looks exactly like a slow command.
+#
+#   * ConnectTimeout, so an unreachable host fails in seconds rather than
+#     hanging on the handshake;
+#   * the keepalives, so a connection that dies mid-command is noticed;
+#   * `timeout`, so a remote command that never returns still ends here.
+#
+# The last one is the weakest: killing the local ssh does not always kill the
+# remote command, which is why the compose helper below also names its
+# container and removes it on the far side.
+SHIP_STEP_TIMEOUT="${SHIP_STEP_TIMEOUT:-900}"
+on_remote() {
+	timeout "$SHIP_STEP_TIMEOUT" \
+		ssh -o BatchMode=yes -o ConnectTimeout=20 \
+		    -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+		    "$REMOTE" "cd '$RPATH' && $*"
+}
+
+# A one-off container that cannot outlive the command that started it.
+#
+# `--no-deps` because this must never start or restart the containers serving
+# the site: `docker compose run` brings dependencies up by default, and on a
+# 961 MB box a second `web` beside the real one is what killed it. `--name`
+# and the removal afterwards because `--rm` alone does not survive the client
+# being killed -- the same belt and braces as agents/sage.sh.
+compose_run() {
+	local name="ship-$$-$RANDOM"
+	on_remote "docker compose run --rm --no-deps -T --name '$name' $*; \
+	           code=\$?; docker rm -f '$name' >/dev/null 2>&1; exit \$code"
+}
 
 # 1 ---------------------------------------------------------------------------
 # Production ran four uncommitted files for a while because the copy takes the
@@ -69,7 +101,7 @@ commit=$(git rev-parse HEAD)
 say "shipping $(git rev-parse --short HEAD) to $REMOTE:$RPATH"
 
 # 2 ---------------------------------------------------------------------------
-notice() { on_remote "docker compose run --rm -T web sage -python manage.py notice $*" >/dev/null 2>&1 || true; }
+notice() { compose_run "web sage -python manage.py notice $*" >/dev/null 2>&1 || true; }
 notice on "\"Updating the site; it may be slow or briefly unavailable.\""
 
 # 3 ---------------------------------------------------------------------------
@@ -86,7 +118,10 @@ tar cz --exclude='.git' --exclude='__pycache__' --exclude='staticfiles' \
        --exclude='docker-compose.override.yml' --exclude='clients/python/docs' \
        --exclude='agents/runs' --exclude='agents/critiques' \
        --exclude='agents/lessons' --exclude='agents/table-ideas/BATCH-*' \
-       -C "$here" . | ssh -o BatchMode=yes "$REMOTE" "tar xz -C '$RPATH'"
+       -C "$here" . | timeout "$SHIP_STEP_TIMEOUT" \
+       	ssh -o BatchMode=yes -o ConnectTimeout=20 \
+       	    -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+       	    "$REMOTE" "tar xz -C '$RPATH'"
 # So the server can answer "what is running here" without anybody guessing.
 on_remote "printf '%s\n' '$commit' > .deployed-commit"
 
@@ -99,7 +134,7 @@ on_remote "docker compose build web" | tail -2
 # inputs mean a cached build and no recreate below.
 on_remote "docker compose build nginx" | tail -2
 say "migrating"
-on_remote "docker compose run --rm -T web sage -python manage.py migrate" | tail -8
+compose_run "web sage -python manage.py migrate" | tail -8
 
 # 5 ---------------------------------------------------------------------------
 if [ "$DATA_STEPS" = "1" ]; then
