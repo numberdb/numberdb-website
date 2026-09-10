@@ -4,12 +4,11 @@
 # review; publishing is a person's act on the site.
 Title: Faltings heights of elliptic curves over $\mathbb{Q}$
 Definition: >-
-  For an elliptic curve $E/\mathbb{Q}$ with global minimal model and Neron
-  differential $\omega=dx/(2y+a_1x+a_3)$, this table gives the Faltings height
-  $h(E)$ CITE{Wiki} and the stable Faltings height $h_{\mathrm{st}}(E)$,
-  defined by CITE{formula-area} and CITE{formula-stable-height} with the
-  period lattice of $\omega$, in the LMFDB and Sage normalisation
-  CITE{LMFDBHeight} CITE{SageFaltings}.
+  For an elliptic curve $E/\mathbb{Q}$ with global minimal model, this table
+  gives the Faltings height $h(E)$ CITE{Wiki} and stable Faltings height
+  $h_{\mathrm{st}}(E)$ in the LMFDB and Sage normalisation
+  CITE{LMFDBHeight} CITE{SageFaltings}, defined by CITE{formula-area} and
+  CITE{formula-stable-height}.
 Parameters:
   N:
     type: Z
@@ -54,7 +53,9 @@ Comments:
     and $11.a3$ are $25$, $5$ and $1$.
 Formulas:
   formula-area: >-
-    If $\omega_1,\omega_2$ is a $\mathbb{Z}$-basis of $\Lambda_E$, then
+    If $\omega_1,\omega_2$ is a $\mathbb{Z}$-basis of the period lattice
+    $\Lambda_E$ of the Neron differential $dx/(2y+a_1x+a_3)$ on a global
+    minimal model of $E$, then
     $A=|\operatorname{Im}(\overline{\omega_1}\omega_2)|$ and
     $h(E)=-\frac12\log A$.
   formula-stable-height: >-
