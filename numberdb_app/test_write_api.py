@@ -496,7 +496,10 @@ class SendingEntriesOneAtATime(WriteBase):
 			HTTP_X_ENTRIES_MODE='upsert', HTTP_X_RUN_ID='run-3')
 		self.assertEqual(answer.status_code, 200, answer.content)
 		bare.refresh_from_db()
-		self.assertEqual(tree_of(bare.head_revision)['Numbers'], ['1.41421'])
+		#Stored as the record that arrived; both forms are read, and which
+		#one a table holds is whatever was last written to it.
+		self.assertEqual(tree_of(bare.head_revision)['Numbers'],
+		                 [{'params': {}, 'number': '1.41421'}])
 
 	def test_one_entry_is_added_without_replacing_the_rest(self):
 		self.send([{'params': {'n': '2'}, 'number': '2.2'}])
