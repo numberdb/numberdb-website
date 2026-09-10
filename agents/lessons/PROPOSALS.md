@@ -4744,3 +4744,31 @@ Evidence: `/tmp/arb_probe2.py`, 2026-09-09, printed `I_0(1) 0`,
 `self` printed `J_0(1) [0.76519768655796655144971752610266322...]` and
 `I_0(1) [1.26606587775200833559824462521471753...]`, both agreeing with
 mpmath 1.3.0 to 40 digits.
+
+## `Generator.publish()` can fail on a draft with no `Numbers` section
+
+What happened: T196 was created as a prose-first draft, with parameters and
+data properties but no `Numbers` section, exactly as the draft API permits.
+Running `ModifiedBesselIValues().publish()` then failed before computing or
+sending entries. The client first calls `check_writable()`, which sends an
+empty upsert to `/api/table/T196/entries`; the server merged that into the
+empty draft as `Numbers: null`, then validation refused it with `A value in
+these entries cannot be read as a number. 'str' object has no attribute
+'items'`. Filling the same draft through `submit_entries(..., upsert=False)`
+with an `Entries` object succeeded and stored all 270 entries.
+
+What the skill says now: make the draft first, then fill it with the
+generator. It does not say that an empty draft may trip the generator's
+preflight writable check.
+
+What it should say: until the client or API is fixed, if a prose-first draft
+has no `Numbers` section and `generator.publish()` fails during
+`check_writable()`, do not recreate the table. Submit the first full entries
+block with `submit_entries(..., upsert=False)` or add a harmless first entry
+before using the generator's normal publish path; then run `verify()`.
+
+Evidence: T196, 2026-09-10; `NUMBERDB_PUBLISH=1 agents/sage.sh
+generators/modified-bessel-i-values-rational-orders/generate.py` failed in
+`check_writable()` with the error above. `/tmp/fill_modified_bessel_i_direct.py`
+used `Entries`, `submit_entries` and `attach` with one run id; the API answered
+`"entries": 270`, and the generator then verified `270/270 matched`.
