@@ -53,6 +53,18 @@ def _is_elementary_row(a, b, z):
     return z == 0 or a == b or _is_nonpositive_integer(a)
 
 
+def _is_transformed_terminating_zero(a, b, z):
+    transformed_a = b - a
+    if transformed_a not in ZZ or transformed_a > 0:
+        return False
+    term = QQ(1)
+    total = term
+    for k in range(1, int(-transformed_a) + 1):
+        term *= (transformed_a + (k - 1)) * (-z) / ((b + (k - 1)) * k)
+        total += term
+    return total == 0
+
+
 def _value_ball(a_text, b_text, z_text, digits):
     a_q = QQ(a_text)
     b_q = QQ(b_text)
@@ -61,6 +73,8 @@ def _value_ball(a_text, b_text, z_text, digits):
         raise ValueError("M(a;b;z) has a pole at b=%s" % (b_text,))
     if _is_elementary_row(a_q, b_q, z_q):
         raise ValueError("row omitted by the table convention")
+    if _is_transformed_terminating_zero(a_q, b_q, z_q):
+        return ZZ(0)
 
     field = ComplexBallField(numberdb.bits(digits, losing=WORKING_GUARD))
     a = field(a_q)

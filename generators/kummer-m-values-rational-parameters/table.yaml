@@ -136,14 +136,15 @@ Data properties:
   rigour details: >-
     Each value was computed as a Sage complex ball with arb at
     `numberdb.bits(digits, losing=64)` bits, with the imaginary part checked
-    to contain zero. The entries were checked against mpmath at 90 decimal
-    digits with `zeroprec=200`, against Kummer's transformation in
-    CITE{formula-kummer-transformation} wherever the transformed row is also
-    stored, against CITE{formula-elementary} for all stored rows with
-    $(a,b)=(1,2)$, against CITE{formula-error} for $x=1,2$, and against
-    CITE{formula-bessel-i} for all stored rows with $b=2a$ and positive
-    argument. The widest returned ball had radius less than
-    $3\cdot10^{-115}$ for 100 requested digits.
+    to contain zero. Rows whose Kummer transform is a terminating polynomial
+    that vanishes are returned as the exact integer $0$. The entries were
+    checked against mpmath at 90 decimal digits with `zeroprec=200`, against
+    Kummer's transformation in CITE{formula-kummer-transformation} wherever
+    the transformed row is also stored, against CITE{formula-elementary} for
+    all stored rows with $(a,b)=(1,2)$, against CITE{formula-error} for
+    $x=1,2$, and against CITE{formula-bessel-i} for all stored rows with
+    $b=2a$ and positive argument. The widest returned ball had radius less
+    than $3\cdot10^{-115}$ for 100 requested digits.
   complete: no
   complete-note: >-
     it holds every entry with
