@@ -1,0 +1,187 @@
+# The table document for the draft Values of the error function family. It began
+# as proposal 4 of agents/table-ideas/BATCH-2026-09-09T1936.md.
+Title: Values of the error function, Dawson's function and Fresnel integrals
+Definition: This table gives the standard real values of the error function
+  $\operatorname{erf}(x)$, its complementary and imaginary normalisations
+  $\operatorname{erfc}(x)$ and $\operatorname{erfi}(x)$ CITE{WikiError} CITE{DLMFDefinitions},
+  Dawson's integral $F(x)$ CITE{WikiDawson}, and the Fresnel integrals $S(x)$
+  and $C(x)$ CITE{WikiFresnel}, for rational $x>0$. The Fresnel integrals use
+  $S(x)=\int_0^x\sin(\pi t^2/2)\,\mathrm{d}t$ and $C(x)=\int_0^x\cos(\pi t^2/2)\,\mathrm{d}t$.
+Keywords:
+- error function
+- erf
+- complementary error function
+- erfc
+- imaginary error function
+- erfi
+- Dawson function
+- Dawson integral
+- Fresnel integral
+- Fresnel sine integral
+- Fresnel cosine integral
+- probability integral
+- Cornu spiral
+- clothoid
+Parameters:
+  function:
+    type: Symbolic
+    title: function
+    display: function
+    values:
+      erf: $\operatorname{erf}(x)$
+      erfc: $\operatorname{erfc}(x)$
+      erfi: $\operatorname{erfi}(x)$
+      dawson: $F(x)$
+      fresnel-S: $S(x)$
+      fresnel-C: $C(x)$
+  x:
+    type: Q
+    title: argument
+    display: $x$
+    constraints: $x>0$
+Comments:
+  comment-fresnel-normalisation: The Fresnel normalisation is the DLMF form in
+    CITE{formula-fresnel-definitions}, with $\pi t^2/2$ in the trigonometric
+    functions. The alternative integrals with $\sin(t^2)$ and $\cos(t^2)$ are
+    not stored at rational arguments here; their conversion is CITE{formula-fresnel-conversion}.
+  comment-dawson-normalisation: Dawson's integral here is the standard $D_+(x)$.
+    The variant $e^{x^2}\int_0^x e^{-t^2}\,\mathrm{d}t$ is not stored; it is
+    $(\sqrt{\pi}/2)e^{x^2}\operatorname{erf}(x)$.
+  comment-negative-arguments: Negative arguments are not listed separately. The
+    parity and complementary-error-function relation are CITE{formula-parity}.
+  comment-erfc: The complementary error function is stored as its own
+    normalisation because it is the small tail value for large positive $x$.
+Formulas:
+  formula-error-definitions: For real $x$, $\operatorname{erf}(x)=\frac{2}{\sqrt{\pi}}\int_0^x
+    e^{-t^2}\,\mathrm{d}t$, $\operatorname{erfc}(x)=1-\operatorname{erf}(x)$,
+    and $\operatorname{erfi}(x)=-i\operatorname{erf}(ix)$ CITE{DLMFDefinitions}.
+  formula-dawson-erfi: Dawson's integral is $F(x)=e^{-x^2}\int_0^x e^{t^2}\,\mathrm{d}t=(\sqrt{\pi}/2)e^{-x^2}\operatorname{erfi}(x)$
+    CITE{WikiDawson}.
+  formula-fresnel-definitions: The Fresnel integrals in this table are
+    $S(x)=\int_0^x\sin(\pi t^2/2)\,\mathrm{d}t$ and $C(x)=\int_0^x\cos(\pi t^2/2)\,\mathrm{d}t$
+    CITE{DLMFDefinitions}.
+  formula-fresnel-erf: With the same normalisation, $C(x)+iS(x)=\frac{1+i}{2}\operatorname{erf}((\sqrt{\pi}/2)(1-i)x)$
+    CITE{WikiFresnel}.
+  formula-fresnel-conversion: If $S_2(x)=\int_0^x\sin(t^2)\,\mathrm{d}t$ and
+    $C_2(x)=\int_0^x\cos(t^2)\,\mathrm{d}t$, then
+    $S_2(x)=\sqrt{\pi/2}\,S(\sqrt{2/\pi}\,x)$ and $C_2(x)=\sqrt{\pi/2}\,C(\sqrt{2/\pi}\,x)$.
+  formula-parity: The functions $\operatorname{erf}$, $\operatorname{erfi}$,
+    $F$, $S$ and $C$ are odd, and $\operatorname{erfc}(-x)=2-\operatorname{erfc}(x)$.
+Programs:
+  program-sage:
+    language: Sage
+    code: 'import numberdb.sage as numberdb
+
+      from sage.rings.complex_arb import ComplexBallField
+
+      from sage.rings.rational_field import QQ
+
+      from sage.rings.real_arb import RealBallField
+
+
+      RBF = RealBallField(numberdb.bits(100, losing=64))
+
+      CBF = ComplexBallField(numberdb.bits(100, losing=64))
+
+      x = RBF(QQ(1))
+
+      z = CBF(QQ(1))
+
+      i = CBF.gen(0)
+
+
+      x.erf()
+
+      RBF(1) - x.erf()
+
+      x.erfi()
+
+      RBF.pi().sqrt() * (-x*x).exp() * x.erfi() / RBF(2)
+
+      fresnel = (CBF(1) + i) * (((CBF.pi().sqrt()/CBF(2)) * (CBF(1) - i) * z).erf()) / CBF(2)
+
+      fresnel.imag(), fresnel.real()'
+  program-python:
+    language: Python
+    code: 'import mpmath
+
+
+      mpmath.mp.dps = 100
+
+      x = mpmath.mpf(1)
+
+
+      mpmath.erf(x)
+
+      mpmath.erfc(x)
+
+      mpmath.erfi(x)
+
+      mpmath.exp(-x*x) * mpmath.quad(lambda t: mpmath.exp(t*t), [0, x])
+
+      mpmath.fresnels(x), mpmath.fresnelc(x)'
+Similar tables:
+- table: HREF{Values_of_the_exponential_integral}[Values of the exponential integral]
+  relation: stores $\operatorname{Ei}(x)$ and $E_1(x)$, the neighbouring
+    exponential-integral functions at rational arguments
+- table: HREF{Values_of_the_sine_integral}[Values of the sine integral $\operatorname{Si}(x)$]
+  relation: stores the trigonometric integral with $\sin(t)/t$ in place of the
+    Fresnel integrals' quadratic phase
+- table: HREF{Values_of_the_cosine_integral}[Values of the cosine integral $\operatorname{Ci}(x)$]
+  relation: stores the trigonometric integral with $\cos(t)/t$
+- table: HREF{Values_of_the_hyperbolic_sine_integral}[Values of the hyperbolic
+    sine integral $\operatorname{Shi}(x)$]
+  relation: stores the corresponding hyperbolic integral at rational arguments
+- table: HREF{Values_of_the_hyperbolic_cosine_integral}[Values of the hyperbolic
+    cosine integral $\operatorname{Chi}(x)$]
+  relation: stores the companion hyperbolic cosine integral
+- table: HREF{Values_of_the_Gamma_function_at_rational_numbers}[Values of the Gamma
+    function at rational numbers]
+  relation: contains HREF{Values_of_the_Gamma_function_at_rational_numbers#1/2}[$\Gamma(1/2)=\sqrt{\pi}$],
+    the normalising constant in the error function
+Links:
+  WikiError:
+    title: 'Wikipedia: Error function'
+    url: https://en.wikipedia.org/wiki/Error_function
+  WikiDawson:
+    title: 'Wikipedia: Dawson function'
+    url: https://en.wikipedia.org/wiki/Dawson_function
+  WikiFresnel:
+    title: 'Wikipedia: Fresnel integral'
+    url: https://en.wikipedia.org/wiki/Fresnel_integral
+  DLMFDefinitions:
+    title: 'DLMF 7.2: Definitions'
+    url: https://dlmf.nist.gov/7.2
+  OEISErfOne:
+    title: 'OEIS A099286: decimal expansion of the error function at 1'
+    url: https://oeis.org/A099286
+  OEISErfiOne:
+    title: 'OEIS A099288: decimal expansion of the imaginary error function at 1'
+    url: https://oeis.org/A099288
+  OEISDawsonOne:
+    title: 'OEIS A087654: decimal expansion of Dawson''s function at 1'
+    url: https://oeis.org/A087654
+  OEISFresnelSOne:
+    title: 'OEIS A099289: decimal expansion of the Fresnel sine integral at 1'
+    url: https://oeis.org/A099289
+  OEISFresnelCOne:
+    title: 'OEIS A099290: decimal expansion of the Fresnel cosine integral at 1'
+    url: https://oeis.org/A099290
+Tags:
+- special values
+- special functions
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: it holds all six listed functions at every rational $x=a/b$
+    in lowest terms with $b\leq6$ and $0<x\leq5$
+  rigour details: Each value was computed as a Sage real or complex ball with
+    arb at `numberdb.bits(digits, losing=64)` bits. The entries were checked
+    against mpmath at 150 decimal digits, against the identities in CITE{formula-error-definitions},
+    CITE{formula-dawson-erfi}, CITE{formula-fresnel-erf} and CITE{formula-parity},
+    and against the OEIS values at $x=1$ CITE{OEISErfOne} CITE{OEISErfiOne}
+    CITE{OEISDawsonOne} CITE{OEISFresnelSOne} CITE{OEISFresnelCOne}. The widest
+    returned ball had radius less than $10^{-108}$ for 100 requested digits.
+Display properties:
+  number-header: value
