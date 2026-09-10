@@ -5,7 +5,7 @@
 Title: Nodes and weights of Gauss–Laguerre quadrature
 Definition: >-
   For $n\geq 1$ the Gauss–Laguerre quadrature rule with $n$ points is the
-  unique rule $\int_{0}^{\infty} f(x)\,e^{-x}\,dx \approx
+  unique rule $\int_{0}^{\infty} f(x)\,e^{-x}\,\mathrm{d}x \approx
   \sum_{k=1}^{n} w_k f(x_k)$ that is exact for every polynomial $f$ of degree
   at most $2n-1$ CITE{Wiki}. Listed are its nodes $x_1<\cdots<x_n$ and its
   weights $w_k$.
@@ -79,13 +79,13 @@ Formulas:
     $\dfrac{1}{w_k}=\sum_{j=0}^{n-1}L_j(x_k)^2$, the Christoffel function at
     the node, the $L_j$ being orthonormal for $e^{-x}$.
   formula-exactness: >-
-    $\sum_{k=1}^{n} w_k x_k^m=\int_{0}^{\infty}x^m e^{-x}\,dx=m!$ for
+    $\sum_{k=1}^{n} w_k x_k^m=\int_{0}^{\infty}x^m e^{-x}\,\mathrm{d}x=m!$ for
     $0\leq m\leq 2n-1$, and not for $m=2n$; the moments are in
     HREF{Factorial}[the table of factorials]. In particular $w_k>0$ and
     $\sum_{k=1}^{n}w_k=1$.
   formula-secondary: >-
     $w_k=\dfrac{q_n(x_k)}{L_n'(x_k)}$ with
-    $q_n(x)=\int_{0}^{\infty}\dfrac{L_n(t)-L_n(x)}{t-x}\,e^{-t}\,dt$ the
+    $q_n(x)=\int_{0}^{\infty}\dfrac{L_n(t)-L_n(x)}{t-x}\,e^{-t}\,\mathrm{d}t$ the
     secondary polynomial of $L_n$ for the density $e^{-x}$, a polynomial of
     degree $n-1$ with rational coefficients; the same construction for the
     HREF{Legendre_polynomials}[Legendre polynomials] gives
@@ -96,12 +96,12 @@ Formulas:
     of the Gauss–Hermite rule with $2n$ points and $u_k$ their weights; for
     $x^{1/2}e^{-x}$ it has nodes $t_k^2$ and weights $2u_k t_k^2$, taken from
     the Gauss–Hermite rule with $2n+1$ points. Both follow from
-    $\int_{0}^{\infty}g(x)\,x^{\mp 1/2}e^{-x}\,dx=\int_{-\infty}^{\infty}
-    g(t^2)\,t^{1\mp 1}\,e^{-t^2}\,dt$ and the uniqueness of the Gauss rule.
+    $\int_{0}^{\infty}g(x)\,x^{\mp 1/2}e^{-x}\,\mathrm{d}x=\int_{-\infty}^{\infty}
+    g(t^2)\,t^{1\mp 1}\,e^{-t^2}\,\mathrm{d}t$ and the uniqueness of the Gauss rule.
   formula-whole-half-line: >-
-    $\int_{0}^{\infty}f(x)\,dx\approx\sum_{k=1}^{n}w_k\,e^{x_k}f(x_k)$ CITE{Wiki},
+    $\int_{0}^{\infty}f(x)\,\mathrm{d}x\approx\sum_{k=1}^{n}w_k\,e^{x_k}f(x_k)$ CITE{Wiki},
     and on $[a,\infty)$ with the weight $e^{-x}$,
-    $\int_{a}^{\infty}f(x)\,e^{-x}\,dx\approx e^{-a}\sum_{k=1}^{n}w_k\,f(x_k+a)$.
+    $\int_{a}^{\infty}f(x)\,e^{-x}\,\mathrm{d}x\approx e^{-a}\sum_{k=1}^{n}w_k\,f(x_k+a)$.
   formula-interlacing: >-
     The nodes of the rules with $n$ and $n-1$ points interlace:
     $x_k^{(n)}<x_k^{(n-1)}<x_{k+1}^{(n)}$ for $1\leq k\leq n-1$, as the
@@ -133,7 +133,7 @@ Similar tables:
   - table: HREF{Nodes_and_weights_of_Gauss_Hermite_quadrature}[Nodes and weights of Gauss–Hermite quadrature]
     relation: the same construction for $e^{-x^2}$ on the real line; folded onto the half-line it gives the rules for $x^{\pm 1/2}e^{-x}$
   - table: HREF{Factorial}[Factorial of natural numbers]
-    relation: the moments $\int_0^\infty x^m e^{-x}\,dx=m!$ that the rule reproduces for $m\leq 2n-1$
+    relation: the moments $\int_0^\infty x^m e^{-x}\,\mathrm{d}x=m!$ that the rule reproduces for $m\leq 2n-1$
   - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
     relation: holds the nodes $2\pm\sqrt{2}$ of $n=2$
   - table: HREF{Zeros_of_Bessel_J_functions}[Zeros of Bessel functions of the first kind]

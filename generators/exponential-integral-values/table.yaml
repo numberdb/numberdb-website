@@ -44,15 +44,30 @@ Formulas:
 Programs:
   program-sage:
     language: Sage
-    code: "import numberdb.sage as numberdb\nfrom sage.rings.rational_field import\
-      \ QQ\nfrom sage.rings.real_arb import RealBallField\n\nRBF = RealBallField(numberdb.bits(100,\
-      \ losing=64))\nx = RBF(QQ(1))\nx.Ei()\n-RBF(-QQ(1)).Ei()\nRBF(QQ(2)).log_integral()\n\
-      x.Si()\nx.Ci()\nx.Shi()\nx.Chi()\n      x.Ei()\n      -RBF(-QQ(1)).Ei()"
+    code: 'import numberdb.sage as numberdb
+
+      from sage.rings.rational_field import QQ
+
+      from sage.rings.real_arb import RealBallField
+
+
+      RBF = RealBallField(numberdb.bits(100, losing=64))
+
+      x = RBF(QQ(1))
+
+      x.Ei()               # Ei(1)
+
+      -RBF(-QQ(1)).Ei()    # E_1(1) = -Ei(-1)'
   program-python:
     language: Python
-    code: "import mpmath\n\nmpmath.mp.dps = 100\nmpmath.ei(1)\nmpmath.e1(1)\n\
-      mpmath.li(2)\nmpmath.si(1)\nmpmath.ci(1)\nmpmath.shi(1)\nmpmath.chi(1)\n\
-      \      mpmath.ei(1)\n      mpmath.e1(1)"
+    code: 'import mpmath
+
+
+      mpmath.mp.dps = 100
+
+      mpmath.ei(1)
+
+      mpmath.e1(1)'
 Similar tables:
 - table: HREF{Values_of_the_logarithmic_integral}[Values of the logarithmic integral
     $\operatorname{li}(x)$]

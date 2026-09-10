@@ -114,11 +114,11 @@ Formulas:
     an $m\times n$ rectangle being
     $\prod_{j=1}^{\lceil m/2\rceil}\prod_{k=1}^{\lceil n/2\rceil}\left(4\cos^2\frac{\pi j}{m+1}+4\cos^2\frac{\pi k}{n+1}\right)$.
   formula-dimer-honeycomb: >-
-    $h(\text{dimer},6^3)=\frac{1}{16\pi^2}\int_{-\pi}^{\pi}\!\int_{-\pi}^{\pi}\ln\left(3+2\cos u+2\cos v+2\cos(u+v)\right)du\,dv=\frac{3\sqrt3}{8\pi}L(2,\chi_{-3})$
+    $h(\text{dimer},6^3)=\frac{1}{16\pi^2}\int_{-\pi}^{\pi}\!\int_{-\pi}^{\pi}\ln\left(3+2\cos u+2\cos v+2\cos(u+v)\right)\,\mathrm{d}u\,\mathrm{d}v=\frac{3\sqrt3}{8\pi}L(2,\chi_{-3})$
     CITE{Kasteleyn63}, half the Mahler measure of $1+x+y$ CITE{Smyth}, and
     $h(\text{dimer},6^3)=\frac1{10}z_{\mathrm{tri}}$.
   formula-dimer-triangular: >-
-    $h(\text{dimer},3^6)=\frac{1}{16\pi^2}\int_{-\pi}^{\pi}\!\int_{-\pi}^{\pi}\ln\left(6+2\cos u+2\cos v+2\cos(u+v)\right)du\,dv=\frac{1}{8\pi}\int_{-\pi}^{\pi}\ln\frac{A+\sqrt{A^2-B^2}}{2}\,du$
+    $h(\text{dimer},3^6)=\frac{1}{16\pi^2}\int_{-\pi}^{\pi}\!\int_{-\pi}^{\pi}\ln\left(6+2\cos u+2\cos v+2\cos(u+v)\right)\,\mathrm{d}u\,\mathrm{d}v=\frac{1}{8\pi}\int_{-\pi}^{\pi}\ln\frac{A+\sqrt{A^2-B^2}}{2}\,\mathrm{d}u$
     with $A=6+2\cos u$ and $B=4\cos\frac u2$ CITE{FMS}.
   formula-spanning-planar: >-
     $z_{\mathrm{sq}}=\frac{4G}{\pi}$,
@@ -133,7 +133,7 @@ Formulas:
     and $z_{\mathrm{UJ}}=2z_{(4,8^2)}$ for the union-jack lattice
     CITE{ShrockWu}.
   formula-spanning-cubic: >-
-    $z_{\mathrm{sc}}=\ln6+\frac{1}{(2\pi)^3}\int_{[-\pi,\pi]^3}\ln\left(1-\frac{\cos\theta_1+\cos\theta_2+\cos\theta_3}{3}\right)d^3\theta=\frac1{\pi^2}\int_0^{\pi}\!\int_0^{\pi}\operatorname{arccosh}\left(3-\cos\theta_1-\cos\theta_2\right)d\theta_1\,d\theta_2=\ln6-\sum_{m\geq1}\frac{W_{2m}}{2m\cdot36^m}$
+    $z_{\mathrm{sc}}=\ln6+\frac{1}{(2\pi)^3}\int_{[-\pi,\pi]^3}\ln\left(1-\frac{\cos\theta_1+\cos\theta_2+\cos\theta_3}{3}\right)d^3\theta=\frac1{\pi^2}\int_0^{\pi}\!\int_0^{\pi}\operatorname{arccosh}\left(3-\cos\theta_1-\cos\theta_2\right)d\theta_1\,\mathrm{d}\theta_2=\ln6-\sum_{m\geq1}\frac{W_{2m}}{2m\cdot36^m}$
     CITE{ShrockWu}, with $W_{2m}=\binom{2m}{m}\sum_{k=0}^{m}\binom mk^2\binom{2k}{k}$
     the number of closed walks of length $2m$ on $\mathbb{Z}^3$ CITE{OEISwalks}.
   formula-duality: >-

@@ -5,7 +5,7 @@
 Title: Nodes and weights of Gauss–Lobatto quadrature
 Definition: >-
   For $n\geq 2$ the Gauss–Lobatto quadrature rule with $n$ points is the
-  unique rule $\int_{-1}^{1} f(x)\,dx \approx \sum_{k=1}^{n} w_k f(x_k)$ with
+  unique rule $\int_{-1}^{1} f(x)\,\mathrm{d}x \approx \sum_{k=1}^{n} w_k f(x_k)$ with
   $x_1=-1$ and $x_n=1$ that is exact for every polynomial $f$ of degree at
   most $2n-3$ CITE{Wiki}. Listed are its nodes $x_1<\cdots<x_n$ and its
   weights $w_k$.
@@ -87,14 +87,14 @@ Formulas:
     $w_k=\dfrac{q(x_k)}{\omega_n'(x_k)}$, where
     $\omega_n=(x^2-1)P_{n-1}'=\dfrac{n(n-1)}{2n-1}\,(P_n-P_{n-2})$ is the
     polynomial whose roots are the nodes and
-    $q(x)=\int_{-1}^{1}\dfrac{\omega_n(t)-\omega_n(x)}{t-x}\,dt
+    $q(x)=\int_{-1}^{1}\dfrac{\omega_n(t)-\omega_n(x)}{t-x}\,\mathrm{d}t
     =\dfrac{n(n-1)}{2n-1}\,(q_n-q_{n-2})$ with $q_n$ the
     HREF{Secondary_polynomials_of_the_Legendre_polynomials}[secondary polynomial of $P_n$].
   formula-exactness: >-
-    $\sum_{k=1}^{n} w_k x_k^m=\int_{-1}^{1}x^m\,dx=\dfrac{1+(-1)^m}{m+1}$ for
+    $\sum_{k=1}^{n} w_k x_k^m=\int_{-1}^{1}x^m\,\mathrm{d}x=\dfrac{1+(-1)^m}{m+1}$ for
     $0\leq m\leq 2n-3$, and not for $m=2n-2$.
   formula-remainder: >-
-    $\int_{-1}^{1}f(x)\,dx-\sum_{k=1}^{n}w_kf(x_k)
+    $\int_{-1}^{1}f(x)\,\mathrm{d}x-\sum_{k=1}^{n}w_kf(x_k)
     =-\dfrac{n(n-1)^3\,2^{2n-1}\,((n-2)!)^4}{(2n-1)\,((2n-2)!)^3}\,f^{(2n-2)}(\xi)$
     for some $\xi\in(-1,1)$ CITE{AS}.
   formula-symmetry: >-
@@ -109,7 +109,7 @@ Formulas:
     the roots of the Jacobi polynomial $P^{(1,1)}_{n-2}$, orthogonal on
     $[-1,1]$ for the weight $1-x^2$.
   formula-lagrange: >-
-    $w_k=\int_{-1}^{1}\ell_k(x)\,dx$ with $\ell_k(x)=\prod_{j\neq k}\frac{x-x_j}{x_k-x_j}$
+    $w_k=\int_{-1}^{1}\ell_k(x)\,\mathrm{d}x$ with $\ell_k(x)=\prod_{j\neq k}\frac{x-x_j}{x_k-x_j}$
     the Lagrange basis polynomial of the nodes, as for every interpolatory
     rule.
   formula-interval: >-

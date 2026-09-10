@@ -4,7 +4,7 @@ Definition: >-
   The Bernoulli polynomials are defined by the exponential generating function
   $\frac{t e^{xt}}{e^t - 1} = \sum_{n=0}^{\infty} B_n(x) \frac{t^n}{n!}$.
   Equivalently $B_0 = 1$ and, for $n \geq 1$, $B_n$ is the polynomial of degree
-  $n$ with $B_n'(x) = n B_{n-1}(x)$ and $\int_0^1 B_n(x)\,dx = 0$.
+  $n$ with $B_n'(x) = n B_{n-1}(x)$ and $\int_0^1 B_n(x)\,\mathrm{d}x = 0$.
 Parameters:
   n:
     type: Z

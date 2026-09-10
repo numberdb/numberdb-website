@@ -50,10 +50,10 @@ Formulas:
     $B(a,b)=\Gamma(a)\Gamma(b)/\Gamma(a+b)$.
   formula-integral: >-
     For $a>0$ and $b>0$,
-    $B(a,b)=\int_0^1 t^{a-1}(1-t)^{b-1}\,dt$.
+    $B(a,b)=\int_0^1 t^{a-1}(1-t)^{b-1}\,\mathrm{d}t$.
   formula-trigonometric: >-
     For $a>0$ and $b>0$,
-    $\int_0^{\pi/2}\sin^{2a-1}(\theta)\cos^{2b-1}(\theta)\,d\theta
+    $\int_0^{\pi/2}\sin^{2a-1}(\theta)\cos^{2b-1}(\theta)\,\mathrm{d}\theta
     =B(a,b)/2$.
   formula-reflection: >-
     For $0<a<1$, $B(a,1-a)=\pi/\sin(\pi a)$.

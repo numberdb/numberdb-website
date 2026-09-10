@@ -5,7 +5,7 @@
 Title: Nodes and weights of Gauss–Hermite quadrature
 Definition: >-
   For $n\geq 1$ the Gauss–Hermite quadrature rule with $n$ points is the
-  unique rule $\int_{-\infty}^{\infty} f(x)\,e^{-x^2}\,dx \approx
+  unique rule $\int_{-\infty}^{\infty} f(x)\,e^{-x^2}\,\mathrm{d}x \approx
   \sum_{k=1}^{n} w_k f(x_k)$ that is exact for every polynomial $f$ of degree
   at most $2n-1$ CITE{Wiki}. Listed are its nodes $x_1<\cdots<x_n$ and its
   weights $w_k$.
@@ -86,7 +86,7 @@ Formulas:
     the Christoffel function at the node; both were computed for every entry
     and agree.
   formula-exactness: >-
-    $\sum_{k=1}^{n} w_k x_k^m=\int_{-\infty}^{\infty}x^m e^{-x^2}\,dx$, which
+    $\sum_{k=1}^{n} w_k x_k^m=\int_{-\infty}^{\infty}x^m e^{-x^2}\,\mathrm{d}x$, which
     is $\Gamma\bigl(\frac{m+1}{2}\bigr)=\sqrt{\pi}\,\dfrac{(m-1)!!}{2^{m/2}}$
     for even $m$ and $0$ for odd $m$, for $0\leq m\leq 2n-1$, and not for
     $m=2n$. Checked in ball arithmetic on every rule here, the failure at
@@ -107,7 +107,7 @@ Formulas:
   formula-normal: >-
     For $Y$ normally distributed with mean $\mu$ and variance $\sigma^2$,
     $\mathbb{E}\,f(Y)=\dfrac{1}{\sigma\sqrt{2\pi}}\int_{-\infty}^{\infty}
-    f(y)\,e^{-(y-\mu)^2/(2\sigma^2)}\,dy\approx\dfrac{1}{\sqrt{\pi}}
+    f(y)\,e^{-(y-\mu)^2/(2\sigma^2)}\,\mathrm{d}y\approx\dfrac{1}{\sqrt{\pi}}
     \sum_{k=1}^{n}w_k\,f\bigl(\sqrt{2}\,\sigma x_k+\mu\bigr)$ CITE{Wiki}.
   formula-interlacing: >-
     The nodes of the rules with $n$ and $n-1$ points interlace:

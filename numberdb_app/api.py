@@ -1258,11 +1258,27 @@ def _upsert_entries(existing, arriving, tree):
 	from .flatten import identity_of, parameter_groups
 
 	groups = parameter_groups(tree)
+
+	#Nothing arriving changes nothing. The client asks "may I write here?" by
+	#sending an empty upsert, which is meant to touch nothing and did: for a
+	#table with no parameters it removed the table's only value, and a
+	#generator that then failed left the table empty. T189 lost its value that
+	#way, and T7 would have.
+	if not arriving:
+		return existing, 0, 0
+
 	if isinstance(existing, dict) or isinstance(arriving, dict):
 		#The nested form has no records to key on. Replacing is the honest
 		#answer rather than guessing at a merge.
 		return arriving, None, None
 
+	#A table with no parameters writes its entries as bare values -- T7 holds
+	#one string, T67 holds 442 -- and those have no identity to merge on.
+	#Dropping them was the other half of the same bug: any upsert, not only an
+	#empty one, deleted every value a parameterless table held. They are kept,
+	#in order, ahead of anything keyed.
+	unkeyed = [record for record in (existing or [])
+	           if not isinstance(record, dict)]
 	kept = [dict(record) for record in (existing or [])
 	        if isinstance(record, dict)]
 	index = {identity_of(record, groups): position
@@ -1280,7 +1296,7 @@ def _upsert_entries(existing, arriving, tree):
 			index[identity] = len(kept)
 			kept.append(record)
 			added += 1
-	return kept, added, updated
+	return unkeyed + kept, added, updated
 
 
 #: What one attached file may weigh, and what a table's files may weigh
