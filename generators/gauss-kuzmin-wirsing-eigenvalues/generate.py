@@ -2,8 +2,17 @@
 
 The Gauss-Kuzmin-Wirsing transfer operator for the Gauss continued-fraction
 map has real eigenvalues lambda_n ordered by decreasing absolute value, with
-lambda_1 = 1. This generator stores the magnitudes of the certified
-eigenvalues lambda_2, ..., lambda_50 from Nisoli's K = 1024 spectral data.
+lambda_1 = 1. This generator stores the certified eigenvalues lambda_2, ...,
+lambda_50 from Nisoli's K = 1024 spectral data.
+
+Signed, as the source gives them. They alternate -- lambda_2 = -0.30366...,
+lambda_3 = +0.10088..., and in general the sign is (-1)^(n+1) -- and the
+source certifies the sign in a column of its own. Storing |lambda_n| threw
+that away and could not be undone from the table: a reader cannot see an
+alternation in a column of positive numbers. The one place the magnitude is
+the conventional quantity is lambda_2, whose absolute value is what the
+literature calls the Gauss-Kuzmin-Wirsing constant, and the entry comment for
+that row says so.
 
 Run it with SageMath:
 
@@ -22,13 +31,21 @@ import os
 import sys
 
 import numberdb.sage as numberdb
+from sage.rings.integer_ring import ZZ
 from sage.rings.real_arb import RealBallField
 
 
 DIGITS = 90
 WORKING_GUARD = 256
 DATA_FILE = "gkw_spectral_coefficients_K1024.tsv"
-FIRST_STORED = 2
+#: The leading eigenvalue is stored too, and it is stored as the integer.
+#:
+#: lambda_1 = 1 is a theorem: the operator preserves the Gauss measure, whose
+#: density 1/((1+x) log 2) is the eigenfunction. The source's row for j = 1 is
+#: 0.999...9, which is the Galerkin computation getting it right, and a
+#: decimal of a hundred nines would say a number known to *be* 1 is known to a
+#: hundred places. So the row is `1` and the source row is used to check it.
+FIRST_STORED = 1
 LAST_STORED = 50
 
 
@@ -71,11 +88,17 @@ def eigenvalue(n, digits):
 
 
 def entry_comment(n):
+    if int(n) == 1:
+        return (
+            "Exactly $1$: the operator preserves the Gauss measure, whose "
+            "density $\\frac{1}{(1+x)\\log2}$ is the eigenfunction "
+            "CITE{comment-leading}."
+        )
     if int(n) == 2:
         return (
-            "$|\\lambda_2|$ is the Gauss-Kuzmin-Wirsing constant "
-            "CITE{OEISA038517} "
-            "CITE{MathWorldGKW}."
+            "The Gauss-Kuzmin-Wirsing constant is $|\\lambda_2|$, and the "
+            "literature quotes it positive CITE{OEISA038517} "
+            "CITE{MathWorldGKW}; the eigenvalue itself is negative."
         )
     return ""
 
@@ -98,7 +121,17 @@ class GaussKuzminWirsingEigenvalues(numberdb.Generator):
         if n < FIRST_STORED or n > LAST_STORED:
             raise ValueError("n must satisfy %d <= n <= %d" %
                              (FIRST_STORED, LAST_STORED))
-        out = {"number": abs(eigenvalue(n, digits))}
+        if n == 1:
+            #Checked against the source rather than taken from it: the row is
+            #a theorem, and the certified enclosure is what says the
+            #computation agrees with the theorem.
+            enclosure = eigenvalue(n, digits)
+            if not enclosure.contains_exact(ZZ(1)):
+                raise ValueError(
+                    "the source's leading eigenvalue does not enclose 1")
+            out = {"number": ZZ(1)}
+        else:
+            out = {"number": eigenvalue(n, digits)}
         comment = entry_comment(n)
         if comment:
             out["comment"] = comment

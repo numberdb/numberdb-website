@@ -8,8 +8,9 @@ Definition: >-
   Let $\mathcal L$ be the Gauss-Kuzmin-Wirsing transfer operator for the
   Gauss continued-fraction map, defined by CITE{formula-operator}
   CITE{Alkauskas} CITE{Nisoli}. Its real eigenvalues $\lambda_n$ are ordered
-  by decreasing absolute value, with $\lambda_1=1$; this table gives
-  $|\lambda_n|$ for $n\geq2$.
+  by decreasing absolute value and alternate in sign CITE{comment-sign}.
+  This table gives $\lambda_n$, signed, for $n\geq1$; the leading eigenvalue
+  is $\lambda_1=1$ CITE{comment-leading}.
 Keywords:
   - Gauss-Kuzmin-Wirsing constant
   - Wirsing constant
@@ -22,17 +23,21 @@ Parameters:
     type: Z
     title: eigenvalue number
     display: $n$
-    constraints: $n\geq2$
+    constraints: $n\geq1$
 Comments:
   comment-ordering: >-
     For the certified range used here, Nisoli gives real simple eigenvalues with
     $|\lambda_1|>|\lambda_2|>\cdots>|\lambda_{50}|$ CITE{Nisoli}.
   comment-leading: >-
-    The leading eigenvalue $\lambda_1=1$ corresponds to the invariant density
-    $\frac{1}{(1+x)\log2}$ of the Gauss map.
+    The leading eigenvalue is exactly $\lambda_1=1$, with the invariant
+    density $\frac{1}{(1+x)\log2}$ of the Gauss map as its eigenfunction. It
+    is a theorem rather than a computation, so the row is the integer.
   comment-sign: >-
-    The signs alternate: $(-1)^{n+1}\lambda_n>0$. Thus the signed eigenvalue is
-    $(-1)^{n+1}|\lambda_n|$.
+    The signs alternate: $(-1)^{n+1}\lambda_n>0$, and the source certifies
+    the sign of each eigenvalue in a column of its own CITE{NisoliData}. The
+    Gauss-Kuzmin-Wirsing constant is $|\lambda_2|$, which is how the
+    literature quotes it CITE{OEISA038517} CITE{MathWorldGKW}; that
+    convention is about one row and the rest are given as they are.
 Formulas:
   formula-operator: >-
     $(\mathcal L f)(x)=\sum_{m=1}^{\infty}
@@ -73,7 +78,7 @@ Programs:
 Similar tables:
   - table: HREF{Khinchin's_means}[Khinchin's means]
     relation: the invariant density for the leading eigenvalue gives the Gauss-Kuzmin distribution whose partial-quotient means are listed there
-  - table: HREF{T172}[Lévy's constant]
+  - table: HREF{Lévy's_constant}[Lévy's constant]
     relation: Lévy's constant gives the almost-sure denominator growth rate for the same regular continued fraction, while $\mathcal L$ is the transfer operator for the Gauss map
   - table: HREF{Lyapunov_exponents_of_classical_chaotic_systems}[Lyapunov exponents of classical chaotic systems]
     relation: the Gauss-map row there gives the Lyapunov exponent with respect to the same invariant measure
@@ -121,26 +126,28 @@ Data properties:
   rigour: proven
   complete: 'no'
   complete-note: >-
-    it holds $|\lambda_n|$ for $2\leq n\leq50$; the leading eigenvalue
-    $\lambda_1=1$ is omitted, and the sequence continues for all $n\geq2$
+    it holds $\lambda_n$ for $1\leq n\leq50$, and the sequence continues for
+    all $n\geq1$
   rigour details: >-
     The values were read from Nisoli's certified spectral data set
     CITE{NisoliData}, file `gkw_spectral_coefficients_K1024.tsv`. That file
-    gives the eigenvalue centers, enclosure radii, and resolvent certification
-    data for a $K=1024$ Galerkin approximation computed in 2048-bit ball
-    arithmetic. The source
-    states that the first 50 nonzero eigenvalues are real and simple and that
-    each certified enclosure carries at least 90 decimal digits CITE{Nisoli}.
+    gives the eigenvalue centers, enclosure radii, and resolvent
+    certification data for a $K=1024$ Galerkin approximation computed in
+    2048-bit ball arithmetic. The source states that the first 50 nonzero
+    eigenvalues are real and simple and that each certified enclosure
+    carries at least 90 decimal digits CITE{Nisoli}.
 
-    The generator returns each stored row as a real ball centered at the
-    absolute value of the source eigenvalue and enlarged by the source column
-    `eval_encl`. The $K=1024$
-    intervals were compared with the independent $K=512$ intervals in the same
-    data set, and all stored rows overlap. The row $|\lambda_2|$ was compared
-    with OEIS A038517 CITE{OEISA038517}; the rows $2\leq n\leq24$ were
-    compared with Alkauskas's 16-digit table CITE{Alkauskas}. The alternating
-    sign pattern in CITE{comment-sign} and the approach of
-    $\lambda_n/\lambda_{n+1}$ toward $-\varphi^2$ were checked on the
-    stored range.
+    The row $\lambda_1$ is the integer $1$, which is CITE{comment-leading}
+    and not a measurement; the source's own value for it, $0.999\ldots9$, is
+    checked to enclose $1$ and is otherwise not used. The generator returns
+    each other stored row as a real ball centered at the source eigenvalue,
+    sign and all, and enlarged by the source column `eval_encl`. The
+    $K=1024$ intervals were compared with the independent $K=512$ intervals
+    in the same data set, and all stored rows overlap. The row $\lambda_2$
+    was compared, in absolute value, with OEIS A038517 CITE{OEISA038517};
+    the rows $2\leq n\leq24$ were compared with Alkauskas's 16-digit table
+    CITE{Alkauskas}. The alternating sign pattern in CITE{comment-sign} and
+    the approach of $\lambda_n/\lambda_{n+1}$ toward $-\varphi^2$ were
+    checked on the stored range.
 Display properties:
-  number-header: $|\lambda_n|$
+  number-header: $\lambda_n$
