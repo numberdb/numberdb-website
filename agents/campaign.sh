@@ -274,6 +274,27 @@ while [ "$made" -lt "$builds" ]; do
 			|| say "the repair run failed; the critique stands and somebody should read it"
 	fi
 
+	#Offer it, whatever happened to the runs above.
+	#
+	#Offering is the last thing a build agent does, so a build that was
+	#interrupted -- killed, or stopped when the site went away -- leaves a
+	#finished table outside the review queue with no button to accept it, and
+	#nothing afterwards notices. T210 sat there with 384 entries.
+	#
+	#The campaign knows the number and offering is idempotent, so it costs a
+	#request and needs no judgement. The API refuses it for a table that is
+	#already published or has no entries yet, which is the right answer in
+	#both cases.
+	if [ -n "$tid" ]; then
+		ALL_PROXY="${ALL_PROXY:-${NUMBERDB_PROXY:-socks5h://127.0.0.1:1080}}" \
+		curl -sS --max-time 30 -X POST \
+			-H "Authorization: Bearer $(cat "${NUMBERDB_KEY:-$HOME/.config/numberdb/zeta3-key}")" \
+			"${NUMBERDB_HOST:-https://numberdb.org}/api/table/$tid/offer" \
+			>/dev/null 2>&1 \
+			&& say "$tid is offered for review" \
+			|| say "could not offer $tid; it may already be published"
+	fi
+
 	#The ceiling is the intended stopping point and it announces itself: the
 	#API refuses the create, the run says so in its report, and `run.sh`
 	#returns what the agent returned. There is deliberately no probe here --
