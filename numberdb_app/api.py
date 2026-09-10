@@ -1274,11 +1274,16 @@ def _upsert_entries(existing, arriving, tree):
 
 	#A table with no parameters writes its entries as bare values -- T7 holds
 	#one string, T67 holds 442 -- and those have no identity to merge on.
-	#Dropping them was the other half of the same bug: any upsert, not only an
-	#empty one, deleted every value a parameterless table held. They are kept,
-	#in order, ahead of anything keyed.
-	unkeyed = [record for record in (existing or [])
-	           if not isinstance(record, dict)]
+	#Dropping them was the other half of the same bug: any upsert deleted
+	#every value a parameterless table held.
+	#
+	#Merging into them is not possible and pretending otherwise is worse: with
+	#no parameters every record has the same identity, so 442 values would
+	#collapse to one. Same answer as the nested form above, and for the same
+	#reason: replace, and say so by doing it rather than by half-doing it.
+	if any(not isinstance(record, dict) for record in (existing or [])):
+		return arriving, None, None
+
 	kept = [dict(record) for record in (existing or [])
 	        if isinstance(record, dict)]
 	index = {identity_of(record, groups): position
@@ -1296,7 +1301,7 @@ def _upsert_entries(existing, arriving, tree):
 			index[identity] = len(kept)
 			kept.append(record)
 			added += 1
-	return unkeyed + kept, added, updated
+	return kept, added, updated
 
 
 #: What one attached file may weigh, and what a table's files may weigh
