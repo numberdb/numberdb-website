@@ -35,8 +35,13 @@ Formulas:
     and $\operatorname{erfi}(x)=-i\operatorname{erf}(ix)$ CITE{DLMFDefinitions}.
   formula-parity: The functions $\operatorname{erf}$, $\operatorname{erfi}$, $F$,
     $S$ and $C$ are odd, and $\operatorname{erfc}(-x)=2-\operatorname{erfc}(x)$.
-  formula-fresnel-erf: With $S$ and $C$ as in CITE{formula-fresnel-definitions},
-    $C(x)+iS(x)=\frac{1+i}{2}\operatorname{erf}((\sqrt{\pi}/2)(1-i)x)$ CITE{WikiFresnel}.
+  formula-fresnel-erf: >-
+    The Fresnel integrals HREF{Values_of_the_Fresnel_sine_integral}[$S$] and
+    HREF{Values_of_the_Fresnel_cosine_integral}[$C$], with
+    $S(x)=\int_0^x\sin(\pi t^2/2)\,\mathrm{d}t$ and $C(x)=\int_0^x\cos(\pi
+    t^2/2)\,\mathrm{d}t$, satisfy
+    $C(x)+iS(x)=\frac{1+i}{2}\operatorname{erf}\!\left(\frac{\sqrt{\pi}}{2}(1-i)x\right)$
+    CITE{WikiFresnel}.
 Programs:
   program-sage:
     language: Sage
