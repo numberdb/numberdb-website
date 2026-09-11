@@ -124,6 +124,13 @@ recording -- one draft held 89 entries of which 78 were $(x-a)^2$, because a
 rational eigenvalue makes the characteristic polynomial a power of a linear
 one whatever the field.
 
+When a grid is what you need, let the arguments choose it rather than the
+count. The six error-function tables and the four Airy ones were built on
+every $a/b$ in lowest terms with $b\leq18$, a bound picked because it made
+about a thousand entries; they now hold every argument of two decimal places
+in their range, which is the same thousand entries and every one of them a
+number a computation hands back.
+
 No general test settles this. Which parameters are the interesting ones is a
 fact about the family, and the table is the only thing that knows it: a
 denominator bound, a size target, a count that matches the older tables --

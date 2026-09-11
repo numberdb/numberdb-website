@@ -113,9 +113,9 @@ class AiryAiValues(numberdb.Generator):
     digits = 100
     rigour = "proven"
 
-    def enumerate(self, denominator=MAX_DENOMINATOR,
-                  maximum=MAX_ABS_ARGUMENT):
-        for x in _arguments(denominator, maximum):
+    def enumerate(self, fine_step=FINE_STEP, fine_limit=FINE_LIMIT,
+                  coarse_step=COARSE_STEP, maximum=MAX_ABS_ARGUMENT):
+        for x in _arguments(fine_step, fine_limit, coarse_step, maximum):
             yield {"x": x}
 
     def value(self, params, digits):
