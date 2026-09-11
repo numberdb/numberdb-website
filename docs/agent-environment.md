@@ -169,6 +169,22 @@ where the client package path is the important one.
 Evidence: `/tmp/audit_t179.py`, 2026-09-09, failed before the path insert and
 then ran `audit_table T179`, reporting `Nothing to report.`
 
+## Put `/app` before the client path when a Sage wrapper imports Django
+
+What happened: a T218 repair wrapper added both `/app` and
+`/app/clients/python` to `sys.path`, but put the client path first. Django then
+failed at `django.setup()` with `ModuleNotFoundError: No module named
+'numberdb.settings'`, because the Python client package is also named
+`numberdb` and shadowed the Django project package.
+
+What to do instead: for a temporary script under `agents/sage.sh` that imports
+Django, put `sys.path.insert(0, "/app/clients/python")` first if the client is
+needed, then `sys.path.insert(0, "/app")`, so `/app` ends up before the client
+path. A wrapper that only imports Django does not need the client path at all.
+
+Evidence: `/tmp/render_t218_preview.py`, 2026-09-11, failed with the client
+path first and rendered `/preview/T218` after `/app` was made first.
+
 ## `agents/sage.sh` mounts extra files rather than passing arguments
 
 What happened: `agents/sage.sh agents/table-build/dry_run.py /tmp/boole_generate.py`
