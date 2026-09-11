@@ -5045,3 +5045,56 @@ Evidence: `generators/genus2-real-periods-q/generate.py`, draft T213,
 monkeypatched only `numberdb._write.check_writable` and returned
 `<PublishOutcome T213: 159 added, 0 updated, ...>`, followed by
 `<VerifyReport T213: 159/159 matched, 0 differing, 0 missing, 0 extra>`.
+
+## Text-search table results have `tid`, not `id`
+
+What happened: the T214 database-neighbour probe used
+`numberdb.search_text('Weil polynomial').tables` and tried to print
+`table.id`, following the shape many API objects use. The result object raised
+`AttributeError: 'Table' object has no attribute 'id'. Did you mean: 'tid'?`
+Changing the probe to `table.tid`, `table.url` and `table.title` printed the
+candidate links correctly.
+
+What the skill says now: `search_text` returns an object with a `.tables`
+list, and the slug is in each result's `.url`. It does not name the T-number
+attribute.
+
+What it should say: entries of `search_text(...).tables` expose the
+T-number as `.tid`, not `.id`. A neighbour-screening print loop should read
+`table.tid`, `table.url` and `table.title`.
+
+Evidence: `/tmp/numberdb_db_probe.py`, 2026-09-11. The first run through
+`agents/sage.sh` failed on `table.id`; the second printed `T142
+Gauss_sums_of_primitive_Dirichlet_characters`, `T143
+Jacobi_sums_of_pairs_of_Dirichlet_characters_modulo_a_prime`, `T144
+Kloosterman_sums_modulo_a_prime` and the other neighbours with their slugs.
+
+## Exact polynomial helpers can still pull in uninitialised Sage subsystems
+
+What happened: the T214 generator first tried to use
+`from sage.rings.polynomial.weil.weil_polynomials import WeilPolynomials`
+after importing `numberdb.sage`. The import failed while initialising Sage's
+symbolic function modules. Replacing it with the genus 1 and genus 2
+coefficient inequalities avoided that path, but then `Polynomial.is_irreducible()`
+failed while importing Singular through Sage's factorisation machinery. A
+small integer quartic reducibility check was enough for this table and kept
+the generator inside named ring imports.
+
+What the skill says now: import `numberdb.sage` first and name the Sage
+objects you use; expect some Sage machinery to be missing, with examples from
+power series, determinants and symmetric functions.
+
+What it should say: exact polynomial code can hit the same problem outside
+those examples. `WeilPolynomials` may import symbolic functions, and
+`Polynomial.is_irreducible()` over `ZZ[t]` may import Singular. For a small
+degree table, it can be simpler and safer to write the exact arithmetic
+directly, for example Hasse bounds for elliptic Weil polynomials and a
+manual monic-quartic reducibility test.
+
+Evidence: T214, 2026-09-11. `/tmp/weil_probe.py` failed on the
+`WeilPolynomials` import with `AttributeError: cannot access submodule
+'function' of module 'sage.symbolic'`; the first dry run of
+`generators/weil-polynomials-abelian-varieties-prime-fields/generate.py`
+failed on `polynomial.is_irreducible()` with `ImportError: cannot import name
+PolynomialSequence_generic`. The checked generator now avoids both and
+`dry_run.py` reports 494 exact entries.
