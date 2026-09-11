@@ -48,6 +48,36 @@ services:
       retries: 5
       start_period: 20s
 
+  #The container agent runs and one-off commands use, so a limit can be put on
+  #them without putting one on the site. `docker compose run` takes no
+  #`--memory` flag -- v5.0.2 has none at all -- so the limit has to be
+  #declared on a service, and declaring it on `web` would cap the gunicorn
+  #worker serving the site, which is the thing being protected.
+  #
+  #320 MB is measured: importing Sage is 98 MB before anything is computed,
+  #the heaviest generator peaks at 211 MB, and one killed on 2026-09-11
+  #reached 386 MB while the machine had about 350 MB to spare. `memswap_limit`
+  #equal to `mem_limit` means no swap at all for the container, so a runaway
+  #dies instead of dragging the machine into thrashing. A failed build is
+  #cheap and says so; an unreachable server is neither.
+  #
+  #`profiles` keeps it out of `docker compose up`: it exists to be run, never
+  #to be raised alongside the site.
+  agent:
+    logging: *logging
+    image: numberdb/web:latest
+    profiles: ["agent"]
+    entrypoint: [""]
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=numberdb.settings.prod
+      - DATABASE_URL=postgres://u_numberdb:${POSTGRES_KEY:-password2_to_be_changed}@db:5432/numberdb
+    mem_limit: ${NUMBERDB_AGENT_MEMORY:-320m}
+    memswap_limit: ${NUMBERDB_AGENT_MEMORY:-320m}
+    volumes:
+      - numberdb-data:/numberdb-data
+
   nginx:
     logging: *logging
     #Without this the site does not come back from a reboot. Twice now

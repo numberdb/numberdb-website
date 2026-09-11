@@ -137,19 +137,21 @@ trap cleanup EXIT
 # Raise it for a run known to need more, when nothing else is on:
 #
 #     NUMBERDB_SAGE_MEMORY=600m agents/sage.sh ...
-MEMORY="${NUMBERDB_SAGE_MEMORY:-320m}"
+# Declared on the `agent` service in docker-compose.yml, not passed here:
+# `docker compose run` has no `--memory` flag, which this script learned by
+# refusing every run with "unknown flag: --memory" the first time it was
+# tried. Override with NUMBERDB_AGENT_MEMORY, which the compose file reads.
 
 name="numberdb-agent-run-$run_id"
 ssh "${ssh_opts[@]}" "$REMOTE" \
 	"exec 9>'$LOCK'; flock -w 3600 9 || { echo 'another run held the lock for an hour' >&2; exit 75; }; \
 	 cd '$RPATH' && timeout $TIMEOUT docker compose run --rm --no-deps -T --name '$name' \
-		--memory='$MEMORY' --memory-swap='$MEMORY' \
 		-e PYTHONPATH=/app/clients/python \
 		-e NUMBERDB_ASSISTED_BY='${NUMBERDB_ASSISTED_BY:-assisted by an agent}' \
 		-e NUMBERDB_KEY_FROM_STDIN='${NUMBERDB_KEY_FROM_STDIN:-0}' \
 		-e NUMBERDB_PUBLISH='${NUMBERDB_PUBLISH:-0}' \
 		${mounts[*]} \
-		web sage -python -u /work/$(basename "$main")" \
+		agent sage -python -u /work/$(basename "$main")" \
 	2>&1 | grep --line-buffered -viE 'collecting static|static files copied|Starting command as|^ Container |remote port forwarding'
 #`-u` and `--line-buffered`: without them a run that is killed at its
 #timeout shows only whole 4 KB blocks of what it printed, and three runs of
