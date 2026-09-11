@@ -93,8 +93,9 @@ Data properties:
   type: R
   rigour: proven
   complete: 'no'
-  complete-note: it holds $\operatorname{Chi}(x)$ at every rational $x=a/b$ in
-    lowest terms with $b\leq6$ and $0<x\leq5$
+  complete-note: >-
+    it holds $\operatorname{Chi}(x)$ at every $x$ of two decimal places with
+    $0<x\leq10$
   rigour details: Each value was computed as a Sage real ball with arb at `numberdb.bits(digits,
     losing=64)` bits, and checked against mpmath at 150 decimal digits and against
     the OEIS value for $\operatorname{Chi}(1)$ CITE{OEISChiOne}. The widest returned

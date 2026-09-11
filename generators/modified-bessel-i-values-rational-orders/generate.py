@@ -28,7 +28,13 @@ from sage.rings.complex_arb import ComplexBallField
 from sage.rings.rational_field import QQ
 
 
-ORDERS = ("0", "1/3", "1/2", "2/3", "1", "3/2", "2", "5/2", "3")
+#The same orders as the Bessel tables T187 and T190, so the four sit on
+#one grid: every half-integer to 15, and the thirds where the Airy
+#functions live. At a half-integer these are elementary in sinh and
+#cosh, which is what somebody checking a value against a closed form
+#is holding.
+ORDERS = tuple(str(nu) for nu in sorted(
+    {QQ(k) / 2 for k in range(0, 31)} | {QQ(1) / 3, QQ(2) / 3}))
 MAX_DENOMINATOR = 4
 MAX_ARGUMENT = 5
 

@@ -18,7 +18,6 @@ only the principal branch, so both branches are computed with
 
 import os
 import sys
-from math import gcd
 
 import numberdb.sage as numberdb
 from sage.rings.complex_arb import ComplexBallField
@@ -26,14 +25,29 @@ from sage.rings.rational_field import QQ
 from sage.rings.real_arb import RealBallField
 
 
-POSITIVE_MAX_DENOMINATOR = 6
-POSITIVE_MAX_ARGUMENT = 10
-NEGATIVE_MAX_DENOMINATOR = 10
+# Seven hundred values, at the arguments somebody actually arrives holding.
+#
+# The grid was every $a/b$ in lowest terms with $b\leq6$, a bound chosen for
+# the count it made rather than for the arguments it picked: W(1.96) is a
+# number people arrive with and W(17/18) is not.
+#
+# Two decimals to 5 and one decimal from there to 20. W grows like a
+# logarithm, so the far end is coarse without losing anything anybody reads
+# off it, and 20 is past W(x) = 2.
+STEP = QQ(1) / QQ(100)
+FINE_LIMIT = 5
+COARSE_STEP = QQ(1) / QQ(10)
+POSITIVE_MAX_ARGUMENT = 20
+
+# Below zero both branches are real, and only down to -1/e. Two decimals is
+# the whole of that interval: -0.36 up to -0.01, and -0.37 is already outside
+# the domain.
+NEGATIVE_STEP = QQ(1) / QQ(100)
 
 # Bits of working precision beyond what the written digits need.
 #
-# Measured over all 142 entries: at this guard the widest result still has
-# radius less than 1e-118 when the table asks for 100 digits.
+# `verify` recomputes every entry and compares, so a guard too small
+# for some argument fails there rather than quietly rounding.
 WORKING_GUARD = 64
 
 
@@ -47,30 +61,29 @@ def _key_from_stdin():
         os.environ["NUMBERDB_API_KEY"] = token
 
 
-def _positive_arguments(max_denominator=POSITIVE_MAX_DENOMINATOR,
+def _positive_arguments(step=STEP, fine_limit=FINE_LIMIT,
+                        coarse_step=COARSE_STEP,
                         maximum=POSITIVE_MAX_ARGUMENT):
-    values = set()
-    for denominator in range(1, max_denominator + 1):
-        for numerator in range(1, maximum * denominator + 1):
-            if gcd(numerator, denominator) == 1:
-                values.add(QQ(numerator) / QQ(denominator))
-    for value in sorted(values):
-        yield str(value)
+    for index in range(1, int(QQ(fine_limit) / step) + 1):
+        yield str(index * step)
+    first = int(QQ(fine_limit) / coarse_step) + 1
+    for index in range(first, int(QQ(maximum) / coarse_step) + 1):
+        yield str(index * coarse_step)
 
 
-def _negative_arguments(max_denominator=NEGATIVE_MAX_DENOMINATOR):
-    values = set()
+def _negative_arguments(step=NEGATIVE_STEP):
+    #-1/e is where the two real branches meet, and it is irrational: the
+    #comparison decides which two-decimal arguments are inside the domain
+    #rather than a rounded bound standing in for it.
     field = RealBallField(256)
     one_over_e = field(1) / field(1).exp()
-    for denominator in range(1, max_denominator + 1):
-        for numerator in range(1, denominator):
-            if gcd(numerator, denominator) != 1:
-                continue
-            magnitude = QQ(numerator) / QQ(denominator)
-            if field(magnitude) < one_over_e:
-                values.add(-magnitude)
-    for value in sorted(values, key=lambda q: (abs(q), q)):
-        yield str(value)
+    index = 1
+    while True:
+        magnitude = index * step
+        if not field(magnitude) < one_over_e:
+            return
+        yield str(-magnitude)
+        index += 1
 
 
 def _value_ball(branch_text, x_text, digits):
@@ -100,12 +113,14 @@ class LambertWValues(numberdb.Generator):
     digits = 100
     rigour = "proven"
 
-    def enumerate(self, positive_denominator=POSITIVE_MAX_DENOMINATOR,
+    def enumerate(self, step=STEP, fine_limit=FINE_LIMIT,
+                  coarse_step=COARSE_STEP,
                   positive_maximum=POSITIVE_MAX_ARGUMENT,
-                  negative_denominator=NEGATIVE_MAX_DENOMINATOR):
-        for x in _positive_arguments(positive_denominator, positive_maximum):
+                  negative_step=NEGATIVE_STEP):
+        for x in _positive_arguments(step, fine_limit, coarse_step,
+                                     positive_maximum):
             yield {"branch": "0", "x": x}
-        for x in _negative_arguments(negative_denominator):
+        for x in _negative_arguments(negative_step):
             yield {"branch": "0", "x": x}
             yield {"branch": "-1", "x": x}
 

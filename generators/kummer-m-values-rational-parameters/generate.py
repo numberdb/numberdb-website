@@ -26,7 +26,12 @@ from sage.rings.integer_ring import ZZ
 
 A_VALUES = ("1/2", "-1/2", "1", "3/2", "-3/2", "2", "5/2", "-5/2", "3")
 B_VALUES = ("1/2", "1", "3/2", "2", "5/2", "3")
-Z_VALUES = ("1/2", "-1/2", "1", "-1", "2", "-2", "4", "-4")
+#Both signs at every magnitude: $M(a;b;z)$ and $M(a;b;-z)$ are related by
+#Kummer's transformation $M(a;b;z)=e^{z}M(b-a;b;-z)$, so a reader with one
+#is often checking the other, and the growing and decaying sides of the
+#function look nothing alike.
+Z_VALUES = ("1/2", "-1/2", "1", "-1", "3/2", "-3/2", "2", "-2", "3",
+            "-3", "4", "-4", "5", "-5", "6", "-6")
 
 # Bits of working precision beyond what the written digits need.
 #

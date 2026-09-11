@@ -26,7 +26,13 @@ from sage.rings.rational_field import QQ
 
 A_VALUES = ("1/2", "-1/2", "1", "3/2", "2", "5/2", "3")
 B_VALUES = ("0", "1/2", "-1/2", "1", "3/2", "2", "5/2", "3")
-Z_VALUES = ("1/4", "1/2", "1", "2", "3", "4")
+#The argument is where a table of $U$ is actually consulted: $a$ and $b$
+#come from whatever equation was being solved and are small rationals,
+#while $z$ is a number someone has. Quarters and halves near the origin,
+#where $U$ carries its $z^{1-b}$ singularity, then integers out to 8,
+#where it is heading for its asymptotic $z^{-a}$.
+Z_VALUES = ("1/4", "1/2", "3/4", "1", "3/2", "2", "5/2", "3", "4", "5",
+            "6", "8")
 
 # Bits of working precision beyond what the written digits need.
 #

@@ -138,9 +138,10 @@ Data properties:
   type: R
   rigour: proven
   complete: 'no'
-  complete-note: it holds $I_\nu(x)$ for $\nu\in\{0,1/3,1/2,2/3,1,3/2,2,5/2,3\}$
-    and for every positive rational $x=a/b$ in lowest terms with $b\leq4$ and
-    $x\leq5$
+  complete-note: >-
+    it holds $I_\nu(x)$ for $\nu\in\{0,1/3,2/3\}\cup\tfrac12\mathbb{Z}$ with
+    $0\leq\nu\leq15$, and for every positive rational $x=a/b$ in lowest terms
+    with $b\leq4$ and $x\leq5$
   rigour details: Each value was computed as a Sage real ball with arb at `numberdb.bits(digits,
     losing=64)` bits. The entries were checked against mpmath at 150 decimal
     digits, against the recurrence in CITE{formula-recurrence} wherever all three
