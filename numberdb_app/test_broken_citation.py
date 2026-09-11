@@ -61,6 +61,19 @@ class ABrokenCitationStillRenders(TestCase):
 		body = self.page(a_table(Comments={'c': 'a stray CITE{ and more text'}))
 		self.assertIn('and more text', body)
 
+	def test_prose_that_is_not_text_still_renders(self):
+		#The backstop rather than the parser: whatever else arrives in a prose
+		#field, the page is served.
+		body = self.page(a_table(Comments={'c': 12345}))
+		self.assertIn('12345', body)
+
+	def test_one_bad_field_does_not_cost_the_others(self):
+		body = self.page(a_table(
+			Definition='the good definition',
+			Comments={'a': 'CITE{missing}', 'b': 'the other comment'}))
+		self.assertIn('the good definition', body)
+		self.assertIn('the other comment', body)
+
 	def test_a_comment_on_an_entry_is_checked_too(self):
 		#Entry comments are prose and are rendered by the same function.
 		tree = a_table(Numbers={'1': {'number': '2', 'comment': 'CITE{gone}'}})

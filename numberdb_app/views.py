@@ -649,6 +649,35 @@ def table_context(table, preview=False):
 		return text.replace('<', '&lt;') if isinstance(text, str) else text
 
 	def render_text(text, line_breaks = True, escape = True):
+		r'''A field's prose, rendered, whatever is wrong with it.
+
+		Nothing here may raise. A table's prose is written by hand and by
+		agents, and a page that answers 500 over one malformed sentence loses
+		the reader everything else on it -- which is what T197 did for a day
+		over a single citation whose label had moved to another table.
+
+		So the parsing below degrades rather than refuses, and this wrapper is
+		the backstop for whatever it did not anticipate: the field comes back
+		as its own text, escaped, and the rest of the page is served. It is
+		logged onto the same activity log as edits, because a fault that shows
+		no stack trace and no error page is one nobody would otherwise learn
+		about.
+		'''
+		try:
+			return _render_text(text, line_breaks, escape)
+		except Exception as problem:
+			import json
+			import logging
+			logging.getLogger('numberdb.edit').warning(json.dumps({
+				'event': 'render',
+				'fault': problem.__class__.__name__,
+				'detail': str(problem)[:200],
+				'text': str(text)[:200],
+			}))
+			raw = text if isinstance(text, str) else str(text)
+			return raw.replace('<', '&lt;')
+
+	def _render_text(text, line_breaks = True, escape = True):
 		r'''
 		Parse text for 'CITE', 'HREF', and '\n', 
 		and replace accordingly.
@@ -671,7 +700,10 @@ def table_context(table, preview=False):
 		'''
 		
 		if not isinstance(text, str):
-			raise ValueError('string expected instead of %s' % text.__class__)
+			#A number or a list where prose was expected: shown as what it is
+			#rather than refused, on the same reasoning as everything else
+			#here. The wrapper logs it.
+			text = str(text)
 		
 		if escape:
 			text = text.replace('<', '&lt;')
