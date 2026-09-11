@@ -5393,3 +5393,30 @@ failed with the error above. `/tmp/fetch_t219_shape.py` then printed
 `has Numbers: False` and `has Data: False`. The patched direct fill wrote two
 entries and attached `closed_census_data.py` and `generate.py` in revision
 `c1c157f908147cbf0ad5ff924cda036a64697bdd80cda7bab1a9e9212af46a30`.
+
+## Source digits are a check, not the definition, for Coxeter simplex volumes
+
+What happened: the 2026-09-11T1148 Coxeter simplex build read the compact and
+paracompact honeycomb pages for the 32 rank-4 hyperbolic Coxeter groups. The
+raw wikitext gives each Coxeter-Dynkin diagram as `{{CDD|...}}` image
+segments, so the matrix had to be read from the diagram pieces rather than
+from the bracket symbol alone. After the Murakami-Yano angle order was fixed,
+31 of the 32 arb-ball volumes agreed with the source decimals to ten places.
+The last paracompact row, `[3^{[3,3]}]`, has all six Coxeter labels equal to
+3, hence it is the regular ideal tetrahedron and has volume
+`Cl_2(pi/3)=1.014941606...`; the page prints `1.014916064`.
+
+What the skill says now: verify against something outside the family and do
+not pick one of two disagreeing computations until the cause is known.
+
+What it should say: when a source table supplies both a defining diagram and
+decimal values, treat the diagram and formula as the definition and the
+decimal as an outside check. If one decimal disagrees but the definition
+identifies a value already independently known, keep the defined value and
+write the source discrepancy in the build report rather than copying the
+printed digit string.
+
+Evidence: `/tmp/coxeter32_test.py`, 2026-09-11. The first angle assignment
+made the branched diagrams fail their controls; the order
+`A=01, B=02, C=12, D=23, E=13, F=03` made all non-typo rows match the source
+decimals, and `[3^{[3,3]}]` matched the T175 Gieseking value instead.
