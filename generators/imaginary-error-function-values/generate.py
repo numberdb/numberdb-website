@@ -126,9 +126,8 @@ class ImaginaryErrorFunctionValues(numberdb.Generator):
     digits = 100
     rigour = "proven"
 
-    def enumerate(self, denominator=MAX_DENOMINATOR,
-                  maximum=MAX_ARGUMENT):
-        for x in _arguments(denominator, maximum):
+    def enumerate(self, step=STEP, maximum=MAX_ARGUMENT):
+        for x in _arguments(step, maximum):
             yield {"x": x}
 
     def value(self, params, digits):
