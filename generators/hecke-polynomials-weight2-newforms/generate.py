@@ -265,15 +265,14 @@ def _record_by_label(label):
 
 def _comment(record, prime):
     parts = []
-    if ZZ(prime).divides(record["level"]):
+    if (ZZ(prime) ** 2).divides(record["level"]):
         parts.append(
-            "Here $p$ divides the level $N$; the polynomial records the "
-            "usual Atkin-Lehner coefficient $a_p$ on $K_f$."
+            "Here $p^2$ divides the level $N$, so $a_p=0$."
         )
     if not _coefficient_charpoly(record, prime).is_irreducible():
         parts.append(
             "The characteristic polynomial is reducible over $\\mathbb{Q}$; "
-            "$a_%s$ does not generate the full coefficient field $K_f$."
+            "$a_{%s}$ does not generate the full coefficient field $K_f$."
             % prime
         )
     return " ".join(parts) if parts else None
