@@ -1,0 +1,150 @@
+# The table document for proposal 5 of
+# agents/table-ideas/BATCH-2026-09-10T2109.md. Created as draft T216 through
+# the API (X-Draft: yes) with URL
+# Frobenius_angles_of_abelian_varieties_over_prime_fields; publishing is a
+# person's act on the site.
+Title: Frobenius angles of abelian varieties over prime fields
+Definition: >-
+  The Frobenius angles of an isogeny class of abelian varieties over
+  $\mathbb{F}_q$ are the numbers $\theta\in[0,1]$ such that
+  $q^{-1/2}e^{\pi i\theta}$ is a root of the L-polynomial of the class,
+  listed in increasing order with multiplicity CITE{LMFDBAngles}. This
+  table gives those angles for isogeny classes over prime fields.
+Parameters:
+  g:
+    type: Z
+    title: dimension
+    display: $g$
+    constraints: $g\geq1$
+  q:
+    type: Z
+    title: base-field cardinality
+    display: $q$
+    constraints: $q$ is prime
+  label:
+    type: Symbolic
+    title: LMFDB isogeny-class label
+    display: label
+  i:
+    type: Z
+    title: position in the sorted angle list
+    display: $i$
+    constraints: $i\geq1$
+Comments:
+  comment-convention: >-
+    The list follows the LMFDB convention CITE{LMFDBAnglesInventory}. It
+    usually has $g$ entries, but if $0$ or $1$ occurs then the boundary
+    angle is listed with its multiplicity, so a genus $2$ class may have
+    more than two rows.
+  comment-polynomial: >-
+    HREF{Weil_polynomials_of_abelian_varieties_over_prime_fields}[The Weil
+    polynomial table] stores the characteristic polynomial $P_A(t)$ for the
+    same isogeny classes. Its roots have absolute value $\sqrt q$, and the
+    L-polynomial used here is $L_A(x)=x^{2g}P_A(1/x)$.
+  comment-exact-rows: >-
+    An angle is written as an exact rational when the corresponding
+    normalized Frobenius eigenvalue is a root of unity. Otherwise it is
+    written as a real ball.
+Formulas:
+  formula-roots: >-
+    If $\alpha$ is a root of $P_A(t)$ and
+    $\alpha=\sqrt q\,e^{\pi i\theta}$ with $0\leq\theta\leq1$, then
+    $\theta$ is one of the angles stored here.
+  formula-trace: >-
+    For $g=1$, $P_A(t)=t^2-a_qt+q$ and
+    $a_q=2\sqrt q\cos(\pi\theta)$.
+  formula-root-unity-test: >-
+    If $\theta$ is rational with denominator $m$, then
+    $\alpha^2/q$ is a root of the cyclotomic polynomial $\Phi_m$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<t> = ZZ[]
+      P = t^4 - t^3 - 2*t + 4       # LMFDB 2.2.ab_a
+      CBF = ComplexBallField(400)
+      roots = P.change_ring(CBF).roots(multiplicities=False)
+      sorted((z.arg() / CBF.pi()).real() for z in roots if z.imag() > 0)
+Similar tables:
+  - table: HREF{Weil_polynomials_of_abelian_varieties_over_prime_fields}[Weil polynomials of abelian varieties over prime fields]
+    relation: stores the Weil polynomials whose roots determine these angles
+  - table: HREF{Roots_of_unity}[Roots of unity]
+    relation: contains the normalized Frobenius eigenvalues when the angle is rational
+  - table: HREF{Cos_pi_times_x_at_rational_numbers}[$\cos(\pi x)$ for rational $x$]
+    relation: gives the trigonometric values in CITE{formula-trace} for rational angles
+  - table: HREF{Gauss_sums_of_primitive_Dirichlet_characters}[Gauss sums of primitive Dirichlet characters]
+    relation: stores finite-field character sums whose values are Frobenius eigenvalue sums in related point-counting problems
+  - table: HREF{Jacobi_sums_of_pairs_of_Dirichlet_characters_modulo_a_prime}[Jacobi sums of pairs of Dirichlet characters modulo a prime]
+    relation: stores finite-field character sums that can determine Frobenius polynomials of diagonal varieties
+  - table: HREF{Kloosterman_sums_modulo_a_prime}[Kloosterman sums modulo a prime]
+    relation: stores another family of Frobenius trace sums over finite fields
+Links:
+  LMFDBAngles:
+    title: 'LMFDB knowl: Frobenius angles'
+    url: https://www.lmfdb.org/knowledge/show/av.fq.frobenius_angles
+  LMFDBAnglesInventory:
+    title: 'LMFDB inventory: abelian varieties over finite fields'
+    url: https://github.com/LMFDB/lmfdb-inventory/blob/master/db-abvar.md
+  LMFDBAbelianVarieties:
+    title: 'LMFDB: isogeny classes of abelian varieties over finite fields'
+    url: https://www.lmfdb.org/Variety/Abelian/Fq/
+  LMFDBData22aba:
+    title: 'LMFDB API data: abelian variety class 2.2.ab_a'
+    url: https://www.lmfdb.org/api/av_fq_isog/?_format=json&_fields=label,angles,poly&label=2.2.ab_a
+  LMFDBData22aae:
+    title: 'LMFDB API data: abelian variety class 2.2.a_ae'
+    url: https://www.lmfdb.org/api/av_fq_isog/?_format=json&_fields=label,angles,poly&label=2.2.a_ae
+  OEISSurfaces:
+    title: 'OEIS A362198: number of isogeny classes of abelian surfaces over finite fields'
+    url: https://oeis.org/A362198
+References:
+  DupuyKedlayaRoeVincent:
+    bib: >-
+      Taylor Dupuy, Kiran S. Kedlaya, David Roe and Christelle Vincent,
+      Isogeny Classes of Abelian Varieties over Finite Fields in the LMFDB,
+      Arithmetic Geometry, Number Theory, and Computation, Simons Symposia,
+      Springer, 2021, 375-448.
+    arxiv: 2003.05380
+Keywords:
+  - Frobenius angle
+  - Frobenius angles
+  - abelian variety
+  - abelian varieties over finite fields
+  - finite field
+  - Weil polynomial
+  - L-polynomial
+  - Sato-Tate
+  - isogeny class
+  - LMFDB label
+Tags:
+  - number theory
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every angle in the LMFDB Frobenius-angle list for every
+    isogeny class with $g=1$ and prime $q\leq13$, and every isogeny class
+    with $g=2$ and prime $q\leq5$
+  rigour details: >-
+    The generator enumerates the same Weil polynomials as
+    HREF{Weil_polynomials_of_abelian_varieties_over_prime_fields}[the Weil
+    polynomial table]: $5,7,9,11,13,15$ elliptic isogeny classes for
+    $q=2,3,5,7,11,13$, and $35,63,129$ abelian-surface isogeny classes
+    for $q=2,3,5$, matching OEIS A362198 CITE{OEISSurfaces}. It factors
+    reducible quartics into quadratic factors before taking roots, so
+    repeated roots such as $(t^2-q)^2$ are handled without numerical root
+    isolation. Non-exact angles are computed in Sage's ComplexBallField or
+    RealBallField with $192$ guard bits beyond the $100$ written digits.
+    A rational angle is returned exactly only when the exact polynomial
+    divisibility test in CITE{formula-root-unity-test} succeeds for
+    $m\in\{1,2,3,4,5,6,8,10,12\}$. The rows for LMFDB classes 2.2.ab_a
+    and 2.2.a_ae were compared with the LMFDB API fields
+    CITE{LMFDBData22aba} CITE{LMFDBData22aae}; the root-size identity
+    $|\alpha|=\sqrt q$ and CITE{formula-trace} were checked on every row
+    before the draft was created. The larger rectangle with $g=2$ and
+    $q\leq7$ was measured before the draft was created and left for a later
+    extension because its entries block was $196.7$ KB.
+Display properties:
+  number-header: $\theta_i$
+  group parameters: [['g'], ['q'], ['label'], ['i']]
