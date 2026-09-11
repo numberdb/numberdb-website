@@ -1,7 +1,11 @@
 """Republish a generator's table, removing whatever the run did not produce.
 
     cat ~/.config/numberdb/bmatschke-key | NUMBERDB_KEY_FROM_STDIN=1 \
-        agents/sage.sh agents/republish.py generators/<name>/generate.py
+        NUMBERDB_PUBLISH=1 agents/sage.sh agents/republish.py \
+        generators/<name>/generate.py
+
+The generator is the file mounted beside this one; `sage.sh` passes no
+arguments to the script it runs.
 
 A generator's own `--publish` adds and updates but never deletes, which is the
 right default: a bug in `enumerate` that yields nothing would otherwise empty
@@ -41,10 +45,24 @@ def generator_in(module):
     return found[0]
 
 
+def beside_me():
+    """The generator mounted next to this script.
+
+    `sage.sh` mounts every file it is given into one directory and runs the
+    first, passing no arguments, so the path cannot arrive as one. The
+    generator is whatever else is there.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    others = [name for name in sorted(os.listdir(here))
+              if name.endswith(".py") and name != os.path.basename(__file__)]
+    if len(others) != 1:
+        raise SystemExit("expected one generator beside %s, found %s"
+                         % (__file__, others))
+    return os.path.join(here, others[0])
+
+
 def main():
-    if len(sys.argv) < 2:
-        raise SystemExit(__doc__)
-    path = sys.argv[1]
+    path = sys.argv[1] if len(sys.argv) > 1 else beside_me()
     message = (sys.argv[2] if len(sys.argv) > 2
                else "republished on a new grid, removing the old one")
 
