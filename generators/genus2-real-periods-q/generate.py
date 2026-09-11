@@ -30,6 +30,11 @@ WRITTEN_DIGITS = 28
 _BY_LABEL = {record["label"]: record for record in CURVE_DATA}
 
 
+def label_sort_key(label):
+    conductor, family, discriminant, curve = label.split(".")
+    return (int(conductor), family, int(discriminant), int(curve))
+
+
 def _key_from_stdin():
     if os.environ.get("NUMBERDB_KEY_FROM_STDIN") != "1":
         return
@@ -151,7 +156,7 @@ class Genus2RealPeriods(numberdb.Generator):
     files = ("generate.py", "curve_data.py")
 
     def enumerate(self, max_conductor=MAX_CONDUCTOR):
-        for record in CURVE_DATA:
+        for record in sorted(CURVE_DATA, key=lambda row: label_sort_key(row["label"])):
             if record["conductor"] <= max_conductor:
                 yield {"label": record["label"]}
 
