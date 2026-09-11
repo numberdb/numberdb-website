@@ -1,0 +1,104 @@
+# The table document for proposal 2 of
+# agents/table-ideas/BATCH-2026-09-10T2109.md. Created as draft T213 through
+# the API (X-Draft: yes) with URL Real_periods_of_genus_2_curves_over. It is
+# filled by generate.py beside it and left offered for review; publishing is a
+# person's act on the site.
+Title: Real periods of genus 2 curves over $\mathbb{Q}$
+Definition: >-
+  Let $C/\mathbb{Q}$ be a genus $2$ curve and let $A=\operatorname{Jac}(C)$.
+  If $\Lambda\subset\mathbb{C}^2$ is the period lattice of a Neron basis of
+  differentials on a regular model of $C$, then this table gives the real
+  period $\Omega_A$ CITE{LMFDBPeriod}: the covolume of
+  $\Lambda\cap\mathbb{R}^2$ in $\mathbb{R}^2$, multiplied by the number of
+  connected components of $A(\mathbb{R})$.
+Parameters:
+  label:
+    type: Symbolic
+    title: LMFDB curve label
+    display: label
+Comments:
+  comment-labels: >-
+    The label is the LMFDB label for the genus $2$ curve CITE{LMFDBGenus2}.
+    Each entry comment gives the isogeny class of the Jacobian and the model
+    $y^2+h(x)y=f(x)$.
+  comment-components: >-
+    The connected-component factor is part of $\Omega_A$ in this table. Some
+    authors omit this factor from a period covolume, so the convention should
+    be checked when comparing with another source.
+  comment-source-precision: >-
+    The LMFDB records these real periods as $97$-bit real literals. The
+    generator stores the first $28$ significant digits of each decimal string,
+    without rounding, so the last written digit is uncertain in NumberDB's
+    decimal convention.
+  comment-isogeny: >-
+    The real period is attached to the curve's Jacobian, not only to its
+    isogeny class. The curves 249.a.249.1 and 249.a.6723.1 have the same
+    period in the source data, while 277.a.277.1 and 277.a.277.2 are in one
+    isogeny class and have different periods.
+Formulas:
+  formula-bsd: >-
+    The Birch and Swinnerton-Dyer conjecture predicts
+    $L^{(r)}(A,1)/r! = \Omega_A R_A |\operatorname{Sha}(A)|
+    \prod_p c_p / |A(\mathbb{Q})_{\mathrm{tors}}|^2$, where $r$ is the
+    analytic rank, $R_A$ is the regulator, $c_p$ is the Tamagawa number at
+    $p$, and $A(\mathbb{Q})_{\mathrm{tors}}$ is the torsion subgroup
+    CITE{LMFDBBSD}.
+Similar tables:
+  - table: HREF{Real_periods_of_elliptic_curves_over_Q_of_rank_1}[Real periods of elliptic curves over $\mathbb{Q}$ of rank $1$]
+    relation: stores the genus $1$ real period for elliptic curves of rank $1$
+  - table: HREF{Real_periods_of_elliptic_curves_over_Q_of_rank_2}[Real periods of elliptic curves over $\mathbb{Q}$ of rank $2$]
+    relation: stores the genus $1$ real period for elliptic curves of rank $2$
+  - table: HREF{Real_periods_of_elliptic_curves_over_Q_of_rank_3}[Real periods of elliptic curves over $\mathbb{Q}$ of rank $3$]
+    relation: stores the genus $1$ real period for elliptic curves of rank $3$
+  - table: HREF{Special-values_of_genus_2_curves_over}[Special $L$-values of genus $2$ curves over $\mathbb{Q}$]
+    relation: stores the $L$-function factor that appears with the real period in the BSD formula for the same genus $2$ Jacobians
+  - table: HREF{Equations_of_Igusa_invariants_of_split_Jacobians}[Equations satisfied by Igusa invariants of split Jacobians]
+    relation: stores equations for genus $2$ curves whose Jacobians split
+Links:
+  LMFDBPeriod:
+    title: 'LMFDB knowl: real period of a genus 2 curve'
+    url: https://www.lmfdb.org/knowledge/show/g2c.real_period
+  LMFDBGenus2:
+    title: 'LMFDB: genus 2 curves over $\mathbb{Q}$'
+    url: https://www.lmfdb.org/Genus2Curve/Q/
+  LMFDBBSD:
+    title: 'LMFDB knowl: BSD invariants for genus 2 curves'
+    url: https://www.lmfdb.org/knowledge/show/g2c.bsd_invariants
+  LMFDBData169:
+    title: 'LMFDB JSON data: genus 2 curve 169.a.169.1'
+    url: https://www.lmfdb.org/Genus2Curve/Q/data/169.a.169.1?_format=json
+Keywords:
+  - genus 2
+  - genus 2 curve
+  - hyperelliptic curve
+  - Jacobian
+  - real period
+  - period lattice
+  - Birch and Swinnerton-Dyer
+  - BSD
+  - LMFDB label
+Tags:
+  - number theory
+  - curves
+Data properties:
+  type: R
+  rigour: heuristic
+  complete: 'no'
+  complete-note: >-
+    it holds every LMFDB genus $2$ curve with conductor $N\leq1000$ whose real
+    period is recorded in the LMFDB genus $2$ curve data
+  rigour details: >-
+    The generator uses the $159$ LMFDB genus $2$ curve rows with conductor
+    $N\leq1000$, fetched from `g2c_curves` and frozen in `curve_data.py`.
+    It transcribes the `real_period` decimal string from each row and stores
+    the first $28$ significant digits, one digit fewer than the source's
+    $97$-bit precision supports. Before the draft was created, PARI's
+    `lfungenus2` computation matched the LMFDB `leading_coeff` values on the
+    $41$ odd-conductor isogeny classes in the range, and the BSD quotient in
+    CITE{formula-bsd} reproduced the $56$ odd-conductor real periods to the
+    precision supported by the source fields. The even-conductor rows are not
+    certified here by an independent period computation; the table records
+    the LMFDB values and is therefore marked `heuristic`.
+Display properties:
+  number-header: $\Omega_A$
+  group parameters: [['label']]
