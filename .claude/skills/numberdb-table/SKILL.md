@@ -109,6 +109,33 @@ none was caught by a test.
   approximation. Exact values are stronger and shorter — return them exactly
   rather than as a hundred digits of an integer.
 
+**Hold the numbers that turn up.** The question a table has to answer about
+its range is not how many entries that makes, nor how simply they can be
+described, but whether anybody will arrive holding one of them.
+
+$\Gamma(1/3)$ turns up: the multiplication formulas put it in people's hands.
+$\operatorname{erf}(1.96)$ turns up, because that is a z-score.
+$\operatorname{erf}(17/18)$ does not, and a bound on the denominator that
+admits it is counting rather than choosing. $t^2+2$ turns up constantly and
+almost never as the Weil polynomial of an abelian variety, so a table holding
+every such polynomial in a small box answers searches it cannot inform.
+$(x-3)^2$ turns up as a square and never as a Hecke polynomial worth
+recording -- one draft held 89 entries of which 78 were $(x-a)^2$, because a
+rational eigenvalue makes the characteristic polynomial a power of a linear
+one whatever the field.
+
+No general test settles this. Which parameters are the interesting ones is a
+fact about the family, and the table is the only thing that knows it: a
+denominator bound, a size target, a count that matches the older tables --
+none of them is a reason for any particular number to be present. Say which
+range you chose and why in the completeness note. That sentence is the
+argument, and it is what a reader checking whether their own number belongs
+here actually reads.
+
+The cost of getting it wrong is not storage. A table full of numbers nobody
+looks for still answers when somebody looks for something else, and every hit
+in the corpus is worth a little less for it.
+
 **A title is what a search reaches.** The text index has four weights: the
 title and `Keywords` first, then `Tags`, then the `Definition`, then the
 table's `Comments`. **An entry's own comment is in none of them** -- a
