@@ -73,6 +73,32 @@ on_remote() {
 		    "$REMOTE" "cd '$RPATH' && $*"
 }
 
+# The same lock `agents/sage.sh` and `agents/on-server.sh` take, for the same
+# reason, which this script was the last one not to take.
+#
+# On 2026-09-11 a deploy's `migrate` -- Sage, a few hundred megabytes -- landed
+# while a campaign was running a build, beside a gunicorn worker that is Sage
+# again. The box has 961 MB. The kernel killed the worker three times, swap
+# filled, the load average reached 92 on one core, and the site answered
+# nothing for the better part of an hour. Each of the three was within its
+# budget; the sum was not.
+#
+# So a deploy queues behind an agent run and an agent run queues behind a
+# deploy. `-w` waits rather than failing: somebody shipping wants the ship to
+# happen, and a refusal would only be retyped.
+LOCK="${NUMBERDB_LOCK:-/tmp/numberdb-sage.lock}"
+LOCK_WAIT="${NUMBERDB_LOCK_WAIT:-3600}"
+
+# Held per step rather than across the whole deploy, because each step is its
+# own ssh session and a lock does not survive between them. The gap between
+# steps is the part this cannot close: it stops the heavy work overlapping,
+# which is what filled the memory.
+locked() {
+	on_remote "exec 9>'$LOCK'; flock -w $LOCK_WAIT 9 || { \
+	           echo 'an agent run held the lock for an hour' >&2; exit 75; }; \
+	           $*"
+}
+
 # A one-off container that cannot outlive the command that started it.
 #
 # `--no-deps` because this must never start or restart the containers serving
@@ -82,8 +108,8 @@ on_remote() {
 # being killed -- the same belt and braces as agents/sage.sh.
 compose_run() {
 	local name="ship-$$-$RANDOM"
-	on_remote "docker compose run --rm --no-deps -T --name '$name' $*; \
-	           code=\$?; docker rm -f '$name' >/dev/null 2>&1; exit \$code"
+	locked "docker compose run --rm --no-deps -T --name '$name' $*; \
+	        code=\$?; docker rm -f '$name' >/dev/null 2>&1; exit \$code"
 }
 
 # 1 ---------------------------------------------------------------------------
@@ -151,7 +177,9 @@ say "restarting web and nginx"
 # nothing when nginx is untouched. Other services (db, evaluator) pick up
 # compose-file changes -- log rotation, limits -- the next time they are
 # recreated, which is deliberately not on every deploy.
-on_remote "docker compose up -d web nginx" | tail -3
+#Under the lock as well: recreating web starts a fresh Sage import, and
+#doing that beside an agent run is half of what filled the memory.
+locked "docker compose up -d web nginx" | tail -3
 sleep 15
 
 # 6 ---------------------------------------------------------------------------
