@@ -1,0 +1,134 @@
+# The table document for the weight 2 newform part of proposal 6 in
+# agents/table-ideas/BATCH-2026-09-10T2109.md. Created as draft T217 through
+# the API (X-Draft: yes), filled by generate.py beside it, and offered for
+# review; publishing is a person's act on the site.
+Title: Hecke polynomials of weight 2 newforms
+Definition: >-
+  For a normalized newform $f(q)=\sum_{n\geq1}a_nq^n$ of weight $2$,
+  trivial character and level $N$, let $K_f$ be its coefficient field. For a
+  prime $p$, this table gives
+  $\chi_{f,p}(x)=\det(xI-m_{a_p}\mid K_f)$, where $m_{a_p}$ is
+  multiplication by the Hecke eigenvalue $a_p$ CITE{WikiHecke} on $K_f$.
+Parameters:
+  label:
+    type: Symbolic
+    title: LMFDB newform label
+    display: label
+    constraints: >-
+      the label has the form $N.2.a.o$ for a weight $2$ newform orbit of
+      trivial character on $\Gamma_0(N)$, with $[K_f:\mathbb{Q}]\geq2$
+  p:
+    type: Z
+    title: prime
+    display: $p$
+    constraints: $p$ is prime
+Comments:
+  comment-labels: >-
+    The labels are the LMFDB labels CITE{LMFDBPage} for weight $2$ newform
+    orbits with trivial character. The character orbit is `a`, and the final
+    letter names the Hecke orbit at that level.
+  comment-dimension-one: >-
+    Dimension-one newforms are omitted. For such a form $K_f=\mathbb{Q}$ and
+    $\chi_{f,p}(x)=x-a_p$ is a linear polynomial; the corresponding $a_p$ are
+    the elliptic-curve traces in Cremona and LMFDB tables.
+  comment-characteristic: >-
+    The table stores the characteristic polynomial on $K_f$, not the minimal
+    polynomial of $a_p$. For example, in the row $f=23.2.a.a$ and $p=13$,
+    $a_{13}=3$ but $[K_f:\mathbb{Q}]=2$, so the entry is $(x-3)^2$.
+  comment-normalisation: >-
+    The eigenvalues are the usual Fourier coefficients $a_p$, not the
+    analytically normalised values $a_p/\sqrt{p}$. When $p\mid N$, the row
+    records the usual Atkin-Lehner coefficient.
+Formulas:
+  formula-eigenvalue: >-
+    If $p\nmid N$, then $T_pf=a_pf$. If $p\mid N$, the same symbol $a_p$
+    denotes the eigenvalue of the operator $U_p$ on $f$.
+  formula-characteristic: >-
+    $\chi_{f,p}(x)=\prod_{\sigma:K_f\hookrightarrow\mathbb{C}}
+    (x-\sigma(a_p))$, counted with multiplicity.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import sage.rings.polynomial.laurent_polynomial_ring
+      from sage.modular.modform.constructor import Newforms
+
+      f = Newforms(23, 2, names='a')[0]
+      f.coefficient(2).matrix().charpoly('x')     # x^2 + x - 1
+      f.coefficient(13).matrix().charpoly('x')    # x^2 - 6*x + 9
+  program-pari:
+    language: PARI/GP
+    code: |-
+      mf = mfinit([23, 2], 0);                    \\ new cuspidal space
+      charpoly(mfheckemat(mf, 13))                \\ x^2 - 6*x + 9
+Similar tables:
+  - table: HREF{T215}[Hecke polynomials of level one cusp forms]
+    relation: stores characteristic polynomials of $T_p$ on level-one cusp-form spaces, while this table stores characteristic polynomials of $a_p$ on individual coefficient fields in weight $2$
+  - table: HREF{Q-expansion_of_the_modular_discriminant}[$q$-expansion of the modular discriminant $\Delta$]
+    relation: its Ramanujan tau coefficients are the Hecke eigenvalues of the unique level-one weight $12$ newform
+  - table: HREF{Spectral_parameters_of_Maass_forms_of_level_1}[Spectral parameter of Maass forms of level 1]
+    relation: stores spectral data for non-holomorphic automorphic eigenforms for $\mathrm{SL}_2(\mathbb{Z})$
+Links:
+  WikiHecke:
+    title: 'Wikipedia: Hecke operator'
+    url: https://en.wikipedia.org/wiki/Hecke_operator
+  MathWorldHecke:
+    title: 'MathWorld: Hecke Operator'
+    url: https://mathworld.wolfram.com/HeckeOperator.html
+  LMFDBPage:
+    title: 'LMFDB: classical modular forms'
+    url: https://www.lmfdb.org/ModularForm/GL2/Q/holomorphic/
+  LMFDB23:
+    title: 'LMFDB: newform 23.2.a.a'
+    url: https://www.lmfdb.org/ModularForm/GL2/Q/holomorphic/23/2/a/a/
+  LMFDBAPI1:
+    title: 'LMFDB API: weight 2 trivial-character newforms, first page'
+    url: https://www.lmfdb.org/api/mf_newforms/?_format=json&weight=2&char_orbit_label=a&_fields=label,level,weight,dim,hecke_orbit,char_orbit_label&_sort=level,hecke_orbit
+  LMFDBAPI2:
+    title: 'LMFDB API: weight 2 trivial-character newforms, second page'
+    url: https://www.lmfdb.org/api/mf_newforms/?_format=json&weight=2&char_orbit_label=a&_fields=label,level,weight,dim,hecke_orbit,char_orbit_label&_sort=level,hecke_orbit&_offset=100
+  SageNewforms:
+    title: 'SageMath reference: Newforms'
+    url: https://doc.sagemath.org/html/en/reference/modfrm/sage/modular/modform/constructor.html#sage.modular.modform.constructor.Newforms
+  PARIHecke:
+    title: 'PARI/GP manual: modular forms and Hecke matrices'
+    url: https://pari.math.u-bordeaux.fr/dochtml/html-stable/Modular_forms.html#mfheckemat
+Keywords:
+  - Hecke polynomial
+  - Hecke operator
+  - Hecke eigenvalue
+  - newform
+  - modular form
+  - cusp form
+  - coefficient field
+  - weight 2 newform
+  - LMFDB newform label
+Tags:
+  - number theory
+  - polynomial
+  - modular form
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every weight $2$ newform orbit of trivial character and level
+    $N\leq100$ whose coefficient field has degree at least $2$, for primes
+    $p<20$
+  rigour details: >-
+    The generator enumerates Sage's `Newforms(N, 2)` CITE{SageNewforms} for
+    $N\leq100$, uses the LMFDB label order CITE{LMFDBAPI1} CITE{LMFDBAPI2},
+    and keeps exactly the $50$ orbits whose coefficient field has degree at
+    least $2$. For each retained orbit and each prime $p<20$, it takes the
+    exact Sage coefficient $a_p$, builds the multiplication matrix of $a_p$
+    on $K_f$, and computes $\det(xI-m_{a_p})$ by a permutation expansion over
+    $\mathbb{Q}$. Before the draft was created, the labels and degrees were
+    compared with the LMFDB API data, including the LMFDB page for 23.2.a.a
+    CITE{LMFDB23}. For every level $N\leq100$ and every listed prime, the
+    product of the polynomials
+    over all newform orbits, including dimension-one orbits omitted from the
+    table, was required to equal PARI/GP's
+    `charpoly(mfheckemat(mfinit([N,2],0),p))` CITE{PARIHecke}.
+Display properties:
+  number-header: $\chi_{f,p}(x)$
+  group parameters: [['label'], ['p']]
