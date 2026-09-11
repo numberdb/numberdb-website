@@ -2605,3 +2605,24 @@ once the YAML is more than a small scratch example.
 Evidence: 2026-09-11, T219 repair. `/tmp/render_t219_preview.py` turned
 `/tmp/T219-live-auth.json` into YAML and called the live preview endpoint; the
 response was HTTP 414.
+
+## The Sage wrapper can hang before it reaches the remote lock
+
+What happened: during the 2026-09-11T1148 Coxeter simplex build, several
+`agents/sage.sh` runs succeeded first and computed the tetrahedron volume
+controls in arb. After an interrupted dry-run attempt, even
+`agents/sage.sh /tmp/sage_hello.py` produced no output. Running the same
+command under `bash -x` showed that it stopped at the first `scp` of the
+main script to `linode:/tmp/agent-run-...`, before the remote lock, Docker
+container or Sage process could start. Retrying after a two-minute pause gave
+the same trace.
+
+What to do instead: treat this as a transport outage, not as a table or Sage
+failure. Do not create a NumberDB draft that still needs `dry_run.py`,
+`verify()` or a generator fill through the wrapper. Wait for the copy path to
+recover, then rerun a one-line `agents/sage.sh` probe before restarting the
+official dry run.
+
+Evidence: 2026-09-11. `bash -x agents/sage.sh /tmp/sage_hello.py` reached
+`scp -q ... /tmp/sage_hello.py linode:/tmp/agent-run-...sage_hello.py` and
+then remained silent until interrupted.
