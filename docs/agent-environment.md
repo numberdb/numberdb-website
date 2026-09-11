@@ -2490,3 +2490,29 @@ caught this, and would catch the other LMFDB shorthands `\Q`, `\Z`,
 
 Evidence: `/tmp/crit212_out.txt`, 2026-09-11, audit output and rendered
 HTML; `agents/critiques/T212.md` finding 1.
+
+## A live table build can pass Sage once and then lose both write transports
+
+What happened: the Maass-coefficient build reached the approved Sage runner
+once, and `dry_run.py` completed on all 150 scratch entries. After a small
+comment-only generator change, two more `agents/sage.sh` runs printed
+nothing for about two minutes each and were interrupted before any script
+output appeared. A one-line `agents/sage.sh` smoke test also stayed silent
+before reaching Python. The HTTPS API route was unavailable from the session
+too: `urllib` through `agents.api_edit.use_socks_proxy_if_set()` timed out
+during the TLS handshake, and `curl -I --max-time 20 https://numberdb.org/api/docs`
+timed out with no bytes received. No draft was created and no generator
+published entries during this failure.
+
+What to do instead: after a successful private dry run, do a short no-key
+`agents/sage.sh` smoke test and a short HTTPS API smoke test before creating
+the draft. If both stay silent or time out, stop before live table creation,
+report transport as the blocker, and keep only scratch artifacts in `/tmp`.
+This is an environment failure, not a table convention to teach in the public
+skill.
+
+Evidence: 2026-09-11. `/tmp/run_dry_maass.py` first reported 150 entries,
+exact values, no prose warnings and an 88.2 KB block. Later runs of the same
+wrapper and `/tmp/sage_smoke_maass.py` were interrupted after silence. The
+HTTPS smoke test raised `URLError: <urlopen error _ssl.c:980: The handshake
+operation timed out>`, and the curl probe exited 28 after 20 seconds.
