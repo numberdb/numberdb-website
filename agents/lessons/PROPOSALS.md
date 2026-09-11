@@ -5208,3 +5208,29 @@ Evidence: `/tmp/export_maass_data.py` and `/tmp/maass_source_probe.sql`,
 all ten forms, 900 coprime Hecke products inside the propagated source
 intervals, and 110 prime-square relations inside the propagated source
 intervals.
+
+## A stored ball must allow for its rounded centre
+
+What happened: T218 first stored each LMFDB Maass coefficient as a Sage
+interval with the source radius, using `format = "ball"` and `digits = 60`.
+The client wrote the centre to 60 significant digits and the radius to three,
+for example `c +/- 7.42e-68`. Read back as a NumberDB ball, that value no
+longer contained the original source interval whenever rounding the centre
+moved it by about $10^{-60}$. `verify()` still passed, because it compared the
+same generator spelling to the stored spelling; checking Hecke relations on
+the values read back from the draft failed for all 1010 relations.
+
+What the skill says now: return a ball or interval when a value is proven, and
+check identities on the stored values after `verify()`.
+
+What it should say: when a generator writes `format = "ball"` from a source
+centre and a much smaller source radius, widen the interval by the possible
+rounding of the written centre before returning it. Otherwise the displayed
+centre has been rounded but the displayed radius has not paid for that
+rounding, and the stored ball may be narrower than the certified value. The
+stored-value identity check is what catches this, not `verify()`.
+
+Evidence: T218, 2026-09-11. `/tmp/check_maass_stored.py` reported 1010
+stored Hecke relation failures before the generator added one unit in the last
+displayed decimal place to each source radius; after the repair it read back
+150 entries and checked the same 1010 Hecke relations on the stored prime rows.
