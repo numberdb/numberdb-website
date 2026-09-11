@@ -13,6 +13,10 @@ Delta times polynomials in E4 and E6; the generator builds that monomial basis,
 applies the Hecke formula coefficient by coefficient, and takes the
 characteristic polynomial of the resulting exact matrix. Each row is compared
 with PARI's mfheckemat and charpoly before it is returned.
+
+The range $k\leq94$, $p\in\{2,3,5,7\}$ measured 164 entries, with a longest
+entry of 1151 characters at $(94,7)$ and a 60.8 KB entries block. Adding weight
+$96$ raised the longest entry to 1503 characters.
 """
 
 import os
