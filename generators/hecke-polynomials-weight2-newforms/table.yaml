@@ -34,8 +34,22 @@ Comments:
   comment-characteristic: >-
     The table stores the characteristic polynomial on $K_f$, not the minimal
     polynomial of $a_p$. Its degree is $[K_f:\mathbb{Q}]$, the dimension of
-    the newform orbit. For example, in the row $f=23.2.a.a$ and $p=13$,
-    $a_{13}=3$ but $[K_f:\mathbb{Q}]=2$, so the entry is $(x-3)^2$.
+    the newform orbit. The two polynomials agree exactly when $a_p$ generates
+    $K_f$, and those are the rows the table keeps.
+  comment-omitted-rows: >-
+    Rows where $a_p$ does not generate $K_f$ are omitted, because
+    $\chi_{f,p}$ is then a proper power of the minimal polynomial of $a_p$
+    and carries nothing the generating primes do not already give. In the
+    extreme $a_p\in\mathbb{Q}$ and $\chi_{f,p}(x)=(x-a_p)^{[K_f:\mathbb{Q}]}$:
+    at $f=23.2.a.a$ and $p=13$ the eigenvalue is $a_{13}=3$ and the
+    characteristic polynomial is $(x-3)^2$, which is a small integer and the
+    degree of a field rather than a number worth looking up.
+  comment-repeats: >-
+    A polynomial can answer for more than one row. The $686$ entries hold
+    $424$ distinct polynomials, of which $317$ occur once; the repetitions are
+    small-height quadratics, $x^2-8$ and $x^2-12$ occurring $14$ times each.
+    Some repeat within a single orbit, where two primes give conjugate
+    eigenvalues: $a_5$ and $a_7$ of $39.2.a.b$ are both roots of $x^2-8$.
   comment-normalisation: >-
     The eigenvalues are the usual Fourier coefficients $a_p$, not the
     analytically normalised values $a_p/\sqrt{p}$. If $p\mid N$, $a_p$ is the
@@ -114,18 +128,19 @@ Data properties:
   complete: 'no'
   complete-note: >-
     it holds every weight $2$ newform orbit of trivial character and level
-    $N\leq100$ whose coefficient field has degree at least $2$, for primes
-    $p<20$
+    $N\leq100$ whose coefficient field has degree at least $2$, for the primes
+    $p\leq59$ at which $a_p$ generates that field
   rigour details: >-
     The generator enumerates Sage's `Newforms(N, 2)` CITE{SageNewforms} for
     $N\leq100$, uses the LMFDB label order CITE{LMFDBAPI1} CITE{LMFDBAPI2},
     and keeps exactly the $50$ orbits whose coefficient field has degree at
-    least $2$. For each retained orbit and each prime $p<20$, it takes the
+    least $2$. For each retained orbit and each prime $p\leq59$, it takes the
     exact Sage coefficient $a_p$, builds the multiplication matrix of $a_p$
     on $K_f$, and computes $\det(xI-m_{a_p})$ by a permutation expansion over
-    $\mathbb{Q}$. Before the draft was created, the labels and degrees were
+    $\mathbb{Q}$, keeping the row when that polynomial is irreducible, which
+    is to say when $a_p$ generates $K_f$. Before the draft was created, the labels and degrees were
     compared with the LMFDB API data, including the LMFDB page for 23.2.a.a
-    CITE{LMFDB23}. For every level $N\leq100$ and every listed prime, the
+    CITE{LMFDB23}. For every level $N\leq100$ and every prime $p\leq59$, the
     product of the polynomials
     over all newform orbits, including dimension-one orbits omitted from the
     table, was required to equal PARI/GP's
