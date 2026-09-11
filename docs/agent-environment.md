@@ -2563,3 +2563,25 @@ those.
 
 Evidence: shell output in the 2026-09-11T1148 run; `df -h /` printed
 `/dev/nvme0n1p5 234G 222G 82M 100% /`.
+
+## SnapPy is installed on the host, not in the Sage wrapper
+
+What happened: the closed Hodgson-Weeks census volume build needed SnapPy's
+`OrientableClosedCensus` to extract the two sub-unit-volume triangulations.
+Host Python had SnapPy 3.3.2, but the approved `agents/sage.sh` runner raised
+`ModuleNotFoundError: No module named 'snappy'`. SnapPy's rigorous
+`verify_hyperbolicity()` also refused on the host with `SageNotAvailable`,
+so the build extracted the gluing rows and approximate shapes on the host,
+stored them in `/tmp/closed_census_data.py`, and then used the Sage wrapper
+only for the arb-ball Krawczyk certificate and value computation.
+
+What to do instead: do not switch to the production container or invent a
+Docker command to get SnapPy inside Sage. For table builds in this environment,
+use host SnapPy only to extract static data, mount that data through
+`agents/sage.sh`, and do the proof in the wrapper. If a future table needs
+SnapPy's own Sage-backed verification, the wrapper image needs SnapPy installed
+before the run starts.
+
+Evidence: 2026-09-11. `python3 -c "import snappy; print(snappy.version())"`
+reported 3.3.2 on the host, while `agents/sage.sh /tmp/check_snappy_sage.py`
+reported `ModuleNotFoundError No module named 'snappy'`.
