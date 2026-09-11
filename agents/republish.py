@@ -44,12 +44,20 @@ import numberdb
 
 
 def beside_me():
-    """The generator mounted next to this script."""
+    """The generator mounted next to this script.
+
+    `generate.py` when it is there, because several generators carry a data
+    module beside them -- `maass_data.py`, `closed_census_data.py` -- which
+    has to be mounted too or the import fails, and then "the only other .py"
+    is two files rather than one.
+    """
     here = os.path.dirname(os.path.abspath(__file__))
     others = [name for name in sorted(os.listdir(here))
               if name.endswith(".py") and name != os.path.basename(__file__)]
+    if "generate.py" in others:
+        return os.path.join(here, "generate.py")
     if len(others) != 1:
-        raise SystemExit("expected one generator beside %s, found %s"
+        raise SystemExit("expected a generate.py beside %s, or one .py; found %s"
                          % (__file__, others))
     return os.path.join(here, others[0])
 
