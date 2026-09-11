@@ -2585,3 +2585,23 @@ before the run starts.
 Evidence: 2026-09-11. `python3 -c "import snappy; print(snappy.version())"`
 reported 3.3.2 on the host, while `agents/sage.sh /tmp/check_snappy_sage.py`
 reported `ModuleNotFoundError No module named 'snappy'`.
+
+## Rendering a full draft through `/preview?table=...` can exceed the URL limit
+
+What happened: the T219 repair had the authenticated draft document from
+`/api/table?id=T219` and tried to render that exact YAML through the live
+preview route, because `/T219` is a private draft and answers 404 outside a
+session. The preview route takes the table from `request.GET`, so the full
+document became a query string and the server answered HTTP 414
+`Request-URI Too Large`. A minimal preview of the affected formula rendered
+correctly and was enough to check the MathJax failure, but a whole-table
+render needs the RequestFactory owner-view path already described above.
+
+What to do instead: for a private draft, render the page in the throwaway with
+`RequestFactory` as the draft owner, or preview only the small field whose
+rendering is under test. Do not use `/preview?table=...` for a full document
+once the YAML is more than a small scratch example.
+
+Evidence: 2026-09-11, T219 repair. `/tmp/render_t219_preview.py` turned
+`/tmp/T219-live-auth.json` into YAML and called the live preview endpoint; the
+response was HTTP 414.
