@@ -29,6 +29,9 @@ from sage.rings.complex_arb import ComplexBallField
 from sage.rings.rational_field import QQ
 
 
+#: Which of the four this table holds.
+FUNCTION = "Ai"
+
 # A thousand values, at the arguments somebody actually arrives holding.
 #
 # The grid was rationals of bounded height, every $a/b$ in lowest terms with

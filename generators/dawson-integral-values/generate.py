@@ -35,6 +35,10 @@ from sage.rings.real_arb import RealBallField
 #: Which of the six this table holds.
 FUNCTION = "dawson"
 
+#: Its value at x = 0, exact, and stored as the integer rather than as
+#: a hundred places of one.
+AT_ZERO = "0"
+
 # A thousand values, at the arguments somebody actually arrives holding.
 #
 # The grid was rationals of bounded height, every $a/b$ in lowest terms with
