@@ -5329,3 +5329,67 @@ Evidence: `/tmp/hv_snappy.py`, `/tmp/hv_snappy2.py`, 2026-09-11, SnapPy
 quad-double, $6^3_2$ (Borromean rings) gives $0$, $5_2$ gives
 $-0.15320413329715186829\ldots$, and the Weeks and Meyerhoff manifolds
 $0.06004306668$ and $0.077038180264$ through refilling.
+
+## A positive ideal-shape certificate does not automatically extend to closed fillings
+
+What happened: the closed Hodgson-Weeks census proposal pointed to the same
+kind of gluing-equation certificate used for T141, where every ideal
+tetrahedron shape is in the upper half plane and the volume is the sum of
+Bloch-Wigner dilogarithms. That route works for the two
+`OrientableClosedCensus` entries with volume less than $1$, but the third
+entry by volume, $m007(3,1)$, and many later entries have triangulations with
+negatively oriented tetrahedra in SnapPy 3.3.2. Randomising and canonicalising
+did not find all-positive ideal shapes for a test set, so the T219 draft
+stopped at the volume-less-than-$1$ range instead of guessing a proof for the
+larger proposed range.
+
+What the skill says now: verify against something independent and do not
+write an identity until it has been checked. Nothing says that a proof method
+from a cusped ideal-triangulation table may fail on a Dehn-filled closed
+triangulation because the certified shapes are not all positively oriented.
+
+What it should say: when adapting an ideal-shape gluing-equation certificate
+to a closed Dehn filling, treat shape orientation as part of the proof, not as
+a cosmetic property of the triangulation. A Krawczyk proof of the equations
+plus all shapes in the upper half plane certifies the rows it certifies; a
+row with negative shapes needs a different triangulation or a closed-manifold
+verification method before its volume belongs in a proven table. Let that
+decide the computed range.
+
+Evidence: T219, 2026-09-11. `/tmp/count_closed_census.py` counted 466 of
+11031 orientable closed census entries whose SnapPy solution type was not
+all-positive; `/tmp/randomize_closed.py` left examples including
+`m007(3,1)` negative after 80 randomisations. The generator for
+`generators/closed-hodgson-weeks-census-volumes` certifies only the two
+volume-less-than-$1$ rows.
+
+## `Generator.publish()` can refuse a fresh draft with no `Numbers` section
+
+What happened: T219 was created as a draft document with parameters and prose
+but no `Numbers` section, following the stage-two order of creating the table
+only after the private dry run. Running the generator's ordinary
+`publish()` path then failed before computing entries, during the empty
+upsert used as a writeability probe: the server answered
+`A value in these entries cannot be read as a number. 'str' object has no
+attribute 'items'`. Fetching the draft showed it still had no `Numbers` or
+`Data` section. Sending the complete non-empty entry list directly to the
+entries endpoint worked, and the generator was patched to keep the same
+formatting, precision and rigour checks while bypassing only the empty probe.
+
+What the skill says now: create the draft, fill it once, and run `verify()`.
+It does not say that a newly created draft without an entries section can
+reject the package's harmless writeability check.
+
+What it should say: until the API or client changes, either create a fresh
+draft with `Numbers: []` or have a tiny-table generator send the complete
+non-empty entry block directly if the empty upsert probe refuses a draft that
+has no entries section. Confirm first that the refusal left the draft
+unchanged, and keep the ordinary entry formatting and precision checks in the
+replacement path.
+
+Evidence: T219, 2026-09-11. The first fill attempt with
+`NUMBERDB_PUBLISH=1 agents/sage.sh generators/closed-hodgson-weeks-census-volumes/generate.py`
+failed with the error above. `/tmp/fetch_t219_shape.py` then printed
+`has Numbers: False` and `has Data: False`. The patched direct fill wrote two
+entries and attached `closed_census_data.py` and `generate.py` in revision
+`c1c157f908147cbf0ad5ff924cda036a64697bdd80cda7bab1a9e9212af46a30`.
