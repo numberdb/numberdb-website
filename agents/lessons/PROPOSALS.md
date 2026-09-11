@@ -211,6 +211,31 @@ Evidence: `/tmp/reg_identities.py`, 2026-09-02: `Sage program at D = 61:
 -3.66421846088643752592...`; `/tmp/reg_programs.py` after the fix:
 `3.66421846088643752592...`, the table's value.
 
+## A Sage newform's parent dimension is not its Hecke-orbit dimension
+
+What happened: checking T217's claim that the coefficient-field degree is the
+dimension of the newform orbit, `form.parent().dimension()` looked tempting
+and was wrong for this purpose. For 44 of the 50 selected newforms it returned
+the dimension of the ambient newspace at that level, not the dimension of the
+individual Hecke orbit. The coefficient-field degree was `form.base_ring().degree()`;
+the LMFDB `dim` field matched that degree for every selected label.
+
+What the skill says now: check claims before writing them, and use independent
+sources where possible; nothing warns that this Sage method names a larger
+space than the newform orbit.
+
+What it should say: for a Sage newform returned by `Newforms(N, k)`, do not use
+`form.parent().dimension()` as the Hecke-orbit dimension. Use the degree of the
+coefficient field, `form.base_ring().degree()`, and check external label data
+such as LMFDB when the table is keyed by those labels.
+
+Evidence: `agents/sage.sh /tmp/check_t217_field.py
+generators/hecke-polynomials-weight2-newforms/generate.py`, 2026-09-11,
+reported 44 `degree != dimension` mismatches using `form.parent().dimension()`;
+`agents/sage.sh /tmp/check_t217_lmfdb.py
+generators/hecke-polynomials-weight2-newforms/generate.py` reported
+`dimension matches coefficient-field degree: 50`.
+
 ## Compare a higher-precision rerun by rounding it back, not by taking its prefix
 
 What happened: the T166 repair reran $C(x^2+1)$ at 160 decimal digits to
