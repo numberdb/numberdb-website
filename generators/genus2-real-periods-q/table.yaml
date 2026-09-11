@@ -6,11 +6,10 @@
 Title: Real periods of genus 2 curves over $\mathbb{Q}$
 Definition: >-
   Let $C/\mathbb{Q}$ be a genus $2$ curve and let $A=\operatorname{Jac}(C)$.
-  If $\Lambda\subset\mathbb{C}^2$ is the period lattice of a Neron basis of
-  differentials on a regular model of $C$, then this table gives the real
-  period $\Omega_A$ CITE{LMFDBPeriod}: the covolume of
-  $\Lambda\cap\mathbb{R}^2$ in $\mathbb{R}^2$, multiplied by the number of
-  connected components of $A(\mathbb{R})$.
+  If $\Lambda\subset\mathbb{C}^2$ is the period lattice of a Neron basis on a
+  regular model of $C$, this table gives
+  $\Omega_A=\#\pi_0(A(\mathbb{R}))\operatorname{covol}(\Lambda\cap\mathbb{R}^2)$
+  CITE{LMFDBPeriod}.
 Parameters:
   label:
     type: Symbolic
@@ -24,7 +23,8 @@ Comments:
   comment-components: >-
     The connected-component factor is part of $\Omega_A$ in this table. Some
     authors omit this factor from a period covolume, so the convention should
-    be checked when comparing with another source.
+    be checked when comparing with another source. The covolume in the
+    definition is taken in $\mathbb{R}^2$.
   comment-source-precision: >-
     The LMFDB records these real periods as $97$-bit real literals. The
     generator stores the first $28$ significant digits of each decimal string,
@@ -79,7 +79,6 @@ Keywords:
   - LMFDB label
 Tags:
   - number theory
-  - curves
 Data properties:
   type: R
   rigour: heuristic

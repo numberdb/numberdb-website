@@ -5015,3 +5015,33 @@ Evidence: `/tmp/T212.json` formula `formula-bsd`, 2026-09-11;
 `grep -c Sha static/vendor/mathjax/tex-svg.js` is 0 and
 `static/js/load-mathjax.js` defines `inlineMath` only;
 `agents/critiques/T212.md` finding 1.
+
+## `Generator.publish()` can fail its empty preflight on a brand-new draft
+
+What happened: the T213 generator was dry-run clean and the draft existed,
+but the first `generator.publish()` stopped before computing an entry. The
+client's preflight sends an empty upsert through `/api/table/<tid>/entries`
+to ask whether the table is writable; on this draft, which had no `Numbers`
+block yet, the server answered
+`A value in these entries cannot be read as a number. 'str' object has no
+attribute 'items'`. Skipping only that preflight and then calling the same
+`publish()` wrote 159 entries and attached the source files normally, and
+`verify(sample=None)` matched all 159.
+
+What the skill says now: create the draft, fill it once with the generator,
+and run `verify()`.
+
+What it should say: if `Generator.publish()` on a newly created empty draft
+fails during `check_writable()` with an error about empty entries rather than
+about the values, the table may still be writable. Do not rebuild the table;
+either retry after the client/server bug is fixed, or have a short wrapper
+skip only `numberdb._write.check_writable` and let the normal `publish()`
+path submit the actual entries and attachments. Then run `verify(sample=None)`
+against the stored draft with the key.
+
+Evidence: `generators/genus2-real-periods-q/generate.py`, draft T213,
+2026-09-11. The failed run printed the traceback from `_generate.py` through
+`check_writable()`; `/tmp/publish_genus2_real_periods_no_preflight.py`
+monkeypatched only `numberdb._write.check_writable` and returned
+`<PublishOutcome T213: 159 added, 0 updated, ...>`, followed by
+`<VerifyReport T213: 159/159 matched, 0 differing, 0 missing, 0 extra>`.
