@@ -2532,3 +2532,34 @@ exact values, no prose warnings and an 88.2 KB block. Later runs of the same
 wrapper and `/tmp/sage_smoke_maass.py` were interrupted after silence. The
 HTTPS smoke test raised `URLError: <urlopen error _ssl.c:980: The handshake
 operation timed out>`, and the curl probe exited 28 after 20 seconds.
+
+## The laptop's root filesystem can be full, and a run cannot free it
+
+What happened: the 2026-09-11T1148 stage-one run tried
+`python3 -m pip download database_knotinfo` into `/tmp` to read KnotInfo's
+Chern-Simons column, and pip died with `OSError: [Errno 28] No space left
+on device`. `df -h /` showed 234 GB used of 234 GB, 82 MB available; `/tmp`
+itself held 269 MB, none of it this run's (scratch from earlier runs, PDFs,
+HTML copies). The pip cache and the earlier runs' scratch are the user's
+files, so the run deleted nothing, skipped the check, and wrote the batch
+(40 KB) and two lesson files, which fitted.
+
+What to do instead: check `df -h /` in the first minute alongside the
+network preflight; below a few hundred megabytes, do not start a download
+or a large Sage export, say in the batch what was skipped for want of
+space, and leave cleanup to a person. SnapPy's Rolfsen and census tables
+are already installed under `~/.local` and need no download, so the
+volume checks still ran; only the KnotInfo comparison was lost.
+
+Two smaller findings from the same run. The KnotInfo site
+(`knotinfo.math.indiana.edu`) is unreachable through the SOCKS proxy
+(`URLError` from `source_names_it`), so a KnotInfo description page cannot
+be screened from a run session; cite it and say it was not read. And
+Wikipedia's *Hyperbolic Coxeter group* is a redirect to the
+Coxeter-Dynkin diagram page, which no longer holds the hyperbolic simplex
+tables; the volumes are on *Uniform honeycombs in hyperbolic space* and
+*Paracompact uniform honeycombs*, so `source_names_it` must be pointed at
+those.
+
+Evidence: shell output in the 2026-09-11T1148 run; `df -h /` printed
+`/dev/nvme0n1p5 234G 222G 82M 100% /`.
