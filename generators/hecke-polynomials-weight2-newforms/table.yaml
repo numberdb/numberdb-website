@@ -5,10 +5,10 @@
 Title: Hecke polynomials of weight 2 newforms
 Definition: >-
   For a normalized newform $f(q)=\sum_{n\geq1}a_nq^n$ of weight $2$,
-  trivial character and level $N$, let $K_f$ be its coefficient field. For a
-  prime $p$, this table gives
-  $\chi_{f,p}(x)=\det(xI-m_{a_p}\mid K_f)$, where $m_{a_p}$ is
-  multiplication by the Hecke eigenvalue $a_p$ CITE{WikiHecke} on $K_f$.
+  trivial character and level $N$, let $K_f=\mathbb{Q}(a_n:n\geq1)$ be its
+  coefficient field. For a prime $p$, this table gives the characteristic
+  polynomial $\chi_{f,p}(x)$ of multiplication by the Hecke eigenvalue $a_p$
+  CITE{WikiHecke} on $K_f$.
 Parameters:
   label:
     type: Symbolic
@@ -33,12 +33,14 @@ Comments:
     the elliptic-curve traces in Cremona and LMFDB tables.
   comment-characteristic: >-
     The table stores the characteristic polynomial on $K_f$, not the minimal
-    polynomial of $a_p$. For example, in the row $f=23.2.a.a$ and $p=13$,
+    polynomial of $a_p$. Its degree is $[K_f:\mathbb{Q}]$, the dimension of
+    the newform orbit. For example, in the row $f=23.2.a.a$ and $p=13$,
     $a_{13}=3$ but $[K_f:\mathbb{Q}]=2$, so the entry is $(x-3)^2$.
   comment-normalisation: >-
     The eigenvalues are the usual Fourier coefficients $a_p$, not the
-    analytically normalised values $a_p/\sqrt{p}$. When $p\mid N$, the row
-    records the usual Atkin-Lehner coefficient.
+    analytically normalised values $a_p/\sqrt{p}$. If $p\mid N$, $a_p$ is the
+    eigenvalue of $U_p$: it is $-w_p$ for the Atkin-Lehner sign $w_p$ when
+    $p^2\nmid N$, and it is $0$ when $p^2\mid N$.
 Formulas:
   formula-eigenvalue: >-
     If $p\nmid N$, then $T_pf=a_pf$. If $p\mid N$, the same symbol $a_p$
