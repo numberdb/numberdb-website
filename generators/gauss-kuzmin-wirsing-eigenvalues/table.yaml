@@ -101,17 +101,17 @@ References:
     bib: >-
       I. Nisoli, Certified spectral approximation of transfer operators and
       the Gauss map, arXiv preprint, 2026.
-    arxiv: 2602.19435
+    arxiv: '2602.19435'
   NisoliData:
     bib: >-
       I. Nisoli, Eigenvalue, eigenvectors, projection coefficients and data
       for the GKW map, Harvard Dataverse, 2026.
-    doi: 10.7910/DVN/HKM3Y2
+    doi: '10.7910/DVN/HKM3Y2'
   Alkauskas:
     bib: >-
       G. Alkauskas, Transfer operator for the Gauss continued fraction map. I.
       Structure of the eigenvalues and trace formulas, arXiv preprint, 2012.
-    arxiv: 1210.4083
+    arxiv: '1210.4083'
   Briggs:
     bib: >-
       K. Briggs, A precise computation of the Gauss-Kuzmin-Wirsing constant,

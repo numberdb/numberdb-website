@@ -110,15 +110,15 @@ References:
       William C. Waterhouse, Abelian varieties over finite fields, Annales
       scientifiques de l'Ecole Normale Superieure, Serie 4, 2 (1969),
       521-560.
-    doi: 10.24033/asens.1183
-    mr: MR0265369
+    doi: '10.24033/asens.1183'
+    mr: 'MR0265369'
   DupuyKedlayaRoeVincent:
     bib: >-
       Taylor Dupuy, Kiran S. Kedlaya, David Roe and Christelle Vincent,
       Isogeny Classes of Abelian Varieties over Finite Fields in the LMFDB,
       Arithmetic Geometry, Number Theory, and Computation, Simons Symposia,
       Springer, 2021, 375-448.
-    arxiv: 2003.05380
+    arxiv: '2003.05380'
 Keywords:
   - Weil polynomial
   - characteristic polynomial of Frobenius
