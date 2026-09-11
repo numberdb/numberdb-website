@@ -150,6 +150,9 @@ ssh "${ssh_opts[@]}" "$REMOTE" \
 		-e NUMBERDB_ASSISTED_BY='${NUMBERDB_ASSISTED_BY:-assisted by an agent}' \
 		-e NUMBERDB_KEY_FROM_STDIN='${NUMBERDB_KEY_FROM_STDIN:-0}' \
 		-e NUMBERDB_PUBLISH='${NUMBERDB_PUBLISH:-0}' \
+		-e NUMBERDB_RESTATING='${NUMBERDB_RESTATING:-0}' \
+		-e NUMBERDB_LOWERING='${NUMBERDB_LOWERING:-0}' \
+		-e NUMBERDB_TABLE='${NUMBERDB_TABLE:-}' \
 		${mounts[*]} \
 		agent sage -python -u /work/$(basename "$main")" \
 	2>&1 | grep --line-buffered -viE 'collecting static|static files copied|Starting command as|^ Container |remote port forwarding'
