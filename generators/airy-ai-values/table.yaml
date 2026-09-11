@@ -116,7 +116,7 @@ Data properties:
   rigour: proven
   complete: 'no'
   complete-note: it holds $\operatorname{Ai}$ at every rational $x=a/b$ in lowest
-    terms with $b\leq4$ and $|x|\leq5$, including $x=0$
+    terms with $b\leq12$ and $|x|\leq8$, including $x=0$
   rigour details: Each value was computed as a Sage complex ball with arb at `numberdb.bits(digits,
     losing=64)` bits and returned as its real part, the imaginary part being checked
     to contain zero. The value at $x=0$ was checked against CITE{formula-initial-value}
