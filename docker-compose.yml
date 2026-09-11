@@ -14,6 +14,11 @@ x-logging: &logging
 services:
   web:
     logging: *logging
+    #Without this the site does not come back from a reboot. Twice now
+    #somebody has rebooted the machine and found nothing serving until
+    #`docker compose up -d` was run by hand, which is not a thing to
+    #remember at the moment it is needed.
+    restart: unless-stopped
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile
@@ -45,6 +50,11 @@ services:
 
   nginx:
     logging: *logging
+    #Without this the site does not come back from a reboot. Twice now
+    #somebody has rebooted the machine and found nothing serving until
+    #`docker compose up -d` was run by hand, which is not a thing to
+    #remember at the moment it is needed.
+    restart: unless-stopped
     build:
       context: .
       dockerfile: deploy/nginx/Dockerfile
@@ -63,6 +73,11 @@ services:
 
   db:
     logging: *logging
+    #Without this the site does not come back from a reboot. Twice now
+    #somebody has rebooted the machine and found nothing serving until
+    #`docker compose up -d` was run by hand, which is not a thing to
+    #remember at the moment it is needed.
+    restart: unless-stopped
     image: postgres:14-alpine
     environment:
       - POSTGRES_DB=numberdb
