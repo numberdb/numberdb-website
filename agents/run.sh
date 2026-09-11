@@ -639,6 +639,11 @@ fi
 #site is worth a warning, not a failed run.
 agents/sync-costs.sh || true
 
+#And the transcript itself somewhere that is not this disk. Never fatal, for
+#the same reason the ledger sync is not: a run that produced a table and
+#failed to file its paperwork has still produced a table.
+agents/archive-run.sh "$log" || true
+
 echo "=== finished with status $status; transcript in $log"
 tail -1 "$ledger" | awk -F'\t' '{printf "=== %s turns, $%s\n", $4, $5}'
 exit "$status"
