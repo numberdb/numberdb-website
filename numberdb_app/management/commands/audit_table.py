@@ -215,12 +215,12 @@ class Command(BaseCommand):
 		#label defined elsewhere in the same table -- CITE{formula-recurrence}
 		#is how a comment points at a formula on the same page, and the first
 		#version of this check called all fourteen of those broken.
-		keys = set(tree.get('Links') or {}) | set(tree.get('References') or {})
-		for section in ('Formulas', 'Comments', 'Programs', 'Display properties'):
-			keys |= set(tree.get(section) or {})
-		for cite in sorted(set(re.findall(r'CITE\{([^}\]]+)\}', prose))):
-			if cite not in keys:
-				yield 'CITE{%s} is not a Link or a Reference' % cite
+		#The same function `commit_table` gates on and `validate` warns about,
+		#so an audit and a refusal cannot come to different answers about the
+		#same document.
+		from ...validate import unresolved_citations
+		for cite in unresolved_citations(tree):
+			yield 'CITE{%s} is not a Link or a Reference' % cite
 		for href in sorted(set(re.findall(r'HREF\{([^}\]]+)\}', prose))):
 			target = href.split('#')[0]
 			if target and not target.startswith(('http://', 'https://')):

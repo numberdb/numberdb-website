@@ -179,7 +179,59 @@ def problems(tree):
 	found.extend(_check_types(tree))
 	found.extend(_check_entries(tree))
 	found.extend(_check_control_characters(tree))
+	found.extend(_check_citations(tree))
 	return found
+
+
+#: Sections whose keys a CITE may name. A citation points at a Link or a
+#: Reference, and also at a label defined elsewhere in the same table:
+#: CITE{formula-recurrence} is how a comment points at a formula on the page.
+CITED_SECTIONS = ('Links', 'References', 'Formulas', 'Comments', 'Programs',
+                  'Display properties')
+
+
+def citation_labels(tree):
+	"""Every label a CITE in this document may point at."""
+	labels = set()
+	for section in CITED_SECTIONS:
+		block = tree.get(section)
+		if isinstance(block, dict):
+			labels |= set(block)
+	return labels
+
+
+def unresolved_citations(tree):
+	"""Labels the prose cites that the document does not define.
+
+	Scanned over the whole document rather than a list of prose sections,
+	entries included: an entry's comment is prose too, and is rendered by the
+	same function that the rest of the page is.
+	"""
+	import json
+	import re
+
+	if not isinstance(tree, dict):
+		return []
+	labels = citation_labels(tree)
+	try:
+		text = json.dumps(tree)
+	except (TypeError, ValueError):
+		text = str(tree)
+	return sorted({cite for cite in re.findall(r'CITE\{([^}\]]+)\}', text)
+	               if cite not in labels})
+
+
+def _check_citations(tree):
+	"""A citation that names nothing.
+
+	A warning, not a fatal error: somebody writing on the site may well cite a
+	reference they are about to add, and a validator that blocks the save
+	teaches them to work around it. `commit_table` refuses one from the API,
+	where there is nobody to show a warning to.
+	"""
+	return [Problem('CITE{%s} names no reference, link or label in this '
+	                'table.' % (cite,), fatal=False, where='citation')
+	        for cite in unresolved_citations(tree)]
 
 
 def check(tree):

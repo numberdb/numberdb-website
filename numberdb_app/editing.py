@@ -183,7 +183,7 @@ def commit_table(table, tree, author=None, message='', base=None,
 	"""
 	from .limits import enforce
 	from .models import TableRevision
-	from .validate import check as check_schema
+	from .validate import check as check_schema, unresolved_citations
 
 	#Every caller says which channel it is. There is no default, because the
 	#one that would be convenient -- `orm`, for a direct call -- is the path
@@ -214,6 +214,24 @@ def commit_table(table, tree, author=None, message='', base=None,
 	#measured or merged.
 	problems = check_schema(tree)
 	breaches = enforce(tree, strict=strict)
+
+	#A citation that names nothing. The renderer no longer answers one with a
+	#500 -- it prints the label and marks it -- but that is a second line, and
+	#the first is not letting the document in.
+	#
+	#Refused for the same writers a soft size limit is refused for, and for
+	#the same reason: `check_schema` returns this as a warning, which is the
+	#right answer for a person on the site who is about to add the reference
+	#they just cited, and no answer at all for a script, which will not read
+	#it. T197 lost a formula's citation in a split and served 500 for a day.
+	if strict:
+		dangling = unresolved_citations(tree)
+		if dangling:
+			raise InvalidDocument(
+				'cites %s, which this table does not define; a CITE names a '
+				'Link, a Reference, or a label in Formulas, Comments, '
+				'Programs or Display properties'
+				% ', '.join('CITE{%s}' % cite for cite in dangling[:5]))
 
 	#The freeze protects citations, and a draft has none: it is not publicly
 	#reachable, nothing outside can point at its identities, and settling the
