@@ -1,6 +1,6 @@
 # The table document for proposal 4 of
 # agents/table-ideas/BATCH-2026-09-10T2109.md. Created as draft T214 through
-# the API (X-Draft: yes), to be filled by generate.py beside it and offered for
+# the API (X-Draft: yes), filled by generate.py beside it, and offered for
 # review; publishing is a person's act on the site.
 Title: Weil polynomials of abelian varieties over prime fields
 Definition: >-
