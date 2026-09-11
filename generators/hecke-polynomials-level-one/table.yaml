@@ -1,0 +1,109 @@
+Title: Hecke polynomials of level one cusp forms
+Definition: >-
+  For an even integer $k$ and a prime $p$, this table gives the characteristic
+  polynomial $\chi_{k,p}(x)=\det(xI-T_p\mid S_k(\mathrm{SL}_2(\mathbb{Z})))$
+  of the Hecke operator $T_p$ CITE{WikiHecke} acting on the space of cusp
+  forms of weight $k$ and level one.
+Parameters:
+  k:
+    type: Z
+    title: weight
+    display: $k$
+    constraints: $k$ is even and $\dim S_k(\mathrm{SL}_2(\mathbb{Z}))>0$
+  p:
+    type: Z
+    title: prime
+    display: $p$
+    constraints: $p$ is prime
+Comments:
+  comment-normalisation: >-
+    The eigenvalues are the usual Fourier coefficients $a_p$ in the
+    $q$-expansion of a normalised eigenform, not the analytically normalised
+    values $a_p/p^{(k-1)/2}$. With this convention, the weight $12$ rows are
+    $x-\tau(p)$ for Ramanujan's tau function.
+  comment-zero-space: >-
+    Weight $14$ is absent because $S_{14}(\mathrm{SL}_2(\mathbb{Z}))=0$.
+    The characteristic polynomial of an operator on the zero vector space
+    would be $1$, which does not name an eigenvalue or a cusp form.
+Formulas:
+  formula-q-action: >-
+    If $f(q)=\sum_{n\geq1}a_nq^n$, then
+    $(T_pf)(q)=\sum_{n\geq1}(a_{pn}+p^{k-1}a_{n/p})q^n$, where
+    $a_{n/p}=0$ when $p\nmid n$.
+  formula-level-one-basis: >-
+    The level-one cusp-form space is
+    $S_k(\mathrm{SL}_2(\mathbb{Z}))=\Delta\,M_{k-12}$, and
+    $M_*=\mathbb{C}[E_4,E_6]$. Thus the products
+    $\Delta E_4^aE_6^b$ with $4a+6b=k-12$ form a basis of $S_k$.
+  formula-tau: >-
+    For $k=12$, $\chi_{12,p}(x)=x-\tau(p)$, where $\tau(n)$ is the
+    coefficient of $q^n$ in
+    HREF{Q-expansion_of_the_modular_discriminant}[the modular discriminant
+    $\Delta$].
+  formula-degree: >-
+    $\deg\chi_{k,p}=\dim S_k(\mathrm{SL}_2(\mathbb{Z}))$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      S = CuspForms(1, 24)
+      S.hecke_matrix(2).charpoly('x')       # x^2 - 1080*x - 20468736
+  program-pari:
+    language: PARI/GP
+    code: |-
+      mf = mfinit([1, 24], 0);
+      charpoly(mfheckemat(mf, 2))           \\ x^2 - 1080*x - 20468736
+Similar tables:
+  - table: HREF{Q-expansion_of_the_modular_discriminant}[$q$-expansion of the modular discriminant $\Delta$]
+    relation: its Ramanujan tau coefficients give the weight $12$ rows by CITE{formula-tau}
+  - table: HREF{Q-expansion_of_the_Eisenstein_series_E4}[$q$-expansion of the Eisenstein series $E_4$]
+    relation: $E_4$ is one generator of the ring of level-one modular forms used in CITE{formula-level-one-basis}
+  - table: HREF{Q-expansion_of_the_Eisenstein_series_E6}[$q$-expansion of the Eisenstein series $E_6$]
+    relation: $E_6$ is the other generator of the ring of level-one modular forms used in CITE{formula-level-one-basis}
+  - table: HREF{Spectral_parameters_of_Maass_forms_of_level_1}[Spectral parameter of Maass forms of level 1]
+    relation: stores spectral data for the non-holomorphic automorphic eigenforms of the same group
+Links:
+  WikiHecke:
+    title: 'Wikipedia: Hecke operator'
+    url: https://en.wikipedia.org/wiki/Hecke_operator
+  PARIHecke:
+    title: 'PARI/GP manual: mfheckemat'
+    url: https://pari.math.u-bordeaux.fr/dochtml/html-stable/Modular_forms.html#mfheckemat
+Keywords:
+  - Hecke polynomial
+  - Hecke operator
+  - Hecke eigenvalue
+  - characteristic polynomial of a Hecke operator
+  - level one modular form
+  - cusp form
+  - modular form
+  - Maeda conjecture
+Tags:
+  - number theory
+  - polynomial
+  - modular form
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every even weight $12\leq k\leq94$ with
+    $\dim S_k(\mathrm{SL}_2(\mathbb{Z}))>0$, for $p=2,3,5,7$
+  rigour details: >-
+    The generator computes $E_4$ and $E_6$ from their divisor-sum
+    $q$-expansions, forms $\Delta=(E_4^3-E_6^2)/1728$, builds the basis
+    $\Delta E_4^aE_6^b$ in CITE{formula-level-one-basis}, and applies
+    CITE{formula-q-action} coefficient by coefficient. It expresses the
+    result in that exact basis over $\mathbb{Q}$ and takes
+    $\det(xI-T_p)$ by a permutation expansion, requiring every coefficient
+    to be an integer before it returns the polynomial. Every row is required
+    to equal PARI/GP's `charpoly(mfheckemat(mfinit([1,k],0),p))`
+    CITE{PARIHecke}. The weight $12$ rows were compared with the stored
+    Ramanujan tau values in the table of the modular discriminant. Before the
+    draft was created, the range
+    $k\leq94$, $p\in\{2,3,5,7\}$ measured 164 entries, longest 1151
+    characters at $(94,7)$ and a 60.8 KB entries block; adding weight $96$
+    raised the longest entry to 1503 characters.
+Display properties:
+  number-header: $\chi_{k,p}(x)$
+  group parameters: [['k'], ['p']]
