@@ -266,3 +266,33 @@ $3$, and $1$ is neither. `/tmp/ec_preflight_out2.txt`, 2026-09-06.
 **Confidence:** high.
 
 **Reported:** no.
+
+## LMFDB genus 2 curve 784.c.614656.1: BSD fields disagree by a factor of 9
+
+**Found:** building T213, *Real periods of genus 2 curves over
+$\mathbb{Q}$*, on 2026-09-11, while using the BSD relation as a consistency
+check on the transcribed real periods.
+
+**Evidence:** the LMFDB row for 784.c.614656.1 has
+`leading_coeff = 0.3582178305688400308992259460321820582993327584490888593`,
+`real_period = 5.7314852891014404943876151365`,
+`regulator = 1.0`, `tamagawa_product = 9`, `analytic_sha = 1`, and
+`torsion_order = 4`. The BSD quotient
+`leading_coeff * torsion_order^2 / (regulator * tamagawa_product *
+analytic_sha)` is
+`0.6368316987890489438208461262...`, which is the real period divided by 9.
+Equivalently,
+`real_period * regulator * tamagawa_product * analytic_sha /
+(leading_coeff * torsion_order^2) = 9.000000000000...`. The same check on
+the other rank-zero rows with these fields agreed to the source precision, and
+PARI's `lfungenus2` matched the LMFDB `leading_coeff` values on all
+odd-conductor genus 2 isogeny classes in T213's range.
+
+**Confidence:** medium. The discrepancy is an exact small factor in fields
+from one source, so it may be a convention or data-entry issue rather than a
+wrong real period. For this note to be wrong, the BSD quotient used by LMFDB
+for this bad-reduction row would have to omit the recorded Tamagawa product,
+while the same field is used in the usual way on the neighbouring checked
+rows.
+
+**Reported:** no.
