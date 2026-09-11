@@ -23,30 +23,33 @@ which is where a relation can be written down.
 
 import os
 import sys
-from math import gcd
 
 import numberdb.sage as numberdb
 from sage.rings.complex_arb import ComplexBallField
 from sage.rings.rational_field import QQ
 
 
-#: Which of the four this table holds.
-FUNCTION = "Ai"
-# A thousand values, which is the scale this corpus's own function tables
-# hold: T20's Bessel zeros and T9's Gamma values are about 1050 each, at some
-# 120 KB per document, and 61 was an order of magnitude short of that.
+# A thousand values, at the arguments somebody actually arrives holding.
 #
-# The knob is the denominator, not the range. Raising it refines the grid
-# between the points already there rather than stretching it further out,
-# which is what somebody interpolating wants -- and every value the table
-# already had stays exactly where it was.
-MAX_DENOMINATOR = 12
-MAX_ABS_ARGUMENT = 8
+# The grid was rationals of bounded height, every $a/b$ in lowest terms with
+# $b\leq12$, which was chosen for how many entries it made rather than for
+# which arguments those were: Ai(1.96) is a number people arrive with and
+# Ai(7/12) is not.
+#
+# Two decimals out to |x| = 5, one decimal from there to |x| = 10. The
+# functions are consulted finely where they turn over and coarsely in the
+# tails, and the wider range is what keeps the zeros in the table: Ai has
+# four in |x| <= 10 and Bi has four, and all but the first two lie beyond 5.
+FINE_STEP = QQ(1) / QQ(100)
+FINE_LIMIT = 5
+COARSE_STEP = QQ(1) / QQ(10)
+MAX_ABS_ARGUMENT = 10
 
 # Bits of working precision beyond what the written digits need.
 #
-# Measured over all 244 entries: at this guard the widest result still has
-# radius less than 1e-115 when the table asks for 100 digits.
+# `verify` recomputes every entry and compares, so a guard too small
+# for some argument fails there rather than quietly rounding; it is
+# stated as a knob and checked as a result.
 WORKING_GUARD = 64
 
 
@@ -60,14 +63,18 @@ def _key_from_stdin():
         os.environ["NUMBERDB_API_KEY"] = token
 
 
-def _arguments(max_denominator=MAX_DENOMINATOR, maximum=MAX_ABS_ARGUMENT):
+def _arguments(fine_step=FINE_STEP, fine_limit=FINE_LIMIT,
+               coarse_step=COARSE_STEP, maximum=MAX_ABS_ARGUMENT):
     values = {QQ(0)}
-    for denominator in range(1, max_denominator + 1):
-        for numerator in range(-maximum * denominator,
-                               maximum * denominator + 1):
-            if numerator == 0 or gcd(abs(numerator), denominator) != 1:
-                continue
-            values.add(QQ(numerator) / QQ(denominator))
+    for index in range(1, int(QQ(fine_limit) / fine_step) + 1):
+        values.add(index * fine_step)
+        values.add(-index * fine_step)
+    first = int(QQ(fine_limit) / coarse_step) + 1
+    for index in range(first, int(QQ(maximum) / coarse_step) + 1):
+        values.add(index * coarse_step)
+        values.add(-index * coarse_step)
+    #Smaller absolute value first, and the positive one ahead of its negative:
+    #the arguments nearest the origin are the ones most often wanted.
     for value in sorted(values, key=lambda x: (abs(x), 0 if x >= 0 else 1)):
         yield str(value)
 

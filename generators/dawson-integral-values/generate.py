@@ -24,7 +24,6 @@ hand.
 
 import os
 import sys
-from math import gcd
 
 import numberdb.sage as numberdb
 from sage.rings.complex_arb import ComplexBallField
@@ -36,24 +35,24 @@ from sage.rings.real_arb import RealBallField
 #: Which of the six this table holds.
 FUNCTION = "dawson"
 
-#: Its value at x = 0, exact, and stored as the integer rather than as
-#: a hundred places of one.
-AT_ZERO = "0"
-# A thousand values, which is the scale this corpus's own function tables
-# hold: T20's Bessel zeros and T9's Gamma values are about 1050 each, at some
-# 120 KB per document, and 60 was an order of magnitude short of that.
+# A thousand values, at the arguments somebody actually arrives holding.
 #
-# The knob is the denominator, not the range. Raising it refines the grid
-# between the points already there rather than stretching it further out,
-# which is what somebody interpolating wants -- and every value the table
-# already had stays exactly where it was.
-MAX_DENOMINATOR = 18
+# The grid was rationals of bounded height, every $a/b$ in lowest terms with
+# $b\leq18$, which was chosen for how many entries it made. That is counting
+# rather than choosing: erf(1.96) is a number people arrive with and erf(17/18)
+# is not, and a denominator bound admits the second to reach the first.
+#
+# So: every argument of two decimal places between 0 and 10. It is a rule that
+# can be stated in a line, it holds every two-decimal number a computation
+# hands back in that range, and it is a thousand and one of them.
+STEP = QQ(1) / QQ(100)
 MAX_ARGUMENT = 10
 
 # Bits of working precision beyond what the written digits need.
 #
-# Measured over all 360 entries: at this guard the widest result still has
-# radius less than 1e-108 when the table asks for 100 digits.
+# `verify` recomputes every entry and compares, so a guard too small
+# for some argument fails there rather than quietly rounding; it is
+# stated as a knob and checked as a result.
 WORKING_GUARD = 64
 
 
@@ -67,15 +66,11 @@ def _key_from_stdin():
         os.environ["NUMBERDB_API_KEY"] = token
 
 
-def _arguments(max_denominator=MAX_DENOMINATOR, maximum=MAX_ARGUMENT):
+def _arguments(step=STEP, maximum=MAX_ARGUMENT):
     #Zero included: see the note at the top.
-    values = {QQ(0)}
-    for denominator in range(1, max_denominator + 1):
-        for numerator in range(1, maximum * denominator + 1):
-            if gcd(numerator, denominator) == 1:
-                values.add(QQ(numerator) / QQ(denominator))
-    for value in sorted(values):
-        yield str(value)
+    count = int(QQ(maximum) / step)
+    for index in range(count + 1):
+        yield str(index * step)
 
 
 def _real_field(digits):

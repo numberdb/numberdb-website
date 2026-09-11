@@ -112,8 +112,10 @@ Data properties:
   type: R
   rigour: proven
   complete: 'no'
-  complete-note: it holds $\operatorname{Ai}'$ at every rational $x=a/b$ in lowest
-    terms with $b\leq12$ and $|x|\leq8$, including $x=0$
+  complete-note: >-
+    it holds $\operatorname{Ai}'$ at every $x$ of two decimal places with
+    $|x|\leq5$, and at every $x$ of one decimal place with $5<|x|\leq10$,
+    including $x=0$
   rigour details: Each value was computed as a Sage complex ball with arb at `numberdb.bits(digits,
     losing=64)` bits and returned as its real part, the imaginary part being checked
     to contain zero. The value at $x=0$ was checked against CITE{formula-initial-value}
