@@ -60,11 +60,11 @@ Similar tables:
 - table: HREF{Values_of_the_Airy_function_of_the_first_kind}[Values of the Airy
     function of the first kind $\operatorname{Ai}(x)$]
   relation: the other solution of the same equation; their Wronskian is CITE{formula-wronskian}
-- table: HREF{Derivatives_of_the_Airy_function_of_the_first_kind}[Derivatives
-    of the Airy function of the first kind $\operatorname{Ai}'(x)$]
+- table: HREF{Values_of_the_derivative_of_the_Airy_function_of_the_first_kind}[Values
+    of the derivative of the Airy function of the first kind $\operatorname{Ai}'(x)$]
   relation: the derivative of the other solution of the same equation
-- table: HREF{Derivatives_of_the_Airy_function_of_the_second_kind}[Derivatives
-    of the Airy function of the second kind $\operatorname{Bi}'(x)$]
+- table: HREF{Values_of_the_derivative_of_the_Airy_function_of_the_second_kind}[Values
+    of the derivative of the Airy function of the second kind $\operatorname{Bi}'(x)$]
   relation: its derivative
 - table: HREF{Zeros_of_the_Airy_function_Ai}[Zeros of the Airy function of the
     first kind Ai]
