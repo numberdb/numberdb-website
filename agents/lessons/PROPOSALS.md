@@ -5177,3 +5177,34 @@ Evidence: T216, 2026-09-11. The failed run printed the traceback through
 520 entries in replace mode and attached `generate.py`; the response was
 `'entries': 520`, followed by `<VerifyReport T216: 520/520 matched, 0
 differing, 0 missing, 0 extra>`.
+
+## The LMFDB SQL mirror may carry the precision the visible page hides
+
+What happened: the Maass-coefficient proposal was left pending because the
+LMFDB page for `1.0.1.1.1` shows only eight digits, and the build needed to
+know whether the coefficient download was better than that. The LMFDB API
+index documents a read-only PostgreSQL mirror. Querying `maass_rigor` joined
+to `maass_rigor_coefficients` there gave full `numeric[]` coefficient arrays
+and matching `coefficient_errors` arrays. For the first ten level-one forms
+and primes below 50, every stored prime coefficient had source radius
+`7.4184123e-74`, enough for 60 written digits as intervals.
+
+What the skill says now: it says to verify against something outside the
+family and an earlier lesson says to fetch LMFDB API rows slowly with
+`_fields`, `_sort` and `_limit`. It does not say that the documented SQL
+mirror can expose full-precision array fields and their error columns when
+the object page rounds them for display.
+
+What it should say: when the LMFDB page says full precision is available from
+downloads or API data, check the table list on `https://www.lmfdb.org/api/`.
+If the needed field is an array or has a companion error or precision field,
+query the read-only SQL mirror once for the whole rectangle, freeze the answer
+locally, and store decimals with their recorded errors as exact rational
+intervals. Do not choose the table precision from the page's display digits.
+
+Evidence: `/tmp/export_maass_data.py` and `/tmp/maass_source_probe.sql`,
+2026-09-11, queried `devmirror.lmfdb.xyz` for `maass_rigor` and
+`maass_rigor_coefficients`. `/tmp/maass_hecke_check.sql` found `a_1=1` on
+all ten forms, 900 coprime Hecke products inside the propagated source
+intervals, and 110 prime-square relations inside the propagated source
+intervals.
