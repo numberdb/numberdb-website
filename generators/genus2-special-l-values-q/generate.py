@@ -111,11 +111,32 @@ def _polynomial_text(coefficients):
     return "".join(pieces)
 
 
+def _nonzero_terms(coefficients):
+    return [(int(coefficient), power)
+            for power, coefficient in enumerate(coefficients)
+            if coefficient]
+
+
+def _times_y_text(coefficient, power):
+    coefficient = abs(int(coefficient))
+    if power == 0:
+        return "y" if coefficient == 1 else "%d y" % coefficient
+    if power == 1:
+        return "xy" if coefficient == 1 else "%d xy" % coefficient
+    body = "x^%d y" % power
+    return body if coefficient == 1 else "%d %s" % (coefficient, body)
+
+
 def equation_text(record):
     f_coefficients, h_coefficients = ast.literal_eval(record["equation"])
     left = "y^2"
-    h_text = _polynomial_text(h_coefficients)
-    if h_text != "0":
+    h_terms = _nonzero_terms(h_coefficients)
+    if len(h_terms) == 1:
+        coefficient, power = h_terms[0]
+        sign = " - " if coefficient < 0 else " + "
+        left += sign + _times_y_text(coefficient, power)
+    elif h_terms:
+        h_text = _polynomial_text(h_coefficients)
         left += " + (%s)y" % h_text
     return "%s = %s" % (left, _polynomial_text(f_coefficients))
 
@@ -127,9 +148,6 @@ def entry_comment(record):
            record["curve_label"],
            equation_text(record))
     )
-    if record["curves_in_class"] > 1:
-        sentence += " The LMFDB class has %d curves in this range." % (
-            record["curves_in_class"],)
     return sentence
 
 
