@@ -5098,3 +5098,25 @@ Evidence: T214, 2026-09-11. `/tmp/weil_probe.py` failed on the
 failed on `polynomial.is_irreducible()` with `ImportError: cannot import name
 PolynomialSequence_generic`. The checked generator now avoids both and
 `dry_run.py` reports 494 exact entries.
+
+## Do not put punctuation immediately after CITE{} or HREF{}
+What happened: the repair of T215 printed clean source prose, but the rendered
+page showed spaces before punctuation: `CITE{GhitzaMcAndrew},` rendered as
+`[2] ,`, `CITE{formula-degree}.` rendered as `(4) .`, and
+`HREF{...}[$E_6$].` rendered as `$E_6$ .`. Rewriting the sentences so the
+citation or link was followed by a word fixed the prose: "summarized in
+CITE{GhitzaMcAndrew} says", "Formula CITE{formula-degree} shows", and
+"HREF{...}[$E_6$] together."
+
+What the skill says now: it says to use `CITE{}` and `HREF{}` and to read the
+rendered page, but it does not mention punctuation beside rendered links.
+
+What it should say: when a `CITE{}` or `HREF{}` would come just before a comma
+or full stop, rewrite the sentence so the citation or link sits inside the
+sentence and a word follows it. The renderer leaves a space after the generated
+link, and that space reads as a typo before punctuation.
+
+Evidence: `/tmp/t215_render.py`, 2026-09-11, rendered the first T215 repair as
+`[2] ,`, `(4) .` and `$E_6$ .`; after rewriting and resubmitting revision
+`f555a3caf8a3fe8c7299edefb86f805a243d53a91d6368351409a3afcf0748ae`, the same
+render check showed no such spacing in the changed prose.
