@@ -185,6 +185,15 @@ in `HREF` at first mention, in `equals` where two entries are the same
 number, and in shared `Tags` -- not by putting them in one table, which is
 the one place the relation cannot be written down.
 
+**Hold the numbers that turn up.** Whether somebody will arrive holding one
+of these numbers is the question about a table's range -- not how many
+entries it makes, nor how simply they are described. $\Gamma(1/3)$ turns up;
+$\operatorname{erf}(1.96)$ turns up; $\operatorname{erf}(17/18)$ does not, and
+a denominator bound that admits it is counting rather than choosing. $t^2+2$
+turns up constantly and almost never as a Weil polynomial. No general test
+settles it: which parameters are interesting is a fact about the family, and
+the completeness note is where you say which you chose and why.
+
 **A value that is exactly a rational is written exactly.** Not
 `3.000000000000000000000000000000`: a decimal means plus or minus one unit in
 the last place however long it is, so that spelling says a number known to be
