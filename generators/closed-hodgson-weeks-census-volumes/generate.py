@@ -266,11 +266,74 @@ class ClosedHodgsonWeeksVolumes(numberdb.Generator):
         return {"number": volume, "comment": comment(record)}
 
 
+def fill_draft_once(generator, message):
+    """Fill a fresh draft without the empty upsert probe.
+
+    The ordinary Generator.publish() path first sends an empty upsert as a
+    writeability check. A draft created with no Numbers section currently
+    rejects that harmless probe while rebuilding its search rows. This table
+    has two entries, so sending the complete non-empty block once keeps the
+    intended revision history and still uses the package's entry formatting.
+    """
+    from numberdb._generate import (
+        _check_precision,
+        _check_rigour,
+        _producer,
+        _run_name,
+        _source_files,
+    )
+    from numberdb._write import Entries, attach, submit_entries, to_text
+
+    table = generator.table
+    run = _run_name(generator)
+    entries = Entries(*generator.parameters)
+
+    for params in generator.enumerate():
+        params = dict(params)
+        wanted = generator.digits_for(params)
+        entry = generator._entry(params, wanted)
+        value = entry["number"]
+        identity = ",".join(str(params[name]) for name in generator.parameters)
+        _check_rigour(generator, table, identity, value)
+
+        written = to_text(value, wanted, generator.format)
+        _check_precision(table, identity, written, wanted, lowering=False)
+
+        record = dict(entry)
+        record.pop("digits", None)
+        entries.add(**params, **record, digits=wanted)
+
+    answer = submit_entries(
+        table,
+        entries,
+        message=message,
+        produced_by=_producer(generator),
+        upsert=False,
+        run=run,
+        rigour=generator.rigour,
+    )
+
+    files = _source_files(generator)
+    stored = []
+    for name, body in sorted(files.items()):
+        attach(table, name, body, run=run, message=message,
+               rigour=generator.rigour)
+        stored.append(name)
+
+    return {
+        "tid": answer.get("tid", table),
+        "revision": answer.get("revision"),
+        "entries": len(entries),
+        "files": stored,
+    }
+
+
 if __name__ == "__main__":
     _key_from_stdin()
     generator = ClosedHodgsonWeeksVolumes()
     if "--publish" in sys.argv or os.environ.get("NUMBERDB_PUBLISH") == "1":
-        print(generator.publish(
+        print(fill_draft_once(
+            generator,
             message="closed Hodgson-Weeks census volumes below 1, certified in ball arithmetic"))
     else:
         report = generator.verify(sample=None)
