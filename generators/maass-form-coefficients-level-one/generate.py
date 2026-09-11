@@ -186,7 +186,18 @@ class MaassFormCoefficients(numberdb.Generator):
     type = "R"
     digits = WRITTEN_DIGITS
     rigour = "proven"
-    format = "ball"
+    #The house convention, and what 211 of the corpus's 219 documents hold:
+    #the digits written are known and the last is uncertain by one. This table
+    #wrote balls, and every one of its 150 radii was exactly one ulp of its own
+    #last digit -- a radius recorded to say what the notation already says.
+    #
+    #`source_interval` adds one unit in the last written place when
+    #`display_rounding` is set, which is there precisely so the decimal form
+    #covers its own rounding, so the enclosure is as honest as it was before.
+    #
+    #Balls stay where the radius carries something: T3's thousand zeta zeros,
+    #the measured constants in T10 and T12, the estimates in T157 and T171.
+    format = "decimal"
     files = ("generate.py", "maass_data.py")
 
     def enumerate(self):
