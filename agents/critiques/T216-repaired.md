@@ -1,0 +1,1 @@
+1. left for a person -- no finding could be evaluated because `agents/critiques/T216.md` is absent from this checkout and from local git history; I authenticated-read the live T216 draft, confirmed the public rendered page is 404 while the draft is private, and `manage.py audit_table T216` reports nothing.
