@@ -167,108 +167,108 @@ References:
     bib: >-
       J. Buchmann and D. Ford, On the computation of totally real quartic
       fields of small discriminant, Math. Comp. 52 (1989), 161-174
-    doi: 10.1090/S0025-5718-1989-0946599-1
-    zbl: 0668.12001
+    doi: '10.1090/S0025-5718-1989-0946599-1'
+    zbl: '0668.12001'
   BFP1993:
     bib: >-
       J. Buchmann, D. Ford and M. Pohst, Enumeration of quartic fields of
       small discriminant, Math. Comp. 61 (1993), 873-879
-    doi: 10.1090/S0025-5718-1993-1176706-0
-    zbl: 0788.11060
+    doi: '10.1090/S0025-5718-1993-1176706-0'
+    zbl: '0788.11060'
   DyD1991:
     bib: >-
       F. Diaz y Diaz, A table of totally real quintic number fields, Math.
       Comp. 56 (1991), 801-808
-    doi: 10.1090/S0025-5718-1991-1068820-3
-    zbl: 0726.11080
+    doi: '10.1090/S0025-5718-1991-1068820-3'
+    zbl: '0726.11080'
   SPD1994:
     bib: >-
       A. Schwarz, M. Pohst and F. Diaz y Diaz, A table of quintic number
       fields, Math. Comp. 63 (1994), 361-376
-    doi: 10.1090/S0025-5718-1994-1219705-3
-    zbl: 0822.11087
+    doi: '10.1090/S0025-5718-1994-1219705-3'
+    zbl: '0822.11087'
   LZ1977:
     bib: >-
       J. Liang and H. Zassenhaus, The minimum discriminant of sixth degree
       totally complex algebraic number fields, J. Number Theory 9 (1977),
       16-35
-    doi: 10.1016/0022-314X(77)90046-4
-    zbl: 0345.12005
+    doi: '10.1016/0022-314X(77)90046-4'
+    zbl: '0345.12005'
   Pohst1982:
     bib: >-
       M. Pohst, On the computation of number fields of small discriminants
       including the minimum discriminants of sixth degree fields, J. Number
       Theory 14 (1982), 99-117
-    doi: 10.1016/0022-314X(82)90061-0
-    zbl: 0478.12005
+    doi: '10.1016/0022-314X(82)90061-0'
+    zbl: '0478.12005'
   Pohst1977:
     bib: >-
       M. Pohst, The minimum discriminant of seventh degree totally real
       algebraic number fields, in Number Theory and Algebra (H. Zassenhaus,
       ed.), Academic Press, 1977, 235-240
-    zbl: 0373.12006
+    zbl: '0373.12006'
   DyD1983:
     bib: >-
       F. Diaz y Diaz, Valeurs minima du discriminant des corps de degré 7
       ayant une seule place réelle, C. R. Acad. Sci. Paris Sér. I Math. 296
       (1983), 137-139
-    zbl: 0527.12007
+    zbl: '0527.12007'
   DyD1984:
     bib: >-
       F. Diaz y Diaz, Valeurs minima du discriminant pour certains types de
       corps de degré 7, Ann. Inst. Fourier 34 (1984), no. 3, 29-38
-    doi: 10.5802/aif.976
-    zbl: 0546.12004
+    doi: '10.5802/aif.976'
+    zbl: '0546.12004'
   DyD1988:
     bib: >-
       F. Diaz y Diaz, Discriminant minimal et petits discriminants des corps
       de nombres de degré 7 avec cinq places réelles, J. London Math. Soc.
       (2) 38 (1988), 33-46
-    doi: 10.1112/jlms/s2-38.1.33
-    zbl: 0653.12003
+    doi: '10.1112/jlms/s2-38.1.33'
+    zbl: '0653.12003'
   DyD1987:
     bib: >-
       F. Diaz y Diaz, Petits discriminants des corps de nombres totalement
       imaginaires de degré 8, J. Number Theory 25 (1987), 34-52
-    doi: 10.1016/0022-314X(87)90014-X
-    zbl: 0606.12005
+    doi: '10.1016/0022-314X(87)90014-X'
+    zbl: '0606.12005'
   PMD1990:
     bib: >-
       M. Pohst, J. Martinet and F. Diaz y Diaz, The minimum discriminant of
       totally real octic fields, J. Number Theory 36 (1990), 145-159
-    doi: 10.1016/0022-314X(90)90069-4
-    zbl: 0719.11079
+    doi: '10.1016/0022-314X(90)90069-4'
+    zbl: '0719.11079'
   Battistoni2019:
     bib: >-
       F. Battistoni, The minimum discriminant of number fields of degree 8
       and signature (2,3), J. Number Theory 198 (2019), 386-395
-    doi: 10.1016/j.jnt.2018.09.007
-    zbl: 1442.11143
+    doi: '10.1016/j.jnt.2018.09.007'
+    zbl: '1442.11143'
   Battistoni2020:
     bib: >-
       F. Battistoni, On small discriminants of number fields of degree 8 and
       9, J. Théor. Nombres Bordeaux 32 (2020), no. 2, 489-501
-    doi: 10.5802/jtnb.1131
-    arxiv: 1910.07208
-    zbl: 1460.11127
+    doi: '10.5802/jtnb.1131'
+    arxiv: '1910.07208'
+    zbl: '1460.11127'
   Takeuchi1999:
     bib: >-
       K. Takeuchi, Totally real algebraic number fields of degree 9 with
       small discriminant, Saitama Math. J. 17 (1999), 63-85
-    zbl: 0985.11069
+    zbl: '0985.11069'
   Voight2008:
     bib: >-
       J. Voight, Enumeration of totally real number fields of bounded root
       discriminant, in Algorithmic Number Theory (ANTS-VIII), Lecture Notes
       in Computer Science 5011, Springer, 2008, 268-281
-    zbl: 1205.11125
+    zbl: '1205.11125'
   Odlyzko1990:
     bib: >-
       A. M. Odlyzko, Bounds for discriminants and related estimates for
       class numbers, regulators and zeros of zeta functions: a survey of
       recent results, Sém. Théor. Nombres Bordeaux (2) 2 (1990), 119-141
-    doi: 10.5802/jtnb.22
-    zbl: 0722.11054
+    doi: '10.5802/jtnb.22'
+    zbl: '0722.11054'
   Cohen1993:
     bib: >-
       H. Cohen, A Course in Computational Algebraic Number Theory, Graduate
