@@ -12,10 +12,17 @@ The table stores the characteristic polynomial of Frobenius, not the
 L-polynomial. For prime q, the genus 1 and genus 2 coefficient inequalities
 below enumerate the isogeny classes exactly.
 
-Rows measured before the draft was created: g = 1 for prime q <= 13 and
-g = 2 for prime q <= 7 gives 494 entries, longest 33 characters and a
-105.6 KB entries block. Adding the next genus 2 prime, q = 11, gives
-895 entries and a 195.0 KB block, so the table stops at q = 7 in genus 2.
+Rows: g = 1 for prime q <= 13 and g = 2 for prime q <= 11 gives 895 entries
+and a 195.0 KB entries block -- inside the soft limits of 1200 entries and
+320 KB, and the size the corpus's larger tables already are (T69 and T70 are
+about 245 KB). An earlier draft stopped at q = 7 in genus 2, at 494 entries
+and 105.6 KB, against a guideline of aiming at half the block limit.
+
+The genus 2 rows are where this table earns its place. In genus 1 membership
+is an inequality a reader can check by inspection -- t^2 - a t + q is a Weil
+polynomial exactly when |a| <= 2 sqrt(q) -- so those 60 rows say something
+anyone could have decided. The genus 2 conditions are not like that, which is
+why the next prime goes to genus 2 rather than to genus 1.
 """
 
 import os
@@ -27,7 +34,7 @@ from sage.rings.integer_ring import ZZ
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 
 G1_PRIMES = (2, 3, 5, 7, 11, 13)
-G2_PRIMES = (2, 3, 5, 7)
+G2_PRIMES = (2, 3, 5, 7, 11)
 OEIS_A362198 = {2: 35, 3: 63, 5: 129, 7: 207}
 
 ZT = PolynomialRing(ZZ, "t")
