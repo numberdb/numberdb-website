@@ -677,27 +677,47 @@ def table_context(table, preview=False):
 			text = text.replace('<', '&lt;')
 		
 		#Parse 'CITE's:
+		#
+		#Nothing in here raises. A citation that points at nothing is a fault
+		#in one sentence of one field, and it used to answer the whole page
+		#with a 500: T197 was unreadable -- a thousand values and every one of
+		#its formulas -- because a single CITE named a label that had moved to
+		#another table in a split. The reader lost everything over a footnote.
+		#
+		#So a broken citation renders as its own label, marked, and the page
+		#is served. The mark is the point: it says something is wrong here to
+		#the person best placed to fix it, where silence would leave the
+		#sentence reading as though the reference had never been meant.
+		#
+		#The gate that stops one arriving is in `commit_table`, which refuses
+		#a document from the API that cites what it does not define. This is
+		#the second line, for the documents that are already stored and for
+		#the labels a later edit removes from under a citation.
 		parts = text.split("CITE{")
 		new_text = parts[0]
 		for part in parts[1:]:
-			try: 
-				ref, part2 = part.split("}",maxsplit=1)
-			except ValueError:
-				raise ValueError('no closing bracket in CITE')
-			try:
+			if "}" not in part:
+				#No closing brace: there is no label here to resolve, so the
+				#text stands as the author wrote it.
+				new_text += "CITE{" + part
+				continue
+			ref, part2 = part.split("}", maxsplit=1)
+			if ref in show_label_as:
 				new_text += '<a class="CITE" href="#%s">%s</a>%s' % (ref, show_label_as[ref], part2)
-				#new_text += '<a class="CITE" href="#%s" onClick="(event) => {scrollTo(event,);}">%s</a>%s' % (ref, ref, show_label_as[ref], part2)
-			except KeyError:
-				raise ValueError('unknown label %s in CITE' % (ref,))
+			else:
+				new_text += ('<span class="CITE-broken" title="this table '
+				             'defines no reference by that name">%s</span>%s'
+				             % (ref, part2))
 				
 		#Parse 'HREF's:
 		parts = new_text.split("HREF{")
 		new_text = parts[0]
 		for part in parts[1:]:
-			try: 
-				ref, part2 = part.split("}",maxsplit=1)
-			except ValueError:
-				raise ValueError('no closing bracket in HREF')
+			if "}" not in part:
+				#As with CITE above: unclosed, so there is nothing to link.
+				new_text += "HREF{" + part
+				continue
+			ref, part2 = part.split("}", maxsplit=1)
 			if part2 != "" and part2[0] == "[":
 				try:
 					caption, part2 = part2[1:].split("]",maxsplit=1)
