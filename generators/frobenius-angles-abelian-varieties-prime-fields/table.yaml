@@ -6,10 +6,9 @@
 Title: Frobenius angles of abelian varieties over prime fields
 Definition: >-
   The Frobenius angles of an isogeny class of abelian varieties over
-  $\mathbb{F}_q$ are the numbers $\theta\in[0,1]$ such that
-  $q^{-1/2}e^{\pi i\theta}$ is a root of the L-polynomial of the class,
-  listed in increasing order with multiplicity CITE{LMFDBAngles}. This
-  table gives those angles for isogeny classes over prime fields.
+  $\mathbb{F}_q$ are the angles $\theta\in[0,1]$ attached to the roots of
+  its L-polynomial by CITE{formula-roots} CITE{LMFDBAngles}. This table
+  gives those angles for classes over prime fields.
 Parameters:
   g:
     type: Z
