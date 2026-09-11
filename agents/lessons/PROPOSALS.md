@@ -5234,3 +5234,98 @@ Evidence: T218, 2026-09-11. `/tmp/check_maass_stored.py` reported 1010
 stored Hecke relation failures before the generator added one unit in the last
 displayed decimal place to each source radius; after the repair it read back
 150 entries and checked the same 1010 Hecke relations on the stored prime rows.
+
+## `api/lookup?number=` takes an encoded record; digits go in `text=`
+
+What happened: a stage-one run asked `api/lookup?number=0.9427073627...`
+for eight hyperbolic volumes to see whether the corpus held them, and every
+answer was `{"error": "number record must be an object"}`. The `number`
+parameter is the JSON record `encode_number` writes (`kind`, `lower`,
+`upper`, ...), the form the client sends; a decimal string is what the
+site's search box takes, and the API parameter for that is `text=`.
+`api/lookup?text=1.01494160640965362502` found T175's row `2,1/3` at
+once, and the same query for $4G$ found nothing although $G$ is stored,
+which is the guessable-multiple rule doing its job.
+
+What the skill says now: `search_text` and `numberdb.table`; nothing about
+looking a value up by its digits from outside the client.
+
+What it should say: to ask the corpus whether it holds a number, send the
+digits as `api/lookup?text=<digits>` (or `numberdb.search_real_interval`
+from the client), and run a control first: a constant the corpus is known
+to hold must come back before an empty answer for the new one means
+anything. `number=` is for a record the client has encoded, and a bare
+decimal there is an error, not an empty result.
+
+Evidence: `/tmp/hv_client2.py` and the curl loop in the 2026-09-11T1148
+stage-one run: eight `number=` queries all answered the error above; the
+`text=` form answered `[]` for the Weeks, Meyerhoff and Bianchi volumes
+and answered T175 `2,1/3` for the Gieseking constant.
+
+## $\mathrm{Cl}_2$ as $\operatorname{Im}\mathrm{Li}_2(e^{i\theta})$ is NaN on a ball around $\theta=0$
+
+What happened: Lobachevsky's orthoscheme formula for the volume of a
+Coxeter tetrahedron $[p,q,r]$ evaluates $\Lambda(\theta)=\tfrac12
+\mathrm{Cl}_2(2\theta)$ at seven angles, and for every noncompact
+tetrahedron one of them is exactly $0$ (the ideal vertex makes
+$\alpha_3-\delta$ vanish, as $\pi/6-\arctan(1/\sqrt3)$ does for $[3,3,6]$).
+Computed in `ComplexBallField(400)` as `CBF(0, theta).exp().polylog(2).imag()`,
+that term is a ball around $1$ fed to $\mathrm{Li}_2$, whose branch point
+is $1$, and arb answers `nan` with infinite radius; the compact tetrahedra
+$[3,5,3]$, $[5,3,5]$, $[4,3,5]$ came out to 30 digits from the same code
+while all seven noncompact ones printed NaN. The skill's own warning that a
+NaN ball overlaps everything applies: a comparison against a known value
+would have passed.
+
+What the skill says now: a nan ball overlaps every interval, and a
+negative base with a negative exponent makes one; nothing about
+$\mathrm{Li}_2$ at $1$.
+
+What it should say: arb's `polylog(2)` is indeterminate on any ball
+containing $1$, so $\mathrm{Cl}_2(\theta)=\operatorname{Im}\mathrm{Li}_2(e^{i\theta})$
+cannot be evaluated on a ball containing $0$ or $2\pi$ even though
+$\mathrm{Cl}_2$ is perfectly regular there. Where the argument is known
+to be exactly $0$ or $\pi$ write the exact $0$ (and say why); where it
+is merely near, use the Fourier series $\sum\sin(k\theta)/k^2$ or the
+integral $-\int_0^\theta\log|2\sin(t/2)|\,dt$, which have no branch point.
+Check the result is finite before comparing it.
+
+Evidence: `/tmp/hv_sage2.py`, 2026-09-11: with $\Lambda$ returning an
+exact $0$ on a ball of radius below $10^{-90}$ around $0$, $\pi/2$ or
+$\pi$, $[3,3,6]$ gave $0.0422892336004022343758834397614$, which is
+$\mathrm{Cl}_2(\pi/3)/24$ to $2\cdot10^{-121}$, and the other nine
+orthoschemes matched the ten-digit values on Wikipedia's honeycomb pages.
+
+## SnapPy's `chern_simons()` needs the cusped invariant computed before `dehn_fill`, and is chirality-sensitive
+
+What happened: `snappy.OrientableClosedCensus[0].chern_simons()` raises
+`ValueError: The Chern-Simons invariant isn't currently known`, and so does
+`M = Manifold('m004'); M.dehn_fill((5,1)); M.chern_simons()`. But
+`M = Manifold('m003'); M.chern_simons(); M.dehn_fill((-3,1)); M.chern_simons()`
+returns $0.06004306668$ for the Weeks manifold: SnapPy propagates the
+invariant through a filling only from a cusped triangulation on which it
+was already computed. Refilling the census name and filling this way worked
+for the first 60 closed census manifolds. Separately, SnapPy's two names
+for the Whitehead link complement give opposite signs, `m129` $+\tfrac18$
+and `5^2_1` $-\tfrac18$: the invariant changes sign under mirror image,
+so a table of it has the knots batch's problem (two sources mirrored on
+137 of 249 knots) in a form that changes the stored number. Volume does
+not see this; Chern-Simons does. `complex_volume()` returns
+$\mathrm{Vol}+2\pi^2 i\,\mathrm{CS}$ in the same normalisation
+($\mathrm{m003}$: $2.0299+4.9348i$, and $4.9348=\pi^2/2$).
+
+What the skill says now: nothing about Chern-Simons; the mirror lesson is
+stated for chirality-sensitive polynomial invariants.
+
+What it should say: a Chern-Simons table must name its diagram source as a
+Jones table must, and the value is defined modulo $\tfrac12$ in SnapPy's
+normalisation (Meyerhoff's), which the table has to state; for a closed
+manifold, compute the invariant on the cusped manifold first and fill
+afterwards. Check the sign on one amphichiral knot ($4_1$ gives $0$) and
+one chiral one against an independent table before publishing any.
+
+Evidence: `/tmp/hv_snappy.py`, `/tmp/hv_snappy2.py`, 2026-09-11, SnapPy
+3.3.2: $\mathrm{m003}$ gives exactly $\tfrac14$ to 57 places in
+quad-double, $6^3_2$ (Borromean rings) gives $0$, $5_2$ gives
+$-0.15320413329715186829\ldots$, and the Weeks and Meyerhoff manifolds
+$0.06004306668$ and $0.077038180264$ through refilling.
