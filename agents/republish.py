@@ -19,14 +19,22 @@ holds both grids at once -- 1221 entries for T197, over the soft limit of
 1200, and the API refused the whole run. Deleting first means the table only
 ever shrinks and then grows back:
 
-  1. Publish the arguments the two grids share, with `removing=True` and
-     `overwrite=False`. Nothing is computed, because every one of them is
-     already stored; the arguments the new grid drops are deleted.
+  1. Publish the arguments the two grids share, with `removing=True`. They are
+     recomputed and sent, and the arguments the new grid drops are deleted.
   2. Publish the generator, which adds what the new grid gained.
 
-Values that survive step 1 are recomputed in step 2 rather than trusted, so a
-disagreement between the stored number and this environment still stops the
-run the way it would in any other publish.
+Step 1 recomputes entries the table already holds, which looks wasteful and is
+not optional. The first version passed `overwrite=False` to skip them, on the
+reasoning that they were stored already -- but a run removes what it did not
+*produce*, and entries that are never computed are never sent and so were
+never produced. It deleted all 1121 entries of T197 instead of the 900 it
+meant to, and the table stood empty until the second pass refilled it. What is
+kept has to be sent.
+
+So the removal is previewed before it happens and the counts have to match
+what was worked out here, and the outcome is checked again afterwards. A
+removal that takes more than it was told to is a bug in this script, and the
+place to catch it is before the delete rather than in the next run's diff.
 """
 import importlib.util
 import os
@@ -123,14 +131,35 @@ def main():
 
     if strays:
         shared = [params for params in wanted if key_of(params, order) in stored]
+        if not shared:
+            raise SystemExit(
+                "the new grid shares no argument with the %s stored: this "
+                "would empty %s rather than regrid it"
+                % (len(stored), generator.table))
 
         class Pruner(kind):
             def enumerate(self, **bounds):
                 return iter(shared)
 
         pruner = Pruner()
-        print(pruner.publish(message="removing the arguments the new grid drops",
-                             removing=True, overwrite=False))
+        expected = len(strays)
+
+        #Computed and sent, not skipped: see the note at the top.
+        rehearsal = pruner.preview(removing=True)
+        if len(rehearsal.removed) != expected:
+            raise SystemExit(
+                "the rehearsal would remove %s entries where %s were worked "
+                "out from the two grids; refusing to delete anything"
+                % (len(rehearsal.removed), expected))
+
+        outcome = pruner.publish(
+            message="removing the arguments the new grid drops", removing=True)
+        print(outcome)
+        if len(outcome.removed) != expected:
+            raise SystemExit(
+                "removed %s entries, expected %s; %s is now in a state this "
+                "script did not intend" % (len(outcome.removed), expected,
+                                           generator.table))
 
     print(generator.publish(message=message))
 
