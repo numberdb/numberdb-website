@@ -100,10 +100,10 @@ Data properties:
   type: R
   rigour: proven
   complete: 'no'
-  complete-note: it holds $W_0(x)$ for every positive rational $x=a/b$ in lowest
-    terms with $b\leq6$ and $x\leq10$, and it holds both $W_0(x)$ and
-    $W_{-1}(x)$ for every negative rational $x=a/b$ in lowest terms with
-    $b\leq10$ and $-e^{-1}<x<0$; the exact value $W_0(0)=0$ is omitted
+  complete-note: >-
+    it holds $W_0(x)$ at every $x$ of two decimal places with $0<x\leq5$ and
+    every $x$ of one decimal place with $5<x\leq20$, and both $W_0(x)$ and
+    $W_{-1}(x)$ at every negative $x$ of two decimal places with $-1/e<x<0$
   rigour details: Each value was computed as a Sage complex ball with arb at
     `numberdb.bits(digits, losing=64)` bits, then returned as a real ball after
     checking that its imaginary part contained zero. The entries were checked

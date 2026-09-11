@@ -22,7 +22,6 @@ where a relation can be written down.
 
 import os
 import sys
-from math import gcd
 
 import numberdb.sage as numberdb
 from sage.rings.rational_field import QQ
@@ -32,13 +31,22 @@ from sage.rings.real_arb import RealBallField
 #: The two normalisations, which are one function:
 #: E_1(x) = -Ei(-x).
 NORMALISATIONS = ("Ei", "E1")
-MAX_DENOMINATOR = 6
+# Five hundred values or a thousand, at the arguments somebody actually
+# arrives holding.
+#
+# The grid was every $a/b$ in lowest terms with $b\leq6$ and $x\leq5$, a bound
+# picked for the count it made rather than for the arguments it chose: Si(1.96)
+# is a number people arrive with and Si(17/18) is not.
+#
+# So: every argument of two decimal places up to 5. Two normalisations share the grid, so its length counts twice:
+# five hundred arguments each, a thousand entries.
+STEP = QQ(1) / QQ(100)
 MAX_ARGUMENT = 5
 
 # Bits of working precision beyond what the written digits need.
 #
-# Measured over all 419 entries: at this guard the widest result still has
-# radius less than 1e-117 when the table asks for 100 digits.
+# `verify` recomputes every entry and compares, so a guard too small
+# for some argument fails there rather than quietly rounding.
 WORKING_GUARD = 64
 
 
@@ -52,14 +60,11 @@ def _key_from_stdin():
         os.environ["NUMBERDB_API_KEY"] = token
 
 
-def _arguments(max_denominator=MAX_DENOMINATOR, maximum=MAX_ARGUMENT):
-    values = set()
-    for denominator in range(1, max_denominator + 1):
-        for numerator in range(1, maximum * denominator + 1):
-            if gcd(numerator, denominator) == 1:
-                values.add(QQ(numerator) / QQ(denominator))
-    for value in sorted(values):
-        yield str(value)
+def _arguments(step=STEP, maximum=MAX_ARGUMENT):
+    #From one step above zero: every function here is either
+    #singular at the origin or exactly zero there.
+    for index in range(1, int(QQ(maximum) / step) + 1):
+        yield str(index * step)
 
 
 def _value_ball(function, x_text, digits):
@@ -103,9 +108,9 @@ class ExponentialIntegralValues(numberdb.Generator):
     digits = 100
     rigour = "proven"
 
-    def enumerate(self, denominator=MAX_DENOMINATOR, maximum=MAX_ARGUMENT):
+    def enumerate(self, step=STEP, maximum=MAX_ARGUMENT):
         for normalisation in NORMALISATIONS:
-            for x in _arguments(denominator, maximum):
+            for x in _arguments(step, maximum):
                 yield {"normalisation": normalisation, "x": x}
 
     def value(self, params, digits):
