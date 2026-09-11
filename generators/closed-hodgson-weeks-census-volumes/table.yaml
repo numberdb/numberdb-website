@@ -16,11 +16,13 @@ Keywords:
 Parameters:
   name:
     type: Symbolic
-    title: SnapPy census name
+    title: Hodgson-Weeks census name
     display: $M$
     constraints: >-
-      $M$ is the SnapPy name of a closed orientable hyperbolic 3-manifold in
-      the Hodgson-Weeks census
+      $M$ is named as in the Hodgson-Weeks census CITE{HodgsonWeeks}, by a
+      Dehn filling of a cusped census manifold: $m003(-3,1)$ is the filling
+      with coefficients $(-3,1)$ on $m003$, and $m003$ is the SnapPea cusped
+      census name CITE{CallahanHildebrandWeeks}
 Comments:
   comment-census: >-
     SnapPy's $\mathtt{OrientableClosedCensus}$ contains $11031$ closed
@@ -92,6 +94,11 @@ Links:
     title: 'OEIS A126774: decimal expansion of the volume of the Weeks manifold'
     url: https://oeis.org/A126774
 References:
+  CallahanHildebrandWeeks:
+    bib: >-
+      P. J. Callahan, M. V. Hildebrand and J. R. Weeks, "A census of cusped
+      hyperbolic 3-manifolds", Mathematics of Computation 68 (1999), 321-332.
+    doi: 10.1090/S0025-5718-99-01036-4
   HodgsonWeeks:
     bib: >-
       C. D. Hodgson and J. R. Weeks, "Symmetries, isometries and length
