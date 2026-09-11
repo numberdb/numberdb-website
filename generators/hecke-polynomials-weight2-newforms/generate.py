@@ -28,7 +28,13 @@ from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.rational_field import QQ
 
 MAX_LEVEL = 100
-PRIMES = (2, 3, 5, 7, 11, 13, 17, 19)
+#: The primes the table runs over.
+#:
+#: More of them rather than more levels, because the newforms are the
+#: expensive part and these are free once a form is known -- and because the
+#: bigger p is, the likelier a_p is to generate the coefficient field, which
+#: is the only case this table has anything to say about.
+PRIMES = (2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59)
 LETTERS = "abcdefghijklmnopqrstuvwxyz"
 
 EXPECTED_ORBITS = (
@@ -149,6 +155,25 @@ def _selected_records():
     return [record for record in _all_records() if record["degree"] >= 2]
 
 
+def _generates_the_field(record, prime):
+    """Whether a_p generates K_f, which is when this entry says anything.
+
+    The characteristic polynomial of multiplication by a_p has the degree of
+    K_f whatever a_p is. When a_p is rational it is (x - a_p)^d: the degree
+    comes from the field and the content is one small integer, so the entry
+    is an ordinary polynomial wearing a disguise. An earlier draft held 89
+    entries of which 78 were (x - a)^2 for a = 0..7 -- perfect squares of a
+    linear polynomial, which would have answered a search for x^2 - 6x + 9
+    with a table about modular forms.
+
+    Irreducible is the test: then the characteristic polynomial is the
+    minimal polynomial of a_p, a_p generates K_f, and the entry records
+    something a reader cannot get by inspection.
+    """
+    polynomial = _coefficient_charpoly(record, prime)
+    return polynomial.degree() >= 2 and polynomial.is_irreducible()
+
+
 def _permutation_sign(perm):
     inversions = 0
     for i in range(len(perm)):
@@ -219,10 +244,14 @@ def _check_global():
         raise ArithmeticError(
             "Sage newform order disagrees with the LMFDB label list")
 
-    rows = [(record["label"], p) for record in _selected_records()
-            for p in PRIMES]
-    if len(rows) != 400:
-        raise ArithmeticError("got %s rows, expected 400" % len(rows))
+    #How many orbits, which is the fact about the mathematics. The row count
+    #was written here as 400, which is that number times the eight primes the
+    #table ran over at the time, so adding a prime broke a check that was not
+    #about primes at all. The orbit list above pins each one by label and
+    #degree; this pins how many there are.
+    if len(_selected_records()) != 50:
+        raise ArithmeticError("got %s orbits of degree >= 2, expected 50"
+                              % len(_selected_records()))
 
     required = {
         ("23.2.a.a", 2): xz**2 + xz - 1,
@@ -289,6 +318,8 @@ class WeightTwoNewformHeckePolynomials(numberdb.Generator):
         _check_global()
         for record in _selected_records():
             for prime in PRIMES:
+                if not _generates_the_field(record, prime):
+                    continue
                 yield {"label": record["label"], "p": ZZ(prime)}
 
     def value(self, params, digits):
