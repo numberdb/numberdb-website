@@ -27,13 +27,24 @@ from sage.rings.rational_field import QQ
 from sage.rings.real_arb import RealBallField
 
 
+# A denominator bound is the right rule for this one, which is not true of
+# most tables of values. B(a,b) = Γ(a)Γ(b)/Γ(a+b), and the rationals with
+# small denominators are where it is a number anybody names: B(1/2,1/2) is
+# π, B(1/3,1/3) and B(1/6,1/6) are the periods of the equianharmonic and
+# lemniscatic curves, and the reflection and multiplication formulas reach
+# exactly the sixths, quarters and thirds. Nobody arrives holding B(1.96,1),
+# which is the opposite of the situation for erf.
+#
+# So the bound stays and the range grows: every $a/b$ in lowest terms with
+# $b\leq6$ up to 3 rather than 2. Unordered pairs, because B is symmetric,
+# which is 36 rationals and 666 of them.
 MAX_DENOMINATOR = 6
-MAX_PARAMETER = 2
+MAX_PARAMETER = 3
 
 # Bits of working precision beyond what the written digits need.
 #
-# Measured over all 300 entries: at this guard the widest non-exact result
-# still carries more than 125 decimal digits when the table asks for 100.
+# `verify` recomputes every entry and compares, so a guard too small for
+# some pair fails there rather than quietly rounding.
 WORKING_GUARD = 96
 
 

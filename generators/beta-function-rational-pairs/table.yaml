@@ -126,5 +126,5 @@ Data properties:
     CITE{OEISLemniscate} and CITE{OEISSeries}.
   complete: no
   complete-note: >-
-    it holds every entry with $a,b\in(0,2]$, $a\leq b$, and both parameters in
-    lowest terms with denominator at most $6$
+    it holds $B(a,b)$ for every unordered pair of rationals $a=p/q$ and
+    $b=r/s$ in lowest terms with $q,s\leq6$ and $a,b\leq3$
