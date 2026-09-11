@@ -161,7 +161,13 @@ def main():
                 "script did not intend" % (len(outcome.removed), expected,
                                            generator.table))
 
-    print(generator.publish(message=message))
+    #A value rewritten in a different notation says the same thing to the same
+    #precision, which `publish` leaves alone by default and reports as
+    #`agreed` -- the right default, since re-running a generator should not
+    #mark a thousand entries edited for nothing. Changing the notation is the
+    #case that default exists to distinguish, so it is asked for by name.
+    restating = os.environ.get("NUMBERDB_RESTATING") == "1"
+    print(generator.publish(message=message, restating=restating))
 
 
 if __name__ == "__main__":
