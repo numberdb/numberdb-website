@@ -1,0 +1,3 @@
+1. *done* -- Rewrote the definition to define the Hecke normalization, $R$ through the Laplace eigenvalue $1/4+R^2$, and $a_p$ through CITE{formula-expansion}; checked the live API and owner page, T84's definition of $R$, the LMFDB coefficient knowl's expansion, and `source_hecke_failures()` under Sage.
+2. *done* -- Removed the `Zeros of the Riemann zeta function` similar-table line after checking the live zeta table stores imaginary parts of zeros while T218 stores Hecke coefficients, and reread the rendered owner page to confirm the line is gone.
+3. *left for a person* -- T84 is tagged `modular form`, but adding that tag to T218 made `manage.py audit_table T218` report `Tags: "modular form" reaches only this table`; I removed it so the produced draft audits cleanly.
