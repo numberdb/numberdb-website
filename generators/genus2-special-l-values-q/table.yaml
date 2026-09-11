@@ -34,11 +34,10 @@ Comments:
     When $r=0$ the stored value is $L(A,1)$, and when $r=1$ it is
     $L'(A,1)$. The factor $1/r!$ is part of the definition for every rank.
   comment-even-conductors: >-
-    Only odd conductors are listed. PARI's documentation for `lfungenus2`
-    says that when the conductor is even, its valuation at $2$ may be
-    incorrect CITE{PARILfun}; those classes need the local Euler factor at
-    $2$ supplied separately before their values can be computed by this
-    method.
+    Only odd conductors are listed, because PARI's documentation for
+    `lfungenus2` says the model must be minimal at $2$ and, when the
+    conductor is even, the conductor's valuation at $2$ may be incorrect
+    CITE{PARILfun}.
 Formulas:
   formula-leading-coefficient: >-
     If $L(A,s)=\sum_{m\geq r} c_m(s-1)^m$ with $c_r\neq 0$, then the table
@@ -49,9 +48,12 @@ Formulas:
     $P_p(t)=\det(1-t\operatorname{Frob}_p\mid T_\ell A)$.
   formula-bsd: >-
     The Birch and Swinnerton-Dyer conjecture predicts
-    $L^{(r)}(A,1)/r! = \Omega_A R_A |\Sha(A)|\prod_p c_p /
-    |A(\mathbb{Q})_{\mathrm{tors}}|^2$, with the factors named as in the
-    LMFDB BSD invariants CITE{LMFDBBSD}.
+    $L^{(r)}(A,1)/r! = \Omega_A R_A |\text{Sha}(A)|\prod_p c_p /
+    |A(\mathbb{Q})_{\mathrm{tors}}|^2$, where $\Omega_A$ is the real
+    period, $R_A$ is the regulator, $c_p$ is the Tamagawa number at $p$,
+    $\text{Sha}(A)$ is the Tate-Shafarevich group, and
+    $A(\mathbb{Q})_{\mathrm{tors}}$ is the torsion subgroup
+    CITE{LMFDBBSD}.
 Programs:
   program-pari:
     language: PARI/GP
@@ -118,17 +120,20 @@ Data properties:
   rigour details: >-
     The generator uses the $41$ odd-conductor LMFDB genus $2$ isogeny classes
     with conductor $N\leq1000$, grouped from $56$ curve rows. For each class
-    it builds the PARI L-function CITE{PARILfun} with `lfungenus2([P,Q])`
-    from the representative curve $y^2+Q(x)y=P(x)$, computes
+    it builds the PARI L-function CITE{PARILfun} with `lfungenus2([P,Q])`,
+    where PARI's $[P,Q]$ is the model $[f,h]$ in $y^2+h(x)y=f(x)$. It
+    computes
     `lfun(L,1,r,bitprec)/r!` at $60$ and $80$ decimal working digits using
     explicit bit precision, and stores the digits that agree. Before the
     draft was created, PARI's `lfunorderzero` agreed with the LMFDB analytic
     rank on all $41$ classes, `lfuncheckfeq(L,None,330)` returned between
     $-339$ and $-331$, and the computed values agreed with the LMFDB
-    `leading_coeff` fields, including CITE{LMFDBData169}. The BSD quotient
-    from the LMFDB period, regulator, Tamagawa product, analytic order of
-    $\Sha$, and torsion order agreed to the precision those source fields
-    carry.
+    `leading_coeff` fields, including CITE{LMFDBData169}. Even-conductor
+    classes were left out because their local data at $2$ need separate
+    checking before the same computation is used. The BSD quotient from the
+    LMFDB period, regulator, Tamagawa product, analytic order of
+    $\text{Sha}$, and torsion order agreed to the precision those source
+    fields carry.
 Display properties:
   number-header: leading coefficient
   group parameters: [['label'], ['rank']]
