@@ -182,7 +182,16 @@ def main():
     #mark a thousand entries edited for nothing. Changing the notation is the
     #case that default exists to distinguish, so it is asked for by name.
     restating = os.environ.get("NUMBERDB_RESTATING") == "1"
-    print(generator.publish(message=message, restating=restating))
+
+    #`lowering` accepts a value carrying fewer digits than the stored one.
+    #Moving a table from balls to decimals costs exactly one digit and must:
+    #a ball states its radius, so the last digit of its centre is written
+    #whatever the radius covers, while a decimal has to absorb its own
+    #rounding and can only claim what the interval supports. Off by default,
+    #because throwing away digits somebody computed should be meant.
+    lowering = os.environ.get("NUMBERDB_LOWERING") == "1"
+    print(generator.publish(message=message, restating=restating,
+                            lowering=lowering))
 
 
 if __name__ == "__main__":
