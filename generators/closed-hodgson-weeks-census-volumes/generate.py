@@ -2,9 +2,14 @@
 
     Vol(M), the volume of the complete hyperbolic metric of curvature -1,
 
-for the orientable closed hyperbolic 3-manifolds M in SnapPy's
-OrientableClosedCensus with volume less than 1. The two rows are the Weeks
-manifold and the Meyerhoff manifold.
+for the orientable closed hyperbolic 3-manifolds M of the Hodgson-Weeks
+census, which SnapPy distributes as OrientableClosedCensus. The two rows are
+the Weeks manifold and the Meyerhoff manifold.
+
+The names are the census's own, not SnapPy's: m003(-3,1) is the Dehn filling
+with coefficients (-3,1) on the cusped census manifold m003, and m003 is a
+SnapPea census name. SnapPy is the program that distributes and looks them
+up, and its own documentation calls them SnapPea census manifolds.
 
 Run it with SageMath:
 
