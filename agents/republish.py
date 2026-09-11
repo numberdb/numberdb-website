@@ -117,6 +117,13 @@ def main():
     message = (sys.argv[2] if len(sys.argv) > 2
                else "republished on the grid the generator now describes")
 
+    #A generator names the files it attaches -- `files = ("generate.py", ...)`
+    #-- and reads them relative to the working directory, which is where it
+    #normally runs. Here it is imported from somewhere else, so run from its
+    #directory: publish refuses outright rather than store numbers without the
+    #code that made them, which is the right refusal and stopped this twice.
+    os.chdir(os.path.dirname(os.path.abspath(path)))
+
     module = load(path)
     if os.environ.get("NUMBERDB_KEY_FROM_STDIN") == "1":
         #Each generator carries this, and the module is imported rather than
