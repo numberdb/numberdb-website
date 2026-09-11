@@ -29,7 +29,18 @@ from sage.rings.complex_arb import ComplexBallField
 from sage.rings.rational_field import QQ
 
 
-ORDERS = ("0", "1/3", "1/2", "2/3", "1", "3/2", "2", "5/2", "3")
+#: The orders the table holds, in the order a reader meets them.
+#:
+#: Up the half-integers to 15. At a half-integer the Bessel functions are the
+#: spherical ones and elementary in sin and cos -- $J_{1/2}(x)=\sqrt{2/(\pi
+#: x)}\sin x$ -- so those are the orders somebody checking a value against a
+#: closed form actually holds; at an integer they are the classical ones. 1/3
+#: and 2/3 stay because that is where the Airy functions live.
+#:
+#: Thirty-three orders against thirty arguments is 990 entries, which is the
+#: scale of this corpus's own function tables: T20's Bessel zeros hold 1050.
+ORDERS = tuple(str(nu) for nu in sorted(
+    {QQ(k) / 2 for k in range(0, 31)} | {QQ(1) / 3, QQ(2) / 3}))
 MAX_DENOMINATOR = 4
 MAX_ARGUMENT = 5
 
