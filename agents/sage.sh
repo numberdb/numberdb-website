@@ -110,10 +110,40 @@ trap cleanup EXIT
 # wants, and a refusal would only be retried by hand. `--rm` and a name let the
 # cleanup below reach the container if this end dies first, which is the other
 # half of the problem -- `timeout` here kills the ssh, never the work.
+# What a run may take before Docker stops it, measured rather than guessed.
+#
+# A run's memory is almost all fixed cost and almost none of it the numbers:
+#
+#   * importing Sage            98 MB, every run, before it computes anything
+#   * the erf generator        100 MB total -- all 1001 values cost 1 MB and
+#                              under a second between them; the values hold
+#                              133 KB of text
+#   * the newform generator    211 MB, of which 91 MB is building the Hecke
+#                              orbits and the PARI cross-check in `enumerate`;
+#                              its 686 polynomials cost nothing measurable
+#   * one killed on 2026-09-11  386 MB
+#
+# The server has about 350 MB available at rest, with the site's own worker at
+# 183 MB and 420 MB already in swap. So one build is the whole of the free
+# memory, and a build that wants a little more takes the site down with it --
+# three times on 2026-09-11, the kernel choosing what to kill.
+#
+# 320 MB fits every run measured with half as much again to spare, and stops
+# one heading for 386 MB. `--memory-swap` equal to `--memory` means the
+# container gets no swap at all: it dies instead of dragging the machine into
+# the thrashing, which is the whole point. A failed build is cheap and says so
+# in the log; an unreachable server is neither.
+#
+# Raise it for a run known to need more, when nothing else is on:
+#
+#     NUMBERDB_SAGE_MEMORY=600m agents/sage.sh ...
+MEMORY="${NUMBERDB_SAGE_MEMORY:-320m}"
+
 name="numberdb-agent-run-$run_id"
 ssh "${ssh_opts[@]}" "$REMOTE" \
 	"exec 9>'$LOCK'; flock -w 3600 9 || { echo 'another run held the lock for an hour' >&2; exit 75; }; \
 	 cd '$RPATH' && timeout $TIMEOUT docker compose run --rm --no-deps -T --name '$name' \
+		--memory='$MEMORY' --memory-swap='$MEMORY' \
 		-e PYTHONPATH=/app/clients/python \
 		-e NUMBERDB_ASSISTED_BY='${NUMBERDB_ASSISTED_BY:-assisted by an agent}' \
 		-e NUMBERDB_KEY_FROM_STDIN='${NUMBERDB_KEY_FROM_STDIN:-0}' \
