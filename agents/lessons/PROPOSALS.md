@@ -5120,3 +5120,35 @@ Evidence: `/tmp/t215_render.py`, 2026-09-11, rendered the first T215 repair as
 `[2] ,`, `(4) .` and `$E_6$ .`; after rewriting and resubmitting revision
 `f555a3caf8a3fe8c7299edefb86f805a243d53a91d6368351409a3afcf0748ae`, the same
 render check showed no such spacing in the changed prose.
+
+## A first fill of an empty draft may need replace mode, not an upsert probe
+
+What happened: T216 was created correctly as an empty draft with
+`X-Draft: yes`, and then `generator.publish()` failed before computing any
+entries. The client first calls `check_writable()`, which sends an empty
+upsert to `/api/table/T216/entries`; on a draft whose document has no
+`Numbers` section yet, that request returned
+`NumberDBError: A value in these entries cannot be read as a number. 'str'
+object has no attribute 'items'`. Filling the draft by building an
+`Entries(...)` object from the generator and submitting it once in replace
+mode succeeded, and attaching `generate.py` under the same run id kept the
+usual source file on the table.
+
+What the skill says now: create the draft first, then fill it once with the
+generator and run `verify()`. It does not mention the client's empty upsert
+probe, or that this probe can fail on a draft whose prose was intentionally
+created before any entries.
+
+What it should say: if `Generator.publish()` fails during `check_writable()`
+on an empty draft, do not create a second draft. Either add an empty
+`Numbers: []` section before filling, or submit the first full entry set in
+replace mode and attach the generator source under the same run id; then run
+`verify(sample=None)` as usual. This is a first-fill workaround, not a reason
+to use upsert for a table with no entries.
+
+Evidence: T216, 2026-09-11. The failed run printed the traceback through
+`numberdb._generate._publish()`, `check_writable()` and
+`submit_entries(..., upsert=True)`. `/tmp/fill_t216_replace.py` submitted
+520 entries in replace mode and attached `generate.py`; the response was
+`'entries': 520`, followed by `<VerifyReport T216: 520/520 matched, 0
+differing, 0 missing, 0 extra>`.
