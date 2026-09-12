@@ -169,34 +169,62 @@ class EveryGeneratorSaysHowToRunIt(TestCase):
 	kept by hand looks like just before it stops being one.
 	"""
 
-	def generators(self):
-		import glob
-		import os
+	#The rule, checked on a constructed table rather than on the corpus: the
+	#test database is empty, so a sweep over `Table.objects` here would assert
+	#nothing at all and pass for ever. The corpus is swept by
+	#`manage.py audit_table`, which runs against the real database, where the
+	#tables actually are.
+	#
+	#What is checked is the *attached* file, because that is the one somebody
+	#downloads from the table. The copy under `generators/` in this repository
+	#differs from it for 55 of 130 tables and is not what anyone runs.
 
-		from django.conf import settings
+	GOOD = ('"""A table -- numberdb.org/T700.\n\n'
+	        'Run it with SageMath:\n\n'
+	        '    $ sage -pip install numberdb          # once\n'
+	        '    $ sage -python generate.py            # check the table\n'
+	        '    $ sage -python generate.py --publish  # send it\n"""\n')
 
-		found = sorted(glob.glob(os.path.join(settings.BASE_DIR, 'generators',
-		                                      '*', 'generate.py')))
-		self.assertTrue(found, 'no generators found -- is the directory mounted?')
-		return found
+	def setUp(self):
+		from django.contrib.auth import get_user_model
 
-	def test_each_one_gives_the_terminal_commands(self):
-		for path in self.generators():
-			with self.subTest(generator=path.split('/')[-2]):
-				with open(path, encoding='utf8') as handle:
-					head = handle.read(4000)
-				self.assertIn('sage -pip install numberdb', head)
-				self.assertIn('sage -python generate.py', head)
-				self.assertIn('--publish', head)
+		from .models import Table
 
-	def test_the_commands_are_in_the_docstring_not_buried(self):
-		#First forty lines, so it is the first thing read rather than a note
-		#somewhere after two pages of reasoning.
-		for path in self.generators():
-			with self.subTest(generator=path.split('/')[-2]):
-				with open(path, encoding='utf8') as handle:
-					head = ''.join(handle.readlines()[:40])
-				self.assertIn('sage -python generate.py', head)
+		self.user = get_user_model().objects.create_user('author')
+		self.table = Table.objects.create(
+			tid='T700', tid_int=700, url='t700', title='A table',
+			published=True)
+
+	def attach(self, text):
+		from .editing import commit_table
+
+		commit_table(self.table, {'Title': 'A table', 'Numbers': {'1': '2'}},
+		             author=self.user, message='m', via='orm',
+		             files={'generate.py': text.encode('utf-8')})
+		self.table.refresh_from_db()
+		revision = self.table.head_revision
+		attachment = revision.attachments.select_related('blob').first()
+		return bytes(attachment.blob.content).decode('utf-8')
+
+	def test_a_generator_that_says_how_to_run_it_passes(self):
+		text = self.attach(self.GOOD)
+		head = text[:4000]
+		self.assertIn('sage -pip install numberdb', head)
+		self.assertIn('sage -python generate.py', head)
+		self.assertIn('--publish', head)
+
+	def test_one_that_omits_the_install_line_is_caught(self):
+		#T218 shipped without it, which is what a convention kept by hand
+		#looks like just before it stops being one.
+		text = self.attach(self.GOOD.replace(
+			'    $ sage -pip install numberdb          # once\n', ''))
+		self.assertNotIn('sage -pip install numberdb', text[:4000])
+
+	def test_commands_buried_past_the_first_forty_lines_are_caught(self):
+		buried = '"""A table.\n' + '\n' * 50 + '    $ sage -python generate.py\n"""\n'
+		text = self.attach(buried)
+		self.assertNotIn('sage -python generate.py',
+		                 ''.join(text.splitlines(True)[:40]))
 
 
 class TheSkillSaysWhenToStop(TestCase):

@@ -215,6 +215,42 @@ class Command(BaseCommand):
 		#label defined elsewhere in the same table -- CITE{formula-recurrence}
 		#is how a comment points at a formula on the same page, and the first
 		#version of this check called all fourteen of those broken.
+		#A reference identifier stored as a number. `arxiv: 0705.4325` written
+		#without quotes is the float 705.4325 by the time YAML has finished
+		#with it, and the leading zero is the year. Checked here, against the
+		#stored document, because that is what a citation resolves against --
+		#a copy in a repository can be wrong while every table is right, and
+		#the other way round, and only this side matters to a reader.
+		references = tree.get('References')
+		if isinstance(references, dict):
+			for label, body in sorted(references.items()):
+				if not isinstance(body, dict):
+					continue
+				for field in ('arxiv', 'mr', 'zbl', 'doi', 'isbn'):
+					value = body.get(field)
+					if value is not None and not isinstance(value, str):
+						yield ('%s of reference %s is stored as the number %r; '
+						       'quote it, or a leading zero is lost'
+						       % (field, label, value))
+
+		#A generator nobody can run. The file is downloaded from the table by
+		#somebody who has neither the repository nor a way to guess the
+		#command, so the commands belong in it, near the top.
+		revision = table.head_revision
+		if revision is not None:
+			for attachment in revision.attachments.select_related('blob').all():
+				if not attachment.name.endswith('generate.py'):
+					continue
+				text = bytes(attachment.blob.content).decode('utf-8', 'replace')
+				if 'sage -pip install numberdb' not in text[:4000]:
+					yield ('%s does not say how to install what it imports; '
+					       'put the run commands in its docstring'
+					       % attachment.name)
+				if 'sage -python generate.py' not in ''.join(
+						text.splitlines(True)[:40]):
+					yield ('%s does not give the command to run it in its '
+					       'first forty lines' % attachment.name)
+
 		#The same function `commit_table` gates on and `validate` warns about,
 		#so an audit and a refusal cannot come to different answers about the
 		#same document.

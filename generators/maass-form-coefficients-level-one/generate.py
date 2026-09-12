@@ -7,6 +7,7 @@ positive spectral parameter, matching T84.
 
 Run it with SageMath:
 
+    $ sage -pip install numberdb          # once
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # send it, with NUMBERDB_API_KEY set
 
