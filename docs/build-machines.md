@@ -24,6 +24,31 @@ so a builder that only builds can be given more:
 
     NUMBERDB_SAGE_MEMORY=2g
 
+## Credentials
+
+A builder needs four: the Claude and ChatGPT sessions the agents run on, a
+GitHub token, and the numberdb API key. Logging in by hand on each machine is
+three browser flows and a person, which is a way to have exactly one machine.
+
+So they live once, encrypted, in SSM Parameter Store under `/numberdb`, and a
+machine reads its own:
+
+    scripts/builder-secrets.sh
+
+Nothing is baked into an image and nothing is copied between laptops. The
+instance carries `numberdb-builder-role`, whose policy allows exactly
+`ssm:Get*` on `/numberdb/*` and `kms:Decrypt` through SSM -- so there is no
+key on the disk to steal, and rotating a credential in one place updates every
+machine that reads it. Re-run the script after rotating.
+
+To seed or rotate one, from a machine with the role:
+
+    aws ssm put-parameter --name /numberdb/gh-token --type SecureString \
+        --overwrite --value file://path/to/token
+
+Read from a file rather than typed, so the value does not reach a shell
+history or a transcript.
+
 ## Creating the VM
 
 Per-cloud, and the only per-cloud part. Sage is **amd64 only** — the
