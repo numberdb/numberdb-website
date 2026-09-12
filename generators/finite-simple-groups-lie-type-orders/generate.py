@@ -242,10 +242,10 @@ def comment(family, n, q):
         parts.append("This group is isomorphic to ${}^2A_3(2^2)$.")
     if family in ("B", "C") and n >= 3 and q % 2 == 0:
         other = "C" if family == "B" else "B"
-        parts.append("It is isomorphic to the row %s_%d(%d)." % (other, n, q))
+        parts.append("It is isomorphic to $%s_%d(%d)$." % (other, n, q))
     if family in ("B", "C") and n >= 3 and q % 2 == 1:
         other = "C" if family == "B" else "B"
-        parts.append("It has the same order as %s_%d(%d)." % (other, n, q))
+        parts.append("It has the same order as $%s_%d(%d)$." % (other, n, q))
     return " ".join(parts)
 
 
