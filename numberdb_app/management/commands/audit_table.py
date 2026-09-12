@@ -224,6 +224,26 @@ class Command(BaseCommand):
 			yield ('%s of reference %s is %s, which is not %s; a leading zero '
 			       'is the usual casualty' % (field, label, text, shape))
 
+		#Numbers with no code beside them. A table whose entries were computed
+		#by a program should carry that program: the client attaches the
+		#generator's own file automatically, so an empty manifest means the
+		#attach step did not happen -- an older client (0.1.0 attached nothing
+		#for five tables) or a run that died between sending the numbers and
+		#sending the code.
+		#
+		#Any script counts, not `generate.py` by name. Seventeen tables attach
+		#theirs as `touchard_gen.py` and the like, from before the convention,
+		#and they are not missing anything.
+		revision_now = table.head_revision
+		if revision_now is not None:
+			names = [a.name for a in revision_now.attachments.all()]
+			computed = any('numberdb=' in (r.produced_by or '')
+			               for r in table.revisions.all())
+			if computed and not any(n.endswith(('.py', '.sage')) for n in names):
+				yield ('the entries were computed by a program and no script '
+				       'is attached, so the numbers here have no code beside '
+				       'them; attach the generator that produced them')
+
 		#A generator nobody can run. The file is downloaded from the table by
 		#somebody who has neither the repository nor a way to guess the
 		#command, so the commands belong in it, near the top.
