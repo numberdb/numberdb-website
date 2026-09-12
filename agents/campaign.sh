@@ -181,7 +181,7 @@ while [ "$made" -lt "$builds" ]; do
 	#failed campaign that looked like a finished one. It said exactly that
 	#when an expired OAuth token stopped a build on 2026-09-03.
 	status=0
-	NUMBERDB_AGENT="$writer" agents/run.sh build "Build the highest-ranked proposal in $batch that the database does not already answer. Claim it first by creating its draft, as the prompt says: if the title is refused because it exists, that proposal is taken -- move to the next one. Do not use the presence of a directory in generators/ to decide what is already built; another campaign may be building it in a tree you cannot see. Say at the start which one you chose and why it is the next one. Follow the order of work in the prompt. Do not publish. If every proposal in that batch is already built, print the single line BATCH-EXHAUSTED and stop without building anything, and do not commit. Print that line only when you have checked every proposal in the batch and each one already has a table: it is what tells the campaign to spend money on a new batch, and a build that simply could not proceed must not print it." || status=$?
+	NUMBERDB_AGENT="$writer" agents/run.sh build "Build the highest-ranked proposal in $batch that the database does not already answer. Claim it first by creating its draft, as the prompt says: if the title is refused because it exists, that proposal is taken -- move to the next one. Do not use the presence of a directory in generators/ to decide what is already built; another campaign may be building it in a tree you cannot see. Say at the start which one you chose and why it is the next one. Follow the order of work in the prompt. Do not publish. If every proposal in that batch is already built, run 'touch agents/runs/batch-exhausted' and stop without building anything, and do not commit. Create that file only when you have checked every proposal in the batch and each one already has a table: it is what tells the campaign to spend money on a new batch, and a build that could not proceed for any other reason must not create it -- say what stopped you instead." || status=$?
 	if [ "$status" -ne 0 ] && { [ "$status" -eq 5 ] || ! site_is_up; }; then
 		#Not a judgement at all: the site went away under the run. Asking
 		#triage would spend a second run to be told the same thing, and
@@ -293,9 +293,18 @@ while [ "$made" -lt "$builds" ]; do
 		#really is used up prints BATCH-EXHAUSTED; a build that stopped for
 		#any other reason prints nothing, and proposing a new batch would be
 		#answering the wrong question at $7.50 a time.
+		#A file, not a word in the transcript.
+		#
+		#This first looked for BATCH-EXHAUSTED anywhere in the transcript, and
+		#the first run that used it wrote "This is not BATCH-EXHAUSTED: I did
+		#not get far enough to check the proposals" -- a correct and careful
+		#sentence that the grep read as the marker. A word a run may also
+		#discuss cannot be the signal; a file it either created or did not is
+		#unambiguous.
 		exhausted=no
-		if [ -n "$transcript" ] && grep -aq 'BATCH-EXHAUSTED' "$transcript"; then
+		if [ -f agents/runs/batch-exhausted ]; then
 			exhausted=yes
+			rm -f agents/runs/batch-exhausted
 		fi
 		if [ "$exhausted" = no ]; then
 			say "the build produced no table and did not say the batch was used up"
