@@ -168,6 +168,20 @@ say "shipping $(git rev-parse --short HEAD) to $REMOTE:$RPATH"
 notice() { compose_run "web sage -python manage.py notice $*" >/dev/null 2>&1 || true; }
 notice on "\"Updating the site; it may be slow or briefly unavailable.\""
 
+# Whatever happens next, take the banner down.
+#
+# It is put up here and taken down at the end, so a deploy that stops in the
+# middle leaves the site telling every reader it is being updated when nothing
+# is updating it. That is what happened on 2026-09-12: the migration outran
+# its watcher, the ship returned early, and "Updating the site; it may be slow
+# or briefly unavailable" stayed up overnight on a site that was serving
+# perfectly well.
+#
+# A trap rather than a line at the end, because the line at the end is exactly
+# what a failure skips. `notice` itself never fails, so this cannot turn a
+# successful deploy into a failed one.
+trap 'notice off' EXIT
+
 # 3 ---------------------------------------------------------------------------
 say "copying the code"
 # The code, and not the agent runs' data. `agents/runs` holds the transcripts,
