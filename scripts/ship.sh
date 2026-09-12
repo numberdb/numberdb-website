@@ -119,7 +119,7 @@ detached() {
 	on_remote "rm -f '$out' '$done'; \
 		setsid nohup sh -c \"exec 9>'$LOCK'; \
 			flock -w $LOCK_WAIT 9 || { echo 'lock held for an hour' >&2; echo 75 > '$done'; exit 75; }; \
-			cd '$RPATH' && $*; echo \\\$? > '$done'\" \
+			cd '$RPATH' && ( $* ); echo \\\$? > '$done'\" \
 			> '$out' 2>&1 < /dev/null & echo started"
 
 	local waited=0
