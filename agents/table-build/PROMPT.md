@@ -18,6 +18,24 @@ and never derive a slug from a title. "Power sum symmetric polynomials" is at
 `Power_sum_symmetric_polynomials`, and a link written to
 `Power_sum_polynomials` points at nothing.
 
+**1a. Claim it, by creating the draft before you build anything.** Title
+first, prose if you have it, no numbers. A table's title is unique in the
+database, so the creation either succeeds -- the proposal is yours -- or is
+refused because somebody else is already building it, and the refusal names
+the table that took it. Then pick the next proposal rather than building a
+duplicate.
+
+This costs no history. The draft's first revision is the prose it would have
+had anyway, and the numbers still arrive in one go at step 8, so it is still
+two revisions and not nine. What it buys is that a second run finds out in its
+first second, instead of after the hours it takes to discover the collision by
+colliding -- and it is the only check that works when two campaigns are
+running at once, since neither can see the other's `generators/` directory and
+both would otherwise build the same table.
+
+If you end up abandoning the proposal, say so, so the empty draft can be
+cleared rather than sitting in the queue looking like work in progress.
+
 **2. Settle the convention.** Write the definition first, before computing
 anything, and make it pin down every choice: the branch, the normalisation, the
 indexing, the parameter order, the variable names. The test is whether two
