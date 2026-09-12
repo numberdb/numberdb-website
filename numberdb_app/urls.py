@@ -23,6 +23,7 @@ urlpatterns = [
     re_path(r'^api/table/(?P<tid>[Tt]?\d+)/entries$', api.write_entries, name='api-write-entries'),
     re_path(r'^api/table/(?P<tid>[Tt]?\d+)/offer$', api.offer_table, name='api-offer-table'),
     re_path(r'^api/table/(?P<tid>[Tt]?\d+)/lease$', api.table_lease, name='api-table-lease'),
+    path('api/costs', api.costs, name='api-costs'),
     re_path(r'^api/table/(?P<tid>[Tt]?\d+)/file/(?P<name>[-\w./]+)$', api.write_file, name='api-write-file'),
     path('api/tag', api.tag, name='api-tag'),
     

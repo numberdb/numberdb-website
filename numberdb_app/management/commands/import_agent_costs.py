@@ -1,151 +1,48 @@
-"""Bring the agent runs' ledger into the database.
+"""Read the agent ledger and put its costs on the tables.
 
-    manage.py import_agent_costs agents/runs/COSTS.tsv
-    manage.py import_agent_costs COSTS.tsv --dry-run
+	manage.py import_agent_costs [--ledger PATH] [--dry-run]
 
-The ledger lives beside the runs, on whoever's machine ran them, and prices
-every run in API-equivalent USD whichever harness produced it (see
-`agents/ledger.py`). This reads it and keeps one row per table, model and
-role, so that "what did this table cost", "what has that model cost us" and
-"what does critiquing cost against building" are all answerable.
-
-Rows are replaced, not added to, so importing the same ledger twice leaves the
-same numbers. A run with no table -- an ideas run proposing a batch, a triage
-deciding what to do about a failure -- belongs to no table and is skipped;
-its cost is in the ledger and in `agents/spend.py`, which is the right place
-for work that is not about one table.
+The work is in `numberdb_app.costs`, shared with `POST /api/costs`, so a
+ledger imported from a file and a ledger sent by a build machine mean the
+same thing. This command stays because it is what a person runs on the
+server, and because the file is beside ATTRIBUTION.tsv.
 """
-import csv
-from collections import defaultdict
-from decimal import Decimal, InvalidOperation
+
+import os
 
 from django.core.management.base import BaseCommand, CommandError
 
-from numberdb_app.models import Table, TableCost
-
-
-def attributions(path):
-	"""Run start -> table, from the file beside the ledger, or {}.
-
-	`run.sh` writes the table into the ledger itself, and for a stretch of
-	runs it wrote nothing: the cost was recorded and what it was spent on was
-	not. That is recoverable after the fact -- from the revisions the run
-	wrote and the files it committed -- but it is a judgement made by reading
-	evidence, so it is kept apart from the ledger, which is what a machine
-	measured. See agents/runs/ATTRIBUTION.tsv for the evidence per run.
-	"""
-	found = {}
-	try:
-		handle = open(path, encoding='utf8', newline='')
-	except OSError:
-		return found
-	with handle:
-		for line in handle:
-			if line.startswith('#') or not line.strip():
-				continue
-			fields = line.rstrip('\n').split('\t')
-			if len(fields) >= 2 and fields[0].strip() and fields[1].strip():
-				found[fields[0].strip()] = fields[1].strip().upper()
-	return found
-
-
-def parse_breakdown(row):
-	"""(model, cost) pairs for one run.
-
-	`cost_by_model` is what the ledger writes when it knows the split -- a
-	claude run bills a little haiku beside its main model, and "which model"
-	should mean the model. Falls back to the run's headline model and cost.
-	"""
-	pairs = []
-	for part in (row.get('cost_by_model') or '').split(';'):
-		name, _, value = part.partition('=')
-		if not name.strip() or not value.strip():
-			continue
-		try:
-			pairs.append((name.strip(), Decimal(value.strip())))
-		except InvalidOperation:
-			continue
-	if pairs:
-		return pairs
-	model = (row.get('model') or '').strip()
-	try:
-		cost = Decimal((row.get('cost_usd') or '0').strip() or '0')
-	except InvalidOperation:
-		return []
-	return [(model or '(unknown)', cost)] if cost else []
+from numberdb_app.costs import ingest
 
 
 class Command(BaseCommand):
-	help = "Import per-table agent costs from an agents/runs/COSTS.tsv."
+	help = "Import agent run costs from the ledger TSV."
 
 	def add_arguments(self, parser):
-		parser.add_argument('ledger')
+		parser.add_argument('--ledger', default='agents/runs/COSTS.tsv')
 		parser.add_argument('--dry-run', action='store_true')
 
 	def handle(self, *args, **options):
+		path = options['ledger']
 		try:
-			handle = open(options['ledger'], encoding='utf8', newline='')
+			with open(path, encoding='utf8', newline='') as handle:
+				ledger = handle.read()
 		except OSError as problem:
 			raise CommandError(str(problem))
 
-		known = {table.tid: table for table in Table.objects.all()}
-		#Beside the ledger, and only consulted for a row that names no table:
-		#the ledger is what a run said about itself and wins where it spoke.
-		import os
+		#Beside the ledger, and only consulted for a row that names no table.
+		attribution = ''
+		beside = os.path.join(os.path.dirname(path), 'ATTRIBUTION.tsv')
+		try:
+			with open(beside, encoding='utf8') as handle:
+				attribution = handle.read()
+		except OSError:
+			pass
 
-		attributed = attributions(
-			os.path.join(os.path.dirname(options['ledger']),
-			             'ATTRIBUTION.tsv'))
-		rescued = 0
-		#(table, model, role) -> [cost, runs]
-		totals = defaultdict(lambda: [Decimal('0'), 0])
-		engines = {}
-		skipped = 0
-		with handle:
-			for row in csv.DictReader(handle, delimiter='\t'):
-				tid = (row.get('table') or '').strip().upper()
-				if not tid:
-					tid = attributed.get((row.get('started') or '').strip(), '')
-					if tid:
-						rescued += 1
-				table = known.get(tid)
-				if table is None:
-					skipped += 1
-					continue
-				role = (row.get('stage') or '').strip()[:16]
-				for model, cost in parse_breakdown(row):
-					key = (table.pk, model[:64], role)
-					totals[key][0] += cost
-					totals[key][1] += 1
-					engines[key] = (row.get('engine') or '').strip()[:16]
-
-		if options['dry_run']:
-			for (table_pk, model, role), (cost, runs) in sorted(totals.items()):
-				self.stdout.write('%-6s %-10s %-26s $%8.4f  %d run(s)'
-				                  % (Table.objects.get(pk=table_pk).tid, role,
-				                     model, cost, runs))
-			self.stdout.write('%d rows would be written, %d runs named no table'
-			                  % (len(totals), skipped))
-			return
-
-		#Replaced rather than added to, so importing twice is not paying twice.
-		TableCost.objects.filter(
-			table__pk__in={pk for pk, _, _ in totals}).delete()
-		TableCost.objects.bulk_create([
-			TableCost(table_id=table_pk, model=model, role=role,
-			          engine=engines.get((table_pk, model, role), ''),
-			          cost_usd=cost, runs=runs)
-			for (table_pk, model, role), (cost, runs) in totals.items()])
-
-		#The overview reads TableMetrics, and the cost it shows is summed
-		#from the rows just written.
-		from numberdb_app.metrics import refresh
-
-		for table_pk in {pk for pk, _, _ in totals}:
-			refresh(Table.objects.get(pk=table_pk))
+		summary = ingest(ledger, attribution, dry_run=options['dry_run'])
 		self.stdout.write(
-			'%d cost rows over %d tables; %d runs named no table'
-			'%s'
-			% (len(totals), len({pk for pk, _, _ in totals}), skipped,
-			   '; %d attributed from ATTRIBUTION.tsv' % rescued if rescued
-			   else ''))
+			'%d cost rows over %d tables; %d runs named no table%s%s'
+			% (summary['rows'], summary['tables'], summary['unattributed'],
+			   '; %d attributed from ATTRIBUTION.tsv' % summary['rescued']
+			   if summary['rescued'] else '',
+			   '' if summary['applied'] else ' (nothing written)'))
