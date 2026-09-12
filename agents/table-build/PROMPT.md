@@ -18,6 +18,15 @@ and never derive a slug from a title. "Power sum symmetric polynomials" is at
 `Power_sum_symmetric_polynomials`, and a link written to
 `Power_sum_polynomials` points at nothing.
 
+**If every proposal in the batch already has a table, print
+`BATCH-EXHAUSTED` on a line of its own and stop.** That line is what tells the
+campaign to spend about $7.50 on a fresh batch, so print it only when you have
+checked every proposal and each one is genuinely built. A build that stopped
+for any other reason -- an unreachable source, a claim you could not take, a
+proposal you judged unsuitable -- must not print it: say what happened
+instead, and the campaign will stop and let somebody read it rather than buy
+another batch that has the same problem.
+
 **1a. Claim it, by creating the draft before you build anything.** Title
 first, prose if you have it, no numbers. A table's title is unique in the
 database, so the creation either succeeds -- the proposal is yours -- or is

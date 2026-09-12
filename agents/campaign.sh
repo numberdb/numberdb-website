@@ -38,6 +38,8 @@ cd "$here"
 
 builds="${1:-999}"
 made=0
+# Batches in a row that produced no table. Reset by a build that makes one.
+empty=0
 # One engine per kind of work rather than one per campaign: the stages differ
 # in what they are good at, and a reader who did not write the table is worth
 # more when it is also not the same model.
@@ -179,7 +181,7 @@ while [ "$made" -lt "$builds" ]; do
 	#failed campaign that looked like a finished one. It said exactly that
 	#when an expired OAuth token stopped a build on 2026-09-03.
 	status=0
-	NUMBERDB_AGENT="$writer" agents/run.sh build "Build the highest-ranked proposal in $batch that the database does not already answer. Claim it first by creating its draft, as the prompt says: if the title is refused because it exists, that proposal is taken -- move to the next one. Do not use the presence of a directory in generators/ to decide what is already built; another campaign may be building it in a tree you cannot see. Say at the start which one you chose and why it is the next one. Follow the order of work in the prompt. Do not publish. If every proposal in that batch is already built, say so and stop without building anything, and do not commit." || status=$?
+	NUMBERDB_AGENT="$writer" agents/run.sh build "Build the highest-ranked proposal in $batch that the database does not already answer. Claim it first by creating its draft, as the prompt says: if the title is refused because it exists, that proposal is taken -- move to the next one. Do not use the presence of a directory in generators/ to decide what is already built; another campaign may be building it in a tree you cannot see. Say at the start which one you chose and why it is the next one. Follow the order of work in the prompt. Do not publish. If every proposal in that batch is already built, print the single line BATCH-EXHAUSTED and stop without building anything, and do not commit. Print that line only when you have checked every proposal in the batch and each one already has a table: it is what tells the campaign to spend money on a new batch, and a build that simply could not proceed must not print it." || status=$?
 	if [ "$status" -ne 0 ] && { [ "$status" -eq 5 ] || ! site_is_up; }; then
 		#Not a judgement at all: the site went away under the run. Asking
 		#triage would spend a second run to be told the same thing, and
@@ -275,6 +277,38 @@ while [ "$made" -lt "$builds" ]; do
 	generator=$(git diff --name-only "$before"..HEAD -- generators/ \
 	            | grep -E 'generate\.py$' | head -1 || true)
 	if [ -z "$tid_from_run" ] && [ -z "$generator" ]; then
+		#A build that made nothing is not the same as a batch that is
+		#finished, and paying for a new batch is the expensive way to confuse
+		#them. On 2026-09-12 the first campaign on the build machine spent
+		#$24.56 doing exactly that: three stage-one runs at about $7.50 each,
+		#alternating with builds that looked at the batch, judged every
+		#proposal already built, and correctly stopped for under a dollar. No
+		#table was made and nothing said anything was wrong.
+		#
+		#So: two in a row and the campaign stops. One is ordinary -- a batch
+		#really can run out, and proposing the next one is the whole point of
+		#that path. Two means the batches are not the problem, and the third
+		#would cost another $7.50 to learn the same thing.
+		#Which of the two happened? The build is asked to say. A batch that
+		#really is used up prints BATCH-EXHAUSTED; a build that stopped for
+		#any other reason prints nothing, and proposing a new batch would be
+		#answering the wrong question at $7.50 a time.
+		exhausted=no
+		if [ -n "$transcript" ] && grep -aq 'BATCH-EXHAUSTED' "$transcript"; then
+			exhausted=yes
+		fi
+		if [ "$exhausted" = no ]; then
+			say "the build produced no table and did not say the batch was used up"
+			say "not proposing another batch; read $transcript"
+			exit 6
+		fi
+
+		empty=$((empty + 1))
+		if [ "$empty" -ge 2 ]; then
+			say "stopping: $empty batches in a row produced no table"
+			say "the builds are refusing the proposals rather than running out of them; read $transcript"
+			exit 6
+		fi
 		say "$(basename "$batch") is finished; proposing the next batch"
 		#Whether a *new batch file exists*, not whether HEAD moved. Batches
 		#are data and `.gitignore` has excluded them since the code and the
@@ -291,6 +325,8 @@ while [ "$made" -lt "$builds" ]; do
 		continue
 	fi
 	made=$((made + 1))
+	#A table was built, so whatever the last empty batch meant, it is over.
+	empty=0
 
 	#Read the table as a reader would, in a session that did not build it.
 	#The build checked its own numbers and cannot see its own prose; three
