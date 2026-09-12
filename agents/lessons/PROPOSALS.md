@@ -5526,3 +5526,66 @@ Evidence: `/tmp/b1857/dbg2.py`, 2026-09-12, Sage 10.9:
 inexact on 2030 lines; of those j1-j2+M<0 on 2030; numerically wrong on 0",
 then "Mathar CGord vs exact ... 7392 lines, 0 mismatches". The table is
 <https://github.com/rmathar/Clebsch-Gordan>.
+
+## Sage's Macdonald `S()` basis is not $s_\lambda[X(1-t)]$; Macdonald's $K_{\lambda\mu}(q,t)$ needs the plethysm written out
+
+What happened: to relate Macdonald's own $K_{\lambda\mu}(q,t)$, defined by
+$J_\mu=\sum_\lambda K_{\lambda\mu}(q,t)\,s_\lambda[X(1-t)]$ (Macdonald VI
+(8.11)), to the modified $\tilde K_{\lambda\mu}(q,t)$ of `Ht()`, a check
+expanded `J[mu]` in `SymmetricFunctions(F).macdonald(q=q, t=t).S()`. It
+gave $K_{(3),(3)}=-q^6+q^5+q^4-q^2-q+1$, which should be $1$, and the
+relation $\tilde K=t^{n(\mu)}K(q,t^{-1})$ failed on all 88 pairs with
+$n\le5$. The name suggests the $S_\lambda(x;t)$ of Macdonald's book, and
+the basis is something else. Building $s_\lambda[X(1-t)]$ as
+`s(s[la].plethysm((1-t)*p[1], include=[t]))` and solving the triangular
+system gave $K_{(2,1),(2,1)}=1+qt$, and the relation held on all 39 pairs
+with $n\le4$. The same check with $n(\mu')$ in place of $n(\mu)$ failed on
+30 of them.
+
+A related trap in the same subject: Wikipedia's *Kostka polynomial* calls
+the two-variable $K_{\lambda\mu}(q,t)$ "Kostka–Foulkes polynomials", a
+name the literature gives to the one-variable $K_{\lambda\mu}(t)$. It also
+writes $s_\lambda=\sum_\mu K_{\lambda\mu}(q,t)J_\mu$, which is not the
+definition.
+
+What the skill says now: nothing about symmetric functions. "Check new
+values against something independent" is the nearest rule.
+
+What it should say: a Sage basis named after a book's symbol is not
+evidence that it is that symbol. Before expanding in it, check one
+coefficient the book states. When a plethystic substitution involves a
+parameter of the base ring, pass that parameter in `include=[...]`, or
+Sage treats it as a constant.
+
+Evidence: `/tmp/b1922/checks4.py` ("ok 0 bad 88") and
+`/tmp/b1922/checks5.py` ("ok 39 bad 0 | control with n(mu') fails on
+30"), 2026-09-12. Sage 10 in the builder image.
+
+## `hall_polynomial` refuses a Python int for `q`, and takes the big module first
+
+What happened: `hall_polynomial(la, mu, nu, q=p)` inside a loop
+`for p in (2, 3)` raised `AttributeError: 'int' object has no attribute
+'parent'`, because `sage -python` makes `p` a Python `int`. `q=ZZ(p)`
+works. Its arguments are `(nu, mu, la)` for $P^\nu_{\mu\lambda}$: the
+module $\nu$ that contains the submodule comes first, then the cotype,
+then the type. Brute-force subgroup counts in abelian $p$-groups
+($|\lambda|\le4$ at $p=2$, $|\lambda|\le3$ with two parts at $p=3$) agree
+with that reading in all 174 comparisons. Evaluating at $p+1$ as a control
+fails on 22 of them. The other 52 nonzero values are constants, which
+evaluating at the wrong prime cannot change, so such a control only means
+something on the non-constant rows.
+
+Also in that script: after `from sage.all import *`, `round` returns a
+`RealDoubleElement`, and `range(max(cols))` on a list of them raised
+`TypeError`. Wrap with `int(...)`.
+
+What the skill says now: the lessons on Python ints cover division and
+powers, not functions that call `.parent()` on their argument.
+
+What it should say: pass Sage integers to Sage combinatorics functions
+(`ZZ(p)`), not loop variables. And when a check is controlled by
+perturbing a parameter, count how many rows can respond to the
+perturbation at all.
+
+Evidence: `/tmp/b1922/checks2.py`, 2026-09-12: `{'A': 0, 'B': 0,
+'control': 22, 'nonzero': 74, 'subgroups': 188}`.
