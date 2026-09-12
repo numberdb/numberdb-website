@@ -43,6 +43,29 @@ fetch() {  # parameter, destination, mode
 	echo "  $1 -> $out"
 }
 
+# --save puts them back.
+#
+# The tokens in Parameter Store are a snapshot. Both CLIs refresh their OAuth
+# credentials as they run and rewrite the file on disk, so the stored copy
+# ages: restore from a months-old snapshot and the refresh token may already
+# have been spent, which is a browser login again. Saving after a campaign
+# keeps the stored copy as fresh as the machine that just used it.
+#
+# One machine at a time. Two builders refreshing the same session and both
+# writing back would each overwrite the other's token.
+if [ "${1:-}" = "--save" ]; then
+	save() {  # file, parameter
+		[ -s "$1" ] || { echo "  $2: nothing here to save"; return 0; }
+		aws ssm put-parameter --name "$PREFIX/$2" --type SecureString \
+			--overwrite --value "file://$1" --region "$REGION" >/dev/null 2>&1 \
+			&& echo "  $2 saved from $1" || echo "  $2 FAILED to save"
+	}
+	echo "saving this machine's credentials back to $PREFIX"
+	save "$HOME/.claude/.credentials.json" claude-credentials
+	save "$HOME/.codex/auth.json" codex-auth
+	exit 0
+fi
+
 echo "fetching credentials from $PREFIX in $REGION"
 fetch claude-credentials "$HOME/.claude/.credentials.json"
 fetch codex-auth "$HOME/.codex/auth.json"
