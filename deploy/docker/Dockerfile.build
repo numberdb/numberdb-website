@@ -1,0 +1,53 @@
+# The image a table build runs in, which is not the image the website runs in.
+#
+# They were the same image for as long as there was one machine, and that is
+# how a build-time dependency becomes a production dependency: two tables want
+# SnapPy, so either the web server grows a knot-theory library it never calls,
+# or the tables stay stubs. T141 stops at ten crossings and T219 holds 2 of the
+# census's 11,031 manifolds, both for want of a package nobody wants on a
+# machine that serves pages.
+#
+# So: same Sage, pinned to the same digest as deploy/docker/Dockerfile so the
+# arithmetic is identical and a value computed here is a value the site would
+# have computed. No Django, no gunicorn, no app -- a build talks to numberdb.org
+# over the public API like any outside contributor, and needs nothing else from
+# the site.
+FROM sagemath/sagemath:10.9@sha256:e068670ae5863b54b2550e72437ec637b0283acb0dc712c8584c124dbf44e667
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git wget ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /work
+USER sage
+
+# The client a generator publishes with, from the repository rather than PyPI,
+# so a build runs against the same code the site's tests run against.
+COPY --chown=sage:sage clients/python /opt/numberdb-client
+RUN sage -pip install --no-cache-dir /opt/numberdb-client
+
+# What the tables need and the website must not have.
+#
+#   snappy   -- hyperbolic 3-manifolds: the knot complements of T141, the
+#               closed census of T219. Pinned, because a census is data and a
+#               different version is a different census.
+#   pandas   -- snappy's census tables want it at import time.
+#
+# Add to this list rather than to the website's requirements.txt. That is the
+# whole point of the file.
+RUN sage -pip install --no-cache-dir \
+    "snappy==3.3.2" \
+    "pandas"
+
+# Proof that it is here and importable, at build time rather than at three in
+# the morning in the middle of a campaign.
+RUN sage -python -c "import snappy; print('snappy', snappy.version()); \
+    print('census', len(snappy.OrientableClosedCensus), 'closed manifolds'); \
+    import numberdb; print('numberdb client ok')"
+
+ENV PYTHONPATH=/opt/numberdb-client
+CMD ["sage", "-python", "-c", "import snappy, numberdb; print('builder ready')"]

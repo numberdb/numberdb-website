@@ -44,6 +44,30 @@ REMOTE="${NUMBERDB_REMOTE:-linode}"
 RPATH="${NUMBERDB_RPATH:-/opt/numberdb-website}"
 TIMEOUT="${NUMBERDB_TIMEOUT:-1800}"
 
+# Which image a run happens in, and how much of the machine it may take.
+#
+# The website's image is the default because for a long time it was the only
+# one: the sole machine with Sage was the one serving pages, so a build ran in
+# the image that serves pages. That is also how a build-time dependency
+# becomes a production one -- two tables want SnapPy, and the choice was
+# either to put a knot-theory library on the web server or leave the tables as
+# stubs.
+#
+#     NUMBERDB_REMOTE=builder NUMBERDB_SAGE_IMAGE=numberdb/builder:latest
+#
+# points a run at a machine that does nothing else, running an image with no
+# Django and no app, which talks to numberdb.org over the public API like any
+# outside contributor. Nothing else about this script changes, because nothing
+# else about a run depends on where it happens.
+IMAGE="${NUMBERDB_SAGE_IMAGE:-numberdb/web:latest}"
+MEMORY="${NUMBERDB_SAGE_MEMORY:-320m}"
+# Where the client lives in that image. In the website's it is the repository
+# copy at /app; the builder installs it and sets its own, so this is passed
+# only when it is set to something.
+CLIENT_PATH="${NUMBERDB_SAGE_PYTHONPATH-/app/clients/python}"
+pythonpath=()
+[ -n "$CLIENT_PATH" ] && pythonpath=(-e "PYTHONPATH=$CLIENT_PATH")
+
 [ $# -ge 1 ] || { echo "usage: $0 script.py [more.py ...]" >&2; exit 2; }
 
 # One run at a time, enforced rather than remembered.
@@ -137,23 +161,27 @@ trap cleanup EXIT
 # Raise it for a run known to need more, when nothing else is on:
 #
 #     NUMBERDB_SAGE_MEMORY=600m agents/sage.sh ...
-# Declared on the `agent` service in docker-compose.yml, not passed here:
-# `docker compose run` has no `--memory` flag, which this script learned by
-# refusing every run with "unknown flag: --memory" the first time it was
-# tried. Override with NUMBERDB_AGENT_MEMORY, which the compose file reads.
+#
+# `docker run` rather than `docker compose run`, which has no resource flags
+# at all -- a cap added as `--memory` there did not limit anything, it refused
+# every run with "unknown flag". It also means a builder needs no compose file
+# and no checkout of the site: an image and a docker daemon are the whole of
+# it.
 
 name="numberdb-agent-run-$run_id"
 ssh "${ssh_opts[@]}" "$REMOTE" \
 	"exec 9>'$LOCK'; flock -w 3600 9 || { echo 'another run held the lock for an hour' >&2; exit 75; }; \
-	 cd '$RPATH' && timeout $TIMEOUT docker compose run --rm --no-deps -T --name '$name' \
-		-e PYTHONPATH=/app/clients/python \
+	 timeout $TIMEOUT docker run --rm -i --name '$name' \
+		--memory='$MEMORY' --memory-swap='$MEMORY' \
+		${pythonpath[*]} \
 		-e NUMBERDB_ASSISTED_BY='${NUMBERDB_ASSISTED_BY:-assisted by an agent}' \
 		-e NUMBERDB_KEY_FROM_STDIN='${NUMBERDB_KEY_FROM_STDIN:-0}' \
 		-e NUMBERDB_PUBLISH='${NUMBERDB_PUBLISH:-0}' \
 		-e NUMBERDB_RESTATING='${NUMBERDB_RESTATING:-0}' \
 		-e NUMBERDB_LOWERING='${NUMBERDB_LOWERING:-0}' \
 		${mounts[*]} \
-		agent sage -python -u /work/$(basename "$main")" \
+		--entrypoint sage \
+		'$IMAGE' -python -u /work/$(basename "$main")" \
 	2>&1 | grep --line-buffered -viE 'collecting static|static files copied|Starting command as|^ Container |remote port forwarding'
 #`-u` and `--line-buffered`: without them a run that is killed at its
 #timeout shows only whole 4 KB blocks of what it printed, and three runs of
