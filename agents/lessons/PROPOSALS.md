@@ -5489,3 +5489,40 @@ transcribe the digits as a stored value.
 Evidence: `/tmp/b1831/checks2.py` and `/tmp/b1831/salem_arch.html`,
 2026-09-12: `rows 47`, `bad 0`, each reciprocal polynomial irreducible with
 one root outside the unit circle.
+
+## Sage's `clebsch_gordan` is inexact whenever $j_1-j_2+m_3<0$; `wigner_3j` and `wigner_6j` are not
+
+What happened: the stage-one check of the Clebsch–Gordan proposal compared
+Sage's `clebsch_gordan` with Mathar's exact table of 7392 coefficients, and
+839 disagreed. None was wrong as a number. Sage 10.9 computes
+`(-1) ** int(j_1 - j_2 + m_3) * (2*j_3+1).sqrt() * wigner_3j(...)`, and a
+Python `int` raised to a negative `int` is a `float`, so every coefficient
+with $j_1-j_2+m_3<0$ comes back as, for example,
+`0.5*sqrt(6)*sqrt(2/5)` in place of `1/2*sqrt(6)*sqrt(2/5)`. That was 2030
+of the 7392, every one with a negative phase exponent. It prints almost
+like an exact value and is numerically right, but `QQ(v**2)` gives
+`831433777360709/1385722962267848` rather than $3/5$. A check that squares
+the value misreads it, and so does a generator that stores the exact form
+or claims `exact`. The first repair made the same mistake: `(-1)**ZZ(-2)`
+is `1.0` too, because the base is still a Python `int`.
+`QQ(-1)**ZZ(j1 - j2 + M) * sqrt(2*J + 1) * wigner_3j(j1, j2, J, m1, m2, -M)`
+is exact. After that change all 7392 agree, and `wigner_6j` agrees with all
+2264 lines of Mathar's 6j table as it stands.
+
+What the skill says now: nothing about `sage.functions.wigner`. The lesson
+on `binomial` covers Python ints and division, not powers.
+
+What it should say: in `sage -python` a sign written `(-1)**k` is a float
+whenever `k` is negative, even when `k` is a Sage `Integer`, because the
+base is a Python `int`. Write the base as `QQ(-1)` or `ZZ(-1)`. Sage's own
+`clebsch_gordan` has this bug. Build the coefficient from `wigner_3j`, and
+test exactness with `v.parent()`, or by searching the printed form for a
+`.`, before trusting a value.
+
+Evidence: `/tmp/b1857/dbg2.py`, 2026-09-12, Sage 10.9:
+`(-1)**int(-1)` gives `-1.0 <class 'float'>`, `(-1)**ZZ(-2)` gives
+`1.0 <class 'float'>`, and `clebsch_gordan(3/2,1,5/2,-1/2,-1,-3/2)` gives
+`0.5*sqrt(6)*sqrt(2/5)`. `/tmp/b1857/checks2.py`: "Sage clebsch_gordan
+inexact on 2030 lines; of those j1-j2+M<0 on 2030; numerically wrong on 0",
+then "Mathar CGord vs exact ... 7392 lines, 0 mismatches". The table is
+<https://github.com/rmathar/Clebsch-Gordan>.
