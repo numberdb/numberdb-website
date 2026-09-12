@@ -2668,3 +2668,59 @@ widened.
 Evidence: 2026-09-12, committing the `clebsch_gordan` lesson: exit code 1 from
 `git add`, `M  agents/lessons/PROPOSALS.md` in `git status --short`, and a
 plain `git commit` then succeeded (d3f23a5).
+
+## The API key is also in the environment as `NUMBERDB_API_KEY`, so `env | grep NUMBERDB` prints it
+
+What happened: the 2026-09-12T1922 ideas run ran
+`env | grep -i "^NUMBERDB" | sed 's/KEY_FILE=.*/KEY_FILE=(set)/'` to see
+which host `agents/sage.sh` would use. It masked `NUMBERDB_KEY_FILE`, as the
+prompt's rule about the key file suggests, but the runner also exports the
+key itself as `NUMBERDB_API_KEY`. The key was printed into the run's
+transcript and log at about 19:42 UTC.
+
+What to do instead: never list the environment by prefix. Ask for the
+variable you need by name (`printenv NUMBERDB_REMOTE`). **The zeta3 key
+printed in that run should be rotated.** The prompt says the key is "in the
+file named by `NUMBERDB_KEY_FILE`", and a run that believes that has no
+reason to expect it elsewhere. Either stop exporting `NUMBERDB_API_KEY` into
+ideas runs, which only read, or say in the prompt that it is there.
+
+Evidence: `agents/runs/20260912T192218Z-ideas.log`, the tool call above.
+
+## `source_names_it` ignores words under three letters, so "q,t-Catalan numbers" is screened as "catalan"
+
+What happened: `screen._distinguishing` keeps words longer than two letters,
+and the hyphen and comma split "q,t-Catalan" into `q`, `t` and `catalan`.
+`source_names_it('q,t-Catalan numbers', 'https://en.wikipedia.org/wiki/Catalan_number')`
+passed. The raw wikitext of that page never contains "q,t". The family is
+real and the page is the wrong source, and the screen cannot tell. The same
+will happen to any name whose distinguishing part is a short symbol:
+$q$-analogues, $j$-invariants, $p$-adic families, $E_8$.
+
+What to do instead: when a name's short symbols are what distinguish it,
+confirm the source by hand, for example with `curl ...&action=raw | grep`,
+and cite a page whose title carries the whole name (here
+arXiv:1003.0916, *q,t-Catalan numbers and knot homology*). A fix in
+`screen.py` would search for the name's longest hyphenated token as a
+phrase as well as for its words.
+
+Evidence: 2026-09-12, `/tmp/b1922/screen_run.py` (pass) and the `grep -i
+"q,t"` of the raw page (no match).
+
+## numberdb.org stopped answering from this runner for over twenty minutes while other hosts answered
+
+What happened: at about 19:40 UTC on 2026-09-12, `search_text` raised
+`TransportError: ... The handshake operation timed out`. curl through
+`ALL_PROXY` and with `--noproxy '*'` both returned `000` after 20 s, on
+every attempt from 19:42 to at least 20:04. Wikipedia, arXiv's export API,
+OEIS b-files and GitHub answered through the same proxy throughout.
+`agents/sage.sh` was running locally (`NUMBERDB_REMOTE=local`) with load
+average 0.00, so the Sage checks were not loading the site's machine.
+
+What to do instead: a stage-one run can still finish its batch, since every
+check except `already_here` and `search_text` is external. It should say
+which corpus searches it could not make, because an unreachable corpus and
+an empty answer read the same way.
+
+Evidence: `agents/runs/20260912T192218Z-ideas.log`; the polling loops at
+19:42, 19:51 and 20:02.
