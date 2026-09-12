@@ -49,7 +49,22 @@ miner="${NUMBERDB_MINER:-$default_engine}"
 #good a reason triage gives, the same table is not tried a third time.
 attempted=0
 
+# Which proposals this campaign works from.
+#
+# Pinned per campaign when several run at once, because the only thing
+# stopping two campaigns building the same table is that a build is told to
+# skip proposals `generators/` already answers -- and two campaigns in two
+# worktrees cannot see each other's generators. Different batches, no overlap.
+#
+#     NUMBERDB_BATCH=agents/table-ideas/BATCH-2026-09-11T1148.md
+#
+# Unset, it takes the newest, which is right when only one campaign is running.
 batch_file() {
+	if [ -n "${NUMBERDB_BATCH:-}" ]; then
+		[ -f "$NUMBERDB_BATCH" ] || { echo "no such batch: $NUMBERDB_BATCH" >&2; exit 2; }
+		echo "$NUMBERDB_BATCH"
+		return
+	fi
 	ls -t agents/table-ideas/BATCH-*.md 2>/dev/null | head -1
 }
 
@@ -95,7 +110,10 @@ wait_for_the_site() {
 	return 0
 }
 
-say "writer $writer, critic $critic, miner $miner"
+# What to call this campaign, so its stop flag and its log are its own.
+NAME="${NUMBERDB_CAMPAIGN:-$(date -u +%Y%m%dT%H%M%SZ)}"
+
+say "campaign $NAME: writer $writer, critic $critic, miner $miner"
 
 while [ "$made" -lt "$builds" ]; do
 	#Asked for between tables, so a campaign can be stopped without killing a
@@ -103,12 +121,21 @@ while [ "$made" -lt "$builds" ]; do
 	#times the build in flight died with it: the parent's children are not
 	#spared, and a run that was twenty minutes in was simply lost.
 	#
-	#    touch agents/campaign.stop
-	if [ -e agents/campaign.stop ]; then
-		say "stopping: agents/campaign.stop is there"
-		rm -f agents/campaign.stop
-		exit 0
-	fi
+	#    touch agents/campaign.stop            stops every campaign
+	#    touch agents/campaign.$NAME.stop      stops this one
+	#
+	# Two files because two campaigns may be running: a global stop is
+	# sometimes what you want and sometimes exactly not, and the first
+	# campaign to notice used to delete the flag out from under the others.
+	for flag in "agents/campaign.$NAME.stop" agents/campaign.stop; do
+		if [ -e "$flag" ]; then
+			say "stopping: $flag is there"
+			#Only its own. The global one is left for the others to see and
+			#for a person to remove, which is what makes it global.
+			[ "$flag" = "agents/campaign.$NAME.stop" ] && rm -f "$flag"
+			exit 0
+		fi
+	done
 
 	#Before anything is spent on this table.
 	wait_for_the_site || exit 7
