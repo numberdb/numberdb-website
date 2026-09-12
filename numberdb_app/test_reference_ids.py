@@ -1,61 +1,75 @@
-"""A reference identifier is text, and YAML will not agree unless told.
+"""A reference identifier is text, in the corpus, where it is read from.
 
-`arxiv: 0705.4325` without quotes is the float 705.4325: the leading zero,
-which is the year 2007, is gone by the time anything reads it. `zbl:
-0668.12001` goes the same way. The file on disk is right and every reader of
-it is wrong, which is the part that makes this worth a test -- it is invisible
-in a diff and in review, and surfaces only when something loads the document
-and writes it back, at which point the identifier points nowhere.
+`arxiv: 0705.4325` without quotes is the float 705.4325 by the time YAML has
+finished with it: the leading zero, which is the year, is gone. `zbl:
+0668.12001` goes the same way.
 
-Found when a push of T219 showed the live table and the repository disagreeing
-about an arXiv id that both of them stored correctly.
+This used to check the YAML files under `generators/`, which is the wrong
+artefact. Those are working copies; what a reader follows is the table on the
+site, and what a citation resolves against is the stored document. A repository
+copy can be wrong while every table is right -- which is exactly what was true
+when this was written -- and a table can be wrong while the repository is
+right, which no test over files would ever see.
 """
 
-import glob
-import os
+from django.test import TestCase
 
-import yaml
-from django.test import SimpleTestCase
+from .models import Table
 
 #: Fields whose value is an identifier rather than a quantity. Every one of
 #: them can begin with a zero, and several routinely do.
 IDENTIFIER_FIELDS = ('arxiv', 'mr', 'zbl', 'doi', 'isbn')
 
 
-def generator_tables():
-	here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-	return sorted(glob.glob(os.path.join(here, 'generators', '*', 'table.yaml')))
+class StoredIdentifiersAreText(TestCase):
+	"""The rule, on a constructed table.
 
+	The corpus itself is swept by `manage.py audit_table`, which runs against
+	the real database. A sweep here would run against the test database, which
+	is empty, and pass for ever without looking at anything.
+	"""
 
-class ReferenceIdentifiersAreText(SimpleTestCase):
+	def setUp(self):
+		from django.contrib.auth import get_user_model
 
-	def test_there_are_tables_to_check(self):
-		#A glob that matches nothing passes every test below it.
-		self.assertGreater(len(generator_tables()), 50)
+		self.user = get_user_model().objects.create_user('author')
+		self.table = Table.objects.create(
+			tid='T700', tid_int=700, url='t700', title='A table',
+			published=True)
 
-	def test_no_identifier_is_read_as_a_number(self):
-		wrong = []
-		for path in generator_tables():
-			with open(path, encoding='utf-8') as handle:
-				document = yaml.safe_load(handle) or {}
-			references = document.get('References') or {}
-			if not isinstance(references, dict):
-				continue
-			for label, body in references.items():
-				if not isinstance(body, dict):
-					continue
-				for field in IDENTIFIER_FIELDS:
-					value = body.get(field)
-					if value is not None and not isinstance(value, str):
-						wrong.append('%s: %s.%s is %r' % (
-							os.path.basename(os.path.dirname(path)),
-							label, field, value))
-		self.assertEqual(wrong, [], 'quote these: ' + '; '.join(wrong))
+	def stored(self, references):
+		from .editing import commit_table
 
-	def test_the_check_would_catch_one(self):
-		#The failure mode itself, so the test cannot pass by looking at nothing.
-		parsed = yaml.safe_load('References:\n  R:\n    arxiv: 0705.4325\n')
-		self.assertEqual(parsed['References']['R']['arxiv'], 705.4325)
-		self.assertNotIsInstance(parsed['References']['R']['arxiv'], str)
+		commit_table(self.table,
+		             {'Title': 'A table', 'Numbers': {'1': '2'},
+		              'References': references},
+		             author=self.user, message='m', via='orm')
+		self.table.refresh_from_db()
+		return self.table.data.json.get('References') or {}
+
+	def numeric(self, references):
+		return [('%s.%s' % (label, field), value)
+		        for label, body in references.items()
+		        if isinstance(body, dict)
+		        for field in IDENTIFIER_FIELDS
+		        for value in [body.get(field)]
+		        if value is not None and not isinstance(value, str)]
+
+	def test_quoted_identifiers_survive_the_round_trip(self):
+		stored = self.stored({'R': {'bib': 'A paper', 'arxiv': '0705.4325',
+		                            'zbl': '0668.12001'}})
+		self.assertEqual(stored['R']['arxiv'], '0705.4325')
+		self.assertEqual(self.numeric(stored), [])
+
+	def test_a_number_is_caught(self):
+		stored = self.stored({'R': {'bib': 'A paper', 'arxiv': 705.4325}})
+		self.assertEqual([name for name, _ in self.numeric(stored)],
+		                 ['R.arxiv'])
+
+	def test_the_failure_this_guards_against(self):
+		#The mechanism itself: the file on disk is right and the parse is not.
+		import yaml
+		loose = yaml.safe_load('References:\n  R:\n    arxiv: 0705.4325\n')
+		self.assertEqual(loose['References']['R']['arxiv'], 705.4325)
 		quoted = yaml.safe_load("References:\n  R:\n    arxiv: '0705.4325'\n")
 		self.assertEqual(quoted['References']['R']['arxiv'], '0705.4325')
