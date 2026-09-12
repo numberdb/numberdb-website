@@ -48,6 +48,19 @@ engine="${NUMBERDB_AGENT:-claude}"
 # actually answered rather than whatever the config happened to say that day,
 # and so that the same campaign is the same campaign tomorrow.
 codex_model="${NUMBERDB_CODEX_MODEL:-gpt-5.5}"
+# How much of the machine a run may touch.
+#
+# `workspace-write` is right for a laptop, which has a home directory full of
+# things a table build has no business reading. It is wrong for a machine that
+# exists only to build tables -- and worse than wrong there: codex's sandbox
+# needs unprivileged user namespaces, which Ubuntu 24.04 restricts, so every
+# command failed with "bwrap: setting up uid map: Permission denied", down to
+# /bin/true. Two campaigns ran that way, agents unable to execute anything,
+# looking from outside like builds that had run and found nothing.
+#
+# Passed as `-c` rather than left to the config file, which is why setting it
+# there on the builder changed nothing: the flag wins.
+codex_sandbox="${NUMBERDB_CODEX_SANDBOX:-workspace-write}"
 codex_effort="${NUMBERDB_CODEX_EFFORT:-xhigh}"
 # What to fall back to when the model above runs out of quota: the second
 # best, and then nothing.
@@ -420,7 +433,7 @@ run_agent() {
 			             -m "$codex_model"
 			             -c "model_reasoning_effort=$codex_effort"
 			             -c "approval_policy=never"
-			             -c "sandbox_mode=workspace-write"
+			             -c "sandbox_mode=$codex_sandbox"
 			             -c "sandbox_workspace_write.network_access=true"
 			             -c "sandbox_workspace_write.writable_roots=[\"$here/.git\"]")
 			if [ "$mode" = "resume" ]; then
