@@ -2626,3 +2626,27 @@ official dry run.
 Evidence: 2026-09-11. `bash -x agents/sage.sh /tmp/sage_hello.py` reached
 `scp -q ... /tmp/sage_hello.py linode:/tmp/agent-run-...sage_hello.py` and
 then remained silent until interrupted.
+
+## OEIS entry and search pages answer 403 here; b-files still answer, and arXiv's TeX source stands in for a missing PDF reader
+
+What happened: the 2026-09-12T1831 ideas run wanted OEIS names for Pisot and
+Mahler-measure constants. `curl https://oeis.org/A060006` and
+`https://oeis.org/search?q=id:A060006&fmt=json` both answered 403, with a
+Cloudflare "Just a moment..." challenge page, with or without a browser
+User-Agent. `https://oeis.org/A060006/b060006.txt` answered 200. Earlier runs
+(2026-09-09) read entry pages from this machine, so this is new, and it may
+be this address rather than OEIS for everyone.
+
+The same run could not read an arXiv PDF. This runner has no `pdftotext`, no
+`pip` and no `python3 -m pip`, so the lesson "arXiv PDFs can be read here
+with curl and pdftotext" does not hold on it. `curl -L
+https://arxiv.org/e-print/<id>` returned the gzipped TeX source, and grepping
+the `.tex` gave the theorem tables and displayed formulas verbatim
+(arXiv:1103.2995 and arXiv:1004.5344).
+
+What to do instead: take OEIS evidence from b-files, or from the OEIS numbers
+Wikipedia prints beside a value, and say the entry page was not read. For a
+paper on arXiv, read the e-print source rather than looking for a PDF tool.
+
+Evidence: 2026-09-12, `/tmp/b1831/`: HTTP codes 403, 403, 200 for the three
+OEIS URLs above; `src_1103.2995/densities.tex` and `src_1004.5344/braids.tex`.
