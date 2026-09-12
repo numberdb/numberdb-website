@@ -65,7 +65,15 @@ batch_file() {
 		echo "$NUMBERDB_BATCH"
 		return
 	fi
-	ls -t agents/table-ideas/BATCH-*.md 2>/dev/null | head -1
+	#`|| true`, and it is not decoration. Under `set -euo pipefail` a glob
+	#that matches nothing makes `ls` fail, `pipefail` carries that through
+	#`head`, and `set -e` kills the campaign inside the command substitution
+	#that called this -- with no message, because nothing was written. A fresh
+	#clone has no batch file, since batches are data and are excluded, so the
+	#first campaign on the AWS builder printed its header and vanished. On a
+	#machine that has been building for a week there is always a batch, which
+	#is why this survived that long.
+	ls -t agents/table-ideas/BATCH-*.md 2>/dev/null | head -1 || true
 }
 
 propose_a_batch() {
