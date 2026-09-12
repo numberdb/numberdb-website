@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 
 from .models import ApiKey, Table, TableCost
-from .permissions import bulk_drafts_group
+from .permissions import bulk_drafts_group, trusted_group
 
 LEDGER = (
 	"started\tstage\tengine\tturns\tcost_usd\tresult\tlog\tmodel\tprompt\t"
@@ -28,13 +28,18 @@ class ACostReportGoesThroughTheApi(TestCase):
 		self.table = Table.objects.create(
 			tid='T700', tid_int=700, url='t700', title='A table',
 			published=True)
+		#Writing through the API at all needs a track record -- `is_trusted` --
+		#which is deliberately higher than editing by hand. Both accounts here
+		#have it; what separates them is whether they may report costs.
 		self.agent = get_user_model().objects.create_user('an-agent')
-		self.agent.groups.add(bulk_drafts_group())
+		self.agent.groups.add(trusted_group(), bulk_drafts_group())
 		self.outsider = get_user_model().objects.create_user('somebody-else')
+		self.outsider.groups.add(trusted_group())
 
 	def key_for(self, user):
-		key, raw = ApiKey.issue(user=user, name='test')
-		return raw
+		#`issue` takes a label, not a name, and returns (record, token).
+		record, token = ApiKey.issue(user, 'test')
+		return token
 
 	def post(self, user, body=LEDGER, **extra):
 		return Client().post(
