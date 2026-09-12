@@ -2650,3 +2650,21 @@ paper on arXiv, read the e-print source rather than looking for a PDF tool.
 
 Evidence: 2026-09-12, `/tmp/b1831/`: HTTP codes 403, 403, 200 for the three
 OEIS URLs above; `src_1103.2995/densities.tex` and `src_1004.5344/braids.tex`.
+
+## `git add agents/lessons/PROPOSALS.md` exits 1 and stages the file anyway
+
+What happened: `agents/lessons/` is matched by a `.gitignore` pattern, but
+`PROPOSALS.md` in it is tracked. `git add` on it prints "The following paths
+are ignored by one of your .gitignore files", exits 1, and stages the change
+all the same. The `git add ... && git commit ...` chain stopped after the add,
+and the commit never ran, though the change was already staged: `git
+status` showed `M `.
+
+What to do instead: after a failed add of a tracked file under
+`agents/lessons/`, check `git status --short` and commit. Do not add `-f`
+out of habit, because that would also stage ignored batches if the path is
+widened.
+
+Evidence: 2026-09-12, committing the `clebsch_gordan` lesson: exit code 1 from
+`git add`, `M  agents/lessons/PROPOSALS.md` in `git status --short`, and a
+plain `git commit` then succeeded (d3f23a5).
