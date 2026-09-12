@@ -82,13 +82,24 @@ say() { printf '\n=== %s\n' "$*"; }
 # 2026-09-10 the server was down for half an hour and the campaign started a
 # build against it, which is ten dollars to be told the site is not there.
 site_is_up() {
-	#The same proxy `run.sh` exports for the runs themselves: numberdb.org is
-	#blocked from here and curl reaches it only through the tunnel. Without
-	#this the probe reports the site down for ever and the campaign waits for
-	#a site that is answering perfectly well.
-	ALL_PROXY="${ALL_PROXY:-${NUMBERDB_PROXY:-socks5h://127.0.0.1:1080}}" \
-		curl -sS --max-time 20 -o /dev/null \
-			"${NUMBERDB_HOST:-https://numberdb.org}/skill" 2>/dev/null
+	#Directly first, then through the tunnel.
+	#
+	#numberdb.org is blocked from the laptop this was written on and curl
+	#reaches it only through a SOCKS proxy, so the proxy was the default --
+	#which made the probe a statement about one machine's network. On a build
+	#box with direct access and no tunnel, every probe failed and the campaign
+	#sat waiting for a site that was answering perfectly well. It cost the
+	#first run on the AWS builder.
+	#
+	#Trying direct first costs one request on the laptop and nothing anywhere
+	#else, and neither machine needs to be told which it is.
+	local url="${NUMBERDB_HOST:-https://numberdb.org}/skill"
+	if curl -sS --max-time 20 -o /dev/null --noproxy '*' "$url" 2>/dev/null; then
+		return 0
+	fi
+	local proxy="${ALL_PROXY:-${NUMBERDB_PROXY:-socks5h://127.0.0.1:1080}}"
+	[ -n "$proxy" ] || return 1
+	ALL_PROXY="$proxy" curl -sS --max-time 20 -o /dev/null "$url" 2>/dev/null
 }
 
 # Wait for it, and say so once rather than every minute. Returns 1 when the
