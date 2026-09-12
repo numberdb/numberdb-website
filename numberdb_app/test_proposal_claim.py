@@ -14,7 +14,7 @@ from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 
-from .editing import make_table
+from .editing import create_table as make_table
 from .models import Table
 
 
