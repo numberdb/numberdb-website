@@ -33,6 +33,24 @@ SAMPLE = None if SAMPLE in ("0", "all", "") else int(SAMPLE)
 ONLY = [n for n in (os.environ.get("NUMBERDB_ONLY") or "").split(",") if n]
 
 
+def key_from_stdin():
+    """The key, so 128 reads are not 128 anonymous ones.
+
+    The first sweep checked 60 tables and was then rate-limited for the other
+    68 -- reading a table is a request like any other, and anonymous requests
+    are throttled. Nothing about the numbers was wrong; the reader simply ran
+    out of allowance.
+    """
+    if os.environ.get("NUMBERDB_KEY_FROM_STDIN") != "1":
+        return
+    token = sys.stdin.read().strip()
+    if "=" in token and token.split("=", 1)[0].isupper():
+        token = token.split("=", 1)[1].strip().strip("'\"")
+    if token:
+        os.environ["NUMBERDB_API_KEY"] = token
+        numberdb.configure(api_key=token)
+
+
 def load(path, name):
     spec = importlib.util.spec_from_file_location("gen_%s" % name, path)
     module = importlib.util.module_from_spec(spec)
@@ -41,6 +59,7 @@ def load(path, name):
 
 
 def main():
+    key_from_stdin()
     dirs = sorted(d for d in os.listdir(ROOT)
                   if os.path.exists(os.path.join(ROOT, d, "generate.py")))
     if ONLY:
