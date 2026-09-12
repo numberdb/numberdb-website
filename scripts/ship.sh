@@ -99,6 +99,44 @@ locked() {
 	           $*"
 }
 
+# Detached on the server, so killing this end cannot orphan the work.
+#
+# Three outages on 2026-09-11 and 2026-09-12 had one shape: a deploy step ran
+# longer than the thing watching it, the local ssh was killed, and the remote
+# half kept going -- unwatched, holding the lock, and pushing a 961 MB machine
+# into swap until nothing answered for half an hour. `timeout` on this side
+# kills the ssh and never the work, which `agents/sage.sh` has said in a
+# comment since August and this script did not do.
+#
+# So the work is started with `setsid` behind `nohup`, writes to a file on the
+# server, and this polls for the marker that says it finished. Killing this
+# side now loses the *watching*, which is recoverable, rather than the
+# control, which is not: the step completes, releases the lock and records its
+# status, and a later ship reads it.
+detached() {
+	local tag="$1"; shift
+	local out="/tmp/ship-$tag.out" done="/tmp/ship-$tag.done"
+	on_remote "rm -f '$out' '$done'; \
+		setsid nohup sh -c \"exec 9>'$LOCK'; \
+			flock -w $LOCK_WAIT 9 || { echo 'lock held for an hour' >&2; echo 75 > '$done'; exit 75; }; \
+			cd '$RPATH' && $*; echo \\\$? > '$done'\" \
+			> '$out' 2>&1 < /dev/null & echo started"
+
+	local waited=0
+	while [ "$waited" -lt "$SHIP_STEP_TIMEOUT" ]; do
+		if code=$(on_remote "cat '$done' 2>/dev/null" 2>/dev/null) && [ -n "$code" ]; then
+			on_remote "tail -5 '$out' 2>/dev/null" || true
+			[ "$code" = "0" ] || { echo "step '$tag' failed with $code" >&2; return "$code"; }
+			return 0
+		fi
+		sleep 10
+		waited=$((waited + 10))
+	done
+	echo "step '$tag' is still running on the server after ${SHIP_STEP_TIMEOUT}s;" >&2
+	echo "it will finish on its own -- watch $out there" >&2
+	return 1
+}
+
 # A one-off container that cannot outlive the command that started it.
 #
 # `--no-deps` because this must never start or restart the containers serving
@@ -174,14 +212,14 @@ on_remote "printf '%s\n' '$commit' > .deployed-commit"
 
 # 4 ---------------------------------------------------------------------------
 say "building"
-on_remote "docker compose build web" | tail -2
+detached build-web "docker compose build web"
 # nginx carries configuration from this repo -- the anonymised log format, the
 # TLS templates -- so a deploy that only ever built `web` shipped those changes
 # to the server's disk and then ran the old image, forever. Cheap: unchanged
 # inputs mean a cached build and no recreate below.
-on_remote "docker compose build nginx" | tail -2
+detached build-nginx "docker compose build nginx"
 say "migrating"
-compose_run "web sage -python manage.py migrate" | tail -8
+detached migrate "docker compose run --rm --no-deps -T --name ship-migrate-$$ web sage -python manage.py migrate; code=\$?; docker rm -f ship-migrate-$$ >/dev/null 2>&1; exit \$code"
 
 # 5 ---------------------------------------------------------------------------
 if [ "$DATA_STEPS" = "1" ]; then
@@ -200,7 +238,7 @@ say "restarting web and nginx"
 # recreated, which is deliberately not on every deploy.
 #Under the lock as well: recreating web starts a fresh Sage import, and
 #doing that beside an agent run is half of what filled the memory.
-locked "docker compose up -d web nginx" | tail -3
+detached restart "docker compose up -d web nginx"
 sleep 15
 
 # 6 ---------------------------------------------------------------------------
