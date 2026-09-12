@@ -1335,6 +1335,60 @@ LEASE_MINUTES = getattr(settings, 'NUMBERDB_LEASE_MINUTES', 20)
 
 @csrf_exempt
 @rate_limited
+@csrf_exempt
+def costs(request):
+	"""Take an agent ledger and put its costs on the tables.
+
+	POST the TSV as the body, with `X-Attribution` holding the attribution
+	file if there is one. A build machine has a numberdb key and no ssh to
+	this server, and should not need one: before this, `sync-costs.sh` copied
+	the ledger over ssh and ran a management command, which works from the one
+	laptop that has a key for the server and nowhere else. Costs from the AWS
+	builder simply never arrived.
+
+	Idempotent, because the machine sends the whole ledger after every run
+	rather than once at the end: the rows are aggregated by table, model and
+	role and replace what is there, so sending the same ledger twice is not
+	paying twice.
+	"""
+	from .costs import ingest
+	from .permissions import is_board_member, is_bulk_drafter
+
+	if request.method != 'POST':
+		return JsonResponse({'error': 'Use POST with the ledger as the body.'},
+		                    status=405)
+
+	user, refusal = _writer_of(request)
+	if refusal is not None:
+		return refusal
+
+	#Not every writer. These rows replace what is stored for a table, so a
+	#key that may write numbers should not also be able to rewrite what those
+	#numbers cost. The accounts that run campaigns, and the board.
+	if not (is_bulk_drafter(user) or is_board_member(user)):
+		return JsonResponse(
+			{'error': 'This account may not report run costs.',
+			 'detail': ('Costs are reported by the accounts that run '
+			            'campaigns. Ask for that if a machine of yours '
+			            'should.')},
+			status=403)
+
+	try:
+		ledger = request.body.decode('utf-8')
+	except UnicodeDecodeError:
+		return JsonResponse({'error': 'The ledger must be UTF-8 text.'},
+		                    status=400)
+	if not ledger.strip():
+		return JsonResponse({'error': 'No ledger in the body.'}, status=400)
+
+	#Newlines cannot travel in an HTTP header, so the sender swaps them
+	#for record separators and they are put back here.
+	attribution = request.headers.get('X-Attribution', '').replace('\x1e', '\n')
+	summary = ingest(ledger, attribution,
+	                 dry_run=request.GET.get('dry') == '1')
+	return JsonResponse(summary)
+
+
 def table_lease(request, tid):
 	"""Claim a table for the length of a run, refresh the claim, or drop it.
 
