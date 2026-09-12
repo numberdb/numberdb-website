@@ -639,15 +639,17 @@ python3 agents/ledger.py "$log" "$started" "$stage" "$engine" \
 	"$prompt_version" "$session" "$resumed" "$codex_model" "$unfinished" \
 	"$about" >> "$ledger" || true
 
-#The ledger is tracked, so appending to it leaves the tree dirty -- and the
-#next run refuses a dirty tree, by design. Committing the line here is what
-#makes a sequence of runs possible: without it a campaign built exactly one
-#table and stopped, and a sweep of critiques read exactly one, both of which
-#looked like something else for an afternoon.
-if [ -n "$(git status --porcelain -- "$ledger")" ]; then
-	git add "$ledger"
-	git commit -q -m "$stage run $started: $(tail -1 "$ledger" | awk -F'\t' '{printf "%s turns, $%s", $4, $5}')" -- "$ledger" || true
-fi
+#The ledger is not committed. It was, and the comment here explained at
+#length that committing it was what made a sequence of runs possible -- true
+#when `agents/runs/` was tracked, and dead code since the directory was
+#excluded: `git status --porcelain -- agents/runs/COSTS.tsv` reports nothing
+#for an ignored file, so the guard never passed and nobody noticed.
+#
+#It stays uncommitted on purpose. A ledger is a log, and this one already
+#reaches two places that outlive the tree: the site's database, through
+#`sync-costs.sh` below, and the run archive beside the transcript. A third
+#copy in git would only be a third copy that two campaigns in two worktrees
+#would conflict over.
 
 #And into the database, so the overview shows what this run cost without
 #anybody remembering a command. Never fatal: a ledger that did not reach the

@@ -171,3 +171,19 @@ agents/lessons/
 #batches it produced and the record of what to skip are data.
 agents/table-ideas/BATCH-*.md
 agents/table-ideas/SKIPPED.md
+
+#Generators are working copies, not the record.
+#
+#The table on the site holds the generator that made its numbers, attached to
+#the revision that wrote them and downloadable from the page -- which is what
+#the skill has always told outside contributors, and what `verify` checks:
+#128 of 128 attachments match, 126 of them recompute their table's values.
+#A second copy in git competed with that and lost three times in one day.
+#T197's Fresnel formula was fixed live and stale here, T219's arXiv id was
+#right on the site and mangled by the YAML parse here, T218's install line was
+#missing from both until the audit found it.
+#
+#The history keeps what it has: how each generator got to where it is lives
+#only in these commits, and that is worth more than the three megabytes
+#removing it would reclaim.
+generators/
