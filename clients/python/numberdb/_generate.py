@@ -1365,8 +1365,23 @@ def _attach(generator, table, run, client, files, message='') -> List[str]:
                    rigour=getattr(generator, 'rigour', ''),
                    message=message or 'a file that produced these entries')
             stored.append(name)
-        except Exception:
-            continue
+        except Exception as problem:
+            #Best effort, but never silent. `except: continue` hid this
+            #completely: three tables were refilled on 2026-09-12 and kept
+            #the previous version of their generator, so the numbers on the
+            #site were produced by code that was not on the site, and nothing
+            #said so -- not the run, not the outcome, not the table.
+            #
+            #A warning rather than a raise, because the numbers are already
+            #stored and failing now would not unstore them. What it must not
+            #do is let the run report success without qualification.
+            import warnings
+            warnings.warn(
+                'the numbers were stored and %s was not: %s: %s. The table '
+                'now holds numbers whose code is not beside them; attach it '
+                'with PUT /api/table/<tid>/file/%s'
+                % (name, type(problem).__name__, problem, name),
+                stacklevel=2)
     return stored
 
 
