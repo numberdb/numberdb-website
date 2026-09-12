@@ -5420,3 +5420,72 @@ Evidence: `/tmp/coxeter32_test.py`, 2026-09-11. The first angle assignment
 made the branched diagrams fail their controls; the order
 `A=01, B=02, C=12, D=23, E=13, F=03` made all non-typo rows match the source
 decimals, and `[3^{[3,3]}]` matched the T175 Gieseking value instead.
+
+## A polynomial printed beside an algebraic value need not be its minimal polynomial; factor it before storing or matching
+
+What happened: the ideas run of 2026-09-12T1831 checked the theorem table of
+Lanneau–Thiffeault, *On the minimum dilatation of braids on punctured discs*
+(arXiv:1004.5344), which gives each minimum dilatation $\delta_n$ as "the
+Perron root of" a polynomial. For $n=7$ that polynomial is
+$x^7-2x^4-2x^3+1=(x+1)(x^3-x^2-1)(x^3+x-1)$. The value is right, but its
+minimal polynomial is the cubic, and $\delta_7$ is the supergolden ratio: the
+fourth-smallest Pisot number, and the fundamental unit of the cubic field of
+discriminant $-31$, whose logarithm T158 already stores. A table that wrote
+the degree-7 polynomial in the comment would state a false degree, and would
+hide the coincidence that makes the row worth finding.
+
+What the skill says now: nothing about algebraic values given by a
+polynomial.
+
+What it should say: when a source gives an algebraic number as "the largest
+root of $P$", run `P.factor()` (or `is_irreducible()`) and store the factor
+the root belongs to. Papers state whichever polynomial their proof produced,
+and a characteristic polynomial of a train track or a Coxeter matrix is
+usually reducible.
+
+Evidence: `/tmp/b1831/checks1.py`, 2026-09-12: `delta_7
+[1.46557123187676802665673122521993910 ... factor (x + 1) * (x^3 - x^2 - 1)
+* (x^3 + x - 1)`; the other five polynomials of the theorem table are
+irreducible.
+
+## `from sage.all import *` rebinds `html`, so `html.unescape` fails after it
+
+What happened: a check script did `import re, html` and then
+`from sage.all import *` to parse an archived web page. The star import binds
+`html` to Sage's `HTMLFragmentFactory`, and the next line raised
+`AttributeError: 'HTMLFragmentFactory' object has no attribute 'unescape'`.
+That reads like a broken page rather than a name clash.
+
+What the skill says now: the skill recommends named imports for generators,
+and the named-import traps it lists are all things missing, not things
+replaced.
+
+What it should say: a star import from `sage.all` shadows standard-library
+names, `html` among them. Import standard modules after it and under an alias
+(`import html as _html`), or keep to the named imports the skill already
+recommends.
+
+Evidence: `/tmp/b1831/checks2.py`, 2026-09-12, first run; rerun with
+`import html as _html` after the star import parsed all 47 rows.
+
+## Mossinghoff's Lehmer and Salem lists survive only on the Internet Archive, and their digits are truncated
+
+What happened: the list of the 47 known Salem numbers below 1.3, which
+Wikipedia cites as `http://www.cecm.sfu.ca/~mjm/Lehmer/lists/SalemList.html`
+(marked `url-status=dead`), is readable at the archive URL Wikipedia also
+gives. That copy passes `source_names_it("Salem numbers", ...)`. The page
+gives each minimal polynomial as its first $d/2+1$ coefficients, leading
+first, since the polynomials are reciprocal. It prints 30 digits and says
+"Salem numbers are truncated, not rounded". The digits were checked against
+root balls and are indeed truncations: all 47 lie in $[v, v+10^{-30})$.
+
+What the skill says now: nothing about this source. The skill says a decimal
+means plus or minus one unit in its last place.
+
+What it should say: a truncated source digit string denotes $[v, v+10^{-k})$,
+not $v\pm10^{-k}$. Compare a computed ball against that interval, and never
+transcribe the digits as a stored value.
+
+Evidence: `/tmp/b1831/checks2.py` and `/tmp/b1831/salem_arch.html`,
+2026-09-12: `rows 47`, `bad 0`, each reciprocal polynomial irreducible with
+one root outside the unit circle.
