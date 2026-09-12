@@ -41,6 +41,43 @@
 set -euo pipefail
 
 REMOTE="${NUMBERDB_REMOTE:-linode}"
+
+# Running on the machine that has the image, rather than reaching one.
+#
+# When the agents run on the build box themselves -- which is the point of
+# having one, so a campaign does not stop because a laptop slept -- the Sage
+# host is this host, and ssh'ing to yourself to run a container is a knot for
+# no gain. `NUMBERDB_REMOTE=local` skips ssh and scp entirely.
+#
+# Everything else is identical: the same lock, the same timeout, the same
+# memory cap, the same image. A run should not be able to tell.
+LOCAL=no
+case "$REMOTE" in local|localhost) LOCAL=yes ;; esac
+
+# One pair of helpers so the call sites below read the same either way.
+run_there() {
+	if [ "$LOCAL" = yes ]; then
+		bash -c "$*"
+	else
+		ssh "${ssh_opts[@]}" "$REMOTE" "$*"
+	fi
+}
+
+run_there_quietly() {
+	if [ "$LOCAL" = yes ]; then
+		bash -c "$*" </dev/null
+	else
+		ssh -n "${ssh_opts[@]}" "$REMOTE" "$*"
+	fi
+}
+
+put_there() {
+	if [ "$LOCAL" = yes ]; then
+		cp "$1" "$2"
+	else
+		scp -q "${ssh_opts[@]}" "$1" "$REMOTE:$2" </dev/null
+	fi
+}
 RPATH="${NUMBERDB_RPATH:-/opt/numberdb-website}"
 TIMEOUT="${NUMBERDB_TIMEOUT:-1800}"
 
@@ -105,7 +142,7 @@ mounts=()
 for file in "$@"; do
 	[ -f "$file" ] || { echo "no such file: $file" >&2; exit 2; }
 	base=$(basename "$file")
-	scp -q "${ssh_opts[@]}" "$file" "$REMOTE:$remote_dir.$base" </dev/null
+	put_there "$file" "$remote_dir.$base"
 	mounts+=(-v "$remote_dir.$base:/work/$base:ro")
 done
 
@@ -117,14 +154,13 @@ done
 # `-n` on every ssh call but the last: ssh forwards its stdin to the remote
 # command, so without it the first helper call here swallowed the API key that
 # was piped in for the script, and the script was told it had no key.
-ssh -n "${ssh_opts[@]}" "$REMOTE" "chmod 644 $remote_dir.* 2>/dev/null || true"
+run_there_quietly "chmod 644 $remote_dir.* 2>/dev/null || true"
 
 cleanup() {
 	#The container as well as the copies. A `timeout` on this side kills the
 	#local ssh and leaves the remote work running, and an abandoned Sage
 	#process is what takes the machine down.
-	ssh -n "${ssh_opts[@]}" "$REMOTE" \
-		"rm -rf $remote_dir.*; docker rm -f '$name' >/dev/null 2>&1" \
+	run_there_quietly "rm -rf $remote_dir.*; docker rm -f '$name' >/dev/null 2>&1" \
 		>/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -169,7 +205,7 @@ trap cleanup EXIT
 # it.
 
 name="numberdb-agent-run-$run_id"
-ssh "${ssh_opts[@]}" "$REMOTE" \
+run_there \
 	"exec 9>'$LOCK'; flock -w 3600 9 || { echo 'another run held the lock for an hour' >&2; exit 75; }; \
 	 timeout $TIMEOUT docker run --rm -i --name '$name' \
 		--memory='$MEMORY' --memory-swap='$MEMORY' \
