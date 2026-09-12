@@ -11,8 +11,9 @@ Run it with SageMath:
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # send it, with NUMBERDB_API_KEY set
 
-The range is every listed Lie-type family with q <= 32 and order below
-10^100, the Tits group, and every A_1(q) with prime-power q <= 1000.
+The range is every group in the Lie-type families named by the family
+parameter with q <= 32 and order below 10^100, the Tits group, and every
+A_1(q) with prime-power q <= 1000.
 """
 
 import os
@@ -28,6 +29,13 @@ Q_LIMIT = 32
 A1_Q_LIMIT = 1000
 ORDER_LIMIT = 10 ** 100
 TITS_ORDER = 17971200
+EXCEPTIONAL_SYMBOLS = {
+    "E6": "E_6",
+    "E7": "E_7",
+    "E8": "E_8",
+    "F4": "F_4",
+    "G2": "G_2",
+}
 
 FAMILIES = (
     "A", "B", "C", "D",
@@ -202,7 +210,7 @@ def group_name(family, n, q):
     if family == "2A":
         return "$\\operatorname{PSU}_{%d}(%d)$" % (n + 1, q)
     if family == "B":
-        return "$B_%d(%d)$" % (n, q)
+        return "$B_{%d}(%d)$" % (n, q)
     if family == "C":
         return "$\\operatorname{PSp}_{%d}(%d)$" % (2 * n, q)
     if family == "D":
@@ -211,8 +219,8 @@ def group_name(family, n, q):
         return "$\\operatorname{P\\Omega}^{-}_{%d}(%d)$" % (2 * n, q)
     if family == "Tits":
         return "the Tits group ${}^2F_4(2)'$"
-    if family in ("E6", "E7", "E8", "F4", "G2"):
-        return "$%s(%d)$" % (family, q)
+    if family in EXCEPTIONAL_SYMBOLS:
+        return "$%s(%d)$" % (EXCEPTIONAL_SYMBOLS[family], q)
     if family == "2E6":
         return "${}^2E_6(%d^2)$" % q
     if family == "3D4":
@@ -223,29 +231,42 @@ def group_name(family, n, q):
         return "${}^2G_2(%d)$" % q
     if family == "2F4":
         return "${}^2F_4(%d)$" % q
-    return "$%s_%d(%d)$" % (family, n, q)
+    return "$%s_{%d}(%d)$" % (family, n, q)
 
 
 def comment(family, n, q):
     parts = [group_name(family, n, q) + "."]
     if family == "A" and n == 1 and q in (4, 5):
-        parts.append("This group is isomorphic to $A_5$.")
+        parts.append(
+            "This group is isomorphic to the alternating group "
+            "$\\operatorname{Alt}_5$.")
     if family == "A" and n == 1 and q == 7:
         parts.append("This group is isomorphic to $A_2(2)$.")
     if family == "A" and n == 1 and q == 9:
-        parts.append("This group is isomorphic to $A_6$.")
+        parts.append(
+            "This group is isomorphic to the alternating group "
+            "$\\operatorname{Alt}_6$.")
+    if family == "A" and n == 2 and q == 2:
+        parts.append("This group is isomorphic to $A_1(7)$.")
+    if family == "A" and n == 2 and q == 4:
+        parts.append(
+            "It has the same order as $A_3(2)$ and is not isomorphic to it.")
     if family == "A" and n == 3 and q == 2:
-        parts.append("This group is isomorphic to $A_8$.")
+        parts.append(
+            "This group is isomorphic to the alternating group "
+            "$\\operatorname{Alt}_8$.")
+        parts.append(
+            "It has the same order as $A_2(4)$ and is not isomorphic to it.")
     if family == "2A" and n == 3 and q == 2:
         parts.append("This group is isomorphic to $B_2(3)$.")
     if family == "B" and n == 2 and q == 3:
         parts.append("This group is isomorphic to ${}^2A_3(2^2)$.")
     if family in ("B", "C") and n >= 3 and q % 2 == 0:
         other = "C" if family == "B" else "B"
-        parts.append("It is isomorphic to $%s_%d(%d)$." % (other, n, q))
+        parts.append("It is isomorphic to $%s_{%d}(%d)$." % (other, n, q))
     if family in ("B", "C") and n >= 3 and q % 2 == 1:
         other = "C" if family == "B" else "B"
-        parts.append("It has the same order as $%s_%d(%d)$." % (other, n, q))
+        parts.append("It has the same order as $%s_{%d}(%d)$." % (other, n, q))
     return " ".join(parts)
 
 
