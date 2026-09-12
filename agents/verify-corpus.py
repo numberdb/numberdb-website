@@ -77,6 +77,15 @@ def main():
         if here not in sys.path:
             sys.path.insert(0, here)
         began = time.time()
+        #What was imported before this generator, so its own modules can be
+        #taken out afterwards. Two generators keep a data module of the same
+        #name -- `genus2-real-periods-q/curve_data.py` and
+        #`genus2-special-l-values-q/curve_data.py` -- and once one is in
+        #`sys.modules` the other's import silently returns it. That looked
+        #exactly like a broken generator: `ImportError: cannot import name
+        #'CLASS_DATA' from 'curve_data'`, naming the *other* directory's file,
+        #on a generator whose own file defines it.
+        before_modules = set(sys.modules)
         try:
             module = load(path, name.replace("-", "_"))
             kinds = [v for v in vars(module).values()
@@ -96,6 +105,12 @@ def main():
             continue
         finally:
             sys.path[:] = [p for p in sys.path if p != here]
+            for name in set(sys.modules) - before_modules:
+                #Only what this generator brought in. Sage's own modules are
+                #shared and expensive, and they were imported before the loop.
+                if getattr(sys.modules[name], '__file__', '') and \
+                        str(sys.modules[name].__file__).startswith(here):
+                    del sys.modules[name]
             gc.collect()
 
         tid = getattr(generator, "table", "?")
