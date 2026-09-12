@@ -215,23 +215,14 @@ class Command(BaseCommand):
 		#label defined elsewhere in the same table -- CITE{formula-recurrence}
 		#is how a comment points at a formula on the same page, and the first
 		#version of this check called all fourteen of those broken.
-		#A reference identifier stored as a number. `arxiv: 0705.4325` written
-		#without quotes is the float 705.4325 by the time YAML has finished
-		#with it, and the leading zero is the year. Checked here, against the
-		#stored document, because that is what a citation resolves against --
-		#a copy in a repository can be wrong while every table is right, and
-		#the other way round, and only this side matters to a reader.
-		references = tree.get('References')
-		if isinstance(references, dict):
-			for label, body in sorted(references.items()):
-				if not isinstance(body, dict):
-					continue
-				for field in ('arxiv', 'mr', 'zbl', 'doi', 'isbn'):
-					value = body.get(field)
-					if value is not None and not isinstance(value, str):
-						yield ('%s of reference %s is stored as the number %r; '
-						       'quote it, or a leading zero is lost'
-						       % (field, label, value))
+		#A reference identifier that has lost a digit. Checked by shape, not
+		#by type: `arxiv: 0705.4325` unquoted in YAML is the float 705.4325,
+		#and by the time it is stored it is the string "705.4325" -- correctly
+		#typed and quietly wrong. Three digits before the dot is not a month.
+		from ...validate import malformed_identifiers
+		for label, field, text, shape in malformed_identifiers(tree):
+			yield ('%s of reference %s is %s, which is not %s; a leading zero '
+			       'is the usual casualty' % (field, label, text, shape))
 
 		#A generator nobody can run. The file is downloaded from the table by
 		#somebody who has neither the repository nor a way to guess the

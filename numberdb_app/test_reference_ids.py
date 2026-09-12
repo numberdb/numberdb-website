@@ -15,6 +15,7 @@ right, which no test over files would ever see.
 from django.test import TestCase
 
 from .models import Table
+from .validate import malformed_identifiers
 
 #: Fields whose value is an identifier rather than a quantity. Every one of
 #: them can begin with a zero, and several routinely do.
@@ -59,12 +60,26 @@ class StoredIdentifiersAreText(TestCase):
 		stored = self.stored({'R': {'bib': 'A paper', 'arxiv': '0705.4325',
 		                            'zbl': '0668.12001'}})
 		self.assertEqual(stored['R']['arxiv'], '0705.4325')
-		self.assertEqual(self.numeric(stored), [])
+		self.assertEqual(malformed_identifiers({'References': stored}), [])
 
-	def test_a_number_is_caught(self):
+	def test_the_site_stores_a_number_as_text_with_the_zero_already_gone(self):
+		#Which is why a type check cannot find this: by the time it is stored
+		#it is a string, correctly typed and quietly wrong.
 		stored = self.stored({'R': {'bib': 'A paper', 'arxiv': 705.4325}})
-		self.assertEqual([name for name, _ in self.numeric(stored)],
-		                 ['R.arxiv'])
+		self.assertEqual(stored['R']['arxiv'], '705.4325')
+		self.assertIsInstance(stored['R']['arxiv'], str)
+
+	def test_the_shape_catches_what_the_type_cannot(self):
+		stored = self.stored({'R': {'bib': 'A paper', 'arxiv': 705.4325}})
+		found = malformed_identifiers({'References': stored})
+		self.assertEqual([(label, field) for label, field, _, _ in found],
+		                 [('R', 'arxiv')])
+
+	def test_an_old_style_arxiv_identifier_is_left_alone(self):
+		#math/0309285 is a real identifier and matches no modern shape.
+		found = malformed_identifiers(
+			{'References': {'R': {'arxiv': 'math/0309285'}}})
+		self.assertEqual(found, [])
 
 	def test_the_failure_this_guards_against(self):
 		#The mechanism itself: the file on disk is right and the parse is not.
