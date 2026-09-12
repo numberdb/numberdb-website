@@ -2724,3 +2724,28 @@ an empty answer read the same way.
 
 Evidence: `agents/runs/20260912T192218Z-ideas.log`; the polling loops at
 19:42, 19:51 and 20:02.
+
+## `source_names_it` passes almost any Wikipedia page for a name whose words sit in navigation boxes
+
+What happened: screening "Poincaré polynomials of finite Coxeter groups",
+I took the 46 hits of a Wikipedia search for *Poincare polynomial Coxeter
+group* and ran `source_names_it` on each. 43 passed. They included
+*Straightedge and compass construction*, *Dimension*, *Cyclic group* and
+*Timeline of mathematics*. The raw wikitext of the likely candidates (*Weyl
+group*, *Root system*, *Kazhdan–Lusztig polynomial*, *E8*) contains
+"Poincaré" only as *Poincaré duality* or in a citation title, and none of
+them names the family. The words "finite", "coxeter" and "groups" are
+common, and "poincar" turns up in footers and navigation templates, so the
+substring test succeeds on unrelated pages. The earlier notes cover a
+false fail (plurals, common nouns) and a short symbol; this is a false pass
+from the words being everywhere.
+
+What to do instead: a pass means little when every distinguishing word is
+common. Grep the raw page (`...&action=raw`) for the family's name as a
+phrase before citing it. Here no Wikipedia page did, and the citable source
+was an arXiv abstract (1411.3233) plus Humphreys §1.11. A fix in
+`screen.py` would strip navigation boxes and references before matching,
+or require the words within a short window of each other.
+
+Evidence: 2026-09-12, `/tmp/ideas/scr4.py` (43 `PASS` lines) and the
+`grep -i poincar` of the raw wikitext of nine pages.

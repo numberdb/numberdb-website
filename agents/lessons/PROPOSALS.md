@@ -5589,3 +5589,60 @@ perturbation at all.
 
 Evidence: `/tmp/b1922/checks2.py`, 2026-09-12: `{'A': 0, 'B': 0,
 'control': 22, 'nonzero': 74, 'subgroups': 188}`.
+
+## A standard Sage has no GAP character table library; CTblLib's data files parse without GAP, and $\sum\chi(1)^2=|G|$ checks them against T77
+
+What happened: `gap.eval('LoadPackage("ctbllib")')` and
+`libgap.LoadPackage("ctbllib")` both returned `fail` in Sage 10.9, and
+`CharacterTable("M11")` then raised "the GAP Character Table Library is not
+loaded". CTblLib is not part of GAP's core packages in a standard Sage. The
+package tarball (`ctbllib-1.3.11.tar.gz`, 18 MB, from Breuer's page) has
+the tables as GAP list literals in `data/cto*.tbl`. Each table is
+`MOT("name", [texts], [centraliser orders], [power maps], [irreducibles],
+...)`. So the irreducibles are the fourth argument after the name, not the
+fifth. Each character is either an explicit list whose first entry is the
+degree, or `[GALOIS,[i,k]]`, a Galois conjugate of character `i`, which
+has the same degree. A 60-line bracket-depth parser read all 26 sporadic
+tables. The sporadic groups' names there are T77's, except `F3+` for
+$\mathrm{Fi}_{24}'$.
+
+What the skill says now: nothing about character tables.
+
+What it should say: without `gap_packages`, read CTblLib's data files
+directly. Two checks come for free:
+
+* the sum of the squared degrees is the group order, which T77 holds;
+* the number of characters is the length of the centraliser list.
+
+Both held for all 26 groups. The Monster's 194 degrees also equal the
+OEIS A001379 b-file in order.
+
+Evidence: 2026-09-12, `/tmp/ideas/spor.py`: 26 of 26 `sumsq==T77: True`,
+1396 characters; `/tmp/ideas/sagecap.py` for the `fail`.
+
+## Iterating a Sage `WeylGroup` costs milliseconds an element; enumerate by root permutations instead
+
+What happened: a check of Poincaré polynomials $\sum_w t^{\ell(w)}$
+iterated `for w in WeylGroup(ct)` and called `w.length()`. $F_4$, with 1152
+elements, took 5.6 s and $B_4$, with 384, took 1.0 s. The script that
+reached $E_6$ (51840 elements) ran fourteen minutes without finishing and
+was stopped. Representing each element as the permutation it induces on
+the roots, and doing a breadth-first search from the identity by
+right-multiplying simple reflections, gives the length as the search
+distance. That did $E_6$ in 1.8 s, and $A_4$, $A_6$, $B_4$, $B_5$, $D_4$,
+$D_5$, $F_4$ and $G_2$ in under 0.2 s each. `CoxeterGroup(['H',4],
+implementation='reflection')` iterated its 14400 elements in 30 s.
+`WeylGroup(ct).degrees()` itself is fast: under 3 s up to $E_8$ and
+$A_{12}$.
+
+What the skill says now: nothing.
+
+What it should say: to enumerate a Weyl group, build the simple reflections
+as permutations of `RootSystem(ct).root_lattice().roots()` and search
+breadth-first. Do not iterate `WeylGroup`. Beyond about $10^5$ elements
+($E_7$ has 2.9 million), even that does not fit in memory; use an identity,
+such as Solomon's alternating sum over parabolic subgroups, instead.
+
+Evidence: 2026-09-12, `/tmp/ideas/sagework/itert.py` (timings) and
+`/tmp/ideas/sagework/poinc.py` (`bfs ('E', 6) True 1.8`, `iter ('H', 4)
+True 30.2`).
