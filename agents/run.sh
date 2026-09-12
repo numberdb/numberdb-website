@@ -83,11 +83,26 @@ mkdir -p agents/runs
 started=$(date -u +%Y%m%dT%H%M%SZ)
 log="agents/runs/$started-$stage.log"
 
-# numberdb.org is blocked from this network without the SOCKS proxy, and a
-# plain curl to it hangs until it is killed rather than failing. curl and the
-# client both honour ALL_PROXY, so setting it here means the run never has to
-# know -- and the preflight below tests the same path the run will use.
-export ALL_PROXY="${NUMBERDB_PROXY:-socks5h://127.0.0.1:1080}"
+# numberdb.org is blocked from the laptop this was written on, and a plain
+# curl to it hangs until it is killed rather than failing. curl and the client
+# both honour ALL_PROXY, so setting it here means the run never has to know --
+# and the preflight below tests the same path the run will use.
+#
+# But only where it is needed. On a build box the site answers directly and
+# there is no tunnel, and a proxy that is not there turns every request into a
+# failure: the first campaign on the AWS builder stopped on each table saying
+# the site was unreachable while the site was answering it perfectly well.
+#
+# So: ask the site directly, and only reach for the tunnel if that fails. One
+# request on the laptop, none anywhere else, and neither machine is told which
+# it is.
+if curl -sS --max-time 15 -o /dev/null --noproxy '*' \
+		"${NUMBERDB_HOST:-https://numberdb.org}/skill" 2>/dev/null; then
+	export ALL_PROXY=""
+	export NO_PROXY="*"
+else
+	export ALL_PROXY="${NUMBERDB_PROXY:-socks5h://127.0.0.1:1080}"
+fi
 # But not the harness's own traffic. The proxy is here because numberdb.org is
 # blocked from this network; chatgpt.com is not, and routing codex's control
 # plane through it printed seven "failed to refresh available models" errors
