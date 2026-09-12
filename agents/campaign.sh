@@ -246,9 +246,27 @@ while [ "$made" -lt "$builds" ]; do
 	#
 	#The generator is also where the T-number comes from below, so the two
 	#questions have one answer.
+	#Ask the site, not the working tree.
+	#
+	#A build claims its proposal by creating the draft, and the API answers
+	#that with the table's number -- so the transcript of the run contains
+	#`"tid": "T220"` exactly when a table was made, on whichever machine the
+	#run happened, whether or not a generator was ever committed. That matters
+	#now that `generators/` is a working copy rather than the record: the file
+	#may not be tracked at all, and on a second machine it is certainly not in
+	#*this* tree.
+	#
+	#The generator diff stays as a fallback for runs that predate this and for
+	#anything the transcript does not name.
+	transcript=$(ls -t agents/runs/*-build.log 2>/dev/null | head -1 || true)
+	tid_from_run=""
+	if [ -n "$transcript" ]; then
+		tid_from_run=$(grep -aoE '"tid": *"T[0-9]{2,4}"' "$transcript" \
+		               | grep -oE 'T[0-9]{2,4}' | head -1 || true)
+	fi
 	generator=$(git diff --name-only "$before"..HEAD -- generators/ \
 	            | grep -E 'generate\.py$' | head -1 || true)
-	if [ -z "$generator" ]; then
+	if [ -z "$tid_from_run" ] && [ -z "$generator" ]; then
 		say "$(basename "$batch") is finished; proposing the next batch"
 		#Whether a *new batch file exists*, not whether HEAD moved. Batches
 		#are data and `.gitignore` has excluded them since the code and the
@@ -284,14 +302,19 @@ while [ "$made" -lt "$builds" ]; do
 	#on a table finished an hour earlier. Failing that the highest number in the
 	#file, which is the newest table and so almost always this one; failing that
 	#nothing, and the loud skip below.
-	tid=$(grep -aoE 'numberdb\.org/T[0-9]{2,4}' "$generator" \
-	      | grep -oE 'T[0-9]{2,4}' | head -1 || true)
-	if [ -z "$tid" ]; then
+	#What the site said when the draft was created, first: it is the table
+	#this run made, stated by the server, and it needs no file at all.
+	tid="$tid_from_run"
+	if [ -z "$tid" ] && [ -n "$generator" ]; then
+		tid=$(grep -aoE 'numberdb\.org/T[0-9]{2,4}' "$generator" \
+		      | grep -oE 'T[0-9]{2,4}' | head -1 || true)
+	fi
+	if [ -z "$tid" ] && [ -n "$generator" ]; then
 		tid=$(grep -aoE '\bT[0-9]{2,4}\b' "$generator" \
 		      | sort -t T -k2 -n | tail -1 || true)
 	fi
 	if [ -z "$tid" ]; then
-		say "no T-number in $generator; skipping the critique and the repair"
+		say "no table number in the transcript or the generator; skipping the critique and the repair"
 	fi
 	if [ -n "$tid" ]; then
 		say "reading $tid as a reader would"
