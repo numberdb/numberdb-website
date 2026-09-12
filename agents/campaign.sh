@@ -407,4 +407,25 @@ while [ "$made" -lt "$builds" ]; do
 	#behind on every pass, which is a poor way to ask a question.
 done
 
+#What the runs learned, to wherever the rest of the work lives.
+#
+# A campaign on a build machine writes its lessons into that machine's
+# checkout and they stay there: four from the first AWS campaign were only
+# recovered by hand, and they are the one thing that campaign produced worth
+# keeping. A campaign that cannot push says so rather than losing them
+# quietly.
+if [ -n "$(git status --porcelain agents/lessons/proposals 2>/dev/null)" ]; then
+	git add agents/lessons/proposals 2>/dev/null || true
+	git commit -q -m "lessons from campaign $NAME" -- agents/lessons/proposals \
+		2>/dev/null || true
+fi
+if [ -n "$(git log --oneline @{u}..HEAD 2>/dev/null)" ]; then
+	if git push -q 2>/dev/null; then
+		say "pushed what this campaign learned"
+	else
+		say "could not push; the lessons of this campaign are only on this machine"
+		git log --oneline @{u}..HEAD | sed 's/^/    /'
+	fi
+fi
+
 say "made $made table(s)"
