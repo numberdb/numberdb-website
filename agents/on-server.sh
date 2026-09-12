@@ -19,7 +19,14 @@ here=$(cd "$(dirname "$0")/.." && pwd)
 cd "$here"
 
 REMOTE="${NUMBERDB_REMOTE:-linode}"
-RPATH="${NUMBERDB_RPATH:-/opt/numberdb-website}"
+LOCAL=no
+case "$REMOTE" in local|localhost) LOCAL=yes ;; esac
+
+if [ "$LOCAL" = yes ] && [ -z "${NUMBERDB_RPATH:-}" ]; then
+	RPATH="$here"
+else
+	RPATH="${NUMBERDB_RPATH:-/opt/numberdb-website}"
+fi
 TIMEOUT="${NUMBERDB_TIMEOUT:-1800}"
 LOCK="/tmp/numberdb-sage.lock"
 
@@ -42,8 +49,12 @@ done
 cleanup() {
 	#The container as well: a timeout on this side kills the ssh and leaves
 	#the work running, which is how a suite came to be racing a test run.
-	ssh -n "${ssh_opts[@]}" "$REMOTE" "docker rm -f '$name' >/dev/null 2>&1" \
-		>/dev/null 2>&1 || true
+	if [ "$LOCAL" = yes ]; then
+		docker rm -f "$name" >/dev/null 2>&1 || true
+	else
+		ssh -n "${ssh_opts[@]}" "$REMOTE" "docker rm -f '$name' >/dev/null 2>&1" \
+			>/dev/null 2>&1 || true
+	fi
 }
 trap cleanup EXIT
 
@@ -62,7 +73,12 @@ for pair in ${NUMBERDB_ENV:-}; do
 	env_args="$env_args -e $(printf '%q' "$pair")"
 done
 
-ssh "${ssh_opts[@]}" "$REMOTE" \
-	"exec 9>'$LOCK'; flock -w 3600 9 || { echo 'another run held the lock for an hour' >&2; exit 75; }; \
-	 cd '$RPATH' && timeout $TIMEOUT docker compose run --rm --no-deps -T --name '$name' \
-	 $env_args $mounted web sage -python $remote_args; code=\$?; docker rm -f '$name' >/dev/null 2>&1; exit \$code"
+command="exec 9>'$LOCK'; flock -w 3600 9 || { echo 'another run held the lock for an hour' >&2; exit 75; }; \
+ cd '$RPATH' && timeout $TIMEOUT docker compose run --rm --no-deps -T --name '$name' \
+ $env_args $mounted web sage -python $remote_args; code=\$?; docker rm -f '$name' >/dev/null 2>&1; exit \$code"
+
+if [ "$LOCAL" = yes ]; then
+	bash -c "$command"
+else
+	ssh "${ssh_opts[@]}" "$REMOTE" "$command"
+fi

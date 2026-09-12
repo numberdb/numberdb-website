@@ -2749,3 +2749,45 @@ or require the words within a short window of each other.
 
 Evidence: 2026-09-12, `/tmp/ideas/scr4.py` (43 `PASS` lines) and the
 `grep -i poincar` of the raw wikitext of nine pages.
+
+## On the local builder, `audit_table` needs either a deployed `.env` or the on-server wrapper cannot start compose
+
+What happened: a T220 build needed `manage.py audit_table T220`. Host
+`python3 manage.py audit_table T220` failed because Django is not installed
+in the runner's Python. `agents/on-server.sh` first inherited
+`NUMBERDB_REMOTE=local`, which it did not support; after adding the same
+local-mode branch that `agents/sage.sh` has, it reached Docker Compose but
+Compose refused because this checkout has no `.env`. The usual SSH targets
+`local` and `linode` were not resolvable from this runner either, so the
+management command could not be run against the live database from here.
+
+What to do instead: when the run is on a builder checkout rather than the
+deployed checkout, either provide a `NUMBERDB_RPATH` whose compose project has
+`.env`, or run the audit through an API-backed helper. `agents/on-server.sh`
+now understands `NUMBERDB_REMOTE=local`; that only solves the transport half,
+not the missing deployment configuration.
+
+Evidence: 2026-09-12, `python3 manage.py audit_table T220` raised
+`ModuleNotFoundError: No module named 'django'`; `NUMBERDB_REMOTE=linode
+agents/on-server.sh manage.py audit_table T220` and the inherited local value
+both failed DNS; `NUMBERDB_REMOTE=local agents/on-server.sh manage.py
+audit_table T220` reached compose and failed on missing
+`/home/ubuntu/numberdb-website/.env`.
+
+## A `sage.sh` process interrupted while Django is starting can leave its container holding the lock
+
+What happened: trying to run `audit_table` through `agents/sage.sh` with a
+small Django script produced no output. Sending Ctrl-C ended the local
+command, but `docker ps` still showed
+`numberdb-agent-run-1789254969-43101-8483` running `sage -python -u
+/work/audit_t220.py`, and a later `agents/on-server.sh` command sat behind
+the lock until that stale container was removed.
+
+What to do instead: after interrupting a silent `agents/sage.sh` run, check
+`docker ps` for a surviving `numberdb-agent-run-*` container before assuming
+the lock is free. If the container is yours and the command was the one just
+interrupted, remove it; otherwise leave it alone.
+
+Evidence: 2026-09-12, `docker ps` showed the stale `audit_t220.py` container
+five minutes after Ctrl-C, and `docker rm -f
+numberdb-agent-run-1789254969-43101-8483` released the lock.
