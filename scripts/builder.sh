@@ -166,7 +166,13 @@ campaign)
 	id=$(instance_id); [ -n "$id" ] || { echo "no builder" >&2; exit 1; }
 	[ "$(state_of "$id")" = running ] || { echo "the builder is not running; scripts/builder.sh start" >&2; exit 1; }
 	stamp=$(date -u +%Y%m%dT%H%M%SZ)
-	ssh "$HOSTALIAS" "cd ~/numberdb-website && git pull -q 2>/dev/null; \
+	#Loudly. A pull that fails quietly means the campaign runs whatever code
+	#the machine happened to have: the first one here ran a version from
+	#before the fix it needed, because an untracked file blocked the merge and
+	#`2>/dev/null` swallowed the reason.
+	ssh "$HOSTALIAS" "cd ~/numberdb-website && git pull --ff-only" \
+		|| { echo "the builder could not update; fix its tree before running a campaign" >&2; exit 1; }
+	ssh "$HOSTALIAS" "cd ~/numberdb-website && \
 		[ -f ~/.numberdb-gh ] && . ~/.numberdb-gh; export GH_TOKEN; \
 		NUMBERDB_CAMPAIGN='$stamp' NUMBERDB_WRITER=codex NUMBERDB_REMOTE=local \
 		NUMBERDB_SAGE_IMAGE=numberdb/builder:latest NUMBERDB_SAGE_PYTHONPATH= \
