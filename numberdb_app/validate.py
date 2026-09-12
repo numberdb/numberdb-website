@@ -221,6 +221,53 @@ def unresolved_citations(tree):
 	               if cite not in labels})
 
 
+#: An arXiv identifier since 2007 is YYMM.NNNNN -- four digits, a dot, four or
+#: five -- and a zbMATH number is four digits, a dot, five. Both begin with a
+#: zero often enough that it matters: 0705.4325 is April 2007 and 0668.12001
+#: is a real zbMATH entry.
+IDENTIFIER_SHAPES = {
+	'arxiv': (r'^\d{4}\.\d{4,5}(v\d+)?$', 'YYMM.NNNNN'),
+	'zbl': (r'^\d{4}\.\d{5}$', 'NNNN.NNNNN'),
+}
+
+
+def malformed_identifiers(tree):
+	"""Reference identifiers that have lost a digit, most likely a zero.
+
+	This is what survives of a bug that cannot be seen once it has happened.
+	`arxiv: 0705.4325` unquoted in YAML is the float 705.4325, and the site
+	stores it as the string "705.4325" -- correctly typed, quietly wrong, and
+	indistinguishable from an identifier somebody simply mistyped. The type is
+	no longer evidence; the shape is. Three digits before the dot is not a
+	month.
+
+	Only the shapes that are fixed are checked. An arXiv identifier from
+	before 2007 looks like math/0309285 and is left alone.
+	"""
+	import re
+
+	if not isinstance(tree, dict):
+		return []
+	references = tree.get('References')
+	if not isinstance(references, dict):
+		return []
+
+	found = []
+	for label, body in sorted(references.items()):
+		if not isinstance(body, dict):
+			continue
+		for field, (pattern, shape) in sorted(IDENTIFIER_SHAPES.items()):
+			value = body.get(field)
+			if value is None:
+				continue
+			text = str(value)
+			if '/' in text:
+				continue
+			if not re.match(pattern, text):
+				found.append((label, field, text, shape))
+	return found
+
+
 def _check_citations(tree):
 	"""A citation that names nothing.
 
