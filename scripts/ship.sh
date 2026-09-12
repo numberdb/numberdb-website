@@ -148,6 +148,27 @@ tar cz --exclude='.git' --exclude='__pycache__' --exclude='staticfiles' \
        	ssh -o BatchMode=yes -o ConnectTimeout=20 \
        	    -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
        	    "$REMOTE" "tar xz -C '$RPATH'"
+# A tar extracts over what is there and removes nothing, so a file deleted
+# from the repository stays on the server for ever. That is not academic: the
+# pre-split generators for T187 and T188 were deleted here weeks ago and were
+# still on the server today, still claiming those tables -- and `sage.sh` and
+# the test suite read the deployed tree, so the server can run code that no
+# longer exists in git.
+#
+# Only `generators/`, and only whole directories, and only ones the tar did
+# not just write. A blanket `--delete` over $RPATH would take `.env`, the
+# database volume mountpoints and everything else the repository does not
+# know about.
+say "removing generator directories that are no longer in git"
+keep=$(printf '%s\n' generators/*/ | sed 's|generators/||;s|/$||' | sort | tr '\n' ' ')
+on_remote "cd generators 2>/dev/null || exit 0; \
+	for d in */; do \
+		name=\${d%/}; \
+		case ' $keep ' in *\" \$name \"*) ;; \
+			*) echo \"  removing stale \$name\"; rm -rf \"\$name\";; \
+		esac; \
+	done"
+
 # So the server can answer "what is running here" without anybody guessing.
 on_remote "printf '%s\n' '$commit' > .deployed-commit"
 
