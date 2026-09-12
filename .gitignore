@@ -166,7 +166,23 @@ clients/python/docs/
 #proposed, and the batches of ideas they worked from.
 agents/runs/
 agents/critiques/
-agents/lessons/
+agents/lessons/*
+#Except the lessons themselves, which are the point of the directory.
+#
+#`agents/lessons/` is excluded for the working files a run leaves there, but
+#PROPOSALS.md is tracked -- and `git add` on a tracked file under an ignored
+#directory prints "the following paths are ignored", exits 1, and stages it
+#anyway. A run of `git add ... && git commit ...` therefore staged the lesson
+#and never committed it, silently, which is how four lessons nearly stayed on
+#a build machine. A campaign agent found that and wrote it down, in the file
+#it could not commit.
+#
+#One file per run rather than one file for all runs: two campaigns appending
+#to PROPOSALS.md in two worktrees conflict on every merge, and a path no other
+#run writes to cannot.
+!agents/lessons/PROPOSALS.md
+!agents/lessons/proposals/
+!agents/lessons/proposals/**
 #`table-ideas` holds both: the prompt and the screening code are code, the
 #batches it produced and the record of what to skip are data.
 agents/table-ideas/BATCH-*.md

@@ -373,7 +373,8 @@ The skill is published at <https://numberdb.org/skill>, for somebody who has
 Python and perhaps Sage and wants to contribute a table. **Could that person,
 on their own laptop, hit what you hit?**
 
-* Yes -- `agents/lessons/PROPOSALS.md`: what you had to decide that the skill
+* Yes -- `agents/lessons/proposals/<your run stamp>-<stage>.md`, in the format
+  `agents/lessons/PROPOSALS.md` uses: what you had to decide that the skill
   did not cover, what went wrong, and what the skill should say.
 * No, it is about this deployment -- containers, ssh, the proxy, the wrapper
   scripts, your own permissions, a bug in the site -- `docs/agent-environment.md`.

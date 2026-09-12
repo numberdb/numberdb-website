@@ -292,7 +292,10 @@ Python, and perhaps Sage or passagemath, and wants to contribute a table. Ask:
 
 * Yes -- the mathematics of checking a value, what the API accepts, what the
   client returns, how search behaves, what a Sage import does not bring with
-  it: append it to \`agents/lessons/PROPOSALS.md\`, in the format given there.
+  it: write it to \`agents/lessons/proposals/$started-$stage.md\`, in the
+  format \`agents/lessons/PROPOSALS.md\` uses. A file of your own rather than
+  a line appended to that one: two campaigns running at once conflict on
+  every merge of a shared file, and a path no other run writes to cannot.
 * No -- anything about this deployment: containers, ssh, the proxy,
   \`agents/sage.sh\`, your own permissions, a bug in the site itself: append it
   to \`docs/agent-environment.md\` instead. It is a real finding and worth
