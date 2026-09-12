@@ -160,7 +160,7 @@ while [ "$made" -lt "$builds" ]; do
 	#failed campaign that looked like a finished one. It said exactly that
 	#when an expired OAuth token stopped a build on 2026-09-03.
 	status=0
-	NUMBERDB_AGENT="$writer" agents/run.sh build "Build the highest-ranked proposal in $batch that no generator in generators/ answers yet. Say at the start which one you chose and why it is the next one. Follow the order of work in the prompt. Do not publish. If every proposal in that batch is already built, say so and stop without building anything, and do not commit." || status=$?
+	NUMBERDB_AGENT="$writer" agents/run.sh build "Build the highest-ranked proposal in $batch that the database does not already answer. Claim it first by creating its draft, as the prompt says: if the title is refused because it exists, that proposal is taken -- move to the next one. Do not use the presence of a directory in generators/ to decide what is already built; another campaign may be building it in a tree you cannot see. Say at the start which one you chose and why it is the next one. Follow the order of work in the prompt. Do not publish. If every proposal in that batch is already built, say so and stop without building anything, and do not commit." || status=$?
 	if [ "$status" -ne 0 ] && { [ "$status" -eq 5 ] || ! site_is_up; }; then
 		#Not a judgement at all: the site went away under the run. Asking
 		#triage would spend a second run to be told the same thing, and
