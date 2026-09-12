@@ -176,7 +176,8 @@ campaign)
 		[ -f ~/.numberdb-gh ] && . ~/.numberdb-gh; export GH_TOKEN; \
 		NUMBERDB_CAMPAIGN='$stamp' NUMBERDB_WRITER=codex NUMBERDB_REMOTE=local \
 		NUMBERDB_SAGE_IMAGE=numberdb/builder:latest NUMBERDB_SAGE_PYTHONPATH= \
-		NUMBERDB_SAGE_MEMORY=1200m NUMBERDB_KEY=\$HOME/.config/numberdb/zeta3-key \
+		NUMBERDB_SAGE_MEMORY=1200m NUMBERDB_KEY=\$HOME/.config/numberdb/zeta3-key \\
+		NUMBERDB_CODEX_SANDBOX=danger-full-access \
 		setsid nohup agents/campaign.sh $count > agents/runs/campaign-$stamp.log 2>&1 < /dev/null & \
 		sleep 3; echo 'started campaign $stamp'"
 	echo "watch it with: ssh $HOSTALIAS 'tail -f ~/numberdb-website/agents/runs/campaign-$stamp.log'"
