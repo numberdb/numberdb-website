@@ -6,9 +6,9 @@
 Title: Values of the derivative of the Riemann zeta function $\zeta'(s)$ at rational numbers
 Definition: >-
   Listed are $\zeta'(s)=\frac{d}{ds}\zeta(s)$ for
-  HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[the Riemann
-  zeta function] and the logarithmic derivative $\zeta'(s)/\zeta(s)$ at
-  rational arguments $s$ where the chosen quantity is finite.
+  the Riemann zeta function and the logarithmic derivative
+  $\zeta'(s)/\zeta(s)$ at rational arguments $s$ where the chosen quantity is
+  finite.
 Keywords:
   - derivative of the Riemann zeta function
   - zeta derivative
