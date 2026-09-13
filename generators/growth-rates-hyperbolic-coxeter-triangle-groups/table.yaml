@@ -58,7 +58,7 @@ Programs:
       W = growth_series(2, 3, 7)
       W.denominator().reverse().roots(RealIntervalField(200))
 Similar tables:
-  - table: HREF{Viswanaths_constant}[Viswanath's constant]
+  - table: HREF{Viswanath's_constant}[Viswanath's constant]
     relation: another exponential growth rate, from random Fibonacci recurrences rather than Coxeter groups
 Links:
   WikiTriangle:
