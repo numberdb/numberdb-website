@@ -2924,3 +2924,22 @@ or a token when one is present.
 
 Evidence: ideas run 2026-09-13T0847. The names from "Euler-Lehmer constants"
 onward, in `/tmp/scr.py`'s output.
+
+## `agents/on-server.sh` with `NUMBERDB_REMOTE=local` needs a local `.env`
+
+What happened: while finishing T226, `agents/on-server.sh manage.py
+audit_table T226` did not reach Django. This runner had
+`NUMBERDB_REMOTE=local`, so the wrapper used the local checkout and local
+Docker Compose file. Compose then stopped because `/home/ubuntu/numberdb-website/.env`
+was absent. The direct host path was not available either, since `python3
+manage.py audit_table T226` failed earlier with `ModuleNotFoundError: No
+module named 'django'`.
+
+What to do instead: if the wrapper is meant to audit the deployed checkout,
+set `NUMBERDB_REMOTE` and `NUMBERDB_RPATH` for that environment before
+running it. If the run is confined to this local checkout, use the API-backed
+document checks and say explicitly that the official management command did
+not run.
+
+Evidence: 2026-09-13, T226 build. The wrapper reported `env file
+/home/ubuntu/numberdb-website/.env not found`.
