@@ -109,10 +109,21 @@ worse than an untidy history, and `audit_table` findings are worth acting on
 whenever they arrive. The point is not to publish nothing twice, it is to have
 done the obvious checking first.
 
-**9. Run `manage.py audit_table T1xx`** and act on what it says. It catches
-what a person does not: a CITE naming nothing, a link out to something the
-corpus holds, a definition that has grown into four things, a snippet whose
-range no longer matches the table, a published table linking to a draft.
+**9. Run the audit on T1xx** and act on what it says. It catches what a
+person does not: a CITE naming nothing, a link out to something the corpus
+holds, a definition that has grown into four things, a snippet whose range no
+longer matches the table, a published table linking to a draft. Where there is
+a database, `manage.py audit_table T1xx`; where there is not -- a build machine
+is the usual case -- ask the site, which runs the same checks:
+
+```
+curl -s -H "Authorization: Bearer $NUMBERDB_KEY" \
+     https://numberdb.org/api/table/T1xx/audit | python3 -m json.tool
+```
+
+It answers `{"findings": [...], "clean": true|false}`, and it reads your draft
+if your key may see it. It does not take `--links`, so a run that wants the
+outward links checked needs the command and a database.
 
 **10. Offer it for review** and stop. Say what you did, what you checked, and
 what you decided that the proposal did not settle.
