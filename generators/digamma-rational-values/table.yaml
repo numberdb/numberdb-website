@@ -4,12 +4,10 @@
 # it. Publishing is a person's act.
 Title: Values of the digamma function $\psi(x)$ at rational numbers
 Definition: >-
-  This table gives two real values attached to a rational argument $x$: the
-  digamma function $\psi(x)=\Gamma'(x)/\Gamma(x)$, the logarithmic derivative
-  of HREF{Values_of_the_Gamma_function_at_rational_numbers}[the Gamma
-  function] in the DLMF convention CITE{DLMFPsi}; and the harmonic-number
-  continuation $H_x=\psi(x+1)+\gamma$ CITE{WikiHarmonic}, where $\gamma$ is
-  HREF{Stieltjes_constants#0}[the Euler-Mascheroni constant].
+  This table gives the digamma function $\psi(x)=\Gamma'(x)/\Gamma(x)$ at
+  rational arguments, using the DLMF convention CITE{DLMFPsi}, and the
+  harmonic-number continuation $H_x=\psi(x+1)+\gamma$ CITE{WikiHarmonic}.
+  Only finite real values are listed.
 Keywords:
   - digamma function
   - psi function
