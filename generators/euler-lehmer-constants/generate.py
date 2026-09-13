@@ -17,7 +17,8 @@ Values are computed as real balls using arb's digamma function:
     gamma(a, q) = -(psi(a/q) + log q) / q, 1 <= a < q.
 
 The identity check mode compares every row with an independent root-of-unity
-logarithm formula and checks the sum and subdivision identities.
+logarithm formula, checks Gauss's digamma theorem, and checks the sum and
+subdivision identities.
 """
 
 import os
@@ -102,13 +103,31 @@ def euler_lehmer_by_roots(a, q, digits):
                  "root formula for gamma(%s,%s)" % (a, q))
 
 
+def euler_lehmer_by_gauss(a, q, digits):
+    """Closed form from Gauss's digamma theorem."""
+    a, q = _validate_parameters(a, q)
+    if a == 0:
+        raise ValueError("Gauss's digamma theorem check needs 1 <= a < q")
+    field = _field(digits)
+    q_field = field(q)
+    total = field.euler_constant() + field(2).log()
+    total += field.pi() / 2 * (field.pi() * field(a) / q_field).cot()
+    for n in range(1, int((q - 1) // 2) + 1):
+        total -= (
+            2
+            * (2 * field.pi() * field(a) * field(n) / q_field).cos()
+            * (field.pi() * field(n) / q_field).sin().log()
+        )
+    return _finite(total / q_field, "Gauss formula for gamma(%s,%s)" % (a, q))
+
+
 def _comment(a, q):
     if q == 1 and a == 0:
         return "Euler's constant, the Stieltjes constant $\\gamma_0$."
     if q == 2 and a == 1:
-        return "$(\\gamma+\\log2)/2$."
+        return "$\\gamma(1,2)=(\\gamma+\\log2)/2$."
     if q == 4 and a == 1:
-        return "$(\\gamma+\\pi/2+\\log2)/4$."
+        return "$\\gamma(1,4)=(\\gamma+\\pi/2+\\log2)/4$."
     return ""
 
 
@@ -154,6 +173,11 @@ def check_identities(maximum=MAX_Q, digits=100):
             value - euler_lehmer_by_roots(a, q, digits),
             "root-of-unity formula at q=%s, a=%s" % (q, a),
         )
+        if a:
+            _assert_contains_zero(
+                value - euler_lehmer_by_gauss(a, q, digits),
+                "Gauss formula at q=%s, a=%s" % (q, a),
+            )
 
     for q in range(1, maximum + 1):
         total = sum(values[(q, a)] for a in range(q))

@@ -7,10 +7,9 @@ Definition: >-
   For integers $q\geq1$ and $0\leq a<q$, the Euler-Lehmer constant
   $\gamma(a,q)$ is
   $\lim_{x\to\infty}\left(\sum_{\substack{0<n\leq x\\n\equiv a\pmod q}}1/n
-  -q^{-1}\log x\right)$ CITE{WikiEuler}.
+  -q^{-1}\log x\right)$ CITE{WikiEuler} CITE{Lehmer1975}.
 Keywords:
   - Euler-Lehmer constant
-  - Lehmer constant
   - harmonic sums in arithmetic progressions
   - Euler's constant in arithmetic progressions
 Parameters:
@@ -26,16 +25,23 @@ Parameters:
     constraints: $0\leq a<q$
 Comments:
   comment-representative: >-
-    The representative is Lehmer's $0\leq a<q$ convention CITE{WikiEuler};
-    the class $a=0$ is the class of multiples of $q$.
+    Residue classes are represented by $0\leq a<q$, so the multiples of $q$
+    are the row $a=0$.
   comment-euler-constant: >-
-    $\gamma(0,1)$ is Euler's constant, the Stieltjes constant
+    $\gamma=\gamma(0,1)$ is Euler's constant, the Stieltjes constant
     HREF{Stieltjes_constants#0}[$\gamma_0$].
 Formulas:
   formula-digamma: >-
-    $\gamma(0,q)=(\gamma-\log q)/q$, and for $1\leq a<q$,
-    $\gamma(a,q)=-(\psi(a/q)+\log q)/q$ CITE{WikiEuler}, where $\psi$ is the
+    $\gamma(0,q)=(\gamma-\log q)/q$ CITE{WikiEuler}, where $\gamma$ is
+    Euler's constant. For $1\leq a<q$,
+    $\gamma(a,q)=-(\psi(a/q)+\log q)/q$, where $\psi$ is the
     HREF{T226}[digamma function].
+  formula-gauss: >-
+    For $1\leq a<q$,
+    $\gamma(a,q)=\frac{1}{q}\left(\gamma+\log2+\frac{\pi}{2}\cot(\pi a/q)
+    -2\sum_{n=1}^{\lfloor(q-1)/2\rfloor}\cos(2\pi an/q)
+    \log\sin(\pi n/q)\right)$, from CITE{formula-digamma} and Gauss's
+    digamma theorem CITE{WikiDigamma}.
   formula-sum: >-
     $\sum_{a=0}^{q-1}\gamma(a,q)=\gamma$.
   formula-gcd: >-
@@ -58,7 +64,10 @@ Programs:
       print(value)
 Similar tables:
   - table: HREF{T226}[Values of the digamma function at rational numbers]
-    relation: the formula for $\gamma(a,q)$ with $1\leq a<q$ uses $\psi(a/q)$
+    relation: >-
+      holds $\psi(a/q)$ for reduced denominators up to 12, and
+      CITE{formula-digamma} gives
+      $\gamma(a,q)=-(\psi(a/q)+\log q)/q$ from it
   - table: HREF{Stieltjes_constants}[Stieltjes constants]
     relation: its row HREF{Stieltjes_constants#0}[$\gamma_0$] is $\gamma(0,1)$
   - table: HREF{Mertens_constants_of_primes_in_arithmetic_progressions}[Mertens constants of primes in arithmetic progressions]
@@ -67,6 +76,15 @@ Links:
   WikiEuler:
     title: "Wikipedia: Euler's constant"
     url: https://en.wikipedia.org/wiki/Euler%27s_constant
+  WikiDigamma:
+    title: 'Wikipedia: Digamma function'
+    url: https://en.wikipedia.org/wiki/Digamma_function
+References:
+  Lehmer1975:
+    bib: >-
+      D. H. Lehmer, Euler constants for arithmetic progressions,
+      Acta Arithmetica 27 (1975), 125-142.
+    doi: 10.4064/aa-27-1-125-142
 Tags:
   - number theory
   - special values
@@ -75,12 +93,12 @@ Data properties:
   rigour: proven
   rigour details: >-
     Each value is computed as a Sage real ball with arb at
-    `numberdb.bits(digits, losing=96)` bits from CITE{formula-digamma}, using
-    exact integer parameters. The entries were checked against
-    CITE{formula-sum}, CITE{formula-gcd}, the special cases
-    $\gamma(0,1)=\gamma$, $\gamma(1,2)=(\gamma+\log2)/2$ and
-    $\gamma(1,4)=(\gamma+\pi/2+\log2)/4$, and an independent root-of-unity
-    logarithm formula from CITE{WikiEuler}.
+    `numberdb.bits(digits, losing=96)` bits from CITE{formula-digamma}. The
+    entries were checked against CITE{formula-sum}, CITE{formula-gcd},
+    CITE{formula-gauss}, the equivalent root-of-unity logarithm formula in
+    CITE{WikiEuler}, and the special cases $\gamma(0,1)=\gamma$,
+    $\gamma(1,2)=(\gamma+\log2)/2$ and
+    $\gamma(1,4)=(\gamma+\pi/2+\log2)/4$.
   complete: 'no'
   complete-note: >-
     it holds every residue class $0\leq a<q$ for $q\leq30$
