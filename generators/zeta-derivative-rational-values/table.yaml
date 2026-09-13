@@ -1,0 +1,105 @@
+# Draft document for T228, values of the derivative of the Riemann zeta
+# function at rational arguments. It began as proposal 2 of
+# agents/table-ideas/BATCH-2026-09-13T0847.md.
+# Created through the API with X-Draft: yes, then filled by generate.py beside
+# it. Publishing is a person's act.
+Title: Values of the derivative of the Riemann zeta function $\zeta'(s)$ at rational numbers
+Definition: >-
+  Listed are $\zeta'(s)=\frac{d}{ds}\zeta(s)$ for
+  HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[the Riemann
+  zeta function] and the logarithmic derivative $\zeta'(s)/\zeta(s)$ at
+  rational arguments $s$ where the chosen quantity is finite.
+Keywords:
+  - derivative of the Riemann zeta function
+  - zeta derivative
+  - logarithmic derivative of the Riemann zeta function
+  - von Mangoldt Dirichlet series
+Parameters:
+  s:
+    type: Q
+    title: argument
+    display: $s$
+    constraints: >-
+      $s\in\mathbb{Q}$; $s\neq1$; for $\zeta'(s)/\zeta(s)$, also
+      $\zeta(s)\neq0$
+  quantity:
+    type: Symbolic
+    title: derivative or logarithmic derivative
+    display: quantity
+    values:
+      derivative: $\zeta'(s)$
+      logderivative: $\zeta'(s)/\zeta(s)$
+Comments:
+  comment-sign: >-
+    The logarithmic derivative is stored with its own sign. Its negative is
+    the von Mangoldt Dirichlet series
+    $-\zeta'(s)/\zeta(s)=\sum_{n\geq1}\Lambda(n)n^{-s}$ for $\Re(s)>1$.
+  comment-poles-zeros: >-
+    The derivative $\zeta'(s)$ is finite at the trivial zeros
+    $s=-2,-4,\ldots$, but the logarithmic derivative has simple poles there
+    and is not listed.
+Formulas:
+  formula-logderivative: >-
+    $\frac{d}{ds}\log\zeta(s)=\zeta'(s)/\zeta(s)$ wherever
+    $\zeta(s)\neq0,\infty$.
+  formula-von-mangoldt: >-
+    For $\Re(s)>1$,
+    $-\zeta'(s)/\zeta(s)=\sum_{n\geq1}\Lambda(n)n^{-s}$ CITE{DLMFZeta}.
+  formula-zero: >-
+    $\zeta'(0)=-\frac12\log(2\pi)$ CITE{DLMFSpecial}.
+  formula-negative-even: >-
+    For $m\geq1$,
+    $\zeta'(-2m)=(-1)^m\frac{(2m)!}{2(2\pi)^{2m}}\zeta(2m+1)$
+    CITE{DLMFSpecial}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.complex_arb import ComplexBallField
+      from sage.rings.rational_field import QQ
+
+      CBF = ComplexBallField(numberdb.bits(100, losing=96))
+      s = CBF(QQ(1) / QQ(2))
+      zeta_prime = s.zetaderiv(1)
+      zeta_log_derivative = zeta_prime / s.zeta()
+Similar tables:
+  - table: HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[Values of the Riemann zeta function at rational numbers]
+    relation: stores $\zeta(s)$ at the same kind of rational arguments
+  - table: HREF{Laurent_coefficients_of_logarithmic_derivative_of_Riemann_zeta_function_at_1}[Laurent series coefficients of the logarithmic derivative of the Riemann zeta function at 1]
+    relation: stores the Laurent expansion of $\zeta'(s)/\zeta(s)$ at its pole
+  - table: HREF{Taylor_coefficients_of_completed_Riemann_zeta_function_at_1_over_2}[Taylor coefficients of the completed Riemann zeta function at 1/2]
+    relation: stores derivatives of the completed zeta function at the centre of the critical strip
+  - table: HREF{Values_of_the_Hurwitz_zeta_function_at_pairs_of_rational_numbers}[Values of the Hurwitz zeta function at pairs of rational numbers]
+    relation: $\zeta(s)$ is the Hurwitz zeta function at parameter $1$
+Links:
+  DLMFZeta:
+    title: 'DLMF 25.2: Definitions'
+    url: https://dlmf.nist.gov/25.2
+  DLMFSpecial:
+    title: 'DLMF 25.6: Special Values'
+    url: https://dlmf.nist.gov/25.6
+  MathWorldZeta:
+    title: 'MathWorld: Riemann Zeta Function'
+    url: https://mathworld.wolfram.com/RiemannZetaFunction.html
+Tags:
+  - special values
+  - L-function
+Data properties:
+  type: R
+  rigour: proven
+  rigour details: >-
+    Each value is computed as a Sage complex ball with arb at
+    `numberdb.bits(digits, losing=96)` bits. The imaginary part is required
+    to contain zero before the real part is returned. The entries are checked
+    against the values of $\zeta(s)$ in
+    HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[the zeta
+    table], the identities in CITE{formula-zero} and
+    CITE{formula-negative-even}, and independent mpmath computations at
+    selected half-integer arguments.
+  complete: 'no'
+  complete-note: >-
+    it holds both quantities for every rational argument $s=a/b$ in lowest
+    terms with $b\leq4$ and $-20\leq s\leq20$ at which the quantity is finite
+Display properties:
+  number-header: value
