@@ -227,7 +227,10 @@ class Command(BaseCommand):
 		from numberdb_app.validate import DATA_TYPES, RIGOUR_LEVELS
 
 		import json
-		prose = json.dumps({k: v for k, v in tree.items() if k != 'Numbers'})
+		#`ensure_ascii=False`: HREF{Lévy's_constant} is a real address in
+		#this corpus, and an escaped dump turns it into a name no table has.
+		prose = json.dumps({k: v for k, v in tree.items() if k != 'Numbers'},
+		                   ensure_ascii=False)
 
 		#Every entry that holds digits should be findable by them. Nothing
 		#checked this, and it went wrong quietly: the number builder skipped
