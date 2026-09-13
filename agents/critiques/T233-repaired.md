@@ -1,0 +1,7 @@
+1. *done* -- Replaced `Programs` with a `{language, code}` Sage record; checked the exact live snippet under `agents/sage.sh` after fixing Python exponentiation from `^` to `**`.
+2. *done* -- Rewrote the kissing-number and Hermite-constant similar-table relations to name the lattices; checked T151 and T149 live rows and verified $L_{A_2}(1)-1=6$, $L_{A_3}(1)-1=12$, $L_{D_4}(1)-1=24$ and $L_{E_8}(1)-1=240$ in Sage.
+3. *done* -- Narrowed the growth-series formula to $A_n$, $B_n$, $C_n$, $D_n$, $F_4$ and $G_2$, added CITE{BacherHarpeVenkov}, and scoped the $E$ rows in `rigour details`; checked the AIF DOI page for the Bacher--de la Harpe--Venkov coverage.
+4. *done* -- Rewrote all row labels as `$L_{A_{2}}(t)$` and `$h^*_{E_{8}}(z)$` style labels; checked the live readback after the API edit.
+5. *done* -- Rewrote the convention and small-rank comments, changed the $A_n$ parameter constraint to $n\geq1$, and put the $A_1$ values in the comment and complete note; checked $A_1$, the $B_2/C_2$ row, and the $C_n,D_n$ ambient-lattice discrepancy in Sage.
+6. *done* -- Added a narrow comment stating exactly which stored $h^*$ rows are palindromic; checked every live $h^*$ row in Sage and did not add the unchecked Hibi theorem.
+7. *done* -- Rewrote `rigour details`, added the range reason to `complete-note`, removed "the listed" from Formula (6), fixed the T147 relation, named the positive-root convention, and removed the duplicate keyword; left the client-side coefficient order alone.
