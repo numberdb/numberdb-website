@@ -6,9 +6,8 @@ Title: Values of the hyperfactorial $K$-function $K(x)$ at rational numbers
 Definition: >-
   Listed are Kinkelin's hyperfactorial $K$-function
   $K(x)=\exp(\zeta'(-1,x)-\zeta'(-1))$ CITE{WikiKFunction} and its real
-  logarithm at positive rational arguments $x$, where $\zeta(s,x)$ is
-  HREF{Values_of_the_Hurwitz_zeta_function_at_pairs_of_rational_numbers}[the
-  Hurwitz zeta function].
+  logarithm at positive rational arguments $x$, where $\zeta(s,x)$ is the
+  Hurwitz zeta function.
 Keywords:
   - K-function
   - hyperfactorial K-function
