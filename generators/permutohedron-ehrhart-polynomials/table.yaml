@@ -1,0 +1,145 @@
+# Draft document for proposal 4 of agents/table-ideas/BATCH-2026-09-13T1751.md.
+# It was created as draft T235 through the API with X-Draft: yes. Publishing is
+# a person's act.
+Title: Ehrhart and $h^*$-polynomials of the permutohedra
+Definition: >-
+  For a positive integer $n$, let $\Pi_n$ be the permutohedron
+  $\operatorname{conv}\{(\sigma(1),\ldots,\sigma(n)):\sigma\in S_n\}$ in
+  $\mathbb{R}^n$, with respect to the lattice $\mathbb{Z}^n$. This table
+  stores its Ehrhart polynomial $L_{\Pi_n}(t)$ and the numerator
+  $h^*_{\Pi_n}(z)$ using the Ehrhart-series convention that
+  CITE{WikiEhrhart} describes.
+Keywords:
+  - permutohedron
+  - permutohedra
+  - Ehrhart polynomial
+  - Ehrhart h-star polynomial
+  - Ehrhart h* polynomial
+  - labelled forests
+  - labeled forests
+  - graphical zonotope
+Parameters:
+  n:
+    type: Z
+    title: rank
+    display: $n$
+    constraints: $n$ is a positive integer
+  form:
+    type: Symbolic
+    title: form of the polynomial
+    display: form
+    constraints: either `ehrhart` or `h-star`
+    values:
+      ehrhart: $L_{\Pi_n}(t)$
+      h-star: $h^*_{\Pi_n}(z)$
+Comments:
+  comment-translation: >-
+    CITE{WikiPermutohedron} describes the permutohedron. Translating the
+    vertices, for example to $(0,1,\ldots,n-1)$, does not change the Ehrhart
+    polynomial.
+  comment-small-n: >-
+    The omitted case $\Pi_2$ is a segment, with Ehrhart polynomial $t+1$ and
+    $h^*$-polynomial $1$.
+  comment-zonotope: >-
+    The permutohedron is the graphical zonotope of the complete graph $K_n$.
+    Formula CITE{formula-forests} identifies $L_{\Pi_n}(t)$ with the forest
+    polynomial of $K_n$.
+Formulas:
+  formula-series: >-
+    $\sum_{t\geq0}L_{\Pi_n}(t)z^t=h^*_{\Pi_n}(z)/(1-z)^n$.
+  formula-forests: >-
+    $L_{\Pi_n}(t)=\sum_{k=0}^{n-1}f_{n,k}t^k$, where $f_{n,k}$ is the number
+    of forests on $n$ labelled vertices with $k$ edges.
+  formula-tutte: >-
+    $L_{\Pi_n}(t)=t^{n-1}T_{K_n}(1+1/t,1)$, where $T_{K_n}$ is the Tutte
+    polynomial of the complete graph.
+  formula-leading: >-
+    The leading coefficient of $L_{\Pi_n}(t)$ is $n^{n-2}$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.rational_field import QQ
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+      T = PolynomialRing(QQ, "t")
+      t = T.gen()
+
+      def tree_count(vertices):
+          return 1 if vertices == 1 else vertices ** (vertices - 2)
+
+      def forest_counts(n):
+          from math import comb
+          by_components = [[0 for _ in range(n + 1)] for _ in range(n + 1)]
+          by_components[0][0] = 1
+          for vertices in range(1, n + 1):
+              for components in range(1, vertices + 1):
+                  by_components[vertices][components] = sum(
+                      comb(vertices - 1, size - 1)
+                      * tree_count(size)
+                      * by_components[vertices - size][components - 1]
+                      for size in range(1, vertices + 1))
+          return [by_components[n][n - edges] for edges in range(n)]
+
+      sum(QQ(c) * t ** i for i, c in enumerate(forest_counts(5)))
+Similar tables:
+  - table: HREF{Tutte_polynomials_of_connected_graphs}[Tutte polynomials of connected graphs]
+    relation: >-
+      gives $T_{K_n}(x,y)$, whose specialization at $(1+1/t,1)$ gives
+      $L_{\Pi_n}(t)$
+  - table: HREF{Chromatic_polynomials_of_connected_graphs}[Chromatic polynomials of connected graphs]
+    relation: >-
+      gives another specialization of graph polynomials for the same graph
+      census
+  - table: HREF{T234}[Ehrhart and $h^*$-polynomials of the hypersimplices]
+    relation: >-
+      records the Ehrhart data of the hypersimplex summands of the
+      permutohedron
+Links:
+  WikiPermutohedron:
+    title: 'Wikipedia: Permutohedron'
+    url: https://en.wikipedia.org/wiki/Permutohedron
+  WikiEhrhart:
+    title: 'Wikipedia: Ehrhart polynomial'
+    url: https://en.wikipedia.org/wiki/Ehrhart_polynomial
+  OEISEhrhart:
+    title: 'OEIS A105599: coefficients of Ehrhart polynomials of permutohedra'
+    url: https://oeis.org/A105599
+  OEISForests:
+    title: 'OEIS A001858: number of forests with n labeled nodes'
+    url: https://oeis.org/A001858
+  OEISTrees:
+    title: 'OEIS A000272: number of trees on n labeled nodes'
+    url: https://oeis.org/A000272
+References:
+  StanleyZonotope:
+    bib: >-
+      Richard P. Stanley, A zonotope associated with graphical degree
+      sequences, in Applied Geometry and Discrete Mathematics, DIMACS Series in
+      Discrete Mathematics and Theoretical Computer Science 4, American
+      Mathematical Society, 1991, 555-570.
+Tags:
+  - polynomial
+  - combinatorics
+  - discrete geometry
+Data properties:
+  type: Q[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds both forms for every $n$ with $3\leq n\leq20$
+  rigour details: >-
+    The generator computes the forest numbers $f_{n,k}$ by an exact recurrence
+    on the tree component containing a distinguished vertex, using Cayley's
+    formula for the number of labelled trees on each component. It then forms
+    $L_{\Pi_n}(t)=\sum_k f_{n,k}t^k$ and converts this polynomial to
+    $h^*_{\Pi_n}(z)$ by the exact Ehrhart-series transform that
+    CITE{formula-series} states. Direct lattice-point counts in $t\Pi_n$
+    agreed with $L_{\Pi_n}(t)$ for $3\leq n\leq5$ and $0\leq t\leq n$. The
+    specialization in CITE{formula-tutte} agreed with
+    HREF{Tutte_polynomials_of_connected_graphs}[the stored Tutte polynomials]
+    of $K_1,\ldots,K_7$. For every stored $n$, the leading coefficient was
+    $n^{n-2}$ and $h^*_{\Pi_n}(1)$ equalled $(n-1)!n^{n-2}$.
+Display properties:
+  number-header: polynomial
