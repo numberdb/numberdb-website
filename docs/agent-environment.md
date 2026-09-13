@@ -2815,3 +2815,38 @@ interrupted, remove it; otherwise leave it alone.
 Evidence: 2026-09-12, `docker ps` showed the stale `audit_t220.py` container
 five minutes after Ctrl-C, and `docker rm -f
 numberdb-agent-run-1789254969-43101-8483` released the lock.
+
+## A private draft's prose renders through `/preview` in pieces under 4094 bytes
+
+What happened: the T221 critique needed the rendered page of a private
+draft on a runner with no Django, so the `RequestFactory` path above was
+closed. The whole prose section of the document sent to `/preview?table=...`
+was 6.3 KB URL-encoded, and the server answered 400 "Request Line is too
+large (6355 > 4094)". This is the limit behind the 414 in the T219 note.
+Six requests did work, each carrying the title, one or two sections and one
+entry. The sections were Links with anything that `CITE`s a link, and
+Formulas with anything that `CITE`s a formula label; each piece was 1.1 to
+2.5 KB. The rendered HTML showed the escaping, the `CITE`/`HREF` targets and
+the entry anchors. MathJax runs in the browser and not in that HTML, so the
+TeX was checked separately with `npm install mathjax-full@3` in `/tmp` and a
+node script converting every `$...$` fragment. A control fragment with an
+unclosed brace did raise an error.
+
+Two more things from the same run. First, the SOCKS proxy on 127.0.0.1:1080
+answered once and then refused every connection, with `ALL_PROXY` empty and
+no `ssh -D` process running. numberdb.org answered `curl` directly, so the
+proxy is not always what reaches the site. Second, the docstring of
+`audit_table` lists "notation used in a formula and defined nowhere in the
+table" among its checks, but no code in the command makes that check. T221
+uses $\zeta_K$ undefined and the audit will pass it.
+
+What to do instead: render a private draft through `/preview` in pieces kept
+under 4 KB after URL-encoding, carrying the Links and Formulas that the
+section's `CITE`s need. Typeset the TeX in node rather than inferring it.
+Try `curl` without the proxy before concluding the site is down. Either
+implement the notation check or remove it from the docstring.
+
+Evidence: 2026-09-13, T221 critique. `/tmp/T221_p[a-f].html`, all 200;
+`/tmp/crit221_mj/check.js` reported "checked 367 errors 0" and the control
+"checked 3 errors 1"; `curl --socks5-hostname 127.0.0.1:1080` gave
+"Failed to connect ... Couldn't connect to server".
