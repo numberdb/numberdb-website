@@ -3,12 +3,11 @@
 # by generate.py beside it. Publishing is a person's act.
 Title: Ehrhart and $h^*$-polynomials of the Birkhoff polytopes
 Definition: >-
-  The Birkhoff polytope $B_n$ is the lattice polytope of $n\times n$ doubly
-  stochastic matrices in $\mathbb{Z}^{n\times n}$ CITE{WikiBirkhoff}. For each
-  $n$, $H_n(t)=L_{B_n}(t)$ counts the $n\times n$ nonnegative integer matrices
-  whose rows and columns all sum to $t$, and $h^*_{B_n}(z)$ is defined by
-  $\sum_{t\geq 0}H_n(t)z^t=h^*_{B_n}(z)/(1-z)^{(n-1)^2+1}$
-  CITE{WikiEhrhart}.
+  The Birkhoff polytope $B_n\subset\mathbb{R}^{n\times n}$ is the lattice
+  polytope of $n\times n$ doubly stochastic matrices CITE{WikiBirkhoff}. The
+  table stores its Ehrhart polynomial $H_n(t)=L_{B_n}(t)$, counting
+  nonnegative integer matrices with all row and column sums $t$, and its
+  $h^*$-polynomial CITE{WikiEhrhart}.
 Keywords:
   - Birkhoff polytope
   - Ehrhart polynomial
@@ -41,8 +40,8 @@ Comments:
     $h^*_{B_2}(z)=1$.
   comment-known-range: >-
     Beck and Pixton give the full Ehrhart polynomials $H_n(t)$ for
-    $1\leq n\leq9$ CITE{BeckPixtonData}. The volume of $B_{10}$ is known, but
-    the full polynomial $H_{10}(t)$ is not included here.
+    $1\leq n\leq9$ CITE{BeckPixtonData}. The full polynomial $H_{10}(t)$ is
+    not included in that source.
 Formulas:
   formula-series: >-
     If $d=(n-1)^2$, then
@@ -117,7 +116,7 @@ Data properties:
   rigour: exact
   complete: 'no'
   complete-note: >-
-    it holds both forms for every matrix size $n$ with $3\leq n\leq9$
+    it holds both forms for every matrix size $n$ with $3\leq n\leq6$
   rigour details: >-
     The $h^*$-polynomials are transcribed from OEIS A259473 CITE{OEISHStar},
     and the Ehrhart polynomials are obtained from them by the binomial
@@ -125,7 +124,7 @@ Data properties:
     the entries were compared with Beck and Pixton's published polynomials
     CITE{BeckPixtonData}; direct dynamic-programming counts for $n=3,4,5$ were
     compared with OEIS A002817 CITE{OEIS3}, A001496 CITE{OEIS4}, and A003438
-    CITE{OEIS5}; each stored row satisfied $H_n(1)=n!$, and $h^*_{B_n}(1)$
-    agreed with OEIS A037302 CITE{OEISVolume}.
+    CITE{OEIS5}; each stored row with $3\leq n\leq6$ satisfied $H_n(1)=n!$,
+    and $h^*_{B_n}(1)$ agreed with OEIS A037302 CITE{OEISVolume}.
 Display properties:
   number-header: polynomial
