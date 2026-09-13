@@ -168,6 +168,12 @@ while [ "$made" -lt "$builds" ]; do
 	fi
 
 	batch=$(batch_file)
+	#So each run's ledger line says which campaign and which batch it belonged
+	#to. Work that produces no table -- a failed build, a triage, the ideas
+	#run itself -- has no other name, and without one its cost had nowhere to
+	#go and was dropped.
+	export NUMBERDB_CAMPAIGN="$NAME"
+	export NUMBERDB_BATCH="$batch"
 	if [ -z "$batch" ]; then
 		say "no batch yet; proposing one"
 		propose_a_batch || exit $?

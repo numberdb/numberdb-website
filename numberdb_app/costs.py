@@ -80,9 +80,14 @@ def ingest(ledger_text, attribution_text='', dry_run=False):
 	#said about itself and wins where it spoke.
 	attributed = read_attributions(attribution_text)
 
+	#Keyed by the table when there is one and by None when there is not. Work
+	#that produced no table is still work somebody paid for: a third of the
+	#builds here failed or found nothing, and a table that took three attempts
+	#cost what all three attempts cost. Counting those and dropping them, as
+	#this did, makes every total 22% short.
 	totals = defaultdict(lambda: [Decimal('0'), 0])
 	engines = {}
-	skipped = rescued = 0
+	unattached = rescued = 0
 
 	for row in csv.DictReader(io.StringIO(ledger_text or ''), delimiter='\t'):
 		tid = (row.get('table') or '').strip().upper()
@@ -92,20 +97,26 @@ def ingest(ledger_text, attribution_text='', dry_run=False):
 				rescued += 1
 		table = known.get(tid)
 		if table is None:
-			skipped += 1
-			continue
+			unattached += 1
 		role = (row.get('stage') or '').strip()[:16]
+		campaign = (row.get('campaign') or '').strip()[:64]
+		batch = (row.get('batch') or '').strip()[:64]
 		for model, cost in parse_breakdown(row):
-			key = (table.pk, model[:64], role)
+			key = (table.pk if table else None, model[:64], role,
+			       campaign, batch)
 			totals[key][0] += cost
 			totals[key][1] += 1
 			engines[key] = (row.get('engine') or '').strip()[:16]
 
-	touched = {pk for pk, _, _ in totals}
+	touched = {key[0] for key in totals if key[0] is not None}
 	summary = {
 		'rows': len(totals),
 		'tables': len(touched),
-		'unattributed': skipped,
+		#Still reported, because a large number here is worth seeing -- but no
+		#longer thrown away.
+		'unattributed': unattached,
+		'unattributed_usd': float(sum(
+			cost for key, (cost, _) in totals.items() if key[0] is None)),
 		'rescued': rescued,
 		'applied': not dry_run,
 	}
@@ -113,12 +124,19 @@ def ingest(ledger_text, attribution_text='', dry_run=False):
 		return summary
 
 	#Replaced rather than added to, so importing twice is not paying twice.
+	#The table-less rows are replaced by campaign, for the same reason: a
+	#machine sends its whole ledger after every run.
+	campaigns = {key[3] for key in totals if key[0] is None}
 	TableCost.objects.filter(table__pk__in=touched).delete()
+	TableCost.objects.filter(table__isnull=True,
+	                         campaign__in=campaigns).delete()
 	TableCost.objects.bulk_create([
 		TableCost(table_id=table_pk, model=model, role=role,
-		          engine=engines.get((table_pk, model, role), ''),
+		          campaign=campaign, batch=batch,
+		          engine=engines.get(key, ''),
 		          cost_usd=cost, runs=runs)
-		for (table_pk, model, role), (cost, runs) in totals.items()])
+		for key, (cost, runs) in totals.items()
+		for (table_pk, model, role, campaign, batch) in [key]])
 
 	#The overview reads TableMetrics, and the cost it shows is summed from the
 	#rows just written.
