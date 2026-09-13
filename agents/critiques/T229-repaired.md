@@ -1,0 +1,12 @@
+1. done -- Added closed-form comments for the `K` and `logK` rows at $x=\tfrac14,\tfrac34,\tfrac13,\tfrac23,\tfrac16,\tfrac56$; checked the formulas under `agents/sage.sh` against the stored T229 rows, stored `T227#1,logA`, stored Clausen rows `#2,1/2` and `#2,2/3`, and the multiplication formula for $n=3,4,6$.
+2. done -- Rewrote the Definition to define $\zeta'(s,x)$ as the $s$-derivative and $\zeta'(-1)=\zeta'(-1,1)$; checked the live text still lacked both glosses, the rendered preview resolved `CITE{WikiKFunction}`, and the new Definition is 272 characters.
+3. done -- Changed `formula-half` from `HREF{T227}` to `HREF{T227#1,A}`; checked the `T227#1,A` row exists and the preview renders the direct entry link.
+4. done -- Replaced `comment-shift` with only the hyperfactorial shift, removed the two `$0$.` comments, and changed the $K(2)$ through $K(6)$ comments to name $H(1)$ through $H(5)$; checked the integer rows and then ran the T229 generator verify, which matched 552/552 entries.
+5. done -- Reworded `comment-domain` to say $K(x)>0$ and $\log K(x)$ is real for $x>0$, and narrowed the non-positive caveat to poles and branch choices rather than the critique's too-broad non-real claim.
+6. done -- Added a reason to `complete-note`: the range includes every factor in the multiplication formula for $n\leq12$ and the integer values through $K(6)=86400000$; checked the denominator bound covers those factors and the stored $K(6)$ row is exact.
+7. left for a person -- T227 and T228 still answer 404 anonymously, but publishing order for linked drafts is a reviewer decision and zeta3 may not publish or review.
+noted keyword "negapolygamma". left for a person -- Adding the negapolygamma formula or dropping the keyword is a search/scope decision beyond the ranked repair, and I did not add an unchecked identity.
+noted T228 caption. declined -- The existing Similar tables link to T228 is accurate as a whole-table relation; changing its caption or linking `T228#-1,derivative` is optional.
+noted rigour details. declined -- The current rigour details accurately say the values were computed as Sage balls and checked against the Barnes $G$, Hurwitz zeta derivative, recurrence, integer values and multiplication formulas.
+noted OEIS. declined -- OEIS A002109 would be an optional external link; the repair already names the hyperfactorial integer rows without adding a new source.
+noted parameter title. declined -- The critique says the current title reads acceptably and matches the nearby T228 shape, so I left it unchanged.
