@@ -23,9 +23,11 @@ KEY_FILE="${NUMBERDB_KEY:-$HOME/.config/numberdb/zeta3-key}"
 [ -s "$KEY_FILE" ] || { echo "sync-costs: no key at $KEY_FILE" >&2; exit 0; }
 
 key=$(cat "$KEY_FILE")
+# Base64: a header value may hold neither a newline nor a record separator,
+# and a server refuses the second as firmly as the first.
 attribution=""
 [ -f agents/runs/ATTRIBUTION.tsv ] && \
-	attribution=$(tr '\n' '\036' < agents/runs/ATTRIBUTION.tsv)
+	attribution=$(base64 -w0 < agents/runs/ATTRIBUTION.tsv)
 
 # Direct first, then through the tunnel: the same reasoning as everywhere else
 # here, since the laptop can only reach numberdb.org through a proxy and the
