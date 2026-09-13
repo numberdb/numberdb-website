@@ -17,8 +17,8 @@ worked examples use det(A - xI), which differs by (-1)^|V(G)|.
 
 The generator computes every connected graph on at most seven vertices,
 the same finite index used by T125 and T126. It also attaches the 35 common
-graph names those tables use, and names connected cospectral mates in entry
-comments.
+graph names those tables use, and names connected graphs with the same
+characteristic polynomial in entry comments.
 
 Answers numberdb-data#67, for characteristic polynomials of natural small
 matrices.
@@ -63,7 +63,7 @@ NAMED = {
     "DK{": "butterfly graph",
     "DLo": "cycle $C_5$",
     "DN{": "house X graph",
-    "D]{": "wheel $W_4$",
+    "D]{": "wheel $W_5$",
     "Dbk": "house graph",
     "D~{": "complete graph $K_5$",
     "E?Bw": "star $K_{1,5}$",
@@ -71,14 +71,14 @@ NAMED = {
     "E@YO": "path $P_6$",
     "EFz_": "complete bipartite graph $K_{3,3}$",
     "EIe_": "cycle $C_6$",
-    "ELrw": "wheel $W_5$",
+    "ELrw": "wheel $W_6$",
     "E~~w": "complete graph $K_6$",
     "F??Fw": "star $K_{1,6}$",
     "F?B~o": "complete bipartite graph $K_{2,5}$",
     "F?~v_": "complete bipartite graph $K_{3,4}$",
     "F@HSO": "path $P_7$",
     "FHQSO": "cycle $C_7$",
-    "FIefw": "wheel $W_6$",
+    "FIefw": "wheel $W_7$",
     "FjaHw": "Moser spindle",
     "F~~~w": "complete graph $K_7$",
 }
@@ -114,19 +114,11 @@ def graph_from_key(key):
     return Graph(str(key))
 
 
-def _entry_ref(key):
-    # HREF{} is delimited by braces; graph6 keys containing a closing brace
-    # cannot be written there without changing the parser's grammar.
-    if "}" in key:
-        return "the graph with graph6 string `%s`" % key
-    return "HREF{#%s}" % key
-
-
-def _joined_refs(keys):
-    refs = [_entry_ref(key) for key in keys]
-    if len(refs) == 1:
-        return refs[0]
-    return ", ".join(refs[:-1]) + " and " + refs[-1]
+def _joined_keys(keys):
+    names = ["`%s`" % key for key in keys]
+    if len(names) == 1:
+        return names[0]
+    return ", ".join(names[:-1]) + " and " + names[-1]
 
 
 class CharacteristicPolynomials(numberdb.Generator):
@@ -168,7 +160,10 @@ class CharacteristicPolynomials(numberdb.Generator):
             if other != key and other_polynomial == polynomial
         ]
         if partners:
-            parts.append("It is cospectral with %s." % _joined_refs(partners))
+            parts.append(
+                "It has the same characteristic polynomial as %s."
+                % _joined_keys(partners)
+            )
 
         if parts:
             return {"number": polynomial, "comment": " ".join(parts)}
