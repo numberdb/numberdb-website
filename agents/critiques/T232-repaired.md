@@ -1,0 +1,9 @@
+1. done -- changed the $n$ constraint, completeness note and small-$n$ comment; checked $H_1=1$, $H_2=t+1$, $h^*_{B_1}=h^*_{B_2}=1$, and computed from OEIS A259473 that $H_7$ writes as 2252 characters.
+2. done -- replaced the web-page remark with sourced range and volume prose, citing Beck-Pixton and the data page; checked the paper source and OEIS A037302 before avoiding the unconfirmed "only known" claim.
+3. done -- rewrote the normalized-volume formula so $d$ is the dimension and $[t^d]H_n(t)$ is named as the leading coefficient; checked $h^*_{B_n}(1)$ against OEIS A037302 for $3\leq n\leq6$.
+4. done -- rewrote the generating-series and binomial-transform formulas to define $h^*$ and name $d=(n-1)^2$ as the dimension; checked the exact binomial transform on every stored row.
+5. done -- added the reciprocity and zero formula and the corresponding $h^*$ degree-palindrome statement; checked $H_n(-n-t)=(-1)^{n-1}H_n(t)$, the roots $-1,\ldots,-n+1$, and palindromicity for every stored row in Sage.
+6. declined -- did not add the PyNormaliz/LattE program because `agents/sage.sh` still reports `FeatureNotPresentError: pynormaliz is not available`; reran the existing Sage snippet and checked it gives the stored $H_4(t)$.
+7. done -- rewrote the $H_n(1)$ formula to link $n!$ directly and name the permutation matrices; checked $H_n(1)=n!$ for every stored Ehrhart row.
+8. done -- rewrote the semi-magic-square comment to name $H_n(t)$ and removed the standalone `magic squares` keyword; checked the remaining keyword list still contains `semi-magic squares`.
+9. done -- removed the unused $L_{B_n}$ notation, rewrote `rigour details` to avoid draft-stage prose and to say "Ehrhart row", and changed the OEIS link titles to use line sum $t$; declined the $\Phi_3$ repeat/equality note, coefficient order change and `Erhart` misspelling keyword as not faults to repair here.
