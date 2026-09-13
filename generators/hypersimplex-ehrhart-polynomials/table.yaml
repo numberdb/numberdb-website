@@ -1,0 +1,125 @@
+# Draft document for proposal 2 of agents/table-ideas/BATCH-2026-09-13T1751.md.
+# It was created as draft T234 through the API with X-Draft: yes, then filled
+# by generate.py beside it. Publishing is a person's act.
+Title: Ehrhart and $h^*$-polynomials of the hypersimplices
+Definition: >-
+  The hypersimplex $\Delta(k,n)$ is the lattice polytope
+  $\{x\in[0,1]^n:x_1+\cdots+x_n=k\}$, equivalently the convex hull of the
+  $0$-$1$ vectors in $\mathbb{R}^n$ with exactly $k$ ones
+  CITE{WikiHypersimplex}. The table stores its Ehrhart polynomial
+  $L_{\Delta(k,n)}(t)$ and its $h^*$-polynomial CITE{WikiEhrhart}.
+Keywords:
+  - hypersimplex
+  - Ehrhart polynomial
+  - Ehrhart h-star polynomial
+  - Ehrhart h* polynomial
+  - delta polynomial
+  - uniform matroid
+  - Veronese type
+  - Grassmannian
+  - dice sums
+Parameters:
+  n:
+    type: Z
+    title: ambient dimension
+    display: $n$
+    constraints: $n$ is an integer with $n\geq4$
+  k:
+    type: Z
+    title: coordinate sum
+    display: $k$
+    constraints: $k$ is an integer with $2\leq k\leq\lfloor n/2\rfloor$
+  form:
+    type: Symbolic
+    title: form of the polynomial
+    display: form
+    constraints: either `ehrhart` or `h-star`
+    values:
+      ehrhart: $L_{\Delta(k,n)}(t)$
+      h-star: $h^*_{\Delta(k,n)}(z)$
+Comments:
+  comment-lattice: >-
+    The lattice is the affine lattice cut out by $x_1+\cdots+x_n=k$ inside
+    $\mathbb{Z}^n$.
+  comment-symmetry: >-
+    The map $x\mapsto\mathbf{1}-x$ identifies $\Delta(k,n)$ with
+    $\Delta(n-k,n)$, so this table stores one representative of each pair.
+  comment-standard-simplex: >-
+    The omitted case $k=1$ is the standard simplex, with
+    $L(t)=\binom{t+n-1}{n-1}$ and $h^*(z)=1$.
+Formulas:
+  formula-coefficient: >-
+    $L_{\Delta(k,n)}(t)$ is the coefficient of $q^{kt}$ in
+    $(1+q+\cdots+q^t)^n$.
+  formula-inclusion-exclusion: >-
+    $L_{\Delta(k,n)}(t)=\sum_{i=0}^{k-1}(-1)^i\binom{n}{i}
+    \binom{(k-i)t-i+n-1}{n-1}$.
+  formula-series: >-
+    $\sum_{t\geq0}L_{\Delta(k,n)}(t)z^t=
+    h^*_{\Delta(k,n)}(z)/(1-z)^n$.
+  formula-volume: >-
+    $h^*_{\Delta(k,n)}(1)$ is the Eulerian number $A(n-1,k-1)$, the
+    normalized volume of $\Delta(k,n)$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from math import factorial
+
+      from sage.arith.misc import binomial
+      from sage.rings.rational_field import QQ
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+      T = PolynomialRing(QQ, "t")
+      t = T.gen()
+
+      def binomial_polynomial(f, r):
+          value = T.one()
+          for j in range(r):
+              value *= f - QQ(j)
+          return value / QQ(factorial(r))
+
+      def hypersimplex_ehrhart(k, n):
+          return sum((-1)**i * binomial(n, i) *
+                     binomial_polynomial((k - i) * t - i + n - 1, n - 1)
+                     for i in range(k))
+
+      hypersimplex_ehrhart(2, 6)
+Similar tables:
+  - table: HREF{T232}[Ehrhart and $h^*$-polynomials of the Birkhoff polytopes]
+    relation: the transportation-polytope analogue with all row and column sums fixed
+Links:
+  WikiHypersimplex:
+    title: 'Wikipedia: Hypersimplex'
+    url: https://en.wikipedia.org/wiki/Hypersimplex
+  WikiEhrhart:
+    title: 'Wikipedia: Ehrhart polynomial'
+    url: https://en.wikipedia.org/wiki/Ehrhart_polynomial
+  OEISHStar2:
+    title: 'OEIS A275514: $h^*$-vectors of the second hypersimplices'
+    url: https://oeis.org/A275514
+Tags:
+  - polynomial
+  - combinatorics
+  - discrete geometry
+Numbers: []
+Data properties:
+  type: Q[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds both forms for every pair with $4\leq n\leq20$ and
+    $2\leq k\leq\lfloor n/2\rfloor$
+  rigour details: >-
+    The Ehrhart polynomials are computed exactly from
+    CITE{formula-inclusion-exclusion}, an inclusion-exclusion count of bounded
+    integer compositions. The $h^*$-polynomials are obtained from the
+    generating-function relation CITE{formula-series}. Before the draft was
+    filled, the rows were checked by direct coefficient counts from
+    CITE{formula-coefficient}; their normalized volumes were checked against
+    Eulerian numbers; the symmetry $\Delta(k,n)\cong\Delta(n-k,n)$ was checked
+    on the computed polynomials; and the rows with $k=2$ were compared with
+    OEIS A275514 CITE{OEISHStar2}, whose title calls them Ehrhart coefficients
+    but whose rows are the $h^*$-vectors.
+Display properties:
+  number-header: polynomial
