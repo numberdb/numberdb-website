@@ -24,9 +24,19 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 RATES = os.path.join(HERE, 'model-rates.tsv')
 
+#: `campaign` and `batch` are last, and appended rather than inserted, so a
+#: ledger written before they existed still parses: a DictReader gives the old
+#: rows an empty value for a column they do not have, which is the truth about
+#: them.
+#:
+#: They are here because a fifth of what this project has spent produced no
+#: table -- failed builds, ideas runs, triage -- and a cost with nowhere to go
+#: was being dropped. A campaign and a batch are identities that already
+#: exist, so nothing new had to be invented to give that work a name.
 COLUMNS = ('started', 'stage', 'engine', 'turns', 'cost_usd', 'result', 'log',
            'model', 'prompt', 'session', 'resumed', 'tokens_in',
-           'tokens_cached', 'tokens_out', 'cost_by_model', 'table')
+           'tokens_cached', 'tokens_out', 'cost_by_model', 'table',
+           'campaign', 'batch')
 
 
 def load_rates(path=RATES):
@@ -224,6 +234,8 @@ def row(log, started, stage, engine, prompt, session, resumed, model,
 		session or found.get('thread', ''), resumed,
 		str(found['tokens_in']), str(found['tokens_cached']),
 		str(found['tokens_out']), breakdown, table,
+		os.environ.get('NUMBERDB_CAMPAIGN', '')[:64],
+		os.path.basename(os.environ.get('NUMBERDB_BATCH', ''))[:64],
 	])
 
 

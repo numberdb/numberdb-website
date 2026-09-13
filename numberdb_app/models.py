@@ -2069,11 +2069,36 @@ class TableCost(models.Model):
 	`manage.py import_agent_costs`; nothing writes it from the web.
 	"""
 
+	#: Null for work that produced no table.
+	#:
+	#: A fifth of everything spent here was work of that kind -- $359.36 of
+	#: $1,662.66 over 59 runs -- and it used to be counted by the importer and
+	#: then dropped on the floor, because a cost row needed a table and these
+	#: had none. Most of it is not proposals: 31 of those 59 are builds that
+	#: failed or found nothing, and a table that took three attempts cost what
+	#: all three attempts cost.
+	#:
+	#: Kept so the question "what has this cost" has an answer that is not
+	#: quietly 22% short.
 	table = models.ForeignKey(
 		Table,
 		on_delete = models.CASCADE,
 		related_name = 'costs',
+		null = True,
+		blank = True,
 	)
+
+	#: Which campaign spent it, when a campaign did: the value of
+	#: NUMBERDB_CAMPAIGN, or a run's own stamp. The grouping that makes
+	#: table-less work legible -- "this campaign cost $240 and produced two
+	#: tables" is a fact about a campaign, not about any table.
+	campaign = models.CharField(max_length = 64, blank = True, default = '')
+
+	#: The batch of proposals the work came from, when it came from one: the
+	#: file name, `BATCH-2026-09-12T2008.md`. An identity that already existed
+	#: and needed no inventing, which is why proposals do not get one of their
+	#: own.
+	batch = models.CharField(max_length = 64, blank = True, default = '')
 
 	#: The model that answered, as the run recorded it: `claude-fable-5-1`,
 	#: `gpt-5.5`, `claude-haiku-4-5-20251001`. Not the harness -- one run bills
