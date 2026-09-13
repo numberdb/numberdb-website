@@ -1,0 +1,172 @@
+# Draft document for proposal 3 of agents/table-ideas/BATCH-2026-09-13T2142.md.
+# It was created as draft T239 through the API with X-Draft: yes. Publishing is
+# a person's act.
+Title: Matching polynomials of connected graphs
+Definition: >-
+  For a connected simple graph $G$ with $n$ vertices, let $m_k(G)$ be the
+  number of matchings with $k$ edges and let $m_0(G)=1$. This table stores
+  the signed matching polynomial $\mu(G,x)=\sum_{k\geq0}(-1)^k m_k(G)x^{n-2k}$
+  and the matching-generating polynomial $M(G,x)=\sum_{k\geq0}m_k(G)x^k$
+  CITE{WikiMatching} CITE{MathWorldMatching}.
+Keywords:
+  - acyclic polynomial
+  - matching-generating polynomial
+  - reference polynomial
+  - monomer-dimer
+  - Hosoya index
+Parameters:
+  g:
+    type: Symbolic
+    title: graph
+    constraints: >-
+      a connected simple graph, named by its canonical graph6 string
+    display: $G$
+  form:
+    type: Symbolic
+    title: form
+    display: form
+    constraints: either `signed` or `generating`
+    values:
+      signed: $\mu(G,x)$
+      generating: $M(G,x)$
+Comments:
+  comment-graph6: >-
+    Graphs are named by their graph6 string CITE{Graph6}, McKay's compact
+    encoding, taken after a canonical relabelling so that the name depends on
+    the graph and not on how its vertices happen to be numbered. Recover the
+    graph in Sage with `Graph(name)`, and produce the name used here with
+    `g.canonical_label(algorithm='sage').graph6_string()`. The same names index
+    HREF{Chromatic_polynomials_of_connected_graphs}[the chromatic polynomials]
+    and HREF{Tutte_polynomials_of_connected_graphs}[the Tutte polynomials].
+  comment-forms: >-
+    The two forms are equivalent by formula CITE{formula-forms}, but they are
+    both standard one-variable conventions. The bivariate matching polynomial
+    carries the same coefficients with an extra homogenising variable and is
+    not stored separately.
+  comment-forest: >-
+    For forests, the signed matching polynomial is the adjacency
+    characteristic polynomial $\det(xI-A(G))$.
+  comment-shared-values: >-
+    The 996 graphs here have 434 distinct signed matching polynomials and 379
+    distinct matching-generating polynomials. For each form, the largest class
+    of connected graphs with the same polynomial has 13 graphs.
+  comment-roots: >-
+    Heilmann and Lieb proved that the zeros of the signed matching polynomial
+    are real CITE{HeilmannLieb}.
+Formulas:
+  formula-forms: >-
+    If $G$ has $n$ vertices, then $\mu(G,x)=x^nM(G,-x^{-2})$.
+  formula-complete: >-
+    $\mu(K_n,x)=He_n(x)$, where $He_n$ is the
+    HREF{Hermite_polynomials_He}[probabilists' Hermite polynomial].
+  formula-complete-bipartite: >-
+    $\mu(K_{n,n},x)=(-1)^n n! L_n(x^2)$, where $L_n$ is the
+    HREF{Laguerre_polynomials}[Laguerre polynomial] normalised by $L_n(0)=1$.
+  formula-paths-cycles: >-
+    $\mu(P_n,x)=U_n(x/2)$ and $\mu(C_n,x)=2T_n(x/2)$, where
+    $U_n$ and $T_n$ are HREF{Chebyshev_polynomials_of_the_second_kind}[the
+    Chebyshev polynomials of the second kind] and
+    HREF{Chebyshev_polynomials_of_the_first_kind}[the Chebyshev polynomials of
+    the first kind].
+  formula-line-graph: >-
+    $M(G,x)=I(L(G),x)$, where $I$ is the independence polynomial and $L(G)$ is
+    the line graph of $G$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from itertools import combinations
+      import numberdb.sage as numberdb
+      from sage.graphs.graph import Graph
+      from sage.rings.integer_ring import ZZ
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+      R = PolynomialRing(ZZ, "x")
+      x = R.gen()
+      G = Graph('EIe_')  # C_6, by its name here
+
+      edges = list(G.edges(labels=False))
+      counts = [0] * (G.num_verts() // 2 + 1)
+      counts[0] = 1
+      for k in range(1, len(counts)):
+          for chosen in combinations(edges, k):
+              used = [vertex for edge in chosen for vertex in edge]
+              if len(set(used)) == 2 * k:
+                  counts[k] += 1
+
+      signed = sum((-1)**k * counts[k] * x**(G.num_verts() - 2*k)
+                   for k in range(len(counts)))
+      generating = sum(counts[k] * x**k for k in range(len(counts)))
+Similar tables:
+  - table: HREF{Characteristic_polynomials_of_connected_graphs}[Characteristic polynomials of connected graphs]
+    relation: holds $\det(xI-A(G))$ for the same graphs under the same names, which equals $\mu(G,x)$ when $G$ is a forest
+  - table: HREF{Chromatic_polynomials_of_connected_graphs}[Chromatic polynomials of connected graphs]
+    relation: uses the same canonical graph6 index for connected graphs on at most seven vertices
+  - table: HREF{Tutte_polynomials_of_connected_graphs}[Tutte polynomials of connected graphs]
+    relation: uses the same canonical graph6 index for connected graphs on at most seven vertices, but the matching polynomial is not determined by the Tutte polynomial
+  - table: HREF{Entropy_constants_of_lattice_models}[Entropy constants of lattice models]
+    relation: contains dimer entropy constants for infinite lattices, the limiting analogue of matching counts in finite graph models
+  - table: HREF{Hermite_polynomials_He}[Hermite polynomials in probabilist's convention]
+    relation: gives the complete-graph cases in formula CITE{formula-complete}
+  - table: HREF{Laguerre_polynomials}[Laguerre polynomials]
+    relation: gives the complete-bipartite cases in formula CITE{formula-complete-bipartite}
+  - table: HREF{Chebyshev_polynomials_of_the_second_kind}[Chebyshev polynomials of the second kind]
+    relation: gives the path cases in formula CITE{formula-paths-cycles}
+  - table: HREF{Chebyshev_polynomials_of_the_first_kind}[Chebyshev polynomials of the first kind]
+    relation: gives the cycle cases in formula CITE{formula-paths-cycles}
+Links:
+  WikiMatching:
+    title: 'Wikipedia: Matching polynomial'
+    url: https://en.wikipedia.org/wiki/Matching_polynomial
+  MathWorldMatching:
+    title: 'MathWorld: Matching Polynomial'
+    url: https://mathworld.wolfram.com/MatchingPolynomial.html
+  Graph6:
+    title: 'Brendan McKay: graph6 and sparse6 formats'
+    url: https://users.cecs.anu.edu.au/~bdm/data/formats.html
+References:
+  HeilmannLieb:
+    bib: >-
+      Ole J. Heilmann and Elliott H. Lieb, Theory of monomer-dimer systems,
+      Communications in Mathematical Physics 25 (1972), no. 3, 190-232.
+    doi: 10.1007/BF01877590
+Tags:
+  - polynomial
+  - combinatorics
+  - statistical mechanics
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds the signed and generating forms for every connected graph on at
+    most seven vertices
+  Size exception: >-
+    The table stores both standard one-variable matching-polynomial
+    conventions for the same 996 graphs. The two forms are equivalent, but a
+    reader holding one form would not naturally search for the other through
+    the substitution in formula CITE{formula-forms}.
+  rigour details: >-
+    The generator enumerates connected simple graphs with $1\leq |V(G)|\leq7$
+    using Sage, takes each graph's `canonical_label(algorithm='sage')`, and
+    stores the canonical graph6 string. It counts matchings by exact
+    enumeration of edge subsets and forms both polynomials over
+    $\mathbb{Z}[x]$.
+
+    Before the draft was filled, the build checked that the 996 graph6 strings
+    were exactly the keys of HREF{Chromatic_polynomials_of_connected_graphs}[the
+    chromatic polynomial table] and HREF{Tutte_polynomials_of_connected_graphs}[the
+    Tutte polynomial table]. The exactness check found no inexact
+    coefficients, and Sage's `matching_polynomial()` agreed with the signed
+    form on every row. The counts of equal-polynomial classes in
+    comment CITE{comment-shared-values} were computed from the same exact
+    rows. Formula CITE{formula-forms} agreed on every row;
+    formula CITE{formula-complete} agreed for $K_1,\ldots,K_7$; formula
+    CITE{formula-complete-bipartite} agreed for $K_{1,1}$, $K_{2,2}$, and
+    $K_{3,3}$; formula CITE{formula-paths-cycles} agreed for every path and
+    cycle in range; formula CITE{formula-line-graph} agreed on the 109 graphs
+    whose line graph is connected and has at most seven vertices; and
+    $\mu(G,x)=\det(xI-A(G))$ agreed on every tree in range.
+Display properties:
+  number-header: polynomial
+  group parameters: [['g'], ['form']]
