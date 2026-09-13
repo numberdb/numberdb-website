@@ -54,12 +54,12 @@ DIAGRAMS = (
         "edges": ((0, 1, 3), (1, 2, 5), (2, 3, 3)),
     },
     {
-        "diagram": "[5,3^1,1]",
+        "diagram": "[5,3^{1,1}]",
         "witt": r"\overline{DH}_3",
         "edges": ((0, 1, 5), (1, 2, 3), (1, 3, 3)),
     },
     {
-        "diagram": "[(4,3,3,3)]",
+        "diagram": "[(3,3,3,4)]",
         "witt": r"\widehat{AB}_3",
         "edges": ((0, 1, 4), (1, 2, 3), (2, 3, 3), (3, 0, 3)),
     },
@@ -69,12 +69,12 @@ DIAGRAMS = (
         "edges": ((0, 1, 5), (1, 2, 3), (2, 3, 5)),
     },
     {
-        "diagram": "[(5,3,3,3)]",
+        "diagram": "[(3,3,3,5)]",
         "witt": r"\widehat{AH}_3",
         "edges": ((0, 1, 5), (1, 2, 3), (2, 3, 3), (3, 0, 3)),
     },
     {
-        "diagram": "[(4,3)^2]",
+        "diagram": "[(3,4,3,4)]",
         "witt": r"\widehat{BB}_3",
         "edges": ((0, 1, 4), (1, 2, 3), (2, 3, 4), (3, 0, 3)),
     },
@@ -84,7 +84,7 @@ DIAGRAMS = (
         "edges": ((0, 1, 3), (1, 2, 4), (2, 3, 3), (3, 0, 5)),
     },
     {
-        "diagram": "[(5,3)^2]",
+        "diagram": "[(3,5,3,5)]",
         "witt": r"\widehat{HH}_3",
         "edges": ((0, 1, 5), (1, 2, 3), (2, 3, 5), (3, 0, 3)),
     },
@@ -340,6 +340,11 @@ def entry_comment(diagram):
         r"$%s$, Witt symbol $%s$. The minimal polynomial of $\tau$ is $%s$."
         % (diagram, record["witt"], minimal_polynomial_latex(diagram))
     )
+    if diagram == "[3,5,3]":
+        sentence += (
+            r" This is the unique minimum among cocompact hyperbolic Coxeter "
+            r"groups in $\mathbb{H}^3$ CITE{Kellerhals}."
+        )
     return sentence
 
 
