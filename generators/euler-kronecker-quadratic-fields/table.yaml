@@ -1,0 +1,84 @@
+# Draft document for T230, Euler-Kronecker constants of quadratic fields.
+# It began as proposal 5 of agents/table-ideas/BATCH-2026-09-13T0847.md.
+# Created through the API with X-Draft: yes, then filled by generate.py beside
+# it. Publishing is a person's act.
+Title: Euler-Kronecker constants of quadratic fields
+Definition: >-
+  For a quadratic field $K=\mathbb{Q}(\sqrt{D})$ of fundamental discriminant
+  $D\ne1$, write the Laurent expansion of its Dedekind zeta function at
+  $s=1$ as $\zeta_K(s)=c_{-1}(s-1)^{-1}+c_0+O(s-1)$. Listed is Ihara's
+  Euler-Kronecker constant $\gamma_K=c_0/c_{-1}$ CITE{Ihara2006}.
+Keywords:
+  - Euler-Kronecker constant
+  - Ihara constant
+  - quadratic field
+  - Dedekind zeta logarithmic derivative
+Parameters:
+  D:
+    type: Z
+    title: fundamental discriminant
+    display: $D$
+    constraints: $D$ is a fundamental discriminant and $D\ne1$
+Comments:
+  comment-log-derivative: >-
+    Equivalently, $\gamma_K$ is the constant term in
+    $\zeta_K'(s)/\zeta_K(s)+1/(s-1)$ at $s=1$.
+  comment-quadratic-character: >-
+    For a quadratic field, the associated quadratic Dirichlet character is
+    $\chi_D(n)=\left(\frac{D}{n}\right)$, the Kronecker symbol.
+Formulas:
+  formula-quadratic-l: >-
+    $\zeta_{\mathbb{Q}(\sqrt{D})}(s)=\zeta(s)L(s,\chi_D)$, and therefore
+    $\gamma_{\mathbb{Q}(\sqrt{D})}=\gamma+
+    L'(1,\chi_D)/L(1,\chi_D)$.
+  formula-laurent: >-
+    $\zeta_K'(s)/\zeta_K(s)=-1/(s-1)+\gamma_K+O(s-1)$ at $s=1$.
+Programs:
+  program-pari:
+    language: PARI/GP
+    code: |-
+      \p 120
+      D = -4;
+      L = lfuncreate(D);
+      Euler + lfun(L, 1, 1) / lfun(L, 1)
+Similar tables:
+  - table: HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[Residues of Dedekind zeta functions of quadratic fields]
+    relation: lists the residue $c_{-1}$ for the same quadratic fields
+  - table: HREF{Values_of_Dirichlet_L-functions_at_positive_integers}[Values of Dirichlet L-functions at positive integers]
+    relation: stores $L(1,\chi)$ for many primitive characters
+  - table: HREF{Stieltjes_constants}[Stieltjes constants]
+    relation: its row HREF{Stieltjes_constants#0}[$\gamma_0$] is $\gamma_{\mathbb{Q}}$
+  - table: HREF{Laurent_coefficients_of_logarithmic_derivative_of_Riemann_zeta_function_at_1}[Laurent series coefficients of the logarithmic derivative of the Riemann zeta function at 1]
+    relation: stores the analogous logarithmic-derivative expansion for $\mathbb{Q}$
+  - table: HREF{Residues_of_Dedekind_zeta_functions_of_cubic_fields}[Residues of Dedekind zeta functions of cubic fields]
+    relation: is the residue table for cubic fields
+References:
+  Ihara2006:
+    bib: >-
+      Yasutaka Ihara, On the Euler-Kronecker constants of global fields and
+      primes with small norms, in Algebraic Geometry and Number Theory,
+      Progress in Mathematics 253, Birkhauser Boston, 2006, 407-451.
+    doi: 10.1007/978-0-8176-4532-8_5
+Tags:
+  - number theory
+  - L-function
+  - special values
+Data properties:
+  type: R
+  rigour: proven
+  rigour details: >-
+    Each value is computed in arb ball arithmetic from
+    $\gamma+L'(1,\chi_D)/L(1,\chi_D)$, using the exact Kronecker character
+    $\chi_D$ and the Hurwitz-zeta expansion of the associated Dirichlet
+    $L$-function at $s=1$. The computation is compared with PARI's
+    `lfuncreate(D)`, `lfun(L, 1, 1)` and `lfun(L, 1)` at selected
+    discriminants, with the closed form for $D=-4$, and with the relation to
+    the stored residues in
+    HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[the
+    quadratic Dedekind zeta residue table].
+  complete: 'no'
+  complete-note: >-
+    it holds every fundamental discriminant with $|D|\leq1000$, matching the
+    range of the quadratic Dedekind zeta residue table
+Display properties:
+  number-header: $\gamma_K$
