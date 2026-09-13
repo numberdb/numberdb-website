@@ -1,0 +1,11 @@
+1. done -- added `comment-connections` to support the `uniform matroid`, `Grassmannian`, `Veronese type`, `dice sums` and `delta polynomial` keywords; checked the live draft still lacked those connections, checked the matroid, Grassmannian and Veronese statements against sources, and checked the dice interpretation by recomputing all 162 rows with Sage for dilations $t=0,\dots,6$.
+2. done -- replaced `comment-lattice` with a sentence that counts lattice points in $\mathbb{Z}^n$ and scopes the normalized-volume lattice to $\{x\in\mathbb{Z}^n:x_1+\cdots+x_n=0\}$; checked the live sentence was still the affine $x_1+\cdots+x_n=k$ version and checked the volume formula against all stored $h^*$ rows.
+3. done -- defined $A(n-1,k-1)$ as the number of permutations of $n-1$ letters with $k-1$ descents; checked the Eulerian recurrence against every stored `h-star` row.
+4. done -- replaced the generator-shaped `Programs` block with a short Sage snippet that computes both $L_{\Delta(k,n)}(t)$ and $h^*_{\Delta(k,n)}(z)$; checked it against the stored $\Delta(2,6)$ and $\Delta(9,20)$ rows under Sage.
+5. declined -- left the T232 similar-table relation, T233 cross-link and draft publication-order note for a person, because they are review-order and table-set decisions rather than faults that require a T234 repair.
+6. done -- removed the draft-timeline wording from `rigour details`; checked the resulting paragraph still names the coefficient, volume, symmetry and OEIS checks.
+7. done -- added the $n\leq20$ range reason to `complete-note`; checked the live entries still have $L_{\Delta(9,20)}(t)$ as the longest stored polynomial, at 682 characters.
+8. left for a person -- did not add the palindromic $h^*$ explanation, because the row pattern is checked but the proposed De Negri-Hibi source was not checked for this repair.
+9. done -- rewrote `comment-symmetry` to tell a reader with $k>n/2$ to look up $\Delta(n-k,n)$; checked the live comment still said only that one representative of each pair is stored.
+10. declined -- did not add a notation-order comment, because the page consistently defines and labels $\Delta(k,n)$ and the extra convention note is not needed for correctness.
+11. declined -- did not change anything for the OEIS 403 note, because it is an environment observation and not a table fault.
