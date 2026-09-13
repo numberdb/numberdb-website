@@ -2943,3 +2943,38 @@ not run.
 
 Evidence: 2026-09-13, T226 build. The wrapper reported `env file
 /home/ubuntu/numberdb-website/.env not found`.
+
+## A `/preview` piece with no `Numbers` renders only an error
+
+What happened: the T226 critique rendered its private draft through
+`/preview?table=` in pieces, as the T221 and T225 notes describe. Five
+pieces carried only prose sections (Comments, Formulas, Programs, Similar
+tables, Data properties) and no `Numbers`. Each answered 200 and printed
+"Error while parsing numbers: cannot access local variable 'number_section'
+where it is not associated with a value", followed by the echoed JSON. None
+of the sections rendered. The same pieces rendered in full once
+`Parameters` and one entry were added. This is a bug in the preview view,
+not a fault in the table.
+
+What to do instead: give every preview piece `Parameters` and at least one
+entry of `Numbers`, even when the piece is meant to test prose. A 200 is not
+evidence that anything rendered: grep the piece for "Error while parsing".
+
+Evidence: 2026-09-13, `/tmp/crit226/p_[b-f].html` first run (error) and
+second run (rendered), made by `/tmp/crit226/pieces.py`.
+
+## The `env | grep` key leak happened again, with a different mask
+
+What happened: the note above on `env | grep -i numberdb` did not prevent
+a repeat. The T226 critique listed the environment to see whether
+`ALL_PROXY` was set, using `sed 's/=.*KEY.*/=<hidden>/'` as the mask. That
+pattern looks for `KEY` *after* the `=`, so the line `NUMBERDB_API_KEY=...`
+went through unmasked, and the zeta3 key is in that run's transcript.
+
+What to do instead: never print the environment. To check a variable, test
+it by name without printing its value: `[ -n "$ALL_PROXY" ] && echo set`,
+or `printenv ALL_PROXY`. The key should be rotated after a run that printed
+it.
+
+Evidence: 2026-09-13, T226 critique, the first environment listing in the
+run's tool output.
