@@ -31,18 +31,25 @@ EXPECTED_COUNT = 301
 
 
 SPECIAL_COMMENTS = {
-    "m003": "This manifold has the same volume as $m004$.",
-    "m004": (
-        "This is the figure-eight knot complement, the row $4_1$ in "
-        "HREF{Hyperbolic_volumes_of_the_prime_knots_with_at_most_ten_crossings}"
-        "[the table of prime-knot complement volumes]."
+    "m003": (
+        "Its volume is $2\\,\\mathrm{Cl}_2(\\pi/3)$, twice "
+        "HREF{Values_of_the_Clausen_functions_at_rational_multiples_of#2,1/3}"
+        "[Gieseking's constant]."
     ),
-    "m009": "This manifold has the same volume as $m010$.",
-    "m010": "This manifold has the same volume as $m009$.",
+    "m004": (
+        "This is the figure-eight knot complement, "
+        "HREF{Hyperbolic_volumes_of_the_prime_knots_with_at_most_ten_crossings#4,1}"
+        "[the $4_1$ row in the table of prime-knot complement volumes]. "
+        "Its volume is $2\\,\\mathrm{Cl}_2(\\pi/3)$, twice "
+        "HREF{Values_of_the_Clausen_functions_at_rational_multiples_of#2,1/3}"
+        "[Gieseking's constant]."
+    ),
     "m129": (
-        "This is the Whitehead link complement, also named $5^2_1$ in "
-        "HREF{Hyperbolic_volumes_of_the_prime_knots_with_at_most_ten_crossings}"
-        "[the table of prime-knot complement volumes]."
+        "This is the Whitehead link complement, the link $5^2_1$ of "
+        "Rolfsen's table. Its volume is $4G=4\\,\\mathrm{Cl}_2(\\pi/2)$, "
+        "where $G$ is "
+        "HREF{Values_of_the_Clausen_functions_at_rational_multiples_of#2,1/2}"
+        "[Catalan's constant]."
     ),
 }
 
@@ -76,6 +83,7 @@ def census_names():
 def homology_tex(manifold):
     text = str(manifold.homology())
     text = text.replace("Z", "\\mathbb{Z}")
+    text = text.replace(" + ", "\\oplus")
     return text
 
 
@@ -83,15 +91,21 @@ def comment(name):
     manifold = Manifold(name)
     cusp_word = "cusp" if manifold.num_cusps() == 1 else "cusps"
     tetra_word = "tetrahedron" if manifold.num_tetrahedra() == 1 else "tetrahedra"
-    pieces = [
-        "%d %s" % (manifold.num_cusps(), cusp_word),
-        "%d ideal %s" % (manifold.num_tetrahedra(), tetra_word),
-        "first homology $%s$" % homology_tex(manifold),
-    ]
+    base = (
+        "It has %d %s, an ideal triangulation with %d %s, and first "
+        "homology $%s$."
+        % (
+            manifold.num_cusps(),
+            cusp_word,
+            manifold.num_tetrahedra(),
+            tetra_word,
+            homology_tex(manifold),
+        )
+    )
     special = SPECIAL_COMMENTS.get(name)
     if special:
-        pieces.append(special)
-    return "; ".join(pieces) + "."
+        return "%s %s" % (base, special)
+    return base
 
 
 def verified_volume(name, digits):
