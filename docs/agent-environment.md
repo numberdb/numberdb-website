@@ -3068,3 +3068,22 @@ unread.
 Evidence: 2026-09-13, `/tmp/ideas2142/o.txt` (403) and `tags2.html` and
 `tags3.html` (identical tag lists); the web-fetch agent's report of 403 on six
 OEIS URLs.
+
+## `Size exception` renders as "(Unknown key)"
+
+What happened: T239 has 1992 entries and says why in a `Size exception`
+line under `Data properties`. The help page ("How much to record") and
+`numberdb_app/limits.py` (`EXCEPTION_KEY`) both ask for that line. `/preview`
+printed it as "Size exception: The table stores both ... (Unknown key)".
+`table_context` in `numberdb_app/views.py` only gives a label to the keys in
+`property_names`. `Size exception` is not one of them, so the line falls
+through to the unknown-key branch. The table page uses the same function,
+so a published table that follows the help looks as if it misspelt a field.
+
+What to do instead: add `'Size exception': 'Size exception'` to
+`property_names`. Until then, a critique should not tell an author to
+rename the key. The table is right and the page is wrong.
+
+Evidence: 2026-09-13, T239 critique. `/preview?table=` with T239's `Data
+properties` (`/tmp/c239/dataprops_a.html`) returned 200 and contained
+"(Unknown key)" immediately after the size exception text.
