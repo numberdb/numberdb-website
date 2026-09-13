@@ -1,6 +1,6 @@
 # Draft document for proposal 2 of agents/table-ideas/BATCH-2026-09-13T2142.md.
-# It was created as draft T238 through the API with X-Draft: yes. Publishing is
-# a person's act.
+# It was created as draft T238 through the API with X-Draft: yes, filled, and
+# offered for review. Publishing is a person's act.
 Title: Laplacian polynomials of connected graphs
 Definition: >-
   The Laplacian polynomial $\lambda(G,x)$ of a connected simple graph $G$ is
