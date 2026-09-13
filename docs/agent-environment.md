@@ -258,6 +258,30 @@ covers exactly the prompt's needs and no more --
                    "WebFetch(domain:mathworld.wolfram.com)" \
                    "WebFetch(domain:github.com)" "WebFetch(domain:api.github.com)"
 
+## The Sage helper image may not contain the Django app
+
+What happened: after filling draft T221, the required
+`manage.py audit_table T221` check could not be run from the local checkout,
+because the host Python had no Django installed. The usual fallback was a
+temporary wrapper through `agents/sage.sh`, but the container used for this
+run did not have `/app` at all. Its root contained `/work` and
+`/opt/numberdb-client`, so a wrapper changing into `/app` failed before it
+could import Django. A filesystem probe inside the same helper image confirmed
+that only the client package was present, not the website checkout.
+
+What to do instead: do not assume `agents/sage.sh` can run Django management
+commands. If `/app` is absent, use a runner image or sanctioned helper that
+contains the site code and database configuration, or record that the audit
+could not be run from this environment. The table build can still use the
+client-side dry run, `verify()`, and API read-back checks, but that is not the
+same as `audit_table`.
+
+Evidence: T221 build, 2026-09-13. `python3 manage.py audit_table T221` failed
+with `ModuleNotFoundError: No module named 'django'`; `/tmp/run_audit_t221.py`
+through `agents/sage.sh` failed with `FileNotFoundError: /app`; a probe of
+`/`, `/app`, `/work`, and `/opt` inside the helper image showed
+`/opt/numberdb-client` and no Django app checkout.
+
 -- and, before spending a turn, a preflight that runs `gh issue list
 --limit 1` and `agents/sage.sh` on a two-line script from *inside* the
 session, so that a run which cannot do the work stops in its first minute
