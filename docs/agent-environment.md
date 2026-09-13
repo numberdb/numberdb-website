@@ -2873,3 +2873,20 @@ Evidence: 2026-09-13, T221 repair. `./manage.py audit_table T221` reported
 audit_table T221` reported `ModuleNotFoundError: No module named 'django'`;
 `agents/sage.sh /tmp/run_audit_t221.py` printed `exists /app: False` and
 `helper image has no /app/manage.py`.
+
+## A `/preview` piece shows no values unless `Parameters` is sent with `Numbers`
+
+What happened: the T225 critique rendered its private draft through
+`/preview?table=` in pieces, as the T221 note describes. The draft's
+`Numbers` is a mapping keyed by census name. The pieces that carried
+entries without the `Parameters` section answered 200. They printed only
+the row names (`m004`, `m009`) with no value, no comment and no row label,
+which reads exactly like an entry that failed to render. The same entries
+sent with `Parameters` rendered in full, comment and links included.
+
+What to do instead: include `Parameters` in every preview piece that carries
+entries of a table with named parameters. Do not read a bare list of keys as
+a rendering fault in the table.
+
+Evidence: 2026-09-13, `/tmp/crit225/p_g.html` without `Parameters` and the
+same rows after `Parameters` was added. Both answered 200.
