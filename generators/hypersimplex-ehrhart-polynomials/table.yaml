@@ -64,6 +64,8 @@ Programs:
   program-sage:
     language: Sage
     code: |-
+      import numberdb.sage as numberdb
+
       from math import factorial
 
       from sage.arith.misc import binomial
