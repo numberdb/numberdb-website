@@ -242,6 +242,11 @@ class Command(BaseCommand):
 		for complaint in self._indexed_as_many_as_written(table, tree):
 			yield complaint
 
+		#The same numbers under another title. Prose cannot catch this and
+		#digits can, which is a thing only a database of numbers can do.
+		for complaint in self._values_also_in_another_table(table, prose):
+			yield complaint
+
 		#Prose faults, each one found by a person reading a rendered page and
 		#none of them by any check. They are mechanical; they were simply not
 		#looked for.
@@ -453,6 +458,122 @@ class Command(BaseCommand):
 				status = self._fetch(url)
 				if status != 200:
 					yield 'Links[%s] answered %s: %s' % (name, status, url)
+
+	#: How many of a table's values to look up elsewhere. Each is one indexed
+	#: query, and a table that shares its subject with another shares far more
+	#: than eight values with it.
+	SAMPLE = 8
+
+	#: How many of the sample must land in the same other table before this is
+	#: worth a reader's time. Half, and at least three: two tables genuinely
+	#: about different things share a value here and there -- zero, one, pi --
+	#: and a check that reported those would be ignored within a week.
+	ENOUGH = 3
+
+	#: An integer or a rational smaller than this is not evidence of anything
+	#: either, however few tables happen to hold it. The highest known ranks of
+	#: elliptic curves are 28, 20, 15, 13, 9; the Dedekind zeta values at
+	#: negative odd integers include those too, and the check announced that
+	#: one of the two tables should not exist. Small numbers collide because
+	#: there are not many of them, not because two tables are the same table.
+	SMALL = 1000
+
+	#: A value in more tables than this identifies nothing, so it is not
+	#: evidence of anything and is dropped before the counting. Without this
+	#: the check reported that the diagonal Ramsey numbers are the values of
+	#: the Gamma function, because both contain 6 and 18: the first version
+	#: made 51 findings on this corpus and perhaps three of them meant
+	#: something. What makes two tables the same table is sharing the values
+	#: that are *hard to share*.
+	COMMON = 4
+
+	def _distinctive_value(self, value):
+		"""Is hitting this number by accident unlikely?
+
+		Only exact small numbers are excluded. A real number written to
+		fifteen digits is shared because it is the same number -- which is the
+		question this check asks -- and how common *that* is, is what COMMON
+		is for.
+		"""
+		try:
+			from sage.rings.all import QQ, ZZ
+			if value in ZZ:
+				return abs(ZZ(value)) >= self.SMALL
+			if value in QQ:
+				exact = QQ(value)
+				return max(abs(exact.numerator()),
+				           exact.denominator()) >= self.SMALL
+		except Exception:                                    # noqa: BLE001
+			return True
+		return True
+
+	def _values_also_in_another_table(self, table, prose):
+		"""Another table holding the same numbers, under another name.
+
+		T219 and T225 were nearly the same table and a reader noticed, not a
+		check: the titles shared no distinctive word -- the Hodgson-Weeks
+		census and the Callahan-Hildebrand-Weeks census -- while the numbers
+		were volumes of hyperbolic 3-manifolds either way. Every check we had
+		read prose, and prose is exactly what two independent agents proposing
+		the same family will write differently.
+
+		A finding here is not a verdict. Two tables may legitimately share a
+		subfamily -- the Bianchi covolumes are multiples of Dedekind zeta
+		values that this corpus also holds -- and the answer then is a line in
+		Similar tables saying so, which is why a table that already names the
+		other is not reported.
+		"""
+		from numberdb_app.models import Number
+
+		#Only what the index can answer, and only from this table's own rows:
+		#the document may be huge and the index is what a reader searching by
+		#digits would hit anyway.
+		rows = list(Number.objects.filter(table=table).order_by('pk')
+		            [:self.SAMPLE * 40])
+		if len(rows) < self.ENOUGH:
+			return
+		#Spread through the table rather than the first eight: the first rows
+		#of a family are its small cases, which are the ones most likely to be
+		#shared with everything (the first Bessel zero, the first prime).
+		step = max(1, len(rows) // self.SAMPLE)
+		sample = rows[::step][:self.SAMPLE]
+
+		from ...search import search_number
+		elsewhere = {}
+		distinctive = 0
+		for row in sample:
+			try:
+				value = row.to_sage()
+				found = search_number(value, per_table=True)
+			except Exception:                                # noqa: BLE001
+				#A type the search cannot hold, or a value it cannot parse.
+				#Not this check's complaint, and not worth failing an audit.
+				continue
+			if not self._distinctive_value(value):
+				continue
+			holders = {}
+			for other in found:
+				if other.table_id != table.pk:
+					holders[other.table_id] = other.table
+			if len(holders) > self.COMMON:
+				continue                    #a number everybody has says nothing
+			distinctive += 1
+			for table_id, other in holders.items():
+				elsewhere.setdefault(table_id, [other, 0])
+				elsewhere[table_id][1] += 1
+		if distinctive < self.ENOUGH:
+			return
+
+		for other, count in sorted(elsewhere.values(), key=lambda p: -p[1]):
+			if count < self.ENOUGH or count * 2 < distinctive:
+				continue
+			if other.tid in prose or other.url in prose:
+				continue                                     #already says so
+			yield ('%d of the %d distinctive values sampled here are also in '
+			       '%s (%s); if these are the same numbers, one of the two '
+			       'tables should not exist, and if they are not, say how they '
+			       'differ in Similar tables'
+			       % (count, distinctive, other.tid, other.title))
 
 	def _indexed_as_many_as_written(self, table, tree):
 		"""Distinct values in the document, against rows in the index.
