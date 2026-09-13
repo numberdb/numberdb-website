@@ -38,7 +38,8 @@ Comments:
     The same constants occur as the normalising constants in the asymptotic
     expansion of $\prod_{m=1}^n m^{m^k}$. With the Bernoulli convention
     $B_1=0$ in that normalising polynomial, the limit definition gives the
-    same values as the zeta-derivative formula in the definition.
+    same values as the zeta-derivative formula in the definition. They are
+    also called Glaisher-Kinkelin-Bendersky constants CITE{Dowker}.
 Formulas:
   formula-log: >-
     $\log A_k=\frac{B_{k+1}}{k+1}H_k-\zeta'(-k)$.
