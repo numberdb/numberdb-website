@@ -3002,3 +3002,21 @@ Evidence: T227 build, 2026-09-13. `/tmp/probe_audit_environment.py` under
 `agents/sage.sh` reported no `/app/manage.py`, no Django and no
 `numberdb_app`; direct `python3 manage.py audit_table T227` failed before
 Django import.
+
+## Unescaping preview HTML before stripping tags invents a swallowed section
+
+What happened: the T231 critique pulled the text out of a `/preview` piece to
+see the order of its sections. The script ran `html.unescape` first and then
+removed tags with `<[^>]+>`. The page's `$0\leq a&lt;q$` became `a<q$)`, and
+the tag stripper deleted everything from that `<` to the next `>`. The
+result read "residue class ($0\leq a Formulas (1) ...", which is exactly the
+"a `<` in mathematics ate the rest of a section" fault critiques look for.
+The raw HTML had the `&lt;` escaped correctly, and the page was fine.
+
+What to do instead: strip tags first and unescape afterwards. Before
+reporting a swallowed section, grep the raw HTML for `&lt;` against a bare
+`<` inside the mathematics.
+
+Evidence: 2026-09-13, `/tmp/crit231/p_g.html`. `grep -o 'a&lt;q'` finds
+the escaped form, and the tags-first extraction of `p_a.html` shows the
+whole parameter list.
