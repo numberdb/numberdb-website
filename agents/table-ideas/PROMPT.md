@@ -243,6 +243,25 @@ against is more useful than one you pad the list with.
 target. A batch of two, argued well, is a good result; a batch padded to eight
 costs the next person the time to reject five of them.
 
+## What becomes of what you write
+
+The file you write is not the record. After the run, the job archives it to
+`numberdb-runs/ideas/` and opens one issue in numberdb-data, labelled
+`proposal`: the family, with your ranking as a checklist of its tables and the
+conventions section copied in. Builds work from that issue, and a table is
+ticked off it when it exists.
+
+Two things follow for you. **Your ranking is the build order**, so rank
+deliberately -- a proposal you would do last should be last, and saying why is
+what stops it being built first. And **the conventions section is what the
+builds share**: whatever the tables of this family must agree about -- the
+grid, the normalisation, the parameter order, the tag -- belongs under
+`## Conventions shared by the tables`, because that heading is the part copied
+into the issue.
+
+Do not open the issue yourself. The job does it, so that the issue and the
+archived report always say the same thing.
+
 ## What you must not do
 
 Do not create tables, do not write generators, do not publish anything. Do not

@@ -10,6 +10,9 @@ propose what it already knows how to build.
 Neither publishes. A table becomes public when a person reviews it, for the
 reasons in `guarding-generated-tables.md`.
 
+They are also two jobs rather than one loop, and what passes between them
+is a queue of `proposal` issues rather than a file: `where-ideas-live.md`.
+
 ## What each stage is
 
 **Stage one** reads the corpus and the open issues, and writes a batch of

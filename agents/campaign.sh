@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Work through a batch of proposals, one table at a time, and propose a new
-# batch when it runs out.
+# Work through the queue of screened proposals, one table at a time, and pay
+# for a new screening when it runs low.
 #
 #     agents/campaign.sh                  # until the draft ceiling stops it
 #     agents/campaign.sh 3                # at most three builds
@@ -53,33 +53,82 @@ attempted=0
 
 # Which proposals this campaign works from.
 #
-# Pinned per campaign when several run at once, because the only thing
-# stopping two campaigns building the same table is that a build is told to
-# skip proposals `generators/` already answers -- and two campaigns in two
-# worktrees cannot see each other's generators. Different batches, no overlap.
+# The queue is the `proposal` issues in numberdb-data: one per family, each
+# with a checklist of the tables in it. `agents/queue.py` speaks it, and
+# `docs/design/where-ideas-live.md` says why it is there rather than in the
+# file the ideation stage writes. The short version is that the file was
+# excluded by `.gitignore`, lived on one disk, and only the newest of its kind
+# was ever read -- which stranded about 39 screened proposals, at $1.50 each.
 #
-#     NUMBERDB_BATCH=agents/table-ideas/BATCH-2026-09-11T1148.md
+# Pin a family when several campaigns run at once, so that two of them do not
+# walk the same list:
 #
-# Unset, it takes the newest, which is right when only one campaign is running.
-batch_file() {
-	if [ -n "${NUMBERDB_BATCH:-}" ]; then
-		[ -f "$NUMBERDB_BATCH" ] || { echo "no such batch: $NUMBERDB_BATCH" >&2; exit 2; }
-		echo "$NUMBERDB_BATCH"
-		return
-	fi
-	#`|| true`, and it is not decoration. Under `set -euo pipefail` a glob
-	#that matches nothing makes `ls` fail, `pipefail` carries that through
-	#`head`, and `set -e` kills the campaign inside the command substitution
-	#that called this -- with no message, because nothing was written. A fresh
-	#clone has no batch file, since batches are data and are excluded, so the
-	#first campaign on the AWS builder printed its header and vanished. On a
-	#machine that has been building for a week there is always a batch, which
-	#is why this survived that long.
-	ls -t agents/table-ideas/BATCH-*.md 2>/dev/null | head -1 || true
+#     NUMBERDB_FAMILY=141 agents/campaign.sh
+#
+# Unpinned, a campaign finishes the family it is in before taking the newest
+# one with work left, because the tables of a family share machinery and
+# cross-reference each other. Two campaigns that do collide lose a minute and
+# nothing else: the claim is the draft, so the second build is refused the
+# title and moves to the next proposal.
+family="${NUMBERDB_FAMILY:-}"
+
+# How many tables are waiting, or empty if the queue could not be read. The
+# difference matters: zero means pay for a screening, and unreadable means
+# stop, because a campaign that reads "zero" from a broken `gh` would pay for
+# a screening every time round the loop.
+queue_waiting() {
+	python3 agents/queue.py open 2>/dev/null | awk '/ waiting$/ {print $1}' | tail -1
 }
 
+# The next table, as JSON: family, title, batch, screened, waiting.
+queue_next() {
+	if [ -n "$family" ]; then
+		python3 agents/queue.py next --family "$family" 2>/dev/null || true
+	else
+		python3 agents/queue.py next 2>/dev/null || true
+	fi
+}
+
+# One field out of that JSON, without a jq that may not be installed.
+field() {
+	python3 -c 'import json,sys
+try:
+	print(json.loads(sys.argv[1])[sys.argv[2]])
+except Exception:
+	pass' "$1" "$2"
+}
+
+# Pay for a screening. The job that does it is `agents/propose-batch.sh`, so
+# that a machine which only screens can run it alone -- and so that the
+# archiving and the issue are done by a script rather than asked of the run.
+# A run asked to file its own result sometimes argues with the instruction
+# instead: one wrote a 580-line batch, said it would not force-add a gitignored
+# file, and was right.
 propose_a_batch() {
-	NUMBERDB_AGENT="$miner" agents/run.sh ideas "Propose a batch from the open 'table wanted' issues, screening every candidate, in an area the corpus does not already cover. Write it to agents/table-ideas/BATCH-$(date -u +%Y-%m-%dT%H%M).md. Do not commit it: batches are data and .gitignore excludes them."
+	NUMBERDB_MINER="$miner" agents/propose-batch.sh
+}
+
+# Keep the queue shallow but never empty. Shallow because a proposal is a
+# claim about the corpus on the day it was screened and this corpus moves: of
+# 89 proposals screened here in a fortnight, about 19 still had no table like
+# them by the end of it. Never empty because a build machine waiting for a
+# screening is a build machine doing nothing.
+#
+# Only screening that will be used is paid for: with two builds left to do and
+# five tables waiting, another batch is five days of nobody's time.
+top_up_if_low() {
+	local waiting remaining low="${NUMBERDB_QUEUE_LOW:-8}"
+	waiting=$(queue_waiting)
+	if [ -z "$waiting" ]; then
+		say "stopping: the queue could not be read (is gh logged in?)"
+		exit 8
+	fi
+	remaining=$((builds - made))
+	if [ "$waiting" -eq 0 ] \
+	   || { [ "$waiting" -lt "$low" ] && [ "$remaining" -gt "$waiting" ]; }; then
+		say "$waiting proposals waiting; screening another family"
+		propose_a_batch || exit $?
+	fi
 }
 
 say() { printf '\n=== %s\n' "$*"; }
@@ -167,34 +216,44 @@ while [ "$made" -lt "$builds" ]; do
 		exit 3
 	fi
 
-	batch=$(batch_file)
 	#So each run's ledger line says which campaign and which batch it belonged
 	#to. Work that produces no table -- a failed build, a triage, the ideas
 	#run itself -- has no other name, and without one its cost had nowhere to
 	#go and was dropped.
 	export NUMBERDB_CAMPAIGN="$NAME"
-	#Not NUMBERDB_BATCH. That one *pins* the batch -- `batch_file` returns it
-	#when it is set -- and exporting it here pinned the campaign to its first
-	#batch for ever: a stage-one run wrote six good proposals to a new file,
-	#`batch_file` kept answering with the old one, and the campaign said "the
-	#stage-one run proposed no new batch" and stopped, having just paid for
-	#it. Telling the ledger which batch a run belonged to and telling the
-	#campaign which batch to work from are two different sentences.
-	export NUMBERDB_BATCH_NAME="$batch"
-	if [ -z "$batch" ]; then
-		say "no batch yet; proposing one"
-		propose_a_batch || exit $?
-		continue
-	fi
 
-	say "next table from $(basename "$batch") (built $made so far)"
+	top_up_if_low
+	next=$(queue_next)
+	if [ -z "$next" ]; then
+		say "nothing waiting in the queue and no screening to be had; stopping"
+		exit 6
+	fi
+	in_family=$(field "$next" family)
+	proposal=$(field "$next" title)
+	#Which batch this work came from, for the ledger. Not NUMBERDB_BATCH:
+	#that one used to *pin* the batch, and exporting it here pinned a campaign
+	#to its first batch for ever -- 21 tables of a campaign became 4, because
+	#a stage-one run wrote six good proposals and the campaign kept reading
+	#the old file. Telling the ledger where a run came from and telling the
+	#campaign what to work on are two different sentences.
+	export NUMBERDB_BATCH_NAME="$(field "$next" batch)"
+	if [ -z "$in_family" ] || [ -z "$proposal" ]; then
+		say "the queue answered something this cannot read: $next"
+		exit 8
+	fi
+	#Finish the family you are in. Set after the first build of a family, so
+	#that a campaign started with no preference still picks up where the last
+	#one stopped rather than opening a new family beside a half-built one.
+	family="$in_family"
+
+	say "next: $proposal (family #$in_family, built $made so far)"
 	before=$(git rev-parse HEAD)
 	#`$?` inside `if ! cmd` is the status of the negation, not of the command,
 	#so this used to report "the build run exited 0" and then exit 0 -- a
 	#failed campaign that looked like a finished one. It said exactly that
 	#when an expired OAuth token stopped a build on 2026-09-03.
 	status=0
-	NUMBERDB_AGENT="$writer" agents/run.sh build "Build the highest-ranked proposal in $batch that the database does not already answer. Claim it first by creating its draft, as the prompt says: if the title is refused because it exists, that proposal is taken -- move to the next one. Do not use the presence of a directory in generators/ to decide what is already built; another campaign may be building it in a tree you cannot see. Say at the start which one you chose and why it is the next one. Follow the order of work in the prompt. Do not publish. If every proposal in that batch is already built, run 'touch agents/runs/batch-exhausted' and stop without building anything, and do not commit. Create that file only when you have checked every proposal in the batch and each one already has a table: it is what tells the campaign to spend money on a new batch, and a build that could not proceed for any other reason must not create it -- say what stopped you instead." || status=$?
+	NUMBERDB_AGENT="$writer" agents/run.sh build "Build this table: $proposal. It is one of the family in numberdb-data issue #$in_family; read the family first with 'python3 agents/queue.py show $in_family', because the conventions its tables share are in it and the tables are meant to agree with each other. The screening is a claim about the corpus on the day it was made, so re-check the cheap half before you spend anything: already_here and already_asked from agents/table-ideas/screen.py, api/lookup on a few of the values you expect, and whether the tag it wants exists. If the corpus already holds this table, do not build it again: run 'python3 agents/queue.py built $in_family \"$proposal\" T<number>' with the number of the table that holds it, say so, and stop. Otherwise claim it by creating its draft, as the prompt says: if the title is refused because it exists, that proposal is taken -- say so and stop, and the campaign will move on. Do not use the presence of a directory in generators/ to decide what is already built; another campaign may be building it in a tree you cannot see. Follow the order of work in the prompt. Do not publish." || status=$?
 	if [ "$status" -ne 0 ] && { [ "$status" -eq 5 ] || ! site_is_up; }; then
 		#Not a judgement at all: the site went away under the run. Asking
 		#triage would spend a second run to be told the same thing, and
@@ -290,64 +349,29 @@ while [ "$made" -lt "$builds" ]; do
 	generator=$(git diff --name-only "$before"..HEAD -- generators/ \
 	            | grep -E 'generate\.py$' | head -1 || true)
 	if [ -z "$tid_from_run" ] && [ -z "$generator" ]; then
-		#A build that made nothing is not the same as a batch that is
-		#finished, and paying for a new batch is the expensive way to confuse
-		#them. On 2026-09-12 the first campaign on the build machine spent
-		#$24.56 doing exactly that: three stage-one runs at about $7.50 each,
-		#alternating with builds that looked at the batch, judged every
-		#proposal already built, and correctly stopped for under a dollar. No
-		#table was made and nothing said anything was wrong.
+		#The build made nothing, and with a queue that no longer means the
+		#proposals have run out: the campaign knew how many were waiting
+		#before it spent anything. It means this proposal was declined -- the
+		#corpus already holds it, or another campaign claimed the title first
+		#-- and the build was asked to tick the box or say so.
 		#
-		#So: two in a row and the campaign stops. One is ordinary -- a batch
-		#really can run out, and proposing the next one is the whole point of
-		#that path. Two means the batches are not the problem, and the third
-		#would cost another $7.50 to learn the same thing.
-		#Which of the two happened? The build is asked to say. A batch that
-		#really is used up prints BATCH-EXHAUSTED; a build that stopped for
-		#any other reason prints nothing, and proposing a new batch would be
-		#answering the wrong question at $7.50 a time.
-		#A file, not a word in the transcript.
-		#
-		#This first looked for BATCH-EXHAUSTED anywhere in the transcript, and
-		#the first run that used it wrote "This is not BATCH-EXHAUSTED: I did
-		#not get far enough to check the proposals" -- a correct and careful
-		#sentence that the grep read as the marker. A word a run may also
-		#discuss cannot be the signal; a file it either created or did not is
-		#unambiguous.
-		exhausted=no
-		if [ -f agents/runs/batch-exhausted ]; then
-			exhausted=yes
-			rm -f agents/runs/batch-exhausted
-		fi
-		if [ "$exhausted" = no ]; then
-			say "the build produced no table and did not say the batch was used up"
-			say "not proposing another batch; read $transcript"
-			exit 6
-		fi
-
+		#So the question is whether the queue moved. If it did, the decline
+		#was orderly and the next table is a different one. If it did not,
+		#the same proposal is about to be handed out again, and a loop that
+		#pays $5.69 a time to be told the same thing is the expensive way to
+		#learn it.
 		empty=$((empty + 1))
-		if [ "$empty" -ge 2 ]; then
-			say "stopping: $empty batches in a row produced no table"
-			say "the builds are refusing the proposals rather than running out of them; read $transcript"
+		still=$(queue_next)
+		if [ "$(field "$still" title)" = "$proposal" ] && [ "$empty" -ge 2 ]; then
+			say "stopping: the build declined $proposal twice and the queue still offers it"
+			say "read $transcript, and either build it by hand or close it in #$in_family"
 			exit 6
 		fi
-		say "$(basename "$batch") is finished; proposing the next batch"
-		#Whether a *new batch file exists*, not whether HEAD moved. Batches
-		#are data and `.gitignore` has excluded them since the code and the
-		#data were separated, so a stage-one run cannot commit one however
-		#well it goes. On 2026-09-06 a run wrote a 580-line batch of five
-		#proposals, said out loud that it would not force-add against that
-		#decision, and was called a failure by this line: the campaign
-		#stopped with a good batch sitting in the working tree.
-		propose_a_batch || exit $?
-		if [ "$(batch_file)" = "$batch" ] || [ -z "$(batch_file)" ]; then
-			say "stopping: the stage-one run proposed no new batch"
-			exit 4
-		fi
+		say "no table from that one; moving on"
 		continue
 	fi
 	made=$((made + 1))
-	#A table was built, so whatever the last empty batch meant, it is over.
+	#A table was built, so whatever the last decline meant, it is over.
 	empty=0
 
 	#Read the table as a reader would, in a session that did not build it.
@@ -381,6 +405,15 @@ while [ "$made" -lt "$builds" ]; do
 	fi
 	if [ -z "$tid" ]; then
 		say "no table number in the transcript or the generator; skipping the critique and the repair"
+	fi
+
+	#Tick the box while the number is in hand. Not at the end of the campaign
+	#and not by the agent: the campaign is the only party that knows both the
+	#proposal it handed out and the table that came back, and a family whose
+	#boxes are never ticked stays open for ever and is handed out again.
+	if [ -n "$tid" ]; then
+		python3 agents/queue.py built "$in_family" "$proposal" "$tid" \
+			|| say "could not tick $proposal in #$in_family; do it by hand"
 	fi
 	if [ -n "$tid" ]; then
 		say "reading $tid as a reader would"
