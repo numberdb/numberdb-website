@@ -67,7 +67,9 @@ The proxy is needed; the key is in the environment for a draft. Read the
 rendered HTML, and read the document too -- `numberdb.table('T1xx')` -- but
 when they disagree the rendering is what a reader gets.
 
-Run `manage.py audit_table T1xx` and say whether you agree with what it says.
+Run the audit on T1xx -- `manage.py audit_table T1xx`, or `GET
+/api/table/T1xx/audit` with your key where there is no database -- and say
+whether you agree with what it says.
 It is a set of rules and you are not: a finding it makes may be right in form
 and wrong here, and a thing it misses may matter.
 

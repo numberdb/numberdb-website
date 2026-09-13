@@ -65,6 +65,7 @@ retries and the crash-safety &mdash; and this page is what it is built on.
   <a href="#endpoint-api-lookup">/api/lookup</a>
   <a href="#endpoint-api-table">/api/table</a>
   <a href="#endpoint-api-tag">/api/tag</a>
+  <a href="#endpoint-api-audit">/api/table/&lt;tid&gt;/audit</a>
   <a href="#endpoint-api-reference">/api/docs</a>
   <a class="toc-section" href="#writing">Writing</a>
   <a href="#endpoint-api-create-table">/api/tables</a>
@@ -164,6 +165,25 @@ reason is in the document, because a warning shown to nobody is not a limit.
       <tr><th>url</th><td>the tag, e.g. <code>elliptic+curves</code></td></tr>
       <tr><th>returns</th><td>its name, how many tables and numbers carry it, and which tables</td></tr>
     </table>
+  </div>
+</div>
+
+<div class="api-endpoint" id="endpoint-api-audit">
+  <h3><span class="api-method api-get">GET</span>/api/table/&lt;tid&gt;/audit</h3>
+  <div class="body">
+    <p>The checks a table is read against, run on one table.</p>
+    <table class="api-table">
+      <tr><th>tid</th><td>in the path, e.g. <code>T7</code></td></tr>
+      <tr><th>returns</th><td><code>findings</code>, a list of sentences, and <code>clean</code>, true when that list is empty</td></tr>
+    </table>
+    <p class="api-note">These are the same checks as <code>manage.py
+    audit_table</code>, through the same implementation, for a machine that
+    computes a table but holds no copy of the database. A finding is a thing to
+    look at, not a verdict: the rules are rules, and one of them can be right
+    in form and wrong here. Outward links are not followed &mdash; that is the
+    command&rsquo;s <code>--links</code>, and it needs a database. A draft
+    answers to a key that may see it, and otherwise as though it did not
+    exist.</p>
   </div>
 </div>
 

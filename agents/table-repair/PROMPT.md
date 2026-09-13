@@ -87,8 +87,10 @@ anything else's.
 
 ## Afterwards
 
-**Run `manage.py audit_table <TID>`** on what you produced, and read what it
-says. If you introduced a finding, fix it before you finish.
+**Run the audit on what you produced**, and read what it says. If you
+introduced a finding, fix it before you finish. With a database that is
+`manage.py audit_table <TID>`; without one, `GET /api/table/<TID>/audit` with
+your key runs the same checks and returns them as JSON.
 
 **Write `agents/critiques/<TID>-repaired.md`**: one line per finding in the
 original report, saying which of
