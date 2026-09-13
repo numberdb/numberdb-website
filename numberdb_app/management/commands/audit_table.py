@@ -106,6 +106,34 @@ _GENERIC_TITLES = {
 }
 
 
+def findings_for(table, fetch=False):
+	"""What the audit says about one table, as a list of sentences.
+
+	Extracted so the checks have one implementation and two ways in: this
+	command, run by a person on the server, and `GET /api/table/<tid>/audit`,
+	run by a build machine that has no database and should not have one.
+
+	That gap was not theoretical. The run that built T223 reported "I could not
+	run `manage.py audit_table T223` because this checkout has no Django
+	installed", so the prose audit never ran on it -- and an overreaching
+	sentence about Salem numbers reached a reader, which the audit's own
+	unlinked-constant check would have caught.
+	"""
+	#A cross-reference may name a table by its address or by its number:
+	#HREF{Integers} and HREF{T13} both resolve.
+	urls = set(Table.objects.values_list('url', flat=True))
+	urls |= set(Table.objects.values_list('tid', flat=True))
+	public = set(Table.objects.filter(published=True)
+	             .values_list('url', flat=True))
+	public |= set(Table.objects.filter(published=True)
+	              .values_list('tid', flat=True))
+	titles = {t.title.lower(): t for t in Table.objects.all()}
+	tree = tree_of(table.head_revision)
+	command = Command()
+	return list(command._check(table, tree, urls, titles,
+	                           fetch=fetch, public=public))
+
+
 class Command(BaseCommand):
 	help = 'Check a table for the mistakes that have been made before.'
 
