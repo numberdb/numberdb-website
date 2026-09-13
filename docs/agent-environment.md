@@ -2978,3 +2978,27 @@ it.
 
 Evidence: 2026-09-13, T226 critique, the first environment listing in the
 run's tool output.
+
+## The builder image cannot run `audit_table`
+
+What happened: the T227 build needed `manage.py audit_table T227` after the
+draft was filled and verified. The local checkout had no `.env` and no Django
+installed, so `python3 manage.py audit_table T227` failed with
+`ModuleNotFoundError: No module named 'django'`. The sanctioned Sage wrapper
+was using the builder image (`NUMBERDB_SAGE_IMAGE=numberdb/builder:latest`),
+which is correct for generators but contains neither Django nor the app:
+`/app/manage.py False`, `django import failed ModuleNotFoundError`, and
+`numberdb_app import failed ModuleNotFoundError`. Trying the web image through
+the same wrapper did not help on this runner, because `numberdb/web:latest`
+was not present locally and Docker could not pull it.
+
+What to do instead: do not treat a failed local `audit_table` as a table
+finding. On a runner configured this way, either arrange a sanctioned Django
+environment before the build reaches the audit step, or say that the
+management command could not run. The builder image is for Sage computations
+and API-backed generator work, not for Django management commands.
+
+Evidence: T227 build, 2026-09-13. `/tmp/probe_audit_environment.py` under
+`agents/sage.sh` reported no `/app/manage.py`, no Django and no
+`numberdb_app`; direct `python3 manage.py audit_table T227` failed before
+Django import.
