@@ -35,7 +35,7 @@ Formulas:
   formula-digamma: >-
     $\gamma(0,q)=(\gamma-\log q)/q$, and for $1\leq a<q$,
     $\gamma(a,q)=-(\psi(a/q)+\log q)/q$ CITE{WikiEuler}, where $\psi$ is the
-    digamma function.
+    HREF{T226}[digamma function].
   formula-sum: >-
     $\sum_{a=0}^{q-1}\gamma(a,q)=\gamma$.
   formula-gcd: >-
