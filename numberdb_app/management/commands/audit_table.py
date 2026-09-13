@@ -119,6 +119,12 @@ def findings_for(table, fetch=False):
 	sentence about Salem numbers reached a reader, which the audit's own
 	unlinked-constant check would have caught.
 	"""
+	#Imported here rather than at the top, as `handle` does: these models are
+	#loaded when the app is, and a management command's module is imported
+	#early enough for that to matter.
+	from numberdb_app.editing import tree_of
+	from numberdb_app.models import Table
+
 	#A cross-reference may name a table by its address or by its number:
 	#HREF{Integers} and HREF{T13} both resolve.
 	urls = set(Table.objects.values_list('url', flat=True))
