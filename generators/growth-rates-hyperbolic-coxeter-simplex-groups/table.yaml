@@ -41,6 +41,9 @@ Comments:
     Entry addresses use ASCII Coxeter bracket symbols and record the
     dimension separately. The same bracket notation is also used in lower-rank
     Coxeter families, including HREF{Growth_rates_of_hyperbolic_Coxeter_triangle_groups}[hyperbolic Coxeter triangle groups].
+  comment-minimum: >-
+    Among compact hyperbolic Coxeter groups in $\mathbb{H}^3$, the group
+    $[3,5,3]$ has the smallest growth rate CITE{Kellerhals}.
 Formulas:
   formula-steinberg: >-
     For $W(t)=\sum_{k\geq0}a_k t^k$, Steinberg's formula CITE{Steinberg}

@@ -340,11 +340,6 @@ def entry_comment(diagram):
         r"$%s$, Witt symbol $%s$. The minimal polynomial of $\tau$ is $%s$."
         % (diagram, record["witt"], minimal_polynomial_latex(diagram))
     )
-    if diagram == "[3,5,3]":
-        sentence += (
-            r" This group has the smallest growth rate among compact hyperbolic "
-            r"Coxeter groups in $\mathbb{H}^3$ CITE{Kellerhals}."
-        )
     return sentence
 
 
