@@ -1,14 +1,14 @@
-# Draft document for T228, values of the derivative of the Riemann zeta
-# function at rational arguments. It began as proposal 2 of
+# Draft document for T228, values of the derivative and logarithmic derivative
+# of the Riemann zeta function at rational arguments. It began as proposal 2 of
 # agents/table-ideas/BATCH-2026-09-13T0847.md.
 # Created through the API with X-Draft: yes, then filled by generate.py beside
 # it. Publishing is a person's act.
-Title: Values of the derivative of the Riemann zeta function $\zeta'(s)$ at rational numbers
+Title: Values of the derivative $\zeta'(s)$ and logarithmic derivative $\zeta'(s)/\zeta(s)$ of the Riemann zeta function at rational numbers
 Definition: >-
-  Listed are $\zeta'(s)=\frac{d}{ds}\zeta(s)$ for
-  the Riemann zeta function and the logarithmic derivative
-  $\zeta'(s)/\zeta(s)$ at rational arguments $s$ where the chosen quantity is
-  finite.
+  $\zeta(s)$ is the Riemann zeta function, $\sum_{n\geq1}n^{-s}$ for
+  $\Re(s)>1$ continued meromorphically away from its pole at $s=1$
+  CITE{DLMFZeta}. The table holds its derivative $\zeta'(s)$ and its
+  logarithmic derivative $\zeta'(s)/\zeta(s)$ at rational $s$.
 Keywords:
   - derivative of the Riemann zeta function
   - zeta derivative
@@ -31,54 +31,77 @@ Parameters:
       logderivative: $\zeta'(s)/\zeta(s)$
 Comments:
   comment-sign: >-
-    The logarithmic derivative is stored with its own sign. Its negative is
-    the von Mangoldt Dirichlet series
-    $-\zeta'(s)/\zeta(s)=\sum_{n\geq1}\Lambda(n)n^{-s}$ for $\Re(s)>1$.
+    $\Lambda(n)$ is the von Mangoldt function, equal to $\log p$ when $n$ is
+    a positive power of a prime $p$ and to $0$ otherwise. The table holds
+    $\zeta'(s)/\zeta(s)$ itself, not its negative, which is the Dirichlet
+    series in CITE{formula-von-mangoldt}.
   comment-poles-zeros: >-
     The derivative $\zeta'(s)$ is finite at the trivial zeros
     $s=-2,-4,\ldots$, but the logarithmic derivative has simple poles there
     and is not listed.
 Formulas:
-  formula-logderivative: >-
-    $\frac{d}{ds}\log\zeta(s)=\zeta'(s)/\zeta(s)$ wherever
-    $\zeta(s)\neq0,\infty$.
   formula-von-mangoldt: >-
     For $\Re(s)>1$,
-    $-\zeta'(s)/\zeta(s)=\sum_{n\geq1}\Lambda(n)n^{-s}$ CITE{DLMFZeta}.
+    $-\zeta'(s)/\zeta(s)=\sum_{n\geq1}\Lambda(n)n^{-s}$
+    CITE{DLMFDirichlet}.
   formula-zero: >-
     $\zeta'(0)=-\frac12\log(2\pi)$ CITE{DLMFSpecial}.
   formula-negative-even: >-
     For $m\geq1$,
     $\zeta'(-2m)=(-1)^m\frac{(2m)!}{2(2\pi)^{2m}}\zeta(2m+1)$
     CITE{DLMFSpecial}.
+  formula-bendersky: >-
+    For $k\geq1$,
+    $\zeta'(-k)=\frac{B_{k+1}}{k+1}H_k-\log A_k$, where
+    $H_k=\sum_{j=1}^k 1/j$ and $A_k$ are the HREF{T227}[Bendersky
+    constants].
+  formula-reflection-logderivative: >-
+    For noninteger $s$ where both logarithmic derivatives are finite,
+    $\frac{\zeta'(1-s)}{\zeta(1-s)}=\log(2\pi)+\frac\pi2\tan\frac{\pi s}2-\psi(s)-\frac{\zeta'(s)}{\zeta(s)}$
+    CITE{DLMFReflection}.
+  formula-positive-even-derivative: >-
+    For $n\geq1$,
+    $\zeta'(2n)=\frac{(-1)^{n+1}(2\pi)^{2n}}{2(2n)!}\left(2n\,\zeta'(1-2n)-(\psi(2n)-\log(2\pi))B_{2n}\right)$
+    CITE{DLMFSpecial}.
 Programs:
   program-sage:
     language: Sage
     code: |-
-      import numberdb.sage as numberdb
+      import numberdb.sage
       from sage.rings.complex_arb import ComplexBallField
       from sage.rings.rational_field import QQ
 
-      CBF = ComplexBallField(numberdb.bits(100, losing=96))
-      s = CBF(QQ(1) / QQ(2))
+      s = ComplexBallField(400)(QQ(1) / QQ(2))
       zeta_prime = s.zetaderiv(1)
-      zeta_log_derivative = zeta_prime / s.zeta()
+      print(zeta_prime.real())
+      print((zeta_prime / s.zeta()).real())
 Similar tables:
   - table: HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[Values of the Riemann zeta function at rational numbers]
     relation: stores $\zeta(s)$ at the same kind of rational arguments
+  - table: HREF{T227}[Glaisher-Kinkelin constant $A$ and Bendersky constants $A_k$]
+    relation: stores the constants $A_k$ that give closed forms for $\zeta'(-k)$
   - table: HREF{Laurent_coefficients_of_logarithmic_derivative_of_Riemann_zeta_function_at_1}[Laurent series coefficients of the logarithmic derivative of the Riemann zeta function at 1]
     relation: stores the Laurent expansion of $\zeta'(s)/\zeta(s)$ at its pole
   - table: HREF{Taylor_coefficients_of_completed_Riemann_zeta_function_at_1_over_2}[Taylor coefficients of the completed Riemann zeta function at 1/2]
     relation: stores derivatives of the completed zeta function at the centre of the critical strip
   - table: HREF{Values_of_the_Hurwitz_zeta_function_at_pairs_of_rational_numbers}[Values of the Hurwitz zeta function at pairs of rational numbers]
-    relation: $\zeta(s)$ is the Hurwitz zeta function at parameter $1$
+    relation: $\zeta(s)$ is the Hurwitz zeta function at $x=1$
 Links:
   DLMFZeta:
-    title: 'DLMF 25.2: Definitions'
+    title: 'DLMF 25.2: Definition and Expansions'
     url: https://dlmf.nist.gov/25.2
+  DLMFReflection:
+    title: 'DLMF 25.4: Reflection Formulas'
+    url: https://dlmf.nist.gov/25.4
   DLMFSpecial:
-    title: 'DLMF 25.6: Special Values'
+    title: 'DLMF 25.6: Integer Arguments'
     url: https://dlmf.nist.gov/25.6
+  DLMFDirichlet:
+    title: 'DLMF 27.4: Euler Products and Dirichlet Series'
+    url: https://dlmf.nist.gov/27.4
+  DLMFBarnes:
+    title: "DLMF 5.17: Barnes' G-Function (Double Gamma Function)"
+    url: https://dlmf.nist.gov/5.17
   MathWorldZeta:
     title: 'MathWorld: Riemann Zeta Function'
     url: https://mathworld.wolfram.com/RiemannZetaFunction.html
