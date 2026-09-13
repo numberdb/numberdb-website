@@ -1,0 +1,131 @@
+# Draft document for proposal 5 of agents/table-ideas/BATCH-2026-09-13T1751.md.
+# It was created as draft T236 through the API with X-Draft: yes, then filled
+# by generate.py beside it. Publishing is a person's act.
+Title: Volumes of the Birkhoff polytopes
+Definition: >-
+  The Birkhoff polytope $B_n\subset\mathbb{R}^{n\times n}$ is the lattice
+  polytope of $n\times n$ doubly stochastic matrices CITE{WikiBirkhoff}. The
+  table stores its volume in three normalisations: the relative lattice volume,
+  the normalised lattice volume, and the Euclidean volume in the metric
+  inherited from $\mathbb{R}^{n\times n}$.
+Keywords:
+  - Birkhoff polytope
+  - volume of the Birkhoff polytope
+  - doubly stochastic matrices
+  - semi-magic squares
+  - magic squares
+  - contingency tables
+Parameters:
+  n:
+    type: Z
+    title: matrix size
+    display: $n$
+    constraints: $n$ is an integer with $n\geq1$
+  normalisation:
+    type: Symbolic
+    title: volume normalisation
+    display: normalisation
+    constraints: one of `relative`, `normalised`, and `euclidean`
+    values:
+      relative: relative lattice volume
+      normalised: normalised lattice volume
+      euclidean: Euclidean volume
+Comments:
+  comment-normalisations: >-
+    The relative volume is measured with respect to the lattice
+    $\mathbb{Z}^{n\times n}\cap\operatorname{aff}(B_n)$, translated to the
+    zero-margin subspace. The normalised volume is $((n-1)^2)!$ times the
+    relative volume.
+  comment-euclidean: >-
+    The Euclidean normalisation uses the ordinary Frobenius norm on matrices.
+    It differs from the relative volume by the covolume of the zero-margin
+    lattice.
+Formulas:
+  formula-leading-coefficient: >-
+    If $d=(n-1)^2$ and $H_n(t)$ is the Ehrhart polynomial of $B_n$, then the
+    relative volume is $[t^d]H_n(t)$.
+  formula-normalised: >-
+    The normalised volume is $d!\,[t^d]H_n(t)$, where $d=(n-1)^2$.
+  formula-h-star: >-
+    If $h^*_{B_n}(z)$ is the Ehrhart $h^*$-polynomial, then
+    $h^*_{B_n}(1)$ is the normalised volume.
+  formula-euclidean: >-
+    The Euclidean volume is $n^{n-1}[t^d]H_n(t)$, where $d=(n-1)^2$.
+  formula-covolume: >-
+    The zero-margin lattice is the integral cycle lattice of $K_{n,n}$. Its
+    Euclidean covolume is $\sqrt{\tau(K_{n,n})}=n^{n-1}$ by the matrix-tree
+    theorem CITE{WikiMatrixTree}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from math import factorial
+      import numberdb.sage as numberdb
+      from sage.rings.rational_field import QQ
+
+      def birkhoff_volumes(n, normalised_volume):
+          d = (n - 1)^2
+          relative = QQ(normalised_volume) / QQ(factorial(d))
+          return {
+              "relative": relative,
+              "normalised": QQ(normalised_volume),
+              "euclidean": QQ(n) ** (n - 1) * relative,
+          }
+Similar tables:
+  - table: HREF{T232}[Ehrhart and $h^*$-polynomials of the Birkhoff polytopes]
+    relation: gives the Ehrhart polynomial whose leading coefficient is the relative volume
+  - table: HREF{Volume_of_Platonic_solids}[Volume of the Platonic solids]
+    relation: stores Euclidean volumes of another family of polytopes
+  - table: HREF{Volumes_of_the_hyperbolic_Coxeter_simplices}[Volumes of the hyperbolic Coxeter simplices]
+    relation: stores volumes of Coxeter simplices
+Links:
+  WikiBirkhoff:
+    title: 'Wikipedia: Birkhoff polytope'
+    url: https://en.wikipedia.org/wiki/Birkhoff_polytope
+  WikiMatrixTree:
+    title: 'Wikipedia: Matrix tree theorem'
+    url: https://en.wikipedia.org/wiki/Kirchhoff%27s_theorem
+  OEISNormalised:
+    title: 'OEIS A037302: normalized volume of the Birkhoff polytope'
+    url: https://oeis.org/A037302
+  OEISEuclideanNumerators:
+    title: 'OEIS A078524: numerators of the Euclidean volumes of the Birkhoff polytopes'
+    url: https://oeis.org/A078524
+  OEISEuclideanDenominators:
+    title: 'OEIS A078525: denominators of the Euclidean volumes of the Birkhoff polytopes'
+    url: https://oeis.org/A078525
+  BeckPixtonData:
+    title: 'Beck and Pixton: Ehrhart polynomials for the Birkhoff polytopes'
+    url: https://matthbeck.github.io/birkhoff/polynomials.html
+References:
+  BeckPixton:
+    bib: >-
+      Matthias Beck and Dennis Pixton, The Ehrhart polynomial of the Birkhoff
+      polytope, Discrete & Computational Geometry 30 (2003), no. 4, 623-637.
+    doi: 10.1007/s00454-003-2850-8
+    arxiv: math/0202267
+Tags:
+  - volume
+  - combinatorics
+  - discrete geometry
+Data properties:
+  type: Q
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds all three normalisations for every matrix size $n$ with
+    $1\leq n\leq10$
+  rigour details: >-
+    The normalised volumes are transcribed from OEIS A037302
+    CITE{OEISNormalised}. The relative volumes are obtained by dividing by
+    $((n-1)^2)!$, and the Euclidean volumes by multiplying the relative
+    volumes by the covolume $n^{n-1}$ in CITE{formula-covolume}. For
+    $n\neq9$, the Euclidean values were compared with OEIS A078524
+    CITE{OEISEuclideanNumerators} and A078525
+    CITE{OEISEuclideanDenominators}. At $n=9$, the A078525 b-file denominator
+    gives the relative volume denominator instead; the stored Euclidean value
+    is the one given by CITE{formula-euclidean}. The relative volumes for
+    $1\leq n\leq9$ were compared with the leading coefficients of Beck and
+    Pixton's published Ehrhart polynomials CITE{BeckPixtonData}.
+Display properties:
+  number-header: volume
