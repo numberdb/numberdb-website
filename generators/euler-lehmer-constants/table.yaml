@@ -1,0 +1,89 @@
+# Draft document for T231, Euler-Lehmer constants.
+# It began as proposal 6 of agents/table-ideas/BATCH-2026-09-13T0847.md.
+# Created through the API with X-Draft: yes, then filled by generate.py beside
+# it. Publishing is a person's act.
+Title: Euler-Lehmer constants $\gamma(a,q)$
+Definition: >-
+  For integers $q\geq1$ and $0\leq a<q$, the Euler-Lehmer constant
+  $\gamma(a,q)$ is
+  $\lim_{x\to\infty}\left(\sum_{\substack{0<n\leq x\\n\equiv a\pmod q}}1/n
+  -q^{-1}\log x\right)$ CITE{WikiEuler}.
+Keywords:
+  - Euler-Lehmer constant
+  - Lehmer constant
+  - harmonic sums in arithmetic progressions
+  - Euler's constant in arithmetic progressions
+Parameters:
+  q:
+    type: Z
+    title: modulus
+    display: $q$
+    constraints: $q\geq1$
+  a:
+    type: Z
+    title: residue class
+    display: $a$
+    constraints: $0\leq a<q$
+Comments:
+  comment-representative: >-
+    The representative is Lehmer's $0\leq a<q$ convention CITE{WikiEuler};
+    the class $a=0$ is the class of multiples of $q$.
+  comment-euler-constant: >-
+    $\gamma(0,1)$ is Euler's constant, the Stieltjes constant
+    HREF{Stieltjes_constants#0}[$\gamma_0$].
+Formulas:
+  formula-digamma: >-
+    $\gamma(0,q)=(\gamma-\log q)/q$, and for $1\leq a<q$,
+    $\gamma(a,q)=-(\psi(a/q)+\log q)/q$ CITE{WikiEuler}, where $\psi$ is the
+    digamma function.
+  formula-sum: >-
+    $\sum_{a=0}^{q-1}\gamma(a,q)=\gamma$.
+  formula-gcd: >-
+    If $d=\gcd(a,q)$, with $\gcd(0,q)=q$, then
+    $q\gamma(a,q)=(q/d)\gamma(a/d,q/d)-\log d$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.rational_field import QQ
+      from sage.rings.real_arb import RealBallField
+
+      RBF = RealBallField(numberdb.bits(100, losing=96))
+      q, a = 4, 1
+      if a == 0:
+          value = (RBF.euler_constant() - RBF(q).log()) / q
+      else:
+          value = -(RBF(QQ(a) / QQ(q)).psi() + RBF(q).log()) / q
+      print(value)
+Similar tables:
+  - table: HREF{T226}[Values of the digamma function at rational numbers]
+    relation: the formula for $\gamma(a,q)$ with $1\leq a<q$ uses $\psi(a/q)$
+  - table: HREF{Stieltjes_constants}[Stieltjes constants]
+    relation: its row HREF{Stieltjes_constants#0}[$\gamma_0$] is $\gamma(0,1)$
+  - table: HREF{Mertens_constants_of_primes_in_arithmetic_progressions}[Mertens constants of primes in arithmetic progressions]
+    relation: both tables store constants left by harmonic sums over arithmetic progressions, here over integers and there over primes
+Links:
+  WikiEuler:
+    title: "Wikipedia: Euler's constant"
+    url: https://en.wikipedia.org/wiki/Euler%27s_constant
+Tags:
+  - number theory
+  - special values
+Data properties:
+  type: R
+  rigour: proven
+  rigour details: >-
+    Each value is computed as a Sage real ball with arb at
+    `numberdb.bits(digits, losing=96)` bits from CITE{formula-digamma}, using
+    exact integer parameters. The entries were checked against
+    CITE{formula-sum}, CITE{formula-gcd}, the special cases
+    $\gamma(0,1)=\gamma$, $\gamma(1,2)=(\gamma+\log2)/2$ and
+    $\gamma(1,4)=(\gamma+\pi/2+\log2)/4$, and an independent root-of-unity
+    logarithm formula from CITE{WikiEuler}.
+  complete: 'no'
+  complete-note: >-
+    it holds every residue class $0\leq a<q$ for $q\leq30$
+Display properties:
+  number-header: $\gamma(a,q)$
+Numbers: []
