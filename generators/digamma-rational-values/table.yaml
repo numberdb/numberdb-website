@@ -4,15 +4,15 @@
 # it. Publishing is a person's act.
 Title: Values of the digamma function $\psi(x)$ at rational numbers
 Definition: >-
-  This table gives the digamma function $\psi(x)=\Gamma'(x)/\Gamma(x)$ at
-  rational arguments, using the DLMF convention CITE{DLMFPsi}, and the
-  harmonic-number continuation $H_x=\psi(x+1)+\gamma$ CITE{WikiHarmonic}.
-  Only finite real values are listed.
+  Listed are the digamma function $\psi(x)=\Gamma'(x)/\Gamma(x)$
+  CITE{DLMFPsi} and the harmonic-number continuation
+  $H_x=\psi(x+1)+\gamma$ CITE{WikiHarmonic} at rational arguments $x$, where
+  $\gamma$ is the Euler-Mascheroni constant.
 Keywords:
   - digamma function
   - psi function
   - harmonic numbers of fractional argument
-  - generalized harmonic number
+  - harmonic number
   - Gauss digamma theorem
 Parameters:
   x:
@@ -24,7 +24,7 @@ Parameters:
       $H_x$, $x$ is not a negative integer
   quantity:
     type: Symbolic
-    title: quantity
+    title: $\psi(x)$ or $H_x$
     display: quantity
     values:
       psi: $\psi(x)$
@@ -32,17 +32,14 @@ Parameters:
 Comments:
   comment-convention: >-
     The symbol $\psi$ means $\Gamma'/\Gamma$, not the shifted function
-    sometimes written $\Psi(x)=\psi(x+1)$. In this table $H_x$ is the same
-    shift with $\gamma$ added, so $H_n$ is the usual $n$th harmonic number for
+    sometimes written $\Psi(x)=\psi(x+1)$. Here $\gamma$ is
+    HREF{Stieltjes_constants#0}[the Euler-Mascheroni constant $\gamma_0$], and
+    $H_x=\psi(x+1)+\gamma$, so $H_n$ is the usual $n$th harmonic number for
     nonnegative integers $n$.
-  comment-range: >-
-    The listed rational arguments have denominators at most $12$ and lie in
-    $-4<x\leq 4$. Integer shifts are listed because
-    CITE{formula-recurrence} changes the value by rational summands.
   comment-exact-harmonic: >-
     For a nonnegative integer $n$, the row $H_n$ is the exact rational number
-    $\sum_{k=1}^{n}1/k$. The rows $\psi(n)$ still involve $\gamma$ and are
-    stored as real values.
+    $\sum_{k=1}^{n}1/k$. For positive integers $n$, the rows
+    $\psi(n)=H_{n-1}-\gamma$ are stored as real values.
 Formulas:
   formula-harmonic: >-
     $H_x=\psi(x+1)+\gamma$.
@@ -53,7 +50,7 @@ Formulas:
     $\psi(1-x)-\psi(x)=\pi\cot(\pi x)$ for nonintegral $x$
     CITE{DLMFFunctional}.
   formula-gauss: >-
-    For $1\leq p<q$,
+    For integers $1\leq p<q$,
     $\psi(p/q)=-\gamma-\log(2q)-\frac{\pi}{2}\cot(\pi p/q)
     +2\sum_{n=1}^{\lfloor(q-1)/2\rfloor}
     \cos(2\pi pn/q)\log\sin(\pi n/q)$ CITE{WikiDigamma}.
@@ -80,11 +77,11 @@ Similar tables:
   - table: HREF{Zeros_of_the_polygamma_functions}[Zeros of the polygamma functions $\psi^{(n)}$]
     relation: stores the real zeros of the same function and its higher derivatives
   - table: HREF{Values_of_the_Hurwitz_zeta_function_at_pairs_of_rational_numbers}[Values of the Hurwitz zeta function at pairs of rational numbers]
-    relation: higher polygamma values satisfy $\psi^{(m)}(x)=(-1)^{m+1}m!\zeta(m+1,x)$
+    relation: the Laurent expansion of $\zeta(s,x)$ at $s=1$ has constant term $-\psi(x)$
   - table: HREF{Values_of_Dirichlet_L-functions_at_positive_integers}[Values of Dirichlet L-functions at positive integers]
     relation: uses digamma values in the formula for $L(1,\chi)$
   - table: HREF{Stieltjes_constants}[Stieltjes constants]
-    relation: contains $\gamma_0$, the Euler-Mascheroni constant appearing in $H_x$
+    relation: its row HREF{Stieltjes_constants#0}[$\gamma_0$] is the Euler-Mascheroni constant $\gamma$ in $H_x=\psi(x+1)+\gamma$
 Links:
   DLMFPsi:
     title: 'DLMF 5.2: Gamma and Psi Functions'
@@ -113,9 +110,13 @@ Data properties:
     $H_x$ in CITE{formula-harmonic}, the exact rational values of $H_n$ for
     nonnegative integers $n$, and the Dirichlet $L$-value relation in
     CITE{formula-dirichlet-l}.
-  complete: no
+  complete: 'no'
   complete-note: >-
     it holds both quantities for every rational argument $x=a/b$ in lowest
-    terms with $b\leq12$ and $-4<x\leq4$ at which the quantity is finite
+    terms with $b\leq12$ and $-4<x\leq4$ at which the quantity is finite;
+    arguments outside $0<x\leq1$ are included because, for positive integers
+    $k$, the differences $\psi(x+k)-\psi(x)=\sum_{j=0}^{k-1}1/(x+j)$ and
+    $H_{x+k}-H_x=\sum_{j=1}^{k}1/(x+j)$ are rational whenever both sides are
+    finite
 Display properties:
   number-header: value
