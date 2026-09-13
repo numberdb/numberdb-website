@@ -1,0 +1,109 @@
+# Draft document for T225. This began as proposal 4 of
+# agents/table-ideas/BATCH-2026-09-12T2233.md and was created through the
+# NumberDB draft API. Publishing remains a separate human review act.
+Title: Volumes of the orientable cusped SnapPea census manifolds
+Definition: >-
+  Listed is $\mathrm{Vol}(M)$, the volume of the complete finite-volume
+  hyperbolic metric with curvature $-1$ on an orientable cusped hyperbolic
+  $3$-manifold $M$ in SnapPy's $\mathtt{OrientableCuspedCensus}$
+  CITE{SnapPyCensus}.
+Keywords:
+  - SnapPy census
+  - SnapPea census
+  - orientable cusped census
+  - cusped hyperbolic 3-manifold
+  - hyperbolic volume
+Parameters:
+  name:
+    type: Symbolic
+    title: SnapPea census name
+    display: $M$
+    constraints: >-
+      $M$ is named as in SnapPy's $\mathtt{OrientableCuspedCensus}$; this table
+      uses the census name with empty filling coefficients suppressed, so
+      $m004$ denotes SnapPy's $m004(0,0)$
+Comments:
+  comment-range: >-
+    This table holds the $m$ part of the orientable cusped census, the
+    manifolds in the original SnapPea census with at most five ideal
+    tetrahedra CITE{CallahanHildebrandWeeks}. SnapPy's
+    $\mathtt{OrientableCuspedCensus}$ also includes the larger $s$, $v$, $o9$
+    and $o10$ parts CITE{SnapPyCensus}.
+  comment-repeats: >-
+    Different census manifolds may have the same volume. The manifolds $m003$
+    and $m004$ have equal volumes, and $m009$ and $m010$ also have equal
+    volumes.
+  comment-arithmetic: >-
+    The $m004$ row is the
+    HREF{Hyperbolic_volumes_of_the_prime_knots_with_at_most_ten_crossings#4,1}[figure-eight
+    knot complement volume]. The $m009$ and $m010$ rows are three times the
+    $D=-7$ entry of HREF{Covolumes_of_the_Bianchi_groups}[the Bianchi covolume
+    table], and $m129$ is twelve times its $D=-4$ entry.
+Formulas:
+  formula-bloch-wigner: >-
+    $\mathrm{Vol}(M)=\sum_i D(z_i)$ for an ideal triangulation of $M$ with
+    tetrahedron shapes $z_i$ in the upper half plane, where
+    $D(z)=\operatorname{Im}\operatorname{Li}_2(z)+\arg(1-z)\log|z|$ is the
+    Bloch-Wigner dilogarithm CITE{NeumannZagier}.
+Programs:
+  program-snappy:
+    language: Python
+    code: |-
+      from snappy import Manifold
+
+      M = Manifold('m004')
+      print(M.volume(verified=True, bits_prec=400))
+Similar tables:
+  - table: HREF{Hyperbolic_volumes_of_the_prime_knots_with_at_most_ten_crossings}[Hyperbolic volumes of the prime knots with at most ten crossings]
+    relation: knot-complement volumes, including the figure-eight knot complement held here as $m004$
+  - table: HREF{Volumes_of_the_closed_hyperbolic_3-manifolds_of_the_Hodgson-Weeks_census}[Volumes of the closed hyperbolic 3-manifolds of the Hodgson-Weeks census]
+    relation: closed hyperbolic $3$-manifold census volumes rather than cusped census volumes
+  - table: HREF{Covolumes_of_the_Bianchi_groups}[Covolumes of the Bianchi groups]
+    relation: arithmetic cusped orbifold covolumes of which some entries here are small-index multiples
+  - table: HREF{Values_of_the_Clausen_functions_at_rational_multiples_of}[Values of the Clausen functions at rational multiples of $\pi$]
+    relation: the Bloch-Wigner and Lobachevsky values that give special ideal-tetrahedron volumes
+Links:
+  SnapPyCensus:
+    title: 'SnapPy documentation: Census manifolds'
+    url: https://snappy.computop.org/censuses.html
+  SnapPyVerify:
+    title: 'SnapPy documentation: Verified computations'
+    url: https://snappy.computop.org/verify.html
+References:
+  CallahanHildebrandWeeks:
+    bib: >-
+      P. J. Callahan, M. V. Hildebrand and J. R. Weeks, "A census of cusped
+      hyperbolic 3-manifolds", Mathematics of Computation 68 (1999), 321-332.
+    doi: 10.1090/S0025-5718-99-01036-4
+  NeumannZagier:
+    bib: >-
+      W. D. Neumann and D. Zagier, "Volumes of hyperbolic three-manifolds",
+      Topology 24 (1985), 307-332.
+    doi: 10.1016/0040-9383(85)90004-7
+  HIKMOT:
+    bib: >-
+      N. Hoffman, K. Ichihara, M. Kashiwagi, H. Masai, S. Oishi and A.
+      Takayasu, "Verified computations for hyperbolic 3-manifolds",
+      Experimental Mathematics 25 (2016), 66-78.
+    arxiv: '1310.3410'
+    doi: 10.1080/10586458.2015.1022840
+Tags:
+  - volume
+  - period
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds the orientable cusped SnapPea census manifolds whose names begin
+    with $m$, the part with at most five ideal tetrahedra
+  rigour details: >-
+    Each value is computed with SnapPy 3.3.2's verified
+    `volume(verified=True, bits_prec=...)` method, which returns a Sage
+    interval containing the true volume CITE{SnapPyVerify}. The generator
+    writes $100$ digits. Before the draft was filled, all rows were compared
+    with SnapPy's high-precision unverified volume as a transcription check,
+    and the relations to the figure-eight knot complement and the Bianchi
+    covolumes were checked against the stored entries in the linked tables.
+Display properties:
+  number-header: $\mathrm{Vol}(M)$
