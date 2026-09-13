@@ -213,8 +213,11 @@ def unresolved_citations(tree):
 	if not isinstance(tree, dict):
 		return []
 	labels = citation_labels(tree)
+	#`ensure_ascii=False`, or a label with an accent in it comes back as
+	#`L\u00e9vy` and matches nothing it should: the labels are compared as
+	#text, and the document is text, not ASCII.
 	try:
-		text = json.dumps(tree)
+		text = json.dumps(tree, ensure_ascii=False)
 	except (TypeError, ValueError):
 		text = str(tree)
 	return sorted({cite for cite in re.findall(r'CITE\{([^}\]]+)\}', text)

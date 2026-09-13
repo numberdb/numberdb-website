@@ -69,3 +69,44 @@ class TheAuditAnswersOverTheApi(TestCase):
 		commit_table(draft, {'Title': 'A draft', 'Numbers': {'1': '2'}},
 		             author=self.user, message='m', via='orm')
 		self.assertEqual(self.audit('T701').status_code, 404)
+
+
+class AnAccentIsNotAnEscape(TestCase):
+	"""T170 and T173 point at T172, whose address is `Lévy's_constant`.
+
+	The audit reported both as naming no table here, and they name it
+	exactly: the check read the document out of `json.dumps`, which escapes
+	a non-ASCII character by default, so the target it compared was
+	`L\\u00e9vy's_constant` -- a name nothing has. The same default in
+	`unresolved_citations` is worse than a false finding: `commit_table`
+	refuses a dangling citation, so an accent in a label would have made a
+	correct table unwritable.
+	"""
+
+	def setUp(self):
+		self.user = get_user_model().objects.create_user('author')
+		self.target = Table.objects.create(
+			tid='T701', tid_int=701, url="Lévy's_constant",
+			title="Lévy's constant", published=True)
+		self.table = Table.objects.create(
+			tid='T702', tid_int=702, url='t702', title='A table',
+			published=True)
+
+	def test_a_cross_reference_to_an_accented_address_resolves(self):
+		from .management.commands.audit_table import findings_for
+		commit_table(self.table, {
+			'Title': 'A table', 'Numbers': {'1': '2'},
+			'Definition': 'These numbers.',
+			'Similar tables': [{
+				'table': "HREF{Lévy's_constant}[Lévy's constant]",
+				'relation': 'holds the constant itself'}],
+		}, author=self.user, message='m', via='orm')
+		self.table.refresh_from_db()
+		findings = findings_for(self.table)
+		self.assertEqual([f for f in findings if 'names no table' in f], [])
+
+	def test_a_citation_label_may_carry_an_accent(self):
+		from .validate import unresolved_citations
+		tree = {'Definition': 'A constant CITE{Lévy1936}.',
+		        'References': {'Lévy1936': {'bib': 'P. Lévy, 1936.'}}}
+		self.assertEqual(unresolved_citations(tree), [])
