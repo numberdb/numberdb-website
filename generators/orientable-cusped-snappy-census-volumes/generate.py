@@ -121,7 +121,7 @@ def check_identities(digits=100):
     widest = None
     for name in census_names():
         interval = verified_volume(name, digits)
-        approximate = RB(str(Manifold(name).high_precision().volume()))
+        approximate = decimal_enclosure(str(Manifold(name).high_precision().volume()), RB)
         difference = RB(interval) - approximate
         if not difference.contains_zero():
             raise ArithmeticError(
