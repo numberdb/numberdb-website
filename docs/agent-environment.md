@@ -3020,3 +3020,24 @@ reporting a swallowed section, grep the raw HTML for `&lt;` against a bare
 Evidence: 2026-09-13, `/tmp/crit231/p_g.html`. `grep -o 'a&lt;q'` finds
 the escaped form, and the tags-first extraction of `p_a.html` shows the
 whole parameter list.
+
+## A Sage run killed by the memory cap says nothing; only the exit status tells
+
+What happened: a proposal run counted lattice points of the $E_8$ root
+polytope under `agents/sage.sh`, which caps the container's memory
+(`NUMBERDB_SAGE_MEMORY`, 1200m on this runner). The script printed
+`polyhedron built, dim 8 facets 19440 4.3s` and then nothing. No traceback,
+no "Killed", no line from `agents/sage.sh`. The first attempt ran the command
+as `agents/sage.sh script.py > out 2>&1; grep ... out`, so the shell's status
+was grep's 0, and it read as a script that had finished with its last lines
+missing. Rerun with `echo "exit=$?"` immediately after, it gave `exit=137`
+(SIGKILL) about 90 s in, which is the cap killing the container.
+
+What to do instead: when a Sage run's output stops short, look at
+`agents/sage.sh`'s own exit status before looking at the script. 137 is the
+memory cap, not a bug in the computation. Raise `NUMBERDB_SAGE_MEMORY` only
+within what the build box can spare, or change the method.
+
+Evidence: 2026-09-13, `/tmp/e8.py`, 18:15:10 to 18:16:42, `exit=137`; the
+earlier `/tmp/exc.py` run ended the same way two minutes into $E_8$ with the
+status hidden.
