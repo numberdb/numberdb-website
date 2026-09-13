@@ -3041,3 +3041,30 @@ within what the build box can spare, or change the method.
 Evidence: 2026-09-13, `/tmp/e8.py`, 18:15:10 to 18:16:42, `exit=137`; the
 earlier `/tmp/exc.py` run ended the same way two minutes into $E_8$ with the
 status hidden.
+
+## OEIS refuses this machine outright; a PDF fetched for a check cannot be read here
+
+What happened: the 2026-09-13T2142 ideas run could not reach OEIS at all.
+`curl -G https://oeis.org/search --data-urlencode q=cospectral --data-urlencode
+fmt=text` answered 403 with a browser user agent and without one. So did
+`fmt=short`, and so did plain `https://oeis.org/A082104` fetched by the
+web-fetch agent. Earlier notes say `fmt=text` worked when the JSON search did
+not; by this run the refusal covered everything from this address. Separately,
+the web-fetch agent downloaded the Brouwer–Spence paper and Brouwer–Haemers'
+book as PDFs, but the host has no `pdftotext`, no `strings`, no `pypdf` and
+no poppler, so `Read` could not render them either. A published count needed
+as an independent check stayed unread.
+
+Also: `https://numberdb.org/tags?page=3` answers with the same 18 tags as
+`page=2`, not with an empty page. A loop that walks pages until one is empty
+never ends. Stop when a page repeats the previous one. The list has 68 tags.
+
+What to do instead: treat OEIS as unreachable from the runner and say so in
+the output rather than retrying. Take sequence numbers from pages that cite
+them (Brouwer's cospectral page names A082104). For PDFs, run the extraction
+inside `agents/sage.sh` if the image has a PDF library, or cite the number as
+unread.
+
+Evidence: 2026-09-13, `/tmp/ideas2142/o.txt` (403) and `tags2.html` and
+`tags3.html` (identical tag lists); the web-fetch agent's report of 403 on six
+OEIS URLs.
