@@ -235,7 +235,8 @@ def row(log, started, stage, engine, prompt, session, resumed, model,
 		str(found['tokens_in']), str(found['tokens_cached']),
 		str(found['tokens_out']), breakdown, table,
 		os.environ.get('NUMBERDB_CAMPAIGN', '')[:64],
-		os.path.basename(os.environ.get('NUMBERDB_BATCH', ''))[:64],
+		os.path.basename(os.environ.get('NUMBERDB_BATCH_NAME')
+		                        or os.environ.get('NUMBERDB_BATCH', ''))[:64],
 	])
 
 

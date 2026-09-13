@@ -173,7 +173,14 @@ while [ "$made" -lt "$builds" ]; do
 	#run itself -- has no other name, and without one its cost had nowhere to
 	#go and was dropped.
 	export NUMBERDB_CAMPAIGN="$NAME"
-	export NUMBERDB_BATCH="$batch"
+	#Not NUMBERDB_BATCH. That one *pins* the batch -- `batch_file` returns it
+	#when it is set -- and exporting it here pinned the campaign to its first
+	#batch for ever: a stage-one run wrote six good proposals to a new file,
+	#`batch_file` kept answering with the old one, and the campaign said "the
+	#stage-one run proposed no new batch" and stopped, having just paid for
+	#it. Telling the ledger which batch a run belonged to and telling the
+	#campaign which batch to work from are two different sentences.
+	export NUMBERDB_BATCH_NAME="$batch"
 	if [ -z "$batch" ]; then
 		say "no batch yet; proposing one"
 		propose_a_batch || exit $?
