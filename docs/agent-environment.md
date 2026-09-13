@@ -2890,3 +2890,37 @@ a rendering fault in the table.
 
 Evidence: 2026-09-13, `/tmp/crit225/p_g.html` without `Parameters` and the
 same rows after `Parameters` was added. Both answered 200.
+
+## OEIS search pages answer 403 with a Cloudflare challenge from this runner
+
+What happened: on 2026-09-13 every `curl "https://oeis.org/search?q=...&fmt=json"`
+through `ALL_PROXY` answered `403 text/html` with a "Just a moment..."
+Cloudflare challenge, for seventeen different queries. JSON parsing then
+failed on every one, so an unguarded script reads it as "no OEIS match"
+rather than as "OEIS not reached". Wikipedia's `index.php?action=raw` answered
+throughout.
+
+What to do instead: check the HTTP status before parsing an OEIS answer. To
+get a constant's OEIS number, read the raw wikitext of the Wikipedia article
+that tabulates it (`grep -oE 'A[0-9]{6}'`). Wikipedia cites the A-number beside
+the digits. Say in the batch that the digits were compared with Wikipedia's
+and not with OEIS's.
+
+Evidence: `/tmp/o.txt` from the ideas run 2026-09-13T0847: `403
+text/html; charset=UTF-8`, `<title>Just a moment...</title>`.
+
+## `already_asked` runs out of GitHub's unauthenticated search budget after about nine names
+
+What happened: `screen.already_asked` calls `api.github.com/search/issues`
+without a token. In one run, screening fourteen names, the tenth and later
+calls returned `could not ask GitHub (HTTPError)`. The search API allows
+ten unauthenticated requests a minute. The screen does say that it failed,
+so nothing was hidden, but the remaining names went unscreened.
+
+What to do instead: redo the failed names with `gh search issues --repo
+numberdb/numberdb-data "<words>"`, which is authenticated. Or pause for a
+minute after every eight names. Longer term, `already_asked` could use `gh`
+or a token when one is present.
+
+Evidence: ideas run 2026-09-13T0847. The names from "Euler-Lehmer constants"
+onward, in `/tmp/scr.py`'s output.
