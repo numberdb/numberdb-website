@@ -32,52 +32,48 @@ Parameters:
       euclidean: Euclidean volume
 Comments:
   comment-normalisations: >-
-    The relative volume is measured with respect to the lattice
-    $\mathbb{Z}^{n\times n}\cap\operatorname{aff}(B_n)$, translated to the
-    zero-margin subspace. The normalised volume is $((n-1)^2)!$ times the
-    relative volume.
-  comment-euclidean: >-
-    The Euclidean normalisation uses the ordinary Frobenius norm on matrices.
-    It differs from the relative volume by the covolume of the zero-margin
-    lattice.
+    Let $d=(n-1)^2$ be the dimension of $B_n$, and let $\Lambda_n$ be the
+    lattice of integer $n\times n$ matrices whose rows and columns all sum to
+    $0$. The affine hull of $B_n$ is a translate of
+    $\Lambda_n\otimes\mathbb{R}$. The relative volume
+    $\operatorname{vol}_{\mathrm{rel}}(B_n)$ is the $d$-dimensional volume in
+    which a fundamental domain of $\Lambda_n$ has volume $1$. The normalised
+    volume is
+    $\operatorname{Vol}(B_n)=d!\,\operatorname{vol}_{\mathrm{rel}}(B_n)$. The
+    Euclidean volume $\operatorname{vol}_{\mathrm{Euc}}(B_n)$ is the
+    $d$-dimensional volume for the Frobenius inner product
+    $\langle X,Y\rangle=\sum_{i,j}X_{ij}Y_{ij}$.
 Formulas:
   formula-leading-coefficient: >-
-    If $d=(n-1)^2$ and $H_n(t)$ is the Ehrhart polynomial of $B_n$, then the
-    relative volume is $[t^d]H_n(t)$.
+    With $d=(n-1)^2$,
+    $\operatorname{vol}_{\mathrm{rel}}(B_n)=[t^d]H_n(t)$, the leading
+    coefficient of the HREF{T232}[Ehrhart polynomial] $H_n(t)$ of $B_n$.
   formula-normalised: >-
-    The normalised volume is $d!\,[t^d]H_n(t)$, where $d=(n-1)^2$.
+    With $d=(n-1)^2$,
+    $\operatorname{Vol}(B_n)=d!\,\operatorname{vol}_{\mathrm{rel}}(B_n)=d!\,[t^d]H_n(t)$.
   formula-h-star: >-
     If $h^*_{B_n}(z)$ is the Ehrhart $h^*$-polynomial, then
-    $h^*_{B_n}(1)$ is the normalised volume.
+    $h^*_{B_n}(1)=\operatorname{Vol}(B_n)$.
   formula-euclidean: >-
-    The Euclidean volume is $n^{n-1}[t^d]H_n(t)$, where $d=(n-1)^2$.
+    $\operatorname{vol}_{\mathrm{Euc}}(B_n)=n^{n-1}\operatorname{vol}_{\mathrm{rel}}(B_n)$.
   formula-covolume: >-
-    The zero-margin lattice is the integral cycle lattice of $K_{n,n}$. Its
-    Euclidean covolume is $\sqrt{\tau(K_{n,n})}=n^{n-1}$ by the matrix-tree
-    theorem CITE{WikiMatrixTree}.
+    The covolume of $\Lambda_n$ in the Frobenius inner product is
+    $n^{n-1}$. Identified with the integral cycle lattice of $K_{n,n}$,
+    $\Lambda_n$ has squared covolume equal to the number of spanning trees of
+    $K_{n,n}$, which is $n^{2n-2}$ by the matrix-tree theorem
+    CITE{WikiMatrixTree}.
 Programs:
   program-sage:
     language: Sage
     code: |-
-      from math import factorial
-      import numberdb.sage as numberdb
-      from sage.rings.rational_field import QQ
+      # Sage can compute the Euclidean volume directly for small n.
+      from sage.geometry.polyhedron.library import polytopes
 
-      def birkhoff_volumes(n, normalised_volume):
-          d = (n - 1)^2
-          relative = QQ(normalised_volume) / QQ(factorial(d))
-          return {
-              "relative": relative,
-              "normalised": QQ(normalised_volume),
-              "euclidean": QQ(n) ** (n - 1) * relative,
-          }
+      B = polytopes.Birkhoff_polytope(4)
+      B.volume(measure="induced", engine="internal")  # 176/2835
 Similar tables:
   - table: HREF{T232}[Ehrhart and $h^*$-polynomials of the Birkhoff polytopes]
     relation: gives the Ehrhart polynomial whose leading coefficient is the relative volume
-  - table: HREF{Volume_of_Platonic_solids}[Volume of the Platonic solids]
-    relation: stores Euclidean volumes of another family of polytopes
-  - table: HREF{Volumes_of_the_hyperbolic_Coxeter_simplices}[Volumes of the hyperbolic Coxeter simplices]
-    relation: stores volumes of Coxeter simplices
 Links:
   WikiBirkhoff:
     title: 'Wikipedia: Birkhoff polytope'
@@ -97,6 +93,9 @@ Links:
   BeckPixtonData:
     title: 'Beck and Pixton: Ehrhart polynomials for the Birkhoff polytopes'
     url: https://matthbeck.github.io/birkhoff/polynomials.html
+  BeckPixtonVolumes:
+    title: 'Beck and Pixton: volumes of the Birkhoff polytopes'
+    url: https://matthbeck.github.io/birkhoff/volumes.html
 References:
   BeckPixton:
     bib: >-
@@ -114,18 +113,22 @@ Data properties:
   complete: 'no'
   complete-note: >-
     it holds all three normalisations for every matrix size $n$ with
-    $1\leq n\leq10$
+    $1\leq n\leq10$; Beck and Pixton computed the Ehrhart polynomial, and
+    hence the volume, of $B_9$ CITE{BeckPixton} and later announced the
+    volume of $B_{10}$ CITE{BeckPixtonVolumes}
   rigour details: >-
     The normalised volumes are transcribed from OEIS A037302
     CITE{OEISNormalised}. The relative volumes are obtained by dividing by
     $((n-1)^2)!$, and the Euclidean volumes by multiplying the relative
-    volumes by the covolume $n^{n-1}$ in CITE{formula-covolume}. For
-    $n\neq9$, the Euclidean values were compared with OEIS A078524
-    CITE{OEISEuclideanNumerators} and A078525
-    CITE{OEISEuclideanDenominators}. At $n=9$, the A078525 b-file denominator
-    gives the relative volume denominator instead; the stored Euclidean value
-    is the one given by CITE{formula-euclidean}. The relative volumes for
-    $1\leq n\leq9$ were compared with the leading coefficients of Beck and
-    Pixton's published Ehrhart polynomials CITE{BeckPixtonData}.
+    volumes by the covolume $n^{n-1}$ in CITE{formula-covolume}. All ten
+    Euclidean volumes agree with Beck and Pixton's list
+    CITE{BeckPixtonVolumes}. OEIS A078524 CITE{OEISEuclideanNumerators}
+    agrees with the Euclidean numerators, and OEIS A078525
+    CITE{OEISEuclideanDenominators} agrees with the Euclidean denominators
+    except at $n=9$. At $n=9$, A078525 keeps the denominator of the unscaled
+    value Beck and Pixton first published before correcting the missing factor
+    $9^8$. The relative volumes for $1\leq n\leq9$ were compared with the
+    leading coefficients of Beck and Pixton's published Ehrhart polynomials
+    CITE{BeckPixtonData}.
 Display properties:
   number-header: volume
