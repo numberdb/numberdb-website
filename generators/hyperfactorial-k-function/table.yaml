@@ -1,0 +1,104 @@
+# Draft document for T229, values of the hyperfactorial K-function at rational
+# arguments. It began as proposal 4 of
+# agents/table-ideas/BATCH-2026-09-13T0847.md.
+# Created through the API with X-Draft: yes. Publishing is a person's act.
+Title: Values of the hyperfactorial $K$-function $K(x)$ at rational numbers
+Definition: >-
+  Listed are Kinkelin's hyperfactorial $K$-function
+  $K(x)=\exp(\zeta'(-1,x)-\zeta'(-1))$ CITE{WikiKFunction} and its real
+  logarithm at positive rational arguments $x$, where $\zeta(s,x)$ is
+  HREF{Values_of_the_Hurwitz_zeta_function_at_pairs_of_rational_numbers}[the
+  Hurwitz zeta function].
+Keywords:
+  - K-function
+  - hyperfactorial K-function
+  - hyperfactorial
+  - Kinkelin function
+  - negapolygamma
+  - derivative of the Hurwitz zeta function at $s=-1$
+Parameters:
+  x:
+    type: Q
+    title: argument
+    display: $x$
+    constraints: $x\in\mathbb{Q}$ and $x>0$
+  quantity:
+    type: Symbolic
+    title: $K(x)$ or $\log K(x)$
+    display: quantity
+    values:
+      K: $K(x)$
+      logK: $\log K(x)$
+Comments:
+  comment-domain: >-
+    The table uses the real positive branch on $x>0$. No values at
+    non-positive rational arguments are listed, since continuing
+    $\Gamma(x)^{x-1}/G(x)$ there requires a branch choice.
+  comment-shift: >-
+    For positive integers $n$, $K(n)=\prod_{m=1}^{n-1}m^m$, with empty
+    product $K(1)=1$. Thus the hyperfactorial $H(n)$ is $K(n+1)$.
+Formulas:
+  formula-log: >-
+    $\log K(x)=\zeta'(-1,x)-\zeta'(-1)$.
+  formula-barnes: >-
+    $K(x)=\Gamma(x)^{x-1}/G(x)$, where $G$ is
+    HREF{Values_of_the_Barnes_G-function_at_rational_numbers}[the Barnes
+    $G$-function] CITE{WikiKFunction}.
+  formula-recurrence: >-
+    $K(x+1)=x^xK(x)$ for $x>0$.
+  formula-integers: >-
+    For positive integers $n$, $K(n)=\prod_{m=1}^{n-1}m^m$.
+  formula-half: >-
+    $K(1/2)=A^{3/2}2^{-1/24}e^{-1/8}$, where $A$ is
+    HREF{T227}[the Glaisher-Kinkelin constant].
+  formula-multiplication: >-
+    For integers $n\geq2$,
+    $\prod_{j=1}^{n-1}K(j/n)=A^{(n^2-1)/n}n^{-1/(12n)}
+    e^{(1-n^2)/(12n)}$ CITE{WikiKFunction}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.complex_arb import ComplexBallField
+      from sage.rings.rational_field import QQ
+
+      CBF = ComplexBallField(numberdb.bits(100, losing=96))
+      x = QQ(1) / QQ(2)
+      value = CBF(x).gamma() ** CBF(x - 1) / CBF(x).barnes_g()
+      print(value.real())
+      print(value.log().real())
+Similar tables:
+  - table: HREF{Values_of_the_Gamma_function_at_rational_numbers}[Values of the Gamma function at rational numbers]
+    relation: $K(x)$ is expressed using powers of $\Gamma(x)$
+  - table: HREF{Values_of_the_Barnes_G-function_at_rational_numbers}[Values of the Barnes $G$-function at rational numbers]
+    relation: $K(x)=\Gamma(x)^{x-1}/G(x)$
+  - table: HREF{Values_of_the_Hurwitz_zeta_function_at_pairs_of_rational_numbers}[Values of the Hurwitz zeta function at pairs of rational numbers]
+    relation: $\log K(x)$ is a derivative of the Hurwitz zeta function at $s=-1$
+  - table: HREF{T227}[Glaisher-Kinkelin constant $A$ and Bendersky constants $A_k$]
+    relation: $A=A_1$ appears in special values and multiplication formulas for $K$
+  - table: HREF{T228}[Values of the derivative and logarithmic derivative of the Riemann zeta function]
+    relation: $\log K(x)$ differs from $\zeta'(-1,x)$ by the constant $\zeta'(-1)$
+Links:
+  WikiKFunction:
+    title: 'Wikipedia: K-function'
+    url: https://en.wikipedia.org/wiki/K-function
+Tags:
+  - special values
+  - special functions
+Data properties:
+  type: R
+  rigour: proven
+  rigour details: >-
+    Non-exact entries are computed as Sage balls with arb at
+    `numberdb.bits(digits, losing=96)` bits from exact rational arguments.
+    The entries are checked by comparing the Barnes $G$-function formula with
+    the Hurwitz zeta derivative formula, by the recurrence $K(x+1)=x^xK(x)$,
+    by exact integer values of $K(n)$, and by the multiplication formula in
+    CITE{formula-multiplication}.
+  complete: 'no'
+  complete-note: >-
+    it holds $K(x)$ and $\log K(x)$ for every rational argument $x=a/b$ in
+    lowest terms with $b\leq12$ and $0<x\leq6$
+Display properties:
+  number-header: value
