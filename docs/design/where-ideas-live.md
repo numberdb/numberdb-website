@@ -1,6 +1,10 @@
 # Where table ideas live
 
-Status: accepted 2026-09-13, being implemented.
+Status: accepted 2026-09-13, and built the same day: `agents/queue.py`,
+`agents/propose-batch.sh`, the queue-driven `agents/campaign.sh`, and the
+audit's duplicate-by-digits check. The 23 batches that existed were archived
+to `numberdb-runs/ideas/` and the 8 families with unbuilt tables in them are
+numberdb-data #138 to #146.
 
 Ideation and building are already two stages (`two-stage-tables.md`). What was
 never decided is what happens to a stage-one result between the two: a batch of
@@ -130,12 +134,23 @@ Three cases, and only one is hard.
    other.
 2. **Same numbers, different titles.** The real hazard, and we have met it:
    T219 and T225 were nearly the same table, and a reader spotted it, not a
-   check. Prose cannot catch this; digits can. A draft's values go through
-   `api/lookup`, and whatever tables already hold them are reported. This
-   belongs in the audit, which is now reachable over the API, so a build sees
-   it before offering and a reviewer sees it too. It is the one check here that
-   protects against agents who ignore the queue entirely, which is why it is
-   worth more than the queue.
+   check. Prose cannot catch this; digits can. This belongs in the audit,
+   which is now reachable over the API, so a build sees it before offering and
+   a reviewer sees it too. It is the one check here that protects against
+   agents who ignore the queue entirely, which is why it is worth more than
+   the queue.
+
+   Built, and the tuning is the whole of it. Eight values, spread through the
+   table, looked up in the index a reader searching by digits would hit. Two
+   filters: a value held by more than four tables identifies nothing, and a
+   small exact number is not evidence however few tables hold it. Without
+   them the check made 51 findings on this corpus, among them that the
+   diagonal Ramsey numbers are the values of the Gamma function -- both
+   contain 6 and 18. With them it makes five, and the two clearest are the
+   golden ratio sitting inside the algebraic numbers of degree 2 and the
+   rational singular moduli sitting inside the $j$-invariants. Neither is a
+   duplicate; both want a line in Similar tables, which is what the finding
+   asks for.
 3. **Same subject, different design** -- one table with a parameter against one
    table per value of it. Editorial, and it belongs to review. What the family
    issue buys is that the argument is written down before the money is spent.
