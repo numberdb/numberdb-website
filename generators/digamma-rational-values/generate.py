@@ -45,7 +45,7 @@ def _key_from_stdin():
 
 
 def _argument_order_key(x):
-    return (x.denominator(), abs(x.numerator() / x.denominator()), x < 0)
+    return (x.denominator(), abs(x), x < 0)
 
 
 def _arguments(max_denominator=MAX_DENOMINATOR):
