@@ -1,0 +1,97 @@
+# Draft document for T221. This began as proposal 1 of
+# agents/table-ideas/BATCH-2026-09-12T2233.md and was created through the
+# NumberDB draft API. Publishing remains a separate human review act.
+Title: Covolumes of the Bianchi groups
+Definition: >-
+  Let $K=\mathbb{Q}(\sqrt{D})$ be an imaginary quadratic field of fundamental
+  discriminant $D<0$, with ring of integers $\mathcal{O}_K$. Listed is the
+  hyperbolic volume of the Bianchi orbifold
+  $\mathrm{PSL}_2(\mathcal{O}_K)\backslash\mathbb{H}^3$ for the metric of
+  curvature $-1$ CITE{WikiBianchi}.
+Keywords:
+  - Bianchi orbifold
+  - Bianchi group
+  - Humbert volume formula
+  - PSL2 of imaginary quadratic integers
+  - imaginary quadratic field
+Parameters:
+  D:
+    type: Z
+    title: fundamental discriminant of $K$
+    display: $D$
+    constraints: $D<0$ a fundamental discriminant
+Comments:
+  comment-convention: >-
+    The group is $\mathrm{PSL}_2(\mathcal{O}_K)$, acting by
+    orientation-preserving isometries on $\mathbb{H}^3$. The quotient by
+    $\mathrm{SL}_2(\mathcal{O}_K)$ is the same orbifold, since $\{\pm I\}$
+    acts trivially.
+  comment-cusps: >-
+    The number of cusps is the class number of $K$ CITE{WikiBianchi}; each
+    entry comment gives the class number and the squarefree integer $d$ for
+    which $K=\mathbb{Q}(\sqrt{-d})$.
+  comment-special: >-
+    Twelve times the $D=-3$ entry is the
+    HREF{Hyperbolic_volumes_of_the_prime_knots_with_at_most_ten_crossings#4,1}[figure-eight knot complement volume].
+    The $D=-4$ entry is
+    HREF{Values_of_the_Clausen_functions_at_rational_multiples_of#2,1/2}[Catalan's constant]
+    divided by $3$.
+Formulas:
+  formula-humbert: >-
+    $\mathrm{Vol}\bigl(\mathrm{PSL}_2(\mathcal{O}_K)\backslash\mathbb{H}^3\bigr)
+    = |D|^{3/2}\zeta_K(2)/(4\pi^2)$ CITE{WikiBianchi}.
+  formula-dirichlet: >-
+    Since $\zeta_K(s)=\zeta(s)L(s,\chi_D)$, the same volume is
+    $|D|^{3/2}L(2,\chi_D)/24$, where $\chi_D(n)=(D/n)$ is the Kronecker
+    character.
+  formula-clausen: >-
+    $\mathrm{Vol}\bigl(\mathrm{PSL}_2(\mathcal{O}_K)\backslash\mathbb{H}^3\bigr)
+    = |D|\sum_{a=1}^{|D|-1}\chi_D(a)\mathrm{Cl}_2(2\pi a/|D|)/24$, where
+    HREF{Values_of_the_Clausen_functions_at_rational_multiples_of}[$\mathrm{Cl}_2$]
+    is the Clausen function.
+Similar tables:
+  - table: HREF{Hyperbolic_volumes_of_the_prime_knots_with_at_most_ten_crossings}[Hyperbolic volumes of the prime knots with at most ten crossings]
+    relation: cusped hyperbolic 3-manifold volumes that include finite covers of Bianchi orbifolds
+  - table: HREF{Volumes_of_the_closed_hyperbolic_3-manifolds_of_the_Hodgson-Weeks_census}[Volumes of the closed hyperbolic 3-manifolds of the Hodgson-Weeks census]
+    relation: closed hyperbolic 3-manifold volumes rather than arithmetic cusped orbifold covolumes
+  - table: HREF{Values_of_Dirichlet_L-functions_at_positive_integers}[Values of Dirichlet L-functions at positive integers]
+    relation: the Dirichlet $L$-values in CITE{formula-dirichlet}, for the conductors it stores
+  - table: HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[Residues of Dedekind zeta functions of quadratic fields]
+    relation: the same fundamental discriminant convention for quadratic fields
+  - table: HREF{Values_of_the_Clausen_functions_at_rational_multiples_of}[Values of the Clausen functions at rational multiples of $\pi$]
+    relation: the finite Clausen sum in CITE{formula-clausen}
+Links:
+  WikiBianchi:
+    title: 'Wikipedia: Bianchi group'
+    url: https://en.wikipedia.org/wiki/Bianchi_group
+  WikiDedekindZeta:
+    title: 'Wikipedia: Dedekind zeta function'
+    url: https://en.wikipedia.org/wiki/Dedekind_zeta_function
+References:
+  MaclachlanReid:
+    bib: >-
+      Colin Maclachlan and Alan W. Reid, The Arithmetic of Hyperbolic
+      3-Manifolds, Graduate Texts in Mathematics 219, Springer, 2003.
+Tags:
+  - volume
+  - number theory
+  - L-function
+  - special values
+  - period
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every negative fundamental discriminant with $|D|\leq 1000$
+  rigour details: >-
+    Each value is a real ball at `numberdb.bits(digits, losing=96)` bits,
+    computed from CITE{formula-dirichlet} by arb's Hurwitz zeta function. The
+    generator writes $100$ digits. Before the draft was filled, all $305$
+    rows were compared with CITE{formula-clausen}, computed independently
+    with arb's complex polylogarithm, and the class numbers in the comments
+    were compared with PARI's `qfbclassno`. The special relations to the
+    figure-eight knot complement volume and Catalan's constant were checked
+    against the stored entries in the linked tables.
+Display properties:
+  number-header: $\mathrm{Vol}$
