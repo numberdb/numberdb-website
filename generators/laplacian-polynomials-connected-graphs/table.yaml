@@ -1,0 +1,98 @@
+# Draft document for proposal 2 of agents/table-ideas/BATCH-2026-09-13T2142.md.
+# It was created as draft T238 through the API with X-Draft: yes. Publishing is
+# a person's act.
+Title: Laplacian polynomials of connected graphs
+Definition: >-
+  The Laplacian polynomial $\lambda(G,x)$ of a connected simple graph $G$ is
+  $\det(xI-L(G))$, where $L(G)=D(G)-A(G)$ is the combinatorial Laplacian,
+  $D(G)$ is the diagonal degree matrix, and $A(G)$ is the adjacency matrix
+  CITE{WikiLaplacian} CITE{MathWorldLaplacianPolynomial}.
+Parameters:
+  g:
+    type: Symbolic
+    constraints: >-
+      a connected graph on at most $7$ vertices, named by its canonical graph6
+      string
+    display: $G$
+Comments:
+  comment-index: >-
+    The index is the canonical graph6 string used by
+    HREF{Chromatic_polynomials_of_connected_graphs}[the chromatic polynomial
+    table] and HREF{Tutte_polynomials_of_connected_graphs}[the Tutte
+    polynomial table].
+  comment-convention: >-
+    The table uses the combinatorial Laplacian $D-A$, not the normalised
+    Laplacian and not the signless Laplacian $D+A$. The polynomial stored is
+    the monic characteristic polynomial $\det(xI-L(G))$ in the variable $x$.
+  comment-zero-root: >-
+    Every row has a factor $x$, because the Laplacian of a connected graph has
+    kernel spanned by the constant vector.
+  comment-cospectral: >-
+    The 996 graphs here give 934 distinct Laplacian polynomials. Each row in a
+    shared class has an entry comment naming the other graph6 strings in that
+    class.
+Formulas:
+  formula-matrix-tree: >-
+    If $\lambda(G,x)=x^n+c_{n-1}x^{n-1}+\cdots+c_1x$ for a connected graph on
+    $n$ vertices, then $\tau(G)=(-1)^{n-1}c_1/n=T_G(1,1)$, where $\tau(G)$ is
+    the number of spanning trees and $T_G$ is the Tutte polynomial.
+  formula-trace: >-
+    The coefficient of $x^{n-1}$ in $\lambda(G,x)$ is $-\operatorname{tr}L(G)
+    =-2|E(G)|$.
+  formula-complete: >-
+    $\lambda(K_n,x)=x(x-n)^{n-1}$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      G = graphs.CompleteGraph(5)
+      G.laplacian_matrix().charpoly()
+Similar tables:
+  - table: HREF{Chromatic_polynomials_of_connected_graphs}[Chromatic polynomials of connected graphs]
+    relation: uses the same canonical graph6 index for connected graphs on at most seven vertices
+  - table: HREF{Tutte_polynomials_of_connected_graphs}[Tutte polynomials of connected graphs]
+    relation: contains $T_G(x,y)$, whose value $T_G(1,1)$ is the number of spanning trees in formula CITE{formula-matrix-tree}
+  - table: HREF{Entropy_constants_of_lattice_models}[Entropy constants of lattice models]
+    relation: contains spanning-tree entropy constants for infinite lattices, the limiting analogue of the finite spanning-tree counts determined by formula CITE{formula-matrix-tree}
+Links:
+  WikiLaplacian:
+    title: 'Wikipedia: Laplacian matrix'
+    url: https://en.wikipedia.org/wiki/Laplacian_matrix
+  MathWorldLaplacianPolynomial:
+    title: 'MathWorld: Laplacian Polynomial'
+    url: https://mathworld.wolfram.com/LaplacianPolynomial.html
+Keywords:
+  - Laplacian matrix
+  - Kirchhoff matrix
+  - characteristic polynomial of the Laplacian
+  - graph spectrum
+  - algebraic connectivity
+  - spanning tree
+Tags:
+  - polynomial
+  - combinatorics
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every connected graph on at most seven vertices
+  rigour details: >-
+    The generator enumerates connected simple graphs with $1\leq |V(G)|\leq7$
+    using Sage, canonically labels each graph, and stores the canonical graph6
+    string. It computes $L(G)=D(G)-A(G)$ exactly over $\mathbb{Z}$ and expands
+    $\det(xI-L(G))$ over permutations in $\mathbb{Z}[x]$, avoiding Sage's
+    polynomial-matrix determinant machinery.
+
+    The build checked that the 996 graph6 strings are exactly the keys of
+    HREF{Chromatic_polynomials_of_connected_graphs}[the chromatic polynomial
+    table] and HREF{Tutte_polynomials_of_connected_graphs}[the Tutte
+    polynomial table]. The exactness check found no inexact coefficients, and
+    Sage's characteristic polynomial of the integer Laplacian matrix agreed on
+    every row. The coefficient in formula CITE{formula-matrix-tree} agreed
+    with $T_G(1,1)$ from the stored Tutte polynomial on every row. Formula
+    CITE{formula-trace} agreed with the number of edges on every row, and
+    formula CITE{formula-complete} agreed for $K_1,\ldots,K_7$.
+Display properties:
+  number-header: $\lambda(G,x)$
+  group parameters: [['g']]
