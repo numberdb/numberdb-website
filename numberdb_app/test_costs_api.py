@@ -72,10 +72,16 @@ class ACostReportGoesThroughTheApi(TestCase):
 	def test_attribution_rescues_one(self):
 		orphan = LEDGER + ("20260912T120000Z\tideas\tclaude\t9\t2.00\tsuccess"
 		                   "\tl\topus\t\t\t\t\t\t\t\t\n")
-		#Newlines cannot travel in a header; the sender swaps them for record
-		#separators, which is the part most likely to be got wrong.
+		#Two lines, base64: a header may hold neither a newline nor a record
+		#separator, and the first version of this test used a single line and
+		#so never exercised the encoding at all -- the real file failed on the
+		#first attempt with "Invalid HTTP Header".
+		import base64
+
+		attribution = ('# a comment line\n'
+		               '20260912T120000Z\tT700\n').encode('utf-8')
 		answer = self.post(self.agent, orphan,
-		                   HTTP_X_ATTRIBUTION='20260912T120000Z\tT700')
+		                   HTTP_X_ATTRIBUTION=base64.b64encode(attribution).decode())
 		self.assertEqual(answer.json()['rescued'], 1)
 		self.assertEqual(answer.json()['unattributed'], 0)
 

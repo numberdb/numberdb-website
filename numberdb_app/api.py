@@ -1381,9 +1381,21 @@ def costs(request):
 	if not ledger.strip():
 		return JsonResponse({'error': 'No ledger in the body.'}, status=400)
 
-	#Newlines cannot travel in an HTTP header, so the sender swaps them
-	#for record separators and they are put back here.
-	attribution = request.headers.get('X-Attribution', '').replace('\x1e', '\n')
+	#Base64, because a header value may not hold a newline and a server will
+	#refuse one that holds a record separator either: swapping newlines for
+	#\x1e produced "Invalid HTTP Header: 'X-ATTRIBUTION'" from the first real
+	#file, while the single-line value in the test went through untouched.
+	attribution = request.headers.get('X-Attribution', '')
+	if attribution:
+		import base64
+		import binascii
+
+		try:
+			attribution = base64.b64decode(attribution).decode('utf-8')
+		except (binascii.Error, UnicodeDecodeError, ValueError):
+			return JsonResponse(
+				{'error': 'X-Attribution must be base64 of the TSV.'},
+				status=400)
 	summary = ingest(ledger, attribution,
 	                 dry_run=request.GET.get('dry') == '1')
 	return JsonResponse(summary)
