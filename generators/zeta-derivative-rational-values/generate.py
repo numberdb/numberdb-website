@@ -1,4 +1,4 @@
-"""Values of the derivative of the Riemann zeta function -- numberdb.org/T228
+"""Values of zeta derivative and logarithmic derivative -- numberdb.org/T228
 
 For each rational s = a/b in lowest terms with b <= 4 and -20 <= s <= 20,
 this stores zeta'(s) where s != 1, and zeta'(s)/zeta(s) where s is neither
@@ -99,13 +99,29 @@ def _comment(s, quantity):
     if quantity == QUANTITY_DERIVATIVE:
         if text == "0":
             return "$-\\frac12\\log(2\\pi)$."
+        if text == "-1":
+            return (
+                "$\\frac1{12}-\\log A$, where $A$ is "
+                "HREF{T227#1,A}[the Glaisher-Kinkelin constant] "
+                "CITE{DLMFBarnes}."
+            )
         if text == "-2":
             return "$-\\zeta(3)/(4\\pi^2)$."
         if text == "-4":
             return "$3\\zeta(5)/(4\\pi^4)$."
-    if quantity == QUANTITY_LOG_DERIVATIVE:
         if text == "2":
-            return "The negative of this value is $\\sum_{n\\geq1}\\Lambda(n)/n^2$."
+            return (
+                "$\\frac{\\pi^2}{6}(\\gamma+\\log(2\\pi)-12\\log A)$ "
+                "CITE{DLMFBarnes}."
+            )
+    if quantity == QUANTITY_LOG_DERIVATIVE:
+        if text == "1/2":
+            return "$\\frac12(\\frac\\pi2+\\gamma+\\log(8\\pi))$."
+        if text == "2":
+            return (
+                "$\\gamma+\\log(2\\pi)-12\\log A$, where $A$ is the "
+                "Glaisher-Kinkelin constant."
+            )
         if text == "0":
             return "$\\log(2\\pi)$."
     return ""
