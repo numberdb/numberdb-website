@@ -26,6 +26,7 @@ from fractions import Fraction
 from math import lcm
 
 import numberdb.sage as numberdb
+from sage.misc.latex import latex
 from sage.rings.integer_ring import ZZ
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.rational_field import QQ
@@ -40,6 +41,7 @@ CHECK_LENGTH = 12
 
 R = PolynomialRing(QQ, "t")
 t = R.gen()
+X = PolynomialRing(QQ, "x")
 
 
 def _key_from_stdin():
@@ -164,6 +166,13 @@ def minimal_polynomial(p, q, r):
     return R(minimal_polynomial_text(p, q, r))
 
 
+@lru_cache(None)
+def minimal_polynomial_latex(p, q, r):
+    poly = minimal_polynomial(p, q, r)
+    display = X([poly[i] for i in range(poly.degree() + 1)])
+    return latex(display)
+
+
 def growth_rate(p, q, r, digits):
     poly = minimal_polynomial(p, q, r)
     if poly.degree() == 1:
@@ -180,13 +189,20 @@ def growth_rate(p, q, r, digits):
 
 def entry_comment(p, q, r):
     sentence = (
-        r"$%s$, with minimal polynomial $%s$ for $\tau$."
-        % (diagram_tex(p, q, r), minimal_polynomial_text(p, q, r))
+        r"$%s$. The minimal polynomial of $\tau$ is $%s$."
+        % (diagram_tex(p, q, r), minimal_polynomial_latex(p, q, r))
     )
     if (p, q, r) == (2, 3, 7):
         sentence += " This is Lehmer's number."
     if (p, q, r) == (2, 3, None):
         sentence += " This is the plastic number."
+    if (p, q, r) in ((2, None, None), (3, 3, None)):
+        sentence += " This is HREF{Golden_ratio#phi}[the golden ratio]."
+    if q is None and r is None:
+        if p == 3:
+            sentence += " This is the tribonacci constant."
+        elif p > 3:
+            sentence += " This is the $%d$-bonacci constant." % p
     return sentence
 
 
