@@ -1,6 +1,6 @@
 # Draft document for proposal 3 of agents/table-ideas/BATCH-2026-09-13T2142.md.
-# It was created as draft T239 through the API with X-Draft: yes. Publishing is
-# a person's act.
+# It was created as draft T239 through the API with X-Draft: yes, filled, and
+# offered for review. Publishing is a person's act.
 Title: Matching polynomials of connected graphs
 Definition: >-
   For a connected simple graph $G$ with $n$ vertices, let $m_k(G)$ be the
