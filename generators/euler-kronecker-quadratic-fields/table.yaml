@@ -5,9 +5,10 @@
 Title: Euler-Kronecker constants of quadratic fields
 Definition: >-
   For a quadratic field $K=\mathbb{Q}(\sqrt{D})$ of fundamental discriminant
-  $D\ne1$, write the Laurent expansion of its Dedekind zeta function at
-  $s=1$ as $\zeta_K(s)=c_{-1}(s-1)^{-1}+c_0+O(s-1)$. Listed is Ihara's
-  Euler-Kronecker constant $\gamma_K=c_0/c_{-1}$ CITE{Ihara2006}.
+  $D\ne1$, write the Laurent expansion of its Dedekind zeta function
+  CITE{WikiDedekind} at $s=1$ as
+  $\zeta_K(s)=c_{-1}(s-1)^{-1}+c_0+O(s-1)$. Listed is Ihara's Euler-Kronecker
+  constant $\gamma_K=c_0/c_{-1}$ CITE{Ihara2006}.
 Keywords:
   - Euler-Kronecker constant
   - Ihara constant
@@ -18,21 +19,26 @@ Parameters:
     type: Z
     title: fundamental discriminant
     display: $D$
-    constraints: $D$ is a fundamental discriminant and $D\ne1$
+    constraints: $D\ne1$
 Comments:
-  comment-log-derivative: >-
-    Equivalently, $\gamma_K$ is the constant term in
-    $\zeta_K'(s)/\zeta_K(s)+1/(s-1)$ at $s=1$.
+  comment-euler-constant: >-
+    $\gamma=\gamma_{\mathbb{Q}}$ is Euler's constant, the Stieltjes constant
+    HREF{Stieltjes_constants#0}[$\gamma_0$].
   comment-quadratic-character: >-
     For a quadratic field, the associated quadratic Dirichlet character is
-    $\chi_D(n)=\left(\frac{D}{n}\right)$, the Kronecker symbol.
+    $\chi_D(n)=\left(\frac{D}{n}\right)$, the Kronecker symbol
+    CITE{WikiKronecker}.
 Formulas:
   formula-quadratic-l: >-
-    $\zeta_{\mathbb{Q}(\sqrt{D})}(s)=\zeta(s)L(s,\chi_D)$, and therefore
-    $\gamma_{\mathbb{Q}(\sqrt{D})}=\gamma+
-    L'(1,\chi_D)/L(1,\chi_D)$.
+    $\zeta_K(s)=\zeta(s)L(s,\chi_D)$, and therefore
+    $\gamma_K=\gamma+L'(1,\chi_D)/L(1,\chi_D)$.
   formula-laurent: >-
     $\zeta_K'(s)/\zeta_K(s)=-1/(s-1)+\gamma_K+O(s-1)$ at $s=1$.
+  formula-imaginary: >-
+    For $D<0$:
+    $\gamma_K=2\gamma+\log(2\pi)+
+    \dfrac{|D|\sum_{a=1}^{|D|-1}\chi_D(a)\log\Gamma(a/|D|)}
+    {\sum_{a=1}^{|D|-1}a\chi_D(a)}$.
 Programs:
   program-pari:
     language: PARI/GP
@@ -43,15 +49,28 @@ Programs:
       Euler + lfun(L, 1, 1) / lfun(L, 1)
 Similar tables:
   - table: HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[Residues of Dedekind zeta functions of quadratic fields]
-    relation: lists the residue $c_{-1}$ for the same quadratic fields
+    relation: lists $\kappa_D=c_{-1}=L(1,\chi_D)$, the denominator in CITE{formula-quadratic-l}, for the same 607 fields
   - table: HREF{Values_of_Dirichlet_L-functions_at_positive_integers}[Values of Dirichlet L-functions at positive integers]
-    relation: stores $L(1,\chi)$ for many primitive characters
+    relation: holds $L(1,\chi_D)$ for $|D|\leq30$, with $\chi_D$ under its Conrey label $(|D|,n)$ rather than under $D$
   - table: HREF{Stieltjes_constants}[Stieltjes constants]
-    relation: its row HREF{Stieltjes_constants#0}[$\gamma_0$] is $\gamma_{\mathbb{Q}}$
+    relation: holds $\gamma_{\mathbb{Q}}=\gamma_0$ as its row HREF{Stieltjes_constants#0}[$\gamma_0$]
   - table: HREF{Laurent_coefficients_of_logarithmic_derivative_of_Riemann_zeta_function_at_1}[Laurent series coefficients of the logarithmic derivative of the Riemann zeta function at 1]
-    relation: stores the analogous logarithmic-derivative expansion for $\mathbb{Q}$
+    relation: its row HREF{Laurent_coefficients_of_logarithmic_derivative_of_Riemann_zeta_function_at_1#eta_n,0}[$\eta_0$] is $-\gamma=-\gamma_{\mathbb{Q}}$ in the analogous logarithmic-derivative expansion for $\mathbb{Q}$
   - table: HREF{Residues_of_Dedekind_zeta_functions_of_cubic_fields}[Residues of Dedekind zeta functions of cubic fields]
-    relation: is the residue table for cubic fields
+    relation: lists the same Laurent coefficient $c_{-1}$ for cubic fields
+Links:
+  WikiDedekind:
+    title: 'Wikipedia: Dedekind zeta function'
+    url: https://en.wikipedia.org/wiki/Dedekind_zeta_function
+  WikiKronecker:
+    title: 'Wikipedia: Kronecker symbol'
+    url: https://en.wikipedia.org/wiki/Kronecker_symbol
+  OEIS-neg:
+    title: 'OEIS A003657: discriminants of imaginary quadratic fields, negated'
+    url: https://oeis.org/A003657
+  OEIS-pos:
+    title: 'OEIS A003658: fundamental discriminants of real quadratic fields'
+    url: https://oeis.org/A003658
 References:
   Ihara2006:
     bib: >-
@@ -70,15 +89,17 @@ Data properties:
     Each value is computed in arb ball arithmetic from
     $\gamma+L'(1,\chi_D)/L(1,\chi_D)$, using the exact Kronecker character
     $\chi_D$ and the Hurwitz-zeta expansion of the associated Dirichlet
-    $L$-function at $s=1$. The computation is compared with PARI's
-    `lfuncreate(D)`, `lfun(L, 1, 1)` and `lfun(L, 1)` at selected
-    discriminants, with the closed form for $D=-4$, and with the relation to
-    the stored residues in
-    HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[the
-    quadratic Dedekind zeta residue table].
+    $L$-function at $s=1$. The computation was compared with PARI's
+    `lfuncreate(D)`, `lfun(L, 1, 1)` and `lfun(L, 1)` at
+    $D=-4,-3,5,12,-995,997$; with the closed form in
+    CITE{formula-imaginary} for every $D<0$; and with
+    $L(1,\chi_D)=\kappa_D$ in
+    HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[Residues of
+    Dedekind zeta functions of quadratic fields] for all 607 discriminants.
   complete: 'no'
   complete-note: >-
-    it holds every fundamental discriminant with $|D|\leq1000$, matching the
-    range of the quadratic Dedekind zeta residue table
+    it holds the same 607 fields as
+    HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[Residues of
+    Dedekind zeta functions of quadratic fields], 305 imaginary and 302 real
 Display properties:
   number-header: $\gamma_K$

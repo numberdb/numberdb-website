@@ -131,9 +131,14 @@ def euler_kronecker(D, digits):
 
 def _comment(D):
     D = ZZ(D)
+    if D == -3:
+        return (r"$\mathbb{Q}(\sqrt{-3})$, where "
+                r"$\gamma_K=2\gamma+4\log(2\pi)-"
+                r"\tfrac32\log3-6\log\Gamma(1/3)$.")
     if D == -4:
-        return (r"$\mathbb{Q}(i)$; "
-                r"$2\gamma+2\log 2+3\log\pi-4\log\Gamma(1/4)$.")
+        return (r"$\mathbb{Q}(i)$, where "
+                r"$\gamma_K=2\gamma+2\log 2+3\log\pi-"
+                r"4\log\Gamma(1/4)$.")
     return "$%s$." % field_name(D)
 
 
