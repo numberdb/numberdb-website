@@ -21,8 +21,8 @@ Parameters:
   diagram:
     type: Symbolic
     title: Coxeter symbol
-    display: Coxeter symbol
-    constraints: a Coxeter symbol of a finite-volume hyperbolic Coxeter simplex
+    display: symbol
+    constraints: a finite-volume hyperbolic Coxeter simplex
 Comments:
   comment-group: >-
     Each entry is the volume of the simplex itself, equivalently the covolume
@@ -30,14 +30,19 @@ Comments:
     orientation-preserving subgroup has index $2$ and covolume twice the
     value listed here.
   comment-range: >-
-    This fill holds the $23$ noncompact rank-$4$ Coxeter simplices in
-    $\mathbb{H}^3$, also called Koszul-type tetrahedra CITE{KozmaSzirmai}.
-    The nine compact Coxeter tetrahedra and the higher-dimensional simplices
-    are not listed yet.
+    A Coxeter simplex is noncompact when it has at least one ideal vertex.
+    Such simplices are also called Koszul-type CITE{KozmaSzirmai}, and in
+    $\mathbb{H}^3$ there are $23$ of them.
   comment-notation: >-
-    Coxeter symbols are written as in CITE{KozmaSzirmai}, Table 1. The entry
-    comment gives the Witt symbol from that table, and the source decimal
-    used as a check.
+    Rows are labelled by Coxeter symbols CITE{WikiParacompact}: $[p,q,r]$ is
+    a linear diagram, $[(p,q,r,s)]$ a cycle, a superscript such as $1,1$ a
+    fork, and a bracketed superscript such as $[3]$ a ring. The empty-bracket
+    product in $[3^{[\,]\times[\,]}]$ is written $[3^{[]x[]}]$ in the row
+    label. Each entry comment gives the Witt symbol of CITE{KozmaSzirmai},
+    Table 1, and, where that table gives one, the closed form; that table
+    labels $\overline{DV}_3$ as $[4,3^{[1,1]}]$, while its diagram is
+    $[6,3^{1,1}]$. The row order follows the commensurability classes of
+    CITE{KozmaSzirmai}, Table 1.
   comment-regular: >-
     The entry $[3^{[3,3]}]$ is the regular ideal tetrahedron. Its volume is
     $3\Lambda(\pi/3)=\mathrm{Cl}_2(\pi/3)$, the Gieseking constant held in
@@ -66,6 +71,8 @@ Formulas:
     $\mathrm{Vol}([3,4,4])=\Lambda(\pi/4)/6$. These are one quarter of the
     $D=-3$ and $D=-4$ entries of
     HREF{Covolumes_of_the_Bianchi_groups}[the Bianchi covolume table].
+    Consequently $\mathrm{Vol}([3,6,3])$ and
+    $\mathrm{Vol}([(3^2,4^2)])$ are those two Bianchi covolumes.
 Programs:
   program-sage:
     language: Sage
@@ -77,6 +84,9 @@ Programs:
       CB = ComplexBallField(numberdb.bits(80, losing=80))
       pi = RB.pi()
       def Lambda(theta):
+          theta = RB(theta)
+          if (theta / pi).contains_integer():
+              return RB(0)
           z = (CB(0, 2) * CB(theta)).exp()
           return z.polylog(2).imag() / 2
       Lambda(pi / 3) / 8        # Vol([3,3,6])
@@ -86,7 +96,7 @@ Similar tables:
   - table: HREF{Values_of_the_Clausen_functions_at_rational_multiples_of}[Values of the Clausen functions at rational multiples of $\pi$]
     relation: the Lobachevsky values in the formulas are half of Clausen values
   - table: HREF{Growth_rates_of_hyperbolic_Coxeter_simplex_groups}[Growth rates of hyperbolic Coxeter simplex groups]
-    relation: the same reflection groups, storing growth rates rather than covolumes
+    relation: growth rates for the same finite-volume family; it holds the nine compact tetrahedral groups, while this table holds the noncompact ones
   - table: HREF{Hyperbolic_volumes_of_the_prime_knots_with_at_most_ten_crossings}[Hyperbolic volumes of the prime knots with at most ten crossings]
     relation: hyperbolic 3-manifold volumes rather than reflection-orbifold covolumes
   - table: HREF{Volumes_of_the_closed_hyperbolic_3-manifolds_of_the_Hodgson-Weeks_census}[Volumes of the closed hyperbolic 3-manifolds of the Hodgson-Weeks census]
@@ -95,9 +105,6 @@ Links:
   WikiCoxeter:
     title: 'Wikipedia: Coxeter group'
     url: https://en.wikipedia.org/wiki/Coxeter_group
-  WikiUniform:
-    title: 'Wikipedia: Uniform honeycombs in hyperbolic space'
-    url: https://en.wikipedia.org/wiki/Uniform_honeycombs_in_hyperbolic_space
   WikiParacompact:
     title: 'Wikipedia: Paracompact uniform honeycombs'
     url: https://en.wikipedia.org/wiki/Paracompact_uniform_honeycombs
@@ -105,7 +112,8 @@ References:
   KozmaSzirmai:
     bib: >-
       R. T. Kozma and J. Szirmai, Optimal horoball packing densities for
-      Koszul-type tilings in hyperbolic 3-space, arXiv preprint, 2022.
+      Koszul-type tilings in hyperbolic 3-space, Acta Math. Hungar. 177
+      (2025), 419-449.
     arxiv: '2205.03945'
     doi: 10.1007/s10474-026-01581-3
   JKRT:
@@ -130,11 +138,11 @@ Data properties:
     The generator evaluates the Lobachevsky function as
     $\frac12\operatorname{Im}\operatorname{Li}_2(e^{2i\theta})$ in arb ball
     arithmetic and applies CITE{formula-orthoscheme} and the orthoscheme
-    decompositions of CITE{KozmaSzirmai}. It writes $100$ digits. Before the
-    draft was filled, all $23$ rows were checked against the source decimals
-    in CITE{KozmaSzirmai}, the regular ideal tetrahedron and ideal octahedral
-    values were checked against the stored Clausen table, and the $[3,3,6]$
-    and $[3,4,4]$ rows were checked as quarters of the $D=-3$ and $D=-4$
-    Bianchi covolumes.
+    decompositions of CITE{KozmaSzirmai}. It writes $100$ digits. All $23$
+    rows were checked against the source values in CITE{KozmaSzirmai}. The
+    $[3^{[3,3]}]$ and $[4^{[4]}]$ rows were checked against the stored
+    Clausen values. The $[3,3,6]$ and $[3,4,4]$ rows were checked as quarters
+    of the $D=-3$ and $D=-4$ Bianchi covolumes; the $[3,6,3]$ and
+    $[(3^2,4^2)]$ rows were checked as those covolumes themselves.
 Display properties:
   number-header: $\mathrm{Vol}$

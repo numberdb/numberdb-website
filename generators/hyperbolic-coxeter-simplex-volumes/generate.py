@@ -54,8 +54,10 @@ def lobachevsky(theta, RB, CB):
     """Lobachevsky's Lambda(theta) = Im Li_2(exp(2 i theta)) / 2."""
     theta = RB(theta)
     pi = RB.pi()
+    if (theta / pi).contains_integer():
+        return RB(0)
     tolerance = RB(BOUNDARY_TOLERANCE)
-    for point in (RB(0), pi / 2, -pi / 2):
+    for point in (pi / 2, -pi / 2):
         if (theta - point).contains_zero() and RB((theta - point).abs().upper()) < tolerance:
             return RB(0)
     z = (CB(0, 2) * CB(theta)).exp()
@@ -101,25 +103,25 @@ def values(bits):
 
     V["[3,3,6]"] = L3 / 8
     V["[3,6,3]"] = L3 / 2
-    V["[6,3^[3]]"] = 3 * L3 / 2
-    V["[3^[3,3]]"] = 3 * L3
-    V["[3,3^[3]]"] = L3 / 4
+    V["[6,3^{[3]}]"] = 3 * L3 / 2
+    V["[3^{[3,3]}]"] = 3 * L3
+    V["[3,3^{[3]}]"] = L3 / 4
     V["[6,3,6]"] = 3 * L3 / 4
     V["[4,3,6]"] = 5 * L3 / 16
-    V["[4,3^[3]]"] = 5 * L3 / 8
-    V["[4,3^[1,1]]"] = 5 * L3 / 8
-    V["[3^[]x[]]"] = 5 * L3 / 4
-    V["[(3,6)^[2]]"] = 5 * L3 / 2
+    V["[4,3^{[3]}]"] = 5 * L3 / 8
+    V["[6,3^{1,1}]"] = 5 * L3 / 8
+    V["[3^{[]x[]}]"] = 5 * L3 / 4
+    V["[(3,6)^{[2]}]"] = 5 * L3 / 2
 
     V["[3,4,4]"] = L4 / 6
-    V["[3,4^[1,1]]"] = L4 / 3
+    V["[3,4^{1,1}]"] = L4 / 3
     V["[(3^2,4^2)]"] = 2 * L4 / 3
     V["[4,4,4]"] = L4 / 2
-    V["[4^[1,1,1]]"] = L4
-    V["[4^[4]]"] = 2 * L4
+    V["[4^{1,1,1}]"] = L4
+    V["[4^{[4]}]"] = 2 * L4
 
     V["[5,3,6]"] = O(5, 3, 6)
-    V["[5,3^[3]]"] = 2 * V["[5,3,6]"]
+    V["[5,3^{[3]}]"] = 2 * V["[5,3,6]"]
     V["[(3^3,6)]"] = O(3, 3, 6) + O(3, 4, 4) + O(4, 4, 3) + O(3, 6, 3)
     V["[(3,4,3,6)]"] = (
         O(4, 3, 6)
@@ -145,28 +147,61 @@ def values(bits):
 ROWS = [
     ("[3,3,6]", r"$\overline{V}_3$", "0.0422892336"),
     ("[3,6,3]", r"$\overline{Y}_3$", "0.1691569344"),
-    ("[6,3^[3]]", r"$\overline{VP}_3$", "0.5074708032"),
-    ("[3^[3,3]]", r"$\widehat{PP}_3$", "1.0149416064"),
-    ("[3,3^[3]]", r"$\overline{P}_3$", "0.0845784672"),
+    ("[6,3^{[3]}]", r"$\overline{VP}_3$", "0.5074708032"),
+    ("[3^{[3,3]}]", r"$\widehat{PP}_3$", "1.0149416064"),
+    ("[3,3^{[3]}]", r"$\overline{P}_3$", "0.0845784672"),
     ("[6,3,6]", r"$\overline{Z}_3$", "0.2537354016"),
     ("[4,3,6]", r"$\overline{BV}_3$", "0.1057230840"),
-    ("[4,3^[3]]", r"$\overline{BP}_3$", "0.2114461680"),
-    ("[4,3^[1,1]]", r"$\overline{DV}_3$", "0.2114461680"),
-    ("[3^[]x[]]", r"$\overline{DP}_3$", "0.4228923360"),
-    ("[(3,6)^[2]]", r"$\widehat{VV}_3$", "0.8457846720"),
+    ("[4,3^{[3]}]", r"$\overline{BP}_3$", "0.2114461680"),
+    ("[6,3^{1,1}]", r"$\overline{DV}_3$", "0.2114461680"),
+    ("[3^{[]x[]}]", r"$\overline{DP}_3$", "0.4228923360"),
+    ("[(3,6)^{[2]}]", r"$\widehat{VV}_3$", "0.8457846720"),
     ("[3,4,4]", r"$\overline{R}_3$", "0.0763304662"),
-    ("[3,4^[1,1]]", r"$\overline{O}_3$", "0.1526609324"),
+    ("[3,4^{1,1}]", r"$\overline{O}_3$", "0.1526609324"),
     ("[(3^2,4^2)]", r"$\widehat{BR}_3$", "0.3053218647"),
     ("[4,4,4]", r"$\overline{N}_3$", "0.2289913985"),
-    ("[4^[1,1,1]]", r"$\overline{M}_3$", "0.4579827971"),
-    ("[4^[4]]", r"$\widehat{RR}_3$", "0.9159655942"),
+    ("[4^{1,1,1}]", r"$\overline{M}_3$", "0.4579827971"),
+    ("[4^{[4]}]", r"$\widehat{RR}_3$", "0.9159655942"),
     ("[5,3,6]", r"$\overline{HV}_3$", "0.1715016613"),
-    ("[5,3^[3]]", r"$\overline{HP}_3$", "0.3430033226"),
+    ("[5,3^{[3]}]", r"$\overline{HP}_3$", "0.3430033226"),
     ("[(3^3,6)]", r"$\widehat{AV}_3$", "0.3641071004"),
     ("[(3,4,3,6)]", r"$\widehat{BV}_3$", "0.5258402692"),
     ("[(3,5,3,6)]", r"$\widehat{HV}_3$", "0.6729858045"),
     ("[(3,4^3)]", r"$\widehat{CR}_3$", "0.5562821156"),
 ]
+
+
+VOLUME_COMMENTS = {
+    "[3,3,6]": r"$\Lambda(\pi/3)/8$",
+    "[3,6,3]": (
+        r"$\Lambda(\pi/3)/2$, which is the covolume of "
+        r"$\mathrm{PSL}_2(\mathbb{Z}[\omega])$ in "
+        r"HREF{Covolumes_of_the_Bianchi_groups#-3}[the Bianchi covolume table]"
+    ),
+    "[6,3^{[3]}]": r"$3\Lambda(\pi/3)/2$",
+    "[3^{[3,3]}]": r"$3\Lambda(\pi/3)=\mathrm{Cl}_2(\pi/3)$",
+    "[3,3^{[3]}]": r"$\Lambda(\pi/3)/4$",
+    "[6,3,6]": r"$3\Lambda(\pi/3)/4$",
+    "[4,3,6]": r"$5\Lambda(\pi/3)/16$",
+    "[4,3^{[3]}]": r"$5\Lambda(\pi/3)/8$",
+    "[6,3^{1,1}]": r"$5\Lambda(\pi/3)/8$",
+    "[3^{[]x[]}]": r"$5\Lambda(\pi/3)/4$",
+    "[(3,6)^{[2]}]": r"$5\Lambda(\pi/3)/2$",
+    "[3,4,4]": r"$\Lambda(\pi/4)/6$",
+    "[3,4^{1,1}]": r"$\Lambda(\pi/4)/3$",
+    "[(3^2,4^2)]": (
+        r"$2\Lambda(\pi/4)/3$, which is the covolume of "
+        r"$\mathrm{PSL}_2(\mathbb{Z}[i])$ in "
+        r"HREF{Covolumes_of_the_Bianchi_groups#-4}[the Bianchi covolume table]"
+    ),
+    "[4,4,4]": r"$\Lambda(\pi/4)/2$",
+    "[4^{1,1,1}]": r"$\Lambda(\pi/4)$",
+    "[4^{[4]}]": (
+        r"$2\Lambda(\pi/4)$, which is "
+        r"HREF{Values_of_the_Clausen_functions_at_rational_multiples_of#2,1/2}"
+        r"[Catalan's constant $G$]"
+    ),
+}
 
 
 def decimal_enclosure(text, RB):
@@ -177,12 +212,11 @@ def decimal_enclosure(text, RB):
     return RB(text).add_error(RB(10) ** (-places))
 
 
-def entry_comment(diagram, witt, source_decimal):
-    return (
-        "Kozma and Szirmai write this simplex as %s and give the check "
-        "decimal $%s\\ldots$ in their Table 1."
-        % (witt, source_decimal)
-    )
+def entry_comment(diagram, witt, _source_decimal):
+    intro = "Kozma and Szirmai write this simplex as %s." % (witt,)
+    if diagram not in VOLUME_COMMENTS:
+        return intro
+    return "%s Its volume is %s." % (intro, VOLUME_COMMENTS[diagram])
 
 
 def check_identities(digits=100):
@@ -199,9 +233,9 @@ def check_identities(digits=100):
     clausen = numberdb.table("T175")
     cl2_pi_over_3 = decimal_enclosure(clausen["Numbers"]["2"]["1/3"]["number"], RB)
     catalan = decimal_enclosure(clausen["Numbers"]["2"]["1/2"]["number"], RB)
-    if not (computed["[3^[3,3]]"] - cl2_pi_over_3).contains_zero():
+    if not (computed["[3^{[3,3]}]"] - cl2_pi_over_3).contains_zero():
         raise ArithmeticError("regular ideal tetrahedron does not match T175")
-    if not (computed["[4^[4]]"] - catalan).contains_zero():
+    if not (computed["[4^{[4]}]"] - catalan).contains_zero():
         raise ArithmeticError("ideal octahedral value does not match T175")
 
     bianchi = numberdb.table("T221")
@@ -211,11 +245,16 @@ def check_identities(digits=100):
         raise ArithmeticError("[3,3,6] is not one quarter of T221 D=-3")
     if not (computed["[3,4,4]"] * RB(4) - d4).contains_zero():
         raise ArithmeticError("[3,4,4] is not one quarter of T221 D=-4")
+    if not (computed["[3,6,3]"] - d3).contains_zero():
+        raise ArithmeticError("[3,6,3] is not T221 D=-3")
+    if not (computed["[(3^2,4^2)]"] - d4).contains_zero():
+        raise ArithmeticError("[(3^2,4^2)] is not T221 D=-4")
 
     print("checked %d source decimals" % len(ROWS))
-    print("[3^[3,3]] matches T175 Cl_2(pi/3)")
-    print("[4^[4]] matches T175 Catalan's constant")
+    print("[3^{[3,3]}] matches T175 Cl_2(pi/3)")
+    print("[4^{[4]}] matches T175 Catalan's constant")
     print("[3,3,6] and [3,4,4] match quarters of T221")
+    print("[3,6,3] and [(3^2,4^2)] match T221 covolumes")
 
 
 class HyperbolicCoxeterSimplexVolumes(numberdb.Generator):
