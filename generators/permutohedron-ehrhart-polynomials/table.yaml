@@ -42,8 +42,13 @@ Comments:
     $h^*$-polynomial $1$.
   comment-zonotope: >-
     The permutohedron is the graphical zonotope of the complete graph $K_n$.
-    Formula CITE{formula-forests} identifies $L_{\Pi_n}(t)$ with the forest
-    polynomial of $K_n$.
+    Stanley's graphical-zonotope formula CITE{StanleyZonotope} gives the
+    forest identity. Formula CITE{formula-forests} identifies
+    $L_{\Pi_n}(t)$ with the forest polynomial of $K_n$.
+  comment-oeis: >-
+    OEIS A105599 CITE{OEISEhrhart} lists the Ehrhart-polynomial coefficient
+    rows, and OEIS A001858 CITE{OEISForests} lists the totals
+    $L_{\Pi_n}(1)$.
 Formulas:
   formula-series: >-
     $\sum_{t\geq0}L_{\Pi_n}(t)z^t=h^*_{\Pi_n}(z)/(1-z)^n$.
@@ -54,7 +59,10 @@ Formulas:
     $L_{\Pi_n}(t)=t^{n-1}T_{K_n}(1+1/t,1)$, where $T_{K_n}$ is the Tutte
     polynomial of the complete graph.
   formula-leading: >-
-    The leading coefficient of $L_{\Pi_n}(t)$ is $n^{n-2}$.
+    The leading coefficient of $L_{\Pi_n}(t)$ is $n^{n-2}$, the number of
+    labelled trees on $n$ vertices that CITE{OEISTrees} lists.
+  formula-one: >-
+    $L_{\Pi_n}(1)$ is the number of forests on $n$ labelled vertices.
 Programs:
   program-sage:
     language: Sage
