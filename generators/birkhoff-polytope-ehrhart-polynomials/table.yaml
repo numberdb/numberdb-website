@@ -1,0 +1,131 @@
+# Draft document for proposal 1 of agents/table-ideas/BATCH-2026-09-13T1751.md.
+# It was created as draft T232 through the API with X-Draft: yes, then filled
+# by generate.py beside it. Publishing is a person's act.
+Title: Ehrhart and $h^*$-polynomials of the Birkhoff polytopes
+Definition: >-
+  The Birkhoff polytope $B_n$ is the lattice polytope of $n\times n$ doubly
+  stochastic matrices in $\mathbb{Z}^{n\times n}$ CITE{WikiBirkhoff}. For each
+  $n$, $H_n(t)=L_{B_n}(t)$ counts the $n\times n$ nonnegative integer matrices
+  whose rows and columns all sum to $t$, and $h^*_{B_n}(z)$ is defined by
+  $\sum_{t\geq 0}H_n(t)z^t=h^*_{B_n}(z)/(1-z)^{(n-1)^2+1}$
+  CITE{WikiEhrhart}.
+Keywords:
+  - Birkhoff polytope
+  - Ehrhart polynomial
+  - Ehrhart h-star polynomial
+  - Ehrhart h* polynomial
+  - semi-magic squares
+  - magic squares
+  - doubly stochastic matrices
+  - contingency tables
+Parameters:
+  n:
+    type: Z
+    title: matrix size
+    display: $n$
+    constraints: $n$ is an integer with $n\geq3$
+  form:
+    type: Symbolic
+    title: form of the polynomial
+    display: form
+    constraints: either `ehrhart` or `h-star`
+    values:
+      ehrhart: $H_n(t)$
+      h-star: $h^*_{B_n}(z)$
+Comments:
+  comment-semi-magic: >-
+    The count is for semi-magic squares: it fixes all row and column sums and
+    imposes no diagonal condition.
+  comment-small-n: >-
+    The omitted cases are $H_1(t)=1$, $h^*_{B_1}(z)=1$, $H_2(t)=t+1$, and
+    $h^*_{B_2}(z)=1$.
+  comment-known-range: >-
+    Beck and Pixton give the full Ehrhart polynomials $H_n(t)$ for
+    $1\leq n\leq9$ CITE{BeckPixtonData}. The volume of $B_{10}$ is known, but
+    the full polynomial $H_{10}(t)$ is not included here.
+Formulas:
+  formula-series: >-
+    If $d=(n-1)^2$, then
+    $\sum_{t\geq0}H_n(t)z^t=h^*_{B_n}(z)/(1-z)^{d+1}$.
+  formula-binomial-transform: >-
+    If $h^*_{B_n}(z)=\sum_{i=0}^{d}h_i^*z^i$ and $d=(n-1)^2$, then
+    $H_n(t)=\sum_{i=0}^{d}h_i^*\binom{t+d-i}{d}$.
+  formula-vertices: >-
+    $H_n(1)=n!$, the number of permutation matrices in $B_n$, so these values
+    are given by HREF{Factorial}[the factorial table].
+  formula-normalized-volume: >-
+    $h^*_{B_n}(1)=d!\,[t^d]H_n(t)$ for $d=(n-1)^2$, the normalized volume of
+    $B_n$ CITE{OEISVolume}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.arith.misc import binomial
+      from sage.rings.rational_field import QQ
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+      T = PolynomialRing(QQ, "t")
+      t = T.gen()
+
+      def ehrhart_from_h_star(coefficients, dimension):
+          return sum(QQ(c) * T(binomial(t + dimension - i, dimension))
+                     for i, c in enumerate(coefficients))
+
+      ehrhart_from_h_star([1, 14, 87, 148, 87, 14, 1], 9)  # H_4(t)
+Similar tables:
+  - table: HREF{Factorial}[Factorial of natural numbers]
+    relation: gives $H_n(1)=n!$, the number of permutation matrices in $B_n$
+Links:
+  WikiBirkhoff:
+    title: 'Wikipedia: Birkhoff polytope'
+    url: https://en.wikipedia.org/wiki/Birkhoff_polytope
+  WikiEhrhart:
+    title: 'Wikipedia: Ehrhart polynomial'
+    url: https://en.wikipedia.org/wiki/Ehrhart_polynomial
+  BeckPixtonData:
+    title: 'Beck and Pixton: Ehrhart polynomials for the Birkhoff polytopes'
+    url: https://matthbeck.github.io/birkhoff/polynomials.html
+  OEISHStar:
+    title: 'OEIS A259473: coefficients arising in the enumeration of doubly stochastic matrices of integers'
+    url: https://oeis.org/A259473
+  OEISVolume:
+    title: 'OEIS A037302: normalized volume of the Birkhoff polytope'
+    url: https://oeis.org/A037302
+  OEIS3:
+    title: 'OEIS A002817: number of $3\times3$ nonnegative integer matrices with all line sums $n$'
+    url: https://oeis.org/A002817
+  OEIS4:
+    title: 'OEIS A001496: number of $4\times4$ nonnegative integer matrices with all line sums $n$'
+    url: https://oeis.org/A001496
+  OEIS5:
+    title: 'OEIS A003438: number of $5\times5$ nonnegative integer matrices with all line sums $n$'
+    url: https://oeis.org/A003438
+References:
+  BeckPixton:
+    bib: >-
+      Matthias Beck and Dennis Pixton, The Ehrhart polynomial of the Birkhoff
+      polytope, Discrete & Computational Geometry 30 (2003), no. 4, 623-637.
+    doi: 10.1007/s00454-003-2850-8
+    arxiv: math/0202267
+Tags:
+  - polynomial
+  - combinatorics
+  - discrete geometry
+Data properties:
+  type: Q[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds both forms for every matrix size $n$ with $3\leq n\leq9$
+  rigour details: >-
+    The $h^*$-polynomials are transcribed from OEIS A259473 CITE{OEISHStar},
+    and the Ehrhart polynomials are obtained from them by the binomial
+    transform in CITE{formula-binomial-transform}. Before the draft was filled,
+    the entries were compared with Beck and Pixton's published polynomials
+    CITE{BeckPixtonData}; direct dynamic-programming counts for $n=3,4,5$ were
+    compared with OEIS A002817 CITE{OEIS3}, A001496 CITE{OEIS4}, and A003438
+    CITE{OEIS5}; each stored row satisfied $H_n(1)=n!$, and $h^*_{B_n}(1)$
+    agreed with OEIS A037302 CITE{OEISVolume}.
+Display properties:
+  number-header: polynomial
