@@ -8,9 +8,9 @@ Definition: >-
   $\pi/p$, $\pi/q$ and $\pi/r$, where
   $p,q,r\in\{2,3,\ldots\}\cup\{\infty\}$ and
   $1/p+1/q+1/r<1$ CITE{WikiTriangle}. Listed is the exponential growth
-  rate $\tau$ of the growth series $W(t)=\sum_{n\geq0}a_n t^n$, where
-  $a_n$ is the number of elements of reflection length $n$ in the standard
-  Coxeter generators CITE{WikiGrowth}.
+  rate $\tau=\lim_{n\to\infty}a_n^{1/n}$, where $a_n$ is the number of
+  elements of word length $n$ with respect to those three reflections
+  CITE{WikiGrowth}.
 Keywords:
   - Coxeter triangle group
   - hyperbolic triangle group
@@ -31,19 +31,30 @@ Comments:
     $\Delta(p,q,r)$ when all of $p,q,r$ are greater than $2$, and `inf`
     denotes $\infty$.
   comment-generators: >-
-    The generating set is the three reflections in the sides of the
-    triangle. The orientation-preserving von Dyck subgroup has index $2$,
-    and its growth rate with respect to its own standard generators is a
-    different convention.
+    The orientation-preserving von Dyck subgroup has index $2$, and its
+    growth rate with respect to its own standard generators is a different
+    convention.
+  comment-salem-pisot: >-
+    Among the entries here, a finite-label triangle has $\tau$ a Salem number,
+    and a triangle with an ideal vertex has $\tau$ a Pisot number CITE{Floyd}.
+    In this table, the smallest finite-label value is Lehmer's number, at
+    $\Delta(2,3,7)$, and the smallest ideal-vertex value is the plastic number, at
+    $\Delta(2,3,\infty)$.
+  comment-repeated-rates: >-
+    Different triangles can have the same growth rate without having the same
+    growth series: $\Delta(2,3,10)$ and $\Delta(2,4,5)$ share $\tau$, and so
+    do $\Delta(3,4,8)$, $\Delta(3,5,5)$ and $\Delta(4,4,4)$.
 Formulas:
   formula-steinberg: >-
-    The growth series is computed from Steinberg's formula
-    $1/W(t^{-1})=\sum_{T\subseteq S,\ W_T\text{ finite}}(-1)^{|T|}/W_T(t)$
-    CITE{Steinberg}.
+    For $a_n$ from the definition, the growth series
+    $W(t)=\sum_{n\geq0}a_n t^n$ satisfies Steinberg's formula
+    CITE{Steinberg}:
+    $1/W(t^{-1})=1-\dfrac{3}{1+t}+
+    \sum_{m\in\{p,q,r\},\ m<\infty}
+    \dfrac{1}{(1+t)(1+t+\cdots+t^{m-1})}$.
   formula-rate: >-
-    The growth rate $\tau$ is the reciprocal of the radius of convergence
-    of $W(t)$, equivalently the largest real pole of the reduced rational
-    function $W(t)$.
+    The radius of convergence of $W(t)$ is the smallest positive pole of the
+    reduced rational function $W(t)$, and $\tau$ is its reciprocal.
 Programs:
   program-sage:
     language: Sage
@@ -68,6 +79,12 @@ Links:
     title: 'Wikipedia: Growth rate (group theory)'
     url: https://en.wikipedia.org/wiki/Growth_rate_(group_theory)
 References:
+  Floyd:
+    bib: >-
+      W. J. Floyd, Growth of planar Coxeter groups, P.V. numbers, and Salem
+      numbers, Math. Ann. 293 (1992), no. 3, 475-483.
+    zbl: '0735.51016'
+    mr: '1170521'
   Steinberg:
     bib: >-
       Robert Steinberg, Endomorphisms of linear algebraic groups, Memoirs of
