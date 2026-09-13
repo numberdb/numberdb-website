@@ -4,10 +4,11 @@
 # Created through the API with X-Draft: yes. Publishing is a person's act.
 Title: Values of the hyperfactorial $K$-function $K(x)$ at rational numbers
 Definition: >-
-  Listed are Kinkelin's hyperfactorial $K$-function
-  $K(x)=\exp(\zeta'(-1,x)-\zeta'(-1))$ CITE{WikiKFunction} and its real
-  logarithm at positive rational arguments $x$, where $\zeta(s,x)$ is the
-  Hurwitz zeta function.
+  The hyperfactorial $K$-function is
+  $K(x)=\exp(\zeta'(-1,x)-\zeta'(-1))$ CITE{WikiKFunction}, where
+  $\zeta(s,x)$ is the Hurwitz zeta function, $\zeta'(s,x)$ is its derivative
+  in $s$, and $\zeta'(-1)=\zeta'(-1,1)$. Listed are $K(x)$ and $\log K(x)$
+  at positive rational $x$.
 Keywords:
   - K-function
   - hyperfactorial K-function
@@ -30,12 +31,12 @@ Parameters:
       logK: $\log K(x)$
 Comments:
   comment-domain: >-
-    The table uses the real positive branch on $x>0$. No values at
-    non-positive rational arguments are listed, since continuing
-    $\Gamma(x)^{x-1}/G(x)$ there requires a branch choice.
+    For $x>0$, $K(x)$ is real and positive, so $\log K(x)$ is real. The table
+    holds no values at $x\leq0$, where continuing $\Gamma(x)^{x-1}/G(x)$
+    encounters poles and branch choices.
   comment-shift: >-
-    For positive integers $n$, $K(n)=\prod_{m=1}^{n-1}m^m$, with empty
-    product $K(1)=1$. Thus the hyperfactorial $H(n)$ is $K(n+1)$.
+    The hyperfactorial $H(n)=1^1 2^2\cdots n^n$ is $K(n+1)$, so $H(n)$ is the
+    row $x=n+1$.
 Formulas:
   formula-log: >-
     $\log K(x)=\zeta'(-1,x)-\zeta'(-1)$.
@@ -49,7 +50,7 @@ Formulas:
     For positive integers $n$, $K(n)=\prod_{m=1}^{n-1}m^m$.
   formula-half: >-
     $K(1/2)=A^{3/2}2^{-1/24}e^{-1/8}$, where $A$ is
-    HREF{T227}[the Glaisher-Kinkelin constant].
+    HREF{T227#1,A}[the Glaisher-Kinkelin constant].
   formula-multiplication: >-
     For integers $n\geq2$,
     $\prod_{j=1}^{n-1}K(j/n)=A^{(n^2-1)/n}n^{-1/(12n)}
@@ -98,6 +99,8 @@ Data properties:
   complete: 'no'
   complete-note: >-
     it holds $K(x)$ and $\log K(x)$ for every rational argument $x=a/b$ in
-    lowest terms with $b\leq12$ and $0<x\leq6$
+    lowest terms with $b\leq12$ and $0<x\leq6$, which includes every factor in
+    the multiplication formula for $n\leq12$ and the integer values through
+    $K(6)=86400000$
 Display properties:
   number-header: value

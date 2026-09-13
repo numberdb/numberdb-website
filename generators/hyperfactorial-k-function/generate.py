@@ -36,6 +36,15 @@ WORKING_GUARD = 96
 QUANTITY_K = "K"
 QUANTITY_LOG_K = "logK"
 
+CLAUSEN_HALF = (
+    "HREF{Values_of_the_Clausen_functions_at_rational_multiples_of#2,1/2}"
+    "[$\\mathrm{Cl}_2(\\pi/2)$]"
+)
+CLAUSEN_TWO_THIRDS = (
+    "HREF{Values_of_the_Clausen_functions_at_rational_multiples_of#2,2/3}"
+    "[$\\mathrm{Cl}_2(2\\pi/3)$]"
+)
+
 _RING_CACHE = {}
 
 
@@ -121,17 +130,37 @@ def _comment(x, quantity):
     if quantity == QUANTITY_K:
         if text == "1":
             return "The empty product."
+        if text in ("2", "3", "4", "5", "6"):
+            return "The hyperfactorial $H(%d)$." % (int(x) - 1)
         if text == "1/2":
             return "$A^{3/2}2^{-1/24}e^{-1/8}$, where $A$ is HREF{T227#1,A}[the Glaisher-Kinkelin constant]."
-        if text == "3":
-            return "$1^1 2^2=4$."
-        if text == "4":
-            return "$1^1 2^2 3^3=108$."
+        if text == "1/4":
+            return "With $C=$ %s, $K(1/4)=A^{9/8}e^{-3/32}\\exp(C/(4\\pi))$." % CLAUSEN_HALF
+        if text == "3/4":
+            return "With $C=$ %s, $K(3/4)=A^{9/8}e^{-3/32}\\exp(-C/(4\\pi))$." % CLAUSEN_HALF
+        if text == "1/3":
+            return "With $C=$ %s, $K(1/3)=A^{4/3}3^{-1/72}e^{-1/9}\\exp(C/(4\\pi))$." % CLAUSEN_TWO_THIRDS
+        if text == "2/3":
+            return "With $C=$ %s, $K(2/3)=A^{4/3}3^{-1/72}e^{-1/9}\\exp(-C/(4\\pi))$." % CLAUSEN_TWO_THIRDS
+        if text == "1/6":
+            return "With $C=$ %s, $K(1/6)=A^{5/6}2^{1/72}3^{1/144}e^{-5/72}\\exp(3C/(8\\pi))$." % CLAUSEN_TWO_THIRDS
+        if text == "5/6":
+            return "With $C=$ %s, $K(5/6)=A^{5/6}2^{1/72}3^{1/144}e^{-5/72}\\exp(-3C/(8\\pi))$." % CLAUSEN_TWO_THIRDS
     if quantity == QUANTITY_LOG_K:
-        if text == "1" or text == "2":
-            return "$0$."
         if text == "1/2":
             return "$\\frac32\\log A-\\frac1{24}\\log2-\\frac18$."
+        if text == "1/4":
+            return "With $C=$ %s, $\\log K(1/4)=\\frac98\\log A-\\frac3{32}+C/(4\\pi)$." % CLAUSEN_HALF
+        if text == "3/4":
+            return "With $C=$ %s, $\\log K(3/4)=\\frac98\\log A-\\frac3{32}-C/(4\\pi)$." % CLAUSEN_HALF
+        if text == "1/3":
+            return "With $C=$ %s, $\\log K(1/3)=\\frac43\\log A-\\frac1{72}\\log3-\\frac19+C/(4\\pi)$." % CLAUSEN_TWO_THIRDS
+        if text == "2/3":
+            return "With $C=$ %s, $\\log K(2/3)=\\frac43\\log A-\\frac1{72}\\log3-\\frac19-C/(4\\pi)$." % CLAUSEN_TWO_THIRDS
+        if text == "1/6":
+            return "With $C=$ %s, $\\log K(1/6)=\\frac56\\log A+\\frac1{72}\\log2+\\frac1{144}\\log3-\\frac5{72}+3C/(8\\pi)$." % CLAUSEN_TWO_THIRDS
+        if text == "5/6":
+            return "With $C=$ %s, $\\log K(5/6)=\\frac56\\log A+\\frac1{72}\\log2+\\frac1{144}\\log3-\\frac5{72}-3C/(8\\pi)$." % CLAUSEN_TWO_THIRDS
     return ""
 
 
