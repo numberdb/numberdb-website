@@ -2850,3 +2850,26 @@ Evidence: 2026-09-13, T221 critique. `/tmp/T221_p[a-f].html`, all 200;
 `/tmp/crit221_mj/check.js` reported "checked 367 errors 0" and the control
 "checked 3 errors 1"; `curl --socks5-hostname 127.0.0.1:1080` gave
 "Failed to connect ... Couldn't connect to server".
+
+## `agents/sage.sh` does not provide the Django checkout for `audit_table`
+
+What happened: after repairing T221 through the API, the required
+`manage.py audit_table T221` could not run in either local Python or the
+Sage helper. Host `./manage.py audit_table T221` used `/usr/bin/env python`,
+but this runner has no `python` executable. `python3 manage.py audit_table
+T221` then failed because Django is not installed. A Sage helper script run
+through `agents/sage.sh` showed that `/app/manage.py` is absent inside that
+helper environment, so the helper is useful for Sage computations and API
+work but not for invoking this checkout's Django management commands.
+
+What to do instead: do not route `audit_table` through `agents/sage.sh` unless
+the helper image has been changed to mount the Django app. On this runner,
+use an API-backed audit helper or a deployed checkout with Django installed.
+When neither is available, run the deterministic JSON checks locally and say
+explicitly that the official management command did not run.
+
+Evidence: 2026-09-13, T221 repair. `./manage.py audit_table T221` reported
+`/usr/bin/env: 'python': No such file or directory`; `python3 manage.py
+audit_table T221` reported `ModuleNotFoundError: No module named 'django'`;
+`agents/sage.sh /tmp/run_audit_t221.py` printed `exists /app: False` and
+`helper image has no /app/manage.py`.
