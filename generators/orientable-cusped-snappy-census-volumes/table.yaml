@@ -19,35 +19,38 @@ Parameters:
     title: SnapPea census name
     display: $M$
     constraints: >-
-      $M$ is named as in SnapPy's $\mathtt{OrientableCuspedCensus}$; this table
+      $M$ is named as in SnapPy's $\mathtt{OrientableCuspedCensus}$. This table
       uses the census name with empty filling coefficients suppressed, so
       $m004$ denotes SnapPy's $m004(0,0)$
 Comments:
   comment-range: >-
     This table holds the $m$ part of the orientable cusped census, the
-    manifolds in the original SnapPea census with at most five ideal
+    orientable manifolds in the original SnapPea census with at most five ideal
     tetrahedra CITE{CallahanHildebrandWeeks}. SnapPy's
     $\mathtt{OrientableCuspedCensus}$ also includes the larger $s$, $v$, $o9$
     and $o10$ parts CITE{SnapPyCensus}.
   comment-repeats: >-
-    Different census manifolds may have the same volume. The manifolds $m003$
-    and $m004$ have equal volumes, and $m009$ and $m010$ also have equal
-    volumes.
+    Volumes repeat often in the census. The $301$ rows contain $219$ distinct
+    stored $100$-digit values, and the rows $m125$, $m129$, $m130$, $m135$,
+    $m136$, $m137$, $m139$ and $m140$ agree to the precision shown with the
+    Whitehead link complement volume.
   comment-arithmetic: >-
     The $m004$ row is the
     HREF{Hyperbolic_volumes_of_the_prime_knots_with_at_most_ten_crossings#4,1}[figure-eight
     knot complement volume]. The $m009$ and $m010$ rows are three times the
     $D=-7$ entry of HREF{Covolumes_of_the_Bianchi_groups}[the Bianchi covolume
-    table], and $m129$ is twelve times its $D=-4$ entry.
+    table]. The repeated Whitehead-link value in the rows $m125$, $m129$,
+    $m130$, $m135$, $m136$, $m137$, $m139$ and $m140$ is twelve times the
+    $D=-4$ entry of that Bianchi covolume table.
 Formulas:
   formula-bloch-wigner: >-
     $\mathrm{Vol}(M)=\sum_i D(z_i)$ for an ideal triangulation of $M$ with
-    tetrahedron shapes $z_i$ in the upper half plane, where
+    tetrahedron shapes $z_i$ giving the complete hyperbolic structure, where
     $D(z)=\operatorname{Im}\operatorname{Li}_2(z)+\arg(1-z)\log|z|$ is the
     Bloch-Wigner dilogarithm CITE{NeumannZagier}.
 Programs:
   program-snappy:
-    language: Python
+    language: Sage
     code: |-
       from snappy import Manifold
 
@@ -59,9 +62,9 @@ Similar tables:
   - table: HREF{Volumes_of_the_closed_hyperbolic_3-manifolds_of_the_Hodgson-Weeks_census}[Volumes of the closed hyperbolic 3-manifolds of the Hodgson-Weeks census]
     relation: closed hyperbolic $3$-manifold census volumes rather than cusped census volumes
   - table: HREF{Covolumes_of_the_Bianchi_groups}[Covolumes of the Bianchi groups]
-    relation: arithmetic cusped orbifold covolumes of which some entries here are small-index multiples
+    relation: arithmetic cusped orbifold covolumes whose $D=-7$ and $D=-4$ entries have rational multiples among the rows here
   - table: HREF{Values_of_the_Clausen_functions_at_rational_multiples_of}[Values of the Clausen functions at rational multiples of $\pi$]
-    relation: the Bloch-Wigner and Lobachevsky values that give special ideal-tetrahedron volumes
+    relation: the rows $2,1/3$ and $2,1/2$ are Gieseking's and Catalan's constants, giving closed forms for the figure-eight and Whitehead-link volumes here
 Links:
   SnapPyCensus:
     title: 'SnapPy documentation: Census manifolds'
@@ -86,7 +89,7 @@ References:
       Takayasu, "Verified computations for hyperbolic 3-manifolds",
       Experimental Mathematics 25 (2016), 66-78.
     arxiv: '1310.3410'
-    doi: 10.1080/10586458.2015.1022840
+    doi: 10.1080/10586458.2015.1029599
 Tags:
   - volume
   - period
@@ -100,10 +103,11 @@ Data properties:
   rigour details: >-
     Each value is computed with SnapPy 3.3.2's verified
     `volume(verified=True, bits_prec=...)` method, which returns a Sage
-    interval containing the true volume CITE{SnapPyVerify}. The generator
-    writes $100$ digits. Before the draft was filled, all rows were compared
-    with SnapPy's high-precision unverified volume as a transcription check,
-    and the relations to the figure-eight knot complement and the Bianchi
+    interval containing the true volume CITE{SnapPyVerify}. The method
+    certifies the shapes by the interval method of CITE{HIKMOT}. The generator
+    writes $100$ digits. Every row was also compared with SnapPy's
+    high-precision unverified volume as a transcription check, and the
+    relations to the figure-eight knot complement, Clausen values and Bianchi
     covolumes were checked against the stored entries in the linked tables.
 Display properties:
   number-header: $\mathrm{Vol}(M)$
