@@ -53,21 +53,21 @@ NAMES = {
     "DLo": "cycle $C_5$",
     "Dbk": "house graph",
     "DN{": "house X graph",
-    "D]{": "wheel $W_4$",
+    "D]{": "wheel $W_5$",
     "D~{": "complete graph $K_5$",
     "E?Bw": "star $K_{1,5}$",
     "E?~o": "complete bipartite graph $K_{2,4}$",
     "E@YO": "path $P_6$",
     "EIe_": "cycle $C_6$",
     "EFz_": "complete bipartite graph $K_{3,3}$",
-    "ELrw": "wheel $W_5$",
+    "ELrw": "wheel $W_6$",
     "E~~w": "complete graph $K_6$",
     "F??Fw": "star $K_{1,6}$",
     "F?B~o": "complete bipartite graph $K_{2,5}$",
     "F?~v_": "complete bipartite graph $K_{3,4}$",
     "F@HSO": "path $P_7$",
     "FHQSO": "cycle $C_7$",
-    "FIefw": "wheel $W_6$",
+    "FIefw": "wheel $W_7$",
     "FjaHw": "Moser spindle",
     "F~~~w": "complete graph $K_7$",
 }
@@ -89,7 +89,7 @@ def connected_graphs(max_vertices=MAX_VERTICES):
     for n in range(1, max_vertices + 1):
         for graph in graphs(n):
             if graph.is_connected():
-                canonical = graph.canonical_label()
+                canonical = graph.canonical_label(algorithm="sage")
                 out.append((canonical.graph6_string(), canonical))
     return tuple(out)
 
@@ -170,10 +170,9 @@ def entry_comment(key):
         if other != key
     ]
     if mates:
-        noun = "string" if len(mates) == 1 else "strings"
         sentences.append(
-            "It is Laplacian-cospectral with the graph6 %s %s."
-            % (noun, english_list(mates))
+            "It has the same Laplacian polynomial as %s."
+            % english_list(mates)
         )
 
     return " ".join(sentences)

@@ -10,27 +10,32 @@ Definition: >-
 Parameters:
   g:
     type: Symbolic
+    title: graph
     constraints: >-
-      a connected graph on at most $7$ vertices, named by its canonical graph6
-      string
+      a connected simple graph, named by its canonical graph6 string
     display: $G$
 Comments:
-  comment-index: >-
-    The index is the canonical graph6 string used by
-    HREF{Chromatic_polynomials_of_connected_graphs}[the chromatic polynomial
-    table] and HREF{Tutte_polynomials_of_connected_graphs}[the Tutte
-    polynomial table].
+  comment-graph6: >-
+    Graphs are named by their graph6 string CITE{Graph6}, McKay's compact
+    encoding, taken after a canonical relabelling so that the name depends on
+    the graph and not on how its vertices happen to be numbered. Recover the
+    graph in Sage with `Graph(name)`, and produce the name used here with
+    `g.canonical_label(algorithm='sage').graph6_string()`. The same names index
+    HREF{Chromatic_polynomials_of_connected_graphs}[the chromatic polynomials]
+    and HREF{Tutte_polynomials_of_connected_graphs}[the Tutte polynomials].
   comment-convention: >-
     The table uses the combinatorial Laplacian $D-A$, not the normalised
     Laplacian and not the signless Laplacian $D+A$. The polynomial stored is
     the monic characteristic polynomial $\det(xI-L(G))$ in the variable $x$.
   comment-zero-root: >-
-    Every row has a factor $x$, because the Laplacian of a connected graph has
-    kernel spanned by the constant vector.
+    The constant vector lies in the kernel of every Laplacian, so $x$ divides
+    $\lambda(G,x)$. It divides it exactly once because $G$ is connected. The
+    next smallest root is the algebraic connectivity of $G$
+    CITE{MathWorldLaplacianPolynomial}.
   comment-cospectral: >-
-    The 996 graphs here give 934 distinct Laplacian polynomials. Each row in a
-    shared class has an entry comment naming the other graph6 strings in that
-    class.
+    The 996 graphs here have 934 distinct Laplacian polynomials. 119 of them
+    share their polynomial with one or two other graphs, and the entry for each
+    of those names the others.
 Formulas:
   formula-matrix-tree: >-
     If $\lambda(G,x)=x^n+c_{n-1}x^{n-1}+\cdots+c_1x$ for a connected graph on
@@ -45,9 +50,12 @@ Programs:
   program-sage:
     language: Sage
     code: |-
-      G = graphs.CompleteGraph(5)
+      G = Graph('D~{')  # K_5, by its name here
       G.laplacian_matrix().charpoly()
+      G.canonical_label(algorithm='sage').graph6_string()
 Similar tables:
+  - table: HREF{Characteristic_polynomials_of_connected_graphs}[Characteristic polynomials of connected graphs]
+    relation: holds the characteristic polynomials $\det(xI-A(G))$ of the same graphs under the same names; for a $k$-regular graph on $n$ vertices, $\lambda(G,x)=(-1)^n\det((k-x)I-A(G))$
   - table: HREF{Chromatic_polynomials_of_connected_graphs}[Chromatic polynomials of connected graphs]
     relation: uses the same canonical graph6 index for connected graphs on at most seven vertices
   - table: HREF{Tutte_polynomials_of_connected_graphs}[Tutte polynomials of connected graphs]
@@ -61,6 +69,9 @@ Links:
   MathWorldLaplacianPolynomial:
     title: 'MathWorld: Laplacian Polynomial'
     url: https://mathworld.wolfram.com/LaplacianPolynomial.html
+  Graph6:
+    title: 'Brendan McKay: graph6 and sparse6 formats'
+    url: https://users.cecs.anu.edu.au/~bdm/data/formats.html
 Keywords:
   - Laplacian matrix
   - Kirchhoff matrix
@@ -79,10 +90,10 @@ Data properties:
     it holds every connected graph on at most seven vertices
   rigour details: >-
     The generator enumerates connected simple graphs with $1\leq |V(G)|\leq7$
-    using Sage, canonically labels each graph, and stores the canonical graph6
-    string. It computes $L(G)=D(G)-A(G)$ exactly over $\mathbb{Z}$ and expands
-    $\det(xI-L(G))$ over permutations in $\mathbb{Z}[x]$, avoiding Sage's
-    polynomial-matrix determinant machinery.
+    using Sage, takes each graph's `canonical_label(algorithm='sage')`, and
+    stores the canonical graph6 string. It computes $L(G)=D(G)-A(G)$ exactly
+    over $\mathbb{Z}$ and expands $\det(xI-L(G))$ over permutations in
+    $\mathbb{Z}[x]$, avoiding Sage's polynomial-matrix determinant machinery.
 
     The build checked that the 996 graph6 strings are exactly the keys of
     HREF{Chromatic_polynomials_of_connected_graphs}[the chromatic polynomial
