@@ -1,0 +1,7 @@
+1. *done* -- Rewrote all 65 cospectral entry comments to name the other graph6 keys in code and added `comment-cospectral`; checked the live draft still had the raw `HREF{#...}` and fallback wordings, then verified in Sage that the table has 32 shared characteristic polynomials covering 65 graphs.
+2. *done* -- Renamed the wheel comments to $W_5$, $W_6$ and $W_7$; checked in Sage that `D]{`, `ELrw` and `FIefw` have 5, 6 and 7 vertices and match `graphs.WheelGraph(5)`, `graphs.WheelGraph(6)` and `graphs.WheelGraph(7)`.
+3. *done* -- Changed the graph6 Sage command to backtick code; previewed the changed comment and checked that `g.canonical_label().graph6_string()` renders without literal `\_`.
+4. *done* -- Changed the Programs example to `Graph('FjaHw')`; checked the live table contains `FjaHw`, and Sage's `graphs.MoserSpindle()` has canonical graph6 string `FjaHw`.
+5. *done* -- Added `title: graph`, changed the parameter constraint to the graph family, set `complete: 'no'`, and added the seven-vertex range to `complete-note`; checked the parameter key stayed `g` and preview rendered no `Unknown type`.
+6. *done* -- Rewrote `comment-connected` and `comment-named` as full sentences; checked `CITE{formula-disjoint-union}` resolves and previewed the changed comments.
+7. *done* -- Added `Hückel` to `Keywords`, added a cited Hückel molecular-orbital comment, and added `WikiHuckel`; checked the Hückel-method source, verified the link returns 200, and previewed the comment.
