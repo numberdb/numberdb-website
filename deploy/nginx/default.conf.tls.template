@@ -23,6 +23,17 @@ server {
     listen 443 ssl http2;
     server_name ${SERVER_NAME};
 
+    # Big enough for what the application already says it will accept.
+    #
+    # nginx's default is 1 MB and the application's limits are 2 MB for one
+    # attached file and 8 MB for a table's files together -- so the larger
+    # half of the application's own rule was unreachable, and a 1.4 MB
+    # generator data file was refused with a bare 413 from nginx that never
+    # reached Django and so said nothing about which limit it had met.
+    #
+    # 10 MB leaves room for the 8 MB case plus the rest of a request.
+    client_max_body_size 10m;
+
     # Replaces the http-block default, which logs the full IP. A second
     # access_log beside it would log twice rather than replace it, so it has to
     # live here. See 00-logging.conf.
