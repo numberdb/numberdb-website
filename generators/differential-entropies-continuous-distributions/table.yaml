@@ -24,10 +24,12 @@ Keywords:
   - Beta distribution entropy
   - Gumbel entropy
   - Rayleigh entropy
+  - Levy entropy
   - von Mises entropy
   - Weibull entropy
   - Pareto entropy
   - F distribution entropy
+  - lognormal entropy
   - information theory
 Parameters:
   distribution:
@@ -44,10 +46,10 @@ Parameters:
       half-normal: half-normal, scale $1$
       arcsine: arcsine on $[0,1]$
       semicircle: Wigner semicircle, radius $1$
-      levy: Levy, location $0$ and scale $1$
+      levy: Lévy, location $0$ and scale $1$
       triangular: symmetric triangular on $[0,1]$
-      hypsecant-scipy: hyperbolic secant with density $\pi^{-1}\operatorname{sech}x$
-      hypsecant-unit-variance: unit-variance hyperbolic secant
+      hypsecant: hyperbolic secant with density $\pi^{-1}\operatorname{sech}x$
+      hypsecant-unit-variance: hyperbolic secant with density $\frac12\operatorname{sech}(\pi x/2)$
       student-t: Student's $t_\nu$
       chi: $\chi_k$
       chi-square: $\chi^2_k$
@@ -74,52 +76,61 @@ Parameters:
       bits: bits
 Comments:
   standard-forms: >-
-    The standard forms are location $0$ and scale $1$; SciPy continuous
-    distributions CITE{SciPyStats} use the same convention. The hyperbolic
-    secant distribution has two common standardizations, so the distribution
-    parameter distinguishes the SciPy density
-    $\pi^{-1}\operatorname{sech}x$ from the unit-variance density
+    Each distribution is in the form its label states, which is SciPy's
+    default CITE{SciPyStats} except for the hyperbolic secant density
     $\frac12\operatorname{sech}(\pi x/2)$.
-  range: >-
-    The parameterized rows use $1\leq\nu\leq30$ for Student's $t_\nu$,
-    $1\leq k\leq30$ for $\chi_k$ and $\chi^2_k$,
-    $a\in\{1/2,1,3/2,\ldots,15\}$ for Gamma$(a,1)$,
-    $k\in\{1/2,3/2,2,3,4,5\}$ for Weibull$(k,1)$,
-    $2\leq\alpha\leq10$ for Pareto$(\alpha,1)$, $1\leq\kappa\leq10$ for the
-    von Mises distribution, $a\leq b$ in
-    $\{1/2,1,3/2,\ldots,5\}$ for Beta$(a,b)$, and
-    $1\leq n_1,n_2\leq10$ for the $F(n_1,n_2)$ distribution.
   omitted-integers: >-
-    The named exponential, logistic and uniform rows are not listed
-    separately: their standard entropies are exactly $1$, $2$ and $0$ nats.
-    Pareto$(1,1)$ is likewise omitted as a named Pareto row because its
-    entropy is exactly $2$ nats.
+    The standard logistic distribution and Pareto$(1,1)$ both have entropy
+    $2$ nats. The standard exponential and uniform distributions are the rows
+    Gamma$(1,1)$ and Beta$(1,1)$, and Weibull$(1,1)$ is the exponential
+    distribution again.
   lognormal: >-
-    If $Z$ is standard normal, then $\exp Z$ has the same differential
-    entropy as $Z$, since the change of variables adds $E[Z]=0$.
+    If $Z$ is standard normal, then $h(e^Z)=h(Z)+E[Z]$, so the standard
+    lognormal distribution has the entropy of the normal row,
+    $\frac12\log(2\pi e)$.
 Formulas:
   formula-scale: >-
-    For $\sigma>0$, $h(\mu+\sigma X)=h(X)+\log\sigma$
-    CITE{WikiDifferentialEntropy} where $\mu$ is real.
+    For real $\mu$ and $\sigma>0$, $h(\mu+\sigma X)=h(X)+\log\sigma$
+    CITE{WikiDifferentialEntropy}.
   formula-units: >-
     $h_{\mathrm{bits}}(X)=h_{\mathrm{nats}}(X)/\log 2$.
   formula-normal-bound: >-
-    Among real random variables with variance $v$, the normal distribution has
-    maximal entropy $\frac12\log(2\pi e v)$
-    CITE{WikiDifferentialEntropy} with equality only for the normal law.
+    If $X$ has variance $v$, then $h(X)\leq\frac12\log(2\pi e v)$, with
+    equality only when $X$ is normal CITE{WikiDifferentialEntropy}.
+  formula-student: >-
+    $h(t_\nu)=\frac12\log\nu+\log B(\nu/2,1/2)
+    +\frac{\nu+1}{2}\left(\psi((\nu+1)/2)-\psi(\nu/2)\right)$ nats.
+  formula-chi: >-
+    $h(\chi_k)=\log\Gamma(k/2)+k/2-\frac12\log2-\frac{k-1}{2}\psi(k/2)$
+    nats.
+  formula-chi-square: >-
+    $h(\chi^2_k)=k/2+\log2+\log\Gamma(k/2)+(1-k/2)\psi(k/2)$ nats.
+  formula-gamma: >-
+    $h(\mathrm{Gamma}(a,1))=a+\log\Gamma(a)+(1-a)\psi(a)$ nats.
+  formula-weibull: >-
+    $h(\mathrm{Weibull}(k,1))=1+\gamma(1-1/k)-\log k$ nats.
+  formula-pareto: >-
+    $h(\mathrm{Pareto}(\alpha,1))=1+1/\alpha-\log\alpha$ nats.
+  formula-von-mises: >-
+    $h(\mathrm{von\ Mises}_\kappa)=\log(2\pi I_0(\kappa))
+    -\kappa I_1(\kappa)/I_0(\kappa)$ nats.
+  formula-beta: >-
+    $h(\mathrm{Beta}(a,b))=\log B(a,b)-(a-1)\psi(a)-(b-1)\psi(b)
+    +(a+b-2)\psi(a+b)$ nats, and
+    $h(\mathrm{Beta}(a,b))=h(\mathrm{Beta}(b,a))$.
+  formula-f: >-
+    $h(F(n_1,n_2))=\log(n_2/n_1)+\log B(n_1/2,n_2/2)
+    -(n_1/2-1)\psi(n_1/2)-(n_2/2+1)\psi(n_2/2)
+    +\frac{n_1+n_2}{2}\psi((n_1+n_2)/2)$ nats.
+  formula-f-two: >-
+    $h(F(2,m))=1+2/m$ nats.
 Similar tables:
-  - table: HREF{Entropy_constants_of_lattice_models}[Entropy constants of lattice models]
-    relation: also stores entropy values, for lattice models rather than probability distributions
-  - table: HREF{Periodic_windows_of_the_logistic_map_by_kneading_word}[Periodic windows of the logistic map by kneading word]
-    relation: has topological entropy rows for one dynamical system
   - table: HREF{Values_of_the_Gamma_function_at_rational_numbers}[Values of the Gamma function at rational numbers]
-    relation: Gamma and Beta distribution entropy formulas contain $\log\Gamma$ and digamma values at rational parameters
+    relation: the Gamma, Beta and $F$ entropy formulas contain logarithms of Gamma values at rational parameters
   - table: HREF{Values_of_the_Beta_function_at_pairs_of_rational_numbers}[Values of the Beta function at pairs of rational numbers]
-    relation: Beta and Student entropy formulas contain the Beta function
+    relation: the Student, Beta and $F$ entropy formulas contain Beta functions at rational parameter pairs
   - table: HREF{Values_of_modified_Bessel_functions_of_the_first_kind}[Values of modified Bessel functions of the first kind $I_\nu(x)$]
     relation: the von Mises entropy uses $I_0(\kappa)$ and $I_1(\kappa)$
-  - table: HREF{Values_of_the_error_function}[Values of the error function]
-    relation: the normal distribution is another standard source of Gaussian special values
 Links:
   WikiDifferentialEntropy:
     title: 'Wikipedia: Differential entropy'
@@ -146,8 +157,13 @@ Data properties:
   rigour: proven
   complete: no
   complete-note: >-
-    it holds the standard-form named distributions and shape ranges stated in
-    the comments, in both nats and bits
+    it holds common standard forms and small shape values likely to be
+    recognized: Student's $t_\nu$, $\chi_k$ and $\chi^2_k$ for
+    $1\leq\nu,k\leq30$, Gamma$(a,1)$ for $a=1/2,1,\ldots,15$,
+    Weibull$(k,1)$ for $k\in\{1/2,3/2,2,3,4,5\}$, Pareto$(\alpha,1)$ for
+    $2\leq\alpha\leq10$, von Mises for $1\leq\kappa\leq10$, Beta$(a,b)$ for
+    $a\leq b$ in $\{1/2,1,\ldots,5\}$, and $F(n_1,n_2)$ for
+    $1\leq n_1,n_2\leq10$, each in nats and bits
   rigour details: >-
     Each entry was computed from closed forms in Sage real and complex ball
     arithmetic at `numberdb.bits(digits, losing=128)`. All 626 entries were

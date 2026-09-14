@@ -14,8 +14,7 @@ Run it with SageMath:
     $ sage -python generate.py --publish  # send it, with NUMBERDB_API_KEY set
 
 Values are computed from closed forms in real and complex ball arithmetic.
-The standard forms are the SciPy ones: location 0 and scale 1 unless the
-distribution's usual shape parameters say otherwise.
+Each standard form is stated in the table's parameter labels.
 """
 
 import os
@@ -46,11 +45,27 @@ NO_SHAPE_DISTRIBUTIONS = (
     'semicircle',
     'levy',
     'triangular',
-    'hypsecant-scipy',
+    'hypsecant',
     'hypsecant-unit-variance',
 )
 
 WEIBULL_SHAPES = (QQ(1) / 2, QQ(3) / 2, QQ(2), QQ(3), QQ(4), QQ(5))
+
+NO_SHAPE_COMMENTS = {
+    'normal': r'In nats, $h=\frac12\log(2\pi e)$.',
+    'cauchy': r'In nats, $h=\log(4\pi)$.',
+    'laplace': r'In nats, $h=1+\log2$.',
+    'gumbel': r'In nats, $h=1+\gamma$.',
+    'rayleigh': r'In nats, $h=1+\frac{\gamma-\log2}{2}$.',
+    'maxwell': r'In nats, $h=\gamma+\frac12\log(2\pi)-\frac12$.',
+    'half-normal': r'In nats, $h=\frac12(1+\log(\pi/2))$.',
+    'arcsine': r'In nats, $h=\log(\pi/4)$.',
+    'semicircle': r'In nats, $h=\log\pi-\frac12$.',
+    'levy': r'In nats, $h=\frac12(1+3\gamma+\log(16\pi))$.',
+    'triangular': r'In nats, $h=\frac12-\log2$.',
+    'hypsecant': r'In nats, $h=\log(2\pi)$.',
+    'hypsecant-unit-variance': r'In nats, $h=\log4$.',
+}
 
 
 def _key_from_stdin():
@@ -148,7 +163,7 @@ def _entropy_nats(distribution, shape, digits):
         return (one + 3 * gamma + (16 * pi).log()) / 2
     if distribution == 'triangular':
         return half - log2
-    if distribution == 'hypsecant-scipy':
+    if distribution == 'hypsecant':
         return (2 * pi).log()
     if distribution == 'hypsecant-unit-variance':
         return field(4).log()
@@ -210,6 +225,8 @@ def _entropy_nats(distribution, shape, digits):
         n1_text, n2_text = shape.split(',')
         n1 = _q(n1_text)
         n2 = _q(n2_text)
+        if n1 == 2:
+            return QQ(1) + QQ(2) / n2
         a = n1 / 2
         b = n2 / 2
         return ((field(n2) / field(n1)).log() + _log_beta(field, a, b)
@@ -247,8 +264,20 @@ def _equals(distribution, shape, unit):
 
 
 def _comment(distribution, shape):
+    if shape == '-':
+        return NO_SHAPE_COMMENTS.get(distribution, '')
+    if distribution == 'student-t' and shape == '1':
+        return 'This is the Cauchy distribution.'
+    if distribution == 'chi' and shape == '1':
+        return 'This is the half-normal distribution.'
+    if distribution == 'chi' and shape == '2':
+        return 'This is the Rayleigh distribution.'
+    if distribution == 'chi' and shape == '3':
+        return 'This is the Maxwell-Boltzmann distribution.'
     if distribution == 'gamma' and shape == '1':
         return 'This is the standard exponential distribution.'
+    if distribution == 'beta' and shape == '1/2,1/2':
+        return 'This is the arcsine distribution.'
     if distribution == 'beta' and shape == '1,1':
         return 'This is the uniform distribution on $[0,1]$.'
     return ''
@@ -274,7 +303,11 @@ class DifferentialEntropies(numberdb.Generator):
         distribution = str(params['distribution'])
         shape = str(params['shape'])
         unit = str(params['unit'])
-        value = _to_unit(_entropy_nats(distribution, shape, digits), unit, digits)
+        if distribution == 'hypsecant-unit-variance' and unit == 'bits':
+            value = ZZ(2)
+        else:
+            value = _to_unit(_entropy_nats(distribution, shape, digits),
+                             unit, digits)
         equals = _equals(distribution, shape, unit)
         comment = _comment(distribution, shape)
         if equals or comment:
