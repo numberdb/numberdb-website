@@ -3087,3 +3087,23 @@ rename the key. The table is right and the page is wrong.
 Evidence: 2026-09-13, T239 critique. `/preview?table=` with T239's `Data
 properties` (`/tmp/c239/dataprops_a.html`) returned 200 and contained
 "(Unknown key)" immediately after the size exception text.
+
+## A code span cannot contain a backtick in any form the site accepts
+
+What happened: graph6 keys use every character from `?` to `~`, including
+the backtick. The prose renderer (`views.py`, around line 775, and
+`prose.py`'s `_CODE`) turns `` `([^`\n]+)` `` into code, and it has no
+escape and no longer delimiter. A key such as `I???P`D`_` is therefore
+broken inside backticks, and broken again in plain text, because its own
+two backticks pair up. T240 has three comments that cannot be written
+correctly at all. `&#96;` gets through because prose is not HTML-escaped,
+but it stores markup in the data.
+
+What to do instead: this is the site's to fix. Markdown's rule would do it: a
+span opened by two backticks closes at the next two, so
+``` `` I???P`D`_ `` ``` holds the key. Until then, a critique should not
+tell an author to find a form that works for those keys, because none does.
+
+Evidence: 2026-09-14, T240 critique. `/preview?table=` rendered
+``as `I???P`D`_`.`` as `as <code>I???P</code>D<code>_</code>.`, and the
+plain text `as I???P`D`_.` as `as I???P<code>D</code>_.`.
