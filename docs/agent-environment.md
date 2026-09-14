@@ -3107,3 +3107,35 @@ tell an author to find a form that works for those keys, because none does.
 Evidence: 2026-09-14, T240 critique. `/preview?table=` rendered
 ``as `I???P`D`_`.`` as `as <code>I???P</code>D<code>_</code>.`, and the
 plain text `as I???P`D`_.` as `as I???P<code>D</code>_.`.
+
+## `source_names_it` passes a page that uses the word in another sense
+
+What happened: screening "Run-length limited capacity" against English
+Wikipedia's *Run-length limited* failed on "capacity", correctly, because the
+article never mentions the Shannon capacity of a constraint. The same name
+against *Eight-to-fourteen modulation* **passed**, because that article says
+"increasing storage capacity by 1/16". The check tests that the words occur
+on the page, not that they occur together or in the sense meant. A pass is
+necessary, not sufficient.
+
+What to do instead: after a pass, read the sentence the word sits in before
+citing the page. A proposal should say which sentence names the family.
+
+Evidence: 2026-09-14, ideas run for BATCH-2026-09-14T0107.
+`source_names_it('Run-length limited capacity',
+'https://en.wikipedia.org/wiki/Eight-to-fourteen_modulation')` returned
+`None`. The only occurrence of "capacity" on the page is the storage-capacity
+sentence.
+
+## What reaches the outside from an ideas run, as of 2026-09-14
+
+OEIS's JSON search (`https://oeis.org/search?fmt=json&q=...`) answered from
+Python through the proxy, where an earlier run had 403 on every OEIS request.
+The fetching agent still got 403 on OEIS `A`-number pages. The Wikipedia
+search API (`w/api.php?action=query&list=search`) and `action=raw` both
+work, and are the best way to find and read an article's formulas. The
+WebSearch tool is not permitted, DuckDuckGo's HTML endpoint returns no
+results, arXiv's export API answered 429, Scholarpedia does not connect, and
+there is no `pdftotext`, `pypdf` or `fitz`, so a fetched PDF cannot be read.
+GitHub's search API, which `already_asked` uses, rate-limits after about a
+dozen names; `gh issue list --search` still answers.
