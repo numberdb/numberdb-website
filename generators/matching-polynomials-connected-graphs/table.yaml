@@ -14,6 +14,7 @@ Keywords:
   - reference polynomial
   - monomer-dimer
   - Hosoya index
+  - matching defect polynomial
 Parameters:
   g:
     type: Symbolic
@@ -23,9 +24,11 @@ Parameters:
     display: $G$
   form:
     type: Symbolic
-    title: form
+    title: polynomial
     display: form
-    constraints: either `signed` or `generating`
+    constraints: >-
+      the signed matching polynomial $\mu(G,x)$, keyed `signed`, or the
+      matching-generating polynomial $M(G,x)$, keyed `generating`
     values:
       signed: $\mu(G,x)$
       generating: $M(G,x)$
@@ -39,13 +42,21 @@ Comments:
     HREF{Chromatic_polynomials_of_connected_graphs}[the chromatic polynomials]
     and HREF{Tutte_polynomials_of_connected_graphs}[the Tutte polynomials].
   comment-forms: >-
-    The two forms are equivalent by formula CITE{formula-forms}, but they are
-    both standard one-variable conventions. The bivariate matching polynomial
-    carries the same coefficients with an extra homogenising variable and is
-    not stored separately.
+    The two forms carry the same counts $m_k(G)$. For a graph with $n$
+    vertices, each determines the other by formula CITE{formula-forms}.
+    $M(G,x)$ does not record $n$, so graphs of different sizes can share it:
+    $K_3$ and $K_{1,3}$ have $M(G,x)=3x+1$.
+  comment-other-names: >-
+    $\mu(G,x)$ is also called the acyclic polynomial, the reference polynomial
+    and the matching defect polynomial CITE{MathWorldMatching}.
+    $M(G,1)=\sum_k m_k(G)$ is the number of matchings of $G$, called its
+    Hosoya index; for $K_7$ it is $232$.
   comment-forest: >-
-    For forests, the signed matching polynomial is the adjacency
-    characteristic polynomial $\det(xI-A(G))$.
+    For the connected graphs stored here, the signed matching polynomial
+    equals
+    HREF{Characteristic_polynomials_of_connected_graphs}[the characteristic
+    polynomial] $\det(xI-A(G))$ of the adjacency matrix exactly when $G$ is a
+    tree.
   comment-shared-values: >-
     The 996 graphs here have 434 distinct signed matching polynomials and 379
     distinct matching-generating polynomials. For each form, the largest class
@@ -75,37 +86,24 @@ Programs:
   program-sage:
     language: Sage
     code: |-
-      from itertools import combinations
       import numberdb.sage as numberdb
       from sage.graphs.graph import Graph
-      from sage.rings.integer_ring import ZZ
-      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 
-      R = PolynomialRing(ZZ, "x")
-      x = R.gen()
-      G = Graph('EIe_')  # C_6, by its name here
-
-      edges = list(G.edges(labels=False))
-      counts = [0] * (G.num_verts() // 2 + 1)
-      counts[0] = 1
-      for k in range(1, len(counts)):
-          for chosen in combinations(edges, k):
-              used = [vertex for edge in chosen for vertex in edge]
-              if len(set(used)) == 2 * k:
-                  counts[k] += 1
-
-      signed = sum((-1)**k * counts[k] * x**(G.num_verts() - 2*k)
-                   for k in range(len(counts)))
-      generating = sum(counts[k] * x**k for k in range(len(counts)))
+      G = Graph('EIe_')                  # C_6, by its name here
+      mu = G.matching_polynomial()       # x^6 - 6*x^4 + 9*x^2 - 2
+      x = mu.parent().gen()
+      n = G.num_verts()
+      M = sum(abs(mu[n - 2*k]) * x**k for k in range(n // 2 + 1))
+      print(mu, M)                       # M = 2*x^3 + 9*x^2 + 6*x + 1
 Similar tables:
   - table: HREF{Characteristic_polynomials_of_connected_graphs}[Characteristic polynomials of connected graphs]
-    relation: holds $\det(xI-A(G))$ for the same graphs under the same names, which equals $\mu(G,x)$ when $G$ is a forest
+    relation: holds $\det(xI-A(G))$ for the same graphs under the same names; on the graphs stored here it equals $\mu(G,x)$ exactly for trees
   - table: HREF{Chromatic_polynomials_of_connected_graphs}[Chromatic polynomials of connected graphs]
     relation: uses the same canonical graph6 index for connected graphs on at most seven vertices
   - table: HREF{Tutte_polynomials_of_connected_graphs}[Tutte polynomials of connected graphs]
     relation: uses the same canonical graph6 index for connected graphs on at most seven vertices, but the matching polynomial is not determined by the Tutte polynomial
   - table: HREF{Entropy_constants_of_lattice_models}[Entropy constants of lattice models]
-    relation: contains dimer entropy constants for infinite lattices, the limiting analogue of matching counts in finite graph models
+    relation: the dimer model counts perfect matchings of lattice regions; for a graph $G$ with an even number $n$ of vertices, $|\mu(G,0)|=m_{n/2}(G)$ counts perfect matchings
   - table: HREF{Hermite_polynomials_He}[Hermite polynomials in probabilist's convention]
     relation: gives the complete-graph cases in formula CITE{formula-complete}
   - table: HREF{Laguerre_polynomials}[Laguerre polynomials]
@@ -143,9 +141,10 @@ Data properties:
     most seven vertices
   Size exception: >-
     The table stores both standard one-variable matching-polynomial
-    conventions for the same 996 graphs. The two forms are equivalent, but a
-    reader holding one form would not naturally search for the other through
-    the substitution in formula CITE{formula-forms}.
+    conventions for the same 996 graphs. For a graph with $n$ vertices, the
+    two forms determine each other by formula CITE{formula-forms}, but a reader
+    holding one form would not naturally search for the other through that
+    substitution.
   rigour details: >-
     The generator enumerates connected simple graphs with $1\leq |V(G)|\leq7$
     using Sage, takes each graph's `canonical_label(algorithm='sage')`, and
@@ -153,20 +152,21 @@ Data properties:
     enumeration of edge subsets and forms both polynomials over
     $\mathbb{Z}[x]$.
 
-    Before the draft was filled, the build checked that the 996 graph6 strings
-    were exactly the keys of HREF{Chromatic_polynomials_of_connected_graphs}[the
-    chromatic polynomial table] and HREF{Tutte_polynomials_of_connected_graphs}[the
-    Tutte polynomial table]. The exactness check found no inexact
-    coefficients, and Sage's `matching_polynomial()` agreed with the signed
-    form on every row. The counts of equal-polynomial classes in
-    comment CITE{comment-shared-values} were computed from the same exact
-    rows. Formula CITE{formula-forms} agreed on every row;
+
+    The 996 graph6 strings are exactly the keys of
+    HREF{Chromatic_polynomials_of_connected_graphs}[the chromatic polynomial
+    table] and HREF{Tutte_polynomials_of_connected_graphs}[the Tutte
+    polynomial table]. Sage's `matching_polynomial()` agreed with the signed
+    form on every row. The counts of equal-polynomial classes in comment
+    CITE{comment-shared-values} were computed from the same exact rows. Formula
+    CITE{formula-forms} agreed on every row;
     formula CITE{formula-complete} agreed for $K_1,\ldots,K_7$; formula
     CITE{formula-complete-bipartite} agreed for $K_{1,1}$, $K_{2,2}$, and
     $K_{3,3}$; formula CITE{formula-paths-cycles} agreed for every path and
     cycle in range; formula CITE{formula-line-graph} agreed on the 109 graphs
-    whose line graph is connected and has at most seven vertices; and
-    $\mu(G,x)=\det(xI-A(G))$ agreed on every tree in range.
+    whose line graph is connected and has at most seven vertices; and, on the
+    connected graphs stored here, $\mu(G,x)=\det(xI-A(G))$ agreed exactly for
+    the 25 trees.
 Display properties:
   number-header: polynomial
   group parameters: [['g'], ['form']]

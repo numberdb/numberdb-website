@@ -1,0 +1,8 @@
+declined -- the Size exception "(Unknown key)" display is a site-rendering fault, not a T239 document fault; I left the key as `Size exception`, which the help and limits code require.
+done -- rewrote `comment-forms` and the Size exception to say the two forms determine each other only with $n$ known; Sage checked 434 signed classes, 379 generating classes, 51 mixed-vertex generating classes, and $K_3$ and $K_{1,3}$ sharing $M(G,x)=3x+1$.
+done -- replaced the Programs snippet with Sage's `Graph(...).matching_polynomial()` path; the exact snippet ran under Sage and printed the two stored `EIe_` rows, and the same derivation agreed with all 996 live rows.
+done -- added `comment-other-names` and the `matching defect polynomial` keyword; MathWorld currently contains the three synonym names and "Hosoya index", and Sage checked $M(K_7,1)=232$.
+done -- sharpened the lattice-entropy relation to perfect matchings; this follows from the definition's constant term for even $n$, and Sage checked the example $|\mu(K_4,0)|=3$.
+done -- linked the characteristic-polynomial table and scoped the converse to the connected graphs stored here; Sage checked that $\mu(G,x)=\det(xI-A(G))$ holds exactly for the 25 trees among the 996 live rows.
+done -- changed the second parameter title and constraints so the page explains `signed` and `generating`; the API accepted the write without a table-parameters refusal, and no entries changed.
+done -- removed draft-build wording and the exactness-tool sentence from `rigour details`; the retained checks are the ones run on the exact rows, and the live postcheck rendered the repaired sections without findings.
