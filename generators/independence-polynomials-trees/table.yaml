@@ -1,10 +1,8 @@
 Title: Independence polynomials of trees
 Definition: >-
-  The independence polynomial $I(T,x)$ of a tree $T$ is
-  $I(T,x)=\sum_{k=0}^{\alpha(T)} s_k x^k$, where $s_k$ is the number of
-  independent vertex sets of $T$ with $k$ vertices and $\alpha(T)$ is the
-  independence number CITE{MathWorld}. The table stores this polynomial in
-  $\mathbb{Z}[x]$.
+  The independence polynomial of a finite simple graph $G$ is
+  $I(G,x)=\sum_{k\geq0} s_k(G)\,x^k$, where $s_k(G)$ is the number of sets of
+  $k$ vertices of $G$ no two of which are adjacent CITE{MathWorld}.
 Keywords:
   - independent set polynomial
   - stable set polynomial
@@ -20,12 +18,9 @@ Comments:
   comment-graph6: >-
     Trees are named by their graph6 string CITE{Graph6}, McKay's compact
     encoding, taken after a canonical relabelling so that the name depends on
-    the tree and not on how its vertices happen to be numbered. Recover the
-    tree in Sage with $\texttt{Graph(name)}$.
-  comment-range: >-
-    The table stores trees rather than arbitrary connected graphs. The
-    independence polynomial of a forest is the product of the independence
-    polynomials of its connected components.
+    the tree and not on how its vertices happen to be numbered. The name of a
+    tree `T` is `T.canonical_label(algorithm='sage').graph6_string()` in Sage,
+    and `Graph(name)` recovers the tree.
   comment-index: >-
     The value at $x=1$ is the number of independent vertex sets of $T$, also
     called the Merrifield-Simmons index.
@@ -55,20 +50,18 @@ Programs:
     language: Sage
     code: |-
       G = Graph('F@HSO')        # the path P_7, by its name here
-      R.<x> = ZZ[]
-      sum(x**len(S) for S in Subsets(G.vertices())
-          if G.subgraph(S).num_edges() == 0)
+      print(G.complement().clique_polynomial())
 Similar tables:
   - table: HREF{Matching_polynomials_of_connected_graphs}[Matching polynomials of connected graphs]
     relation: the matching-generating polynomial $M(G,x)$ is the independence polynomial of the line graph $L(G)$
-  - table: HREF{Entropy_constants_of_lattice_models#hard-core}[the hard-core entry of the lattice entropy table]
-    relation: the finite hard-core partition function of a graph is its independence polynomial evaluated at the fugacity
+  - table: HREF{Entropy_constants_of_lattice_models}[Entropy constants of lattice models]
+    relation: the hard-core constants are $\lim I(\Lambda,1)^{1/|\Lambda|}$ over finite regions $\Lambda$ of a lattice; on the line $I(P_n,1)=F_{n+2}$, and the constant is $\varphi$
   - table: HREF{Fibonacci_polynomials}[Fibonacci polynomials]
     relation: gives the path cases by formula CITE{formula-paths}
   - table: HREF{Chromatic_polynomials_of_connected_graphs}[Chromatic polynomials of connected graphs]
-    relation: uses the same canonical graph6 naming convention for connected graphs
+    relation: holds the trees on at most $7$ vertices under the same keys; every tree on $n$ vertices has chromatic polynomial $x(x-1)^{n-1}$
   - table: HREF{Tutte_polynomials_of_connected_graphs}[Tutte polynomials of connected graphs]
-    relation: uses the same canonical graph6 naming convention for connected graphs
+    relation: holds the trees on at most $7$ vertices under the same keys; every tree on $n$ vertices has Tutte polynomial $x^{n-1}$
 Links:
   MathWorld:
     title: 'MathWorld: Independence Polynomial'
@@ -84,7 +77,7 @@ Data properties:
   type: Z[]
   rigour: exact
   complete: 'no'
-  complete-note: it holds every tree on at most twelve vertices
+  complete-note: it holds every tree on at most twelve vertices, 987 of them; adding the 1301 trees on thirteen vertices would exceed the soft entry limit
   rigour details: >-
     An exact value, namely a polynomial with integer coefficients, so there is
     no precision to choose. The generator enumerates trees with

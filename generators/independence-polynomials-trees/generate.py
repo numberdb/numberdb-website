@@ -146,10 +146,15 @@ def tree_name(graph):
     if n == 1:
         return "path $P_1$"
     if degrees[0] <= 2:
-        return "path $P_%d$" % n
+        return "path $P_{%d}$" % n
     if degrees[0] == n - 1:
         return "star $K_{1,%d}$" % (n - 1)
     return ""
+
+
+def display_key(key):
+    # graph6 uses backticks, which the site prose renderer treats as markup.
+    return str(key).replace("`", "&#96;")
 
 
 def entry_comment(key):
@@ -164,7 +169,7 @@ def entry_comment(key):
         if other != key
     ]
     if mates:
-        labels = ["`%s`" % other for other in mates]
+        labels = [display_key(other) for other in mates]
         sentences.append(
             "It has the same independence polynomial as %s."
             % english_list(labels)
