@@ -3200,3 +3200,23 @@ retry with a minimal title rather than guessing that the table was created.
 Evidence: 2026-09-15, T233 split. `/tmp/T233-hstar-create.yaml` returned
 HTTP 500 from `/api/tables`; `/tmp/T233-hstar-title-only.yaml` returned 201
 with `tid: T243`.
+
+## Draft file pages are visible even when the draft table page is private
+
+What happened: during the T235 split, unauthenticated `GET /T235` returned the
+site's "Not found" page, but unauthenticated `GET /files/T235` returned the
+file list and unauthenticated `GET /files/T235/generate.py?raw=1` returned the
+attached generator source. The views for `table_files` and `table_file` load
+the table by T-number and do not apply the draft visibility guard that the
+table and preview pages use.
+
+What to do instead: treat attached files on a draft as public until the site
+adds the same draft guard to file and bundle routes. Never put secrets or
+private notes in a generator, even while the table itself is still a private
+draft.
+
+Evidence: 2026-09-15, T235 split. `curl https://numberdb.org/T235` returned a
+Not found page, while `curl https://numberdb.org/files/T235` showed "Files of
+Ehrhart polynomials of the permutohedra" and
+`curl https://numberdb.org/files/T235/generate.py?raw=1` returned the
+generator docstring beginning with `numberdb.org/T235`.
