@@ -36,11 +36,33 @@ while [ $# -gt 0 ]; do
 done
 [ -n "$mode" ] || { sed -n '2,12p' "$0"; exit 2; }
 
+# Where the dump comes from: a `.sql.gz` if one was named or one is lying
+# there, otherwise the newest restic snapshot. `read_dump` is the only place
+# that knows which, so the two restores below are the same code either way.
+#
+# A snapshot rather than a file is the normal case now -- see the note in
+# scripts/backup.sh about sixty copies of one day -- and the `.sql.gz` path
+# stays because backups taken before the change are still backups.
+RESTIC_REPO="${NUMBERDB_RESTIC_REPO:-$DEST/repo}"
+RESTIC_PASSWORD_FILE="${NUMBERDB_RESTIC_PASSWORD_FILE:-$HOME/.config/numberdb/restic-password}"
+snapshot=""
+
 if [ -z "$dump" ]; then
 	dump=$(ls -1t "$DEST"/numberdb-*.sql.gz 2>/dev/null | head -1 || true)
+	if [ -z "$dump" ] && command -v restic >/dev/null 2>&1 	   && [ -s "$RESTIC_PASSWORD_FILE" ]; then
+		export RESTIC_PASSWORD_FILE RESTIC_REPOSITORY="$RESTIC_REPO"
+		snapshot="${NUMBERDB_SNAPSHOT:-latest}"
+	fi
 fi
-[ -n "$dump" ] && [ -f "$dump" ] || { echo "No backup found in $DEST" >&2; exit 2; }
-echo "using $dump ($(du -h "$dump" | cut -f1))"
+
+if [ -n "$snapshot" ]; then
+	echo "using restic snapshot $snapshot from $RESTIC_REPO"
+	read_dump() { restic dump "$snapshot" /"${PLAIN_NAME:-numberdb.sql}" 		2>/dev/null || restic dump "$snapshot" numberdb.sql; }
+else
+	[ -n "$dump" ] && [ -f "$dump" ] || { echo "No backup found in $DEST" >&2; exit 2; }
+	echo "using $dump ($(du -h "$dump" | cut -f1))"
+	read_dump() { gzip -dc "$dump"; }
+fi
 
 # What a restored database has to contain to count as restored. Read back
 # rather than trusting psql's exit code: a dump can apply cleanly and still be
@@ -82,7 +104,7 @@ verify)
 	echo "restoring into $scratch on the local stack"
 	$LOCAL_COMPOSE exec -T db psql -U u_numberdb -d postgres \
 		-c "drop database if exists $scratch;" -c "create database $scratch;" >/dev/null
-	gzip -dc "$dump" | $LOCAL_COMPOSE exec -T db psql -q -U u_numberdb -d "$scratch" \
+	read_dump | $LOCAL_COMPOSE exec -T db psql -q -U u_numberdb -d "$scratch" \
 		-v ON_ERROR_STOP=0 >/dev/null 2>&1 || true
 	echo
 	$LOCAL_COMPOSE exec -T db psql -U u_numberdb -d "$scratch" -c "$counts_sql"
@@ -104,7 +126,7 @@ to)
 
 	echo "stopping the app so nothing writes while the tables are replaced"
 	ssh -o BatchMode=yes "$target" "cd '$RPATH' && docker compose stop web" >/dev/null
-	gzip -dc "$dump" | ssh -o BatchMode=yes "$target" \
+	read_dump | ssh -o BatchMode=yes "$target" \
 		"cd '$RPATH' && docker compose exec -T db psql -q -U u_numberdb -d numberdb"
 	echo "starting the app"
 	ssh -o BatchMode=yes "$target" "cd '$RPATH' && docker compose up -d web" >/dev/null
