@@ -123,3 +123,53 @@ class TheValueColumnNamesTheQuantity(TestCase):
 	def test_a_column_headed_with_a_symbol_is_not(self):
 		found = self.headers(findings_for(self.table('$\\gamma_K$')))
 		self.assertEqual(found, [])
+
+
+class ALabelMayNotStandWhereANumberShould(TestCase):
+	"""`param-latex` replaces the label of its own parameter group.
+
+	On a parameter whose values are words that is the point: `normalisation:
+	relative` reads better as the symbol for that volume. On a numeric
+	parameter the value *is* the label, and replacing it hides what the row
+	is -- the hypersimplex tables put `$L_{\\Delta(2,4)}(t)$` in the column
+	that should have read `2`, which is the table's own header restated once
+	per row.
+	"""
+
+	def table(self, title, last_type, labelled):
+		tree = {'Title': title,
+		        'Definition': 'These numbers, for a reason.',
+		        'Data properties': {'type': 'R'},
+		        'Parameters': {'n': {'type': 'Z'}, 'which': {'type': last_type}},
+		        'Numbers': []}
+		for n in range(1, 5):
+			for i, which in enumerate(('2', '3') if last_type == 'Z'
+			                          else ('first', 'second')):
+				entry = {'params': {'n': str(n), 'which': which},
+				         'number': '%d.%d' % (n, i)}
+				if labelled:
+					entry['param-latex'] = '$f_{%s,%s}(t)$' % (which, n)
+				tree['Numbers'].append(entry)
+		create_table(tree, via='orm')
+		table = Table.objects.get(title=title)
+		table.published = False
+		table.save(update_fields=['published'])
+		return table
+
+	def labels(self, findings):
+		return [f for f in findings if 'param-latex' in f]
+
+	def test_a_label_over_a_numeric_parameter_is_reported(self):
+		table = self.table('Something indexed by two numbers', 'Z', True)
+		found = self.labels(findings_for(table))
+		self.assertEqual(len(found), 1, found)
+		self.assertIn('which', found[0])
+
+	def test_a_label_over_a_word_parameter_is_not(self):
+		#The normalisations of the Birkhoff volumes are the case this is for.
+		table = self.table('Something in two conventions', 'Symbolic', True)
+		self.assertEqual(self.labels(findings_for(table)), [])
+
+	def test_a_table_with_no_labels_is_not_reported(self):
+		table = self.table('Something plain', 'Z', False)
+		self.assertEqual(self.labels(findings_for(table)), [])

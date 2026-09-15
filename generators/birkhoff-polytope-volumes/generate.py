@@ -157,17 +157,17 @@ class BirkhoffPolytopeVolumes(numberdb.Generator):
         if normalisation == "relative":
             return {
                 "number": relative_volume(n),
-                "param-latex": r"$\operatorname{vol}_{\mathrm{rel}}(B_{%d})$" % n,
+                "param-latex": r"$\operatorname{vol}_{\mathrm{rel}}$",
             }
         if normalisation == "normalised":
             return {
                 "number": normalised_volume(n),
-                "param-latex": r"$\operatorname{Vol}(B_{%d})$" % n,
+                "param-latex": r"$\operatorname{Vol}$",
             }
         if normalisation == "euclidean":
             return {
                 "number": euclidean_volume(n),
-                "param-latex": r"$\operatorname{vol}_{\mathrm{Euc}}(B_{%d})$" % n,
+                "param-latex": r"$\operatorname{vol}_{\mathrm{Euc}}$",
             }
         raise ValueError("unknown normalisation %r" % (normalisation,))
 
