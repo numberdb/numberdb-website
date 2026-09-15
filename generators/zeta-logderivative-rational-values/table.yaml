@@ -1,0 +1,94 @@
+# Draft document for T246, values of the logarithmic derivative of the Riemann
+# zeta function at rational arguments. It was split from T228 before review.
+# Publishing is a person's act.
+Title: Values of the logarithmic derivative $\zeta'(s)/\zeta(s)$ of the Riemann zeta function at rational numbers
+Definition: >-
+  $\zeta(s)$ is the Riemann zeta function, $\sum_{n\geq1}n^{-s}$ for
+  $\Re(s)>1$ continued meromorphically away from its pole at $s=1$
+  CITE{DLMFZeta}. The table holds its logarithmic derivative
+  $\zeta'(s)/\zeta(s)$ at rational $s$ where it is finite.
+Keywords:
+  - logarithmic derivative of the Riemann zeta function
+  - zeta logarithmic derivative
+  - von Mangoldt Dirichlet series
+Parameters:
+  s:
+    type: Q
+    title: argument
+    display: $s$
+    constraints: $s\in\mathbb{Q}$; $s\neq1$; $\zeta(s)\neq0$
+Comments:
+  comment-sign: >-
+    $\Lambda(n)$ is the von Mangoldt function, equal to $\log p$ when $n$ is
+    a positive power of a prime $p$ and to $0$ otherwise. The table holds
+    $\zeta'(s)/\zeta(s)$ itself, not its negative, which is the Dirichlet
+    series in CITE{formula-von-mangoldt}.
+  comment-poles-zeros: >-
+    $\zeta'(s)/\zeta(s)$ has simple poles at $s=1$ and at the zeros of
+    $\zeta(s)$. The negative even trivial zeros $s=-2,-4,\ldots$ are
+    therefore not listed.
+Formulas:
+  formula-von-mangoldt: >-
+    For $\Re(s)>1$,
+    $-\zeta'(s)/\zeta(s)=\sum_{n\geq1}\Lambda(n)n^{-s}$
+    CITE{DLMFDirichlet}.
+  formula-reflection-logderivative: >-
+    For noninteger $s$ where both logarithmic derivatives are finite,
+    $\frac{\zeta'(1-s)}{\zeta(1-s)}=\log(2\pi)+\frac\pi2\tan\frac{\pi s}2-\psi(s)-\frac{\zeta'(s)}{\zeta(s)}$
+    CITE{DLMFReflection}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage
+      from sage.rings.complex_arb import ComplexBallField
+      from sage.rings.rational_field import QQ
+
+      s = ComplexBallField(400)(QQ(1) / QQ(2))
+      zeta_prime = s.zetaderiv(1)
+      print((zeta_prime / s.zeta()).real())
+Similar tables:
+  - table: HREF{T228}[Values of the derivative $\zeta'(s)$ of the Riemann zeta function at rational numbers]
+    relation: >-
+      stores $\zeta'(s)$; dividing those values by
+      HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[the
+      corresponding values of $\zeta(s)$] gives this table where
+      $\zeta(s)\neq0$, but a reader holding the quotient is likely looking
+      for the logarithmic derivative itself
+  - table: HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[Values of the Riemann zeta function at rational numbers]
+    relation: stores $\zeta(s)$ at the same kind of rational arguments, the denominator in $\zeta'(s)/\zeta(s)$
+  - table: HREF{Laurent_coefficients_of_logarithmic_derivative_of_Riemann_zeta_function_at_1}[Laurent series coefficients of the logarithmic derivative of the Riemann zeta function at 1]
+    relation: stores the Laurent expansion of this same logarithmic derivative at its pole at $s=1$
+  - table: HREF{Values_of_the_Hurwitz_zeta_function_at_pairs_of_rational_numbers}[Values of the Hurwitz zeta function at pairs of rational numbers]
+    relation: $\zeta(s)$ is the Hurwitz zeta function at $x=1$
+Links:
+  DLMFZeta:
+    title: 'DLMF 25.2: Definition and Expansions'
+    url: https://dlmf.nist.gov/25.2
+  DLMFReflection:
+    title: 'DLMF 25.4: Reflection Formulas'
+    url: https://dlmf.nist.gov/25.4
+  DLMFDirichlet:
+    title: 'DLMF 27.4: Euler Products and Dirichlet Series'
+    url: https://dlmf.nist.gov/27.4
+Tags:
+  - special values
+  - L-function
+Data properties:
+  type: R
+  rigour: proven
+  rigour details: >-
+    Each value is computed as a Sage complex ball with arb at
+    `numberdb.bits(digits, losing=96)` bits. The imaginary part is required
+    to contain zero before the real part is returned. The entries are checked
+    against the values of $\zeta(s)$ in
+    HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[the zeta
+    table], the reflection formula in CITE{formula-reflection-logderivative},
+    and independent mpmath computations at selected half-integer arguments.
+  complete: 'no'
+  complete-note: >-
+    it holds every rational argument $s=a/b$ in lowest terms with
+    $b\leq4$ and $-20\leq s\leq20$ for which
+    $\zeta'(s)/\zeta(s)$ is finite
+Display properties:
+  number-header: $\zeta'(s)/\zeta(s)$
