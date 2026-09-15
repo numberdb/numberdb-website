@@ -1,7 +1,7 @@
-"""Ehrhart polynomials of hypersimplices -- numberdb.org/T234
+"""Ehrhart h-star polynomials of hypersimplices -- numberdb.org/T244
 
 For 4 <= n <= 20 and 2 <= k <= floor(n/2), this stores the Ehrhart
-polynomial L_{Delta(k,n)}(t) of the hypersimplex
+h-star polynomial h^*_{Delta(k,n)}(z) of the hypersimplex
 Delta(k,n) = {x in [0,1]^n : sum x_i = k}.
 
 Run it with SageMath:
@@ -10,9 +10,12 @@ Run it with SageMath:
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # fill the draft, with NUMBERDB_API_KEY set
 
-The Ehrhart polynomial is computed by exact inclusion-exclusion:
+The Ehrhart polynomial is computed first by exact inclusion-exclusion:
 
     L(t) = sum_i (-1)^i binomial(n, i) binomial((k-i)t - i + n - 1, n - 1).
+
+The h-star polynomial is then the numerator of
+sum_{t >= 0} L(t) z^t with denominator (1-z)^n.
 """
 
 import numberdb.sage as numberdb
@@ -25,11 +28,13 @@ from sage.rings.rational_field import QQ
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 
 
-T234 = "T234"
+T244 = "T244"
 UP_TO_N = 20
 
 _T = PolynomialRing(QQ, "t")
 _t = _T.gen()
+_Z = PolynomialRing(QQ, "z")
+_z = _Z.gen()
 
 
 def _key_from_stdin():
@@ -60,9 +65,30 @@ def ehrhart_polynomial(n, k):
     return value
 
 
-class HypersimplexEhrhartPolynomials(numberdb.Generator):
+def h_star_coefficients(n, k):
+    ehrhart = ehrhart_polynomial(n, k)
+    coefficients = []
+    for m in range(n):
+        coefficient = QQ(0)
+        for j in range(m + 1):
+            coefficient += QQ((-1) ** j * comb(n, j)) * ehrhart(m - j)
+        assert coefficient.denominator() == 1
+        coefficients.append(coefficient)
+    while coefficients and coefficients[-1] == 0:
+        coefficients.pop()
+    return coefficients
 
-    table = os.environ.get("NUMBERDB_TABLE", T234)
+
+def h_star_polynomial(n, k):
+    value = _Z.zero()
+    for i, coefficient in enumerate(h_star_coefficients(n, k)):
+        value += coefficient * _z ** i
+    return value
+
+
+class HypersimplexHStarPolynomials(numberdb.Generator):
+
+    table = os.environ.get("NUMBERDB_TABLE", T244)
     parameters = ("n", "k")
     type = "Q[]"
     rigour = "exact"
@@ -76,17 +102,17 @@ class HypersimplexEhrhartPolynomials(numberdb.Generator):
         n = int(params["n"])
         k = int(params["k"])
         return {
-            "number": ehrhart_polynomial(n, k),
-            "param-latex": r"$L_{\Delta(%d,%d)}(t)$" % (k, n),
+            "number": h_star_polynomial(n, k),
+            "param-latex": r"$h^*_{\Delta(%d,%d)}(z)$" % (k, n),
         }
 
 
 if __name__ == "__main__":
     _key_from_stdin()
-    generator = HypersimplexEhrhartPolynomials()
+    generator = HypersimplexHStarPolynomials()
     if os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
         print(generator.publish(
-            message="hypersimplex Ehrhart polynomials",
+            message="hypersimplex h-star polynomials",
         ))
     else:
         report = generator.verify(sample=None)

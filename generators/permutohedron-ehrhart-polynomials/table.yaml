@@ -100,10 +100,11 @@ Similar tables:
     relation: >-
       gives another specialization of graph polynomials for the same graph
       census
-  - table: HREF{T234}[Ehrhart and $h^*$-polynomials of the hypersimplices]
+  - table: HREF{T234}[Ehrhart polynomials of the hypersimplices]
     relation: >-
-      records the Ehrhart data of the hypersimplex summands of the
-      permutohedron
+      records the Ehrhart polynomials of the non-simplex hypersimplices that
+      occur, up to symmetry, in the Minkowski sum
+      $\Pi_n=\Delta(1,n)+\cdots+\Delta(n-1,n)+(1,\ldots,1)$
 Links:
   WikiPermutohedron:
     title: 'Wikipedia: Permutohedron'

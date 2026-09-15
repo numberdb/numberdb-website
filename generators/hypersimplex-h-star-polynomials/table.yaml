@@ -1,0 +1,481 @@
+# Draft document for T244, split from T234.
+# Publishing is a person's act.
+Title: Ehrhart $h^*$-polynomials of the hypersimplices
+Definition: The hypersimplex $\Delta(k,n)=\{x\in[0,1]^n:x_1+\cdots+x_n=k\}$
+  is a lattice polytope CITE{WikiHypersimplex}. The table stores its Ehrhart $h^*$-polynomial
+  $h^*_{\Delta(k,n)}(z)$, the numerator of its Ehrhart series CITE{WikiEhrhart}.
+Keywords:
+- hypersimplex
+- Ehrhart h-star polynomial
+- Ehrhart h* polynomial
+- h-star polynomial
+- h* polynomial
+- delta polynomial
+- uniform matroid
+- Veronese type
+- Grassmannian
+- dice sums
+Parameters:
+  n:
+    type: Z
+    title: ambient dimension
+    display: $n$
+    constraints: $n$ is an integer with $n\geq4$
+  k:
+    type: Z
+    title: coordinate sum
+    display: $k$
+    constraints: $k$ is an integer with $2\leq k\leq\lfloor n/2\rfloor$
+Comments:
+  comment-series: The polynomial $h^*_{\Delta(k,n)}(z)$ is also called the Ehrhart
+    $\delta$-polynomial. Formula CITE{formula-series} relates it to the Ehrhart polynomial
+    $L_{\Delta(k,n)}(t)$.
+  comment-connections: The hypersimplex $\Delta(k,n)$ is the matroid polytope of the
+    uniform matroid $U_{k,n}$ CITE{WikiHypersimplex} and the moment polytope for the
+    torus action on the Grassmannian $\mathrm{Gr}(k,n)$ CITE{Postnikov2018}.
+  comment-lattice: Lattice points are counted in $\mathbb{Z}^n$. Since $t\Delta(k,n)$
+    lies in the hyperplane $x_1+\cdots+x_n=kt$, the normalized volume in CITE{formula-volume}
+    is taken with respect to the lattice $\{x\in\mathbb{Z}^n:x_1+\cdots+x_n=0\}$.
+  comment-symmetry: The map $x\mapsto\mathbf{1}-x$ identifies $\Delta(k,n)$ with $\Delta(n-k,n)$,
+    so $\Delta(n-k,n)$ has the same two polynomials; for $k>n/2$, look up $\Delta(n-k,n)$.
+  comment-standard-simplex: The omitted case $k=1$ is the standard simplex, with $h^*(z)=1$.
+Formulas:
+  formula-series: $\sum_{t\geq0}L_{\Delta(k,n)}(t)z^t= h^*_{\Delta(k,n)}(z)/(1-z)^n$.
+  formula-coefficient: $L_{\Delta(k,n)}(t)$ is the coefficient of $q^{kt}$ in $(1+q+\cdots+q^t)^n$.
+  formula-volume: $h^*_{\Delta(k,n)}(1)$ is the Eulerian number $A(n-1,k-1)$, the
+    number of permutations of $n-1$ letters with $k-1$ descents, and it is the normalized
+    volume of $\Delta(k,n)$.
+Programs:
+  program-sage:
+    language: Sage
+    code: "n, k = 6, 2\nT = PolynomialRing(QQ, \"t\"); t = T.gen()\nZ = PolynomialRing(QQ,\
+      \ \"z\"); z = Z.gen()\n\nL = sum((-1)**i * binomial(n, i) * binomial((k - i)*t\
+      \ - i + n - 1, n - 1)\n        for i in range(k))\nh = (sum(L(j)*z**j for j\
+      \ in range(n)) * (1 - z)**n).truncate(n)\nh"
+Similar tables:
+- table: HREF{T234}[Ehrhart polynomials of the hypersimplices]
+  relation: gives the counting polynomial $L_{\Delta(k,n)}(t)$ whose Ehrhart series
+    has this numerator; the two tables determine each other by CITE{formula-series}.
+    A reader holding this numerator wants this table; a reader holding the Ehrhart
+    counting polynomial wants T234.
+- table: HREF{T242}[Ehrhart $h^*$-polynomials of the Birkhoff polytopes]
+  relation: the transportation-polytope $h^*$-polynomial analogue with all row and
+    column sums fixed
+Links:
+  WikiHypersimplex:
+    title: 'Wikipedia: Hypersimplex'
+    url: https://en.wikipedia.org/wiki/Hypersimplex
+  WikiEhrhart:
+    title: 'Wikipedia: Ehrhart polynomial'
+    url: https://en.wikipedia.org/wiki/Ehrhart_polynomial
+  OEISHStar2:
+    title: 'OEIS A275514: $h^*$-vectors of the second hypersimplices'
+    url: https://oeis.org/A275514
+References:
+  Postnikov2018:
+    bib: Alexander Postnikov, Positive Grassmannian and polyhedral subdivisions, 2018.
+    arxiv: '1806.05307'
+Tags:
+- polynomial
+- combinatorics
+- discrete geometry
+Numbers:
+  '4':
+    '2':
+      number: z^2 + 2*z + 1
+      param-latex: $h^*_{\Delta(2,4)}(z)$
+  '5':
+    '2':
+      number: 5*z^2 + 5*z + 1
+      param-latex: $h^*_{\Delta(2,5)}(z)$
+  '6':
+    '2':
+      number: z^3 + 15*z^2 + 9*z + 1
+      param-latex: $h^*_{\Delta(2,6)}(z)$
+    '3':
+      number: z^4 + 14*z^3 + 36*z^2 + 14*z + 1
+      param-latex: $h^*_{\Delta(3,6)}(z)$
+  '7':
+    '2':
+      number: 7*z^3 + 35*z^2 + 14*z + 1
+      param-latex: $h^*_{\Delta(2,7)}(z)$
+    '3':
+      number: 21*z^4 + 119*z^3 + 133*z^2 + 28*z + 1
+      param-latex: $h^*_{\Delta(3,7)}(z)$
+  '8':
+    '2':
+      number: z^4 + 28*z^3 + 70*z^2 + 20*z + 1
+      param-latex: $h^*_{\Delta(2,8)}(z)$
+    '3':
+      number: 8*z^5 + 202*z^4 + 568*z^3 + 364*z^2 + 48*z + 1
+      param-latex: $h^*_{\Delta(3,8)}(z)$
+    '4':
+      number: z^6 + 62*z^5 + 575*z^4 + 1140*z^3 + 575*z^2 + 62*z + 1
+      param-latex: $h^*_{\Delta(4,8)}(z)$
+  '9':
+    '2':
+      number: 9*z^4 + 84*z^3 + 126*z^2 + 27*z + 1
+      param-latex: $h^*_{\Delta(2,9)}(z)$
+    '3':
+      number: z^6 + 147*z^5 + 1230*z^4 + 2005*z^3 + 834*z^2 + 75*z + 1
+      param-latex: $h^*_{\Delta(3,9)}(z)$
+    '4':
+      number: 84*z^6 + 1548*z^5 + 5895*z^4 + 6165*z^3 + 1809*z^2 + 117*z + 1
+      param-latex: $h^*_{\Delta(4,9)}(z)$
+  '10':
+    '2':
+      number: z^5 + 45*z^4 + 210*z^3 + 210*z^2 + 35*z + 1
+      param-latex: $h^*_{\Delta(2,10)}(z)$
+    '3':
+      number: 55*z^6 + 1352*z^5 + 5565*z^4 + 5830*z^3 + 1695*z^2 + 110*z + 1
+      param-latex: $h^*_{\Delta(3,10)}(z)$
+    '4':
+      number: 45*z^7 + 2400*z^6 + 18328*z^5 + 37985*z^4 + 24565*z^3 + 4710*z^2 + 200*z
+        + 1
+      param-latex: $h^*_{\Delta(4,10)}(z)$
+    '5':
+      number: z^8 + 242*z^7 + 6478*z^6 + 37994*z^5 + 66760*z^4 + 37994*z^3 + 6478*z^2
+        + 242*z + 1
+      param-latex: $h^*_{\Delta(5,10)}(z)$
+  '11':
+    '2':
+      number: 11*z^5 + 165*z^4 + 462*z^3 + 330*z^2 + 44*z + 1
+      param-latex: $h^*_{\Delta(2,11)}(z)$
+    '3':
+      number: 11*z^7 + 869*z^6 + 8437*z^5 + 20438*z^4 + 14773*z^3 + 3157*z^2 + 154*z
+        + 1
+      param-latex: $h^*_{\Delta(3,11)}(z)$
+    '4':
+      number: 11*z^8 + 2156*z^7 + 35508*z^6 + 142428*z^5 + 183711*z^4 + 80278*z^3
+        + 10780*z^2 + 319*z + 1
+      param-latex: $h^*_{\Delta(4,11)}(z)$
+    '5':
+      number: 330*z^8 + 16225*z^7 + 158235*z^6 + 466004*z^5 + 478236*z^4 + 171831*z^3
+        + 19041*z^2 + 451*z + 1
+      param-latex: $h^*_{\Delta(5,11)}(z)$
+  '12':
+    '2':
+      number: z^6 + 66*z^5 + 495*z^4 + 924*z^3 + 495*z^2 + 54*z + 1
+      param-latex: $h^*_{\Delta(2,12)}(z)$
+    '3':
+      number: z^8 + 352*z^7 + 7930*z^6 + 40612*z^5 + 64285*z^4 + 33748*z^3 + 5500*z^2
+        + 208*z + 1
+      param-latex: $h^*_{\Delta(3,12)}(z)$
+    '4':
+      number: z^9 + 1209*z^8 + 44682*z^7 + 344488*z^6 + 834900*z^5 + 727638*z^4 +
+        227646*z^3 + 22440*z^2 + 483*z + 1
+      param-latex: $h^*_{\Delta(4,12)}(z)$
+    '5':
+      number: 220*z^9 + 25674*z^8 + 441024*z^7 + 2176954*z^6 + 3836196*z^5 + 2574429*z^4
+        + 633996*z^3 + 48840*z^2 + 780*z + 1
+      param-latex: $h^*_{\Delta(5,12)}(z)$
+    '6':
+      number: z^10 + 912*z^9 + 62767*z^8 + 878932*z^7 + 3834832*z^6 + 6169360*z^5
+        + 3834832*z^4 + 878932*z^3 + 62767*z^2 + 912*z + 1
+      param-latex: $h^*_{\Delta(6,12)}(z)$
+  '13':
+    '2':
+      number: 13*z^6 + 286*z^5 + 1287*z^4 + 1716*z^3 + 715*z^2 + 65*z + 1
+      param-latex: $h^*_{\Delta(2,13)}(z)$
+    '3':
+      number: 91*z^8 + 4992*z^7 + 51610*z^6 + 161811*z^5 + 179335*z^4 + 71071*z^3
+        + 9087*z^2 + 273*z + 1
+      param-latex: $h^*_{\Delta(3,13)}(z)$
+    '4':
+      number: 442*z^9 + 38727*z^8 + 568087*z^7 + 2487862*z^6 + 3985813*z^5 + 2483052*z^4
+        + 579592*z^3 + 43407*z^2 + 702*z + 1
+      param-latex: $h^*_{\Delta(4,13)}(z)$
+    '5':
+      number: 78*z^10 + 26728*z^9 + 853658*z^8 + 7080853*z^7 + 20751926*z^6 + 24129937*z^5
+        + 11341720*z^4 + 2019108*z^3 + 113191*z^2 + 1274*z + 1
+      param-latex: $h^*_{\Delta(5,13)}(z)$
+    '6':
+      number: 1287*z^10 + 154375*z^9 + 3334110*z^8 + 21984040*z^7 + 54615067*z^6 +
+        55490487*z^5 + 23102326*z^4 + 3649477*z^3 + 179413*z^2 + 1703*z + 1
+      param-latex: $h^*_{\Delta(6,13)}(z)$
+  '14':
+    '2':
+      number: z^7 + 91*z^6 + 1001*z^5 + 3003*z^4 + 3003*z^3 + 1001*z^2 + 77*z + 1
+      param-latex: $h^*_{\Delta(2,14)}(z)$
+    '3':
+      number: 14*z^9 + 2184*z^8 + 45278*z^7 + 265174*z^6 + 557662*z^5 + 454545*z^4
+        + 140140*z^3 + 14378*z^2 + 350*z + 1
+      param-latex: $h^*_{\Delta(3,14)}(z)$
+    '4':
+      number: 105*z^10 + 24192*z^9 + 674492*z^8 + 5177147*z^7 + 14424501*z^6 + 16255043*z^5
+        + 7542731*z^4 + 1355081*z^3 + 79170*z^2 + 987*z + 1
+      param-latex: $h^*_{\Delta(4,14)}(z)$
+    '5':
+      number: 14*z^11 + 19187*z^10 + 1191736*z^9 + 16675036*z^8 + 79494076*z^7 + 152350576*z^6
+        + 124579364*z^5 + 42982562*z^4 + 5744662*z^3 + 242333*z^2 + 1988*z + 1
+      param-latex: $h^*_{\Delta(5,14)}(z)$
+    '6':
+      number: 1001*z^11 + 256256*z^10 + 9019297*z^9 + 91077427*z^8 + 344909878*z^7
+        + 550074602*z^6 + 383162430*z^5 + 113644440*z^4 + 13012545*z^3 + 460642*z^2
+        + 2989*z + 1
+      param-latex: $h^*_{\Delta(6,14)}(z)$
+    '7':
+      number: z^12 + 3418*z^11 + 568270*z^10 + 16972890*z^9 + 155600485*z^8 + 549831736*z^7
+        + 829218404*z^6 + 549831736*z^5 + 155600485*z^4 + 16972890*z^3 + 568270*z^2
+        + 3418*z + 1
+      param-latex: $h^*_{\Delta(7,14)}(z)$
+  '15':
+    '2':
+      number: 15*z^7 + 455*z^6 + 3003*z^5 + 6435*z^4 + 5005*z^3 + 1365*z^2 + 90*z
+        + 1
+      param-latex: $h^*_{\Delta(2,15)}(z)$
+    '3':
+      number: z^10 + 665*z^9 + 28650*z^8 + 305160*z^7 + 1141140*z^6 + 1712532*z^5
+        + 1065090*z^4 + 261690*z^3 + 21945*z^2 + 440*z + 1
+      param-latex: $h^*_{\Delta(3,15)}(z)$
+    '4':
+      number: 15*z^11 + 11178*z^10 + 601820*z^9 + 7936815*z^8 + 36917520*z^7 + 70508540*z^6
+        + 58480587*z^5 + 20859765*z^4 + 2955615*z^3 + 137580*z^2 + 1350*z + 1
+      param-latex: $h^*_{\Delta(4,15)}(z)$
+    '5':
+      number: z^12 + 9813*z^11 + 1245141*z^10 + 29505050*z^9 + 225079320*z^8 + 686074008*z^7
+        + 917619424*z^6 + 552064083*z^5 + 144716100*z^4 + 14939655*z^3 + 486591*z^2
+        + 2988*z + 1
+      param-latex: $h^*_{\Delta(5,15)}(z)$
+    '6':
+      number: 455*z^12 + 299910*z^11 + 18044510*z^10 + 282064700*z^9 + 1611895470*z^8
+        + 3916933725*z^7 + 4316832045*z^6 + 2175342072*z^5 + 479511015*z^4 + 41247325*z^3
+        + 1086645*z^2 + 4990*z + 1
+      param-latex: $h^*_{\Delta(6,15)}(z)$
+    '7':
+      number: 5005*z^12 + 1401960*z^11 + 61742562*z^10 + 806191155*z^9 + 4058378310*z^8
+        + 8918175720*z^7 + 9011739220*z^6 + 4191072999*z^5 + 853398330*z^4 + 67456320*z^3
+        + 1608090*z^2 + 6420*z + 1
+      param-latex: $h^*_{\Delta(7,15)}(z)$
+  '16':
+    '2':
+      number: z^8 + 120*z^7 + 1820*z^6 + 8008*z^5 + 12870*z^4 + 8008*z^3 + 1820*z^2
+        + 104*z + 1
+      param-latex: $h^*_{\Delta(2,16)}(z)$
+    '3':
+      number: 136*z^10 + 13328*z^9 + 258314*z^8 + 1656496*z^7 + 4273272*z^6 + 4786112*z^5
+        + 2337296*z^4 + 466752*z^3 + 32488*z^2 + 544*z + 1
+      param-latex: $h^*_{\Delta(3,16)}(z)$
+    '4':
+      number: z^12 + 3844*z^11 + 415618*z^10 + 9342268*z^9 + 70495535*z^8 + 217730376*z^7
+        + 300515548*z^6 + 189891192*z^5 + 53381039*z^4 + 6084116*z^3 + 229570*z^2
+        + 1804*z + 1
+      param-latex: $h^*_{\Delta(4,16)}(z)$
+    '5':
+      number: 3620*z^12 + 1003440*z^11 + 40556456*z^10 + 489024224*z^9 + 2308167620*z^8
+        + 4832050656*z^7 + 4726533952*z^6 + 2164248528*z^5 + 442618800*z^4 + 36091424*z^3
+        + 926448*z^2 + 4352*z + 1
+      param-latex: $h^*_{\Delta(5,16)}(z)$
+    '6':
+      number: 120*z^13 + 256650*z^12 + 27571400*z^11 + 673488900*z^10 + 5762482896*z^9
+        + 20861071757*z^8 + 34944643608*z^7 + 27990945724*z^6 + 10603216848*z^5 +
+        1791956640*z^4 + 118964064*z^3 + 2392328*z^2 + 7992*z + 1
+      param-latex: $h^*_{\Delta(6,16)}(z)$
+    '7':
+      number: 4368*z^13 + 2450448*z^12 + 167405664*z^11 + 3167382488*z^10 + 22698040432*z^9
+        + 71539991310*z^8 + 106556585360*z^7 + 76751967352*z^6 + 26260826176*z^5 +
+        4001548076*z^4 + 237225072*z^3 + 4160240*z^2 + 11424*z + 1
+      param-latex: $h^*_{\Delta(7,16)}(z)$
+    '8':
+      number: z^14 + 12854*z^13 + 4990827*z^12 + 297458828*z^11 + 5202902329*z^10
+        + 35289282282*z^9 + 106517454171*z^8 + 152914614888*z^7 + 106517454171*z^6
+        + 35289282282*z^5 + 5202902329*z^4 + 297458828*z^3 + 4990827*z^2 + 12854*z
+        + 1
+      param-latex: $h^*_{\Delta(8,16)}(z)$
+  '17':
+    '2':
+      number: 17*z^8 + 680*z^7 + 6188*z^6 + 19448*z^5 + 24310*z^4 + 12376*z^3 + 2380*z^2
+        + 119*z + 1
+      param-latex: $h^*_{\Delta(2,17)}(z)$
+    '3':
+      number: 17*z^11 + 4556*z^10 + 165087*z^9 + 1789114*z^8 + 7611172*z^7 + 14298547*z^6
+        + 12364882*z^5 + 4851392*z^4 + 800462*z^3 + 46852*z^2 + 663*z + 1
+      param-latex: $h^*_{\Delta(3,17)}(z)$
+    '4':
+      number: 969*z^12 + 226083*z^11 + 8700294*z^10 + 104604842*z^9 + 505219991*z^8
+        + 1102887104*z^7 + 1144219017*z^6 + 565976240*z^5 + 127954223*z^4 + 11924106*z^3
+        + 370022*z^2 + 2363*z + 1
+      param-latex: $h^*_{\Delta(4,17)}(z)$
+    '5':
+      number: 952*z^13 + 637058*z^12 + 44517050*z^11 + 841756071*z^10 + 6027751421*z^9
+        + 19111651396*z^8 + 28920688609*z^7 + 21433283664*z^6 + 7669449445*z^5 + 1249845287*z^4
+        + 81965058*z^3 + 1686366*z^2 + 6171*z + 1
+      param-latex: $h^*_{\Delta(5,17)}(z)$
+    '6':
+      number: 17*z^14 + 164815*z^13 + 33084788*z^12 + 1274618911*z^11 + 16231198545*z^10
+        + 86017327600*z^9 + 212508483425*z^8 + 258066480485*z^7 + 155899626505*z^6
+        + 45697307028*z^5 + 6064854533*z^4 + 317387535*z^3 + 4971752*z^2 + 12359*z
+        + 1
+      param-latex: $h^*_{\Delta(6,17)}(z)$
+    '7':
+      number: 2380*z^14 + 3157852*z^13 + 349751591*z^12 + 9722297365*z^11 + 99053770273*z^10
+        + 441975864607*z^9 + 945669868474*z^8 + 1010629719085*z^7 + 541647432237*z^6
+        + 141103063485*z^5 + 16562470320*z^4 + 755762200*z^3 + 9998856*z^2 + 19431*z
+        + 1
+      param-latex: $h^*_{\Delta(7,17)}(z)$
+    '8':
+      number: 19448*z^14 + 12447536*z^13 + 1063060592*z^12 + 25511378848*z^11 + 234802079884*z^10
+        + 968180708188*z^9 + 1938631187883*z^8 + 1952649084909*z^7 + 989768069669*z^6
+        + 243983890741*z^5 + 27027356245*z^4 + 1155521433*z^3 + 14095805*z^2 + 24293*z
+        + 1
+      param-latex: $h^*_{\Delta(8,17)}(z)$
+  '18':
+    '2':
+      number: z^9 + 153*z^8 + 3060*z^7 + 18564*z^6 + 43758*z^5 + 43758*z^4 + 18564*z^3
+        + 3060*z^2 + 135*z + 1
+      param-latex: $h^*_{\Delta(2,18)}(z)$
+    '3':
+      number: z^12 + 1122*z^11 + 80580*z^10 + 1480784*z^9 + 10157058*z^8 + 30604896*z^7
+        + 43579977*z^6 + 29883960*z^5 + 9598914*z^4 + 1326884*z^3 + 66045*z^2 + 798*z
+        + 1
+      param-latex: $h^*_{\Delta(3,18)}(z)$
+    '4':
+      number: 171*z^13 + 97545*z^12 + 6543504*z^11 + 124294599*z^10 + 917273982*z^9
+        + 3053143611*z^8 + 4929475482*z^7 + 3963093702*z^6 + 1568492523*z^5 + 289999719*z^4
+        + 22402770*z^3 + 578799*z^2 + 3042*z + 1
+      param-latex: $h^*_{\Delta(4,18)}(z)$
+    '5':
+      number: 171*z^14 + 322506*z^13 + 39857877*z^12 + 1178314830*z^11 + 12609530955*z^10
+        + 59047404052*z^9 + 133217516313*z^8 + 151416272538*z^7 + 87401792079*z^6
+        + 24964466832*z^5 + 3298273497*z^4 + 176587500*z^3 + 2953359*z^2 + 8550*z
+        + 1
+      param-latex: $h^*_{\Delta(5,18)}(z)$
+    '6':
+      number: z^15 + 80562*z^14 + 31892187*z^13 + 1958604477*z^12 + 36965679885*z^11
+        + 282834936723*z^10 + 1006775048306*z^9 + 1789315745103*z^8 + 1635346024965*z^7
+        + 766515158372*z^6 + 177851049531*z^5 + 18894963615*z^4 + 792932361*z^3 +
+        9837747*z^2 + 18546*z + 1
+      param-latex: $h^*_{\Delta(6,18)}(z)$
+    '7':
+      number: 816*z^15 + 3092742*z^14 + 578742714*z^13 + 23923991301*z^12 + 346131204768*z^11
+        + 2163041362350*z^10 + 6514394978760*z^9 + 10000101157164*z^8 + 7986505934988*z^7
+        + 3287595156969*z^6 + 669254167962*z^5 + 61882317576*z^4 + 2218218174*z^3
+        + 22590297*z^2 + 31806*z + 1
+      param-latex: $h^*_{\Delta(7,18)}(z)$
+    '8':
+      number: 18564*z^15 + 22828824*z^14 + 2927157291*z^13 + 98141557566*z^12 + 1230863521572*z^11
+        + 6892852400928*z^10 + 18951970865524*z^9 + 26850334989897*z^8 + 19910470050252*z^7
+        + 7628187583152*z^6 + 1443856347423*z^5 + 123509398104*z^4 + 4049593596*z^3
+        + 36828936*z^2 + 43740*z + 1
+      param-latex: $h^*_{\Delta(8,18)}(z)$
+    '9':
+      number: z^16 + 48602*z^15 + 43277802*z^14 + 4937642026*z^13 + 155012076974*z^12
+        + 1858232498322*z^11 + 10049989911874*z^10 + 26842765525442*z^9 + 37068418696464*z^8
+        + 26842765525442*z^7 + 10049989911874*z^6 + 1858232498322*z^5 + 155012076974*z^4
+        + 4937642026*z^3 + 43277802*z^2 + 48602*z + 1
+      param-latex: $h^*_{\Delta(9,18)}(z)$
+  '19':
+    '2':
+      number: 19*z^9 + 969*z^8 + 11628*z^7 + 50388*z^6 + 92378*z^5 + 75582*z^4 + 27132*z^3
+        + 3876*z^2 + 152*z + 1
+      param-latex: $h^*_{\Delta(2,19)}(z)$
+    '3':
+      number: 190*z^12 + 30039*z^11 + 955415*z^10 + 10480685*z^9 + 49293030*z^8 +
+        110282061*z^7 + 122755200*z^6 + 68198866*z^5 + 18217200*z^4 + 2135030*z^3
+        + 91257*z^2 + 950*z + 1
+      param-latex: $h^*_{\Delta(3,19)}(z)$
+    '4':
+      number: 19*z^14 + 33269*z^13 + 4025834*z^12 + 120858525*z^11 + 1342914034*z^10
+        + 6639152463*z^9 + 16048390983*z^8 + 19836286558*z^7 + 12661568004*z^6 + 4082529468*z^5
+        + 626099647*z^4 + 40568477*z^3 + 881961*z^2 + 3857*z + 1
+      param-latex: $h^*_{\Delta(4,19)}(z)$
+    '5':
+      number: 19*z^15 + 130625*z^14 + 29557730*z^13 + 1369432315*z^12 + 21675013401*z^11
+        + 147061657389*z^10 + 480913930576*z^9 + 805588732316*z^8 + 708537813815*z^7
+        + 325700719261*z^6 + 75565120134*z^5 + 8211491763*z^4 + 363485143*z^3 + 5001503*z^2
+        + 11609*z + 1
+      param-latex: $h^*_{\Delta(5,19)}(z)$
+    '6':
+      number: 30039*z^15 + 25120679*z^14 + 2493211654*z^13 + 69598483653*z^12 + 760551811357*z^11
+        + 3829324392311*z^10 + 9693055120580*z^9 + 12889575031720*z^8 + 9126387532005*z^7
+        + 3394567246969*z^6 + 635015797444*z^5 + 54859737951*z^4 + 1872545361*z^3
+        + 18659235*z^2 + 27113*z + 1
+      param-latex: $h^*_{\Delta(6,19)}(z)$
+    '7':
+      number: 171*z^16 + 2352713*z^15 + 775920784*z^14 + 48255918534*z^13 + 990731824636*z^12
+        + 8594871485071*z^11 + 35842709418778*z^10 + 77065773283965*z^9 + 88367396632750*z^8
+        + 54385072015327*z^7 + 17621942820839*z^6 + 2861248364819*z^5 + 212171856865*z^4
+        + 6073952205*z^3 + 48409473*z^2 + 50369*z + 1
+      param-latex: $h^*_{\Delta(7,19)}(z)$
+    '8':
+      number: 11628*z^16 + 31878162*z^15 + 6395409234*z^14 + 304097767654*z^13 + 5211792552439*z^12
+        + 39420647699488*z^11 + 146881764495810*z^10 + 286321115707768*z^9 + 300232660601038*z^8
+        + 169724227366879*z^7 + 50559857331148*z^6 + 7526441514554*z^5 + 507820784433*z^4
+        + 13024616793*z^3 + 90102636*z^2 + 75563*z + 1
+      param-latex: $h^*_{\Delta(8,19)}(z)$
+    '9':
+      number: 75582*z^16 + 109361511*z^15 + 17545780527*z^14 + 737071348587*z^13 +
+        11612484687381*z^12 + 82368474208539*z^11 + 291074747871819*z^10 + 541769568970868*z^9
+        + 544581671136148*z^8 + 295702192439491*z^7 + 84635745299443*z^6 + 12087500823853*z^5
+        + 779463518167*z^4 + 18959730127*z^3 + 122436247*z^2 + 92359*z + 1
+      param-latex: $h^*_{\Delta(9,19)}(z)$
+  '20':
+    '2':
+      number: z^10 + 190*z^9 + 4845*z^8 + 38760*z^7 + 125970*z^6 + 184756*z^5 + 125970*z^4
+        + 38760*z^3 + 4845*z^2 + 170*z + 1
+      param-latex: $h^*_{\Delta(2,20)}(z)$
+    '3':
+      number: 20*z^13 + 8455*z^12 + 484500*z^11 + 8533260*z^10 + 61734800*z^9 + 210549165*z^8
+        + 362435280*z^7 + 323168150*z^6 + 148060616*z^5 + 33330370*z^4 + 3346280*z^3
+        + 123880*z^2 + 1120*z + 1
+      param-latex: $h^*_{\Delta(3,20)}(z)$
+    '4':
+      number: z^15 + 8835*z^14 + 2038965*z^13 + 97634255*z^12 + 1621045135*z^11 +
+        11688379531*z^10 + 41123373615*z^9 + 75065973395*z^8 + 72980758715*z^7 + 37724560705*z^6
+        + 10060714131*z^5 + 1295364045*z^4 + 71121845*z^3 + 1313185*z^2 + 4825*z +
+        1
+      param-latex: $h^*_{\Delta(4,20)}(z)$
+    '5':
+      number: z^16 + 42084*z^15 + 18338230*z^14 + 1342518340*z^13 + 31243228095*z^12
+        + 302786852432*z^11 + 1404380739458*z^10 + 3363552566740*z^9 + 4322264895445*z^8
+        + 3012555338660*z^7 + 1123092670108*z^6 + 214763902832*z^5 + 19431933480*z^4
+        + 718919340*z^3 + 8223770*z^2 + 15484*z + 1
+      param-latex: $h^*_{\Delta(5,20)}(z)$
+    '6':
+      number: 8455*z^16 + 16358810*z^15 + 2672057400*z^14 + 110370179600*z^13 + 1708572381210*z^12
+        + 11990710860130*z^11 + 42310204249200*z^10 + 79444217584300*z^9 + 81480909758520*z^8
+        + 45737438804910*z^7 + 13749669039640*z^6 + 2105483766976*z^5 + 149867640070*z^4
+        + 4211021110*z^3 + 34105760*z^2 + 38740*z + 1
+      param-latex: $h^*_{\Delta(6,20)}(z)$
+    '7':
+      number: 20*z^17 + 1409495*z^16 + 858453820*z^15 + 81311662250*z^14 + 2369117497760*z^13
+        + 28327874751315*z^12 + 161408797284160*z^11 + 476419577424490*z^10 + 762141773678000*z^9
+        + 673179093472485*z^8 + 327040778272140*z^7 + 85063329007060*z^6 + 11200773586700*z^5
+        + 675949071650*z^4 + 15667137060*z^3 + 99090130*z^2 + 77500*z + 1
+      param-latex: $h^*_{\Delta(7,20)}(z)$
+    '8':
+      number: 4845*z^17 + 34783870*z^16 + 11352891781*z^15 + 775850189385*z^14 + 18211798035045*z^13
+        + 185148100760965*z^12 + 924538464224375*z^11 + 2435692164025601*z^10 + 3517044485217165*z^9
+        + 2822213885064205*z^8 + 1249029332944455*z^7 + 295743795079555*z^6 + 35286168261971*z^5
+        + 1910053052095*z^4 + 38942008125*z^3 + 208340035*z^2 + 125950*z + 1
+      param-latex: $h^*_{\Delta(8,20)}(z)$
+    '9':
+      number: 77520*z^17 + 209308845*z^16 + 49305029640*z^15 + 2821775678600*z^14
+        + 58799798443360*z^13 + 546323521110355*z^12 + 2534708717545540*z^11 + 6266670109931296*z^10
+        + 8543959393047340*z^9 + 6496023454577335*z^8 + 2727784026259000*z^7 + 612462511673170*z^6
+        + 69095814064036*z^5 + 3515037613920*z^4 + 66569397120*z^3 + 323168340*z^2
+        + 167940*z + 1
+      param-latex: $h^*_{\Delta(9,20)}(z)$
+    '10':
+      number: z^18 + 184736*z^17 + 373684439*z^16 + 79469260064*z^15 + 4298493363980*z^14
+        + 86221454090612*z^13 + 778285461926792*z^12 + 3526521217218608*z^11 + 8542144050644948*z^10
+        + 11432612114864640*z^9 + 8542144050644948*z^8 + 3526521217218608*z^7 + 778285461926792*z^6
+        + 86221454090612*z^5 + 4298493363980*z^4 + 79469260064*z^3 + 373684439*z^2
+        + 184736*z + 1
+      param-latex: $h^*_{\Delta(10,20)}(z)$
+Data properties:
+  type: Q[]
+  rigour: exact
+  complete: 'no'
+  complete-note: it holds $h^*_{\Delta(k,n)}(z)$ for every pair with $4\leq n\leq20$
+    and $2\leq k\leq\lfloor n/2\rfloor$, matching the companion Ehrhart polynomial
+    table
+  rigour details: The $h^*$-polynomials are obtained exactly from the generating-function
+    relation CITE{formula-series}. The rows were checked by direct coefficient counts
+    from CITE{formula-coefficient}; their normalized volumes were checked against
+    Eulerian numbers through CITE{formula-volume}; the symmetry $\Delta(k,n)\cong\Delta(n-k,n)$
+    was checked on the computed polynomials; and the rows with $k=2$ were compared
+    with OEIS A275514 CITE{OEISHStar2}, whose title calls them Ehrhart coefficients
+    but whose rows are the $h^*$-vectors.
+Display properties:
+  number-header: $h^*_{\Delta(k,n)}(z)$
