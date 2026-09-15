@@ -75,9 +75,13 @@ class HypersimplexEhrhartPolynomials(numberdb.Generator):
     def value(self, params, digits):
         n = int(params["n"])
         k = int(params["k"])
+        #No `param-latex` here. It overrides the label of the
+        #entry's own parameter group, so naming the polynomial put
+        #`$L_{\Delta(2,4)}(t)$` in the column that should read `2`
+        #-- the column header already says which polynomial this
+        #table holds.
         return {
             "number": ehrhart_polynomial(n, k),
-            "param-latex": r"$L_{\Delta(%d,%d)}(t)$" % (k, n),
         }
 
 
