@@ -36,7 +36,7 @@ Formulas:
   formula-line-graph: >-
     The matching-generating polynomial $M(G,x)$ of a graph $G$ equals
     $I(L(G),x)$, where $L(G)$ is the line graph and $M(G,x)$ is the generating
-    form in HREF{T248}[the matching-generating polynomial table].
+    form of the matching polynomial.
   formula-paths: >-
     For the path graph $P_n$,
     $I(P_n,x)=x^{(n+1)/2}F_{n+2}(x^{-1/2})$, where $F_n$ is the
@@ -51,8 +51,6 @@ Programs:
       G = Graph('F@HSO')        # the path P_7, by its name here
       print(G.complement().clique_polynomial())
 Similar tables:
-  - table: HREF{T248}[Matching-generating polynomials of connected graphs]
-    relation: the matching-generating polynomial $M(G,x)$ is the independence polynomial of the line graph $L(G)$
   - table: HREF{Entropy_constants_of_lattice_models}[Entropy constants of lattice models]
     relation: the hard-core constants are $\lim I(\Lambda,1)^{1/|\Lambda|}$ over finite regions $\Lambda$ of a lattice; on the line $I(P_n,1)=F_{n+2}$, and the constant is $\varphi$
   - table: HREF{Fibonacci_polynomials}[Fibonacci polynomials]
