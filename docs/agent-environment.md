@@ -3181,3 +3181,22 @@ as the available remote audit, and say explicitly when the local
 Evidence: 2026-09-15, T232 split run. The failed command was run from
 `/home/ubuntu/numberdb-website`; the API audit for T232 and T242 returned
 `clean: True`.
+
+## `POST /api/tables` can answer 500 when the initial draft cites undeclared labels
+
+What happened: claiming the h-star half of T233 with `POST /api/tables`,
+`X-Draft: yes`, and a fuller initial document failed with HTTP 500. The
+document's Definition cited `CITE{WikiRootSystem}` and `CITE{WikiEhrhart}`,
+but the scratch claim did not yet include the matching `Links` section. A
+second claim with only the Title succeeded as T243, and the full document
+with Links was accepted by `POST /api/table/T243`.
+
+What to do instead: when claiming a draft through the API, either send only
+the title or include every `Links`, `References`, `Formulas`, `Comments`,
+`Programs`, and `Display properties` label cited by the initial document.
+Treat a 500 from a cite-bearing draft claim as a validation-path bug, then
+retry with a minimal title rather than guessing that the table was created.
+
+Evidence: 2026-09-15, T233 split. `/tmp/T233-hstar-create.yaml` returned
+HTTP 500 from `/api/tables`; `/tmp/T233-hstar-title-only.yaml` returned 201
+with `tid: T243`.
