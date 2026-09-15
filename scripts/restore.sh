@@ -43,13 +43,24 @@ done
 # A snapshot rather than a file is the normal case now -- see the note in
 # scripts/backup.sh about sixty copies of one day -- and the `.sql.gz` path
 # stays because backups taken before the change are still backups.
+#The same choice backup.sh makes, for the same reason: the distribution's
+#restic may be too old to read a repository this one wrote.
+RESTIC="${NUMBERDB_RESTIC:-}"
+if [ -z "$RESTIC" ]; then
+	if [ -x "$HOME/.local/bin/restic" ]; then
+		RESTIC="$HOME/.local/bin/restic"
+	else
+		RESTIC=restic
+	fi
+fi
+
 RESTIC_REPO="${NUMBERDB_RESTIC_REPO:-$DEST/repo}"
 RESTIC_PASSWORD_FILE="${NUMBERDB_RESTIC_PASSWORD_FILE:-$HOME/.config/numberdb/restic-password}"
 snapshot=""
 
 if [ -z "$dump" ]; then
 	dump=$(ls -1t "$DEST"/numberdb-*.sql.gz 2>/dev/null | head -1 || true)
-	if [ -z "$dump" ] && command -v restic >/dev/null 2>&1 	   && [ -s "$RESTIC_PASSWORD_FILE" ]; then
+	if [ -z "$dump" ] && command -v "$RESTIC" >/dev/null 2>&1 	   && [ -s "$RESTIC_PASSWORD_FILE" ]; then
 		export RESTIC_PASSWORD_FILE RESTIC_REPOSITORY="$RESTIC_REPO"
 		snapshot="${NUMBERDB_SNAPSHOT:-latest}"
 	fi
@@ -60,10 +71,10 @@ if [ -n "$snapshot" ]; then
 	#records the absolute path it backed up, and a repository opened on a
 	#machine whose home directory is not this one would otherwise not be
 	#readable by its own restore script.
-	inside=$(restic snapshots "$snapshot" --json \
+	inside=$("$RESTIC" snapshots "$snapshot" --json \
 		| python3 -c 'import json,sys; print(json.load(sys.stdin)[-1]["paths"][0])')
 	echo "using restic snapshot $snapshot from $RESTIC_REPO ($inside)"
-	read_dump() { restic dump "$snapshot" "$inside"; }
+	read_dump() { "$RESTIC" dump "$snapshot" "$inside"; }
 else
 	[ -n "$dump" ] && [ -f "$dump" ] || { echo "No backup found in $DEST" >&2; exit 2; }
 	echo "using $dump ($(du -h "$dump" | cut -f1))"
