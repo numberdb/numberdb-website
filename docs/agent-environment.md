@@ -2774,6 +2774,21 @@ or require the words within a short window of each other.
 Evidence: 2026-09-12, `/tmp/ideas/scr4.py` (43 `PASS` lines) and the
 `grep -i poincar` of the raw wikitext of nine pages.
 
+## The audit answers over the API, for a machine with no database
+
+What happened: three separate runs (T220, T221, and a repair) lost time to the
+same wall: the build machine computes the table but holds no database, and
+`manage.py audit_table` needs one. Each found a different dead end -- no
+`python` on the runner, no Django in `python3`, no `/app/manage.py` in the Sage
+helper -- and each ended by saying the required check had not run.
+
+What to do instead: `GET /api/table/<TID>/audit`, with your key, from anywhere.
+`findings_for()` in `numberdb_app/management/commands/audit_table.py` is what
+both the command and the route call, so the two cannot drift. `--links` is the
+exception: following outward links stays with the command.
+
+Evidence: 2026-09-13, the route and `numberdb_app/test_audit_api.py`.
+
 ## On the local builder, `audit_table` needs either a deployed `.env` or the on-server wrapper cannot start compose
 
 What happened: a T220 build needed `manage.py audit_table T220`. Host
@@ -2862,11 +2877,18 @@ through `agents/sage.sh` showed that `/app/manage.py` is absent inside that
 helper environment, so the helper is useful for Sage computations and API
 work but not for invoking this checkout's Django management commands.
 
-What to do instead: do not route `audit_table` through `agents/sage.sh` unless
-the helper image has been changed to mount the Django app. On this runner,
-use an API-backed audit helper or a deployed checkout with Django installed.
-When neither is available, run the deterministic JSON checks locally and say
-explicitly that the official management command did not run.
+What to do instead: ask the site. `GET /api/table/<TID>/audit` with your key
+returns `{"findings": [...], "clean": ...}` from the same implementation the
+command uses, so a machine with no database gets the same answer:
+
+```
+curl -s -H "Authorization: Bearer $NUMBERDB_KEY" \
+     https://numberdb.org/api/table/T221/audit
+```
+
+It does not follow outward links; `--links` still needs the command and a
+database. Do not route `audit_table` through `agents/sage.sh`: that helper
+mounts no Django app, and never will for this purpose.
 
 Evidence: 2026-09-13, T221 repair. `./manage.py audit_table T221` reported
 `/usr/bin/env: 'python': No such file or directory`; `python3 manage.py

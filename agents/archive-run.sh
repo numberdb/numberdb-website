@@ -29,14 +29,19 @@ BOT_NAME="${NUMBERDB_BOT_NAME:-zeta3-bot}"
 BOT_EMAIL="${NUMBERDB_BOT_EMAIL:-79627455+zeta3-bot@users.noreply.github.com}"
 
 log="${1:-}"
-[ -n "$log" ] || { echo "usage: $0 <transcript>" >&2; exit 2; }
-[ -f "$log" ] || { echo "archive: no such transcript: $log" >&2; exit 0; }
+#Transcripts go to `runs/`, and a batch of proposals to `ideas/`: the same
+#upload, a different shelf. A batch is the more valuable of the two per byte
+#-- a transcript records what one run did, a batch is a screened plan that
+#several runs will work from -- and until now it was the one not archived.
+dir="${2:-runs}"
+[ -n "$log" ] || { echo "usage: $0 <file> [directory in the archive]" >&2; exit 2; }
+[ -f "$log" ] || { echo "archive: no such file: $log" >&2; exit 0; }
 
 command -v gh >/dev/null 2>&1 || {
 	echo "archive: no gh on this machine; $log stays local" >&2; exit 0; }
 
 name=$(basename "$log")
-python3 - "$log" "$REPO" "runs/$name.gz" "$BOT_NAME" "$BOT_EMAIL" <<'PY' || \
+python3 - "$log" "$REPO" "$dir/$name.gz" "$BOT_NAME" "$BOT_EMAIL" <<'PY' || \
 	echo "archive: $name did not reach $REPO; it is still here" >&2
 import base64, gzip, json, subprocess, sys
 

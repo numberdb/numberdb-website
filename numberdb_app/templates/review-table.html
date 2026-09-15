@@ -44,6 +44,16 @@ pre.review-diff { background: #f7f7f7; border: 1px solid #ddd; padding: 0.6rem;
   </p>
 {% endif %}
 
+{% if findings %}
+  <h2>What the audit says</h2>
+  <p>The same checks as <code>manage.py audit_table</code>. Each is a thing to
+  look at, not a verdict &mdash; the rules are rules, and one of them can be
+  right in form and wrong here.</p>
+  <ul class="review-findings">
+    {% for finding in findings %}<li>{{ finding }}</li>{% endfor %}
+  </ul>
+{% endif %}
+
 {% if diff %}
   <h2>What changed</h2>
   <pre class="review-diff">{{ diff }}</pre>

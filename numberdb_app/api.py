@@ -1401,6 +1401,39 @@ def costs(request):
 	return JsonResponse(summary)
 
 
+def audit(request, tid):
+	"""What the audit says about this table, for a machine that cannot run it.
+
+	The checks live in `manage.py audit_table`, which needs the database. A
+	build machine has no database and should not have one -- it talks to this
+	site over the public API like any contributor -- so the run that built
+	T223 reported it could not audit its own table, and an overreaching
+	sentence reached a reader that the audit would have caught.
+
+	Read-only and public: an audit says what is already visible on the page,
+	and a table a caller cannot see is not audited for them.
+	"""
+	from .management.commands.audit_table import findings_for
+
+	try:
+		table = Table.objects.get(tid_int=int(str(tid).lstrip('tT')))
+	except (Table.DoesNotExist, ValueError):
+		return JsonResponse({'error': "No table '%s'." % (tid,)}, status=404)
+
+	#The same answer the table itself gives: a draft exists for its author and
+	#the board, and does not exist for anybody else.
+	if not table.published and not _may_see_draft(request, table):
+		return JsonResponse({'error': "No table '%s'." % (tid,)}, status=404)
+
+	findings = findings_for(table)
+	return JsonResponse({
+		'tid': table.tid,
+		'title': table.title,
+		'findings': findings,
+		'clean': not findings,
+	})
+
+
 def table_lease(request, tid):
 	"""Claim a table for the length of a run, refresh the claim, or drop it.
 

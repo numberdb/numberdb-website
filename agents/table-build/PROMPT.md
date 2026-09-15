@@ -8,6 +8,27 @@ Read <https://numberdb.org/skill> first and follow it. What follows is the
 order of work and the mistakes that have actually been made, not a replacement
 for it.
 
+## The proposal, and what is still true about it
+
+A proposal comes from a family -- an issue in numberdb-data, labelled
+`proposal`, holding the conventions its tables share and a checklist of them.
+Read it (`python3 agents/queue.py show <number>`) before anything else: the
+tables of a family are meant to agree with each other, and the ones that do
+were built by runs that read the family first.
+
+It is also a claim about the corpus **on the day it was screened**, and this
+corpus moves: of 89 proposals screened here in a fortnight, only about 19
+still had no table like them by the end of it. So re-check the cheap half
+before you spend anything -- `already_here` and `already_asked` from
+`agents/table-ideas/screen.py`, `api/lookup` on a few values you expect, and
+whether the tag it wants exists. Seconds of work against a build that costs
+about six dollars.
+
+If the corpus already holds it, say so and tick the box rather than building
+it twice:
+
+    python3 agents/queue.py built <family> "<the proposal's title>" T<number>
+
 ## The order of work
 
 **1. Look at the database.** Search for the family and its neighbours. A table
@@ -109,10 +130,21 @@ worse than an untidy history, and `audit_table` findings are worth acting on
 whenever they arrive. The point is not to publish nothing twice, it is to have
 done the obvious checking first.
 
-**9. Run `manage.py audit_table T1xx`** and act on what it says. It catches
-what a person does not: a CITE naming nothing, a link out to something the
-corpus holds, a definition that has grown into four things, a snippet whose
-range no longer matches the table, a published table linking to a draft.
+**9. Run the audit on T1xx** and act on what it says. It catches what a
+person does not: a CITE naming nothing, a link out to something the corpus
+holds, a definition that has grown into four things, a snippet whose range no
+longer matches the table, a published table linking to a draft. Where there is
+a database, `manage.py audit_table T1xx`; where there is not -- a build machine
+is the usual case -- ask the site, which runs the same checks:
+
+```
+curl -s -H "Authorization: Bearer $NUMBERDB_KEY" \
+     https://numberdb.org/api/table/T1xx/audit | python3 -m json.tool
+```
+
+It answers `{"findings": [...], "clean": true|false}`, and it reads your draft
+if your key may see it. It does not take `--links`, so a run that wants the
+outward links checked needs the command and a database.
 
 **10. Offer it for review** and stop. Say what you did, what you checked, and
 what you decided that the proposal did not settle.

@@ -1,0 +1,203 @@
+"""The queue's parsing, without GitHub.
+
+    python3 agents/test_queue.py
+
+Everything here is text in and text out: what a batch file says, what an issue
+body says, and what happens when a box is ticked. The network is the part that
+cannot be tested here and is also the part least likely to be wrong.
+"""
+import os
+import sys
+import unittest
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import queue as q  # noqa: E402  (the file under test, not the stdlib module)
+
+
+BATCH = """# Batch: values of the special functions -- Bessel, Airy and the
+rest of them
+
+Written 2026-09-12 for numberdb-data#7, which asks for special function
+values, and #60.
+
+## How this run went
+
+| step | done |
+|---|---|
+| read the skill | yes |
+
+## Conventions shared by the tables
+
+Every table uses the same grid of rational arguments, and every value is
+computed in ball arithmetic.
+
+## 1. Values of the Bessel functions at rational arguments
+
+What it is. The first one.
+
+## 2. Values of the Airy functions at rational arguments
+
+What it is. The second one.
+
+## Ranking
+
+1 then 2.
+"""
+
+
+class WhatABatchSays(unittest.TestCase):
+
+	def setUp(self):
+		self.batch = q.parse_batch(BATCH, 'agents/table-ideas/BATCH-2026-09-12T1857.md')
+
+	def test_the_proposals_come_out_in_the_order_the_batch_ranks_them(self):
+		#The ranking is the batch's argument about what to build first, and
+		#the build order is the one thing that would silently waste it.
+		self.assertEqual(self.batch['proposals'], [
+			'Values of the Bessel functions at rational arguments',
+			'Values of the Airy functions at rational arguments'])
+
+	def test_the_date_comes_from_the_name(self):
+		self.assertEqual(self.batch['screened'], '2026-09-12')
+		self.assertEqual(self.batch['batch'], 'BATCH-2026-09-12T1857')
+
+	def test_the_conventions_are_carried_over(self):
+		#What a build needs in front of it. Without this the family issue is
+		#a list of titles and the tables stop agreeing with each other.
+		self.assertIn('same grid of rational arguments',
+		              self.batch['conventions'])
+		self.assertNotIn('read the skill', self.batch['conventions'])
+
+	def test_it_records_which_requests_it_answers(self):
+		self.assertEqual(self.batch['draws_on'], [7, 60])
+
+	def test_the_heading_loses_the_word_batch(self):
+		#Both forms are in use -- `# Batch: volumes of...` and `# Batch
+		#2026-09-12T1831: Lehmer's problem...` -- and an issue titled
+		#"Family: Batch 2026-09-12T1831: ..." says the same thing three times.
+		for heading in ('# Batch: Lehmer\'s problem and Mahler measures',
+		                '# Batch 2026-09-12T1831: Lehmer\'s problem and '
+		                'Mahler measures',
+		                '# Lehmer\'s problem and Mahler measures, screened '
+		                '2026-09-12'):
+			batch = q.parse_batch(heading + '\n\n## 1. A table\n',
+			                      'BATCH-2026-09-12T1831.md')
+			self.assertEqual(batch['subject'],
+			                 "Lehmer's problem and Mahler measures")
+
+	def test_a_heading_that_names_five_families_is_shortened(self):
+		long = ('volumes of hyperbolic manifolds and orbifolds -- the closed '
+		        'and cusped census manifolds, the prime links, the Coxeter '
+		        'simplices of dimensions 3 to 9, and the Bianchi orbifolds')
+		self.assertLessEqual(len(q._short(long)), 90)
+		self.assertTrue(q._short(long).startswith('volumes of hyperbolic'))
+
+
+class WhatAnIssueSays(unittest.TestCase):
+
+	def setUp(self):
+		self.batch = q.parse_batch(BATCH, 'BATCH-2026-09-12T1857.md')
+		self.body = q.issue_body(self.batch)
+		self.family = q.parse_family({'number': 42, 'title': 'Family: x',
+		                              'body': self.body})
+
+	def test_an_issue_reads_back_as_the_family_it_was(self):
+		self.assertEqual(self.family['batch'], 'BATCH-2026-09-12T1857')
+		self.assertEqual(self.family['screened'], '2026-09-12')
+		self.assertEqual([item['title'] for item in self.family['items']],
+		                 self.batch['proposals'])
+		self.assertEqual(len(q.waiting(self.family)), 2)
+
+	def test_an_issue_nobody_wrote_as_a_family_is_not_one(self):
+		#The label can be put on by hand, and a person's issue under it must
+		#not be read as a checklist of work.
+		self.assertIsNone(q.parse_family(
+			{'number': 1, 'title': 'Cantor polynomial',
+			 'body': 'It would be nice to have this table.'}))
+
+	def test_ticking_a_box_records_the_table(self):
+		body = q._tick(self.family, self.batch['proposals'][0], 'T226')
+		self.assertIn('- [x] Values of the Bessel functions at rational '
+		              'arguments -- T226', body)
+		after = q.parse_family({'number': 42, 'title': 't', 'body': body})
+		self.assertEqual(len(q.waiting(after)), 1)
+
+	def test_a_title_may_drift_between_the_proposal_and_the_table(self):
+		#Real drift: proposed as "Values of the digamma function at rational
+		#numbers", built as "Values of the digamma function $\\psi(x)$ at
+		#rational numbers". Requiring the string to match would leave the box
+		#unticked and the family open for ever.
+		body = q._tick(self.family,
+		               'Values of the Bessel functions $J_\\nu$ and $Y_\\nu$ '
+		               'at rational arguments', 'T226')
+		self.assertIsNotNone(body)
+		self.assertIn('-- T226', body)
+
+	def test_a_table_from_another_family_ticks_nothing(self):
+		self.assertIsNone(q._tick(self.family, 'Salem numbers below 1.3',
+		                          'T300'))
+
+	def test_ticking_twice_moves_to_the_next_box(self):
+		once = q._tick(self.family, self.batch['proposals'][0], 'T226')
+		family = q.parse_family({'number': 42, 'title': 't', 'body': once})
+		twice = q._tick(family, self.batch['proposals'][1], 'T227')
+		self.assertIn('-- T226', twice)
+		self.assertIn('-- T227', twice)
+		after = q.parse_family({'number': 42, 'title': 't', 'body': twice})
+		self.assertEqual(q.waiting(after), [])
+
+
+class WhichTableIsNext(unittest.TestCase):
+
+	def family(self, number, screened, done):
+		batch = q.parse_batch(BATCH, 'BATCH-%s.md' % screened)
+		body = q.issue_body(batch, done)
+		return q.parse_family({'number': number, 'title': 'Family: x',
+		                       'body': body})
+
+	def setUp(self):
+		self.started = self.family(10, '2026-09-01',
+		                           [('Values of the Bessel functions at '
+		                             'rational arguments', 'T226')])
+		self.newer = self.family(20, '2026-09-12', [])
+		self.asked = None
+		self.real = q.families
+		q.families = lambda state='open': [self.newer, self.started]
+
+	def tearDown(self):
+		q.families = self.real
+
+	def test_without_a_preference_it_takes_the_newest_family(self):
+		family, item = q.next_table()
+		self.assertEqual(family['number'], 20)
+		self.assertEqual(item['title'],
+		                 'Values of the Bessel functions at rational arguments')
+
+	def test_the_family_already_started_is_finished_first(self):
+		#Not the newest. A half-built family loses the thing that made the
+		#batch worth screening as a batch: the tables share machinery and
+		#point at each other, and T219 and T222 to T225 read as a family only
+		#because one campaign happened to get through all of them.
+		family, item = q.next_table(prefer=10)
+		self.assertEqual(family['number'], 10)
+		self.assertEqual(item['title'],
+		                 'Values of the Airy functions at rational arguments')
+
+	def test_a_finished_family_does_not_hold_the_queue(self):
+		done = self.family(30, '2026-09-13',
+		                   [('Values of the Bessel functions at rational '
+		                     'arguments', 'T226'),
+		                    ('Values of the Airy functions at rational '
+		                     'arguments', 'T227')])
+		q.families = lambda state='open': [done, self.newer]
+		family, _ = q.next_table(prefer=30)
+		self.assertEqual(family['number'], 20)
+
+	def test_an_empty_queue_says_so_rather_than_raising(self):
+		q.families = lambda state='open': []
+		self.assertIsNone(q.next_table())
+
+
+if __name__ == '__main__':
+	unittest.main(verbosity=1)
