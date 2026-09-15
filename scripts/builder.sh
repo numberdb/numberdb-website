@@ -169,6 +169,13 @@ split)
 	id=$(instance_id); [ -n "$id" ] || { echo "no builder" >&2; exit 1; }
 	[ "$(state_of "$id")" = running ] || { echo "the builder is not running; scripts/builder.sh start" >&2; exit 1; }
 	stamp=$(date -u +%Y%m%dT%H%M%SZ)
+	#Quoted for the remote shell, one argument at a time. Unquoted `$*` sent
+	#`--why the Glaisher-Kinkelin constant A is one table ...` as thirteen
+	#words, and the remote bash tried to run `A` as a command -- while the
+	#tattered remains of the sentence still reached the agent, which did
+	#something reasonable with them. A mangled instruction that half works is
+	#worse than one that fails.
+	args=$(printf '%q ' "$@")
 	ssh "$HOSTALIAS" "cd ~/numberdb-website && git pull --ff-only" \
 		|| { echo "the builder could not update; fix its tree before splitting" >&2; exit 1; }
 	ssh "$HOSTALIAS" "cd ~/numberdb-website && \
@@ -177,7 +184,7 @@ split)
 		NUMBERDB_SAGE_IMAGE=numberdb/builder:latest NUMBERDB_SAGE_PYTHONPATH= \
 		NUMBERDB_SAGE_MEMORY=1200m NUMBERDB_KEY=\$HOME/.config/numberdb/zeta3-key \
 		NUMBERDB_CODEX_SANDBOX=danger-full-access \
-		setsid nohup agents/split-table.sh $* > agents/runs/split-$stamp.log 2>&1 < /dev/null & \
+		setsid nohup agents/split-table.sh $args > agents/runs/split-$stamp.log 2>&1 < /dev/null & \
 		sleep 3; echo 'started split $stamp'"
 	echo "watch it with: ssh $HOSTALIAS 'tail -f ~/numberdb-website/agents/runs/split-$stamp.log'"
 	;;
