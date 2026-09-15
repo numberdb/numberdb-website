@@ -258,6 +258,15 @@ ACCOUNT_LOGOUT_ON_GET = False #Not fully safe, as users may get logged out by tr
 ACCOUNT_LOGOUT_REDIRECT_URL ='/'
 ACCOUNT_USERNAME_MAX_LENGTH = 20
 ACCOUNT_SESSION_REMEMBER = True #Always remember session
+
+#: Push the expiry forward on every request, so that a session ends after two
+#: weeks of *not being used* rather than two weeks after signing in. Somebody
+#: reading drafts all afternoon should not be signed out mid-afternoon, and
+#: being signed out is not obvious when it happens: the pages they were
+#: reading start answering "not found", which reads as "deleted". The cost is
+#: one session row written per request from a signed-in account, and this
+#: site's signed-in traffic is a handful of people.
+SESSION_SAVE_EVERY_REQUEST = True
 #ACCOUNT_SIGNUP_FORM_CLASS #Perhaps in future, for additional input fields
 #ACCOUNT_SIGNUP_REDIRECT_URL = "welcome/"
 #ACCOUNT_USER_DISPLAY #Perhaps in future
