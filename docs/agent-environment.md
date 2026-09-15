@@ -3238,3 +3238,20 @@ mathematical symbol in the prose if it matters.
 Evidence: 2026-09-15, T251 build. The builder probe
 `PolynomialRing(QQ, 'r')` succeeded under `agents/sage.sh`, but the live
 `/api/table/T251/entries` write failed with the `rpy2` message.
+
+## `agents/queue.py built` does not tick two-word proposal titles
+
+What happened: after T251 was offered for review, running
+`python3 agents/queue.py built 139 "Zernike polynomials (#77)" T251`
+answered `#139 has no unbuilt table like 'Zernike polynomials (#77)'`.
+The family issue still had the exact unchecked line. The helper's
+`_same_subject` refuses matches whose smaller word set has fewer than three
+words, so "Zernike polynomials" cannot match through that path.
+
+What to do instead: for a two-word proposal title, patch the exact checklist
+line in the family issue body, or have a person tick it, rather than trying
+more decorated titles.
+
+Evidence: 2026-09-15, T251 build; issue #139 was updated by replacing
+`- [ ] Zernike polynomials (#77)` with
+`- [x] Zernike polynomials (#77) -- T251`.
