@@ -87,8 +87,10 @@ Programs:
       h = (sum(L(j)*z**j for j in range(n)) * (1 - z)**n).truncate(n)
       L, h
 Similar tables:
-  - table: HREF{T232}[Ehrhart and $h^*$-polynomials of the Birkhoff polytopes]
-    relation: the transportation-polytope analogue with all row and column sums fixed
+  - table: HREF{T232}[Ehrhart polynomials of the Birkhoff polytopes]
+    relation: the transportation-polytope Ehrhart-polynomial analogue with all row and column sums fixed
+  - table: HREF{T242}[Ehrhart $h^*$-polynomials of the Birkhoff polytopes]
+    relation: the transportation-polytope $h^*$-polynomial analogue with all row and column sums fixed
 Links:
   WikiHypersimplex:
     title: 'Wikipedia: Hypersimplex'

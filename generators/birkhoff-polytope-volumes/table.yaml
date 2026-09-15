@@ -72,8 +72,10 @@ Programs:
       B = polytopes.Birkhoff_polytope(4)
       B.volume(measure="induced", engine="internal")  # 176/2835
 Similar tables:
-  - table: HREF{T232}[Ehrhart and $h^*$-polynomials of the Birkhoff polytopes]
+  - table: HREF{T232}[Ehrhart polynomials of the Birkhoff polytopes]
     relation: gives the Ehrhart polynomial whose leading coefficient is the relative volume
+  - table: HREF{T242}[Ehrhart $h^*$-polynomials of the Birkhoff polytopes]
+    relation: gives the $h^*$-polynomial whose value at $z=1$ is the normalised volume
 Links:
   WikiBirkhoff:
     title: 'Wikipedia: Birkhoff polytope'
