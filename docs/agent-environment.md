@@ -3255,3 +3255,69 @@ more decorated titles.
 Evidence: 2026-09-15, T251 build; issue #139 was updated by replacing
 `- [ ] Zernike polynomials (#77)` with
 `- [x] Zernike polynomials (#77) -- T251`.
+
+## The audit's two-tables check is blind to a bundle whose halves have different ranges
+
+What happened: T251 bundles the Zernike radial polynomials $R_n^{|l|}(t)$ and
+the Cartesian polynomials $Z_n^l(x,y)$ under a parameter `form` whose two
+values are the names `radial` and `cartesian`. That is the exact shape
+`_one_table_or_several` in
+`numberdb_app/management/commands/audit_table.py` was written to report, and
+`GET /api/table/T251/audit` answered `"findings": [], "clean": true`.
+
+Both rules miss, for different reasons:
+
+* `_one_table_or_several` requires the grid to be orthogonal --
+  `if len(grid) * len(labels) > len(records) * 1.05: continue` -- so a ragged
+  parameter is treated as a genuine family, "a shape that only some
+  distributions have". T251's 188 entries sit on 152 distinct `(n, l)` pairs,
+  only 36 of which carry both forms, because the radial half was computed to
+  `n <= 20` and the Cartesian half to `n <= 12`, and because the radial half
+  indexes by `|l|` while the Cartesian half indexes by signed `l`. The test is
+  `304 > 197.4` and the check bails. Two tables that were each given the range
+  that suited them are *more* ragged than one table, not less.
+* `_column_names_its_quantity` tests `header.lower() in GENERIC_HEADERS`, a
+  membership test against ten words. T251's `number-header` is
+  `$R_n^{|l|}(t)$ or $Z_n^l(x,y)$`: the same fallback the rule's own docstring
+  describes -- no symbol is true of every row -- written as a LaTeX
+  disjunction rather than as the word `value`, and so invisible.
+
+What to do instead: in the grid check, before the orthogonality `continue`,
+ask whether the *ranges* differ -- whether the set of values some other
+parameter takes under one label is a proper subset of the set it takes under
+another. That is bundling, not a ragged family, and it is the commoner shape:
+the halves of a bundle are computed to whatever depth each could afford. In
+the header check, treat a header containing ` or ` (or any top-level `\vee`,
+`,` or `/` joining two `$...$` spans) the same as a generic word: a
+disjunction names no quantity either.
+
+Evidence: 2026-09-15, T251 critique. `GET /api/table/T251/audit` clean;
+`agents/critiques/T251.md` finding 1 gives the counts.
+
+## `/preview?table=` in pieces reports false `CITE-broken`
+
+What happened: previewing T251's `Similar tables` and `rigour details` alone
+rendered every `CITE{formula-...}` as
+`<span class="CITE-broken" title="this table defines no reference by that
+name">formula-jacobi</span>`, which reads exactly like a table citing a key it
+never defines. It is not: `CITE` resolves against the keys present *in the
+piece that was sent*, and the pieces did not carry `Formulas`. With the cited
+formulas included, the same `CITE`s render as `<a class="CITE"
+href="#formula-jacobi">(4)</a>`.
+
+The existing note "render a private draft through `/preview` in pieces ...
+carrying the Links and Formulas that the section's `CITE`s need" says to
+include them; it does not say what it looks like when you forget. This is the
+symptom, and it is a false positive a critique can report as a fault in the
+table.
+
+What to do instead: before reporting a `CITE-broken`, re-send that one field
+in a piece that also carries the section defining the key. Numbering is global
+across `Formulas` then `Comments` in render order, so a citation's number also
+changes with what the piece contains -- another reason not to read numbers off
+a partial preview.
+
+Evidence: 2026-09-15, T251 critique. `/tmp/t251/sec_Similar_tables.html`
+(`CITE-broken`, no `Formulas` in the piece) against `/tmp/t251/cite1.html`
+(same fields plus `formula-jacobi` and `formula-hankel`, rendering `(1)` and
+`(2)`).
