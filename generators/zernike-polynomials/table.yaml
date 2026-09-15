@@ -2,13 +2,8 @@
 # Publishing is a person's act.
 Title: Zernike polynomials $Z_n^l$
 Definition: >-
-  For integers $n\geq0$ and $l$ with $|l|\leq n$ and $n-l$ even, the
-  Zernike polynomial on the unit disk is
-  $Z_n^l(\rho,\varphi)=R_n^{|l|}(\rho)\cos(l\varphi)$ for $l\geq0$ and
-  $Z_n^l(\rho,\varphi)=R_n^{|l|}(\rho)\sin(|l|\varphi)$ for $l<0$
-  CITE{Wiki}. This table stores the unnormalised radial polynomial
-  $R_n^{|l|}(t)$ and the unnormalised Cartesian polynomial $Z_n^l(x,y)$,
-  where $x=\rho\cos\varphi$ and $y=\rho\sin\varphi$.
+  The Zernike polynomials $Z_n^l$ are the orthogonal disk polynomials with
+  radial part $R_n^{|l|}$ and a sine or cosine angular part CITE{Wiki}.
 Parameters:
   n:
     type: Z
@@ -55,6 +50,11 @@ Comments:
     CITE{Wiki} CITE{MathWorld}. The classical aberration names for the first
     modes are included in the Cartesian entry comments.
 Formulas:
+  formula-angular: >-
+    $Z_n^l(\rho,\varphi)=R_n^{|l|}(\rho)\cos(l\varphi)$ for $l\geq0$, and
+    $Z_n^l(\rho,\varphi)=R_n^{|l|}(\rho)\sin(|l|\varphi)$ for $l<0$. The
+    Cartesian entries use $x=\rho\cos\varphi$ and
+    $y=\rho\sin\varphi$.
   formula-radial-sum: >-
     $R_n^m(\rho)=\sum_{k=0}^{(n-m)/2}(-1)^k
     \binom{n-k}{k}\binom{n-2k}{(n-m)/2-k}\rho^{n-2k}$ for
