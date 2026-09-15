@@ -2,12 +2,10 @@
 # numberdb-data#139. Publishing is a person's act.
 Title: Clebsch-Gordan coefficients and Wigner $3j$ symbols
 Definition: >-
-  The Wigner $3j$ symbol
-  $\begin{pmatrix}j_1&j_2&j_3\\m_1&m_2&m_3\end{pmatrix}$ is the
-  angular-momentum coupling coefficient defined by the finite Racah sum in
-  CITE{DLMF-3j}. The Clebsch-Gordan coefficient
-  $\langle j_1m_1,j_2m_2\mid j_3m\rangle$ is stored in the Condon-Shortley
-  phase convention, related to the Wigner symbol by CITE{formula-cg}.
+  Clebsch-Gordan coefficients and Wigner $3j$ symbols are two normalisations
+  of the same angular-momentum coupling coefficient. This table uses the DLMF
+  Wigner convention CITE{DLMF-3j} and the Condon-Shortley phase convention,
+  with the row relation in CITE{formula-cg}.
 Parameters:
   j1:
     type: Q
@@ -85,7 +83,7 @@ Formulas:
     \sin\theta\,d\theta
     =2\begin{pmatrix}l_1&l_2&l_3\\0&0&0\end{pmatrix}^2$, relating the
     $m_i=0$ Wigner symbols to the
-    HREF{Legendre_polynomials}[Legendre polynomials] CITE{DLMF-legendre}.
+    HREF{Legendre_polynomials}[Legendre polynomials] CITE{DLMF-relations}.
 Programs:
   program-sage:
     language: Sage
@@ -103,8 +101,8 @@ Links:
   DLMF-3j:
     title: 'DLMF 34.2: definition of the Wigner 3j symbol'
     url: https://dlmf.nist.gov/34.2
-  DLMF-legendre:
-    title: 'DLMF 34.3(vii): relations to Legendre polynomials and spherical harmonics'
+  DLMF-relations:
+    title: 'DLMF 34.3(vii): Wigner 3j symbol product formulas'
     url: https://dlmf.nist.gov/34.3#vii
   Sage:
     title: 'SageMath: Wigner, Clebsch-Gordan, Racah, and Gaunt coefficients'
