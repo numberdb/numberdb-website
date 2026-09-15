@@ -388,6 +388,14 @@ which says the table holds something it does not. When what a table stores
 changes, three places say what it holds -- the title, the definition and that
 header -- and the header is the one nobody rereads.
 
+**`param-latex` replaces the label of the parameter group it sits in**, and
+that is the whole of what it does. It is for a parameter whose values are
+words -- `normalisation: relative` shown as `$\operatorname{vol}_{\mathrm{rel}}(B_5)$`
+-- and it is wrong on a parameter whose value is a number, because there the
+value *is* the label. Two tables named each polynomial with it and the column
+that should have read `2` read `$L_{\Delta(2,4)}(t)$`, which is the column
+header restated one row at a time.
+
 **Entries are shown in the order the document writes them**, so the order the
 generator enumerates in is what a reader sees. For an index running over the
 negatives that is not the order of $\mathbb Z$: a table led with $a=-50$ and

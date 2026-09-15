@@ -59,6 +59,21 @@ former", "as above" make a reader count backwards and be wrong.
 came from a calculation and want to know what they have. Does the page tell
 them, in the first screen?
 
+**Is it one table?** A parameter whose values are a handful of *names*, that
+every other parameter repeats under, is two tables sharing a title and a value
+column -- and the value column gives it away by falling back on the word
+`value`, because no symbol is true of every row. The audit asks about this on
+a draft; you are the reader who can say whether the answer is the good kind
+(parts of one object, one number in two conventions, an argument rather than a
+name) or the kind that needs splitting.
+
+**Does each column say what it holds?** `param-latex` replaces the label of
+its own parameter group, which is right for a parameter whose values are words
+and wrong for one whose value is a number: four tables had columns reading
+`$L_{\Delta(2,4)}(t)$` where they should have read `2`. A label that repeats
+what the block heading above it already says -- `(B_n)` on every row of a
+table already grouped by $n$ -- is noise at the same place.
+
 ## How to look
 
     curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/T1xx
