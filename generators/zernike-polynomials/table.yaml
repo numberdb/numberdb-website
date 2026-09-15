@@ -7,7 +7,7 @@ Definition: >-
   $Z_n^l(\rho,\varphi)=R_n^{|l|}(\rho)\cos(l\varphi)$ for $l\geq0$ and
   $Z_n^l(\rho,\varphi)=R_n^{|l|}(\rho)\sin(|l|\varphi)$ for $l<0$
   CITE{Wiki}. This table stores the unnormalised radial polynomial
-  $R_n^{|l|}(r)$ and the unnormalised Cartesian polynomial $Z_n^l(x,y)$,
+  $R_n^{|l|}(t)$ and the unnormalised Cartesian polynomial $Z_n^l(x,y)$,
   where $x=\rho\cos\varphi$ and $y=\rho\sin\varphi$.
 Parameters:
   n:
@@ -26,11 +26,11 @@ Parameters:
     display: form
     constraints: either `radial` or `cartesian`
     values:
-      radial: $R_n^{|l|}(r)$
+      radial: $R_n^{|l|}(t)$
       cartesian: $Z_n^l(x,y)$
 Comments:
   comment-forms: >-
-    The `radial` entries write the radial coordinate as $r$, and use only
+    The `radial` entries write the radial coordinate as $t$, and use only
     $l\geq0$, since $R_n^{|-l|}=R_n^l$. The `cartesian` entries use the
     signed upper index $l$: nonnegative $l$ gives the cosine mode and
     negative $l$ gives the sine mode. The angle $\varphi$ is measured
@@ -40,7 +40,7 @@ Comments:
     multiply these polynomials by $\sqrt{n+1}$ when $l=0$ and by
     $\sqrt{2(n+1)}$ when $l\ne0$ CITE{Wiki}.
   comment-omissions: >-
-    The monomial rows are omitted: $R_n^n(r)=r^n$ for the radial form,
+    The monomial rows are omitted: $R_n^n(t)=t^n$ for the radial form,
     and the Cartesian rows $Z_0^0=1$, $Z_1^1=x$ and $Z_1^{-1}=y$. The
     non-monomial edge modes such as $Z_2^2=x^2-y^2$ and
     $Z_2^{-2}=2xy$ are included.
@@ -102,13 +102,13 @@ Programs:
       from sage.rings.integer_ring import ZZ
       from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 
-      R = PolynomialRing(ZZ, 'r')
-      r = R.gen()
+      R = PolynomialRing(ZZ, 't')
+      t = R.gen()
 
       def radial(n, m):
           return sum((-1)**k * ZZ(binomial(n - k, k)) *
                      ZZ(binomial(n - 2*k, (n - m)//2 - k)) *
-                     r**(n - 2*k)
+                     t**(n - 2*k)
                      for k in range((n - m)//2 + 1))
 
       radial(22, 0)                       # the next even radial row after this table
@@ -166,4 +166,4 @@ Data properties:
     the single-index formulas must reproduce the checked initial Noll and
     Fringe lists.
 Display properties:
-  number-header: $R_n^{|l|}(r)$ or $Z_n^l(x,y)$
+  number-header: $R_n^{|l|}(t)$ or $Z_n^l(x,y)$
