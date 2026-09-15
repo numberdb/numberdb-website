@@ -1,0 +1,375 @@
+# Draft document for T243, split from T233. Publishing is a person's act.
+Title: Ehrhart $h^*$-polynomials of the root polytopes
+Definition: For an irreducible crystallographic root system $\Phi$ CITE{WikiRootSystem}, let $P_\Phi=\operatorname{conv}(\Phi)$
+  be the full root polytope in the root lattice $\mathbb{Z}\Phi$. This table stores the Ehrhart $h^*$-polynomial
+  $h^*_{P_\Phi}(z)$, the numerator of its Ehrhart series CITE{WikiEhrhart}.
+Keywords:
+- root polytope
+- Ehrhart polynomial
+- Ehrhart h-star polynomial
+- Ehrhart h* polynomial
+- h-star polynomial
+- h* polynomial
+- growth series
+- coordination sequence
+- crystal ball sequence
+- root lattice
+Tags:
+- polynomial
+- combinatorics
+- discrete geometry
+Parameters:
+  type:
+    type: Symbolic
+    title: Dynkin type
+    display: type
+    constraints: $A_n$ with $n\geq1$, $B_n$ with $n\geq2$, $C_n$ with $n\geq3$, $D_n$ with $n\geq4$, or
+      one of $E_6$, $E_7$, $E_8$, $F_4$, $G_2$
+Comments:
+  conventions: 'Some authors use root polytope for $\operatorname{conv}(\Phi^+\cup\{0\})$; this table
+    uses $P_\Phi=\operatorname{conv}(\Phi)$. Counting in $\mathbb{Z}\Phi$ matters: for $C_n$ and $D_n$
+    in the usual coordinates, $\mathbb{Z}^n$ also contains $\pm e_i\in P_\Phi$, and counting in $\mathbb{Z}^n$
+    gives a different polynomial.'
+  small-rank-coincidences: '$n$ follows Bourbaki''s ranges, which list each irreducible root system once:
+    $C_2\cong B_2$ and $D_3\cong A_3$. $A_1$ is omitted as a row because its root polytope is a segment,
+    with $L_{A_1}(t)=2t+1$ and $h^*_{A_1}(z)=1+z$.'
+  palindromic-h-star: Among these entries, the palindromic $h^*$-polynomials are those for $A_n$, $C_n$,
+    $D_n$, $E_6$ and $B_2$; the other $h^*$ rows are not palindromic.
+Formulas:
+  formula-series: $\sum_{t\geq0}L_\Phi(t)z^t=h^*_{P_\Phi}(z)/(1-z)^{r+1}$, where $r=\operatorname{rank}(\Phi)$
+    CITE{WikiEhrhart}.
+  formula-binomial-transform: If $h^*_{P_\Phi}(z)=\sum_i h_i^*z^i$, then $L_\Phi(t)=\sum_i h_i^*\binom{t+r-i}{r}$.
+  formula-growth-series: If $s_\Phi(m)$ counts root-lattice points of word length exactly $m$ with respect
+    to the roots, then $\sum_{m\geq0}s_\Phi(m)z^m=h^*_{P_\Phi}(z)/(1-z)^r$ for $\Phi$ of type $A_n$, $B_n$,
+    $C_n$, $D_n$, $F_4$ or $G_2$ CITE{BacherHarpeVenkov}; for $A_n$, $C_n$ and $D_n$ this is also obtained
+    from unimodular triangulations of the root polytopes CITE{ABHPS}.
+  formula-classical-h-star: $h^*_{A_n}(z)=\sum_{k=0}^n\binom nk^2z^k$, $h^*_{B_n}(z)=\sum_{k=0}^n\left(\binom{2n+1}{2k}-2n\binom{n-1}{k-1}\right)z^k$,
+    $h^*_{C_n}(z)=\sum_{k=0}^n\binom{2n}{2k}z^k$, and $h^*_{D_n}(z)=\sum_{k=0}^n\left(\binom{2n}{2k}-2n\binom{n-2}{k-1}\right)z^k$
+    CITE{ABHPS} CITE{BaakeGrimm}.
+  formula-exceptional-h-star: $h^*_{G_2}(z)=1+10z+7z^2$, $h^*_{F_4}(z)=1+44z+198z^2+140z^3+z^4$, $h^*_{E_6}(z)=1+66z+645z^2+1384z^3+645z^4+66z^5+z^6$,
+    $h^*_{E_7}(z)=1+119z+2037z^2+8211z^3+8787z^4+2037z^5+119z^6+z^7$, and $h^*_{E_8}(z)=1+232z+7228z^2+55384z^3+133510z^4+107224z^5+24508z^6+232z^7+z^8$
+    CITE{ConwaySloane}.
+Programs:
+  program-sage:
+    language: Sage
+    code: 'from sage.arith.misc import binomial
+
+      from sage.rings.rational_field import QQ
+
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+
+      Z = PolynomialRing(QQ, "z")
+
+      z = Z.gen()
+
+      n = 4
+
+      sum(QQ(binomial(n, k)**2)*z**k for k in range(n + 1))  # h^*_{A_4}(z)'
+Similar tables:
+- table: HREF{T233}[Ehrhart polynomials of the root polytopes]
+  relation: gives the Ehrhart polynomial $L_\Phi(t)$ whose generating series has this numerator; the two
+    tables determine each other by CITE{formula-series} and CITE{formula-binomial-transform}
+- table: HREF{Packing_densities_and_Hermite_numbers_of_the_classical_lattices}[Packing densities and Hermite
+    numbers of the classical lattices]
+  relation: the lattices $A_n$, $D_n$ and $E_n$, with packing and Hermite data
+- table: HREF{Covering_radii_and_covering_densities_of_the_classical_lattices}[Covering radii and covering
+    densities of the classical lattices]
+  relation: the same classical root lattices, with covering data
+Links:
+  WikiRootSystem:
+    title: 'Wikipedia: Root system'
+    url: https://en.wikipedia.org/wiki/Root_system
+  WikiEhrhart:
+    title: 'Wikipedia: Ehrhart polynomial'
+    url: https://en.wikipedia.org/wiki/Ehrhart_polynomial
+  OEISA:
+    title: 'OEIS A008459: coordinator triangle for the root lattice $A_n$'
+    url: https://oeis.org/A008459
+  OEISB:
+    title: 'OEIS A109001: coordinator triangle for the root lattice $B_n$'
+    url: https://oeis.org/A109001
+  OEISD:
+    title: 'OEIS A108558: coordinator triangle for the root lattice $D_n$'
+    url: https://oeis.org/A108558
+  OEISG2:
+    title: 'OEIS A019557: coordination sequence for the root lattice $G_2$'
+    url: https://oeis.org/A019557
+  OEISF4:
+    title: 'OEIS A019558: coordination sequence for the root lattice $F_4$'
+    url: https://oeis.org/A019558
+  OEISE6:
+    title: 'OEIS A008399: coordination sequence for the root lattice $E_6$'
+    url: https://oeis.org/A008399
+  OEISE7:
+    title: 'OEIS A008397: coordination sequence for the root lattice $E_7$'
+    url: https://oeis.org/A008397
+  OEISE8:
+    title: 'OEIS A008340: coordination sequence for the root lattice $E_8$'
+    url: https://oeis.org/A008340
+References:
+  ABHPS:
+    bib: Federico Ardila, Matthias Beck, Serkan Hosten, Julian Pfeifle and Kim Seashore, Root polytopes
+      and growth series of root lattices, SIAM Journal on Discrete Mathematics 25 (2011), 360-378.
+    arxiv: '0809.5123'
+    doi: 10.1137/090749122
+  BacherHarpeVenkov:
+    bib: Roland Bacher, Pierre de la Harpe and Boris Venkov, Series de croissance et polynomes d'Ehrhart
+      associes aux reseaux de racines, Annales de l'Institut Fourier 49 (1999), 727-762.
+    doi: 10.5802/aif.1689
+  BaakeGrimm:
+    bib: Michael Baake and Uwe Grimm, Coordination sequences for root lattices and related graphs, Zeitschrift
+      fuer Kristallographie 212 (1997), 253-256.
+    arxiv: cond-mat/9706122
+  ConwaySloane:
+    bib: John H. Conway and Neil J. A. Sloane, Low-dimensional lattices. VII. Coordination sequences,
+      Proceedings of the Royal Society of London A 453 (1997), 2369-2389.
+    doi: 10.1098/rspa.1997.0126
+Data properties:
+  type: Q[]
+  rigour: exact
+  complete: 'no'
+  complete-note: it holds $h^*_{P_\Phi}(z)$ for $A_n$ and $B_n$ with $2\leq n\leq20$, $C_n$ with $3\leq
+    n\leq20$, $D_n$ with $4\leq n\leq20$, and the exceptional types $E_6$, $E_7$, $E_8$, $F_4$ and $G_2$;
+    the range matches the companion Ehrhart-polynomial table, and the $A_1$ case is given in the comments
+  rigour details: All entries are exact polynomials. The $A_n$, $C_n$ and $D_n$ rows use the formulas
+    of CITE{ABHPS}; the $B_n$, $F_4$ and $G_2$ rows use the growth-series formula of CITE{BacherHarpeVenkov};
+    the $E_6$, $E_7$ and $E_8$ rows are recovered from the coordination sequences of CITE{ConwaySloane}.
+    The rows reproduced the first ten b-file terms of CITE{OEISG2}, CITE{OEISF4}, CITE{OEISE6}, CITE{OEISE7}
+    and CITE{OEISE8}; the $A_n$, $B_n$ and $D_n$ rows were compared with CITE{OEISA}, CITE{OEISB} and
+    CITE{OEISD}.
+Display properties:
+  number-header: $h^*_{P_\Phi}(z)$
+Numbers:
+  A2:
+    number: z^2 + 4*z + 1
+  A3:
+    number: z^3 + 9*z^2 + 9*z + 1
+  A4:
+    number: z^4 + 16*z^3 + 36*z^2 + 16*z + 1
+  A5:
+    number: z^5 + 25*z^4 + 100*z^3 + 100*z^2 + 25*z + 1
+  A6:
+    number: z^6 + 36*z^5 + 225*z^4 + 400*z^3 + 225*z^2 + 36*z + 1
+  A7:
+    number: z^7 + 49*z^6 + 441*z^5 + 1225*z^4 + 1225*z^3 + 441*z^2 + 49*z + 1
+  A8:
+    number: z^8 + 64*z^7 + 784*z^6 + 3136*z^5 + 4900*z^4 + 3136*z^3 + 784*z^2 + 64*z + 1
+  A9:
+    number: z^9 + 81*z^8 + 1296*z^7 + 7056*z^6 + 15876*z^5 + 15876*z^4 + 7056*z^3 + 1296*z^2 + 81*z +
+      1
+  A10:
+    number: z^10 + 100*z^9 + 2025*z^8 + 14400*z^7 + 44100*z^6 + 63504*z^5 + 44100*z^4 + 14400*z^3 + 2025*z^2
+      + 100*z + 1
+  A11:
+    number: z^11 + 121*z^10 + 3025*z^9 + 27225*z^8 + 108900*z^7 + 213444*z^6 + 213444*z^5 + 108900*z^4
+      + 27225*z^3 + 3025*z^2 + 121*z + 1
+  A12:
+    number: z^12 + 144*z^11 + 4356*z^10 + 48400*z^9 + 245025*z^8 + 627264*z^7 + 853776*z^6 + 627264*z^5
+      + 245025*z^4 + 48400*z^3 + 4356*z^2 + 144*z + 1
+  A13:
+    number: z^13 + 169*z^12 + 6084*z^11 + 81796*z^10 + 511225*z^9 + 1656369*z^8 + 2944656*z^7 + 2944656*z^6
+      + 1656369*z^5 + 511225*z^4 + 81796*z^3 + 6084*z^2 + 169*z + 1
+  A14:
+    number: z^14 + 196*z^13 + 8281*z^12 + 132496*z^11 + 1002001*z^10 + 4008004*z^9 + 9018009*z^8 + 11778624*z^7
+      + 9018009*z^6 + 4008004*z^5 + 1002001*z^4 + 132496*z^3 + 8281*z^2 + 196*z + 1
+  A15:
+    number: z^15 + 225*z^14 + 11025*z^13 + 207025*z^12 + 1863225*z^11 + 9018009*z^10 + 25050025*z^9 +
+      41409225*z^8 + 41409225*z^7 + 25050025*z^6 + 9018009*z^5 + 1863225*z^4 + 207025*z^3 + 11025*z^2
+      + 225*z + 1
+  A16:
+    number: z^16 + 256*z^15 + 14400*z^14 + 313600*z^13 + 3312400*z^12 + 19079424*z^11 + 64128064*z^10
+      + 130873600*z^9 + 165636900*z^8 + 130873600*z^7 + 64128064*z^6 + 19079424*z^5 + 3312400*z^4 + 313600*z^3
+      + 14400*z^2 + 256*z + 1
+  A17:
+    number: z^17 + 289*z^16 + 18496*z^15 + 462400*z^14 + 5664400*z^13 + 38291344*z^12 + 153165376*z^11
+      + 378224704*z^10 + 590976100*z^9 + 590976100*z^8 + 378224704*z^7 + 153165376*z^6 + 38291344*z^5
+      + 5664400*z^4 + 462400*z^3 + 18496*z^2 + 289*z + 1
+  A18:
+    number: z^18 + 324*z^17 + 23409*z^16 + 665856*z^15 + 9363600*z^14 + 73410624*z^13 + 344622096*z^12
+      + 1012766976*z^11 + 1914762564*z^10 + 2363904400*z^9 + 1914762564*z^8 + 1012766976*z^7 + 344622096*z^6
+      + 73410624*z^5 + 9363600*z^4 + 665856*z^3 + 23409*z^2 + 324*z + 1
+  A19:
+    number: z^19 + 361*z^18 + 29241*z^17 + 938961*z^16 + 15023376*z^15 + 135210384*z^14 + 736145424*z^13
+      + 2538950544*z^12 + 5712638724*z^11 + 8533694884*z^10 + 8533694884*z^9 + 5712638724*z^8 + 2538950544*z^7
+      + 736145424*z^6 + 135210384*z^5 + 15023376*z^4 + 938961*z^3 + 29241*z^2 + 361*z + 1
+  A20:
+    number: z^20 + 400*z^19 + 36100*z^18 + 1299600*z^17 + 23474025*z^16 + 240374016*z^15 + 1502337600*z^14
+      + 6009350400*z^13 + 15868440900*z^12 + 28210561600*z^11 + 34134779536*z^10 + 28210561600*z^9 + 15868440900*z^8
+      + 6009350400*z^7 + 1502337600*z^6 + 240374016*z^5 + 23474025*z^4 + 1299600*z^3 + 36100*z^2 + 400*z
+      + 1
+  B2:
+    number: z^2 + 6*z + 1
+  B3:
+    number: z^3 + 23*z^2 + 15*z + 1
+  B4:
+    number: z^4 + 60*z^3 + 102*z^2 + 28*z + 1
+  B5:
+    number: z^5 + 125*z^4 + 402*z^3 + 290*z^2 + 45*z + 1
+  B6:
+    number: z^6 + 226*z^5 + 1167*z^4 + 1596*z^3 + 655*z^2 + 66*z + 1
+  B7:
+    number: z^7 + 371*z^6 + 2793*z^5 + 6155*z^4 + 4795*z^3 + 1281*z^2 + 91*z + 1
+  B8:
+    number: z^8 + 568*z^7 + 5852*z^6 + 18888*z^5 + 23750*z^4 + 12040*z^3 + 2268*z^2 + 120*z + 1
+  B9:
+    number: z^9 + 825*z^8 + 11124*z^7 + 49380*z^6 + 91118*z^5 + 74574*z^4 + 26628*z^3 + 3732*z^2 + 153*z
+      + 1
+  B10:
+    number: z^10 + 1150*z^9 + 19629*z^8 + 114600*z^7 + 291410*z^6 + 350196*z^5 + 201810*z^4 + 53544*z^3
+      + 5805*z^2 + 190*z + 1
+  B11:
+    number: z^11 + 1551*z^10 + 32659*z^9 + 242517*z^8 + 812570*z^7 + 1346534*z^6 + 1139446*z^5 + 487674*z^4
+      + 99957*z^3 + 8635*z^2 + 231*z + 1
+  B12:
+    number: z^12 + 2036*z^11 + 51810*z^10 + 476740*z^9 + 2035055*z^8 + 4446312*z^7 + 5189212*z^6 + 3260840*z^5
+      + 1077615*z^4 + 175780*z^3 + 12386*z^2 + 276*z + 1
+  B13:
+    number: z^13 + 2613*z^12 + 79014*z^11 + 882310*z^10 + 4673955*z^9 + 13017303*z^8 + 20034276*z^7 +
+      17363268*z^6 + 8423415*z^5 + 2214355*z^4 + 294294*z^3 + 17238*z^2 + 325*z + 1
+  B14:
+    number: z^14 + 3290*z^13 + 116571*z^12 + 1552772*z^11 + 9994985*z^10 + 34561254*z^9 + 67815867*z^8
+      + 77510712*z^7 + 51859899*z^6 + 20009990*z^5 + 4284137*z^4 + 472836*z^3 + 23387*z^2 + 378*z + 1
+  B15:
+    number: z^15 + 4075*z^14 + 167181*z^13 + 2618655*z^12 + 20130045*z^11 + 84612255*z^10 + 206162985*z^9
+      + 300437235*z^8 + 265092435*z^7 + 141060465*z^6 + 44322135*z^5 + 7877805*z^4 + 733551*z^3 + 31045*z^2
+      + 435*z + 1
+  B16:
+    number: z^16 + 4976*z^15 + 233976*z^14 + 4257488*z^13 + 38523420*z^12 + 193440624*z^11 + 573006280*z^10
+      + 1036952400*z^9 + 1166597190*z^8 + 818649040*z^7 + 354721224*z^6 + 92517360*z^5 + 13869596*z^4
+      + 1104208*z^3 + 40440*z^2 + 496*z + 1
+  B17:
+    number: z^17 + 6001*z^16 + 320552*z^15 + 6705480*z^14 + 70545580*z^13 + 417077388*z^12 + 1476065528*z^11
+      + 3247554200*z^10 + 4537130070*z^9 + 4059539990*z^8 + 2319687128*z^7 + 834303288*z^6 + 183517516*z^5
+      + 23516780*z^4 + 1619080*z^3 + 51816*z^2 + 561*z + 1
+  B18:
+    number: z^18 + 7158*z^17 + 431001*z^16 + 10270992*z^15 + 124317940*z^14 + 854769384*z^13 + 3562021764*z^12
+      + 9363499632*z^11 + 15904493550*z^10 + 17671756740*z^9 + 12875074542*z^8 + 6106641264*z^7 + 1852260228*z^6
+      + 348244456*z^5 + 38583540*z^4 + 2319888*z^3 + 65433*z^2 + 630*z + 1
+  B19:
+    number: z^19 + 8455*z^18 + 569943*z^17 + 15349929*z^16 + 211798852*z^15 + 1675730460*z^14 + 8121720012*z^13
+      + 25139631348*z^12 + 51019455006*z^11 + 68921416850*z^10 + 62357481186*z^9 + 37710051678*z^8 + 15083798964*z^7
+      + 3910471852*z^6 + 635629116*z^5 + 61492740*z^4 + 3256809*z^3 + 81567*z^2 + 703*z + 1
+  B20:
+    number: z^20 + 9900*z^19 + 742558*z^18 + 22443180*z^17 + 350188525*z^16 + 3158996848*z^15 + 17618991080*z^14
+      + 63430259376*z^13 + 151581457170*z^12 + 244658975080*z^11 + 269125242100*z^10 + 202109617320*z^9
+      + 103075431186*z^8 + 35239067440*z^7 + 7898189800*z^6 + 1120944368*z^5 + 95509485*z^4 + 4489548*z^3
+      + 100510*z^2 + 780*z + 1
+  C3:
+    number: z^3 + 15*z^2 + 15*z + 1
+  C4:
+    number: z^4 + 28*z^3 + 70*z^2 + 28*z + 1
+  C5:
+    number: z^5 + 45*z^4 + 210*z^3 + 210*z^2 + 45*z + 1
+  C6:
+    number: z^6 + 66*z^5 + 495*z^4 + 924*z^3 + 495*z^2 + 66*z + 1
+  C7:
+    number: z^7 + 91*z^6 + 1001*z^5 + 3003*z^4 + 3003*z^3 + 1001*z^2 + 91*z + 1
+  C8:
+    number: z^8 + 120*z^7 + 1820*z^6 + 8008*z^5 + 12870*z^4 + 8008*z^3 + 1820*z^2 + 120*z + 1
+  C9:
+    number: z^9 + 153*z^8 + 3060*z^7 + 18564*z^6 + 43758*z^5 + 43758*z^4 + 18564*z^3 + 3060*z^2 + 153*z
+      + 1
+  C10:
+    number: z^10 + 190*z^9 + 4845*z^8 + 38760*z^7 + 125970*z^6 + 184756*z^5 + 125970*z^4 + 38760*z^3 +
+      4845*z^2 + 190*z + 1
+  C11:
+    number: z^11 + 231*z^10 + 7315*z^9 + 74613*z^8 + 319770*z^7 + 646646*z^6 + 646646*z^5 + 319770*z^4
+      + 74613*z^3 + 7315*z^2 + 231*z + 1
+  C12:
+    number: z^12 + 276*z^11 + 10626*z^10 + 134596*z^9 + 735471*z^8 + 1961256*z^7 + 2704156*z^6 + 1961256*z^5
+      + 735471*z^4 + 134596*z^3 + 10626*z^2 + 276*z + 1
+  C13:
+    number: z^13 + 325*z^12 + 14950*z^11 + 230230*z^10 + 1562275*z^9 + 5311735*z^8 + 9657700*z^7 + 9657700*z^6
+      + 5311735*z^5 + 1562275*z^4 + 230230*z^3 + 14950*z^2 + 325*z + 1
+  C14:
+    number: z^14 + 378*z^13 + 20475*z^12 + 376740*z^11 + 3108105*z^10 + 13123110*z^9 + 30421755*z^8 +
+      40116600*z^7 + 30421755*z^6 + 13123110*z^5 + 3108105*z^4 + 376740*z^3 + 20475*z^2 + 378*z + 1
+  C15:
+    number: z^15 + 435*z^14 + 27405*z^13 + 593775*z^12 + 5852925*z^11 + 30045015*z^10 + 86493225*z^9 +
+      145422675*z^8 + 145422675*z^7 + 86493225*z^6 + 30045015*z^5 + 5852925*z^4 + 593775*z^3 + 27405*z^2
+      + 435*z + 1
+  C16:
+    number: z^16 + 496*z^15 + 35960*z^14 + 906192*z^13 + 10518300*z^12 + 64512240*z^11 + 225792840*z^10
+      + 471435600*z^9 + 601080390*z^8 + 471435600*z^7 + 225792840*z^6 + 64512240*z^5 + 10518300*z^4 +
+      906192*z^3 + 35960*z^2 + 496*z + 1
+  C17:
+    number: z^17 + 561*z^16 + 46376*z^15 + 1344904*z^14 + 18156204*z^13 + 131128140*z^12 + 548354040*z^11
+      + 1391975640*z^10 + 2203961430*z^9 + 2203961430*z^8 + 1391975640*z^7 + 548354040*z^6 + 131128140*z^5
+      + 18156204*z^4 + 1344904*z^3 + 46376*z^2 + 561*z + 1
+  C18:
+    number: z^18 + 630*z^17 + 58905*z^16 + 1947792*z^15 + 30260340*z^14 + 254186856*z^13 + 1251677700*z^12
+      + 3796297200*z^11 + 7307872110*z^10 + 9075135300*z^9 + 7307872110*z^8 + 3796297200*z^7 + 1251677700*z^6
+      + 254186856*z^5 + 30260340*z^4 + 1947792*z^3 + 58905*z^2 + 630*z + 1
+  C19:
+    number: z^19 + 703*z^18 + 73815*z^17 + 2760681*z^16 + 48903492*z^15 + 472733756*z^14 + 2707475148*z^13
+      + 9669554100*z^12 + 22239974430*z^11 + 33578000610*z^10 + 33578000610*z^9 + 22239974430*z^8 + 9669554100*z^7
+      + 2707475148*z^6 + 472733756*z^5 + 48903492*z^4 + 2760681*z^3 + 73815*z^2 + 703*z + 1
+  C20:
+    number: z^20 + 780*z^19 + 91390*z^18 + 3838380*z^17 + 76904685*z^16 + 847660528*z^15 + 5586853480*z^14
+      + 23206929840*z^13 + 62852101650*z^12 + 113380261800*z^11 + 137846528820*z^10 + 113380261800*z^9
+      + 62852101650*z^8 + 23206929840*z^7 + 5586853480*z^6 + 847660528*z^5 + 76904685*z^4 + 3838380*z^3
+      + 91390*z^2 + 780*z + 1
+  D4:
+    number: z^4 + 20*z^3 + 54*z^2 + 20*z + 1
+  D5:
+    number: z^5 + 35*z^4 + 180*z^3 + 180*z^2 + 35*z + 1
+  D6:
+    number: z^6 + 54*z^5 + 447*z^4 + 852*z^3 + 447*z^2 + 54*z + 1
+  D7:
+    number: z^7 + 77*z^6 + 931*z^5 + 2863*z^4 + 2863*z^3 + 931*z^2 + 77*z + 1
+  D8:
+    number: z^8 + 104*z^7 + 1724*z^6 + 7768*z^5 + 12550*z^4 + 7768*z^3 + 1724*z^2 + 104*z + 1
+  D9:
+    number: z^9 + 135*z^8 + 2934*z^7 + 18186*z^6 + 43128*z^5 + 43128*z^4 + 18186*z^3 + 2934*z^2 + 135*z
+      + 1
+  D10:
+    number: z^10 + 170*z^9 + 4685*z^8 + 38200*z^7 + 124850*z^6 + 183356*z^5 + 124850*z^4 + 38200*z^3 +
+      4685*z^2 + 170*z + 1
+  D11:
+    number: z^11 + 209*z^10 + 7117*z^9 + 73821*z^8 + 317922*z^7 + 643874*z^6 + 643874*z^5 + 317922*z^4
+      + 73821*z^3 + 7117*z^2 + 209*z + 1
+  D12:
+    number: z^12 + 252*z^11 + 10386*z^10 + 133516*z^9 + 732591*z^8 + 1956216*z^7 + 2698108*z^6 + 1956216*z^5
+      + 732591*z^4 + 133516*z^3 + 10386*z^2 + 252*z + 1
+  D13:
+    number: z^13 + 299*z^12 + 14664*z^11 + 228800*z^10 + 1557985*z^9 + 5303155*z^8 + 9645688*z^7 + 9645688*z^6
+      + 5303155*z^5 + 1557985*z^4 + 228800*z^3 + 14664*z^2 + 299*z + 1
+  D14:
+    number: z^14 + 350*z^13 + 20139*z^12 + 374892*z^11 + 3101945*z^10 + 13109250*z^9 + 30399579*z^8 +
+      40090728*z^7 + 30399579*z^6 + 13109250*z^5 + 3101945*z^4 + 374892*z^3 + 20139*z^2 + 350*z + 1
+  D15:
+    number: z^15 + 405*z^14 + 27015*z^13 + 591435*z^12 + 5844345*z^11 + 30023565*z^10 + 86454615*z^9 +
+      145371195*z^8 + 145371195*z^7 + 86454615*z^6 + 30023565*z^5 + 5844345*z^4 + 591435*z^3 + 27015*z^2
+      + 405*z + 1
+  D16:
+    number: z^16 + 464*z^15 + 35512*z^14 + 903280*z^13 + 10506652*z^12 + 64480208*z^11 + 225728776*z^10
+      + 471339504*z^9 + 600970566*z^8 + 471339504*z^7 + 225728776*z^6 + 64480208*z^5 + 10506652*z^4 +
+      903280*z^3 + 35512*z^2 + 464*z + 1
+  D17:
+    number: z^17 + 527*z^16 + 45866*z^15 + 1341334*z^14 + 18140734*z^13 + 131081730*z^12 + 548251938*z^11
+      + 1391805470*z^10 + 2203742640*z^9 + 2203742640*z^8 + 1391805470*z^7 + 548251938*z^6 + 131081730*z^5
+      + 18140734*z^4 + 1341334*z^3 + 45866*z^2 + 527*z + 1
+  D18:
+    number: z^18 + 594*z^17 + 58329*z^16 + 1943472*z^15 + 30240180*z^14 + 254121336*z^13 + 1251520452*z^12
+      + 3796008912*z^11 + 7307460270*z^10 + 9074671980*z^9 + 7307460270*z^8 + 3796008912*z^7 + 1251520452*z^6
+      + 254121336*z^5 + 30240180*z^4 + 1943472*z^3 + 58329*z^2 + 594*z + 1
+  D19:
+    number: z^19 + 665*z^18 + 73169*z^17 + 2755513*z^16 + 48877652*z^15 + 472643316*z^14 + 2707240004*z^13
+      + 9669083812*z^12 + 22239235406*z^11 + 33577076830*z^10 + 33577076830*z^9 + 22239235406*z^8 + 9669083812*z^7
+      + 2707240004*z^6 + 472643316*z^5 + 48877652*z^4 + 2755513*z^3 + 73169*z^2 + 665*z + 1
+  D20:
+    number: z^20 + 740*z^19 + 90670*z^18 + 3832260*z^17 + 76872045*z^16 + 847538128*z^15 + 5586510760*z^14
+      + 23206187280*z^13 + 62850828690*z^12 + 113378511480*z^11 + 137844584020*z^10 + 113378511480*z^9
+      + 62850828690*z^8 + 23206187280*z^7 + 5586510760*z^6 + 847538128*z^5 + 76872045*z^4 + 3832260*z^3
+      + 90670*z^2 + 740*z + 1
+  E6:
+    number: z^6 + 66*z^5 + 645*z^4 + 1384*z^3 + 645*z^2 + 66*z + 1
+  E7:
+    number: z^7 + 119*z^6 + 2037*z^5 + 8787*z^4 + 8211*z^3 + 2037*z^2 + 119*z + 1
+  E8:
+    number: z^8 + 232*z^7 + 24508*z^6 + 107224*z^5 + 133510*z^4 + 55384*z^3 + 7228*z^2 + 232*z + 1
+  F4:
+    number: z^4 + 140*z^3 + 198*z^2 + 44*z + 1
+  G2:
+    number: 7*z^2 + 10*z + 1

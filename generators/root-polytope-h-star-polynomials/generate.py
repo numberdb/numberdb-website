@@ -1,8 +1,8 @@
-"""Ehrhart polynomials of root polytopes -- numberdb.org/T233
+"""Ehrhart h-star polynomials of root polytopes -- numberdb.org/T243
 
 For the irreducible crystallographic root systems this stores the Ehrhart
-polynomial L_Phi(t) of the full root polytope P_Phi = conv(Phi), in the root
-lattice.
+h-star polynomial h^*_{P_Phi}(z) of the full root polytope
+P_Phi = conv(Phi), in the root lattice.
 
 Run it with SageMath:
 
@@ -10,11 +10,8 @@ Run it with SageMath:
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # fill the draft, with NUMBERDB_API_KEY set
 
-The h-star polynomials of numberdb.org/T243 use the closed forms for the
-coordinator polynomials of root lattices. These Ehrhart polynomials are
-computed from those polynomials by the exact binomial transform
-
-    L_Phi(t) = sum_i h_i^* binomial(t + d - i, d),  d = rank(Phi).
+The h-star polynomials use the closed forms for the coordinator polynomials of
+root lattices.
 
 The rings are named rather than taken from `sage.all`, so this runs on a
 modular passagemath as well as on a full SageMath.
@@ -22,14 +19,14 @@ modular passagemath as well as on a full SageMath.
 
 import os
 import sys
-from math import comb, factorial
+from math import comb
 
 import numberdb.sage as numberdb
 from sage.rings.rational_field import QQ
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 
 
-T233 = "T233"
+T243 = "T243"
 CLASSICAL_UP_TO_RANK = 20
 
 EXCEPTIONAL_H_STAR = {
@@ -40,8 +37,8 @@ EXCEPTIONAL_H_STAR = {
     "G2": [1, 10, 7],
 }
 
-_T = PolynomialRing(QQ, "t")
-_t = _T.gen()
+_Z = PolynomialRing(QQ, "z")
+_z = _Z.gen()
 
 
 def choose(n, k):
@@ -58,13 +55,6 @@ def _key_from_stdin():
         token = token.split("=", 1)[1].strip().strip("'\"")
     if token:
         os.environ["NUMBERDB_API_KEY"] = token
-
-
-def binomial_polynomial(shift, degree):
-    value = _T.one()
-    for j in range(degree):
-        value *= _t + QQ(shift - j)
-    return value / QQ(factorial(degree))
 
 
 def parse_type(root_type):
@@ -95,13 +85,8 @@ def h_star_coefficients(root_type):
     raise ValueError("unknown root type %r" % (root_type,))
 
 
-def ehrhart_polynomial(root_type):
-    coefficients = h_star_coefficients(root_type)
-    degree = len(coefficients) - 1
-    return sum(
-        QQ(c) * binomial_polynomial(degree - i, degree)
-        for i, c in enumerate(coefficients)
-    )
+def h_star_polynomial(root_type):
+    return sum(QQ(c) * _z ** i for i, c in enumerate(h_star_coefficients(root_type)))
 
 
 def root_types(up_to_rank=CLASSICAL_UP_TO_RANK):
@@ -117,9 +102,9 @@ def root_types(up_to_rank=CLASSICAL_UP_TO_RANK):
         yield root_type
 
 
-class RootPolytopeEhrhartPolynomials(numberdb.Generator):
+class RootPolytopeHStarPolynomials(numberdb.Generator):
 
-    table = os.environ.get("NUMBERDB_TABLE", T233)
+    table = os.environ.get("NUMBERDB_TABLE", T243)
     parameters = ("type",)
     type = "Q[]"
     rigour = "exact"
@@ -129,14 +114,14 @@ class RootPolytopeEhrhartPolynomials(numberdb.Generator):
             yield {"type": root_type}
 
     def value(self, params, digits):
-        return ehrhart_polynomial(params["type"])
+        return h_star_polynomial(params["type"])
 
 
 if __name__ == "__main__":
     _key_from_stdin()
-    generator = RootPolytopeEhrhartPolynomials()
+    generator = RootPolytopeHStarPolynomials()
     if os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
-        print(generator.publish(message="root polytope Ehrhart polynomials"))
+        print(generator.publish(message="root polytope h-star polynomials"))
     else:
         report = generator.verify(sample=None)
         print(report)
