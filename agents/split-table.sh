@@ -32,6 +32,7 @@ engine="${NUMBERDB_WRITER:-${NUMBERDB_AGENT:-claude}}"
 host="${NUMBERDB_HOST:-https://numberdb.org}"
 key_file="${NUMBERDB_KEY:-$HOME/.config/numberdb/zeta3-key}"
 say() { printf '\n=== %s\n' "$*"; }
+failed=""
 
 # What the audit says about one table, as one line per finding.
 findings() {
@@ -60,7 +61,18 @@ for tid in "$@"; do
 		fi
 	fi
 	say "splitting $tid"
-	NUMBERDB_AGENT="$engine" agents/run.sh split \
-		"Split $tid, or say why it should stay as it is. The audit says: $task" \
-		|| { say "the split run for $tid failed; $tid is unchanged unless its report says otherwise"; exit 1; }
+	#One table's run failing is not a reason to skip the rest: each split is
+	#a separate table, a separate session and a separate judgement, and the
+	#failures are named at the end rather than stopping the list.
+	if ! NUMBERDB_AGENT="$engine" agents/run.sh split \
+		"Split $tid, or say why it should stay as it is. The audit says: $task"
+	then
+		say "the split run for $tid failed; $tid is unchanged unless its report says otherwise"
+		failed="$failed $tid"
+	fi
 done
+
+if [ -n "$failed" ]; then
+	say "these did not finish:$failed"
+	exit 1
+fi
