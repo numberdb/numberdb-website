@@ -160,6 +160,28 @@ stop)
 	echo "stopping; the disk and the image stay"
 	;;
 
+split)
+	#The same machine, the same environment, a different job. Splitting a
+	#draft that holds two quantities is a table's worth of judgement each
+	#time, so it runs here for the same reason a build does.
+	shift
+	[ $# -gt 0 ] || { echo "usage: $0 split <TID>..." >&2; exit 2; }
+	id=$(instance_id); [ -n "$id" ] || { echo "no builder" >&2; exit 1; }
+	[ "$(state_of "$id")" = running ] || { echo "the builder is not running; scripts/builder.sh start" >&2; exit 1; }
+	stamp=$(date -u +%Y%m%dT%H%M%SZ)
+	ssh "$HOSTALIAS" "cd ~/numberdb-website && git pull --ff-only" \
+		|| { echo "the builder could not update; fix its tree before splitting" >&2; exit 1; }
+	ssh "$HOSTALIAS" "cd ~/numberdb-website && \
+		[ -f ~/.numberdb-gh ] && . ~/.numberdb-gh; export GH_TOKEN; \
+		NUMBERDB_CAMPAIGN='$stamp' NUMBERDB_WRITER=codex NUMBERDB_REMOTE=local \
+		NUMBERDB_SAGE_IMAGE=numberdb/builder:latest NUMBERDB_SAGE_PYTHONPATH= \
+		NUMBERDB_SAGE_MEMORY=1200m NUMBERDB_KEY=\$HOME/.config/numberdb/zeta3-key \
+		NUMBERDB_CODEX_SANDBOX=danger-full-access \
+		setsid nohup agents/split-table.sh $* > agents/runs/split-$stamp.log 2>&1 < /dev/null & \
+		sleep 3; echo 'started split $stamp'"
+	echo "watch it with: ssh $HOSTALIAS 'tail -f ~/numberdb-website/agents/runs/split-$stamp.log'"
+	;;
+
 campaign)
 	shift
 	count="${1:-2}"
@@ -184,7 +206,7 @@ campaign)
 	;;
 
 *)
-	echo "usage: $0 {up|start|stop|status|campaign N}" >&2
+	echo "usage: $0 {up|start|stop|status|campaign N|split TID...}" >&2
 	exit 2
 	;;
 esac
