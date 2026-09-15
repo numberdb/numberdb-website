@@ -1,80 +1,53 @@
-# Draft document for proposal 1 of agents/table-ideas/BATCH-2026-09-13T1751.md.
-# It was created as draft T232 through the API with X-Draft: yes, then filled
-# by generate.py beside it. Publishing is a person's act.
-Title: Ehrhart and $h^*$-polynomials of the Birkhoff polytopes
-Definition: >-
-  The Birkhoff polytope $B_n\subset\mathbb{R}^{n\times n}$ is the lattice
-  polytope of $n\times n$ doubly stochastic matrices CITE{WikiBirkhoff}. The
-  table stores its Ehrhart polynomial $H_n(t)=L_{B_n}(t)$, counting
-  nonnegative integer matrices with all row and column sums $t$, and its
-  $h^*$-polynomial CITE{WikiEhrhart}.
+# Draft document for T232 after splitting the h-star rows to T242.
+# Publishing is a person's act.
+Title: Ehrhart polynomials of the Birkhoff polytopes
+Definition: The Birkhoff polytope $B_n\subset\mathbb{R}^{n\times n}$ is the lattice polytope
+  of $n\times n$ doubly stochastic matrices CITE{WikiBirkhoff}. The table stores its Ehrhart
+  polynomial $H_n(t)=L_{B_n}(t)$, counting $n\times n$ nonnegative integer matrices whose
+  rows and columns all sum to $t$.
 Keywords:
-  - Birkhoff polytope
-  - Ehrhart polynomial
-  - Ehrhart h-star polynomial
-  - Ehrhart h* polynomial
-  - semi-magic squares
-  - magic squares
-  - doubly stochastic matrices
-  - contingency tables
+- Birkhoff polytope
+- Ehrhart polynomial
+- semi-magic squares
+- doubly stochastic matrices
+- contingency tables
 Parameters:
   n:
     type: Z
     title: matrix size
     display: $n$
-    constraints: $n$ is an integer with $n\geq3$
-  form:
-    type: Symbolic
-    title: form of the polynomial
-    display: form
-    constraints: either `ehrhart` or `h-star`
-    values:
-      ehrhart: $H_n(t)$
-      h-star: $h^*_{B_n}(z)$
+    constraints: $n$ is a positive integer
 Comments:
-  comment-semi-magic: >-
-    The count is for semi-magic squares: it fixes all row and column sums and
-    imposes no diagonal condition.
-  comment-small-n: >-
-    The omitted cases are $H_1(t)=1$, $h^*_{B_1}(z)=1$, $H_2(t)=t+1$, and
-    $h^*_{B_2}(z)=1$.
-  comment-known-range: >-
-    Beck and Pixton give the full Ehrhart polynomials $H_n(t)$ for
-    $1\leq n\leq9$ CITE{BeckPixtonData}. The full polynomial $H_{10}(t)$ is
-    not included in that source.
+  comment-semi-magic: '$H_n(t)$ counts semi-magic squares: $n\times n$ nonnegative integer
+    matrices whose rows and columns all sum to $t$, with no condition on the diagonals.'
+  comment-small-n: For $n=1$ and $n=2$ the polytope is respectively a point and a line segment,
+    so $H_1(t)=1$ and $H_2(t)=t+1$.
+  comment-known-range: Beck and Pixton computed $H_n(t)$ for $n\leq9$ CITE{BeckPixton}, and
+    the polynomials are listed at CITE{BeckPixtonData}. The rows from $n=7$ on are omitted
+    here because the polynomials are long enough to be poor reference entries.
 Formulas:
-  formula-series: >-
-    If $d=(n-1)^2$, then
-    $\sum_{t\geq0}H_n(t)z^t=h^*_{B_n}(z)/(1-z)^{d+1}$.
-  formula-binomial-transform: >-
-    If $h^*_{B_n}(z)=\sum_{i=0}^{d}h_i^*z^i$ and $d=(n-1)^2$, then
-    $H_n(t)=\sum_{i=0}^{d}h_i^*\binom{t+d-i}{d}$.
-  formula-vertices: >-
-    $H_n(1)=n!$, the number of permutation matrices in $B_n$, so these values
-    are given by HREF{Factorial}[the factorial table].
-  formula-normalized-volume: >-
-    $h^*_{B_n}(1)=d!\,[t^d]H_n(t)$ for $d=(n-1)^2$, the normalized volume of
-    $B_n$ CITE{OEISVolume}.
+  formula-series: If $d=(n-1)^2$, then $\sum_{t\geq0}H_n(t)z^t=h^*_{B_n}(z)/(1-z)^{d+1}$ CITE{WikiEhrhart}.
+  formula-binomial-transform: With $d=(n-1)^2$ and $h^*_{B_n}(z)=\sum_i h_i^*z^i$, $H_n(t)=\sum_{i=0}^{d}h_i^*\binom{t+d-i}{d}$.
+  formula-vertices: $H_n(1)=$HREF{Factorial}[$n!$], since the lattice points of $B_n$ are
+    the $n\times n$ permutation matrices.
+  formula-normalized-volume: $d!\,[t^d]H_n(t)$ is the normalized volume of $B_n$, where $d=(n-1)^2$
+    and $[t^d]H_n(t)$ is the leading coefficient CITE{OEISVolume}.
+  formula-reciprocity: $H_n(-n-t)=(-1)^{n-1}H_n(t)$ and $H_n(-1)=\cdots=H_n(-n+1)=0$ CITE{BeckPixton}.
 Programs:
   program-sage:
     language: Sage
-    code: |-
-      import numberdb.sage as numberdb
-      from sage.arith.misc import binomial
-      from sage.rings.rational_field import QQ
-      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
-
-      T = PolynomialRing(QQ, "t")
-      t = T.gen()
-
-      def ehrhart_from_h_star(coefficients, dimension):
-          return sum(QQ(c) * T(binomial(t + dimension - i, dimension))
-                     for i, c in enumerate(coefficients))
-
-      ehrhart_from_h_star([1, 14, 87, 148, 87, 14, 1], 9)  # H_4(t)
+    code: "import numberdb.sage as numberdb\nfrom sage.arith.misc import binomial\nfrom sage.rings.rational_field\
+      \ import QQ\nfrom sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing\n\
+      \nT = PolynomialRing(QQ, \"t\")\nt = T.gen()\n\ndef ehrhart_from_h_star(coefficients,\
+      \ dimension):\n    return sum(QQ(c) * T(binomial(t + dimension - i, dimension))\n  \
+      \             for i, c in enumerate(coefficients))\n\nehrhart_from_h_star([1, 14, 87,\
+      \ 148, 87, 14, 1], 9)  # H_4(t)"
 Similar tables:
-  - table: HREF{Factorial}[Factorial of natural numbers]
-    relation: gives $H_n(1)=n!$, the number of permutation matrices in $B_n$
+- table: HREF{T242}[Ehrhart $h^*$-polynomials of the Birkhoff polytopes]
+  relation: gives the numerator $h^*_{B_n}(z)$ of the Ehrhart series; the two tables determine
+    each other by CITE{formula-series} and CITE{formula-binomial-transform}
+- table: HREF{Factorial}[Factorial of natural numbers]
+  relation: gives $H_n(1)=n!$, the number of permutation matrices in $B_n$
 Links:
   WikiBirkhoff:
     title: 'Wikipedia: Birkhoff polytope'
@@ -86,45 +59,69 @@ Links:
     title: 'Beck and Pixton: Ehrhart polynomials for the Birkhoff polytopes'
     url: https://matthbeck.github.io/birkhoff/polynomials.html
   OEISHStar:
-    title: 'OEIS A259473: coefficients arising in the enumeration of doubly stochastic matrices of integers'
+    title: 'OEIS A259473: coefficients arising in the enumeration of doubly stochastic matrices
+      of integers'
     url: https://oeis.org/A259473
   OEISVolume:
     title: 'OEIS A037302: normalized volume of the Birkhoff polytope'
     url: https://oeis.org/A037302
   OEIS3:
-    title: 'OEIS A002817: number of $3\times3$ nonnegative integer matrices with all line sums $n$'
+    title: 'OEIS A002817: number of $3\times3$ nonnegative integer matrices with common line
+      sum $t$'
     url: https://oeis.org/A002817
   OEIS4:
-    title: 'OEIS A001496: number of $4\times4$ nonnegative integer matrices with all line sums $n$'
+    title: 'OEIS A001496: number of $4\times4$ nonnegative integer matrices with common line
+      sum $t$'
     url: https://oeis.org/A001496
   OEIS5:
-    title: 'OEIS A003438: number of $5\times5$ nonnegative integer matrices with all line sums $n$'
+    title: 'OEIS A003438: number of $5\times5$ nonnegative integer matrices with common line
+      sum $t$'
     url: https://oeis.org/A003438
 References:
   BeckPixton:
-    bib: >-
-      Matthias Beck and Dennis Pixton, The Ehrhart polynomial of the Birkhoff
-      polytope, Discrete & Computational Geometry 30 (2003), no. 4, 623-637.
+    bib: Matthias Beck and Dennis Pixton, The Ehrhart polynomial of the Birkhoff polytope,
+      Discrete & Computational Geometry 30 (2003), no. 4, 623-637.
     doi: 10.1007/s00454-003-2850-8
     arxiv: math/0202267
 Tags:
-  - polynomial
-  - combinatorics
-  - discrete geometry
+- polynomial
+- combinatorics
+- discrete geometry
 Data properties:
   type: Q[]
   rigour: exact
   complete: 'no'
-  complete-note: >-
-    it holds both forms for every matrix size $n$ with $3\leq n\leq6$
-  rigour details: >-
-    The $h^*$-polynomials are transcribed from OEIS A259473 CITE{OEISHStar},
-    and the Ehrhart polynomials are obtained from them by the binomial
-    transform in CITE{formula-binomial-transform}. Before the draft was filled,
-    the entries were compared with Beck and Pixton's published polynomials
-    CITE{BeckPixtonData}; direct dynamic-programming counts for $n=3,4,5$ were
-    compared with OEIS A002817 CITE{OEIS3}, A001496 CITE{OEIS4}, and A003438
-    CITE{OEIS5}; each stored row with $3\leq n\leq6$ satisfied $H_n(1)=n!$,
-    and $h^*_{B_n}(1)$ agreed with OEIS A037302 CITE{OEISVolume}.
+  complete-note: it holds $H_n(t)$ for every matrix size $n$ with $3\leq n\leq6$; for $n=1,2$
+    the values are trivial, and from $n=7$ the polynomials run to thousands of characters
+  rigour details: The $h^*$-coefficients used to compute these rows are transcribed from OEIS
+    A259473 CITE{OEISHStar}, and the Ehrhart polynomials are obtained from them by the binomial
+    transform in CITE{formula-binomial-transform}. The entries were compared with Beck and
+    Pixton's published polynomials CITE{BeckPixtonData}; direct dynamic-programming counts
+    for $n=3,4,5$ were compared with OEIS A002817 CITE{OEIS3}, A001496 CITE{OEIS4}, and A003438
+    CITE{OEIS5}; each stored row satisfied $H_n(1)=n!$.
 Display properties:
-  number-header: polynomial
+  number-header: $H_n(t)$
+Numbers:
+  '3':
+    number: 1/8*t^4 + 3/4*t^3 + 15/8*t^2 + 9/4*t + 1
+  '4':
+    number: 11/11340*t^9 + 11/630*t^8 + 19/135*t^7 + 2/3*t^6 + 1109/540*t^5 + 43/10*t^4 +
+      35117/5670*t^3 + 379/63*t^2 + 65/18*t + 1
+  '5':
+    number: 188723/836911595520*t^16 + 188723/20922789888*t^15 + 1008757/5977939968*t^14 +
+      112655/57480192*t^13 + 72750523/4598415360*t^12 + 984101/10450944*t^11 + 125188639/292626432*t^10
+      + 55426325/36578304*t^9 + 3541860299/836075520*t^8 + 196563587/20901888*t^7 + 3812839477/229920768*t^6
+      + 664118435/28740096*t^5 + 438177965089/17435658240*t^4 + 3028287247/145297152*t^3 +
+      6229735/494208*t^2 + 725/144*t + 1
+  '6':
+    number: 9700106723/10258736801144832000000*t^25 + 9700106723/136783157348597760000*t^24
+      + 158824242127/62444484876533760000*t^23 + 4394656999/75690284698828800*t^22 + 853529939221/901074817843200000*t^21
+      + 141248912237/12014330904576000*t^20 + 2462417656967/21341245685760000*t^19 + 18674864899/20324995891200*t^18
+      + 1062348478211833/175751435059200000*t^17 + 77984295979769/2343352467456000*t^16 +
+      1424745952102609/9206027550720000*t^15 + 8346012436199/13638559334400*t^14 + 570713692223620411/276180826521600000*t^13
+      + 2000221303490489/334764638208000*t^12 + 16265048187290869/1098446469120000*t^11 +
+      736591080322991/23433524674560*t^10 + 253578194011961479/4446092851200000*t^9 + 232132948167689/2634721689600*t^8
+      + 243245111626317349/2111894104320000*t^7 + 14226886368398551/112634352230400*t^6 +
+      155498465793777230567/1355132050272000000*t^5 + 382955230861099213/4517106834240000*t^4
+      + 12246206617138789/247365374256000*t^3 + 46584105377/2141691552*t^2 + 3899/600*t +
+      1

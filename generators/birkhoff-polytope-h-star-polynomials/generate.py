@@ -1,7 +1,7 @@
-"""Ehrhart polynomials of Birkhoff polytopes -- numberdb.org/T232
+"""Ehrhart h-star polynomials of Birkhoff polytopes -- numberdb.org/T242
 
-For n = 3, ..., 6 this stores the Ehrhart polynomial H_n(t) of the
-Birkhoff polytope B_n.
+For n = 3, ..., 6 this stores the Ehrhart h-star polynomial h^*_{B_n}(z) of
+the Birkhoff polytope B_n.
 
 Run it with SageMath:
 
@@ -9,11 +9,7 @@ Run it with SageMath:
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # fill the draft, with NUMBERDB_API_KEY set
 
-The h-star coefficients used here are transcribed from OEIS A259473. The
-Ehrhart polynomials are computed from those rows by the exact binomial
-transform
-
-    H_n(t) = sum_i h_i^* binomial(t + d - i, d),  d = (n - 1)^2.
+The h-star rows are transcribed from OEIS A259473.
 
 The rings are named rather than taken from `sage.all`, so this runs on a
 modular passagemath as well as on a full SageMath.
@@ -21,7 +17,6 @@ modular passagemath as well as on a full SageMath.
 
 import os
 import sys
-from math import factorial
 
 import numberdb.sage as numberdb
 from sage.rings.rational_field import QQ
@@ -45,8 +40,8 @@ H_STAR_COEFFICIENTS = {
     ],
 }
 
-_T = PolynomialRing(QQ, "t")
-_t = _T.gen()
+_Z = PolynomialRing(QQ, "z")
+_z = _Z.gen()
 
 
 def _key_from_stdin():
@@ -59,28 +54,13 @@ def _key_from_stdin():
         os.environ["NUMBERDB_API_KEY"] = token
 
 
-def dimension(n):
-    return (n - 1) ** 2
+def h_star_polynomial(n):
+    return sum(QQ(c) * _z ** i for i, c in enumerate(H_STAR_COEFFICIENTS[n]))
 
 
-def binomial_polynomial(shift, degree):
-    value = _T.one()
-    for j in range(degree):
-        value *= _t + QQ(shift - j)
-    return value / QQ(factorial(degree))
+class BirkhoffPolytopeHStarPolynomials(numberdb.Generator):
 
-
-def ehrhart_polynomial(n):
-    d = dimension(n)
-    return sum(
-        QQ(c) * binomial_polynomial(d - i, d)
-        for i, c in enumerate(H_STAR_COEFFICIENTS[n])
-    )
-
-
-class BirkhoffPolytopeEhrhartPolynomials(numberdb.Generator):
-
-    table = os.environ.get("NUMBERDB_TABLE", "T232")
+    table = os.environ.get("NUMBERDB_TABLE", "T242")
     parameters = ("n",)
     type = "Q[]"
     rigour = "exact"
@@ -90,14 +70,14 @@ class BirkhoffPolytopeEhrhartPolynomials(numberdb.Generator):
             yield {"n": str(n)}
 
     def value(self, params, digits):
-        return ehrhart_polynomial(int(params["n"]))
+        return h_star_polynomial(int(params["n"]))
 
 
 if __name__ == "__main__":
     _key_from_stdin()
-    generator = BirkhoffPolytopeEhrhartPolynomials()
+    generator = BirkhoffPolytopeHStarPolynomials()
     if os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
-        print(generator.publish(message="Birkhoff polytope Ehrhart polynomials"))
+        print(generator.publish(message="Birkhoff polytope h-star polynomials"))
     else:
         report = generator.verify(sample=None)
         print(report)

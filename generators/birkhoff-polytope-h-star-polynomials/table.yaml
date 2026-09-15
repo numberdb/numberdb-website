@@ -1,0 +1,117 @@
+# Draft document for T242, split from T232.
+# Publishing is a person's act.
+Title: Ehrhart $h^*$-polynomials of the Birkhoff polytopes
+Definition: The Birkhoff polytope $B_n\subset\mathbb{R}^{n\times n}$ is the lattice polytope
+  of $n\times n$ doubly stochastic matrices CITE{WikiBirkhoff}. The table stores its Ehrhart
+  $h^*$-polynomial $h^*_{B_n}(z)$, the numerator of the Ehrhart series of $B_n$ CITE{WikiEhrhart}.
+Keywords:
+- Birkhoff polytope
+- Ehrhart polynomial
+- Ehrhart h-star polynomial
+- Ehrhart h* polynomial
+- h-star polynomial
+- h* polynomial
+- semi-magic squares
+- doubly stochastic matrices
+- contingency tables
+Parameters:
+  n:
+    type: Z
+    title: matrix size
+    display: $n$
+    constraints: $n$ is a positive integer
+Comments:
+  comment-series: If $d=(n-1)^2$, then $\sum_{t\geq0}H_n(t)z^t=h^*_{B_n}(z)/(1-z)^{d+1}$.
+  comment-small-n: For $n=1$ and $n=2$ the polytope is respectively a point and a line segment,
+    and $h^*_{B_1}(z)=h^*_{B_2}(z)=1$.
+  comment-known-range: The rows here match the range of the companion Ehrhart polynomial table.
+    Beck and Pixton list the Ehrhart polynomials through $n=9$ CITE{BeckPixtonData}.
+Formulas:
+  formula-series: If $d=(n-1)^2$, then $\sum_{t\geq0}H_n(t)z^t=h^*_{B_n}(z)/(1-z)^{d+1}$.
+  formula-binomial-transform: With $h^*_{B_n}(z)=\sum_i h_i^*z^i$ and $d=(n-1)^2$, $H_n(t)=\sum_{i=0}^{d}h_i^*\binom{t+d-i}{d}$.
+  formula-normalized-volume: $h^*_{B_n}(1)$ is the normalized volume of $B_n$ CITE{OEISVolume}.
+  formula-palindromic: $h^*_{B_n}(z)$ has degree $(n-1)(n-2)$ and palindromic coefficients
+    CITE{BeckPixton}.
+Programs:
+  program-sage:
+    language: Sage
+    code: 'from sage.rings.rational_field import QQ
+
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+
+      Z = PolynomialRing(QQ, "z")
+
+      z = Z.gen()
+
+      coefficients = [1, 14, 87, 148, 87, 14, 1]
+
+      sum(QQ(c) * z**i for i, c in enumerate(coefficients))  # h^*_{B_4}(z)'
+Similar tables:
+- table: HREF{T232}[Ehrhart polynomials of the Birkhoff polytopes]
+  relation: gives the Ehrhart polynomial $H_n(t)$ whose generating series has this numerator;
+    the two tables determine each other by CITE{formula-series} and CITE{formula-binomial-transform}
+Links:
+  WikiBirkhoff:
+    title: 'Wikipedia: Birkhoff polytope'
+    url: https://en.wikipedia.org/wiki/Birkhoff_polytope
+  WikiEhrhart:
+    title: 'Wikipedia: Ehrhart polynomial'
+    url: https://en.wikipedia.org/wiki/Ehrhart_polynomial
+  BeckPixtonData:
+    title: 'Beck and Pixton: Ehrhart polynomials for the Birkhoff polytopes'
+    url: https://matthbeck.github.io/birkhoff/polynomials.html
+  OEISHStar:
+    title: 'OEIS A259473: coefficients arising in the enumeration of doubly stochastic matrices
+      of integers'
+    url: https://oeis.org/A259473
+  OEISVolume:
+    title: 'OEIS A037302: normalized volume of the Birkhoff polytope'
+    url: https://oeis.org/A037302
+  OEIS3:
+    title: 'OEIS A002817: number of $3\times3$ nonnegative integer matrices with common line
+      sum $t$'
+    url: https://oeis.org/A002817
+  OEIS4:
+    title: 'OEIS A001496: number of $4\times4$ nonnegative integer matrices with common line
+      sum $t$'
+    url: https://oeis.org/A001496
+  OEIS5:
+    title: 'OEIS A003438: number of $5\times5$ nonnegative integer matrices with common line
+      sum $t$'
+    url: https://oeis.org/A003438
+References:
+  BeckPixton:
+    bib: Matthias Beck and Dennis Pixton, The Ehrhart polynomial of the Birkhoff polytope,
+      Discrete & Computational Geometry 30 (2003), no. 4, 623-637.
+    doi: 10.1007/s00454-003-2850-8
+    arxiv: math/0202267
+Tags:
+- polynomial
+- combinatorics
+- discrete geometry
+Data properties:
+  type: Q[]
+  rigour: exact
+  complete: 'no'
+  complete-note: it holds $h^*_{B_n}(z)$ for every matrix size $n$ with $3\leq n\leq6$, matching
+    the companion Ehrhart polynomial table
+  rigour details: The $h^*$-polynomials are transcribed from OEIS A259473 CITE{OEISHStar}.
+    Through CITE{formula-binomial-transform}, they give the Ehrhart polynomials compared with
+    Beck and Pixton's published rows CITE{BeckPixtonData}; their values at $z=1$ agree with
+    OEIS A037302 CITE{OEISVolume}.
+Display properties:
+  number-header: $h^*_{B_n}(z)$
+Numbers:
+  '3':
+    number: z^2 + z + 1
+  '4':
+    number: z^6 + 14*z^5 + 87*z^4 + 148*z^3 + 87*z^2 + 14*z + 1
+  '5':
+    number: z^12 + 103*z^11 + 4306*z^10 + 63110*z^9 + 388615*z^8 + 1115068*z^7 + 1575669*z^6
+      + 1115068*z^5 + 388615*z^4 + 63110*z^3 + 4306*z^2 + 103*z + 1
+  '6':
+    number: z^20 + 694*z^19 + 184015*z^18 + 15902580*z^17 + 567296265*z^16 + 9816969306*z^15
+      + 91422589980*z^14 + 490333468494*z^13 + 1583419977390*z^12 + 3166404385990*z^11 + 3982599815746*z^10
+      + 3166404385990*z^9 + 1583419977390*z^8 + 490333468494*z^7 + 91422589980*z^6 + 9816969306*z^5
+      + 567296265*z^4 + 15902580*z^3 + 184015*z^2 + 694*z + 1
