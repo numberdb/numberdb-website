@@ -4,6 +4,7 @@
 #     agents/run.sh ideas                 # stage one: propose a batch
 #     agents/run.sh build "proposal 1 of agents/table-ideas/BATCH-2026-08-30.md"
 #     agents/run.sh repair "Act on agents/critiques/T136.md"
+#     agents/run.sh split "T232 holds two quantities behind `form`"
 #     NUMBERDB_RESUME=<session> agents/run.sh build "..."   # continue a run
 #
 # The point of this file is that the session doing the work is not the session
@@ -37,6 +38,7 @@ case "$stage" in
 	build) prompt_file="agents/table-build/PROMPT.md" ;;
 	critique) prompt_file="agents/table-critique/PROMPT.md" ;;
 	repair) prompt_file="agents/table-repair/PROMPT.md" ;;
+	split) prompt_file="agents/table-split/PROMPT.md" ;;
 	triage) prompt_file="agents/triage/PROMPT.md" ;;
 	*) echo "usage: $0 {ideas|build|critique|repair|triage} [task]" >&2
 	   exit 2 ;;
