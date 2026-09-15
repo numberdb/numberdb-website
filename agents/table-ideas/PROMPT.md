@@ -209,6 +209,23 @@ The test to apply to a proposed title: *what would somebody type who is
 holding one of these numbers and wants to know what it is?* If the answer is
 a word the title does not contain, the table is either misnamed or too big.
 
+**A proposal is one table per named quantity.** The question to ask of every
+parameter you propose: does it name *what the number is of*, or *which
+quantity is taken of it*? The first indexes a family and is one table -- one
+Ehrhart polynomial for each of seventy-eight root systems, one entropy for
+each of twenty-two distributions. The second is a second table, and proposing
+it as one costs a split later: ten of the sixteen tables built in the week of
+2026-09-13 arrived holding two quantities behind a parameter (`form: ehrhart |
+h-star`, `quantity: psi | H`, `form: generating | signed`), and eight had to be
+taken apart by hand.
+
+Propose them as the separate tables they are, in the same family, and say in
+the relation what connects them. Three exceptions, and they are real: parts of
+one object (the $a$, $b$, $c$ of a triple; the $N$, $c_4$, $c_6$ of a curve),
+one number in two conventions ($E_1$ and $\operatorname{Ei}$, a constant and
+its logarithm), and a parameter that is an argument rather than a name
+($\nu = 0, 1, 2$). If a proposal rests on one of those, say which.
+
 ## A batch may need a tag that does not exist
 
 You propose five tables at once, so you are the one who can see that they

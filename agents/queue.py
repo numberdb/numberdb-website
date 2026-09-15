@@ -5,6 +5,7 @@
     python3 agents/queue.py show N               one family, for a build prompt
     python3 agents/queue.py post BATCH.md        a batch becomes a family issue
     python3 agents/queue.py built N "Title" T226 tick the box
+    python3 agents/queue.py skipped N "Title" "why"  settle it without a table
     python3 agents/queue.py stale [--weeks 6]    families that have aged out
 
 Why issues rather than the file the ideation stage writes: that file is
@@ -47,8 +48,19 @@ MARKER = '<!-- numberdb-family: %s -->'
 MARKER_FINDER = re.compile(r'<!-- numberdb-family: ([^\s>]+) -->')
 SCREENED_FINDER = re.compile(r'<!-- screened: (\d{4}-\d{2}-\d{2}) -->')
 
-#: A checklist line: `- [ ] Some table` or `- [x] Some table -- T226`.
-ITEM = re.compile(r'^- \[([ xX])\] (.+?)(?:\s+--\s+(T\d+))?\s*$')
+#: A checklist line. Three states, not two:
+#:
+#:     - [ ] Some table                        waiting
+#:     - [x] Some table -- T226                built
+#:     - [-] Some table -- skipped: <why>      settled, and not to be retried
+#:
+#: The third is the one that was missing. A proposal a build looked at and
+#: declined for a good reason -- the corpus already holds it under another
+#: name, the sources disagree about the definition, the data is not public --
+#: stayed an empty box, so the next campaign picked it up and paid to reach
+#: the same conclusion.
+ITEM = re.compile(r'^- \[([ xX\-~])\] (.+?)'
+                  r'(?:\s+--\s+(T\d+|skipped:.*?))?\s*$')
 
 #: How long a screening stays believable. Six weeks is not a measurement; it
 #: is the age at which this corpus has visibly moved -- of 89 proposals
@@ -200,9 +212,13 @@ def parse_family(issue):
 	for line in body.splitlines():
 		found = ITEM.match(line)
 		if found:
-			items.append({'title': found.group(2).strip(),
-			              'done': found.group(1).lower() == 'x',
-			              'tid': found.group(3)})
+			mark, title, tail = found.groups()
+			settled = mark.lower() in ('x', '-', '~')
+			items.append({'title': title.strip(),
+			              'done': settled,
+			              'built': mark.lower() == 'x',
+			              'tid': tail if (tail or '').startswith('T') else None,
+			              'why': tail if (tail or '').startswith('skipped') else None})
 	return {'number': issue['number'], 'title': issue['title'],
 	        'batch': marker.group(1), 'body': body, 'items': items,
 	        'screened': screened.group(1) if screened else None}
@@ -232,13 +248,24 @@ def waiting(family):
 	return [item for item in family['items'] if not item['done']]
 
 
+def started(family):
+	"""Has anything in this family been settled already?"""
+	return any(item['done'] for item in family['items'])
+
+
 def next_table(prefer=None):
 	"""The next table to build.
 
-	**Finish the family you are in.** The tables of a batch share machinery
-	and cross-reference each other, which is most of why the batches have been
-	good, and a family left half-built loses that. Only when the current one
-	is done does this move to the newest family with work left.
+	**Finish the family you are in**, and failing that, finish one somebody
+	else started. The tables of a batch share machinery and cross-reference
+	each other, which is most of why the batches have been good, and a family
+	left half-built loses that -- the symmetric-function family sat five-for-
+	five unbuilt while newer batches were screened and built past it.
+
+	So the order is: the family named by `prefer`; then families with work
+	already done in them, oldest screening first, because the oldest debt is
+	the one nobody will come back to; then untouched families, newest first,
+	since a fresh screening is the most likely to still be true.
 	"""
 	open_ones = [f for f in families() if waiting(f)]
 	if not open_ones:
@@ -247,6 +274,11 @@ def next_table(prefer=None):
 		for family in open_ones:
 			if family['number'] == int(prefer):
 				return family, waiting(family)[0]
+
+	half_built = sorted((f for f in open_ones if started(f)),
+	                    key=lambda f: (f['screened'] or '', f['number']))
+	if half_built:
+		return half_built[0], waiting(half_built[0])[0]
 	return open_ones[0], waiting(open_ones[0])[0]
 
 
@@ -315,8 +347,8 @@ def cmd_post(args):
 	return 0
 
 
-def _tick(family, title, tid):
-	"""The checklist with one more box ticked, or None if nothing matched."""
+def _tick(family, title, tid, why=None):
+	"""The checklist with one more box settled, or None if nothing matched."""
 	lines = []
 	hit = False
 	for line in family['body'].splitlines():
@@ -328,7 +360,11 @@ def _tick(family, title, tid):
 			#so an exact match cannot be required. The words that carry the
 			#subject have to agree; the decoration does not.
 			if _same_subject(found.group(2), title):
-				line = '- [x] %s -- %s' % (found.group(2).strip(), tid)
+				if why:
+					line = '- [-] %s -- skipped: %s' % (found.group(2).strip(),
+					                                    why)
+				else:
+					line = '- [x] %s -- %s' % (found.group(2).strip(), tid)
 				hit = True
 		lines.append(line)
 	return '\n'.join(lines) if hit else None
@@ -356,14 +392,17 @@ def cmd_built(args):
 	if family is None:
 		print('#%d is not a family' % args.number, file=sys.stderr)
 		return 2
-	body = _tick(family, args.title, args.tid)
+	body = _tick(family, args.title, args.tid, getattr(args, 'why', None))
 	if body is None:
 		print('#%d has no unbuilt table like %r' % (args.number, args.title),
 		      file=sys.stderr)
 		return 1
 	api('repos/%s/issues/%d' % (REPO, args.number), 'PATCH', {'body': body})
 	family = parse_family(api('repos/%s/issues/%d' % (REPO, args.number)))
-	print('#%d: %s is %s' % (args.number, args.tid, args.title))
+	if getattr(args, 'why', None):
+		print('#%d: %s left alone (%s)' % (args.number, args.title, args.why))
+	else:
+		print('#%d: %s is %s' % (args.number, args.tid, args.title))
 	if not waiting(family):
 		api('repos/%s/issues/%d/comments' % (REPO, args.number), 'POST',
 		    {'body': 'Every table in this family now exists. '
@@ -411,7 +450,15 @@ def main(argv=None):
 	built.add_argument('number', type=int)
 	built.add_argument('title')
 	built.add_argument('tid')
-	built.set_defaults(run=cmd_built)
+	built.set_defaults(run=cmd_built, why=None)
+
+	#Settled without a table, and on purpose. Without this a proposal declined
+	#for a good reason looks exactly like one nobody has reached yet.
+	skipped = sub.add_parser('skipped')
+	skipped.add_argument('number', type=int)
+	skipped.add_argument('title')
+	skipped.add_argument('why')
+	skipped.set_defaults(run=cmd_built, tid=None)
 
 	stale = sub.add_parser('stale')
 	stale.add_argument('--weeks', type=int, default=STALE_WEEKS)

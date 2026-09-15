@@ -168,11 +168,23 @@ class WhichTableIsNext(unittest.TestCase):
 	def tearDown(self):
 		q.families = self.real
 
-	def test_without_a_preference_it_takes_the_newest_family(self):
+	def test_a_half_built_family_is_finished_before_a_new_one_is_opened(self):
+		#The debt first, even though family 20 was screened eleven days
+		#later. The symmetric-function family sat five-for-five unbuilt while
+		#newer batches were screened and built past it, and nothing was ever
+		#going to come back for it.
 		family, item = q.next_table()
-		self.assertEqual(family['number'], 20)
+		self.assertEqual(family['number'], 10)
 		self.assertEqual(item['title'],
-		                 'Values of the Bessel functions at rational arguments')
+		                 'Values of the Airy functions at rational arguments')
+
+	def test_an_untouched_family_is_taken_newest_first(self):
+		#Among families nobody has started, the freshest screening is the one
+		#most likely to still be true.
+		older = self.family(5, '2026-08-01', [])
+		q.families = lambda state='open': [self.newer, older]
+		family, _ = q.next_table()
+		self.assertEqual(family['number'], 20)
 
 	def test_the_family_already_started_is_finished_first(self):
 		#Not the newest. A half-built family loses the thing that made the
@@ -193,6 +205,26 @@ class WhichTableIsNext(unittest.TestCase):
 		q.families = lambda state='open': [done, self.newer]
 		family, _ = q.next_table(prefer=30)
 		self.assertEqual(family['number'], 20)
+
+	def test_a_skipped_proposal_is_not_offered_again(self):
+		#A build that looked at a proposal and declined it for a good reason
+		#left an empty box, so the next campaign paid to reach the same
+		#conclusion. `skipped` settles it without claiming a table was made.
+		batch = q.parse_batch(BATCH, 'BATCH-2026-09-12T1857.md')
+		body = q.issue_body(batch)
+		family = q.parse_family({'number': 40, 'title': 'f', 'body': body})
+		body = q._tick(family, batch['proposals'][0], None,
+		               why='the corpus holds this as T187 under another name')
+		after = q.parse_family({'number': 40, 'title': 'f', 'body': body})
+		self.assertIn('- [-]', body)
+		self.assertIn('skipped: the corpus holds this', body)
+		self.assertEqual(len(q.waiting(after)), 1)
+		settled = [i for i in after['items'] if i['done']][0]
+		self.assertFalse(settled['built'])
+		self.assertIsNone(settled['tid'])
+		#and it counts as work done, so the family is finished before a new
+		#one is opened
+		self.assertTrue(q.started(after))
 
 	def test_an_empty_queue_says_so_rather_than_raising(self):
 		q.families = lambda state='open': []
