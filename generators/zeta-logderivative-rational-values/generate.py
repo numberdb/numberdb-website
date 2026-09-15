@@ -1,6 +1,6 @@
-"""https://numberdb.org/T228
-Generate T228, the values of the derivative zeta'(s) of the Riemann zeta
-function at rational arguments.
+"""https://numberdb.org/T246
+Generate T246, the values of the logarithmic derivative zeta'(s)/zeta(s) of
+the Riemann zeta function at rational arguments.
 
 Run it with SageMath:
 
@@ -11,7 +11,7 @@ Run it with SageMath:
 Under the repository's agent runner, pipe the API key on stdin:
 
     $ cat "$NUMBERDB_KEY_FILE" | NUMBERDB_KEY_FROM_STDIN=1 \
-        agents/sage.sh generators/zeta-derivative-rational-values/generate.py
+        agents/sage.sh generators/zeta-logderivative-rational-values/generate.py
 
 Set NUMBERDB_PUBLISH=preview to preview the write, or NUMBERDB_PUBLISH=1 to
 send the entries and attach this file.
@@ -49,6 +49,10 @@ def rational_arguments(denominator=4, lower=-20, upper=20):
                 yield s
 
 
+def is_trivial_zero(s):
+    return s.denominator() == 1 and s < 0 and int(s) % 2 == 0
+
+
 def finite_real(value, label):
     if not value.real().is_finite() or not value.imag().is_finite():
         raise ArithmeticError('computed a non-finite ball for %s' % (label,))
@@ -57,30 +61,22 @@ def finite_real(value, label):
     return value.real()
 
 
-def derivative_comment(s):
+def logderivative_comment(s):
     text = str(s)
-    if text == '0':
-        return '$-\\frac12\\log(2\\pi)$.'
-    if text == '-1':
-        return (
-            '$\\frac1{12}-\\log A$, where $A$ is '
-            'HREF{T227#1,A}[the Glaisher-Kinkelin constant] '
-            'CITE{DLMFBarnes}.'
-        )
-    if text == '-2':
-        return '$-\\zeta(3)/(4\\pi^2)$.'
-    if text == '-4':
-        return '$3\\zeta(5)/(4\\pi^4)$.'
+    if text == '1/2':
+        return '$\\frac12(\\frac\\pi2+\\gamma+\\log(8\\pi))$.'
     if text == '2':
         return (
-            '$\\frac{\\pi^2}{6}(\\gamma+\\log(2\\pi)-12\\log A)$ '
-            'CITE{DLMFBarnes}.'
+            '$\\gamma+\\log(2\\pi)-12\\log A$, where $A$ is the '
+            'Glaisher-Kinkelin constant.'
         )
+    if text == '0':
+        return '$\\log(2\\pi)$.'
     return ''
 
 
-class RiemannZetaDerivativeAtRationals(numberdb.Generator):
-    table = 'T228'
+class RiemannZetaLogDerivativeAtRationals(numberdb.Generator):
+    table = 'T246'
     parameters = ('s',)
     type = 'R'
     digits = 100
@@ -88,14 +84,18 @@ class RiemannZetaDerivativeAtRationals(numberdb.Generator):
 
     def enumerate(self):
         for s in rational_arguments():
-            yield {'s': str(s)}
+            if not is_trivial_zero(s):
+                yield {'s': str(s)}
 
     def value(self, params, digits):
         field = ComplexBallField(numberdb.bits(digits, losing=WORKING_GUARD))
         rational_s = QQ(params['s'])
         s = field(rational_s)
-        number = finite_real(s.zetaderiv(1), "zeta'(%s)" % (rational_s,))
-        comment = derivative_comment(rational_s)
+        number = finite_real(
+            s.zetaderiv(1) / s.zeta(),
+            "zeta'(%s)/zeta(%s)" % (rational_s, rational_s),
+        )
+        comment = logderivative_comment(rational_s)
         if comment:
             return {'number': number, 'comment': comment}
         return number
@@ -103,10 +103,10 @@ class RiemannZetaDerivativeAtRationals(numberdb.Generator):
 
 def main():
     configure_key_from_stdin()
-    generator = RiemannZetaDerivativeAtRationals()
+    generator = RiemannZetaLogDerivativeAtRationals()
     mode = os.environ.get('NUMBERDB_PUBLISH')
     if '--publish' in sys.argv or mode == '1':
-        print(generator.publish(message='split T228 derivative entries'))
+        print(generator.publish(message='split T228 logarithmic derivative entries'))
         return
     if '--preview' in sys.argv or mode == 'preview':
         print(generator.preview())
