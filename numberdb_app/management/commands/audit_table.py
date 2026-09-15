@@ -106,6 +106,40 @@ _GENERIC_TITLES = {
 }
 
 
+def findings_for(table, fetch=False):
+	"""What the audit says about one table, as a list of sentences.
+
+	Extracted so the checks have one implementation and two ways in: this
+	command, run by a person on the server, and `GET /api/table/<tid>/audit`,
+	run by a build machine that has no database and should not have one.
+
+	That gap was not theoretical. The run that built T223 reported "I could not
+	run `manage.py audit_table T223` because this checkout has no Django
+	installed", so the prose audit never ran on it -- and an overreaching
+	sentence about Salem numbers reached a reader, which the audit's own
+	unlinked-constant check would have caught.
+	"""
+	#Imported here rather than at the top, as `handle` does: these models are
+	#loaded when the app is, and a management command's module is imported
+	#early enough for that to matter.
+	from numberdb_app.editing import tree_of
+	from numberdb_app.models import Table
+
+	#A cross-reference may name a table by its address or by its number:
+	#HREF{Integers} and HREF{T13} both resolve.
+	urls = set(Table.objects.values_list('url', flat=True))
+	urls |= set(Table.objects.values_list('tid', flat=True))
+	public = set(Table.objects.filter(published=True)
+	             .values_list('url', flat=True))
+	public |= set(Table.objects.filter(published=True)
+	              .values_list('tid', flat=True))
+	titles = {t.title.lower(): t for t in Table.objects.all()}
+	tree = tree_of(table.head_revision)
+	command = Command()
+	return list(command._check(table, tree, urls, titles,
+	                           fetch=fetch, public=public))
+
+
 class Command(BaseCommand):
 	help = 'Check a table for the mistakes that have been made before.'
 
@@ -193,7 +227,10 @@ class Command(BaseCommand):
 		from numberdb_app.validate import DATA_TYPES, RIGOUR_LEVELS
 
 		import json
-		prose = json.dumps({k: v for k, v in tree.items() if k != 'Numbers'})
+		#`ensure_ascii=False`: HREF{Lévy's_constant} is a real address in
+		#this corpus, and an escaped dump turns it into a name no table has.
+		prose = json.dumps({k: v for k, v in tree.items() if k != 'Numbers'},
+		                   ensure_ascii=False)
 
 		#Every entry that holds digits should be findable by them. Nothing
 		#checked this, and it went wrong quietly: the number builder skipped
@@ -203,6 +240,20 @@ class Command(BaseCommand):
 		#whole of T60 whose every entry carries one. The values were right, so
 		#no check that looked at values could have noticed.
 		for complaint in self._indexed_as_many_as_written(table, tree):
+			yield complaint
+
+		#Two tables wearing one title. The skill has said since May that
+		#"seven functions evaluated at the same rational x are still seven
+		#functions", and ten of sixteen tables built in one week said it with
+		#a parameter instead.
+		for complaint in self._one_table_or_several(table, tree):
+			yield complaint
+		for complaint in self._column_names_its_quantity(table, tree):
+			yield complaint
+
+		#The same numbers under another title. Prose cannot catch this and
+		#digits can, which is a thing only a database of numbers can do.
+		for complaint in self._values_also_in_another_table(table, prose):
 			yield complaint
 
 		#Prose faults, each one found by a person reading a rendered page and
@@ -416,6 +467,240 @@ class Command(BaseCommand):
 				status = self._fetch(url)
 				if status != 200:
 					yield 'Links[%s] answered %s: %s' % (name, status, url)
+
+	#: How many of a table's values to look up elsewhere. Each is one indexed
+	#: query, and a table that shares its subject with another shares far more
+	#: than eight values with it.
+	SAMPLE = 8
+
+	#: How many of the sample must land in the same other table before this is
+	#: worth a reader's time. Half, and at least three: two tables genuinely
+	#: about different things share a value here and there -- zero, one, pi --
+	#: and a check that reported those would be ignored within a week.
+	ENOUGH = 3
+
+	#: An integer or a rational smaller than this is not evidence of anything
+	#: either, however few tables happen to hold it. The highest known ranks of
+	#: elliptic curves are 28, 20, 15, 13, 9; the Dedekind zeta values at
+	#: negative odd integers include those too, and the check announced that
+	#: one of the two tables should not exist. Small numbers collide because
+	#: there are not many of them, not because two tables are the same table.
+	SMALL = 1000
+
+	#: A value in more tables than this identifies nothing, so it is not
+	#: evidence of anything and is dropped before the counting. Without this
+	#: the check reported that the diagonal Ramsey numbers are the values of
+	#: the Gamma function, because both contain 6 and 18: the first version
+	#: made 51 findings on this corpus and perhaps three of them meant
+	#: something. What makes two tables the same table is sharing the values
+	#: that are *hard to share*.
+	COMMON = 4
+
+	#: A parameter with more values than this is indexing something, not
+	#: choosing between a few quantities. T233 is indexed by 78 root systems
+	#: and T241 by 22 distributions; neither is two tables glued together.
+	MOST_LABELS = 4
+
+	#: What a value column is called when nobody could name it. A table of one
+	#: quantity has a symbol at the top -- $\gamma_K$, $\phi(G,x)$, $I(T,x)$ --
+	#: and a table of two has to fall back on a word.
+	GENERIC_HEADERS = ('value', 'values', 'number', 'numbers', 'polynomial',
+	                   'polynomials', 'constant', 'constants', 'entry', 'data')
+
+	def _one_table_or_several(self, table, tree):
+		r"""A parameter that names quantities rather than indexing arguments.
+
+		The tell is structural and does not need to read a word of prose: the
+		entries are the same grid repeated once per value of that parameter.
+		`form: ehrhart | h-star`, `quantity: psi | H`, `unit: bits | nats` --
+		each one is a second table, copied alongside the first, sharing the
+		value column with it and forcing that column to be headed "value".
+
+		The skill's rule is older than this check: "Where several named
+		objects share a subject but not a name, make several tables", and
+		"seven functions evaluated at the same rational $x$ are still seven
+		functions". A rule that is only written gets followed until a build is
+		in a hurry.
+
+		It is a question, not a verdict, and there are good answers to it. The
+		$abc$-triples store $a$, $b$ and $c$ because the three are one triple;
+		an elliptic curve is stored as $N$, $c_4$, $c_6$ because $c_4$ and
+		$c_6$ identify the curve and $N$ says at a glance which curve it is; a
+		number in two conventions is one number, which is why $E_1$ and
+		$\operatorname{Ei}$ share T188. What the check reports is that the
+		question applies here.
+
+		Only drafts are asked. A published table was read and accepted as it
+		is, and re-litigating that on every audit would be the fastest way to
+		have this check turned off; a published table that grows a new bundled
+		parameter is caught in review, where the diff is what is read.
+		"""
+		from numberdb_app.flatten import to_records
+
+		if table.published:
+			return
+		params = list((tree.get('Parameters') or {}))
+		if len(params) < 2:
+			return
+		try:
+			records = to_records(tree)
+		except Exception:                                    # noqa: BLE001
+			return
+		if len(records) < 4:
+			return
+
+		def key(record, names):
+			values = record.get('params') or {}
+			return tuple(str(values.get(name)) for name in names)
+
+		for name in params:
+			labels = {str((r.get('params') or {}).get(name)) for r in records}
+			if not 2 <= len(labels) <= self.MOST_LABELS:
+				continue
+			if all(self._reads_as_a_number(label) for label in labels):
+				#An argument, not a name: nu = 0, 1, 2 is three orders of one
+				#function, and T187 is right to hold them together.
+				continue
+			rest = [other for other in params if other != name]
+			if not rest:
+				continue
+			#Orthogonal: every combination of the other parameters appears
+			#under every label. That is what "the same table twice" means,
+			#and it is why a ragged parameter -- a shape that only some
+			#distributions have -- does not trip this.
+			grid = {key(record, rest) for record in records}
+			if len(grid) * len(labels) > len(records) * 1.05:
+				continue
+			if len(grid) < 2:
+				continue
+			yield ('parameter %s takes %d names (%s) and every other '
+			       'parameter repeats under each of them, so this reads as %d '
+			       'tables sharing one title and one value column. If those '
+			       'are %d named quantities, make %d tables and relate them '
+			       'in Similar tables; if they are one object in several '
+			       'parts, or one number in several conventions, say so in '
+			       'the definition and leave them together'
+			       % (name, len(labels), ', '.join(sorted(labels)),
+			          len(labels), len(labels), len(labels)))
+
+	def _column_names_its_quantity(self, table, tree):
+		r"""The value column's heading, which is the same question asked once.
+
+		A table of one quantity can head its column with that quantity's
+		symbol -- $\gamma_K$, $\phi(G,x)$, $I(T,x)$ -- and a table of two
+		falls back on a word, because no symbol is true of every row. That is
+		how the bundled tables were noticed by eye, before any of this ran.
+
+		Drafts only, for the reason the grid check gives.
+		"""
+		if table.published:
+			return
+		header = str((tree.get('Display properties') or {})
+		             .get('number-header') or '').strip()
+		if header.lower() in self.GENERIC_HEADERS:
+			yield ('the value column is headed "%s", which names no quantity; '
+			       'if the table holds one thing, put its symbol there' % header)
+
+	def _reads_as_a_number(self, text):
+		from fractions import Fraction
+		try:
+			Fraction(str(text))
+			return True
+		except (ValueError, ZeroDivisionError):
+			pass
+		try:
+			float(str(text))
+			return True
+		except ValueError:
+			return False
+
+	def _distinctive_value(self, value):
+		"""Is hitting this number by accident unlikely?
+
+		Only exact small numbers are excluded. A real number written to
+		fifteen digits is shared because it is the same number -- which is the
+		question this check asks -- and how common *that* is, is what COMMON
+		is for.
+		"""
+		try:
+			from sage.rings.all import QQ, ZZ
+			if value in ZZ:
+				return abs(ZZ(value)) >= self.SMALL
+			if value in QQ:
+				exact = QQ(value)
+				return max(abs(exact.numerator()),
+				           exact.denominator()) >= self.SMALL
+		except Exception:                                    # noqa: BLE001
+			return True
+		return True
+
+	def _values_also_in_another_table(self, table, prose):
+		"""Another table holding the same numbers, under another name.
+
+		T219 and T225 were nearly the same table and a reader noticed, not a
+		check: the titles shared no distinctive word -- the Hodgson-Weeks
+		census and the Callahan-Hildebrand-Weeks census -- while the numbers
+		were volumes of hyperbolic 3-manifolds either way. Every check we had
+		read prose, and prose is exactly what two independent agents proposing
+		the same family will write differently.
+
+		A finding here is not a verdict. Two tables may legitimately share a
+		subfamily -- the Bianchi covolumes are multiples of Dedekind zeta
+		values that this corpus also holds -- and the answer then is a line in
+		Similar tables saying so, which is why a table that already names the
+		other is not reported.
+		"""
+		from numberdb_app.models import Number
+
+		#Only what the index can answer, and only from this table's own rows:
+		#the document may be huge and the index is what a reader searching by
+		#digits would hit anyway.
+		rows = list(Number.objects.filter(table=table).order_by('pk')
+		            [:self.SAMPLE * 40])
+		if len(rows) < self.ENOUGH:
+			return
+		#Spread through the table rather than the first eight: the first rows
+		#of a family are its small cases, which are the ones most likely to be
+		#shared with everything (the first Bessel zero, the first prime).
+		step = max(1, len(rows) // self.SAMPLE)
+		sample = rows[::step][:self.SAMPLE]
+
+		from ...search import search_number
+		elsewhere = {}
+		distinctive = 0
+		for row in sample:
+			try:
+				value = row.to_sage()
+				found = search_number(value, per_table=True)
+			except Exception:                                # noqa: BLE001
+				#A type the search cannot hold, or a value it cannot parse.
+				#Not this check's complaint, and not worth failing an audit.
+				continue
+			if not self._distinctive_value(value):
+				continue
+			holders = {}
+			for other in found:
+				if other.table_id != table.pk:
+					holders[other.table_id] = other.table
+			if len(holders) > self.COMMON:
+				continue                    #a number everybody has says nothing
+			distinctive += 1
+			for table_id, other in holders.items():
+				elsewhere.setdefault(table_id, [other, 0])
+				elsewhere[table_id][1] += 1
+		if distinctive < self.ENOUGH:
+			return
+
+		for other, count in sorted(elsewhere.values(), key=lambda p: -p[1]):
+			if count < self.ENOUGH or count * 2 < distinctive:
+				continue
+			if other.tid in prose or other.url in prose:
+				continue                                     #already says so
+			yield ('%d of the %d distinctive values sampled here are also in '
+			       '%s (%s); if these are the same numbers, one of the two '
+			       'tables should not exist, and if they are not, say how they '
+			       'differ in Similar tables'
+			       % (count, distinctive, other.tid, other.title))
 
 	def _indexed_as_many_as_written(self, table, tree):
 		"""Distinct values in the document, against rows in the index.

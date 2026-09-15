@@ -114,6 +114,37 @@ class TheSkillSaysTheThingsThatWentWrong(TestCase):
 		self.assertIn('{:,}'.format(HARD_ENTRY_COUNT), self.body)
 
 
+class TheSkillSaysOneTableHoldsOneQuantity(TestCase):
+	"""Ten of the sixteen tables built in one week bundled two.
+
+	`form: ehrhart | h-star`, `quantity: psi | H`, `form: generating | signed`:
+	a parameter choosing which function is tabulated, where the skill already
+	said "seven functions evaluated at the same rational $x$ are still seven
+	functions". The rule was there and the tell was not, so a build in a hurry
+	could follow the letter of it and still ship two tables under one title.
+	The audit reports this now; if the skill loses it, a build meets the
+	finding without having been told what it means.
+	"""
+
+	def setUp(self):
+		self.body = self.client.get('/skill').content.decode()
+
+	def test_it_asks_what_the_parameter_names(self):
+		self.assertIn('what the number is of', self.body)
+
+	def test_it_gives_the_structural_tell(self):
+		#The one a check can apply, and the one a reader can see.
+		self.assertIn('ehrhart | h-star', self.body)
+		self.assertIn('value', self.body)
+
+	def test_it_keeps_the_exceptions_that_are_real(self):
+		#Without these the rule reads as "never use a second parameter", and
+		#the corpus is full of tables that are right to have one.
+		for good in ('triple', 'convention', 'argument'):
+			with self.subTest(good=good):
+				self.assertIn(good, self.body)
+
+
 class TheSkillCanBeFound(TestCase):
 	"""Nothing makes `/skill` discoverable by itself.
 

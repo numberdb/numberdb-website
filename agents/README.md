@@ -9,6 +9,16 @@ contributor works across; an agent should not have a private door. See
     table-build/    stage two: build one proposal, leave it offered for review
     lessons/        what a run met that the skill did not cover
 
+Two jobs, not one loop:
+
+    agents/propose-batch.sh   screen a family and put it in the queue
+    agents/campaign.sh        build what is in the queue, table by table
+
+The queue is the `proposal` issues in numberdb-data, one per family, each with
+a checklist of its tables; `agents/queue.py` speaks it. A campaign tops the
+queue up when it runs low and otherwise never stops to screen. Why it is there
+and not in a file: `docs/design/where-ideas-live.md`.
+
 Each stage is a fresh session, one batch at a time. The skill is the memory: if
 a run cannot do the work from <https://numberdb.org/skill> alone, the skill is
 incomplete, and a long session would hide that behind conversational memory
