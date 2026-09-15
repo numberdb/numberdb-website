@@ -1,37 +1,23 @@
-# Draft document for proposal 3 of agents/table-ideas/BATCH-2026-09-13T2142.md.
-# It was created as draft T239 through the API with X-Draft: yes, filled, and
-# offered for review. Publishing is a person's act.
-Title: Matching polynomials of connected graphs
+# Draft document for signed matching polynomial table T239.
+# Publishing is a person's act.
+Title: Signed matching polynomials of connected graphs
 Definition: >-
   For a connected simple graph $G$ with $n$ vertices, let $m_k(G)$ be the
-  number of matchings with $k$ edges and let $m_0(G)=1$. This table stores
-  the signed matching polynomial $\mu(G,x)=\sum_{k\geq0}(-1)^k m_k(G)x^{n-2k}$
-  and the matching-generating polynomial $M(G,x)=\sum_{k\geq0}m_k(G)x^k$
+  number of matchings with $k$ edges and let $m_0(G)=1$. Listed is the signed
+  matching polynomial $\mu(G,x)=\sum_{k\geq0}(-1)^k m_k(G)x^{n-2k}$
   CITE{WikiMatching} CITE{MathWorldMatching}.
 Keywords:
+  - matching polynomial
   - acyclic polynomial
-  - matching-generating polynomial
   - reference polynomial
-  - monomer-dimer
-  - Hosoya index
   - matching defect polynomial
+  - monomer-dimer
 Parameters:
   g:
     type: Symbolic
     title: graph
-    constraints: >-
-      a connected simple graph, named by its canonical graph6 string
+    constraints: a connected simple graph, named by its canonical graph6 string
     display: $G$
-  form:
-    type: Symbolic
-    title: polynomial
-    display: form
-    constraints: >-
-      the signed matching polynomial $\mu(G,x)$, keyed `signed`, or the
-      matching-generating polynomial $M(G,x)$, keyed `generating`
-    values:
-      signed: $\mu(G,x)$
-      generating: $M(G,x)$
 Comments:
   comment-graph6: >-
     Graphs are named by their graph6 string CITE{Graph6}, McKay's compact
@@ -41,16 +27,9 @@ Comments:
     `g.canonical_label(algorithm='sage').graph6_string()`. The same names index
     HREF{Chromatic_polynomials_of_connected_graphs}[the chromatic polynomials]
     and HREF{Tutte_polynomials_of_connected_graphs}[the Tutte polynomials].
-  comment-forms: >-
-    The two forms carry the same counts $m_k(G)$. For a graph with $n$
-    vertices, each determines the other by formula CITE{formula-forms}.
-    $M(G,x)$ does not record $n$, so graphs of different sizes can share it:
-    $K_3$ and $K_{1,3}$ have $M(G,x)=3x+1$.
   comment-other-names: >-
     $\mu(G,x)$ is also called the acyclic polynomial, the reference polynomial
     and the matching defect polynomial CITE{MathWorldMatching}.
-    $M(G,1)=\sum_k m_k(G)$ is the number of matchings of $G$, called its
-    Hosoya index; for $K_7$ it is $232$.
   comment-forest: >-
     For the connected graphs stored here, the signed matching polynomial
     equals
@@ -58,15 +37,16 @@ Comments:
     polynomial] $\det(xI-A(G))$ of the adjacency matrix exactly when $G$ is a
     tree.
   comment-shared-values: >-
-    The 996 graphs here have 434 distinct signed matching polynomials and 379
-    distinct matching-generating polynomials. For each form, the largest class
-    of connected graphs with the same polynomial has 13 graphs.
+    The 996 graphs here have 434 distinct signed matching polynomials. The
+    largest class of connected graphs with the same signed matching polynomial
+    has 13 graphs.
   comment-roots: >-
     Heilmann and Lieb proved that the zeros of the signed matching polynomial
     are real CITE{HeilmannLieb}.
 Formulas:
-  formula-forms: >-
-    If $G$ has $n$ vertices, then $\mu(G,x)=x^nM(G,-x^{-2})$.
+  formula-generating-form: >-
+    If $G$ has $n$ vertices and $M(G,x)$ is the matching-generating polynomial,
+    then $\mu(G,x)=x^nM(G,-x^{-2})$.
   formula-complete: >-
     $\mu(K_n,x)=He_n(x)$, where $He_n$ is the
     HREF{Hermite_polynomials_He}[probabilists' Hermite polynomial].
@@ -79,23 +59,23 @@ Formulas:
     Chebyshev polynomials of the second kind] and
     HREF{Chebyshev_polynomials_of_the_first_kind}[the Chebyshev polynomials of
     the first kind].
-  formula-line-graph: >-
-    $M(G,x)=I(L(G),x)$, where $I$ is the independence polynomial and $L(G)$ is
-    the line graph of $G$.
 Programs:
   program-sage:
     language: Sage
     code: |-
-      import numberdb.sage as numberdb
       from sage.graphs.graph import Graph
 
-      G = Graph('EIe_')                  # C_6, by its name here
-      mu = G.matching_polynomial()       # x^6 - 6*x^4 + 9*x^2 - 2
-      x = mu.parent().gen()
-      n = G.num_verts()
-      M = sum(abs(mu[n - 2*k]) * x**k for k in range(n // 2 + 1))
-      print(mu, M)                       # M = 2*x^3 + 9*x^2 + 6*x + 1
+      G = Graph('EIe_')             # C_6, by its name here
+      G.matching_polynomial()       # x^6 - 6*x^4 + 9*x^2 - 2
 Similar tables:
+  - table: HREF{T248}[Matching-generating polynomials of connected graphs]
+    relation: >-
+      uses the same graph names and stores $M(G,x)=\sum_k m_k(G)x^k$; for a
+      graph with $n$ vertices, $\mu(G,x)=x^nM(G,-x^{-2})$, so the two tables
+      encode the same matching counts in different one-variable polynomials.
+      The generating table is the likely target for a reader holding matching
+      counts or a Hosoya-index computation; this table is the signed convention
+      used for roots and characteristic-polynomial identities.
   - table: HREF{Characteristic_polynomials_of_connected_graphs}[Characteristic polynomials of connected graphs]
     relation: holds $\det(xI-A(G))$ for the same graphs under the same names; on the graphs stored here it equals $\mu(G,x)$ exactly for trees
   - table: HREF{Chromatic_polynomials_of_connected_graphs}[Chromatic polynomials of connected graphs]
@@ -137,36 +117,26 @@ Data properties:
   rigour: exact
   complete: 'no'
   complete-note: >-
-    it holds the signed and generating forms for every connected graph on at
-    most seven vertices
-  Size exception: >-
-    The table stores both standard one-variable matching-polynomial
-    conventions for the same 996 graphs. For a graph with $n$ vertices, the
-    two forms determine each other by formula CITE{formula-forms}, but a reader
-    holding one form would not naturally search for the other through that
-    substitution.
+    it holds $\mu(G,x)$ for every connected graph $G$ on at most seven vertices
   rigour details: >-
     The generator enumerates connected simple graphs with $1\leq |V(G)|\leq7$
     using Sage, takes each graph's `canonical_label(algorithm='sage')`, and
     stores the canonical graph6 string. It counts matchings by exact
-    enumeration of edge subsets and forms both polynomials over
-    $\mathbb{Z}[x]$.
+    enumeration of edge subsets and forms $\mu(G,x)$ over $\mathbb{Z}[x]$.
 
 
     The 996 graph6 strings are exactly the keys of
     HREF{Chromatic_polynomials_of_connected_graphs}[the chromatic polynomial
     table] and HREF{Tutte_polynomials_of_connected_graphs}[the Tutte
-    polynomial table]. Sage's `matching_polynomial()` agreed with the signed
-    form on every row. The counts of equal-polynomial classes in comment
-    CITE{comment-shared-values} were computed from the same exact rows. Formula
-    CITE{formula-forms} agreed on every row;
-    formula CITE{formula-complete} agreed for $K_1,\ldots,K_7$; formula
+    polynomial table]. Sage's `matching_polynomial()` agreed on every row.
+    The count of equal-polynomial classes in comment
+    CITE{comment-shared-values} was computed from the same exact rows. Formula
+    CITE{formula-generating-form} agreed against the stored
+    matching-generating rows before the split; formula CITE{formula-complete}
+    agreed for $K_1,\ldots,K_7$; formula
     CITE{formula-complete-bipartite} agreed for $K_{1,1}$, $K_{2,2}$, and
     $K_{3,3}$; formula CITE{formula-paths-cycles} agreed for every path and
-    cycle in range; formula CITE{formula-line-graph} agreed on the 109 graphs
-    whose line graph is connected and has at most seven vertices; and, on the
-    connected graphs stored here, $\mu(G,x)=\det(xI-A(G))$ agreed exactly for
-    the 25 trees.
+    cycle in range; and, on the connected graphs stored here,
+    $\mu(G,x)=\det(xI-A(G))$ agreed exactly for the 25 trees.
 Display properties:
-  number-header: polynomial
-  group parameters: [['g'], ['form']]
+  number-header: $\mu(G,x)$
