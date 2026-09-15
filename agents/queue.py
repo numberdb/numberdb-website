@@ -375,15 +375,45 @@ STOP = set('of the at and in a an with to for by as its from on'.split())
 
 def _words(text):
 	text = re.sub(r'\$[^$]*\$', ' ', text)
-	return {w.lower() for w in re.findall(r"[A-Za-z][A-Za-z'-]+", text)
+	#Every dash is a separator, not a letter. The batches write
+	#`Euler–Lehmer` with an en-dash and the tables that answer them write
+	#`Euler-Lehmer` with a hyphen, so one side had a single token and the
+	#other two and the titles did not match at all. Splitting both ways makes
+	#them the same two words -- and two words are more to match on than one.
+	text = re.sub(r'[\u2010-\u2015-]', ' ', text)
+	return {w.lower() for w in re.findall(r"[A-Za-z][A-Za-z']+", text)
 	        if w.lower() not in STOP and len(w) > 2}
 
 
-def _same_subject(one, other, enough=0.5):
+def _same_subject(one, other):
+	"""Do two titles name the same table?
+
+	One title wholly inside the other, and nothing else. Not "most words in
+	common": two tables that differ in the single word that matters score
+	exactly one half -- `Ehrhart polynomials of the permutohedra` against
+	`Ehrhart polynomials of the hypersimplices` -- and a sweep run on that
+	rule ticked the permutohedra off as built when it was the hypersimplices
+	that existed.
+
+	Containment is what the real cases need. A proposal's heading carries its
+	own commentary (`Volumes of the Birkhoff polytopes. Rank last; the case
+	against is real`), and a built table carries notation the proposal did not
+	(`Values of the digamma function $\psi(x)$ at rational numbers`); the
+	words of the shorter are in the longer either way, and a word that
+	distinguishes -- permutohedra, hypersimplices, zeros, values -- is a word
+	the other does not have.
+	"""
 	first, second = _words(one), _words(other)
 	if not first or not second:
 		return False
-	return len(first & second) / float(len(first | second)) >= enough
+	#Three words, not two. A two-word title is contained in half the corpus:
+	#`Golden ratio` sits inside `Pisot numbers less than the golden ratio`,
+	#and `Rational numbers` inside `Values of the polygamma functions at
+	#rational numbers`, neither of which is the same table. A short title
+	#that cannot be matched this way is one a person ticks by hand, which is
+	#the safe direction to fail in.
+	smaller, larger = sorted((first, second), key=len)
+	return len(smaller) >= 3 and smaller <= larger
 
 
 def cmd_built(args):

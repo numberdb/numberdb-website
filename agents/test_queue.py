@@ -134,6 +134,45 @@ class WhatAnIssueSays(unittest.TestCase):
 		self.assertIsNotNone(body)
 		self.assertIn('-- T226', body)
 
+	def test_an_en_dash_is_a_separator(self):
+		#The batches write `Euler–Lehmer` and the table that answers it is
+		#`Euler-Lehmer`: one token against two, and no match at all.
+		self.assertTrue(q._same_subject('Euler–Lehmer constants',
+		                                'Euler-Lehmer constants'))
+
+	def test_a_proposal_carrying_its_own_commentary_still_matches(self):
+		#"Rank last; the case against is real" is part of the heading, and
+		#those words drag the overlap below any threshold.
+		self.assertTrue(q._same_subject(
+			'Volumes of the Birkhoff polytopes. Rank last; the case against '
+			'is real', 'Volumes of the Birkhoff polytopes'))
+
+	def test_a_distinguishing_word_keeps_two_titles_apart(self):
+		#Containment is not "shares most words": the thing the title is *of*
+		#has to be the same thing.
+		self.assertFalse(q._same_subject(
+			'Ehrhart polynomials of the permutohedra',
+			'Ehrhart polynomials of the hypersimplices'))
+		self.assertFalse(q._same_subject(
+			'Values of the digamma function at rational numbers',
+			'Zeros of the digamma function'))
+
+	def test_a_two_word_title_is_not_matched_by_containment(self):
+		#`Golden ratio` is inside `Pisot numbers less than the golden ratio`
+		#and is not that table; `Rational numbers` is inside half the corpus.
+		self.assertFalse(q._same_subject(
+			'Pisot numbers less than the golden ratio', 'Golden ratio'))
+		self.assertFalse(q._same_subject(
+			'Values of the polygamma functions at rational numbers',
+			'Rational numbers'))
+
+	#What this cannot do, written down rather than asserted: "Orders of the
+	#finite groups of Lie type as polynomials in $q$" and "Orders of finite
+	#simple groups of Lie type" are different tables -- one holds integers for
+	#a given $q$, the other polynomials -- and they share every word but two.
+	#No word-counting separates them. The build re-checks the corpus before it
+	#spends anything, which is where that judgement belongs.
+
 	def test_a_table_from_another_family_ticks_nothing(self):
 		self.assertIsNone(q._tick(self.family, 'Salem numbers below 1.3',
 		                          'T300'))
