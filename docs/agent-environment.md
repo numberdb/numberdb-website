@@ -3161,3 +3161,23 @@ results, arXiv's export API answered 429, Scholarpedia does not connect, and
 there is no `pdftotext`, `pypdf` or `fitz`, so a fetched PDF cannot be read.
 GitHub's search API, which `already_asked` uses, rate-limits after about a
 dozen names; `gh issue list --search` still answers.
+
+## Local `audit_table --links` may be unavailable on the agent checkout
+
+What happened: after splitting T232 into T232 and T242, the live API audit
+passed for both drafts. The requested local `python3 manage.py audit_table
+T232 T242 --links` could not start because the default Python in this checkout
+does not have Django installed:
+
+    ModuleNotFoundError: No module named 'django'
+
+There was no `.env` in the checkout naming a project Python or `MANAGE`
+command to use instead.
+
+What to do instead: use `GET /api/table/<tid>/audit` with the contributor key
+as the available remote audit, and say explicitly when the local
+`audit_table --links` command cannot run in this environment.
+
+Evidence: 2026-09-15, T232 split run. The failed command was run from
+`/home/ubuntu/numberdb-website`; the API audit for T232 and T242 returned
+`clean: True`.
