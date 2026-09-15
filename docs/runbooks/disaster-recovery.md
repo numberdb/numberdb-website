@@ -13,7 +13,8 @@ before TLS) and nowhere else.
 | The code | `git clone https://github.com/numberdb/numberdb-website` |
 | The data | `git clone https://github.com/numberdb/numberdb-data` |
 | The secrets | Bitwarden, secure note "numberdb.org production .env" |
-| The database | `~/numberdb-backups/numberdb-*.sql.gz` on the laptop |
+| The database | `~/numberdb-backups/repo`, a restic repository on the laptop, and its copy in S3 |
+| The key to it | Bitwarden, secure note "numberdb.org restic repository" &mdash; **lose this and every snapshot is unreadable** |
 | The domain | the registrar account, which is its own single point of failure |
 
 Nothing else is needed. TLS certificates reissue in minutes, static files are
@@ -59,10 +60,31 @@ note afterwards, or set the password explicitly:
 
 ## 3. Restore the database
 
-From the laptop, using the newest verified backup:
+From the laptop:
 
-    f=$(ls -t ~/numberdb-backups/numberdb-*.sql.gz | head -1)
-    gzip -dc "$f" | ssh user@NEW_IP \
+    scripts/restore.sh --to user@NEW_IP
+
+That reads the newest restic snapshot, or the newest `numberdb-*.sql.gz` if
+one is there, and prints the counts of what came back. By hand, if you would
+rather see every step:
+
+    export RESTIC_REPOSITORY=$HOME/numberdb-backups/repo
+    export RESTIC_PASSWORD_FILE=$HOME/.config/numberdb/restic-password
+    restic snapshots                      # which nights are here
+    restic dump latest "$(restic snapshots latest --json |
+        python3 -c 'import json,sys; print(json.load(sys.stdin)[-1]["paths"][0])')" \
+      | ssh user@NEW_IP \
+        "cd /opt/numberdb-website && docker compose exec -T db psql -U u_numberdb -q -d numberdb"
+
+If the laptop is what went away, the same repository is in S3 and needs only
+the password and a read-only key:
+
+    . ~/.config/numberdb/s3-env        # or make a key; the policy is below
+    export RESTIC_REPOSITORY=s3:s3.eu-central-1.amazonaws.com/numberdb-backups
+
+An older `.sql.gz` restores the way it always did:
+
+    gzip -dc ~/numberdb-backups/numberdb-20260915-031218.sql.gz | ssh user@NEW_IP \
         "cd /opt/numberdb-website && docker compose exec -T db psql -U u_numberdb -q -d numberdb"
 
 The dump is written with `--clean --if-exists`, so it drops and recreates each
@@ -129,10 +151,84 @@ the secrets in place:
 It stops the app, replaces the database, starts it again, and prints the counts
 so you can see what came back.
 
+## Setting up the two copies
+
+Once, on the laptop. Everything below is opt-in: `scripts/backup.sh` works
+without any of it and says what is missing.
+
+**1. restic, and a key.** The key encrypts the repository and there is no way
+back from losing it, so it goes into Bitwarden before the repository holds
+anything.
+
+    sudo apt install restic
+    mkdir -p ~/.config/numberdb
+    openssl rand -base64 32 > ~/.config/numberdb/restic-password
+    chmod 600 ~/.config/numberdb/restic-password
+    # then paste it into Bitwarden as "numberdb.org restic repository"
+
+**2. A bucket, and a key that can only reach it.** The nightly timer has no
+ssh agent and no AWS SSO session, so an expired `aws login` must not be able
+to stop a backup: this wants a plain access key for a user that can do nothing
+else. About a cent a month at the sizes involved.
+
+    aws s3api create-bucket --bucket numberdb-backups \
+        --region eu-central-1 \
+        --create-bucket-configuration LocationConstraint=eu-central-1
+    aws s3api put-public-access-block --bucket numberdb-backups \
+        --public-access-block-configuration \
+        "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+
+The policy for the user, which names the bucket and nothing else:
+
+    {"Version": "2012-10-17", "Statement": [
+      {"Effect": "Allow", "Action": ["s3:ListBucket", "s3:GetBucketLocation"],
+       "Resource": "arn:aws:s3:::numberdb-backups"},
+      {"Effect": "Allow",
+       "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+       "Resource": "arn:aws:s3:::numberdb-backups/*"}]}
+
+`DeleteObject` is needed: `forget --prune` removes packs nothing references
+any more. If that worries you more than it helps, drop it and prune the remote
+copy by hand from an account that may.
+
+Then the credentials, in a file rather than the environment:
+
+    umask 077; cat > ~/.config/numberdb/s3-env <<'EOF'
+    export AWS_ACCESS_KEY_ID=...
+    export AWS_SECRET_ACCESS_KEY=...
+    EOF
+
+and the repository, in the systemd unit beside `SSH_KEY`:
+
+    Environment=NUMBERDB_S3_REPO=s3:s3.eu-central-1.amazonaws.com/numberdb-backups
+
+**Do not put restic packs in Glacier Deep Archive.** They have to be readable
+without thawing, and at a few hundred megabytes the storage class saves
+fractions of a cent. Standard or Standard-IA.
+
+## What is not backed up, and could be
+
+Two thirds of the dump is the search index, which the database builds from the
+revisions:
+
+    db_number        203 MB   derived
+    db_tablerevision  62 MB   the record
+    db_tabledata      34 MB   derived
+    db_polynomial     11 MB   derived
+
+Dumping with `--exclude-table-data=db_number` and friends would make each dump
+about 30 MB instead of 232. It is not the default and should not become one
+until the rebuild has been rehearsed end to end: the restore then has to run
+the pipeline that repopulates those tables, and *that* is the step which has
+never been tested. Worth doing on purpose one afternoon, not by surprise at
+three in the morning.
+
 ## Rehearsing it
 
 An untested restore is a hypothesis. The cheap version, which does not need a
-new VM and takes about a minute, is to restore into a scratch database:
+new VM and takes about a minute, is `scripts/restore.sh --verify` -- it
+restores the newest snapshot into a throwaway database beside the real one,
+counts what came back and drops it. By hand, from a `.sql.gz`:
 
     f=$(ls -t ~/numberdb-backups/numberdb-*.sql.gz | head -1)
     docker compose exec -T db psql -U u_numberdb -q -d postgres \

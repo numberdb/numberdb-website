@@ -56,8 +56,14 @@ if [ -z "$dump" ]; then
 fi
 
 if [ -n "$snapshot" ]; then
-	echo "using restic snapshot $snapshot from $RESTIC_REPO"
-	read_dump() { restic dump "$snapshot" /"${PLAIN_NAME:-numberdb.sql}" 		2>/dev/null || restic dump "$snapshot" numberdb.sql; }
+	#Ask the snapshot where the file is rather than assuming: restic
+	#records the absolute path it backed up, and a repository opened on a
+	#machine whose home directory is not this one would otherwise not be
+	#readable by its own restore script.
+	inside=$(restic snapshots "$snapshot" --json \
+		| python3 -c 'import json,sys; print(json.load(sys.stdin)[-1]["paths"][0])')
+	echo "using restic snapshot $snapshot from $RESTIC_REPO ($inside)"
+	read_dump() { restic dump "$snapshot" "$inside"; }
 else
 	[ -n "$dump" ] && [ -f "$dump" ] || { echo "No backup found in $DEST" >&2; exit 2; }
 	echo "using $dump ($(du -h "$dump" | cut -f1))"
