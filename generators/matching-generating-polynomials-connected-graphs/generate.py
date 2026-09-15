@@ -1,12 +1,11 @@
-"""Signed matching polynomials of connected graphs -- numberdb.org/T239
+"""Matching-generating polynomials of connected graphs -- numberdb.org/T248
 
 For every connected simple graph G on at most seven vertices, named by its
 canonical graph6 string, this stores
 
-    mu(G, x) = sum_k (-1)^k m_k x^(n - 2k),
+    M(G, x) = sum_k m_k x^k,
 
-where n is the number of vertices and m_k is the number of k-edge matchings
-of G.
+where m_k is the number of k-edge matchings of G.
 
 Run it with SageMath:
 
@@ -15,8 +14,8 @@ Run it with SageMath:
     $ sage -python generate.py --publish  # fill the draft, with NUMBERDB_API_KEY set
 
 The generator counts matchings directly from edge subsets. This keeps the
-arithmetic in ZZ and gives an independent path to compare with Sage's
-matching_polynomial().
+arithmetic in ZZ and records the matching counts in their ordinary generating
+polynomial.
 """
 
 import os
@@ -31,7 +30,7 @@ from sage.rings.integer_ring import ZZ
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 
 
-T239 = "T239"
+T248 = "T248"
 MAX_VERTICES = 7
 
 _R = PolynomialRing(ZZ, "x")
@@ -127,15 +126,9 @@ def matching_counts(key):
 
 
 @lru_cache(maxsize=None)
-def signed_matching_polynomial(key):
-    counts = matching_counts(key)
-    graph = graph_by_key().get(key)
-    if graph is None:
-        graph = graph_from_key(key)
-    n = graph.num_verts()
+def matching_generating_polynomial(key):
     return sum(
-        _R((-1) ** k) * _R(count) * _x ** (n - 2 * k)
-        for k, count in enumerate(counts)
+        _R(count) * _x ** k for k, count in enumerate(matching_counts(key))
     )
 
 
@@ -145,9 +138,9 @@ def entry_comment(key):
     return ""
 
 
-class SignedMatchingPolynomialsOfConnectedGraphs(numberdb.Generator):
+class MatchingGeneratingPolynomialsOfConnectedGraphs(numberdb.Generator):
 
-    table = os.environ.get("NUMBERDB_TABLE", T239)
+    table = os.environ.get("NUMBERDB_TABLE", T248)
     parameters = ("g",)
     type = "Z[]"
     rigour = "exact"
@@ -159,7 +152,7 @@ class SignedMatchingPolynomialsOfConnectedGraphs(numberdb.Generator):
     def value(self, params, digits):
         del digits
         key = params["g"]
-        entry = {"number": signed_matching_polynomial(key)}
+        entry = {"number": matching_generating_polynomial(key)}
         comment = entry_comment(key)
         if comment:
             entry["comment"] = comment
@@ -168,10 +161,10 @@ class SignedMatchingPolynomialsOfConnectedGraphs(numberdb.Generator):
 
 if __name__ == "__main__":
     _key_from_stdin()
-    generator = SignedMatchingPolynomialsOfConnectedGraphs()
+    generator = MatchingGeneratingPolynomialsOfConnectedGraphs()
     if os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
         print(generator.publish(
-            message="signed matching polynomials of connected graphs",
+            message="matching-generating polynomials of connected graphs",
             assisted_by=os.environ.get("NUMBERDB_ASSISTED_BY", "")))
     else:
         report = generator.verify(sample=None)
