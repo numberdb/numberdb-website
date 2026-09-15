@@ -1,0 +1,83 @@
+Title: Glaisher-Kinkelin constant $A$
+Definition: 'The Glaisher-Kinkelin constant is the classical constant $A=A_1$ CITE{MathWorldGlaisher}
+  in the Bendersky family. The two entries give the same number in two conventions: $A$ and
+  $\log A$.'
+Keywords:
+- Glaisher constant
+- Glaisher-Kinkelin constant
+- hyperfactorial
+- Kinkelin constant
+Parameters:
+  quantity:
+    type: Symbolic
+    title: $A$ or $\log A$
+    display: convention
+    values:
+      A: $A$
+      logA: $\log A$
+Comments:
+  comment-convention: $A$ and $\log A$ are stored together because they are one constant in
+    two conventions.
+  comment-product: The constant $A$ is the normalising constant for the hyperfactorial product
+    $\prod_{m=1}^n m^m$.
+Formulas:
+  formula-log: $\log A=\frac1{12}-\zeta'(-1)$.
+  formula-barnes-g: HREF{Values_of_the_Barnes_G-function_at_rational_numbers#1/2}[$G(1/2)$]
+    satisfies $G(1/2)=2^{1/24}e^{1/8}A^{-3/2}\pi^{-1/4}$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.arith.misc import bernoulli
+      from sage.rings.complex_arb import ComplexBallField
+      from sage.rings.integer_ring import ZZ
+      from sage.rings.rational_field import QQ
+
+      CBF = ComplexBallField(numberdb.bits(100, losing=96))
+      k = ZZ(1)
+      H = sum(QQ(1) / QQ(j) for j in range(1, int(k) + 1))
+      log_A = CBF(QQ(bernoulli(k + 1)) * H / QQ(k + 1)) - CBF(-k).zetaderiv(1)
+      log_A.exp(), log_A
+Similar tables:
+- table: HREF{Bendersky_constants}[Bendersky constants $A_k$]
+  relation: $A$ is the $k=1$ member $A_1$ of the Bendersky family; the family table holds
+    the other displayed indices, also with each constant beside its logarithmic convention,
+    and is the table to use for a general indexed $A_k$
+- table: HREF{Values_of_the_Barnes_G-function_at_rational_numbers}[Values of the Barnes $G$-function
+    at rational numbers]
+  relation: $A$ appears in closed forms for special values of $G$, including $G(1/2)$
+- table: HREF{Factorial}[Factorial of natural numbers]
+  relation: $A$ is the hyperfactorial analogue of the Stirling constant $\sqrt{2\pi}$ for
+    $n!$
+Links:
+  WikiGlaisher:
+    title: 'Wikipedia: Glaisher-Kinkelin constant'
+    url: https://en.wikipedia.org/wiki/Glaisher%E2%80%93Kinkelin_constant
+  MathWorldGlaisher:
+    title: 'MathWorld: Glaisher-Kinkelin Constant'
+    url: https://mathworld.wolfram.com/Glaisher-KinkelinConstant.html
+References:
+  Dowker:
+    bib: J. S. Dowker, Computation of the derivative of the Hurwitz zeta-function and the
+      higher Kinkelin constants, 2015.
+    arxiv: '1506.01819'
+Tags:
+- special values
+- special functions
+Data properties:
+  type: R
+  rigour: proven
+  rigour details: Both values are computed as Sage complex balls with arb at `numberdb.bits(digits,
+    losing=96)` bits. The imaginary part is required to contain zero before the real part
+    is returned, and $A$ is checked against CITE{formula-barnes-g}.
+  complete: 'yes'
+Display properties:
+  number-header: $A$, $\log A$
+Numbers:
+  A:
+    number: '1.282427129100622636875342568869791727767688927325001192063740021740406308858826461129736491958202374'
+    comment: The classical Glaisher-Kinkelin constant.
+  logA:
+    number: '0.2487544770337842625472529935761139760973697136685351169998556396906930329999105060928584336658420889'
+    comment: $\log A_1=\frac1{12}-\zeta'(-1)$.
