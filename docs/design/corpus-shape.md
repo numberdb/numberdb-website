@@ -85,10 +85,25 @@ choosing a range.
     parameter types        Z 102 · Symbolic 27 · R 14 · Q 8 · C 5 · Qp 2 · Set 1
 
 Integer parameters dominate, and reach a median of 100 (quartiles 29 and 1450).
-Rational parameters use denominators of 10 to 30, at most 55. `Symbolic` is the
-variant selector -- `expression` in the Gibbs table, `solid` in the Platonic
-ones -- and is how a table holds several related quantities without becoming
-several tables.
+Rational parameters use denominators of 10 to 30, at most 55. `Symbolic` names
+what the entry is *of* -- `solid` in the Platonic table, the root system in the
+Ehrhart ones, the distribution in the entropy one.
+
+This paragraph used to end "and is how a table holds several related quantities
+without becoming several tables", which is a description of what the corpus did
+and reads as permission to do it. Ten of the sixteen tables built in the week of
+2026-09-13 used a `Symbolic` parameter to hold two quantities under one title:
+`form: ehrhart | h-star`, `quantity: psi | H`, `form: generating | signed`. The
+rule is the one the skill states -- a parameter names what the number is of,
+not which quantity is taken of it -- and the audit now asks the question on any
+draft where a parameter takes a handful of names that every other parameter
+repeats under. Three answers are good ones: parts of one object, one number in
+two conventions, and a parameter that is an argument.
+
+Published tables are not asked. Twenty-five would be flagged, most of them
+correctly bundled (`w` and `x` of a quadrature rule, $a$, $b$, $c$ of a triple),
+and a check that re-litigates accepted work on every run is a check that gets
+turned off.
 
 ## Precision
 

@@ -12,11 +12,18 @@ Type=oneshot
 Environment=SSH_KEY=%h/.ssh/id_rsa_matschke
 Environment=REMOTE=linode
 
+# The off-site copy, once the bucket and the key exist. Unset, the backup still
+# runs and says once that there is no second copy. The AWS credentials are read
+# from ~/.config/numberdb/s3-env by the script, not from here: a timer has no
+# SSO session, and an expired `aws login` must not be able to stop a backup.
+# docs/runbooks/disaster-recovery.md has the bucket and the policy.
+#Environment=NUMBERDB_S3_REPO=s3:s3.eu-central-1.amazonaws.com/numberdb-backups
+
 ExecStart=%h/projects/numberdb/numberdb-website/scripts/backup.sh %h/numberdb-backups
 
-# The script already refuses a dump that is too small, is not valid gzip, or is
-# missing db_table/db_number/auth_user, and it prunes old backups only after
-# the new one has passed all three. A non-zero exit here therefore means the
+# The script already refuses a dump that is too small, does not end with
+# pg_dump's completion line, or is missing db_table/db_number/auth_user, and it
+# stores nothing until the dump has passed all three. A non-zero exit here therefore means the
 # backup did not happen -- which is worth seeing in `systemctl --user status`
 # rather than swallowing into a log file nobody opens.
 StandardOutput=journal

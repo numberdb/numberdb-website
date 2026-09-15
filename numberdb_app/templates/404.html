@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% comment %}
+Django's default page says "Not Found. The requested resource was not found on
+this server." A draft answers exactly that to anybody who may not see it --
+saying "you may not see this" would confirm a table of that name exists -- and
+a session that has ended turns the drafts somebody was reading into that page,
+all at once. Which reads as: the tables have been deleted.
+
+That happened, to a person who had made the drafts, and cost a few minutes of
+believing the server had lost them.
+
+The fix has to leave the answer as uninformative as it was, so the paragraph
+below is on *every* not-found page: for an address that never existed, for a
+table that was never made, and for a draft the reader may not see. It confirms
+nothing, because it says the same thing on all three.
+{% endcomment %}
+
+{% block head-title %}Not found{% endblock %}
+
+{% block content %}
+<h1 class="title">Nothing at this address</h1>
+
+<p>There is no page here. That is also the answer for a table that exists but
+is private: a draft is invisible to everybody except the people working on it,
+and it says it is not here rather than that you may not see it.</p>
+
+{% if not user.is_authenticated %}
+  <p><b>You are not signed in.</b> If you were a moment ago, your session has
+  ended, and the drafts you could read are answering as though they do not
+  exist. They have not been deleted. Sign in and come back to this address:</p>
+
+  <p><a class="button" href="{% url 'account_login' %}?next={{ request.path|urlencode:"" }}">Sign in and return here</a></p>
+{% else %}
+  <p>You are signed in as {{ user }}. If you expected a draft here, it belongs
+  to somebody else, or its address changed &mdash; a draft&rsquo;s address
+  follows its title until it is published. <a href="{% url 'db:drafts' %}">The
+  drafts you can see</a> are listed.</p>
+{% endif %}
+
+<p><a href="{% url 'db:tables' %}">All tables</a> &middot;
+   <a href="{% url 'db:home' %}">Search</a></p>
+{% endblock %}
