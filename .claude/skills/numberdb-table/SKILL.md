@@ -180,6 +180,37 @@ $E_1(x)=-\operatorname{Ei}(-x)$, $\beta$ and $e^\beta$ for Lévy's constant,
 $r$ and $c$ for the logistic map: those are normalisations, and a reader
 holding either should land in the same place.
 
+**The question to ask about a parameter: does it name *what the number is of*,
+or *which quantity is taken of it*?** The first indexes a family and belongs in
+one table -- one Hausdorff dimension for each of forty named sets, one Ehrhart
+polynomial for each of seventy-eight root systems, one entropy for each of
+twenty-two distributions. The second is a second table wearing the same title.
+
+**The tell is structural, and the audit now reports it on a draft.** A
+parameter whose values are a handful of *names* -- `form: ehrhart | h-star`,
+`quantity: psi | H`, `form: generating | signed` -- and which every other
+parameter repeats under, is one table written twice, sharing a value column
+with itself. The column gives it away too: a table of one quantity heads its
+column with that quantity's symbol, `$\gamma_K$` or `$\phi(G,x)$` or
+`$I(T,x)$`, and a table of two falls back on the word `value`, because no
+symbol is true of every row. If you find yourself writing `value` there, ask
+what the table holds.
+
+Three answers to that question are good ones, and the audit says so rather than
+insisting:
+
+* **Parts of one object.** The $abc$-triples store $a$, $b$ and $c$ because a
+  triple is the thing; an elliptic curve is stored as $N$, $c_4$, $c_6$
+  because $c_4$ and $c_6$ identify the curve and $N$ says at a glance which
+  curve it is. A reader holding one part wants the others beside it.
+* **One number in two conventions**, as just above.
+* **A parameter that is an argument**, not a name: $\nu = 0, 1, 2$ is one
+  function at three orders.
+
+Everything else -- the derivative of a function and its logarithmic
+derivative, a polynomial and a different polynomial of the same object, a
+constant and the family it is a member of -- is two tables.
+
 **Splitting does not lose the connection; it puts it where it belongs.** The
 argument for one table is usually that the objects belong together, and this
 corpus has four ways to say that, each saying something different:
