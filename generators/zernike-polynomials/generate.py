@@ -1,7 +1,7 @@
 r"""Zernike polynomials -- numberdb.org/T251
 
 This draft stores the unnormalised Zernike radial polynomials
-R_n^m(r), for n <= 20 with m < n, and the unnormalised Cartesian
+R_n^m(t), for n <= 20 with m < n, and the unnormalised Cartesian
 polynomials Z_n^l(x,y), for n <= 12, omitting only the monomials 1, x
 and y.
 
@@ -34,14 +34,14 @@ TID = "T251"
 RADIAL_UP_TO = 20
 CARTESIAN_UP_TO = 12
 
-RHO_ZZ = PolynomialRing(ZZ, "r")
-r = RHO_ZZ.gen()
+RHO_ZZ = PolynomialRing(ZZ, "t")
+t = RHO_ZZ.gen()
 
 XY_ZZ = PolynomialRing(ZZ, ("x", "y"))
 x, y = XY_ZZ.gens()
 
-RHO_QQ = PolynomialRing(QQ, "r")
-r_q = RHO_QQ.gen()
+RHO_QQ = PolynomialRing(QQ, "t")
+t_q = RHO_QQ.gen()
 
 U_QQ = PolynomialRing(QQ, "u")
 u = U_QQ.gen()
@@ -62,7 +62,7 @@ def admissible(n, l):
 
 
 def radial_terms(n, m):
-    """The (exponent, coefficient) terms of R_n^m(r)."""
+    """The (exponent, coefficient) terms of R_n^m(t)."""
     if m < 0 or m > n or (n - m) % 2:
         raise ValueError("inadmissible radial indices n=%s, m=%s" % (n, m))
     terms = []
@@ -87,7 +87,7 @@ def radial_polynomial(n, m):
     if key not in _RADIAL:
         value = RHO_ZZ.zero()
         for exponent, coefficient in radial_terms(*key):
-            value += coefficient * r ** exponent
+            value += coefficient * t ** exponent
         _RADIAL[key] = value
     return _RADIAL[key]
 
@@ -149,8 +149,8 @@ def jacobi_polynomial(k, alpha, beta):
 def jacobi_radial(n, m):
     s = (n - m) // 2
     p = jacobi_polynomial(s, m, 0)
-    argument = RHO_QQ(1) - QQ(2) * r_q ** 2
-    return RHO_QQ(((-1) ** s) * r_q ** m * p(argument))
+    argument = RHO_QQ(1) - QQ(2) * t_q ** 2
+    return RHO_QQ(((-1) ** s) * t_q ** m * p(argument))
 
 
 def legendre_polynomials(up_to):
@@ -243,21 +243,21 @@ WIKI_INDEX_ROWS = [
 
 RADIAL_EXAMPLES = {
     (0, 0): RHO_ZZ(1),
-    (1, 1): r,
-    (2, 0): 2 * r ** 2 - 1,
-    (2, 2): r ** 2,
-    (3, 1): 3 * r ** 3 - 2 * r,
-    (3, 3): r ** 3,
-    (4, 0): 6 * r ** 4 - 6 * r ** 2 + 1,
-    (4, 2): 4 * r ** 4 - 3 * r ** 2,
-    (4, 4): r ** 4,
-    (5, 1): 10 * r ** 5 - 12 * r ** 3 + 3 * r,
-    (5, 3): 5 * r ** 5 - 4 * r ** 3,
-    (5, 5): r ** 5,
-    (6, 0): 20 * r ** 6 - 30 * r ** 4 + 12 * r ** 2 - 1,
-    (6, 2): 15 * r ** 6 - 20 * r ** 4 + 6 * r ** 2,
-    (6, 4): 6 * r ** 6 - 5 * r ** 4,
-    (6, 6): r ** 6,
+    (1, 1): t,
+    (2, 0): 2 * t ** 2 - 1,
+    (2, 2): t ** 2,
+    (3, 1): 3 * t ** 3 - 2 * t,
+    (3, 3): t ** 3,
+    (4, 0): 6 * t ** 4 - 6 * t ** 2 + 1,
+    (4, 2): 4 * t ** 4 - 3 * t ** 2,
+    (4, 4): t ** 4,
+    (5, 1): 10 * t ** 5 - 12 * t ** 3 + 3 * t,
+    (5, 3): 5 * t ** 5 - 4 * t ** 3,
+    (5, 5): t ** 5,
+    (6, 0): 20 * t ** 6 - 30 * t ** 4 + 12 * t ** 2 - 1,
+    (6, 2): 15 * t ** 6 - 20 * t ** 4 + 6 * t ** 2,
+    (6, 4): 6 * t ** 6 - 5 * t ** 4,
+    (6, 6): t ** 6,
 }
 
 
@@ -299,7 +299,7 @@ def self_check():
                 raise ArithmeticError("R_%d^%d disagrees with the Jacobi identity" % (n, m))
 
     legendre = legendre_polynomials(RADIAL_UP_TO // 2)
-    argument = QQ(2) * r_q ** 2 - QQ(1)
+    argument = QQ(2) * t_q ** 2 - QQ(1)
     for k, polynomial in enumerate(legendre):
         if RHO_QQ(radial_polynomial(2 * k, 0)) != RHO_QQ(polynomial(argument)):
             raise ArithmeticError("R_%d^0 disagrees with the Legendre recurrence" % (2 * k,))
@@ -319,11 +319,11 @@ def self_check():
         for l in range(0, n + 1):
             if not admissible(n, l):
                 continue
-            value = cartesian_polynomial(n, l)(r_q, 0)
+            value = cartesian_polynomial(n, l)(t_q, 0)
             expected = RHO_QQ(radial_polynomial(n, l))
             if value != expected:
                 raise ArithmeticError("Z_%d^%d(rho,0) is not R_%d^%d" % (n, l, n, l))
-            if l > 0 and cartesian_polynomial(n, -l)(r_q, 0) != RHO_QQ.zero():
+            if l > 0 and cartesian_polynomial(n, -l)(t_q, 0) != RHO_QQ.zero():
                 raise ArithmeticError("Z_%d^%d(rho,0) is not zero" % (n, -l))
 
     for n, l, noll, osa, fringe, wyant in WIKI_INDEX_ROWS:

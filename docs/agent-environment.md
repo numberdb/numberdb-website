@@ -3220,3 +3220,21 @@ Not found page, while `curl https://numberdb.org/files/T235` showed "Files of
 Ehrhart polynomials of the permutohedra" and
 `curl https://numberdb.org/files/T235/generate.py?raw=1` returned the
 generator docstring beginning with `numberdb.org/T235`.
+
+## A stored polynomial variable named `r` can trip the live Sage environment
+
+What happened: after the Zernike generator changed radial entries from
+`rho` to the single-letter variable `r`, the local Sage wrapper could build
+`QQ['r']` and dry-run the table, but the live API refused the fill of draft
+T251 with `A value in these entries cannot be read as a number. No module
+named 'rpy2'`. The same entries with the radial variable renamed to `t`
+avoided the server-side import path.
+
+What to do instead: if a draft polynomial table is refused with an `rpy2`
+message and the only unusual thing is a stored variable named `r`, rename
+that stored variable to another single-letter variable such as `t`. Keep the
+mathematical symbol in the prose if it matters.
+
+Evidence: 2026-09-15, T251 build. The builder probe
+`PolynomialRing(QQ, 'r')` succeeded under `agents/sage.sh`, but the live
+`/api/table/T251/entries` write failed with the `rpy2` message.
