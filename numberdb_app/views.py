@@ -2783,8 +2783,22 @@ def review_table(request, tid):
 	outstanding = unreviewed_params(table)
 	before = tree_of(table.reviewed_at_revision)
 	after = tree_of(head)
+	#What the audit says, at the last moment before the table becomes
+	#permanent. The checks existed and ran where the table was built, which is
+	#a machine nobody reads afterwards: T226 and four others reached this page
+	#holding two quantities under one title, and the finding that says so was
+	#sitting in a transcript. It is a page a person reads, so a finding that
+	#is wrong here costs a glance, and the audit is phrased as a question.
+	from .management.commands.audit_table import findings_for
+	try:
+		findings = findings_for(table)
+	except Exception:                                        # noqa: BLE001
+		#Never between a reviewer and the button. A check that breaks should
+		#not stop a table being published.
+		findings = []
 	return render(request, 'review-table.html', {
 		'table_being_reviewed': table,
+		'findings': findings,
 		'head': head,
 		'since': table.reviewed_at_revision,
 		'whole_table': outstanding is ALL_UNREVIEWED,

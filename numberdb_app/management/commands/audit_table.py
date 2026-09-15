@@ -242,6 +242,15 @@ class Command(BaseCommand):
 		for complaint in self._indexed_as_many_as_written(table, tree):
 			yield complaint
 
+		#Two tables wearing one title. The skill has said since May that
+		#"seven functions evaluated at the same rational x are still seven
+		#functions", and ten of sixteen tables built in one week said it with
+		#a parameter instead.
+		for complaint in self._one_table_or_several(table, tree):
+			yield complaint
+		for complaint in self._column_names_its_quantity(table, tree):
+			yield complaint
+
 		#The same numbers under another title. Prose cannot catch this and
 		#digits can, which is a thing only a database of numbers can do.
 		for complaint in self._values_also_in_another_table(table, prose):
@@ -486,6 +495,124 @@ class Command(BaseCommand):
 	#: something. What makes two tables the same table is sharing the values
 	#: that are *hard to share*.
 	COMMON = 4
+
+	#: A parameter with more values than this is indexing something, not
+	#: choosing between a few quantities. T233 is indexed by 78 root systems
+	#: and T241 by 22 distributions; neither is two tables glued together.
+	MOST_LABELS = 4
+
+	#: What a value column is called when nobody could name it. A table of one
+	#: quantity has a symbol at the top -- $\gamma_K$, $\phi(G,x)$, $I(T,x)$ --
+	#: and a table of two has to fall back on a word.
+	GENERIC_HEADERS = ('value', 'values', 'number', 'numbers', 'polynomial',
+	                   'polynomials', 'constant', 'constants', 'entry', 'data')
+
+	def _one_table_or_several(self, table, tree):
+		r"""A parameter that names quantities rather than indexing arguments.
+
+		The tell is structural and does not need to read a word of prose: the
+		entries are the same grid repeated once per value of that parameter.
+		`form: ehrhart | h-star`, `quantity: psi | H`, `unit: bits | nats` --
+		each one is a second table, copied alongside the first, sharing the
+		value column with it and forcing that column to be headed "value".
+
+		The skill's rule is older than this check: "Where several named
+		objects share a subject but not a name, make several tables", and
+		"seven functions evaluated at the same rational $x$ are still seven
+		functions". A rule that is only written gets followed until a build is
+		in a hurry.
+
+		It is a question, not a verdict, and there are good answers to it. The
+		$abc$-triples store $a$, $b$ and $c$ because the three are one triple;
+		an elliptic curve is stored as $N$, $c_4$, $c_6$ because $c_4$ and
+		$c_6$ identify the curve and $N$ says at a glance which curve it is; a
+		number in two conventions is one number, which is why $E_1$ and
+		$\operatorname{Ei}$ share T188. What the check reports is that the
+		question applies here.
+
+		Only drafts are asked. A published table was read and accepted as it
+		is, and re-litigating that on every audit would be the fastest way to
+		have this check turned off; a published table that grows a new bundled
+		parameter is caught in review, where the diff is what is read.
+		"""
+		from numberdb_app.flatten import to_records
+
+		if table.published:
+			return
+		params = list((tree.get('Parameters') or {}))
+		if len(params) < 2:
+			return
+		try:
+			records = to_records(tree)
+		except Exception:                                    # noqa: BLE001
+			return
+		if len(records) < 4:
+			return
+
+		def key(record, names):
+			values = record.get('params') or {}
+			return tuple(str(values.get(name)) for name in names)
+
+		for name in params:
+			labels = {str((r.get('params') or {}).get(name)) for r in records}
+			if not 2 <= len(labels) <= self.MOST_LABELS:
+				continue
+			if all(self._reads_as_a_number(label) for label in labels):
+				#An argument, not a name: nu = 0, 1, 2 is three orders of one
+				#function, and T187 is right to hold them together.
+				continue
+			rest = [other for other in params if other != name]
+			if not rest:
+				continue
+			#Orthogonal: every combination of the other parameters appears
+			#under every label. That is what "the same table twice" means,
+			#and it is why a ragged parameter -- a shape that only some
+			#distributions have -- does not trip this.
+			grid = {key(record, rest) for record in records}
+			if len(grid) * len(labels) > len(records) * 1.05:
+				continue
+			if len(grid) < 2:
+				continue
+			yield ('parameter %s takes %d names (%s) and every other '
+			       'parameter repeats under each of them, so this reads as %d '
+			       'tables sharing one title and one value column. If those '
+			       'are %d named quantities, make %d tables and relate them '
+			       'in Similar tables; if they are one object in several '
+			       'parts, or one number in several conventions, say so in '
+			       'the definition and leave them together'
+			       % (name, len(labels), ', '.join(sorted(labels)),
+			          len(labels), len(labels), len(labels)))
+
+	def _column_names_its_quantity(self, table, tree):
+		r"""The value column's heading, which is the same question asked once.
+
+		A table of one quantity can head its column with that quantity's
+		symbol -- $\gamma_K$, $\phi(G,x)$, $I(T,x)$ -- and a table of two
+		falls back on a word, because no symbol is true of every row. That is
+		how the bundled tables were noticed by eye, before any of this ran.
+
+		Drafts only, for the reason the grid check gives.
+		"""
+		if table.published:
+			return
+		header = str((tree.get('Display properties') or {})
+		             .get('number-header') or '').strip()
+		if header.lower() in self.GENERIC_HEADERS:
+			yield ('the value column is headed "%s", which names no quantity; '
+			       'if the table holds one thing, put its symbol there' % header)
+
+	def _reads_as_a_number(self, text):
+		from fractions import Fraction
+		try:
+			Fraction(str(text))
+			return True
+		except (ValueError, ZeroDivisionError):
+			pass
+		try:
+			float(str(text))
+			return True
+		except ValueError:
+			return False
 
 	def _distinctive_value(self, value):
 		"""Is hitting this number by accident unlikely?
