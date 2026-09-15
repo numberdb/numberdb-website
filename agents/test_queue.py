@@ -134,6 +134,45 @@ class WhatAnIssueSays(unittest.TestCase):
 		self.assertIsNotNone(body)
 		self.assertIn('-- T226', body)
 
+	def test_an_en_dash_is_a_separator(self):
+		#The batches write `Euler–Lehmer` and the table that answers it is
+		#`Euler-Lehmer`: one token against two, and no match at all.
+		self.assertTrue(q._same_subject('Euler–Lehmer constants',
+		                                'Euler-Lehmer constants'))
+
+	def test_a_proposal_carrying_its_own_commentary_still_matches(self):
+		#"Rank last; the case against is real" is part of the heading, and
+		#those words drag the overlap below any threshold.
+		self.assertTrue(q._same_subject(
+			'Volumes of the Birkhoff polytopes. Rank last; the case against '
+			'is real', 'Volumes of the Birkhoff polytopes'))
+
+	def test_a_distinguishing_word_keeps_two_titles_apart(self):
+		#Containment is not "shares most words": the thing the title is *of*
+		#has to be the same thing.
+		self.assertFalse(q._same_subject(
+			'Ehrhart polynomials of the permutohedra',
+			'Ehrhart polynomials of the hypersimplices'))
+		self.assertFalse(q._same_subject(
+			'Values of the digamma function at rational numbers',
+			'Zeros of the digamma function'))
+
+	def test_a_two_word_title_is_not_matched_by_containment(self):
+		#`Golden ratio` is inside `Pisot numbers less than the golden ratio`
+		#and is not that table; `Rational numbers` is inside half the corpus.
+		self.assertFalse(q._same_subject(
+			'Pisot numbers less than the golden ratio', 'Golden ratio'))
+		self.assertFalse(q._same_subject(
+			'Values of the polygamma functions at rational numbers',
+			'Rational numbers'))
+
+	#What this cannot do, written down rather than asserted: "Orders of the
+	#finite groups of Lie type as polynomials in $q$" and "Orders of finite
+	#simple groups of Lie type" are different tables -- one holds integers for
+	#a given $q$, the other polynomials -- and they share every word but two.
+	#No word-counting separates them. The build re-checks the corpus before it
+	#spends anything, which is where that judgement belongs.
+
 	def test_a_table_from_another_family_ticks_nothing(self):
 		self.assertIsNone(q._tick(self.family, 'Salem numbers below 1.3',
 		                          'T300'))
@@ -168,11 +207,23 @@ class WhichTableIsNext(unittest.TestCase):
 	def tearDown(self):
 		q.families = self.real
 
-	def test_without_a_preference_it_takes_the_newest_family(self):
+	def test_a_half_built_family_is_finished_before_a_new_one_is_opened(self):
+		#The debt first, even though family 20 was screened eleven days
+		#later. The symmetric-function family sat five-for-five unbuilt while
+		#newer batches were screened and built past it, and nothing was ever
+		#going to come back for it.
 		family, item = q.next_table()
-		self.assertEqual(family['number'], 20)
+		self.assertEqual(family['number'], 10)
 		self.assertEqual(item['title'],
-		                 'Values of the Bessel functions at rational arguments')
+		                 'Values of the Airy functions at rational arguments')
+
+	def test_an_untouched_family_is_taken_newest_first(self):
+		#Among families nobody has started, the freshest screening is the one
+		#most likely to still be true.
+		older = self.family(5, '2026-08-01', [])
+		q.families = lambda state='open': [self.newer, older]
+		family, _ = q.next_table()
+		self.assertEqual(family['number'], 20)
 
 	def test_the_family_already_started_is_finished_first(self):
 		#Not the newest. A half-built family loses the thing that made the
@@ -193,6 +244,26 @@ class WhichTableIsNext(unittest.TestCase):
 		q.families = lambda state='open': [done, self.newer]
 		family, _ = q.next_table(prefer=30)
 		self.assertEqual(family['number'], 20)
+
+	def test_a_skipped_proposal_is_not_offered_again(self):
+		#A build that looked at a proposal and declined it for a good reason
+		#left an empty box, so the next campaign paid to reach the same
+		#conclusion. `skipped` settles it without claiming a table was made.
+		batch = q.parse_batch(BATCH, 'BATCH-2026-09-12T1857.md')
+		body = q.issue_body(batch)
+		family = q.parse_family({'number': 40, 'title': 'f', 'body': body})
+		body = q._tick(family, batch['proposals'][0], None,
+		               why='the corpus holds this as T187 under another name')
+		after = q.parse_family({'number': 40, 'title': 'f', 'body': body})
+		self.assertIn('- [-]', body)
+		self.assertIn('skipped: the corpus holds this', body)
+		self.assertEqual(len(q.waiting(after)), 1)
+		settled = [i for i in after['items'] if i['done']][0]
+		self.assertFalse(settled['built'])
+		self.assertIsNone(settled['tid'])
+		#and it counts as work done, so the family is finished before a new
+		#one is opened
+		self.assertTrue(q.started(after))
 
 	def test_an_empty_queue_says_so_rather_than_raising(self):
 		q.families = lambda state='open': []

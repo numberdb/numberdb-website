@@ -115,7 +115,6 @@ class PermutohedronEhrhartPolynomials(numberdb.Generator):
         if form == "ehrhart":
             return {
                 "number": ehrhart_polynomial(n),
-                "param-latex": "$L_{\\Pi_%d}(t)$" % n,
             }
         if form == "h-star":
             return {

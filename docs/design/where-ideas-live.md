@@ -100,8 +100,17 @@ it draws on, each table says which it answers, and a `table wanted` closes when
 the tables answering it are published -- possibly from two different families.
 That is already the true shape; today it is invisible.
 
-The build order follows from the family being real: **finish the family you are
-in before opening another.** Today that happens only by accident of file
+A proposal ends in one of three states, not two: built, waiting, or **settled
+without a table** -- `- [-] ... -- skipped: <why>`. The third was missing, and
+its absence is expensive: a build that looked at a proposal and declined it
+for a good reason left an empty box, so the next campaign picked it up and
+paid to reach the same conclusion.
+
+The build order follows from the family being real: **finish the family you
+are in before opening another, and finish one somebody else started before
+opening a new one at all.** Half-built families go oldest first, because the
+oldest debt is the one nobody will come back to; untouched families go newest
+first, because the freshest screening is the most likely to still be true. Today that happens only by accident of file
 mtimes, and breaks exactly when a campaign ends mid-family.
 
 ## A proposal is a claim about a date

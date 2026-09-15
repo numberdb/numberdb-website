@@ -156,15 +156,28 @@ so you can see what came back.
 Once, on the laptop. Everything below is opt-in: `scripts/backup.sh` works
 without any of it and says what is missing.
 
-**1. restic, and a key.** The key encrypts the repository and there is no way
-back from losing it, so it goes into Bitwarden before the repository holds
-anything.
+**1. restic, and a key.** Version matters: compression arrived in 0.14 and
+`copy` in 0.10, and Ubuntu 20.04 ships 0.9.6, which would dedup and then store
+the chunks raw -- the first snapshot costing three times the `.sql.gz` it
+replaces, with no off-site copy possible. `scripts/backup.sh` prefers
+`~/.local/bin/restic` and refuses anything older than 0.14, so the
+distribution's package can stay where it is:
 
-    sudo apt install restic
+    v=$(curl -s https://api.github.com/repos/restic/restic/releases/latest |
+        grep -oP '"tag_name": "v\K[^"]+')
+    curl -sL "https://github.com/restic/restic/releases/download/v$v/restic_${v}_linux_amd64.bz2" \
+      | bunzip2 > ~/.local/bin/restic && chmod +x ~/.local/bin/restic
+
+The key encrypts the repository and there is no way back from losing it, so it
+goes into Bitwarden before the repository holds anything.
     mkdir -p ~/.config/numberdb
     openssl rand -base64 32 > ~/.config/numberdb/restic-password
     chmod 600 ~/.config/numberdb/restic-password
     # then paste it into Bitwarden as "numberdb.org restic repository"
+
+Old `.sql.gz` dumps go in with `scripts/import-backups.sh`, dated from their
+own stamps so the history reads as the nights it was taken. Done here on
+2026-09-15: fourteen dumps, 690 MB of files, 231 MB of repository.
 
 **2. A bucket, and a key that can only reach it.** The nightly timer has no
 ssh agent and no AWS SSO session, so an expired `aws login` must not be able

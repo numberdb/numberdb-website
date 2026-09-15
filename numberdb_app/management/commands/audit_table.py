@@ -250,6 +250,8 @@ class Command(BaseCommand):
 			yield complaint
 		for complaint in self._column_names_its_quantity(table, tree):
 			yield complaint
+		for complaint in self._labels_that_replace_a_number(table, tree):
+			yield complaint
 
 		#The same numbers under another title. Prose cannot catch this and
 		#digits can, which is a thing only a database of numbers can do.
@@ -600,6 +602,42 @@ class Command(BaseCommand):
 		if header.lower() in self.GENERIC_HEADERS:
 			yield ('the value column is headed "%s", which names no quantity; '
 			       'if the table holds one thing, put its symbol there' % header)
+
+	def _labels_that_replace_a_number(self, table, tree):
+		"""`param-latex` standing where a number should be.
+
+		It overrides the label of its own parameter group. On a parameter
+		whose values are words that is the point -- `normalisation: relative`
+		reads better as the symbol for that volume. On a numeric parameter the
+		value is the label, and replacing it hides what the row is: the
+		hypersimplex tables put `$L_{\\Delta(2,4)}(t)$` in the column that
+		should have read `2`, which is the table's own header specialised one
+		row at a time.
+		"""
+		from numberdb_app.flatten import to_records
+
+		params = tree.get('Parameters') or {}
+		numeric = {name for name, about in params.items()
+		           if isinstance(about, dict)
+		           and str(about.get('type') or '') in ('Z', 'Q', 'R')}
+		if not numeric:
+			return
+		try:
+			records = to_records(tree)
+		except Exception:                                    # noqa: BLE001
+			return
+
+		#The label sits on the innermost group an entry belongs to, which is
+		#the last parameter the table declares.
+		last = list(params)[-1] if params else None
+		if last not in numeric:
+			return
+		labelled = sum(1 for record in records if 'param-latex' in record)
+		if labelled:
+			yield ('%d entries carry a param-latex, which replaces the label '
+			       'of the %s column -- and %s is a number, so the value is '
+			       'the label; name the quantity in number-header instead'
+			       % (labelled, last, last))
 
 	def _reads_as_a_number(self, text):
 		from fractions import Fraction
