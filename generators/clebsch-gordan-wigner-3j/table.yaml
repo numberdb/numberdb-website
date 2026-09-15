@@ -1,0 +1,145 @@
+# Draft document for T252, the Clebsch-Gordan and Wigner 3j table proposed in
+# numberdb-data#139. Publishing is a person's act.
+Title: Clebsch-Gordan coefficients and Wigner $3j$ symbols
+Definition: >-
+  The Wigner $3j$ symbol
+  $\begin{pmatrix}j_1&j_2&j_3\\m_1&m_2&m_3\end{pmatrix}$ is the
+  angular-momentum coupling coefficient defined by the finite Racah sum in
+  CITE{DLMF-3j}. The Clebsch-Gordan coefficient
+  $\langle j_1m_1,j_2m_2\mid j_3m\rangle$ is stored in the Condon-Shortley
+  phase convention, related to the Wigner symbol by CITE{formula-cg}.
+Parameters:
+  j1:
+    type: Q
+    title: first angular momentum
+    display: $j_1$
+    constraints: >-
+      $j_1$ is a nonnegative integer or half-integer, and $j_1,j_2,j_3$
+      satisfy the triangle inequalities
+  j2:
+    type: Q
+    title: second angular momentum
+    display: $j_2$
+    constraints: >-
+      $j_2$ is a nonnegative integer or half-integer, and $j_1,j_2,j_3$
+      satisfy the triangle inequalities
+  j3:
+    type: Q
+    title: coupled angular momentum
+    display: $j_3$
+    constraints: >-
+      $j_3$ is a nonnegative integer or half-integer, and $j_1,j_2,j_3$
+      satisfy the triangle inequalities
+  m1:
+    type: Q
+    title: first magnetic quantum number
+    display: $m_1$
+    constraints: $-j_1\leq m_1\leq j_1$ and $j_1-m_1\in\mathbb{Z}$
+  m2:
+    type: Q
+    title: second magnetic quantum number
+    display: $m_2$
+    constraints: $-j_2\leq m_2\leq j_2$ and $j_2-m_2\in\mathbb{Z}$
+  m:
+    type: Q
+    title: coupled magnetic quantum number
+    display: $m$
+    constraints: $m=m_1+m_2$, $-j_3\leq m\leq j_3$, and $j_3-m\in\mathbb{Z}$
+  normalisation:
+    type: Symbolic
+    title: normalisation
+    display: normalisation
+    constraints: either `clebsch-gordan` or `wigner-3j`
+    values:
+      clebsch-gordan: $\langle j_1m_1,j_2m_2\mid j_3m\rangle$
+      wigner-3j: $\begin{pmatrix}j_1&j_2&j_3\\m_1&m_2&-m\end{pmatrix}$
+Comments:
+  comment-indexing: >-
+    The `wigner-3j` rows use $-m$ as the third entry in the lower row of the
+    Wigner symbol. With that choice both normalisations are indexed by the
+    same coupling condition $m=m_1+m_2$.
+  comment-zeros: >-
+    Rows whose coefficient is zero are omitted. The selection rules in
+    CITE{formula-selection} determine those values.
+  comment-algebraic: >-
+    Every coefficient is a rational multiple of a square root of a rational,
+    so it is a rational number or a quadratic algebraic number. Many of the
+    simplest radicals are also in HREF{Algebraic_numbers_of_degree_2}[the
+    table of algebraic numbers of degree 2].
+Formulas:
+  formula-selection: >-
+    The Wigner symbol is zero unless $|j_r-j_s|\leq j_t\leq j_r+j_s$ for
+    every permutation of $1,2,3$, unless $m_1+m_2+m_3=0$, and unless
+    $|m_i|\leq j_i$ with $j_i-m_i\in\mathbb{Z}$ for each $i$ CITE{DLMF-3j}.
+  formula-cg: >-
+    $\langle j_1m_1,j_2m_2\mid j_3m\rangle
+    =(-1)^{j_1-j_2+m}\sqrt{2j_3+1}
+    \begin{pmatrix}j_1&j_2&j_3\\m_1&m_2&-m\end{pmatrix}$ CITE{Sage}.
+  formula-orthogonality: >-
+    For fixed $j_1,j_2$, the Clebsch-Gordan coefficients form an orthogonal
+    change of basis:
+    $\sum_{m_1,m_2}\langle j_1m_1,j_2m_2\mid jm\rangle
+    \langle j_1m_1,j_2m_2\mid j'm'\rangle=\delta_{j,j'}\delta_{m,m'}$.
+  formula-legendre: >-
+    $\int_0^\pi P_{l_1}(\cos\theta)P_{l_2}(\cos\theta)P_{l_3}(\cos\theta)
+    \sin\theta\,d\theta
+    =2\begin{pmatrix}l_1&l_2&l_3\\0&0&0\end{pmatrix}^2$, relating the
+    $m_i=0$ Wigner symbols to the
+    HREF{Legendre_polynomials}[Legendre polynomials] CITE{DLMF-legendre}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.functions.wigner import clebsch_gordan, wigner_3j
+
+      clebsch_gordan(1, 1, 1, 1, 0, 1)     # -sqrt(1/2)
+      wigner_3j(1, 1, 1, 1, 0, -1)         # sqrt(1/6)
+Similar tables:
+  - table: HREF{Legendre_polynomials}[Legendre polynomials]
+    relation: their triple-product integrals are squares of the $m_i=0$ Wigner $3j$ symbols in CITE{formula-legendre}
+  - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
+    relation: the coefficients here are rational numbers or quadratic algebraic numbers
+Links:
+  DLMF-3j:
+    title: 'DLMF 34.2: definition of the Wigner 3j symbol'
+    url: https://dlmf.nist.gov/34.2
+  DLMF-legendre:
+    title: 'DLMF 34.3(vii): relations to Legendre polynomials and spherical harmonics'
+    url: https://dlmf.nist.gov/34.3#vii
+  Sage:
+    title: 'SageMath: Wigner, Clebsch-Gordan, Racah, and Gaunt coefficients'
+    url: https://doc.sagemath.org/html/en/reference/functions/sage/functions/wigner.html
+Keywords:
+  - Clebsch Gordan coefficient
+  - Clebsch-Gordan coefficient
+  - Wigner 3j symbol
+  - 3-j symbol
+  - angular momentum coupling
+  - Condon-Shortley phase
+Tags:
+  - special functions
+  - physics
+  - algebraic
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every nonzero Clebsch-Gordan coefficient and the corresponding
+    Wigner $3j$ normalisation with $j_1,j_2,j_3\leq 2$
+  rigour details: >-
+    The generator evaluates the Racah finite sum with exact rational
+    arithmetic, using integer-scaled angular momenta so every factorial
+    argument is checked before it is used. The exact result is a sign times
+    the square root of a rational number, converted to an arb ball for the
+    stored real value; rational results are written exactly. Before the values
+    are sent, the Wigner rows are checked against Sage's exact `wigner_3j`
+    function on every row. The Clebsch-Gordan rows are checked against the
+    exact values obtained from Sage's Wigner rows by CITE{formula-cg}, against
+    the row-by-row relation CITE{formula-cg}, against the orthogonality
+    relations for every $j_1,j_2\leq2$, and against the special case
+    CITE{formula-legendre} for $l_i\leq2$.
+Display properties:
+  number-header: >-
+    $\langle j_1m_1,j_2m_2\mid j_3m\rangle$ or
+    $\begin{pmatrix}j_1&j_2&j_3\\m_1&m_2&-m\end{pmatrix}$
