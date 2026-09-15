@@ -77,8 +77,8 @@ Similar tables:
     relation: $\log K(x)$ is a derivative of the Hurwitz zeta function at $s=-1$
   - table: HREF{T227}[Glaisher-Kinkelin constant $A$ and Bendersky constants $A_k$]
     relation: $A=A_1$ appears in special values and multiplication formulas for $K$
-  - table: HREF{T228}[Values of the derivative and logarithmic derivative of the Riemann zeta function]
-    relation: $\log K(x)$ differs from $\zeta'(-1,x)$ by the constant $\zeta'(-1)$
+  - table: HREF{T228}[Values of the derivative $\zeta'(s)$ of the Riemann zeta function at rational numbers]
+    relation: $\log K(x)$ differs from the Hurwitz zeta derivative $\zeta'(-1,x)$ by the Riemann zeta derivative $\zeta'(-1)$
 Links:
   WikiKFunction:
     title: 'Wikipedia: K-function'
