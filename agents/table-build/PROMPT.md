@@ -130,6 +130,20 @@ worse than an untidy history, and `audit_table` findings are worth acting on
 whenever they arrive. The point is not to publish nothing twice, it is to have
 done the obvious checking first.
 
+**8b. One table, one named quantity.** Before you write the parameters down:
+does each of them name *what the number is of*, or *which quantity is taken of
+it*? The second is a second table. `form: ehrhart | h-star`, `quantity: psi |
+H`, `form: generating | signed` all shipped as one table and all had to be
+split by hand afterwards. The exceptions are parts of one object, one number
+in two conventions, and a parameter that is an argument -- say which one
+applies if you keep two things together.
+
+Two symptoms to watch for in your own draft: a `number-header` you had to fill
+with the word `value` because no symbol fits every row, and a `param-latex` on
+an entry whose parameter is a number -- that field replaces the label of its
+own parameter group, so it puts `$L_{\Delta(2,4)}(t)$` in the column that
+should read `2`.
+
 **9. Run the audit on T1xx** and act on what it says. It catches what a
 person does not: a CITE naming nothing, a link out to something the corpus
 holds, a definition that has grown into four things, a snippet whose range no
