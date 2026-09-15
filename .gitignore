@@ -203,3 +203,12 @@ agents/table-ideas/SKIPPED.md
 #only in these commits, and that is worth more than the three megabytes
 #removing it would reclaim.
 generators/
+
+#A stop flag is a fact about one machine right now, not about the project. It
+#was committed once by a `git add -A` that swept up a flag somebody had left
+#lying around, and from then on every campaign on every machine refused to
+#start the moment it pulled -- the file being checked before the first table
+#and the message being "stopping: agents/campaign.stop is there", which reads
+#like a deliberate instruction rather than an accident.
+agents/campaign.stop
+agents/campaign.*.stop
