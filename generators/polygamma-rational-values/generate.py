@@ -99,14 +99,71 @@ class PolygammaRationalValues(numberdb.Generator):
         return polygamma(n, x, digits)
 
 
+def fill_draft_once(generator, message):
+    """Fill a fresh draft without the empty upsert probe."""
+    from numberdb._generate import (
+        _check_precision,
+        _check_rigour,
+        _producer,
+        _run_name,
+        _source_files,
+    )
+    from numberdb._write import Entries, attach, submit_entries, to_text
+
+    table = generator.table
+    run = _run_name(generator)
+    entries = Entries(*generator.parameters)
+
+    for params in generator.enumerate():
+        params = dict(params)
+        wanted = generator.digits_for(params)
+        entry = generator._entry(params, wanted)
+        value = entry["number"]
+        identity = ",".join(str(params[name]) for name in generator.parameters)
+        _check_rigour(generator, table, identity, value)
+
+        written = to_text(value, wanted, generator.format)
+        _check_precision(table, identity, written, wanted, lowering=False)
+
+        record = dict(entry)
+        record.pop("digits", None)
+        entries.add(**params, **record, digits=wanted)
+
+    answer = submit_entries(
+        table,
+        entries,
+        message=message,
+        produced_by=_producer(
+            generator,
+            assisted_by=os.environ.get("NUMBERDB_ASSISTED_BY", "codex-cli"),
+        ),
+        upsert=False,
+        run=run,
+        rigour=generator.rigour,
+    )
+
+    files = _source_files(generator)
+    stored = []
+    for name, body in sorted(files.items()):
+        attach(table, name, body, run=run, message=message,
+               rigour=generator.rigour)
+        stored.append(name)
+
+    return {
+        "tid": answer.get("tid", table),
+        "revision": answer.get("revision"),
+        "entries": len(entries),
+        "files": stored,
+    }
+
+
 if __name__ == "__main__":
     _key_from_stdin()
     generator = PolygammaRationalValues()
     if os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
-        print(generator.publish(
-            message="polygamma values at rational arguments",
-            assisted_by=os.environ.get("NUMBERDB_ASSISTED_BY", "codex-cli"),
-        ))
+        print(fill_draft_once(
+            generator,
+            message="polygamma values at rational arguments"))
     else:
         report = generator.verify(sample=None)
         print(report)
