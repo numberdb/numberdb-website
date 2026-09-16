@@ -3858,3 +3858,23 @@ regression test for the Charlier shape.
 Evidence: 2026-09-16, T267 build. The first `python3 agents/queue.py built
 147 'Charlier polynomials $C_n(x;a)$' T267` failed; after the matcher fix,
 the same command ticked the issue as `-- T267`.
+
+## `pdftotext` is no longer on this machine; arXiv's `/html/<id>` is the way to read a paper
+
+What happened: the ideas run of 2026-09-16T1046 needed three threshold tables
+from arXiv papers. The note above ("arXiv PDFs can be read here with curl and
+pdftotext") no longer holds: `which pdftotext` finds nothing and
+`/usr/bin/pdftotext` does not exist, and the `Read` tool refuses PDFs because
+`pdftoppm` is missing too. PDFs fetched through the web-fetch agent come back
+as compressed streams it cannot decode. What did work: arXiv's own HTML
+rendering, `https://arxiv.org/html/<id>v<n>`, linked from the abstract page,
+for 0912.0287, 1309.6772 and 1001.1826; and
+`https://ar5iv.labs.arxiv.org/html/<id>` for cond-mat/0612365. Neither exists
+for cs/0309020 or math/0702007, and those tables stayed unread.
+
+What to do instead: for a paper since about 2009, read `arxiv.org/html/<id>`;
+for an older one try ar5iv; if neither exists, record the paper as unread
+rather than installing tools.
+
+Evidence: 2026-09-16, `ls -l /usr/bin/pdftotext` "No such file or
+directory"; `Read` on a saved PDF: "pdftoppm is not installed".
