@@ -137,6 +137,24 @@ class TheSkillSaysOneTableHoldsOneQuantity(TestCase):
 		self.assertIn('ehrhart | h-star', self.body)
 		self.assertIn('value', self.body)
 
+	def test_a_convention_has_to_be_invertible(self):
+		#The exception was stated as "one object in two conventions", and a
+		#specialisation reads like one: the q,t-Catalan numbers arrived with
+		#the Carlitz and MacMahon specialisations behind a parameter. You
+		#cannot get C_n(q,t) back from C_n(q,1), so they are not the same
+		#number written twice -- they are three sequences.
+		self.assertIn('invertible', self.body)
+		self.assertIn('specialisation', self.body)
+
+	def test_invertible_is_not_the_end_of_the_question(self):
+		#Two forms that do determine each other are still two tables when the
+		#parameters differ, or when one is compact enough to be carried
+		#further than the other: the h*-polynomial of a Birkhoff polytope
+		#writes 134 characters where the Ehrhart polynomial writes 381, and
+		#for the permutohedra it is the other way round.
+		self.assertIn('not sufficient', self.body)
+		self.assertIn('compact', self.body)
+
 	def test_it_keeps_the_exceptions_that_are_real(self):
 		#Without these the rule reads as "never use a second parameter", and
 		#the corpus is full of tables that are right to have one.

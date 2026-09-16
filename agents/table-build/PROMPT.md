@@ -136,7 +136,10 @@ it*? The second is a second table. `form: ehrhart | h-star`, `quantity: psi |
 H`, `form: generating | signed` all shipped as one table and all had to be
 split by hand afterwards. The exceptions are parts of one object, one number
 in two conventions, and a parameter that is an argument -- say which one
-applies if you keep two things together.
+applies if you keep two things together. "Two conventions" means each form
+determines the other; a specialisation does not, so $C_n(q,t)$ and the
+$C_n(q,1)$ you get by setting $t=1$ are two tables, not one with a
+parameter.
 
 Two symptoms to watch for in your own draft: a `number-header` you had to fill
 with the word `value` because no symbol fits every row, and a `param-latex` on

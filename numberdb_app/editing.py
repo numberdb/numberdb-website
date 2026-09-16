@@ -760,9 +760,24 @@ def slug_for(title, taken=None):
 	#`Values_of_Bessel_functions_and`, an address ending in a conjunction that
 	#says nothing about which two. When what is left dangles, the symbols come
 	#back, transliterated: `J_nu` for `$J_\\nu(x)$`.
-	dangling = r'(?:and|or|of|at|for|in|with|to|the|a|an)'
+	#Mathematics *attached* to a word is part of that word, whatever else is
+	#in the title. `Ehrhart $h^*$-polynomials of the Birkhoff polytopes` lost
+	#the $h^*$ and left `Ehrhart -polynomials`, which the hyphen rule below
+	#then glued into `Ehrhart-polynomials_of_the_Birkhoff_polytopes` -- an
+	#address differing from the Ehrhart table's by one character, with no
+	#trace of the thing that distinguishes them. The test is on the title,
+	#not on what is left of it: no space between the closing `$` and the next
+	#character means it was a term.
+	attached = re.search(r'\$[^$]*\$(?=[^\s$])|(?<=[^\s$])\$[^$]*\$', title or '')
+
+	#`over` was not in this list, so `Faltings heights of elliptic curves over
+	#$\mathbb{Q}$` became an address ending in `_over`, naming everything
+	#except the field it is over. Three tables had one.
+	dangling = (r'(?:and|or|of|at|for|in|with|to|the|a|an'
+	            r'|over|under|above|below|into|onto|from|by|on|between)')
 	left = plain.strip()
 	if (not left
+			or attached
 			or re.search(r'(?:^|\s)%s\s*$' % dangling, left, re.I)
 			or re.match(r'%s(?:\s|$)' % dangling, left, re.I)
 			#`$abc$-triples of high merit` leaves `-triples ...`, a word with
@@ -771,6 +786,11 @@ def slug_for(title, taken=None):
 		def spell(match):
 			inner = match.group(0)
 			inner = re.sub(r'\\left|\\right', ' ', inner)
+			#A star is a letter here, not punctuation: `$h^*$-polynomials`
+			#without it becomes `h-polynomials`, and an h-polynomial is a
+			#different object from an h*-polynomial. The literature writes
+			#the ASCII of it "h-star".
+			inner = inner.replace('^*', '-star').replace('*', '-star')
 			inner = re.sub(r'\\([A-Za-z]+)', r'\1', inner)   # \nu -> nu
 			inner = re.sub(r'[$^{}()\\,]+', ' ', inner)
 			return ' ' + inner + ' '

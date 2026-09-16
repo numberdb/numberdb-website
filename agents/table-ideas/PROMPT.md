@@ -226,6 +226,19 @@ one number in two conventions ($E_1$ and $\operatorname{Ei}$, a constant and
 its logarithm), and a parameter that is an argument rather than a name
 ($\nu = 0, 1, 2$). If a proposal rests on one of those, say which.
 
+The second one has a test, and it is invertibility: each form must determine
+the other. A **specialisation** does not qualify, however natural it looks in
+the same paragraph -- $C_n(q,1)$ and $C_n(q,q^{-1})$ are the Carlitz and
+MacMahon $q$-Catalan numbers, each with its own literature, and neither gives
+$C_n(q,t)$ back. Propose them as separate tables that cite each other.
+
+Invertible is necessary and not sufficient. Propose two tables anyway when the
+two forms are **indexed differently** (integer alphabet size against rational
+$p$, for the Krawtchouk polynomials), when **one is far more compact than the
+other** and can be carried to a range the other cannot reach, or when the
+conversion is expensive. Say which of these you are relying on, and how far
+each form could be computed.
+
 ## A batch may need a tag that does not exist
 
 You propose five tables at once, so you are the one who can see that they
