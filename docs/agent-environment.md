@@ -205,6 +205,24 @@ Evidence: the Boole polynomial draft T184, 2026-09-09, used
 agents/table-build/dry_run.py /tmp/boole_generate.py` run failed with
 `ModuleNotFoundError: No module named 'check'`.
 
+## A Sage wrapper cannot see a separate `/tmp` file unless it is mounted
+
+What happened: a T267 repair fetched the live table to `/tmp/T267-live.json`
+and then ran a Sage check from `/tmp/check_t267.py`. Inside `agents/sage.sh`
+the script was mounted at `/work/check_t267.py`, but the JSON file was not
+mounted, so `open("/tmp/T267-live.json")` failed with `FileNotFoundError`.
+
+What to do instead: either pass every extra local file to `agents/sage.sh` so
+it is mounted under `/work`, or make the Sage script fetch/read what it needs
+itself. For API reads of private drafts, reading the key from stdin and fetching
+inside the Sage script is usually cleaner than carrying a second temporary
+file alongside it.
+
+Evidence: `/tmp/check_t267.py`, 2026-09-16, failed on
+`/tmp/T267-live.json`; the self-contained version fetched
+`https://numberdb.org/api/table?id=T267` with the key from stdin and then
+checked the live rows successfully.
+
 ## A pipeline that swallows the verdict reports nothing
 
 What happened: the suite was run as `manage.py test ... | tail -30`. The
