@@ -1073,6 +1073,14 @@ matched the `NUMBERDB_KEY_FILE` line and not `NUMBERDB_API_KEY`: the same
 mistake in a different spelling, so the rule is to never print values from
 the environment at all, masked or not. That run's log is a third one to
 scrub, and a third reason to rotate the key.
+It happened a third time in the T279 critique of 2026-09-16 (campaign
+`20260915T221028Z`): `env | grep -i -E 'proxy|numberdb' | sed 's/=.*KEY.*/=<hidden>/'`
+was run to see why the proxy was down, and printed `NUMBERDB_API_KEY`. A
+rule in a notes file has not stopped this. The runner exports the key's
+value as well as the name of the file holding it, and a prompt that says the
+key "is in the file named by `NUMBERDB_KEY_FILE`" should not also find the
+key in `NUMBERDB_API_KEY`. Unsetting that variable in `run.sh` would end the
+mistake for good.
 
 ## `audit_table --links` reports KnotInfo as `URLError`; that is this network, not the link
 
