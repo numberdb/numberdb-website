@@ -6,8 +6,8 @@ Definition: >-
   For $k\geq3$, random $k$-XORSAT CITE{WikiXORSAT} is a system of
   $m=\lfloor\alpha n\rfloor$ equations over $\mathbb{F}_2$ in $n$ Boolean
   variables, each using $k$ distinct variables and a uniform right-hand side.
-  The threshold $\alpha_k$ separates almost-sure satisfiability from
-  almost-sure unsatisfiability as $\alpha$ crosses it CITE{PittelSorkin}.
+  The threshold $\alpha_k$ is its sharp satisfiability transition in the
+  density $\alpha$ CITE{PittelSorkin}.
 Keywords: XOR-SAT, random linear systems over GF(2), p-spin model, cuckoo hashing
 Parameters:
   k:
