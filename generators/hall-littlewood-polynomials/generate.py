@@ -8,7 +8,7 @@ Run it with SageMath:
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # fill the draft, with NUMBERDB_API_KEY set
 
-This table stores the complete rectangle 1 <= n <= 4 and |lambda| <= 4.
+This table stores the complete rectangle 1 <= n <= 4 and 1 <= |lambda| <= 4.
 The largest entry in that rectangle is P_(4) in four variables, at 1080
 characters. Extending the same rectangle to n = 5 makes P_(4) 2493
 characters, and extending to |lambda| = 5 at n = 4 makes P_(5) 2114
