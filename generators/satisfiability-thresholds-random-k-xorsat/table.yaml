@@ -3,13 +3,11 @@
 # publishing is a person's act on the site.
 Title: Satisfiability thresholds of random $k$-XORSAT
 Definition: >-
-  For $k\geq3$, a random $k$-XORSAT formula CITE{WikiXORSAT} has $n$
-  Boolean variables and $m=\lfloor\alpha n\rfloor$ equations over
-  $\mathbb{F}_2$, each involving $k$ distinct variables chosen uniformly,
-  with an independent uniformly random right-hand side. The satisfiability
-  threshold $\alpha_k$ separates almost-sure satisfiability for
-  $\alpha<\alpha_k$ from almost-sure unsatisfiability for
-  $\alpha>\alpha_k$ CITE{PittelSorkin}.
+  For $k\geq3$, random $k$-XORSAT CITE{WikiXORSAT} is a system of
+  $m=\lfloor\alpha n\rfloor$ equations over $\mathbb{F}_2$ in $n$ Boolean
+  variables, each using $k$ distinct variables and a uniform right-hand side.
+  The threshold $\alpha_k$ separates almost-sure satisfiability from
+  almost-sure unsatisfiability as $\alpha$ crosses it CITE{PittelSorkin}.
 Keywords: XOR-SAT, random linear systems over GF(2), p-spin model, cuckoo hashing
 Parameters:
   k:
