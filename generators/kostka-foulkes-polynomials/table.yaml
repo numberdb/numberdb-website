@@ -1,0 +1,97 @@
+Title: Kostka–Foulkes polynomials $K_{\lambda\mu}(t)$
+Definition: >-
+  For partitions $\lambda$ and $\mu$ of the same positive integer, with
+  $\lambda$ dominating $\mu$, the Kostka-Foulkes polynomial
+  $K_{\lambda\mu}(t)$ CITE{WikiKostka} is the coefficient in
+  $s_\lambda = \sum_\nu K_{\lambda\nu}(t)P_\nu(x;t)$, where $s_\lambda$ is
+  the HREF{Schur_polynomials}[Schur polynomial] and $P_\nu(x;t)$ is the
+  Hall-Littlewood polynomial CITE{WikiHallLittlewood} in Macdonald's $P$
+  normalisation.
+Parameters:
+  lambda:
+    type: Symbolic
+    title: shape
+    display: $\lambda$
+    constraints: a partition of a positive integer
+  mu:
+    type: Symbolic
+    title: weight
+    display: $\mu$
+    constraints: a partition of $|\lambda|$ dominated by $\lambda$
+Comments: >-
+  If $\lambda$ does not dominate $\mu$, then $K_{\lambda\mu}(t)=0$; such
+  pairs are not entries in this table.
+Formulas:
+  formula-transition: >-
+    $s_\lambda = \sum_\mu K_{\lambda\mu}(t)P_\mu(x;t)$, with
+    $P_\mu(x;t)$ in Macdonald's Hall-Littlewood $P$ normalisation CITE{Macdonald}.
+  formula-charge: >-
+    $K_{\lambda\mu}(t)=\sum_T t^{\operatorname{charge}(T)}$, summed over
+    semistandard Young tableaux $T$ of shape $\lambda$ and weight $\mu$
+    CITE{LS}.
+  formula-kostka: >-
+    $K_{\lambda\mu}(1)$ is the Kostka number, the coefficient of $m_\mu$ in
+    the expansion of $s_\lambda$ in HREF{Monomial_symmetric_polynomials}[the
+    monomial symmetric polynomials].
+  formula-edges: >-
+    $K_{\lambda\lambda}(t)=1$, and $K_{\lambda\mu}(t)=0$ unless $\lambda$
+    dominates $\mu$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.combinat.sf.kfpoly import KostkaFoulkesPolynomial
+
+      KostkaFoulkesPolynomial([4], [2, 1, 1])    # t^3, past this table's diagonal
+Similar tables:
+  - table: HREF{Schur_polynomials}[Schur polynomials]
+    relation: are expanded in the Hall-Littlewood $P$ basis with these coefficients
+  - table: HREF{Monomial_symmetric_polynomials}[monomial symmetric polynomials]
+    relation: use $K_{\lambda\mu}(1)$ as the coefficient of $m_\mu$ in $s_\lambda$
+Links:
+  Sage:
+    title: "SageMath: Kostka-Foulkes polynomials"
+    url: https://doc.sagemath.org/html/en/reference/combinat/sage/combinat/sf/kfpoly.html
+  WikiKostka:
+    title: "Wikipedia: Kostka polynomial"
+    url: https://en.wikipedia.org/wiki/Kostka_polynomial
+  WikiHallLittlewood:
+    title: "Wikipedia: Hall-Littlewood polynomials"
+    url: https://en.wikipedia.org/wiki/Hall%E2%80%93Littlewood_polynomials
+References:
+  Macdonald:
+    bib: >-
+      I. G. Macdonald, Symmetric Functions and Hall Polynomials, second ed.,
+      The Clarendon Press, Oxford University Press, New York, 1995.
+    mr: '1354144'
+  LS:
+    bib: >-
+      A. Lascoux and M.-P. Schützenberger, Sur une conjecture de H. O.
+      Foulkes, C. R. Acad. Sci. Paris Sér. A-B 286 (1978), A323-A324.
+Keywords:
+  - Kostka-Foulkes
+  - Kostka Foulkes
+  - Hall-Littlewood
+  - tableaux charge
+  - t-analogue of Kostka numbers
+Tags:
+  - polynomial
+  - combinatorics
+  - algebra
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every nonzero $K_{\lambda\mu}(t)$ with $|\lambda|=|\mu|\leq9$
+  rigour details: >-
+    Every entry is an exact polynomial with integer coefficients. The generator
+    computes the coefficients with Sage's `KostkaFoulkesPolynomial`, whose
+    documentation defines them by CITE{formula-charge}. Before the values were
+    written, they were checked against Sage's Schur-to-Hall-Littlewood
+    transition dictionary, against an independent enumeration of semistandard
+    tableaux using the charge statistic, against the dominance zero condition,
+    and against the specialization $K_{\lambda\mu}(1)$ to the ordinary Kostka
+    number.
+Display properties:
+  number-header: $K_{\lambda\mu}(t)$
