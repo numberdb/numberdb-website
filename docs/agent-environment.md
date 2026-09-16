@@ -3663,3 +3663,54 @@ Evidence: 2026-09-16, T260 critique. `/tmp/render260.py` (no `Numbers`): eight
 chunks, all 200, all showing the banner and no rendered table.
 `/tmp/render260b.py` (one row each): the same eight chunks render.
 URL lengths 3524 and 3894 -> 200; 4136, 4149, 4992 and 7456 -> 400.
+
+## The SOCKS proxy was dead again, and the critique prompt still tells a run to use it
+
+What happened: the T261 critique opened with the command its own prompt gives,
+`curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/skill`, and got
+exit 7 and an empty file, twice. Nothing was listening on 1080, `ALL_PROXY` was
+empty, and no `ssh -N -D` was running. `curl` straight to numberdb.org answered
+every request in the run, including the API, the audit endpoint and five
+`/preview` pieces. This is the second recorded occurrence; the T221 note above
+says the same thing.
+
+The first minute of a run is the expensive place for this, because an empty
+answer from the proxy and an empty answer from a dead site look identical, and
+the instinct is to conclude the site is down and stop.
+
+What to do instead: when the proxy answers nothing, try the same URL without
+it before concluding anything. `env | grep -i proxy` with `ALL_PROXY` empty is
+the tell that there is no tunnel to use. The prompt in
+`agents/table-critique/PROMPT.md` still prints the `--socks5-hostname` form as
+the way to fetch a page, and could say "or without it, if 1080 refuses".
+
+Evidence: 2026-09-16, T261 critique. `curl --socks5-hostname 127.0.0.1:1080`
+to `/skill` and to `/T261`: exit 7, `000 0` both times. `ss -ltn` showed only
+22 and the two resolvers. The same two URLs without the proxy: 200 (47044
+bytes) and 404, the 404 being the draft answering anonymously as it should.
+
+## `agents/critiques/` is gitignored and 118 critiques are committed in it anyway
+
+What happened: the T261 critique wrote its report, ran `git status`, and the
+file was not there. `.gitignore` line 168 ignores `agents/critiques/` under the
+heading "what they produced on a particular afternoon is data, and lives
+outside it ... the critiques they wrote". The note above about
+`agents/table-ideas/BATCH-*.md` says, of the same kind of rule, "do not
+`git add -f` it (the ignore is the owner's decision that agent output is
+data)". Reasoning from that note alone, this run would have left its only
+deliverable uncommitted.
+
+The practice says the opposite for this directory. `git ls-files
+agents/critiques | wc -l` is 118, and every critique of this campaign is in
+the history: T259 at `5c9716c`, T260 at `852e91f`, each one commit containing
+that file alone. Tracked files are unaffected by a later ignore rule, so only
+a *new* critique hits it, and only on its first `git add`.
+
+What to do instead: commit a new critique with `git add -f
+agents/critiques/T<n>.md`, one commit for the file alone, as the ten before it
+were. Do not generalise the batch note to this directory. The ignore line and
+the practice disagree, and it is the ignore line that is stale.
+
+Evidence: 2026-09-16, T261 critique. `git check-ignore -v
+agents/critiques/T261.md` -> `.gitignore:168`; `git show --stat 852e91f` ->
+`agents/critiques/T260.md | 239 +++`, one file.
