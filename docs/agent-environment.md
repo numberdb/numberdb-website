@@ -3547,3 +3547,33 @@ need for `Title` and a few real entries.
 Evidence: 2026-09-16, T257 critique. Nine chunks built by
 `json.dumps({'Title': doc['Title'], ...})`, all 200, covering every section of
 the document.
+
+## `/preview?table=` renders `CITE{formula-key}` as bare text when the chunk omits `Formulas`
+
+What happened: reading T259, `rigour details` ends "whose documentation defines
+them by CITE{formula-charge}". Previewed in a chunk carrying `Title`,
+`Data properties`, `Links`, `References` and three entries, it rendered as the
+literal word `formula-charge` in running prose -- which reads exactly like the
+dangling-`CITE{}` rendering fault a critique is looking for, and the T258
+critique had recorded the opposite behaviour (`CITE{formula-simple-quotients}`
+rendering as the link "(5)") on a table where the chunk happened to include
+`Formulas`.
+
+It is not a fault in either table. A `CITE{}` whose key names a formula
+resolves against the `Formulas` section of the *same document*, so a chunk that
+drops `Formulas` to buy request line drops the target and the citation falls
+back to its key. With `Formulas` in the chunk the same field renders "(2)",
+linked to `#formula-charge`.
+
+What to do instead: when a preview chunk carries a field whose prose cites
+anything, carry the sections the keys resolve in -- `Links` and `References`
+for source keys, and `Formulas` too when a key begins `formula-`. The floor for
+a chunk is now `Title`, two or three real entries (the T255 note above), and
+whatever the prose cites. A bare key in rendered prose from a chunked preview
+is a missing section, not a broken citation; confirm it against a chunk that
+includes the target before writing it down as a finding.
+
+Evidence: 2026-09-16, T259 critique. Same `rigour details`, two chunks:
+`{Title, Data properties, Links, References, Numbers}` renders `formula-charge`;
+`{Title, Data properties, Formulas, Numbers}` renders `(2)` inside
+`<a class="CITE" href="#formula-charge">`.
