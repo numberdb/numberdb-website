@@ -2,10 +2,9 @@
 # numberdb-data#141. Publishing is a person's act.
 Title: Degrees of the irreducible characters of the sporadic simple groups
 Definition: >-
-  For a HREF{Orders_of_sporadic_finite_simple_groups}[sporadic finite simple
-  group] $G$, this table lists the degrees $\chi_i(1)$ of the nontrivial
-  irreducible complex characters $\chi_i$ in the ordering used by the
-  GAP Character Table Library CITE{CTblLib}.
+  For a sporadic finite simple group $G$, this table lists the degrees
+  $\chi_i(1)$ of the nontrivial irreducible complex characters $\chi_i$ in
+  the ordering used by the GAP Character Table Library CITE{CTblLib}.
 Parameters:
   G:
     type: Symbolic
