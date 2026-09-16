@@ -4033,3 +4033,21 @@ main script.
 Evidence: 2026-09-16, T280 build. The wrapper `/tmp/dry_run_euler.py` made the
 same dry run succeed: 96 exact entries, longest value 10 characters, entries
 block 5.8 KB.
+
+## The SOCKS proxy can refuse after one request while numberdb.org answers directly
+
+What happened: during the T281 critique the first request through
+`--socks5-hostname 127.0.0.1:1080` (`/skill`) returned the page. Every
+request after it failed at once with `curl: (7) Failed to connect to
+127.0.0.1 port 1080 ... Couldn't connect to server`. The earlier note
+describes a timeout; this was a refusal, so nothing was listening any more.
+The T280 critique hit the same thing ("the next request through it failed
+(`000`)"). A plain `curl https://numberdb.org/skill` with no proxy answered
+200, and so did every request after it, including the keyed API calls and
+`/preview`.
+
+What to do instead: when the proxy refuses, try the request without it
+before concluding that the site is down. If it answers, carry on directly.
+
+Evidence: 2026-09-16, about 19:10 UTC; six retries through the proxy each
+returned `000`, and the direct request returned 200.
