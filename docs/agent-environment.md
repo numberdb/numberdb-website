@@ -3714,3 +3714,63 @@ the practice disagree, and it is the ignore line that is stale.
 Evidence: 2026-09-16, T261 critique. `git check-ignore -v
 agents/critiques/T261.md` -> `.gitignore:168`; `git show --stat 852e91f` ->
 `agents/critiques/T260.md | 239 +++`, one file.
+
+## `/tables?page=N` past the end returns the last page again, and the corpus is 249 tables
+
+What happened: an ideas run needed the whole list of published tables, and the
+skill says there is no call that lists the corpus. `/tables` is paginated at
+50 rows and honours `?page=`. A walk that stops when a page comes back empty
+never stops: pages 6, 7, 8 and 9 each return the 49 rows of page 5, byte for
+byte. Concatenating nine pages gave 445 rows; deduplicating by T-number gave
+249. A run that did not deduplicate would have read the last 49 tables five
+times and concluded the corpus was twice its size.
+
+The count matters separately. There are **249 published tables**, T0 to T249
+with T75 absent, plus the drafts above T249. Every stage prompt in
+`agents/*/PROMPT.md` still says "126 tables exist", which was true in August;
+a run that believes it will under-search the corpus before proposing.
+
+Two smaller things found beside it. The tag pages are at `/tags/<name>` with
+the name URL-encoded (`/tags/orthogonal+polynomials`); `/tag/<name>` is a 404,
+and the singular is the form one guesses. And `/api/tables` answers **405
+Method Not Allowed** to a GET, because it is the table-creation endpoint, which
+reads as "the listing is broken" rather than "there is no listing".
+
+What to do instead: walk `/tables?page=` into a dict keyed by T-number and
+stop when a page contributes nothing new, rather than when it is empty.
+
+Evidence: 2026-09-16, ideas run. Pages 1 to 9 of `/tables?page=`: rows
+50/50/50/50/49/49/49/49/49, new rows 50/50/50/50/49/0/0/0/0, distinct total
+249; pages 5 to 9 all begin "T177: Values of the Beta function". `sort_by=title`
+changes nothing about this. `curl https://numberdb.org/tag/orthogonal%20polynomials`
+-> 404; `/tags/orthogonal+polynomials` -> 200 with ten rows.
+
+## oeis.org answers 403 to a script from this machine, except for b-files
+
+What happened: an ideas run tried to find OEIS sequences for four coefficient
+triangles. Every HTML endpoint answered **403** with a Cloudflare "Just a
+moment..." interstitial: `/search?q=...&fmt=text`, the same with `fmt=json`,
+the same with a browser `User-Agent`, `/A046716/internal`, and the bulk
+`https://oeis.org/names.gz` (which returns the challenge page *under the
+`.gz` name*, so a script that unzips it fails on something that is not a gzip
+rather than on a 403). The static b-file
+`https://oeis.org/A046716/b046716.txt` answered 200 with 40 KB.
+
+This is a change: the accepted lesson at the top of
+`agents/lessons/PROPOSALS.md` cites `https://oeis.org/search?q=hilbert+class+
+polynomial` working from here on 2026-09-01. Nothing about the request changed,
+so the reputation of this address did.
+
+What to do meanwhile: a check against a *known* A-number still works through
+its b-file, and that is worth doing; finding an A-number from its terms does
+not, and a run should say so in its output rather than report "no OEIS check
+was available". The technique half of this is written up for the skill in
+`agents/lessons/proposals/20260916T072254Z-ideas.md`; the 403 itself is here
+because it is about this address and not about the mathematics.
+
+Evidence: 2026-09-16. `curl -s -m 25 -o /tmp/o.txt -w "%{http_code} %{size_download}"
+"https://oeis.org/search?q=1,3,8,24,89,415&fmt=text"` -> `403 5400`, body
+beginning `<!DOCTYPE html>...<title>Just a moment...</title>`. The same for
+`&fmt=json` with `-A "Mozilla/5.0 ..."` -> `403 5613`, for
+`https://oeis.org/A046716/internal` -> 403, and for `names.gz` -> `403 5252`.
+`https://oeis.org/A046716/b046716.txt` -> `200 40724`.
