@@ -3800,3 +3800,25 @@ count a label whose rows are a prefix of the others' as orthogonal.
 Evidence: 2026-09-16, T262 critique. The audit response was
 `{"findings": [], "clean": true}`. The document has 4 `qt`, 9 `carlitz` and
 9 `macmahon` rows.
+
+## `agents/sage.sh` mounts extra files but does not pass script arguments
+
+What happened: a build run tried to follow the table-building prompt literally
+with `agents/sage.sh agents/table-build/dry_run.py path/to/generate.py`. The
+wrapper copied both files into `/work`, but it invoked Sage as
+`sage -python -u /work/dry_run.py` with no remaining command-line arguments.
+`dry_run.py` therefore printed its usage instead of checking the generator.
+
+This is about the wrapper, not the public table skill: on a contributor's own
+laptop, `sage -python agents/table-build/dry_run.py path/to/generate.py` is
+the right command.
+
+What to do here: create a tiny runner in `/tmp` that imports `dry_run` and
+calls `dry_run.main(["/work/generate.py"])`, then mount that runner,
+`dry_run.py`, `check.py` and the generator with `agents/sage.sh`.
+
+Evidence: 2026-09-16, T266 build. Running
+`agents/sage.sh agents/table-build/dry_run.py agents/table-build/check.py
+generators/krawtchouk-polynomials-hamming-scheme/generate.py` printed the
+`dry_run.py` usage. Running `/tmp/run_krawtchouk_dry.py` through the same
+wrapper computed 608 entries and measured the block.
