@@ -3919,3 +3919,23 @@ Evidence: 2026-09-16T12:26:38Z, T272 repair. The full preview URL returned
 414, a 7082-character section preview returned 400, and smaller section
 previews with the needed `Formulas` and `References` context rendered with no
 `CITE-broken` or `HREF-broken` spans.
+
+## The critique prompt still names the proxy and `manage.py`; neither worked on 2026-09-16
+
+What happened: the T273 critique followed the prompt's
+`curl --socks5-hostname 127.0.0.1:1080`. It fetched `/skill` once, and then
+every connection was refused, because nothing was listening on 1080 any more.
+`curl --noproxy '*'` reached numberdb.org directly. This is the T221
+observation again. The `RequestFactory` rendering recipe above failed too:
+`agents/sage.sh` ran `import django` and got `ModuleNotFoundError`, so
+`manage.py audit_table` could not run either. What worked instead was
+`GET /api/table?id=T273` and `GET /api/table/T273/audit` with `-H @-`, plus
+`/preview?table=...` in five pieces of 1.8 to 3.6 KB, all 200.
+
+What it should say: the critique prompt should say "curl directly, and fall
+back to the proxy", and should name the audit API as the route when the
+throwaway has no Django. Otherwise every critique run spends its first turns
+rediscovering this.
+
+Evidence: 2026-09-16. `/tmp/crit273_out.txt` has the Django traceback, and
+`/tmp/T273_p[a-e].html` are the five previews.
