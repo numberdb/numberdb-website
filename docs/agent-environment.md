@@ -4072,3 +4072,21 @@ the full 4.7 KB API document; `/tmp/t281_preview_pieces.py` rendered the
 formula, entry, similar-table and data-property pieces; and
 `/tmp/t281_preview_comments_split.py` rendered the longer comments after
 splitting them into two chunks.
+
+## Web search refused, and the arXiv API answers 406 to Python here
+
+What happened: in the 2026-09-16T2020 ideas run, the `WebSearch` tool was
+refused for lack of permission. `https://export.arxiv.org/api/query?...`
+answered HTTP 406 to `urllib` (through the SOCKS setup in
+`agents/table-ideas/screen.py`), with and without a browser-like
+User-Agent. The Wikipedia API (`en.wikipedia.org/w/api.php`) and
+`raw.githubusercontent.com` answered normally, and so did numberdb.org with
+the key.
+
+What to do instead: find sources through the Wikipedia search API, and screen
+library documentation from GitHub raw files (Singular's `LIB/*.lib` headers
+name their subjects). When a family's only real source is a book or an arXiv
+paper, say in the batch that it was not screened, rather than spending turns
+on the API.
+
+Evidence: `/tmp/b2020/find.py`, `/tmp/b2020/find2.py`, `/tmp/b2020/find4.py`.
