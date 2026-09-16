@@ -5,9 +5,7 @@ Title: Hall–Littlewood polynomials $P_\lambda(x_1,\dots,x_n;t)$
 Definition: >-
   The Hall–Littlewood polynomial $P_\lambda(x_1,\dots,x_n;t)$ CITE{Wiki}
   is Macdonald's $P$-normalised Hall–Littlewood symmetric polynomial
-  CITE{Macdonald} for a partition $\lambda$ with at most $n$ parts. The
-  parameter $t$ is an indeterminate, and $\lambda$ is padded with zeros to
-  length $n$ in CITE{formula-symmetrization}.
+  CITE{Macdonald} for a partition $\lambda$ with at most $n$ parts.
 Keywords:
   - Hall-Littlewood symmetric functions
   - Hall Littlewood polynomials
@@ -31,9 +29,11 @@ Comments:
     The partition is written as its parts, largest first, separated by commas:
     $2,1,1$ is the partition $(2,1,1)$ of $4$.
   convention: >-
-    This is the $P_\lambda$ normalisation of Macdonald. The $Q_\lambda$ and
-    $Q'_\lambda$ normalisations multiply these polynomials by factors depending
-    on $\lambda$ and $t$.
+    The parameter $t$ is an indeterminate, and $\lambda$ is padded with zeros
+    to length $n$ in CITE{formula-symmetrization}. This is the $P_\lambda$
+    normalisation of Macdonald. The $Q_\lambda$ and $Q'_\lambda$
+    normalisations multiply these polynomials by factors depending on
+    $\lambda$ and $t$.
 Formulas:
   formula-symmetrization: >-
     $P_\lambda(x_1,\dots,x_n;t)=v_\lambda(t)^{-1}\sum_{w\in S_n}
