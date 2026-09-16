@@ -1,0 +1,73 @@
+# Draft document for T254, the heat (caloric) polynomial table proposed in
+# numberdb-data#139 from numberdb-data#109. Publishing is a person's act.
+Title: Heat (caloric) polynomials $P_m(x,t)$
+Definition: >-
+  The heat polynomials $P_m(x,t)$ are the parabolically $m$-homogeneous
+  polynomial solutions of $\partial P/\partial t=\partial^2P/\partial x^2$,
+  normalized by $P_m(x,0)=x^m$ CITE{Wiki}.
+Parameters:
+  m:
+    type: Z
+    title: degree
+    display: $m$
+    constraints: $m\geq0$
+Formulas:
+  formula-explicit: >-
+    $P_m(x,t)=\sum_{\ell=0}^{\lfloor m/2\rfloor}
+    \frac{m!}{\ell!(m-2\ell)!}x^{m-2\ell}t^\ell$.
+  formula-recurrence: >-
+    $P_0(x,t)=1$ and
+    $P_{m+1}(x,t)=xP_m(x,t)+2t\,\partial P_m(x,t)/\partial x$.
+  formula-hermite: >-
+    $P_m(x,-1/2)=He_m(x)$, where $He_m$ is the
+    HREF{Hermite_polynomials_He}[probabilists' Hermite polynomial].
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.integer_ring import ZZ
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+      R = PolynomialRing(ZZ, ('x', 't'))
+      x, t = R.gens()
+
+      def heat_polynomial(m):
+          p = R.one()
+          for _ in range(m):
+              p = x * p + ZZ(2) * t * p.derivative(x)
+          return p
+
+      heat_polynomial(51)      # the next one after this table
+Similar tables:
+  - table: HREF{Hermite_polynomials_He}[Hermite polynomials in probabilist's convention]
+    relation: are the specialization $P_m(x,-1/2)$ in CITE{formula-hermite}
+Links:
+  Wiki:
+    title: "Wikipedia: Caloric polynomial"
+    url: https://en.wikipedia.org/wiki/Caloric_polynomial
+Keywords:
+  - caloric polynomial
+  - caloric polynomials
+  - heat polynomial
+Tags:
+  - polynomial
+  - special functions
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every degree $m$ with $0\leq m\leq50$; $P_{50}$ is
+    1016 characters, and $P_{60}$ is 1425 characters
+  rigour details: >-
+    Every entry is exact, a polynomial with integer coefficients. The
+    generator computes CITE{formula-recurrence} over Sage's integer polynomial
+    ring. Before the entries were sent, the dry run computed all 51 entries
+    and found exact coefficients; the values were checked against
+    CITE{formula-explicit}, against the heat equation, against the
+    normalization $P_m(x,0)=x^m$, against parabolic homogeneity, and against
+    the specialization to HREF{Hermite_polynomials_He}[probabilists' Hermite
+    polynomials] in CITE{formula-hermite}, read from T104.
+Display properties:
+  number-header: $P_m(x,t)$
