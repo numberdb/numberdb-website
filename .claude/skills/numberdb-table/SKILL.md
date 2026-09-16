@@ -180,6 +180,14 @@ $E_1(x)=-\operatorname{Ei}(-x)$, $\beta$ and $e^\beta$ for Lévy's constant,
 $r$ and $c$ for the logistic map: those are normalisations, and a reader
 holding either should land in the same place.
 
+**The test for a convention is that it is invertible.** Landing in the same
+place is only possible if each form determines the other. A *specialisation*
+does not: $C_n(q,1)$ and $C_n(q,q^{-1})$ are the Carlitz and MacMahon
+$q$-Catalan numbers, each a different sequence of polynomials with its own
+literature, and neither one gives $C_n(q,t)$ back. Two tables holding the same
+numbers in two units are one table; a table and the thing you get by setting
+one of its variables to 1 are two.
+
 **The question to ask about a parameter: does it name *what the number is of*,
 or *which quantity is taken of it*?** The first indexes a family and belongs in
 one table -- one Hausdorff dimension for each of forty named sets, one Ehrhart
