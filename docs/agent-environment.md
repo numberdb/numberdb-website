@@ -3774,3 +3774,29 @@ beginning `<!DOCTYPE html>...<title>Just a moment...</title>`. The same for
 `&fmt=json` with `-A "Mozilla/5.0 ..."` -> `403 5613`, for
 `https://oeis.org/A046716/internal` -> 403, and for `names.gz` -> `403 5252`.
 `https://oeis.org/A046716/b046716.txt` -> `200 40724`.
+
+## The audit's one-table rule steps aside when one name covers a shorter range
+
+What happened: T262 has a `specialisation` parameter that takes the names
+`qt`, `carlitz` and `macmahon`, with `n` repeated under each, and its value
+column is headed $C_n$, which is true of only 4 of its 22 rows. This is the
+shape `_one_quantity_per_table` in `audit_table` was written to catch, and
+`GET /api/table/T262/audit` came back clean. The grid test requires
+`len(grid) * len(labels) <= len(records) * 1.05`. The `qt` rows stop at $n=6$
+and the other two run to $n=11$, so the grid has $9\times3=27$ cells against
+$22\times1.05=23.1$ entries and the rule returns without reporting anything.
+The comment on that condition says a ragged parameter "does not trip this" on
+purpose, to protect a shape only some rows have. Here, though, the gaps come
+from a length limit on one name's polynomials, not from the family. The
+header check, `_column_names_its_quantity`, compares only against generic
+words, so it passes a symbol that is false for most of the rows.
+
+What to do instead: when reading a draft, do not take a clean audit to mean
+the table is one quantity. Look at the parameter values and ask the skill's
+question directly. In the audit itself, the grid test could compare each
+label's range of the other parameters against the *shortest* label's range, or
+count a label whose rows are a prefix of the others' as orthogonal.
+
+Evidence: 2026-09-16, T262 critique. The audit response was
+`{"findings": [], "clean": true}`. The document has 4 `qt`, 9 `carlitz` and
+9 `macmahon` rows.
