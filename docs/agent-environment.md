@@ -4013,3 +4013,23 @@ Evidence: `agents/critiques/T278.md` records the broken anchor as rendered.
 The T278 repair on 2026-09-16 changed the title to `Noam D. Elkies: Hall's
 conjecture examples`; `/tmp/t278-preview-links.html` then rendered a closed
 anchor with that exact text.
+
+## `agents/sage.sh` mounts extra files but does not pass script arguments
+
+What happened: T280 needed the standard dry run,
+`agents/table-build/dry_run.py path/to/generate.py`, under the required Sage
+wrapper. Running `agents/sage.sh agents/table-build/dry_run.py
+agents/table-build/check.py generators/counterexamples-euler-sum-powers/generate.py`
+mounted all three files, but the container executed only
+`sage -python -u /work/dry_run.py`; no command-line arguments were forwarded,
+so `dry_run.py` printed its usage and stopped.
+
+What to do instead: make a scratch wrapper in `/tmp` that imports `dry_run`
+and calls `dry_run.main(["/work/generate.py"])`, then mount that wrapper,
+`dry_run.py`, `check.py` and the generator with `agents/sage.sh`. The extra
+files are available in `/work` by basename, but they are not arguments to the
+main script.
+
+Evidence: 2026-09-16, T280 build. The wrapper `/tmp/dry_run_euler.py` made the
+same dry run succeed: 96 exact entries, longest value 10 characters, entries
+block 5.8 KB.
