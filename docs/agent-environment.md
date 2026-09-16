@@ -3321,3 +3321,39 @@ Evidence: 2026-09-15, T251 critique. `/tmp/t251/sec_Similar_tables.html`
 (`CITE-broken`, no `Formulas` in the piece) against `/tmp/t251/cite1.html`
 (same fields plus `formula-jacobi` and `formula-hankel`, rendering `(1)` and
 `(2)`).
+
+## To preview the *number table* of a wide draft, strip `title` and `constraints`
+
+What happened: T252 has seven parameters, and its `Parameters` section is
+1.9 KB of YAML that URL-encodes to over 3 KB because almost every character in
+it is a `$`, a `\` or a brace. Sent to `/preview?table=` with the title and a
+handful of entries it came to 5,024 bytes and the server answered
+400 "Request Line is too large (5017 > 4094)". The existing note above covers
+splitting the *prose* into pieces, and that works: one piece per two or three
+parameters renders the parameter list fine.
+
+But the parameter list is not the thing worth looking at. What a critique needs
+from the number table is the header row, the per-row labels and the value
+column together -- whether a `values:` label is repeated on every row, whether
+`number-header` restates it, how wide the label column is against the
+parameter columns. No piece carrying two parameters shows that: it renders a
+two-column table that exists in no reader's browser.
+
+The layout depends only on each parameter's `type`, `display` and `values`.
+`title` and `constraints` feed the Parameters list at the bottom of the page
+and nothing else. Stripping those two keys from every parameter took T252's
+section from 1.9 KB to 0.5 KB, and the whole document -- all seven parameters,
+`Display properties` and three entries -- fit in a 2,444-byte request line and
+rendered the real eight-column table, header and per-row labels included.
+
+What to do instead: preview a wide draft twice. Once with the parameters
+slimmed to `type`/`display`/`values` plus `Display properties` and a few
+entries, to read the number table as a reader sees it; and again in prose
+pieces with the full `title` and `constraints`, to read the parameter list.
+Say in the critique that the layout piece was slimmed, because it is not the
+stored document.
+
+Evidence: 2026-09-15, T252 critique. `/tmp/t252prev/a-def.html` is the 400
+(full `Parameters`, 5,024-byte request line); `/tmp/t252prev/g-layout.html` is
+200 at 2,444 bytes and contains the eight `table-param-group-header` cells and
+the `$\begin{pmatrix}j_1&j_2&j_3\\m_1&m_2&-m\end{pmatrix}$:` row labels.
