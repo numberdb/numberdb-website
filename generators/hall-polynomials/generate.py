@@ -8,9 +8,9 @@ Run it with SageMath:
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # fill the draft, with NUMBERDB_API_KEY set
 
-The table stores the nonzero non-edge Hall polynomials with |lambda| <= 8 and
-both lower partitions nonempty. The edge cases with one lower partition empty
-are the identity constants stated in the table formulas.
+The table stores the nonzero Hall polynomials with |lambda| <= 8 and both
+lower partitions nonempty. The edge cases with one lower partition empty are
+the identity constants stated in the table formulas.
 """
 
 import itertools
@@ -68,11 +68,16 @@ def _partitions(total, largest=None):
 
 
 def _format_partition(partition):
-    return ",".join(str(part) for part in partition)
+    return "(%s)" % ",".join(str(part) for part in partition)
 
 
 def _parse_partition(text):
-    return tuple(int(part) for part in str(text).split(",") if part)
+    text = str(text).strip()
+    if text == "()":
+        return ()
+    if text.startswith("(") and text.endswith(")"):
+        text = text[1:-1]
+    return tuple(int(part) for part in text.split(",") if part)
 
 
 def _n_stat(partition):
