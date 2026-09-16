@@ -1,0 +1,10 @@
+1. done -- changed `Formulas.hall-ratio` from a record to labelled text; checked the live field first and previewed that the formula now renders as `$r=\sqrt{x}/|y^2-x^3|$`, not a Python dictionary.
+2. done -- changed the Elkies link title to `Noam D. Elkies: Hall's conjecture examples`; checked the live title still had raw `<`, previewed the repaired anchor, and recorded the unescaped-title renderer bug in `docs/agent-environment.md`.
+3. done -- rewrote the definition and completeness note, added the AKR reference and source cite, and cited the DOI `10.1090/mcom/3298`; checked current bibliographic metadata, counted 44 entries with $x\leq10^{29}$ and 10 larger entries in Sage, and rechecked every row satisfies $y^2-x^3=k$.
+4. done -- moved the largest-ratio comment to the `r` part and narrowed it to the entries here, and rewrote the non-primitive comment without "row"; checked in Sage that the largest listed ratio is at $x=5853886516781223$ and that the second comment's factors are exactly $4$, $8$ and $64$.
+5. declined -- the small integer values are real search noise, but removing `k` would stop the table from recording the integral point on $E_k$; I left the four parts together after rechecking the identities.
+6. declined -- the audit still reports the four `part` values as possible separate quantities, but they are parts of one Hall example and the definition says the table records the four parts $x$, $y$, $k$ and $r$ for each $x$.
+Noted only, Similar tables. declined -- the wording could be sharper, but changing cross-table relation prose would need reading the neighboring tables and was outside the ranked repairs.
+Noted only, parameter title. declined -- the existing title is not wrong after the repaired definition introduces Hall examples, and changing parameter presentation would be a low-gain edit.
+Noted only, Mordell curve link. declined -- the critique says the link is fine, and I left it unchanged.
+Noted only, entry type. declined -- the mixed exact/real display comes from the site's single table type, not from a field this table can repair.
