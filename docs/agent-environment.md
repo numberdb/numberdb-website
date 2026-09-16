@@ -3939,3 +3939,22 @@ rediscovering this.
 
 Evidence: 2026-09-16. `/tmp/crit273_out.txt` has the Django traceback, and
 `/tmp/T273_p[a-e].html` are the five previews.
+
+## Audit misses some unlinked table mentions when the target title contains math
+
+What happened: the T274 critique found plain prose mentions of the sibling
+drafts T272 and T273 that should have been linked at first mention, but
+`GET /api/table/T274/audit` returned clean. The audit strips `$...$` spans from
+the candidate table title before matching, so T272's title becomes
+`Satisfiability thresholds of random -XORSAT`; it then searches the unstripped
+prose, where the text is `random $k$-XORSAT`, and the strings can never match.
+T273 has the same title shape.
+
+What to do now: do not rely on a clean audit to catch unlinked table mentions
+when the target title contains math in the middle. Search the prose yourself
+for sibling table names, and link the first mention once per section. The site
+fix would be to strip math from the prose with the same rule before matching.
+
+Evidence: 2026-09-16, T274 repair. Before the repair, `comment-capacity-one`
+plainly named random `$k$-XORSAT` and `comment-core` named the
+`$(\ell+1)$-core`; the audit answered `{"findings": [], "clean": true}`.
