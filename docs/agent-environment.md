@@ -3481,3 +3481,49 @@ attempt; `curl -sS --noproxy '*' https://numberdb.org/skill` answered 200 with
 47,044 bytes, 2,259 bytes longer than the `/tmp/skill.md` of 2026-09-14 --
 the difference is the "does a parameter name what the number is of" section and
 the `param-latex` paragraph, both of which the critique needed.
+
+## `/preview?table=` answers 500 on a document with no `Title`
+
+What happened: reading T257, the prose was previewed in pieces, as the T255
+note above recommends. The first piece carried `Title`, `Definition`,
+`Parameters`, `Links`, `References` and three entries and answered 200; the
+next five dropped `Title` to buy request line for the section being read, and
+every one of them answered `Server Error (500)` with a 145-byte body and no
+message. It looked like the sections themselves were breaking the renderer, and
+three of them were bisected one field at a time before the common factor turned
+out to be the missing `Title`.
+
+`numberdb_app/views.py:1564` reads `yaml_data['Title']` with no guard. The
+sibling path at line 1484 raises a clean `ValueError('The table has no
+Title.')` for the same document, so the check exists and the preview view does
+not make it.
+
+What to do instead: put `Title` in every `/preview?table=` chunk -- it costs
+about fifty bytes and it is the difference between a rendered page and an empty
+500. Together with the T255 note above (`Numbers: []` gives
+"cannot access local variable 'number_section'"), the floor for a preview chunk
+is `Title` plus two or three real entries. A 500 with a 145-byte body from this
+endpoint means a missing section, not a bad one.
+
+Evidence: 2026-09-16, T257 critique. `/tmp/t257_title500.py`: the same document
+without `Title` gave 500 and with `Title` gave 200; `{Title, Numbers}` alone
+gave 200 and `{Definition, Numbers}` gave 500.
+
+## JSON is a legal preview document, which saves writing YAML into a query string
+
+What happened: the same T257 previews had to turn a document fetched as JSON
+from `GET /api/table?id=T257` back into YAML to send it to `/preview?table=`.
+They did not: `preview` parses with `yaml.load(..., Loader=yaml.BaseLoader)`,
+YAML is a superset of JSON, and `BaseLoader` makes every scalar a string, which
+is what the table parser wants anyway. So
+`json.dumps(subset_of_the_document)`, URL-encoded, is a valid chunk, and a
+chunk is assembled by picking keys out of the fetched document rather than by
+re-serialising prose full of backslashes and quotes into YAML by hand.
+
+What to do instead: build preview chunks as JSON dicts straight from the API's
+answer. Nothing else changes -- the same 4,094-byte request line, the same
+need for `Title` and a few real entries.
+
+Evidence: 2026-09-16, T257 critique. Nine chunks built by
+`json.dumps({'Title': doc['Title'], ...})`, all 200, covering every section of
+the document.
