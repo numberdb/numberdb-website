@@ -3895,3 +3895,27 @@ rather than installing tools.
 
 Evidence: 2026-09-16, `ls -l /usr/bin/pdftotext` "No such file or
 directory"; `Read` on a saved PDF: "pdftoppm is not installed".
+
+## Full-table `/preview?table=` requests can exceed the deployed URI limit
+
+What happened: repairing T272 needed a rendered preview of the changed draft.
+Sending the whole 6.8 KB API document back through `/preview?table=...` as a
+query string returned `414 Request-URI Too Large`. A smaller but still broad
+chunk, about 7.1K URL characters after encoding, returned `400 Bad Request`
+before the preview page rendered.
+
+This is about the deployed preview route and proxy limits, not the table
+skill. A contributor using the website editor does not have to encode the
+whole document into a URL, but an agent calling `/preview?table=` directly can
+hit the limit on ordinary drafts.
+
+What to do instead: preview only the changed sections, and include the
+context those sections need. For example, row comments using
+`CITE{formula-root}` must be previewed with the `Formulas` section present, and
+formula sections citing papers need `References` present, otherwise the preview
+reports false `CITE-broken` spans.
+
+Evidence: 2026-09-16T12:26:38Z, T272 repair. The full preview URL returned
+414, a 7082-character section preview returned 400, and smaller section
+previews with the needed `Formulas` and `References` context rendered with no
+`CITE-broken` or `HREF-broken` spans.
