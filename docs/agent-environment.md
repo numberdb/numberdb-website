@@ -3380,3 +3380,54 @@ Evidence: 2026-09-16, issue #139. The helper refused `"Wigner 6j symbols"`;
 `python3 agents/queue.py show 139` immediately before the manual patch still
 showed the unchecked line, and immediately after showed
 `- [x] Wigner 6j symbols -- T253`.
+
+## `Data properties: Size exception` renders as "(Unknown key)"
+
+What happened: reading T255 for a critique, the rendered *Data properties*
+section ended with
+
+    Size exception: The table has one row for each ... short. (Unknown key)
+
+`numberdb_app/limits.py:93` defines `EXCEPTION_KEY = 'Size exception'` as the
+place an author states why a table is over a soft limit, and
+`limits.stated_reason` reads it out of `Data properties`. The page renderer's
+`property_names` map (`numberdb_app/views.py:1063`) does not list it, so the
+`else` branch at line 1152 fires and appends `(Unknown key)`. The API accepts
+the key, the review gate reads it, and the page tells the reader it is
+unrecognised.
+
+What to do instead: add `'Size exception': 'Size exception'` to
+`property_names`. Until somebody does, a critique or a repair meeting this on a
+page should report it as a renderer fault and not try to fix it by renaming the
+key in the table — the key is the one `limits.py` looks for, and renaming it
+would make the table breach its soft limit with no stated reason.
+
+Evidence: 2026-09-16, T255 critique. `grep -rl "Size exception"
+generators/*/table.yaml` finds only T255's, so this may be the first table in
+the repository to render one. `/preview` of its `Data properties` block, with
+`Links` and `References` included, shows the string above.
+
+## `/preview?table=` crashes on a document whose `Numbers` is empty
+
+What happened: previewing a draft's prose in pieces, each piece was built with
+`Numbers: []` so that the entries would not eat the request line. Every one of
+the five answered 200 with the whole table replaced by
+
+    Error while parsing numbers: cannot access local variable
+    'number_section' where it is not associated with a value
+
+`numberdb_app/views.py:1397` guards the `Numbers` branch with
+`len(data['Numbers']) > 0` and the `Data` branch with the same test, so an
+empty entries block leaves `number_section` unbound before the context
+dictionary reads it at line 1450. No section of the document renders, not just
+the numbers.
+
+What to do instead: put two or three real entries in every preview chunk. They
+cost about forty bytes each of request line and they are what makes the rest of
+the page render at all. (Reading the number table itself still wants the
+slimmed-`Parameters` trick recorded above.)
+
+Evidence: 2026-09-16, T255 critique. Five chunks with `Numbers: []` gave the
+error; the same five with three M11 entries added rendered Definition,
+Parameters, Comments, Formulas, Programs, Similar tables, Links, References and
+Data properties normally.
