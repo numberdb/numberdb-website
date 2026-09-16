@@ -3822,3 +3822,21 @@ Evidence: 2026-09-16, T266 build. Running
 generators/krawtchouk-polynomials-hamming-scheme/generate.py` printed the
 `dry_run.py` usage. Running `/tmp/run_krawtchouk_dry.py` through the same
 wrapper computed 608 entries and measured the block.
+
+## `queue.py built` used to miss exact two-word proposal titles
+
+What happened: after T267 was filled and offered, the required queue update
+failed with `#147 has no unbuilt table like 'Charlier polynomials $C_n(x;a)$'`.
+The checklist line was exactly `Charlier polynomials $C_n(x;a)$`, but
+`_same_subject` strips math before comparing subjects. That left only
+`charlier` and `polynomials`, and the matcher refused two-word containment to
+avoid ticking titles such as `Golden ratio` inside longer unrelated names.
+
+What to do now: `agents/queue.py` accepts exact equality after stripping
+notation when the subject has at least two words, while still refusing a
+two-word title contained in a longer title. `agents/test_queue.py` has a
+regression test for the Charlier shape.
+
+Evidence: 2026-09-16, T267 build. The first `python3 agents/queue.py built
+147 'Charlier polynomials $C_n(x;a)$' T267` failed; after the matcher fix,
+the same command ticked the issue as `-- T267`.
