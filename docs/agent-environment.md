@@ -3357,3 +3357,26 @@ Evidence: 2026-09-15, T252 critique. `/tmp/t252prev/a-def.html` is the 400
 (full `Parameters`, 5,024-byte request line); `/tmp/t252prev/g-layout.html` is
 200 at 2,444 bytes and contains the eight `table-param-group-header` cells and
 the `$\begin{pmatrix}j_1&j_2&j_3\\m_1&m_2&-m\end{pmatrix}$:` row labels.
+
+## `agents/queue.py built` cannot tick a short title whose distinguishing token is alphanumeric
+
+What happened: after T253 was built, the instructed command
+`python3 agents/queue.py built 139 "Wigner 6j symbols" T253` answered
+`#139 has no unbuilt table like 'Wigner 6j symbols'`, although issue #139
+contained the unchecked line `- [ ] Wigner 6j symbols`. The matcher drops
+`6j` because `_words()` only keeps tokens beginning with a letter, leaving
+`wigner` and `symbols`; `_same_subject()` then refuses every title with fewer
+than three surviving words. The checklist had to be patched directly through
+the GitHub API.
+
+What to do instead: when a proposed title is naturally short and contains a
+letter-digit token such as `3j`, `6j` or `9j`, either make `_words()` keep
+those tokens or let `cmd_built` fall back to an exact unchecked-line match
+before using subject containment. Until then, a failed `built` command on this
+shape can be a helper mismatch rather than evidence that another run changed
+the issue.
+
+Evidence: 2026-09-16, issue #139. The helper refused `"Wigner 6j symbols"`;
+`python3 agents/queue.py show 139` immediately before the manual patch still
+showed the unchecked line, and immediately after showed
+`- [x] Wigner 6j symbols -- T253`.
