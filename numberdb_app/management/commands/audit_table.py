@@ -566,17 +566,30 @@ class Command(BaseCommand):
 			rest = [other for other in params if other != name]
 			if not rest:
 				continue
-			#Orthogonal: every combination of the other parameters appears
-			#under every label. That is what "the same table twice" means,
-			#and it is why a ragged parameter -- a shape that only some
-			#distributions have -- does not trip this.
+			#Each label has to carry a table's worth of entries, not one or
+			#two rows of a ragged index -- a shape that only some
+			#distributions have is not a second table.
+			#
+			#This used to demand a full grid: every combination of the other
+			#parameters under every label. That is what "the same table
+			#twice" looks like when both halves were computed to the same
+			#range, and it let T262 through -- the $q,t$-Catalan numbers had
+			#four entries against nine for each of the two specialisations,
+			#so the grid was ragged and the rule stood down on a table that
+			#was three tables. How far each quantity happens to have been
+			#computed says nothing about whether it is the same quantity.
 			grid = {key(record, rest) for record in records}
-			if len(grid) * len(labels) > len(records) * 1.05:
-				continue
 			if len(grid) < 2:
 				continue
-			yield ('parameter %s takes %d names (%s) and every other '
-			       'parameter repeats under each of them, so this reads as %d '
+			by_label = {}
+			for record in records:
+				by_label.setdefault(
+					str((record.get('params') or {}).get(name)), 0)
+				by_label[str((record.get('params') or {}).get(name))] += 1
+			if sum(1 for count in by_label.values() if count >= 2) < 2:
+				continue
+			yield ('parameter %s takes %d names (%s), each carrying entries '
+			       'of its own, so this reads as %d '
 			       'tables sharing one title and one value column. If those '
 			       'are %d named quantities, make %d tables and relate them '
 			       'in Similar tables; if they are one object in several '

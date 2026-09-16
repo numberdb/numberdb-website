@@ -71,17 +71,46 @@ class OneNamedQuantityPerTable(TestCase):
 		table = self.table('Something by root system', ['n', 'type'], entries)
 		self.assertEqual(splitting(findings_for(table)), [])
 
-	def test_a_ragged_parameter_is_not_the_same_table_twice(self):
-		#"The same table copied" means every combination appears under every
-		#label. A shape only some distributions have is not that.
+	def test_a_label_carrying_one_entry_is_an_index_not_a_table(self):
+		#A parameter whose values each hold a single row is naming objects,
+		#not quantities: four distributions with one shape apiece is one
+		#table of entropies, not four tables.
 		entries = [({'d': 'normal', 'shape': '-'}, '1.0'),
 		           ({'d': 'beta', 'shape': '1,1'}, '2.0'),
-		           ({'d': 'beta', 'shape': '2,2'}, '3.0'),
 		           ({'d': 'cauchy', 'shape': '1'}, '4.0'),
-		           ({'d': 'gamma', 'shape': '2'}, '5.0'),
-		           ({'d': 'gamma', 'shape': '3'}, '6.0')]
+		           ({'d': 'gamma', 'shape': '2'}, '5.0')]
 		table = self.table('Something by distribution', ['d', 'shape'], entries)
 		self.assertEqual(splitting(findings_for(table)), [])
+
+	def test_it_asks_about_a_small_named_index_too_and_that_is_the_cost(self):
+		#Honest about the false positives. Nothing structural separates
+		#"three distributions, several shapes each" from "three quantities,
+		#several n each" -- only what the names mean -- so the check asks and
+		#a person answers. Missing T262 was worse than asking twice.
+		entries = [({'d': d, 'shape': s}, '%s.%s' % (d, s))
+		           for d in ('normal', 'beta', 'gamma')
+		           for s in ('1', '2')]
+		table = self.table('Something by three distributions',
+		                   ['d', 'shape'], entries)
+		self.assertEqual(len(splitting(findings_for(table))), 1)
+
+	def test_a_shorter_range_under_one_name_does_not_disarm_it(self):
+		#T262 held the $q,t$-Catalan numbers to n=6 and each of the two
+		#specialisations to n=11, so the grid was ragged and the check --
+		#which demanded every combination under every label -- stood down on
+		#a table that was three tables. How far a quantity happens to have
+		#been computed says nothing about whether it is the same quantity.
+		entries = ([({'n': str(n), 'which': 'qt'}, '%d.0' % n)
+		            for n in range(1, 5)]
+		           + [({'n': str(n), 'which': 'carlitz'}, '%d.1' % n)
+		              for n in range(1, 10)]
+		           + [({'n': str(n), 'which': 'macmahon'}, '%d.2' % n)
+		              for n in range(1, 10)])
+		table = self.table('Something and its two specialisations',
+		                   ['n', 'which'], entries)
+		found = splitting(findings_for(table))
+		self.assertEqual(len(found), 1, found)
+		self.assertIn('which', found[0])
 
 	def test_a_published_table_is_not_asked_again(self):
 		#It was read and accepted as it is. Re-litigating that on every audit
