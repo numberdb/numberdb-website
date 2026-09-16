@@ -4051,3 +4051,24 @@ before concluding that the site is down. If it answers, carry on directly.
 
 Evidence: 2026-09-16, about 19:10 UTC; six retries through the proxy each
 returned `000`, and the direct request returned 200.
+
+## Large `/preview?table=` queries can return 400
+
+What happened: during the T281 repair, rendering the full current table YAML
+through `/preview?table=...` returned HTTP 400. A prose-only piece of about
+3.9 KB, and later the updated comments piece of about 2.5 KB, hit the same
+refusal. Smaller pieces with the same document shape and a minimal `Numbers`
+section rendered normally, and the live `/T281` page rendered normally after
+the API write.
+
+What to do instead: when a draft is private and the full preview URL returns
+400, split the YAML into sections that still include enough `Parameters` and
+`Numbers` for `table_context` to draw the page, or fetch the live page once the
+draft is visible to the key-holder. Treat a 400 here as a preview transport
+limit, not as evidence that the table YAML is invalid.
+
+Evidence: 2026-09-16 T281 repair. `/tmp/t281_preview.py` returned HTTP 400 for
+the full 4.7 KB API document; `/tmp/t281_preview_pieces.py` rendered the
+formula, entry, similar-table and data-property pieces; and
+`/tmp/t281_preview_comments_split.py` rendered the longer comments after
+splitting them into two chunks.
