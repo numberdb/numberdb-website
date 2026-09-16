@@ -1,12 +1,8 @@
 Title: Kostka–Foulkes polynomials $K_{\lambda\mu}(t)$
 Definition: >-
-  For partitions $\lambda$ and $\mu$ of the same positive integer, with
-  $\lambda$ dominating $\mu$, the Kostka-Foulkes polynomial
-  $K_{\lambda\mu}(t)$ CITE{WikiKostka} is the coefficient in
-  $s_\lambda = \sum_\nu K_{\lambda\nu}(t)P_\nu(x;t)$, where $s_\lambda$ is
-  the HREF{Schur_polynomials}[Schur polynomial] and $P_\nu(x;t)$ is the
-  Hall-Littlewood polynomial CITE{WikiHallLittlewood} in Macdonald's $P$
-  normalisation.
+  The Kostka-Foulkes polynomial $K_{\lambda\mu}(t)$ is the coefficient of
+  $P_\mu(x;t)$ in the Hall-Littlewood expansion CITE{WikiHallLittlewood} of
+  the Schur polynomial $s_\lambda$ CITE{WikiKostka}.
 Parameters:
   lambda:
     type: Symbolic
@@ -19,8 +15,9 @@ Parameters:
     display: $\mu$
     constraints: a partition of $|\lambda|$ dominated by $\lambda$
 Comments: >-
-  If $\lambda$ does not dominate $\mu$, then $K_{\lambda\mu}(t)=0$; such
-  pairs are not entries in this table.
+  The Hall-Littlewood polynomial $P_\mu(x;t)$ is taken in Macdonald's $P$
+  normalisation. If $\lambda$ does not dominate $\mu$, then
+  $K_{\lambda\mu}(t)=0$; such pairs are not entries in this table.
 Formulas:
   formula-transition: >-
     $s_\lambda = \sum_\mu K_{\lambda\mu}(t)P_\mu(x;t)$, with
