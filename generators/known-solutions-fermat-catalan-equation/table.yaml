@@ -1,0 +1,119 @@
+# Draft document for T279, built from numberdb-data issue #149.
+# Created as a draft through the API with X-Draft: yes, filled by generate.py
+# beside it, and offered for review. Publishing is a person's act.
+Title: Known solutions of the Fermat-Catalan equation $x^p+y^q=z^r$
+Definition: >-
+  Known coprime positive-integer solutions of the Fermat-Catalan equation
+  $x^p+y^q=z^r$ CITE{Sikora2024}, with $xyz>1$,
+  $\frac1p+\frac1q+\frac1r<1$ and $x^p<y^q$. The stored integers $x$, $y$,
+  $z$ and $z^r$ are parts of one solution.
+Parameters:
+  sum:
+    type: Z
+    title: sum
+    display: $z^r$
+    constraints: >-
+      a perfect power $z^r$ from a coprime solution of $x^p+y^q=z^r$ with
+      $xyz>1$ and $\frac1p+\frac1q+\frac1r<1$
+    values:
+      81: $2^5+7^2=3^4$
+      512: $13^2+7^3=2^9$
+      5041: $2^7+17^3=71^2$
+      14884: $3^5+11^4=122^2$
+      3805914951397: $33^8+1549034^2=15613^3$
+      4902227890625: $1414^3+2213459^2=65^7$
+      235260548044817: $9262^3+15312283^2=113^7$
+      443689062789184: $17^7+76271^3=21063928^2$
+      902576261010649: $43^8+96222^3=30042907^2$
+  part:
+    type: Symbolic
+    title: part
+    show-in-parameter-list: 'no'
+    values:
+      x: $x$
+      y: $y$
+      z: $z$
+      sum: $z^r$
+Comments:
+  comment-order: >-
+    The summands are ordered by size, so $x^p<y^q$. Thus the solution with
+    $z^r=512$ is written here as $13^2+7^3=2^9$, although some sources list
+    the two summands in the other order.
+  comment-exponents: >-
+    The exponents $p$, $q$ and $r$ are shown in the displayed solution label
+    and in each entry comment, rather than stored as rows. They are small
+    integers and would not identify this family in a number search.
+  comment-catalan-family: >-
+    The infinite family $1^p+2^3=3^2$ with $p>6$ gives the OEIS A214618 term
+    $9$ CITE{OEIS214618}. It is not stored as entries because $p$ is unbounded
+    and the integers $1$, $2$, $3$, $8$ and $9$ do not identify one solution.
+Formulas:
+  formula-equation: >-
+    For every stored solution, $x^p+y^q=z^r$, $\gcd(x,y,z)=1$ and
+    $\frac1p+\frac1q+\frac1r<1$.
+Similar tables:
+  - table: HREF{T278}[Good examples of Hall's conjecture]
+    relation: records another family where two perfect powers nearly coincide
+  - table: HREF{Abc-triples_of_high_quality}[$abc$-triples of high quality]
+    relation: >-
+      stores high-quality $abc$-triples, and the $abc$ conjecture would imply
+      the Fermat-Catalan conjecture
+  - table: HREF{Abc-triples_of_high_merit}[$abc$-triples of high merit]
+    relation: stores the refinement of $abc$ quality by merit in the same circle of conjectures
+  - table: HREF{Number_of_p-smooth_abc_triples}[Number of $p$-smooth $abc$-triples]
+    relation: counts a finite search space for another form of the $abc$ equation
+Links:
+  WikiFermatCatalan:
+    title: "Wikipedia: Fermat-Catalan conjecture"
+    url: https://en.wikipedia.org/wiki/Fermat%E2%80%93Catalan_conjecture
+  OEIS214618:
+    title: "OEIS A214618"
+    url: https://oeis.org/A214618
+  MathWorldFermatCatalan:
+    title: "MathWorld: Fermat-Catalan Conjecture"
+    url: https://mathworld.wolfram.com/Fermat-CatalanConjecture.html
+References:
+  Sikora2024:
+    bib: >-
+      Adam S. Sikora, Fermat-Catalan and Tijdeman-Zagier Conjectures for
+      Products, 2024.
+    arxiv: '2410.21552'
+  DarmonGranville:
+    bib: >-
+      Henri Darmon and Andrew Granville, On the equations $z^m=F(x,y)$ and
+      $Ax^p+By^q=Cz^r$, Bulletin of the London Mathematical Society 27 (1995),
+      513-543.
+    doi: 10.1112/blms/27.6.513
+    mr: '1348707'
+Keywords:
+  - Fermat-Catalan conjecture
+  - generalized Fermat equation
+  - Beal conjecture
+  - Tijdeman-Zagier conjecture
+  - x^p+y^q=z^r
+Tags:
+  - number theory
+  - abc conjecture
+Data properties:
+  type: Z
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds the nine known solutions with $xyz>1$ listed in CITE{Sikora2024};
+    Sikora's 2024 search found no other coprime solution with
+    $\min(p,q,r)\leq113$ and $x^p,y^q,z^r<M_{\min(p,q,r)}$, where
+    $M_2=2^{71}$, $M_3=2^{80}$, $M_4=2^{100}$ and $M_d=2^{113}$ for
+    $5\leq d\leq113$
+  sources:
+    - CITE{Sikora2024}
+    - CITE{OEIS214618}
+    - CITE{WikiFermatCatalan}
+    - CITE{MathWorldFermatCatalan}
+  rigour details: >-
+    Every stored value is an exact integer. The generator checks each identity,
+    each coprimality condition and each exponent inequality with integer
+    arithmetic. It also checks the stored sums against the OEIS A214618 b-file
+    after removing its first term $9$, which comes from the family
+    $1^p+2^3=3^2$.
+Display properties:
+  number-header: $x$, $y$, $z$, or $z^r$
