@@ -218,6 +218,23 @@ itself. For API reads of private drafts, reading the key from stdin and fetching
 inside the Sage script is usually cleaner than carrying a second temporary
 file alongside it.
 
+## Do not combine a heredoc script with an API key on stdin
+
+What happened: an API edit sender was run as a Python heredoc while also
+redirecting the NumberDB key into stdin. The redirection won: Python read the
+key as its program text instead of running the heredoc, failed with a syntax
+error, and echoed part of the token in the traceback before any HTTP request
+was made.
+
+What to do instead: when a script must read the key from stdin, put the script
+in `/tmp` and run `cat "$NUMBERDB_KEY_FILE" | python3 /tmp/script.py`, or keep
+the code in a `python3 -c '...'` argument that reads `sys.stdin`. Do not use
+`python3 - <<'PY' ... PY` for a program that also needs stdin for the key.
+
+Evidence: T271 repair, 2026-09-16. The corrected sender lived at
+`/tmp/t271_post_edit.py` and the API accepted the edit through
+`cat "$NUMBERDB_KEY_FILE" | python3 /tmp/t271_post_edit.py`.
+
 Evidence: `/tmp/check_t267.py`, 2026-09-16, failed on
 `/tmp/T267-live.json`; the self-contained version fetched
 `https://numberdb.org/api/table?id=T267` with the key from stdin and then
