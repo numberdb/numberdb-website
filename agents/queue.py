@@ -263,9 +263,15 @@ def next_table(prefer=None):
 	five unbuilt while newer batches were screened and built past it.
 
 	So the order is: the family named by `prefer`; then families with work
-	already done in them, oldest screening first, because the oldest debt is
-	the one nobody will come back to; then untouched families, newest first,
-	since a fresh screening is the most likely to still be true.
+	already done in them; then the rest -- and both by oldest screening
+	first, because the oldest debt is the one nobody will come back to. A
+	family nobody has started is a leftover too: #138 was screened on
+	2026-09-12 and was still waiting four days later while two families
+	screened after it went ahead, which is how the first pile got made.
+
+	What guards against building a stale plan is not the order but the
+	screening date on the family and the cheap re-check a build runs before
+	it spends anything.
 	"""
 	open_ones = [f for f in families() if waiting(f)]
 	if not open_ones:
@@ -275,11 +281,10 @@ def next_table(prefer=None):
 			if family['number'] == int(prefer):
 				return family, waiting(family)[0]
 
-	half_built = sorted((f for f in open_ones if started(f)),
-	                    key=lambda f: (f['screened'] or '', f['number']))
-	if half_built:
-		return half_built[0], waiting(half_built[0])[0]
-	return open_ones[0], waiting(open_ones[0])[0]
+	by_age = sorted(open_ones, key=lambda f: (f['screened'] or '', f['number']))
+	half_built = [f for f in by_age if started(f)]
+	first = (half_built or by_age)[0]
+	return first, waiting(first)[0]
 
 
 #---------------------------------------------------------------- the commands
