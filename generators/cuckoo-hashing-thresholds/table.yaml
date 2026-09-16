@@ -6,9 +6,7 @@ Definition: >-
   Let $H_{n,\lfloor cn\rfloor,k}$ be the random $k$-uniform hypergraph
   CITE{WikiHypergraph} on $n$ vertices. The number $c^*_{k,\ell}$ is the
   threshold density for $\ell$-orientability of
-  $H_{n,\lfloor cn\rfloor,k}$, equivalently the load threshold for offline
-  cuckoo hashing CITE{WikiCuckoo} with $k$ choices and bucket capacity $\ell$
-  CITE{FKP} CITE{DGMMPR}.
+  $H_{n,\lfloor cn\rfloor,k}$ CITE{FKP}.
 Keywords: orientability threshold, load threshold, multiple-choice hashing, balanced allocation
 Parameters:
   k:
@@ -25,7 +23,9 @@ Comments:
   comment-orientation: >-
     An $\ell$-orientation assigns each edge to one of its vertices so that no
     vertex receives more than $\ell$ edges. In hashing language, edges are
-    keys and vertices are buckets.
+    keys and vertices are buckets, so this is the load threshold for offline
+    cuckoo hashing CITE{WikiCuckoo} with $k$ choices and bucket capacity
+    $\ell$ CITE{DGMMPR}.
   comment-conventions: >-
     The density is $c=m/n$, keys per bucket. The average hypergraph degree is
     $kc$, and the fraction of bucket capacity used is $c/\ell$. Dietzfelbinger,
@@ -91,7 +91,7 @@ References:
       and M. Rink, Tight thresholds for cuckoo hashing via XORSAT, Proceedings
       of ICALP 2010, Lecture Notes in Computer Science 6198, 213-225.
     doi: 10.1007/978-3-642-14165-2_19
-    arxiv: 0912.0287
+    arxiv: '0912.0287'
   CainSandersWormald:
     bib: >-
       J. A. Cain, P. Sanders and N. Wormald, The random graph threshold for
@@ -100,7 +100,6 @@ References:
       Discrete Algorithms (SODA 2007), 469-476.
 Tags:
   - probability theory
-  - algorithms
   - combinatorics
 Data properties:
   type: R
