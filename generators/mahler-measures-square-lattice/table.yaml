@@ -1,0 +1,95 @@
+# The table document for numberdb.org/T282. It was created as a draft
+# through the API (X-Draft: yes) and is filled by generate.py beside it;
+# publishing is a person's act on the site.
+Title: Mahler measures of $x+x^{-1}+y+y^{-1}+k$
+Definition: >-
+  For a nonnegative integer $k$, $m_k$ is the logarithmic Mahler measure
+  CITE{Wiki} of the Laurent polynomial $x+x^{-1}+y+y^{-1}+k$:
+  $m_k=\int_0^1\int_0^1\log|k+2\cos(2\pi s)+2\cos(2\pi t)|\,ds\,dt$.
+Parameters:
+  k:
+    type: Z
+    title: parameter
+    display: $k$
+    constraints: $k\geq0$
+Comments:
+  comment-symmetry: >-
+    Only nonnegative $k$ are listed. Replacing $x$ and $y$ by $-x$ and
+    $-y$ gives $m_{-k}=m_k$.
+  comment-family: >-
+    Boyd used this family in his study of Mahler measures and special
+    values of $L$-functions CITE{Boyd}. The case $k=1$ is the polynomial
+    whose elliptic-curve $L$-value identity was proved by Rogers and
+    Zudilin CITE{RogersZudilin}.
+Formulas:
+  formula-jensen: >-
+    Jensen's formula in the variable $y$ gives
+    $m_k=\frac{1}{2\pi}\int_0^{2\pi}
+    \operatorname{arcosh}_+\left(|k+2\cos\theta|/2\right)\,d\theta$,
+    where $\operatorname{arcosh}_+(u)=\operatorname{arcosh}(u)$ for
+    $u>1$ and is $0$ for $0\leq u\leq1$.
+  formula-large-k: >-
+    For $k>4$,
+    $m_k=\log k-\sum_{n=1}^{\infty}
+    \binom{2n}{n}^2/(2n k^{2n})$ CITE{GuttmannRogers}.
+  formula-four: >-
+    $m_4=4G/\pi$, where $G$ is Catalan's constant CITE{GuttmannRogers};
+    this is the
+    HREF{Entropy_constants_of_lattice_models#spanning-tree,square,entropy}[square-lattice spanning-tree entropy].
+Similar tables:
+  - table: HREF{Entropy_constants_of_lattice_models}[Entropy constants of lattice models]
+    relation: holds the same number $4G/\pi$ as the row $k=4$, as a square-lattice spanning-tree entropy
+Links:
+  Wiki:
+    title: "Wikipedia: Mahler measure"
+    url: https://en.wikipedia.org/wiki/Mahler_measure
+References:
+  Boyd:
+    bib: >-
+      David W. Boyd, Mahler's measure and special values of L-functions,
+      Experimental Mathematics 7 (1998), 37-82.
+    doi: 10.1080/10586458.1998.10504357
+  GuttmannRogers:
+    bib: >-
+      Anthony J. Guttmann and Mathew D. Rogers, Spanning tree generating
+      functions and Mahler measures, Journal of Physics A 45 (2012), 494001.
+    arxiv: 1207.2815
+    doi: 10.1088/1751-8113/45/49/494001
+  RogersZudilin:
+    bib: >-
+      Mathew Rogers and Wadim Zudilin, On the Mahler measure of
+      $1+X+1/X+Y+1/Y$, International Mathematics Research Notices 2014
+      (2014), 2305-2326.
+    arxiv: 1102.1153
+    doi: 10.1093/imrn/rns285
+Keywords:
+  - Mahler measure
+  - logarithmic Mahler measure
+  - Lehmer problem
+  - spanning tree entropy
+Tags:
+  - number theory
+  - special values
+  - dynamical systems
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: it holds every integer $k$ with $0\leq k\leq100$
+  rigour details: >-
+    The generator computes $m_k$ in ball arithmetic. For $k=1,2,3$ it uses
+    the one-dimensional integral from CITE{formula-jensen}, after the
+    substitution $\sin(\theta/2)=\sqrt{k}\sin(t)/2$ removes the endpoint
+    singularity. For $k=4$ it evaluates $4G/\pi$ using arb's Hurwitz zeta
+    function for $G=L(2,\chi_{-4})$. For $k\geq5$ it sums the absolutely
+    convergent series in CITE{formula-large-k}, with the remaining tail
+    bounded by a geometric majorant.
+
+    Before the draft was filled, every entry was checked against a
+    computation not used for that row: a coefficient power series for
+    $k=1,2,3$, the transformed Jensen integral for $k=4$, and direct arb
+    integration of CITE{formula-jensen} for every $5\leq k\leq100$. The
+    range $0\leq k\leq100$ measured 101 entries, a longest written value of
+    146 characters at $k=4$, and a 17.9 KB entries block.
+Display properties:
+  number-header: $m_k$
