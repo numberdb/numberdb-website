@@ -3,12 +3,10 @@
 # publishing is a person's act on the site.
 Title: Satisfiability thresholds of random $k$-SAT
 Definition: >-
-  For $k\geq3$, random $k$-SAT CITE{WikiSAT} is the random $k$-CNF model
-  with $n$ Boolean variables and $m=\lfloor\alpha n\rfloor$ clauses, each
-  clause using $k$ distinct variables and negating each literal with
-  probability $\frac12$. The number $\alpha_s(k)$ is the one-step
-  replica-symmetry-breaking cavity-method prediction for the clause-density
-  satisfiability threshold CITE{MMZ}.
+  For $k\geq3$, random $k$-SAT CITE{WikiSAT} is the random $k$-CNF model at
+  clause density $\alpha=m/n$. The number $\alpha_s(k)$ is the one-step
+  replica-symmetry-breaking cavity-method prediction for its satisfiability
+  threshold CITE{MMZ}.
 Keywords: random SAT, random Boolean formulas, cavity method, survey propagation, phase transition
 Parameters:
   k:
@@ -75,7 +73,7 @@ References:
     arxiv: '1411.0650'
 Tags:
   - statistical mechanics
-  - complexity
+  - probability theory
 Data properties:
   type: R
   rigour: heuristic
