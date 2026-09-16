@@ -3431,3 +3431,24 @@ Evidence: 2026-09-16, T255 critique. Five chunks with `Numbers: []` gave the
 error; the same five with three M11 entries added rendered Definition,
 Parameters, Comments, Formulas, Programs, Similar tables, Links, References and
 Data properties normally.
+
+## `agents/sage.sh` forwards only its named environment variables
+
+What happened: a build of T256 set `NUMBERDB_CHECK_ONLY=1` around
+`agents/sage.sh generators/exceptional-lie-representation-dimensions/generate.py`.
+The generator's integrity checks ran, but then the script continued into
+`verify()` and failed with `Table with id 'T256' does not exist`, because the
+draft was private and no key had been passed. The cause was not the generator:
+`agents/sage.sh` forwards only the environment variables named in its
+`docker run` command, such as `NUMBERDB_KEY_FROM_STDIN` and `NUMBERDB_PUBLISH`.
+Arbitrary variables from the caller are not inherited inside the container.
+
+What to do instead: for one-off modes that are not already forwarded by
+`agents/sage.sh`, mount a tiny scratch runner that imports the generator and
+calls the wanted function directly, or add the variable to the wrapper in a
+deliberate edit. Do not read a failed mode flag as evidence that the generator
+ignored it.
+
+Evidence: 2026-09-16, T256. The first integrity run printed "integrity checks
+passed for 599 rows" and then failed in `generator.verify`; `/tmp/run_integrity_exceptional_lie.py`
+called `run_integrity_checks()` directly through the wrapper and exited 0.
