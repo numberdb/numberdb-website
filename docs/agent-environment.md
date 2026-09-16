@@ -3985,3 +3985,23 @@ run that escapes cannot be stopped from here; say so in the output.
 
 Evidence: `/tmp/ds4b.out` ends `M=4` / `EXIT 124`; `ps aux | grep ds4.py` at
 15:40 listed PIDs 717948, 717950 and 717992 (58:28 CPU).
+
+## Link titles are not HTML-escaped on rendered table pages
+
+What happened: T278's `Links.ElkiesHall.title` used mathematical inequalities
+with raw `<` characters:
+`List of integers x,y with x<10^18 and 0<|x^3-y^2|<sqrt(x)`. The rendered
+anchor put that title directly into HTML, so the browser treated `<sqrt(x)` as
+a tag and swallowed the end of the link text. The API document was valid and
+the audit did not report it; the fault only showed on the rendered page or
+preview.
+
+What to do instead: until the renderer escapes link titles, avoid raw `<` and
+`>` in `Links` titles. Spell inequalities in words, or use a shorter source
+title that does not contain angle brackets. A site fix should escape link
+titles before inserting them into anchor text.
+
+Evidence: `agents/critiques/T278.md` records the broken anchor as rendered.
+The T278 repair on 2026-09-16 changed the title to `Noam D. Elkies: Hall's
+conjecture examples`; `/tmp/t278-preview-links.html` then rendered a closed
+anchor with that exact text.
