@@ -51,6 +51,8 @@ Programs:
       {g: max(root for root, multiplicity in p.roots(RR))
        for g, p in polynomials.items()}
 Similar tables:
+  - table: HREF{Growth_rates_of_hyperbolic_Coxeter_triangle_groups}[Growth rates of hyperbolic Coxeter triangle groups]
+    relation: holds several of the same Salem numbers as growth rates of Coxeter reflection groups, indexed by Coxeter diagram rather than by surface genus
   - table: HREF{T284}[Salem numbers less than $1.3$]
     relation: holds the same Salem numbers as the rows $g=4$ and $g=5$, indexed by their minimal polynomials rather than by genus
   - table: HREF{T171}[Lyapunov exponents of classical chaotic systems]
@@ -65,7 +67,7 @@ References:
       Erwan Lanneau and Jean-Luc Thiffeault, On the minimum dilatation of
       pseudo-Anosov homeomorphisms on surfaces of small genus, Annales de
       l'Institut Fourier 61 (2011), 105-144.
-    arxiv: 0905.1302
+    arxiv: '0905.1302'
     doi: 10.5802/aif.2599
 Keywords:
   - pseudo-Anosov map
