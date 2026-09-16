@@ -3958,3 +3958,30 @@ fix would be to strip math from the prose with the same rule before matching.
 Evidence: 2026-09-16, T274 repair. Before the repair, `comment-capacity-one`
 plainly named random `$k$-XORSAT` and `comment-core` named the
 `$(\ell+1)$-core`; the audit answered `{"findings": [], "clean": true}`.
+
+## `sage.sh`'s own `timeout 1800` did not stop a Sage computation, and neither did killing the client
+
+What happened: a Gröbner-basis run (`/tmp/ds4.py`, Davenport–Stothers pairs of
+degree $M=4$, 2026-09-16, table-ideas) was started at 14:41 as
+`timeout 3300 agents/sage.sh /tmp/ds4.py`. At 15:37 the outer `timeout` had
+fired (`EXIT 124`), but `ps` still showed `timeout 1800 docker run --rm -i
+--name numberdb-agent-run-...` and, inside it, `python3 -u /work/ds4.py` at
+99% CPU with 58 minutes of CPU time -- so the wrapper's own 30-minute limit had
+passed half an hour earlier without stopping it. `kill` on the `timeout` and
+`docker run` client PIDs returned no error and changed nothing.
+
+Two things appear to combine. `timeout` sends SIGTERM to `docker run`, which
+forwards it to the container, and a Sage process busy inside Singular does not
+act on it; `timeout` sends no SIGKILL unless given `-k`. And the outer
+`timeout` killed `sage.sh` by signal, and bash does not run an `EXIT` trap for a
+TERM it does not trap, so `cleanup`'s `docker rm -f` never ran.
+
+What to do instead: do not rely on either timeout to bound a heavy algebraic
+computation. Measure one smaller case first, and give the script its own
+internal limit (Singular's `alarm`, or `cysignals.alarm`) that raises inside
+Python. The fix in `sage.sh` would be `timeout -k 30 $TIMEOUT docker run ...`
+and `trap cleanup EXIT INT TERM`. From an agent run, `docker` is refused, so a
+run that escapes cannot be stopped from here; say so in the output.
+
+Evidence: `/tmp/ds4b.out` ends `M=4` / `EXIT 124`; `ps aux | grep ds4.py` at
+15:40 listed PIDs 717948, 717950 and 717992 (58:28 CPU).
