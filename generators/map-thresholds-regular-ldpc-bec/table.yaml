@@ -1,0 +1,129 @@
+# The table document for numberdb-data#148, proposal 5. Created as draft T276
+# through the API (X-Draft: yes) and filled by generate.py beside it;
+# publishing is a person's act on the site.
+Title: MAP thresholds of regular LDPC codes on the binary erasure channel
+Definition: >-
+  For integers $3\leq l<r$, the regular $(l,r)$ low-density parity-check
+  ensemble CITE{WikiLDPC} has variable degree $l$ and check degree $r$.
+  The number $\epsilon^{\mathrm{MAP}}_{l,r}$ is the binary erasure channel
+  CITE{WikiBEC} erasure probability at the maximum a posteriori decoding
+  threshold of this ensemble CITE{KRU}.
+Keywords: Gallager codes, density evolution, optimal decoding, coding theory, threshold saturation
+Parameters:
+  l:
+    type: Z
+    title: variable degree
+    display: $l$
+    constraints: $l\geq3$
+  r:
+    type: Z
+    title: check degree
+    display: $r$
+    constraints: $r>l$
+Comments:
+  comment-conventions: >-
+    The value stored here is the channel erasure probability $\epsilon$, not
+    the constraint density. The parity-check density of the ensemble is
+    $m/n=l/r$, and its design rate is $1-l/r$ when the checks are independent.
+  comment-l2: >-
+    There are no $l=2$ rows. The table follows the non-cycle regular
+    ensembles with $l\geq3$ used in the analytic threshold characterization of
+    CITE{KRU}.
+  comment-root: >-
+    At the MAP threshold, density evolution has a nonzero fixed point
+    $x^{\mathrm{MAP}}_{l,r}$ in $(0,1)$; each entry comment gives this root.
+  comment-maxwell: >-
+    The root condition is the Maxwell construction for the extended
+    belief-propagation EXIT curve CITE{MMU}. Kudekar, Richardson and Urbanke
+    give the regular-ensemble analytic characterization used here as
+    Lemma 4 CITE{KRU}.
+Formulas:
+  formula-density-evolution: >-
+    The density-evolution fixed point equation on the binary erasure channel
+    is $x=\epsilon(1-(1-x)^{r-1})^{l-1}$ CITE{KRU}.
+  formula-threshold-curve: >-
+    For $0<x\leq1$, write
+    $\epsilon(x)=x/(1-(1-x)^{r-1})^{l-1}$.
+  formula-root: >-
+    The root $x^{\mathrm{MAP}}_{l,r}$ is the solution in $0<x<1$ of
+    $p^{\mathrm{MAP}}_{l,r}(x)=0$, where
+    $p^{\mathrm{MAP}}_{l,r}(x)=x+\frac1r(1-x)^{r-1}
+    (l+l(r-1)x-rx)-\frac lr$ CITE{KRU}.
+  formula-trial-entropy: >-
+    Equivalently,
+    $\epsilon(x)(1-(1-x)^{r-1})^l+lx(1-x)^{r-1}
+    -\frac lr(1-(1-x)^r)=0$ at $x=x^{\mathrm{MAP}}_{l,r}$.
+  formula-threshold: >-
+    The threshold is
+    $\epsilon^{\mathrm{MAP}}_{l,r}=\epsilon(x^{\mathrm{MAP}}_{l,r})$
+    CITE{KRU}.
+Programs:
+  program-mpmath:
+    language: Python
+    code: |-
+      from mpmath import mp
+      mp.dps = 50
+      l, r = 3, 6
+      def p(x):
+          y = 1 - x
+          return x + y**(r - 1) * (l + l * (r - 1) * x - r * x) / r - mp.mpf(l) / r
+      lo, hi = mp.mpf("1e-30"), mp.mpf(1)
+      for _ in range(200):
+          mid = (lo + hi) / 2
+          if p(mid) < 0:
+              lo = mid
+          else:
+              hi = mid
+      x = (lo + hi) / 2
+      print(x / (1 - (1 - x)**(r - 1))**(l - 1))
+Similar tables:
+  - table: HREF{T275}[belief-propagation thresholds of regular LDPC codes on the binary erasure channel]
+    relation: thresholds for iterative decoding of the same regular ensembles
+Links:
+  WikiLDPC:
+    title: 'Wikipedia: Low-density parity-check code'
+    url: https://en.wikipedia.org/wiki/Low-density_parity-check_code
+  WikiBEC:
+    title: 'Wikipedia: Binary erasure channel'
+    url: https://en.wikipedia.org/wiki/Binary_erasure_channel
+References:
+  KRU:
+    bib: >-
+      S. Kudekar, T. Richardson and R. Urbanke, Threshold saturation via
+      spatial coupling: why convolutional LDPC ensembles perform so well over
+      the BEC, IEEE Transactions on Information Theory 57 (2011), 803-834.
+    doi: 10.1109/TIT.2010.2095072
+    arxiv: '1001.1826'
+  MMU:
+    bib: >-
+      C. Measson, A. Montanari and R. Urbanke, Maxwell construction: the
+      hidden bridge between iterative and maximum a posteriori decoding.
+    arxiv: cs/0506083
+Tags:
+  - probability theory
+Data properties:
+  type: R
+  rigour: proven
+  sources:
+    - CITE{KRU}
+    - CITE{MMU}
+  complete: 'no'
+  complete-note: >-
+    it holds $\epsilon^{\mathrm{MAP}}_{l,r}$ for every pair with
+    $3\leq l<r\leq12$
+  rigour details: >-
+    Each entry is computed in ball arithmetic with 64 guard bits beyond the
+    100 digits written. The root $x^{\mathrm{MAP}}_{l,r}$ is enclosed by
+    bisection on the sign of $p^{\mathrm{MAP}}_{l,r}(x)$ in the interval
+    $(0,1)$, down to a bracket of half-width $10^{-106}$ whose ends are
+    checked to give opposite signs; the value of
+    $x/(1-(1-x)^{r-1})^{l-1}$ on that bracket is the stored ball. The
+    generator also checks every row against the equivalent trial-entropy
+    equation in CITE{formula-trial-entropy}, compares every row with an
+    mpmath bisection, compares the $(3,6)$ row with the printed value
+    $0.488151$ in CITE{KRU}, and checks
+    $\epsilon^{\mathrm{BP}}_{l,r}<\epsilon^{\mathrm{MAP}}_{l,r}<l/r$
+    against HREF{T275}.
+Display properties:
+  number-header: $\epsilon^{\mathrm{MAP}}_{l,r}$
+Numbers: []
