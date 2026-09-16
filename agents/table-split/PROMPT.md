@@ -26,6 +26,14 @@ so:
   not give $C_n(q,t)$ back, and the Carlitz $q$-Catalan numbers are their own
   sequence with their own literature. A table and the thing you get by
   setting one of its variables to a number are two tables.
+
+  Invertible is necessary and not sufficient. Two forms that do determine
+  each other are still two tables when their **parameters differ** (the
+  Krawtchouk polynomials by integer alphabet size against rational $p$), when
+  **one is far more compact and can therefore be carried further** (the
+  $h^*$-polynomial of a Birkhoff polytope writes 134 characters where the
+  Ehrhart polynomial writes 381, and for the permutohedra it is the other way
+  round), or when **the conversion costs more than the storage**.
 * **A parameter that is an argument**, not a name: $\nu = 0, 1, 2$.
 
 The question to ask: does the parameter name *what the number is of*, or

@@ -188,6 +188,25 @@ literature, and neither one gives $C_n(q,t)$ back. Two tables holding the same
 numbers in two units are one table; a table and the thing you get by setting
 one of its variables to 1 are two.
 
+**Invertible is necessary and not sufficient.** Three things still argue for
+two tables when each form does determine the other:
+
+* **The parameters differ.** The Krawtchouk polynomials of the Hamming scheme
+  are indexed by an integer alphabet size $q$; in the Askey normalisation by a
+  rational $p$. Each is a rescaling of the other where they meet, and they
+  meet only on a subset, so neither table contains the other.
+* **One form is far more compact, so it can be carried further.** Measured
+  over the four Ehrhart pairs, as mean characters per stored value: the
+  Birkhoff polytopes write 381 for the Ehrhart polynomial against 134 for the
+  $h^*$-polynomial, the hypersimplices 352 against 151, the root polytopes 223
+  against 140 -- and the permutohedra the other way round, 180 against 300.
+  Which form is small depends on the family, so one table holding both reaches
+  a different range in each, and a range that is ragged for this reason is a
+  sign of two tables rather than of one unfinished.
+* **The conversion costs more than the storage.** A closed form both ways is
+  the case for one table; a transform you would have to compute to answer a
+  reader holding the other form is not.
+
 **The question to ask about a parameter: does it name *what the number is of*,
 or *which quantity is taken of it*?** The first indexes a family and belongs in
 one table -- one Hausdorff dimension for each of forty named sets, one Ehrhart
