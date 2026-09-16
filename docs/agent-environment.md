@@ -3402,10 +3402,30 @@ page should report it as a renderer fault and not try to fix it by renaming the
 key in the table — the key is the one `limits.py` looks for, and renaming it
 would make the table breach its soft limit with no stated reason.
 
-Evidence: 2026-09-16, T255 critique. `grep -rl "Size exception"
-generators/*/table.yaml` finds only T255's, so this may be the first table in
-the repository to render one. `/preview` of its `Data properties` block, with
-`Links` and `References` included, shows the string above.
+Evidence: 2026-09-16, T255 critique. `grep -rl "Size exception" generators/*/table.yaml`
+finds only T255's, so this may be the first table in the repository to render
+one. `/preview` of its `Data properties` block, with `Links` and `References`
+included, shows the string above.
+
+## `agents/sage.sh` returns 1 for a successful Sage script that prints nothing
+
+What happened: while repairing T257, the final check extracted the stored
+`Programs` snippet and ran it with `agents/sage.sh /tmp/T257_after_program.py`.
+The Sage code imported cleanly and only evaluated two polynomial expressions,
+so `sage -python` had no stdout. The wrapper pipes the container's output
+through `grep --line-buffered -viE ...`; when there are no input lines, `grep`
+exits 1, and that is the status the caller sees. The run therefore looked like
+a failed Sage program while printing no traceback at all.
+
+What to do instead: when checking a snippet or smoke test through
+`agents/sage.sh`, make it print a value or an explicit `OK`. For a table
+`Programs` snippet this is a better reader experience too: a copied script
+should show the value it computed.
+
+Evidence: 2026-09-16, T257 repair. `/tmp/T257_after_program.py` with two bare
+`poincare_from_degrees(...)` calls exited 1 with no output through the wrapper;
+the same code with `print(...)` around both calls exited 0 and printed the
+stored $F_4$ and $I_2(5)$ polynomials.
 
 ## `/preview?table=` crashes on a document whose `Numbers` is empty
 
