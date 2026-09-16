@@ -137,6 +137,15 @@ class TheSkillSaysOneTableHoldsOneQuantity(TestCase):
 		self.assertIn('ehrhart | h-star', self.body)
 		self.assertIn('value', self.body)
 
+	def test_a_convention_has_to_be_invertible(self):
+		#The exception was stated as "one object in two conventions", and a
+		#specialisation reads like one: the q,t-Catalan numbers arrived with
+		#the Carlitz and MacMahon specialisations behind a parameter. You
+		#cannot get C_n(q,t) back from C_n(q,1), so they are not the same
+		#number written twice -- they are three sequences.
+		self.assertIn('invertible', self.body)
+		self.assertIn('specialisation', self.body)
+
 	def test_it_keeps_the_exceptions_that_are_real(self):
 		#Without these the rule reads as "never use a second parameter", and
 		#the corpus is full of tables that are right to have one.

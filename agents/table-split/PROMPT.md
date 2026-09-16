@@ -20,7 +20,12 @@ so:
   beside it.
 * **One number in two conventions.** $E_1$ and $\operatorname{Ei}$, $\beta$
   and $e^\beta$, a quantity and its logarithm, the same volume in three
-  normalisations. A reader holding either should land in the same place.
+  normalisations. A reader holding either should land in the same place --
+  which is possible only when each form determines the other, so **the test
+  is invertibility**. A specialisation is not a convention: $C_n(q,1)$ does
+  not give $C_n(q,t)$ back, and the Carlitz $q$-Catalan numbers are their own
+  sequence with their own literature. A table and the thing you get by
+  setting one of its variables to a number are two tables.
 * **A parameter that is an argument**, not a name: $\nu = 0, 1, 2$.
 
 The question to ask: does the parameter name *what the number is of*, or
