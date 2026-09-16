@@ -232,6 +232,13 @@ the same paragraph -- $C_n(q,1)$ and $C_n(q,q^{-1})$ are the Carlitz and
 MacMahon $q$-Catalan numbers, each with its own literature, and neither gives
 $C_n(q,t)$ back. Propose them as separate tables that cite each other.
 
+Invertible is necessary and not sufficient. Propose two tables anyway when the
+two forms are **indexed differently** (integer alphabet size against rational
+$p$, for the Krawtchouk polynomials), when **one is far more compact than the
+other** and can be carried to a range the other cannot reach, or when the
+conversion is expensive. Say which of these you are relying on, and how far
+each form could be computed.
+
 ## A batch may need a tag that does not exist
 
 You propose five tables at once, so you are the one who can see that they

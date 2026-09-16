@@ -146,6 +146,15 @@ class TheSkillSaysOneTableHoldsOneQuantity(TestCase):
 		self.assertIn('invertible', self.body)
 		self.assertIn('specialisation', self.body)
 
+	def test_invertible_is_not_the_end_of_the_question(self):
+		#Two forms that do determine each other are still two tables when the
+		#parameters differ, or when one is compact enough to be carried
+		#further than the other: the h*-polynomial of a Birkhoff polytope
+		#writes 134 characters where the Ehrhart polynomial writes 381, and
+		#for the permutohedra it is the other way round.
+		self.assertIn('not sufficient', self.body)
+		self.assertIn('compact', self.body)
+
 	def test_it_keeps_the_exceptions_that_are_real(self):
 		#Without these the rule reads as "never use a second parameter", and
 		#the corpus is full of tables that are right to have one.
