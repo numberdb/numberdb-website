@@ -3577,3 +3577,89 @@ Evidence: 2026-09-16, T259 critique. Same `rigour details`, two chunks:
 `{Title, Data properties, Links, References, Numbers}` renders `formula-charge`;
 `{Title, Data properties, Formulas, Numbers}` renders `(2)` inside
 `<a class="CITE" href="#formula-charge">`.
+
+## The SOCKS proxy was refusing connections, and this box reaches numberdb.org directly
+
+What happened: the first `curl -s --socks5-hostname 127.0.0.1:1080
+https://numberdb.org/skill` of the run succeeded; the next one, seconds later,
+failed with `connect to 127.0.0.1 port 1080 ... Connection refused`, and so did
+every retry. This is not the dead-tunnel failure the notes above describe --
+that one keeps listening on 1080 and times out. `ps` showed no `ssh -N -D`
+process at all: the tunnel was gone rather than hung, and nothing this account
+may run can restart it (`ssh` is refused to an agent run).
+
+It did not matter, because this box does not need it. `ALL_PROXY` is empty in
+the run's environment and `NUMBERDB_REMOTE=local`, and plain
+`curl https://numberdb.org/T260` answers. The note "Python does not see the
+proxy that curl sees" and the `use_socks_proxy_if_set()` bootstrap in
+`agents/api_edit.py` are both written for a machine that reaches the site only
+through the tunnel; on the build box `urllib` with no proxy at all works, which
+is what `/tmp/render260b.py` used for every request in this run.
+
+What to do instead: when the proxy refuses (`000`, "Connection refused", no
+`ssh -N -D` in `ps`), try the request without it before reporting the site
+unreachable. Check `env | grep -i proxy` first: an empty `ALL_PROXY` on this
+host means direct is the intended route and the `--socks5-hostname` in the
+stage prompts is inherited from the workstation setup, not a requirement here.
+
+Evidence: 2026-09-16, T260 critique. `curl --socks5-hostname` to `/T260`:
+`HTTP 000` three times, `Failed to connect to 127.0.0.1 port 1080`. The same
+URL without the flag: `HTTP 404` with an 11533-byte body, which is the draft
+refusal and means the request arrived.
+
+## Anonymous reads are rate limited per IP, and one corpus sweep spends the hour for everything else on the box
+
+What happened: a survey of `HREF{}` style walked about sixty tables with
+`urllib.request.urlopen('https://numberdb.org/api/table?id=T%d')` and no
+`Authorization` header. It got through 59 and then `HTTP 429`. The next thing
+to run was a Sage check under `agents/sage.sh`, whose first line is
+`numberdb.table('T260')` -- and it died with `RateLimitError: too many
+requests; retry in 2771s`. The limit is on the address, so an anonymous sweep
+from this box locks out the container too: they share the egress IP, and
+`agents/sage.sh` passes no key unless `NUMBERDB_KEY_FROM_STDIN=1` is set.
+
+What to do instead: send the key on every corpus read, including throwaway
+ones -- `printf 'Authorization: Bearer %s' "$(cat "$NUMBERDB_KEY_FILE")" |
+curl -H @- ...` reads it from stdin and keeps it off the command line. And a
+Sage script that only needs one table's document should read a copy rather
+than call the API: `agents/sage.sh script.py /tmp/T260.json` mounts the extra
+file at `/work/T260.json`, which costs no request and survives a lockout that
+is already in force.
+
+Evidence: 2026-09-16, T260 critique. `/tmp/t260_checks.py` first run,
+`numberdb._errors.RateLimitError: too many requests; retry in 2771s`, raised
+from `numberdb/_http.py` line 160, minutes after the unauthenticated sweep.
+Authenticated `curl` to `/api/table?id=T260` answered 200 throughout.
+
+## `/preview?table=` needs a `Numbers` section, and the request line dies above about 4 KB
+
+What happened: two failures in a row while chunking T260 for rendering, each
+of which reads like something else.
+
+A chunk of `{Title, Definition}` returned 200 and rendered no table at all --
+just the banner "Error while parsing numbers: cannot access local variable
+'number_section' where it is not associated with a value". That is a Django
+`UnboundLocalError` surfaced as a message, not a YAML complaint, and it fires
+whenever the posted document has no `Numbers`. Every chunk needs at least one
+entry; one row is enough, and the parameters it is keyed under have to be in
+the chunk too.
+
+Then chunks stopped working again above a certain size: a 3894-byte URL
+answered 200, a 4136-byte one answered `400` with a 163-byte body and nothing
+in the page. That is nginx refusing the request line, not Django. The ceiling
+measured today is between those two numbers, so roughly 4 KB of URL, which for
+`Title` plus prose plus one entry is about two sections of a wordy table at a
+time. Shortening the `References` bib text to a placeholder is the cheapest
+way to buy room when the chunk needs `References` present only so that
+`CITE{}` keys resolve to numbers (see the note above).
+
+What to do instead: build every preview chunk as `Title` + `Parameters` + one
+`Numbers` row + the sections under test, keep the encoded URL under 4000
+bytes, and read a `400` with a tiny body as "too long", not as "the site
+refused the document". A `200` with the `number_section` banner means the
+chunk forgot its entries.
+
+Evidence: 2026-09-16, T260 critique. `/tmp/render260.py` (no `Numbers`): eight
+chunks, all 200, all showing the banner and no rendered table.
+`/tmp/render260b.py` (one row each): the same eight chunks render.
+URL lengths 3524 and 3894 -> 200; 4136, 4149, 4992 and 7456 -> 400.
