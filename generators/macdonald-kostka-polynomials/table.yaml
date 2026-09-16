@@ -1,0 +1,130 @@
+# Draft document for T260, built from numberdb-data issue #140.
+# Created as a draft through the API with X-Draft: yes, filled by generate.py
+# beside it, and offered for review. Publishing is a person's act.
+Title: Macdonald–Kostka polynomials $\tilde K_{\lambda\mu}(q,t)$
+Definition: >-
+  The Macdonald-Kostka polynomial $\tilde K_{\lambda\mu}(q,t)$ is the
+  coefficient of the Schur polynomial $s_\lambda$ in the expansion
+  $\tilde H_\mu(x;q,t)=\sum_\lambda \tilde K_{\lambda\mu}(q,t)s_\lambda$ of
+  the modified Macdonald polynomial $\tilde H_\mu$ CITE{HHL}.
+Parameters:
+  lambda:
+    type: Symbolic
+    title: shape
+    display: $\lambda$
+    constraints: a partition of a positive integer, other than a single row or a single column
+  mu:
+    type: Symbolic
+    title: Macdonald shape
+    display: $\mu$
+    constraints: a partition of $|\lambda|$
+Comments:
+  convention: >-
+    A partition is written as its parts, largest first, separated by commas:
+    $3,2,1$ is the partition $(3,2,1)$ of $6$. This table uses the
+    Haglund-Haiman-Loehr convention CITE{HHL}, where
+    $\tilde H_{(n)}$ has powers of $q$ and $\tilde H_{(1^n)}$ has powers of
+    $t$.
+  swapped-variables: >-
+    Some sources interchange $q$ and $t$. By CITE{formula-duality}, that
+    convention sends the row with Macdonald shape $\mu$ to the row with
+    Macdonald shape $\mu'$.
+  omitted-rows: >-
+    The single-row and single-column Schur coefficients are not stored as
+    entries. They are the closed forms in CITE{formula-edges}.
+Formulas:
+  formula-transition: >-
+    $\tilde H_\mu(x;q,t)=\sum_\lambda \tilde K_{\lambda\mu}(q,t)s_\lambda$.
+  formula-macdonald-kostka: >-
+    $\tilde K_{\lambda\mu}(q,t)=t^{n(\mu)}K_{\lambda\mu}(q,t^{-1})$, where
+    $n(\mu)=\sum_i(i-1)\mu_i$ and $K_{\lambda\mu}(q,t)$ is Macdonald's
+    two-variable Kostka coefficient CITE{SageMacdonald}.
+  formula-hall-littlewood: >-
+    $\tilde K_{\lambda\mu}(0,t)=t^{n(\mu)}K_{\lambda\mu}(t^{-1})$, where
+    $K_{\lambda\mu}(t)$ is the Kostka-Foulkes polynomial HREF{T259}.
+  formula-one-one: >-
+    $\tilde K_{\lambda\mu}(1,1)=f^\lambda$, the number of standard Young
+    tableaux of shape $\lambda$.
+  formula-hook: >-
+    For a hook shape $\lambda=(n-k,1^k)$,
+    $\tilde K_{\lambda\mu}(q,t)=e_k[B_\mu-1]$, with
+    $B_\mu=\sum_{(i,j)\in\mu}q^jt^i$ and zero-based row and column indices.
+  formula-duality: >-
+    $\tilde K_{\lambda\mu'}(q,t)=\tilde K_{\lambda\mu}(t,q)$.
+  formula-edges: >-
+    $\tilde K_{(n),\mu}(q,t)=1$ and
+    $\tilde K_{(1^n),\mu}(q,t)=q^{n(\mu')}t^{n(\mu)}$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.combinat.partition import Partition
+      from sage.combinat.sf.macdonald import qt_kostka
+
+      K = qt_kostka([3, 2, 1], [3, 2, 1])
+      q, t = K.parent().gens()
+      K.subs({t: 1/t}) * t^Partition([3, 2, 1]).weighted_size()
+Similar tables:
+  - table: HREF{T122}[Schur polynomials]
+    relation: are the basis whose coefficients are stored here
+  - table: HREF{T259}[Kostka-Foulkes polynomials]
+    relation: are the $q=0$ specialization after the change of variable in CITE{formula-hall-littlewood}
+  - table: HREF{T118}[elementary symmetric polynomials]
+    relation: give the hook-shape rows through the elementary symmetric function in CITE{formula-hook}
+Links:
+  SageMacdonald:
+    title: "SageMath: Macdonald polynomials"
+    url: https://doc.sagemath.org/html/en/reference/combinat/sage/combinat/sf/macdonald.html
+References:
+  HHL:
+    bib: >-
+      J. Haglund, M. Haiman and N. Loehr, A combinatorial formula for
+      Macdonald polynomials, J. Amer. Math. Soc. 18 (2005), 735-761.
+    doi: 10.1090/S0894-0347-05-00485-6
+    arxiv: math/0409538
+  Haiman:
+    bib: >-
+      M. Haiman, Hilbert schemes, polygraphs and the Macdonald positivity
+      conjecture, J. Amer. Math. Soc. 14 (2001), 941-1006.
+    doi: 10.1090/S0894-0347-01-00373-3
+    arxiv: math/0010246
+  Macdonald:
+    bib: >-
+      I. G. Macdonald, Symmetric Functions and Hall Polynomials, second ed.,
+      The Clarendon Press, Oxford University Press, New York, 1995.
+    mr: '1354144'
+Keywords:
+  - Kostka-Macdonald coefficients
+  - Macdonald-Kostka
+  - q,t-Kostka
+  - modified Macdonald polynomials
+  - Garsia-Haiman modules
+  - Hilbert scheme of points
+Tags:
+  - polynomial
+  - combinatorics
+  - algebra
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every nontrivial coefficient with
+    $2\leq|\lambda|=|\mu|\leq8$; the omitted single-row and single-column
+    cases are given by CITE{formula-edges}, and size $9$ would add $840$
+    stored rows, past the soft entry limit of $1200$
+  rigour details: >-
+    Every entry is an exact polynomial with integer coefficients. The
+    generator computes $t^{n(\mu)}K_{\lambda\mu}(q,t^{-1})$ using Sage's
+    `qt_kostka` CITE{SageMacdonald}, then coerces the result to
+    $\mathbb{Z}[q,t]$.
+
+    The rows are compared with the Haglund-Haiman-Loehr filling formula
+    CITE{HHL} for every Schur coefficient with $|\mu|\leq6$. They are also
+    compared with the specialization at $q=0$ to HREF{T259}[the
+    Kostka-Foulkes polynomials], with the hook formula
+    CITE{formula-hook}, with the duality CITE{formula-duality}, with the
+    edge formulas CITE{formula-edges}, and with the specialization
+    $\tilde K_{\lambda\mu}(1,1)=f^\lambda$ from the hook-length formula.
+Display properties:
+  number-header: $\tilde K_{\lambda\mu}(q,t)$
