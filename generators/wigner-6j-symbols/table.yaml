@@ -1,0 +1,118 @@
+# Draft document for T253, the Wigner 6j symbol table proposed in
+# numberdb-data#139. Publishing is a person's act.
+Title: Wigner $6j$ symbols
+Definition: >-
+  Wigner $6j$ symbols are the Wigner-convention recoupling coefficients
+  $\begin{Bmatrix}j_1&j_2&j_3\\j_4&j_5&j_6\end{Bmatrix}$ for three angular
+  momenta CITE{DLMF-6j}.
+Parameters:
+  j1:
+    type: Q
+    title: first angular momentum
+    display: $j_1$
+    constraints: $j_1$ is a nonnegative integer or half-integer
+  j2:
+    type: Q
+    title: second angular momentum
+    display: $j_2$
+    constraints: $j_2$ is a nonnegative integer or half-integer
+  j3:
+    type: Q
+    title: third angular momentum
+    display: $j_3$
+    constraints: $j_3$ is a nonnegative integer or half-integer
+  j4:
+    type: Q
+    title: fourth angular momentum
+    display: $j_4$
+    constraints: $j_4$ is a nonnegative integer or half-integer
+  j5:
+    type: Q
+    title: fifth angular momentum
+    display: $j_5$
+    constraints: $j_5$ is a nonnegative integer or half-integer
+  j6:
+    type: Q
+    title: sixth angular momentum
+    display: $j_6$
+    constraints: $j_6$ is a nonnegative integer or half-integer
+Comments:
+  comment-admissible: >-
+    The four triads $(j_1,j_2,j_3)$, $(j_1,j_5,j_6)$, $(j_4,j_2,j_6)$ and
+    $(j_4,j_5,j_3)$ satisfy the triangle inequalities and have integer sums.
+  comment-symmetry: >-
+    Entries use the lexicographically largest $(j_1,j_2,j_3,j_4,j_5,j_6)$
+    among the 24 tetrahedral symmetries of the Wigner $6j$ symbol.
+  comment-zeros: >-
+    Rows whose Wigner $6j$ symbol is zero are omitted. The all-zero symbol is
+    also omitted, since its value is $1$.
+  comment-algebraic: >-
+    Every nonzero Wigner $6j$ symbol is a rational number or a rational
+    multiple of the square root of a rational number. Many of the simplest
+    radicals are also in HREF{T35}[the table of algebraic numbers of degree 2].
+Formulas:
+  formula-racah: >-
+    The Racah $W$ coefficient satisfies
+    $\begin{Bmatrix}j_1&j_2&j_3\\j_4&j_5&j_6\end{Bmatrix}
+    =(-1)^{j_1+j_2+j_4+j_5}W(j_1j_2j_5j_4;j_3j_6)$ CITE{Wikipedia}.
+  formula-zero: >-
+    If one entry is zero, then
+    $\begin{Bmatrix}a&b&c\\b&a&0\end{Bmatrix}
+    =(-1)^{a+b+c}/\sqrt{(2a+1)(2b+1)}$ CITE{Wikipedia}.
+  formula-3j-sum: >-
+    A Wigner $6j$ symbol is a finite signed sum of products of four
+    HREF{T252}[Wigner $3j$ symbols] CITE{Wikipedia}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.functions.wigner import wigner_6j
+
+      wigner_6j(1, 1, 1, 1, 1, 1)    # 1/6
+Similar tables:
+  - table: HREF{T252}[Clebsch-Gordan coefficients and Wigner $3j$ symbols]
+    relation: Wigner $6j$ symbols are finite signed sums of products of Wigner $3j$ symbols
+  - table: HREF{T35}[Algebraic numbers of degree 2]
+    relation: the non-rational Wigner $6j$ symbols are quadratic algebraic numbers
+Links:
+  DLMF-6j:
+    title: 'DLMF 34.4: Wigner 6j symbols'
+    url: https://dlmf.nist.gov/34.4
+  Wikipedia:
+    title: 'Wikipedia: 6-j symbol'
+    url: https://en.wikipedia.org/wiki/6-j_symbol
+  Sage:
+    title: 'SageMath: Wigner, Clebsch-Gordan, Racah, and Gaunt coefficients'
+    url: https://doc.sagemath.org/html/en/reference/functions/sage/functions/wigner.html
+Keywords:
+  - Wigner 6j symbol
+  - Wigner 6-j symbol
+  - Racah W coefficient
+  - Racah coefficient
+  - angular momentum coupling
+  - recoupling coefficient
+  - Ponzano-Regge model
+  - Turaev-Viro invariant
+Tags:
+  - special functions
+  - physics
+  - algebraic
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every nonzero canonical tetrahedral class with all $j_i\leq 7/2$,
+    except the all-zero symbol
+  rigour details: >-
+    The generator evaluates Racah's finite sum with exact rational arithmetic,
+    using integer-scaled angular momenta so every factorial argument is checked
+    before it is used. The exact result is a sign times the square root of a
+    rational number, converted to an arb ball for the stored real value;
+    rational results are written exactly. The values are checked against
+    Richard Mathar's exact `6jSymb` table, against the zero-entry formula
+    CITE{formula-zero}, and against the finite sum of Wigner $3j$ symbols
+    in CITE{formula-3j-sum}.
+Display properties:
+  number-header: $\begin{Bmatrix}j_1&j_2&j_3\\j_4&j_5&j_6\end{Bmatrix}$
+Numbers: []
