@@ -38,7 +38,7 @@ from sage.rings.real_mpfr import RealField
 
 TABLE = os.environ.get("NUMBERDB_TABLE", "T273")
 
-# Measured before filling the draft: 42 entries, longest value 119 characters,
+# Measured before filling the draft: 42 entries, longest value 124 characters,
 # and an entries block of about 13 KB including comments.
 K_MIN = 3
 K_MAX = 8
