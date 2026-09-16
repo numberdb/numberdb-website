@@ -391,7 +391,7 @@ def _words(text):
 
 
 def _same_subject(one, other):
-	"""Do two titles name the same table?
+	r"""Do two titles name the same table?
 
 	One title wholly inside the other, and nothing else. Not "most words in
 	common": two tables that differ in the single word that matters score
