@@ -1,0 +1,8 @@
+1. done -- rewrote Formulas as string values under `formula-generating-function` and `formula-orthogonality`; checked the renderer expects strings and Sage verified 608 generating-function specializations and 7136 orthogonality sums over the stored range.
+2. done -- changed Programs to `program-sage: {language: Sage, code: ...}` and dropped the unused `name`; ran the stored snippet under Sage and compared sample outputs with the defining formula.
+3. done -- added `HREF{Gegenbauer_polynomials}` and rewrote the Kissing numbers relation; checked both slugs live through the API and checked T151's comments identify `\tau_8` and `\tau_{24}` with the Delsarte/Levenshtein/Odlyzko-Sloane proofs.
+4. done -- shortened Definition and moved the falling-factorial and Hamming-weight detail to `comment-polynomial`; Sage checked all 608 stored entries equal the falling-factorial formula and have degree `k`.
+5. done -- changed the `q` domain to alphabet size `q >= 2` and scoped the MacWilliams-normalisation sentence to prime powers; Sage checked the generating function and orthogonality also for `q=6` (152 and 1784 checks).
+6. done -- changed the scheme comment from "$k$-th relation" to "distance-$k$ adjacency matrix"; this is a wording correction naming the operator and does not alter values.
+7. done -- renamed comment keys to `comment-...` and formula/program keys to corpus-prefixed keys; checked no `CITE{}` used the old keys.
+8. declined -- left the Askey-normalisation conversion in the normalisation comment rather than moving it to Formulas, because it states a convention and the critique judged that placement acceptable.
