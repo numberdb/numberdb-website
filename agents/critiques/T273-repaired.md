@@ -1,0 +1,6 @@
+done -- rewrote the definition to state the $m=\lfloor cn\rfloor$ random-hypergraph model, degree at least $r$, and the high-probability empty/nonempty threshold; checked the live draft first, previewed the definition, and shortened it after audit flagged the first version as too long.
+done -- combined the two graph-case comments into one convention comment, linked the Erdős–Rényi table once, and named the minimisation; checked in Sage that the $k=2$ extension gives half of T156's stored graph thresholds for $3\leq r\leq8$.
+done -- removed the copied decimal from `comment-peeling` and linked `HREF{#3,2}[$c_{3,2}$]`; checked the live `Numbers` keys include row `3,2`.
+done -- kept the pure literal rule and invertible Bloom lookup table keywords and added application sentences for them; checked in Sage that $2c_{3,2}=1.6369383215\ldots$ and $1/c_{3,2}=1.2217931327\ldots$, and checked Molloy's Boolean-formula source plus the Dagstuhl IBLT source before adding `GadurekVesely`.
+done -- restored the Erdős–Rényi accents and en dash in the comment caption and `Similar tables`; checked the sibling table's live title is `k-core thresholds of the Erdős–Rényi random graph`.
+done -- defined $\mathrm{Po}(\lambda)$ in `formula-tail`; previewed the formula slice and reran `GET /api/table/T273/audit`, which returned `{"findings": [], "clean": true}`.
