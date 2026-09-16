@@ -21,8 +21,9 @@ Parameters:
 Comments:
   convention: >-
     A partition is written as its parts, largest first, separated by commas:
-    $3,2,1$ is the partition $(3,2,1)$ of $6$. This table uses the
-    Haglund-Haiman-Loehr convention CITE{HHL}, where
+    $3,2,1$ is the partition $(3,2,1)$ of $6$, and $\mu'$ denotes the
+    conjugate partition. This table uses the Haglund-Haiman-Loehr convention
+    CITE{HHL}, where
     $\tilde H_{(n)}$ has powers of $q$ and $\tilde H_{(1^n)}$ has powers of
     $t$.
   swapped-variables: >-
@@ -30,25 +31,32 @@ Comments:
     convention sends the row with Macdonald shape $\mu$ to the row with
     Macdonald shape $\mu'$.
   omitted-rows: >-
-    The single-row and single-column Schur coefficients are not stored as
+    The coefficients with $\lambda=(n)$ or $\lambda=(1^n)$ are not stored as
     entries. They are the closed forms in CITE{formula-edges}.
+  positivity: >-
+    The coefficients of each $\tilde K_{\lambda\mu}(q,t)$ are nonnegative
+    integers by Haiman's proof of the Macdonald positivity conjecture
+    CITE{Haiman}.
 Formulas:
   formula-transition: >-
     $\tilde H_\mu(x;q,t)=\sum_\lambda \tilde K_{\lambda\mu}(q,t)s_\lambda$.
   formula-macdonald-kostka: >-
     $\tilde K_{\lambda\mu}(q,t)=t^{n(\mu)}K_{\lambda\mu}(q,t^{-1})$, where
     $n(\mu)=\sum_i(i-1)\mu_i$ and $K_{\lambda\mu}(q,t)$ is Macdonald's
-    two-variable Kostka coefficient CITE{SageMacdonald}.
+    two-variable Kostka coefficient CITE{Macdonald}.
   formula-hall-littlewood: >-
     $\tilde K_{\lambda\mu}(0,t)=t^{n(\mu)}K_{\lambda\mu}(t^{-1})$, where
-    $K_{\lambda\mu}(t)$ is the Kostka-Foulkes polynomial HREF{T259}.
+    $K_{\lambda\mu}(t)$ is HREF{T259}[the Kostka-Foulkes polynomial].
   formula-one-one: >-
     $\tilde K_{\lambda\mu}(1,1)=f^\lambda$, the number of standard Young
     tableaux of shape $\lambda$.
   formula-hook: >-
     For a hook shape $\lambda=(n-k,1^k)$,
-    $\tilde K_{\lambda\mu}(q,t)=e_k[B_\mu-1]$, with
-    $B_\mu=\sum_{(i,j)\in\mu}q^jt^i$ and zero-based row and column indices.
+    $\tilde K_{\lambda\mu}(q,t)=e_k[B_\mu-1]$, where
+    $B_\mu=\sum_{(i,j)\in\mu}q^jt^i$ is formed with zero-based row and column
+    indices, and $e_k[B_\mu-1]$ means the elementary symmetric polynomial of
+    degree $k$ in the monomials $q^jt^i$ for all cells $(i,j)\in\mu$ except
+    the cell $(0,0)$.
   formula-duality: >-
     $\tilde K_{\lambda\mu'}(q,t)=\tilde K_{\lambda\mu}(t,q)$.
   formula-edges: >-
@@ -110,9 +118,9 @@ Data properties:
   complete: 'no'
   complete-note: >-
     it holds every nontrivial coefficient with
-    $2\leq|\lambda|=|\mu|\leq8$; the omitted single-row and single-column
-    cases are given by CITE{formula-edges}, and size $9$ would add $840$
-    stored rows, past the soft entry limit of $1200$
+    $3\leq|\lambda|=|\mu|\leq8$; the omitted cases with $\lambda=(n)$ or
+    $\lambda=(1^n)$ are given by CITE{formula-edges}, and size $9$ would add
+    $840$ stored rows, past the soft entry limit of $1200$
   rigour details: >-
     Every entry is an exact polynomial with integer coefficients. The
     generator computes $t^{n(\mu)}K_{\lambda\mu}(q,t^{-1})$ using Sage's

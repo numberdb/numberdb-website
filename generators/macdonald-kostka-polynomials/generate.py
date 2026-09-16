@@ -8,7 +8,7 @@ Run it with SageMath:
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # fill the draft, with NUMBERDB_API_KEY set
 
-The table stores the nontrivial Schur coefficients for 2 <= |lambda| = |mu|
+The table stores the nontrivial Schur coefficients for 3 <= |lambda| = |mu|
 <= 8. The single-row and single-column Schur coefficients are closed-form
 monomials and are left to the table formulas.
 """
