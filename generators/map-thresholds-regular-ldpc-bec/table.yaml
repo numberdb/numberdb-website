@@ -3,11 +3,9 @@
 # publishing is a person's act on the site.
 Title: MAP thresholds of regular LDPC codes on the binary erasure channel
 Definition: >-
-  For integers $3\leq l<r$, the regular $(l,r)$ low-density parity-check
-  ensemble CITE{WikiLDPC} has variable degree $l$ and check degree $r$.
-  The number $\epsilon^{\mathrm{MAP}}_{l,r}$ is the binary erasure channel
-  CITE{WikiBEC} erasure probability at the maximum a posteriori decoding
-  threshold of this ensemble CITE{KRU}.
+  For $3\leq l<r$, $\epsilon^{\mathrm{MAP}}_{l,r}$ is the binary erasure
+  channel CITE{WikiBEC} threshold of maximum a posteriori decoding for the
+  regular $(l,r)$ low-density parity-check ensemble CITE{WikiLDPC} CITE{KRU}.
 Keywords: Gallager codes, density evolution, optimal decoding, coding theory, threshold saturation
 Parameters:
   l:
@@ -23,8 +21,9 @@ Parameters:
 Comments:
   comment-conventions: >-
     The value stored here is the channel erasure probability $\epsilon$, not
-    the constraint density. The parity-check density of the ensemble is
-    $m/n=l/r$, and its design rate is $1-l/r$ when the checks are independent.
+    the constraint density. Here $l$ is the variable degree and $r$ is the
+    check degree. The parity-check density of the ensemble is $m/n=l/r$, and
+    its design rate is $1-l/r$ when the checks are independent.
   comment-l2: >-
     There are no $l=2$ rows. The table follows the non-cycle regular
     ensembles with $l\geq3$ used in the analytic threshold characterization of
