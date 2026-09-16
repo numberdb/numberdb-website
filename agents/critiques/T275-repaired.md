@@ -1,0 +1,6 @@
+1. done -- Changed `formula-root` to the unique solution in $(0,1)$ and `formula-threshold` to the minimum of $\epsilon(x)$; checked the live text still had "positive solution", then Sage verified all 45 rows have one root in $(0,1)$ and even $r$ rows have the extra positive root the critique described.
+2. done -- Rewrote the Definition to define the BP threshold as the supremum of BEC erasure probabilities for which density evolution converges to $0$, citing `RichardsonUrbanke`; checked the old noun-stack definition was still live and the final audit accepted the shorter definition.
+3. done -- Replaced `comment-l2` and `comment-threshold`; checked in Sage that the $l=2$ limit is $1/(r-1)$ with $\epsilon(x)$ increasing, and used the root/minimum check from finding 1 for the threshold comment.
+4. done -- Replaced `comment-conventions` with the rate, actual-rate, Shannon-limit, and $\epsilon^{\mathrm{BP}}_{l,r}<l/r$ facts; checked the rate statement by the parity-check rank argument and compared every stored row with $l/r$ in Sage.
+5. done -- Cited `RichardsonUrbanke` from the Definition; checked it was already a live reference and the rendered slices had no broken `CITE`.
+6. done -- Added `BEC`, `BP threshold`, and `erasure threshold` to `Keywords`; checked the live keywords lacked them and the final audit was clean.
