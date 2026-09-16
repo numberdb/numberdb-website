@@ -7,11 +7,9 @@ Definition: >-
   Boolean variables and $m=\lfloor\alpha n\rfloor$ equations over
   $\mathbb{F}_2$, each involving $k$ distinct variables chosen uniformly,
   with an independent uniformly random right-hand side. The satisfiability
-  threshold $\alpha_k$ is the number such that the formula is satisfiable
-  with probability tending to $1$ as $n\to\infty$ when $\alpha<\alpha_k$ and
-  with probability tending to $0$ when $\alpha>\alpha_k$; it is
-  $\xi_k/(k(1-e^{-\xi_k})^{k-1})$, where $\xi_k$ is the positive solution of
-  CITE{formula-root} CITE{PittelSorkin}.
+  threshold $\alpha_k$ separates almost-sure satisfiability for
+  $\alpha<\alpha_k$ from almost-sure unsatisfiability for
+  $\alpha>\alpha_k$ CITE{PittelSorkin}.
 Keywords: XOR-SAT, random linear systems over GF(2), p-spin model, cuckoo hashing
 Parameters:
   k:
@@ -89,7 +87,7 @@ References:
     doi: 10.1007/978-3-642-14165-2_19
     arxiv: 0912.0287
 Tags:
-  - random graphs
+  - probability theory
   - statistical mechanics
 Data properties:
   type: R
