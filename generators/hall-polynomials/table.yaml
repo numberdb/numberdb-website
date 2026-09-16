@@ -1,0 +1,116 @@
+# Draft document for T263, built from numberdb-data issue #140.
+# Created as a draft through the API with X-Draft: yes, filled by generate.py
+# beside it, and offered for review. Publishing is a person's act.
+Title: Hall polynomials $g^\lambda_{\mu\nu}(q)$
+Definition: >-
+  The Hall polynomial $g^\lambda_{\mu\nu}(q)$ CITE{WikiHallAlgebra} is the
+  polynomial whose value at a prime power $q$ counts submodules $N$ of type
+  $\nu$ in a finite module of type $\lambda$ over a discrete valuation ring
+  with residue field of size $q$, such that the quotient has type $\mu$.
+Parameters:
+  lambda:
+    type: Symbolic
+    title: ambient type
+    display: $\lambda$
+    constraints: a partition of a positive integer
+  mu:
+    type: Symbolic
+    title: quotient type
+    display: $\mu$
+    constraints: a partition of a positive integer
+  nu:
+    type: Symbolic
+    title: submodule type
+    display: $\nu$
+    constraints: a partition of a positive integer with $|\lambda|=|\mu|+|\nu|$
+Comments:
+  notation: >-
+    A partition is written as its parts, largest first, separated by commas:
+    $3,2,1$ is the partition $(3,2,1)$.
+  convention: >-
+    The lower index $\mu$ is the quotient type and $\nu$ is the submodule
+    type. The edge cases with one lower partition empty are not stored as
+    entries; they are the identities in CITE{formula-edges}.
+Formulas:
+  formula-hall-littlewood: >-
+    If $P_\lambda(x;t)$ denotes Macdonald's Hall-Littlewood $P$ basis
+    CITE{Macdonald}, and
+    $P_\mu(x;t)P_\nu(x;t)=\sum_\lambda f^\lambda_{\mu\nu}(t)P_\lambda(x;t)$,
+    then
+    $g^\lambda_{\mu\nu}(q)=q^{n(\lambda)-n(\mu)-n(\nu)}
+    f^\lambda_{\mu\nu}(q^{-1})$, where $n(\lambda)=\sum_i(i-1)\lambda_i$.
+  formula-edges: >-
+    $g^\lambda_{\lambda,\varnothing}(q)=
+    g^\lambda_{\varnothing,\lambda}(q)=1$, and
+    $g^\lambda_{\mu\nu}(q)=0$ unless $|\lambda|=|\mu|+|\nu|$.
+  formula-symmetry: >-
+    $g^\lambda_{\mu\nu}(q)=g^\lambda_{\nu\mu}(q)$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.combinat.sf.sf import SymmetricFunctions
+      from sage.rings.rational_field import QQ
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+      T = PolynomialRing(QQ, "t")
+      t = T.gen()
+      P = SymmetricFunctions(T.fraction_field()).hall_littlewood().P()
+      coefficient = (P([2]) * P([1])).coefficient([2, 1])
+
+      Q = PolynomialRing(QQ, "q")
+      q = Q.gen()
+      # n(2,1)-n(2)-n(1) = 1, so this is g^(2,1)_((2),(1))(q).
+      q * Q(coefficient(t=1 / q))
+Similar tables:
+  - table: HREF{T261}[Hall-Littlewood polynomials]
+    relation: are the basis whose multiplication structure constants determine these polynomials
+  - table: HREF{T259}[Kostka-Foulkes polynomials]
+    relation: are the transition coefficients from Schur polynomials to the same Hall-Littlewood $P$ basis
+Links:
+  WikiHallAlgebra:
+    title: "Wikipedia: Hall algebra"
+    url: https://en.wikipedia.org/wiki/Hall_algebra
+  SageHallLittlewood:
+    title: "SageMath: Hall-Littlewood symmetric functions"
+    url: https://doc.sagemath.org/html/en/reference/combinat/sage/combinat/sf/hall_littlewood.html
+References:
+  Macdonald:
+    bib: >-
+      I. G. Macdonald, Symmetric Functions and Hall Polynomials, second ed.,
+      The Clarendon Press, Oxford University Press, New York, 1995.
+    mr: '1354144'
+  Hall:
+    bib: >-
+      P. Hall, The algebra of partitions, Proceedings of the 4th Canadian
+      Mathematical Congress, Banff, 1957, 147-159.
+Keywords:
+  - Hall algebra
+  - Hall-Littlewood structure constants
+  - finite abelian p-groups
+  - subgroups of abelian p-groups
+Tags:
+  - polynomial
+  - combinatorics
+  - algebra
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every nonzero non-edge $g^\lambda_{\mu\nu}(q)$ with
+    $|\lambda|\leq8$ and $|\mu|,|\nu|>0$; the omitted edge cases are given by
+    CITE{formula-edges}, and size $9$ would make $2527$ stored non-edge
+    entries, past the soft entry limit of $1200$
+  rigour details: >-
+    Every entry is an exact polynomial with integer coefficients. The generator
+    computes the Hall-Littlewood $P$-basis structure constants in Sage
+    CITE{SageHallLittlewood} and converts them by CITE{formula-hall-littlewood}.
+
+    Before the values were written, the rows with $|\lambda|\leq4$ were
+    compared with direct counts of subgroups of finite abelian $p$-groups for
+    $p=2$ and $p=3$. The full stored range was also checked against the
+    symmetry CITE{formula-symmetry} and the edge identities
+    CITE{formula-edges}.
+Display properties:
+  number-header: $g^\lambda_{\mu\nu}(q)$
