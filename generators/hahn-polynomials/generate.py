@@ -27,13 +27,14 @@ from sage.rings.rational_field import QQ
 
 TABLE = os.environ.get("NUMBERDB_TABLE", "T268")
 
-# Measured before filling the draft: these six shape pairs, 2 <= N <= 14 and
-# 0 <= n <= N give 702 entries. The longest written value has 379 characters,
-# and the entries block is 96.0 KB in the dry-run measurement.
+# Measured before filling the draft: these seven shape pairs, 2 <= N <= 14 and
+# 0 <= n <= N give 819 entries. The longest written value has 379 characters,
+# and the entries block is 112.6 KB in the dry-run measurement.
 PARAMETER_PAIRS = (
     (QQ(0), QQ(0)),
     (QQ(1), QQ(1)),
     (QQ(1), QQ(2)),
+    (QQ(2), QQ(1)),
     (QQ(2), QQ(2)),
     (QQ(1) / QQ(2), QQ(1) / QQ(2)),
     (-QQ(1) / QQ(2), -QQ(1) / QQ(2)),
