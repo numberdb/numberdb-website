@@ -1,0 +1,107 @@
+# Draft document for T261, built from numberdb-data issues #119 and #140.
+# Created as a draft through the API with X-Draft: yes, filled by generate.py
+# beside it, and offered for review. Publishing is a person's act.
+Title: Hall–Littlewood polynomials $P_\lambda(x_1,\dots,x_n;t)$
+Definition: >-
+  The Hall–Littlewood polynomial $P_\lambda(x_1,\dots,x_n;t)$ CITE{Wiki}
+  is Macdonald's $P$-normalised Hall–Littlewood symmetric polynomial
+  CITE{Macdonald} for a partition $\lambda$ with at most $n$ parts. The
+  parameter $t$ is an indeterminate, and $\lambda$ is padded with zeros to
+  length $n$ in CITE{formula-symmetrization}.
+Keywords:
+  - Hall-Littlewood symmetric functions
+  - Hall Littlewood polynomials
+  - Macdonald Hall polynomials
+Tags:
+  - polynomial
+  - combinatorics
+  - algebra
+Parameters:
+  n:
+    type: Z
+    title: number of variables
+    display: $n$
+    constraints: a positive integer
+  lambda:
+    type: Symbolic
+    display: $\lambda$
+    constraints: a partition with at most $n$ parts
+Comments:
+  notation: >-
+    The partition is written as its parts, largest first, separated by commas:
+    $2,1,1$ is the partition $(2,1,1)$ of $4$.
+  convention: >-
+    This is the $P_\lambda$ normalisation of Macdonald. The $Q_\lambda$ and
+    $Q'_\lambda$ normalisations multiply these polynomials by factors depending
+    on $\lambda$ and $t$.
+Formulas:
+  formula-symmetrization: >-
+    $P_\lambda(x_1,\dots,x_n;t)=v_\lambda(t)^{-1}\sum_{w\in S_n}
+    w\left(x_1^{\lambda_1}\cdots x_n^{\lambda_n}
+    \prod_{1\leq i<j\leq n}\frac{x_i-tx_j}{x_i-x_j}\right)$, where
+    $v_\lambda(t)=\prod_{r\geq0}\prod_{j=1}^{m_r(\lambda)}(1-t^j)/(1-t)$
+    and $m_0(\lambda)=n-\ell(\lambda)$.
+  formula-schur: >-
+    $P_\lambda(x;0)=s_\lambda(x)$, the Schur polynomial
+    HREF{Schur_polynomials}.
+  formula-monomial: >-
+    $P_\lambda(x;1)=m_\lambda(x)$, the monomial symmetric polynomial
+    HREF{Monomial_symmetric_polynomials}.
+  formula-transition: >-
+    $s_\lambda=\sum_\mu K_{\lambda\mu}(t)P_\mu(x;t)$, where
+    $K_{\lambda\mu}(t)$ is HREF{T259}[the Kostka-Foulkes polynomial].
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import sage.rings.polynomial.laurent_polynomial_ring
+      from sage.combinat.sf.sf import SymmetricFunctions
+      from sage.rings.rational_field import QQ
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+      T = PolynomialRing(QQ, 't')
+      P = SymmetricFunctions(T.fraction_field()).hall_littlewood().P()
+      P([3, 2]).expand(4, alphabet=['x1', 'x2', 'x3', 'x4'])
+Similar tables:
+  - table: HREF{Schur_polynomials}[Schur polynomials]
+    relation: are the $t=0$ specialization
+  - table: HREF{Monomial_symmetric_polynomials}[monomial symmetric polynomials]
+    relation: are the $t=1$ specialization
+  - table: HREF{T259}[Kostka-Foulkes polynomials]
+    relation: are the transition coefficients from Schur polynomials to this Hall–Littlewood $P$ basis
+Links:
+  Wiki:
+    title: "Wikipedia: Hall-Littlewood polynomials"
+    url: https://en.wikipedia.org/wiki/Hall%E2%80%93Littlewood_polynomials
+  SageHallLittlewood:
+    title: "SageMath: Hall-Littlewood symmetric functions"
+    url: https://doc.sagemath.org/html/en/reference/combinat/sage/combinat/sf/hall_littlewood.html
+References:
+  Macdonald:
+    bib: >-
+      I. G. Macdonald, Symmetric Functions and Hall Polynomials, second ed.,
+      The Clarendon Press, Oxford University Press, New York, 1995.
+    mr: '1354144'
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every $P_\lambda$ with $1\leq n\leq4$, $|\lambda|\leq4$, and
+    $\ell(\lambda)\leq n$; extending the same rectangle to $n=5$ would make
+    $P_{(4)}$ 2493 characters long, while extending to $|\lambda|=5$ at
+    $n=4$ would make $P_{(5)}$ 2114 characters long
+  rigour details: >-
+    Every entry is an exact polynomial with integer coefficients. The generator
+    computes Macdonald's symmetrization formula in the fraction field of
+    $\mathbb{Z}[x_1,\dots,x_n,t]$ and refuses an entry unless the denominator
+    cancels.
+
+    Before the values were written, every entry was compared with Sage's
+    Hall-Littlewood $P$ basis CITE{SageHallLittlewood}. The same values were
+    checked at $t=0$ against HREF{Schur_polynomials}[the Schur polynomials],
+    at $t=1$ against HREF{Monomial_symmetric_polynomials}[the monomial
+    symmetric polynomials], and in the transition identity with HREF{T259}[the
+    Kostka-Foulkes polynomials].
+Display properties:
+  number-header: $P_\lambda(x_1,\dots,x_n;t)$
