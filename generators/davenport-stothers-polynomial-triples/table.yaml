@@ -5,8 +5,8 @@ Title: Davenport-Stothers polynomial triples
 Definition: >-
   A Davenport-Stothers polynomial triple of type $M$ is a triple
   $f,g,h\in\mathbb Q[t]$ with $h=f^3-g^2\ne0$, $\deg f=2M$,
-  $\deg g=3M$ and $\deg h=M+1$. This table stores the parts $f$, $g$
-  and $h$ of the printed representatives in CITE{Montanus2006}.
+  $\deg g=3M$ and $\deg h=M+1$. The half-degree $M$ and the tree label
+  identify one equivalence class, and the part is one of its three polynomials.
 Parameters:
   M:
     type: Z
