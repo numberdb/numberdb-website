@@ -1,0 +1,95 @@
+# The table document for numberdb.org/T285. It was created as a draft
+# through the API (X-Draft: yes) and is filled by generate.py beside it;
+# publishing is a person's act on the site.
+Title: Minimum dilatations of pseudo-Anosov maps
+Definition: >-
+  For a closed orientable surface $\Sigma_g$ of genus $g\geq1$,
+  $\delta_g^+$ is the minimum dilatation $\lambda>1$ among pseudo-Anosov
+  homeomorphisms CITE{Wiki} of $\Sigma_g$ whose invariant measured foliations
+  are orientable CITE{LT}.
+Parameters:
+  g:
+    type: Z
+    title: genus
+    display: $g$
+    constraints: $g\geq1$
+Comments:
+  comment-convention: >-
+    This table uses the orientable invariant-foliation convention of Lanneau
+    and Thiffeault. The unrestricted minimum $\delta_g$ is a different
+    quantity; they note evidence that $\delta_5<\delta_5^+$ CITE{LT}.
+  comment-salem: >-
+    For $2\leq g\leq5$, the values are Salem numbers and are largest roots of
+    the degree $2g$ polynomials listed in CITE{formula-polynomials}. The rows
+    $g=4$ and $g=5$ also occur in HREF{T284}[the table of Salem numbers less
+    than $1.3$].
+Formulas:
+  formula-polynomials: >-
+    For the rows held here, $\delta_g^+$ is the largest real root of
+    $P_g(x)$, where $P_1=x^2-3x+1$, $P_2=x^4-x^3-x^2-x+1$,
+    $P_3=x^6-x^4-x^3-x^2+1$, $P_4=x^8-x^5-x^4-x^3+1$, and
+    $P_5=x^{10}+x^9-x^7-x^6-x^5-x^4-x^3+x+1$ CITE{LT}.
+  formula-entropy: >-
+    The topological entropy of a pseudo-Anosov homeomorphism with dilatation
+    $\lambda$ is $\log\lambda$ CITE{LT}.
+Programs:
+  program-python:
+    language: Python
+    code: |-
+      from sage.all import PolynomialRing, QQ, RealField
+
+      RR = RealField(80)
+      R = PolynomialRing(QQ, 'x')
+      x = R.gen()
+      polynomials = {
+          1: x**2 - 3*x + 1,
+          2: x**4 - x**3 - x**2 - x + 1,
+          3: x**6 - x**4 - x**3 - x**2 + 1,
+          4: x**8 - x**5 - x**4 - x**3 + 1,
+          5: x**10 + x**9 - x**7 - x**6 - x**5 - x**4 - x**3 + x + 1,
+      }
+      {g: max(root for root, multiplicity in p.roots(RR))
+       for g, p in polynomials.items()}
+Similar tables:
+  - table: HREF{T284}[Salem numbers less than $1.3$]
+    relation: holds the same Salem numbers as the rows $g=4$ and $g=5$, indexed by their minimal polynomials rather than by genus
+  - table: HREF{T171}[Lyapunov exponents of classical chaotic systems]
+    relation: stores logarithmic exponential growth rates for standard maps, while this table stores pseudo-Anosov stretch factors before taking the logarithm
+Links:
+  Wiki:
+    title: "Wikipedia: Pseudo-Anosov map"
+    url: https://en.wikipedia.org/wiki/Pseudo-Anosov_map
+References:
+  LT:
+    bib: >-
+      Erwan Lanneau and Jean-Luc Thiffeault, On the minimum dilatation of
+      pseudo-Anosov homeomorphisms on surfaces of small genus, Annales de
+      l'Institut Fourier 61 (2011), 105-144.
+    arxiv: 0905.1302
+    doi: 10.5802/aif.2599
+Keywords:
+  - pseudo-Anosov map
+  - pseudo-Anosov homeomorphism
+  - minimum dilatation
+  - minimum stretch factor
+  - orientable invariant foliation
+  - topological entropy
+  - Salem number
+  - Lehmer problem
+Tags:
+  - dynamical systems
+  - algebraic
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: it holds the exact values in the contiguous range $1\leq g\leq5$
+  rigour details: >-
+    The mathematical identification of these roots with $\delta_g^+$ is
+    Theorems 1.1 and 1.2 and the genus-one statement recalled by Lanneau and
+    Thiffeault CITE{LT}. The generator isolates the real root greater than $1$
+    of each exact polynomial in interval arithmetic and verifies that the
+    polynomial changes sign across the isolating interval before writing $100$
+    digits.
+Display properties:
+  number-header: $\delta_g^+$
