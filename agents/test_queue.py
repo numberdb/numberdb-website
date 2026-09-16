@@ -166,6 +166,14 @@ class WhatAnIssueSays(unittest.TestCase):
 			'Values of the polygamma functions at rational numbers',
 			'Rational numbers'))
 
+	def test_a_two_word_title_matches_when_it_is_exact(self):
+		#The notation in a proposal title may be the third word in human
+		#terms, but the matcher strips it. Exact equality after stripping is
+		#still the same table.
+		self.assertTrue(q._same_subject(
+			'Charlier polynomials $C_n(x;a)$',
+			'Charlier polynomials $C_n(x;a)$'))
+
 	#What this cannot do, written down rather than asserted: "Orders of the
 	#finite groups of Lie type as polynomials in $q$" and "Orders of finite
 	#simple groups of Lie type" are different tables -- one holds integers for

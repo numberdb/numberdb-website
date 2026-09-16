@@ -406,6 +406,8 @@ def _same_subject(one, other):
 	first, second = _words(one), _words(other)
 	if not first or not second:
 		return False
+	if first == second and len(first) >= 2:
+		return True
 	#Three words, not two. A two-word title is contained in half the corpus:
 	#`Golden ratio` sits inside `Pisot numbers less than the golden ratio`,
 	#and `Rational numbers` inside `Values of the polygamma functions at
