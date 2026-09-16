@@ -3,16 +3,10 @@
 # publishing is a person's act on the site.
 Title: Core thresholds of random $k$-uniform hypergraphs
 Definition: >-
-  For integers $k\geq3$ and $r\geq2$, the $r$-core of a $k$-uniform
-  hypergraph CITE{WikiHypergraph} is its largest subhypergraph in which every
-  vertex lies in at least $r$ edges. The threshold $c_{k,r}$ is the edge
-  density such that the random $k$-uniform hypergraph with $n$ vertices and
-  $m=\lfloor cn\rfloor$ edges has, with probability tending to $1$ as
-  $n\to\infty$, an empty $r$-core when $c<c_{k,r}$ and a nonempty $r$-core
-  when $c>c_{k,r}$; it equals
-  $\min_{\lambda>0}\lambda/(kQ(\lambda,r-1)^{k-1})$, where
-  $Q(\lambda,s)=\mathbb{P}(\mathrm{Po}(\lambda)\geq s)$ CITE{Molloy}
-  CITE{CainWormald}.
+  The $r$-core of a $k$-uniform hypergraph CITE{WikiHypergraph} is its largest
+  subhypergraph with minimum vertex degree $r$. The number $c_{k,r}$ is the
+  edge-density threshold for its appearance in the random $k$-uniform
+  hypergraph CITE{Molloy} CITE{CainWormald}.
 Keywords: peeling threshold, pure literal rule, invertible Bloom lookup table, 2-core
 Parameters:
   k:
@@ -101,11 +95,11 @@ References:
       and M. Rink, Tight thresholds for cuckoo hashing via XORSAT, Proceedings
       of ICALP 2010, Lecture Notes in Computer Science 6198, 213-225.
     doi: 10.1007/978-3-642-14165-2_19
-    arxiv: 0912.0287
+    arxiv: '0912.0287'
 Tags:
   - probability theory
   - statistical mechanics
-  - random graphs
+  - combinatorics
 Data properties:
   type: R
   rigour: proven
