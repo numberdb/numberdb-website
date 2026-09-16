@@ -8,10 +8,10 @@ Run it with SageMath:
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # fill the draft, with NUMBERDB_API_KEY set
 
-The table stores the nine known coprime solutions with xyz > 1, ordered so
-that x^p < y^q. The infinite family 1^p + 2^3 = 3^2, with p > 6, accounts for
-the OEIS A214618 term 9 and is described in the table comments rather than
-stored as entries.
+The table stores the nine known coprime solutions with x, y, z > 1, ordered
+so that x^p < y^q. The infinite family 1^p + 2^3 = 3^2, with p > 6, accounts
+for the OEIS A214618 term 9 and is described in the table comments rather
+than stored as entries.
 """
 
 import os
@@ -76,11 +76,6 @@ def _sum(solution):
     return _powers(solution)[2]
 
 
-def _exponents(solution):
-    _x, p, _y, q, _z, r = solution
-    return p, q, r
-
-
 def _by_sum():
     out = {}
     for solution in SOLUTIONS:
@@ -101,8 +96,8 @@ def _check_solution(solution):
         raise ArithmeticError("%s does not satisfy x^p + y^q = z^r" % (solution,))
     if gcd(gcd(x, y), z) != 1:
         raise ArithmeticError("%s is not coprime" % (solution,))
-    if x * y * z <= 1:
-        raise ArithmeticError("%s is not in the xyz > 1 part" % (solution,))
+    if min(x, y, z) <= 1:
+        raise ArithmeticError("%s is not in the x, y, z > 1 part" % (solution,))
     if p * q + p * r + q * r >= p * q * r:
         raise ArithmeticError("%s does not satisfy 1/p + 1/q + 1/r < 1" %
                               (solution,))
@@ -129,19 +124,6 @@ def _check_data():
         raise ArithmeticError("the 65^7 check from the proposal failed")
 
     _CHECKED = True
-
-
-def _entry_comment(solution, part):
-    p, q, r = _exponents(solution)
-    if part == "x":
-        return "In this solution, $x$ has exponent $p=%d$." % p
-    if part == "y":
-        return "In this solution, $y$ has exponent $q=%d$." % q
-    if part == "z":
-        return "In this solution, $z$ has exponent $r=%d$." % r
-    if part == "sum":
-        return "This is $z^r$ for $(p,q,r)=(%d,%d,%d)$." % (p, q, r)
-    raise ValueError("unknown part %s" % part)
 
 
 class FermatCatalanKnownSolutions(numberdb.Generator):
@@ -173,7 +155,7 @@ class FermatCatalanKnownSolutions(numberdb.Generator):
             number = _sum(solution)
         else:
             raise ValueError("unknown part %s" % part)
-        return {"number": number, "comment": _entry_comment(solution, part)}
+        return number
 
 
 def fill_draft_once(generator, message):
