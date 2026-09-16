@@ -3452,3 +3452,32 @@ ignored it.
 Evidence: 2026-09-16, T256. The first integrity run printed "integrity checks
 passed for 599 rows" and then failed in `generator.verify`; `/tmp/run_integrity_exceptional_lie.py`
 called `run_integrity_checks()` directly through the wrapper and exited 0.
+
+## On this builder there is no SOCKS proxy at all, and the prompt's `curl` line fails
+
+What happened: the T256 critique opened with the command its own prompt gives,
+`curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/skill`, and got
+nothing. The second attempt wrote a file and reported `HTTP:000`, which looked
+like a partial success; the 44 KB in `/tmp/skill.md` was a stale copy another
+run had left there two days earlier, so the first minutes were spent reading an
+old skill. `curl -v` said "connect to 127.0.0.1 port 1080 ... Connection
+refused", `ss -ltn` showed nothing listening on 1080, `ALL_PROXY` was empty and
+no `ssh -N -D` process existed. Nothing had died: on the AWS builder the tunnel
+is never started, because the box reaches numberdb.org directly.
+
+This is the same conclusion as the second paragraph of the T221 note above and
+as the comment on `site_is_up` in `agents/campaign.sh` ("Trying direct first
+costs one request on the laptop and nothing anywhere else"), but both are
+buried inside notes about other things, and the campaign prompts still hand the
+agent the proxy form.
+
+What to do instead: on this builder use `curl --noproxy '*'`. Treat `HTTP:000`
+with a non-empty output file as a failed fetch of a stale file, not as a fetch
+-- `curl` leaves `-o` targets alone when it cannot connect. Read `ALL_PROXY`
+first: empty means direct, and the `--socks5-hostname` form cannot work.
+
+Evidence: 2026-09-16, T256 critique. `--socks5-hostname` refused on every
+attempt; `curl -sS --noproxy '*' https://numberdb.org/skill` answered 200 with
+47,044 bytes, 2,259 bytes longer than the `/tmp/skill.md` of 2026-09-14 --
+the difference is the "does a parameter name what the number is of" section and
+the `param-latex` paragraph, both of which the critique needed.
