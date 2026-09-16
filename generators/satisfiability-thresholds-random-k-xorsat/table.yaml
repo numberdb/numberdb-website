@@ -1,0 +1,116 @@
+# The table document for numberdb-data#148, proposal 1. Created as a draft
+# through the API (X-Draft: yes) and filled by generate.py beside it;
+# publishing is a person's act on the site.
+Title: Satisfiability thresholds of random $k$-XORSAT
+Definition: >-
+  For $k\geq3$, a random $k$-XORSAT formula CITE{WikiXORSAT} has $n$
+  Boolean variables and $m=\lfloor\alpha n\rfloor$ equations over
+  $\mathbb{F}_2$, each involving $k$ distinct variables chosen uniformly,
+  with an independent uniformly random right-hand side. The satisfiability
+  threshold $\alpha_k$ is the number such that the formula is satisfiable
+  with probability tending to $1$ as $n\to\infty$ when $\alpha<\alpha_k$ and
+  with probability tending to $0$ when $\alpha>\alpha_k$; it is
+  $\xi_k/(k(1-e^{-\xi_k})^{k-1})$, where $\xi_k$ is the positive solution of
+  CITE{formula-root} CITE{PittelSorkin}.
+Keywords: XOR-SAT, random linear systems over GF(2), p-spin model, cuckoo hashing
+Parameters:
+  k:
+    type: Z
+    title: number of variables in each equation
+    display: $k$
+    constraints: $k\geq3$
+Comments:
+  comment-conventions: >-
+    The density is $\alpha=m/n$, equations per variable. The average degree of
+    the underlying $k$-uniform constraint hypergraph is $k\alpha$, and cuckoo
+    hashing with one key per bucket quotes the same number as the load, keys
+    per bucket CITE{DGMMPR}. The variables in an equation are chosen without
+    replacement; allowing repeated choices gives the same threshold
+    CITE{PittelSorkin}.
+  comment-k2: >-
+    There is no $k=2$ row. In random $2$-XORSAT the limiting probability of
+    satisfiability is strictly between $0$ and $1$ below average degree $1$
+    and is $0$ above it, so no positive density has the almost-sure
+    satisfiability required in this definition CITE{PittelSorkin}.
+  comment-core: >-
+    Peeling variables that occur in at most one equation leaves the $2$-core
+    of the constraint hypergraph, and satisfiability is decided at the density
+    where that core has asymptotically equal numbers of equations and
+    variables CITE{PittelSorkin}. The
+    HREF{k-core_thresholds_of_the_Erdős_Rényi_random_graph}[$k$-core
+    thresholds of the Erdős-Rényi random graph] use the same Poisson-tail
+    method for graph cores.
+Formulas:
+  formula-root: >-
+    $\xi_k$ is the positive solution of
+    $k=\frac{\xi(1-e^{-\xi})}{1-e^{-\xi}-\xi e^{-\xi}}$.
+  formula-threshold: >-
+    $\alpha_k=\frac{\xi_k}{k(1-e^{-\xi_k})^{k-1}}$ for $k\geq3$
+    CITE{PittelSorkin}.
+  formula-core: >-
+    Equivalently, with $q$ the largest solution of
+    $q=1-e^{-k\alpha q^{k-1}}$ and $x=k\alpha q^{k-1}$, the threshold is the
+    value of $\alpha$ for which $\alpha q^k=1-e^{-x}-xe^{-x}$
+    CITE{PittelSorkin}.
+Programs:
+  program-mpmath:
+    language: Python
+    code: |-
+      from mpmath import mp
+      mp.dps = 50
+      k = 3
+      psi = lambda x: x*(1-mp.e**(-x))/(1-mp.e**(-x)-x*mp.e**(-x))
+      xi = mp.findroot(lambda x: psi(x) - k, k)
+      print(xi/(k*(1-mp.e**(-xi))**(k-1)))
+Similar tables:
+  - table: HREF{k-core_thresholds_of_the_Erdős_Rényi_random_graph}[$k$-core thresholds of the Erdős-Rényi random graph]
+    relation: thresholds for graph cores, using the same Poisson-tail machinery in the graph case
+Links:
+  WikiXORSAT:
+    title: 'Wikipedia: XOR-SAT'
+    url: https://en.wikipedia.org/wiki/XOR-SAT
+  WikiCuckoo:
+    title: 'Wikipedia: Cuckoo hashing'
+    url: https://en.wikipedia.org/wiki/Cuckoo_hashing
+References:
+  PittelSorkin:
+    bib: >-
+      B. Pittel and G. B. Sorkin, The satisfiability threshold for
+      $k$-XORSAT, Combinatorics, Probability and Computing 25 (2016),
+      236-268.
+    doi: 10.1017/S0963548315000097
+    arxiv: 1212.1905
+  DGMMPR:
+    bib: >-
+      M. Dietzfelbinger, A. Goerdt, M. Mitzenmacher, A. Montanari, R. Pagh
+      and M. Rink, Tight thresholds for cuckoo hashing via XORSAT,
+      Proceedings of ICALP 2010, Lecture Notes in Computer Science 6198,
+      213-225.
+    doi: 10.1007/978-3-642-14165-2_19
+    arxiv: 0912.0287
+Tags:
+  - random graphs
+  - statistical mechanics
+Data properties:
+  type: R
+  rigour: proven
+  sources:
+    - CITE{PittelSorkin}
+    - CITE{DGMMPR}
+  complete: 'no'
+  complete-note: >-
+    it holds $\alpha_k$ for every $k$ with $3\leq k\leq12$
+  rigour details: >-
+    Each entry is computed in ball arithmetic with 64 guard bits beyond the
+    100 digits written. The root $\xi_k$ is enclosed by bisection on the sign
+    of $\psi(x)-k$, where
+    $\psi(x)=x(1-e^{-x})/(1-e^{-x}-xe^{-x})$, down to a bracket of half-width
+    $10^{-106}$, with the signs at the two ends checked in ball arithmetic;
+    the value of $x/(k(1-e^{-x})^{k-1})$ on that bracket is the stored ball.
+    Before any entry was written, the values for $3\leq k\leq7$ were compared
+    with the ten-digit table of Dietzfelbinger, Goerdt, Mitzenmacher,
+    Montanari, Pagh and Rink, and every value for $3\leq k\leq12$ was
+    compared with the independent $2$-core characterisation in
+    CITE{formula-core}.
+Display properties:
+  number-header: $\alpha_k$
