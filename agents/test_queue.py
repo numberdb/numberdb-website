@@ -217,13 +217,14 @@ class WhichTableIsNext(unittest.TestCase):
 		self.assertEqual(item['title'],
 		                 'Values of the Airy functions at rational arguments')
 
-	def test_an_untouched_family_is_taken_newest_first(self):
-		#Among families nobody has started, the freshest screening is the one
-		#most likely to still be true.
+	def test_an_untouched_family_is_taken_oldest_first_too(self):
+		#A family nobody has started is a leftover as much as a half-built
+		#one: #138 was screened on 2026-09-12 and was still waiting four days
+		#later while two families screened after it went ahead.
 		older = self.family(5, '2026-08-01', [])
 		q.families = lambda state='open': [self.newer, older]
 		family, _ = q.next_table()
-		self.assertEqual(family['number'], 20)
+		self.assertEqual(family['number'], 5)
 
 	def test_the_family_already_started_is_finished_first(self):
 		#Not the newest. A half-built family loses the thing that made the
