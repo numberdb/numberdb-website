@@ -4157,3 +4157,25 @@ What to do instead: fetch the document with the key and render it through
 sections.
 
 Evidence: `/tmp/T289-*.q` and `/tmp/T289-*.html`, 2026-09-17.
+
+## `agents/sage.sh` forwards only its named control variables
+
+What happened: T290's generator had a `NUMBERDB_SELF_CHECK=1` mode that asks
+Singular's `bfct` to recompute every stored Bernstein-Sato polynomial. Running
+
+    NUMBERDB_SELF_CHECK=1 agents/sage.sh generate.py
+
+did not enter that mode. The wrapper forwards `NUMBERDB_KEY_FROM_STDIN`,
+`NUMBERDB_PUBLISH`, `NUMBERDB_RESTATING` and `NUMBERDB_LOWERING`, but not
+arbitrary environment variables. The script fell through to `verify()`, and
+because T290 was still a draft and no key was being sent, it reported that
+the table did not exist.
+
+What to do instead: for one-off generator modes, mount a tiny runner script
+that imports the generator and calls the function directly, or teach
+`agents/sage.sh` to forward the specific variable before relying on it. Do
+not assume an environment flag visible to the outer shell is visible inside
+the Sage container.
+
+Evidence: `NUMBERDB_SELF_CHECK=1 agents/sage.sh generators/bernstein-sato-polynomials-simple-unimodal-singularities/generate.py`,
+2026-09-17, followed by `/tmp/run_self_check_issue151.py`.
