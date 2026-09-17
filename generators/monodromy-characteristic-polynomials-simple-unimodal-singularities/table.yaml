@@ -1,0 +1,145 @@
+# Draft document for T291. Publishing is a person's act.
+Title: Characteristic polynomials of the monodromy of the simple and unimodal singularities
+Definition: >-
+  $\Delta_f(t)=\det(tI-h_*)\in\mathbb{Z}[t]$ is the characteristic polynomial
+  of the geometric monodromy transformation $h_*$ on the middle homology of
+  the Milnor fibre CITE{Milnor} of $f+x_{c+1}^2+\cdots+x_n^2$. Here $f$ is the
+  normal form in $c$ variables $x,y,z$ of a simple singularity, a parabolic
+  unimodal singularity, or an exceptional unimodal singularity in Arnold's
+  classification CITE{AGV} with the modulus set to $0$ for the unimodal
+  families. The normal forms are $A_k:x^{k+1}$; $D_k:x^2y+y^{k-1}$;
+  $E_6:x^3+y^4$; $E_7:x^3+xy^3$; $E_8:x^3+y^5$;
+  $P_8:x^3+y^3+z^3$; $X_9:x^4+y^4$; $J_{10}:x^3+y^6$;
+  $E_{12}:x^3+y^7$; $E_{13}:x^3+xy^5$; $E_{14}:x^3+y^8$;
+  $Z_{11}:x^3y+y^5$; $Z_{12}:x^3y+xy^4$; $Z_{13}:x^3y+y^6$;
+  $W_{12}:x^4+y^5$; $W_{13}:x^4+xy^4$; $Q_{10}:x^3+y^4+yz^2$;
+  $Q_{11}:x^3+y^2z+xz^3$; $Q_{12}:x^3+y^5+yz^2$;
+  $S_{11}:x^4+y^2z+xz^2$; $S_{12}:x^2y+y^2z+xz^3$; and
+  $U_{12}:x^3+y^3+z^4$.
+Keywords:
+  - monodromy characteristic polynomial
+  - Milnor monodromy
+  - simple singularity
+  - unimodal singularity
+  - Arnold singularity
+  - ADE singularity
+Parameters:
+  singularity:
+    type: Symbolic
+    title: singularity
+    display: singularity
+    constraints: >-
+      $A_k$ with $k\geq1$, $D_k$ with $k\geq4$, one of
+      $E_6,E_7,E_8$, or one of Arnold's parabolic or exceptional unimodal
+      labels $P_8,X_9,J_{10},E_{12},E_{13},E_{14},Z_{11},Z_{12},Z_{13},
+      W_{12},W_{13},Q_{10},Q_{11},Q_{12},S_{11},S_{12},U_{12}$
+    values:
+      A1: $A_1$
+      A2: $A_2$
+      A3: $A_3$
+      A4: $A_4$
+      A5: $A_5$
+      A6: $A_6$
+      A7: $A_7$
+      A8: $A_8$
+      A9: $A_9$
+      A10: $A_{10}$
+      A11: $A_{11}$
+      A12: $A_{12}$
+      D4: $D_4$
+      D5: $D_5$
+      D6: $D_6$
+      D7: $D_7$
+      D8: $D_8$
+      D9: $D_9$
+      D10: $D_{10}$
+      D11: $D_{11}$
+      D12: $D_{12}$
+      E6: $E_6$
+      E7: $E_7$
+      E8: $E_8$
+      P8: $P_8$
+      X9: $X_9$
+      J10: $J_{10}$
+      E12: $E_{12}$
+      E13: $E_{13}$
+      E14: $E_{14}$
+      Z11: $Z_{11}$
+      Z12: $Z_{12}$
+      Z13: $Z_{13}$
+      W12: $W_{12}$
+      W13: $W_{13}$
+      Q10: $Q_{10}$
+      Q11: $Q_{11}$
+      Q12: $Q_{12}$
+      S11: $S_{11}$
+      S12: $S_{12}$
+      U12: $U_{12}$
+  n:
+    type: Z
+    title: number of variables
+    display: $n$
+    constraints: >-
+      the number of variables, at least the corank of the singularity
+Comments:
+  notation: >-
+    $\mu$ is the Milnor number
+    $\dim_{\mathbb{C}}\mathbb{C}[x_1,\ldots,x_n]/(\partial f)$. The degree of
+    $\Delta_f(t)$ is $\mu$.
+  suspension: >-
+    Increasing $n$ by one adds a square variable and suspends the singularity;
+    every monodromy eigenvalue is multiplied by $-1$.
+Formulas:
+  weighted-homogeneous-eigenvalues: >-
+    If $f$ has weighted degree $1$ with weights $w_i$, and $x^a$ runs through
+    a monomial basis of the Milnor algebra
+    $\mathbb{C}[x_1,\ldots,x_c]/(\partial f)$, then the eigenvalues are
+    $\exp\left(-2\pi i\left(\sum_iw_i+\sum_ia_iw_i+\frac{n-c}{2}\right)\right)$,
+    each with multiplicity. The product of $t$ minus these eigenvalues is
+    $\Delta_f(t)$.
+  suspension: >-
+    If $\mu$ is the Milnor number, then
+    $\Delta_{f+u^2}(t)=(-1)^\mu\Delta_f(-t)$.
+Similar tables:
+  - table: HREF{T290}[Bernstein-Sato polynomials of the simple and unimodal singularities]
+    relation: >-
+      Malgrange-Kashiwara theory gives the set of monodromy eigenvalues from
+      the roots of the Bernstein-Sato polynomial, without their multiplicities
+  - table: HREF{Poincaré_polynomials_of_the_finite_Coxeter_groups}[Poincaré polynomials of the finite Coxeter groups]
+    relation: >-
+      for the ADE rows with $n=3$, the monodromy eigenvalues are the
+      eigenvalues of a Coxeter element of the corresponding finite Coxeter
+      group
+Links:
+  WikiMilnorFibration:
+    title: 'Wikipedia: Milnor fibration'
+    url: https://en.wikipedia.org/wiki/Milnor_fibration
+References:
+  AGV:
+    bib: >-
+      V. I. Arnold, S. M. Gusein-Zade and A. N. Varchenko, Singularities of
+      Differentiable Maps, Volume I, Birkhauser, 1985.
+  Milnor:
+    bib: >-
+      John Milnor, Singular Points of Complex Hypersurfaces, Annals of
+      Mathematics Studies 61, Princeton University Press, 1968.
+Tags:
+  - polynomial
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds $A_k$ for $1\leq k\leq12$, $D_k$ for $4\leq k\leq12$, the
+    exceptional simple singularities, and the parabolic and exceptional
+    unimodal singularities in the definition, with $n\leq3$; the hyperbolic
+    unimodal families $T_{p,q,r}$ are not included
+  rigour details: >-
+    The generator computes the rational monodromy exponents from the weights
+    and a monomial basis of the Milnor algebra, forms the product over the
+    corresponding roots of unity exactly in cyclotomic factors, checks that
+    each root order occurs in complete Galois orbits, and returns the
+    expanded polynomial in $\mathbb{Z}[t]$.
+Display properties:
+  number-header: $\Delta_f(t)$
+Numbers: []
