@@ -1,0 +1,126 @@
+# Table document for numberdb-data issue #156, draft T302. Created with
+# X-Draft: yes, then filled by generate.py beside it. Publishing is a
+# person's act on the site.
+Title: Newton–Cotes weights
+Definition: >-
+  For $n\geq 1$, the closed Newton–Cotes weights $w_{n,j}$ are the rational
+  coefficients in $\int_0^n f(x)\,\mathrm{d}x\approx
+  \sum_{j=0}^n w_{n,j}f(j)$, exact for every polynomial $f$ of degree at
+  least $n$ CITE{Wiki}. Listed with each $w_{n,j}$ is the Cotes number
+  $C_{n,j}=w_{n,j}/n$ for the unit interval.
+Parameters:
+  n:
+    type: Z
+    title: number of subintervals
+    display: $n$
+    constraints: $n\geq 1$
+  j:
+    type: Z
+    title: node index, counted from the left endpoint
+    display: $j$
+    constraints: $0\leq j\leq n$
+  normalisation:
+    type: Symbolic
+    title: normalisation
+    display: normalisation
+    constraints: either `step` or `unit-interval`
+    values:
+      step: $w_{n,j}$
+      unit-interval: $C_{n,j}$
+Comments:
+  comment-step: >-
+    The `step` rows use spacing $h=1$. On an interval with nodes
+    $a,a+h,\ldots,a+nh$, the quadrature rule is
+    $\int_a^{a+nh}f(x)\,\mathrm{d}x\approx h\sum_{j=0}^n w_{n,j}f(a+jh)$.
+    The `unit-interval` rows divide the same weights by $n$, giving
+    $\int_0^1 f(x)\,\mathrm{d}x\approx\sum_{j=0}^n C_{n,j}f(j/n)$.
+  comment-ordering: >-
+    The node index $j$ is counted from the left endpoint, so the entries are
+    in the same order as $f(0),f(1),\ldots,f(n)$ in the step form. Every
+    symmetric duplicate is stored: $w_{n,j}=w_{n,n-j}$, and a reader may hold
+    either end of the rule.
+  comment-reduced: >-
+    The entries are reduced fractions. The common-denominator form printed in
+    tables of quadrature rules, such as
+    $\tfrac{2}{45}(7,32,12,32,7)$ for Boole's rule, is given as an entry
+    comment on the first row of each rule.
+  comment-negative: >-
+    The closed equally spaced rules stop being positive: the first negative
+    weights in this range occur for $n=8$, where
+    $w_{8,2}=w_{8,6}=-3712/14175$. The rules with $n=10,11,12$ also have
+    negative weights.
+  comment-neighbours: >-
+    The weights are the integrals of
+    HREF{Lagrange_basis_polynomials_for_equally_spaced_nodes}[the Lagrange
+    basis polynomials for equally spaced nodes]. HREF{Nodes_and_weights_of_Gauss_Legendre_quadrature}[Gauss–Legendre],
+    HREF{Nodes_and_weights_of_Gauss_Lobatto_quadrature}[Gauss–Lobatto] and
+    HREF{Nodes_and_weights_of_Gauss_Kronrod_quadrature}[Gauss–Kronrod]
+    quadrature choose different, non-equally spaced nodes for the same
+    integration problem.
+Formulas:
+  formula-lagrange: >-
+    $w_{n,j}=\int_0^n \ell_{n,j}(x)\,\mathrm{d}x$, where
+    $\ell_{n,j}(x)=\prod_{0\leq k\leq n,\ k\neq j}\frac{x-k}{j-k}$.
+  formula-cotes: >-
+    $C_{n,j}=w_{n,j}/n$, so the two normalisations determine one another.
+  formula-exactness: >-
+    $\sum_{j=0}^n w_{n,j}j^m=\int_0^n x^m\,\mathrm{d}x=\frac{n^{m+1}}{m+1}$
+    for $0\leq m\leq n$; when $n$ is even, the same identity also holds for
+    $m=n+1$.
+  formula-symmetry: >-
+    $w_{n,j}=w_{n,n-j}$, $C_{n,j}=C_{n,n-j}$,
+    $\sum_{j=0}^n w_{n,j}=n$ and $\sum_{j=0}^n C_{n,j}=1$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x> = QQ[]
+      def newton_cotes_weights(n):
+          weights = []
+          for j in range(n + 1):
+              ell = prod((x - k) / (j - k) for k in range(n + 1) if k != j)
+              weights.append(integral(ell, x, 0, n))
+          return weights
+
+      newton_cotes_weights(4)     # [14/45, 64/45, 8/15, 64/45, 14/45]
+Similar tables:
+  - table: HREF{Lagrange_basis_polynomials_for_equally_spaced_nodes}[Lagrange basis polynomials for equally spaced nodes]
+    relation: the weights are the integrals of these basis polynomials
+  - table: HREF{Nodes_and_weights_of_Gauss_Legendre_quadrature}[Nodes and weights of Gauss–Legendre quadrature]
+    relation: the interpolatory rule with $n$ free nodes, exact to the highest possible degree
+  - table: HREF{Nodes_and_weights_of_Gauss_Lobatto_quadrature}[Nodes and weights of Gauss–Lobatto quadrature]
+    relation: the interpolatory rule with both endpoints fixed, agreeing here only for the trapezoidal and Simpson rules
+  - table: HREF{Nodes_and_weights_of_Gauss_Kronrod_quadrature}[Nodes and weights of Gauss–Kronrod quadrature]
+    relation: the extension of Gauss–Legendre rules used for adaptive quadrature
+Links:
+  Wiki:
+    title: 'Wikipedia: Newton–Cotes formulas'
+    url: https://en.wikipedia.org/wiki/Newton%E2%80%93Cotes_formulas
+  MathWorld:
+    title: 'MathWorld: Newton-Cotes Formulas'
+    url: https://mathworld.wolfram.com/Newton-CotesFormulas.html
+  OEISNumerators:
+    title: 'OEIS A093735: numerators of Newton–Cotes formulas'
+    url: https://oeis.org/A093735
+  OEISDenominators:
+    title: 'OEIS A093736: denominators of Newton–Cotes formulas'
+    url: https://oeis.org/A093736
+Keywords: trapezoidal rule, Simpson's rule, Simpson's 3/8 rule, Boole's rule, Bode's rule, Cotes numbers
+Tags:
+  - numerical analysis
+  - analysis
+Data properties:
+  type: Q
+  rigour: exact
+  complete: 'no'
+  complete-note: it holds every closed rule with $1\leq n\leq 12$, in both the step and unit-interval normalisations
+  rigour details: >-
+    The generator builds the Lagrange moment equations over $\mathbb{Q}$ and
+    solves them exactly. Each completed rule is checked against the moments
+    through degree $n$, and through degree $n+1$ when $n$ is even, against
+    the symmetry and the two normalisations, against the quoted rows on
+    Wikipedia and MathWorld for the named small rules, and against OEIS
+    A093735 and A093736 where those b-files give the same rows.
+Display properties:
+  number-header: $w_{n,j}$ or $C_{n,j}$
+Numbers: []
