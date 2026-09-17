@@ -1,0 +1,99 @@
+# The table document for numberdb.org/T301. It is created as a draft through the
+# API (X-Draft: yes), filled by generate.py beside it, and left offered for
+# review; publishing is a person's act on the site.
+Title: Minimal polynomials of the Salem numbers less than 1.3
+Definition: >-
+  A Salem number CITE{Wiki} is an algebraic integer $\tau>1$ whose other
+  conjugates have absolute value at most $1$, with at least one on the unit
+  circle. For the coefficient half-list $a=(a_0,\ldots,a_{d/2})$ indexing a
+  row of HREF{Salem_numbers_less_than_1_3}[the Salem-number table], the table
+  stores the monic minimal polynomial $m_a(x)\in\mathbb{Z}[x]$ of that Salem
+  number.
+Parameters:
+  coefficients:
+    type: Symbolic
+    title: leading coefficients of the minimal polynomial
+    display: coefficients
+    constraints: >-
+      the coefficients $a_0,\ldots,a_{d/2}$ of $x^d,\ldots,x^{d/2}$ in the
+      minimal polynomial of a Salem number of even degree $d$
+Comments:
+  comment-source: >-
+    Mossinghoff's small-Salem-number list CITE{Mossinghoff1998} gives the
+    degree, a decimal expansion of the Salem number, and the first half of the
+    reciprocal minimal polynomial. The entries here are the reciprocal monic
+    polynomials determined by those half-lists.
+  comment-roots: >-
+    Each entry comment links to the matching Salem number in
+    HREF{Salem_numbers_less_than_1_3}[the root table].
+Formulas:
+  formula-reciprocal: >-
+    For coefficients $a_0,a_1,\ldots,a_{d/2}$, the polynomial is
+    $m_a(x)=a_0x^d+a_1x^{d-1}+\cdots+a_{d/2}x^{d/2}+\cdots+a_1x+a_0$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x> = ZZ[]
+      half = [1, 1, 0, -1, -1, -1]
+      d = 2*(len(half) - 1)
+      sum(half[i]*x^(d - i) for i in range(len(half))) + sum(half[i]*x^i for i in range(len(half) - 1))
+Similar tables:
+  - table: HREF{Salem_numbers_less_than_1_3}[Salem numbers less than $1.3$]
+    relation: stores the Salem root $\tau>1$ of each polynomial $m_a(x)$ held here
+Links:
+  Wiki:
+    title: "Wikipedia: Salem number"
+    url: https://en.wikipedia.org/wiki/Salem_number
+  Mossinghoff:
+    title: "Mossinghoff: Small Salem Numbers"
+    url: https://web.archive.org/web/20210509232916/http://www.cecm.sfu.ca/~mjm/Lehmer/lists/SalemList.html
+References:
+  SacEpee:
+    bib: >-
+      J.-M. Sac-Epee, Salem numbers less than $49/37$, 2025.
+    arxiv: '2409.11159'
+    doi: 10.48550/arXiv.2409.11159
+  MRW:
+    bib: >-
+      M. J. Mossinghoff, G. Rhin and Q. Wu, Minimal Mahler measures,
+      Experimental Mathematics 17 (2008), no. 4, 451-458.
+    doi: 10.1080/10586458.2008.10128872
+    mr: '2484429'
+  Mossinghoff1998:
+    bib: >-
+      M. J. Mossinghoff, Polynomials with small Mahler measure, Mathematics of
+      Computation 67 (1998), no. 224, 1697-1705, S11-S14.
+    doi: 10.1090/S0025-5718-98-01006-0
+Keywords:
+  - Salem number
+  - small Salem number
+  - Lehmer number
+  - Lehmer problem
+  - Mahler measure
+  - minimal polynomial
+  - reciprocal polynomial
+  - algebraic entropy
+Tags:
+  - number theory
+  - algebraic
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds the minimal polynomials of the $47$ known Salem numbers below
+    $1.3$ in Mossinghoff's list CITE{Mossinghoff}; the list is proved complete
+    through degree $44$ CITE{MRW}, and the one degree-$46$ entry is also
+    included
+  rigour details: >-
+    The generator parses the exact coefficient half-lists in Mossinghoff's
+    archived table CITE{Mossinghoff}. It constructs the reciprocal polynomial
+    in Formula CITE{formula-reciprocal}, checks irreducibility over
+    $\mathbb{Q}$, checks the Salem root pattern, and stores the resulting
+    monic integer polynomial exactly. It also verifies that the real root
+    greater than $1$ lies in the corresponding interval in
+    HREF{Salem_numbers_less_than_1_3}[the Salem-number table].
+Display properties:
+  number-header: $m_a(x)$
+Numbers: []
