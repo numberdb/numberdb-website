@@ -63,9 +63,11 @@ import numberdb
 #: Where the stored range stops, and where this one starts.
 FIRST_NEW = 7
 
-#: How far to go. At about six minutes a value for both working precisions,
-#: n = 7..20 is under two hours.
-UP_TO = 20
+#: How far to go, from the environment so a run can be carried further
+#: without an edit. The cost falls as n grows, because J_0(x)^n decays like
+#: x^{-n/2}: measured at working precision 40 and 48, n = 20 takes minutes
+#: and n = 50, 100 and 200 take seconds.
+UP_TO = int(os.environ.get("NUMBERDB_UP_TO", "200"))
 
 #: The two working precisions, and the most digits a value is given. The
 #: published value keeps the digits both precisions agree on, less a two-digit
