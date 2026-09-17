@@ -116,7 +116,7 @@ def _mu(n, dps):
 
 
 def mu(n):
-    """mu_n, as a string of the digits two precisions agree on."""
+    """mu_n, as a string of the digits two precisions agree on, and how many."""
     low = _mu(n, LOW)
     high = _mu(n, HIGH)
     mp.mp.dps = HIGH + 20
@@ -128,14 +128,13 @@ def mu(n):
     #Two digits of margin, because the last agreeing digit is the one most
     #likely to be agreed on by accident.
     keep = max(1, min(MOST_DIGITS, agreed - 2))
-    return mp.nstr(high, keep, strip_zeros=False)
+    return mp.nstr(high, keep, strip_zeros=False), keep
 
 
 def check():
     """Reproduce what is known before computing what is not."""
     for n, stored in sorted(KNOWN.items()):
-        got = mu(n)
-        digits = len(got.split(".")[-1])
+        got, digits = mu(n)
         mp.mp.dps = digits + 10
         if abs(mp.mpf(got) - mp.mpf(stored)) > mp.mpf(10) ** (-digits + 1):
             raise SystemExit(
@@ -155,8 +154,15 @@ class ShortWalkMahlerMeasures(numberdb.Generator):
         for n in range(first, last + 1):
             yield {"n": str(n)}
 
+    #What a value is worth is decided per value, by how far two working
+    #precisions agree, so it is stated per value. Without this the client
+    #asks for its default of 100 digits, receives 50, and refuses to send --
+    #which it did, correctly, on the first value this generator computed.
+    digits = MOST_DIGITS
+
     def value(self, params, digits=None):
-        return mu(int(params["n"]))
+        text, known = mu(int(params["n"]))
+        return {"number": text, "digits": known}
 
 
 if __name__ == "__main__":
