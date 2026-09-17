@@ -4197,3 +4197,25 @@ mathematical result.
 
 Evidence: `/tmp/t292_pair_check.py`, 2026-09-17. The replacement check used
 exact arithmetic in the basis `1,w` and verified all 250 repeated-value pairs.
+
+## `/api/table/<tid>/audit` can 500 on one draft while other audits work
+
+What happened: after filling T293, `GET /api/table/T293/audit` with the
+draft owner's API key returned HTTP 500 with only the generic server-error
+HTML page. The same keyed request succeeded for public T64 and draft T292 in
+the same run, so the audit service was reachable and draft auth was working.
+The local fallback was unavailable because this checkout has no Django
+installed (`ModuleNotFoundError: No module named 'django'`). Trying to run the
+audit code inside `agents/sage.sh` also failed, because the builder image used
+there did not have the site checkout at `/app`.
+
+What to do instead: when the audit endpoint gives only a generic 500, probe a
+known table and a known draft to separate an endpoint outage from a
+table-specific crash, keep the generator `verify(sample=None)` and dry-run
+output in the final report, and leave a note for a person with server logs to
+run `manage.py audit_table <tid>` directly. Do not treat the generic 500 as a
+clean audit.
+
+Evidence: T293 on 2026-09-17 returned 500 from the audit endpoint after
+`verify()` reported `585/585 matched`; T64 returned one finding and T292
+returned clean from the same keyed audit script.
