@@ -12,7 +12,20 @@ contributor works across; an agent should not have a private door. See
 Two jobs, not one loop:
 
     agents/propose-batch.sh   screen a family and put it in the queue
-    agents/campaign.sh        build what is in the queue, table by table
+    agents/campaign.sh        work through what is waiting, item by item
+
+and four kinds of work, which `agents/work.py` picks between:
+
+    proposal   a screened family in the queue        -> build a new table
+    demand     an `enhancement` issue, or a sentence -> critique file, repair
+    growth     a table small for its subject         -> ask, then grow it
+    sweep      a table nobody has ever read          -> critique, repair
+
+They share one pipeline because they share one shape: a list of claims about
+one table, and an agent that checks each claim and acts. `growth` and `sweep`
+exist because nobody files an issue for them -- 126 hand-made tables had never
+been read, and the median table built since T240 uses a tenth of the room it
+is allowed.
 
 The queue is the `proposal` issues in numberdb-data, one per family, each with
 a checklist of its tables; `agents/queue.py` speaks it. A campaign tops the

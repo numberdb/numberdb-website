@@ -1,0 +1,294 @@
+tid	entries	bytes	title
+T0	1	633	Zero
+T1	1	688	One
+T2	21	1019	Integers
+T3	1000	59051	Zeros of the Riemann zeta function
+T4	1075	153145	Zeros of Dirichlet L-series
+T5	1	2011	Exponent of matrix multiplication complexity
+T6	10	2487	Diagonal Ramsey numbers
+T7	1	1055	Pi
+T8	1	1229	Euler's constant e
+T9	1080	123675	Values of the Gamma function at rational numbers
+T10	2	1913	Fine-structure constant
+T11	101	8954	Factorial of natural numbers
+T12	2	1546	Proton-to-electron mass ratio
+T13	101	4479	Bernoulli numbers
+T14	1000	110846	Values of the Riemann zeta function at rational numbers
+T15	502	35188	Taylor coefficients of the completed Riemann zeta function a
+T16	1001	117040	Stieltjes constants
+T17	294	34654	Area of the regular n-gon
+T18	6	7558	Feigenbaum constants
+T19	8	2756	Pólya's random walk constants
+T20	1050	124734	Zeros of Bessel functions of the first kind $J_\alpha$
+T21	1050	121274	Zeros of Bessel functions of the second kind $Y_\alpha$
+T22	1050	121423	Local extrema of Bessel functions of the first kind $J_\alph
+T23	1050	121403	Local extrema of Bessel functions of the second kind $Y_\alp
+T24	908	132462	Values of the prime zeta function at rational numbers
+T25	774	88458	Complete elliptic integral of the first kind $K(m)$
+T26	775	88344	Complete elliptic integral of the second kind $E(m)$
+T27	501	59629	Volume of the $d$-dimensional unit ball
+T28	502	59643	Volume of the $d$-dimensional unit sphere
+T29	319	36553	Rational multiples of pi
+T30	39	1382	Rational numbers
+T31	1001	117317	Keiper-Li coefficients
+T32	3	2458	Golden ratio
+T33	502	60624	Taylor coefficients of the completed Riemann zeta function a
+T34	1002	122677	Laurent series coefficients of the logarithmic derivative  o
+T35	850	101212	Algebraic numbers of degree 2
+T36	700	87436	Laurent series coefficients of the logarithmic derivative  o
+T37	1	1969	Ramanujan's constant $R = e^{\pi \sqrt{163}}$
+T38	1	1924	Hafner-Sarnak-McCurley constant
+T39	1	1277	Twin prime constant $C_2$
+T40	4	2306	Wilbraham-Gibbs constant
+T41	4	2867	Hyperreal numbers
+T42	1	1069	42
+T43	1	1507	Meissel-Mertens constant $M$
+T44	1036	75815	Teichmüller representatives in $\mathbb{Z}_p$
+T45	856	66136	$p$-adic logarithm of integers
+T46	1010	75093	Values of the $p$-adic exponential function at integers
+T47	810	52306	Values of the $p$-adic Gamma function at integers
+T48	1010	75085	Values of the Artin-Hasse exponential function at integers
+T49	841	102466	Generalized Bernoulli numbers
+T50	1000	80529	Values of the Kubota-Leopoldt zeta function at integers
+T51	990	115224	Values of the arithmetic-geometric mean
+T52	990	78357	Values of the $p$-adic arithmetic-geometric mean
+T53	990	117559	Multiple zeta values of length 2
+T54	900	107162	Multiple zeta values of length 3
+T55	1000	115266	Zeros of the Airy function of the first kind Ai
+T56	1000	115268	Zeros of the Airy function of the second kind Bi
+T57	1000	115396	Local extrema of the Airy function of the first kind Ai
+T58	1000	115398	Local extrema of the Airy function of the second kind Bi
+T59	992	113942	Complete elliptic integral of the third kind $\Pi(n,m)$
+T60	774	176195	Roots of unity
+T61	941	107666	$\cos(\pi x)$ for rational $x$
+T62	723	22649	$abc$-triples of high quality
+T63	606	36115	$abc$-triples of high merit
+T64	1007	223667	Regulators of elliptic curves over $\mathbb{Q}$ of rank $1$
+T65	955	217440	Regulators of elliptic curves over $\mathbb{Q}$ of rank $2$
+T66	1061	247797	Regulators of elliptic curves over $\mathbb{Q}$ of rank $3$
+T67	442	7247	$j$-invariants of elliptic curves over $\mathbb{Q}$ with  go
+T68	395	42383	$j$-invariants of elliptic curves  over quadratic fields  wi
+T69	1124	243339	Special $L$-value of elliptic curves over $\mathbb{Q}$ of ra
+T70	1091	249165	Special $L$-value of elliptic curves over $\mathbb{Q}$ of ra
+T71	1026	240082	Special $L$-value of elliptic curves over $\mathbb{Q}$ of ra
+T72	1007	223665	Real periods of elliptic curves over $\mathbb{Q}$ of rank $1
+T73	955	217582	Real periods of elliptic curves over $\mathbb{Q}$ of rank $2
+T74	1061	247940	Real periods of elliptic curves over $\mathbb{Q}$ of rank $3
+T76	40	3312	Mass ratios
+T77	26	3035	Orders of sporadic finite simple groups
+T78	35	3044	Magnetic moment ratios
+T79	1002	126550	$q$-expansion of the $j$-invariant
+T80	1001	27910	$q$-expansion of the modular discriminant $\Delta$
+T81	1001	23847	$q$-expansion of the Eisenstein series $E_4$
+T82	1001	30253	$q$-expansion of the Eisenstein series $E_6$
+T83	13	1359	Rational singular moduli
+T84	69	5324	Spectral parameter of Maass forms of level 1
+T85	25	3902	Volume of the Platonic solids
+T86	25	3806	Surface area of the Platonic solids
+T87	120	9124	Elliptic curves over $\mathbb{Q}$ with large Szpiro ratios
+T88	512	14076	Number of elliptic curves over $\mathbb{Q}$ with good reduti
+T89	16	3082	Number of $p$-smooth $abc$-triples
+T90	26	2602	First known Mordell curves of given rank
+T91	15	3202	Highest known ranks of elliptic curves over $\mathbb{Q}$ wit
+T92	1024	132359	Best Sobolev constant for $W^{1,p}(\mathbb{R}^n)$
+T93	1080	230731	Values of the Barnes $G$-function at rational numbers
+T94	1134	121500	Values of the Hurwitz zeta function at pairs of rational num
+T95	100	15869	Cyclotomic polynomials
+T96	12	133559	Modular polynomials for the $j$-invariant
+T97	23	75167	Modular polynomials for Weber's $f$-function
+T98	101	75666	Chebyshev polynomials of the first kind $T_n$
+T99	101	76121	Chebyshev polynomials of the second kind $U_n$
+T100	5	2628	Hausdorff dimension of some fractals
+T101	51	26700	Legendre polynomials
+T102	51	39123	Laguerre polynomials
+T103	51	22401	Hermite polynomials in physicist's convention
+T104	51	17106	Hermite polynomials in probabilist's convention
+T105	337	47274	Gegenbauer polynomials
+T106	207	33998	Jacobi polynomials
+T107	2	22176	Equations satisfied by Igusa invariants of split Jacobians
+T108	101	50069	Fibonacci polynomials $F_n$
+T109	101	51437	Lucas polynomials $L_n$
+T110	41	21549	Touchard polynomials $T_n$
+T111	351	51784	Bernstein basis polynomials $b_{v,n}$
+T112	231	78476	Lagrange basis polynomials for equally spaced nodes
+T113	28	4563	Partial Bell polynomials $B_{n,k}$
+T114	51	16264	Bernoulli polynomials $B_n$
+T115	51	18547	Euler polynomials $E_n$
+T116	31	13928	Bessel polynomials $y_n$
+T117	41	9349	Dickson polynomials of the first kind $D_n(x,a)$
+T118	21	3934	Elementary symmetric polynomials $e_k$
+T119	72	4507	Power sum symmetric polynomials $p_k$
+T120	18	4414	Complete homogeneous symmetric polynomials $h_k$
+T121	44	5579	Monomial symmetric polynomials $m_\lambda$
+T122	33	5946	Schur polynomials $s_\lambda$
+T123	21	6541	Abel polynomials $A_n(x;a)$
+T124	26	8698	Bernoulli polynomials of the second kind $\psi_n$
+T125	996	68484	Chromatic polynomials of connected graphs
+T126	996	182580	Tutte polynomials of connected graphs
+T127	1050	123921	Zeros of the polygamma functions $\psi^{(n)}$
+T128	607	133098	Residues of Dedekind zeta functions of quadratic fields
+T129	150	53644	Hilbert class polynomials $H_\Delta$
+T130	906	77951	Values of Dedekind zeta functions of real quadratic fields a
+T131	302	76887	Regulators of real quadratic fields
+T132	930	119534	Nodes and weights of Gauss–Legendre quadrature
+T133	51	34553	Secondary polynomials of the Legendre polynomials $q_n$
+T134	930	123155	Nodes and weights of Gauss–Hermite quadrature
+T135	930	123667	Nodes and weights of Gauss–Laguerre quadrature
+T136	816	126934	Nodes and weights of Gauss–Kronrod quadrature
+T137	928	111907	Nodes and weights of Gauss–Lobatto quadrature
+T138	250	47059	Alexander polynomials of the prime knots with at most ten cr
+T139	479	107800	Jones polynomials of the prime knots with at most ten crossi
+T140	250	46282	Conway polynomials of the prime knots with at most ten cross
+T141	243	56300	Hyperbolic volumes of the prime knots with at most ten cross
+T142	471	171446	Gauss sums of primitive Dirichlet characters
+T143	372	150263	Jacobi sums of pairs of Dirichlet characters modulo a prime
+T144	616	147302	Kloosterman sums modulo a prime
+T145	503	171980	Values of Dirichlet L-functions at positive integers
+T146	158	24388	Gaussian period polynomials
+T147	399	96652	Packing densities and Hermite numbers of the classical latti
+T148	96	46715	Densities of the densest known lattice sphere packings
+T149	9	14021	Hermite's constants $\gamma_n$
+T150	234	69602	Covering radii and covering densities of the classical latti
+T151	24	17170	Kissing numbers $\tau_n$
+T152	66	31586	Site and bond percolation thresholds of lattices
+T153	34	28828	Entropy constants of lattice models
+T154	46	30303	Critical couplings of the Ising model on lattices
+T155	34	20562	Critical exponents of the two-dimensional universality class
+T156	10	11110	k-core thresholds of the Erdős–Rényi random graph
+T157	16	19728	Connective constants of lattices
+T158	515	140076	Regulators of cubic fields
+T159	515	118678	Residues of Dedekind zeta functions of cubic fields
+T160	26	24040	Minimal discriminants of number fields by degree and signatu
+T161	519	61221	Values of Dedekind zeta functions of totally real cubic fiel
+T162	515	125803	Values of Dedekind zeta functions of cubic fields at 2
+T163	71	28427	Hardy-Littlewood singular series of prime tuples
+T164	828	100581	Mertens constants of primes in arithmetic progressions
+T165	92	25981	Densities of primes with a given primitive root
+T166	76	20390	Bateman-Horn constants of monic quadratic polynomials
+T167	12	10886	Named rational Euler products over primes
+T168	48	15124	Bifurcation points of the period-doubling cascade of the log
+T169	238	64745	Periodic windows of the logistic map by kneading word
+T170	13	10467	Khinchin's means $K_p$
+T171	28	13565	Lyapunov exponents of classical chaotic systems
+T172	2	5297	Lévy's constant
+T173	1	3303	Lochs's constant
+T174	50	12123	Eigenvalues of the Gauss-Kuzmin-Wirsing operator
+T175	538	69891	Values of the Clausen functions $\mathrm{Cl}_s$ at rational 
+T176	768	95026	Values of the polylogarithm $\mathrm{Li}_s$ at rational argu
+T177	666	71136	Values of the Beta function $B(a,b)$ at pairs of rational nu
+T178	508	67470	Values of Ramanujan's signature hypergeometric functions $F_
+T179	51	19183	Sums of powers $S_p(n)$
+T180	31	17881	Stirling polynomials $S_k(x)$
+T181	25	12208	Faulhaber polynomials $F_p(a)$
+T182	51	24160	Mahler polynomials $g_n(x)$
+T183	31	16507	Bateman polynomials $F_n(x)$
+T184	31	14801	Boole polynomials $r_n(x)$
+T185	46	24350	Mott polynomials $s_n(x)$
+T186	25	15850	Stirling convolution polynomials $\sigma_n(x)$
+T187	990	122753	Values of Bessel functions of the first kind $J_\nu(x)$
+T188	1000	121644	Values of the exponential integral
+T189	1	3755	Viswanath's constant
+T190	990	121006	Values of Bessel functions of the second kind $Y_\nu(x)$
+T191	999	117563	Values of the logarithmic integral $\operatorname{li}(x)$
+T192	1000	117668	Values of the sine integral $\operatorname{Si}(x)$
+T193	1000	119385	Values of the cosine integral $\operatorname{Ci}(x)$
+T194	1000	117876	Values of the hyperbolic sine integral $\operatorname{Shi}(x
+T195	1000	118071	Values of the hyperbolic cosine integral $\operatorname{Chi}
+T196	990	123305	Values of modified Bessel functions of the first kind $I_\nu
+T197	1001	121193	Values of the error function $\operatorname{erf}(x)$
+T198	1101	133041	Values of the Airy function of the first kind $\operatorname
+T199	990	119304	Values of modified Bessel functions of the second kind $K_\n
+T200	722	87824	Values of the Lambert $W$ function
+T201	1101	133514	Values of the derivative of the Airy function of the first k
+T202	1101	131790	Values of the Airy function of the second kind $\operatornam
+T203	1101	131628	Values of the derivative of the Airy function of the second 
+T204	1001	123122	Values of the complementary error function $\operatorname{er
+T205	1001	119561	Values of the imaginary error function $\operatorname{erfi}(
+T206	1001	120925	Values of Dawson's integral $F(x)$
+T207	1001	121129	Values of the Fresnel sine integral $S(x)$
+T208	1001	121045	Values of the Fresnel cosine integral $C(x)$
+T209	564	72142	Values of Tricomi's confluent hypergeometric function $U(a,b
+T210	768	96452	Values of Kummer's confluent hypergeometric function $M(a;b;
+T211	466	129448	Faltings heights of elliptic curves over $\mathbb{Q}$
+T212	41	15946	Special $L$-values of genus 2 curves over $\mathbb{Q}$
+T213	159	43691	Real periods of genus 2 curves over $\mathbb{Q}$
+T214	895	199557	Weil polynomials of abelian varieties over prime fields
+T215	164	55206	Hecke polynomials of level one cusp forms
+T216	520	62595	Frobenius angles of abelian varieties over prime fields
+T217	686	28075	Hecke polynomials of weight 2 newforms
+T218	150	18053	Fourier coefficients of Maass forms of level 1
+T219	1000	184805	Volumes of the closed hyperbolic 3-manifolds of the Hodgson-
+T220	893	114844	Orders of finite simple groups of Lie type
+T221	305	76678	Covolumes of the Bianchi groups
+T222	345	114717	Growth rates of hyperbolic Coxeter triangle groups
+T223	9	8684	Growth rates of hyperbolic Coxeter simplex groups
+T224	23	12624	Volumes of the hyperbolic Coxeter simplices
+T225	301	79298	Volumes of the cusped hyperbolic 3-manifolds of the Callahan
+T226	364	45748	Values of the digamma function $\psi(x)$ at rational numbers
+T227	40	9033	Bendersky constants $A_k$
+T228	240	32275	Values of the derivative $\zeta'(s)$ of the Riemann zeta fun
+T229	552	70847	Values of the hyperfactorial $K$-function $K(x)$ at rational
+T230	607	105453	Euler-Kronecker constants of quadratic fields
+T231	465	57895	Euler-Lehmer constants $\gamma(a,q)$
+T232	4	6775	Ehrhart polynomials of the Birkhoff polytopes
+T233	78	26607	Ehrhart polynomials of the root polytopes
+T234	81	37543	Ehrhart polynomials of the hypersimplices
+T235	18	9058	Ehrhart polynomials of the permutohedra
+T236	30	9405	Volumes of the Birkhoff polytopes
+T237	996	62334	Characteristic polynomials of connected graphs
+T238	996	85414	Laplacian polynomials of connected graphs
+T239	996	45104	Signed matching polynomials of connected graphs
+T240	987	101566	Independence polynomials of trees
+T241	626	84815	Differential entropies of continuous probability distributio
+T242	4	4758	Ehrhart $h^*$-polynomials of the Birkhoff polytopes
+T243	78	20251	Ehrhart $h^*$-polynomials of the root polytopes
+T244	81	19747	Ehrhart $h^*$-polynomials of the hypersimplices
+T245	18	9959	Ehrhart $h^*$-polynomials of the permutohedra
+T246	230	30742	Values of the logarithmic derivative $\zeta'(s)/\zeta(s)$ of
+T247	365	43903	Values of the harmonic-number function $H_x$ at rational num
+T248	996	41397	Matching-generating polynomials of connected graphs
+T249	2	3382	Glaisher-Kinkelin constant $A$
+T250	728	87599	Values of the polygamma functions $\psi^{(n)}(x)$ at rationa
+T251	188	58109	Zernike polynomials $Z_n^l$
+T252	586	87592	Clebsch-Gordan coefficients and Wigner $3j$ symbols
+T253	485	59183	Wigner $6j$ symbols
+T254	51	22480	Heat (caloric) polynomials $P_m(x,t)$
+T255	1370	36284	Degrees of the irreducible characters of the sporadic simple
+T256	599	21184	Dimensions of the irreducible representations of the excepti
+T257	37	18101	Poincaré polynomials of the finite Coxeter groups
+T258	90	40201	Orders of finite groups of Lie type as polynomials in $q$
+T259	901	45421	Kostka–Foulkes polynomials $K_{\lambda\mu}(t)$
+T260	787	123637	Macdonald–Kostka polynomials $\tilde K_{\lambda\mu}(q,t)$
+T261	33	10541	Hall–Littlewood polynomials $P_\lambda(x_1,\dots,x_n;t)$
+T262	4	4915	$q,t$-Catalan numbers $C_n(q,t)$
+T263	1197	42471	Hall polynomials $g^\lambda_{\mu\nu}(q)$
+T264	9	5730	Carlitz-Riordan $q$-Catalan numbers $C_n(q)$
+T265	9	7459	MacMahon $q$-Catalan numbers $\widetilde C_n(q)$
+T266	608	74372	Krawtchouk polynomials $\mathcal{K}_k(x)$ of the Hamming sch
+T267	210	57108	Charlier polynomials $C_n(x;a)$
+T268	819	92235	Hahn polynomials $Q_n(x;\alpha,\beta,N)$
+T269	425	101750	Meixner polynomials $M_n(x;\beta,c)$
+T270	760	98913	Krawtchouk polynomials $K_n(x;p,N)$ in the Askey normalisati
+T271	770	129810	Wilson polynomials $W_n(x^2;a,b,c,d)$
+T272	10	6756	Satisfiability thresholds of random $k$-XORSAT
+T273	42	14571	Core thresholds of random $k$-uniform hypergraphs
+T274	36	11894	Cuckoo hashing thresholds of random $k$-uniform hypergraphs
+T275	45	13959	Belief-propagation thresholds of regular LDPC codes on the b
+T276	45	15193	MAP thresholds of regular LDPC codes on the binary erasure c
+T277	5	4944	Satisfiability thresholds of random $k$-SAT
+T278	216	11982	Good examples of Hall's conjecture
+T279	36	5520	Known solutions of the Fermat-Catalan equation $x^p+y^q=z^r$
+T280	96	7759	Counterexamples to Euler's sum of powers conjecture
+T281	15	5476	Davenport-Stothers polynomial triples
+T282	101	15286	Mahler measures of $x+x^{-1}+y+y^{-1}+k$
+T283	4	6756	Mahler measures of $1+x_1+\dots+x_{n-1}$ (short random walks
+T284	47	20125	Salem numbers less than 1.3
+T285	5	5268	Minimum dilatations of pseudo-Anosov maps with orientable in
+T286	50	18526	Pisot numbers less than the golden ratio
+T287	10	5548	Roots of the $k$-XORSAT threshold equation
+T288	35	13003	Roots of the cuckoo hashing threshold equation
+T289	42	14836	Minimisers in the core threshold formula of random $k$-unifo
+T290	87	53238	Bernstein-Sato polynomials of the simple and unimodal singul
+T291	87	19056	Characteristic polynomials of the monodromy of the simple an
+T292	572	128198	Special $L$-values of elliptic curves over real quadratic fi
+T293	32	13825	Regulators of elliptic curves over real quadratic fields
