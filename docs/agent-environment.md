@@ -797,6 +797,12 @@ Evidence: `/tmp/gq_20260902_screen.py` output, 2026-09-02; `gh search
 issues` prints `unknown flag: --repo` and lists `repos` as the only
 subcommand.
 
+Update, 2026-09-17: the `gh` on this machine is now 2.45.0, and `gh search
+issues --repo numberdb/numberdb-data "<words>" --json number,title,state`
+works and searches open and closed issues. `already_asked` was still
+throttled after about ten calls in the 2026-09-17T0814 ideas run, so the rate
+limit stands, but this search is now the fallback.
+
 ## The anonymous lookup budget is per address and shared by every tool on the machine
 
 What happened: the corpus walk at the start of the run spent the 60
