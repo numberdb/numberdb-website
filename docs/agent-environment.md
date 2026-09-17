@@ -4447,3 +4447,32 @@ Evidence: 2026-09-17, T311 critique.
 with the help page's example, with `x^2 - x - 1`, with
 `x^3 + 48*x^2 - x*y + 768*x + 4096` (a stored T309 value) and with
 `PolynomialRing(ZZ,["x","y"])("...")`: four refusals, no results.
+
+## A `/preview` piece with no `Numbers` draws no sections at all, and answers 200 while doing it
+
+What happened: the T312 critique rendered a private draft through
+`/preview?table=` in pieces, as the T221 note above describes. Five of the
+nine pieces carried prose only -- `Title`, one `Comments` field and the
+`Links` its `CITE`s need, with no `Numbers` key, since the piece was about the
+prose. All five answered 200 with a 7 KB page that is the navigation bar and
+the footer and nothing between them: no Comments, no Links, no section title
+of any kind. That reads exactly like a section that failed to render, which is
+the fault the critique was looking for, and cost a round of re-reading before
+the pattern was clear.
+
+Adding a one-entry `Numbers` -- `{"0": {"1": {"K": {"vz": "1"}}}}` -- to the
+same document made every section appear. Measured directly afterwards: the
+same piece without `Numbers` is 6476 bytes with zero `table-section-title`
+elements; with one entry it is 14331 bytes and draws `Numbers`, `Comments`,
+`Links`. The view returns the rendered table only when there is a table of
+numbers to hang it on.
+
+What to do instead: put a minimal `Numbers` in every preview piece, including
+the prose-only ones, and treat an empty render as a missing `Numbers` rather
+than as a broken section. One stored entry, or a bare `"1"`, is enough; the
+entry costs about 40 bytes of the 4094-byte request line.
+
+Evidence: 2026-09-17, T312 critique. `/tmp/prev312.py` and the two-request
+check above; `/tmp/T312_c.html` (first round, no `Numbers`, 7484 bytes, only
+the shell) against the same piece rerun with one entry (16925 bytes, all
+sections).
