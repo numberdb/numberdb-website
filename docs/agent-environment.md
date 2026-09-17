@@ -4351,3 +4351,55 @@ command. Rotate the zeta3 key. numberdb.org answered `curl` directly
 throughout, so the proxy is not needed on this runner.
 
 Evidence: 2026-09-17, T305 critique, the fourth Bash call of the run.
+
+## A draft's whole document is readable anonymously through `/revisions`
+
+What happened: reading draft T310, `curl https://numberdb.org/T310` and
+`/preview/T310` both answered 404, as a draft should, and `/bundle/T310` and
+`/discuss/T310` did too. But unauthenticated `GET /revisions/T310` answered
+200 with the revision table -- times, the zeta3 account, the messages -- and
+with the unified YAML diffs of every revision, which for a table filled in one
+go is the whole document: title, definition, parameters and every stored
+entry. `GET /history/T310` also answered 200. This is the T235 note about
+`/files/<tid>` one route wider: `revision_history` and `table_history` load
+the table by T-number without the draft guard that `table_by_tid` and
+`preview` apply, so a draft is private only on the routes somebody remembered.
+
+What to do instead: treat a draft as public on every route but `/T<n>`,
+`/preview/T<n>`, `/bundle/T<n>` and `/discuss/T<n>` until the guard is applied
+in one place. Reading `/revisions/<tid>` is, in the meantime, the cheapest way
+for a critique to see what an edit to a draft actually changed -- the T310 read
+used it to find that the definition-shortening commit had dropped the page's
+only identification of $j$ -- but it is a leak, not a feature.
+
+Evidence: 2026-09-17, T310 critique. `/T310` 404 (11,533 bytes of Not found),
+`/revisions/T310` 200 showing `@@ -1,10 +1,7 @@` and the removed Definition
+text, `/history/T310` 200, `/files/T310/generate.py` 200 as the T235 note
+already records.
+
+## `audit_table` never reads a `Similar tables` relation
+
+What happened: the T310 audit returned `"findings": [], "clean": true`, and
+two of the critique's six findings are in the Similar-tables relations. That is
+not bad luck. `_prose_faults` collects its texts from `Definition`, `Comments`,
+`Formulas` and `Similar tables`, taking a section that is a string or a mapping
+of strings; a `Similar tables` written as a list of `{table, relation}` -- which
+is how every table that has more than a sentence to say writes it -- is neither,
+so it is skipped entirely. No relation is ever checked for an editorial phrase,
+a positional phrase, a family named without a link, or a link written after the
+name it belongs on.
+
+The phrase list has a second gap beside it: `POSITIONAL` holds "the first
+factor" and "the second factor" but not "the other factor", which T310 uses in
+`comment-factor` and again in its rigour note, in both cases for a polynomial
+that `Formulas` has already named $Q_\Delta$.
+
+What to do instead: when a critique reports "audit clean", read the
+Similar-tables relations by hand; the audit has not looked at them. Fixing it
+is small -- extend the collection in `_prose_faults` to pull `relation` (and
+the caption in `table`) out of a list-valued section, and add "the other
+factor" to `POSITIONAL` -- and both want a test in `test_audit_table.py`.
+
+Evidence: 2026-09-17, T310 critique;
+`numberdb_app/management/commands/audit_table.py`, `_prose_faults` lines
+838-860 and `POSITIONAL` at line 826.
