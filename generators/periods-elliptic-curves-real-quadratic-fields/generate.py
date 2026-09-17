@@ -1,4 +1,17 @@
-"""Periods of elliptic curves over real quadratic fields -- numberdb.org/T294."""
+r"""Periods of elliptic curves over real quadratic fields -- numberdb.org/T294.
+
+Run it with SageMath:
+
+    $ sage -pip install numberdb
+    $ sage -python generate.py
+    $ sage -python generate.py --publish
+
+The generator reads ecnf-data's `curves` and `mwdata` files for the five real
+quadratic fields with $D\in\{5,8,12,13,17\}$ at the pinned commit below. It
+stores the `omega` column for every curve with conductor norm at most $60$,
+keeping $35$ significant digits and adding the LMFDB curve label, conductor
+ideal, rank and Weierstrass equation as the entry comment.
+"""
 
 import os
 import sys
@@ -135,7 +148,7 @@ def main():
         numberdb.configure(api_key=sys.stdin.read().strip())
 
     generator = RealQuadraticEllipticCurvePeriods()
-    if os.environ.get("NUMBERDB_PUBLISH") == "1":
+    if os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
         print(generator.publish(message="filled from ecnf-data omega values"))
         return
 
