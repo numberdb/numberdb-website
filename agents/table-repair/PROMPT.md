@@ -43,6 +43,21 @@ the mathematics is a hypothesis until you have checked it:
 `agents/sage.sh` runs a file under Sage. Use it. A claim you could have
 checked and did not is the one that will be wrong.
 
+**A report may ask for more numbers, and then you compute them.** Most
+reports are about prose, and most of this prompt is about prose. A demand from
+a person often is not: "make this table longer", "carry it to more
+discriminants", "the comments name a second quantity nobody can find". Those
+are build work, and you have the build machinery -- `agents/sage.sh`, the
+table's own generator, `publish` -- so use it. Two rules, and both have cost a
+table before:
+
+* **Re-run the generator with a wider range; do not hand-write values.** A
+  number typed from a paper carries no provenance and matches nothing when
+  somebody regenerates the table.
+* **Add without removing.** `publish(overwrite=False)` adds what is missing
+  and leaves the rest alone. `removing=True` on a generator that yields only
+  part of a table empties it: that is how T197 lost 1121 entries.
+
 **Narrow a claim rather than dropping it.** When a proposed sentence is true
 for the entries here but not in general, scope it to the entries here. That
 is more useful than silence and more honest than the general statement.

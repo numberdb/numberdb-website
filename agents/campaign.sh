@@ -223,11 +223,51 @@ while [ "$made" -lt "$builds" ]; do
 	export NUMBERDB_CAMPAIGN="$NAME"
 
 	top_up_if_low
-	next=$(queue_next)
+	#What to do next, of any kind: build a proposal, act on somebody's demand,
+	#ask whether a small table can grow, or read one nobody has ever read.
+	#`agents/work.py` decides; this loop only carries it out. One pipeline,
+	#four sources of work, because all four end in the same two steps -- a
+	#list of claims about one table, and an agent that checks each and acts.
+	next=$(python3 agents/work.py next --done "$made" 2>/dev/null || true)
 	if [ -z "$next" ]; then
-		say "nothing waiting in the queue and no screening to be had; stopping"
+		say "nothing waiting anywhere and no screening to be had; stopping"
 		exit 6
 	fi
+	kind=$(field "$next" kind)
+	tid=$(field "$next" tid)
+
+	if [ "$kind" != proposal ]; then
+		#Reviewing an existing table. The critique file is the interface: a
+		#demand arrives with one already written (by work.py, carrying its
+		#provenance), and growth and sweep need the question asked first.
+		say "$kind: $tid -- $(field "$next" title) (done $made)"
+		case "$kind" in
+			growth)
+				NUMBERDB_AGENT="$critic" agents/run.sh critique \
+					"Read $tid, which has $(field "$next" entries) entries in $(field "$next" bytes) bytes -- under a tenth of the soft limits of 1200 entries and 320 KB. The question is whether it can grow *naturally*: is its range the whole of what its definition promises, or was it stopped early? Read the skill on what makes a good range, read the table's own completeness note and its generator, and write agents/critiques/$tid-growth.md saying either how far it could go and by what method, or why it is already complete -- a named constant with one entry is finished, and saying so is a good answer. Change nothing." \
+					|| say "the growth question failed for $tid"
+				;;
+			sweep)
+				NUMBERDB_AGENT="$critic" agents/run.sh critique \
+					"Read $tid. Fetch the rendered page, read the document, run the audit on it, and write agents/critiques/$tid.md. This table has never been read by this pipeline -- most of the corpus below T127 was made by hand, before the skill existed -- so read it as a reader meeting it for the first time. Change nothing else." \
+					|| say "the critique failed for $tid"
+				;;
+		esac
+
+		report="agents/critiques/$tid.md"
+		[ "$kind" = growth ] && report="agents/critiques/$tid-growth.md"
+		if [ ! -f "$report" ]; then
+			say "no report at $report; moving on"
+			made=$((made + 1))
+			continue
+		fi
+		NUMBERDB_AGENT="$writer" agents/run.sh repair \
+			"Act on $report, for $tid. Check every finding against the live table before you change anything, verify what can be verified, and write ${report%.md}-repaired.md saying what you did with each." \
+			|| say "the repair failed for $tid; the report stands and somebody should read it"
+		made=$((made + 1))
+		continue
+	fi
+
 	in_family=$(field "$next" family)
 	proposal=$(field "$next" title)
 	#Which batch this work came from, for the ledger. Not NUMBERDB_BATCH:
