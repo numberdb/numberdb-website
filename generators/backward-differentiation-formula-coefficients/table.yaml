@@ -3,12 +3,11 @@
 # person's act on the site.
 Title: Backward differentiation formula coefficients
 Definition: >-
-  For $1\leq s\leq6$, the backward differentiation formula coefficients
-  $\alpha_{s,j}$ and $\beta_s$ are the rational coefficients in the
-  $s$-step implicit linear multistep method
-  $\sum_{j=0}^{s}\alpha_{s,j}y_{n+j}=h\beta_s f(t_{n+s},y_{n+s})$ of order
-  $s$ CITE{Wiki}. The table gives the same method in two invertible
-  normalisations: $\alpha_{s,s}=1$ and $\beta_s=1$.
+  For $1\leq s\leq6$, the backward differentiation formula coefficients are
+  the rationals $\alpha_{s,j}$ and $\beta_s$ in
+  $\sum_{j=0}^{s}\alpha_{s,j}y_{n+j}=h\beta_s f(t_{n+s},y_{n+s})$, the
+  zero-stable $s$-step BDF method of order $s$ CITE{Wiki}. The two
+  normalisations determine one another.
 Parameters:
   s:
     type: Z
