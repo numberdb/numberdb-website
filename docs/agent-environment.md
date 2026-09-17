@@ -4398,7 +4398,8 @@ What to do instead: when a critique reports "audit clean", read the
 Similar-tables relations by hand; the audit has not looked at them. Fixing it
 is small -- extend the collection in `_prose_faults` to pull `relation` (and
 the caption in `table`) out of a list-valued section, and add "the other
-factor" to `POSITIONAL` -- and both want a test in `test_audit_table.py`.
+factor" to `POSITIONAL` -- and both want a test in
+`numberdb_app/test_audit_prose.py`, where the other prose checks are tested.
 
 Evidence: 2026-09-17, T310 critique;
 `numberdb_app/management/commands/audit_table.py`, `_prose_faults` lines
