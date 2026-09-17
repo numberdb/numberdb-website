@@ -4404,3 +4404,46 @@ factor" to `POSITIONAL` -- and both want a test in
 Evidence: 2026-09-17, T310 critique;
 `numberdb_app/management/commands/audit_table.py`, `_prose_faults` lines
 838-860 and `POSITIONAL` at line 826.
+
+## The site's own polynomial-search example is refused: `polygens` is not in the evaluator
+
+What happened: the T311 critique asked the question the critique prompt asks
+last -- would a reader who arrived holding one of these polynomials be served?
+-- and found that no polynomial in the corpus can be searched for today.
+`/advanced-search` tells the reader, under "Lists of polynomials over
+$\mathbb{Q}$", to write
+
+    [{n: x^2 + n for n in [1..10]} for x,y in [polygens(QQ,2,'x')]]
+
+and `/api/search` answers that exact string with
+
+    Unknown or not-allowed name 'polygens'. Only mathematical functions and
+    constants provided by the search environment may be used.
+
+`workers/evaluator.py` builds the namespace by hand (lines 60-115) and it has
+`PolynomialRing` but neither `polygen` nor `polygens`. Nor is there a way
+round: `PolynomialRing(ZZ,"x")([-1,-1,1])` is refused with "Only direct calls
+to permitted functions are allowed", and a bare `x^2 - x - 1` with "Unknown or
+not-allowed name 'x'" -- which is the form the published skill gives in its
+type table as how a `Z[]` value is written.
+
+The matching machinery behind the search is fine and is tested
+(`utils/numbers/polynomial`, `polynomial_modulo_variable_names`,
+`numberdb_app/test_search.py` line 599 on): polynomials find each other modulo
+variable names once a query reaches them. It is only the evaluator's namespace
+that no query can get through.
+
+This is a site bug rather than a lesson: it affects the twelve polynomial
+tables equally and nothing a contributor writes can work round it. Fixing it
+is two names in `_namespace()` plus a test that the advanced-search help
+page's own example returns results.
+
+What to do instead, meanwhile: do not report "this table's values cannot be
+found" as a finding against a polynomial table under critique; it is true of
+all of them. Say it once, where it belongs.
+
+Evidence: 2026-09-17, T311 critique.
+`curl -sS -G --data-urlencode "expression=..." https://numberdb.org/api/search`
+with the help page's example, with `x^2 - x - 1`, with
+`x^3 + 48*x^2 - x*y + 768*x + 4096` (a stored T309 value) and with
+`PolynomialRing(ZZ,["x","y"])("...")`: four refusals, no results.
