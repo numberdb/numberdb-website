@@ -1,0 +1,9 @@
+*done* -- Restored a self-contained Definition with $m_r=\lambda(i\sqrt r)$ and the formula for $\alpha(r)$; checked the live API document still had the shortened non-definition, previewed the prose, and shortened it again after audit reported the first repair was too long.
+*done* -- Rewrote the convention comment so $K$ and $E$ are already defined and the arb implementation detail is no longer the reason for the notation; checked T296 defines the related value as $K(m_r)$, classically $K(k_r)$.
+*done* -- Added the $1/\pi$ asymptotic comment; checked in Sage that the $q$-expansion of CITE{formula-theta} gives the leading and next terms, and that the stored values are above $1/\pi$ and strictly decreasing over $1\leq r\leq100$.
+*done* -- Removed the misleading `Ramanujan modular equation alpha` and `singular modulus` keywords; checked that modular-equation usage sends $\alpha$ to the squared modulus and that T295 is the singular-modulus table.
+*left for a person* -- The parameter title "index, with $\tau=i\sqrt r$" is imprecise, but changing parameter prose was not needed for the repair and the critique marked it noted only.
+*declined* -- The CM comment and class-number note are true as written; moving the class-number clause into the comment would be a larger prose restructure rather than a correctness repair.
+*declined* -- The row comments' "MathWorld gives" phrasing is redundant but not wrong, and the closed forms a reader needs are already present.
+*done* -- Cleaned the Similar tables wording while editing the same prose: T296 now uses its full title, and the rational-parameter elliptic-integral tables are described as holding $E(m)$ and $K(m)$ rather than "the same" integral.
+*left for a person* -- T295 and T296 are still drafts, so their links remain unavailable to public readers until publication; I did not publish or review anything.
