@@ -74,12 +74,21 @@ Programs:
   program-sage:
     language: Sage
     code: |-
-      R.<x> = QQ[]
+      import numberdb.sage as numberdb
+      from sage.rings.rational_field import QQ
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+      R = PolynomialRing(QQ, 'x')
+      x = R.gen()
       def newton_cotes_weights(n):
           weights = []
           for j in range(n + 1):
-              ell = prod((x - k) / (j - k) for k in range(n + 1) if k != j)
-              weights.append(integral(ell, x, 0, n))
+              ell = R(1)
+              for k in range(n + 1):
+                  if k != j:
+                      ell *= (x - k) * (QQ(1) / QQ(j - k))
+              anti = ell.integral()
+              weights.append(anti(n) - anti(0))
           return weights
 
       newton_cotes_weights(4)     # [14/45, 64/45, 8/15, 64/45, 14/45]
