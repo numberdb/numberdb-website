@@ -139,7 +139,11 @@ Data properties:
     and a monomial basis of the Milnor algebra, forms the product over the
     corresponding roots of unity exactly in cyclotomic factors, checks that
     each root order occurs in complete Galois orbits, and returns the
-    expanded polynomial in $\mathbb{Z}[t]$.
+    expanded polynomial in $\mathbb{Z}[t]$. Checks compare every row with
+    Singular's `spectrum` from `gmssing.lib` after the control $x^2+y^3$,
+    whose monodromy polynomial is $t^2-t+1$; they also verify the suspension
+    identity on stored rows and compare the ADE rows with $n=3$ against the
+    Coxeter exponents.
 Display properties:
   number-header: $\Delta_f(t)$
 Numbers: []
