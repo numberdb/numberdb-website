@@ -1,0 +1,4 @@
+done -- added T274 to Similar tables and "cuckoo hashing" to Keywords after Sage checked that the $\ell=1$ root equation is T287's $\psi$ equation and that T274's $\ell=1$ root comments agree with T287 for $3\leq k\leq7$; widening the draft to $\xi_{k,\ell}$ is left for a person because it changes the table's scope and parameters.
+done -- replaced the Definition with the unique-root definition, checked by differentiating $\psi$ and using $(e^x-1)^2-x^2e^x>0$ for $x>0$; the threshold cross-reference was kept out of the Definition because the live audit refuses table links there.
+done -- replaced the repeated comment with the 2-core parameter fact, after Sage checked that substituting $\alpha=x/(kq^{k-1})$ in T272's core equation is equivalent to $\psi(x)=k$.
+declined -- the noted-only items did not need a T287 edit, so the row comments, complete-note, formula-root, and suggested future edits to T272/T274 were left alone.
