@@ -51,16 +51,16 @@ References:
       B. Pittel and G. B. Sorkin, The satisfiability threshold for
       $k$-XORSAT, Combinatorics, Probability and Computing 25 (2016),
       236-268.
-    doi: 10.1017/S0963548315000097
-    arxiv: 1212.1905
+    doi: '10.1017/S0963548315000097'
+    arxiv: '1212.1905'
   DGMMPR:
     bib: >-
       M. Dietzfelbinger, A. Goerdt, M. Mitzenmacher, A. Montanari, R. Pagh
       and M. Rink, Tight thresholds for cuckoo hashing via XORSAT,
       Proceedings of ICALP 2010, Lecture Notes in Computer Science 6198,
       213-225.
-    doi: 10.1007/978-3-642-14165-2_19
-    arxiv: 0912.0287
+    doi: '10.1007/978-3-642-14165-2_19'
+    arxiv: '0912.0287'
 Tags:
   - probability theory
   - statistical mechanics
