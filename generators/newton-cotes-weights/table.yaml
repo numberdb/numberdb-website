@@ -116,7 +116,6 @@ Links:
     url: https://oeis.org/A093736
 Keywords: trapezoidal rule, Simpson's rule, Simpson's 3/8 rule, Boole's rule, Bode's rule, Cotes numbers
 Tags:
-  - numerical analysis
   - analysis
 Data properties:
   type: Q
