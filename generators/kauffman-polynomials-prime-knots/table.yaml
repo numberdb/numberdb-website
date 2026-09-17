@@ -1,11 +1,9 @@
 Title: Kauffman polynomials of the prime knots with at most ten crossings
 Definition: >-
-  The Kauffman polynomial $F_K(a,z)\in\mathbb{Z}[a,a^{-1},z]$
-  CITE{Wiki} CITE{Kauffman} of the unknot, of every prime knot $K=n_k$
-  with at most ten crossings, named as in the Rolfsen table CITE{Rolfsen}
-  with Perko's correction CITE{Perko} and drawn as in KnotInfo
-  CITE{KnotInfo}, and of each distinct mirror image $\bar K$, shifted into
-  ordinary polynomial form.
+  The Kauffman polynomial $F_K(a,z)$ CITE{Wiki} CITE{Kauffman}, shifted into
+  ordinary polynomial form, for the unknot, every Rolfsen prime knot through
+  ten crossings as KnotInfo draws it CITE{KnotInfo}, and each distinct mirror
+  image; the entries for $K$ and $\bar K$ are values of the same invariant.
 Keywords:
   - Kauffman polynomial
 Parameters:
