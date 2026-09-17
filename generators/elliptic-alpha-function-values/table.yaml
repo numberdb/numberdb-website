@@ -3,12 +3,9 @@
 # is filled by generate.py beside it. Publishing is a person's act on the site.
 Title: Values of the elliptic alpha function $\alpha(r)$
 Definition: >-
-  For a positive integer $r$, set $\tau=i\sqrt r$, $q=e^{-\pi\sqrt r}$, and
-  $m_r=\lambda(\tau)$, where $\lambda$ is the elliptic modular function. The
-  entry is Ramanujan's elliptic alpha function
-  $\alpha(r)=\pi/(4K(m_r)^2)+\sqrt r-\sqrt r\,E(m_r)/K(m_r)$, where $K(m)$
-  and $E(m)$ are the complete elliptic integrals in the parameter convention
-  $m=k^2$ CITE{MathWorldAlpha} CITE{DLMFEllipticIntegrals}.
+  For a positive integer $r$, set $\tau=i\sqrt r$ and
+  $q=e^{-\pi\sqrt r}$. The entry is Ramanujan's elliptic alpha function
+  $\alpha(r)$, in the singular-modulus convention of CITE{MathWorldAlpha}.
 Parameters:
   r:
     type: Z
@@ -25,6 +22,12 @@ Comments:
     The lattice $\mathbb Z+\mathbb Z\,i\sqrt r$ has complex multiplication by
     the order $\mathbb Z[\sqrt{-r}]$, of discriminant $-4r$.
 Formulas:
+  formula-elliptic-integrals: >-
+    With $m_r=\lambda(\tau)$, where $\lambda$ is the elliptic modular
+    function, $\alpha(r)=\pi/(4K(m_r)^2)+\sqrt r-\sqrt r\,E(m_r)/K(m_r)$.
+    Here $K(m)$ and $E(m)$ are the complete elliptic integrals in the
+    parameter convention $m=k^2$ CITE{MathWorldAlpha}
+    CITE{DLMFEllipticIntegrals} CITE{DLMFModularFunctions}.
   formula-theta: >-
     $\alpha(r)=\bigl(\pi^{-1}-4\sqrt r\,q\,\theta_4'(q)/\theta_4(q)\bigr)/
     \theta_3(q)^4$, where $q=e^{-\pi\sqrt r}$ and the derivative is with
