@@ -4536,3 +4536,53 @@ Evidence: 2026-09-17, T315 critique. `/tmp/t315_render_sage.py` (the script,
 worth promoting to `agents/render_draft.py` with the tid as an argument),
 `/tmp/t315_render_out.txt` (the run: `records: 479`, `status 200`, 497,255
 bytes of HTML between `=== HTML ===` markers) and `/tmp/t315_page.html`.
+
+## LMFDB answers a reCAPTCHA challenge with HTTP 200, so an LMFDB URL cannot be screened or read from here
+
+What happened: in the 2026-09-17T2308 ideas run, every request to
+`www.lmfdb.org` -- `/api/mf_newforms/?...`, `/api/mf_hecke_cc/?...`,
+`/knowledge/show/mf.elliptic.satake_parameters` -- came back as a Google
+reCAPTCHA challenge page, served with HTTP 200 and 30 KB of
+`RecaptchaChallengePageUi` JavaScript. Two consequences, and the first is the
+dangerous one: `source_names_it(name, lmfdb_url)` does not report a network
+failure, it reports that the page does not mention the family, which reads like
+the family being misnamed. The second is that LMFDB's own conventions cannot be
+read here, so a batch that wants to follow one (its Satake angle
+normalisation, its embedding numbering, its published first zeros) has to say
+in the report that the comparison was not run.
+
+An earlier note records that `curl` reaches some LMFDB calculators for about
+four requests before blocking; this run got zero. Do not spend turns on it.
+
+What to do instead: cite Wikipedia, the PARI or Sage manual, or an arXiv
+abstract, and screen that. Where LMFDB is the right cross-check for a table,
+write it into the proposal as the check a builder with an ordinary connection
+should run before publishing.
+
+Evidence: 2026-09-17, the three URLs above, each returning
+`<!doctype html>...RecaptchaChallengePageUi`.
+
+## The arXiv API answers `curl -sL` over https, though `urllib` gets 406, and `already_asked` got HTTPError on every call
+
+What happened: the existing note above says the arXiv API answers 406 to
+`urllib` here and advises not to spend turns on it. In the 2026-09-17T2308 run
+`curl -sL "https://export.arxiv.org/api/query?search_query=all:%22Petersson%20norms%22&max_results=5"`
+answered with the Atom feed, and it is how the source for one proposal was
+found (arXiv 1902.06429, whose title names "Petersson norms of generic cusp
+forms"). Two traps: `http://export.arxiv.org` answers 301 and `curl` without
+`-L` prints nothing at all, which looks like an empty result set rather than a
+redirect; and a phrase search that returns nothing really does mean nothing
+(`all:"Satake angles"` is empty, which is why that title was not used).
+
+In the same run every `already_asked` call answered
+`could not ask GitHub (HTTPError)`, so all issue claims in the batch were
+checked with `gh issue list --repo numberdb/numberdb-data --state all --search
+"X in:title"`, which is authenticated and answered every time.
+
+What to do instead: reach arXiv with `curl -sL` over https rather than through
+the screen's `urllib`, and treat `already_asked` as optional here: `gh` is the
+reliable route and it also shows closed issues.
+
+Evidence: 2026-09-17, the `curl -sL` query above (five titles returned), the
+same query over `http` (301, empty output), and the six `already_asked` calls
+in `/tmp/screenrun.py`.
