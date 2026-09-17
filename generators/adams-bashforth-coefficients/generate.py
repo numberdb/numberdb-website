@@ -139,7 +139,7 @@ def _method_comment(s):
     newest_first = tuple(reversed(row(s)))
     form = _common_denominator_form(newest_first)
     if s == 1:
-        return "Euler method: %s." % form
+        return "Euler method: $1$."
     return "%d-step Adams-Bashforth formula, from newest to oldest: %s." % (s, form)
 
 
