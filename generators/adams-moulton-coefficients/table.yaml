@@ -1,0 +1,105 @@
+# Table document for numberdb-data issue #156, draft T306. Created with
+# X-Draft: yes, then filled by generate.py beside it. Publishing is a
+# person's act on the site.
+Title: Adams–Moulton coefficients
+Definition: >-
+  For $s\geq0$, the Adams–Moulton coefficients $\beta^*_{s,j}$ are the
+  rational coefficients in the implicit $s$-step formula
+  $y_{n+s}=y_{n+s-1}+h\sum_{j=0}^{s}\beta^*_{s,j}f_{n+j}$ CITE{Wiki}. The
+  method has order $s+1$, and an absent row has coefficient $0$.
+Parameters:
+  s:
+    type: Z
+    title: number of steps
+    display: $s$
+    constraints: $s\geq0$
+  j:
+    type: Z
+    title: history index, counted from the oldest value
+    display: $j$
+    constraints: $0\leq j\leq s$
+Comments:
+  comment-notation: >-
+    Here $f_{n+j}=f(t_{n+j},y_{n+j})$ and $t_{n+j}=t_0+(n+j)h$. The case
+    $s=0$ is backward Euler, and the case $s=1$ is the trapezoidal rule.
+    The coefficients are chosen so the formula is exact when $f(t,y(t))$ is
+    a polynomial in $t$ of degree at most $s$; this is the moment condition in
+    the Formulas section.
+  comment-step: >-
+    The step size appears as the single factor $h$ before the sum. Each stored
+    number is the coefficient multiplying one $f_{n+j}$ when $h=1$.
+  comment-ordering: >-
+    Entries are listed from the oldest value to the newest value. Wikipedia
+    CITE{Wiki} writes the displayed formulas from newest to oldest; for
+    example its three-step row is $(9,19,-5,1)/24$, while this table stores
+    $j=0,1,2,3$ as $1/24,-5/24,19/24,3/8$.
+Formulas:
+  formula-integral: >-
+    If $\ell_{s,j}$ is the Lagrange basis polynomial for the nodes
+    $0,1,\ldots,s$, with $\ell_{s,j}(i)=1$ for $i=j$ and $0$ otherwise, then
+    $\beta^*_{s,j}=\int_{s-1}^{s}\ell_{s,j}(x)\,\mathrm{d}x$.
+  formula-moments: >-
+    $\sum_{j=0}^{s}\beta^*_{s,j}j^m=(s^{m+1}-(s-1)^{m+1})/(m+1)$ for
+    $0\leq m\leq s$.
+  formula-gregory: >-
+    If $\gamma^*_m$ denotes the Gregory coefficient, then
+    $\gamma^*_m=(-1)^m\psi_m(0)/m!$, where $\psi_m$ is
+    HREF{Bernoulli_polynomials_of_the_second_kind}[the Bernoulli polynomial
+    of the second kind], and $\beta^*_{s,0}=(-1)^s\gamma^*_s$.
+Similar tables:
+  - table: HREF{Adams_Bashforth_coefficients}[Adams–Bashforth coefficients]
+    relation: the explicit Adams predictor, using the previous $s$ values rather than including $f_{n+s}$
+  - table: HREF{Lagrange_basis_polynomials_for_equally_spaced_nodes}[Lagrange basis polynomials for equally spaced nodes]
+    relation: the coefficients are integrals of these basis polynomials over one unit step
+  - table: HREF{Bernoulli_polynomials_of_the_second_kind}[Bernoulli polynomials of the second kind]
+    relation: their value at $0$ gives the oldest Adams–Moulton coefficient through the Gregory coefficients
+  - table: HREF{Butcher_tableaux_of_explicit_Runge_Kutta_methods}[Butcher tableaux of explicit Runge–Kutta methods]
+    relation: another family of rational coefficients for classical methods for ordinary differential equations
+Links:
+  Wiki:
+    title: 'Wikipedia: Linear multistep method, revision 1347229011'
+    url: https://en.wikipedia.org/w/index.php?title=Linear_multistep_method&oldid=1347229011
+  OEIS260781:
+    title: 'OEIS A260781: coefficients for Adams corrector formulas'
+    url: https://oeis.org/A260781
+  OEIS235936:
+    title: 'OEIS A235936: triangle of Adams corrector coefficients'
+    url: https://oeis.org/A235936
+  OEISGregory:
+    title: 'OEIS A002206: Gregory coefficients'
+    url: https://oeis.org/A002206
+Keywords: linear multistep method, implicit multistep method, Adams method, Adams corrector, predictor-corrector method, backward Euler method, trapezoidal rule, Gregory coefficients
+Tags:
+  - analysis
+Data properties:
+  type: Q
+  rigour: exact
+  complete: 'no'
+  complete-note: it holds every nonzero coefficient with $0\leq s\leq12$
+  rigour details: >-
+    The generator builds the moment equations over $\mathbb{Q}$ for the nodes
+    $0,1,\ldots,s$ and solves them exactly. Each completed method is checked
+    against the defining moments, the integral formula for the Lagrange basis
+    polynomials, the displayed Adams–Moulton formulas through $s=4$ in
+    CITE{Wiki}, OEIS A260781 and A235936, and the Gregory-coefficient identity
+    using the Bernoulli polynomials of the second kind.
+Display properties:
+  number-header: $\beta^*_{s,j}$
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.matrix.constructor import matrix
+      from sage.modules.free_module_element import vector
+      from sage.rings.rational_field import QQ
+
+      def adams_moulton_coefficients(s):
+          nodes = list(range(s + 1))
+          rows = [[QQ(j) ** m for j in nodes] for m in range(s + 1)]
+          rhs = [(QQ(s) ** (m + 1) - QQ(s - 1) ** (m + 1)) / QQ(m + 1)
+                 for m in range(s + 1)]
+          return dict(zip(nodes, matrix(QQ, rows).solve_right(vector(QQ, rhs))))
+
+      adams_moulton_coefficients(3)
+Numbers: []
