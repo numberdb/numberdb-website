@@ -20,9 +20,17 @@ further.
 `mp.quadosc(..., period=2*pi)` stalls at about sixteen correct digits however
 much working precision it is given, because the zeros of J_0 are not spaced by
 2*pi: they approach spacing pi. Integrating between consecutive zeros and
-accelerating the resulting series instead -- `nsum` with Richardson, Shanks and
-Euler-Maclaurin -- reached 42 correct digits for n = 3 against Smyth's value,
-and was limited by the working precision rather than by the method.
+accelerating the resulting series instead reaches the working precision: 50
+correct digits for n = 3 against Smyth's value.
+
+The acceleration is Richardson and Shanks, and deliberately not Euler-Maclaurin.
+`nsum`'s Euler-Maclaurin step treats the summand as a smooth function of k, and
+this one is a step function -- the integral over [z_k, z_{k+1}] at k = int(k) --
+so the step is meaningless here and it was the whole of the cost: with it, one
+value took 825 seconds and 765 MB, and the second run of this generator was
+killed by the kernel's OOM killer on a 2 GB build machine; without it, 21
+seconds and 14 MB, with the same 42 digits. At the precision used now a value
+takes about three minutes per working precision and under 20 MB.
 
 ## Why the values are heuristic, and what checks them
 
@@ -53,14 +61,15 @@ import numberdb
 #: Where the stored range stops, and where this one starts.
 FIRST_NEW = 7
 
-#: How far to go. Chosen from the cost, which is worst at small n because
-#: J_0(x)^n decays like x^{-n/2}: measured at working precision 40, n = 6 took
-#: 32 minutes, n = 12 sixteen, n = 24 seventeen.
+#: How far to go. At about six minutes a value for both working precisions,
+#: n = 7..20 is under two hours.
 UP_TO = 20
 
-#: The two working precisions. The published value keeps the digits both
-#: agree on, less a two-digit margin.
-LOW, HIGH = 25, 33
+#: The two working precisions, and the most digits a value is given. The
+#: published value keeps the digits both precisions agree on, less a two-digit
+#: margin, and never more than the fifty the closed-form rows carry.
+LOW, HIGH = 40, 48
+MOST_DIGITS = 50
 
 #: What the method has to reproduce before it is trusted anywhere new.
 KNOWN = {
@@ -100,7 +109,9 @@ def _mu(n, dps):
         return mp.quad(lambda x: mp.besselj(0, x) ** n / x,
                        [zero(k), zero(k + 1)])
 
-    tail = mp.nsum(between, [1, mp.inf], method="r+s+e")
+    #Richardson and Shanks only: see the module docstring for why not
+    #Euler-Maclaurin, which cost 40 times the time and 50 times the memory.
+    tail = mp.nsum(between, [1, mp.inf], method="r+s")
     return mp.log(2) - mp.euler - head - first - tail
 
 
@@ -116,7 +127,7 @@ def mu(n):
         agreed = int(-mp.log10(difference / abs(high)))
     #Two digits of margin, because the last agreeing digit is the one most
     #likely to be agreed on by accident.
-    keep = max(1, min(LOW, agreed - 2))
+    keep = max(1, min(MOST_DIGITS, agreed - 2))
     return mp.nstr(high, keep, strip_zeros=False)
 
 
