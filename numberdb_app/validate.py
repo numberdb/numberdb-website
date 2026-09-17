@@ -178,6 +178,7 @@ def problems(tree):
 
 	found.extend(_check_types(tree))
 	found.extend(_check_entries(tree))
+	found.extend(_check_prose(tree))
 	found.extend(_check_control_characters(tree))
 	found.extend(_check_citations(tree))
 	return found
@@ -269,6 +270,57 @@ def malformed_identifiers(tree):
 			if not re.match(pattern, text):
 				found.append((label, field, text, shape))
 	return found
+
+
+#: Sections that hold prose and nothing else: `Definition` one piece of it,
+#: `Comments` and `Formulas` one piece per label.
+PROSE_SECTIONS = ('Comments', 'Formulas')
+
+
+def _check_prose(tree):
+	"""A section of prose holding something that is not prose.
+
+	Fatal, and for the same reason the control characters are: the page shows
+	whatever it finds, so a mapping where a sentence belongs reaches the reader
+	as its Python repr. T313's Formulas were written as
+	`{'display': 'mirror image', 'formula': '$...$'}` -- a shape somebody
+	invented for a caption, which no part of this site reads -- and the table
+	published two formulas that read
+
+	    (1) {'display': 'mirror image', 'formula': '
+
+	with the LaTeX inside them never set. Nothing refused it, and nothing
+	noticed until a person opened the page. A formula's caption is its number,
+	drawn by the page; what a formula has to say about itself goes in the
+	prose, where a reader can read it.
+	"""
+	definition = tree.get('Definition')
+	if definition is not None and not isinstance(definition, str):
+		yield Problem(
+			'Definition holds a %s. It is one piece of prose, shown as it '
+			'stands, so anything else reaches the reader as its Python repr.'
+			% (type(definition).__name__,), where='Definition')
+
+	for section in PROSE_SECTIONS:
+		block = tree.get(section)
+		if not isinstance(block, dict):
+			continue
+		for label, value in block.items():
+			if isinstance(value, str):
+				continue
+			extra = ''
+			if isinstance(value, dict):
+				written = [str(v) for v in value.values()
+				           if isinstance(v, str)]
+				if written:
+					extra = (' Write it as one string: %r.'
+					         % (' '.join(written),))
+			yield Problem(
+				'%s: %s holds a %s. Each label in %s names one piece of '
+				'prose, shown as it stands, so anything else reaches the '
+				'reader as its Python repr.%s'
+				% (section, label, type(value).__name__, section, extra),
+				where='%s: %s' % (section, label))
 
 
 def _check_citations(tree):
