@@ -1,0 +1,8 @@
+1. done -- replaced the $\gamma^*$ convention with $\beta^*_{s,0}=G_s=\psi_s(0)/s!$ in OEIS's Gregory-coefficient sign convention; checked the stored $j=0$ column against the coefficients of $x/\log(1+x)$ for every $0\leq s\leq12$.
+2. done -- moved the polynomial-exactness condition into the Definition and left `comment-notation` to define notation and order; checked all 91 stored coefficients against the moment equations that express that exactness.
+3. done -- removed "nonzero" from the completeness note and deleted the absent-row sentence; checked the live table has exactly the 91 rows with $0\leq s\leq12$ and $0\leq j\leq s$, and none is zero.
+4. done -- added the range reason as matching the Adams--Bashforth coefficient table so its predictors have their Adams--Moulton correctors; checked T305 has every row with $1\leq s\leq12$ and T306 has the corresponding corrector rows.
+5. done -- replaced the "$h=1$" wording with the statement that the coefficient of $f_{n+j}$ in the formula is $h\beta^*_{s,j}$; checked this changes no stored value.
+6. done -- changed the $j$ title to "index of the node, counted from the oldest value"; checked that the live table includes the $j=s$ row, so "history index" was wrong for one row in every block.
+7. done -- linked the Lagrange basis table at the first mention in Formulas; checked every stored coefficient against $\int_{s-1}^s\ell_{s,j}(x)\,dx$ and the post-edit audit resolved the HREF cleanly.
+8. done -- changed the $s=0$ entry comment to "This is the backward Euler method."; left the hyphen style, Butcher-tableaux wording, draft-link sequencing note and possible `numerical analysis` tag unchanged because they are harmless house style, review sequencing or batch-level decisions.
