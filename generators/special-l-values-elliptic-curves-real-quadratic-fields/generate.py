@@ -29,7 +29,7 @@ from decimal import Decimal, localcontext
 import numberdb.sage as numberdb
 from numberdb._generate import _producer
 from numberdb._write import Entries, attach, submit_entries
-from sage.databases.cremona import CremonaDatabase
+from sage.databases.cremona import CremonaDatabase, lmfdb_to_cremona
 from sage.libs.pari import pari
 
 from curve_data import MAX_CONDUCTOR_NORM, RECORDS, SOURCE_COMMIT
@@ -188,9 +188,13 @@ def _q_curve(label):
     if cached is not None:
         return cached
 
-    found = re.fullmatch(r"([0-9]+)\.([a-z]+[0-9]+)", label)
+    cremona_label = lmfdb_to_cremona(label, _cremona_database())
+    found = re.fullmatch(r"([0-9]+)([a-z]+[0-9]+)", cremona_label)
     if found is None:
-        raise ValueError("not a Cremona label from ecnf-data: %s" % label)
+        raise ValueError(
+            "could not convert ecnf-data LMFDB label %s to a Cremona label"
+            % label
+        )
     conductor, key = found.groups()
     data = _cremona_database().allcurves(int(conductor))[key]
     cached = ([int(value) for value in data[0]], int(data[1]))
