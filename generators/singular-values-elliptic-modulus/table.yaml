@@ -3,12 +3,10 @@
 # is a person's act on the site.
 Title: Singular values $k_r$ of the elliptic modulus
 Definition: >-
-  Let $r$ be a positive integer, set $\tau=i\sqrt r$ and
-  $q=e^{\pi i\tau}=e^{-\pi\sqrt r}$. The singular value $k_r$ of the
-  elliptic modulus is the positive real number with
-  $k_r^2=\lambda(\tau)$, where $\lambda$ is the elliptic modular function
-  CITE{DLMFModularFunctions}, equivalently
-  $K'(k_r)/K(k_r)=\sqrt r$ CITE{MathWorldSingularValue}.
+  For a positive integer $r$, set $\tau=i\sqrt r$. The rows store
+  $k_r$, the positive square root of $\lambda(\tau)$, and
+  $m_r=k_r^2=\lambda(\tau)$, one number in two invertible conventions
+  CITE{DLMFModularFunctions} CITE{MathWorldSingularValue}.
 Parameters:
   r:
     type: Z
