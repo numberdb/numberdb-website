@@ -3,13 +3,9 @@
 # is a person's act on the site.
 Title: Modular polynomials for $\gamma_2=\sqrt[3]{j}$
 Definition: >-
-  Let $j$ be HREF{Q-expansion_of_the_j-invariant}[the modular $j$-invariant]
-  and let $\gamma_2$ be the branch with
-  $\gamma_2(\tau)^3=j(\tau)$ and $q$-expansion
-  $q^{-1/3}(1+O(q))$. For a prime $\ell\ne3$, listed is the primitive
-  polynomial $\Phi^{\gamma_2}_\ell(x,y)\in\mathbb Z[x,y]$ satisfying
-  $\Phi^{\gamma_2}_\ell(\gamma_2(\ell\tau),\gamma_2(\tau))=0$,
-  normalised so that the coefficient of $x^{\ell+1}$ is $1$.
+  Let $\gamma_2(\tau)^3=j(\tau)$, with
+  $\gamma_2(\tau)=q^{-1/3}(1+O(q))$. The table gives the primitive relation
+  $\Phi^{\gamma_2}_\ell(x,y)$ for prime $\ell\ne3$.
 Parameters:
   ell:
     type: Z
@@ -17,6 +13,9 @@ Parameters:
     display: $\ell$
     constraints: $\ell$ is prime and $\ell\ne3$
 Comments:
+  comment-normalisation: >-
+    The polynomial is normalised so that the coefficient of $x^{\ell+1}$ is
+    $1$.
   comment-variables: >-
     The variable $x$ is the value at $\ell\tau$, and $y$ is the value at
     $\tau$, matching the variable order in HREF{Modular_polynomials_for_j-invariant}[the classical modular polynomials]
