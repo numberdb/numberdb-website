@@ -3,13 +3,10 @@
 # a person's act on the site.
 Title: Roots of the cuckoo hashing threshold equation
 Definition: >-
-  Let $H_{n,\lfloor cn\rfloor,k}$ be the random $k$-uniform hypergraph
-  CITE{WikiHypergraph} on $n$ vertices. For $k\geq2$ and $\ell\geq1$, the
-  number $\xi_{k,\ell}$ is the nonnegative real auxiliary root used to write
-  the $\ell$-orientability threshold for
-  HREF{T274}[cuckoo hashing]: it satisfies
-  $k\ell=\xi Q(\xi,\ell)/Q(\xi,\ell+1)$, where
-  $Q(x,s)=\mathbb{P}(\mathrm{Po}(x)\geq s)$ CITE{FKP} CITE{DGMMPR}.
+  For $k\geq2$ and $\ell\geq1$, let
+  $Q(x,s)=\mathbb{P}(\mathrm{Po}(x)\geq s)$. The number $\xi_{k,\ell}$ is the
+  nonnegative real solution of $k\ell=\xi Q(\xi,\ell)/Q(\xi,\ell+1)$, taking
+  $\xi_{2,1}=0$ by removable extension at $x=0$ CITE{FKP} CITE{DGMMPR}.
 Keywords: orientability threshold, load threshold, multiple-choice hashing, balanced allocation
 Parameters:
   k:
@@ -115,7 +112,6 @@ Data properties:
     - CITE{FKP}
     - CITE{DGMMPR}
     - CITE{CainSandersWormald}
-  repeats: HREF{T287}
   complete: 'no'
   complete-note: >-
     it holds $\xi_{k,\ell}$ for every $2\leq k\leq7$ and $1\leq\ell\leq6$,
