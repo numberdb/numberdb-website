@@ -3,12 +3,9 @@
 # review; publishing is a person's act on the site.
 Title: Minimal polynomials of the Salem numbers less than 1.3
 Definition: >-
-  A Salem number CITE{Wiki} is an algebraic integer $\tau>1$ whose other
-  conjugates have absolute value at most $1$, with at least one on the unit
-  circle. For the coefficient half-list $a=(a_0,\ldots,a_{d/2})$ indexing a
-  row of HREF{Salem_numbers_less_than_1_3}[the Salem-number table], the table
-  stores the monic minimal polynomial $m_a(x)\in\mathbb{Z}[x]$ of that Salem
-  number.
+  Let $a=(a_0,\ldots,a_{d/2})$ be the first half of the reciprocal minimal
+  polynomial of a Salem number $\tau<1.3$ CITE{Wiki}. The table stores the
+  monic minimal polynomial $m_a(x)\in\mathbb{Z}[x]$ of $\tau$.
 Parameters:
   coefficients:
     type: Symbolic
@@ -24,8 +21,9 @@ Comments:
     reciprocal minimal polynomial. The entries here are the reciprocal monic
     polynomials determined by those half-lists.
   comment-roots: >-
-    Each entry comment links to the matching Salem number in
-    HREF{Salem_numbers_less_than_1_3}[the root table].
+    The parameter is the same coefficient half-list used by
+    HREF{Salem_numbers_less_than_1_3}[the Salem-number table]. Each entry
+    comment links to the matching root there.
 Formulas:
   formula-reciprocal: >-
     For coefficients $a_0,a_1,\ldots,a_{d/2}$, the polynomial is
