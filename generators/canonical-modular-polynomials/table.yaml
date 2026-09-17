@@ -3,13 +3,11 @@
 # is a person's act on the site.
 Title: Canonical modular polynomials $\Phi^c_\ell$
 Definition: >-
-  For a prime $\ell$, put $s=12/\gcd(12,\ell-1)$ and
-  $\mathfrak m_\ell(\tau)=\ell^s(\eta(\ell\tau)/\eta(\tau))^{2s}$,
-  where $\eta$ is Dedekind's eta function CITE{DLMFEta}. Listed is the
-  primitive polynomial $\Phi^c_\ell(x,y)\in\mathbb Z[x,y]$ satisfying
-  $\Phi^c_\ell(\mathfrak m_\ell(\tau),j(\tau))=0$, with $x$ standing for
-  $\mathfrak m_\ell$ and $y$ for $j$, normalised so that the coefficient of
-  $x^{\ell+1}$ is $1$.
+  Let $\mathfrak m_\ell$ be the eta quotient in
+  Formula CITE{formula-eta-quotient}. Listed is the primitive polynomial
+  $\Phi^c_\ell(x,y)\in\mathbb Z[x,y]$ satisfying
+  $\Phi^c_\ell(\mathfrak m_\ell(\tau),j(\tau))=0$, normalised so that the
+  coefficient of $x^{\ell+1}$ is $1$.
 Parameters:
   ell:
     type: Z
@@ -29,6 +27,10 @@ Comments:
     For $v=s(\ell-1)/12$, the degree in $x$ is $\ell+1$ and the degree in
     $y$ is $v$. Each entry's comment gives $v$.
 Formulas:
+  formula-eta-quotient: >-
+    For a prime $\ell$, put $s=12/\gcd(12,\ell-1)$ and
+    $\mathfrak m_\ell(\tau)=\ell^s(\eta(\ell\tau)/\eta(\tau))^{2s}$,
+    where $\eta$ is Dedekind's eta function CITE{DLMFEta}.
   formula-degree: >-
     If $v=s(\ell-1)/12$, then
     $\deg_x\Phi^c_\ell=\ell+1$ and $\deg_y\Phi^c_\ell=v$.
