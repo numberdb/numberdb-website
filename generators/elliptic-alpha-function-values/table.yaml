@@ -1,0 +1,98 @@
+# The table document for numberdb.org/T299. It was created as a draft through
+# the API with X-Draft: yes and URL Values_of_the_elliptic_alpha_function. It
+# is filled by generate.py beside it. Publishing is a person's act on the site.
+Title: Values of the elliptic alpha function $\alpha(r)$
+Definition: >-
+  For a positive integer $r$, set $\tau=i\sqrt r$, $q=e^{-\pi\sqrt r}$, and
+  $m_r=\lambda(\tau)$, where $\lambda$ is the elliptic modular function. The
+  entry is Ramanujan's elliptic alpha function
+  $\alpha(r)=\pi/(4K(m_r)^2)+\sqrt r-\sqrt r\,E(m_r)/K(m_r)$, where $K(m)$
+  and $E(m)$ are the complete elliptic integrals in the parameter convention
+  $m=k^2$ CITE{MathWorldAlpha} CITE{DLMFEllipticIntegrals}.
+Parameters:
+  r:
+    type: Z
+    title: index, with $\tau=i\sqrt r$
+    display: $r$
+    constraints: positive integer
+Comments:
+  comment-convention: >-
+    MathWorld writes the same value as
+    $\pi/(4K(k_r)^2)+\sqrt r-\sqrt r\,E(k_r)/K(k_r)$, with
+    $k_r^2=m_r$. The table uses $K(m)$ and $E(m)$ because arb's
+    `elliptic_k` and `elliptic_e` take the parameter $m$.
+  comment-cm-point: >-
+    The lattice $\mathbb Z+\mathbb Z\,i\sqrt r$ has complex multiplication by
+    the order $\mathbb Z[\sqrt{-r}]$, of discriminant $-4r$.
+Formulas:
+  formula-theta: >-
+    $\alpha(r)=\bigl(\pi^{-1}-4\sqrt r\,q\,\theta_4'(q)/\theta_4(q)\bigr)/
+    \theta_3(q)^4$, where $q=e^{-\pi\sqrt r}$ and the derivative is with
+    respect to $q$ CITE{MathWorldAlpha}.
+  formula-order-two: >-
+    $\alpha(4r)=(1+k_{4r})^2\alpha(r)-2\sqrt r\,k_{4r}$, where
+    $k_s=\sqrt{\lambda(i\sqrt s)}$ CITE{MathWorldAlpha}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.complex_arb import ComplexBallField
+
+      r = 2
+      CBF = ComplexBallField(numberdb.bits(100, losing=256))
+      tau = CBF.gen(0) * CBF(r).sqrt()
+      m = tau.modular_lambda().real()
+      K = CBF(m).elliptic_k().real()
+      E = CBF(m).elliptic_e().real()
+      CBF.pi().real() / (4 * K * K) + CBF(r).sqrt().real() * (1 - E / K)
+Similar tables:
+  - table: HREF{T295}[Singular values $k_r$ of the elliptic modulus]
+    relation: holds $k_r$ and $m_r=k_r^2$, the singular values used in the definition of $\alpha(r)$
+  - table: HREF{T296}[Complete elliptic integral $K(k_r)$ at the singular values]
+    relation: holds the $K(m_r)$ factor used in the definition of $\alpha(r)$
+  - table: HREF{Complete_elliptic_integral_of_the_second_kind_E}[Complete elliptic integral of the second kind $E(m)$]
+    relation: holds the same complete elliptic integral at rational parameters
+  - table: HREF{Complete_elliptic_integral_of_the_first_kind_K}[Complete elliptic integral of the first kind $K(m)$]
+    relation: holds the same complete elliptic integral at rational parameters
+Links:
+  MathWorldAlpha:
+    title: 'MathWorld: Elliptic Alpha Function'
+    url: https://mathworld.wolfram.com/EllipticAlphaFunction.html
+  DLMFEllipticIntegrals:
+    title: 'DLMF 19.2: Definitions of complete elliptic integrals'
+    url: https://dlmf.nist.gov/19.2
+  DLMFModularFunctions:
+    title: 'DLMF 23.15: modular functions and the elliptic modular function $\lambda$'
+    url: https://dlmf.nist.gov/23.15
+Keywords:
+  - elliptic alpha function
+  - Ramanujan alpha function
+  - Ramanujan modular equation alpha
+  - singular modulus
+Tags:
+  - special values
+  - modular function
+  - elliptic curves
+  - special functions
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds $\alpha(r)$ for every integer $1\leq r\leq100$, matching the
+    range of HREF{T295}[the singular moduli $k_r$] and HREF{T296}[$K(k_r)$];
+    over this range the order $\mathbb Z[\sqrt{-r}]$ has class number at most
+    $12$
+  rigour details: >-
+    Each value is computed in Sage's arb-backed `ComplexBallField` at
+    `numberdb.bits(digits, losing=256)` bits. The generator evaluates
+    $m_r=\lambda(i\sqrt r)$ as a complex ball, checks that the imaginary part
+    contains zero, and evaluates arb's `elliptic_k` and `elliptic_e` at
+    $m_r$. The row $r=1$ is returned exactly as $1/2$. The run checks
+    CITE{formula-theta} on every computed row, CITE{formula-order-two} for
+    every row where $4r\leq100$, and the closed forms from
+    CITE{MathWorldAlpha} for $1\leq r\leq10$.
+Display properties:
+  number-header: $\alpha(r)$
+Numbers: []
