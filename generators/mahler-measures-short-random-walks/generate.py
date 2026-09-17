@@ -55,6 +55,8 @@ forms, and replacing them with forty from quadrature would be a downgrade.
 import os
 import sys
 
+import multiprocessing
+
 import mpmath as mp
 import numberdb
 
@@ -116,7 +118,32 @@ def _mu(n, dps):
 
 
 def mu(n):
-    """mu_n, as a string of the digits two precisions agree on, and how many."""
+    """mu_n, as a string of the digits two precisions agree on, and how many.
+
+    Computed in a child process that exits afterwards. mpmath keeps caches
+    that grow at high working precision, about 80 MB a value here, and a run
+    through n = 20 would have reached the size at which the kernel's OOM
+    killer ended an earlier run on the 2 GB build machine. A child gives it
+    all back when it exits, so the parent stays flat however far it goes.
+    """
+    #A forked Process inherits its target rather than pickling it, so this
+    #works however the file was imported; only the result crosses the pipe.
+    context = multiprocessing.get_context("fork")
+    reader, writer = context.Pipe(duplex=False)
+    child = context.Process(target=lambda: writer.send(_agreed(n)))
+    child.start()
+    writer.close()
+    try:
+        result = reader.recv()
+    except EOFError:
+        child.join()
+        raise RuntimeError("the child computing mu_%d exited with code %s and "
+                           "sent nothing" % (n, child.exitcode))
+    child.join()
+    return result
+
+
+def _agreed(n):
     low = _mu(n, LOW)
     high = _mu(n, HIGH)
     mp.mp.dps = HIGH + 20
