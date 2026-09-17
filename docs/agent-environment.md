@@ -4293,3 +4293,34 @@ starting a long run, because the failure otherwise looks like the helper was
 called without its required arguments.
 
 Evidence: 2026-09-17, T302 Newton-Cotes weights dry-run and document rebuild.
+
+## The Sage image has SnapPy but not `database_knotinfo`, and the host has no pip
+
+What happened: an ideas run measuring knot invariants found that Sage's
+`KnotInfo` in the image behind `agents/sage.sh` iterates over KnotInfo's
+ten-knot sample only, because the optional package `database_knotinfo` is not
+installed. SnapPy is (`snappy.Link(braid_closure=...)`, verified
+`cusp_translations`, `cusp_areas`). On the host, `pip` and `python3 -m pip`
+are absent too.
+
+What to do instead: to read KnotInfo's data from the host, download the wheel
+from PyPI with `curl` and unpack it with `python3 -m zipfile -e`. The data is
+`database_knotinfo/csv_data/knotinfo_data_complete.csv`, `|`-delimited, with a
+second header row of descriptions. A build that needs it inside Sage has to
+install it in its container run (`sage -pip install database_knotinfo`) or
+mount the CSV.
+
+Evidence: 2026-09-17, ideas run 1425, `/tmp/k2.py` printed `knots 10`.
+
+## The ideas prompt's table count is stale
+
+What happened: the ideas prompt says "126 tables exist". Walking T1–T420 with
+`numberdb.table` found 304 (the highest is T304), and roughly thirty-five of
+the open `table wanted` issues are already built. Two candidate areas taken
+from the issues, character sums and the Beta function, turned out to be
+T142–T144 and T177.
+
+What to do instead: walk the T-numbers first (eight threads take about two
+minutes) and read titles before picking an area from the issues.
+
+Evidence: 2026-09-17, ideas run 1425, `/tmp/walk.py`.
