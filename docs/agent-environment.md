@@ -4179,3 +4179,21 @@ the Sage container.
 
 Evidence: `NUMBERDB_SELF_CHECK=1 agents/sage.sh generators/bernstein-sato-polynomials-simple-unimodal-singularities/generate.py`,
 2026-09-17, followed by `/tmp/run_self_check_issue151.py`.
+
+## The local Sage image may not have enough polynomial machinery for `NumberField`
+
+What happened: while repairing T292, a check script run with
+`NUMBERDB_REMOTE=local agents/sage.sh` tried to construct quadratic fields
+with `NumberField(x^2 - x - 1, 'w')`. Even after importing
+`numberdb.sage` first, Sage failed inside polynomial factorisation with
+`ImportError: cannot import name PolynomialSequence_generic`, through
+`sage.libs.singular.function`.
+
+What to do instead: when the check only needs quadratic conjugation or ideal
+equality, use exact arithmetic in the table's integral basis, or PARI through
+`sage.libs.pari`, rather than depending on Sage's `NumberField` stack in the
+local container. Treat this as a limitation of the runner image, not as a
+mathematical result.
+
+Evidence: `/tmp/t292_pair_check.py`, 2026-09-17. The replacement check used
+exact arithmetic in the basis `1,w` and verified all 250 repeated-value pairs.

@@ -1,0 +1,9 @@
+1. *done* -- replaced `*w` with `w` in 428 live entry comments and updated `generate.py` to emit the same comments; checked every `*w` was an integer coefficient before `w`, then matched the fetched generator's comments to all 572 stored rows.
+2. *done* -- added a `comment-index` sentence explaining that Galois-conjugate isogeny classes share an $L$-function and value; checked all 250 repeated-value pairs by exact quadratic arithmetic, including 11 fixed conductor ideals where the generator changes by a unit.
+3. *done* -- reworded `comment-convention` to say the stored value is the $r$-th derivative divided by $r!$; checked this against the Definition and the Birch and Swinnerton-Dyer formula.
+4. *done* -- added plain-text `display` values for `conductor` and `class`; checked the preview no longer contains `$conductor$` or `$class$`.
+5. *done* -- changed the Definition so $r$ is the order of vanishing and moved the rank equality to Comments; checked all 572 source rows have analytic rank equal to the recorded Mordell-Weil rank and nonzero source $L$-value.
+6. *done* -- clarified `formula-BSD` and `rigour details`; checked the named period, Tamagawa, and $|\operatorname{Sha}(E/K)|$ quantities against the generator's BSD quotient inputs.
+7. *done* -- added the reason for the field range to `complete-note`; checked that the positive fundamental discriminants greater than 1 begin $5,8,12,13,17$.
+8. *done* -- cited LMFDB at first mention, moved the sample LMFDB label out of math mode, and cited LMFDB for the $w$ convention; checked the preview renders those changes.
+9. *done* -- added keywords for all five fields and clarified the rank 2 and rank 3 similar-table relations; left the optional base-change link out because the formula is generic and one factor can have rank 0, for which this corpus has no companion table.
