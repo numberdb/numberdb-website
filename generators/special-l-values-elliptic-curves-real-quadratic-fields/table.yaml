@@ -84,10 +84,10 @@ Data properties:
     $D\in\{5,8,12,13,17\}$ and conductor norm at most $150$
   rigour details: >-
     Entries are computed with PARI's $L$-function machinery at two working
-    precisions, keeping only the digits that agree. The generator compares
-    every row with the independent ecnf-data value to the 38 digits stored
-    there, checks the base-change identity where ecnf-data identifies a base
-    change, and checks that the Birch and Swinnerton-Dyer quotient in
+    precisions, keeping 40 digits from the values that agree. The generator
+    compares every row with the independent ecnf-data value to the 38 digits
+    stored there, checks the base-change identity where ecnf-data identifies a
+    base change, and checks that the Birch and Swinnerton-Dyer quotient in
     CITE{formula-BSD} gives the square integer recorded by ecnf-data for each
     source row.
 Display properties:

@@ -39,7 +39,7 @@ TABLE = os.environ.get("NUMBERDB_TABLE", "T292")
 
 # Decimal working precisions for the agreement check. The larger precision is
 # also used for the source, BSD and base-change checks.
-WORKING_DIGITS = (110, 130)
+WORKING_DIGITS = (50, 70)
 PARI_GUARD_BITS = 96
 
 # The source values carry 38 significant digits. The tolerance is deliberately
@@ -243,34 +243,13 @@ def _check_base_change(record, computed):
     )
 
 
-def _clean_equation(record):
-    equation = record["equation"]
-    equation = equation.replace(r"\phi", "w")
-    if int(record["D"]) != 5:
-        equation = re.sub(r"(?<![A-Za-z\\])a(?=\\{|[^A-Za-z]|$)", "w", equation)
-    equation = equation.replace("{x}", "x").replace("{y}", "y")
-    return equation
-
-
-def _lmfdb_url(record):
-    return "https://www.lmfdb.org/EllipticCurve/%s/%s/%s/%d" % (
-        record["field_label"],
-        record["conductor"],
-        record["class"],
-        int(record["curve"]),
-    )
-
-
 def _entry_comment(record):
     return (
-        "Representative curve HREF{%s}[LMFDB %s], conductor ideal $%s$, "
-        "rank $%d$: $%s$."
+        "Representative curve %s has conductor ideal $%s$ and rank $%d$."
         % (
-            _lmfdb_url(record),
             record["label"],
             record["conductor_ideal"],
             int(record["rank"]),
-            _clean_equation(record),
         )
     )
 
@@ -281,7 +260,7 @@ class RealQuadraticEllipticLValues(numberdb.Generator):
     table = TABLE
     parameters = ("D", "conductor", "class")
     type = "R"
-    digits = 100
+    digits = 40
     rigour = "heuristic (agreement-checked)"
     files = ("generate.py", "curve_data.py")
 
