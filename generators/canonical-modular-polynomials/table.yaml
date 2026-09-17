@@ -1,0 +1,96 @@
+# The table document for numberdb.org/T309. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Canonical modular polynomials $\Phi^c_\ell$
+Definition: >-
+  For a prime $\ell$, put $s=12/\gcd(12,\ell-1)$ and
+  $\mathfrak m_\ell(\tau)=\ell^s(\eta(\ell\tau)/\eta(\tau))^{2s}$,
+  where $\eta$ is Dedekind's eta function CITE{DLMFEta}. Listed is the
+  primitive polynomial $\Phi^c_\ell(x,y)\in\mathbb Z[x,y]$ satisfying
+  $\Phi^c_\ell(\mathfrak m_\ell(\tau),j(\tau))=0$, with $x$ standing for
+  $\mathfrak m_\ell$ and $y$ for $j$, normalised so that the coefficient of
+  $x^{\ell+1}$ is $1$.
+Parameters:
+  ell:
+    type: Z
+    title: prime level
+    display: $\ell$
+    constraints: $\ell$ is prime
+Comments:
+  comment-convention: >-
+    The eta quotient includes the factor $\ell^s$. With this convention the
+    Fricke involution sends $\mathfrak m_\ell$ to $\ell^s/\mathfrak m_\ell$,
+    and the polynomial is PARI/GP's canonical modular equation when
+    `ellmodulareqn` returns type $0$ CITE{PARIellmodulareqn}.
+  comment-reciprocal: >-
+    The quotient $(\eta(\tau)/\eta(\ell\tau))^{2s}$ gives the reciprocal
+    convention in $x$, not another entry of this table.
+  comment-degree: >-
+    For $v=s(\ell-1)/12$, the degree in $x$ is $\ell+1$ and the degree in
+    $y$ is $v$. Each entry's comment gives $v$.
+Formulas:
+  formula-degree: >-
+    If $v=s(\ell-1)/12$, then
+    $\deg_x\Phi^c_\ell=\ell+1$ and $\deg_y\Phi^c_\ell=v$.
+  formula-fricke: >-
+    The Fricke involution gives
+    $\mathfrak m_\ell(-1/(\ell\tau))=\ell^s/\mathfrak m_\ell(\tau)$.
+Programs:
+  program-pari:
+    language: PARI/GP
+    code: |-
+      E = ellmodulareqn(13);
+      E[2] == 0        \\ true for a canonical equation
+      E[1]
+Similar tables:
+  - table: HREF{Modular_polynomials_for_j-invariant}[Modular polynomials for the $j$-invariant]
+    relation: eliminating the eta quotient from $\Phi^c_\ell(\mathfrak m_\ell,j(\tau))$ and its Fricke transform gives the classical modular polynomial
+  - table: HREF{Modular_polynomials_for_Weber's_f-function}[Modular polynomials for Weber's $f$-function]
+    relation: stores another family of smaller modular equations used in place of the classical $j$-invariant equation
+  - table: HREF{Q-expansion_of_the_j-invariant}[$q$-expansion of the $j$-invariant]
+    relation: the generator uses this modular function in the defining relation
+  - table: HREF{Q-expansion_of_the_modular_discriminant}[$q$-expansion of the modular discriminant $\Delta$]
+    relation: Dedekind's eta function satisfies $\eta^{24}=\Delta$, and the eta quotient in the definition is built from it
+Links:
+  DLMFEta:
+    title: 'DLMF 23.15: Dedekind''s eta function'
+    url: https://dlmf.nist.gov/23.15#E9
+  PARIellmodulareqn:
+    title: 'PARI/GP manual: ellmodulareqn'
+    url: https://pari.math.u-bordeaux.fr/dochtml/html-stable/Elliptic_curves.html#ellmodulareqn
+References:
+  Maier2007:
+    bib: >-
+      Robert S. Maier, On rationally parametrized modular equations, Journal
+      of the Ramanujan Mathematical Society 24 (2009), no. 1, 1-73.
+    arxiv: math/0611041
+Keywords:
+  - canonical modular polynomial
+  - canonical modular equation
+  - eta quotient modular equation
+  - SEA modular equation
+Tags:
+  - number theory
+  - polynomial
+  - elliptic curves
+  - modular function
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: it holds every prime $\ell\leq43$
+  rigour details: >-
+    The generator computes exact $q$-expansions of $\mathfrak m_\ell$ and
+    $j$ and finds the one-dimensional rational kernel among the monomials
+    $x^a y^b$ with $0\leq a\leq\ell+1$ and $0\leq b\leq v$, where
+    $v=s(\ell-1)/12$. It truncates beyond the total pole order
+    $v(2\ell+2)$ of such a relation on $X_0(\ell)$, so a relation whose
+    $q$-expansion vanishes that far is identically zero. Each resulting
+    primitive polynomial is required to have integer coefficients and leading
+    coefficient $1$ in $x^{\ell+1}$. The rows for
+    $\ell=2,3,5,7,13,37,73$ were compared with PARI/GP's canonical
+    `ellmodulareqn` data where that data has type $0$; the stored range uses
+    the rows with $\ell\leq43$.
+Display properties:
+  number-header: $\Phi^c_\ell(x,y)$
+Numbers: []
