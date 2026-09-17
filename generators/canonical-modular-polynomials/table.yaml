@@ -58,12 +58,6 @@ Links:
   PARIellmodulareqn:
     title: 'PARI/GP manual: ellmodulareqn'
     url: https://pari.math.u-bordeaux.fr/dochtml/html-stable/Elliptic_curves.html#ellmodulareqn
-References:
-  Maier2007:
-    bib: >-
-      Robert S. Maier, On rationally parametrized modular equations, Journal
-      of the Ramanujan Mathematical Society 24 (2009), no. 1, 1-73.
-    arxiv: math/0611041
 Keywords:
   - canonical modular polynomial
   - canonical modular equation
@@ -87,10 +81,12 @@ Data properties:
     $v(2\ell+2)$ of such a relation on $X_0(\ell)$, so a relation whose
     $q$-expansion vanishes that far is identically zero. Each resulting
     primitive polynomial is required to have integer coefficients and leading
-    coefficient $1$ in $x^{\ell+1}$. The rows for
-    $\ell=2,3,5,7,13,37,73$ were compared with PARI/GP's canonical
-    `ellmodulareqn` data where that data has type $0$; the stored range uses
-    the rows with $\ell\leq43$.
+    coefficient $1$ in $x^{\ell+1}$. The rows in the stored range for
+    $\ell=2,3,5,7,13,37$ were compared with PARI/GP's canonical
+    `ellmodulareqn` data where that data has type $0$. For
+    $\ell=2,3,5,7,11$, eliminating the eta quotient was checked against
+    HREF{Modular_polynomials_for_j-invariant}[the stored classical modular
+    polynomial].
 Display properties:
   number-header: $\Phi^c_\ell(x,y)$
 Numbers: []
