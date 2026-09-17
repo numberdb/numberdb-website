@@ -1,0 +1,129 @@
+# The table document for numberdb.org/T297. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: 'Ramanujan''s class invariants $G_n$, with Weber''s $\mathfrak f(\sqrt{-n})$'
+Definition: >-
+  For a positive integer $n$, take $\sqrt{-n}=i\sqrt n$, set
+  $\tau=i\sqrt n$ and $q=e^{-\pi\sqrt n}=e^{\pi i\tau}$. The rows store
+  Ramanujan's class invariant
+  $G_n=2^{-1/4}q^{-1/24}\prod_{m\geq1}(1+q^{2m-1})$ and Weber's
+  $\mathfrak f(\sqrt{-n})=\mathfrak f(i\sqrt n)$, with
+  $G_n=2^{-1/4}\mathfrak f(i\sqrt n)$ CITE{BorweinBorwein}
+  CITE{Duke} CITE{BerndtChanZhang}.
+Parameters:
+  n:
+    type: Z
+    title: positive integer
+    display: $n$
+    constraints: positive integer
+  normalisation:
+    type: Symbolic
+    title: convention
+    display: convention
+    values:
+      ramanujan: $G_n$
+      weber: $\mathfrak f(i\sqrt n)$
+Comments:
+  comment-cm-point: >-
+    The index $n$ is the $r$ used for the CM point in the other singular-value
+    tables. The point is $\tau=i\sqrt n$, and the order is
+    $\mathbb{Z}[\sqrt{-n}]$, of discriminant $-4n$.
+  comment-conventions: >-
+    The `ramanujan` rows store $G_n$. The `weber` rows store
+    $\mathfrak f(i\sqrt n)$. These are two invertible normalisations because
+    $\mathfrak f(i\sqrt n)=2^{1/4}G_n$.
+Formulas:
+  formula-weber-eta: >-
+    Weber's function is
+    $\mathfrak f(\tau)=\eta(\tau)^2/(\eta(\tau/2)\eta(2\tau))$, equivalently
+    $\mathfrak f(\tau)=q^{-1/24}\prod_{m\geq1}(1+q^{2m-1})$ for
+    $q=e^{\pi i\tau}$ CITE{Duke} CITE{DLMFEta}.
+  formula-singular-modulus: >-
+    If $m_n=\lambda(i\sqrt n)$, then
+    $G_n^{-24}=4m_n(1-m_n)$ CITE{DLMFModularFunctions}.
+  formula-reciprocal: >-
+    The reciprocal-index identity is $G_{1/n}=G_n$.
+  formula-j: >-
+    The Weber value satisfies
+    $j(i\sqrt n)=(\mathfrak f(i\sqrt n)^{24}-16)^3/
+    \mathfrak f(i\sqrt n)^{24}$ CITE{WikipediaWeber}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.complex_arb import ComplexBallField
+      from sage.rings.rational_field import QQ
+
+      n = 2
+      CBF = ComplexBallField(numberdb.bits(100, losing=256))
+      tau = CBF.gen(0) * CBF(n).sqrt()
+      f = tau.modular_eta()**2 / ((tau / 2).modular_eta() * (2 * tau).modular_eta())
+      G = f / CBF(2)**(QQ(1) / QQ(4))
+      G.real(), f.real()
+Similar tables:
+  - table: HREF{Modular_polynomials_for_Weber's_f-function}[Modular polynomials for Weber's $f$-function]
+    relation: those polynomials give modular equations for the same Weber function
+  - table: HREF{Rational_singular_moduli}[Rational singular moduli]
+    relation: both evaluate modular functions at imaginary quadratic points; that table holds the rational $j$-invariant cases
+  - table: HREF{Hilbert_class_polynomials}[Hilbert class polynomials $H_\Delta$]
+    relation: those polynomials record the algebraic $j$-values of imaginary quadratic orders, while this table records Weber and Ramanujan class invariants at $\tau=i\sqrt n$
+Links:
+  DLMFEta:
+    title: 'DLMF 23.15: Dedekind''s eta function'
+    url: https://dlmf.nist.gov/23.15#E9
+  DLMFModularFunctions:
+    title: 'DLMF 23.15: modular functions and the elliptic modular function $\lambda$'
+    url: https://dlmf.nist.gov/23.15
+  WikipediaWeber:
+    title: 'Wikipedia: Weber modular function'
+    url: https://en.wikipedia.org/wiki/Weber_modular_function
+Keywords:
+  - Ramanujan class invariant
+  - Ramanujan-Weber class invariant
+  - Weber modular function
+  - Weber f-function
+  - singular modulus
+Tags:
+  - special values
+  - modular function
+  - elliptic curves
+References:
+  BorweinBorwein:
+    bib: >-
+      Jonathan M. Borwein and Peter B. Borwein, Pi and the AGM: A Study in
+      Analytic Number Theory and Computational Complexity, Wiley-Interscience,
+      1987.
+  Duke:
+    bib: >-
+      W. Duke, Continued fractions and modular functions, Bulletin of the
+      American Mathematical Society 42 (2005), no. 2, 137-162.
+    doi: 10.1090/S0273-0979-05-01047-5
+  BerndtChanZhang:
+    bib: >-
+      Bruce C. Berndt, Heng Huat Chan and Liang-Cheng Zhang, Ramanujan's class
+      invariants, Kronecker's limit formula, and modular equations,
+      Transactions of the American Mathematical Society 349 (1997), no. 6,
+      2125-2173.
+    doi: 10.1090/S0002-9947-97-01738-8
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds Ramanujan's $G_n$ and Weber's $\mathfrak f(i\sqrt n)$ for every
+    integer $1\leq n\leq100$
+  rigour details: >-
+    The generator computes Weber's $\mathfrak f$ in Sage's arb-backed
+    `ComplexBallField` from the eta quotient in CITE{formula-weber-eta}; the
+    imaginary part is required to contain zero before the real part is stored.
+    The `ramanujan` row divides the same real ball by $2^{1/4}$, except that
+    $G_1$ is returned exactly as $1$. Before the values are sent, the generator
+    checks CITE{formula-weber-eta}, CITE{formula-singular-modulus},
+    CITE{formula-reciprocal}, and CITE{formula-j} on the computed range.
+Display properties:
+  number-header: $G_n$ or $\mathfrak f(i\sqrt n)$
+  group parameters:
+    - [n]
+    - [normalisation]
+Numbers: []
