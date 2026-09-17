@@ -4090,3 +4090,21 @@ paper, say in the batch that it was not screened, rather than spending turns
 on the API.
 
 Evidence: `/tmp/b2020/find.py`, `/tmp/b2020/find2.py`, `/tmp/b2020/find4.py`.
+
+## `already_asked` misses an issue whose title shares only later words of the name
+
+What happened: in the 2026-09-17T0110 ideas run,
+`already_asked('Special L-values of elliptic curves over real quadratic fields')`
+returned `[]`. It searches issue titles for the first three words longer than
+four letters ("Special", "L-values", "elliptic"), and GitHub's title search
+ANDs them, so numberdb-data#20 *Data of elliptic curves over quadratic fields*
+was not found. `already_asked('elliptic curves quadratic fields')` found it.
+One call in the same run also answered `could not ask GitHub (HTTPError)`,
+presumably the unauthenticated search rate limit.
+
+What to do instead: call `already_asked` with the family's core noun phrase
+as well as the proposed title, and read the open `table wanted` list with
+`gh issue list -R numberdb/numberdb-data --label "table wanted"`, which is
+authenticated and not rate-limited the same way.
+
+Evidence: `/tmp/ideas0917/screen_run.py`.
