@@ -4277,3 +4277,19 @@ page defines the family". For a large page or a common word, find the
 sentence and quote it in the proposal, or record the pass as disregarded.
 
 Evidence: 2026-09-17, ideas run 1154, `/tmp/screen2.py`.
+
+## `agents/sage.sh` mounts extra files but does not pass them as arguments
+
+What happened: the public dry-run command is
+`sage -python agents/table-build/dry_run.py path/to/generate.py`, but
+`agents/sage.sh` runs only the first script as `/work/<script>` and mounts the
+remaining paths as files. They are not preserved as ordinary `sys.argv`
+arguments inside the container.
+
+What to do instead: for a Sage helper that expects path arguments, write a
+small `/tmp` wrapper whose paths are the mounted `/work/...` filenames, or make
+the helper read its companion files from fixed mounted names. Check this before
+starting a long run, because the failure otherwise looks like the helper was
+called without its required arguments.
+
+Evidence: 2026-09-17, T302 Newton-Cotes weights dry-run and document rebuild.
