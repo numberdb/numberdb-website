@@ -1,0 +1,133 @@
+# Table document for numberdb-data issue #156, draft T307. Created with
+# X-Draft: yes, then filled by generate.py beside it. Publishing is a
+# person's act on the site.
+Title: Backward differentiation formula coefficients
+Definition: >-
+  For $1\leq s\leq6$, the backward differentiation formula coefficients
+  $\alpha_{s,j}$ and $\beta_s$ are the rational coefficients in the
+  $s$-step implicit linear multistep method
+  $\sum_{j=0}^{s}\alpha_{s,j}y_{n+j}=h\beta_s f(t_{n+s},y_{n+s})$ of order
+  $s$ CITE{Wiki}. The table gives the same method in two invertible
+  normalisations: $\alpha_{s,s}=1$ and $\beta_s=1$.
+Parameters:
+  s:
+    type: Z
+    title: number of steps
+    display: $s$
+    constraints: $1\leq s\leq6$
+  normalisation:
+    type: Symbolic
+    title: normalisation
+    display: normalisation
+    constraints: either `alpha-s-one` or `nabla`
+    values:
+      alpha-s-one: $\alpha_{s,s}=1$
+      nabla: $\beta_s=1$
+  coefficient:
+    type: Symbolic
+    title: method coefficient
+    display: coefficient
+    constraints: either `beta` or `alpha_j` with $0\leq j\leq s$
+    values:
+      beta: $\beta_s$
+      alpha_0: $\alpha_{s,0}$
+      alpha_1: $\alpha_{s,1}$
+      alpha_2: $\alpha_{s,2}$
+      alpha_3: $\alpha_{s,3}$
+      alpha_4: $\alpha_{s,4}$
+      alpha_5: $\alpha_{s,5}$
+      alpha_6: $\alpha_{s,6}$
+Comments:
+  comment-notation: >-
+    Here $t_{n+j}=t_0+(n+j)h$. The `alpha-s-one` rows use the convention of
+    CITE{Wiki}; the `nabla` rows are the backward-difference form
+    $\sum_{k=1}^{s}\nabla^k y_{n+s}/k=h f(t_{n+s},y_{n+s})$.
+  comment-normalising: >-
+    Rows fixed to $1$ by the normalisation are omitted: $\alpha_{s,s}$ in
+    the `alpha-s-one` normalisation and $\beta_s$ in the `nabla`
+    normalisation. Other coefficients belonging to the method are stored,
+    including coefficients whose value is $1$ only in a special case.
+  comment-ordering: >-
+    The history index $j$ is counted from the oldest value to the newest
+    value, so entries follow the order $y_n,y_{n+1},\ldots,y_{n+s}$.
+    Wikipedia CITE{Wiki} writes the displayed formulas from newest to oldest;
+    for example BDF3 has $\alpha_{3,0},\alpha_{3,1},\alpha_{3,2}$ equal to
+    $-2/11,9/11,-18/11$ in the `alpha-s-one` normalisation.
+  comment-range: >-
+    The BDF methods are zero-stable only for $s\leq6$ CITE{Wiki}; the table
+    therefore stops at the six methods that are used as BDF methods.
+Formulas:
+  formula-moments: >-
+    The order-$s$ conditions are
+    $\sum_{j=0}^{s}\alpha_{s,j}j^q=q\beta_s s^{q-1}$ for $1\leq q\leq s$,
+    together with $\sum_{j=0}^{s}\alpha_{s,j}=0$.
+  formula-lagrange: >-
+    In the `nabla` normalisation,
+    $\alpha_{s,j}=\ell'_{s,j}(s)$, where $\ell_{s,j}$ is the Lagrange basis
+    polynomial for the nodes $0,1,\ldots,s$ with $\ell_{s,j}(i)=1$ if
+    $i=j$ and $0$ otherwise.
+  formula-nabla: >-
+    In the `nabla` normalisation,
+    $\alpha_{s,j}=(-1)^{s-j}\binom{s}{j}/(s-j)$ for $0\leq j<s$,
+    $\alpha_{s,s}=H_s$ and $\beta_s=1$.
+  formula-normalisations: >-
+    If $H_s=\sum_{k=1}^{s}1/k$, then the `alpha-s-one` coefficients are
+    $\alpha_{s,j}^{(1)}=\alpha_{s,j}^{\nabla}/H_s$ and
+    $\beta_s^{(1)}=1/H_s$.
+Similar tables:
+  - table: HREF{Central_finite_difference_coefficients}[Central finite difference coefficients]
+    relation: both are finite-difference coefficients for derivatives on equally spaced nodes, with BDF using the one-sided stencil at the newest node
+  - table: HREF{Lagrange_basis_polynomials_for_equally_spaced_nodes}[Lagrange basis polynomials for equally spaced nodes]
+    relation: differentiating these basis polynomials at the newest node gives the `nabla` coefficients
+  - table: HREF{Adams_Bashforth_coefficients}[Adams-Bashforth coefficients]
+    relation: another family of rational coefficients for linear multistep methods, using explicit values of $f$
+  - table: HREF{Adams_Moulton_coefficients}[Adams-Moulton coefficients]
+    relation: another family of rational coefficients for implicit linear multistep methods, using values of $f$ rather than backward differences of $y$
+  - table: HREF{Butcher_tableaux_of_explicit_Runge_Kutta_methods}[Butcher tableaux of explicit Runge-Kutta methods]
+    relation: another family of rational coefficients for classical methods for ordinary differential equations
+Links:
+  Wiki:
+    title: 'Wikipedia: Backward differentiation formula, revision 1166087118'
+    url: https://en.wikipedia.org/w/index.php?title=Backward_differentiation_formula&oldid=1166087118
+Keywords: BDF, linear multistep method, implicit multistep method, stiff differential equation, Gear method, Gear's method, backward Euler method
+Tags:
+  - analysis
+Data properties:
+  type: Q
+  rigour: exact
+  complete: 'yes'
+  rigour details: >-
+    The generator builds the order conditions over $\mathbb{Q}$ and solves
+    them exactly in the normalisation $\beta_s=1$. Each completed method is
+    checked against the defining moments, the Lagrange-basis derivative
+    formula, the closed backward-difference formula in the Formulas section,
+    and the six displayed BDF formulas in CITE{Wiki}.
+Display properties:
+  number-header: method coefficient
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.arith.misc import binomial
+      from sage.rings.rational_field import QQ
+
+      def bdf_coefficients(s, normalisation='alpha-s-one'):
+          harmonic = sum(QQ(1) / QQ(k) for k in range(1, s + 1))
+          alpha = {
+              j: QQ((-1) ** (s - j)) * QQ(binomial(s, j)) / QQ(s - j)
+              for j in range(s)
+          }
+          alpha[s] = harmonic
+          beta = QQ(1)
+          if normalisation == 'alpha-s-one':
+              alpha = {j: value / harmonic for j, value in alpha.items()}
+              beta = QQ(1) / harmonic
+          elif normalisation != 'nabla':
+              raise ValueError("unknown normalisation")
+          out = {'beta': beta}
+          out.update({'alpha_%d' % j: alpha[j] for j in range(s + 1)})
+          return out
+
+      bdf_coefficients(3)
+Numbers: []
