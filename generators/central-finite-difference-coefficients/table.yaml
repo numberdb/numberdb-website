@@ -7,9 +7,7 @@ Definition: >-
   difference coefficient $a_{m,r,j}$ is the rational coefficient of $f(x+jh)$
   in the interpolatory formula
   $h^m f^{(m)}(x)\approx\sum_{j=-r}^{r}a_{m,r,j}f(x+jh)$ on the equally
-  spaced offsets $-r,-r+1,\ldots,r$ CITE{Wiki} CITE{Fornberg}. The
-  coefficients are chosen so that the formula is exact for every polynomial
-  $f$ of degree at most $2r$; an absent row has coefficient $0$.
+  spaced offsets $-r,-r+1,\ldots,r$ CITE{Wiki} CITE{Fornberg}.
 Parameters:
   m:
     type: Z
