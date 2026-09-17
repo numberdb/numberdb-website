@@ -4129,3 +4129,31 @@ Evidence: 2026-09-17 T286 build. The direct replacement stored 50 entries and
 attached `generate.py` on revision
 `e936fce85cf6a82f929c6c0f56b2a7ded82666d1f09729fb06cf05a02b65f1ac`;
 `verify()` then reported `50/50 matched`.
+
+## A critique on the builder cannot render a draft's page, but `/preview` renders its document in pieces
+
+What happened: the T289 critique of 2026-09-17 found the SOCKS proxy at
+`127.0.0.1:1080` refusing connections (`curl: (7) Failed to connect`), while a
+direct `curl https://numberdb.org/...` worked. The draft's page answered 404
+even with `Authorization: Bearer <key>`: the table view does not read the API
+key, only a session. `GET /api/table?id=T289` and `GET
+/api/table/T289/audit` accept the key. The `RequestFactory` render described
+above needs Django, and `agents/sage.sh` with `NUMBERDB_REMOTE=local` runs
+`numberdb/builder:latest`, which has none (`ModuleNotFoundError: No module
+named 'django'`).
+
+What worked: convert the API document to YAML, put `ID: INPUT{id.yaml}` in
+front, and `GET /preview?table=<urlencoded yaml>` with no key. It renders the
+sections exactly as the table page does: formulas, CITE numbering, folded
+rigour note, entry links. The request line is limited to about 4 KB once
+encoded. 3.3 KB returned 200, while 4.1 KB answered 400 and 8 KB answered
+400/414. So send Title and Parameters with each piece: one or two sections of
+prose, or one block of entries.
+
+What to do instead: fetch the document with the key and render it through
+`/preview` in pieces, or give the builder image the site code so the
+`RequestFactory` render works again. Do not trust a copy of the skill left in
+`/tmp` by an earlier run; this run found a five-day-old one missing two
+sections.
+
+Evidence: `/tmp/T289-*.q` and `/tmp/T289-*.html`, 2026-09-17.
