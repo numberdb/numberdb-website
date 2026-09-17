@@ -4476,3 +4476,63 @@ Evidence: 2026-09-17, T312 critique. `/tmp/prev312.py` and the two-request
 check above; `/tmp/T312_c.html` (first round, no `Numbers`, 7484 bytes, only
 the shell) against the same piece rerun with one entry (16925 bytes, all
 sections).
+
+## A draft's whole page can be rebuilt from the API document, in the Sage container, on a throwaway sqlite database
+
+What happened: the T315 critique needed the rendered page, and the site's HTML
+routes authenticate by session, so `GET /T315` and `/preview/T315` answer 404
+to the zeta3 bearer token (the note above, T182). This builder has no Django
+and no database, so the `RequestFactory` recipe written for T136 and T137 does
+not run here either, and `/preview?table=` renders only pieces small enough to
+fit a 4094-byte request line. Rebuilding the whole page instead worked, in one
+`agents/sage.sh` run: the container has Sage, which `numberdb_app/models.py`
+imports at module level, and it has the network, so it can install Django.
+
+The shape, all of it inside one script mounted at `/work`:
+
+  * `pip install --target /tmp/libs django<6.1 django-allauth python-decouple
+    dj-database-url django-widget-tweaks django-anymail gitpython
+    django-extensions psycopg2-binary timeout-decorator func-timeout
+    beautifulsoup4 requests requests-oauthlib`. `psycopg2` is needed even for
+    sqlite, because `django.contrib.postgres` is in `INSTALLED_APPS` and
+    imports it at app-loading time.
+  * mount a tarball of `numberdb numberdb_app templates static utils workers
+    data_pipeline manage.py` and extract it; `sys.path` gets `/tmp/libs` and
+    the extracted repository, and `NUMBERDB_SAGE_PYTHONPATH=` keeps the client
+    off the path, which it must be: with Django up, the name `numberdb` has to
+    belong to the site (the `/app` note above).
+  * settings from the environment: `DJANGO_SETTINGS_MODULE=numberdb.settings.dev`,
+    `DATABASE_URL=sqlite:////tmp/x.sqlite3`, `SECRET_KEY`, `ALLOWED_HOSTS`,
+    `SOCIALACCOUNT_GITHUB_ID`, `SOCIALACCOUNT_GITHUB_SECRET`,
+    `ACCOUNT_DEFAULT_HTTP_PROTOCOL`. Then `django.setup()` and
+    `call_command('migrate', run_syncdb=True)`.
+  * two writes have to be replaced, because both build a postgres text-search
+    vector and sqlite answers "no such function: to_tsvector":
+    `editing.reindex_for_search` (patch to a no-op) and `editing._sync_tags`
+    (replace with a copy that makes the `Tag` rows and skips the final
+    `update(search_vector=...)`; a `try/except` around the original is no good,
+    since the failure happens inside `create_table`'s atomic block).
+  * `tree = json.load(...)` of `GET /api/table?id=T315`, then
+    `tree['Numbers'] = flatten.to_records(tree)` -- the API nests entries and
+    `create_table` wants the flat records -- then
+    `editing.create_table(tree, author=user, via='orm', published=False)`, and
+    `views.table_by_tid(request, table.tid)` with `request.user` the author, a
+    `SessionStore()` and a `FallbackStorage` for messages.
+
+What this gives is the page a reader gets: for T315, 497 KB of HTML with all
+479 rows, the column headers, the entry comments under their rows, the prose
+sections and the reference numbering. Two things it does not give: the table
+takes `T1` in the fresh database, so its self-links say `/T1`; and the tables
+it links to do not exist there, so `HREF{}` anchors render but resolve to
+nothing locally -- check those slugs with a plain `curl` against the live site
+instead.
+
+Also: on this machine `NUMBERDB_API_KEY` is set in the environment, so any
+command that dumps the environment -- `env | grep -i numberdb`, a debug print
+of `os.environ` -- puts the key in the transcript. Read the key from
+`NUMBERDB_KEY_FILE` and grep for what you want by name.
+
+Evidence: 2026-09-17, T315 critique. `/tmp/t315_render_sage.py` (the script,
+worth promoting to `agents/render_draft.py` with the tid as an argument),
+`/tmp/t315_render_out.txt` (the run: `records: 479`, `status 200`, 497,255
+bytes of HTML between `=== HTML ===` markers) and `/tmp/t315_page.html`.
