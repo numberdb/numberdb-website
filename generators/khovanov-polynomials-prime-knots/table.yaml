@@ -1,10 +1,10 @@
 Title: Khovanov polynomials of the prime knots with at most ten crossings
 Definition: >-
   The unreduced integral Khovanov polynomial $Kh_K(q,t,T)$ CITE{Wiki}
-  CITE{Khovanov}, shifted into ordinary polynomial form, for the unknot, every
-  Rolfsen prime knot through ten crossings as KnotInfo draws it
-  CITE{KnotInfo}, and each distinct mirror image; the entries for $K$ and
-  $\bar K$ are values of the same invariant.
+  CITE{Khovanov}, shifted into ordinary polynomial form, for the unknot and
+  each Rolfsen prime knot through ten crossings as KnotInfo draws it
+  CITE{KnotInfo}. The parameter $K$ or $\bar K$ chooses the mirror image of
+  the same named knot.
 Keywords:
   - Khovanov homology
   - unreduced integral Khovanov polynomial
