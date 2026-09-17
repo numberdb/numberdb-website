@@ -218,6 +218,25 @@ itself. For API reads of private drafts, reading the key from stdin and fetching
 inside the Sage script is usually cleaner than carrying a second temporary
 file alongside it.
 
+## A repair assignment can arrive without its critique file
+
+What happened: a T294 repair run was assigned `agents/critiques/T294.md`, but
+that file was absent from the checkout and had no history under that path. The
+live table was still reachable through `/api/table?id=T294`, while `/T294`
+returned 404 because the table was an unpublished draft. The audit endpoint
+returned one structural finding, and the repair report had to say explicitly
+that it acted on the live audit rather than on a missing critique file.
+
+What to do instead: before editing, check the requested critique path directly
+and with `find agents -name '*TID*'`. If it is missing, do not invent the
+finding list. Either stop with a repaired report that records the missing
+critique, or, if a live audit finding is safe and local enough to act on, say
+that the audit rather than the missing report supplied the actionable proposal.
+
+Evidence: on 2026-09-17, `find agents -name '*T294*' -print` returned nothing
+before the repair report was written, and `git log -- agents/critiques/T294.md`
+was empty.
+
 ## Do not combine a heredoc script with an API key on stdin
 
 What happened: an API edit sender was run as a Python heredoc while also
