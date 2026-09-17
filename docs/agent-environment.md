@@ -4324,3 +4324,23 @@ What to do instead: walk the T-numbers first (eight threads take about two
 minutes) and read titles before picking an area from the issues.
 
 Evidence: 2026-09-17, ideas run 1425, `/tmp/walk.py`.
+
+## The `env | grep` key leak happened a third time, with the same mask
+
+What happened: the T305 critique hit the refused SOCKS proxy (127.0.0.1:1080
+answered the first request of the run and then "Couldn't connect" on every
+later one, as in the T221 note) and listed the environment to see how the
+runner reaches the site. The mask was `sed 's/=.*KEY.*/=<redacted>/'`, the
+same pattern the T226 note describes as not matching `NUMBERDB_API_KEY=...`.
+The zeta3 key is again in a run's tool output. The note existed; it was read
+only after the listing.
+
+What to do instead: the environment carries the key in `NUMBERDB_API_KEY` as
+well as in the file named by `NUMBERDB_KEY_FILE`, which is what makes any
+listing dangerous. Either stop exporting `NUMBERDB_API_KEY` into agent runs
+(everything documented reads the file) or put "never print the environment"
+in the prompt beside the key instructions, where it is read before the first
+command. Rotate the zeta3 key. numberdb.org answered `curl` directly
+throughout, so the proxy is not needed on this runner.
+
+Evidence: 2026-09-17, T305 critique, the fourth Bash call of the run.
