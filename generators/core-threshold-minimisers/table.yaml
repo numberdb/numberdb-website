@@ -3,12 +3,9 @@
 # a person's act on the site.
 Title: Minimisers of the core threshold
 Definition: >-
-  For $k\geq3$ and $r\geq2$, let
-  $Q(\lambda,s)=\mathbb{P}(\mathrm{Po}(\lambda)\geq s)$. The number
-  $\lambda_{k,r}$ is the positive real value of $\lambda$ at which the random
-  $k$-uniform hypergraph CITE{WikiHypergraph} $r$-core threshold
-  $c_{k,r}=\min_{\lambda>0}\lambda/(kQ(\lambda,r-1)^{k-1})$ is attained
-  CITE{Molloy} CITE{CainWormald}.
+  For $k\geq3$ and $r\geq2$, $\lambda_{k,r}$ is the positive minimiser in
+  CITE{formula-threshold}, the formula for the random $k$-uniform hypergraph
+  CITE{WikiHypergraph} $r$-core threshold.
 Keywords: peeling threshold, pure literal rule, invertible Bloom lookup table, 2-core
 Parameters:
   k:
@@ -40,7 +37,9 @@ Formulas:
     $g'(\lambda)=e^{-\lambda}\lambda^{r-2}((k-1)\lambda-(k-1)(r-1)+1)/(r-2)!$,
     so $g$ decreases and then increases, with one positive zero.
   formula-threshold: >-
-    $c_{k,r}=\lambda_{k,r}/(kQ(\lambda_{k,r},r-1)^{k-1})$.
+    $c_{k,r}=\min_{\lambda>0}\lambda/(kQ(\lambda,r-1)^{k-1})
+    =\lambda_{k,r}/(kQ(\lambda_{k,r},r-1)^{k-1})$ CITE{Molloy}
+    CITE{CainWormald}.
 Programs:
   program-mpmath:
     language: Python
