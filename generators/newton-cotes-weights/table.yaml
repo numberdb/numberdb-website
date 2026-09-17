@@ -3,12 +3,11 @@
 # person's act on the site.
 Title: Newton–Cotes weights
 Definition: >-
-  For $n\geq 1$, the closed Newton–Cotes weights $w_{n,j}$ are the rational
-  coefficients in $\int_0^n f(x)\,\mathrm{d}x\approx
-  \sum_{j=0}^n w_{n,j}f(j)$, exact for every polynomial $f$ of degree at
-  most $n$ CITE{Wiki}. Each weight is listed in two invertible
-  normalisations: the step weight $w_{n,j}$ and the Cotes number
-  $C_{n,j}=w_{n,j}/n$ for the unit interval.
+  For $n\geq 1$, closed Newton–Cotes weights $w_{n,j}$ are the rational
+  coefficients in $\int_0^n f(x)\,\mathrm{d}x\approx\sum_{j=0}^n w_{n,j}f(j)$,
+  exact for polynomials of degree at most $n$ CITE{Wiki}. The table gives the
+  same weights in two invertible normalisations: $w_{n,j}$ and
+  $C_{n,j}=w_{n,j}/n$.
 Parameters:
   n:
     type: Z
