@@ -1,0 +1,103 @@
+# The table document for numberdb.org/T293. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Regulators of elliptic curves over real quadratic fields
+Definition: >-
+  Let $K=\mathbb{Q}(\sqrt{D})$ be a real quadratic field and let $E/K$ be an
+  elliptic curve of Mordell-Weil rank $r$. This table gives the regulator
+  $R_{E/K}=\det(\langle P_i,P_j\rangle)$ of the free part of $E(K)$, using
+  the absolute Neron-Tate height pairing and the ecnf-data Mordell-Weil basis
+  CITE{ecnf-data}.
+Keywords: Birch and Swinnerton-Dyer, BSD, elliptic regulator, Neron-Tate height, Hilbert modular form, base change, real quadratic field, Q(sqrt 5)
+Parameters:
+  D:
+    type: Z
+    title: field discriminant
+    display: $D$
+    constraints: positive fundamental discriminant
+  conductor:
+    type: Symbolic
+    title: LMFDB conductor label
+  class:
+    type: Symbolic
+    title: isogeny class label
+  curve:
+    type: Z
+    title: curve number in the LMFDB class
+Comments:
+  comment-index: >-
+    The row with $D=5$, conductor label `31.1`, isogeny class `a`, and curve
+    number $1$ is the LMFDB curve `2.2.5.1-31.1-a1`. There is one row per
+    curve rather than one row per isogeny class, since the regulator is
+    attached to the Mordell-Weil lattice of the curve.
+  comment-field-generator: >-
+    The generator $w$ of $K$ is the one used by LMFDB CITE{ecnf-data}: it
+    satisfies $w^2-w-1=0$ for $D=5$, $w^2-2=0$ for $D=8$, $w^2-3=0$ for
+    $D=12$, $w^2-w-3=0$ for $D=13$, and $w^2-w-4=0$ for $D=17$.
+  comment-rank-zero: >-
+    For rank $0$ curves the regulator is the determinant of the empty
+    height-pairing matrix, so it is $1$.
+  comment-convention: >-
+    The height pairing is absolute. In PARI, `ellheightmatrix` over a
+    quadratic field gives twice this height; the ecnf-data `reg` field and
+    this table use the absolute convention that appears in CITE{formula-BSD}.
+Formulas:
+  formula-BSD: >-
+    The Birch and Swinnerton-Dyer formula CITE{WikiBSD} in these
+    normalisations is
+    $L^*(E/K,1)=2^r\Omega_{E/K}R_{E/K}|\operatorname{Sha}(E/K)|
+    \prod_{\mathfrak p}c_{\mathfrak p}/(|E(K)_{\mathrm{tors}}|^2\sqrt{D})$.
+    Here $L^*(E/K,1)$ is the leading Taylor coefficient divided by $r!$,
+    $\Omega_{E/K}$ is the product over both real embeddings with real
+    components counted, and $R_{E/K}$ is the regulator for the absolute
+    Neron-Tate height.
+Similar tables:
+  - table: HREF{Regulators_of_elliptic_curves_over_Q_of_rank_1}[Regulators of elliptic curves over $\mathbb{Q}$ of rank $1$]
+    relation: the same height-pairing regulator for elliptic curves over $\mathbb{Q}$ of rank $1$
+  - table: HREF{Regulators_of_elliptic_curves_over_Q_of_rank_2}[Regulators of elliptic curves over $\mathbb{Q}$ of rank $2$]
+    relation: the same height-pairing regulator for elliptic curves over $\mathbb{Q}$ of rank $2$
+  - table: HREF{Regulators_of_elliptic_curves_over_Q_of_rank_3}[Regulators of elliptic curves over $\mathbb{Q}$ of rank $3$]
+    relation: the same height-pairing regulator for elliptic curves over $\mathbb{Q}$ of rank $3$
+  - table: HREF{Special_L-values_of_elliptic_curves_over_real_quadratic_fields}[Special $L$-values of elliptic curves over real quadratic fields]
+    relation: the $L^*(E/K,1)$ factor in the BSD formula for overlapping ecnf-data curves
+  - table: HREF{Regulators_of_real_quadratic_fields}[Regulators of real quadratic fields]
+    relation: a different regulator, of the unit group of the base field
+Links:
+  ecnf-data:
+    title: 'GitHub: ecnf-data'
+    url: https://github.com/JohnCremona/ecnf-data
+  LMFDB:
+    title: 'LMFDB: elliptic curves over number fields'
+    url: https://www.lmfdb.org/EllipticCurve/
+  WikiBSD:
+    title: 'Wikipedia: Birch and Swinnerton-Dyer conjecture'
+    url: https://en.wikipedia.org/wiki/Birch_and_Swinnerton-Dyer_conjecture
+References:
+Tags:
+  - number theory
+  - elliptic curves
+Data properties:
+  type: R
+  rigour: heuristic
+  sources:
+    - CITE{ecnf-data}
+  complete: 'no'
+  complete-note: >-
+    it holds every curve in ecnf-data with $D\in\{5,8,12,13,17\}$ and
+    conductor norm at most $60$
+  rigour details: >-
+    Entries are transcribed from the ecnf-data `reg` field at commit
+    `10b28418e80392032b106ea00e6c5aa109d28e7b`. In this range every curve has
+    rank $0$ or $1$: rank-zero regulators are stored as the exact value $1$,
+    and each rank-one regulator is compared with the source height of the
+    recorded generator. The generator also checks that the Birch and
+    Swinnerton-Dyer quotient in CITE{formula-BSD} gives the square integer
+    recorded by ecnf-data for each source row.
+Display properties:
+  number-header: $R_{E/K}$
+  group parameters:
+    - [D]
+    - [conductor]
+    - [class]
+    - [curve]
+Numbers: []
