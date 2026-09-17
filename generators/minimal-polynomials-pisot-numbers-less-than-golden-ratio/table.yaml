@@ -100,11 +100,12 @@ Data properties:
   rigour details: >-
     The generator forms the exact integer polynomials given in Formula
     CITE{formula-families} and factors them over $\mathbb Q$. It selects the
-    irreducible factor whose real root lies in $(1,\varphi)$, verifies that
-    this root is contained in the corresponding stored interval in
-    HREF{Pisot_numbers_less_than_the_golden_ratio}[the root table], and stores
-    the monic factor exactly. The first ten polynomials agree with the source
-    table quoted by Wikipedia's small-Pisot-numbers section.
+    irreducible factor whose real root lies in $(1,\varphi)$ and stores the
+    monic factor exactly. A verification run checks that this root is contained
+    in the corresponding stored interval in
+    HREF{Pisot_numbers_less_than_the_golden_ratio}[the root table]. The first
+    ten polynomials agree with the source table quoted by Wikipedia's
+    small-Pisot-numbers section.
 Display properties:
   number-header: $m_r(x)$
 Numbers: []
