@@ -3,13 +3,11 @@
 # is a person's act on the site.
 Title: 'Ramanujan''s class invariants $G_n$, with Weber''s $\mathfrak f(\sqrt{-n})$'
 Definition: >-
-  For a positive integer $n$, take $\sqrt{-n}=i\sqrt n$, set
-  $\tau=i\sqrt n$ and $q=e^{-\pi\sqrt n}=e^{\pi i\tau}$. The rows store
-  Ramanujan's class invariant
-  $G_n=2^{-1/4}q^{-1/24}\prod_{m\geq1}(1+q^{2m-1})$ and Weber's
-  $\mathfrak f(\sqrt{-n})=\mathfrak f(i\sqrt n)$, with
-  $G_n=2^{-1/4}\mathfrak f(i\sqrt n)$ CITE{BorweinBorwein}
-  CITE{Duke} CITE{BerndtChanZhang}.
+  For $n\in\mathbb{Z}_{>0}$, take $\sqrt{-n}=i\sqrt n$ and
+  $\tau=i\sqrt n$. The rows store one number in two invertible conventions:
+  Ramanujan's class-invariant convention $G_n$ and Weber's convention
+  $\mathfrak f(i\sqrt n)=2^{1/4}G_n$ CITE{BorweinBorwein} CITE{Duke}
+  CITE{BerndtChanZhang}.
 Parameters:
   n:
     type: Z
