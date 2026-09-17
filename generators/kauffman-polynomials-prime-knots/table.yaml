@@ -1,0 +1,165 @@
+Title: Kauffman polynomials of the prime knots with at most ten crossings
+Definition: >-
+  The Kauffman polynomial $F_K(a,z)\in\mathbb{Z}[a,a^{-1},z]$
+  CITE{Wiki} CITE{Kauffman} of the unknot, of every prime knot $K=n_k$
+  with at most ten crossings, named as in the Rolfsen table CITE{Rolfsen}
+  with Perko's correction CITE{Perko} and drawn as in KnotInfo
+  CITE{KnotInfo}, and of each distinct mirror image $\bar K$, shifted into
+  ordinary polynomial form.
+Keywords:
+  - Kauffman polynomial
+Parameters:
+  n:
+    type: Z
+    title: crossing number
+    display: $n$
+    constraints: $n=0$ or $3\leq n\leq 10$
+  k:
+    type: Z
+    title: index in the Rolfsen table
+    display: $k$
+    constraints: >-
+      $1\leq k\leq N(n)$, where $N(n)$ is the number of knots listed with $n$
+      crossings, $1,1,1,2,3,7,21,49,165$ for $n=0,3,4,\ldots,10$
+  knot:
+    type: Symbolic
+    title: the knot $K=n_k$ as KnotInfo draws it, or its mirror image $\bar K$
+    display: knot
+    values:
+      K: $K$
+      mirror: $\bar K$
+    constraints: >-
+      $\bar K$ is listed for the 229 chiral knots only; the unknot and the 20
+      amphichiral knots are their own mirror images
+Comments:
+  comment-convention: >-
+    This is Kauffman's two-variable polynomial $F_K(a,z)$, not the Kauffman
+    bracket and not the Dubrovnik polynomial. The convention is KnotInfo's:
+    $F_K(a,z)=a^{-w(D)}L(D)$, where $D$ is an unoriented diagram of $K$,
+    $w(D)$ is its writhe after choosing an orientation, and $L$ is the
+    regular-isotopy invariant with $L(D_+)+L(D_-)=z(L(D_0)+L(D_\infty))$ and
+    $L(0_1)=1$ CITE{Kauffman} CITE{KnotInfoKauffman}.
+  comment-shift: >-
+    $F_K$ is a Laurent polynomial in $a$ and the table holds polynomials, so
+    the entry is $a^{-m}F_K(a,z)$ with $m$ the lowest exponent of $a$, and each
+    entry's comment gives $m$. The unknot has $F=1$. For the right-handed
+    trefoil, KnotInfo gives
+    $F=(-a^{-4}-2a^{-2})+(a^{-5}+a^{-3})z+(a^{-4}+a^{-2})z^2$, so the entry is
+    $(1+a^2)z-a-2a^3+(a+a^3)z^2$ with $m=-5$.
+  comment-mirror: >-
+    The name $n_k$ names a knot only up to mirror image, and
+    $F_{\bar K}(a,z)=F_K(a^{-1},z)$, so a table of Kauffman polynomials has to
+    say which mirror image it draws. Here $K$ is the knot as KnotInfo
+    CITE{KnotInfo} draws it, the closure of the braid in its braid notation,
+    and $\bar K$ is its mirror image. The
+    HREF{Jones_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Jones polynomial]
+    and
+    HREF{HOMFLY-PT_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[HOMFLY-PT polynomial]
+    tables use the same convention.
+  comment-chirality: >-
+    An amphichiral knot is isotopic to its mirror image CITE{WikiChiral}, so
+    it has a single entry. The amphichiral knots here are $4_1$, $6_3$, $8_3$,
+    $8_9$, $8_{12}$, $8_{17}$, $8_{18}$, $10_{17}$, $10_{33}$, $10_{37}$,
+    $10_{43}$, $10_{45}$, $10_{79}$, $10_{81}$, $10_{88}$, $10_{99}$,
+    $10_{109}$, $10_{115}$, $10_{118}$ and $10_{123}$, which is $1,1,5,13$ of
+    them for $n=4,6,8,10$ CITE{OEISamph}.
+  comment-numbering: >-
+    The numbering is Rolfsen's after Perko's correction CITE{Perko}. The knots
+    Rolfsen listed as $10_{161}$ and $10_{162}$ are one knot, so there are
+    $165$ prime knots with ten crossings rather than $166$ CITE{OEIS}, and
+    Rolfsen's $10_{163}$ to $10_{166}$ are $10_{162}$ to $10_{165}$ here
+    CITE{WikiList}. KnotInfo CITE{KnotInfo}, the Knot Atlas CITE{KnotAtlas}
+    and Sage's knot table use this numbering.
+  comment-range: >-
+    The Rolfsen table ends at ten crossings, and so do the names $n_k$. The
+    552 prime knots with eleven crossings are named $11a_1$ to $11a_{367}$
+    and $11n_1$ to $11n_{185}$ after Hoste and Thistlethwaite, alternating and
+    non-alternating separately, which $n$ and $k$ do not express. KnotInfo
+    carries Kauffman polynomials of prime knots beyond this range.
+Formulas:
+  formula-mirror: >-
+    $F_{\bar K}(a,z)=F_K(a^{-1},z)$ for the mirror image $\bar K$ CITE{Wiki}.
+    If the entry of $K$ is $P(a,z)=a^{-m}F_K(a,z)$ and the degree of $P$ in
+    $a$ is $d$, then the entry of $\bar K$ is $a^dP(a^{-1},z)$ and the $m$ of
+    $\bar K$ is $-m-d$.
+  formula-jones: >-
+    $V_K(t)=F_K(-t^{-3/4},t^{1/4}+t^{-1/4})$ for the
+    HREF{Jones_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Jones polynomial]
+    $V_K(t)$ in the convention used here.
+  formula-q: >-
+    $F_K(1,z)=Q_K(z)$, the Brandt-Lickorish-Millett-Ho polynomial of $K$
+    CITE{BrandtLickorishMillettHo}.
+Similar tables:
+  - table: HREF{Jones_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Jones polynomials of the prime knots with at most ten crossings]
+    relation: the same knots; the Kauffman polynomial specialises to the Jones polynomial
+  - table: HREF{HOMFLY-PT_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[HOMFLY-PT polynomials of the prime knots with at most ten crossings]
+    relation: the same knots; the HOMFLY-PT polynomial is the $SU(N)$ counterpart of the Kauffman polynomial
+  - table: HREF{Alexander_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Alexander polynomials of the prime knots with at most ten crossings]
+    relation: the same knot names, with mirror images not distinguished by the Alexander polynomial
+  - table: HREF{Conway_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Conway polynomials of the prime knots with at most ten crossings]
+    relation: the same knot names, with mirror images not distinguished by the Conway polynomial
+Links:
+  Wiki:
+    title: 'Wikipedia: Kauffman polynomial'
+    url: https://en.wikipedia.org/wiki/Kauffman_polynomial
+  WikiChiral:
+    title: 'Wikipedia: Chiral knot'
+    url: https://en.wikipedia.org/wiki/Chiral_knot
+  WikiList:
+    title: 'Wikipedia: List of prime knots'
+    url: https://en.wikipedia.org/wiki/List_of_prime_knots
+  KnotAtlas:
+    title: 'The Knot Atlas: The Rolfsen Knot Table'
+    url: http://katlas.org/wiki/The_Rolfsen_Knot_Table
+  KnotInfo:
+    title: 'KnotInfo: Table of Knot Invariants (C. Livingston and A. H. Moore)'
+    url: https://knotinfo.org/
+  KnotInfoKauffman:
+    title: 'KnotInfo: Kauffman Polynomial'
+    url: https://knotinfo.org/descriptions/kauffman_polynomial.html
+  OEIS:
+    title: 'OEIS A002863: number of prime knots with n crossings'
+    url: https://oeis.org/A002863
+  OEISamph:
+    title: 'OEIS A052401: number of amphichiral prime knots with n crossings'
+    url: https://oeis.org/A052401
+References:
+  Kauffman:
+    bib: >-
+      L. H. Kauffman, An invariant of regular isotopy, Trans. Amer. Math.
+      Soc. 318 (1990), 417-471.
+  BrandtLickorishMillettHo:
+    bib: >-
+      R. D. Brandt, W. B. R. Lickorish and K. C. Millett, A polynomial
+      invariant for unoriented knots and links, Invent. Math. 84 (1986),
+      563-573; C. F. Ho, A polynomial invariant for knots and links, preliminary
+      report, Abstracts Amer. Math. Soc. 6 (1985), 300.
+  Rolfsen:
+    bib: >-
+      D. Rolfsen, Knots and Links, Publish or Perish, 1976, Appendix C: Table
+      of knots and links.
+  Perko:
+    bib: >-
+      K. A. Perko, On the classification of knots, Proc. Amer. Math. Soc. 45
+      (1974), 262-266.
+Tags:
+  - polynomial
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'yes'
+  Size exception: >-
+    The complete Rolfsen range through ten crossings has 479 entries when both
+    mirror images are listed; the dry run measured a 213.7 KB entries block and
+    a longest entry of 500 characters, under the 320 KB soft limit and matching
+    the range of the Alexander, Jones, Conway and HOMFLY-PT knot tables.
+  rigour details: >-
+    The values are transcribed from the kauffman_polynomial column of KnotInfo,
+    package database_knotinfo 2026.9.1. The generator parses the Laurent
+    polynomials exactly, shifts each one by the lowest exponent of $a$, and
+    generates the mirror entries by $F_{\bar K}(a,z)=F_K(a^{-1},z)$. It checks
+    the Jones specialisation against the stored
+    HREF{Jones_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Jones polynomial]
+    table and checks $F_K(1,z)$ against KnotInfo's $Q$-polynomial column.
+Display properties:
+  number-header: $a^{-m}F_K(a,z)$
