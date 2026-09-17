@@ -4,11 +4,8 @@
 Title: Adams–Bashforth coefficients
 Definition: >-
   For $s\geq1$, the Adams–Bashforth coefficients $\beta_{s,j}$ are the
-  rational coefficients in
-  $y_{n+s}=y_{n+s-1}+h\sum_{j=0}^{s-1}\beta_{s,j}f_{n+j}$, where
-  $f_{n+j}=f(t_{n+j},y_{n+j})$ and $t_{n+j}=t_0+(n+j)h$. They are chosen so
-  the formula is exact when $f(t,y(t))$ is a polynomial in $t$ of degree at
-  most $s-1$ CITE{Wiki}; an absent row has coefficient $0$.
+  rational coefficients in the explicit $s$-step formula
+  $y_{n+s}=y_{n+s-1}+h\sum_{j=0}^{s-1}\beta_{s,j}f_{n+j}$ CITE{Wiki}.
 Parameters:
   s:
     type: Z
@@ -21,6 +18,11 @@ Parameters:
     display: $j$
     constraints: $0\leq j<s$
 Comments:
+  comment-notation: >-
+    Here $f_{n+j}=f(t_{n+j},y_{n+j})$ and $t_{n+j}=t_0+(n+j)h$. The
+    coefficients are chosen so the formula is exact when $f(t,y(t))$ is a
+    polynomial in $t$ of degree at most $s-1$; this is the moment condition in
+    the Formulas section. An absent row has coefficient $0$.
   comment-step: >-
     The step size appears as the single factor $h$ before the sum. Each stored
     number is the coefficient multiplying one $f_{n+j}$ when $h=1$.
