@@ -97,6 +97,16 @@ def _integer_polynomial(polynomial):
     return Z_POLYS(coefficients)
 
 
+def _decimal_claim(field, text):
+    sign = -1 if text.startswith("-") else 1
+    unsigned = text[1:] if sign == -1 else text
+    whole, fraction = unsigned.split(".")
+    scale = 10 ** len(fraction)
+    center = QQ(sign * int(whole + fraction)) / QQ(scale)
+    unit = QQ(1) / QQ(scale)
+    return field(center - unit, center + unit)
+
+
 def pisot_factor_and_root(polynomial, digits):
     field = RealIntervalField(numberdb.bits(digits, losing=WORKING_GUARD))
     found = []
@@ -160,6 +170,25 @@ def entry_comment(rank, record):
     )
 
 
+def check_against_root_table(digits):
+    root_values = numberdb.table("T286")["Numbers"]
+    field = RealIntervalField(numberdb.bits(digits, losing=WORKING_GUARD))
+    for rank, record in enumerate(records(digits), 1):
+        claim = _decimal_claim(field, root_values[str(rank)]["number"])
+        root = record["root"]
+        if root.lower() < claim.lower() or root.upper() > claim.upper():
+            raise ArithmeticError(
+                "root interval for r=%d is not inside the T286 decimal interval"
+                % rank
+            )
+        value = R(record["polynomial"])(claim)
+        if not (value.lower() <= 0 <= value.upper()):
+            raise ArithmeticError(
+                "T286 interval for r=%d does not contain a root of %s"
+                % (rank, record["polynomial"])
+            )
+
+
 class PisotMinimalPolynomialsBelowGoldenRatio(numberdb.Generator):
 
     table = os.environ.get("NUMBERDB_TABLE") or TABLE
@@ -187,6 +216,9 @@ def main():
         print(generator.publish(message="computed Pisot minimal polynomials from exact families"))
     else:
         report = generator.verify(sample=None)
+        if report.ok:
+            check_against_root_table(generator.digits)
+            print("checked against the T286 root intervals")
         print(report)
         sys.exit(0 if report.ok else 1)
 
