@@ -4108,3 +4108,24 @@ as well as the proposed title, and read the open `table wanted` list with
 authenticated and not rate-limited the same way.
 
 Evidence: `/tmp/ideas0917/screen_run.py`.
+
+## `Generator.publish()` can fail its empty preflight on a prose-only draft
+
+What happened: T286 was created as a draft with prose and parameters but no
+`Numbers` section, as the proposal-claim workflow asks. Running its generator
+with `NUMBERDB_PUBLISH=1` failed before computing entries: the client
+preflight `check_writable()` sent an empty upsert to
+`/api/table/T286/entries`, and the server answered 400,
+`A value in these entries cannot be read as a number. 'str' object has no
+attribute 'items'`.
+
+What to do instead: verify with `dry_run.py` first, then send the actual
+entries as a single replacement to `/api/table/<tid>/entries` and attach the
+generator source with the same run id. After that, run the generator's
+`verify(sample=None)` against the stored draft. Do not conclude that the key
+or draft is unwritable from this empty-upsert refusal.
+
+Evidence: 2026-09-17 T286 build. The direct replacement stored 50 entries and
+attached `generate.py` on revision
+`e936fce85cf6a82f929c6c0f56b2a7ded82666d1f09729fb06cf05a02b65f1ac`;
+`verify()` then reported `50/50 matched`.
