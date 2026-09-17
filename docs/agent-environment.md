@@ -4244,3 +4244,36 @@ clean audit.
 Evidence: T293 on 2026-09-17 returned 500 from the audit endpoint after
 `verify()` reported `585/585 matched`; T64 returned one finding and T292
 returned clean from the same keyed audit script.
+
+## A `sage.sh` run queued behind the lock looks exactly like one that is running
+
+What happened: a Sage computation (integer kernels at large level) ran for
+seventeen minutes. Two more `agents/sage.sh` calls, started in the background
+meanwhile, sat on the lock with empty output files and no "waiting" line. With
+`| tail -20` on the first, nothing at all was visible until it ended, so three
+runs looked like three slow computations. Stopping the first meant killing
+the local `timeout` and `sage.sh` processes (`docker` itself is refused); the
+container then went away and the queued runs started at once.
+
+What to do instead: send a long run's output to a file without `tail`, print
+with `flush=True` after each case, and order cases smallest first so a
+partial file says how far it got. Before starting a second run, check
+`ps aux | grep sage.sh`: a run you started earlier may still hold the lock.
+
+Evidence: 2026-09-17, ideas run 1154, `/tmp/pari5.py` then `/tmp/pari6.py`
+and `/tmp/pari7.py`.
+
+## `source_names_it` passes on a page whose words are only in its reference list
+
+What happened: `source_names_it('Weber class polynomials', <AMS page of
+Yui–Zagier, Math. Comp. 1997>)` passed. `curl` on the same address returns a
+Cloudflare challenge; `urllib` gets an 11 MB landing page, in which "Weber"
+and "class" occur only inside other papers' bibliographies. The screen also
+passed "Class polynomials gamma2" on PARI's documentation because "gamma" is
+in the entries for the Gamma function, while the invariant is written γ.
+
+What to do instead: treat a pass as "the words are on the page", not "the
+page defines the family". For a large page or a common word, find the
+sentence and quote it in the proposal, or record the pass as disregarded.
+
+Evidence: 2026-09-17, ideas run 1154, `/tmp/screen2.py`.
