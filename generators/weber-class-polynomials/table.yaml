@@ -3,12 +3,10 @@
 # is a person's act on the site.
 Title: Weber class polynomials $W_D$
 Definition: >-
-  Let $D<0$ be an imaginary quadratic discriminant with $D\equiv1\pmod 8$
-  and $3\nmid D$, and put $m=-D$. For Weber's function
-  $\mathfrak f(\tau)=\eta(\tau)^2/(\eta(\tau/2)\eta(2\tau))$
-  CITE{Schertz2002}, define
-  $\omega_D=\mathfrak f(i\sqrt m)/\sqrt2$. Listed is the monic minimal
-  polynomial $W_D(x)\in\mathbb Z[x]$ of $\omega_D$.
+  For $D<0$, $D\equiv1\pmod 8$ and $3\nmid D$, put $m=-D$. Let
+  $\omega_D=\mathfrak f(i\sqrt m)/\sqrt2$, with $\mathfrak f$ Weber's
+  function CITE{Schertz2002}. Listed is the monic minimal polynomial
+  $W_D(x)\in\mathbb Z[x]$ of $\omega_D$.
 Parameters:
   D:
     type: Z
