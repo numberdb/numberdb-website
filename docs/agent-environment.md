@@ -1106,6 +1106,13 @@ value as well as the name of the file holding it, and a prompt that says the
 key "is in the file named by `NUMBERDB_KEY_FILE`" should not also find the
 key in `NUMBERDB_API_KEY`. Unsetting that variable in `run.sh` would end the
 mistake for good.
+It happened a fourth time in the T307 critique of 2026-09-17 (campaign
+`20260917T011039Z`), in the same situation and with the same `sed` mask: the
+proxy refused connections, and the environment was listed to find out why.
+The answer the listing gave was `ALL_PROXY=` (empty) and `NUMBERDB_REMOTE=local`.
+On this box `curl https://numberdb.org/...` with no proxy works, as the note
+of 2026-09-16 further down says. Run the direct `curl` before looking at the
+environment at all.
 
 ## `audit_table --links` reports KnotInfo as `URLError`; that is this network, not the link
 
