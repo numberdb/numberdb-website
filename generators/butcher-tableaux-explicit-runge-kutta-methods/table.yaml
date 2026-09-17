@@ -3,13 +3,10 @@
 # person's act on the site.
 Title: Butcher tableaux of explicit Runge–Kutta methods
 Definition: >-
-  For each listed explicit Runge-Kutta method with rational coefficients, the
-  table gives the nonzero rational entries of its Butcher tableau: the nodes
-  $c_i$, the matrix entries $a_{ij}$ with $j<i$, and the weights
-  $b^{(q)}_i$ of each order-$q$ formula in an embedded pair CITE{WikiList}.
-  The step has the form
-  $y_{n+1}=y_n+h\sum_i b_i k_i$, where
-  $k_i=f(t_n+c_i h, y_n+h\sum_{j<i} a_{ij}k_j)$.
+  An explicit Runge-Kutta method with rational coefficients is determined by
+  its Butcher tableau CITE{WikiList}. The table gives the nonzero nodes
+  $c_i$, matrix entries $a_{ij}$ with $j<i$, and weights $b^{(q)}_i$ of each
+  listed method or embedded pair.
 Parameters:
   method:
     type: Symbolic
@@ -56,6 +53,9 @@ Comments:
     one-parameter generic families, implicit methods, and Ralston's
     fourth-order method, whose coefficients lie in $\mathbb{Q}(\sqrt5)$.
 Formulas:
+  formula-step: >-
+    The step has the form $y_{n+1}=y_n+h\sum_i b_i k_i$, where
+    $k_i=f(t_n+c_i h, y_n+h\sum_{j<i} a_{ij}k_j)$.
   formula-row-sums: >-
     For every stage, $c_i=\sum_{j<i}a_{ij}$.
   formula-moments: >-
