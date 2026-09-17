@@ -82,7 +82,7 @@ Data properties:
     against the defining moments, the integral formula for the Lagrange basis
     polynomials, the displayed Adams–Moulton formulas through $s=4$ in
     CITE{Wiki}, OEIS A260781 and A235936, and the Gregory-coefficient identity
-    using the Bernoulli polynomials of the second kind.
+    stated in the Formulas section.
 Display properties:
   number-header: $\beta^*_{s,j}$
 Programs:
