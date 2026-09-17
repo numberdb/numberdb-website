@@ -1,8 +1,8 @@
 """Bernstein-Sato polynomials of the simple and unimodal singularities -- numberdb.org/T290
 
-For each listed modulus-zero normal form f and each number n of variables
-from the corank through 3, this stores the exact local Bernstein-Sato
-polynomial b_f(s) in Q[s].
+For each modulus-zero normal form f and each number n of variables from the
+corank through 3, this stores the exact local Bernstein-Sato polynomial
+b_f(s) in Q[s].
 
 The generator computes the weights and a monomial basis of the Milnor algebra,
 then uses the weighted-homogeneous formula
@@ -252,8 +252,8 @@ def entry_comment(spec, n):
     alphas = alpha_values(spec, n)
     lct = min([QQ(1)] + alphas)
     return (
-        r"Normal form $f=%s$; $\mu=%d$; $\operatorname{lct}(f)=%s$. "
-        r"Factored form: $b_f(s)=%s$."
+        r"$f=%s$, with $\mu=%d$ and $\operatorname{lct}(f)=%s$; "
+        r"$b_f(s)=%s$."
         % (normal_form_latex(spec, n), spec.mu, rational_latex(lct),
            factor_latex(alphas))
     )
