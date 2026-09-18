@@ -358,6 +358,11 @@ def _entry_comment(k, i):
     a2 = _short_decimal(field(_t2_roots(k)[int(i) - 1]))
     href = "HREF{%s#%s,2}[$\\chi_{%s,2}$]" % (HECKE_SLUG, k, k)
     if cusp_dimension(int(k)) == 1:
+        exact = _hecke_matrix(k, ZZ(2))[0][0]
+        if exact.denominator() == 1:
+            a2 = str(ZZ(exact))
+        else:
+            a2 = str(exact)
         comment = "$a_2=%s$, the root of %s." % (a2, href)
     else:
         comment = (
