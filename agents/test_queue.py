@@ -34,7 +34,7 @@ computed in ball arithmetic.
 
 ## 1. Values of the Bessel functions at rational arguments
 
-What it is. The first one.
+What it is. The first one. This is what numberdb-data#7 asks for.
 
 ## 2. Values of the Airy functions at rational arguments
 
@@ -71,6 +71,16 @@ class WhatABatchSays(unittest.TestCase):
 
 	def test_it_records_which_requests_it_answers(self):
 		self.assertEqual(self.batch['draws_on'], [7, 60])
+
+	def test_it_records_which_proposal_answers_which_request(self):
+		#The family answering somebody and *this table* answering them are
+		#different facts, and only the second can close an issue or cite it.
+		#Of 24 families screened before this was recorded, four mentioned a
+		#request at all -- and one built exactly what numberdb-data#110 asked
+		#for while #110 stayed open.
+		self.assertEqual(
+			self.batch['answers'],
+			{'Values of the Bessel functions at rational arguments': [7]})
 
 	def test_the_heading_loses_the_word_batch(self):
 		#Both forms are in use -- `# Batch: volumes of...` and `# Batch
@@ -116,10 +126,25 @@ class WhatAnIssueSays(unittest.TestCase):
 			{'number': 1, 'title': 'Cantor polynomial',
 			 'body': 'It would be nice to have this table.'}))
 
+	def test_the_request_survives_the_box_being_ticked(self):
+		#It is how a reader of the family sees who asked, and how the build
+		#knows which issue to close once the table exists.
+		body = q._tick(self.family, self.batch['proposals'][0], 'T226')
+		self.assertIn('(answers #7)', body)
+		after = q.parse_family({'number': 42, 'title': 't', 'body': body})
+		built = [i for i in after['items'] if i['built']][0]
+		self.assertEqual(built['answers'], [7])
+		self.assertEqual(built['tid'], 'T226')
+
+	def test_a_proposal_nobody_asked_for_carries_no_request(self):
+		airy = [i for i in self.family['items']
+		        if 'Airy' in i['title']][0]
+		self.assertEqual(airy['answers'], [])
+
 	def test_ticking_a_box_records_the_table(self):
 		body = q._tick(self.family, self.batch['proposals'][0], 'T226')
 		self.assertIn('- [x] Values of the Bessel functions at rational '
-		              'arguments -- T226', body)
+		              'arguments (answers #7) -- T226', body)
 		after = q.parse_family({'number': 42, 'title': 't', 'body': body})
 		self.assertEqual(len(q.waiting(after)), 1)
 

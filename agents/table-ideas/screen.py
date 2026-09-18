@@ -213,3 +213,41 @@ def representable(kind, parameters_are_finite, variables=1):
                           'variable names is found by trying permutations'
                           % (variables, MOST_VARIABLES))
     return complaints
+
+
+def requests(repository='numberdb/numberdb-data', label='table wanted'):
+    """The open `table wanted` issues, oldest first: (number, title).
+
+    The backlog is the point of the stage and was being read as a duplicate
+    check rather than as a source. Of 24 families screened before this
+    existed, four cited a request at all, while 81 requests sat open -- 17 of
+    them already built, because nothing closed them.
+
+    Oldest first because that is the order somebody asked in, and because the
+    whole backlog here was written in 2021 and has been waiting since.
+    """
+    use_socks_proxy_if_set()
+    url = ('https://api.github.com/repos/%s/issues?state=open&labels=%s'
+           '&per_page=100&direction=asc'
+           % (repository, urllib.parse.quote(label)))
+    try:
+        request = urllib.request.Request(
+            url, headers={'User-Agent': 'numberdb-proposal-screen',
+                          'Accept': 'application/vnd.github+json'})
+        with urllib.request.urlopen(request, timeout=TIMEOUT) as answer:
+            payload = json.load(answer)
+    except Exception as trouble:                     # noqa: BLE001
+        return []
+    return [(item['number'], item['title']) for item in payload
+            if 'pull_request' not in item]
+
+
+if __name__ == '__main__':
+    import sys
+
+    if sys.argv[1:2] == ['requests']:
+        for number, title in requests():
+            print('#%-5d %s' % (number, title))
+    else:
+        print(__doc__.strip().splitlines()[0])
+        print('  python3 agents/table-ideas/screen.py requests')

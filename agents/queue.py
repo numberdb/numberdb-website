@@ -60,6 +60,7 @@ SCREENED_FINDER = re.compile(r'<!-- screened: (\d{4}-\d{2}-\d{2}) -->')
 #: stayed an empty box, so the next campaign picked it up and paid to reach
 #: the same conclusion.
 ITEM = re.compile(r'^- \[([ xX\-~])\] (.+?)'
+                  r'(?:\s+\(answers ([^)]+)\))?'
                   r'(?:\s+--\s+(T\d+|skipped:.*?))?\s*$')
 
 #: How long a screening stays believable. Six weeks is not a measurement; it
@@ -130,6 +131,19 @@ def parse_batch(text, name):
 	proposals = [(int(n), title.strip())
 	             for n, title in re.findall(r'^## (\d+)\.\s+(.+?)\s*$', text,
 	                                        re.M)]
+	#Which request each proposal answers, from the `#N` in its own section.
+	#Batch-level `draws_on` below says the family answers somebody; this says
+	#*which table* does, which is what lets the build close the issue and cite
+	#it. Of 24 families screened before this existed, four cited a request at
+	#all -- and one of them built exactly what numberdb-data#110 asked for
+	#while #110 stayed open.
+	answers = {}
+	sections = re.split(r'^## \d+\.\s+', text, flags=re.M)[1:]
+	for (_rank, title), section in zip(sorted(proposals), sections):
+		found = sorted({int(n) for n in
+		                re.findall(r'(?:numberdb-data)?#(\d{1,4})\b', section)})
+		if found:
+			answers[title] = found
 	#`(#134)` in a proposal heading and `numberdb-data#134` in the prose are
 	#the same reference written two ways, and both mean "this is what somebody
 	#asked for".
@@ -140,6 +154,7 @@ def parse_batch(text, name):
 		'subject': subject,
 		'screened': _screened_on(name),
 		'proposals': [title for _, title in sorted(proposals)],
+		'answers': answers,
 		'conventions': _section(text, 'Conventions shared by the tables'),
 		'draws_on': draws_on,
 	}
@@ -172,8 +187,11 @@ def issue_body(batch, done=()):
 	lines.append('')
 	for title in batch['proposals']:
 		tid = done.get(title)
-		lines.append('- [%s] %s%s' % ('x' if tid else ' ', title,
-		                              ' -- %s' % tid if tid else ''))
+		asked = (batch.get('answers') or {}).get(title) or []
+		wanted = (' (answers %s)' % ', '.join('#%d' % n for n in asked)
+		          if asked else '')
+		lines.append('- [%s] %s%s%s' % ('x' if tid else ' ', title, wanted,
+		                                ' -- %s' % tid if tid else ''))
 	lines.append('')
 	if batch['draws_on']:
 		lines.append('Draws on: %s.'
@@ -212,11 +230,13 @@ def parse_family(issue):
 	for line in body.splitlines():
 		found = ITEM.match(line)
 		if found:
-			mark, title, tail = found.groups()
+			mark, title, asked, tail = found.groups()
 			settled = mark.lower() in ('x', '-', '~')
 			items.append({'title': title.strip(),
 			              'done': settled,
 			              'built': mark.lower() == 'x',
+			              'answers': [int(n) for n in
+			                          re.findall(r'\d+', asked or '')],
 			              'tid': tail if (tail or '').startswith('T') else None,
 			              'why': tail if (tail or '').startswith('skipped') else None})
 	return {'number': issue['number'], 'title': issue['title'],
@@ -365,11 +385,17 @@ def _tick(family, title, tid, why=None):
 			#so an exact match cannot be required. The words that carry the
 			#subject have to agree; the decoration does not.
 			if _same_subject(found.group(2), title):
+				#The request this proposal answers is kept on the line: it is
+				#how a reader of the family sees who asked, and how the build
+				#knows which issue to close.
+				asked = (' (answers %s)' % found.group(3)
+				         if found.group(3) else '')
 				if why:
-					line = '- [-] %s -- skipped: %s' % (found.group(2).strip(),
-					                                    why)
+					line = '- [-] %s%s -- skipped: %s' % (
+						found.group(2).strip(), asked, why)
 				else:
-					line = '- [x] %s -- %s' % (found.group(2).strip(), tid)
+					line = '- [x] %s%s -- %s' % (found.group(2).strip(),
+					                             asked, tid)
 				hit = True
 		lines.append(line)
 	return '\n'.join(lines) if hit else None
@@ -440,6 +466,8 @@ def cmd_built(args):
 		print('#%d: %s left alone (%s)' % (args.number, args.title, args.why))
 	else:
 		print('#%d: %s is %s' % (args.number, args.tid, args.title))
+		for asked in _answered(family, args.title):
+			answer_request(asked, args.tid, args.number)
 	if not waiting(family):
 		api('repos/%s/issues/%d/comments' % (REPO, args.number), 'POST',
 		    {'body': 'Every table in this family now exists. '
@@ -447,6 +475,43 @@ def cmd_built(args):
 		api('repos/%s/issues/%d' % (REPO, args.number), 'PATCH',
 		    {'state': 'closed'})
 		print('#%d closed; the family is built' % args.number)
+	return 0
+
+
+def _answered(family, title):
+	"""The requests the proposal just built was answering."""
+	for item in family['items']:
+		if _same_subject(item['title'], title):
+			return item.get('answers') or []
+	return []
+
+
+def answer_request(number, tid, family_number=None):
+	"""Tell whoever asked that the table exists, and close their issue.
+
+	The backlog is unusable while this does not happen. 81 `table wanted`
+	issues were open when this was written and 17 of them already had their
+	table -- Shapiro polynomials had been built three days earlier as T319 and
+	#110 was still open -- so the count said nothing about what was left, and
+	a later screening could pay to propose a table the corpus already had.
+	"""
+	site = os.environ.get('NUMBERDB_HOST', 'https://numberdb.org')
+	body = ['This is now %s/%s.' % (site.rstrip('/'), tid)]
+	if family_number:
+		body.append('')
+		body.append('Built from the screened family #%d.' % (family_number,))
+	body.append('')
+	body.append('Closing: the table is the record, and anything left to say '
+	            'about it belongs on the table rather than here.')
+	api('repos/%s/issues/%d/comments' % (REPO, number), 'POST',
+	    {'body': '\n'.join(body)})
+	api('repos/%s/issues/%d' % (REPO, number), 'PATCH', {'state': 'closed'})
+	print('  #%d answered by %s; closed' % (number, tid))
+
+
+def cmd_answered(args):
+	"""Close a request by hand, for a table that answered it long ago."""
+	answer_request(args.number, args.tid)
 	return 0
 
 
@@ -496,6 +561,11 @@ def main(argv=None):
 	skipped.add_argument('title')
 	skipped.add_argument('why')
 	skipped.set_defaults(run=cmd_built, tid=None)
+
+	answered = sub.add_parser('answered')
+	answered.add_argument('number', type=int, help='the table wanted issue')
+	answered.add_argument('tid', help='the table that answers it')
+	answered.set_defaults(run=cmd_answered)
 
 	stale = sub.add_parser('stale')
 	stale.add_argument('--weeks', type=int, default=STALE_WEEKS)

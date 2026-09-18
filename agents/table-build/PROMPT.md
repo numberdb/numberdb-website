@@ -29,6 +29,15 @@ it twice:
 
     python3 agents/queue.py built <family> "<the proposal's title>" T<number>
 
+**If the checklist line says `(answers #N)`, somebody asked for this table in
+2021 and has been waiting since.** Two things follow. Put the request in the
+table's `Links`, as *"Requested in numberdb-data#N"*, because the provenance
+of an idea is owed to whoever had it. And let the same `queue.py built` above
+close it: it comments on the issue with the table's address and closes it, so
+the backlog says what is left rather than what was once asked. Nothing else
+closes those issues, and 17 of the 81 open ones already had their table when
+this was written.
+
 ## The order of work
 
 **1. Look at the database.** Search for the family and its neighbours. A table
