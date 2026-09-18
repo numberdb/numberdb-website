@@ -41,6 +41,11 @@ PRIMES = (2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41,
 WORKING_GUARD = 160
 COMMENT_DIGITS = 80
 HECKE_SLUG = "Hecke_polynomials_of_level_one_cusp_forms"
+ORDINALS = {
+    1: "first",
+    2: "second",
+    3: "third",
+}
 
 ZX = PolynomialRing(ZZ, "x")
 QX = PolynomialRing(QQ, "x")
@@ -350,6 +355,10 @@ def _short_decimal(value):
     return format(_decimal(value), ".16g")
 
 
+def _ordinal(n):
+    return ORDINALS.get(int(n), "%sth" % n)
+
+
 def _entry_comment(k, i):
     key = (ZZ(k), ZZ(i))
     if key in _COMMENTS:
@@ -366,8 +375,9 @@ def _entry_comment(k, i):
         comment = "$a_2=%s$, the root of %s." % (a2, href)
     else:
         comment = (
-            "$a_2$ is root %s of %s in increasing order; $a_2\\approx %s."
-            % (i, href, a2))
+            "$a_2$ is the %s root of %s in increasing order, with "
+            "$a_2\\approx %s$."
+            % (_ordinal(i), href, a2))
     _COMMENTS[key] = comment
     return comment
 
