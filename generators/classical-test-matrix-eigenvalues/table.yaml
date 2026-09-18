@@ -30,14 +30,14 @@ Parameters:
     type: Symbolic
     title: matrix family
     display: $A_n$
-    constraints: one of the named symmetric matrix families listed in the comments
+    constraints: one of the real symmetric matrix families from MATLAB's `gallery` CITE{MathWorksGallery} or the Test Matrix Toolbox source CITE{TMTGallery}
     values:
       hilbert: Hilbert matrix
       lehmer: Lehmer matrix
       pascal: symmetric Pascal matrix
       cauchy: Cauchy matrix
       fiedler: Fiedler matrix
-      kms: Kac-Murdock-Szego matrix
+      kms: Kac-Murdock-Szegő matrix
       minij: Minij matrix
       wilkinson: Wilkinson matrix
       moler: Moler matrix
@@ -61,7 +61,7 @@ Comments:
     symmetric Pascal matrix CITE{WikiPascal}; $A_{ij}=1/(i+j)$ for the
     Cauchy matrix, the scalar default case of `gallery("cauchy",n)`
     CITE{MathWorksGallery}; $A_{ij}=|i-j|$ for the Fiedler matrix;
-    $A_{ij}=2^{-|i-j|}$ for the Kac-Murdock-Szego matrix; and
+    $A_{ij}=2^{-|i-j|}$ for the Kac-Murdock-Szegő matrix; and
     $A_{ij}=\min(i,j)$ for the Minij matrix.
   comment-toolbox-families: >-
     The Wilkinson, Moler and Ris matrices use the definitions in the Test
@@ -73,13 +73,18 @@ Comments:
     matrix is tridiagonal with diagonal entries $2$ and off-diagonal entries
     $-1$.
   comment-symmetric-only: >-
-    This table includes the real symmetric matrix families from the classical
-    test-matrix list used here. The nonsymmetric gallery matrices and the
-    default Clement matrix are not rows. The default Clement eigenvalues are
-    the integers $\pm(n-1),\pm(n-3),\ldots$, with $0$ when $n$ is odd.
+    This table includes the real symmetric matrix families from MATLAB's
+    `gallery` CITE{MathWorksGallery} and the Test Matrix Toolbox source
+    CITE{TMTGallery}. Nonsymmetric families from those collections are not
+    rows. The Clement matrix is also not included: the default Clement form is
+    nonsymmetric, and the symmetric Clement form is diagonally similar to the
+    default form and has the integer eigenvalues
+    $\pm(n-1),\pm(n-3),\ldots$, with $0$ when $n$ is odd.
   comment-signs: >-
-    Negative eigenvalues are stored with their signs. The Fiedler and Moler
-    matrices have negative eigenvalues in the listed range.
+    For every listed order, only the Fiedler, Ris and Wilkinson spectra
+    contain negative eigenvalues. The Fiedler spectrum has $n-1$ negative
+    eigenvalues, the Ris spectrum has $\lfloor n/2\rfloor$, and the
+    Wilkinson spectrum has one.
 Formulas:
   formula-second-difference: >-
     For the second-difference matrix,
@@ -109,8 +114,8 @@ Similar tables:
     relation: stores the 2-norm condition numbers of the same gallery matrix families
   - table: HREF{Cos_pi_times_x_at_rational_numbers}[$\cos(\pi x)$ for rational $x$]
     relation: the Minij and second-difference spectra are elementary functions of cosine values at rational arguments
-  - table: HREF{Eigenvalues_of_the_Gauss-Kuzmin-Wirsing_operator}[Eigenvalues of the Gauss-Kuzmin-Wirsing operator]
-    relation: another table of operator eigenvalues in increasing index order
+  - table: HREF{T237}[Characteristic polynomials of connected graphs]
+    relation: stores exact characteristic polynomials of symmetric integer adjacency matrices rather than numerical eigenvalues
 Links:
   WikiEigenvalue:
     title: 'Wikipedia: Eigenvalues and eigenvectors'
@@ -140,12 +145,14 @@ Data properties:
   complete: 'no'
   complete-note: >-
     it holds every eigenvalue for the listed symmetric matrix families with
-    $2\leq n\leq12$
+    $2\leq n\leq12$, giving the nontrivial small orders while keeping this
+    table to 847 eigenvalues
   rigour details: >-
     The generator builds each matrix over $\mathbb{Q}$, computes its
     characteristic polynomial exactly, isolates its roots in Sage's algebraic
-    real field, orders those algebraic roots increasingly, and returns each
-    root as a real ball with 96 guard bits beyond the 100 digits written.
+    real field, orders those algebraic roots increasingly, returns roots
+    proved rational as exact rationals, and returns the other roots as real
+    balls with 96 guard bits beyond the 100 digits written.
     During generation it checks that every listed characteristic polynomial
     has $n$ real roots, that the eigenvalue sum equals the trace, that the
     eigenvalue product equals the determinant, that the Minij and
