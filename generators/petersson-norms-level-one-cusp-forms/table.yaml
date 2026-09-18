@@ -1,0 +1,121 @@
+# Created as draft T326 through the API (X-Draft: yes), to be filled by
+# generate.py beside it and offered for review. Publishing is a person's act.
+Title: Petersson norms of level one cusp forms
+Definition: >-
+  For $f_{k,i}(q)=\sum_{n\geq1}a_nq^n$, the $i$th normalised Hecke
+  eigenform in $S_k(\mathrm{SL}_2(\mathbb{Z}))$ CITE{WikiCusp} ordered by
+  increasing embedded $a_2$, this table gives its Petersson norm
+  $\langle f_{k,i},f_{k,i}\rangle$ CITE{WikiPetersson}.
+Parameters:
+  k:
+    type: Z
+    title: weight
+    display: $k$
+    constraints: $k$ is even and $\dim S_k(\mathrm{SL}_2(\mathbb{Z}))>0$
+  i:
+    type: Z
+    title: position by increasing $a_2$
+    display: $i$
+    constraints: >-
+      $1\leq i\leq\dim S_k(\mathrm{SL}_2(\mathbb{Z}))$, with positions counted
+      after sorting the eigenforms by increasing embedded $a_2$
+Comments:
+  comment-normalisation: >-
+    The eigenform is normalised so that $a_1=1$. The Petersson inner product is
+    $\int_{\mathrm{SL}_2(\mathbb{Z})\backslash\mathbb{H}} f(z)\overline{g(z)}
+    y^k\,dx\,dy/y^2$, with no division by the volume of the fundamental domain.
+  comment-ordering: >-
+    The index $i$ counts the eigenforms of weight $k$ in increasing order of the
+    embedded $T_2$-eigenvalue $a_2$; this is not necessarily the order Sage or
+    PARI lists them in. Each entry gives its own $a_2$ and links to $\chi_{k,2}$
+    in HREF{Hecke_polynomials_of_level_one_cusp_forms}[the Hecke polynomial
+    table], whose roots are the $a_2$ values in that weight.
+Formulas:
+  formula-symmetric-square: >-
+    In Sage's arithmetic normalisation CITE{SageModform},
+    $\langle f,f\rangle=(k-1)!L(\mathrm{Sym}^2 f,k)/(2^{2k-1}\pi^{k+1})$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage
+      import sage.symbolic.expression
+      import sage.rings.polynomial.laurent_polynomial_ring
+      from sage.modular.modform.constructor import Newforms
+      from sage.rings.complex_mpfr import ComplexField
+      k = 24; i = 1; bits = 330
+      C = ComplexField(bits)
+      forms = []
+      for f in Newforms(1, k, names='a'):
+          a2 = f[2]
+          for embedding, phi in enumerate(a2.parent().embeddings(C)):
+              forms.append((phi(a2).real(), embedding, f))
+      forms.sort(key=lambda row: row[0])
+      forms[i - 1][2].petersson_norm(embedding=forms[i - 1][1], prec=bits)
+  program-pari:
+    language: PARI/GP
+    code: |-
+      default(realbitprecision, 330);
+      k = 24; i = 1;
+      mf = mfinit([1,k], 0);
+      F = mfeigenbasis(mf)[1];
+      a2 = mfcoefs(F, 2)[3];
+      nf = nfinit(component(a2, 1));
+      A2 = nfeltembed(nf, a2);
+      P = mfpetersson(mfsymbol(mf, F));
+      vecsort(vector(#A2, j, [real(A2[j]), P[j,j]]), 1)[i][2]
+Similar tables:
+  - table: HREF{T323}[Special values of the $L$-functions of level one cusp forms]
+    relation: stores critical values of the same eigenforms in the same ordering
+  - table: HREF{T324}[Zeros of the $L$-functions of level one cusp forms]
+    relation: stores critical-line zero ordinates of the same eigenforms in the same ordering
+  - table: HREF{T325}[Normalised Hecke eigenvalues of level one cusp forms]
+    relation: stores Deligne-normalised Hecke eigenvalues of the same eigenforms in the same ordering
+  - table: HREF{Hecke_polynomials_of_level_one_cusp_forms}[Hecke polynomials of level one cusp forms]
+    relation: stores the characteristic polynomials whose $T_2$ roots order the eigenforms used here
+  - table: HREF{Q-expansion_of_the_modular_discriminant}[$q$-expansion of the modular discriminant $\Delta$]
+    relation: stores the coefficients of the weight $12$ eigenform whose Petersson norm is the $k=12$ row here
+Links:
+  WikiCusp:
+    title: 'Wikipedia: cusp form'
+    url: https://en.wikipedia.org/wiki/Cusp_form
+  WikiPetersson:
+    title: 'Wikipedia: Petersson inner product'
+    url: https://en.wikipedia.org/wiki/Petersson_inner_product
+  SageModform:
+    title: 'SageMath reference: elements of modular forms spaces'
+    url: https://doc.sagemath.org/html/en/reference/modfrm/sage/modular/modform/element.html#sage.modular.modform.element.ModularForm_abstract.petersson_norm
+  PARIModular:
+    title: 'PARI/GP reference: modular forms'
+    url: https://pari.math.u-bordeaux.fr/dochtml/html/Modular_forms.html
+Keywords:
+  - Petersson norm
+  - Petersson inner product
+  - modular form norm
+  - level one cusp form
+  - Ramanujan tau function
+Tags:
+  - number theory
+  - L-function
+  - special values
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: >-
+    it holds every even weight $12\leq k\leq40$ with
+    $\dim S_k(\mathrm{SL}_2(\mathbb{Z}))>0$ and every eigenform in the
+    increasing-$a_2$ ordering
+  rigour details: >-
+    The generator evaluates Sage's `petersson_norm` CITE{SageModform} at $80$
+    and $120$ decimal working digits, passing explicit bit precisions to Sage's
+    symmetric-square $L$-function computation, and stores only $30$ digits. It
+    sorts the embeddings of each Hecke orbit by the embedded value of $a_2$. An
+    independent check compares every stored value with PARI/GP's `mfsymbol` and
+    `mfpetersson` CITE{PARIModular}, after sorting PARI's embeddings by the
+    same $a_2$ values. Neither computation gives a certified error bound, so the
+    table does not claim proven digits.
+Display properties:
+  number-header: $\langle f_{k,i},f_{k,i}\rangle$
+  group parameters: [['k'], ['i']]
+Numbers: []
