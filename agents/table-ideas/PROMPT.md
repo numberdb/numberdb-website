@@ -110,9 +110,35 @@ the question is not "give me more of this sequence".
    meets it. Propose such a family as a table only when the individual values
    are themselves the object of interest -- the diagonal Ramsey numbers of T6
    are ten specific integers people care about one at a time.
-4. **Read the open issues** at <https://github.com/numberdb/numberdb-data/issues>
-   with label `table wanted`. Around 80 are open. If your idea is there, say so
-   and cite the number rather than proposing it afresh.
+4. **Start from the open requests, and build the family around one.**
+
+       python3 agents/table-ideas/screen.py requests
+
+   lists the open `table wanted` issues, oldest first. They are somebody's
+   asks, most of them written in 2021 and waiting since, and they are the
+   first place to look for a batch -- not a duplicate check to run at the end.
+   Of the 24 families screened before this was written, four cited a request
+   at all; one of them built exactly what numberdb-data#110 asked for and
+   #110 is still open.
+
+   **Anchor, then surround.** A request is one table, and a batch is a family:
+   take the request as the anchor and propose the tables *around* it that
+   share its machinery and point at each other. Somebody asking for Wilson
+   polynomials is asking about the Askey scheme, and a batch that answers them
+   with Wilson alone is a worse answer than one that also brings Racah and
+   Continuous Hahn -- built together, by one run, agreeing on conventions. So
+   the shape is: the requested table, and two to six relatives that a reader
+   of it would want next. Do not pad; a relative that needs a different
+   convention or a different rigour argument is a different batch.
+
+   **Say which proposal answers which request**, by writing `numberdb-data#N`
+   in that proposal's own section. The checklist carries it into the family
+   issue, the build cites it in the table, and the issue is closed when the
+   table exists -- which is what makes the backlog a number anybody can trust.
+   A proposal nobody asked for simply carries none.
+
+   If a request cannot be a table -- see 5 -- say so in the batch, and it can
+   be closed as answered rather than sitting open for another five years.
 5. **Check it can be a table at all.** Some things cannot: numberdb-data#121
    asks for Lagrange polynomials "for general point sets", and a general point
    set is a parameter with infinitely many values and no canonical order, so
