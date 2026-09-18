@@ -1516,6 +1516,232 @@ class WikipediaNumber(models.Model):
 	)
 
 
+class AgentRun(models.Model):
+	"""One run of something that wrote to this database.
+
+	`produced_by` says what made a revision in a sentence, and a sentence is
+	what a reader wants; it is not what a question wants. Eight spellings of
+	"codex" accumulated in it, no version of any prompt was recorded anywhere,
+	and the run identifier on a revision named a generator object while the
+	cost ledger keyed on a timestamp -- so the two records of one event could
+	not be joined, and a third of the spend named no table at all.
+
+	This is that event, once, as a row: what ran, which version of it, on what,
+	for how long and at what cost. `TableRevision.agent_run` points here, and
+	`produced_by` stays as the rendering.
+
+	**A person's session is a run too.** An interactive Claude Code or Codex
+	CLI session has a model, a session id and a person at the keyboard, and
+	recording it as `api` -- which is what happened -- hid exactly the
+	disclosure that `docs/design/ai-provenance.md` asks for. It is the same
+	object with `pipeline = 'interactive'` and the person as `operator`. A
+	hand edit at the web form is not a run and has none; that absence is the
+	honest record of a person typing.
+
+	See docs/design/pipeline-provenance.md.
+	"""
+
+	#: The run's own name, and the join key to the cost ledger: the UTC stamp a
+	#: run starts with, `20260918T072306Z`. Interactive sessions use the
+	#: harness's session id, which is the thing that identifies them.
+	run_id = models.CharField(
+		max_length = 80,
+		unique = True,
+		db_index = True,
+	)
+
+	started = models.DateTimeField(
+		db_index = True,
+	)
+	finished = models.DateTimeField(
+		null = True,
+		blank = True,
+	)
+
+	#: Which pipeline: `table-build`, `table-critique`, `table-repair`,
+	#: `table-ideas`, `table-split`, `triage` -- or one of the four that have
+	#: no manifest because they are not a prompt at all: `interactive` (a
+	#: person with an assistant), `script` (somebody's own program), `migration`
+	#: (a one-off over the whole corpus), `data-repository` (an edit made when
+	#: numberdb-data was the source of truth).
+	pipeline = models.CharField(
+		max_length = 64,
+		blank = True,
+		default = '',
+		db_index = True,
+	)
+
+	#: `2.7` -- the major a person declared, and the position of this digest
+	#: among that major's states. Computed by `agents/pipeline.py`, never typed.
+	pipeline_version = models.CharField(
+		max_length = 32,
+		blank = True,
+		default = '',
+	)
+
+	#: sha256 over the pipeline's declared scope. The authority behind the
+	#: version, and what makes the version checkable rather than merely stated.
+	pipeline_digest = models.CharField(
+		max_length = 64,
+		blank = True,
+		default = '',
+	)
+
+	#: `build`, `critique`, `repair`, `ideas`, `split`, `triage`. Kept beside
+	#: `pipeline` because a pipeline may one day run more than one stage.
+	stage = models.CharField(
+		max_length = 32,
+		blank = True,
+		default = '',
+	)
+
+	#: What executed it -- `codex-cli`, `claude-code`, `numberdb-python`, a
+	#: script's name -- and which model answered. Two fields because the same
+	#: harness runs several models and the same model runs under several
+	#: harnesses, and a campaign that falls back mid-run changes one, not both.
+	engine = models.CharField(
+		max_length = 40,
+		blank = True,
+		default = '',
+		db_index = True,
+	)
+	model = models.CharField(
+		max_length = 80,
+		blank = True,
+		default = '',
+		db_index = True,
+	)
+	effort = models.CharField(
+		max_length = 16,
+		blank = True,
+		default = '',
+	)
+
+	#: The harness's own session id, which is what makes a run resumable and
+	#: therefore what identifies it to the harness rather than to us.
+	session = models.CharField(
+		max_length = 80,
+		blank = True,
+		default = '',
+	)
+
+	#: Which campaign and which screened batch this belonged to, when it
+	#: belonged to either. A table's family is provenance as much as its model.
+	campaign = models.CharField(
+		max_length = 64,
+		blank = True,
+		default = '',
+		db_index = True,
+	)
+	batch = models.CharField(
+		max_length = 80,
+		blank = True,
+		default = '',
+	)
+
+	#: Where it ran: `aws-builder`, a laptop, the server. Two machines ran
+	#: campaigns with separate ledgers, and which one is not recoverable from
+	#: the run stamp.
+	machine = models.CharField(
+		max_length = 64,
+		blank = True,
+		default = '',
+	)
+
+	#: The person who started it, when one did. Not the author of what it wrote
+	#: -- that stays on the revision, because the account whose key published
+	#: is what answers for the digits.
+	operator = models.ForeignKey(
+		settings.AUTH_USER_MODEL,
+		null = True,
+		blank = True,
+		on_delete = models.SET_NULL,
+		related_name = 'agent_runs',
+	)
+
+	turns = models.IntegerField(
+		null = True,
+		blank = True,
+	)
+	cost_usd = models.DecimalField(
+		max_digits = 12,
+		decimal_places = 4,
+		null = True,
+		blank = True,
+	)
+	tokens_in = models.BigIntegerField(null = True, blank = True)
+	tokens_cached = models.BigIntegerField(null = True, blank = True)
+	tokens_out = models.BigIntegerField(null = True, blank = True)
+
+	#: `{"gpt-5.5": "4.7337"}` -- a run that fell back to a second model spent
+	#: money on both, and one total would put all of it on whichever model it
+	#: happened to name.
+	cost_by_model = models.JSONField(
+		default = dict,
+		blank = True,
+	)
+
+	#: `success` or `failure`, as the runner saw it. A failed run still wrote
+	#: things sometimes, which is why it is here rather than filtered out.
+	result = models.CharField(
+		max_length = 16,
+		blank = True,
+		default = '',
+	)
+
+	#: How much of this row is first-hand:
+	#:
+	#:   `run`      the run recorded itself. Everything from now on.
+	#:   `ledger`   reconstructed from a cost ledger, which carries the stamp,
+	#:              stage, engine, model, prompt version, session and campaign.
+	#:   `inferred` reconstructed from the revision alone -- its `produced_by`
+	#:              string, its time and its author -- and matched to a ledger
+	#:              row by table and time window. Weaker, and labelled so.
+	#:   `declared` a submitter said so through the API and nothing checked it.
+	#:
+	#: A provenance record that cannot say how sure it is would be worse than
+	#: none: it would make a guess look like a measurement.
+	source = models.CharField(
+		max_length = 16,
+		blank = True,
+		default = 'run',
+		db_index = True,
+	)
+
+	#: What a reconstruction could not settle, in words. Empty for a run that
+	#: recorded itself.
+	notes = models.TextField(
+		blank = True,
+		default = '',
+	)
+
+	class Meta:
+		ordering = ('-started',)
+
+	def __str__(self):
+		return '%s %s' % (self.run_id, self.label or self.pipeline or '')
+
+	@property
+	def label(self):
+		"""`table-build@2.7+9f3ac1d2`, as `agents/pipeline.py` writes it."""
+		if not self.pipeline:
+			return ''
+		if not self.pipeline_version:
+			return self.pipeline
+		found = '%s@%s' % (self.pipeline, self.pipeline_version)
+		return found + ('+%s' % self.pipeline_digest[:8]
+		                if self.pipeline_digest else '')
+
+	@property
+	def by(self):
+		"""One line for a reader: what ran this, and under whose hand."""
+		parts = [p for p in (self.engine, self.model) if p]
+		who = ' '.join(parts) if parts else (self.pipeline or 'unknown')
+		if self.pipeline == 'interactive' and self.operator_id:
+			return '%s, via %s' % (self.operator, who)
+		return who
+
+
 class TableRevision(models.Model):
 	"""One complete snapshot of a table, and how it came to be.
 
@@ -1660,6 +1886,19 @@ class TableRevision(models.Model):
 		blank = True,
 		default = '',
 		db_index = True,
+	)
+
+	#: The run that made this, when one did: what ran, which version of it, on
+	#: what and at what cost. `run` above is the string a submission carried,
+	#: which is what amends a revision; this is the record it belongs to, and
+	#: the two are separate because the string is set by generators that know
+	#: nothing about pipelines.
+	agent_run = models.ForeignKey(
+		AgentRun,
+		null = True,
+		blank = True,
+		on_delete = models.SET_NULL,
+		related_name = 'revisions',
 	)
 
 	#: Who wrote it, when that person has no account here. The data repository's

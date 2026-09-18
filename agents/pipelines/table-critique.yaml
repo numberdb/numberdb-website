@@ -1,0 +1,15 @@
+# A critique run reads a table and writes findings. `audit_table` is in scope
+# because the critique runs it and argues with it: a check added there changes
+# what a critique says without a word of the prompt changing.
+name: table-critique
+major: 2
+files:
+  - agents/table-critique/PROMPT.md
+  - agents/run.sh
+  - agents/campaign.sh
+  - agents/work.py
+  - numberdb_app/management/commands/audit_table.py
+  - .claude/skills/numberdb-table/SKILL.md
+majors:
+  - 1 from start
+  - 2 from 33ab14c9

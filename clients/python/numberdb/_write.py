@@ -512,6 +512,39 @@ def _as_yaml(tree):
                      default_flow_style=False)
 
 
+#: Environment to header: what a runner tells the site about itself. Set by
+#: `agents/run.sh` for a campaign stage and by a person's shell for an
+#: interactive session, never written into a generator -- a file that names a
+#: model keeps naming it after another tool edits and republishes it, which
+#: credits one tool with another's work.
+#:
+#: See docs/design/pipeline-provenance.md for what the site does with these.
+PROVENANCE = (
+    ('NUMBERDB_RUN_ID', 'X-Run-Id'),
+    ('NUMBERDB_PIPELINE', 'X-Pipeline'),
+    ('NUMBERDB_STAGE', 'X-Stage'),
+    ('NUMBERDB_ENGINE', 'X-Engine'),
+    ('NUMBERDB_MODEL', 'X-Model'),
+    ('NUMBERDB_EFFORT', 'X-Effort'),
+    ('NUMBERDB_SESSION', 'X-Session'),
+    ('NUMBERDB_CAMPAIGN', 'X-Campaign'),
+    ('NUMBERDB_BATCH', 'X-Batch'),
+    ('NUMBERDB_MACHINE', 'X-Machine'),
+)
+
+
+def provenance_headers():
+    """What the environment says made this write. Empty when it says nothing."""
+    import os
+
+    found = {}
+    for variable, header in PROVENANCE:
+        value = (os.environ.get(variable) or '').strip()
+        if value:
+            found[header] = value[:80]
+    return found
+
+
 def submit_entries(tid: str, entries: Union[Entries, Sequence[Mapping[str, Any]]],
                    message: str = '', produced_by: str = '',
                    upsert: bool = False, run: str = '', rigour: str = '',
@@ -548,6 +581,7 @@ def submit_entries(tid: str, entries: Union[Entries, Sequence[Mapping[str, Any]]
 
     headers = {'X-Produced-By': produced_by or 'numberdb-python',
                'X-Numberdb-Client': 'numberdb-python/%s' % (__version__,)}
+    headers.update(provenance_headers())
     if message:
         headers['X-Edit-Message'] = message
     if upsert:
@@ -602,7 +636,7 @@ def attach(tid: str, name: str, content: Any, run: str = '',
     from . import _default_client
 
     client = client or _default_client
-    headers = {}
+    headers = provenance_headers()
     if run:
         headers['X-Run-Id'] = run
     if message:

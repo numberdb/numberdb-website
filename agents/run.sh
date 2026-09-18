@@ -94,6 +94,23 @@ if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
 	exit 3
 fi
 
+# And from a commit somebody else can fetch. A run records which version of
+# the pipeline made a table -- `table-build@2.7+9f3ac1d2`, the digest of the
+# files that steered it -- and that is provenance only if the commit it names
+# can be resolved. When this was written the builder was 383 commits ahead of
+# origin: every version it had recorded named a commit that existed on one
+# disk, which is a note to itself rather than a record.
+#
+# NUMBERDB_ALLOW_UNPUSHED=1 for a machine with no remote, which then says so
+# in the label it records rather than pretending.
+if [ "${NUMBERDB_ALLOW_UNPUSHED:-0}" != "1" ] \
+		&& [ -z "$(git branch -r --contains HEAD 2>/dev/null)" ]; then
+	echo "Refusing: HEAD is not on any remote, so the version this run would" >&2
+	echo "record names a commit nobody else can fetch. Push first:" >&2
+	echo "    git push origin $(git rev-parse --abbrev-ref HEAD)" >&2
+	exit 3
+fi
+
 mkdir -p agents/runs
 started=$(date -u +%Y%m%dT%H%M%SZ)
 log="agents/runs/$started-$stage.log"
@@ -159,6 +176,27 @@ prompt_version="$(basename "$(dirname "$prompt_file")")@${prompt_commit:-uncommi
 # written to the ledger, where it belongs and where it can be followed.
 export NUMBERDB_ASSISTED_BY="$harness, $prompt_version"
 export NUMBERDB_KEY_FILE="$key_file"
+
+# What ran, for the record the site keeps of it.
+#
+# `prompt_version` above names the prompt's commit and nothing else, which
+# credits a paragraph with the work of a pipeline: the runner, the queue, the
+# skill and the audit all steer a run as much as its prompt does. The label
+# below covers the scope each pipeline declares in agents/pipelines/, and
+# carries a digest of it, so "which version built T219" has an answer that can
+# be checked rather than believed.
+#
+# The client turns these into headers; nothing is written into a generator,
+# because a file that names a model keeps naming it after another tool edits
+# and republishes it. See docs/design/pipeline-provenance.md.
+pipeline_name="$(basename "$(dirname "$prompt_file")")"
+pipeline_label=$(python3 agents/pipeline.py label "$pipeline_name" 2>/dev/null || true)
+export NUMBERDB_RUN_ID="$started"
+export NUMBERDB_PIPELINE="${pipeline_label:-$pipeline_name}"
+export NUMBERDB_STAGE="$stage"
+export NUMBERDB_ENGINE="$(printf '%s' "$harness" | tr 'A-Z ' 'a-z-')"
+export NUMBERDB_CAMPAIGN="${NUMBERDB_CAMPAIGN:-}"
+export NUMBERDB_MACHINE="${NUMBERDB_MACHINE:-$(hostname -s 2>/dev/null || echo unknown)}"
 
 # And the key itself, for reading.
 #
@@ -367,6 +405,18 @@ fi
 agent_status=0
 
 run_agent() {
+	# Which model is answering, for the record the site keeps. Decided here
+	# rather than with the rest of the provenance above, because a run that
+	# hits a quota changes model between then and now and the record should
+	# name the one that did the work.
+	case "$engine" in
+		claude) export NUMBERDB_MODEL="${NUMBERDB_CLAUDE_MODEL:-}"
+		        export NUMBERDB_EFFORT="${NUMBERDB_CLAUDE_EFFORT:-}" ;;
+		codex)  export NUMBERDB_MODEL="${codex_model:-}"
+		        export NUMBERDB_EFFORT="${NUMBERDB_CODEX_EFFORT:-}" ;;
+	esac
+	export NUMBERDB_SESSION="${session:-}"
+
 	# `start` or `resume`; each engine spells resuming its own way, and the
 	# flags differ enough that composing one list for both is how the codex
 	# branch came to be handed `--session-id`, which it does not know.

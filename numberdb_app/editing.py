@@ -158,7 +158,7 @@ def dump_tree(tree):
 
 def commit_table(table, tree, author=None, message='', base=None,
                  produced_by='', allow_parameter_change=False, strict=False,
-                 files=None, run='', via=None):
+                 files=None, run='', via=None, agent_run=None):
 	"""Put ``tree`` on ``table``'s history and return a :class:`CommitOutcome`.
 
 	``base`` is the revision the author started from. Passing None means "this
@@ -247,7 +247,7 @@ def commit_table(table, tree, author=None, message='', base=None,
 	if head is None:
 		return _write(table, tree, author, message, parent=None, base=None,
 		              produced_by=produced_by, via=via, breaches=breaches, files=files,
-		              problems=problems, run=run)
+		              problems=problems, run=run, agent_run=agent_run)
 
 	if base is None or base.pk == head.pk:
 		#Nobody moved. The ordinary case, and the fast one.
@@ -267,7 +267,7 @@ def commit_table(table, tree, author=None, message='', base=None,
 
 		return _write(table, tree, author, message, parent=head, base=head,
 		              produced_by=produced_by, via=via, breaches=breaches, files=files,
-		              problems=problems, run=run)
+		              problems=problems, run=run, agent_run=agent_run)
 
 	#Somebody committed while this edit was being written.
 	result = merge(tree_of(base), tree, tree_of(head))
@@ -292,7 +292,8 @@ def commit_table(table, tree, author=None, message='', base=None,
 
 	return _write(table, result.tree, author, message, parent=head, base=base,
 	              produced_by=produced_by, via=via, merged=True, breaches=breaches,
-	              manifest=merged_files, problems=problems, run=run)
+	              manifest=merged_files, problems=problems, run=run,
+	              agent_run=agent_run)
 
 
 def _files_change(revision, files):
@@ -323,7 +324,7 @@ def _wanted_manifest(revision, files):
 
 def _write(table, tree, author, message, parent, base, produced_by,
            merged=False, breaches=(), files=None, manifest=None, problems=(),
-           run='', via='orm'):
+           run='', via='orm', agent_run=None):
 	from django.db import transaction
 
 	from .models import TableRevision
@@ -339,7 +340,7 @@ def _write(table, tree, author, message, parent, base, produced_by,
 	with transaction.atomic():
 		outcome = _write_inside(table, tree, author, message, parent, base,
 		                        produced_by, merged, breaches, files, manifest,
-		                        problems, run, via=via)
+		                        problems, run, via=via, agent_run=agent_run)
 
 	#Outside the transaction, so nothing is ever logged that was then rolled
 	#back -- a line describing a revision that does not exist is worse than no
@@ -351,7 +352,7 @@ def _write(table, tree, author, message, parent, base, produced_by,
 
 def _write_inside(table, tree, author, message, parent, base, produced_by,
                   merged, breaches, files, manifest, problems=(), run='',
-                  via='orm'):
+                  via='orm', agent_run=None):
 	from .models import TableRevision
 
 	revision = TableRevision.objects.create(
@@ -364,6 +365,7 @@ def _write_inside(table, tree, author, message, parent, base, produced_by,
 		produced_by = produced_by,
 		via = via,
 		run = run,
+		agent_run = agent_run,
 	)
 	#Before head moves, so a revision is never briefly visible without the
 	#files it was committed with.
@@ -814,7 +816,7 @@ def slug_for(title, taken=None):
 
 
 def create_table(tree, author=None, message='', produced_by='', strict=False,
-                 published=True, via=None):
+                 published=True, via=None, agent_run=None):
 	"""Create a table from a document and return it.
 
 	The T-number is allocated here rather than in the data repository, which is
@@ -883,7 +885,8 @@ def create_table(tree, author=None, message='', produced_by='', strict=False,
 
 		commit_table(table, tree, author=author,
 		             message=message or 'created this table',
-		             produced_by=produced_by, strict=strict, via=via)
+		             produced_by=produced_by, strict=strict, via=via,
+		             agent_run=agent_run)
 	table.refresh_from_db()
 	return table
 

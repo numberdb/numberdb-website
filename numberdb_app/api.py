@@ -744,7 +744,24 @@ def _produced_by(request, user):
 	"""
 	named = (request.headers.get('X-Produced-By')
 	         or request.GET.get('produced_by') or '').strip()
-	return (named or 'api')[:100]
+	if named:
+		return named[:100]
+	#Nothing named, but the request may still have said what ran: an
+	#interactive session sends its engine and model and no sentence, and
+	#recording that as `api` is what hid every assisted edit made under a
+	#person's own key.
+	from .provenance import sentence
+	return sentence(_run(request, user))[:100]
+
+
+def _run(request, user):
+	"""The run this write belongs to, when the request declared one.
+
+	Shared with `_produced_by` so the sentence and the record cannot disagree:
+	both come from here, and a write that declares nothing gets neither.
+	"""
+	from .provenance import run_for
+	return run_for(request, user)
 
 
 def _via(request):
@@ -869,6 +886,7 @@ def write_table(request, tid):
 			table, without_managed_keys(tree),
 			author=user, base=base, strict=True,
 			produced_by=_produced_by(request, user), via=_via(request),
+			agent_run=_run(request, user),
 			message=(request.headers.get('X-Edit-Message') or '')[:300])
 	except TooBig as big:
 		return JsonResponse(
@@ -1012,6 +1030,7 @@ def create_table(request):
 		table = make_table(
 			tree, author=user,
 			produced_by=_produced_by(request, user), via=_via(request),
+			agent_run=_run(request, user),
 			message=(request.headers.get('X-Edit-Message') or '')[:300],
 			published=not wants_draft, strict=True)
 		if offer_now and not table.published:
@@ -1202,6 +1221,7 @@ def _write_entries_locked(request, table, entries, user):
 		outcome = commit_table(
 			table, tree, author=user, base=table.head_revision, strict=True,
 			produced_by=_produced_by(request, user), via=_via(request), run=run,
+			agent_run=_run(request, user),
 			message=(request.headers.get('X-Edit-Message')
 			         or ('regenerated the entries' if mode != 'upsert'
 			             else 'added entries as they were computed'))[:300])
@@ -1644,6 +1664,7 @@ def write_file(request, tid, name):
 				table, tree, author=user,
 				base=table.head_revision, strict=True, run=run,
 				produced_by=_produced_by(request, user), via=_via(request),
+				agent_run=_run(request, user),
 				files={name: content},
 				message=(request.headers.get('X-Edit-Message')
 				         or 'attached %s' % (name,))[:300])

@@ -1,0 +1,8 @@
+# The run that decides what happens after a run fails. Deliberately narrow:
+# its whole job is judgement about a failure, and the skill is not part of it.
+name: triage
+major: 1
+files:
+  - agents/triage/PROMPT.md
+  - agents/run.sh
+  - agents/campaign.sh
