@@ -26,6 +26,81 @@ version it claims. The rest is stated, attributed and revisable.
 
 from django.utils import timezone
 
+#: Stage to pipeline. The stage is what a runner and the cost ledger record;
+#: the pipeline is what declares a scope in agents/pipelines/ and therefore
+#: what has versions. Four pipelines have no manifest because they are not a
+#: prompt at all: `interactive`, `script`, `migration`, `data-repository`.
+PIPELINE_OF = {
+	'ideas': 'table-ideas',
+	'build': 'table-build',
+	'critique': 'table-critique',
+	'repair': 'table-repair',
+	'split': 'table-split',
+	'triage': 'triage',
+}
+
+#: The harness, spelt one way. `claude` and `codex` in a ledger are the CLIs,
+#: not the models; the model is its own field.
+ENGINE_OF = {
+	'claude': 'claude-code',
+	'codex': 'codex-cli',
+}
+
+
+def runs_from_ledger(rows, machine=''):
+	"""Upsert an AgentRun for each ledger row. Returns how many were made.
+
+	A run that writes nothing to a table still happened: the screening runs,
+	the triage runs and the third of builds that fail or decline produce no
+	revision at all, and before this they existed only as a line in a file on
+	whichever machine happened to run them. `sync-costs` sends the ledger after
+	every stage, so this is where they arrive.
+
+	Never lowers a row's `source`, and never overwrites what a run recorded
+	about itself: the ledger knows the cost and the tokens, the run knows which
+	version of the pipeline it was.
+	"""
+	from .models import AgentRun
+
+	made = 0
+	for row in rows:
+		run_id = (row.get('started') or '').strip()[:80]
+		if not run_id:
+			continue
+		stage = (row.get('stage') or '').strip()[:32]
+		fields = {
+			'pipeline': PIPELINE_OF.get(stage, stage),
+			'stage': stage,
+			'engine': ENGINE_OF.get((row.get('engine') or '').strip(),
+			                        (row.get('engine') or '').strip())[:40],
+			'model': (row.get('model') or '').strip()[:80],
+			'session': (row.get('session') or '').strip()[:80],
+			'campaign': (row.get('campaign') or '').strip()[:64],
+			'batch': (row.get('batch') or '').strip()[:80],
+			'machine': machine[:64],
+			'result': (row.get('result') or '').strip()[:16],
+		}
+		run = AgentRun.objects.filter(run_id=run_id).first()
+		if run is None:
+			from datetime import datetime, timezone as tz
+			try:
+				started = datetime.strptime(run_id, '%Y%m%dT%H%M%SZ').replace(
+					tzinfo=tz.utc)
+			except ValueError:
+				continue
+			AgentRun.objects.create(run_id=run_id, started=started,
+			                        source='ledger', **fields)
+			made += 1
+			continue
+		changed = [name for name, value in fields.items()
+		           if value and not getattr(run, name, '')]
+		for name in changed:
+			setattr(run, name, fields[name])
+		if changed:
+			run.save(update_fields=changed)
+	return made
+
+
 #: Header to field. Kept as data because the same map documents the API
 #: reference, and two lists of header names drift.
 DECLARED = (
