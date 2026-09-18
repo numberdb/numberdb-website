@@ -60,13 +60,15 @@ Programs:
   program-pari:
     language: PARI/GP
     code: |-
+      default(realbitprecision, 330);
       mf = mfinit([1, 12], 0);
-      lfun(lfunmf(mf)[1][1], 6)       \\ 0.79212283864603056935...
+      lfun(lfunmf(mf)[1][1], 6)       \\ 0.792122838646030569355944890487...
   program-sage:
     language: Sage
     code: |-
+      from sage.modular.modform.constructor import Newforms
       f = Newforms(1, 12, names='a')[0]
-      f.lseries()(6)                  # 0.79212283864603056935...
+      f.lseries(prec=330)(6)          # 0.792122838646030569355944890487...
 Similar tables:
   - table: HREF{Hecke_polynomials_of_level_one_cusp_forms}[Hecke polynomials of level one cusp forms]
     relation: stores the characteristic polynomials whose $T_2$ roots order the eigenforms used here
@@ -119,14 +121,17 @@ Data properties:
     increasing-$a_2$ ordering, and every critical integer $1\leq s\leq k-1$,
     except the forced central zeros for $k\equiv2\pmod4$
   rigour details: >-
-    The generator evaluates the PARI/GP `lfunmf` $L$-functions documented in
-    CITE{PARILfun} and CITE{PARIModular} at two decimal working precisions,
-    and stores only the digits common to both computations. It sorts the
-    embeddings of each Hecke orbit by the embedded value of $a_2$, computed
-    from PARI's `mfeigenbasis` and `mfcoefs`. An independent check compares
-    the values with Sage's `Newforms` $L$-series CITE{SageNewforms}, after
-    sorting Sage's embeddings by the same $a_2$ values, and checks the
-    functional equation with PARI's `lfuncheckfeq`.
+    The generator evaluates Sage's `Newforms` $L$-series CITE{SageNewforms}
+    at $80$ and $120$ decimal working digits, passing explicit bit precisions
+    to Sage's Dokchitser implementation and creating a fresh $L$-series object
+    for each value, and stores only $30$ digits. It
+    sorts the embeddings of each Hecke orbit by the embedded value of $a_2$.
+    An independent check compares every stored value with PARI/GP's `lfunmf`
+    values CITE{PARILfun} and CITE{PARIModular}, after sorting PARI's
+    embeddings by the same $a_2$ values, and checks the functional equation
+    with PARI's `lfuncheckfeq`. PARI and Sage did not stably agree to $100$
+    digits for all edge critical values, so this draft stores the precision
+    supported by both implementations.
 Display properties:
   number-header: $L(f_{k,i},s)$
   group parameters: [['k'], ['i'], ['s']]
