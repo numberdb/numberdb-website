@@ -1,0 +1,11 @@
+# The screening run that proposes a family of tables. `screen.py` is in scope
+# because what it refuses is half of what a batch contains.
+name: table-ideas
+major: 1
+files:
+  - agents/table-ideas/PROMPT.md
+  - agents/table-ideas/screen.py
+  - agents/run.sh
+  - agents/campaign.sh
+  - agents/queue.py
+  - .claude/skills/numberdb-table/SKILL.md

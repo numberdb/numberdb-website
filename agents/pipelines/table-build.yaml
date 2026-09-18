@@ -1,0 +1,22 @@
+# What a build run is made of. See docs/design/pipeline-provenance.md.
+#
+# `major` is bumped by hand when the shape changes -- a new stage, a different
+# way of choosing work -- not when a paragraph is reworded. It went to 2 when
+# the four sources of work (proposal, demand, growth, sweep) replaced the
+# proposal queue as the only one.
+name: table-build
+major: 2
+files:
+  - agents/table-build/PROMPT.md
+  - agents/table-build/check.py
+  - agents/table-build/dry_run.py
+  - agents/run.sh
+  - agents/campaign.sh
+  - agents/sage.sh
+  - agents/queue.py
+  - agents/work.py
+  - .claude/skills/numberdb-table/SKILL.md
+# When each major began, so the history is not stamped with today's shape.
+majors:
+  - 1 from start
+  - 2 from 33ab14c9

@@ -1,0 +1,15 @@
+# A repair run acts on a critique. The critique file itself is the input and
+# not the pipeline, so it is not in scope; what steers the run is the prompt,
+# the runner and the skill.
+name: table-repair
+major: 2
+files:
+  - agents/table-repair/PROMPT.md
+  - agents/run.sh
+  - agents/campaign.sh
+  - agents/sage.sh
+  - agents/work.py
+  - .claude/skills/numberdb-table/SKILL.md
+majors:
+  - 1 from start
+  - 2 from 33ab14c9

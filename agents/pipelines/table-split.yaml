@@ -1,0 +1,8 @@
+# Splitting one table into the several it should have been.
+name: table-split
+major: 1
+files:
+  - agents/table-split/PROMPT.md
+  - agents/split-table.sh
+  - agents/run.sh
+  - .claude/skills/numberdb-table/SKILL.md
