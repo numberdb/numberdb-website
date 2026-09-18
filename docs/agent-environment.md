@@ -5060,3 +5060,32 @@ to write it out from the notes.
 Evidence: 2026-09-18, T321 critique. `/tmp/t321_render.py`,
 `/tmp/t321_render_out.txt` (`records: 167`, `tid: T1 tags: ['combinatorics',
 'number theory']`, `status 200 85252 bytes`), `/tmp/t321_page.html`.
+
+## An interactive session declares itself, or it is recorded as `api`
+
+Editing through the API from a session somebody is typing in -- Claude Code,
+Codex CLI, a script -- the write should say what ran. Without it the revision
+records `api`, which is what a person at a keyboard looks like, and that is
+how 121 assisted revisions came to be indistinguishable from hand edits under
+the same account.
+
+With `curl`, four headers:
+
+    -H "X-Pipeline: interactive" \
+    -H "X-Engine: claude-code" \
+    -H "X-Model: claude-opus-5" \
+    -H "X-Session: $CLAUDE_SESSION_ID"
+
+With the `numberdb` package, the same thing from the environment, since the
+client turns these into the headers above:
+
+    export NUMBERDB_PIPELINE=interactive
+    export NUMBERDB_ENGINE=codex-cli
+    export NUMBERDB_MODEL=gpt-5.5
+
+The author is unchanged: it is the account whose key signed the request, which
+is the thing that answers for the digits. This only adds what assisted it. A
+campaign stage needs none of this -- `agents/run.sh` exports the lot, including
+the pipeline's version and the digest of its scope.
+
+See docs/design/pipeline-provenance.md.
