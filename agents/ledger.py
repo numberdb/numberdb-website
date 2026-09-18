@@ -208,11 +208,21 @@ def codex_run(path, model):
 
 def row(log, started, stage, engine, prompt, session, resumed, model,
         unfinished='', table=''):
+	#Where a campaign says it is, read once so that both branches below agree.
+	#They did not: the failure branch wrote sixteen fields where the ordinary
+	#one writes eighteen, so a run whose log held no result record produced a
+	#short row -- invisible to a reader that goes by the header, and two
+	#columns out of step for one that counts, which is what the campaign and
+	#the batch are read by.
+	campaign = os.environ.get('NUMBERDB_CAMPAIGN', '')[:64]
+	batch = os.path.basename(os.environ.get('NUMBERDB_BATCH_NAME')
+	                         or os.environ.get('NUMBERDB_BATCH', ''))[:64]
+
 	found = codex_run(log, model) if engine == 'codex' else claude_run(log)
 	if found is None:
 		return '\t'.join([started, stage, engine, '', '', 'no result record',
 		                  os.path.basename(log), '', prompt, session, resumed,
-		                  '', '', '', '', table])
+		                  '', '', '', '', table, campaign, batch])
 	cost = found['cost']
 	outcome = found['outcome']
 	if unfinished:
@@ -233,10 +243,7 @@ def row(log, started, stage, engine, prompt, session, resumed, model,
 		outcome, os.path.basename(log), found['model'], prompt,
 		session or found.get('thread', ''), resumed,
 		str(found['tokens_in']), str(found['tokens_cached']),
-		str(found['tokens_out']), breakdown, table,
-		os.environ.get('NUMBERDB_CAMPAIGN', '')[:64],
-		os.path.basename(os.environ.get('NUMBERDB_BATCH_NAME')
-		                        or os.environ.get('NUMBERDB_BATCH', ''))[:64],
+		str(found['tokens_out']), breakdown, table, campaign, batch,
 	])
 
 
