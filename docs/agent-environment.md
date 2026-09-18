@@ -5424,3 +5424,49 @@ Evidence: 2026-09-18, T331 critique. `curl -s -o /dev/null -w '%{http_code}'
 https://numberdb.org/T331` -> 404 at 14:05, 200 at 14:09;
 `https://numberdb.org/revisions/T331` shows revisions at 13:58 and 14:04 only;
 `GET /api/table/T331/audit` -> one finding, `clean: false`.
+
+## What goes in `site.tgz` for the sqlite draft-render recipe
+
+What happened: the T332 critique wrote the render script from the notes above,
+for the fifth time, and lost two `agents/sage.sh` runs to the one thing none of
+them says: which directories the tarball has to contain. The script extracts
+`/work/site.tgz` to `/tmp/site`, puts it on `sys.path` and calls
+`django.setup()`, and `numberdb_app/models.py` imports across the repository at
+module scope, so a tarball of the obvious four packages fails inside
+`apps.populate` with `ModuleNotFoundError` -- naming a different module each
+time, one per run:
+
+    numberdb numberdb_app templates static manage.py   -> No module named 'utils'
+    ... + utils workers                                -> No module named 'data_pipeline'
+
+What works, and is 1.6 MB:
+
+    tar czf /tmp/site.tgz --exclude='.git' --exclude='static/vendor' \
+        --exclude='staticfiles' --exclude='__pycache__' --exclude='agents' \
+        --exclude='generators' \
+        numberdb numberdb_app templates static utils workers data_pipeline \
+        clients manage.py
+
+`static/vendor` must be excluded or the tarball carries the 2 MB single-line
+`tex-svg.js` for nothing; `agents` and `generators` are excluded because the
+rendered page does not read them and `agents/runs` is large.
+
+The recipe then works unchanged for a `Z[]` table with a variable-length
+`Symbolic` index: T332 rebuilt at **999 records, status 200, 511,127 bytes**,
+with all 999 entry anchors present and unique (`2,2` through
+`10,2,2,2,2,2,3`), the three tags right, and the section order the page's own
+(`Formulas` before `Comments`). The two range patches from the T316 and T319
+notes were both needed, as the T319 note predicts for a polynomial table with a
+bare-constant entry -- T332 has two entries that are the polynomial `1`.
+
+So the recipe has now run for polynomial (T315, T319, T320, T332), real (T316),
+complex (T317) and rational (T321) tables, and this is the fifth run to write
+the script from these notes. Promoting it to `agents/render_draft.py` with the
+tid as an argument, and this tarball line inside it, would end that.
+
+Evidence: 2026-09-18, T332 critique. `/tmp/t332_render.py` (T321's script with
+the tid changed), `/tmp/t332_render_out.txt` (`records: 999`, `tid: T1 tags:
+['algebra', 'characteristic classes', 'polynomial']`, `status 200 511127
+bytes`), `/tmp/t332_page.html`. `NUMBERDB_SAGE_MEMORY=1200m
+NUMBERDB_SAGE_PYTHONPATH= agents/sage.sh /tmp/t332_render.py /tmp/site.tgz
+/tmp/T332.json`.
