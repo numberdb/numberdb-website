@@ -1,0 +1,7 @@
+done -- fixed the 324 irrational-$a_2$ entry comments by closing the TeX and writing "first/second/third root"; checked the live API had 324 odd-dollar comments before, 0 after, and the repaired generator verified 432/432 entries.
+done -- rewrote the normalisation comment to say the eigenform has $a_1=1$ and the stored value is the analytic normalisation $a_p/p^{(k-1)/2}$; checked this against the live definition, number header, and generator verification.
+done -- replaced the PARI example instead of just transcribing it; checked the old `[2]` expression returns $0.022097\ldots$, the corrected coefficient index returns the $k=12$ value it prints, and the new PARI example matches the stored $k=24,i=2,p=2$ row.
+done -- changed both Programs examples to $k=24,i=2,p=2$ and made the ordering step explicit; checked the Sage and PARI snippets under Sage, both matching the stored value $1.759601793373322\ldots$.
+done -- rewrote the ordering comment to name Sage and PARI, describe real-root ordering, and remove the sentence about entry-comment presentation; checked the changed paragraph as prose before sending it.
+done -- defined $\chi_{k,2}$ as the Hecke polynomial whose roots are the $a_2$ values, and cited CITE{WikiSatoTate} at the Satake-angle mentions in Comments and Formulas; checked the post-edit API audit is clean.
+done -- removed the repeated ordering clause from parameter $i$'s constraints and from `complete-note`; checked the API accepted the write without a parameter-change refusal and the post-edit API audit is clean.
