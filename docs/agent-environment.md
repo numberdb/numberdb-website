@@ -5337,3 +5337,30 @@ but record the timeout status beside it and rerun with a larger
 Evidence: 2026-09-18, T328 repair. `NUMBERDB_TIMEOUT=150 agents/sage.sh
 /tmp/t328_time_gauss5.py generators/lebesgue-constants-interpolation-nodes/generate.py`
 printed the lines above and exited 124.
+
+## `api/table?id=` with the key reads a private draft's whole document
+
+What happened: the T329 critique needed the document of a draft on a runner
+with no Django. The note above ("Corpus searches and slugs need no Sage run")
+says `api/table?id=T128` gives a published table's document and "answers 'does
+not exist' for a draft", which reads as if the route were closed to drafts
+altogether, and an earlier campaign reached for `/preview` and the client
+before trying it. It is not closed: the route refuses a draft only to a
+request that cannot see it. `api.table` calls `_may_see_draft`, so the
+author's or the board's key gets the full document, deliberately -- otherwise
+a generator could create a draft through the API and then not read it back.
+
+    curl -s -H "Authorization: Bearer $(cat "$NUMBERDB_KEY_FILE")" \
+         'https://numberdb.org/api/table?id=T329'
+
+answered 200 with 96 KB of JSON, `Numbers` included, while `GET /T329` and
+`GET /api/table?id=T329` without the key both answer 404 / "does not exist".
+Note `id=`, not `tid=`: the parameter is `id` (or `url`), and `tid=` falls
+through to "No id or url given."
+
+What to do instead: to read a draft's *document*, ask `api/table?id=<TID>`
+with the key. `/preview?table=` in pieces is still the only way to see the
+draft *rendered*, because the page route refuses a draft to everybody.
+
+Evidence: 2026-09-18, T329 critique. The call above, against
+`numberdb_app/api.py:377` and its `_may_see_draft` guard.
