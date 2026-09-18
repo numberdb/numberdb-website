@@ -163,7 +163,7 @@ def _entry_comment(k, i):
     entry = _data_for_weight(k, COMMENT_DIGITS)[int(i) - 1]
     href = "HREF{%s#%s,2}[$\\chi_{%s,2}$]" % (HECKE_SLUG, k, k)
     if cusp_dimension(int(k)) == 1:
-        a2 = _short_decimal(entry["a2"])
+        a2 = entry["form"][2]
         comment = "$a_2=%s$, the root of %s." % (a2, href)
     else:
         comment = (
