@@ -164,9 +164,15 @@ class TheReferenceKeepsUpWithTheCode(TestCase):
 		from django.conf import settings
 
 		self.page = self.client.get('/api/docs').content.decode()
-		with open(os.path.join(settings.BASE_DIR, 'numberdb_app', 'api.py'),
-		          encoding='utf8') as handle:
-			self.source = handle.read()
+		#`api.py` and every module it reads headers in. Provenance moved to one
+		#of those -- nine headers saying what made a write -- and a scan of
+		#api.py alone called them documentation for something the code ignores,
+		#which was exactly backwards.
+		self.source = ''
+		for name in ('api.py', 'provenance.py'):
+			with open(os.path.join(settings.BASE_DIR, 'numberdb_app', name),
+			          encoding='utf8') as handle:
+				self.source += handle.read()
 
 	def headers_read_by_the_code(self):
 		import re
@@ -174,6 +180,13 @@ class TheReferenceKeepsUpWithTheCode(TestCase):
 		#`request.headers.get('X-...')`, however it is spelled.
 		found = set(re.findall(r"headers\.get\(\s*'(X-[A-Za-z-]+)'", self.source))
 		found |= set(re.findall(r'headers\.get\(\s*"(X-[A-Za-z-]+)"', self.source))
+		#And the ones the code reads from a table rather than by name. The
+		#provenance headers are a list on purpose -- the same list documents the
+		#reference -- so a scan for literals sees none of them and calls nine
+		#documented headers undocumented behaviour.
+		from .provenance import DECLARED
+
+		found |= {header for header, _field in DECLARED}
 		return found
 
 	def test_there_are_headers_to_check(self):

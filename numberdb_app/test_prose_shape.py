@@ -64,6 +64,12 @@ class ProseHasToBeProse(TestCase):
 			                          '\\operatorname{CS}(K)\\pmod{1/2}$.'})),
 			[])
 
+	def test_a_number_where_prose_belongs_is_left_alone(self):
+		#It renders as that number and reads as somebody's shorthand. The fault
+		#is a mapping, which renders as its Python repr and has no reading at
+		#all -- and `test_broken_citation` asserts the page survives the rest.
+		self.assertEqual(check(document({'f': 12345})), [])
+
 	def test_an_empty_section_is_not_a_fault(self):
 		#`Formulas:` with nothing under it is how half the corpus writes a
 		#section it has nothing to put in.
