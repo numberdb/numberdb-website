@@ -1,0 +1,4 @@
+done -- Finding 1: added `formula-coefficients`, changed the coefficient comment to point at it, and made `rigour details` cite it; checked the stored $Q_n$ against the recurrence, the proposed coefficient rule for $n=1,\dots,8$, and all stored autocorrelation identities in Sage before writing.
+done -- Finding 2: changed the T319 pointer to "The other sequence of the pair, $P_n$"; checked the live document still had the ambiguous "corresponding first Shapiro polynomials" sentence before changing it.
+done -- Finding 3: changed the autocorrelation formula so $c_0(f)=2^n$ is only inferred when every $b_j=\pm1$; checked $c_k(P_n)+c_k(Q_n)=0$ for every stored $n$ and shift in Sage before writing.
+done -- Finding 4: removed the NumberDB build-machine `agents/sage.sh` publishing paragraph from the attached `generate.py`; checked the live attachment still contained it, then refetched the served file and ran it under `agents/sage.sh`, where it verified 8/8 entries.
