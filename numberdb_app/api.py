@@ -1417,7 +1417,11 @@ def costs(request):
 				{'error': 'X-Attribution must be base64 of the TSV.'},
 				status=400)
 	summary = ingest(ledger, attribution,
-	                 dry_run=request.GET.get('dry') == '1')
+	                 dry_run=request.GET.get('dry') == '1',
+	                 #Which machine sent it. Two ran campaigns with separate
+	                 #ledgers and the run stamp does not say which, so without
+	                 #this a run's `machine` is only ever fillable by hand.
+	                 machine=(request.headers.get('X-Machine') or '').strip())
 	return JsonResponse(summary)
 
 
