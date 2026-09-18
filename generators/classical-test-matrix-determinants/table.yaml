@@ -115,6 +115,10 @@ Formulas:
   formula-kms: >-
     For the Kac-Murdock-Szego matrix with $\rho=1/2$,
     $\det(A_n)=(1-\rho^2)^{n-1}=(3/4)^{n-1}$.
+  formula-grcar: >-
+    For the Grcar matrix with three superdiagonals, the determinants satisfy
+    $g_1=1$, $g_2=2$, $g_3=4$, $g_4=8$, and
+    $g_n=g_{n-1}+g_{n-2}+g_{n-3}+g_{n-4}$ for $n\geq5$.
   formula-lotkin: >-
     For the Lotkin matrix, $\det(A_n)=(-1)^{n-1}n\det(H_n)$, where $H_n$ is
     the Hilbert matrix of the same order.
@@ -181,14 +185,19 @@ Data properties:
   complete-note: >-
     it holds the listed nontrivial determinant families for $2\leq n\leq30$,
     with only even orders of the Clement matrix because the odd orders are
-    singular
+    singular, making 363 entries
   rigour details: >-
     The generator builds each matrix over $\mathbb{Q}$ and computes its
-    determinant exactly. Before the entries were written, `agents/table-build/dry_run.py`
-    computed every entry, checked exactness, and measured the longest written
-    value. The determinants were checked against the closed forms and
-    recurrences in the formulas, and every listed family with $n\leq6$ was
-    also checked by a direct Leibniz determinant over permutations.
+    determinant exactly by fraction-free Bareiss elimination. Before the
+    entries were written, `agents/table-build/dry_run.py` computed all 363
+    entries, checked exactness, and measured the longest written value as 968
+    characters at the Parter matrix with $n=30$, with an entries block of 58.8
+    KB. The determinants were checked against the closed forms and recurrences
+    in the formulas, and every listed family with $n\leq6$ was also checked by
+    a direct Leibniz determinant over permutations. The omitted small families
+    were checked against CITE{formula-small}. The relation to
+    HREF{T330}[the characteristic polynomial table] was checked against the
+    stored T330 draft values on 138 overlapping rows.
 Display properties:
   number-header: $\det(A_n)$
 Numbers: []
