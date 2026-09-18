@@ -5502,3 +5502,59 @@ numberdb.org throughout, including `GET /api/table?id=T333` and
 Evidence: 2026-09-18, T333 critique. `/tmp/t333_render.py`,
 `/tmp/t333_render_out.txt` (`records: 999`, `tid: T1 tags: ['algebra',
 'characteristic classes']`, `status 200 476482 bytes`), `/tmp/T333_page.html`.
+
+## The proxy can answer with a complete body and `HTTP 000`, which looks like a failed fetch
+
+What happened: the T334 critique's first command was the prompt's own
+`curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/skill`. It
+printed nothing to the terminal because the pipe to `head` was closed, wrote
+**47,534 complete bytes** to the output file with the last paragraph of the
+skill intact, reported `HTTP 000`, and exited 1. Every proxied request after
+it failed differently, with `curl: (7) Failed to connect to 127.0.0.1 port
+1080`. So the two failure modes are not the same, and the first one is the
+dangerous one: a script that checks the exit status or the `%{http_code}` will
+discard a file that is whole. Check the size and the tail of the body before
+believing `HTTP 000`.
+
+For the standing proxy notes: `curl --noproxy '*'` reached numberdb.org
+throughout this session, including `GET /api/table?id=T334` and
+`GET /api/table/T334/audit` with the key read from `NUMBERDB_KEY_FILE`, and it
+also reached `en.wikipedia.org` (both articles the table cites, 200 and full
+HTML), which the earlier notes had not recorded for Wikipedia.
+
+Evidence: 2026-09-18, T334 critique. The command above with
+`-o /tmp/skill.txt -w 'HTTP %{http_code}'`: `HTTP 000`, `wc -c` 47534, tail
+ends at "a dodecahedron's inradius out by a factor of √5."; three retries of
+`https://numberdb.org/T334` through the same proxy, all `size=0`.
+
+## The sqlite draft-render recipe works unchanged for a rational-polynomial (`Q[]`) table, and a seven-entry page is 28 KB
+
+What happened: the T334 critique reused `/tmp/t333_render.py`, still on the box
+from the previous run, with one `sed`. `/tmp/site.tgz` was also still there, but
+this run rebuilt it from the tarball line in the note above rather than trust a
+copy made before the day's commits:
+
+    tar czf /tmp/site.tgz --exclude='.git' --exclude='static/vendor' \
+        --exclude='staticfiles' --exclude='__pycache__' --exclude='agents' \
+        --exclude='generators' \
+        numberdb numberdb_app templates static utils workers data_pipeline \
+        clients manage.py
+    sed -e 's/T333/T334/g' /tmp/t333_render.py > /tmp/t334_render.py
+    NUMBERDB_SAGE_MEMORY=1200m NUMBERDB_SAGE_PYTHONPATH= \
+        agents/sage.sh /tmp/t334_render.py /tmp/site.tgz /tmp/T334.json
+
+That produced **7 records, status 200, 28,345 bytes**, with the seven rows
+anchored `id="1"` to `id="7"`, the three tags, the `rigour details` fold, and
+the section order the site's own. No patch beyond the ones already in the
+script was needed for `Q[]` with rational coefficients. So the recipe has now
+run for polynomial (T315, T319, T320, T332), rational polynomial (T334), real
+(T316), complex (T317), rational (T321) and integer (T333) tables, and this is
+the second run to get there by `sed` on the last one's script rather than by
+writing it again. The note above still asks for `agents/render_draft.py`; the
+useful shape is now clear, since the only thing that changed between three
+consecutive runs was the tid.
+
+Evidence: 2026-09-18, T334 critique. `/tmp/t334_render.py`,
+`/tmp/t334_render_out.txt` (`records: 7`, `tid: T1 tags: ['algebra',
+'characteristic classes', 'polynomial']`, `status 200 28345 bytes`),
+`/tmp/T334_page.html`.
