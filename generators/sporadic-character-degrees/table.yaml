@@ -1,0 +1,136 @@
+# Draft document for T255, the sporadic character-degree table proposed in
+# numberdb-data#141. Publishing is a person's act.
+Title: Degrees of the irreducible characters of the sporadic simple groups
+Definition: >-
+  For a sporadic finite simple group $G$, this table lists the degrees
+  $\chi_i(1)$ of the nontrivial irreducible complex characters $\chi_i$ in
+  the ordering used by the GAP Character Table Library CITE{CTblLib}.
+Parameters:
+  G:
+    type: Symbolic
+    title: group
+    display: $G$
+    values:
+      M11: $\rm{M}_{11}$
+      M12: $\rm{M}_{12}$
+      M22: $\rm{M}_{22}$
+      M23: $\rm{M}_{23}$
+      M24: $\rm{M}_{24}$
+      J1: $\rm{J}_{1}$
+      J2: $\rm{J}_{2}$
+      J3: $\rm{J}_{3}$
+      J4: $\rm{J}_{4}$
+      Co3: $\rm{Co}_{3}$
+      Co2: $\rm{Co}_{2}$
+      Co1: $\rm{Co}_{1}$
+      Fi22: $\rm{Fi}_{22}$
+      Fi23: $\rm{Fi}_{23}$
+      Fi24: $\rm{Fi}_{24}'$
+      HS: $\rm{HS}$
+      McL: $\rm{McL}$
+      He: $\rm{He}$
+      Ru: $\rm{Ru}$
+      Suz: $\rm{Suz}$
+      ON: $\rm{O'N}$
+      HN: $\rm{HN}$
+      Ly: $\rm{Ly}$
+      Th: $\rm{Th}$
+      B: $\rm{B}$
+      M: $\rm{M}$
+  chi:
+    type: Z
+    title: character index
+    display: $i$
+    constraints: >-
+      $i\geq2$; $\chi_i$ is the $i$th irreducible complex character in the
+      GAP Character Table Library ordering for $G$.
+Comments:
+  comment-trivial: >-
+    The trivial character $\chi_1$ is omitted, since its degree is $1$ for
+    every group.
+  comment-repetitions: >-
+    Repeated degrees are kept. Equal-degree rows may be complex-conjugate or
+    Galois-conjugate characters rather than the same character.
+  comment-labels: >-
+    The group labels are the same as in
+    HREF{Orders_of_sporadic_finite_simple_groups}[the table of sporadic group
+    orders]. The label `Fi24` denotes the Fischer group $\mathrm{Fi}_{24}'$,
+    and `ON` denotes the O'Nan group.
+Formulas:
+  formula-squares: >-
+    The irreducible character degrees satisfy
+    $\sum_i \chi_i(1)^2=|G|$, with the omitted trivial character contributing
+    $1$ and $|G|$ given in
+    HREF{Orders_of_sporadic_finite_simple_groups}[the table of sporadic group
+    orders].
+  formula-moonshine: >-
+    For the Monster group $M$, the first nontrivial degree is $196883$, and
+    $196884=1+196883$ is the coefficient of $q$ in
+    HREF{Q-expansion_of_the_j-invariant}[the $q$-expansion of the
+    $j$-invariant].
+Programs:
+  program-gap:
+    language: GAP
+    code: |-
+      LoadPackage("ctbllib");
+      degrees := List(Irr(CharacterTable("M24")), chi -> chi[1]);
+Similar tables:
+  - table: HREF{Orders_of_sporadic_finite_simple_groups}[Orders of sporadic finite simple groups]
+    relation: gives the group order that is the sum of the squares of all irreducible character degrees
+  - table: HREF{Q-expansion_of_the_j-invariant}[$q$-expansion of the $j$-invariant]
+    relation: its coefficient $196884$ at $q$ differs by $1$ from the smallest nontrivial Monster character degree
+Links:
+  CTblLib:
+    title: GAP Character Table Library
+    url: https://www.math.rwth-aachen.de/~Thomas.Breuer/ctbllib/
+  CTblLibArchive:
+    title: CTblLib 1.3.11 tar archive
+    url: https://www.math.rwth-aachen.de/~Thomas.Breuer/ctbllib/ctbllib-1.3.11.tar.gz
+  OEIS-A001379:
+    title: 'OEIS A001379: irreducible character degrees of the Monster group'
+    url: https://oeis.org/A001379
+References:
+  Atlas:
+    bib: >-
+      Conway, J. H., Curtis, R. T., Norton, S. P., Parker, R. A. and
+      Wilson, R. A., Atlas of finite groups, Oxford University Press, 1985.
+    mr: '827219'
+Keywords:
+  - sporadic group
+  - character degree
+  - irreducible character
+  - ATLAS
+  - Monster
+  - Baby Monster
+  - moonshine
+  - Mathieu group
+  - Conway group
+  - Fischer group
+  - Janko group
+Tags:
+  - algebra
+  - groups
+Data properties:
+  type: Z
+  rigour: exact
+  complete: 'yes'
+  sources:
+    - CITE{CTblLib}
+    - CITE{Atlas}
+  Size exception: >-
+    The table has one row for each nontrivial irreducible character of each
+    sporadic simple group, because the repeated degrees and the shared
+    character index are part of the data; the integer entries are short.
+  rigour details: >-
+    The entries are exact integers read from CTblLib 1.3.11 CITE{CTblLibArchive},
+    whose page names the Atlas of finite groups CITE{Atlas} as an important
+    source for ordinary character tables. Galois-conjugate rows in the CTblLib
+    data are resolved by copying the degree of the referenced irreducible
+    character. The generator checks that each group has the expected number of
+    irreducible characters, that the sum of the squares of the degrees agrees
+    with HREF{Orders_of_sporadic_finite_simple_groups}[the stored sporadic
+    group order], and that the Monster degrees agree with OEIS A001379
+    CITE{OEIS-A001379}.
+Display properties:
+  number-header: $\chi_i(1)$
+Numbers: []

@@ -1,0 +1,161 @@
+# Draft document for T290. Publishing is a person's act.
+Title: Bernstein-Sato polynomials of the simple and unimodal singularities
+Definition: >-
+  $b_f(s)\in\mathbb{Q}[s]$ is the local Bernstein-Sato polynomial
+  CITE{WikiBFunction} at the origin of
+  $f+x_{c+1}^2+\cdots+x_n^2$. Here $f$ is the normal form in $c$ variables
+  $x,y,z$ of a simple singularity, a parabolic unimodal singularity, or an
+  exceptional unimodal singularity in Arnold's classification CITE{AGV} with
+  the modulus set to $0$ for the unimodal families. The normal forms are
+  $A_k:x^{k+1}$; $D_k:x^2y+y^{k-1}$; $E_6:x^3+y^4$; $E_7:x^3+xy^3$;
+  $E_8:x^3+y^5$; $P_8:x^3+y^3+z^3$; $X_9:x^4+y^4$; $J_{10}:x^3+y^6$;
+  $E_{12}:x^3+y^7$; $E_{13}:x^3+xy^5$; $E_{14}:x^3+y^8$;
+  $Z_{11}:x^3y+y^5$; $Z_{12}:x^3y+xy^4$; $Z_{13}:x^3y+y^6$;
+  $W_{12}:x^4+y^5$; $W_{13}:x^4+xy^4$; $Q_{10}:x^3+y^4+yz^2$;
+  $Q_{11}:x^3+y^2z+xz^3$; $Q_{12}:x^3+y^5+yz^2$;
+  $S_{11}:x^4+y^2z+xz^2$; $S_{12}:x^2y+y^2z+xz^3$; and
+  $U_{12}:x^3+y^3+z^4$.
+Keywords:
+  - Bernstein-Sato polynomial
+  - Bernstein Sato polynomial
+  - b-function
+  - simple singularity
+  - unimodal singularity
+  - Arnold singularity
+  - ADE singularity
+Parameters:
+  singularity:
+    type: Symbolic
+    title: singularity
+    display: singularity
+    constraints: >-
+      $A_k$ with $k\geq1$, $D_k$ with $k\geq4$, one of
+      $E_6,E_7,E_8$, or one of Arnold's parabolic or exceptional unimodal
+      labels $P_8,X_9,J_{10},E_{12},E_{13},E_{14},Z_{11},Z_{12},Z_{13},
+      W_{12},W_{13},Q_{10},Q_{11},Q_{12},S_{11},S_{12},U_{12}$
+    values:
+      A1: $A_1$
+      A2: $A_2$
+      A3: $A_3$
+      A4: $A_4$
+      A5: $A_5$
+      A6: $A_6$
+      A7: $A_7$
+      A8: $A_8$
+      A9: $A_9$
+      A10: $A_{10}$
+      A11: $A_{11}$
+      A12: $A_{12}$
+      D4: $D_4$
+      D5: $D_5$
+      D6: $D_6$
+      D7: $D_7$
+      D8: $D_8$
+      D9: $D_9$
+      D10: $D_{10}$
+      D11: $D_{11}$
+      D12: $D_{12}$
+      E6: $E_6$
+      E7: $E_7$
+      E8: $E_8$
+      P8: $P_8$
+      X9: $X_9$
+      J10: $J_{10}$
+      E12: $E_{12}$
+      E13: $E_{13}$
+      E14: $E_{14}$
+      Z11: $Z_{11}$
+      Z12: $Z_{12}$
+      Z13: $Z_{13}$
+      W12: $W_{12}$
+      W13: $W_{13}$
+      Q10: $Q_{10}$
+      Q11: $Q_{11}$
+      Q12: $Q_{12}$
+      S11: $S_{11}$
+      S12: $S_{12}$
+      U12: $U_{12}$
+  n:
+    type: Z
+    title: number of variables
+    display: $n$
+    constraints: >-
+      the number of variables, at least the corank of the singularity
+Comments:
+  full-b-function: >-
+    The full Bernstein-Sato polynomial is stored, including the factor
+    $s+1$. The reduced Bernstein-Sato polynomial is
+    $\tilde b_f(s)=b_f(s)/(s+1)$ and is not stored separately; when $-1$ is a
+    root of $\tilde b_f(s)$, the full polynomial has $(s+1)^2$ as a factor.
+  notation: >-
+    $\mu$ is the Milnor number
+    $\dim_{\mathbb{C}}\mathbb{C}[x_1,\ldots,x_n]/(\partial f)$, and
+    $\operatorname{lct}(f)$ is the log canonical threshold, which is minus the
+    largest root of $b_f(s)$.
+  local-and-global: >-
+    The polynomial is the local b-function at the origin. For these
+    quasi-homogeneous isolated singularities the origin is the only critical
+    point on $f=0$, so Singular's global routine `bfct` CITE{SingularBfct}
+    computes the same polynomial.
+  modulus-zero: >-
+    The hyperbolic unimodal families $T_{p,q,r}$ are not included: in the
+    hyperbolic case $1/p+1/q+1/r<1$, so the modulus term $xyz$ is not weighted
+    homogeneous with $x^p,y^q,z^r$. For the exceptional unimodal families the
+    b-function depends on the modulus: $x^3+y^7$ has the root $-32/21$, while
+    $x^3+y^7+xy^5$ has $-11/21$.
+Formulas:
+  weighted-homogeneous-formula: >-
+    If $f$ has weighted degree $1$ with weights $w_i$, and $x^a$ runs through
+    a monomial basis of the Milnor algebra
+    $\mathbb{C}[x_1,\ldots,x_n]/(\partial f)$, then
+    $b_f(s)=(s+1)\prod_{\alpha\in A_f}(s+\alpha)$, where
+    $A_f$ is the set of distinct values
+    $\alpha=\sum_i w_i+\sum_i a_iw_i$.
+  suspension: >-
+    $\tilde b_{f+u^2}(s)=\tilde b_f(s+\frac{1}{2})$.
+Programs:
+  program-singular:
+    language: Singular
+    code: |-
+      LIB "bfun.lib";
+      ring r = 0,(x,y),dp;
+      poly F = x2 + y3;
+      bfct(F);        // roots -5/6, -1, -7/6
+Similar tables:
+  - table: HREF{Poincaré_polynomials_of_the_finite_Coxeter_groups}[Poincaré polynomials of the finite Coxeter groups]
+    relation: >-
+      for the ADE rows with $n=3$, the monodromy eigenvalues obtained from
+      the roots of $b_f$ are the eigenvalues of a Coxeter element of the
+      corresponding finite Coxeter group; the degrees read from that Coxeter
+      group's Poincaré polynomial are the Coxeter exponents plus one
+Links:
+  WikiBFunction:
+    title: 'Wikipedia: Bernstein-Sato polynomial'
+    url: https://en.wikipedia.org/wiki/Bernstein%E2%80%93Sato_polynomial
+  SingularBfct:
+    title: 'Singular manual: bfct'
+    url: https://www.singular.uni-kl.de/Manual/latest/sing_510.htm
+References:
+  AGV:
+    bib: >-
+      V. I. Arnold, S. M. Gusein-Zade and A. N. Varchenko, Singularities of
+      Differentiable Maps, Volume I, Birkhauser, 1985.
+Tags:
+  - polynomial
+Data properties:
+  type: Q[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds $A_k$ for $1\leq k\leq12$, $D_k$ for $4\leq k\leq12$, the
+    exceptional simple singularities, and the parabolic and exceptional
+    unimodal singularities in the definition, with $n\leq3$; the hyperbolic
+    unimodal families $T_{p,q,r}$ are not included
+  rigour details: >-
+    The generator computes the weights and a monomial basis of the Milnor
+    algebra over $\mathbb{Q}$, forms the weighted-homogeneous product exactly,
+    and expands it in $\mathbb{Q}[s]$. Every row was also computed with
+    Singular's `bfct` CITE{SingularBfct} and agreed; the control $x^2+y^3$,
+    whose roots are $-5/6,-1,-7/6$, was run first.
+Display properties:
+  number-header: $b_f(s)$

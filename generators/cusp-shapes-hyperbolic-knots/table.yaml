@@ -1,0 +1,139 @@
+# The table document for numberdb.org/T317. It was created as a draft through
+# the API (X-Draft: yes), with Numbers: [] so the first fill can use the
+# entries endpoint. Publishing is a person's act on the site.
+Title: Cusp shapes of the hyperbolic prime knots with at most ten crossings
+Definition: >-
+  The cusp shape $\tau(S^3\setminus K)$ is SnapPy's longitude translation
+  divided by its meridian translation for the complete hyperbolic metric on a
+  one-cusped knot complement CITE{SnapPy}. This table lists it for the
+  hyperbolic prime knots $n_k$ with at most ten crossings and their distinct
+  mirror images.
+Parameters:
+  n:
+    type: Z
+    title: crossing number
+    display: $n$
+    constraints: $4\leq n\leq 10$, with $n=3$ omitted because the trefoil $3_1$ is a torus knot
+  k:
+    type: Z
+    title: index in the Rolfsen table
+    display: $k$
+    constraints: >-
+      $1\leq k\leq N(n)$, where $N(n)$ is the number of prime knots with $n$
+      crossings, $1,2,3,7,21,49,165$ for $n=4,\ldots,10$, and $n_k$ is not
+      one of the torus knots $5_1$, $7_1$, $8_{19}$, $9_1$, $10_{124}$
+  knot:
+    type: Symbolic
+    title: the knot $K=n_k$ as KnotInfo draws it, or its mirror image $\bar K$
+    display: knot
+    values:
+      K: $K$
+      mirror: $\bar K$
+    constraints: >-
+      $\bar K$ is listed for the chiral hyperbolic knots only; the 20
+      amphichiral hyperbolic knots are their own mirror images
+Comments:
+  comment-which-knots: >-
+    A prime knot is a torus knot, a satellite knot or hyperbolic
+    CITE{Thurston}, and no satellite knot has fewer than thirteen crossings
+    CITE{KnotInfo}. Of the 249 prime knots with at most ten crossings, 243 are
+    therefore hyperbolic and are listed here; the six torus knots
+    $3_1=T(2,3)$, $5_1=T(2,5)$, $7_1=T(2,7)$, $9_1=T(2,9)$,
+    $8_{19}=T(3,4)$ and $10_{124}=T(3,5)$ have Seifert fibred complements,
+    carry no hyperbolic metric, and are left out. The unknot is left out for
+    the same reason.
+  comment-numbering: >-
+    The exterior is built from KnotInfo's braid word CITE{KnotInfo}, using the
+    same post-Perko knot numbering as the neighboring knot tables: Rolfsen's
+    table CITE{Rolfsen} with Perko's correction CITE{Perko}. SnapPy's built-in
+    names Manifold('n_k') CITE{SnapPy} use Rolfsen's pre-Perko ten-crossing
+    table in part and interchange the knots named $10_{83}$ and $10_{86}$
+    relative to KnotInfo, so they are not used to construct the entries.
+  comment-mirror: >-
+    Rows marked $K$ use KnotInfo's diagram, and rows marked $\bar K$ use its
+    mirror image. These are the two mirror choices for the same Rolfsen knot
+    name, not two different quantities.
+  comment-convention: >-
+    The value is SnapPy's cusp shape, not the reduced modulus of the Euclidean
+    cusp torus. Changing the peripheral basis by
+    $\begin{pmatrix}a&b\\ c&d\end{pmatrix}\in \mathrm{SL}_2(\mathbb Z)$
+    changes the shape by the fractional linear transformation
+    $\tau\mapsto(a\tau+b)/(c\tau+d)$, so the meridian-longitude basis is part
+    of the definition.
+  comment-entries: >-
+    An entry comment gives the knot's common name where it has one.
+Formulas:
+  formula-mirror: >-
+    $\tau(S^3\setminus\bar K)=-\overline{\tau(S^3\setminus K)}$ in the
+    convention used here, where $\bar K$ is the mirror image.
+  formula-figure-eight: >-
+    $\tau(S^3\setminus4_1)=2\sqrt{-3}=2i\sqrt3$ for the figure-eight knot
+    complement.
+Programs:
+  program-snappy:
+    language: Sage
+    code: |-
+      from snappy import Link
+      Link(braid_closure=[1, -2, 1, -2]).exterior().cusp_info('shape', verified=True, bits_prec=400)[0]
+      # Use KnotInfo braid words for n_k; SnapPy's Manifold('n_k') names do not match this table throughout.
+Similar tables:
+  - table: HREF{Hyperbolic_volumes_of_the_prime_knots_with_at_most_ten_crossings}[Hyperbolic volumes of the prime knots with at most ten crossings]
+    relation: the same hyperbolic knot complements; the volume is a real invariant of the complete hyperbolic metric, while the cusp shape records the Euclidean similarity type of the cusp in a chosen peripheral basis
+  - table: HREF{T316}[Maximal cusp volumes of the hyperbolic prime knots with at most ten crossings]
+    relation: the same hyperbolic knot complements and cusps; the cusp volume measures the area scale of the maximal cusp rather than its complex shape
+  - table: HREF{Chern_Simons_invariants_of_hyperbolic_knot_complements}[Chern-Simons invariants of the hyperbolic prime knots with at most ten crossings]
+    relation: the same hyperbolic knot complements, with mirror images distinguished
+  - table: HREF{Jones_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Jones polynomials of the prime knots with at most ten crossings]
+    relation: the same knot names, with the unknot and the torus knots included there and excluded here
+  - table: HREF{Alexander_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Alexander polynomials of the prime knots with at most ten crossings]
+    relation: the same knot names, with mirror images not distinguished by the Alexander polynomial
+Links:
+  SnapPy:
+    title: 'SnapPy documentation: CuspNeighborhood.cusp_info and verified computations'
+    url: https://snappy.computop.org/verify.html
+  KnotInfo:
+    title: 'KnotInfo: Table of Knot Invariants (C. Livingston and A. H. Moore)'
+    url: https://knotinfo.org/
+  KnotInfoData:
+    title: 'KnotInfo: Database Download'
+    url: https://knotinfo.org/homelinks/database_download.php
+  WikiList:
+    title: 'Wikipedia: List of prime knots'
+    url: https://en.wikipedia.org/wiki/List_of_prime_knots
+References:
+  Rolfsen:
+    bib: >-
+      D. Rolfsen, Knots and Links, Publish or Perish, 1976, Appendix C: Table
+      of knots and links.
+  Perko:
+    bib: >-
+      K. A. Perko, On the classification of knots, Proc. Amer. Math. Soc. 45
+      (1974), 262-266.
+  Thurston:
+    bib: >-
+      W. P. Thurston, Three-dimensional manifolds, Kleinian groups and
+      hyperbolic geometry, Bull. Amer. Math. Soc. (N.S.) 6 (1982), 357-381.
+  HIKMOT:
+    bib: >-
+      N. Hoffman, K. Ichihara, M. Kashiwagi, H. Masai, S. Oishi and A.
+      Takayasu, Verified computations for hyperbolic 3-manifolds, Exp. Math.
+      25 (2016), 66-78.
+Tags:
+  - algebraic
+Data properties:
+  type: C
+  rigour: proven
+  complete: 'yes'
+  rigour details: >-
+    Each value is SnapPy's verified cusp shape of the exterior of the closure
+    of KnotInfo's braid word for the knot, computed as a complex interval at
+    540 bits. SnapPy certifies the complete hyperbolic structure by interval
+    methods in the sense of CITE{HIKMOT}; the digits written are those
+    supported by the interval. The generator checks the exact figure-eight
+    value $2\sqrt{-3}$, checks the mirror relation on every chiral hyperbolic
+    knot, checks that every amphichiral hyperbolic knot has purely imaginary
+    cusp shape in this convention, and checks that the hyperbolic knot list has
+    243 entries and is the KnotInfo braid table with the torus knots removed.
+Display properties:
+  number-header: $\tau(S^3\setminus K)$
+Numbers: []

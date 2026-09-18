@@ -1,0 +1,6 @@
+1. done -- defined $U_p$ in `formula-l4-norm` and made `comment-fekete` refer back to `CITE{formula-l4-norm}`; checked the live API document still had the page-order problem and Sage rechecked the stored Legendre values and the $L^4$ identity.
+2. done -- removed the unused "$c_0=p$" clause from `formula-merit-factor` and added the norm identity where it explains the subtraction in `formula-l4-norm`; checked $c_0=p$ for all 167 entries and the $L^4$ identity for $p\leq101$ and $p=997$ in Sage.
+3. left for a person -- T320 is still a draft and `/T321` is still a draft 404, so the dead-link risk is a publishing-order decision for review; zeta3 may not publish or review.
+4. done -- rewrote the T320 relation to say it forms the second polynomial sequence in the same Rudin-Shapiro pair; checked live T320 defines $Q_n$ that way and Sage sampled $P_n,Q_n$ merit factors at $n=6,8,10$.
+5. done -- expanded `complete-note` to give the small-prime range and exact $O(p^2)$ autocorrelation cost; checked the live entries are exactly the 167 odd primes $p<1000$.
+6. done -- removed the build-machine publishing paragraph, the table-wanted issue reference, and the irrelevant coefficient convention from T321's attached and repository `generate.py`; checked `verify(sample=None)` after the edit reported 167/167 matched.

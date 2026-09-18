@@ -1,0 +1,141 @@
+# The table document for numberdb.org/T283. It was created as a draft through
+# the API (X-Draft: yes) with URL Mahler_measures_of_(short_random_walks) and
+# is filled by generate.py beside it; publishing is a person's act on the site.
+Title: Mahler measures of $1+x_1+\dots+x_{n-1}$ (short random walks)
+Definition: >-
+  For an integer $n\geq1$, $\mu_n$ is the logarithmic Mahler measure
+  CITE{Wiki} of $1+x_1+\cdots+x_{n-1}$. Equivalently,
+  $\mu_n=W_n'(0)$, where $W_n(s)$ is the $s$-th moment of the distance from
+  the origin after $n$ independent unit steps in uniformly random directions
+  in the plane CITE{BSWZ}.
+Parameters:
+  n:
+    type: Z
+    title: number of steps
+    display: $n$
+    constraints: $n\geq1$
+Comments:
+  comment-indexing: >-
+    The index $n$ is the number of unit steps, or equivalently the number of
+    terms in $x_1+\cdots+x_n$; the displayed polynomial has $n-1$ variables
+    after dividing by the first term. The values $\mu_1$ and $\mu_2$ are
+    exactly zero, since $m(1)=m(1+x)=0$, and are not listed as rows.
+  comment-known-values: >-
+    Smyth evaluated $\mu_3=m(1+x+y)=\mathrm{Cl}_2(\pi/3)/\pi$ and
+    $\mu_4=m(1+x+y+z)=7\zeta(3)/(2\pi^2)$ CITE{Smyth} CITE{Boyd}. Rodriguez
+    Villegas conjectured the modular eta-integral evaluations for $\mu_5$ and
+    $\mu_6$ quoted in CITE{formula-rv5} and CITE{formula-rv6}; Borwein,
+    Straub, Wan and Zudilin report numerical confirmations to 600 and 80
+    decimal places respectively CITE{BSWZ}, and Straub and Zudilin review the
+    later short-walk literature CITE{StraubZudilin}.
+Formulas:
+  formula-moment: >-
+    $W_n(s)=\int_{[0,1]^n}\left|\sum_{j=1}^n e^{2\pi i t_j}\right|^s
+    dt_1\cdots dt_n
+    =\int_{[0,1]^{n-1}}\left|1+\sum_{j=1}^{n-1}e^{2\pi i t_j}\right|^s
+    dt_1\cdots dt_{n-1}$, and differentiating at $s=0$ gives
+    $\mu_n=W_n'(0)$ CITE{BSWZ}.
+  formula-bessel: >-
+    For $n\geq3$,
+    $\mu_n=\log2-\gamma-\int_0^1\frac{J_0(x)^n-1}{x}\,dx
+    -\int_1^\infty\frac{J_0(x)^n}{x}\,dx$, where $J_0$ is the Bessel function
+    of the first kind and $\gamma$ is Euler's constant CITE{BSWZ}.
+  formula-smyth: >-
+    $\mu_3=\frac{1}{\pi}\mathrm{Cl}_2(\pi/3)
+    =\frac{3\sqrt3}{4\pi}L(2,\chi_{-3})$, where
+    $\mathrm{Cl}_2(\pi/3)$ is
+    HREF{Values_of_the_Clausen_functions_at_rational_multiples_of_pi#2,1/3}[in
+    the table of Clausen-function values] and $L(2,\chi_{-3})$ is
+    HREF{Values_of_Dirichlet_L-functions_at_positive_integers#3,2,2}[in the
+    table of Dirichlet $L$-values] CITE{Smyth}.
+  formula-zeta: >-
+    $\mu_4=7\zeta(3)/(2\pi^2)$, where $\zeta(3)$ is
+    HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers#3}[in the
+    table of Riemann zeta values] CITE{Smyth}.
+  formula-rv5: >-
+    $\mu_5\stackrel{?}{=}\left(\frac{15}{4\pi^2}\right)^{5/2}
+    \int_0^\infty\left(\eta(e^{-3t})^3\eta(e^{-5t})^3+
+    \eta(e^{-t})^3\eta(e^{-15t})^3\right)t^3\,dt$, with
+    $\eta(q)=q^{1/24}\prod_{m\geq1}(1-q^m)$ CITE{BSWZ}.
+  formula-rv6: >-
+    $\mu_6\stackrel{?}{=}\left(\frac3{\pi^2}\right)^3
+    \int_0^\infty \eta(e^{-t})^2\eta(e^{-2t})^2
+    \eta(e^{-3t})^2\eta(e^{-6t})^2 t^4\,dt$ CITE{BSWZ}.
+Programs:
+  program-python:
+    language: Python
+    code: |-
+      import mpmath as mp
+      mp.mp.dps = 80
+      mu3 = mp.clsin(2, mp.pi/3) / mp.pi
+      mu4 = 7 * mp.zeta(3) / (2 * mp.pi**2)
+Similar tables:
+  - table: HREF{Polya's_random_walk_constants}[Pólya's random walk constants]
+    relation: gives return probabilities for lattice random walks, another family of constants indexed by a walk dimension
+  - table: HREF{Entropy_constants_of_lattice_models}[Entropy constants of lattice models]
+    relation: holds $\mu_3/2$ as the honeycomb-lattice dimer entropy and $5\mu_3$ as the triangular-lattice spanning-tree entropy
+Links:
+  Wiki:
+    title: "Wikipedia: Mahler measure"
+    url: https://en.wikipedia.org/wiki/Mahler_measure
+References:
+  BSWZ:
+    bib: >-
+      Jonathan M. Borwein, Armin Straub, James Wan and Wadim Zudilin,
+      Densities of short uniform random walks, Canadian Journal of Mathematics
+      64 (2012), 961-990.
+    arxiv: 1103.2995
+    doi: 10.4153/CJM-2011-079-2
+  Smyth:
+    bib: >-
+      C. J. Smyth, On measures of polynomials in several variables, Bulletin
+      of the Australian Mathematical Society 23 (1981), 49-63.
+  Boyd:
+    bib: >-
+      David W. Boyd, Speculations concerning the range of Mahler's measure,
+      Canadian Mathematical Bulletin 24 (1981), 453-469.
+    doi: 10.4153/CMB-1981-069-5
+  StraubZudilin:
+    bib: >-
+      Armin Straub and Wadim Zudilin, Short walk adventures, in From Analysis
+      to Visualization: A Celebration of the Life and Legacy of Jonathan M.
+      Borwein, Springer Proceedings in Mathematics & Statistics 313
+      (2020), 423-439.
+    arxiv: 1801.06002
+Keywords:
+  - Mahler measure
+  - logarithmic Mahler measure
+  - short random walk
+  - random phasor sum
+  - Smyth
+  - $m(1+x+y)$
+  - $m(1+x+y+z)$
+  - Lehmer problem
+Tags:
+  - number theory
+  - special values
+  - random walks
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: >-
+    it holds the classical short-walk cases $3\leq n\leq6$; the cases
+    $n=1$ and $n=2$ are zero and are stated in the comments
+  rigour details: >-
+    The generator computes $\mu_3$ from the closed form
+    $\mathrm{Cl}_2(\pi/3)/\pi$ and $\mu_4$ from $7\zeta(3)/(2\pi^2)$.
+    It computes $\mu_5$ and $\mu_6$ from the Rodriguez-Villegas eta-integrals
+    CITE{formula-rv5} and CITE{formula-rv6}, using the modular transformation
+    of Dedekind's eta function for the small-$t$ part of the integral.
+
+    Before the draft was filled, $\mu_3$ and $\mu_4$ were checked against
+    the BSWZ Bessel integral CITE{formula-bessel}; $\mu_5$ and $\mu_6$ were
+    checked against the same Bessel integral to the 18 digits printed in
+    the screening report. The eta-integral computation was repeated at 50,
+    80 and 120 working digits and the 50 digits kept here were unchanged.
+    The moment series CITE{BSWZ} was measured and rejected for this first
+    draft because after 300 terms it was still about $10^{-3}$ from the
+    known $\mu_3$ and $\mu_4$ values.
+Display properties:
+  number-header: $\mu_n$

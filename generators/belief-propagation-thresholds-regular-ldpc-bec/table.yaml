@@ -1,0 +1,116 @@
+# The table document for numberdb-data#148, proposal 4. Created as draft T275
+# through the API (X-Draft: yes) and filled by generate.py beside it;
+# publishing is a person's act on the site.
+Title: Belief-propagation thresholds of regular LDPC codes on the binary erasure channel
+Definition: >-
+  For integers $3\leq l<r$, the regular $(l,r)$ low-density parity-check
+  ensemble CITE{WikiLDPC} has variable degree $l$ and check degree $r$.
+  The number $\epsilon^{\mathrm{BP}}_{l,r}$ is the binary erasure channel
+  CITE{WikiBEC} erasure probability at the belief-propagation decoding
+  threshold of this ensemble CITE{KRU}.
+Keywords: Gallager codes, density evolution, iterative decoding, coding theory
+Parameters:
+  l:
+    type: Z
+    title: variable degree
+    display: $l$
+    constraints: $l\geq3$
+  r:
+    type: Z
+    title: check degree
+    display: $r$
+    constraints: $r>l$
+Comments:
+  comment-conventions: >-
+    The value stored here is the channel erasure probability $\epsilon$, not
+    the constraint density. The parity-check density of the ensemble is
+    $m/n=l/r$, and its design rate is $1-l/r$ when the checks are independent.
+  comment-l2: >-
+    There are no $l=2$ rows. In that degree-two variable-node case the
+    density-evolution threshold is the stability value $1/(r-1)$, so these
+    exact values are left to the comment rather than repeated as entries.
+  comment-threshold: >-
+    At the threshold with $l\geq3$, density evolution has a nonzero double
+    fixed point $x^{\mathrm{BP}}_{l,r}$; each entry comment gives this root.
+Formulas:
+  formula-density-evolution: >-
+    The density-evolution fixed point equation on the binary erasure channel
+    is
+    $x=\epsilon(1-(1-x)^{r-1})^{l-1}$ CITE{KRU}.
+  formula-threshold-curve: >-
+    For $0<x\leq1$, write
+    $\epsilon(x)=x/(1-(1-x)^{r-1})^{l-1}$.
+  formula-root: >-
+    The root $x^{\mathrm{BP}}_{l,r}$ is the positive solution of
+    $p^{\mathrm{BP}}_{l,r}(x)=0$, where
+    $p^{\mathrm{BP}}_{l,r}(x)=((l-1)(r-1)-1)(1-x)^{r-2}
+    -\sum_{i=0}^{r-3}(1-x)^i$ CITE{KRU}.
+  formula-threshold: >-
+    The threshold is
+    $\epsilon^{\mathrm{BP}}_{l,r}=\epsilon(x^{\mathrm{BP}}_{l,r})$
+    CITE{KRU}.
+Programs:
+  program-mpmath:
+    language: Python
+    code: |-
+      from mpmath import mp
+      mp.dps = 50
+      l, r = 3, 6
+      def p(x):
+          y = 1 - x
+          return ((l - 1) * (r - 1) - 1) * y**(r - 2) - mp.fsum(y**i for i in range(r - 2))
+      lo, hi = mp.mpf("0"), mp.mpf("1")
+      for _ in range(200):
+          mid = (lo + hi) / 2
+          if p(mid) > 0:
+              lo = mid
+          else:
+              hi = mid
+      x = (lo + hi) / 2
+      print(x / (1 - (1 - x)**(r - 1))**(l - 1))
+Links:
+  WikiLDPC:
+    title: 'Wikipedia: Low-density parity-check code'
+    url: https://en.wikipedia.org/wiki/Low-density_parity-check_code
+  WikiBEC:
+    title: 'Wikipedia: Binary erasure channel'
+    url: https://en.wikipedia.org/wiki/Binary_erasure_channel
+References:
+  KRU:
+    bib: >-
+      S. Kudekar, T. Richardson and R. Urbanke, Threshold saturation via
+      spatial coupling: why convolutional LDPC ensembles perform so well over
+      the BEC, IEEE Transactions on Information Theory 57 (2011), 803-834.
+    doi: 10.1109/TIT.2010.2095072
+    arxiv: '1001.1826'
+  RichardsonUrbanke:
+    bib: >-
+      T. J. Richardson and R. L. Urbanke, The capacity of low-density
+      parity-check codes under message-passing decoding, IEEE Transactions on
+      Information Theory 47 (2001), 599-618.
+    doi: 10.1109/18.910577
+Tags:
+  - probability theory
+Data properties:
+  type: R
+  rigour: proven
+  sources:
+    - CITE{KRU}
+    - CITE{RichardsonUrbanke}
+  complete: 'no'
+  complete-note: >-
+    it holds $\epsilon^{\mathrm{BP}}_{l,r}$ for every pair with
+    $3\leq l<r\leq12$
+  rigour details: >-
+    Each entry is computed in ball arithmetic with 64 guard bits beyond the
+    100 digits written. The root $x^{\mathrm{BP}}_{l,r}$ is enclosed by
+    bisection on the sign of $p^{\mathrm{BP}}_{l,r}(x)$ between $0$ and $1$,
+    down to a bracket of half-width $10^{-106}$ whose ends are checked to give
+    opposite signs; the value of
+    $x/(1-(1-x)^{r-1})^{l-1}$ on that bracket is the stored ball. The
+    generator also compares every row with an mpmath minimisation of
+    $\epsilon(x)$ on $(0,1]$, and compares the $(3,6)$ row with the printed
+    value $0.42944$ in CITE{KRU}.
+Display properties:
+  number-header: $\epsilon^{\mathrm{BP}}_{l,r}$
+Numbers: []

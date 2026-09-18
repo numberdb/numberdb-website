@@ -1,0 +1,83 @@
+# Draft document for T254, the heat (caloric) polynomial table proposed in
+# numberdb-data#139 from numberdb-data#109. Publishing is a person's act.
+Title: Heat (caloric) polynomials $P_m(x,t)$
+Definition: >-
+  The heat polynomial $P_m(x,t)$ is the unique polynomial solution of
+  $\partial P/\partial t=\partial^2P/\partial x^2$ with $P_m(x,0)=x^m$
+  CITE{RW}.
+Parameters:
+  m:
+    type: Z
+    title: degree
+    display: $m$
+    constraints: $m\geq0$
+Formulas:
+  formula-explicit: >-
+    $P_m(x,t)=\sum_{\ell=0}^{\lfloor m/2\rfloor}
+    \frac{m!}{\ell!(m-2\ell)!}x^{m-2\ell}t^\ell$.
+  formula-homogeneous: >-
+    $P_m(\lambda x,\lambda^2t)=\lambda^mP_m(x,t)$ for $\lambda>0$; this is
+    parabolic $m$-homogeneity.
+  formula-recurrence: >-
+    $P_0(x,t)=1$ and
+    $P_{m+1}(x,t)=xP_m(x,t)+2t\,\partial P_m(x,t)/\partial x$.
+  formula-hermite: >-
+    $P_m(x,-1/2)=He_m(x)$, where $He_m$ is the
+    HREF{Hermite_polynomials_He}[probabilists' Hermite polynomial].
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.all import ZZ, PolynomialRing
+
+      R = PolynomialRing(ZZ, ('x', 't'))
+      x, t = R.gens()
+
+      def heat_polynomial(m):
+          p = R.one()
+          for _ in range(m):
+              p = x * p + ZZ(2) * t * p.derivative(x)
+          return p
+
+      heat_polynomial(51)      # the next one after this table
+Similar tables:
+  - table: HREF{Hermite_polynomials_He}[Hermite polynomials in probabilist's convention]
+    relation: are the specialization $P_m(x,-1/2)$ in CITE{formula-hermite}
+Links:
+  Wiki:
+    title: "Wikipedia: Caloric polynomial"
+    url: https://en.wikipedia.org/wiki/Caloric_polynomial
+References:
+  RW:
+    bib: >-
+      P. C. Rosenbloom and D. V. Widder, Expansions in terms of heat
+      polynomials and associated functions, Trans. Amer. Math. Soc. 92
+      (1959), 220-266.
+    doi: 10.2307/1993155
+    zbl: '0086.27203'
+Keywords:
+  - heat equation
+  - parabolic homogeneity
+  - parabolically homogeneous
+  - Rosenbloom
+  - Widder
+Tags:
+  - polynomial
+  - special functions
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every degree $m$ with $0\leq m\leq50$, and stops there because
+    the entries grow: $P_{50}$ is 1016 characters, and $P_{60}$ would be 1425
+  rigour details: >-
+    The generator computes CITE{formula-recurrence} over Sage's integer
+    polynomial ring. The values were checked against CITE{formula-explicit},
+    against the heat equation, against the normalization $P_m(x,0)=x^m$,
+    against the parabolic homogeneity identity CITE{formula-homogeneous}, and
+    against the specialization to
+    HREF{Hermite_polynomials_He}[probabilists' Hermite polynomials] in
+    CITE{formula-hermite}.
+Display properties:
+  number-header: $P_m(x,t)$

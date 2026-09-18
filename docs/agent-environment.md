@@ -205,6 +205,60 @@ Evidence: the Boole polynomial draft T184, 2026-09-09, used
 agents/table-build/dry_run.py /tmp/boole_generate.py` run failed with
 `ModuleNotFoundError: No module named 'check'`.
 
+## A Sage wrapper cannot see a separate `/tmp` file unless it is mounted
+
+What happened: a T267 repair fetched the live table to `/tmp/T267-live.json`
+and then ran a Sage check from `/tmp/check_t267.py`. Inside `agents/sage.sh`
+the script was mounted at `/work/check_t267.py`, but the JSON file was not
+mounted, so `open("/tmp/T267-live.json")` failed with `FileNotFoundError`.
+
+What to do instead: either pass every extra local file to `agents/sage.sh` so
+it is mounted under `/work`, or make the Sage script fetch/read what it needs
+itself. For API reads of private drafts, reading the key from stdin and fetching
+inside the Sage script is usually cleaner than carrying a second temporary
+file alongside it.
+
+## A repair assignment can arrive without its critique file
+
+What happened: a T294 repair run was assigned `agents/critiques/T294.md`, but
+that file was absent from the checkout and had no history under that path. The
+live table was still reachable through `/api/table?id=T294`, while `/T294`
+returned 404 because the table was an unpublished draft. The audit endpoint
+returned one structural finding, and the repair report had to say explicitly
+that it acted on the live audit rather than on a missing critique file.
+
+What to do instead: before editing, check the requested critique path directly
+and with `find agents -name '*TID*'`. If it is missing, do not invent the
+finding list. Either stop with a repaired report that records the missing
+critique, or, if a live audit finding is safe and local enough to act on, say
+that the audit rather than the missing report supplied the actionable proposal.
+
+Evidence: on 2026-09-17, `find agents -name '*T294*' -print` returned nothing
+before the repair report was written, and `git log -- agents/critiques/T294.md`
+was empty.
+
+## Do not combine a heredoc script with an API key on stdin
+
+What happened: an API edit sender was run as a Python heredoc while also
+redirecting the NumberDB key into stdin. The redirection won: Python read the
+key as its program text instead of running the heredoc, failed with a syntax
+error, and echoed part of the token in the traceback before any HTTP request
+was made.
+
+What to do instead: when a script must read the key from stdin, put the script
+in `/tmp` and run `cat "$NUMBERDB_KEY_FILE" | python3 /tmp/script.py`, or keep
+the code in a `python3 -c '...'` argument that reads `sys.stdin`. Do not use
+`python3 - <<'PY' ... PY` for a program that also needs stdin for the key.
+
+Evidence: T271 repair, 2026-09-16. The corrected sender lived at
+`/tmp/t271_post_edit.py` and the API accepted the edit through
+`cat "$NUMBERDB_KEY_FILE" | python3 /tmp/t271_post_edit.py`.
+
+Evidence: `/tmp/check_t267.py`, 2026-09-16, failed on
+`/tmp/T267-live.json`; the self-contained version fetched
+`https://numberdb.org/api/table?id=T267` with the key from stdin and then
+checked the live rows successfully.
+
 ## A pipeline that swallows the verdict reports nothing
 
 What happened: the suite was run as `manage.py test ... | tail -30`. The
@@ -762,6 +816,12 @@ Evidence: `/tmp/gq_20260902_screen.py` output, 2026-09-02; `gh search
 issues` prints `unknown flag: --repo` and lists `repos` as the only
 subcommand.
 
+Update, 2026-09-17: the `gh` on this machine is now 2.45.0, and `gh search
+issues --repo numberdb/numberdb-data "<words>" --json number,title,state`
+works and searches open and closed issues. `already_asked` was still
+throttled after about ten calls in the 2026-09-17T0814 ideas run, so the rate
+limit stands, but this search is now the fallback.
+
 ## The anonymous lookup budget is per address and shared by every tool on the machine
 
 What happened: the corpus walk at the start of the run spent the 60
@@ -1038,6 +1098,21 @@ matched the `NUMBERDB_KEY_FILE` line and not `NUMBERDB_API_KEY`: the same
 mistake in a different spelling, so the rule is to never print values from
 the environment at all, masked or not. That run's log is a third one to
 scrub, and a third reason to rotate the key.
+It happened a third time in the T279 critique of 2026-09-16 (campaign
+`20260915T221028Z`): `env | grep -i -E 'proxy|numberdb' | sed 's/=.*KEY.*/=<hidden>/'`
+was run to see why the proxy was down, and printed `NUMBERDB_API_KEY`. A
+rule in a notes file has not stopped this. The runner exports the key's
+value as well as the name of the file holding it, and a prompt that says the
+key "is in the file named by `NUMBERDB_KEY_FILE`" should not also find the
+key in `NUMBERDB_API_KEY`. Unsetting that variable in `run.sh` would end the
+mistake for good.
+It happened a fourth time in the T307 critique of 2026-09-17 (campaign
+`20260917T011039Z`), in the same situation and with the same `sed` mask: the
+proxy refused connections, and the environment was listed to find out why.
+The answer the listing gave was `ALL_PROXY=` (empty) and `NUMBERDB_REMOTE=local`.
+On this box `curl https://numberdb.org/...` with no proxy works, as the note
+of 2026-09-16 further down says. Run the direct `curl` before looking at the
+environment at all.
 
 ## `audit_table --links` reports KnotInfo as `URLError`; that is this network, not the link
 
@@ -3220,3 +3295,1768 @@ Not found page, while `curl https://numberdb.org/files/T235` showed "Files of
 Ehrhart polynomials of the permutohedra" and
 `curl https://numberdb.org/files/T235/generate.py?raw=1` returned the
 generator docstring beginning with `numberdb.org/T235`.
+
+## A stored polynomial variable named `r` can trip the live Sage environment
+
+What happened: after the Zernike generator changed radial entries from
+`rho` to the single-letter variable `r`, the local Sage wrapper could build
+`QQ['r']` and dry-run the table, but the live API refused the fill of draft
+T251 with `A value in these entries cannot be read as a number. No module
+named 'rpy2'`. The same entries with the radial variable renamed to `t`
+avoided the server-side import path.
+
+What to do instead: if a draft polynomial table is refused with an `rpy2`
+message and the only unusual thing is a stored variable named `r`, rename
+that stored variable to another single-letter variable such as `t`. Keep the
+mathematical symbol in the prose if it matters.
+
+Evidence: 2026-09-15, T251 build. The builder probe
+`PolynomialRing(QQ, 'r')` succeeded under `agents/sage.sh`, but the live
+`/api/table/T251/entries` write failed with the `rpy2` message.
+
+## `agents/queue.py built` does not tick two-word proposal titles
+
+What happened: after T251 was offered for review, running
+`python3 agents/queue.py built 139 "Zernike polynomials (#77)" T251`
+answered `#139 has no unbuilt table like 'Zernike polynomials (#77)'`.
+The family issue still had the exact unchecked line. The helper's
+`_same_subject` refuses matches whose smaller word set has fewer than three
+words, so "Zernike polynomials" cannot match through that path.
+
+What to do instead: for a two-word proposal title, patch the exact checklist
+line in the family issue body, or have a person tick it, rather than trying
+more decorated titles.
+
+Evidence: 2026-09-15, T251 build; issue #139 was updated by replacing
+`- [ ] Zernike polynomials (#77)` with
+`- [x] Zernike polynomials (#77) -- T251`.
+
+## The audit's two-tables check is blind to a bundle whose halves have different ranges
+
+What happened: T251 bundles the Zernike radial polynomials $R_n^{|l|}(t)$ and
+the Cartesian polynomials $Z_n^l(x,y)$ under a parameter `form` whose two
+values are the names `radial` and `cartesian`. That is the exact shape
+`_one_table_or_several` in
+`numberdb_app/management/commands/audit_table.py` was written to report, and
+`GET /api/table/T251/audit` answered `"findings": [], "clean": true`.
+
+Both rules miss, for different reasons:
+
+* `_one_table_or_several` requires the grid to be orthogonal --
+  `if len(grid) * len(labels) > len(records) * 1.05: continue` -- so a ragged
+  parameter is treated as a genuine family, "a shape that only some
+  distributions have". T251's 188 entries sit on 152 distinct `(n, l)` pairs,
+  only 36 of which carry both forms, because the radial half was computed to
+  `n <= 20` and the Cartesian half to `n <= 12`, and because the radial half
+  indexes by `|l|` while the Cartesian half indexes by signed `l`. The test is
+  `304 > 197.4` and the check bails. Two tables that were each given the range
+  that suited them are *more* ragged than one table, not less.
+* `_column_names_its_quantity` tests `header.lower() in GENERIC_HEADERS`, a
+  membership test against ten words. T251's `number-header` is
+  `$R_n^{|l|}(t)$ or $Z_n^l(x,y)$`: the same fallback the rule's own docstring
+  describes -- no symbol is true of every row -- written as a LaTeX
+  disjunction rather than as the word `value`, and so invisible.
+
+What to do instead: in the grid check, before the orthogonality `continue`,
+ask whether the *ranges* differ -- whether the set of values some other
+parameter takes under one label is a proper subset of the set it takes under
+another. That is bundling, not a ragged family, and it is the commoner shape:
+the halves of a bundle are computed to whatever depth each could afford. In
+the header check, treat a header containing ` or ` (or any top-level `\vee`,
+`,` or `/` joining two `$...$` spans) the same as a generic word: a
+disjunction names no quantity either.
+
+Evidence: 2026-09-15, T251 critique. `GET /api/table/T251/audit` clean;
+`agents/critiques/T251.md` finding 1 gives the counts.
+
+## `/preview?table=` in pieces reports false `CITE-broken`
+
+What happened: previewing T251's `Similar tables` and `rigour details` alone
+rendered every `CITE{formula-...}` as
+`<span class="CITE-broken" title="this table defines no reference by that
+name">formula-jacobi</span>`, which reads exactly like a table citing a key it
+never defines. It is not: `CITE` resolves against the keys present *in the
+piece that was sent*, and the pieces did not carry `Formulas`. With the cited
+formulas included, the same `CITE`s render as `<a class="CITE"
+href="#formula-jacobi">(4)</a>`.
+
+The existing note "render a private draft through `/preview` in pieces ...
+carrying the Links and Formulas that the section's `CITE`s need" says to
+include them; it does not say what it looks like when you forget. This is the
+symptom, and it is a false positive a critique can report as a fault in the
+table.
+
+What to do instead: before reporting a `CITE-broken`, re-send that one field
+in a piece that also carries the section defining the key. Numbering is global
+across `Formulas` then `Comments` in render order, so a citation's number also
+changes with what the piece contains -- another reason not to read numbers off
+a partial preview.
+
+Evidence: 2026-09-15, T251 critique. `/tmp/t251/sec_Similar_tables.html`
+(`CITE-broken`, no `Formulas` in the piece) against `/tmp/t251/cite1.html`
+(same fields plus `formula-jacobi` and `formula-hankel`, rendering `(1)` and
+`(2)`).
+
+## To preview the *number table* of a wide draft, strip `title` and `constraints`
+
+What happened: T252 has seven parameters, and its `Parameters` section is
+1.9 KB of YAML that URL-encodes to over 3 KB because almost every character in
+it is a `$`, a `\` or a brace. Sent to `/preview?table=` with the title and a
+handful of entries it came to 5,024 bytes and the server answered
+400 "Request Line is too large (5017 > 4094)". The existing note above covers
+splitting the *prose* into pieces, and that works: one piece per two or three
+parameters renders the parameter list fine.
+
+But the parameter list is not the thing worth looking at. What a critique needs
+from the number table is the header row, the per-row labels and the value
+column together -- whether a `values:` label is repeated on every row, whether
+`number-header` restates it, how wide the label column is against the
+parameter columns. No piece carrying two parameters shows that: it renders a
+two-column table that exists in no reader's browser.
+
+The layout depends only on each parameter's `type`, `display` and `values`.
+`title` and `constraints` feed the Parameters list at the bottom of the page
+and nothing else. Stripping those two keys from every parameter took T252's
+section from 1.9 KB to 0.5 KB, and the whole document -- all seven parameters,
+`Display properties` and three entries -- fit in a 2,444-byte request line and
+rendered the real eight-column table, header and per-row labels included.
+
+What to do instead: preview a wide draft twice. Once with the parameters
+slimmed to `type`/`display`/`values` plus `Display properties` and a few
+entries, to read the number table as a reader sees it; and again in prose
+pieces with the full `title` and `constraints`, to read the parameter list.
+Say in the critique that the layout piece was slimmed, because it is not the
+stored document.
+
+Evidence: 2026-09-15, T252 critique. `/tmp/t252prev/a-def.html` is the 400
+(full `Parameters`, 5,024-byte request line); `/tmp/t252prev/g-layout.html` is
+200 at 2,444 bytes and contains the eight `table-param-group-header` cells and
+the `$\begin{pmatrix}j_1&j_2&j_3\\m_1&m_2&-m\end{pmatrix}$:` row labels.
+
+## `agents/queue.py built` cannot tick a short title whose distinguishing token is alphanumeric
+
+What happened: after T253 was built, the instructed command
+`python3 agents/queue.py built 139 "Wigner 6j symbols" T253` answered
+`#139 has no unbuilt table like 'Wigner 6j symbols'`, although issue #139
+contained the unchecked line `- [ ] Wigner 6j symbols`. The matcher drops
+`6j` because `_words()` only keeps tokens beginning with a letter, leaving
+`wigner` and `symbols`; `_same_subject()` then refuses every title with fewer
+than three surviving words. The checklist had to be patched directly through
+the GitHub API.
+
+What to do instead: when a proposed title is naturally short and contains a
+letter-digit token such as `3j`, `6j` or `9j`, either make `_words()` keep
+those tokens or let `cmd_built` fall back to an exact unchecked-line match
+before using subject containment. Until then, a failed `built` command on this
+shape can be a helper mismatch rather than evidence that another run changed
+the issue.
+
+Evidence: 2026-09-16, issue #139. The helper refused `"Wigner 6j symbols"`;
+`python3 agents/queue.py show 139` immediately before the manual patch still
+showed the unchecked line, and immediately after showed
+`- [x] Wigner 6j symbols -- T253`.
+
+## `Data properties: Size exception` renders as "(Unknown key)"
+
+What happened: reading T255 for a critique, the rendered *Data properties*
+section ended with
+
+    Size exception: The table has one row for each ... short. (Unknown key)
+
+`numberdb_app/limits.py:93` defines `EXCEPTION_KEY = 'Size exception'` as the
+place an author states why a table is over a soft limit, and
+`limits.stated_reason` reads it out of `Data properties`. The page renderer's
+`property_names` map (`numberdb_app/views.py:1063`) does not list it, so the
+`else` branch at line 1152 fires and appends `(Unknown key)`. The API accepts
+the key, the review gate reads it, and the page tells the reader it is
+unrecognised.
+
+What to do instead: add `'Size exception': 'Size exception'` to
+`property_names`. Until somebody does, a critique or a repair meeting this on a
+page should report it as a renderer fault and not try to fix it by renaming the
+key in the table — the key is the one `limits.py` looks for, and renaming it
+would make the table breach its soft limit with no stated reason.
+
+Evidence: 2026-09-16, T255 critique. `grep -rl "Size exception" generators/*/table.yaml`
+finds only T255's, so this may be the first table in the repository to render
+one. `/preview` of its `Data properties` block, with `Links` and `References`
+included, shows the string above.
+
+## `agents/sage.sh` returns 1 for a successful Sage script that prints nothing
+
+What happened: while repairing T257, the final check extracted the stored
+`Programs` snippet and ran it with `agents/sage.sh /tmp/T257_after_program.py`.
+The Sage code imported cleanly and only evaluated two polynomial expressions,
+so `sage -python` had no stdout. The wrapper pipes the container's output
+through `grep --line-buffered -viE ...`; when there are no input lines, `grep`
+exits 1, and that is the status the caller sees. The run therefore looked like
+a failed Sage program while printing no traceback at all.
+
+What to do instead: when checking a snippet or smoke test through
+`agents/sage.sh`, make it print a value or an explicit `OK`. For a table
+`Programs` snippet this is a better reader experience too: a copied script
+should show the value it computed.
+
+Evidence: 2026-09-16, T257 repair. `/tmp/T257_after_program.py` with two bare
+`poincare_from_degrees(...)` calls exited 1 with no output through the wrapper;
+the same code with `print(...)` around both calls exited 0 and printed the
+stored $F_4$ and $I_2(5)$ polynomials.
+
+## `/preview?table=` crashes on a document whose `Numbers` is empty
+
+What happened: previewing a draft's prose in pieces, each piece was built with
+`Numbers: []` so that the entries would not eat the request line. Every one of
+the five answered 200 with the whole table replaced by
+
+    Error while parsing numbers: cannot access local variable
+    'number_section' where it is not associated with a value
+
+`numberdb_app/views.py:1397` guards the `Numbers` branch with
+`len(data['Numbers']) > 0` and the `Data` branch with the same test, so an
+empty entries block leaves `number_section` unbound before the context
+dictionary reads it at line 1450. No section of the document renders, not just
+the numbers.
+
+What to do instead: put two or three real entries in every preview chunk. They
+cost about forty bytes each of request line and they are what makes the rest of
+the page render at all. (Reading the number table itself still wants the
+slimmed-`Parameters` trick recorded above.)
+
+Evidence: 2026-09-16, T255 critique. Five chunks with `Numbers: []` gave the
+error; the same five with three M11 entries added rendered Definition,
+Parameters, Comments, Formulas, Programs, Similar tables, Links, References and
+Data properties normally.
+
+## `agents/sage.sh` forwards only its named environment variables
+
+What happened: a build of T256 set `NUMBERDB_CHECK_ONLY=1` around
+`agents/sage.sh generators/exceptional-lie-representation-dimensions/generate.py`.
+The generator's integrity checks ran, but then the script continued into
+`verify()` and failed with `Table with id 'T256' does not exist`, because the
+draft was private and no key had been passed. The cause was not the generator:
+`agents/sage.sh` forwards only the environment variables named in its
+`docker run` command, such as `NUMBERDB_KEY_FROM_STDIN` and `NUMBERDB_PUBLISH`.
+Arbitrary variables from the caller are not inherited inside the container.
+
+What to do instead: for one-off modes that are not already forwarded by
+`agents/sage.sh`, mount a tiny scratch runner that imports the generator and
+calls the wanted function directly, or add the variable to the wrapper in a
+deliberate edit. Do not read a failed mode flag as evidence that the generator
+ignored it.
+
+Evidence: 2026-09-16, T256. The first integrity run printed "integrity checks
+passed for 599 rows" and then failed in `generator.verify`; `/tmp/run_integrity_exceptional_lie.py`
+called `run_integrity_checks()` directly through the wrapper and exited 0.
+
+## On this builder there is no SOCKS proxy at all, and the prompt's `curl` line fails
+
+What happened: the T256 critique opened with the command its own prompt gives,
+`curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/skill`, and got
+nothing. The second attempt wrote a file and reported `HTTP:000`, which looked
+like a partial success; the 44 KB in `/tmp/skill.md` was a stale copy another
+run had left there two days earlier, so the first minutes were spent reading an
+old skill. `curl -v` said "connect to 127.0.0.1 port 1080 ... Connection
+refused", `ss -ltn` showed nothing listening on 1080, `ALL_PROXY` was empty and
+no `ssh -N -D` process existed. Nothing had died: on the AWS builder the tunnel
+is never started, because the box reaches numberdb.org directly.
+
+This is the same conclusion as the second paragraph of the T221 note above and
+as the comment on `site_is_up` in `agents/campaign.sh` ("Trying direct first
+costs one request on the laptop and nothing anywhere else"), but both are
+buried inside notes about other things, and the campaign prompts still hand the
+agent the proxy form.
+
+What to do instead: on this builder use `curl --noproxy '*'`. Treat `HTTP:000`
+with a non-empty output file as a failed fetch of a stale file, not as a fetch
+-- `curl` leaves `-o` targets alone when it cannot connect. Read `ALL_PROXY`
+first: empty means direct, and the `--socks5-hostname` form cannot work.
+
+Evidence: 2026-09-16, T256 critique. `--socks5-hostname` refused on every
+attempt; `curl -sS --noproxy '*' https://numberdb.org/skill` answered 200 with
+47,044 bytes, 2,259 bytes longer than the `/tmp/skill.md` of 2026-09-14 --
+the difference is the "does a parameter name what the number is of" section and
+the `param-latex` paragraph, both of which the critique needed.
+
+## `/preview?table=` answers 500 on a document with no `Title`
+
+What happened: reading T257, the prose was previewed in pieces, as the T255
+note above recommends. The first piece carried `Title`, `Definition`,
+`Parameters`, `Links`, `References` and three entries and answered 200; the
+next five dropped `Title` to buy request line for the section being read, and
+every one of them answered `Server Error (500)` with a 145-byte body and no
+message. It looked like the sections themselves were breaking the renderer, and
+three of them were bisected one field at a time before the common factor turned
+out to be the missing `Title`.
+
+`numberdb_app/views.py:1564` reads `yaml_data['Title']` with no guard. The
+sibling path at line 1484 raises a clean `ValueError('The table has no
+Title.')` for the same document, so the check exists and the preview view does
+not make it.
+
+What to do instead: put `Title` in every `/preview?table=` chunk -- it costs
+about fifty bytes and it is the difference between a rendered page and an empty
+500. Together with the T255 note above (`Numbers: []` gives
+"cannot access local variable 'number_section'"), the floor for a preview chunk
+is `Title` plus two or three real entries. A 500 with a 145-byte body from this
+endpoint means a missing section, not a bad one.
+
+Evidence: 2026-09-16, T257 critique. `/tmp/t257_title500.py`: the same document
+without `Title` gave 500 and with `Title` gave 200; `{Title, Numbers}` alone
+gave 200 and `{Definition, Numbers}` gave 500.
+
+## JSON is a legal preview document, which saves writing YAML into a query string
+
+What happened: the same T257 previews had to turn a document fetched as JSON
+from `GET /api/table?id=T257` back into YAML to send it to `/preview?table=`.
+They did not: `preview` parses with `yaml.load(..., Loader=yaml.BaseLoader)`,
+YAML is a superset of JSON, and `BaseLoader` makes every scalar a string, which
+is what the table parser wants anyway. So
+`json.dumps(subset_of_the_document)`, URL-encoded, is a valid chunk, and a
+chunk is assembled by picking keys out of the fetched document rather than by
+re-serialising prose full of backslashes and quotes into YAML by hand.
+
+What to do instead: build preview chunks as JSON dicts straight from the API's
+answer. Nothing else changes -- the same 4,094-byte request line, the same
+need for `Title` and a few real entries.
+
+Evidence: 2026-09-16, T257 critique. Nine chunks built by
+`json.dumps({'Title': doc['Title'], ...})`, all 200, covering every section of
+the document.
+
+## `/preview?table=` renders `CITE{formula-key}` as bare text when the chunk omits `Formulas`
+
+What happened: reading T259, `rigour details` ends "whose documentation defines
+them by CITE{formula-charge}". Previewed in a chunk carrying `Title`,
+`Data properties`, `Links`, `References` and three entries, it rendered as the
+literal word `formula-charge` in running prose -- which reads exactly like the
+dangling-`CITE{}` rendering fault a critique is looking for, and the T258
+critique had recorded the opposite behaviour (`CITE{formula-simple-quotients}`
+rendering as the link "(5)") on a table where the chunk happened to include
+`Formulas`.
+
+It is not a fault in either table. A `CITE{}` whose key names a formula
+resolves against the `Formulas` section of the *same document*, so a chunk that
+drops `Formulas` to buy request line drops the target and the citation falls
+back to its key. With `Formulas` in the chunk the same field renders "(2)",
+linked to `#formula-charge`.
+
+What to do instead: when a preview chunk carries a field whose prose cites
+anything, carry the sections the keys resolve in -- `Links` and `References`
+for source keys, and `Formulas` too when a key begins `formula-`. The floor for
+a chunk is now `Title`, two or three real entries (the T255 note above), and
+whatever the prose cites. A bare key in rendered prose from a chunked preview
+is a missing section, not a broken citation; confirm it against a chunk that
+includes the target before writing it down as a finding.
+
+Evidence: 2026-09-16, T259 critique. Same `rigour details`, two chunks:
+`{Title, Data properties, Links, References, Numbers}` renders `formula-charge`;
+`{Title, Data properties, Formulas, Numbers}` renders `(2)` inside
+`<a class="CITE" href="#formula-charge">`.
+
+## The SOCKS proxy was refusing connections, and this box reaches numberdb.org directly
+
+What happened: the first `curl -s --socks5-hostname 127.0.0.1:1080
+https://numberdb.org/skill` of the run succeeded; the next one, seconds later,
+failed with `connect to 127.0.0.1 port 1080 ... Connection refused`, and so did
+every retry. This is not the dead-tunnel failure the notes above describe --
+that one keeps listening on 1080 and times out. `ps` showed no `ssh -N -D`
+process at all: the tunnel was gone rather than hung, and nothing this account
+may run can restart it (`ssh` is refused to an agent run).
+
+It did not matter, because this box does not need it. `ALL_PROXY` is empty in
+the run's environment and `NUMBERDB_REMOTE=local`, and plain
+`curl https://numberdb.org/T260` answers. The note "Python does not see the
+proxy that curl sees" and the `use_socks_proxy_if_set()` bootstrap in
+`agents/api_edit.py` are both written for a machine that reaches the site only
+through the tunnel; on the build box `urllib` with no proxy at all works, which
+is what `/tmp/render260b.py` used for every request in this run.
+
+What to do instead: when the proxy refuses (`000`, "Connection refused", no
+`ssh -N -D` in `ps`), try the request without it before reporting the site
+unreachable. Check `env | grep -i proxy` first: an empty `ALL_PROXY` on this
+host means direct is the intended route and the `--socks5-hostname` in the
+stage prompts is inherited from the workstation setup, not a requirement here.
+
+Evidence: 2026-09-16, T260 critique. `curl --socks5-hostname` to `/T260`:
+`HTTP 000` three times, `Failed to connect to 127.0.0.1 port 1080`. The same
+URL without the flag: `HTTP 404` with an 11533-byte body, which is the draft
+refusal and means the request arrived.
+
+## Anonymous reads are rate limited per IP, and one corpus sweep spends the hour for everything else on the box
+
+What happened: a survey of `HREF{}` style walked about sixty tables with
+`urllib.request.urlopen('https://numberdb.org/api/table?id=T%d')` and no
+`Authorization` header. It got through 59 and then `HTTP 429`. The next thing
+to run was a Sage check under `agents/sage.sh`, whose first line is
+`numberdb.table('T260')` -- and it died with `RateLimitError: too many
+requests; retry in 2771s`. The limit is on the address, so an anonymous sweep
+from this box locks out the container too: they share the egress IP, and
+`agents/sage.sh` passes no key unless `NUMBERDB_KEY_FROM_STDIN=1` is set.
+
+What to do instead: send the key on every corpus read, including throwaway
+ones -- `printf 'Authorization: Bearer %s' "$(cat "$NUMBERDB_KEY_FILE")" |
+curl -H @- ...` reads it from stdin and keeps it off the command line. And a
+Sage script that only needs one table's document should read a copy rather
+than call the API: `agents/sage.sh script.py /tmp/T260.json` mounts the extra
+file at `/work/T260.json`, which costs no request and survives a lockout that
+is already in force.
+
+Evidence: 2026-09-16, T260 critique. `/tmp/t260_checks.py` first run,
+`numberdb._errors.RateLimitError: too many requests; retry in 2771s`, raised
+from `numberdb/_http.py` line 160, minutes after the unauthenticated sweep.
+Authenticated `curl` to `/api/table?id=T260` answered 200 throughout.
+
+## `/preview?table=` needs a `Numbers` section, and the request line dies above about 4 KB
+
+What happened: two failures in a row while chunking T260 for rendering, each
+of which reads like something else.
+
+A chunk of `{Title, Definition}` returned 200 and rendered no table at all --
+just the banner "Error while parsing numbers: cannot access local variable
+'number_section' where it is not associated with a value". That is a Django
+`UnboundLocalError` surfaced as a message, not a YAML complaint, and it fires
+whenever the posted document has no `Numbers`. Every chunk needs at least one
+entry; one row is enough, and the parameters it is keyed under have to be in
+the chunk too.
+
+Then chunks stopped working again above a certain size: a 3894-byte URL
+answered 200, a 4136-byte one answered `400` with a 163-byte body and nothing
+in the page. That is nginx refusing the request line, not Django. The ceiling
+measured today is between those two numbers, so roughly 4 KB of URL, which for
+`Title` plus prose plus one entry is about two sections of a wordy table at a
+time. Shortening the `References` bib text to a placeholder is the cheapest
+way to buy room when the chunk needs `References` present only so that
+`CITE{}` keys resolve to numbers (see the note above).
+
+What to do instead: build every preview chunk as `Title` + `Parameters` + one
+`Numbers` row + the sections under test, keep the encoded URL under 4000
+bytes, and read a `400` with a tiny body as "too long", not as "the site
+refused the document". A `200` with the `number_section` banner means the
+chunk forgot its entries.
+
+Evidence: 2026-09-16, T260 critique. `/tmp/render260.py` (no `Numbers`): eight
+chunks, all 200, all showing the banner and no rendered table.
+`/tmp/render260b.py` (one row each): the same eight chunks render.
+URL lengths 3524 and 3894 -> 200; 4136, 4149, 4992 and 7456 -> 400.
+
+## The SOCKS proxy was dead again, and the critique prompt still tells a run to use it
+
+What happened: the T261 critique opened with the command its own prompt gives,
+`curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/skill`, and got
+exit 7 and an empty file, twice. Nothing was listening on 1080, `ALL_PROXY` was
+empty, and no `ssh -N -D` was running. `curl` straight to numberdb.org answered
+every request in the run, including the API, the audit endpoint and five
+`/preview` pieces. This is the second recorded occurrence; the T221 note above
+says the same thing.
+
+The first minute of a run is the expensive place for this, because an empty
+answer from the proxy and an empty answer from a dead site look identical, and
+the instinct is to conclude the site is down and stop.
+
+What to do instead: when the proxy answers nothing, try the same URL without
+it before concluding anything. `env | grep -i proxy` with `ALL_PROXY` empty is
+the tell that there is no tunnel to use. The prompt in
+`agents/table-critique/PROMPT.md` still prints the `--socks5-hostname` form as
+the way to fetch a page, and could say "or without it, if 1080 refuses".
+
+Evidence: 2026-09-16, T261 critique. `curl --socks5-hostname 127.0.0.1:1080`
+to `/skill` and to `/T261`: exit 7, `000 0` both times. `ss -ltn` showed only
+22 and the two resolvers. The same two URLs without the proxy: 200 (47044
+bytes) and 404, the 404 being the draft answering anonymously as it should.
+
+## `agents/critiques/` is gitignored and 118 critiques are committed in it anyway
+
+What happened: the T261 critique wrote its report, ran `git status`, and the
+file was not there. `.gitignore` line 168 ignores `agents/critiques/` under the
+heading "what they produced on a particular afternoon is data, and lives
+outside it ... the critiques they wrote". The note above about
+`agents/table-ideas/BATCH-*.md` says, of the same kind of rule, "do not
+`git add -f` it (the ignore is the owner's decision that agent output is
+data)". Reasoning from that note alone, this run would have left its only
+deliverable uncommitted.
+
+The practice says the opposite for this directory. `git ls-files
+agents/critiques | wc -l` is 118, and every critique of this campaign is in
+the history: T259 at `5c9716c`, T260 at `852e91f`, each one commit containing
+that file alone. Tracked files are unaffected by a later ignore rule, so only
+a *new* critique hits it, and only on its first `git add`.
+
+What to do instead: commit a new critique with `git add -f
+agents/critiques/T<n>.md`, one commit for the file alone, as the ten before it
+were. Do not generalise the batch note to this directory. The ignore line and
+the practice disagree, and it is the ignore line that is stale.
+
+Evidence: 2026-09-16, T261 critique. `git check-ignore -v
+agents/critiques/T261.md` -> `.gitignore:168`; `git show --stat 852e91f` ->
+`agents/critiques/T260.md | 239 +++`, one file.
+
+## `/tables?page=N` past the end returns the last page again, and the corpus is 249 tables
+
+What happened: an ideas run needed the whole list of published tables, and the
+skill says there is no call that lists the corpus. `/tables` is paginated at
+50 rows and honours `?page=`. A walk that stops when a page comes back empty
+never stops: pages 6, 7, 8 and 9 each return the 49 rows of page 5, byte for
+byte. Concatenating nine pages gave 445 rows; deduplicating by T-number gave
+249. A run that did not deduplicate would have read the last 49 tables five
+times and concluded the corpus was twice its size.
+
+The count matters separately. There are **249 published tables**, T0 to T249
+with T75 absent, plus the drafts above T249. Every stage prompt in
+`agents/*/PROMPT.md` still says "126 tables exist", which was true in August;
+a run that believes it will under-search the corpus before proposing.
+
+Two smaller things found beside it. The tag pages are at `/tags/<name>` with
+the name URL-encoded (`/tags/orthogonal+polynomials`); `/tag/<name>` is a 404,
+and the singular is the form one guesses. And `/api/tables` answers **405
+Method Not Allowed** to a GET, because it is the table-creation endpoint, which
+reads as "the listing is broken" rather than "there is no listing".
+
+What to do instead: walk `/tables?page=` into a dict keyed by T-number and
+stop when a page contributes nothing new, rather than when it is empty.
+
+Evidence: 2026-09-16, ideas run. Pages 1 to 9 of `/tables?page=`: rows
+50/50/50/50/49/49/49/49/49, new rows 50/50/50/50/49/0/0/0/0, distinct total
+249; pages 5 to 9 all begin "T177: Values of the Beta function". `sort_by=title`
+changes nothing about this. `curl https://numberdb.org/tag/orthogonal%20polynomials`
+-> 404; `/tags/orthogonal+polynomials` -> 200 with ten rows.
+
+## oeis.org answers 403 to a script from this machine, except for b-files
+
+What happened: an ideas run tried to find OEIS sequences for four coefficient
+triangles. Every HTML endpoint answered **403** with a Cloudflare "Just a
+moment..." interstitial: `/search?q=...&fmt=text`, the same with `fmt=json`,
+the same with a browser `User-Agent`, `/A046716/internal`, and the bulk
+`https://oeis.org/names.gz` (which returns the challenge page *under the
+`.gz` name*, so a script that unzips it fails on something that is not a gzip
+rather than on a 403). The static b-file
+`https://oeis.org/A046716/b046716.txt` answered 200 with 40 KB.
+
+This is a change: the accepted lesson at the top of
+`agents/lessons/PROPOSALS.md` cites `https://oeis.org/search?q=hilbert+class+
+polynomial` working from here on 2026-09-01. Nothing about the request changed,
+so the reputation of this address did.
+
+What to do meanwhile: a check against a *known* A-number still works through
+its b-file, and that is worth doing; finding an A-number from its terms does
+not, and a run should say so in its output rather than report "no OEIS check
+was available". The technique half of this is written up for the skill in
+`agents/lessons/proposals/20260916T072254Z-ideas.md`; the 403 itself is here
+because it is about this address and not about the mathematics.
+
+Evidence: 2026-09-16. `curl -s -m 25 -o /tmp/o.txt -w "%{http_code} %{size_download}"
+"https://oeis.org/search?q=1,3,8,24,89,415&fmt=text"` -> `403 5400`, body
+beginning `<!DOCTYPE html>...<title>Just a moment...</title>`. The same for
+`&fmt=json` with `-A "Mozilla/5.0 ..."` -> `403 5613`, for
+`https://oeis.org/A046716/internal` -> 403, and for `names.gz` -> `403 5252`.
+`https://oeis.org/A046716/b046716.txt` -> `200 40724`.
+
+## The audit's one-table rule steps aside when one name covers a shorter range
+
+What happened: T262 has a `specialisation` parameter that takes the names
+`qt`, `carlitz` and `macmahon`, with `n` repeated under each, and its value
+column is headed $C_n$, which is true of only 4 of its 22 rows. This is the
+shape `_one_quantity_per_table` in `audit_table` was written to catch, and
+`GET /api/table/T262/audit` came back clean. The grid test requires
+`len(grid) * len(labels) <= len(records) * 1.05`. The `qt` rows stop at $n=6$
+and the other two run to $n=11$, so the grid has $9\times3=27$ cells against
+$22\times1.05=23.1$ entries and the rule returns without reporting anything.
+The comment on that condition says a ragged parameter "does not trip this" on
+purpose, to protect a shape only some rows have. Here, though, the gaps come
+from a length limit on one name's polynomials, not from the family. The
+header check, `_column_names_its_quantity`, compares only against generic
+words, so it passes a symbol that is false for most of the rows.
+
+What to do instead: when reading a draft, do not take a clean audit to mean
+the table is one quantity. Look at the parameter values and ask the skill's
+question directly. In the audit itself, the grid test could compare each
+label's range of the other parameters against the *shortest* label's range, or
+count a label whose rows are a prefix of the others' as orthogonal.
+
+Evidence: 2026-09-16, T262 critique. The audit response was
+`{"findings": [], "clean": true}`. The document has 4 `qt`, 9 `carlitz` and
+9 `macmahon` rows.
+
+## `agents/sage.sh` mounts extra files but does not pass script arguments
+
+What happened: a build run tried to follow the table-building prompt literally
+with `agents/sage.sh agents/table-build/dry_run.py path/to/generate.py`. The
+wrapper copied both files into `/work`, but it invoked Sage as
+`sage -python -u /work/dry_run.py` with no remaining command-line arguments.
+`dry_run.py` therefore printed its usage instead of checking the generator.
+
+This is about the wrapper, not the public table skill: on a contributor's own
+laptop, `sage -python agents/table-build/dry_run.py path/to/generate.py` is
+the right command.
+
+What to do here: create a tiny runner in `/tmp` that imports `dry_run` and
+calls `dry_run.main(["/work/generate.py"])`, then mount that runner,
+`dry_run.py`, `check.py` and the generator with `agents/sage.sh`.
+
+Evidence: 2026-09-16, T266 build. Running
+`agents/sage.sh agents/table-build/dry_run.py agents/table-build/check.py
+generators/krawtchouk-polynomials-hamming-scheme/generate.py` printed the
+`dry_run.py` usage. Running `/tmp/run_krawtchouk_dry.py` through the same
+wrapper computed 608 entries and measured the block.
+
+## `queue.py built` used to miss exact two-word proposal titles
+
+What happened: after T267 was filled and offered, the required queue update
+failed with `#147 has no unbuilt table like 'Charlier polynomials $C_n(x;a)$'`.
+The checklist line was exactly `Charlier polynomials $C_n(x;a)$`, but
+`_same_subject` strips math before comparing subjects. That left only
+`charlier` and `polynomials`, and the matcher refused two-word containment to
+avoid ticking titles such as `Golden ratio` inside longer unrelated names.
+
+What to do now: `agents/queue.py` accepts exact equality after stripping
+notation when the subject has at least two words, while still refusing a
+two-word title contained in a longer title. `agents/test_queue.py` has a
+regression test for the Charlier shape.
+
+Evidence: 2026-09-16, T267 build. The first `python3 agents/queue.py built
+147 'Charlier polynomials $C_n(x;a)$' T267` failed; after the matcher fix,
+the same command ticked the issue as `-- T267`.
+
+## `pdftotext` is no longer on this machine; arXiv's `/html/<id>` is the way to read a paper
+
+What happened: the ideas run of 2026-09-16T1046 needed three threshold tables
+from arXiv papers. The note above ("arXiv PDFs can be read here with curl and
+pdftotext") no longer holds: `which pdftotext` finds nothing and
+`/usr/bin/pdftotext` does not exist, and the `Read` tool refuses PDFs because
+`pdftoppm` is missing too. PDFs fetched through the web-fetch agent come back
+as compressed streams it cannot decode. What did work: arXiv's own HTML
+rendering, `https://arxiv.org/html/<id>v<n>`, linked from the abstract page,
+for 0912.0287, 1309.6772 and 1001.1826; and
+`https://ar5iv.labs.arxiv.org/html/<id>` for cond-mat/0612365. Neither exists
+for cs/0309020 or math/0702007, and those tables stayed unread.
+
+What to do instead: for a paper since about 2009, read `arxiv.org/html/<id>`;
+for an older one try ar5iv; if neither exists, record the paper as unread
+rather than installing tools.
+
+Evidence: 2026-09-16, `ls -l /usr/bin/pdftotext` "No such file or
+directory"; `Read` on a saved PDF: "pdftoppm is not installed".
+
+## Full-table `/preview?table=` requests can exceed the deployed URI limit
+
+What happened: repairing T272 needed a rendered preview of the changed draft.
+Sending the whole 6.8 KB API document back through `/preview?table=...` as a
+query string returned `414 Request-URI Too Large`. A smaller but still broad
+chunk, about 7.1K URL characters after encoding, returned `400 Bad Request`
+before the preview page rendered.
+
+This is about the deployed preview route and proxy limits, not the table
+skill. A contributor using the website editor does not have to encode the
+whole document into a URL, but an agent calling `/preview?table=` directly can
+hit the limit on ordinary drafts.
+
+What to do instead: preview only the changed sections, and include the
+context those sections need. For example, row comments using
+`CITE{formula-root}` must be previewed with the `Formulas` section present, and
+formula sections citing papers need `References` present, otherwise the preview
+reports false `CITE-broken` spans.
+
+Evidence: 2026-09-16T12:26:38Z, T272 repair. The full preview URL returned
+414, a 7082-character section preview returned 400, and smaller section
+previews with the needed `Formulas` and `References` context rendered with no
+`CITE-broken` or `HREF-broken` spans.
+
+## The critique prompt still names the proxy and `manage.py`; neither worked on 2026-09-16
+
+What happened: the T273 critique followed the prompt's
+`curl --socks5-hostname 127.0.0.1:1080`. It fetched `/skill` once, and then
+every connection was refused, because nothing was listening on 1080 any more.
+`curl --noproxy '*'` reached numberdb.org directly. This is the T221
+observation again. The `RequestFactory` rendering recipe above failed too:
+`agents/sage.sh` ran `import django` and got `ModuleNotFoundError`, so
+`manage.py audit_table` could not run either. What worked instead was
+`GET /api/table?id=T273` and `GET /api/table/T273/audit` with `-H @-`, plus
+`/preview?table=...` in five pieces of 1.8 to 3.6 KB, all 200.
+
+What it should say: the critique prompt should say "curl directly, and fall
+back to the proxy", and should name the audit API as the route when the
+throwaway has no Django. Otherwise every critique run spends its first turns
+rediscovering this.
+
+Evidence: 2026-09-16. `/tmp/crit273_out.txt` has the Django traceback, and
+`/tmp/T273_p[a-e].html` are the five previews.
+
+## Audit misses some unlinked table mentions when the target title contains math
+
+What happened: the T274 critique found plain prose mentions of the sibling
+drafts T272 and T273 that should have been linked at first mention, but
+`GET /api/table/T274/audit` returned clean. The audit strips `$...$` spans from
+the candidate table title before matching, so T272's title becomes
+`Satisfiability thresholds of random -XORSAT`; it then searches the unstripped
+prose, where the text is `random $k$-XORSAT`, and the strings can never match.
+T273 has the same title shape.
+
+What to do now: do not rely on a clean audit to catch unlinked table mentions
+when the target title contains math in the middle. Search the prose yourself
+for sibling table names, and link the first mention once per section. The site
+fix would be to strip math from the prose with the same rule before matching.
+
+Evidence: 2026-09-16, T274 repair. Before the repair, `comment-capacity-one`
+plainly named random `$k$-XORSAT` and `comment-core` named the
+`$(\ell+1)$-core`; the audit answered `{"findings": [], "clean": true}`.
+
+## `sage.sh`'s own `timeout 1800` did not stop a Sage computation, and neither did killing the client
+
+What happened: a Gröbner-basis run (`/tmp/ds4.py`, Davenport–Stothers pairs of
+degree $M=4$, 2026-09-16, table-ideas) was started at 14:41 as
+`timeout 3300 agents/sage.sh /tmp/ds4.py`. At 15:37 the outer `timeout` had
+fired (`EXIT 124`), but `ps` still showed `timeout 1800 docker run --rm -i
+--name numberdb-agent-run-...` and, inside it, `python3 -u /work/ds4.py` at
+99% CPU with 58 minutes of CPU time -- so the wrapper's own 30-minute limit had
+passed half an hour earlier without stopping it. `kill` on the `timeout` and
+`docker run` client PIDs returned no error and changed nothing.
+
+Two things appear to combine. `timeout` sends SIGTERM to `docker run`, which
+forwards it to the container, and a Sage process busy inside Singular does not
+act on it; `timeout` sends no SIGKILL unless given `-k`. And the outer
+`timeout` killed `sage.sh` by signal, and bash does not run an `EXIT` trap for a
+TERM it does not trap, so `cleanup`'s `docker rm -f` never ran.
+
+What to do instead: do not rely on either timeout to bound a heavy algebraic
+computation. Measure one smaller case first, and give the script its own
+internal limit (Singular's `alarm`, or `cysignals.alarm`) that raises inside
+Python. The fix in `sage.sh` would be `timeout -k 30 $TIMEOUT docker run ...`
+and `trap cleanup EXIT INT TERM`. From an agent run, `docker` is refused, so a
+run that escapes cannot be stopped from here; say so in the output.
+
+Evidence: `/tmp/ds4b.out` ends `M=4` / `EXIT 124`; `ps aux | grep ds4.py` at
+15:40 listed PIDs 717948, 717950 and 717992 (58:28 CPU).
+
+## Link titles are not HTML-escaped on rendered table pages
+
+What happened: T278's `Links.ElkiesHall.title` used mathematical inequalities
+with raw `<` characters:
+`List of integers x,y with x<10^18 and 0<|x^3-y^2|<sqrt(x)`. The rendered
+anchor put that title directly into HTML, so the browser treated `<sqrt(x)` as
+a tag and swallowed the end of the link text. The API document was valid and
+the audit did not report it; the fault only showed on the rendered page or
+preview.
+
+What to do instead: until the renderer escapes link titles, avoid raw `<` and
+`>` in `Links` titles. Spell inequalities in words, or use a shorter source
+title that does not contain angle brackets. A site fix should escape link
+titles before inserting them into anchor text.
+
+Evidence: `agents/critiques/T278.md` records the broken anchor as rendered.
+The T278 repair on 2026-09-16 changed the title to `Noam D. Elkies: Hall's
+conjecture examples`; `/tmp/t278-preview-links.html` then rendered a closed
+anchor with that exact text.
+
+## `agents/sage.sh` mounts extra files but does not pass script arguments
+
+What happened: T280 needed the standard dry run,
+`agents/table-build/dry_run.py path/to/generate.py`, under the required Sage
+wrapper. Running `agents/sage.sh agents/table-build/dry_run.py
+agents/table-build/check.py generators/counterexamples-euler-sum-powers/generate.py`
+mounted all three files, but the container executed only
+`sage -python -u /work/dry_run.py`; no command-line arguments were forwarded,
+so `dry_run.py` printed its usage and stopped.
+
+What to do instead: make a scratch wrapper in `/tmp` that imports `dry_run`
+and calls `dry_run.main(["/work/generate.py"])`, then mount that wrapper,
+`dry_run.py`, `check.py` and the generator with `agents/sage.sh`. The extra
+files are available in `/work` by basename, but they are not arguments to the
+main script.
+
+Evidence: 2026-09-16, T280 build. The wrapper `/tmp/dry_run_euler.py` made the
+same dry run succeed: 96 exact entries, longest value 10 characters, entries
+block 5.8 KB.
+
+## The SOCKS proxy can refuse after one request while numberdb.org answers directly
+
+What happened: during the T281 critique the first request through
+`--socks5-hostname 127.0.0.1:1080` (`/skill`) returned the page. Every
+request after it failed at once with `curl: (7) Failed to connect to
+127.0.0.1 port 1080 ... Couldn't connect to server`. The earlier note
+describes a timeout; this was a refusal, so nothing was listening any more.
+The T280 critique hit the same thing ("the next request through it failed
+(`000`)"). A plain `curl https://numberdb.org/skill` with no proxy answered
+200, and so did every request after it, including the keyed API calls and
+`/preview`.
+
+What to do instead: when the proxy refuses, try the request without it
+before concluding that the site is down. If it answers, carry on directly.
+
+Evidence: 2026-09-16, about 19:10 UTC; six retries through the proxy each
+returned `000`, and the direct request returned 200.
+
+## Large `/preview?table=` queries can return 400
+
+What happened: during the T281 repair, rendering the full current table YAML
+through `/preview?table=...` returned HTTP 400. A prose-only piece of about
+3.9 KB, and later the updated comments piece of about 2.5 KB, hit the same
+refusal. Smaller pieces with the same document shape and a minimal `Numbers`
+section rendered normally, and the live `/T281` page rendered normally after
+the API write.
+
+What to do instead: when a draft is private and the full preview URL returns
+400, split the YAML into sections that still include enough `Parameters` and
+`Numbers` for `table_context` to draw the page, or fetch the live page once the
+draft is visible to the key-holder. Treat a 400 here as a preview transport
+limit, not as evidence that the table YAML is invalid.
+
+Evidence: 2026-09-16 T281 repair. `/tmp/t281_preview.py` returned HTTP 400 for
+the full 4.7 KB API document; `/tmp/t281_preview_pieces.py` rendered the
+formula, entry, similar-table and data-property pieces; and
+`/tmp/t281_preview_comments_split.py` rendered the longer comments after
+splitting them into two chunks.
+
+## Web search refused, and the arXiv API answers 406 to Python here
+
+What happened: in the 2026-09-16T2020 ideas run, the `WebSearch` tool was
+refused for lack of permission. `https://export.arxiv.org/api/query?...`
+answered HTTP 406 to `urllib` (through the SOCKS setup in
+`agents/table-ideas/screen.py`), with and without a browser-like
+User-Agent. The Wikipedia API (`en.wikipedia.org/w/api.php`) and
+`raw.githubusercontent.com` answered normally, and so did numberdb.org with
+the key.
+
+What to do instead: find sources through the Wikipedia search API, and screen
+library documentation from GitHub raw files (Singular's `LIB/*.lib` headers
+name their subjects). When a family's only real source is a book or an arXiv
+paper, say in the batch that it was not screened, rather than spending turns
+on the API.
+
+Evidence: `/tmp/b2020/find.py`, `/tmp/b2020/find2.py`, `/tmp/b2020/find4.py`.
+
+## `already_asked` misses an issue whose title shares only later words of the name
+
+What happened: in the 2026-09-17T0110 ideas run,
+`already_asked('Special L-values of elliptic curves over real quadratic fields')`
+returned `[]`. It searches issue titles for the first three words longer than
+four letters ("Special", "L-values", "elliptic"), and GitHub's title search
+ANDs them, so numberdb-data#20 *Data of elliptic curves over quadratic fields*
+was not found. `already_asked('elliptic curves quadratic fields')` found it.
+One call in the same run also answered `could not ask GitHub (HTTPError)`,
+presumably the unauthenticated search rate limit.
+
+What to do instead: call `already_asked` with the family's core noun phrase
+as well as the proposed title, and read the open `table wanted` list with
+`gh issue list -R numberdb/numberdb-data --label "table wanted"`, which is
+authenticated and not rate-limited the same way.
+
+Evidence: `/tmp/ideas0917/screen_run.py`.
+
+## `Generator.publish()` can fail its empty preflight on a prose-only draft
+
+What happened: T286 was created as a draft with prose and parameters but no
+`Numbers` section, as the proposal-claim workflow asks. Running its generator
+with `NUMBERDB_PUBLISH=1` failed before computing entries: the client
+preflight `check_writable()` sent an empty upsert to
+`/api/table/T286/entries`, and the server answered 400,
+`A value in these entries cannot be read as a number. 'str' object has no
+attribute 'items'`.
+
+What to do instead: verify with `dry_run.py` first, then send the actual
+entries as a single replacement to `/api/table/<tid>/entries` and attach the
+generator source with the same run id. After that, run the generator's
+`verify(sample=None)` against the stored draft. Do not conclude that the key
+or draft is unwritable from this empty-upsert refusal.
+
+Evidence: 2026-09-17 T286 build. The direct replacement stored 50 entries and
+attached `generate.py` on revision
+`e936fce85cf6a82f929c6c0f56b2a7ded82666d1f09729fb06cf05a02b65f1ac`;
+`verify()` then reported `50/50 matched`.
+
+## A critique on the builder cannot render a draft's page, but `/preview` renders its document in pieces
+
+What happened: the T289 critique of 2026-09-17 found the SOCKS proxy at
+`127.0.0.1:1080` refusing connections (`curl: (7) Failed to connect`), while a
+direct `curl https://numberdb.org/...` worked. The draft's page answered 404
+even with `Authorization: Bearer <key>`: the table view does not read the API
+key, only a session. `GET /api/table?id=T289` and `GET
+/api/table/T289/audit` accept the key. The `RequestFactory` render described
+above needs Django, and `agents/sage.sh` with `NUMBERDB_REMOTE=local` runs
+`numberdb/builder:latest`, which has none (`ModuleNotFoundError: No module
+named 'django'`).
+
+What worked: convert the API document to YAML, put `ID: INPUT{id.yaml}` in
+front, and `GET /preview?table=<urlencoded yaml>` with no key. It renders the
+sections exactly as the table page does: formulas, CITE numbering, folded
+rigour note, entry links. The request line is limited to about 4 KB once
+encoded. 3.3 KB returned 200, while 4.1 KB answered 400 and 8 KB answered
+400/414. So send Title and Parameters with each piece: one or two sections of
+prose, or one block of entries.
+
+What to do instead: fetch the document with the key and render it through
+`/preview` in pieces, or give the builder image the site code so the
+`RequestFactory` render works again. Do not trust a copy of the skill left in
+`/tmp` by an earlier run; this run found a five-day-old one missing two
+sections.
+
+Evidence: `/tmp/T289-*.q` and `/tmp/T289-*.html`, 2026-09-17.
+
+## `agents/sage.sh` forwards only its named control variables
+
+What happened: T290's generator had a `NUMBERDB_SELF_CHECK=1` mode that asks
+Singular's `bfct` to recompute every stored Bernstein-Sato polynomial. Running
+
+    NUMBERDB_SELF_CHECK=1 agents/sage.sh generate.py
+
+did not enter that mode. The wrapper forwards `NUMBERDB_KEY_FROM_STDIN`,
+`NUMBERDB_PUBLISH`, `NUMBERDB_RESTATING` and `NUMBERDB_LOWERING`, but not
+arbitrary environment variables. The script fell through to `verify()`, and
+because T290 was still a draft and no key was being sent, it reported that
+the table did not exist.
+
+What to do instead: for one-off generator modes, mount a tiny runner script
+that imports the generator and calls the function directly, or teach
+`agents/sage.sh` to forward the specific variable before relying on it. Do
+not assume an environment flag visible to the outer shell is visible inside
+the Sage container.
+
+Evidence: `NUMBERDB_SELF_CHECK=1 agents/sage.sh generators/bernstein-sato-polynomials-simple-unimodal-singularities/generate.py`,
+2026-09-17, followed by `/tmp/run_self_check_issue151.py`.
+
+## The local Sage image may not have enough polynomial machinery for `NumberField`
+
+What happened: while repairing T292, a check script run with
+`NUMBERDB_REMOTE=local agents/sage.sh` tried to construct quadratic fields
+with `NumberField(x^2 - x - 1, 'w')`. Even after importing
+`numberdb.sage` first, Sage failed inside polynomial factorisation with
+`ImportError: cannot import name PolynomialSequence_generic`, through
+`sage.libs.singular.function`.
+
+What to do instead: when the check only needs quadratic conjugation or ideal
+equality, use exact arithmetic in the table's integral basis, or PARI through
+`sage.libs.pari`, rather than depending on Sage's `NumberField` stack in the
+local container. Treat this as a limitation of the runner image, not as a
+mathematical result.
+
+Evidence: `/tmp/t292_pair_check.py`, 2026-09-17. The replacement check used
+exact arithmetic in the basis `1,w` and verified all 250 repeated-value pairs.
+
+## `/api/table/<tid>/audit` can 500 on one draft while other audits work
+
+What happened: after filling T293, `GET /api/table/T293/audit` with the
+draft owner's API key returned HTTP 500 with only the generic server-error
+HTML page. The same keyed request succeeded for public T64 and draft T292 in
+the same run, so the audit service was reachable and draft auth was working.
+The local fallback was unavailable because this checkout has no Django
+installed (`ModuleNotFoundError: No module named 'django'`). Trying to run the
+audit code inside `agents/sage.sh` also failed, because the builder image used
+there did not have the site checkout at `/app`.
+
+What to do instead: when the audit endpoint gives only a generic 500, probe a
+known table and a known draft to separate an endpoint outage from a
+table-specific crash, keep the generator `verify(sample=None)` and dry-run
+output in the final report, and leave a note for a person with server logs to
+run `manage.py audit_table <tid>` directly. Do not treat the generic 500 as a
+clean audit.
+
+Evidence: T293 on 2026-09-17 returned 500 from the audit endpoint after
+`verify()` reported `585/585 matched`; T64 returned one finding and T292
+returned clean from the same keyed audit script.
+
+## A `sage.sh` run queued behind the lock looks exactly like one that is running
+
+What happened: a Sage computation (integer kernels at large level) ran for
+seventeen minutes. Two more `agents/sage.sh` calls, started in the background
+meanwhile, sat on the lock with empty output files and no "waiting" line. With
+`| tail -20` on the first, nothing at all was visible until it ended, so three
+runs looked like three slow computations. Stopping the first meant killing
+the local `timeout` and `sage.sh` processes (`docker` itself is refused); the
+container then went away and the queued runs started at once.
+
+What to do instead: send a long run's output to a file without `tail`, print
+with `flush=True` after each case, and order cases smallest first so a
+partial file says how far it got. Before starting a second run, check
+`ps aux | grep sage.sh`: a run you started earlier may still hold the lock.
+
+Evidence: 2026-09-17, ideas run 1154, `/tmp/pari5.py` then `/tmp/pari6.py`
+and `/tmp/pari7.py`.
+
+## `source_names_it` passes on a page whose words are only in its reference list
+
+What happened: `source_names_it('Weber class polynomials', <AMS page of
+Yui–Zagier, Math. Comp. 1997>)` passed. `curl` on the same address returns a
+Cloudflare challenge; `urllib` gets an 11 MB landing page, in which "Weber"
+and "class" occur only inside other papers' bibliographies. The screen also
+passed "Class polynomials gamma2" on PARI's documentation because "gamma" is
+in the entries for the Gamma function, while the invariant is written γ.
+
+What to do instead: treat a pass as "the words are on the page", not "the
+page defines the family". For a large page or a common word, find the
+sentence and quote it in the proposal, or record the pass as disregarded.
+
+Evidence: 2026-09-17, ideas run 1154, `/tmp/screen2.py`.
+
+## `agents/sage.sh` mounts extra files but does not pass them as arguments
+
+What happened: the public dry-run command is
+`sage -python agents/table-build/dry_run.py path/to/generate.py`, but
+`agents/sage.sh` runs only the first script as `/work/<script>` and mounts the
+remaining paths as files. They are not preserved as ordinary `sys.argv`
+arguments inside the container.
+
+What to do instead: for a Sage helper that expects path arguments, write a
+small `/tmp` wrapper whose paths are the mounted `/work/...` filenames, or make
+the helper read its companion files from fixed mounted names. Check this before
+starting a long run, because the failure otherwise looks like the helper was
+called without its required arguments.
+
+Evidence: 2026-09-17, T302 Newton-Cotes weights dry-run and document rebuild.
+
+## The Sage image has SnapPy but not `database_knotinfo`, and the host has no pip
+
+What happened: an ideas run measuring knot invariants found that Sage's
+`KnotInfo` in the image behind `agents/sage.sh` iterates over KnotInfo's
+ten-knot sample only, because the optional package `database_knotinfo` is not
+installed. SnapPy is (`snappy.Link(braid_closure=...)`, verified
+`cusp_translations`, `cusp_areas`). On the host, `pip` and `python3 -m pip`
+are absent too.
+
+What to do instead: to read KnotInfo's data from the host, download the wheel
+from PyPI with `curl` and unpack it with `python3 -m zipfile -e`. The data is
+`database_knotinfo/csv_data/knotinfo_data_complete.csv`, `|`-delimited, with a
+second header row of descriptions. A build that needs it inside Sage has to
+install it in its container run (`sage -pip install database_knotinfo`) or
+mount the CSV.
+
+Evidence: 2026-09-17, ideas run 1425, `/tmp/k2.py` printed `knots 10`.
+
+## The ideas prompt's table count is stale
+
+What happened: the ideas prompt says "126 tables exist". Walking T1–T420 with
+`numberdb.table` found 304 (the highest is T304), and roughly thirty-five of
+the open `table wanted` issues are already built. Two candidate areas taken
+from the issues, character sums and the Beta function, turned out to be
+T142–T144 and T177.
+
+What to do instead: walk the T-numbers first (eight threads take about two
+minutes) and read titles before picking an area from the issues.
+
+Evidence: 2026-09-17, ideas run 1425, `/tmp/walk.py`.
+
+## The `env | grep` key leak happened a third time, with the same mask
+
+What happened: the T305 critique hit the refused SOCKS proxy (127.0.0.1:1080
+answered the first request of the run and then "Couldn't connect" on every
+later one, as in the T221 note) and listed the environment to see how the
+runner reaches the site. The mask was `sed 's/=.*KEY.*/=<redacted>/'`, the
+same pattern the T226 note describes as not matching `NUMBERDB_API_KEY=...`.
+The zeta3 key is again in a run's tool output. The note existed; it was read
+only after the listing.
+
+What to do instead: the environment carries the key in `NUMBERDB_API_KEY` as
+well as in the file named by `NUMBERDB_KEY_FILE`, which is what makes any
+listing dangerous. Either stop exporting `NUMBERDB_API_KEY` into agent runs
+(everything documented reads the file) or put "never print the environment"
+in the prompt beside the key instructions, where it is read before the first
+command. Rotate the zeta3 key. numberdb.org answered `curl` directly
+throughout, so the proxy is not needed on this runner.
+
+Evidence: 2026-09-17, T305 critique, the fourth Bash call of the run.
+
+## A draft's whole document is readable anonymously through `/revisions`
+
+What happened: reading draft T310, `curl https://numberdb.org/T310` and
+`/preview/T310` both answered 404, as a draft should, and `/bundle/T310` and
+`/discuss/T310` did too. But unauthenticated `GET /revisions/T310` answered
+200 with the revision table -- times, the zeta3 account, the messages -- and
+with the unified YAML diffs of every revision, which for a table filled in one
+go is the whole document: title, definition, parameters and every stored
+entry. `GET /history/T310` also answered 200. This is the T235 note about
+`/files/<tid>` one route wider: `revision_history` and `table_history` load
+the table by T-number without the draft guard that `table_by_tid` and
+`preview` apply, so a draft is private only on the routes somebody remembered.
+
+What to do instead: treat a draft as public on every route but `/T<n>`,
+`/preview/T<n>`, `/bundle/T<n>` and `/discuss/T<n>` until the guard is applied
+in one place. Reading `/revisions/<tid>` is, in the meantime, the cheapest way
+for a critique to see what an edit to a draft actually changed -- the T310 read
+used it to find that the definition-shortening commit had dropped the page's
+only identification of $j$ -- but it is a leak, not a feature.
+
+Evidence: 2026-09-17, T310 critique. `/T310` 404 (11,533 bytes of Not found),
+`/revisions/T310` 200 showing `@@ -1,10 +1,7 @@` and the removed Definition
+text, `/history/T310` 200, `/files/T310/generate.py` 200 as the T235 note
+already records.
+
+## `audit_table` never reads a `Similar tables` relation
+
+What happened: the T310 audit returned `"findings": [], "clean": true`, and
+two of the critique's six findings are in the Similar-tables relations. That is
+not bad luck. `_prose_faults` collects its texts from `Definition`, `Comments`,
+`Formulas` and `Similar tables`, taking a section that is a string or a mapping
+of strings; a `Similar tables` written as a list of `{table, relation}` -- which
+is how every table that has more than a sentence to say writes it -- is neither,
+so it is skipped entirely. No relation is ever checked for an editorial phrase,
+a positional phrase, a family named without a link, or a link written after the
+name it belongs on.
+
+The phrase list has a second gap beside it: `POSITIONAL` holds "the first
+factor" and "the second factor" but not "the other factor", which T310 uses in
+`comment-factor` and again in its rigour note, in both cases for a polynomial
+that `Formulas` has already named $Q_\Delta$.
+
+What to do instead: when a critique reports "audit clean", read the
+Similar-tables relations by hand; the audit has not looked at them. Fixing it
+is small -- extend the collection in `_prose_faults` to pull `relation` (and
+the caption in `table`) out of a list-valued section, and add "the other
+factor" to `POSITIONAL` -- and both want a test in
+`numberdb_app/test_audit_prose.py`, where the other prose checks are tested.
+
+Evidence: 2026-09-17, T310 critique;
+`numberdb_app/management/commands/audit_table.py`, `_prose_faults` lines
+838-860 and `POSITIONAL` at line 826.
+
+## The site's own polynomial-search example is refused: `polygens` is not in the evaluator
+
+What happened: the T311 critique asked the question the critique prompt asks
+last -- would a reader who arrived holding one of these polynomials be served?
+-- and found that no polynomial in the corpus can be searched for today.
+`/advanced-search` tells the reader, under "Lists of polynomials over
+$\mathbb{Q}$", to write
+
+    [{n: x^2 + n for n in [1..10]} for x,y in [polygens(QQ,2,'x')]]
+
+and `/api/search` answers that exact string with
+
+    Unknown or not-allowed name 'polygens'. Only mathematical functions and
+    constants provided by the search environment may be used.
+
+`workers/evaluator.py` builds the namespace by hand (lines 60-115) and it has
+`PolynomialRing` but neither `polygen` nor `polygens`. Nor is there a way
+round: `PolynomialRing(ZZ,"x")([-1,-1,1])` is refused with "Only direct calls
+to permitted functions are allowed", and a bare `x^2 - x - 1` with "Unknown or
+not-allowed name 'x'" -- which is the form the published skill gives in its
+type table as how a `Z[]` value is written.
+
+The matching machinery behind the search is fine and is tested
+(`utils/numbers/polynomial`, `polynomial_modulo_variable_names`,
+`numberdb_app/test_search.py` line 599 on): polynomials find each other modulo
+variable names once a query reaches them. It is only the evaluator's namespace
+that no query can get through.
+
+This is a site bug rather than a lesson: it affects the twelve polynomial
+tables equally and nothing a contributor writes can work round it. Fixing it
+is two names in `_namespace()` plus a test that the advanced-search help
+page's own example returns results.
+
+What to do instead, meanwhile: do not report "this table's values cannot be
+found" as a finding against a polynomial table under critique; it is true of
+all of them. Say it once, where it belongs.
+
+Evidence: 2026-09-17, T311 critique.
+`curl -sS -G --data-urlencode "expression=..." https://numberdb.org/api/search`
+with the help page's example, with `x^2 - x - 1`, with
+`x^3 + 48*x^2 - x*y + 768*x + 4096` (a stored T309 value) and with
+`PolynomialRing(ZZ,["x","y"])("...")`: four refusals, no results.
+
+## A `/preview` piece with no `Numbers` draws no sections at all, and answers 200 while doing it
+
+What happened: the T312 critique rendered a private draft through
+`/preview?table=` in pieces, as the T221 note above describes. Five of the
+nine pieces carried prose only -- `Title`, one `Comments` field and the
+`Links` its `CITE`s need, with no `Numbers` key, since the piece was about the
+prose. All five answered 200 with a 7 KB page that is the navigation bar and
+the footer and nothing between them: no Comments, no Links, no section title
+of any kind. That reads exactly like a section that failed to render, which is
+the fault the critique was looking for, and cost a round of re-reading before
+the pattern was clear.
+
+Adding a one-entry `Numbers` -- `{"0": {"1": {"K": {"vz": "1"}}}}` -- to the
+same document made every section appear. Measured directly afterwards: the
+same piece without `Numbers` is 6476 bytes with zero `table-section-title`
+elements; with one entry it is 14331 bytes and draws `Numbers`, `Comments`,
+`Links`. The view returns the rendered table only when there is a table of
+numbers to hang it on.
+
+What to do instead: put a minimal `Numbers` in every preview piece, including
+the prose-only ones, and treat an empty render as a missing `Numbers` rather
+than as a broken section. One stored entry, or a bare `"1"`, is enough; the
+entry costs about 40 bytes of the 4094-byte request line.
+
+Evidence: 2026-09-17, T312 critique. `/tmp/prev312.py` and the two-request
+check above; `/tmp/T312_c.html` (first round, no `Numbers`, 7484 bytes, only
+the shell) against the same piece rerun with one entry (16925 bytes, all
+sections).
+
+## A draft's whole page can be rebuilt from the API document, in the Sage container, on a throwaway sqlite database
+
+What happened: the T315 critique needed the rendered page, and the site's HTML
+routes authenticate by session, so `GET /T315` and `/preview/T315` answer 404
+to the zeta3 bearer token (the note above, T182). This builder has no Django
+and no database, so the `RequestFactory` recipe written for T136 and T137 does
+not run here either, and `/preview?table=` renders only pieces small enough to
+fit a 4094-byte request line. Rebuilding the whole page instead worked, in one
+`agents/sage.sh` run: the container has Sage, which `numberdb_app/models.py`
+imports at module level, and it has the network, so it can install Django.
+
+The shape, all of it inside one script mounted at `/work`:
+
+  * `pip install --target /tmp/libs django<6.1 django-allauth python-decouple
+    dj-database-url django-widget-tweaks django-anymail gitpython
+    django-extensions psycopg2-binary timeout-decorator func-timeout
+    beautifulsoup4 requests requests-oauthlib`. `psycopg2` is needed even for
+    sqlite, because `django.contrib.postgres` is in `INSTALLED_APPS` and
+    imports it at app-loading time.
+  * mount a tarball of `numberdb numberdb_app templates static utils workers
+    data_pipeline manage.py` and extract it; `sys.path` gets `/tmp/libs` and
+    the extracted repository, and `NUMBERDB_SAGE_PYTHONPATH=` keeps the client
+    off the path, which it must be: with Django up, the name `numberdb` has to
+    belong to the site (the `/app` note above).
+  * settings from the environment: `DJANGO_SETTINGS_MODULE=numberdb.settings.dev`,
+    `DATABASE_URL=sqlite:////tmp/x.sqlite3`, `SECRET_KEY`, `ALLOWED_HOSTS`,
+    `SOCIALACCOUNT_GITHUB_ID`, `SOCIALACCOUNT_GITHUB_SECRET`,
+    `ACCOUNT_DEFAULT_HTTP_PROTOCOL`. Then `django.setup()` and
+    `call_command('migrate', run_syncdb=True)`.
+  * two writes have to be replaced, because both build a postgres text-search
+    vector and sqlite answers "no such function: to_tsvector":
+    `editing.reindex_for_search` (patch to a no-op) and `editing._sync_tags`
+    (replace with a copy that makes the `Tag` rows and skips the final
+    `update(search_vector=...)`; a `try/except` around the original is no good,
+    since the failure happens inside `create_table`'s atomic block).
+  * `tree = json.load(...)` of `GET /api/table?id=T315`, then
+    `tree['Numbers'] = flatten.to_records(tree)` -- the API nests entries and
+    `create_table` wants the flat records -- then
+    `editing.create_table(tree, author=user, via='orm', published=False)`, and
+    `views.table_by_tid(request, table.tid)` with `request.user` the author, a
+    `SessionStore()` and a `FallbackStorage` for messages.
+
+What this gives is the page a reader gets: for T315, 497 KB of HTML with all
+479 rows, the column headers, the entry comments under their rows, the prose
+sections and the reference numbering. Two things it does not give: the table
+takes `T1` in the fresh database, so its self-links say `/T1`; and the tables
+it links to do not exist there, so `HREF{}` anchors render but resolve to
+nothing locally -- check those slugs with a plain `curl` against the live site
+instead.
+
+Also: on this machine `NUMBERDB_API_KEY` is set in the environment, so any
+command that dumps the environment -- `env | grep -i numberdb`, a debug print
+of `os.environ` -- puts the key in the transcript. Read the key from
+`NUMBERDB_KEY_FILE` and grep for what you want by name.
+
+Evidence: 2026-09-17, T315 critique. `/tmp/t315_render_sage.py` (the script,
+worth promoting to `agents/render_draft.py` with the tid as an argument),
+`/tmp/t315_render_out.txt` (the run: `records: 479`, `status 200`, 497,255
+bytes of HTML between `=== HTML ===` markers) and `/tmp/t315_page.html`.
+
+## LMFDB answers a reCAPTCHA challenge with HTTP 200, so an LMFDB URL cannot be screened or read from here
+
+What happened: in the 2026-09-17T2308 ideas run, every request to
+`www.lmfdb.org` -- `/api/mf_newforms/?...`, `/api/mf_hecke_cc/?...`,
+`/knowledge/show/mf.elliptic.satake_parameters` -- came back as a Google
+reCAPTCHA challenge page, served with HTTP 200 and 30 KB of
+`RecaptchaChallengePageUi` JavaScript. Two consequences, and the first is the
+dangerous one: `source_names_it(name, lmfdb_url)` does not report a network
+failure, it reports that the page does not mention the family, which reads like
+the family being misnamed. The second is that LMFDB's own conventions cannot be
+read here, so a batch that wants to follow one (its Satake angle
+normalisation, its embedding numbering, its published first zeros) has to say
+in the report that the comparison was not run.
+
+An earlier note records that `curl` reaches some LMFDB calculators for about
+four requests before blocking; this run got zero. Do not spend turns on it.
+
+What to do instead: cite Wikipedia, the PARI or Sage manual, or an arXiv
+abstract, and screen that. Where LMFDB is the right cross-check for a table,
+write it into the proposal as the check a builder with an ordinary connection
+should run before publishing.
+
+Evidence: 2026-09-17, the three URLs above, each returning
+`<!doctype html>...RecaptchaChallengePageUi`.
+
+## The arXiv API answers `curl -sL` over https, though `urllib` gets 406, and `already_asked` got HTTPError on every call
+
+What happened: the existing note above says the arXiv API answers 406 to
+`urllib` here and advises not to spend turns on it. In the 2026-09-17T2308 run
+`curl -sL "https://export.arxiv.org/api/query?search_query=all:%22Petersson%20norms%22&max_results=5"`
+answered with the Atom feed, and it is how the source for one proposal was
+found (arXiv 1902.06429, whose title names "Petersson norms of generic cusp
+forms"). Two traps: `http://export.arxiv.org` answers 301 and `curl` without
+`-L` prints nothing at all, which looks like an empty result set rather than a
+redirect; and a phrase search that returns nothing really does mean nothing
+(`all:"Satake angles"` is empty, which is why that title was not used).
+
+In the same run every `already_asked` call answered
+`could not ask GitHub (HTTPError)`, so all issue claims in the batch were
+checked with `gh issue list --repo numberdb/numberdb-data --state all --search
+"X in:title"`, which is authenticated and answered every time.
+
+What to do instead: reach arXiv with `curl -sL` over https rather than through
+the screen's `urllib`, and treat `already_asked` as optional here: `gh` is the
+reliable route and it also shows closed issues.
+
+Evidence: 2026-09-17, the `curl -sL` query above (five titles returned), the
+same query over `http` (301, empty output), and the six `already_asked` calls
+in `/tmp/screenrun.py`.
+
+## Rendering a *real* table's draft page on sqlite needs `RangeField.get_placeholder` patched too
+
+What happened: the T316 critique reused the recipe above -- rebuild the draft
+from the API document, in the `agents/sage.sh` container, on a throwaway
+sqlite database -- and every entry insert failed with
+
+    django.db.utils.OperationalError: unrecognized token: ":"
+
+T315 was a polynomial table and never reached this. `Number` carries two
+`DecimalRangeField`s, `value_range` and `frac_range` (`numberdb_app/models.py`),
+which are the postgres search projection. Nulling them is not enough:
+`django.contrib.postgres.fields.ranges.RangeField.get_placeholder` emits
+`%s::numrange` whatever the value is, and the cast is what sqlite chokes on.
+
+What worked, added to the two patches the T315 note lists, after
+`django.setup()` and before `create_table`:
+
+    from django.contrib.postgres.fields import ranges
+    ranges.RangeField.get_placeholder = lambda self, value, compiler, connection: '%s'
+
+    _save = models.Number.save
+    def save(self, *a, **k):
+        self.value_range = None
+        self.frac_range = None
+        return _save(self, *a, **k)
+    models.Number.save = save
+
+Nothing on the rendered page reads either column -- they exist for search by
+number -- so the page is the page a reader gets: for T316, 243 rows and
+188,528 bytes of HTML, status 200, with the column headers, the entry
+comments, the prose and the reference numbering.
+
+Evidence: 2026-09-18, T316 critique. `/tmp/t316_render_sage.py` (the script,
+still worth promoting to `agents/render_draft.py` with the tid and the two
+patches in it), `/tmp/t316_render_out.txt`, `/tmp/t316_page.html`.
+
+## The `env | grep` key listing happened a fifth time, and the mask held
+
+What happened: the T316 critique of 2026-09-18 found the SOCKS proxy refusing
+connections and ran `env | grep -i -E 'proxy|numberdb'` to see why, which is
+the fourth note above, repeated. The answer was the same as last time:
+`ALL_PROXY=` is empty and a direct `curl https://numberdb.org/...` works.
+
+Two things are different. The mask was `sed 's/\(KEY[A-Z_]*\)=.*/\1=<hidden>/'`
+as well as the older `s/=.*KEY.*/=<hidden>/`, so `NUMBERDB_API_KEY`,
+`NUMBERDB_KEY` and `NUMBERDB_KEY_FILE` all printed as `<hidden>` and no key
+reached the transcript. And the prompt for this campaign says the proxy "is
+needed", which is why a run reaches for the environment when it refuses: the
+first thing to try is the direct `curl`, which the note of 2026-09-16 already
+says and which works.
+
+What to do instead: unset `NUMBERDB_API_KEY` in `run.sh` so the listing cannot
+leak it, and stop telling the prompt that the proxy is required on a machine
+where `ALL_PROXY` is empty.
+
+## `/tags/<name>` answers 500, not 404, for a tag that does not exist
+
+What happened: the T317 critique wanted to know whether the corpus has a knot
+tag, so that a table tagged only `algebraic` could be compared with its
+siblings. `https://numberdb.org/tags/algebraic`, `/tags/volume` and
+`/tags/period` answer 200 with the tag's table list. `/tags/knot`,
+`/tags/hyperbolic` and `/tags/zzz-nonsense-tag` all answer **500** with an
+empty body. So the site cannot distinguish "this tag does not exist" from "the
+tag page is broken", and an agent probing a name gets an error where it should
+get a not-found.
+
+It also means the obvious way to enumerate tags does not work: `/tags` is an
+infinite-scroll page whose first response carries exactly one tag
+("Appell sequence") and a `Loading...` placeholder, so a plain `curl` of it
+lists nothing. Probing names one at a time is the only route from here, and a
+500 has to be read as "no such tag".
+
+What to do instead: treat 500 from `/tags/<name>` as "no such tag", and get a
+table's own tags from `GET /api/table?id=T<n>` rather than from the tag pages.
+The 500 is a site bug -- `views.tag` presumably does not handle
+`Tag.DoesNotExist` -- and is worth an issue.
+
+Evidence: 2026-09-18, T317 critique. `/tags/algebraic` 200 (listing T61, T132,
+T135, T137, T35, T136, T60, T144, ...), `/tags/knot` 500, `/tags/hyperbolic`
+500, `/tags/zzz-nonsense-tag` 500; `/tags` 22,554 bytes containing one tag name.
+
+## Prose is not HTML-escaped on a rendered table page, so a `&` in math reaches the body raw
+
+What happened: T317's comment (6) contains
+`$\begin{pmatrix}a&b\\ c&d\end{pmatrix}\in \mathrm{SL}_2(\mathbb Z)$`. The
+rendered page carries it verbatim -- `a&b`, not `a&amp;b` -- in the document
+body. Nothing visible goes wrong: `&b` is not the prefix of any HTML5 named
+character reference, so a browser flushes the ampersand as literal text and
+MathJax reads the right string. But it is the same hole as the existing note
+that link titles are not escaped, in a field a table is much more likely to
+use, and it would not recover as kindly from `&amp` or `&lt` appearing inside
+a formula -- or from the `<` that the skill already warns eats the rest of a
+section.
+
+What to do instead: when checking a rendered page for a critique, grep the raw
+HTML for a bare `&` in the prose blocks as well as for `<`. Do not report it
+as a fault of the table -- it is the site that does not escape -- but do check
+that the particular text survives, because whether it does depends on what
+follows the ampersand.
+
+Evidence: 2026-09-18, T317 critique. `/tmp/t317_page.html` contains
+`$\begin{pmatrix}a&b\\ c&d\end{pmatrix}` inside `<div class="table-entry">`.
+
+## The sqlite draft-render recipe works unchanged for a *complex* table, and the previous run's script was not on this box
+
+What happened: the T316 note above records the two patches a table of reals
+needs before its draft page will rebuild on sqlite, and points at
+`/tmp/t316_render_sage.py` as the script worth promoting. That file does not
+exist on this machine -- `/tmp` has render scripts from 2026-09-13 to
+2026-09-17 and none of the T315 or T316 ones -- so the script was rewritten
+from the two notes. It worked first time for T317, a `type: C` table: the
+complex values need no third patch, because `value_range` and `frac_range` are
+the same two `DecimalRangeField`s whatever the type is, and nulling them plus
+`RangeField.get_placeholder = lambda ...: '%s'` is the whole of it. 466 rows,
+status 200, 366,096 bytes of HTML in one `agents/sage.sh` run.
+
+Two details the earlier notes do not give. `NUMBERDB_SAGE_MEMORY=900m` was
+used rather than the 320 MB default, because the pip install plus Django plus
+Sage does not fit in 320 MB; and `NUMBERDB_SAGE_PYTHONPATH=` (set to empty)
+has to be in the environment of the `agents/sage.sh` call itself, not inside
+the script, since it is read by the wrapper to decide whether to pass
+`-e PYTHONPATH`.
+
+What to do instead: the script really should be promoted to
+`agents/render_draft.py` with the tid as an argument -- three critique runs
+have now written it from scratch. Until somebody does, write it from this note
+and the two above rather than looking for the old copy.
+
+Evidence: 2026-09-18, T317 critique. `/tmp/t317_render.py`,
+`/tmp/t317_render_out.txt` (`records: 466`, `tid: T1`, `status 200 366096`),
+`/tmp/t317_page.html`.
+
+## SnapPy is in the Sage image, and a `Programs` snippet needs `Integer` in the namespace as well as `preparse`
+
+What happened: T317's `Programs` block is two lines of Sage using SnapPy. The
+existing note at "Testing a `Programs` snippet under `sage -python`: preparse
+it and hand it `Integer`" is right and understates it: `preparse` turns
+`[1, -2, 1, -2]` into `[Integer(1), -Integer(2), ...]`, so `exec`/`eval` of the
+preparsed string fails with `NameError: name 'Integer' is not defined` unless
+the namespace dict already holds `Integer` (and `RealNumber`, for any snippet
+with a decimal literal). Passing `globals()` is not enough when the wrapper
+itself was started with `sage -python`.
+
+`import snappy` works in the wrapper image -- against the older note that
+SnapPy is on the host and not in the container -- and prints one harmless
+warning to stderr, `Plink failed to import tkinter, GUI will not be
+available`. `snappy.Manifold('10_83')` works too, so the built-in Rolfsen
+census is present; only `database_knotinfo` is missing.
+
+What to do instead:
+
+    from sage.repl.preparse import preparse
+    from sage.rings.integer import Integer
+    from sage.rings.real_mpfr import RealNumber
+    ns = {'Integer': Integer, 'RealNumber': RealNumber}
+    exec(preparse(line), ns)
+
+Evidence: 2026-09-18, T317 critique. `/tmp/t317_programs.py` failed with
+`NameError: name 'Integer' is not defined` and then reproduced five of the
+table's stored values; `/tmp/t317_names.py` ran `snappy.Manifold(name)` for
+ten Rolfsen names.
+
+## The sqlite draft-render recipe needs the range patches for a *polynomial* table too, when one entry is a bare constant
+
+What happened: the T316 note above says the two patches
+(`RangeField.get_placeholder` to `%s`, and `Number.save` nulling `value_range`
+and `frac_range`) are what a *real* table needs, and that "T315 was a
+polynomial table and never reached this". T319 is a polynomial table and
+reached it on its first row:
+
+    Error saving number: {'raw_number': '1', 'parsed_repr': '1',
+      'parent': 'Integer Ring', 'is_polynomial_ring_parent': False,
+      'exception': "OperationalError('unrecognized token: \":\"')"}
+    sqlite3.OperationalError: unrecognized token: ":"
+
+$P_0=1$, so the entry is the bare string `1`, and the parser reads that as an
+element of the integer ring rather than of $\mathbb Z[x]$ -- which gives it the
+numeric range projection, and the postgres `::numrange` cast that sqlite
+refuses. T315's entries were all of positive degree, which is why it never hit
+it.
+
+What to do instead: apply both patches unconditionally, whatever the table's
+`type`. They are inert on a table that never writes a range, and one constant
+entry is enough to need them.
+
+Evidence: 2026-09-18, T319 critique. `/tmp/t319_render.py` (first run without
+the patches, the traceback above; with them, `records: 8`, `tid: T1`,
+`status 200 29495`), `/tmp/t319_page.html`.
+
+## `/preview?table=` needs `Parameters`, `Data properties` and a `Numbers` section, and blames the numbers when they are missing
+
+What happened: rendering T319's prose in slices through `/preview?table=` --
+the route the T314 and T317 critiques used, because the whole document does not
+fit a request line -- every slice that carried only prose answered 200 with
+
+    Error while parsing numbers: cannot access local variable
+    'number_section' where it is not associated with a value
+
+and no rendered table at all. The message names the numbers, but the slices
+that failed were the ones with no `Numbers` key; adding `Parameters`, `Data
+properties` and three entries to each slice rendered all of them. So a preview
+of a `Comments` block has to carry the scaffolding of a whole table, and the
+error it gives otherwise reads like a fault in the numbers a run did not send.
+
+The other half of the constraint is the request line: gunicorn refuses at 4094
+bytes with `Request Line is too large (6267 > 4094)`, and a URL-encoded YAML
+document runs about 1.6 times its own length, so a slice can carry roughly
+2,400 characters of YAML. T319's whole document is 4,641, which is why it went
+in four.
+
+What to do instead: build each preview slice as
+`Title + Parameters + <the section> + Data properties + Display properties +
+two or three entries`, keep it under about 2,400 characters of YAML, and read
+the `CITE`s with care -- a citation whose target is in a slice you left out
+renders as a `CITE-broken` span, which is an artefact of the slicing and not a
+fault in the table. The whole-page rebuild on sqlite (the note above) has
+neither problem and is what a finding should be quoted from.
+
+Evidence: 2026-09-18, T319 critique. `/tmp/prev.py` (four prose-only slices,
+all four with the `number_section` message), `/tmp/prev2.py` (the same four
+with scaffolding, 17-20 KB of rendered HTML each), and the 400 from
+`--data-urlencode table@/tmp/T319.yaml`.
+
+## `/files/<tid>/<name>` serves a draft's attachment to an API key, where `/T<n>` answers 404
+
+What happened: the T319 critique wanted the generator as a reader downloads it
+rather than as the repository holds it. `GET /T319` answers 404 to the zeta3
+key, as the T182 note records, but
+
+    curl -H "X-API-Key: ..." https://numberdb.org/files/T319/generate.py
+
+answers 200 with the file's own page: the size and revision date
+("4,923 bytes, as of the version from 2026-09-18 01:35 (current). Recorded
+here, not run.") and the source inside a `<pre>`, HTML-escaped. Unescaping that
+block gave a file byte-identical to
+`generators/shapiro-polynomials/generate.py`, which is how the two copies were
+compared without a session.
+
+So the file routes honour the key where the table routes do not. Useful: a
+critique can read the attachment a reader gets, and can check the claim that
+the repository copy and the attached one agree, which the skill's rule about
+generators living on the table makes worth checking.
+
+Evidence: 2026-09-18, T319 critique. `curl` above (200, 17,674 bytes of HTML,
+title `generate.py - Shapiro polynomials $P_n$ - NumberDB`), and `diff` of the
+unescaped `<pre>` against the repository copy, which is empty.
+
+## OEIS is unreachable from this machine, so an A-number cannot be checked here
+
+What happened: the test-matrix proposal wanted to cite the OEIS sequence of
+Hilbert matrix determinants, $1, 12, 2160, 6048000, 266716800000, \dots$.
+`curl https://oeis.org/search?q=12,2160,6048000,266716800000&fmt=text` returns
+a Cloudflare interstitial ("Just a moment..."), not results, and a fetch agent
+with its own client got a bare **403 on every OEIS URL it tried**, including
+`https://oeis.org/A000001` -- so it is the host refusing this network, not the
+search endpoint or the query.
+
+What to do instead: cite the sequence by its terms and say the A-number was
+not verified, or leave the OEIS check to a build that runs somewhere else. Do
+not write an A-number from memory into a proposal or a table: the lesson file
+already records one campaign that gained a real check from OEIS
+(`A305474`, the Hilbert class polynomial triangle), which is exactly why a
+guessed A-number would be believed.
+
+Evidence: 2026-09-18, ideas run. `curl` above; a `web-fetch` agent reporting
+403 on four OEIS URLs including a bare sequence page.
+
+## `screen.py`'s `already_asked` misses an issue that asks for the proposal
+
+What happened: `already_asked` returned `[]` for "Characteristic polynomials
+of the classical test matrices", while **numberdb-data#67** is open and titled
+*Characteristic polynomials of interesting (small) matrices*. The function
+takes the words of the name longer than four letters, keeps the **first
+three**, and searches GitHub `in:title` for all of them. Here that is
+"Characteristic polynomials classical", and no issue title contains
+"classical". Any name whose distinguishing word comes fourth has the same
+problem, and the answer is indistinguishable from "nobody asked".
+
+What to do instead: pull the whole issue list once --
+`gh issue list --repo numberdb/numberdb-data --state all --limit 400 --json
+number,title,state` -- and grep it for the subject's words. All three issues
+this batch answers (#67, #126, #127) were found that way and none by the
+screen. `already_here` has the opposite failure and is honest about it: it
+returns everything that matched any word, so its answer is noise a reader
+filters rather than a false negative.
+
+Evidence: 2026-09-18, ideas run. `/tmp/scr3.py` (five names, `already_asked`
+empty for all five); `gh issue list ... | grep -i matri` (three open issues).
+
+## mathworks.com answers 403 to `screen.py` but is readable by a fetch agent
+
+What happened: `source_names_it('test matrices',
+'https://www.mathworks.com/help/matlab/ref/gallery.html')` reports
+`source answered 403`. The page is real and is the source of half the matrix
+definitions in the 2026-09-18 batch; a `web-fetch` agent read it (HTTP 200,
+71 KB, though only the first 39 KB came back as page text and the tail as a
+summary, which is its own hazard: the summary invented a wrong formula for the
+Frank matrix that the verbatim window contradicted).
+
+What to do instead: when `source_names_it` reports 403 rather than a missing
+word, screen the family against a second durable source that does answer --
+`https://math.nist.gov/MatrixMarket/` passed for "test matrices" -- and say in
+the proposal which source each definition actually came from. A 403 is not
+evidence that the family is invented, and the screen cannot tell the
+difference.
+
+Evidence: 2026-09-18, ideas run. `/tmp/scr.py` and `/tmp/scr2.py`.
+
+## The codex quota fallback names a model the account cannot use
+
+What happened: build run 20260918T023210Z ran out of gpt-5.5 quota mid-turn
+(`You've hit your usage limit [...] try again at Sep 19th, 2026 2:17 PM`). The
+runner handled it by switching models and recorded the switch:
+
+    === out of quota on gpt-5.5; resuming on gpt-5.4 at effort xhigh
+        (and for the runs after this one)
+
+The resumed session died before its first tool call:
+
+    HTTP 400 invalid_request_error: The 'gpt-5.4' model is not supported
+    when using Codex with a ChatGPT account.
+
+preceded by two warnings that say the same thing more quietly -- `This session
+was recorded with model gpt-5.5 but is resuming with gpt-5.4` and `Model
+metadata for gpt-5.4 not found. Defaulting to fallback metadata`.
+
+Why it matters beyond the one run: the parenthesis is literal. The fallback is
+written to `agents/runs/codex-fallback` (`gpt-5.4`, `xhigh`) and read by every
+later stage, so the whole remainder of the batch inherits a model this account
+is not entitled to. Each codex build and repair then fails on turn 1, costs
+$0, and triggers a triage run to be told the same thing. A fallback that fails
+for free is more dangerous than one that fails expensively: nothing about the
+spend curve flags it.
+
+What to do instead: the fallback must name a model the ChatGPT account
+actually has. Until it does, clear `agents/runs/codex-fallback` and either
+wait out the quota or run the affected stages on the claude engine -- the
+critique and ideas stages of this same batch were running on claude throughout
+and were unaffected. A quota exhaustion is worth distinguishing from an
+ordinary API error in the runner: it is not retryable for hours, so resuming
+immediately on any model is the wrong reflex.
+
+Evidence: 2026-09-18. `agents/runs/20260918T023210Z-build.log` lines 140-147;
+`agents/runs/campaign-20260917T011039Z.log` lines 35190-35201;
+`agents/runs/codex-fallback`.
+
+## `COSTS.tsv` records the failed resume and not the turn that did the work
+
+What happened: the same run's ledger row is
+
+    20260918T023210Z  build  codex  0  0.0000  error  ...  gpt-5.4  ...  resumed=yes  0  0  0  gpt-5.4=0.0000  <empty table column>
+
+Every number in it describes the *second* attempt -- the 400 that never ran a
+tool. The first attempt made about seventy tool calls on gpt-5.5, read the
+skill and half the generator tooling, exhausted the account's quota, and
+created draft T320. None of that is counted: 0 turns, $0.0000, 0 tokens, and
+an empty `table` column even though the run's lasting effect was a new draft.
+
+So the campaign's own records assert that this run cost nothing and touched no
+table, and both are false. Anything reconciling spend, or working out which
+drafts belong to which run, will silently skip it -- and T320 is exactly the
+kind of half-created table a later run would otherwise be warned about.
+
+What to do instead: when a run is resumed, the ledger row should accumulate
+across attempts rather than be overwritten by the last one, and the `table`
+column should be filled from what the run actually created (the create
+response carries the `tid`) rather than from a successful exit. Treat a
+`$0.0000` row with `resumed=yes` as "unmeasured", not as "free".
+
+Evidence: 2026-09-18, `agents/runs/COSTS.tsv` line 312, against
+`agents/runs/20260918T023210Z-build.log` (the T320 create at item_69/item_70
+returns `{"tid": "T320", ... "drafts_held": 7}`).
+
+## The sqlite draft-render recipe's `_sync_tags` replacement takes the document, not a list of names
+
+What happened: the T320 critique rebuilt the draft's page by the recipe above
+(API document, Sage container, throwaway sqlite, both range patches). The page
+came out at status 200 with all eight rows, and its tag strip read
+
+    title  definition  parameters  comments  formulas  programs
+    similar tables  links  keywords  tags  data properties  display properties
+    numbers
+
+rather than the table's own `polynomial` and `combinatorics`. Those are the
+document's *section names*, lowercased. The stand-in for `editing._sync_tags`
+had been written as `_sync_tags(table, names)` and was iterating the dict it
+was handed; the real signature is `_sync_tags(table, document)`, and iterating
+a document yields its keys. Nothing failed, nothing was logged, and the fault
+looks exactly like a table tagged by somebody who misunderstood tags -- which
+is the kind of finding a critique would have written up as the table's.
+
+What to do instead: the replacement has to do what the original does except
+the final `update(search_vector=...)`, which means going through
+`editing._tag_names(document.get('Tags'))` and the 32-character skip:
+
+    def _sync_tags(table, document, **kwargs):
+        from numberdb_app.models import Tag
+        if not isinstance(document, dict):
+            return
+        tags = []
+        for name in editing._tag_names(document.get('Tags')):
+            if len(name) > 32:
+                continue
+            tag, _ = Tag.objects.get_or_create(name=name)
+            if tag not in tags:
+                tags.append(tag)
+        table.tags.set(tags)
+
+More generally: the two writes this recipe patches out are the two that build a
+postgres search vector, and both are patched by *replacement*, so a replacement
+whose signature is guessed produces a page that renders and lies. Check the
+rebuilt page's tags against `Tags` in the document before quoting anything else
+off it. The same care applies to `reindex_for_search`, though there the stand-in
+is a no-op and cannot be wrong.
+
+Evidence: 2026-09-18, T320 critique. `/tmp/t320_render.py` (first run, tags from
+the section names, 31,422 bytes of HTML; second run with the signature fixed,
+30,777 bytes and `<a class="tag" href="/tags/polynomial">`),
+`/tmp/t320_render_out.txt` and `/tmp/t320_render_out2.txt`.
+`numberdb_app/editing.py`, `def _sync_tags(table, document)`.
+
+## Nothing is listening on port 1080 at all now, so the proxy notes above understate it
+
+What happened: the T321 critique started with the prompt's
+`curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/skill`, which
+exited 7 having printed nothing. The earlier notes here describe a live
+`ssh -N -D` tunnel that stays up with a dead connection and times every request
+out; that is not today's state. `ss -ltn` shows **no listener on 1080 at all**,
+so every request fails immediately rather than after a minute, and there is no
+process to restart or wait for.
+
+What to do instead: `curl https://numberdb.org/...` with no proxy at all, which
+works from this machine and is how this whole run read the site -- the skill
+(47,534 bytes, byte-identical to the copy the T320 run left in `/tmp`), the
+public pages of T318 and T319, `/tables`, `/api/table`, `/api/table/<tid>/audit`
+and `/api/search`. Crossref (`api.crossref.org`) answers directly too, which is
+how both of T321's DOIs were checked.
+
+And: do not run `env | grep` to find out why the proxy is down. That has now
+happened five times and is written up twice above; `ss -ltn | grep 1080` answers
+the same question and prints no key.
+
+Evidence: 2026-09-18, T321 critique. `curl` exit 7 on the proxy, `ss -ltn` empty
+for 1080, `curl https://numberdb.org/skill` 200 in the same minute.
+
+## The sqlite draft-render recipe works unchanged for a *rational* table
+
+What happened: the T321 critique rebuilt T321's draft page by the recipe above
+-- the API document, the `agents/sage.sh` container, a throwaway sqlite
+database, `editing.reindex_for_search` as a no-op, `_sync_tags` replaced with
+the version that goes through `editing._tag_names` (the note above), plus the
+two range patches from the T316 note. It worked first time: 167 records, status
+200, **85,252 bytes** of HTML, the rows with their `$p$` and `$F_p$` headers,
+the prose in the page's own section order (Formulas before Comments, which is
+what the critique's first finding is about), the reference numbering, and the
+tag strip reading `number theory combinatorics` -- the table's own tags, which
+is the check the `_sync_tags` note says to make before quoting anything else off
+the page.
+
+So the recipe has now run for a polynomial table (T315, T320), a real one
+(T316), a complex one and a rational one, and the only variation anybody has
+needed is the `RangeField` pair for tables whose entries go through
+`value_range`. A rational table needs them: `Number.save` writes those columns
+whatever the type.
+
+The script is `/tmp/t321_render.py`, 100 lines including the pip install, and
+it takes the tid in one place. It is still worth promoting to
+`agents/render_draft.py` with the tid as an argument -- this is the fourth run
+to write it out from the notes.
+
+Evidence: 2026-09-18, T321 critique. `/tmp/t321_render.py`,
+`/tmp/t321_render_out.txt` (`records: 167`, `tid: T1 tags: ['combinatorics',
+'number theory']`, `status 200 85252 bytes`), `/tmp/t321_page.html`.

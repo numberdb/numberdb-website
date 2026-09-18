@@ -1,0 +1,129 @@
+# The table document for numberdb-data#148, proposal 3. It is created as a
+# draft T274 through the API (X-Draft: yes) and filled by generate.py beside it;
+# publishing is a person's act on the site.
+Title: Cuckoo hashing thresholds of random $k$-uniform hypergraphs
+Definition: >-
+  Let $H_{n,\lfloor cn\rfloor,k}$ be the random $k$-uniform hypergraph
+  CITE{WikiHypergraph} on $n$ vertices. The number $c^*_{k,\ell}$ is the
+  threshold density for $\ell$-orientability of
+  $H_{n,\lfloor cn\rfloor,k}$ CITE{FKP}.
+Keywords: orientability threshold, load threshold, multiple-choice hashing, balanced allocation
+Parameters:
+  k:
+    type: Z
+    title: number of choices
+    display: $k$
+    constraints: $k\geq2$
+  ell:
+    type: Z
+    title: bucket capacity
+    display: $\ell$
+    constraints: $\ell\geq1$
+Comments:
+  comment-orientation: >-
+    An $\ell$-orientation assigns each edge to one of its vertices so that no
+    vertex receives more than $\ell$ edges. In hashing language, edges are
+    keys and vertices are buckets, so this is the load threshold for offline
+    cuckoo hashing CITE{WikiCuckoo} with $k$ choices and bucket capacity
+    $\ell$ CITE{DGMMPR}.
+  comment-conventions: >-
+    The density is $c=m/n$, keys per bucket. The average hypergraph degree is
+    $kc$, and the fraction of bucket capacity used is $c/\ell$. Dietzfelbinger,
+    Goerdt, Mitzenmacher, Montanari, Pagh and Rink tabulate the same values
+    with an index larger by one: their row labelled $\ell+1$ is this table's
+    bucket capacity $\ell$ CITE{DGMMPR}.
+  comment-capacity-one: >-
+    For $\ell=1$ and $k\geq3$, the thresholds are equal to the satisfiability
+    thresholds of random $k$-XORSAT CITE{DGMMPR}. The row $k=2$, $\ell=1$ is
+    the ordinary two-choice cuckoo hashing threshold $1/2$, where the cuckoo
+    graph is a pseudoforest CITE{WikiCuckoo}.
+  comment-core: >-
+    The obstruction is the $(\ell+1)$-core: at the threshold its asymptotic
+    edge density is $\ell$ CITE{FKP}.
+Formulas:
+  formula-tail: >-
+    $Q(x,s)=\mathbb{P}(\mathrm{Po}(x)\geq s)
+    =1-e^{-x}\sum_{j=0}^{s-1}x^j/j!$.
+  formula-root: >-
+    Except for $c^*_{2,1}=1/2$, the value $\xi_{k,\ell}$ is the positive
+    solution of
+    $k\ell=\xi_{k,\ell}Q(\xi_{k,\ell},\ell)/Q(\xi_{k,\ell},\ell+1)$.
+  formula-threshold: >-
+    $c^*_{k,\ell}=\xi_{k,\ell}/(kQ(\xi_{k,\ell},\ell)^{k-1})$ for
+    $(k,\ell)\neq(2,1)$, and $c^*_{2,1}=1/2$ CITE{FKP} CITE{DGMMPR}.
+Programs:
+  program-mpmath:
+    language: Python
+    code: |-
+      from mpmath import mp
+      mp.dps = 50
+      k, ell = 3, 1
+      Q = lambda x, s: mp.gammainc(s, 0, x, regularized=True)
+      if (k, ell) == (2, 1):
+          print(mp.mpf(1) / 2)
+      else:
+          g = lambda x: x * Q(x, ell) / Q(x, ell + 1) - k * ell
+          xi = mp.findroot(g, k * ell)
+          print(xi / (k * Q(xi, ell)**(k - 1)))
+Similar tables:
+  - table: HREF{T272}[satisfiability thresholds of random $k$-XORSAT]
+    relation: the same threshold for bucket capacity one and $k\geq3$
+  - table: HREF{T273}[core thresholds of random $k$-uniform hypergraphs]
+    relation: thresholds for the cores whose edge density obstructs orientability
+Links:
+  WikiCuckoo:
+    title: 'Wikipedia: Cuckoo hashing'
+    url: https://en.wikipedia.org/wiki/Cuckoo_hashing
+  WikiHypergraph:
+    title: 'Wikipedia: Hypergraph'
+    url: https://en.wikipedia.org/wiki/Hypergraph
+References:
+  FKP:
+    bib: >-
+      N. Fountoulakis, M. Khosla and K. Panagiotou, The multiple-orientability
+      thresholds for random hypergraphs, Combinatorics, Probability and
+      Computing 25 (2016), 870-908.
+    doi: 10.1017/S0963548315000334
+    arxiv: 1309.6772
+  DGMMPR:
+    bib: >-
+      M. Dietzfelbinger, A. Goerdt, M. Mitzenmacher, A. Montanari, R. Pagh
+      and M. Rink, Tight thresholds for cuckoo hashing via XORSAT, Proceedings
+      of ICALP 2010, Lecture Notes in Computer Science 6198, 213-225.
+    doi: 10.1007/978-3-642-14165-2_19
+    arxiv: '0912.0287'
+  CainSandersWormald:
+    bib: >-
+      J. A. Cain, P. Sanders and N. Wormald, The random graph threshold for
+      k-orientiability and a fast algorithm for optimal multiple-choice
+      allocation, Proceedings of the Eighteenth Annual ACM-SIAM Symposium on
+      Discrete Algorithms (SODA 2007), 469-476.
+Tags:
+  - probability theory
+  - combinatorics
+Data properties:
+  type: R
+  rigour: proven
+  sources:
+    - CITE{FKP}
+    - CITE{DGMMPR}
+    - CITE{CainSandersWormald}
+  complete: 'no'
+  complete-note: >-
+    it holds $c^*_{k,\ell}$ for every $2\leq k\leq7$ and
+    $1\leq\ell\leq6$
+  rigour details: >-
+    Each inexact entry is computed in ball arithmetic with 64 guard bits beyond
+    the 100 digits written. The root $\xi_{k,\ell}$ is enclosed by bisection on
+    the sign of
+    $\xi Q(\xi,\ell)/Q(\xi,\ell+1)-k\ell$, down to a bracket of half-width
+    $10^{-106}$ whose ends are checked to give opposite signs; the value of
+    $\xi/(kQ(\xi,\ell)^{k-1})$ on that bracket is the stored ball. The entry
+    $c^*_{2,1}=1/2$ is exact. The generator also compares every inexact row
+    with an mpmath computation at 120 digits that writes $Q$ as the
+    regularised incomplete gamma function, and compares all rows in the
+    printed range with the ten-decimal table in CITE{DGMMPR}, using the
+    source's index shift described in the comments.
+Display properties:
+  number-header: $c^*_{k,\ell}$
+Numbers: []

@@ -1,0 +1,115 @@
+# The table document for numberdb.org/T295. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Singular values $k_r$ of the elliptic modulus
+Definition: >-
+  For a positive integer $r$, set $\tau=i\sqrt r$. The rows store
+  $k_r$, the positive square root of $\lambda(\tau)$, and
+  $m_r=k_r^2=\lambda(\tau)$, one number in two invertible conventions
+  CITE{DLMFModularFunctions} CITE{MathWorldSingularValue}.
+Parameters:
+  r:
+    type: Z
+    title: positive integer
+    display: $r$
+    constraints: positive integer
+  normalisation:
+    type: Symbolic
+    title: convention
+    display: convention
+    values:
+      modulus: $k_r$
+      parameter: $m_r=k_r^2$
+Comments:
+  comment-cm-point: >-
+    The CM point is $\tau=i\sqrt r$. The order is
+    $\mathbb{Z}[\sqrt{-r}]$, of discriminant $-4r$.
+  comment-conventions: >-
+    The `modulus` rows store $k_r$. The `parameter` rows store
+    $m_r=k_r^2=\lambda(i\sqrt r)$, the elliptic parameter used by many
+    software libraries. These are two invertible conventions for the same
+    singular value because $0<k_r<1$.
+Formulas:
+  formula-theta: >-
+    $k_r=\theta_2(0,q)^2/\theta_3(0,q)^2$ and
+    $m_r=\theta_2(0,q)^4/\theta_3(0,q)^4$, with
+    $q=e^{-\pi\sqrt r}$ CITE{DLMFJacobi} CITE{DLMFModularFunctions}.
+  formula-elliptic-integral: >-
+    $q=\exp(-\pi K'(k_r)/K(k_r))$, so
+    $K'(k_r)/K(k_r)=\sqrt r$ CITE{DLMFJacobi}.
+  formula-complement: >-
+    $k_{1/r}=\sqrt{1-k_r^2}$, where the left side is the analytic
+    continuation of the same singular-value function to positive real
+    indices.
+  formula-j: >-
+    For $m_r=k_r^2$,
+    $j(i\sqrt r)=256(1-m_r+m_r^2)^3/(m_r^2(1-m_r)^2)$, using
+    $j=1728J$ and the DLMF relation between $J$ and $\lambda$
+    CITE{DLMFInterrelations}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.complex_arb import ComplexBallField
+
+      r = 2
+      CBF = ComplexBallField(numberdb.bits(100, losing=256))
+      tau = CBF.gen(0) * CBF(r).sqrt()
+      m = tau.modular_lambda()
+      k = m.sqrt()
+      k.real(), m.real()
+Similar tables:
+  - table: HREF{Complete_elliptic_integral_of_the_first_kind_K}[Complete elliptic integral of the first kind $K(m)$]
+    relation: the defining quotient uses $K$ at the complementary parameters $m_r$ and $1-m_r$
+  - table: HREF{Rational_singular_moduli}[Rational singular moduli]
+    relation: both evaluate modular functions at imaginary quadratic points; that table holds the rational $j$-invariant cases
+  - table: HREF{Hilbert_class_polynomials}[Hilbert class polynomials $H_\Delta$]
+    relation: those polynomials record the algebraic $j$-values of imaginary quadratic orders, while this table records $\lambda$-values at $\tau=i\sqrt r$
+Links:
+  DLMFJacobi:
+    title: 'DLMF 22.2: Jacobian elliptic functions, definitions'
+    url: https://dlmf.nist.gov/22.2
+  DLMFModularFunctions:
+    title: 'DLMF 23.15: modular functions and the elliptic modular function $\lambda$'
+    url: https://dlmf.nist.gov/23.15
+  DLMFInterrelations:
+    title: 'DLMF 23.19: interrelations among modular functions'
+    url: https://dlmf.nist.gov/23.19
+  MathWorldSingularValue:
+    title: 'MathWorld: Elliptic Integral Singular Value'
+    url: https://mathworld.wolfram.com/EllipticIntegralSingularValue.html
+Keywords:
+  - singular modulus
+  - singular moduli
+  - elliptic modular lambda function
+  - modular lambda
+  - elliptic parameter
+Tags:
+  - special values
+  - modular function
+  - elliptic curves
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds the modulus $k_r$ and the parameter $m_r=k_r^2$ for every integer
+    $1\leq r\leq100$
+  rigour details: >-
+    Each value is computed in Sage's arb-backed `ComplexBallField` at
+    `numberdb.bits(digits, losing=256)` bits. The generator evaluates
+    $\lambda(i\sqrt r)$ as a complex ball, checks that the imaginary part
+    contains zero, and stores its real part for the `parameter` row. The
+    `modulus` row is the positive square root of that real ball. At this
+    precision the widest value ball before writing has radius below
+    $2\cdot10^{-176}$, at the row $r=1$, `modulus`. Before the values were
+    sent, the generator checked CITE{formula-theta},
+    CITE{formula-elliptic-integral}, CITE{formula-complement}, and
+    CITE{formula-j} on every computed row.
+Display properties:
+  number-header: $k_r$ or $m_r$
+  group parameters:
+    - [r]
+    - [normalisation]
+Numbers: []

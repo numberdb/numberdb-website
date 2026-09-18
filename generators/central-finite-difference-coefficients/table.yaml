@@ -1,0 +1,104 @@
+# Table document for numberdb-data issue #156, draft T303. Created with
+# X-Draft: yes, then filled by generate.py beside it. Publishing is a
+# person's act on the site.
+Title: Central finite difference coefficients
+Definition: >-
+  For integers $m\geq1$ and $r\geq\lceil m/2\rceil$, the central finite
+  difference coefficient $a_{m,r,j}$ is the rational coefficient of $f(x+jh)$
+  in the interpolatory formula
+  $h^m f^{(m)}(x)\approx\sum_{j=-r}^{r}a_{m,r,j}f(x+jh)$ on the equally
+  spaced offsets $-r,-r+1,\ldots,r$ CITE{Wiki} CITE{Fornberg}.
+Parameters:
+  m:
+    type: Z
+    title: derivative order
+    display: $m$
+    constraints: $m\geq1$
+  r:
+    type: Z
+    title: stencil radius
+    display: $r$
+    constraints: $r\geq\lceil m/2\rceil$
+  j:
+    type: Z
+    title: offset from the centre
+    display: $j$
+    constraints: $-r\leq j\leq r$
+Comments:
+  comment-step: >-
+    The rows use spacing $h=1$. For a general mesh spacing $h$, the power
+    $h^m$ is on the derivative side:
+    $h^m f^{(m)}(x)\approx\sum_{j=-r}^{r}a_{m,r,j}f(x+jh)$.
+  comment-ordering: >-
+    Offsets are listed from $-r$ to $r$, the same order as the function values
+    in the formula. Symmetric duplicates are stored:
+    $a_{m,r,-j}=(-1)^m a_{m,r,j}$, and a reader may hold either sign.
+  comment-zeroes: >-
+    Rows with coefficient $0$ are omitted. Thus $a_{m,r,0}$ is absent for odd
+    $m$, and any coefficient outside the listed stencil is also $0$.
+  comment-neighbours: >-
+    These coefficients differentiate the interpolating polynomial on equally
+    spaced nodes. HREF{Newton_Cotes_weights}[Newton-Cotes weights] integrate
+    the same kind of interpolant, and
+    HREF{Lagrange_basis_polynomials_for_equally_spaced_nodes}[the Lagrange
+    basis polynomials for equally spaced nodes] are the basis behind both
+    constructions.
+Formulas:
+  formula-moments: >-
+    $\sum_{j=-r}^{r} a_{m,r,j}j^q=m!$ if $q=m$, and
+    $\sum_{j=-r}^{r} a_{m,r,j}j^q=0$ for $0\leq q\leq2r$ with $q\neq m$.
+  formula-accuracy: >-
+    The truncation error is $O(h^{2r+1-m})$ for odd $m$ and
+    $O(h^{2r+2-m})$ for even $m$.
+  formula-symmetry: >-
+    $a_{m,r,-j}=(-1)^m a_{m,r,j}$.
+  formula-lagrange: >-
+    $a_{m,r,j}=\ell_{r,j}^{(m)}(0)$, where
+    $\ell_{r,j}(x)=\prod_{\substack{-r\leq k\leq r\\ k\neq j}}\frac{x-k}{j-k}$
+    is the Lagrange basis polynomial for the offset $j$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.arith.misc import factorial
+      from sage.matrix.constructor import matrix
+      from sage.modules.free_module_element import vector
+      from sage.rings.rational_field import QQ
+
+      def central_difference_coefficients(m, r):
+          offsets = list(range(-r, r + 1))
+          rows = [[QQ(j) ** q for j in offsets] for q in range(2 * r + 1)]
+          rhs = [QQ(factorial(m)) if q == m else QQ(0) for q in range(2 * r + 1)]
+          return dict(zip(offsets, matrix(QQ, rows).solve_right(vector(QQ, rhs))))
+
+      central_difference_coefficients(2, 2)
+Similar tables:
+  - table: HREF{Lagrange_basis_polynomials_for_equally_spaced_nodes}[Lagrange basis polynomials for equally spaced nodes]
+    relation: their derivatives at the centre give the finite difference coefficients
+  - table: HREF{Newton_Cotes_weights}[Newton-Cotes weights]
+    relation: integrals of equally spaced Lagrange basis polynomials rather than derivatives at the centre
+Links:
+  Wiki:
+    title: 'Wikipedia: Finite difference coefficient'
+    url: https://en.wikipedia.org/wiki/Finite_difference_coefficient
+References:
+  Fornberg:
+    bib: B. Fornberg, Generation of finite difference formulas on arbitrarily spaced grids, Mathematics of Computation 51 (1988), 699-706.
+    doi: 10.1090/S0025-5718-1988-0935077-0
+Keywords: finite difference method, numerical differentiation, central difference, five-point stencil, seven-point stencil, nine-point stencil, eleven-point stencil
+Tags:
+  - analysis
+Data properties:
+  type: Q
+  rigour: exact
+  complete: 'no'
+  complete-note: it holds every nonzero coefficient with $1\leq m\leq6$ and $\lceil m/2\rceil\leq r\leq5$
+  rigour details: >-
+    The generator builds the moment equations over $\mathbb{Q}$ on the offsets
+    $-r,-r+1,\ldots,r$ and solves them exactly. Each completed stencil is
+    checked against the defining moments, the parity symmetry, the first
+    nonzero error term and the quoted central-difference rows on Wikipedia.
+Display properties:
+  number-header: $a_{m,r,j}$
+Numbers: []

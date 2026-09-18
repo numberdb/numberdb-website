@@ -1,0 +1,133 @@
+# The table document for numberdb.org/T288. It was created as a draft through
+# the API (X-Draft: yes) and is filled by generate.py beside it; publishing is
+# a person's act on the site.
+Title: Roots of the cuckoo hashing threshold equation
+Definition: >-
+  For $k\geq2$ and $\ell\geq1$, let
+  $Q(x,s)=\mathbb{P}(\mathrm{Po}(x)\geq s)$. The number $\xi_{k,\ell}$ is the
+  nonnegative real solution of $k\ell=\xi Q(\xi,\ell)/Q(\xi,\ell+1)$, taking
+  $\xi_{2,1}=0$ by removable extension at $x=0$ CITE{FKP} CITE{DGMMPR}.
+Keywords: orientability threshold, load threshold, multiple-choice hashing, balanced allocation
+Parameters:
+  k:
+    type: Z
+    title: number of choices
+    display: $k$
+    constraints: $k\geq2$
+  ell:
+    type: Z
+    title: bucket capacity
+    display: $\ell$
+    constraints: $\ell\geq1$
+Comments:
+  comment-convention: >-
+    The notation and indexing match
+    HREF{T274}[the cuckoo hashing threshold table]: $\xi_{k,\ell}$ gives
+    $c^*_{k,\ell}=\xi_{k,\ell}/(kQ(\xi_{k,\ell},\ell)^{k-1})$.
+    Dietzfelbinger, Goerdt, Mitzenmacher, Montanari, Pagh and Rink tabulate
+    the threshold values with an index larger by one: their row labelled
+    $\ell+1$ is this table's bucket capacity $\ell$ CITE{DGMMPR}.
+  comment-degenerate-row: >-
+    The row $k=2$, $\ell=1$ stores $\xi_{2,1}=0$. At $x=0$ the quotient
+    $xQ(x,1)/Q(x,2)$ has a removable singularity with limit $2$, and
+    $x/(2Q(x,1))$ tends to the exact threshold $c^*_{2,1}=1/2$.
+  comment-capacity-one: >-
+    For $\ell=1$ and $k\geq3$, the equation is the same one used for the
+    roots of the random $k$-XORSAT satisfiability threshold CITE{DGMMPR}.
+Formulas:
+  formula-tail: >-
+    $Q(x,s)=\mathbb{P}(\mathrm{Po}(x)\geq s)
+    =1-e^{-x}\sum_{j=0}^{s-1}x^j/j!$.
+  formula-root: >-
+    For $(k,\ell)\neq(2,1)$, $\xi_{k,\ell}$ is the positive solution of
+    $k\ell=\xi_{k,\ell}Q(\xi_{k,\ell},\ell)/Q(\xi_{k,\ell},\ell+1)$; the
+    value $\xi_{2,1}=0$ is taken by the removable extension at $x=0$.
+  formula-threshold: >-
+    $c^*_{k,\ell}=\xi_{k,\ell}/(kQ(\xi_{k,\ell},\ell)^{k-1})$ for
+    $(k,\ell)\neq(2,1)$, with limiting value $c^*_{2,1}=1/2$
+    CITE{FKP} CITE{DGMMPR}.
+Programs:
+  program-mpmath:
+    language: Python
+    code: |-
+      from mpmath import mp
+      mp.dps = 50
+      k, ell = 3, 1
+      Q = lambda x, s: mp.gammainc(s, 0, x, regularized=True)
+      if (k, ell) == (2, 1):
+          print(mp.mpf(0))
+      else:
+          g = lambda x: x * Q(x, ell) / Q(x, ell + 1) - k * ell
+          lo, hi = mp.mpf("1e-30"), mp.mpf(4 * (k + ell) + 10)
+          while g(hi) <= 0:
+              hi *= 2
+          for _ in range(4 * mp.dps):
+              mid = (lo + hi) / 2
+              if g(mid) < 0:
+                  lo = mid
+              else:
+                  hi = mid
+          print((lo + hi) / 2)
+Similar tables:
+  - table: HREF{T274}[Cuckoo hashing thresholds of random $k$-uniform hypergraphs]
+    relation: thresholds obtained from these roots by the formula for $c^*_{k,\ell}$
+  - table: HREF{T287}[Roots of the $k$-XORSAT threshold equation]
+    relation: the same roots in the rows with bucket capacity $\ell=1$ and $k\geq3$
+Links:
+  WikiCuckoo:
+    title: 'Wikipedia: Cuckoo hashing'
+    url: https://en.wikipedia.org/wiki/Cuckoo_hashing
+  WikiHypergraph:
+    title: 'Wikipedia: Hypergraph'
+    url: https://en.wikipedia.org/wiki/Hypergraph
+References:
+  FKP:
+    bib: >-
+      N. Fountoulakis, M. Khosla and K. Panagiotou, The multiple-orientability
+      thresholds for random hypergraphs, Combinatorics, Probability and
+      Computing 25 (2016), 870-908.
+    doi: 10.1017/S0963548315000334
+    arxiv: 1309.6772
+  DGMMPR:
+    bib: >-
+      M. Dietzfelbinger, A. Goerdt, M. Mitzenmacher, A. Montanari, R. Pagh
+      and M. Rink, Tight thresholds for cuckoo hashing via XORSAT,
+      Proceedings of ICALP 2010, Lecture Notes in Computer Science 6198,
+      213-225.
+    doi: 10.1007/978-3-642-14165-2_19
+    arxiv: '0912.0287'
+  CainSandersWormald:
+    bib: >-
+      J. A. Cain, P. Sanders and N. Wormald, The random graph threshold for
+      k-orientability and a fast algorithm for optimal multiple-choice
+      allocation, Proceedings of the Eighteenth Annual ACM-SIAM Symposium on
+      Discrete Algorithms (SODA 2007), 469-476.
+Tags:
+  - probability theory
+  - combinatorics
+Data properties:
+  type: R
+  rigour: proven
+  sources:
+    - CITE{FKP}
+    - CITE{DGMMPR}
+    - CITE{CainSandersWormald}
+  complete: 'no'
+  complete-note: >-
+    it holds $\xi_{k,\ell}$ for every $2\leq k\leq7$ and $1\leq\ell\leq6$,
+    matching the companion cuckoo-hashing threshold table
+  rigour details: >-
+    Each positive root is computed in ball arithmetic with 64 guard bits
+    beyond the 100 digits written. The root $\xi_{k,\ell}$ is enclosed by
+    bisection on the sign of $\xi Q(\xi,\ell)/Q(\xi,\ell+1)-k\ell$, down to
+    a bracket of half-width $10^{-106}$ whose ends are checked to give
+    opposite signs; that bracket is the stored ball. The entry
+    $\xi_{2,1}=0$ is exact, from the removable limiting equation at $x=0$.
+    The generator also compares every positive root with an mpmath computation
+    at 120 digits that writes $Q$ as the regularised incomplete gamma function,
+    compares the rows with $\ell=1$ and $k\geq3$ with HREF{T287}[the XORSAT
+    root table], and compares every derived threshold with
+    HREF{T274}[the cuckoo hashing threshold table].
+Display properties:
+  number-header: $\xi_{k,\ell}$
+Numbers: []

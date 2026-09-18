@@ -1,0 +1,133 @@
+# Created as draft T323 through the API (X-Draft: yes), to be filled by
+# generate.py beside it and offered for review. Publishing is a person's act.
+Title: Special values of the $L$-functions of level one cusp forms
+Definition: >-
+  For the $i$th normalised Hecke eigenform
+  $f_{k,i}(q)=\sum_{n\geq1}a_nq^n$ in
+  $S_k(\mathrm{SL}_2(\mathbb{Z}))$ CITE{WikiCusp}, ordered by increasing real
+  $T_2$-eigenvalue $a_2$, this table gives the critical value
+  $L(f_{k,i},s)=\sum_{n\geq1}a_n n^{-s}$ of its $L$-function CITE{WikiL}.
+Parameters:
+  k:
+    type: Z
+    title: weight
+    display: $k$
+    constraints: $k$ is even and $\dim S_k(\mathrm{SL}_2(\mathbb{Z}))>0$
+  i:
+    type: Z
+    title: position by increasing $a_2$
+    display: $i$
+    constraints: >-
+      $1\leq i\leq\dim S_k(\mathrm{SL}_2(\mathbb{Z}))$, with positions counted
+      after sorting the eigenforms by increasing $a_2$
+  s:
+    type: Z
+    title: argument of $L$
+    display: $s$
+    constraints: $s$ is an integer with $1\leq s\leq k-1$
+Comments:
+  comment-normalisation: >-
+    The table uses the arithmetic normalisation: $a_1=1$ and
+    $L(f,s)=\sum a_nn^{-s}$, so the critical strip is
+    $0<\operatorname{Re}s<k$ and the centre is $s=k/2$. The analytic
+    normalisation often written with centre $1/2$ is obtained by shifting
+    $s$ by $(k-1)/2$.
+  comment-ordering: >-
+    Library orderings are not used as table orderings. In each weight, the
+    generator embeds the Hecke field into the real numbers, computes the
+    corresponding value of $a_2$, and then sorts the forms by that real value.
+    Each entry comment names the same $a_2$ ordering through the row
+    $(k,2)$ of
+    HREF{Hecke_polynomials_of_level_one_cusp_forms}[the Hecke polynomial
+    table].
+  comment-central-zero: >-
+    The sign of the functional equation is $(-1)^{k/2}$, so for
+    $k\equiv2\pmod4$ the central value $L(f,k/2)$ vanishes. Those forced
+    zeros are omitted from the entries rather than making every search for
+    $0$ match this table.
+Formulas:
+  formula-completed: >-
+    The completed $L$-function is
+    $\Lambda(f,s)=(2\pi)^{-s}\Gamma(s)L(f,s)$, and for level one it satisfies
+    $\Lambda(f,s)=(-1)^{k/2}\Lambda(f,k-s)$.
+  formula-euler-product: >-
+    For $\operatorname{Re}s>(k+1)/2$,
+    $L(f,s)=\prod_p(1-a_pp^{-s}+p^{k-1-2s})^{-1}$.
+Programs:
+  program-pari:
+    language: PARI/GP
+    code: |-
+      default(realbitprecision, 330);
+      mf = mfinit([1, 12], 0);
+      lfun(lfunmf(mf)[1][1], 6)       \\ 0.792122838646030569355944890487...
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.modular.modform.constructor import Newforms
+      f = Newforms(1, 12, names='a')[0]
+      f.lseries(prec=330)(6)          # 0.792122838646030569355944890487...
+Similar tables:
+  - table: HREF{Hecke_polynomials_of_level_one_cusp_forms}[Hecke polynomials of level one cusp forms]
+    relation: stores the characteristic polynomials whose $T_2$ roots order the eigenforms used here
+  - table: HREF{Q-expansion_of_the_modular_discriminant}[$q$-expansion of the modular discriminant $\Delta$]
+    relation: stores the coefficients of the weight $12$ eigenform whose $L$-values are the $k=12$ rows here
+  - table: HREF{Values_of_Dirichlet_L-functions_at_positive_integers}[Values of Dirichlet $L$-functions at positive integers]
+    relation: stores special values of degree-one $L$-functions
+  - table: HREF{Special_value_of_L-function_of_elliptic_curves_over_Q_of_rank_1}[Special $L$-value of elliptic curves over $\mathbb{Q}$ of rank $1$]
+    relation: stores leading Taylor coefficients for modular $L$-functions attached to elliptic curves
+  - table: HREF{Special_value_of_L-function_of_elliptic_curves_over_Q_of_rank_2}[Special $L$-value of elliptic curves over $\mathbb{Q}$ of rank $2$]
+    relation: stores leading Taylor coefficients for modular $L$-functions attached to elliptic curves
+  - table: HREF{Special_value_of_L-function_of_elliptic_curves_over_Q_of_rank_3}[Special $L$-value of elliptic curves over $\mathbb{Q}$ of rank $3$]
+    relation: stores leading Taylor coefficients for modular $L$-functions attached to elliptic curves
+  - table: HREF{Special_L-values_of_genus_2_curves_over_Q}[Special $L$-values of genus 2 curves over $\mathbb{Q}$]
+    relation: stores leading Taylor coefficients for Hasse-Weil $L$-functions of genus $2$ curves
+Links:
+  WikiCusp:
+    title: 'Wikipedia: cusp form'
+    url: https://en.wikipedia.org/wiki/Cusp_form
+  WikiL:
+    title: 'Wikipedia: L-function'
+    url: https://en.wikipedia.org/wiki/L-function
+  PARILfun:
+    title: 'PARI/GP reference: L-functions'
+    url: https://pari.math.u-bordeaux.fr/dochtml/html-stable/_L_minusfunctions.html
+  PARIModular:
+    title: 'PARI/GP reference: modular forms'
+    url: https://pari.math.u-bordeaux.fr/dochtml/html-stable/Modular_forms.html
+  SageNewforms:
+    title: 'SageMath reference: Newforms'
+    url: https://doc.sagemath.org/html/en/reference/modfrm/sage/modular/modform/constructor.html#sage.modular.modform.constructor.Newforms
+Keywords:
+  - level one cusp form
+  - modular form L-function
+  - critical L-value
+  - special L-value
+  - Ramanujan tau L-function
+Tags:
+  - number theory
+  - L-function
+  - special values
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: >-
+    it holds every even weight $12\leq k\leq40$ with
+    $\dim S_k(\mathrm{SL}_2(\mathbb{Z}))>0$, every eigenform in the
+    increasing-$a_2$ ordering, and every critical integer $1\leq s\leq k-1$,
+    except the forced central zeros for $k\equiv2\pmod4$
+  rigour details: >-
+    The generator evaluates Sage's `Newforms` $L$-series CITE{SageNewforms}
+    at $80$ and $120$ decimal working digits, passing explicit bit precisions
+    to Sage's Dokchitser implementation and creating a fresh $L$-series object
+    for each value, and stores only $30$ digits. It
+    sorts the embeddings of each Hecke orbit by the embedded value of $a_2$.
+    An independent check compares every stored value with PARI/GP's `lfunmf`
+    values CITE{PARILfun} and CITE{PARIModular}, after sorting PARI's
+    embeddings by the same $a_2$ values, and checks the functional equation
+    with PARI's `lfuncheckfeq`. PARI and Sage did not stably agree to $100$
+    digits for all edge critical values, so this draft stores the precision
+    supported by both implementations.
+Display properties:
+  number-header: $L(f_{k,i},s)$
+  group parameters: [['k'], ['i'], ['s']]

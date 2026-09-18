@@ -1,0 +1,174 @@
+Title: Khovanov polynomials of the prime knots with at most ten crossings
+Definition: >-
+  The unreduced integral Khovanov polynomial $Kh_K(q,t,T)$ CITE{Wiki}
+  CITE{Khovanov}, shifted into ordinary polynomial form, for the unknot and
+  each Rolfsen prime knot through ten crossings as KnotInfo draws it
+  CITE{KnotInfo}. The parameter $K$ or $\bar K$ chooses the mirror image of
+  the same named knot.
+Keywords:
+  - Khovanov homology
+  - unreduced integral Khovanov polynomial
+Parameters:
+  n:
+    type: Z
+    title: crossing number
+    display: $n$
+    constraints: $n=0$ or $3\leq n\leq 10$
+  k:
+    type: Z
+    title: index in the Rolfsen table
+    display: $k$
+    constraints: >-
+      $1\leq k\leq N(n)$, where $N(n)$ is the number of knots listed with $n$
+      crossings, $1,1,1,2,3,7,21,49,165$ for $n=0,3,4,\ldots,10$
+  knot:
+    type: Symbolic
+    title: the knot $K=n_k$ as KnotInfo draws it, or its mirror image $\bar K$
+    display: knot
+    values:
+      K: $K$
+      mirror: $\bar K$
+    constraints: >-
+      $\bar K$ is listed for the 229 chiral knots only; the unknot and the 20
+      amphichiral knots are their own mirror images
+Comments:
+  comment-convention: >-
+    This is the original unreduced Khovanov homology over $\mathbb Z$. A free
+    summand $\mathbb Z^r$ in homological grading $i$ and quantum grading $j$
+    contributes $r t^i q^j$ to $Kh_K(q,t,T)$, and a torsion summand
+    $(\mathbb Z/m\mathbb Z)^r$ contributes $r t^i q^j T^m$ CITE{KnotInfoKhovanov}.
+    The source values were computed by KnotJob CITE{KnotJob}.
+  comment-shift: >-
+    $Kh_K$ is a Laurent polynomial in $q$ and $t$, and the table holds
+    polynomials, so the entry is $q^{-a}t^{-b}Kh_K(q,t,T)$ with $a$ the
+    lowest exponent of $q$ and $b$ the lowest exponent of $t$. Each entry's
+    comment gives the nonzero exponents among $a$ and $b$. The unknot has
+    $Kh=q^{-1}+q$, so the entry is $1+q^2$ with $a=-1$. For the right-handed
+    trefoil, KnotInfo gives $Kh=q+q^3+t^2q^5+t^3q^9+t^3q^7T^2$, so the entry
+    is $1+q^2+t^2q^4+t^3q^8+t^3q^6T^2$ with $a=1$.
+  comment-mirror: >-
+    The name $n_k$ names a knot only up to mirror image, and Khovanov homology
+    sees the difference, so the table says which mirror image it draws. Here
+    $K$ is the knot as KnotInfo CITE{KnotInfo} draws it, the closure of the
+    braid in its braid notation, and $\bar K$ is its mirror image. The
+    HREF{Jones_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Jones polynomial]
+    and
+    HREF{HOMFLY-PT_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[HOMFLY-PT polynomial]
+    tables use the same convention.
+  comment-chirality: >-
+    An amphichiral knot is isotopic to its mirror image CITE{WikiChiral}, so
+    it has a single entry. The amphichiral knots here are $4_1$, $6_3$, $8_3$,
+    $8_9$, $8_{12}$, $8_{17}$, $8_{18}$, $10_{17}$, $10_{33}$, $10_{37}$,
+    $10_{43}$, $10_{45}$, $10_{79}$, $10_{81}$, $10_{88}$, $10_{99}$,
+    $10_{109}$, $10_{115}$, $10_{118}$ and $10_{123}$, which is $1,1,5,13$ of
+    them for $n=4,6,8,10$ CITE{OEISamph}.
+  comment-numbering: >-
+    The numbering is Rolfsen's after Perko's correction CITE{Perko}. The knots
+    Rolfsen listed as $10_{161}$ and $10_{162}$ are one knot, so there are
+    $165$ prime knots with ten crossings rather than $166$ CITE{OEIS}, and
+    Rolfsen's $10_{163}$ to $10_{166}$ are $10_{162}$ to $10_{165}$ here
+    CITE{WikiList}. KnotInfo CITE{KnotInfo}, the Knot Atlas CITE{KnotAtlas}
+    and Sage's knot table use this numbering.
+  comment-range: >-
+    The Rolfsen table ends at ten crossings, and so do the names $n_k$. The
+    552 prime knots with eleven crossings are named $11a_1$ to $11a_{367}$
+    and $11n_1$ to $11n_{185}$ after Hoste and Thistlethwaite, alternating and
+    non-alternating separately, which $n$ and $k$ do not express. KnotInfo
+    carries Khovanov homology data for prime knots beyond this range.
+Formulas:
+  formula-euler: >-
+    If $r_{i,j}$ is the rank of the free part of $Kh_K^{i,j}$, then
+    $\sum_{i,j}(-1)^i r_{i,j}q^j=(q+q^{-1})V_K(q^2)$, where $V_K(t)$ is the
+    HREF{Jones_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Jones polynomial]
+    in the convention used here.
+  formula-mirror: >-
+    Write $Kh_K(q,t,T)=F(q,t)+\sum_{m>1}T^mG_m(q,t)$, with $F$ recording the
+    free part and $T^mG_m$ recording the $\mathbb Z/m\mathbb Z$ torsion
+    summands. Then
+    $Kh_{\bar K}(q,t,T)=F(q^{-1},t^{-1})+\sum_{m>1}T^m t\,G_m(q^{-1},t^{-1})$.
+  formula-unknot: >-
+    $Kh_{0_1}(q,t,T)=q^{-1}+q$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      B = BraidGroup(3)
+      K = Link(B([1, 1, 1, 2, -1, 2]))        # 5_2, from KnotInfo's braid notation
+      Kh = K.khovanov_polynomial()            # q^13*t^5 + q^11*t^5*T^2 + ...
+      q, t, T = Kh.parent().gens()
+      exponents = list(Kh.dict())
+      a = min(e[0] for e in exponents)        # lowest exponent of q
+      b = min(e[1] for e in exponents)        # lowest exponent of t
+      shifted = sum(c*q^(e[0]-a)*t^(e[1]-b)*T^(e[2]) for e, c in Kh.dict().items())
+Similar tables:
+  - table: HREF{Jones_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Jones polynomials of the prime knots with at most ten crossings]
+    relation: the same knots; the graded Euler characteristic of Khovanov homology is the Jones polynomial
+  - table: HREF{HOMFLY-PT_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[HOMFLY-PT polynomials of the prime knots with at most ten crossings]
+    relation: the same knots; both refine or specialise to the Jones-polynomial convention used here
+  - table: HREF{Alexander_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Alexander polynomials of the prime knots with at most ten crossings]
+    relation: the same knot names, with mirror images not distinguished by the Alexander polynomial
+  - table: HREF{Conway_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Conway polynomials of the prime knots with at most ten crossings]
+    relation: the same knot names, with mirror images not distinguished by the Conway polynomial
+Links:
+  Wiki:
+    title: 'Wikipedia: Khovanov homology'
+    url: https://en.wikipedia.org/wiki/Khovanov_homology
+  WikiChiral:
+    title: 'Wikipedia: Chiral knot'
+    url: https://en.wikipedia.org/wiki/Chiral_knot
+  WikiList:
+    title: 'Wikipedia: List of prime knots'
+    url: https://en.wikipedia.org/wiki/List_of_prime_knots
+  KnotAtlas:
+    title: 'The Knot Atlas: The Rolfsen Knot Table'
+    url: http://katlas.org/wiki/The_Rolfsen_Knot_Table
+  KnotInfo:
+    title: 'KnotInfo: Table of Knot Invariants (C. Livingston and A. H. Moore)'
+    url: https://knotinfo.org/
+  KnotInfoKhovanov:
+    title: 'KnotInfo: Khovanov Homology Invariants'
+    url: https://knotinfo.org/descriptions/khovanov_unreduced_integral_polynomial.html
+  KnotJob:
+    title: 'KnotJob'
+    url: https://www.maths.dur.ac.uk/users/dirk.schuetz/knotjob.html
+  OEIS:
+    title: 'OEIS A002863: number of prime knots with n crossings'
+    url: https://oeis.org/A002863
+  OEISamph:
+    title: 'OEIS A052401: number of amphichiral prime knots with n crossings'
+    url: https://oeis.org/A052401
+References:
+  Khovanov:
+    bib: >-
+      M. Khovanov, A categorification of the Jones polynomial, Duke Math. J.
+      101 (2000), 359-426.
+    arxiv: math/9908171
+    doi: 10.1215/S0012-7094-00-10131-7
+  Rolfsen:
+    bib: >-
+      D. Rolfsen, Knots and Links, Publish or Perish, 1976, Appendix C: Table
+      of knots and links.
+  Perko:
+    bib: >-
+      K. A. Perko, On the classification of knots, Proc. Amer. Math. Soc. 45
+      (1974), 262-266.
+Tags:
+  - polynomial
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'yes'
+  rigour details: >-
+    The values are transcribed from the khovanov_unreduced_integral_vector
+    column of KnotInfo, package database_knotinfo 2026.9.1, except for the
+    unknot, whose source field is blank and whose standard unreduced value is
+    $q^{-1}+q$. The generator parses each vector exactly, shifts each
+    Laurent polynomial by the lowest exponents of $q$ and $t$, and generates
+    the mirror entries from the mirror formula. It checks the graded Euler
+    characteristic of every entry against the stored
+    HREF{Jones_polynomials_of_the_prime_knots_with_at_most_ten_crossings}[Jones polynomial]
+    table. Sage's `Link.khovanov_polynomial()` was also run from KnotInfo
+    braid closures for $0_1$, $3_1$, $4_1$ and $5_2$, including mirror
+    images, and agreed with the source vectors and the mirror formula.
+Display properties:
+  number-header: $q^{-a}t^{-b}Kh_K(q,t,T)$

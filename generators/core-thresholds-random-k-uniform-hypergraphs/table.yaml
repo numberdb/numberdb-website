@@ -1,0 +1,132 @@
+# The table document for numberdb-data#148, proposal 2. Created as draft T273
+# through the API (X-Draft: yes) and filled by generate.py beside it;
+# publishing is a person's act on the site.
+Title: Core thresholds of random $k$-uniform hypergraphs
+Definition: >-
+  The $r$-core of a $k$-uniform hypergraph CITE{WikiHypergraph} is its largest
+  subhypergraph with minimum vertex degree $r$. The number $c_{k,r}$ is the
+  edge-density threshold for its appearance in the random $k$-uniform
+  hypergraph CITE{Molloy} CITE{CainWormald}.
+Keywords: peeling threshold, pure literal rule, invertible Bloom lookup table, 2-core
+Parameters:
+  k:
+    type: Z
+    title: edge size
+    display: $k$
+    constraints: $k\geq3$
+  r:
+    type: Z
+    title: minimum degree of the core
+    display: $r$
+    constraints: $r\geq2$
+Comments:
+  comment-conventions: >-
+    The density is $c=m/n$, edges per vertex. The average degree is $kc$;
+    HREF{k-core_thresholds_of_the_Erdős_Rényi_random_graph}[$k$-core thresholds
+    of the Erdos-Renyi random graph] use the graph average degree in the case
+    $k=2$, and Dembo and Montanari use the inverse convention, vertices per
+    edge, for $2$-cores of uniform hypergraphs CITE{DemboMontanari}.
+  comment-graph-case: >-
+    The rows with $k=2$ are not repeated here. For $r\geq3$, the same
+    minimisation gives half of the graph $r$-core threshold in
+    HREF{k-core_thresholds_of_the_Erdős_Rényi_random_graph}[the Erdos-Renyi
+    table], because that table writes average degree while this table writes
+    edges per vertex. For $r=2$, the graph $2$-core grows continuously from
+    edge density $1/2$, while for every $k\geq3$ the hypergraph $2$-core
+    appears discontinuously.
+  comment-peeling: >-
+    The $r=2$ rows are the obstruction thresholds for peeling processes on
+    random uniform hypergraphs. In particular $c_{3,2}=0.8184691607\ldots$ is
+    the $2$-core threshold of the random $3$-uniform hypergraph, and it is also
+    the clustering threshold of random $3$-XORSAT CITE{DemboMontanari}
+    CITE{Dietzfelbinger}.
+Formulas:
+  formula-tail: >-
+    $Q(\lambda,s)=\mathbb{P}(\mathrm{Po}(\lambda)\geq s)
+    =1-e^{-\lambda}\sum_{j=0}^{s-1}\lambda^j/j!$.
+  formula-threshold: >-
+    $c_{k,r}=\min_{\lambda>0}\frac{\lambda}{kQ(\lambda,r-1)^{k-1}}$ for
+    $k\geq3$ and $r\geq2$ CITE{Molloy} CITE{CainWormald}.
+  formula-minimiser: >-
+    The minimiser $\lambda_{k,r}$ is the unique positive zero of
+    $g(\lambda)=Q(\lambda,r-1)
+    -(k-1)e^{-\lambda}\lambda^{r-1}/(r-2)!$. The sign of $g$ is the sign of
+    the derivative of
+    $\lambda/Q(\lambda,r-1)^{k-1}$, and
+    $g'(\lambda)=e^{-\lambda}\lambda^{r-2}((k-1)\lambda-(k-1)(r-1)+1)/(r-2)!$,
+    so $g$ decreases and then increases, with one positive zero.
+Programs:
+  program-mpmath:
+    language: Python
+    code: |-
+      from mpmath import mp
+      mp.dps = 50
+      k, r = 3, 2
+      Q = lambda x, s: mp.gammainc(s, 0, x, regularized=True)
+      g = lambda x: Q(x, r - 1) - (k - 1) * mp.e**(-x) * x**(r - 1) / mp.factorial(r - 2)
+      lam = mp.findroot(g, r)
+      print(lam / (k * Q(lam, r - 1)**(k - 1)))
+Similar tables:
+  - table: HREF{k-core_thresholds_of_the_Erdős_Rényi_random_graph}[$k$-core thresholds of the Erdos-Renyi random graph]
+    relation: the graph case, written in average degree rather than edge density, with the core degree as its only parameter
+Links:
+  WikiHypergraph:
+    title: 'Wikipedia: Hypergraph'
+    url: https://en.wikipedia.org/wiki/Hypergraph
+References:
+  Molloy:
+    bib: >-
+      M. Molloy, Cores in random hypergraphs and Boolean formulas, Random
+      Structures & Algorithms 27 (2005), 124-135.
+    doi: 10.1002/rsa.20061
+  CainWormald:
+    bib: >-
+      J. Cain and N. Wormald, Encores on cores, Electronic Journal of
+      Combinatorics 13 (2006), R81.
+  DemboMontanari:
+    bib: >-
+      A. Dembo and A. Montanari, Finite size scaling for the core of large
+      random hypergraphs, Annals of Applied Probability 18 (2008), 1993-2040.
+    doi: 10.1214/07-AAP514
+    arxiv: math/0702007
+  Dietzfelbinger:
+    bib: >-
+      M. Dietzfelbinger, A. Goerdt, M. Mitzenmacher, A. Montanari, R. Pagh
+      and M. Rink, Tight thresholds for cuckoo hashing via XORSAT, Proceedings
+      of ICALP 2010, Lecture Notes in Computer Science 6198, 213-225.
+    doi: 10.1007/978-3-642-14165-2_19
+    arxiv: '0912.0287'
+Tags:
+  - probability theory
+  - statistical mechanics
+  - combinatorics
+Data properties:
+  type: R
+  rigour: proven
+  sources:
+    - CITE{Molloy}
+    - CITE{CainWormald}
+  complete: 'no'
+  complete-note: >-
+    it holds $c_{k,r}$ for every $3\leq k\leq8$ and $2\leq r\leq8$
+  rigour details: >-
+    Each entry is the value at the minimiser $\lambda_{k,r}$ of
+    $f(\lambda)=\lambda/(kQ(\lambda,r-1)^{k-1})$, computed in ball arithmetic
+    with 64 guard bits beyond the 100 digits written. That $\lambda_{k,r}$ is
+    the unique minimiser and the minimum is global follows from the sign of
+    $f'$, which is the sign of $g$ in CITE{formula-minimiser}: $g$ is negative
+    before $\lambda_{k,r}$ and positive after it, so $f$ decreases and then
+    increases. The computation encloses $\lambda_{k,r}$ by bisection on the
+    sign of $g$ between $(r-1)-1/(k-1)$ and $4(k+r)+10$, each sign decided in
+    ball arithmetic, down to a bracket of half-width $10^{-106}$ whose ends
+    are then checked to give $g$ opposite signs, and evaluates $f$ on that
+    bracket as a ball; the Poisson tail is the finite sum in
+    CITE{formula-tail}. Before any entry was written, all values were compared
+    with an mpmath computation at 120 digits that writes the tail as the
+    regularised incomplete gamma function and finds the minimiser as a root of
+    the numerical derivative; the extension of the generator to $k=2$ was also
+    compared with the graph-core table, where it gives exactly half of each
+    stored value for $3\leq r\leq8$.
+Display properties:
+  number-header: $c_{k,r}$
+Numbers: []

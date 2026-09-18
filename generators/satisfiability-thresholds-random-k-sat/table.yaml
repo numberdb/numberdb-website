@@ -1,0 +1,102 @@
+# The table document for numberdb-data#148, proposal 6. Created as draft T277
+# through the API (X-Draft: yes) and filled by generate.py beside it;
+# publishing is a person's act on the site.
+Title: Satisfiability thresholds of random $k$-SAT
+Definition: >-
+  For $k\geq3$, random $k$-SAT CITE{WikiSAT} is the random $k$-CNF model at
+  clause density $\alpha=m/n$. The number $\alpha_s(k)$ is the one-step
+  replica-symmetry-breaking cavity-method prediction for its satisfiability
+  threshold CITE{MMZ}.
+Keywords: random SAT, random Boolean formulas, cavity method, survey propagation, phase transition
+Parameters:
+  k:
+    type: Z
+    title: clause length
+    display: $k$
+    constraints: $k\geq3$
+Comments:
+  comment-conventions: >-
+    The density is $\alpha=m/n$, clauses per variable. The average literal
+    degree is $k\alpha$. Clauses are sampled with distinct variables, and each
+    occurrence is independently negated with probability $\frac12$.
+  comment-source-notation: >-
+    Mertens, Mezard and Zecchina CITE{MMZ} write the satisfiability threshold
+    as $\alpha_c$; their $\alpha_s$ is the stability limit of the 1RSB
+    solution. This table follows the notation of Krzakala, Montanari,
+    Ricci-Tersenghi, Semerjian and Zdeborova CITE{KMRTSZ}, where
+    $\alpha_s(k)$ is the SAT-UNSAT threshold.
+  comment-heuristic: >-
+    The listed values for $3\leq k\leq7$ are predictions of the
+    cavity-method population-dynamics computation in CITE{MMZ}. Ding, Sly and
+    Sun prove that the one-step replica-symmetry-breaking prediction gives the
+    satisfiability threshold for all sufficiently large $k$ CITE{DSS}, but
+    their theorem does not give an explicit $k_0$ and does not certify any row
+    listed here.
+  comment-k2: >-
+    There is no $k=2$ row. The random $2$-SAT threshold is exactly
+    $\alpha_s(2)=1$, and the cavity-method table in CITE{MMZ} starts at
+    $k=3$.
+Formulas:
+  formula-asymptotic: >-
+    The cavity-method prediction satisfies
+    $\alpha_s(k)=2^k\log 2-\frac12(1+\log 2)+O(2^{-k})$ as $k\to\infty$
+    CITE{MMZ} CITE{KMRTSZ}.
+Similar tables:
+  - table: HREF{T272}[satisfiability thresholds of random $k$-XORSAT]
+    relation: the XOR analogue, where the threshold is proven and computed from a scalar root equation
+  - table: HREF{T273}[core thresholds of random $k$-uniform hypergraphs]
+    relation: the $2$-core thresholds give the pure-literal obstruction thresholds for random $k$-SAT after the density convention is adjusted
+Links:
+  WikiSAT:
+    title: 'Wikipedia: Boolean satisfiability problem'
+    url: https://en.wikipedia.org/wiki/Boolean_satisfiability_problem
+References:
+  MMZ:
+    bib: >-
+      S. Mertens, M. Mezard and R. Zecchina, Threshold values of random
+      K-SAT from the cavity method, Random Structures & Algorithms 28 (2006),
+      340-373.
+    doi: 10.1002/rsa.20090
+    arxiv: cs/0309020
+  KMRTSZ:
+    bib: >-
+      F. Krzakala, A. Montanari, F. Ricci-Tersenghi, G. Semerjian and
+      L. Zdeborova, Gibbs states and the set of solutions of random
+      constraint satisfaction problems, Proceedings of the National Academy
+      of Sciences of the United States of America 104 (2007), 10318-10323.
+    doi: 10.1073/pnas.0703685104
+    arxiv: cond-mat/0612365
+  DSS:
+    bib: >-
+      J. Ding, A. Sly and N. Sun, Proof of the satisfiability conjecture for
+      large $k$, Annals of Mathematics 196 (2022), 1-388.
+    arxiv: '1411.0650'
+Tags:
+  - statistical mechanics
+  - probability theory
+Data properties:
+  type: R
+  rigour: heuristic
+  sources:
+    - CITE{MMZ}
+    - CITE{KMRTSZ}
+    - CITE{DSS}
+  complete: 'no'
+  complete-note: >-
+    it holds the cavity-method values printed by Mertens, Mezard and Zecchina
+    for every $k$ with $3\leq k\leq7$
+  rigour details: >-
+    The values are transcribed from Table 1 and Eq. (43) of CITE{MMZ}. The
+    $k=3$ entry stores the centre $4.26675$ with the published $2\sigma$
+    radius $0.00015$. For $4\leq k\leq7$, CITE{MMZ} prints the decimal values
+    without separate error bars, so each entry is stored as the printed
+    decimal and carries the database interval implied by its last digit.
+    Before any entry was written, the rows $k=4,5,6$ were compared with the
+    rounded values $9.93$, $21.12$ and $43.4$ in Table 1 of CITE{KMRTSZ}, and
+    all rows were compared with the large-$k$ asymptotic in
+    CITE{formula-asymptotic}. That comparison checks the convention and scale;
+    it is not an error bound. No rigorous proof is known for the listed small
+    values.
+Display properties:
+  number-header: $\alpha_s(k)$
+Numbers: []

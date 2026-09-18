@@ -1,0 +1,146 @@
+# Draft document for T256. Publishing is a person's act.
+Title: Dimensions of the irreducible representations of the exceptional simple Lie algebras
+Definition: >-
+  For an exceptional complex simple Lie algebra $\mathfrak g$
+  CITE{WikiExceptional}, this table stores
+  $\dim V_{\mathfrak g}(\lambda)$ for nonzero dominant integral highest
+  weights $\lambda$.
+Parameters:
+  algebra:
+    type: Symbolic
+    title: exceptional simple Lie algebra
+    display: $\mathfrak g$
+    constraints: one of $G_2$, $F_4$, $E_6$, $E_7$ or $E_8$
+    values:
+      G2: $G_2$
+      F4: $F_4$
+      E6: $E_6$
+      E7: $E_7$
+      E8: $E_8$
+  weight:
+    type: Symbolic
+    title: highest weight
+    display: $\lambda$
+    constraints: >-
+      a nonzero tuple $(a_1,\ldots,a_r)$ of nonnegative integers, where
+      $r$ is the rank of $\mathfrak g$
+Comments:
+  bourbaki-numbering: >-
+    Weights are written as Dynkin labels in Bourbaki node numbering, the
+    numbering used by Sage's root-system data CITE{SageRootSystem}. For
+    example, in this convention $E_8$ has
+    $\dim V(1,0,0,0,0,0,0,0)=3875$ and
+    $\dim V(0,0,0,0,0,0,0,1)=248$.
+  trivial-representation: >-
+    The zero highest weight, whose representation has dimension $1$, is
+    omitted.
+  equal-dimensions: >-
+    Weights with the same dimension remain separate rows. This includes
+    dual pairs such as the two $27$-dimensional representations of $E_6$
+    and repeated dimensions such as the two $77$-dimensional
+    representations of $G_2$.
+  classical-types: >-
+    The classical simple Lie algebras are not included. Their familiar
+    families of representations often have binomial-coefficient or short
+    product dimensions, so their small values are better found through
+    their own classical constructions.
+Formulas:
+  formula-weyl-dimension: >-
+    Weyl's dimension formula is
+    $\dim V(\lambda)=\prod_{\alpha\in\Phi^+}
+    \frac{\langle\lambda+\rho,\alpha^\vee\rangle}
+    {\langle\rho,\alpha^\vee\rangle}$, where $\Phi^+$ is the set of
+    positive roots and $\rho$ is the half-sum of the positive roots
+    CITE{WikiWeyl}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.combinat.root_system.root_system import RootSystem
+      from sage.rings.rational_field import QQ
+
+      ambient = RootSystem("E8").ambient_space()
+      weights = ambient.fundamental_weights()
+      rho = ambient.rho()
+      labels = (0, 0, 0, 0, 0, 0, 0, 1)
+      lam = ambient.zero()
+      for a, i in zip(labels, ambient.index_set()):
+          lam += QQ(a) * weights[i]
+      dimension = QQ(1)
+      for alpha in ambient.positive_roots():
+          coroot = alpha.associated_coroot()
+          dimension *= QQ((lam + rho).scalar(coroot)) / QQ(rho.scalar(coroot))
+      dimension                                  # 248
+Similar tables:
+  - table: HREF{Orders_of_finite_simple_groups_of_Lie_type}[Orders of finite simple groups of Lie type]
+    relation: uses the same exceptional Dynkin types for the corresponding finite groups of Lie type
+  - table: HREF{Schur_polynomials}[Schur polynomials]
+    relation: gives the type $A$ characters whose specialisations include dimensions of polynomial representations of general linear groups
+Links:
+  WikiExceptional:
+    title: 'Wikipedia: Exceptional Lie algebra'
+    url: https://en.wikipedia.org/wiki/Exceptional_Lie_algebra
+  WikiWeyl:
+    title: 'Wikipedia: Weyl character formula'
+    url: https://en.wikipedia.org/wiki/Weyl_character_formula
+  SageRootSystem:
+    title: 'SageMath: root systems'
+    url: https://doc.sagemath.org/html/en/reference/combinat/sage/combinat/root_system/root_system.html
+  OEISG2:
+    title: 'OEIS A104599: dimensions of irreducible representations of $G_2$'
+    url: https://oeis.org/A104599
+  OEISF4:
+    title: 'OEIS A121738: dimensions of irreducible representations of $F_4$'
+    url: https://oeis.org/A121738
+  OEISE6:
+    title: 'OEIS A121737: dimensions of irreducible representations of $E_6$'
+    url: https://oeis.org/A121737
+  OEISE7:
+    title: 'OEIS A121736: dimensions of irreducible representations of $E_7$'
+    url: https://oeis.org/A121736
+  OEISE8:
+    title: 'OEIS A121732: dimensions of irreducible representations of $E_8$'
+    url: https://oeis.org/A121732
+Keywords:
+  - exceptional Lie algebra
+  - irreducible representation
+  - highest weight representation
+  - Weyl dimension formula
+  - Dynkin label
+  - Bourbaki numbering
+  - representation dimension
+  - E8
+  - E7
+  - E6
+  - F4
+  - G2
+Tags:
+  - algebra
+  - groups
+Data properties:
+  type: Z
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every nontrivial irreducible representation with
+    $\dim V(\lambda)\leq10^6$ for $G_2$,
+    $\dim V(\lambda)\leq10^7$ for $F_4$ and $E_6$,
+    $\dim V(\lambda)\leq10^8$ for $E_7$, and
+    $\dim V(\lambda)\leq10^{12}$ for $E_8$
+  rigour details: >-
+    All entries are exact integers computed from Weyl's dimension formula
+    CITE{formula-weyl-dimension}. The generator reads the positive roots
+    and fundamental weights from Sage's root-system data CITE{SageRootSystem},
+    evaluates the product over positive coroots with exact rational
+    arithmetic, and checks that each result is integral. The finite range is
+    checked by enumerating the dominant weights a second way, by total label
+    sum. The fundamental representation dimensions are checked against the
+    standard values $7,14$ for $G_2$, $26,52,273,1274$ for $F_4$, $27,78,351,
+    2925,351,27$ for $E_6$, $56,133,912,1539,8645,27664,365750$ for $E_7$,
+    and $248,3875,30380,147250,2450240,6696000,146325270,6899079264$ for
+    $E_8$. For each algebra, the set of distinct stored dimensions, together
+    with the omitted trivial dimension $1$, is checked against the
+    corresponding OEIS b-file through the stated bound: CITE{OEISG2},
+    CITE{OEISF4}, CITE{OEISE6}, CITE{OEISE7} and CITE{OEISE8}.
+Display properties:
+  number-header: $\dim V_{\mathfrak g}(\lambda)$

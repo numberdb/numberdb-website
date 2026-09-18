@@ -1,0 +1,6 @@
+1. done -- changed the complete-note to say the table covers the cited known evaluations for $n=3,4$ and conjectural eta-integral evaluations for $n=5,6$, with $\mu_1=\mu_2=0$; checked the Straub-Zudilin source and narrowed the wording to the cited sources.
+2. done -- shortened the Definition and added `formula-mahler` defining $m(P)$ by its torus integral; checked the BSWZ and Straub-Zudilin definitions and previewed the rendered formula.
+3. done -- rewrote `comment-indexing` to name the walk steps, the terms of $1+x_1+\cdots+x_{n-1}$, and the monomial-invariance reason one variable is removed; checked the source identity $m(x_1+\cdots+x_n)=m(1+x_1+\cdots+x_{n-1})$.
+4. done -- rewrote the Pólya similar-table gloss to say T19 is indexed by lattice dimension while this table is indexed by number of planar steps; checked T19 through the live API.
+5. done -- rewrote `rigour details` to remove draft/screening-report language and state the eta-integral basis and conjectural status; checked BSWZ for the 600- and 80-place confirmations and ran `agents/sage.sh /tmp/t283_check.py` to recompute the four displayed values.
+6. done -- rewrote the row comments for $n=5$ and $n=6$ so the conjecture is the eta-integral equality, not the value itself, and used the unhyphenated Rodriguez Villegas spelling; checked BSWZ and the Sage recomputation before changing them.

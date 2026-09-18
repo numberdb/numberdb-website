@@ -1,0 +1,115 @@
+# The table document for numberdb.org/T289. It was created as a draft through
+# the API (X-Draft: yes) and is filled by generate.py beside it; publishing is
+# a person's act on the site.
+Title: Minimisers of the core threshold
+Definition: >-
+  For $k\geq3$ and $r\geq2$, $\lambda_{k,r}$ is the positive minimiser in
+  CITE{formula-threshold}, the formula for the random $k$-uniform hypergraph
+  CITE{WikiHypergraph} $r$-core threshold.
+Keywords: peeling threshold, pure literal rule, invertible Bloom lookup table, 2-core
+Parameters:
+  k:
+    type: Z
+    title: edge size
+    display: $k$
+    constraints: $k\geq3$
+  r:
+    type: Z
+    title: minimum degree of the core
+    display: $r$
+    constraints: $r\geq2$
+Comments:
+  comment-convention: >-
+    The notation and indexing match
+    HREF{Core_thresholds_of_random_k-uniform_hypergraphs}[the core threshold
+    table]: $\lambda_{k,r}$ gives
+    $c_{k,r}=\lambda_{k,r}/(kQ(\lambda_{k,r},r-1)^{k-1})$.
+Formulas:
+  formula-tail: >-
+    $Q(\lambda,s)=\mathbb{P}(\mathrm{Po}(\lambda)\geq s)
+    =1-e^{-\lambda}\sum_{j=0}^{s-1}\lambda^j/j!$.
+  formula-minimiser: >-
+    The minimiser $\lambda_{k,r}$ is the unique positive zero of
+    $g(\lambda)=Q(\lambda,r-1)
+    -(k-1)e^{-\lambda}\lambda^{r-1}/(r-2)!$. The sign of $g$ is the sign of
+    the derivative of
+    $\lambda/Q(\lambda,r-1)^{k-1}$, and
+    $g'(\lambda)=e^{-\lambda}\lambda^{r-2}((k-1)\lambda-(k-1)(r-1)+1)/(r-2)!$,
+    so $g$ decreases and then increases, with one positive zero.
+  formula-threshold: >-
+    $c_{k,r}=\min_{\lambda>0}\lambda/(kQ(\lambda,r-1)^{k-1})
+    =\lambda_{k,r}/(kQ(\lambda_{k,r},r-1)^{k-1})$ CITE{Molloy}
+    CITE{CainWormald}.
+Programs:
+  program-mpmath:
+    language: Python
+    code: |-
+      from mpmath import mp
+      mp.dps = 50
+      k, r = 3, 2
+      Q = lambda x, s: mp.gammainc(s, 0, x, regularized=True)
+      g = lambda x: Q(x, r - 1) - (k - 1) * mp.e**(-x) * x**(r - 1) / mp.factorial(r - 2)
+      lo = mp.mpf(r - 1) - mp.mpf(1) / (k - 1)
+      hi = mp.mpf(4 * (k + r) + 10)
+      while g(hi) <= 0:
+          hi *= 2
+      for _ in range(4 * mp.dps):
+          mid = (lo + hi) / 2
+          if g(mid) < 0:
+              lo = mid
+          else:
+              hi = mid
+      print((lo + hi) / 2)
+Similar tables:
+  - table: HREF{Core_thresholds_of_random_k-uniform_hypergraphs}[Core thresholds of random $k$-uniform hypergraphs]
+    relation: thresholds obtained from these minimisers by the formula for $c_{k,r}$
+  - table: HREF{k-core_thresholds_of_the_Erdős_Rényi_random_graph}[$k$-core thresholds of the Erdos-Renyi random graph]
+    relation: the graph case, obtained by the same minimisation when the edge size is $2$ and written in average degree rather than edge density
+Links:
+  WikiHypergraph:
+    title: 'Wikipedia: Hypergraph'
+    url: https://en.wikipedia.org/wiki/Hypergraph
+References:
+  Molloy:
+    bib: >-
+      M. Molloy, Cores in random hypergraphs and Boolean formulas, Random
+      Structures & Algorithms 27 (2005), 124-135.
+    doi: 10.1002/rsa.20061
+  CainWormald:
+    bib: >-
+      J. Cain and N. Wormald, Encores on cores, Electronic Journal of
+      Combinatorics 13 (2006), R81.
+Tags:
+  - probability theory
+  - statistical mechanics
+  - combinatorics
+Data properties:
+  type: R
+  rigour: proven
+  sources:
+    - CITE{Molloy}
+    - CITE{CainWormald}
+  complete: 'no'
+  complete-note: >-
+    it holds $\lambda_{k,r}$ for every $3\leq k\leq8$ and $2\leq r\leq8$,
+    matching the companion core-threshold table
+  rigour details: >-
+    Each entry is computed in ball arithmetic with 64 guard bits beyond the
+    100 digits written. The minimiser $\lambda_{k,r}$ is the unique minimiser
+    because the sign of the derivative is the sign of $g$ in
+    CITE{formula-minimiser}: $g$ decreases and then increases, so it is
+    negative before $\lambda_{k,r}$ and positive after it. The computation
+    encloses $\lambda_{k,r}$ by bisection on the sign of $g$ between
+    $(r-1)-1/(k-1)$ and $4(k+r)+10$, each sign decided in ball arithmetic,
+    down to a bracket of half-width $10^{-106}$ whose ends are checked to
+    give opposite signs; that bracket is the stored ball. The Poisson tail is
+    the finite sum in CITE{formula-tail}. The generator compares every row
+    with an mpmath computation at 120 digits that writes $Q$ as the
+    regularised incomplete gamma function, compares every derived threshold
+    with HREF{Core_thresholds_of_random_k-uniform_hypergraphs}[the core
+    threshold table], and checks the $k=2$ extension against
+    HREF{k-core_thresholds_of_the_Erdős_Rényi_random_graph}[the graph-core
+    threshold table].
+Display properties:
+  number-header: $\lambda_{k,r}$
+Numbers: []

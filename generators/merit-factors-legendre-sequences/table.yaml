@@ -1,0 +1,91 @@
+Title: Merit factors of the Legendre sequences
+Definition: >-
+  For an odd prime $p$, the Legendre sequence $u^{(p)}=(u_0,\ldots,u_{p-1})$
+  is defined by $u_0=1$ and $u_j=\left(\frac{j}{p}\right)$ for
+  $1\leq j<p$, where $\left(\frac{\cdot}{p}\right)$ is the Legendre symbol
+  CITE{Legendre}. This table holds its aperiodic merit factor $F_p$.
+Parameters:
+  p:
+    type: Z
+    title: prime length
+    display: $p$
+    constraints: $p$ is an odd prime
+Comments:
+  comment-convention: >-
+    The sequence is not cyclically rotated, and the merit factor is the
+    aperiodic one. The periodic merit factor is a different quantity.
+  comment-literature: >-
+    The merit factor convention and the Legendre sequence family are those
+    studied by Golay CITE{Golay} and by Hoholdt and Jensen CITE{HJ}.
+  comment-fekete: >-
+    If $U_p(x)=\sum_{j=0}^{p-1}u_jx^j$, then $U_p(x)=1+f_p(x)$, where
+    $f_p$ is the HREF{Fekete_polynomials}[Fekete polynomial] with the same
+    prime parameter.
+Formulas:
+  formula-merit-factor: >-
+    $F_p=p^2/(2\sum_{k=1}^{p-1}c_k^2)$, where
+    $c_k=\sum_{j=0}^{p-1-k}u_ju_{j+k}$ and $c_0=p$.
+  formula-l4-norm: >-
+    If $\|U_p\|_4^4$ denotes the integral of $|U_p(z)|^4$ over $|z|=1$ with
+    normalized Haar measure, then $F_p=p^2/(\|U_p\|_4^4-p^2)$.
+  formula-asymptotic: >-
+    For the unrotated Legendre sequence, $F_p\to 3/2$ as $p\to\infty$
+    CITE{HJ}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.arith.misc import kronecker_symbol
+      from sage.rings.integer_ring import ZZ
+      from sage.rings.rational_field import QQ
+
+      def legendre_merit_factor(p):
+          u = [ZZ(1)] + [ZZ(kronecker_symbol(j, p)) for j in range(1, p)]
+          denominator = ZZ(0)
+          for k in range(1, p):
+              c = sum(u[j] * u[j + k] for j in range(p - k))
+              denominator += c * c
+          return QQ(p * p) / QQ(2 * denominator)
+
+      legendre_merit_factor(1009)      # the next prime after this table
+Similar tables:
+  - table: HREF{Fekete_polynomials}[Fekete polynomials $f_p$]
+    relation: have the same Legendre-symbol coefficients for positive powers, but store the polynomial with zero constant term rather than the merit factor of the length-$p$ sequence with $u_0=1$
+  - table: HREF{Shapiro_polynomials}[Shapiro polynomials $P_n$]
+    relation: use the Rudin-Shapiro sign rule for another family of binary sequences with small aperiodic autocorrelations
+  - table: HREF{Complementary_Shapiro_polynomials}[Complementary Shapiro polynomials $Q_n$]
+    relation: store the second polynomial in the Rudin-Shapiro recursion rather than a Legendre-symbol sequence merit factor
+Links:
+  Legendre:
+    title: 'Wikipedia: Legendre symbol'
+    url: https://en.wikipedia.org/wiki/Legendre_symbol
+Keywords:
+  - Legendre sequence
+  - binary sequences
+  - low autocorrelation binary sequences
+  - merit factor
+Tags:
+  - number theory
+  - combinatorics
+References:
+  Golay:
+    bib: M. J. E. Golay, The merit factor of Legendre sequences, IEEE Transactions on Information Theory 29 (1983), no. 6, 934-936.
+    doi: 10.1109/TIT.1983.1056744
+  HJ:
+    bib: T. Hoholdt and H. E. Jensen, Determination of the merit factor of Legendre sequences, IEEE Transactions on Information Theory 34 (1988), no. 1, 161-164.
+    doi: 10.1109/18.2620
+Data properties:
+  type: Q
+  rigour: exact
+  complete: no
+  complete-note: it holds every odd prime $p<1000$
+  rigour details: >-
+    The generator computes the Legendre sequence from exact Legendre symbols
+    and forms the aperiodic autocorrelations by integer arithmetic. The values
+    are exact rational numbers. The run checked every value against the same
+    sequence built by Euler's criterion rather than Sage's Legendre symbol,
+    against the known small values for $p=3,5,7,11,13$, and against the
+    $L^4$-norm formula computed from all ordered coefficient pairs.
+Display properties:
+  number-header: $F_p$
