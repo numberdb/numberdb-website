@@ -23,6 +23,8 @@ table.overview tr:hover td { background: #f7f9f2; }
 .breakdown { margin: 1rem 0 1.5rem 0; }
 .breakdown td { padding: 0.15rem 0.8rem 0.15rem 0; font-size: 0.9rem; }
 .breakdown td.bar div { background: #d9e5b8; height: 0.7rem; }
+.overview-heading { font-size: 1rem; font-weight: 400; color: #555;
+  margin: 1.4rem 0 0 0; }
 .granularity a { font-size: 0.85rem; margin-right: 0.6rem; }
 .granularity a.on { font-weight: 600; text-decoration: none; color: #000; }
 table.distribution { border-collapse: collapse; margin: 0.5rem 0 1.5rem 0; font-size: 0.9rem; }
@@ -71,6 +73,30 @@ say that in one line.
     {% endfor %}
   </tbody>
 </table>
+
+{% comment %}
+What the corpus holds, by kind of number. Entries and tables both, because
+they answer different questions and the table count alone misleads: one table
+of integers can hold more entries than every complex-valued table together.
+{% endcomment %}
+<h2 class="overview-heading">Entries by type</h2>
+<table class="breakdown">
+  {% for item in types %}
+    <tr>
+      <td><code>{{ item.type }}</code>{% if item.name %} &mdash; {{ item.name }}{% endif %}</td>
+      <td class="right">{{ item.entries }}</td>
+      <td class="right overview-cost">{{ item.tables }} table{{ item.tables|pluralize }}</td>
+      <td class="bar" style="width: 40%">
+        <div style="width: {% widthratio item.entries typed_total 100 %}%"></div>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="4" class="overview-zero">Nothing measured yet.</td></tr>
+  {% endfor %}
+</table>
+<div class="overview-summary">Counted from the indexed rows, which is what
+search answers from. A table declaring a type this database cannot parse is
+shown and citable and indexes nothing, so it counts zero here.</div>
 
 {% comment %}
 The same money, asked three ways. What a table cost, what a model has cost,
