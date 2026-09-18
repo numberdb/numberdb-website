@@ -3,12 +3,11 @@
 # entries endpoint. Publishing is a person's act on the site.
 Title: Cusp shapes of the hyperbolic prime knots with at most ten crossings
 Definition: >-
-  The cusp shape $\tau(S^3\setminus K)$ of a complete one-cusped hyperbolic
-  knot complement is the ratio of the longitude translation to the meridian
-  translation in SnapPy's meridian-longitude basis CITE{SnapPy}. This table
-  lists it for every hyperbolic prime knot $K=n_k$ with at most ten crossings,
-  numbered as in the Rolfsen table CITE{Rolfsen} after Perko's correction
-  CITE{Perko}, and for each distinct mirror image $\bar K$.
+  The cusp shape $\tau(S^3\setminus K)$ is SnapPy's longitude translation
+  divided by its meridian translation for the complete hyperbolic metric on a
+  one-cusped knot complement CITE{SnapPy}. This table lists it for the
+  hyperbolic prime knots $n_k$ with at most ten crossings and their distinct
+  mirror images.
 Parameters:
   n:
     type: Z
@@ -45,11 +44,15 @@ Comments:
     the same reason.
   comment-numbering: >-
     The exterior is built from KnotInfo's braid word CITE{KnotInfo}, using the
-    same post-Perko knot numbering as the neighboring knot tables. SnapPy's
-    built-in names Manifold('n_k') CITE{SnapPy} use Rolfsen's pre-Perko
-    ten-crossing table in part and interchange the knots named $10_{83}$ and
-    $10_{86}$ relative to KnotInfo, so they are not used to construct the
-    entries.
+    same post-Perko knot numbering as the neighboring knot tables: Rolfsen's
+    table CITE{Rolfsen} with Perko's correction CITE{Perko}. SnapPy's built-in
+    names Manifold('n_k') CITE{SnapPy} use Rolfsen's pre-Perko ten-crossing
+    table in part and interchange the knots named $10_{83}$ and $10_{86}$
+    relative to KnotInfo, so they are not used to construct the entries.
+  comment-mirror: >-
+    Rows marked $K$ use KnotInfo's diagram, and rows marked $\bar K$ use its
+    mirror image. These are the two mirror choices for the same Rolfsen knot
+    name, not two different quantities.
   comment-convention: >-
     The value is SnapPy's cusp shape, not the reduced modulus of the Euclidean
     cusp torus. Changing the peripheral basis by
