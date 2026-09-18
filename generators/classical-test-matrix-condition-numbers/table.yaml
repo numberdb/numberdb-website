@@ -152,7 +152,6 @@ Links:
     url: https://github.com/carandraug/testmatrix/blob/master/Test%20Matrix%20Toolbox/gallery.m
 Tags:
   - analysis
-  - numerical linear algebra
 Data properties:
   type: R
   rigour: proven
