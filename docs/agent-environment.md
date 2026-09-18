@@ -5137,3 +5137,109 @@ Evidence: 2026-09-18, T324 critique. `git log` on
 `generators/level-one-cusp-form-l-values/table.yaml` (last commit `a26e063`,
 06:55) against the live T323 document; `git log` for `0f213ec` (07:22, the
 repair record) and `d15d462` (07:36, the T324 draft).
+
+## `screen.source_names_it` checks the words separately, so it passes on a page that never uses the phrase
+
+What happened: `agents/table-ideas/screen.py` splits a proposal's name into its
+distinguishing words and reports a complaint only for words the page does not
+contain anywhere. Screening "Chern classes of a complete intersection" against
+`https://en.wikipedia.org/wiki/Chern_class` returns `None` -- a pass -- and that
+page does not contain the phrase "complete intersection" at all. It contains
+"complete" (in "complete the proof", and in several unrelated places) and
+"intersection" (in "intersection product"), and that is enough.
+
+The check is still worth running: it catches an invented family, which is what
+it is for. What it cannot do is confirm that the source *names* the family, and
+a run that reports "source_names_it: None" as if it had is reporting something
+it did not measure.
+
+What to do instead: when a pass depends on common words rather than on a proper
+noun, fetch the page and grep for the phrase before writing the proposal up,
+and say in the proposal which sections actually treat the subject. A one-line
+probe is enough:
+
+    ' '.join(re.sub(r'<[^>]+>', ' ', body).lower().split()).find('complete intersection')
+
+Evidence: 2026-09-18, ideas run. `source_names_it('Chern classes of a complete
+intersection', 'https://en.wikipedia.org/wiki/Chern_class')` returns `None`
+while a phrase probe of the same page returns `-1`. The same page *does* carry
+the sections "Normal sequence", "Quintic threefold" and "Degree d
+hypersurfaces", which treat the hypersurface case, so the proposal is sound and
+the screen's reason for saying so was not.
+
+## `screen.already_asked` rate-limits after about a dozen calls, and the failure reads like "nothing found"
+
+What happened: `already_asked` goes to `api.github.com/search/issues`
+unauthenticated. Screening twelve candidates in one loop exhausted the
+unauthenticated quota partway through, and the last two rows came back as
+`['could not ask GitHub (HTTPError)']`. That is honest -- the function was
+written not to return `[]` on failure, for exactly this reason -- but in a table
+of screening results it sits in the same column as a genuine empty answer and
+is easy to read past.
+
+What to do instead: run the tail through `gh`, which is authenticated in this
+environment and searches closed issues too:
+
+    gh search issues --repo numberdb/numberdb-data --match title "Chern" \
+        --limit 10 --json number,title,state
+
+Evidence: 2026-09-18, ideas run, twelve candidates screened in one process; rows
+eleven and twelve returned the HTTPError string. Re-running ten search terms
+through `gh` took seconds and found the one issue that matters (#108, open).
+
+## The repository's own `numberdb/` package shadows the client, so `import numberdb` from the repository root is the Django app
+
+What happened: `PYTHONPATH=clients/python python3 -c "import numberdb"` run from
+`/home/ubuntu/numberdb-website` imports `/home/ubuntu/numberdb-website/numberdb`
+-- the Django project package, which has no `search_text` and no `table` -- and
+not `clients/python/numberdb`. Python puts the working directory ahead of
+`PYTHONPATH`. The failure is an `AttributeError` on the first call rather than
+an `ImportError`, so it does not look like a path problem.
+
+`agents/sage.sh` is unaffected: it mounts the file under `/work` in a container
+and puts the client on the path there. This bites only a plain `python3` used
+for the screening helpers, which do not need Sage.
+
+What to do instead: run screening scripts from another directory, copying
+`screen.py` beside them:
+
+    cp agents/table-ideas/screen.py /tmp/ && cd /tmp && \
+        PYTHONPATH=/home/ubuntu/numberdb-website/clients/python python3 /tmp/s1.py
+
+Evidence: 2026-09-18, ideas run. From the repository root,
+`import numberdb; numberdb.__file__` is
+`/home/ubuntu/numberdb-website/numberdb/__init__.py`; from `/tmp` with the same
+`PYTHONPATH` it is the client.
+
+## The corpus is 269 tables, and `agents/table-ideas/PROMPT.md` still says 126
+
+What happened: the stage-one prompt tells a run that "126 tables exist" and that
+the tag list "has 66 tags". Walking `numberdb.table('T1')` through `T269` this
+run returns **269 tables** (every number from T1 to T269 except T75). A run that
+believes the prompt underestimates the corpus by more than half and will screen
+against a picture of a database that stopped growing in August.
+
+What to do instead: walk the T-numbers at the start of a run -- there is still
+no call that lists the corpus -- and use what comes back. Updating the number in
+`PROMPT.md` only postpones the problem; the sentence would be better written as
+"walk the T-numbers; there were 269 on 2026-09-18".
+
+Evidence: 2026-09-18, ideas run. `/tmp/corpus.py`, a loop over `T1`..`T269`
+printing `Title` and `Tags`, returned 269 rows, the last being T269 *Meixner
+polynomials*.
+
+## `WebSearch` is not permitted to this runner
+
+What happened: looking for a durable web page that names a family by its full
+phrase, the ideas run called `WebSearch` and got "Claude requested permissions
+to use WebSearch, but you haven't granted it yet". Unattended, there is nobody
+to grant it.
+
+What to do instead: probe candidate URLs directly with `urllib` and check the
+text, which is what `screen.source_names_it` does anyway. Ten candidates took
+one script and about twenty seconds. Two results worth keeping so nobody else
+tries them: `https://ncatlab.org/nlab/show/complete+intersection` and
+`https://mathworld.wolfram.com/CompleteIntersection.html` are both **404**, so
+neither is available as a citation however natural it looks.
+
+Evidence: 2026-09-18, ideas run; `/tmp/s6.py`.
