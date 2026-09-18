@@ -1,0 +1,164 @@
+# The table document for T329, Eigenvalues of the classical symmetric test
+# matrices. Created as a draft through the API (X-Draft: yes) and filled by
+# generate.py beside it; publishing is a person's act on the site.
+Title: Eigenvalues of the classical symmetric test matrices
+Definition: >-
+  For a named symmetric classical test matrix $A_n$, this table gives the
+  $k$th eigenvalue $\lambda_k(A_n)$ CITE{WikiEigenvalue}, ordered
+  increasingly, where $n$ is the order of the matrix and $1\leq k\leq n$.
+Keywords:
+  - eigenvalue
+  - matrix eigenvalue
+  - test matrix
+  - classical test matrix
+  - MATLAB gallery
+  - Hilbert matrix
+  - Lehmer matrix
+  - Pascal matrix
+  - Cauchy matrix
+  - Fiedler matrix
+  - Kac-Murdock-Szego matrix
+  - Minij matrix
+  - Wilkinson matrix
+  - Moler matrix
+  - Ris matrix
+  - Dingdong matrix
+  - second difference matrix
+  - tridiagonal matrix
+Parameters:
+  family:
+    type: Symbolic
+    title: matrix family
+    display: $A_n$
+    constraints: one of the real symmetric matrix families from MATLAB's `gallery` CITE{MathWorksGallery} or the Test Matrix Toolbox source CITE{TMTGallery}
+    values:
+      hilbert: Hilbert matrix
+      lehmer: Lehmer matrix
+      pascal: symmetric Pascal matrix
+      cauchy: Cauchy matrix
+      fiedler: Fiedler matrix
+      kms: Kac-Murdock-Szegő matrix
+      minij: Minij matrix
+      wilkinson: Wilkinson matrix
+      moler: Moler matrix
+      ris: Ris matrix
+      second-difference: second-difference matrix
+  n:
+    type: Z
+    title: order
+    display: $n$
+    constraints: $n\geq 1$
+  k:
+    type: Z
+    title: eigenvalue index
+    display: $k$
+    constraints: $1\leq k\leq n$
+Comments:
+  comment-families: >-
+    Indices are $1$-based. The matrices are $A_{ij}=1/(i+j-1)$ for the
+    Hilbert matrix CITE{WikiHilbert}; $A_{ij}=\min(i,j)/\max(i,j)$ for the
+    Lehmer matrix CITE{WikiLehmer}; $A_{ij}=\binom{i+j-2}{i-1}$ for the
+    symmetric Pascal matrix CITE{WikiPascal}; $A_{ij}=1/(i+j)$ for the
+    Cauchy matrix, the scalar default case of `gallery("cauchy",n)`
+    CITE{MathWorksGallery}; $A_{ij}=|i-j|$ for the Fiedler matrix;
+    $A_{ij}=2^{-|i-j|}$ for the Kac-Murdock-Szegő matrix; and
+    $A_{ij}=\min(i,j)$ for the Minij matrix.
+  comment-toolbox-families: >-
+    The Wilkinson, Moler and Ris matrices use the definitions in the Test
+    Matrix Toolbox source CITE{TMTGallery}. The Wilkinson matrix is symmetric
+    tridiagonal with off-diagonal entries $1$ and diagonal entries
+    $|(n-1)/2-(i-1)|$. The Moler matrix has $A_{ii}=i$ and
+    $A_{ij}=\min(i,j)-2$ for $i\neq j$. The Ris matrix, also called the
+    Dingdong matrix, is $A_{ij}=(1/2)/(n-i-j+3/2)$. The second-difference
+    matrix is tridiagonal with diagonal entries $2$ and off-diagonal entries
+    $-1$.
+  comment-symmetric-only: >-
+    This table includes the real symmetric matrix families from MATLAB's
+    `gallery` CITE{MathWorksGallery} and the Test Matrix Toolbox source
+    CITE{TMTGallery}. Nonsymmetric families from those collections are not
+    rows. The Clement matrix is also not included: the default Clement form is
+    nonsymmetric, and the symmetric Clement form is diagonally similar to the
+    default form and has the integer eigenvalues
+    $\pm(n-1),\pm(n-3),\ldots$, with $0$ when $n$ is odd.
+  comment-signs: >-
+    For every listed order, only the Fiedler, Ris and Wilkinson spectra
+    contain negative eigenvalues. The Fiedler spectrum has $n-1$ negative
+    eigenvalues, the Ris spectrum has $\lfloor n/2\rfloor$, and the
+    Wilkinson spectrum has one.
+Formulas:
+  formula-second-difference: >-
+    For the second-difference matrix,
+    $\lambda_k=2-2\cos(k\pi/(n+1))$ for $k=1,\ldots,n$.
+  formula-minij: >-
+    For the Minij matrix,
+    $\lambda_k=\dfrac{1}{4}\sec^2\!\left(\dfrac{k\pi}{2n+1}\right)$ for
+    $k=1,\ldots,n$.
+  formula-pascal-reciprocal: >-
+    The eigenvalues of the symmetric Pascal matrix occur in reciprocal pairs;
+    when $n$ is odd, $1$ is an eigenvalue.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage
+      from sage.matrix.constructor import matrix
+      from sage.rings.qqbar import AA, _init_qqbar
+      from sage.rings.rational_field import QQ
+
+      _init_qqbar()
+      A = matrix(QQ, 3, 3, lambda i, j: QQ(1) / QQ(i + j + 1))
+      sorted(AA(root) for root in A.charpoly().roots(
+          ring=AA, multiplicities=False))
+Similar tables:
+  - table: HREF{T327}[Condition numbers of the classical test matrices]
+    relation: stores the 2-norm condition numbers of the same gallery matrix families
+  - table: HREF{Cos_pi_times_x_at_rational_numbers}[$\cos(\pi x)$ for rational $x$]
+    relation: the Minij and second-difference spectra are elementary functions of cosine values at rational arguments
+  - table: HREF{T237}[Characteristic polynomials of connected graphs]
+    relation: stores exact characteristic polynomials of symmetric integer adjacency matrices rather than numerical eigenvalues
+Links:
+  WikiEigenvalue:
+    title: 'Wikipedia: Eigenvalues and eigenvectors'
+    url: https://en.wikipedia.org/wiki/Eigenvalues_and_eigenvectors
+  WikiHilbert:
+    title: 'Wikipedia: Hilbert matrix'
+    url: https://en.wikipedia.org/wiki/Hilbert_matrix
+  WikiLehmer:
+    title: 'Wikipedia: Lehmer matrix'
+    url: https://en.wikipedia.org/wiki/Lehmer_matrix
+  WikiPascal:
+    title: 'Wikipedia: Pascal matrix'
+    url: https://en.wikipedia.org/wiki/Pascal_matrix
+  MathWorksGallery:
+    title: 'MathWorks: gallery, test matrices'
+    url: https://www.mathworks.com/help/matlab/ref/gallery.html
+  TMTGallery:
+    title: 'Test Matrix Toolbox: gallery.m source'
+    url: https://github.com/carandraug/testmatrix/blob/master/Test%20Matrix%20Toolbox/gallery.m
+Tags:
+  - analysis
+  - algebraic
+  - eigenvalue
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every eigenvalue for the listed symmetric matrix families with
+    $2\leq n\leq12$, giving the nontrivial small orders while keeping this
+    table to 847 eigenvalues
+  rigour details: >-
+    The generator builds each matrix over $\mathbb{Q}$, computes its
+    characteristic polynomial exactly, isolates its roots in Sage's algebraic
+    real field, orders those algebraic roots increasingly, returns roots
+    proved rational as exact rationals, and returns the other roots as real
+    balls with 96 guard bits beyond the 100 digits written.
+    During generation it checks that every listed characteristic polynomial
+    has $n$ real roots, that the eigenvalue sum equals the trace, that the
+    eigenvalue product equals the determinant, that the Minij and
+    second-difference rows agree with the closed forms in CITE{formula-minij}
+    and CITE{formula-second-difference}, and that the symmetric Pascal
+    eigenvalues occur in reciprocal pairs.
+Display properties:
+  number-header: $\lambda_k(A_n)$
+Numbers: []

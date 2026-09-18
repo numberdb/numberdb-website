@@ -1,0 +1,80 @@
+# The table document for numberdb.org/T334. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Todd polynomials $\mathrm{Td}_n(c_1,\dots,c_n)$
+Definition: >-
+  The entry is the homogeneous component $\mathrm{Td}_n(c_1,\dots,c_n)$ of
+  the Todd class of a complex vector bundle, written as a polynomial in the
+  Chern classes $c_i$ CITE{ToddWiki}. It is defined by the characteristic
+  power series $Q(x)=x/(1-e^{-x})$ through Formula CITE{formula-component}.
+Parameters:
+  n:
+    type: Z
+    title: degree
+    display: $n$
+    constraints: $n\geq 1$
+Comments:
+  comment-component: >-
+    The table stores one homogeneous component per row, not the total Todd
+    class $1+\mathrm{Td}_1+\mathrm{Td}_2+\cdots$ truncated at degree $n$.
+  comment-zero: >-
+    The constant component is $\mathrm{Td}_0=1$ and is stated in Formula
+    CITE{formula-zero}, rather than stored as a row.
+  comment-variables: >-
+    The variables are Chern classes. Some sources write the elementary
+    symmetric functions of the Chern roots as $p_i$; this table writes them as
+    $c_i$, reserving $p_i$ for Pontryagin classes in the characteristic-class
+    tables.
+  comment-odd: >-
+    For odd $n>1$, the coefficient of $c_n$ vanishes. Thus
+    $\mathrm{Td}_7$ has no $c_7$ term and still fits in the six-variable
+    polynomial search.
+Formulas:
+  formula-component: >-
+    $1+\sum_{n\geq1}\mathrm{Td}_n(c_1,c_2,\dots)=\prod_i Q(x_i)$, where
+    $c_j=e_j(x_1,x_2,\dots)$.
+  formula-series: >-
+    $Q(x)=\frac{x}{1-e^{-x}}=1+\frac{x}{2}+\frac{x^2}{12}-\frac{x^4}{720}+
+    \frac{x^6}{30240}+\cdots$ CITE{GenusWiki}. Equivalently
+    $Q(x)=\sum_i B_i^+x^i/i!$, where $B_1^+=+\frac12$ and $B_i^+=B_i$ for
+    $i\ne1$, using HREF{Bernoulli_numbers}[the Bernoulli numbers].
+  formula-zero: >-
+    $\mathrm{Td}_0=1$.
+Similar tables:
+  - table: HREF{Elementary_symmetric_polynomials}[Elementary symmetric polynomials]
+    relation: give the elementary symmetric functions $e_j$ that are renamed as Chern classes here
+  - table: HREF{Bernoulli_numbers}[Bernoulli numbers]
+    relation: give the Bernoulli numbers appearing in the characteristic power series, except that the Todd convention takes $B_1=+1/2$
+Links:
+  ToddWiki:
+    title: 'Wikipedia: Todd class'
+    url: https://en.wikipedia.org/wiki/Todd_class
+  GenusWiki:
+    title: 'Wikipedia: Genus of a multiplicative sequence'
+    url: https://en.wikipedia.org/wiki/Genus_of_a_multiplicative_sequence
+Keywords:
+  - Todd class polynomials
+  - Todd genus polynomials
+  - characteristic class Todd polynomial
+  - multiplicative sequence Todd genus
+Tags:
+  - characteristic classes
+  - polynomial
+  - algebra
+Data properties:
+  type: Q[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every entry with $1\leq n\leq 7$, and $\mathrm{Td}_7$ is the
+    last entry whose polynomial uses at most six variables
+  rigour details: >-
+    The generator computes exact rational coefficients in
+    $\mathbb Q[c_1,\dots,c_6]$ from Formula CITE{formula-component}. It is
+    checked against the displayed terms in CITE{ToddWiki} and CITE{GenusWiki},
+    and by substituting the Chern classes of $T\mathbb P^m$ for
+    $1\leq m\leq7$, which gives Todd genus $1$ for each complex projective
+    space CITE{GenusWiki}.
+Display properties:
+  number-header: $\mathrm{Td}_n$
+Numbers: []

@@ -1,0 +1,101 @@
+# The table document for numberdb.org/T333. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Euler characteristics of smooth complete intersections in $\mathbb{P}^n$
+Definition: >-
+  Let $X\subset\mathbb P^n$ be a smooth complete intersection of multidegree
+  $(d_1,\dots,d_k)$ CITE{CIWiki}. The entry is the topological Euler
+  characteristic $\chi(X)$ CITE{EulerWiki}; it depends only on $n$ and the
+  multidegree.
+Parameters:
+  n:
+    type: Z
+    title: ambient dimension
+    display: $n$
+    constraints: $n\geq 2$
+  d:
+    type: Symbolic
+    title: multidegree
+    display: $(d_1,\dots,d_k)$
+    constraints: >-
+      a nonempty nondecreasing list of integers at least $2$, with
+      $1\leq k\leq n-1$
+Comments:
+  comment-dimension: >-
+    If $k$ is the length of the multidegree, then $\dim X=m=n-k$.
+  comment-degree-one: >-
+    Degree-one equations are omitted: a linear equation only replaces
+    $\mathbb P^n$ by a smaller projective space, so it gives the same variety
+    under another address.
+  comment-order: >-
+    The multidegree is written nondecreasing, as in the phrase complete
+    intersection of type $(2,4)$.
+  comment-chern: >-
+    The same grid is used by HREF{T332}[the complete-intersection Chern-class
+    table].
+Formulas:
+  formula-chern: >-
+    If $m=n-k$, then
+    $\chi(X)=(\prod_i d_i)\,[h^m]\,(1+h)^{n+1}\prod_{i=1}^k(1+d_i h)^{-1}$.
+  formula-generating: >-
+    Equivalently,
+    $\chi(X)=(\prod_i d_i)\,[z^m]\,(1-z)^{-2}\prod_{i=1}^k(1+(d_i-1)z)^{-1}$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.integer_ring import ZZ
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+      R = PolynomialRing(ZZ, "h")
+      h = R.gen()
+
+      def truncate(polynomial, degree):
+          return sum(ZZ(polynomial[j]) * h ** j for j in range(degree + 1))
+
+      def euler_complete_intersection(n, degrees):
+          m = n - len(degrees)
+          f = (1 + h) ** (n + 1)
+          degree = ZZ(1)
+          for d in degrees:
+              degree *= ZZ(d)
+              inverse = sum((-ZZ(d) * h) ** j for j in range(m + 1))
+              f = truncate(f * inverse, m)
+          return degree * ZZ(f[m])
+
+      euler_complete_intersection(4, [5])
+Similar tables:
+  - table: HREF{T332}[Chern classes of smooth complete intersections]
+    relation: store the total Chern class whose top coefficient gives this Euler characteristic
+Links:
+  CIWiki:
+    title: 'Wikipedia: Complete intersection'
+    url: https://en.wikipedia.org/wiki/Complete_intersection
+  EulerWiki:
+    title: 'Wikipedia: Euler characteristic'
+    url: https://en.wikipedia.org/wiki/Euler_characteristic
+Keywords:
+  - Euler characteristic complete intersection
+  - topological Euler characteristic complete intersection
+  - complete intersection Euler number
+  - quintic threefold Euler characteristic
+  - Calabi-Yau complete intersection Euler characteristic
+Tags:
+  - characteristic classes
+  - algebra
+Data properties:
+  type: Z
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every row with $n\leq 10$, every $d_i\leq 10$, and
+    $\prod_i d_i\leq 100$
+  rigour details: >-
+    The generator computes exact integer coefficients in $\mathbb Z[h]$ from
+    Formula CITE{formula-chern}. It checks the smooth conic, cubic surface,
+    quartic K3 surface and quintic threefold values, and verifies Formula
+    CITE{formula-generating} on every row.
+Display properties:
+  number-header: $\chi(X)$
+Numbers: []
