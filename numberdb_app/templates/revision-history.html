@@ -91,6 +91,7 @@ table.revision-list tr.is-head { background: #f2f8ff; }
               {% elif group.latest.contributor %}{{ group.latest.contributor.author }}
               {% else %}{{ group.latest.produced_by|default:"unknown" }}{% endif %}
               {% if group.latest.assisted_by %}<span class="revision-note">with {{ group.latest.assisted_by }}</span>{% endif %}
+              {% if group.latest.agent_run.label %}<span class="revision-note" title="the pipeline that made this, and the digest of the files that steered it">{{ group.latest.agent_run.label }}</span>{% endif %}
             </td>
             <td>
               {{ group.latest.message|default:"(no message)" }}
@@ -134,6 +135,7 @@ table.revision-list tr.is-head { background: #f2f8ff; }
             {% elif revision.contributor %}{{ revision.contributor.author }}
             {% else %}{{ revision.produced_by|default:"unknown" }}{% endif %}
             {% if revision.assisted_by %}<span class="revision-note">with {{ revision.assisted_by }}</span>{% endif %}
+            {% if revision.agent_run.label %}<span class="revision-note" title="the pipeline that made this, and the digest of the files that steered it">{{ revision.agent_run.label }}</span>{% endif %}
           </td>
           <td>
             {{ revision.message|default:"(no message)" }}
