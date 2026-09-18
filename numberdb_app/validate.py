@@ -294,8 +294,12 @@ def _check_prose(tree):
 	drawn by the page; what a formula has to say about itself goes in the
 	prose, where a reader can read it.
 	"""
+	#Only a mapping or a list. A number where prose belongs renders as that
+	#number and reads as somebody's shorthand; a mapping renders as its Python
+	#repr, which is the fault this exists for, and there is no reading of
+	#`{'display': ..., 'formula': ...}` that a page can show.
 	definition = tree.get('Definition')
-	if definition is not None and not isinstance(definition, str):
+	if definition is not None and isinstance(definition, (dict, list, tuple)):
 		yield Problem(
 			'Definition holds a %s. It is one piece of prose, shown as it '
 			'stands, so anything else reaches the reader as its Python repr.'
@@ -306,7 +310,7 @@ def _check_prose(tree):
 		if not isinstance(block, dict):
 			continue
 		for label, value in block.items():
-			if isinstance(value, str):
+			if not isinstance(value, (dict, list, tuple)):
 				continue
 			extra = ''
 			if isinstance(value, dict):

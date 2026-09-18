@@ -205,7 +205,7 @@ reason is in the document, because a warning shown to nobody is not a limit.
       <tr><th>X-Numberdb-Client</th><td>which client this is, as <code>name/version</code>. The <code>numberdb</code> package sends <code>numberdb-python/&lt;version&gt;</code> and the revision records that it arrived through the package; a request without it is recorded as having come through the API directly. A different fact from <code>X-Produced-By</code>, which says what <em>made</em> the values: the same generator run from a laptop and pasted into the form on the site agree about what, and differ about how</td></tr>
       <tr><th>X-Produced-By</th><td>what made this, recorded on the revision and shown in its history. Defaults to <code>api</code>. The <code>numberdb</code> package sends the generator and the versions of the package and of Sage, and &mdash; when <code>NUMBERDB_ASSISTED_BY</code> is set &mdash; whatever ran the publish: <code>Zeta (numberdb=0.1.2, sage=10.9), assisted by Claude Code, table-build@8390298</code>. Name each layer that can change without you noticing, at a version: there is rarely one thing that made a revision, and <code>numberdb=0.1.2, sage=10.9</code> is the same habit applied to the generator. Do not name a model you have not checked &mdash; a runner usually cannot know which one answered until afterwards &mdash; and do not cite anything a reader here cannot follow: <code>table-build@8390298</code> is a commit in a public repository, while a run number is a line in somebody’s private log. At most 100 characters, so about 50 are left after the generator; the author is still the person whose key it was</td></tr>
       <tr><th>X-Edit-Message</th><td>what changed, for the history</td></tr>
-      <tr><th>X-Run-Id, X-Pipeline,<br>X-Stage, X-Engine,<br>X-Model, X-Session,<br>X-Campaign, X-Batch,<br>X-Machine</th><td>what ran, as a record rather than a sentence. Writes naming one <code>X-Run-Id</code> land on one run, so a stage that sends fifty entries is one producer and not fifty. <code>X-Pipeline</code> is <code>name@major.minor+digest</code> &mdash; <code>table-build@2.7+9f3ac1d2</code> &mdash; where the digest covers the files that pipeline declares in <code>agents/pipelines/</code>; a label carrying one is taken as written by a runner that knows what it ran, and one without as a claim typed by hand. An interactive session (Claude Code, Codex CLI, a person’s own script) sends <code>X-Pipeline: interactive</code> with its engine, model and session: the author stays the account whose key it is, and the tool is disclosed beside it. All optional; a write that sends none of them is recorded as a person at a keyboard, which is what the absence honestly means</td></tr>
+      <tr><th>X-Run-Id, X-Pipeline,<br>X-Stage, X-Engine,<br>X-Model, X-Effort,<br>X-Session, X-Campaign,<br>X-Batch, X-Machine</th><td>what ran, as a record rather than a sentence. Writes naming one <code>X-Run-Id</code> land on one run, so a stage that sends fifty entries is one producer and not fifty. <code>X-Pipeline</code> is <code>name@major.minor+digest</code> &mdash; <code>table-build@2.7+9f3ac1d2</code> &mdash; where the digest covers the files that pipeline declares in <code>agents/pipelines/</code>; a label carrying one is taken as written by a runner that knows what it ran, and one without as a claim typed by hand. An interactive session (Claude Code, Codex CLI, a person’s own script) sends <code>X-Pipeline: interactive</code> with its engine, model and session: the author stays the account whose key it is, and the tool is disclosed beside it. All optional; a write that sends none of them is recorded as a person at a keyboard, which is what the absence honestly means</td></tr>
       <tr><th>returns</th><td><code>201</code> with the allocated <code>tid</code> and the first revision</td></tr>
       <tr><th>400</th><td>no title, no entries, or a document that is not a table</td></tr>
       <tr><th>413</th><td>over a size limit</td></tr>
@@ -296,6 +296,30 @@ reason is in the document, because a warning shown to nobody is not a limit.
     heartbeat. It expires because a generator that dies must not lock a table
     for good, and it never refuses a person editing on the site: a generator's
     claim is against other generators.</p>
+  </div>
+</div>
+
+<div class="api-endpoint" id="endpoint-api-costs">
+  <h3><span class="api-method api-post">POST</span>/api/costs</h3>
+  <div class="body">
+    <p>Report what a machine&rsquo;s runs cost, and what they were. The body is
+    the run ledger as TSV; the rows are aggregated by table, model and stage
+    and <em>replace</em> what is stored, so sending the same ledger twice is
+    not paying twice. Each row also becomes a run, which is how the work that
+    produced no table &mdash; a screening run, a triage run, a build that
+    declined &mdash; is recorded at all.</p>
+    <table class="api-table">
+      <tr><th>X-Attribution</th><td>base64 of a two-column TSV, run stamp and
+      table, for runs whose own row never said what they were about</td></tr>
+      <tr><th>X-Machine</th><td>which machine the ledger came from. Two
+      machines ran campaigns with separate ledgers and the run stamp does not
+      say which</td></tr>
+      <tr><th>?dry=1</th><td>report what would change and write nothing</td></tr>
+      <tr><th>returns</th><td>how many rows, tables and runs it touched, and
+      what it could not attribute</td></tr>
+      <tr><th>403</th><td>the key may write numbers but may not report costs:
+      that is for the accounts that run campaigns, and the board</td></tr>
+    </table>
   </div>
 </div>
 
