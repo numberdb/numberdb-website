@@ -86,6 +86,10 @@ def _check_figure_eight(z):
         raise ArithmeticError("4_1: cusp shape does not contain 2*sqrt(-3)")
 
 
+def _pure_imaginary(z):
+    return z.parent()(0, z.imag())
+
+
 def _entry_comment(n, k, image):
     if (n, k) not in NAMED:
         return None
@@ -129,6 +133,7 @@ class CuspShapes(numberdb.Generator):
         if key in AMPHICHIRAL:
             if not z.real().contains_zero():
                 raise ArithmeticError("%d_%d: amphichiral cusp shape has nonzero real part" % (n, k))
+            self._values[(n, k, "K")] = _pure_imaginary(z)
         else:
             mirror = _shape(n, k, "mirror")
             self._values[(n, k, "mirror")] = mirror
