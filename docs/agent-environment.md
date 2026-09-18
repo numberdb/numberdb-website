@@ -4586,3 +4586,58 @@ reliable route and it also shows closed issues.
 Evidence: 2026-09-17, the `curl -sL` query above (five titles returned), the
 same query over `http` (301, empty output), and the six `already_asked` calls
 in `/tmp/screenrun.py`.
+
+## Rendering a *real* table's draft page on sqlite needs `RangeField.get_placeholder` patched too
+
+What happened: the T316 critique reused the recipe above -- rebuild the draft
+from the API document, in the `agents/sage.sh` container, on a throwaway
+sqlite database -- and every entry insert failed with
+
+    django.db.utils.OperationalError: unrecognized token: ":"
+
+T315 was a polynomial table and never reached this. `Number` carries two
+`DecimalRangeField`s, `value_range` and `frac_range` (`numberdb_app/models.py`),
+which are the postgres search projection. Nulling them is not enough:
+`django.contrib.postgres.fields.ranges.RangeField.get_placeholder` emits
+`%s::numrange` whatever the value is, and the cast is what sqlite chokes on.
+
+What worked, added to the two patches the T315 note lists, after
+`django.setup()` and before `create_table`:
+
+    from django.contrib.postgres.fields import ranges
+    ranges.RangeField.get_placeholder = lambda self, value, compiler, connection: '%s'
+
+    _save = models.Number.save
+    def save(self, *a, **k):
+        self.value_range = None
+        self.frac_range = None
+        return _save(self, *a, **k)
+    models.Number.save = save
+
+Nothing on the rendered page reads either column -- they exist for search by
+number -- so the page is the page a reader gets: for T316, 243 rows and
+188,528 bytes of HTML, status 200, with the column headers, the entry
+comments, the prose and the reference numbering.
+
+Evidence: 2026-09-18, T316 critique. `/tmp/t316_render_sage.py` (the script,
+still worth promoting to `agents/render_draft.py` with the tid and the two
+patches in it), `/tmp/t316_render_out.txt`, `/tmp/t316_page.html`.
+
+## The `env | grep` key listing happened a fifth time, and the mask held
+
+What happened: the T316 critique of 2026-09-18 found the SOCKS proxy refusing
+connections and ran `env | grep -i -E 'proxy|numberdb'` to see why, which is
+the fourth note above, repeated. The answer was the same as last time:
+`ALL_PROXY=` is empty and a direct `curl https://numberdb.org/...` works.
+
+Two things are different. The mask was `sed 's/\(KEY[A-Z_]*\)=.*/\1=<hidden>/'`
+as well as the older `s/=.*KEY.*/=<hidden>/`, so `NUMBERDB_API_KEY`,
+`NUMBERDB_KEY` and `NUMBERDB_KEY_FILE` all printed as `<hidden>` and no key
+reached the transcript. And the prompt for this campaign says the proxy "is
+needed", which is why a run reaches for the environment when it refuses: the
+first thing to try is the direct `curl`, which the note of 2026-09-16 already
+says and which works.
+
+What to do instead: unset `NUMBERDB_API_KEY` in `run.sh` so the listing cannot
+leak it, and stop telling the prompt that the proxy is required on a machine
+where `ALL_PROXY` is empty.
