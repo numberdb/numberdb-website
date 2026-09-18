@@ -5007,3 +5007,56 @@ the section names, 31,422 bytes of HTML; second run with the signature fixed,
 30,777 bytes and `<a class="tag" href="/tags/polynomial">`),
 `/tmp/t320_render_out.txt` and `/tmp/t320_render_out2.txt`.
 `numberdb_app/editing.py`, `def _sync_tags(table, document)`.
+
+## Nothing is listening on port 1080 at all now, so the proxy notes above understate it
+
+What happened: the T321 critique started with the prompt's
+`curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/skill`, which
+exited 7 having printed nothing. The earlier notes here describe a live
+`ssh -N -D` tunnel that stays up with a dead connection and times every request
+out; that is not today's state. `ss -ltn` shows **no listener on 1080 at all**,
+so every request fails immediately rather than after a minute, and there is no
+process to restart or wait for.
+
+What to do instead: `curl https://numberdb.org/...` with no proxy at all, which
+works from this machine and is how this whole run read the site -- the skill
+(47,534 bytes, byte-identical to the copy the T320 run left in `/tmp`), the
+public pages of T318 and T319, `/tables`, `/api/table`, `/api/table/<tid>/audit`
+and `/api/search`. Crossref (`api.crossref.org`) answers directly too, which is
+how both of T321's DOIs were checked.
+
+And: do not run `env | grep` to find out why the proxy is down. That has now
+happened five times and is written up twice above; `ss -ltn | grep 1080` answers
+the same question and prints no key.
+
+Evidence: 2026-09-18, T321 critique. `curl` exit 7 on the proxy, `ss -ltn` empty
+for 1080, `curl https://numberdb.org/skill` 200 in the same minute.
+
+## The sqlite draft-render recipe works unchanged for a *rational* table
+
+What happened: the T321 critique rebuilt T321's draft page by the recipe above
+-- the API document, the `agents/sage.sh` container, a throwaway sqlite
+database, `editing.reindex_for_search` as a no-op, `_sync_tags` replaced with
+the version that goes through `editing._tag_names` (the note above), plus the
+two range patches from the T316 note. It worked first time: 167 records, status
+200, **85,252 bytes** of HTML, the rows with their `$p$` and `$F_p$` headers,
+the prose in the page's own section order (Formulas before Comments, which is
+what the critique's first finding is about), the reference numbering, and the
+tag strip reading `number theory combinatorics` -- the table's own tags, which
+is the check the `_sync_tags` note says to make before quoting anything else off
+the page.
+
+So the recipe has now run for a polynomial table (T315, T320), a real one
+(T316), a complex one and a rational one, and the only variation anybody has
+needed is the `RangeField` pair for tables whose entries go through
+`value_range`. A rational table needs them: `Number.save` writes those columns
+whatever the type.
+
+The script is `/tmp/t321_render.py`, 100 lines including the pip install, and
+it takes the tid in one place. It is still worth promoting to
+`agents/render_draft.py` with the tid as an argument -- this is the fourth run
+to write it out from the notes.
+
+Evidence: 2026-09-18, T321 critique. `/tmp/t321_render.py`,
+`/tmp/t321_render_out.txt` (`records: 167`, `tid: T1 tags: ['combinatorics',
+'number theory']`, `status 200 85252 bytes`), `/tmp/t321_page.html`.
