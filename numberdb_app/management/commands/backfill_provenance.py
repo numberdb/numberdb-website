@@ -107,7 +107,14 @@ SPELLINGS = (
 )
 
 #: `Foo (numberdb=0.1.10, python=3.12.3, sage=10.9)` -- a generator publish.
-GENERATOR = re.compile(r'^([A-Za-z_][\w-]*)\s*\((numberdb=[^)]*)\)')
+#: The environment is optional: the earliest publishes recorded the class name
+#: alone (`BarnesG`, `UnitBallVolume`), and a generator with no version
+#: recorded is still a generator.
+GENERATOR = re.compile(r'^([A-Z][A-Za-z0-9_]*)\s*(?:\((numberdb=[^)]*)\))?$')
+
+#: The package, publishing something that did not name itself. The revision's
+#: own `run` string usually does.
+PACKAGE = 'numberdb-python'
 
 #: `from the data repository, fc072a35`
 FROM_REPO = re.compile(r'from the data repository,\s*([0-9a-f]{7,40})')
@@ -284,6 +291,23 @@ class Command(BaseCommand):
 
 	#---------------------------------------------------------------- linking
 
+	def claimable(self, **where):
+		"""Revisions a campaign run may claim: the agent's, not the person's.
+
+		A campaign publishes under the agent's account, and a person editing
+		the same table while a campaign is running is not that campaign's work.
+		Without this the rule that picks the nearest preceding run attributed
+		one of the operator's own edits to a build run, because it happened to
+		fall inside its window -- a wrong link, which is worse than a missing
+		one because nothing about it looks wrong.
+		"""
+		from numberdb_app.models import TableRevision
+
+		found = TableRevision.objects.filter(**where)
+		if self.operator is not None:
+			found = found.exclude(author=self.operator)
+		return found
+
 	def link_ledger_runs(self, runs, rows):
 		"""Revisions each table-naming run claims, where nothing else claims them."""
 		from numberdb_app.models import Table, TableRevision
@@ -296,9 +320,9 @@ class Command(BaseCommand):
 			table = Table.objects.filter(tid=tid).first()
 			if table is None:
 				continue
-			for revision in TableRevision.objects.filter(
-					table=table, created__gte=run.started,
-					created__lt=run.started + WINDOW):
+			for revision in self.claimable(table=table,
+			                               created__gte=run.started,
+			                               created__lt=run.started + WINDOW):
 				claims[revision.id].append(run)
 
 		#A run that named no table is not lost: 36 of them, $174 of spend, and
@@ -309,7 +333,7 @@ class Command(BaseCommand):
 		for run, row in zip(runs, rows):
 			if not run or (row.get('table') or '').strip():
 				continue
-			nearby = TableRevision.objects.filter(
+			nearby = self.claimable(
 				created__gte=run.started,
 				created__lt=run.started + WINDOW).exclude(
 				id__in=list(claims)).only('id', 'table_id')
@@ -324,8 +348,24 @@ class Command(BaseCommand):
 					'only one edited inside this run\'s window.'])))
 				run.save(update_fields=['notes'])
 
+		#Where several runs' windows cover one revision, the run that was
+		#*in progress* is the one that started last before it -- a build at
+		#10:00 and the critique it triggered at 11:30 both cover a 12:00
+		#revision, and the critique is whose work it is. Refusing both, which
+		#this did first, left 273 revisions with no run for the sake of a tie
+		#that is not really one; a tie is two runs starting at the same second,
+		#and those are still refused.
+		when = {r.id: r.created for r in TableRevision.objects.filter(
+			id__in=list(claims)).only('id', 'created')}
+
 		linked = contested = 0
 		for revision_id, found in claims.items():
+			started = when.get(revision_id)
+			before = [r for r in found
+			          if started is None or r.started <= started]
+			if before:
+				latest = max(r.started for r in before)
+				found = [r for r in before if r.started == latest]
 			names = {r.run_id for r in found}
 			if len(names) != 1:
 				contested += 1
@@ -438,8 +478,20 @@ class Command(BaseCommand):
 			if generator:
 				key = ('generator', revision.run or generator.group(1),
 				       revision.author_id, revision.created.date())
+			elif produced.strip() == PACKAGE or revision.via == 'package':
+				#A publish through the package that named no generator. What it
+				#ran is not recoverable; that it was a program, and which run,
+				#is -- and those are the two facts a reader needs.
+				key = ('generator', revision.run or PACKAGE,
+				       revision.author_id, revision.created.date())
 			elif engine or model:
 				key = ('interactive', '%s/%s' % (engine, model),
+				       revision.author_id, revision.created.date())
+			elif 'assisted by' in produced.lower():
+				#It says an assistant was involved and not which one. That is
+				#weaker than a name and stronger than silence, and dropping it
+				#would lose the disclosure entirely.
+				key = ('interactive', 'unnamed-assistant',
 				       revision.author_id, revision.created.date())
 			else:
 				continue
@@ -454,7 +506,7 @@ class Command(BaseCommand):
 				fields = dict(
 					pipeline='generator',
 					stage='publish',
-					engine='numberdb-python',
+					engine=PACKAGE,
 					model=model,
 					notes='%s; environment as the publish recorded it: %s'
 					      % (produced, generator.group(2) if generator else ''),
