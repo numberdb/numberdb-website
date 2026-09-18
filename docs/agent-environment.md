@@ -4894,3 +4894,68 @@ evidence that the family is invented, and the screen cannot tell the
 difference.
 
 Evidence: 2026-09-18, ideas run. `/tmp/scr.py` and `/tmp/scr2.py`.
+
+## The codex quota fallback names a model the account cannot use
+
+What happened: build run 20260918T023210Z ran out of gpt-5.5 quota mid-turn
+(`You've hit your usage limit [...] try again at Sep 19th, 2026 2:17 PM`). The
+runner handled it by switching models and recorded the switch:
+
+    === out of quota on gpt-5.5; resuming on gpt-5.4 at effort xhigh
+        (and for the runs after this one)
+
+The resumed session died before its first tool call:
+
+    HTTP 400 invalid_request_error: The 'gpt-5.4' model is not supported
+    when using Codex with a ChatGPT account.
+
+preceded by two warnings that say the same thing more quietly -- `This session
+was recorded with model gpt-5.5 but is resuming with gpt-5.4` and `Model
+metadata for gpt-5.4 not found. Defaulting to fallback metadata`.
+
+Why it matters beyond the one run: the parenthesis is literal. The fallback is
+written to `agents/runs/codex-fallback` (`gpt-5.4`, `xhigh`) and read by every
+later stage, so the whole remainder of the batch inherits a model this account
+is not entitled to. Each codex build and repair then fails on turn 1, costs
+$0, and triggers a triage run to be told the same thing. A fallback that fails
+for free is more dangerous than one that fails expensively: nothing about the
+spend curve flags it.
+
+What to do instead: the fallback must name a model the ChatGPT account
+actually has. Until it does, clear `agents/runs/codex-fallback` and either
+wait out the quota or run the affected stages on the claude engine -- the
+critique and ideas stages of this same batch were running on claude throughout
+and were unaffected. A quota exhaustion is worth distinguishing from an
+ordinary API error in the runner: it is not retryable for hours, so resuming
+immediately on any model is the wrong reflex.
+
+Evidence: 2026-09-18. `agents/runs/20260918T023210Z-build.log` lines 140-147;
+`agents/runs/campaign-20260917T011039Z.log` lines 35190-35201;
+`agents/runs/codex-fallback`.
+
+## `COSTS.tsv` records the failed resume and not the turn that did the work
+
+What happened: the same run's ledger row is
+
+    20260918T023210Z  build  codex  0  0.0000  error  ...  gpt-5.4  ...  resumed=yes  0  0  0  gpt-5.4=0.0000  <empty table column>
+
+Every number in it describes the *second* attempt -- the 400 that never ran a
+tool. The first attempt made about seventy tool calls on gpt-5.5, read the
+skill and half the generator tooling, exhausted the account's quota, and
+created draft T320. None of that is counted: 0 turns, $0.0000, 0 tokens, and
+an empty `table` column even though the run's lasting effect was a new draft.
+
+So the campaign's own records assert that this run cost nothing and touched no
+table, and both are false. Anything reconciling spend, or working out which
+drafts belong to which run, will silently skip it -- and T320 is exactly the
+kind of half-created table a later run would otherwise be warned about.
+
+What to do instead: when a run is resumed, the ledger row should accumulate
+across attempts rather than be overwritten by the last one, and the `table`
+column should be filled from what the run actually created (the create
+response carries the `tid`) rather than from a successful exit. Treat a
+`$0.0000` row with `resumed=yes` as "unmeasured", not as "free".
+
+Evidence: 2026-09-18, `agents/runs/COSTS.tsv` line 312, against
+`agents/runs/20260918T023210Z-build.log` (the T320 create at item_69/item_70
+returns `{"tid": "T320", ... "drafts_held": 7}`).
