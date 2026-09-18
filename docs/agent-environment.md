@@ -4641,3 +4641,110 @@ says and which works.
 What to do instead: unset `NUMBERDB_API_KEY` in `run.sh` so the listing cannot
 leak it, and stop telling the prompt that the proxy is required on a machine
 where `ALL_PROXY` is empty.
+
+## `/tags/<name>` answers 500, not 404, for a tag that does not exist
+
+What happened: the T317 critique wanted to know whether the corpus has a knot
+tag, so that a table tagged only `algebraic` could be compared with its
+siblings. `https://numberdb.org/tags/algebraic`, `/tags/volume` and
+`/tags/period` answer 200 with the tag's table list. `/tags/knot`,
+`/tags/hyperbolic` and `/tags/zzz-nonsense-tag` all answer **500** with an
+empty body. So the site cannot distinguish "this tag does not exist" from "the
+tag page is broken", and an agent probing a name gets an error where it should
+get a not-found.
+
+It also means the obvious way to enumerate tags does not work: `/tags` is an
+infinite-scroll page whose first response carries exactly one tag
+("Appell sequence") and a `Loading...` placeholder, so a plain `curl` of it
+lists nothing. Probing names one at a time is the only route from here, and a
+500 has to be read as "no such tag".
+
+What to do instead: treat 500 from `/tags/<name>` as "no such tag", and get a
+table's own tags from `GET /api/table?id=T<n>` rather than from the tag pages.
+The 500 is a site bug -- `views.tag` presumably does not handle
+`Tag.DoesNotExist` -- and is worth an issue.
+
+Evidence: 2026-09-18, T317 critique. `/tags/algebraic` 200 (listing T61, T132,
+T135, T137, T35, T136, T60, T144, ...), `/tags/knot` 500, `/tags/hyperbolic`
+500, `/tags/zzz-nonsense-tag` 500; `/tags` 22,554 bytes containing one tag name.
+
+## Prose is not HTML-escaped on a rendered table page, so a `&` in math reaches the body raw
+
+What happened: T317's comment (6) contains
+`$\begin{pmatrix}a&b\\ c&d\end{pmatrix}\in \mathrm{SL}_2(\mathbb Z)$`. The
+rendered page carries it verbatim -- `a&b`, not `a&amp;b` -- in the document
+body. Nothing visible goes wrong: `&b` is not the prefix of any HTML5 named
+character reference, so a browser flushes the ampersand as literal text and
+MathJax reads the right string. But it is the same hole as the existing note
+that link titles are not escaped, in a field a table is much more likely to
+use, and it would not recover as kindly from `&amp` or `&lt` appearing inside
+a formula -- or from the `<` that the skill already warns eats the rest of a
+section.
+
+What to do instead: when checking a rendered page for a critique, grep the raw
+HTML for a bare `&` in the prose blocks as well as for `<`. Do not report it
+as a fault of the table -- it is the site that does not escape -- but do check
+that the particular text survives, because whether it does depends on what
+follows the ampersand.
+
+Evidence: 2026-09-18, T317 critique. `/tmp/t317_page.html` contains
+`$\begin{pmatrix}a&b\\ c&d\end{pmatrix}` inside `<div class="table-entry">`.
+
+## The sqlite draft-render recipe works unchanged for a *complex* table, and the previous run's script was not on this box
+
+What happened: the T316 note above records the two patches a table of reals
+needs before its draft page will rebuild on sqlite, and points at
+`/tmp/t316_render_sage.py` as the script worth promoting. That file does not
+exist on this machine -- `/tmp` has render scripts from 2026-09-13 to
+2026-09-17 and none of the T315 or T316 ones -- so the script was rewritten
+from the two notes. It worked first time for T317, a `type: C` table: the
+complex values need no third patch, because `value_range` and `frac_range` are
+the same two `DecimalRangeField`s whatever the type is, and nulling them plus
+`RangeField.get_placeholder = lambda ...: '%s'` is the whole of it. 466 rows,
+status 200, 366,096 bytes of HTML in one `agents/sage.sh` run.
+
+Two details the earlier notes do not give. `NUMBERDB_SAGE_MEMORY=900m` was
+used rather than the 320 MB default, because the pip install plus Django plus
+Sage does not fit in 320 MB; and `NUMBERDB_SAGE_PYTHONPATH=` (set to empty)
+has to be in the environment of the `agents/sage.sh` call itself, not inside
+the script, since it is read by the wrapper to decide whether to pass
+`-e PYTHONPATH`.
+
+What to do instead: the script really should be promoted to
+`agents/render_draft.py` with the tid as an argument -- three critique runs
+have now written it from scratch. Until somebody does, write it from this note
+and the two above rather than looking for the old copy.
+
+Evidence: 2026-09-18, T317 critique. `/tmp/t317_render.py`,
+`/tmp/t317_render_out.txt` (`records: 466`, `tid: T1`, `status 200 366096`),
+`/tmp/t317_page.html`.
+
+## SnapPy is in the Sage image, and a `Programs` snippet needs `Integer` in the namespace as well as `preparse`
+
+What happened: T317's `Programs` block is two lines of Sage using SnapPy. The
+existing note at "Testing a `Programs` snippet under `sage -python`: preparse
+it and hand it `Integer`" is right and understates it: `preparse` turns
+`[1, -2, 1, -2]` into `[Integer(1), -Integer(2), ...]`, so `exec`/`eval` of the
+preparsed string fails with `NameError: name 'Integer' is not defined` unless
+the namespace dict already holds `Integer` (and `RealNumber`, for any snippet
+with a decimal literal). Passing `globals()` is not enough when the wrapper
+itself was started with `sage -python`.
+
+`import snappy` works in the wrapper image -- against the older note that
+SnapPy is on the host and not in the container -- and prints one harmless
+warning to stderr, `Plink failed to import tkinter, GUI will not be
+available`. `snappy.Manifold('10_83')` works too, so the built-in Rolfsen
+census is present; only `database_knotinfo` is missing.
+
+What to do instead:
+
+    from sage.repl.preparse import preparse
+    from sage.rings.integer import Integer
+    from sage.rings.real_mpfr import RealNumber
+    ns = {'Integer': Integer, 'RealNumber': RealNumber}
+    exec(preparse(line), ns)
+
+Evidence: 2026-09-18, T317 critique. `/tmp/t317_programs.py` failed with
+`NameError: name 'Integer' is not defined` and then reproduced five of the
+table's stored values; `/tmp/t317_names.py` ran `snappy.Manifold(name)` for
+ten Rolfsen names.
