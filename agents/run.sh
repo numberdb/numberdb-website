@@ -698,6 +698,15 @@ fi
 ledger="agents/runs/COSTS.tsv"
 if [ ! -f "$ledger" ]; then
 	python3 agents/ledger.py --header > "$ledger"
+# The header is written once, when the file is created, and the columns have
+# grown since: the two ledgers in use both carry a sixteen-name header over
+# eighteen-field rows, so every reader that trusts the header -- the cost
+# importer's DictReader among them -- silently drops `campaign` and `batch`,
+# which is exactly which campaign a table came from. Rewritten in place when
+# it no longer matches, rather than left for the next reader to discover.
+elif [ "$(head -1 "$ledger")" != "$(python3 agents/ledger.py --header)" ]; then
+	{ python3 agents/ledger.py --header; tail -n +2 "$ledger"; } > "$ledger.new" \
+		&& mv "$ledger.new" "$ledger"
 fi
 # In a file of its own rather than a heredoc, because what it does is now
 # arithmetic worth testing: two harnesses bill in different currencies -- one
