@@ -4833,3 +4833,64 @@ generators living on the table makes worth checking.
 Evidence: 2026-09-18, T319 critique. `curl` above (200, 17,674 bytes of HTML,
 title `generate.py - Shapiro polynomials $P_n$ - NumberDB`), and `diff` of the
 unescaped `<pre>` against the repository copy, which is empty.
+
+## OEIS is unreachable from this machine, so an A-number cannot be checked here
+
+What happened: the test-matrix proposal wanted to cite the OEIS sequence of
+Hilbert matrix determinants, $1, 12, 2160, 6048000, 266716800000, \dots$.
+`curl https://oeis.org/search?q=12,2160,6048000,266716800000&fmt=text` returns
+a Cloudflare interstitial ("Just a moment..."), not results, and a fetch agent
+with its own client got a bare **403 on every OEIS URL it tried**, including
+`https://oeis.org/A000001` -- so it is the host refusing this network, not the
+search endpoint or the query.
+
+What to do instead: cite the sequence by its terms and say the A-number was
+not verified, or leave the OEIS check to a build that runs somewhere else. Do
+not write an A-number from memory into a proposal or a table: the lesson file
+already records one campaign that gained a real check from OEIS
+(`A305474`, the Hilbert class polynomial triangle), which is exactly why a
+guessed A-number would be believed.
+
+Evidence: 2026-09-18, ideas run. `curl` above; a `web-fetch` agent reporting
+403 on four OEIS URLs including a bare sequence page.
+
+## `screen.py`'s `already_asked` misses an issue that asks for the proposal
+
+What happened: `already_asked` returned `[]` for "Characteristic polynomials
+of the classical test matrices", while **numberdb-data#67** is open and titled
+*Characteristic polynomials of interesting (small) matrices*. The function
+takes the words of the name longer than four letters, keeps the **first
+three**, and searches GitHub `in:title` for all of them. Here that is
+"Characteristic polynomials classical", and no issue title contains
+"classical". Any name whose distinguishing word comes fourth has the same
+problem, and the answer is indistinguishable from "nobody asked".
+
+What to do instead: pull the whole issue list once --
+`gh issue list --repo numberdb/numberdb-data --state all --limit 400 --json
+number,title,state` -- and grep it for the subject's words. All three issues
+this batch answers (#67, #126, #127) were found that way and none by the
+screen. `already_here` has the opposite failure and is honest about it: it
+returns everything that matched any word, so its answer is noise a reader
+filters rather than a false negative.
+
+Evidence: 2026-09-18, ideas run. `/tmp/scr3.py` (five names, `already_asked`
+empty for all five); `gh issue list ... | grep -i matri` (three open issues).
+
+## mathworks.com answers 403 to `screen.py` but is readable by a fetch agent
+
+What happened: `source_names_it('test matrices',
+'https://www.mathworks.com/help/matlab/ref/gallery.html')` reports
+`source answered 403`. The page is real and is the source of half the matrix
+definitions in the 2026-09-18 batch; a `web-fetch` agent read it (HTTP 200,
+71 KB, though only the first 39 KB came back as page text and the tail as a
+summary, which is its own hazard: the summary invented a wrong formula for the
+Frank matrix that the verbatim window contradicted).
+
+What to do instead: when `source_names_it` reports 403 rather than a missing
+word, screen the family against a second durable source that does answer --
+`https://math.nist.gov/MatrixMarket/` passed for "test matrices" -- and say in
+the proposal which source each definition actually came from. A 403 is not
+evidence that the family is invented, and the screen cannot tell the
+difference.
+
+Evidence: 2026-09-18, ideas run. `/tmp/scr.py` and `/tmp/scr2.py`.
