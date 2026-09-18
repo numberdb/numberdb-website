@@ -1,0 +1,180 @@
+# The table document for T330, Characteristic polynomials of the classical
+# test matrices. Created as a draft through the API (X-Draft: yes) and filled
+# by generate.py beside it; publishing is a person's act on the site.
+Title: Characteristic polynomials of the classical test matrices
+Definition: >-
+  For a named classical test matrix $A_n$, this table gives the characteristic
+  polynomial $\chi_{A_n}(x)=\det(xI_n-A_n)$ CITE{WikiCharacteristic}, where
+  $n$ is the order of the matrix.
+Keywords:
+  - characteristic polynomial
+  - matrix characteristic polynomial
+  - test matrix
+  - classical test matrix
+  - MATLAB gallery
+  - Hilbert matrix
+  - Lehmer matrix
+  - Pascal matrix
+  - Redheffer matrix
+  - Vandermonde matrix
+  - Cauchy matrix
+  - Fiedler matrix
+  - Kac-Murdock-Szego matrix
+  - Minij matrix
+  - Grcar matrix
+  - Chow matrix
+  - Frank matrix
+  - Wilkinson matrix
+  - Clement matrix
+  - Moler matrix
+  - Parter matrix
+  - Ris matrix
+  - Dingdong matrix
+  - Lotkin matrix
+  - Riemann matrix
+  - second difference matrix
+  - tridiagonal matrix
+Parameters:
+  family:
+    type: Symbolic
+    title: matrix family
+    display: $A_n$
+    constraints: one of the named matrix families listed in the comments
+    values:
+      hilbert: Hilbert matrix
+      lehmer: Lehmer matrix
+      pascal: symmetric Pascal matrix
+      redheffer: Redheffer matrix
+      vandermonde: Vandermonde matrix
+      cauchy: Cauchy matrix
+      fiedler: Fiedler matrix
+      kms: Kac-Murdock-Szego matrix
+      minij: Minij matrix
+      grcar: Grcar matrix
+      chow: Chow matrix
+      frank: Frank matrix
+      wilkinson: Wilkinson matrix
+      clement: Clement matrix
+      moler: Moler matrix
+      parter: Parter matrix
+      ris: Ris matrix
+      lotkin: Lotkin matrix
+      riemann: Riemann matrix
+      second-difference: second-difference matrix
+  n:
+    type: Z
+    title: order
+    display: $n$
+    constraints: $n\geq 1$
+Comments:
+  comment-families: >-
+    Indices are $1$-based. The matrices are $A_{ij}=1/(i+j-1)$ for the
+    Hilbert matrix CITE{WikiHilbert}; $A_{ij}=\min(i,j)/\max(i,j)$ for the
+    Lehmer matrix CITE{WikiLehmer}; $A_{ij}=\binom{i+j-2}{i-1}$ for the
+    symmetric Pascal matrix CITE{WikiPascal}; $A_{ij}=1$ if $i\mid j$ or
+    $j=1$, and $0$ otherwise, for the Redheffer matrix CITE{WikiRedheffer};
+    and $A_{ij}=i^{j-1}$ for the Vandermonde matrix CITE{WikiVandermonde}.
+    The Cauchy matrix is $A_{ij}=1/(i+j)$, the default scalar case of
+    `gallery("cauchy",n)` CITE{MathWorksGallery}. The Fiedler matrix is
+    $A_{ij}=|i-j|$. The Kac-Murdock-Szego matrix is $A_{ij}=2^{-|i-j|}$.
+    The Minij matrix is $A_{ij}=\min(i,j)$.
+  comment-toolbox-families: >-
+    The Grcar, Chow, Frank, Clement, Moler, Parter, Ris, Lotkin and Riemann
+    matrices use the definitions in MATLAB gallery documentation
+    CITE{MathWorksGallery} or the Test Matrix Toolbox source CITE{TMTGallery}.
+    The Grcar matrix has $-1$ on the subdiagonal and $1$ on the diagonal and
+    on the first three superdiagonals. The Chow matrix has $A_{ij}=1$ for
+    $j\leq i+1$ and $0$ otherwise. The Frank matrix is the unreflected upper
+    Hessenberg form $A_{ij}=n-\max(i,j)+1$ for $j\geq i-1$, and $0$
+    otherwise. The Wilkinson matrix is symmetric tridiagonal with off-diagonal
+    entries $1$ and diagonal entries $|(n+1)/2-i|$.
+  comment-more-toolbox-families: >-
+    The Clement matrix is the default nonsymmetric tridiagonal matrix, with
+    zero diagonal, $A_{i,i-1}=n-i+1$ and $A_{i,i+1}=i$. The Moler matrix has
+    $A_{ii}=i$ and $A_{ij}=\min(i,j)-2$ for $i\neq j$. The Parter matrix is
+    $A_{ij}=1/(i-j+1/2)$. The Ris matrix, also called the Dingdong matrix, is
+    $A_{ij}=(1/2)/(n-i-j+3/2)$. The Lotkin matrix is the Hilbert matrix with
+    first row replaced by ones. The Riemann matrix is $B(2:n+1,2:n+1)$ with
+    $B_{ij}=i-1$ if $i\mid j$ and $-1$ otherwise. The second-difference
+    matrix is tridiagonal with diagonal entries $2$ and off-diagonal entries
+    $-1$.
+Formulas:
+  formula-clement: >-
+    For the Clement matrix,
+    $\chi_{A_n}(x)=\prod_{j=0}^{n-1}(x-(n-1-2j))$.
+  formula-second-difference: >-
+    For the second-difference matrix, the characteristic polynomials satisfy
+    $p_0(x)=1$, $p_1(x)=x-2$, and
+    $p_n(x)=(x-2)p_{n-1}(x)-p_{n-2}(x)$.
+  formula-redheffer: >-
+    For the Redheffer matrix, $\chi_{A_n}(0)=(-1)^n M(n)$, where $M(n)$ is
+    the Mertens function.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.matrix.constructor import matrix
+      from sage.rings.rational_field import QQ
+
+      A = matrix(QQ, 3, 3, lambda i, j: QQ(1) / QQ(i + j + 1))
+      A.charpoly()
+Similar tables:
+  - table: HREF{T327}[Condition numbers of the classical test matrices]
+    relation: stores finite 2-norm condition numbers for nonsingular members of these gallery families
+  - table: HREF{T329}[Eigenvalues of the classical symmetric test matrices]
+    relation: stores the ordered real eigenvalues for the symmetric subfamilies listed here
+  - table: HREF{T237}[Characteristic polynomials of connected graphs]
+    relation: stores exact characteristic polynomials of symmetric integer adjacency matrices rather than gallery test matrices
+Links:
+  WikiCharacteristic:
+    title: 'Wikipedia: Characteristic polynomial'
+    url: https://en.wikipedia.org/wiki/Characteristic_polynomial
+  WikiHilbert:
+    title: 'Wikipedia: Hilbert matrix'
+    url: https://en.wikipedia.org/wiki/Hilbert_matrix
+  WikiLehmer:
+    title: 'Wikipedia: Lehmer matrix'
+    url: https://en.wikipedia.org/wiki/Lehmer_matrix
+  WikiPascal:
+    title: 'Wikipedia: Pascal matrix'
+    url: https://en.wikipedia.org/wiki/Pascal_matrix
+  WikiRedheffer:
+    title: 'Wikipedia: Redheffer matrix'
+    url: https://en.wikipedia.org/wiki/Redheffer_matrix
+  WikiVandermonde:
+    title: 'Wikipedia: Vandermonde matrix'
+    url: https://en.wikipedia.org/wiki/Vandermonde_matrix
+  MathWorksGallery:
+    title: 'MathWorks: gallery, test matrices'
+    url: https://www.mathworks.com/help/matlab/ref/gallery.html
+  TMTGallery:
+    title: 'Test Matrix Toolbox: gallery.m source'
+    url: https://github.com/carandraug/testmatrix/blob/master/Test%20Matrix%20Toolbox/gallery.m
+Tags:
+  - analysis
+  - algebraic
+  - eigenvalue
+Data properties:
+  type: Q[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every listed default matrix family with $2\leq n\leq12$, a
+    complete rectangle of the nontrivial small orders; extending to $n=13$
+    would make the Ris entry 1458 characters
+  rigour details: >-
+    The generator builds each matrix over $\mathbb{Q}$ and computes
+    $\det(xI_n-A_n)$ exactly in $\mathbb{Q}[x]$. During generation it checks
+    that every polynomial is monic of degree $n$, that its $x^{n-1}$
+    coefficient is $-\operatorname{tr}(A_n)$, and that its constant
+    coefficient is $(-1)^n\det(A_n)$. For every listed family with
+    $n\leq5$, it also recomputes $\det(xI_n-A_n)$ by the Leibniz formula over
+    permutations. It checks the Hilbert and Vandermonde determinants against
+    their closed forms, the Redheffer determinant against the Mertens
+    function, the Frank determinant against $1$, the Clement polynomial
+    against CITE{formula-clement}, and the second-difference polynomial
+    against CITE{formula-second-difference}.
+Display properties:
+  number-header: $\chi_{A_n}(x)$
+Numbers: []
