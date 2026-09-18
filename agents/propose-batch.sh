@@ -32,7 +32,25 @@ say() { printf '\n=== %s\n' "$*"; }
 
 before=$(ls -t agents/table-ideas/BATCH-*.md 2>/dev/null | head -1 || true)
 
-NUMBERDB_AGENT="$miner" agents/run.sh ideas "Propose a batch from the open 'table wanted' issues, screening every candidate, in an area the corpus does not already cover. Write it to agents/table-ideas/BATCH-$(date -u +%Y-%m-%dT%H%M).md. Do not commit it: batches are data and .gitignore excludes them. Do not open an issue for it either; this job does that with what you wrote."
+# Either harness can screen, so one account's exhausted quota hands the job
+# to the other rather than ending the campaign that asked for it. `run.sh`
+# exits 6 when it has spent every model its engine may use and the other
+# engine is installed; see the same handover in agents/campaign.sh.
+other=claude
+if [ "$miner" = claude ]; then other=codex; fi
+screen() {
+	NUMBERDB_AGENT="$1" agents/run.sh ideas "Propose a batch from the open 'table wanted' issues, screening every candidate, in an area the corpus does not already cover. Write it to agents/table-ideas/BATCH-$(date -u +%Y-%m-%dT%H%M).md. Do not commit it: batches are data and .gitignore excludes them. Do not open an issue for it either; this job does that with what you wrote."
+}
+
+if ! screen "$miner"; then
+	status=$?
+	if [ "$status" -eq 6 ]; then
+		say "$miner has no quota left; $other screens instead"
+		screen "$other"
+	else
+		exit "$status"
+	fi
+fi
 
 after=$(ls -t agents/table-ideas/BATCH-*.md 2>/dev/null | head -1 || true)
 if [ -z "$after" ] || [ "$after" = "$before" ]; then

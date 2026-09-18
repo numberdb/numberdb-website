@@ -615,6 +615,24 @@ if [ "$status" -ne 0 ] && [ "$stage" != "triage" ] \
 	fi
 
 	if [ "$give_up" = "yes" ]; then
+		# One engine's quota is not both engines' quota. Two harnesses run
+		# every stage here -- that is what NUMBERDB_WRITER and NUMBERDB_CRITIC
+		# are for -- so an account that has run out is a reason to hand this
+		# stage to the other one, not a reason to stop the campaign. Exit 6
+		# says so; `campaign.sh` flips that role and runs the stage again.
+		#
+		# Not resumed here, and not inside this run: a session belongs to the
+		# harness that made it, and a transcript holding two harnesses' events
+		# is one the ledger cannot price.
+		other=""
+		case "$engine" in
+			claude) other=codex ;;
+			codex)  other=claude ;;
+		esac
+		if [ -n "$other" ] && command -v "$other" >/dev/null 2>&1; then
+			echo "=== $engine is out of quota on every model it may use; $other can take this stage"
+			exit 6
+		fi
 		#Nothing left to try. Resuming here would spend money to be refused
 		#again, and the campaign stopping is the right outcome: a quota
 		#refills, and the next run can start where this one stopped.
