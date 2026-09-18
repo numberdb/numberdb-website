@@ -210,13 +210,64 @@ def touching(name, at=None):
 	return commits
 
 
-def history(name):
+#: Where the reconstructed history is kept between runs, keyed by the commit
+#: it was computed at. Walking 130 commits and reading ten files at each costs
+#: about forty seconds, and `agents/run.sh` asks for a label at every run: a
+#: minute of git per run, for an answer that only changes when HEAD does.
+CACHE = os.path.join(HERE, 'runs', '.pipeline-history.json')
+
+
+def _cached(name):
+	import json
+
+	head = (_git('rev-parse', 'HEAD') or '').strip()
+	if not head:
+		return None, None
+	try:
+		with io.open(CACHE, encoding='utf-8') as handle:
+			found = json.load(handle)
+	except (OSError, ValueError):
+		found = {}
+	if found.get('head') != head:
+		return head, None
+	kept = (found.get('pipelines') or {}).get(name)
+	if kept is None:
+		return head, None
+	return head, [tuple(entry) for entry in kept]
+
+
+def _keep(name, head, versions):
+	import json
+
+	if not head:
+		return
+	try:
+		with io.open(CACHE, encoding='utf-8') as handle:
+			found = json.load(handle)
+	except (OSError, ValueError):
+		found = {}
+	if found.get('head') != head:
+		found = {'head': head, 'pipelines': {}}
+	found.setdefault('pipelines', {})[name] = [list(v) for v in versions]
+	try:
+		os.makedirs(os.path.dirname(CACHE), exist_ok=True)
+		with io.open(CACHE, 'w', encoding='utf-8') as handle:
+			json.dump(found, handle)
+	except OSError:
+		pass
+
+
+def history(name, use_cache=True):
 	"""Every version this pipeline has had: (major, minor, digest, commit, when).
 
 	One entry per *distinct* digest, in commit order. A commit that touches a
 	file in scope without changing what the scope hashes to -- a comment in
 	run.sh, a file moved back -- is not a version.
 	"""
+	head, kept = _cached(name) if use_cache else (None, None)
+	if kept is not None:
+		return kept
+
 	versions = []
 	previous = None
 	for commit, when in touching(name):
@@ -227,6 +278,8 @@ def history(name):
 		previous = sha
 		minor = sum(1 for v in versions if v[0] == major)
 		versions.append((major, minor, sha, commit, when))
+	if use_cache:
+		_keep(name, head, versions)
 	return versions
 
 
