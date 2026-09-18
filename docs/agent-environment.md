@@ -5584,22 +5584,43 @@ records for a ring module imported before Sage has initialised. There is no
 order that works: import numberdb first and it segfaults, import it later and
 the module will not load.
 
-Two things about watching such a run. The Sage crash handler tries to attach
-gdb before it gives up, and a third run -- the same script with a print between
-each step, to find which one dies -- produced **nothing at all in 25 minutes**
-and was still inside `timeout 1800 docker run` when this note was written, with
-`docker` itself not a command an agent here may use to look. And the output
-never reached the terminal because the run was piped through `grep -v ... |
-head -20`: `grep` block-buffers when its output is not a tty, so a crashing
-run's last words sit in a 4 KB buffer that is never flushed. Send such a run to
-a file -- `agents/sage.sh script.py > /tmp/out.txt 2>&1` -- and read the file.
+Two things about watching such a run, and the second is the one that costs
+somebody else an hour.
+
+*The output never arrives.* A third run -- the same script with a print between
+each step, to find which one dies -- produced **nothing at all**, because it was
+piped through `grep -v ... | head -20`: `grep` block-buffers when its output is
+not a tty, so a crashing run's last words sit in a 4 KB buffer that is never
+flushed, and `agents/sage.sh`'s own `--line-buffered` does not help once a
+second `grep` is added on this side. Send such a run to a file --
+`agents/sage.sh script.py > /tmp/out.txt 2>&1` -- and read the file. The two
+runs that *did* report their segfault were piped the same way and got their
+20 lines out first; a run that prints nothing before dying prints nothing at
+all.
+
+*A segfaulting run outlives `timeout 1800`, and it holds the lock.* This one
+was still alive at **35 minutes**, six minutes past the timeout: `timeout`
+sends SIGTERM to the `docker run` client, the client forwards it to PID 1 in
+the container, and PID 1 is Sage's crash handler trying to attach a gdb that is
+not installed. Both processes sit there. That matters because every
+`agents/sage.sh` run takes `flock -w 3600` on a single lock, so the next
+agent's run would have waited behind it for up to an hour, with nothing on
+screen to say why.
+
+The way out, for an agent that may not run `docker`: kill the `bash
+agents/sage.sh ...` wrapper. Its `trap cleanup EXIT` runs `docker rm -f` on the
+container by name, which is what that trap is for, and the container, the
+`timeout` and the lock all go within seconds. `kill <pid of the wrapper>`,
+then `ps -eo pid,etime,comm | grep -E 'docker|timeout'` to confirm. Do not
+reach for `docker kill`: it is refused here, and the trap does the same thing.
 
 Evidence: 2026-09-18, T335 critique. `/tmp/t335_programs.py` (the published
 `Programs` block verbatim, then the symmetric-function route: the first prints
 `1/720*c1^6 - ...` matching `Numbers['6']`, the second segfaults),
 `/tmp/t335_sf.py` at `--memory=4000m` (same segfault), `/tmp/t335_sf2.py`
-(`ImportError: cannot import name Category`), `/tmp/t335_sf3.py` (no output,
-held the container to its timeout).
+(`ImportError: cannot import name Category`), `/tmp/t335_sf3.py` (zero bytes of
+output, `timeout`+`docker` still in `ps` at 35:55, both gone eight seconds
+after `kill` on the wrapper).
 
 ## The sqlite draft-render recipe, third `sed` in a row, and a six-entry `Q[]` page is 29 KB
 
