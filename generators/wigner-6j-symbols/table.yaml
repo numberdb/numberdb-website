@@ -1,0 +1,112 @@
+# Draft document for T253, the Wigner 6j symbol table proposed in
+# numberdb-data#139. Publishing is a person's act.
+Title: Wigner $6j$ symbols
+Definition: >-
+  Wigner $6j$ symbols are the Wigner-convention recoupling coefficients
+  $\begin{Bmatrix}j_1&j_2&j_3\\j_4&j_5&j_6\end{Bmatrix}$ for three angular
+  momenta CITE{DLMF-6j}.
+Parameters:
+  j1:
+    type: Q
+    title: first angular momentum
+    display: $j_1$
+    constraints: $j_1$ is a nonnegative integer or half-integer
+  j2:
+    type: Q
+    title: second angular momentum
+    display: $j_2$
+    constraints: $j_2$ is a nonnegative integer or half-integer
+  j3:
+    type: Q
+    title: third angular momentum
+    display: $j_3$
+    constraints: $j_3$ is a nonnegative integer or half-integer
+  j4:
+    type: Q
+    title: fourth angular momentum
+    display: $j_4$
+    constraints: $j_4$ is a nonnegative integer or half-integer
+  j5:
+    type: Q
+    title: fifth angular momentum
+    display: $j_5$
+    constraints: $j_5$ is a nonnegative integer or half-integer
+  j6:
+    type: Q
+    title: sixth angular momentum
+    display: $j_6$
+    constraints: $j_6$ is a nonnegative integer or half-integer
+Comments:
+  comment-symmetry: >-
+    A Wigner $6j$ symbol is unchanged by the 24 tetrahedral symmetries: a
+    permutation of the three columns, followed by either no swap or by swaps
+    of the upper and lower entries in two columns. Each class is stored once,
+    under the lexicographically largest $(j_1,j_2,j_3,j_4,j_5,j_6)$, so a
+    symbol in another arrangement is found by applying those symmetries first.
+  comment-admissible: >-
+    A Wigner $6j$ symbol is zero unless each of the four triads
+    $(j_1,j_2,j_3)$, $(j_1,j_5,j_6)$, $(j_4,j_2,j_6)$ and $(j_4,j_5,j_3)$
+    satisfies the triangle inequalities and has an integer sum. This condition
+    is necessary but not sufficient: of the 490 canonical classes with all
+    $j_i\leq 7/2$, four nontrivial admissible classes vanish, including
+    $\begin{Bmatrix}2&2&2\\3/2&3/2&3/2\end{Bmatrix}$.
+  comment-zeros: >-
+    Rows whose value is zero are omitted, as is the trivial all-zero symbol
+    $\begin{Bmatrix}0&0&0\\0&0&0\end{Bmatrix}$, whose value is $1$.
+  comment-algebraic: >-
+    Every nonzero Wigner $6j$ symbol is a rational number or a rational
+    multiple of the square root of a rational number.
+Formulas:
+  formula-racah: 'Put $x_1=j_1+j_2+j_3$, $x_2=j_1+j_5+j_6$, $x_3=j_4+j_2+j_6$, $x_4=j_4+j_5+j_3$, $y_1=j_1+j_2+j_4+j_5$, $y_2=j_2+j_3+j_5+j_6$ and $y_3=j_3+j_1+j_6+j_4$. With $\Delta(a,b,c)=\sqrt{(a+b-c)!(a-b+c)!(-a+b+c)!/(a+b+c+1)!}$, Racah''s finite sum is $\begin{aligned}\begin{Bmatrix}j_1&j_2&j_3\\j_4&j_5&j_6\end{Bmatrix}&=\Delta(j_1,j_2,j_3)\Delta(j_1,j_5,j_6)\Delta(j_4,j_2,j_6)\Delta(j_4,j_5,j_3)\\&\quad\times\sum_s \frac{(-1)^s(s+1)!}{\prod_{i=1}^4(s-x_i)!\prod_{r=1}^3(y_r-s)!}.\end{aligned}$ The sum is over the integers $s$ for which every factorial argument is nonnegative CITE{DLMF-6j}.'
+  formula-zero: 'If a Wigner $6j$ symbol has an entry $0$, tetrahedral symmetry may put that entry in the lower-right position. The value is then zero unless the first two columns are a transposed pair, and in the nonzero case $\begin{Bmatrix}j_1&j_2&j_3\\j_2&j_1&0\end{Bmatrix}=(-1)^{j_1+j_2+j_3}/\sqrt{(2j_1+1)(2j_2+1)}$ CITE{Wikipedia}.'
+  formula-3j-sum: 'Equivalently, $\begin{aligned}\begin{Bmatrix}j_1&j_2&j_3\\j_4&j_5&j_6\end{Bmatrix}&=\sum_{m_1,m_2,m_3,\mu_1,\mu_2,\mu_3}(-1)^{j_4+\mu_1+j_5+\mu_2+j_6+\mu_3}\\&\quad\times\begin{pmatrix}j_1&j_2&j_3\\m_1&m_2&m_3\end{pmatrix}\begin{pmatrix}j_1&j_5&j_6\\m_1&\mu_2&-\mu_3\end{pmatrix}\\&\quad\times\begin{pmatrix}j_4&j_2&j_6\\-\mu_1&m_2&\mu_3\end{pmatrix}\begin{pmatrix}j_4&j_5&j_3\\\mu_1&-\mu_2&m_3\end{pmatrix}.\end{aligned}$ The sum is over magnetic quantum numbers admissible for all four HREF{T252}[Wigner $3j$ symbols] CITE{DLMF-6j}.'
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.functions.wigner import wigner_6j
+
+      wigner_6j(1, 1, 1, 1, 1, 1)    # 1/6
+Similar tables:
+  - table: HREF{T252}[Clebsch-Gordan coefficients and Wigner $3j$ symbols]
+    relation: Wigner $6j$ symbols are finite signed sums of products of Wigner $3j$ symbols
+  - table: HREF{T35}[Algebraic numbers of degree 2]
+    relation: the non-rational Wigner $6j$ symbols are quadratic algebraic numbers
+Links:
+  DLMF-6j:
+    title: 'DLMF 34.4: Wigner 6j symbols'
+    url: https://dlmf.nist.gov/34.4
+  Wikipedia:
+    title: 'Wikipedia: 6-j symbol'
+    url: https://en.wikipedia.org/wiki/6-j_symbol
+  Sage:
+    title: 'SageMath: Wigner, Clebsch-Gordan, Racah, and Gaunt coefficients'
+    url: https://doc.sagemath.org/html/en/reference/functions/sage/functions/wigner.html
+Keywords:
+  - Wigner 6j symbol
+  - Wigner 6-j symbol
+  - Racah W coefficient
+  - Racah coefficient
+  - angular momentum coupling
+  - recoupling coefficient
+  - Ponzano-Regge model
+  - Turaev-Viro invariant
+Tags:
+  - special functions
+  - physics
+  - algebraic
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every canonical tetrahedral class with all $j_i\leq 7/2$ whose
+    value is not zero, other than the symbol with every $j_i=0$; this cutoff
+    covers the small angular momenta through $7/2$ and gives 485 rows
+  rigour details: |-
+    The generator evaluates Racah's finite sum CITE{formula-racah} with exact rational arithmetic, using integer-scaled angular momenta so every factorial argument is checked before it is used. The exact result is a sign times the square root of a rational number, converted to an arb ball for the stored real value; rational results are written exactly.
+
+    Before any entry is returned, the generator recomputes every row at all 24 tetrahedral images and requires the results to agree. It checks the zero-entry formula CITE{formula-zero} wherever that formula applies, and it checks every row against the finite sum of Wigner $3j$ symbols in CITE{formula-3j-sum}. All 485 stored rows were also compared with SageMath's exact `wigner_6j` function CITE{Sage}.
+Display properties:
+  number-header: $\begin{Bmatrix}j_1&j_2&j_3\\j_4&j_5&j_6\end{Bmatrix}$
+Numbers: []

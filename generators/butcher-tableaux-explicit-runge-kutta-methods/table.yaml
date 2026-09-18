@@ -1,0 +1,123 @@
+# Table document for numberdb-data issue #156, draft T304. Created with
+# X-Draft: yes, then filled by generate.py beside it. Publishing is a
+# person's act on the site.
+Title: Butcher tableaux of explicit Runge–Kutta methods
+Definition: >-
+  An explicit Runge-Kutta method with rational coefficients is determined by
+  its Butcher tableau CITE{WikiList}. The table gives the nonzero nodes
+  $c_i$, matrix entries $a_{ij}$ with $j<i$, and weights $b^{(q)}_i$ of each
+  listed method or embedded pair.
+Parameters:
+  method:
+    type: Symbolic
+    title: method
+    display: method
+    constraints: one of the listed rational explicit methods
+    values:
+      forward-euler: forward Euler
+      midpoint: explicit midpoint method
+      heun-2: Heun's second-order method
+      ralston-2: Ralston's second-order method
+      kutta-3: Kutta's third-order method
+      heun-3: Heun's third-order method
+      ralston-3: Ralston's third-order method
+      van-der-houwen-wray: Van der Houwen-Wray third-order method
+      ssprk3: third-order strong stability preserving Runge-Kutta method
+      rk4: classic fourth-order Runge-Kutta method
+      three-eighths: 3/8-rule fourth-order method
+      nystrom-5: Nystrom's fifth-order method
+      heun-euler: Heun-Euler embedded pair
+      fehlberg-12: Fehlberg RK1(2) embedded pair
+      bogacki-shampine: Bogacki-Shampine embedded pair
+      fehlberg-45: Runge-Kutta-Fehlberg RKF45 embedded pair
+      cash-karp: Cash-Karp embedded pair
+      dormand-prince: Dormand-Prince embedded pair
+  coefficient:
+    type: Symbolic
+    title: tableau coefficient
+    display: coefficient
+    constraints: a key `c_i`, `a_i_j` with $j<i$, or `bq_i` for the order-$q$ weight of stage $i$
+Comments:
+  comment-indexing: >-
+    Stages are numbered from $1$, as in Butcher notation. The first node
+    $c_1=0$, zero entries in the strictly lower triangular matrix, and zero
+    weights are omitted; an absent coefficient is $0$.
+  comment-embedded: >-
+    Embedded methods have one weight row for each order. The coefficient
+    $b^{(q)}_i$ is the weight of stage $i$ in the order-$q$ formula. Which
+    order is used to advance the step is a property of the method, not a
+    separate normalisation.
+  comment-range: >-
+    The listed methods are the rational explicit tableaux in Wikipedia's
+    list of Runge-Kutta methods at revision 1346207143. The table excludes
+    one-parameter generic families, implicit methods, and Ralston's
+    fourth-order method, whose coefficients lie in $\mathbb{Q}(\sqrt5)$.
+Formulas:
+  formula-step: >-
+    The step has the form $y_{n+1}=y_n+h\sum_i b_i k_i$, where
+    $k_i=f(t_n+c_i h, y_n+h\sum_{j<i} a_{ij}k_j)$.
+  formula-row-sums: >-
+    For every stage, $c_i=\sum_{j<i}a_{ij}$.
+  formula-moments: >-
+    For each order-$q$ weight row and $1\leq m\leq q$,
+    $\sum_i b^{(q)}_i c_i^{m-1}=1/m$.
+  formula-error: >-
+    If an embedded pair has weight rows $b^{(p)}$ and $b^{(q)}$, the
+    difference of the two one-step formulas is
+    $h\sum_i (b^{(p)}_i-b^{(q)}_i)k_i$.
+Programs:
+  program-python:
+    language: Python
+    code: |-
+      from fractions import Fraction
+
+      def row_sums(c, a):
+          return [sum(row) == node for node, row in zip(c, a)]
+
+      def moment_conditions(c, b, order):
+          return [sum(weight * node ** (m - 1) for node, weight in zip(c, b))
+                  == Fraction(1, m) for m in range(1, order + 1)]
+Similar tables:
+  - table: HREF{Nodes_and_weights_of_Gauss_Legendre_quadrature}[Nodes and weights of Gauss-Legendre quadrature]
+    relation: the nodes are the $c_i$ of the implicit Gauss collocation Runge-Kutta methods, which are not included here
+  - table: HREF{Nodes_and_weights_of_Gauss_Lobatto_quadrature}[Nodes and weights of Gauss-Lobatto quadrature]
+    relation: the Lobatto collocation Runge-Kutta families are implicit relatives of the explicit methods here
+  - table: HREF{Newton_Cotes_weights}[Newton-Cotes weights]
+    relation: another family of rational coefficients for classical numerical integration methods
+Links:
+  WikiList:
+    title: 'Wikipedia: List of Runge-Kutta methods, revision 1346207143'
+    url: https://en.wikipedia.org/w/index.php?title=List_of_Runge%E2%80%93Kutta_methods&oldid=1346207143
+  WikiBogackiShampine:
+    title: 'Wikipedia: Bogacki-Shampine method, revision 1342579003'
+    url: https://en.wikipedia.org/w/index.php?title=Bogacki%E2%80%93Shampine_method&oldid=1342579003
+  WikiFehlberg:
+    title: 'Wikipedia: Runge-Kutta-Fehlberg method, revision 1322992296'
+    url: https://en.wikipedia.org/w/index.php?title=Runge%E2%80%93Kutta%E2%80%93Fehlberg_method&oldid=1322992296
+  WikiCashKarp:
+    title: 'Wikipedia: Cash-Karp method, revision 1233373053'
+    url: https://en.wikipedia.org/w/index.php?title=Cash%E2%80%93Karp_method&oldid=1233373053
+  WikiDormandPrince:
+    title: 'Wikipedia: Dormand-Prince method, revision 1338750478'
+    url: https://en.wikipedia.org/w/index.php?title=Dormand%E2%80%93Prince_method&oldid=1338750478
+  SciPyRK:
+    title: 'SciPy scipy.integrate._ivp.rk at f0371a854cc7031df9a1ff920c304979b8c7d93e'
+    url: https://github.com/scipy/scipy/blob/f0371a854cc7031df9a1ff920c304979b8c7d93e/scipy/integrate/_ivp/rk.py
+Keywords: Euler method, forward Euler, explicit midpoint method, Heun's method, improved Euler, modified Euler, Ralston, Kutta, Van der Houwen, Wray, SSPRK3, RK4, 3/8 rule, Nystrom, Nyström, Heun-Euler, Fehlberg, RKF45, Bogacki-Shampine, Bogacki–Shampine, RK23, Cash-Karp, Cash–Karp, Dormand-Prince, Dormand–Prince, RK45, ode45, DOPRI, RKDP
+Tags:
+  - analysis
+Data properties:
+  type: Q
+  rigour: exact
+  complete: 'no'
+  complete-note: it holds the nonzero rational coefficients of the 18 rational explicit tableaux listed in the source revision, excluding one-parameter families, implicit methods and irrational tableaux
+  rigour details: >-
+    The generator transcribes the rational coefficients from the cited
+    source revisions and stores them as reduced fractions. Each completed
+    tableau is checked against the row sums, the order moment conditions,
+    the rooted-tree order conditions through its stated order, and an
+    independent transcription for the Bogacki-Shampine and Dormand-Prince
+    arrays in SciPy.
+Display properties:
+  number-header: tableau coefficient
+Numbers: []

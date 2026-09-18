@@ -1,0 +1,11 @@
+1. done -- added Coxeter-triangle sentences to the five affected rows and tightened the T222/T223 similar-table glosses; checked the live T222 values against T284 for `[7,3]`, `[8,3]`, `[9,3]`, `[10,3]`, `[5,4]`, and `[11,3]`, checked T223's smallest value is greater than $1.3$, and previewed the changed HREFs.
+2. done -- moved the coverage evidence into `complete-note`, added `MRW`, and removed Sac-Épée from `rigour details`; checked Mossinghoff's 47-row list, Sac-Épée §1.3/§3.2, and the final API audit.
+3. done -- replaced the stale "recent discovery" comments on rows 39, 43, and 46 and added the same Mossinghoff-discovery fact to row 40; checked Mossinghoff's asterisks and Sac-Épée's history note before adding `Mossinghoff1998`.
+4. done -- rewrote the Definition to exclude quadratic units and define "small"; checked Sac-Épée's definition and Wikipedia's definition, then shortened the first draft after `audit_table` reported it too long.
+5. done -- changed the coefficient parameter title and constraint, rewrote the reciprocal-polynomial formula, and deleted the duplicate coefficient and source-decimal comments; checked the live source convention and that the API accepted the edit without changing parameter order.
+6. done -- rewrote the T223 gloss to say its compact tetrahedral Coxeter growth rates are all Salem numbers and all greater than $1.3$; checked the live T223 values before changing it.
+noted entry-comment fragments: declined -- only the rows touched by ranked findings were rewritten as sentences, because rewriting every row would be noisy churn without correcting a false claim.
+noted algebraic-entropy keyword and dynamical-systems tag: declined -- the critique named an unchecked McMullen link, and I did not have a checked sentence and citation to justify changing browse/search metadata.
+noted Lehmer-problem keyword: declined -- I corrected the Mahler/logarithmic Mahler wording in `comment-mahler`, but did not add a Lehmer-problem sentence without checking a source for that wording.
+noted Sac-Epee accents: done -- corrected the `SacEpee` bibliography text to `Sac-Épée` and checked the arXiv record.
+noted T282 and T283 drafts: left for a person -- publication order and whether draft links should be held back are review decisions, and I may not publish or review.

@@ -1,0 +1,6 @@
+Audit finding. declined -- the audit still reports `part` as four possible quantities, but `$x$`, `$y$`, `$z$` and `$z^r$` are parts of one Fermat-Catalan solution; I left them together after checking the live definition says that explicitly.
+1. done -- changed the scope from `$xyz>1$` to `$x,y,z>1$` in the definition, parameter constraint, completeness note and generator; checked Sikora lists ten coprime solutions, and in Sage checked the nine stored solutions have $x,y,z>1$ while the excluded family has $x=1$ and $xyz=6$.
+2. done -- added a Darmon-Granville comment citing `CITE{DarmonGranville}`; checked Sikora's Section 2 states that theorem for fixed exponents satisfying the Fermat-Catalan inequality.
+3. done -- shortened the exponent comment and removed the 36 repeated entry comments; checked the labels still carry $(p,q,r)$ and previewed every entry chunk without the old comment text.
+4. done -- removed the `Formulas` section because it only restated the definition; checked the definition and exact Sage verification still cover the equation, coprimality and exponent inequality.
+5. done -- changed the `sum` display from `$z^r$` to `solution`; checked the rendered preview chunks after the change.

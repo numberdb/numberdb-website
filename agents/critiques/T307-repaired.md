@@ -1,0 +1,10 @@
+1. *done* -- Replaced code-key normalisation prose with $\alpha_{s,s}=1$ and $\beta_s=1$, and defined $\nabla$; checked every stored coefficient against the exact $\beta_s=1$ formula in Sage.
+2. *done* -- Rewrote the Definition to state the BDF equation, order and two normalisations without the zero-stability appositive; checked the exact order conditions for every stored method in Sage.
+3. *done* -- Changed the parameter domain to $s\geq1$, marked the table incomplete with a zero-stable $1\leq s\leq6$ note, and shortened the range comment; checked root moduli for $s=1,\ldots,8$ in Sage.
+4. *done* -- Added the finite-difference keyword and the $\beta_s=1$ finite-difference sentence; checked the derivative moment conditions and Lagrange derivative formula for every stored row in Sage.
+5. *done* -- Moved the definition of $H_s$ into `formula-nabla` and rewrote `formula-normalisations`; checked the $H_s$ scaling against every stored coefficient in Sage.
+6. *done* -- Removed the unresolved final sentence of `comment-normalising`; checked that the omitted rows are exactly $\alpha_{s,s}$ in the $\alpha_{s,s}=1$ normalisation and $\beta_s$ in the $\beta_s=1$ normalisation.
+7. *done* -- Replaced the six fragment entry comments with full BDF equations generated from exact rational coefficients; checked those coefficients against the stored numbers in Sage.
+8. *done* -- Linked the first Lagrange-table mention in Formulas; checked $\alpha_{s,j}=\ell'_{s,j}(s)$ for all stored $s,j$ in Sage.
+9. *done* -- Rewrote the finite-difference, Lagrange, Adams-Bashforth and Adams-Moulton Similar-tables relations; checked the finite-difference and Lagrange claims in Sage and the Adams claims against the live linked table definitions.
+10. *done* -- Changed "Each completed method" to "Each stored method" in rigour details; declined the other notes because the integer rows are legitimate method parts, the hyphenated captions are harmless, the `numberdb.sage` import initializes Sage, and the `analysis` tag is a batch-level decision.

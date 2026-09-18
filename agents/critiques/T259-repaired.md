@@ -1,0 +1,11 @@
+1. *done* -- Replaced the `Programs` example with a pair of partitions of 10; checked in Sage that the old call returns the stored row `t^3`, and that the new call returns `t^13 + 2*t^12 + 4*t^11 + 5*t^10 + 6*t^9 + 5*t^8 + 4*t^7 + 2*t^6 + t^5` while the live table stops at size 9.
+2. *done* -- Defined `\operatorname{charge}(T)` as the charge of the reading word in formula (2), and added the reading-word convention and charge-subword algorithm pointer to the comment; checked Sage's documentation mentions the reading word and that Sage's row word reads left to right from the bottom row upwards.
+3. *done* -- Removed the Schur-to-Hall-Littlewood transition dictionary from `rigour details`; checked Sage source shows `KostkaFoulkesPolynomial`, `kfpoly`, and `schur_to_hl` share the same `riggings` and `weight` machinery.
+4. *declined* -- Corrected the misplaced `WikiKostka` citation in the Definition, but did not keep the proposed Schur `HREF`: the first API edit proved `audit_table` rejects table cross-references in a Definition, and Schur polynomials are already linked from `Similar tables`.
+5. *done* -- Replaced the repeated comment with partition notation, reading-word, charge, and omitted-zero-pair conventions; checked the repeated Hall-Littlewood and dominance facts remain in the formulas/parameter constraint.
+6. *done* -- Added the entry-count reason to `complete-note`; checked the final JSON still has 901 entries, counts by size `1, 3, 6, 15, 28, 64, 116, 238, 430`, and longest value length 182.
+7. *done* -- Cited `CITE{Sage}` from `rigour details` and the charge comment; preview rendered it as link `[3]` and the final API audit is clean.
+8. *done* -- Replaced the dash-variant keywords with `Lusztig q-analogue` and `q-analogue of weight multiplicity`; checked NumberDB search gives identical results for hyphen/en-dash test queries and checked the Lusztig type-A naming before changing it.
+9. *left for a person* -- The alphabet convention touches this table and its symmetric-function siblings, so I left it unchanged.
+10. *declined* -- The repeated `\lambda` column is the site's flat two-parameter rendering, not a table-data fault, and the entry anchors are still unambiguous.
+11. *left for a person* -- I did not add an LS identifier because that needs a reliable MR/Zbl/DOI lookup rather than a guess.

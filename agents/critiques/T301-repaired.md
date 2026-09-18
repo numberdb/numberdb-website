@@ -1,0 +1,8 @@
+* done -- shortened the Definition so it defines Salem numbers and the stored minimal polynomials, and moved the coefficient-tuple precision to Comments; checked in Sage that all 47 stored polynomials match their keys, are monic reciprocal polynomials of even degree, and are irreducible.
+* done -- linked the companion T284 table in Comments rather than the Definition, because `/api/table/T301/audit` refused a Definition HREF; preview showed the link rendering and the final audit was clean.
+* done -- cited `SacEpee` from `complete-note` and restored the spelling "Sac-Épée"; checked the live T284 reference and completeness note before changing it.
+* done -- rewrote `complete-note` to say that the degree-$46$ entry lies outside the proved degree-$44$ range and that Sac-Épée's later search rediscovered all 47; checked in Sage that there is exactly one degree-46 polynomial and every other degree is at most 44.
+* done -- added a row-1 comment naming Lehmer's polynomial and linking its root in T284; checked in Sage that row 1 has key `1,1,0,-1,-1,-1`, has Lehmer's polynomial, and is the Lehmer row named by T284.
+* done -- replaced the two source/navigation comments with one ordering/index comment; checked that T301 and T284 have the same keys in the same order and that T284's values are increasing, and previewed the Formula (1) citation and T284 link.
+* declined -- left the parameter title and display unchanged, because the critique marked this as noted only, the wording matches T284, citations depend on the parameter key, and the final audit is clean.
+* left for a person -- this is a suggested future change to public T284 after T301 is published, not a T301 repair, so zeta3 did not edit it in this run.

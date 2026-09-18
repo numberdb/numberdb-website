@@ -1,0 +1,81 @@
+# The table document for numberdb.org/T311. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Modular polynomials for $\gamma_2=\sqrt[3]{j}$
+Definition: >-
+  Let $\gamma_2$ be the branch with $\gamma_2(\tau)^3=j(\tau)$ and
+  $\gamma_2(\tau)=q^{-1/3}(1+O(q))$, where $j$ is the modular $j$-invariant.
+  The entry is the monic minimal polynomial of $\gamma_2(\ell\tau)$ over
+  $\mathbb Q(\gamma_2(\tau))$.
+Parameters:
+  ell:
+    type: Z
+    title: prime level
+    display: $\ell$
+    constraints: $\ell$ is prime and $\ell\ne3$
+Comments:
+  comment-normalisation: >-
+    The polynomial lies in $\mathbb Z[x,y]$ and is normalised so that the
+    coefficient of $x^{\ell+1}$ is $1$.
+  comment-variables: >-
+    The variable $x$ is the value at $\ell\tau$, and $y$ is the value at
+    $\tau$; for the rows in this table each polynomial is symmetric,
+    $\Phi^{\gamma_2}_\ell(x,y)=\Phi^{\gamma_2}_\ell(y,x)$.
+  comment-pari: >-
+    PARI/GP calls this invariant number $5$ in `polmodular` CITE{PARIpolmodular}.
+  comment-level: >-
+    $\gamma_2$ has level $3$, so this table uses prime levels $\ell$ coprime to
+    $3$; PARI/GP's `polmodular(3,5)` is correspondingly undefined.
+Formulas:
+  formula-branch: >-
+    If $q=e^{2\pi i\tau}$, then
+    $\gamma_2(\tau)=q^{-1/3}(1+O(q))$ and $\gamma_2(\tau)^3=j(\tau)$.
+  formula-relation: >-
+    $\Phi^{\gamma_2}_\ell(\gamma_2(\ell\tau),\gamma_2(\tau))=0$.
+Programs:
+  program-pari:
+    language: PARI/GP
+    code: |-
+      \\ prime level 11, invariant 5 = gamma_2; PARI/GP prints the polynomial nested in x
+      polmodular(11, 5)
+Similar tables:
+  - table: HREF{Modular_polynomials_for_j-invariant}[Modular polynomials for the $j$-invariant]
+    relation: store the classical modular equations for $j(\ell\tau)$ and $j(\tau)$
+  - table: HREF{Modular_polynomials_for_Weber's_f-function}[Modular polynomials for Weber's $f$-function]
+    relation: store another family of modular equations for a class invariant smaller than $j$
+  - table: HREF{Canonical_modular_polynomials}[Canonical modular polynomials $\Phi^c_\ell$]
+    relation: store modular equations for eta quotients used in the same complex multiplication algorithms
+  - table: HREF{Class_polynomials_of_gamma_2_sqrt_3_j}[Class polynomials of $\gamma_2$]
+    relation: store class polynomials for the same modular function at CM points
+  - table: HREF{Q-expansion_of_the_j-invariant}[$q$-expansion of the $j$-invariant]
+    relation: defines the cube of $\gamma_2$
+Links:
+  PARIpolmodular:
+    title: 'PARI/GP manual: polmodular'
+    url: https://pari.math.u-bordeaux.fr/dochtml/html-stable/Elliptic_curves.html#polmodular
+Keywords:
+  - gamma2 modular polynomial
+  - cube root j modular polynomial
+  - cube root j modular equation
+Tags:
+  - number theory
+  - polynomial
+  - elliptic curves
+  - modular function
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: it holds every prime $\ell\ne3$ with $\ell\leq23$
+  rigour details: >-
+    The generator computes exact $q$-expansions of $\gamma_2(\tau)$ and
+    $\gamma_2(\ell\tau)$ from the branch in Formula CITE{formula-branch} and
+    finds the one-dimensional rational kernel among monomials $x^a y^b$ with
+    $0\leq a,b\leq\ell+1$ and
+    $\ell a+b\equiv\ell+1\pmod 3$. For the rows in this table, the resulting
+    polynomial is irreducible over $\mathbb Q(y)$. The result is primitive over
+    $\mathbb Z$, has leading coefficient $1$ in $x^{\ell+1}$, and is compared
+    with PARI/GP's exact `polmodular(ell,5)` output CITE{PARIpolmodular}.
+Display properties:
+  number-header: $\Phi^{\gamma_2}_\ell(x,y)$
+Numbers: []

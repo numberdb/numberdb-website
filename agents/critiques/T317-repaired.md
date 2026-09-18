@@ -1,0 +1,12 @@
+1. done -- changed the SnapPy link to `Manifold.cusp_info`; checked that `verify.html` has zero `cusp_info` mentions, `manifold.html` has `snappy.Manifold.cusp_info`, and Sage reports `Manifold.cusp_info` exists while `CuspNeighborhood.cusp_info` does not.
+2. done -- rewrote the Definition as the mathematical ratio $\ell/m$ and moved the SnapPy convention to the convention comment; checked the rendered preview and shortened it after the audit flagged the first draft as too long.
+3. done -- expanded the numbering comment to name the $10_{83}$/$10_{86}$ swap and the $10_{161}$--$10_{166}$ Perko/Rolfsen shift; checked the seven SnapPy names under Sage against the live T317 rows.
+4. done -- changed the 20 exact-zero real parts from `[0, 0] + i * ...` to `0 + i * ...`; checked there were exactly 20 such spellings, no `[0, 0]` spellings remained, and the API/audit accepted the complex values.
+5. done -- cited `WikiList` on the prime-knot count and `KnotInfoData` on the braid words; checked the post-edit document cites each Link label at least once.
+6. done -- rewrote the Chern-Simons relation to say the actual difference, a real invariant rather than a complex cusp invariant; checked live T313 has the same knot/mirror choices and two normalisations.
+7. left for a person -- T316 still answers 404 as an unpublished draft, and the right fix is publication order or deliberately dropping a useful relation, neither of which I can decide or perform.
+8. done -- annotated the SnapPy program with the install command, the $4_1$ input, the 540-bit output shape, and the braid-word warning; checked the example under Sage at 540 bits.
+9. done -- removed the "neighboring knot tables" pointer while rewriting the numbering comment; checked the sentence still names Rolfsen, Perko and KnotInfo's braid-word source directly.
+10. done -- added the `period` tag and kept `algebraic` with a visible cusp-field sentence in the convention comment; checked T141 and T313 carry `period`.
+11. done -- reduced the $10_{161}$ entry comments to "the Perko pair" and "mirror image of the Perko pair"; checked the Rolfsen duplicate explanation now lives in the numbering comment.
+audit. declined -- left the `knot` split warning in place; the Definition still says the table includes distinct mirror images and the mirror comment says these are two mirror choices for one quantity, which matches the critique's reasoning.

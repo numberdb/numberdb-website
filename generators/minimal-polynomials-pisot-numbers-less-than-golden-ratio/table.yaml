@@ -1,0 +1,110 @@
+# The table document for numberdb.org/T300. It was created as a draft
+# through the API (X-Draft: yes), filled by generate.py beside it, and left
+# offered for review; publishing is a person's act on the site.
+Title: Minimal polynomials of the Pisot numbers less than the golden ratio
+Definition: >-
+  Let $\varphi=(1+\sqrt5)/2$ be the golden ratio, and let $\theta_r$ be the
+  $r$-th smallest Pisot-Vijayaraghavan number CITE{Wiki} in the interval
+  $(1,\varphi)$. The table stores the monic minimal polynomial
+  $m_r(x)\in\mathbb{Z}[x]$ of $\theta_r$.
+Parameters:
+  r:
+    type: Z
+    title: rank
+    display: $r$
+    constraints: $r\geq1$
+Comments:
+  comment-classification: >-
+    Dufresnoy and Pisot proved that HREF{Golden_ratio#phi}[$\varphi$] is the
+    smallest limit point of the set of Pisot numbers and determined all Pisot
+    numbers in $(1,\varphi)$ CITE{DP}. The polynomials $m_r(x)$ here are the
+    irreducible factors whose roots in $(1,\varphi)$ give that increasing
+    sequence, as recorded in CITE{Bertin} and CITE{McKeeSmyth} for the
+    classification.
+  comment-roots: >-
+    Each entry comment links to the matching root $\theta_r$ in
+    HREF{Pisot_numbers_less_than_the_golden_ratio}[the Pisot-number table].
+Formulas:
+  formula-families: >-
+    The roots $\theta_r$ in $(1,\varphi)$ come from
+    $P_n(x)=x^n(x^2-x-1)+1$ and $Q_n(x)=x^n(x^2-x-1)+x^2-1$ for $n\geq2$,
+    together with $E(x)=x^6-2x^5+x^4-x^2+x-1$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      R.<x> = QQ[]
+      P = lambda n: x^n*(x^2 - x - 1) + 1
+      Q = lambda n: x^n*(x^2 - x - 1) + x^2 - 1
+      E = x^6 - 2*x^5 + x^4 - x^2 + x - 1
+      RR = RealIntervalField(400)
+      phi = (RR(1) + RR(5).sqrt())/2
+      def pisot_factor(f):
+          out = []
+          for g, e in f.factor():
+              out += [(root, g) for root, m in g.roots(RR)
+                      if root.lower() > 1 and root.upper() < phi.lower()]
+          return out[0]
+      polys = [P(n) for n in range(2, 30)] + [Q(n) for n in range(2, 30)] + [E]
+      [g for root, g in sorted(pisot_factor(f) for f in polys)[:10]]
+Similar tables:
+  - table: HREF{Pisot_numbers_less_than_the_golden_ratio}[Pisot numbers less than the golden ratio]
+    relation: stores the root $\theta_r$ in $(1,\varphi)$ of each polynomial $m_r(x)$ held here
+  - table: HREF{T32}[Golden ratio]
+    relation: holds the smallest accumulation point of the set of Pisot numbers
+Links:
+  Wiki:
+    title: "Wikipedia: Pisot-Vijayaraghavan number"
+    url: https://en.wikipedia.org/wiki/Pisot%E2%80%93Vijayaraghavan_number
+References:
+  DP:
+    bib: >-
+      J. Dufresnoy and Ch. Pisot, Etude de certaines fonctions meromorphes
+      bornees sur le cercle unite. Application a un ensemble ferme d'entiers
+      algebriques, Annales Scientifiques de l'Ecole Normale Superieure 72
+      (1955), 69-92.
+    doi: 10.24033/asens.1030
+    mr: '0072902'
+  Bertin:
+    bib: >-
+      M.-J. Bertin, A. Decomps-Guilloux, M. Grandet-Hugot,
+      M. Pathiaux-Delefosse and J.-P. Schreiber, Pisot and Salem Numbers,
+      Birkhauser, 1992.
+    doi: 10.1007/978-3-0348-8632-1
+  McKeeSmyth:
+    bib: >-
+      James McKee and Chris Smyth, Salem numbers, Pisot numbers, Mahler
+      measure and graphs, Experimental Mathematics 14 (2005), 211-229.
+    arxiv: math/0503480
+    doi: 10.1080/10586458.2005.10128918
+Keywords:
+  - Pisot number
+  - Pisot-Vijayaraghavan number
+  - PV number
+  - minimal polynomial
+  - Dufresnoy-Pisot
+  - plastic ratio
+  - supergolden ratio
+  - Mahler measure
+Tags:
+  - number theory
+  - algebraic
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds the minimal polynomials for the first $50$ Pisot numbers in
+    $(1,\varphi)$, matching the range in
+    HREF{Pisot_numbers_less_than_the_golden_ratio}[the root table] exactly
+  rigour details: >-
+    The generator forms the exact integer polynomials given in Formula
+    CITE{formula-families} and factors them over $\mathbb Q$. It selects the
+    irreducible factor whose real root lies in $(1,\varphi)$ and stores the
+    monic factor exactly. A verification run checks that this root is contained
+    in the corresponding stored interval in
+    HREF{Pisot_numbers_less_than_the_golden_ratio}[the root table]. The first
+    ten polynomials agree with the source table quoted by Wikipedia's
+    small-Pisot-numbers section.
+Display properties:
+  number-header: $m_r(x)$

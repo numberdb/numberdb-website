@@ -1,0 +1,99 @@
+# The table document for numberdb.org/T292. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Special $L$-values of elliptic curves over real quadratic fields
+Definition: >-
+  Let $K=\mathbb{Q}(\sqrt{D})$ be a real quadratic field and let $E/K$ be an
+  elliptic curve. This table gives the leading Taylor coefficient
+  $L^*(E/K,1)=L^{(r)}(E/K,1)/r!$, where $r=\operatorname{rank}E(K)$, for the
+  Hasse-Weil $L$-function in the arithmetic normalisation CITE{ecnf-data}.
+Keywords: Birch and Swinnerton-Dyer, BSD, Hilbert modular form, base change, real quadratic field, Q(sqrt 5)
+Parameters:
+  D:
+    type: Z
+    title: field discriminant
+    display: $D$
+    constraints: positive fundamental discriminant
+  conductor:
+    type: Symbolic
+    title: LMFDB conductor label
+  class:
+    type: Symbolic
+    title: isogeny class label
+Comments:
+  comment-index: >-
+    The row with $D=5$, conductor label $31.1$, and isogeny class $a$ is the
+    LMFDB class $2.2.5.1-31.1-a$. There is one row per $K$-isogeny class,
+    since the $L$-function is an isogeny invariant. The representative curve
+    named in each entry comment is the first curve in the class.
+  comment-field-generator: >-
+    The generator $w$ of $K$ is the one used by LMFDB CITE{ecnf-data}: it
+    satisfies $w^2-w-1=0$ for $D=5$, $w^2-2=0$ for $D=8$, $w^2-3=0$ for
+    $D=12$, $w^2-w-3=0$ for $D=13$, and $w^2-w-4=0$ for $D=17$.
+  comment-convention: >-
+    The stored value is the leading coefficient divided by $r!$. Thus it is
+    the number that appears on the left of the Birch and Swinnerton-Dyer
+    formula CITE{WikiBSD} in CITE{formula-BSD}.
+Formulas:
+  formula-BSD: >-
+    The Birch and Swinnerton-Dyer formula in these normalisations is
+    $L^*(E/K,1)=2^r\Omega_{E/K}R_{E/K}|\operatorname{Sha}(E/K)|
+    \prod_{\mathfrak p}c_{\mathfrak p}/(|E(K)_{\mathrm{tors}}|^2\sqrt{D})$.
+    Here $\Omega_{E/K}$ is the product over both real embeddings with real
+    components counted, and $R_{E/K}$ is the regulator for the absolute
+    Neron-Tate height.
+  formula-base-change: >-
+    If $E/K$ is the base change of an elliptic curve $E_0/\mathbb{Q}$, then
+    $L^*(E/K,1)=L^*(E_0,1)L^*(E_0^{(D)},1)$, where $E_0^{(D)}$ is the
+    quadratic twist of $E_0$ by $D$.
+Similar tables:
+  - table: HREF{Special_value_of_L-function_of_elliptic_curves_over_Q_of_rank_1}[Special $L$-values of elliptic curves over $\mathbb{Q}$ of rank $1$]
+    relation: the same leading coefficient for elliptic curves over $\mathbb{Q}$ of rank $1$
+  - table: HREF{Special_value_of_L-function_of_elliptic_curves_over_Q_of_rank_2}[Special $L$-values of elliptic curves over $\mathbb{Q}$ of rank $2$]
+    relation: the same derivative over $\mathbb{Q}$, but written there without dividing by $2!$
+  - table: HREF{Special_value_of_L-function_of_elliptic_curves_over_Q_of_rank_3}[Special $L$-values of elliptic curves over $\mathbb{Q}$ of rank $3$]
+    relation: the same derivative over $\mathbb{Q}$, but written there without dividing by $3!$
+  - table: HREF{J-invariants_of_elliptic_curves_over_quadratic_fields_with_everywere_good_reduction}[$j$-invariants of elliptic curves over quadratic fields]
+    relation: a different invariant of elliptic curves over quadratic fields
+  - table: HREF{Special_L-values_of_genus_2_curves_over_Q}[Special $L$-values of genus 2 curves over $\mathbb{Q}$]
+    relation: leading Taylor coefficients of Hasse-Weil $L$-functions for another family of curves
+Links:
+  ecnf-data:
+    title: 'GitHub: ecnf-data'
+    url: https://github.com/JohnCremona/ecnf-data
+  LMFDB:
+    title: 'LMFDB: elliptic curves over number fields'
+    url: https://www.lmfdb.org/EllipticCurve/
+  WikiBSD:
+    title: 'Wikipedia: Birch and Swinnerton-Dyer conjecture'
+    url: https://en.wikipedia.org/wiki/Birch_and_Swinnerton-Dyer_conjecture
+References:
+Tags:
+  - number theory
+  - elliptic curves
+  - L-function
+  - special values
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  sources:
+    - CITE{ecnf-data}
+  complete: 'no'
+  complete-note: >-
+    it holds one row for every $K$-isogeny class in ecnf-data with
+    $D\in\{5,8,12,13,17\}$ and conductor norm at most $150$
+  rigour details: >-
+    Entries are computed with PARI's $L$-function machinery at two working
+    precisions, keeping 40 digits from the values that agree. The generator
+    compares every row with the independent ecnf-data value to the 38 digits
+    stored there, checks the base-change identity where ecnf-data identifies a
+    base change, and checks that the Birch and Swinnerton-Dyer quotient in
+    CITE{formula-BSD} gives the square integer recorded by ecnf-data for each
+    source row.
+Display properties:
+  number-header: $L^*(E/K,1)$
+  group parameters:
+    - [D]
+    - [conductor]
+    - [class]
+Numbers: []

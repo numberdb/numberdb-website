@@ -1,0 +1,5 @@
+1. done -- Replaced the discrete-Chebyshev comment with the Legendre and Chebyshev limit statements; checked the live text still had the old comment, verified the Jacobi normalisations through $n=14$ in Sage, and checked the relevant HREF slugs resolve.
+2. done -- Removed the false reflection comment and added the scalar reflection formula; checked every stored asymmetric row in Sage and confirmed plain substitution fails on sample rows.
+3. done -- Rewrote the Wikipedia convention comment as an $N$-shift; checked in Sage that the $-N+1$ convention matches this table with $N$ lowered by one and has no $k=N$ term in its own degree range.
+4. done -- Rewrote `complete-note` as a sentence-clause naming the stored grid, the Chebyshev-limit pairs, the asymmetric pair, and the omission of $N=1$; checked in Sage that $N=1$ rows are defined linear cases on a support with no interior point.
+5. done -- Shortened the definition to define the polynomial through `CITE{formula-hypergeometric}` instead of the ambiguous "read through $k=n$" wording; read the rendered page and reran the API audit, which is clean.

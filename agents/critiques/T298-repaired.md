@@ -1,0 +1,8 @@
+1. done -- Replaced the CM-point comment with the variable used by Formula CITE{formula-j}, $z=i\sqrt r/2$, and dropped the order sentence; checked the live API document, that `/T298` still 404s as a private draft, T295's $\tau=i\sqrt r$ convention, and in Sage that $z$ gives discriminants $-16,-8,-4,-8,-12,-16,-28$ for the tested rows.
+2. done -- Added entry comments on rows 4 and 20 with the two closed forms; checked in Sage that both closed forms lie inside the stored decimal intervals, with differences below $5e-101$.
+3. done -- Changed the parameter title from "positive integer" to "the parameter in the nome $e^{-\pi\sqrt r}$"; checked the live parameter still had the duplicate title and constraint.
+4. done -- Rewrote the Definition and convergence comment to avoid "the row stores" and the ambiguous unit-disk sentence; checked the live text still matched the critique and rendered the replacement through `/preview?table=`.
+5. declined -- Naming the T83 rows would add useful relation detail, but the corrected CM comment already gives the variable needed to follow Formula CITE{formula-j}, and the report marked this as optional.
+6. declined -- The T297 relation is true though broad; sharpening sibling-table relations is a wider editorial decision for the Ramanujan batch.
+7. declined -- The "explicit positive tail bound" wording is a small clarity issue rather than a correctness fault, and the post-edit audit is clean.
+8. left for a person -- The links to sibling drafts already existed and still resolve for a reviewer with draft access; publishing those tables together is a review/batch decision, not a content repair.
