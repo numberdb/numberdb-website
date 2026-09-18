@@ -5243,3 +5243,42 @@ tries them: `https://ncatlab.org/nlab/show/complete+intersection` and
 neither is available as a citation however natural it looks.
 
 Evidence: 2026-09-18, ideas run; `/tmp/s6.py`.
+
+## `/preview?table=...` renders nothing at all for a document with no `Numbers`
+
+What happened: T326's critique rendered a private draft the way the T221 note
+above prescribes -- `/preview?table=<yaml>` in pieces kept under the 4 KB
+request line -- and the first five pieces came back 200 with an empty preview.
+Each of those pieces carried the title and one prose section and no entries.
+The page had rendered a red message instead:
+
+    Error while parsing numbers: cannot access local variable
+    'number_section' where it is not associated with a value
+
+which is a Python `UnboundLocalError` in the number parser escaping as a user
+message, not a statement about the YAML. A piece is not invalid for holding no
+numbers, and the same document renders fine the moment one entry is added.
+
+What to do instead: give every piece a `Numbers` section -- one row is enough,
+and adding `Parameters` with it keeps the parameter list rendering as it does
+on the page. Three lines in the piece builder:
+
+    piece.setdefault('Parameters', DOC['Parameters'])
+    piece.setdefault('Numbers', {'12': {'1': DOC['Numbers']['12']['1']['number']}})
+
+The site should also not be answering a reader's YAML with the name of one of
+its own local variables; the parser initialises `number_section` inside a
+branch that a document with no `Numbers` never enters.
+
+Two smaller things from the same run, for whoever renders the next draft.
+`/preview/T326` answers 404 to a request carrying the API key, as does `/T326`:
+both routes take the user from the session, and an API key does not make one,
+so `/preview` with the document in the query string is the only route in
+without Django. And thirteen pieces covering the prose, the data properties,
+both programs and all 24 entries cost thirteen requests and about four seconds
+in total, so there is no reason to economise on pieces.
+
+Evidence: 2026-09-18, T326 critique. `/tmp/prev326.py` and
+`/tmp/prev-*.html`; the five empty renders were 6.2 to 7.1 KB where a rendered
+piece is 14 to 20 KB. Nothing was listening on 127.0.0.1:1080 again, and
+`curl` without the proxy answered 200, as the note above already says.
