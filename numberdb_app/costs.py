@@ -66,7 +66,7 @@ def read_attributions(text):
 	return found
 
 
-def ingest(ledger_text, attribution_text='', dry_run=False):
+def ingest(ledger_text, attribution_text='', dry_run=False, machine=''):
 	"""Put a ledger's costs on the tables they belong to.
 
 	Returns a summary dict. Never raises on a row it cannot use: a ledger is
@@ -97,7 +97,7 @@ def ingest(ledger_text, attribution_text='', dry_run=False):
 	#happened to run them. Costs are aggregated below; a run is a thing.
 	if not dry_run:
 		from .provenance import runs_from_ledger
-		runs_from_ledger(rows)
+		runs_from_ledger(rows, machine=machine)
 
 	for row in rows:
 		tid = (row.get('table') or '').strip().upper()

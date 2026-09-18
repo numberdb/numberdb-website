@@ -37,6 +37,7 @@ send() {
 		-H "Authorization: Bearer $key" \
 		-H "Content-Type: text/tab-separated-values" \
 		${attribution:+-H "X-Attribution: $attribution"} \
+		-H "X-Machine: ${NUMBERDB_MACHINE:-$(hostname -s 2>/dev/null || echo unknown)}" \
 		--data-binary "@$LEDGER" "$@"
 }
 
