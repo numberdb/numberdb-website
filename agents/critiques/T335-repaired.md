@@ -1,0 +1,8 @@
+1. *done* -- linked the phrase "power sum symmetric polynomial" instead of printing the slug; checked the live slug and preview-rendered the formula.
+2. *done* -- linked "elementary symmetric polynomial" in the variables comment and removed the redundant first sentence; checked the live slug and preview-rendered the comment.
+3. *done* -- replaced the range comment with the coefficient fact for $c_n$ and changed the completeness note from "entry" to "component"; checked the generator in Sage, including $c_7$ coefficient $1/720$ and 6/6 stored values.
+4. *left for a person* -- T334 and `Todd_polynomials` still render 404 as draft pages, so I kept `HREF{T334}`; review should publish T334 first or with T335, or drop the row.
+5. *done* -- changed the `Programs` block to a self-contained Sage snippet without `numberdb`; checked it under `agents/sage.sh` and compared the printed $\mathrm{ch}_6$ with the stored value.
+6. *done* -- removed the build-machine publish paragraph from the attached and local `generate.py` and added the projective-space check to rigour details; checked the attached file no longer has that paragraph and the generator still verifies 6/6.
+7. *declined* -- the audit tag finding is still true for the published corpus but the tag is shared by T332, T334 and T335 in this draft batch; the post-repair audit reports only this expected finding.
+8. *done* -- changed the Similar tables wording from elementary symmetric functions to polynomials; left the grading, operator spelling and future T332-row notes alone because they were noted-only issues and T332 is still a draft.

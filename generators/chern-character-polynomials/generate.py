@@ -15,12 +15,6 @@ Run it with SageMath:
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # fill the draft, with NUMBERDB_API_KEY set
 
-On the NumberDB build machine, where arguments are not passed through
-agents/sage.sh, publish with:
-
-    $ cat "$NUMBERDB_KEY_FILE" | NUMBERDB_KEY_FROM_STDIN=1 NUMBERDB_PUBLISH=1 \
-          agents/sage.sh generate.py
-
 The values are exact rational polynomials. The integrity checks compare the
 first three nonconstant components with the printed Chern-character formula,
 verify the Chern-root definition in six roots, and check the projective-space
