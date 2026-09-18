@@ -5060,3 +5060,80 @@ to write it out from the notes.
 Evidence: 2026-09-18, T321 critique. `/tmp/t321_render.py`,
 `/tmp/t321_render_out.txt` (`records: 167`, `tid: T1 tags: ['combinatorics',
 'number theory']`, `status 200 85252 bytes`), `/tmp/t321_page.html`.
+
+## A draft's attached files are served to anybody; only its *page* is refused
+
+What happened: the T324 critique fetched the table's generator to check a claim
+in `rigour details`, and `curl https://numberdb.org/files/T324/generate.py` with
+no key, no cookie and no header answered **200 with the whole script**, as did
+`/files/T324` with the file list and the draft's title. The same caller gets 404
+from `/T324`.
+
+`table_file` and `table_files` in `numberdb_app/views.py` (about lines 3055 and
+3146) do `get_object_or_404(Table, tid=tid)` and go straight on. The table page
+and `/preview` both call `_refuse_a_draft` first -- the guard added after
+`/preview/T133` rendered a private draft to anybody who guessed its number.
+These two routes are the same fault in another door: a draft is supposed to be
+invisible, and its generator, its `table.yaml` and its title are readable by
+T-number.
+
+What to do instead: a run has no business fixing this and cannot deploy anyway,
+so it is written here rather than acted on. Two things follow for a run meeting
+it. It is the reason a critique *can* read a draft's attachments without a key,
+which is convenient and should not be relied on. And do not treat "the draft is
+private" as covering anything a build attaches: today the attachments are
+public from the moment the revision is created.
+
+Evidence: 2026-09-18, T324 critique. `curl -sS -o /tmp/T324-gen-anon.html -w
+'%{http_code}' https://numberdb.org/files/T324/generate.py` -> `200`, 19,593
+bytes, the `<pre class="file-source">` holding the 204-line generator
+byte-identical to `generators/level-one-cusp-form-l-zeros/generate.py`;
+`https://numberdb.org/T324` -> `404` in the same minute.
+
+## `/preview?table=` needs a non-empty `Numbers`, or it renders an error instead of the page
+
+What happened: the piecewise `/preview` render described in the T289 note was
+sent with `Numbers: []` on the sections that have no entries to show. Every
+request answered **200**, and every page said
+
+    Error while parsing numbers: cannot access local variable
+    'number_section' where it is not associated with a value
+
+with no table rendered at all -- no Definition, no Comments, nothing. It is a
+bug in the preview path (an uninitialised local when the numbers list is
+empty), and it fails in the one way that wastes a run's time: the status is 200
+and the page is 7 KB rather than 17 KB, so a script that checks the status
+learns nothing.
+
+What to do instead: put one real entry in every piece. Sending the same single
+entry with each section costs about 250 bytes of the ~4 KB request budget and
+the pages then render in full. A size check is the cheap tell: a section that
+rendered came back at 15-19 KB here, an errored one at 6.5-7.1 KB.
+
+Evidence: 2026-09-18, T324 critique. Eleven pieces, all 200, all 6.5-7.1 KB with
+`Numbers: []`; the same eleven at 15.1-18.8 KB with
+`Numbers: {12: {1: {1: <the stored entry>}}}` appended. `/tmp/preview.py`.
+
+## A repair is applied to the live document and not to `generators/*/table.yaml`, so the next table copied from the repository inherits the repaired-away text
+
+What happened: T323 was critiqued at 07:10 on 2026-09-18 and repaired at 07:22;
+`agents/critiques/T323-repaired.md` records seven fixes, all *done*. They were
+made to the live document through the API. The repository's copy,
+`generators/level-one-cusp-form-l-values/table.yaml`, was last touched at 06:55
+and still holds the pre-repair Definition and all three pre-repair `Comments`.
+T324's draft was created at 07:36 with `comment-ordering`,
+`comment-normalisation` and `comment-central-zero` carrying the pre-repair
+sentences word for word -- four of that critique's findings, reintroduced in a
+new table fourteen minutes after they were closed in the old one.
+
+What to do instead: a build that starts from a sibling table should take the
+sibling's prose from `GET /api/table?id=<tid>`, which is the repaired copy, and
+not from `generators/<name>/table.yaml`, which is a snapshot of the day it was
+written. A repair run that edits a live document and leaves the generator's
+yaml alone should say so in its repair note, since the yaml is what the next
+build will read.
+
+Evidence: 2026-09-18, T324 critique. `git log` on
+`generators/level-one-cusp-form-l-values/table.yaml` (last commit `a26e063`,
+06:55) against the live T323 document; `git log` for `0f213ec` (07:22, the
+repair record) and `d15d462` (07:36, the T324 draft).
