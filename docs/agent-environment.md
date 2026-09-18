@@ -5558,3 +5558,77 @@ Evidence: 2026-09-18, T334 critique. `/tmp/t334_render.py`,
 `/tmp/t334_render_out.txt` (`records: 7`, `tid: T1 tags: ['algebra',
 'characteristic classes', 'polynomial']`, `status 200 28345 bytes`),
 `/tmp/T334_page.html`.
+
+## `SymmetricFunctions` basis changes segfault on the builder image, and a segfaulting run can hold `agents/sage.sh` for the whole 1800s
+
+What happened: the T335 critique wanted to recommend the standard incantation
+for a symmetric-function table's `Programs` block -- `Sym =
+SymmetricFunctions(QQ); e(p[n]) / factorial(n)`, three lines instead of the
+twenty-line Newton recurrence the table carries -- and could not, because it
+does not run here. `e(p[2])` dies with
+
+    Unhandled SIGSEGV: A segmentation fault occurred.
+
+inside `sage/data_structures/blas_dict`, reached through
+`sage/categories/map` and `sage/structure/parent`, which is the coercion doing
+the basis change. Twice: `NUMBERDB_SAGE_MEMORY=1200m` and again at `4000m`, so
+it is not the memory cap. The polynomial-ring route in the same script -- a
+`PolynomialRing(QQ, ['c1',...])` and Newton's identities by hand -- runs in
+seconds in the same container and reproduces the stored `ch_6` exactly. So a
+generator or a `Programs` block for a symmetric-function family should build
+its own recurrence rather than change bases, on this image.
+
+Dropping `import numberdb.sage` and importing `sage.combinat.sf.sf` first
+raises `ImportError: cannot import name Category`, the same shape the skill
+records for a ring module imported before Sage has initialised. There is no
+order that works: import numberdb first and it segfaults, import it later and
+the module will not load.
+
+Two things about watching such a run. The Sage crash handler tries to attach
+gdb before it gives up, and a third run -- the same script with a print between
+each step, to find which one dies -- produced **nothing at all in 25 minutes**
+and was still inside `timeout 1800 docker run` when this note was written, with
+`docker` itself not a command an agent here may use to look. And the output
+never reached the terminal because the run was piped through `grep -v ... |
+head -20`: `grep` block-buffers when its output is not a tty, so a crashing
+run's last words sit in a 4 KB buffer that is never flushed. Send such a run to
+a file -- `agents/sage.sh script.py > /tmp/out.txt 2>&1` -- and read the file.
+
+Evidence: 2026-09-18, T335 critique. `/tmp/t335_programs.py` (the published
+`Programs` block verbatim, then the symmetric-function route: the first prints
+`1/720*c1^6 - ...` matching `Numbers['6']`, the second segfaults),
+`/tmp/t335_sf.py` at `--memory=4000m` (same segfault), `/tmp/t335_sf2.py`
+(`ImportError: cannot import name Category`), `/tmp/t335_sf3.py` (no output,
+held the container to its timeout).
+
+## The sqlite draft-render recipe, third `sed` in a row, and a six-entry `Q[]` page is 29 KB
+
+What happened: the T335 critique rebuilt `/tmp/site.tgz` from the tarball line
+in the note above and ran `sed -e 's/T334/T335/g' /tmp/t334_render.py`, which
+was still on the box from the previous run. That produced **6 records, status
+200, 28,833 bytes**, with the six rows anchored `id="1"` to `id="6"`, the three
+tags, the `Programs` block's indentation intact inside `<pre><code>`, and the
+section order the site's own. No patch beyond the ones already in the script
+was needed. That is three consecutive runs whose only change to the script was
+the T-number, and the fourth table type the recipe has now covered twice
+(`Q[]`). `agents/render_draft.py`, which the T332 note asks for, would have
+saved all three.
+
+One thing the recipe cannot show, and it matters for a critique: `HREF{}`
+targets do not exist in the throwaway database, so a link's *text* renders
+faithfully but its target cannot be checked there. Check the slugs against the
+live site instead -- `curl -s -o /dev/null -w '%{http_code}'
+https://numberdb.org/<slug>` -- and remember that a slug which 404s may be a
+draft rather than a typo.
+
+For the standing proxy notes: the SOCKS proxy on 127.0.0.1:1080 answered
+exactly one request this session, `/skill`, with a complete 47,534-byte body
+and `HTTP 000`, and refused every request after it; `curl --noproxy '*'`
+reached numberdb.org throughout, including `GET /api/table?id=T335`,
+`GET /api/table/T335/audit` and `/files/T335/generate.py` with the key on
+stdin through `-H @-`. That is the third session in a row with the same shape.
+
+Evidence: 2026-09-18, T335 critique. `/tmp/t335_render.py`,
+`/tmp/t335_render_out.txt` (`records: 6`, `tid: T1 tags: ['algebra',
+'characteristic classes', 'polynomial']`, `status 200 28833 bytes`),
+`/tmp/T335_page.html`.
