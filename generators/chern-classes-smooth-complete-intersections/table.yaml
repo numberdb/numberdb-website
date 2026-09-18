@@ -4,12 +4,10 @@
 Title: Chern classes of smooth complete intersections in $\mathbb{P}^n$
 Definition: >-
   Let $X\subset\mathbb P^n$ be a smooth complete intersection of multidegree
-  $(d_1,\dots,d_k)$, with $2\leq d_1\leq\cdots\leq d_k$ and
-  $1\leq k\leq n-1$ CITE{CIWiki}. The entry is the total Chern class
-  $c(T_X)=\sum_{i=0}^{n-k}a_i h^i\in\mathbb Z[h]$ of the tangent bundle,
-  where $h$ is the hyperplane class on $X$ and $c_i(T_X)=a_i h^i$
-  CITE{ChernWiki}; for smooth complete intersections these integers depend
-  only on $n$ and the multidegree.
+  $(d_1,\dots,d_k)$ CITE{CIWiki}. The entry is the total Chern class
+  $c(T_X)=\sum_i a_i h^i\in\mathbb Z[h]$ of the tangent bundle, written in
+  powers of the hyperplane class $h$ CITE{ChernWiki}; it depends only on $n$
+  and the multidegree.
 Parameters:
   n:
     type: Z
