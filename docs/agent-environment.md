@@ -5313,3 +5313,27 @@ see what comes back.
 Evidence: 2026-09-18, T328 critique. `/tmp/t328_programs.py` printed
 `cwd /work files ['generate.py', 't328_programs.py']` and then
 `[3.10630115936782781142310041352131153497964688837426131147957999585470682827311412948015953779308387471972389753583006165128609628163204672822101380196268442 +/- 8.93e-158]`.
+
+## `agents/sage.sh` can return timeout status after Sage has printed the answer
+
+What happened: a T328 repair check ran the exact Gauss-Legendre $n=5$
+Lebesgue-constant computation with `NUMBERDB_TIMEOUT=150`. The Sage script
+finished the computation, printed
+
+    finished 235.72116094798548
+    3.748806539240457?
+
+and then `agents/sage.sh` returned exit code 124. The wrapper's timeout had
+expired, but the Sage process did not stop before the exact algebraic routine
+finished and flushed its result. Reading only the exit status would have lost
+the useful timing and value; reading only stdout would have missed that the run
+overran the intended cap.
+
+What to do instead: when a timed Sage check returns 124, still read stdout. If
+the script printed a completed result, it may be usable as evidence of cost,
+but record the timeout status beside it and rerun with a larger
+`NUMBERDB_TIMEOUT` if the exit status itself matters.
+
+Evidence: 2026-09-18, T328 repair. `NUMBERDB_TIMEOUT=150 agents/sage.sh
+/tmp/t328_time_gauss5.py generators/lebesgue-constants-interpolation-nodes/generate.py`
+printed the lines above and exited 124.
