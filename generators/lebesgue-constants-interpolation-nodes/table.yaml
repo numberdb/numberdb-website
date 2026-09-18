@@ -1,0 +1,132 @@
+# The table document for T328, Lebesgue constants of the classical
+# interpolation node families. Created as a draft through the API
+# (X-Draft: yes). Publishing is a person's act on the site.
+Title: Lebesgue constants of the classical interpolation node families
+Definition: >-
+  For a named family $T_n=\{x_0,\ldots,x_n\}$ of interpolation nodes in
+  $[-1,1]$, this table gives the Lebesgue constant
+  $\Lambda_n(T_n)=\max_{-1\leq x\leq1}\sum_{j=0}^n |\ell_j(x)|$
+  CITE{WikiLebesgue}, where $\ell_j$ is the Lagrange basis polynomial for
+  the nodes and $n$ is the interpolation degree.
+Keywords:
+  - Lebesgue constant
+  - Lebesgue function
+  - polynomial interpolation
+  - Lagrange interpolation
+  - interpolation nodes
+  - equally spaced nodes
+  - equispaced nodes
+  - Chebyshev nodes
+  - Chebyshev-Lobatto nodes
+  - stretched Chebyshev nodes
+  - Gauss-Legendre nodes
+  - Gauss-Lobatto nodes
+  - Runge phenomenon
+Parameters:
+  family:
+    type: Symbolic
+    title: node family
+    display: $T_n$
+    constraints: one of the named interpolation node families listed in the comments
+    values:
+      equally-spaced: equally spaced nodes including the endpoints
+      chebyshev-first-kind: Chebyshev points of the first kind
+      chebyshev-lobatto: Chebyshev-Lobatto points
+      stretched-chebyshev: stretched Chebyshev points
+      gauss-legendre: Gauss-Legendre points
+      gauss-lobatto: Gauss-Lobatto points
+  n:
+    type: Z
+    title: interpolation degree
+    display: $n$
+    constraints: $n\geq 1$
+Comments:
+  comment-nodes: >-
+    The nodes are written on $[-1,1]$. The equally spaced family is
+    $x_j=-1+2j/n$. The Chebyshev points of the first kind
+    CITE{WikiChebyshevNodes} are
+    $x_j=\cos((2j+1)\pi/(2n+2))$, the roots of
+    HREF{Chebyshev_polynomials_of_the_first_kind}[$T_{n+1}$]. The
+    Chebyshev-Lobatto points are $x_j=\cos(j\pi/n)$, the extrema of $T_n$.
+    The stretched Chebyshev points divide the Chebyshev points of the first
+    kind by $\cos(\pi/(2n+2))$. Here $0\leq j\leq n$.
+  comment-gauss: >-
+    The Gauss-Legendre family uses the nodes of the $n+1$ point
+    HREF{Nodes_and_weights_of_Gauss_Legendre_quadrature}[Gauss-Legendre
+    quadrature] rule. The Gauss-Lobatto family uses the nodes of the $n+1$
+    point HREF{Nodes_and_weights_of_Gauss_Lobatto_quadrature}[Gauss-Lobatto
+    quadrature] rule, namely the endpoints $-1,1$ and the roots of the
+    derivative of the HREF{Legendre_polynomials}[Legendre polynomial] $P_n$
+    when $n>1$.
+  comment-degree: >-
+    The parameter $n$ is the interpolation degree, so each row uses $n+1$
+    nodes. Some sources index the same constants by the number of nodes.
+  comment-not-minimal: >-
+    This table gives constants for named node families. It does not give the
+    minimal Lebesgue constant obtained by optimising over all node sets of a
+    fixed size.
+Formulas:
+  formula-definition: >-
+    $\Lambda_n(T_n)=\max_{-1\leq x\leq1}\sum_{j=0}^n |\ell_j(x)|$, where
+    $\ell_j(x)=\prod_{m\neq j}(x-x_m)/(x_j-x_m)$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      # In the directory containing the attached generate.py:
+      from generate import LebesgueConstantsInterpolationNodes
+
+      generator = LebesgueConstantsInterpolationNodes()
+      generator.value({'family': 'equally-spaced', 'n': '5'}, 100)
+Similar tables:
+  - table: HREF{Lagrange_basis_polynomials_for_equally_spaced_nodes}[Lagrange basis polynomials for equally spaced nodes]
+    relation: the equally spaced rows use these nodes, and the Lebesgue constant is the uniform-norm condition number of the corresponding Lagrange basis
+  - table: HREF{Chebyshev_polynomials_of_the_first_kind}[Chebyshev polynomials of the first kind]
+    relation: the first-kind Chebyshev node families are built from the roots and extrema of these polynomials
+  - table: HREF{Nodes_and_weights_of_Gauss_Legendre_quadrature}[Nodes and weights of Gauss-Legendre quadrature]
+    relation: the Gauss-Legendre rows use the same nodes and omit the quadrature weights
+  - table: HREF{Nodes_and_weights_of_Gauss_Lobatto_quadrature}[Nodes and weights of Gauss-Lobatto quadrature]
+    relation: the Gauss-Lobatto rows use the same nodes and omit the quadrature weights
+  - table: HREF{Newton_Cotes_weights}[Newton-Cotes weights]
+    relation: the closed Newton-Cotes rules use the same equally spaced endpoint nodes
+Links:
+  WikiLebesgue:
+    title: 'Wikipedia: Lebesgue constant'
+    url: https://en.wikipedia.org/wiki/Lebesgue_constant
+  WikiChebyshevNodes:
+    title: 'Wikipedia: Chebyshev nodes'
+    url: https://en.wikipedia.org/wiki/Chebyshev_nodes
+Tags:
+  - analysis
+  - algebraic
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds all six listed node families for interpolation degrees
+    $1\leq n\leq4$
+  rigour details: >-
+    The generator builds the node polynomials over $\mathbb{Q}$ and isolates
+    their roots in Sage's algebraic real field. It forms the Lagrange basis
+    exactly, splits $[-1,1]$ at the nodes, and on each interval uses the
+    constant sign pattern of the basis polynomials to replace the Lebesgue
+    function by one algebraic polynomial. The maximum is checked at every
+    interval endpoint and at every real root of that polynomial's derivative;
+    the algebraic maximum is then returned as a real ball with 192 guard bits
+    beyond the 100 digits written, except when it is proved rational and is
+    returned exactly.
+
+    Before the entries were written, `agents/table-build/dry_run.py` computed
+    all 24 entries. The exact values
+    $\Lambda_2=5/4$ for equally spaced nodes,
+    $\Lambda_1=\sqrt2$ for Chebyshev points of the first kind,
+    $\Lambda_1=1$ for endpoint node families, and
+    $\Lambda_1=\sqrt3$ for Gauss-Legendre nodes were checked independently.
+    The values $\Lambda_4=2.2078243973258429982911088644463\ldots$ for
+    equally spaced nodes and
+    $\Lambda_4=1.9888543819998317571273389349850\ldots$ for Chebyshev points
+    of the first kind were checked against the screening calculation for
+    numberdb-data issue 162.
+Display properties:
+  number-header: $\Lambda_n(T_n)$
