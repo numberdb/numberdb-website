@@ -2,14 +2,11 @@
 # generate.py beside it and offered for review. Publishing is a person's act.
 Title: Special values of the $L$-functions of level one cusp forms
 Definition: >-
-  For a normalised Hecke eigenform
-  $f_{k,i}(q)=\sum_{n\geq1}a_nq^n$ in the space
-  $S_k(\mathrm{SL}_2(\mathbb{Z}))$ of level one cusp forms CITE{WikiCusp},
-  this table gives the critical value
+  For the $i$th normalised Hecke eigenform
+  $f_{k,i}(q)=\sum_{n\geq1}a_nq^n$ in
+  $S_k(\mathrm{SL}_2(\mathbb{Z}))$ CITE{WikiCusp}, ordered by increasing real
+  $T_2$-eigenvalue $a_2$, this table gives the critical value
   $L(f_{k,i},s)=\sum_{n\geq1}a_n n^{-s}$ of its $L$-function CITE{WikiL}.
-  The index $i$ orders the eigenforms of weight $k$ by increasing $a_2$, the
-  eigenvalue of $T_2$ in
-  HREF{Hecke_polynomials_of_level_one_cusp_forms}[the Hecke polynomial table].
 Parameters:
   k:
     type: Z
@@ -108,7 +105,6 @@ Keywords:
   - Ramanujan tau L-function
 Tags:
   - number theory
-  - modular form
   - L-function
   - special values
 Data properties:
