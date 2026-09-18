@@ -4959,3 +4959,51 @@ response carries the `tid`) rather than from a successful exit. Treat a
 Evidence: 2026-09-18, `agents/runs/COSTS.tsv` line 312, against
 `agents/runs/20260918T023210Z-build.log` (the T320 create at item_69/item_70
 returns `{"tid": "T320", ... "drafts_held": 7}`).
+
+## The sqlite draft-render recipe's `_sync_tags` replacement takes the document, not a list of names
+
+What happened: the T320 critique rebuilt the draft's page by the recipe above
+(API document, Sage container, throwaway sqlite, both range patches). The page
+came out at status 200 with all eight rows, and its tag strip read
+
+    title  definition  parameters  comments  formulas  programs
+    similar tables  links  keywords  tags  data properties  display properties
+    numbers
+
+rather than the table's own `polynomial` and `combinatorics`. Those are the
+document's *section names*, lowercased. The stand-in for `editing._sync_tags`
+had been written as `_sync_tags(table, names)` and was iterating the dict it
+was handed; the real signature is `_sync_tags(table, document)`, and iterating
+a document yields its keys. Nothing failed, nothing was logged, and the fault
+looks exactly like a table tagged by somebody who misunderstood tags -- which
+is the kind of finding a critique would have written up as the table's.
+
+What to do instead: the replacement has to do what the original does except
+the final `update(search_vector=...)`, which means going through
+`editing._tag_names(document.get('Tags'))` and the 32-character skip:
+
+    def _sync_tags(table, document, **kwargs):
+        from numberdb_app.models import Tag
+        if not isinstance(document, dict):
+            return
+        tags = []
+        for name in editing._tag_names(document.get('Tags')):
+            if len(name) > 32:
+                continue
+            tag, _ = Tag.objects.get_or_create(name=name)
+            if tag not in tags:
+                tags.append(tag)
+        table.tags.set(tags)
+
+More generally: the two writes this recipe patches out are the two that build a
+postgres search vector, and both are patched by *replacement*, so a replacement
+whose signature is guessed produces a page that renders and lies. Check the
+rebuilt page's tags against `Tags` in the document before quoting anything else
+off it. The same care applies to `reindex_for_search`, though there the stand-in
+is a no-op and cannot be wrong.
+
+Evidence: 2026-09-18, T320 critique. `/tmp/t320_render.py` (first run, tags from
+the section names, 31,422 bytes of HTML; second run with the signature fixed,
+30,777 bytes and `<a class="tag" href="/tags/polynomial">`),
+`/tmp/t320_render_out.txt` and `/tmp/t320_render_out2.txt`.
+`numberdb_app/editing.py`, `def _sync_tags(table, document)`.
