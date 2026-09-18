@@ -5364,3 +5364,29 @@ draft *rendered*, because the page route refuses a draft to everybody.
 
 Evidence: 2026-09-18, T329 critique. The call above, against
 `numberdb_app/api.py:377` and its `_may_see_draft` guard.
+
+## A `/preview` piece names the entries block "Polynomials" only if it carries `Data properties`
+
+What happened: the T330 critique rendered a private draft through
+`/preview?table=` in eleven pieces, as the T221, T225 and T226 notes describe.
+The heading over the entries block was not the same in every piece. The two
+pieces that carried `Data properties` (with `type: Q[]`) headed it
+**Polynomials**; the nine that did not headed it **Numbers**, from the same
+document, the same `Parameters` and the same entries. The renderer names that
+block from the declared type, and a piece assembled to test one prose section
+does not carry the type unless it was put there.
+
+This matters because the heading is one of the things a reader is supposed to
+check, and the piece-wise workaround silently changes it. A run reading a piece
+without `Data properties` sees "Numbers" over a column of polynomials and can
+write that up as a table that failed to declare its type, which is a finding
+about the workaround and not about the table.
+
+What to do instead: judge the entries-block heading only from a piece that
+carries `Data properties`, or add `Data properties` to every piece that carries
+`Numbers`. The same caution as the T225 note about `Parameters`: what a piece
+omits changes what the rest of it renders as.
+
+Evidence: 2026-09-18, T330 critique. `/tmp/p330_a.html` and `/tmp/q330_f.html`
+(with `Data properties`) -> "Polynomials"; `/tmp/q330_b.html` through
+`/tmp/q330_k.html` and `/tmp/p330_[hij].html` (without) -> "Numbers".
