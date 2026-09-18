@@ -1,0 +1,146 @@
+# Created as draft T325 through the API (X-Draft: yes), to be filled by
+# generate.py beside it and offered for review. Publishing is a person's act.
+Title: Normalised Hecke eigenvalues of level one cusp forms
+Definition: >-
+  For the $i$th normalised Hecke eigenform
+  $f_{k,i}(q)=\sum_{m\geq1}a_mq^m$ in
+  $S_k(\mathrm{SL}_2(\mathbb{Z}))$ CITE{WikiCusp}, ordered by increasing real
+  $T_2$-eigenvalue $a_2$ CITE{WikiHecke}, this table gives the
+  Deligne-normalised eigenvalue $a_p/p^{(k-1)/2}$ for primes $p$.
+Parameters:
+  k:
+    type: Z
+    title: weight
+    display: $k$
+    constraints: $k$ is even and $\dim S_k(\mathrm{SL}_2(\mathbb{Z}))>0$
+  i:
+    type: Z
+    title: position by increasing $a_2$
+    display: $i$
+    constraints: $1\leq i\leq\dim S_k(\mathrm{SL}_2(\mathbb{Z}))$
+  p:
+    type: Z
+    title: prime
+    display: $p$
+    constraints: $p$ is prime
+Comments:
+  comment-normalisation: >-
+    The eigenform is normalised so that $a_1=1$, and the stored value is the
+    analytic normalisation $a_p/p^{(k-1)/2}$. It lies in $[-2,2]$ by the
+    Ramanujan-Petersson theorem CITE{WikiRamanujanPetersson}, and is not
+    divided by an additional factor of $2$.
+  comment-ordering: >-
+    In each weight, the eigenforms are ordered by the real roots of
+    HREF{Hecke_polynomials_of_level_one_cusp_forms}[the Hecke polynomial]
+    $\chi_{k,2}$, whose roots are the $a_2$ values in that weight. This is not
+    necessarily the order Sage or PARI lists the eigenforms in.
+  comment-angle: >-
+    The Satake angle $\theta_p\in[0,\pi]$ CITE{WikiSatoTate} is determined by
+    $a_p/p^{(k-1)/2}=2\cos\theta_p$. This table stores the normalised
+    eigenvalue rather than the angle.
+Formulas:
+  formula-euler-factor: >-
+    For $\operatorname{Re}s>(k+1)/2$, the Euler factor of $L(f_{k,i},s)$ at
+    $p$ is $(1-a_pp^{-s}+p^{k-1-2s})^{-1}$.
+  formula-satake-angle: >-
+    $a_p/p^{(k-1)/2}=2\cos\theta_p$, where $\theta_p$ is the Satake angle
+    CITE{WikiSatoTate} in $[0,\pi]$.
+  formula-hecke-relation: >-
+    For a normalised eigenform, $a_{p^2}=a_p^2-p^{k-1}$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage
+      import sage.symbolic.expression
+      from sage.modular.modform.constructor import CuspForms
+      from sage.rings.qqbar import AA
+      from sage.rings.rational_field import QQ
+      k = 24; i = 2; p = 2
+      roots = sorted(
+          CuspForms(1, k).hecke_matrix(2).charpoly().roots(
+              ring=AA, multiplicities=False))
+      (roots[i - 1] / (AA(p) ** (QQ(k - 1) / 2))).n(110)       # 1.759601793373322...
+  program-pari:
+    language: PARI/GP
+    code: |-
+      default(realbitprecision, 330);
+      k = 24; i = 2; p = 2;
+      mf = mfinit([1,k], 0);
+      F = mfeigenbasis(mf)[1];
+      a2 = mfcoefs(F, 2)[3];
+      ap = mfcoefs(F, p)[p+1];
+      nf = nfinit(component(a2, 1));
+      A2 = nfeltembed(nf, a2);
+      Ap = nfeltembed(nf, ap);
+      P = vecsort(vector(#A2, j, [real(A2[j]), real(Ap[j])]), 1);
+      P[i][2] / p^((k-1)/2)       \\ 1.759601793373322...
+Similar tables:
+  - table: HREF{Hecke_polynomials_of_level_one_cusp_forms}[Hecke polynomials of level one cusp forms]
+    relation: stores the characteristic polynomials whose roots are the unnormalised eigenvalues used here
+  - table: HREF{T323}[Special values of the $L$-functions of level one cusp forms]
+    relation: stores critical values of the same eigenforms in the same ordering
+  - table: HREF{T324}[Zeros of the $L$-functions of level one cusp forms]
+    relation: stores critical-line zero ordinates of the same eigenforms in the same ordering
+  - table: HREF{Q-expansion_of_the_modular_discriminant}[$q$-expansion of the modular discriminant $\Delta$]
+    relation: stores the coefficients of the weight $12$ eigenform whose normalised prime coefficients are the $k=12$ rows here
+  - table: HREF{Frobenius_angles_of_abelian_varieties_over_prime_fields}[Frobenius angles of abelian varieties over prime fields]
+    relation: stores angles in another family governed by a Sato-Tate distribution CITE{WikiSatoTate}
+  - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree $2$]
+    relation: contains low-degree algebraic numbers of the kind that occur in the two-dimensional Hecke fields
+Links:
+  WikiCusp:
+    title: 'Wikipedia: cusp form'
+    url: https://en.wikipedia.org/wiki/Cusp_form
+  WikiHecke:
+    title: 'Wikipedia: Hecke operator'
+    url: https://en.wikipedia.org/wiki/Hecke_operator
+  WikiRamanujanPetersson:
+    title: 'Wikipedia: Ramanujan-Petersson conjecture'
+    url: https://en.wikipedia.org/wiki/Ramanujan-Petersson_conjecture
+  WikiSatoTate:
+    title: 'Wikipedia: Sato-Tate conjecture'
+    url: https://en.wikipedia.org/wiki/Sato%E2%80%93Tate_conjecture
+  PARIModular:
+    title: 'PARI/GP reference: modular forms'
+    url: https://pari.math.u-bordeaux.fr/dochtml/html-stable/Modular_forms.html
+  SageNewforms:
+    title: 'SageMath reference: Newforms'
+    url: https://doc.sagemath.org/html/en/reference/modfrm/sage/modular/modform/constructor.html#sage.modular.modform.constructor.Newforms
+Keywords:
+  - normalised Hecke eigenvalue
+  - normalized Hecke eigenvalue
+  - Hecke eigenvalue
+  - level one cusp form
+  - modular form coefficient
+  - Satake angle
+  - Satake parameter
+  - Sato-Tate
+  - Ramanujan tau function
+Tags:
+  - number theory
+  - L-function
+  - eigenvalue
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every even weight $12\leq k\leq40$ with
+    $\dim S_k(\mathrm{SL}_2(\mathbb{Z}))>0$, every eigenform, and every prime
+    $p\leq61$
+  rigour details: >-
+    The generator computes exact Hecke matrices with Sage and checks their
+    characteristic polynomials against PARI/GP's `mfheckemat` CITE{PARIModular}.
+    For each prime $p$, it expresses $T_p$ exactly as a polynomial in $T_2$,
+    evaluates that polynomial at the exact algebraic roots of the $T_2$
+    characteristic polynomial in increasing real order, and only then coerces
+    $a_p/p^{(k-1)/2}$ into Sage's real ball field before writing the stored
+    digits. It checks Deligne's bound on every entry. The weight $12$ rows were
+    checked against the Ramanujan tau values in
+    HREF{Q-expansion_of_the_modular_discriminant}[the modular discriminant
+    table], and an independent run compared every row with Sage's `Newforms`
+    coefficient embeddings CITE{SageNewforms}.
+Display properties:
+  number-header: $a_p/p^{(k-1)/2}$
+  group parameters: [['k'], ['i'], ['p']]

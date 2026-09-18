@@ -1,0 +1,105 @@
+# The table document for numberdb.org/T332. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Chern classes of smooth complete intersections in $\mathbb{P}^n$
+Definition: >-
+  Let $X\subset\mathbb P^n$ be a smooth complete intersection of multidegree
+  $(d_1,\dots,d_k)$ CITE{CIWiki}. The entry is the total Chern class
+  $c(T_X)=\sum_i a_i h^i\in\mathbb Z[h]$ of the tangent bundle, written in
+  powers of the hyperplane class $h$ CITE{ChernWiki}; it depends only on $n$
+  and the multidegree.
+Parameters:
+  n:
+    type: Z
+    title: ambient dimension
+    display: $n$
+    constraints: $n\geq 2$
+  d:
+    type: Symbolic
+    title: multidegree
+    display: $(d_1,\dots,d_k)$
+    constraints: >-
+      a nonempty nondecreasing list of integers at least $2$, with
+      $1\leq k\leq n-1$
+Comments:
+  comment-total: >-
+    The table stores the total Chern class in the hyperplane class $h$, not
+    the auxiliary Chern polynomial $c_t(E)=\sum_i c_i(E)t^i$.
+  comment-cohomology: >-
+    The polynomial is truncated at degree $m=n-k$ because $\dim X=m$; the
+    cohomology class $h^m$ integrates to $\prod_i d_i$ on $X$.
+  comment-degree-one: >-
+    Degree-one equations are omitted: a linear equation only replaces
+    $\mathbb P^n$ by a smaller projective space, so it gives the same variety
+    under another address.
+  comment-order: >-
+    The multidegree is written nondecreasing, as in the phrase complete
+    intersection of type $(2,4)$. This is the opposite order from the
+    partitions in HREF{Monomial_symmetric_polynomials}[the monomial symmetric
+    polynomial table].
+  comment-c1: >-
+    The linear coefficient is $n+1-\sum_i d_i$, so the Calabi-Yau complete
+    intersections in this grid are exactly the rows with no $h$ term.
+Formulas:
+  formula-total: >-
+    If $m=n-k$, then
+    $c(T_X)=\left[(1+h)^{n+1}\prod_{i=1}^k(1+d_i h)^{-1}\right]_{\leq m}$.
+  formula-first: >-
+    $c_1(T_X)=(n+1-\sum_i d_i)h$.
+  formula-euler: >-
+    The topological Euler characteristic is
+    $\chi(X)=(\prod_i d_i)\,[h^m]c(T_X)$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.all import PolynomialRing, ZZ
+
+      R = PolynomialRing(ZZ, "h")
+      h = R.gen()
+
+      def chern_complete_intersection(n, degrees):
+          m = n - len(degrees)
+          f = (1 + h) ** (n + 1)
+          for d in degrees:
+              inverse = sum((-d * h) ** j for j in range(m + 1))
+              f *= inverse
+          return sum(f[j] * h ** j for j in range(m + 1))
+
+      chern_complete_intersection(4, [5])
+Similar tables:
+  - table: HREF{Elementary_symmetric_polynomials}[Elementary symmetric polynomials]
+    relation: store the universal elementary symmetric polynomials in the Chern roots
+Links:
+  ChernWiki:
+    title: 'Wikipedia: Chern class'
+    url: https://en.wikipedia.org/wiki/Chern_class
+  CIWiki:
+    title: 'Wikipedia: Complete intersection'
+    url: https://en.wikipedia.org/wiki/Complete_intersection
+Keywords:
+  - total Chern class complete intersection
+  - Chern class projective complete intersection
+  - quintic threefold Chern class
+  - Calabi-Yau complete intersection Chern class
+Tags:
+  - characteristic classes
+  - polynomial
+  - algebra
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every row with $n\leq 10$, every $d_i\leq 10$, and
+    $\prod_i d_i\leq 100$
+  rigour details: >-
+    The generator computes in the exact ring $\mathbb Z[h]$ from Formula
+    CITE{formula-total}. It checks the quintic threefold value
+    $1+10h^2-40h^3$ from CITE{ChernWiki}, verifies Formula
+    CITE{formula-first} on every row, and compares the Euler characteristic
+    from Formula CITE{formula-euler} with Hirzebruch's generating function
+    quoted in CITE{CIWiki} on every row in the table.
+Display properties:
+  number-header: $c(T_X)$
+Numbers: []

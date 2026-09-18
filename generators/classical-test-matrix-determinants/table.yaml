@@ -1,0 +1,203 @@
+# The table document for T331, Determinants of the classical test matrices.
+# Created as a draft through the API (X-Draft: yes) and filled by generate.py
+# beside it; publishing is a person's act on the site.
+Title: Determinants of the classical test matrices
+Definition: >-
+  For a named classical test matrix $A_n$, this table gives the determinant
+  $\det(A_n)$ CITE{WikiDeterminant}, where $n$ is the order of the matrix.
+Keywords:
+  - determinant
+  - matrix determinant
+  - test matrix
+  - classical test matrix
+  - MATLAB gallery
+  - Hilbert matrix
+  - Lehmer matrix
+  - Pascal matrix
+  - Redheffer matrix
+  - Vandermonde matrix
+  - Cauchy matrix
+  - Fiedler matrix
+  - Kac-Murdock-Szego matrix
+  - Minij matrix
+  - Grcar matrix
+  - Chow matrix
+  - Frank matrix
+  - Wilkinson matrix
+  - Clement matrix
+  - Moler matrix
+  - Parter matrix
+  - Ris matrix
+  - Dingdong matrix
+  - Lotkin matrix
+  - Riemann matrix
+  - second difference matrix
+  - tridiagonal matrix
+Parameters:
+  family:
+    type: Symbolic
+    title: matrix family
+    display: $A_n$
+    constraints: one of the named matrix families listed in the comments whose determinant is stored as a row
+    values:
+      hilbert: Hilbert matrix
+      lehmer: Lehmer matrix
+      vandermonde: Vandermonde matrix
+      cauchy: Cauchy matrix
+      fiedler: Fiedler matrix
+      kms: Kac-Murdock-Szego matrix
+      grcar: Grcar matrix
+      wilkinson: Wilkinson matrix
+      clement: Clement matrix
+      parter: Parter matrix
+      ris: Ris matrix
+      lotkin: Lotkin matrix
+      riemann: Riemann matrix
+  n:
+    type: Z
+    title: order
+    display: $n$
+    constraints: $n\geq 1$
+Comments:
+  comment-families: >-
+    Indices are $1$-based. The matrices are $A_{ij}=1/(i+j-1)$ for the
+    Hilbert matrix CITE{WikiHilbert}; $A_{ij}=\min(i,j)/\max(i,j)$ for the
+    Lehmer matrix CITE{WikiLehmer}; $A_{ij}=i^{j-1}$ for the Vandermonde
+    matrix CITE{WikiVandermonde}; and $A_{ij}=1/(i+j)$ for the Cauchy
+    matrix, the scalar default case of `gallery("cauchy",n)`
+    CITE{MathWorksGallery}. The Fiedler matrix is $A_{ij}=|i-j|$. The
+    Kac-Murdock-Szego matrix is $A_{ij}=2^{-|i-j|}$. The Grcar matrix has
+    $-1$ on the subdiagonal and $1$ on the diagonal and on the first three
+    superdiagonals.
+  comment-toolbox-families: >-
+    The Wilkinson, Clement, Parter, Ris, Lotkin and Riemann matrices use the
+    definitions in MATLAB gallery documentation CITE{MathWorksGallery} or the
+    Test Matrix Toolbox source CITE{TMTGallery}. The Wilkinson matrix is
+    symmetric tridiagonal with off-diagonal entries $1$ and diagonal entries
+    $|(n-1)/2-(i-1)|$. The Clement matrix is the default nonsymmetric
+    tridiagonal matrix, with zero diagonal, $A_{i,i-1}=n-i+1$ and
+    $A_{i,i+1}=i$. The Parter matrix is $A_{ij}=1/(i-j+1/2)$.
+  comment-more-toolbox-families: >-
+    The Ris matrix, also called the Dingdong matrix, is
+    $A_{ij}=(1/2)/(n-i-j+3/2)$. The Lotkin matrix is the Hilbert matrix with
+    first row replaced by ones. The Riemann matrix is $B(2:n+1,2:n+1)$ with
+    $B_{ij}=i-1$ if $i\mid j$ and $-1$ otherwise.
+  comment-omitted: >-
+    The Pascal, Minij, Frank and Moler matrices have determinant $1$ for every
+    listed order; the default Chow matrices are singular for $n>1$; the
+    Redheffer determinants are the small-integer Mertens values; and the
+    second-difference determinants are $n+1$. Those determinant facts are
+    recorded in formulas rather than as rows, because a table of repeated or
+    small integers would make search by number less useful.
+Formulas:
+  formula-characteristic-polynomial: >-
+    The determinant is the signed constant term of the characteristic
+    polynomial: $\det(A_n)=(-1)^n\chi_{A_n}(0)$. The polynomials
+    $\chi_{A_n}(x)$ for these matrix families are in
+    HREF{T330}[Characteristic polynomials of the classical test matrices].
+  formula-hilbert: >-
+    For the Hilbert matrix,
+    $\det(A_n)=c_n^4/c_{2n}$, where
+    $c_m=\prod_{j=1}^{m-1}j!$.
+  formula-lehmer: >-
+    For the Lehmer matrix,
+    $\det(A_n)=\prod_{j=2}^n(2j-1)/j^2$.
+  formula-vandermonde: >-
+    For the Vandermonde matrix,
+    $\det(A_n)=\prod_{1\leq i<j\leq n}(j-i)$.
+  formula-cauchy: >-
+    The Cauchy determinant identity
+    $\det(1/(x_i+y_j))=\dfrac{\prod_{i<j}(x_j-x_i)(y_j-y_i)}
+    {\prod_{i,j}(x_i+y_j)}$ applies to the Cauchy and Parter matrices, and
+    to the Ris matrix after the common factor $1/2$ is taken from each row.
+  formula-fiedler: >-
+    For the Fiedler matrix, $\det(A_n)=(-1)^{n-1}2^{n-2}(n-1)$.
+  formula-kms: >-
+    For the Kac-Murdock-Szego matrix with $\rho=1/2$,
+    $\det(A_n)=(1-\rho^2)^{n-1}=(3/4)^{n-1}$.
+  formula-grcar: >-
+    For the Grcar matrix with three superdiagonals, the determinants satisfy
+    $g_1=1$, $g_2=2$, $g_3=4$, $g_4=8$, and
+    $g_n=g_{n-1}+g_{n-2}+g_{n-3}+g_{n-4}$ for $n\geq5$.
+  formula-lotkin: >-
+    For the Lotkin matrix, $\det(A_n)=(-1)^{n-1}n\det(H_n)$, where $H_n$ is
+    the Hilbert matrix of the same order.
+  formula-clement: >-
+    For the Clement matrix, the determinant is $0$ when $n$ is odd. When
+    $n=2m$, $\det(A_n)=(-1)^m\prod_{j=1}^m(2j-1)^2$.
+  formula-wilkinson: >-
+    The Wilkinson determinants satisfy $d_0=1$, $d_1=(n-1)/2$, and
+    $d_j=a_jd_{j-1}-d_{j-2}$, where
+    $a_j=|(n-1)/2-(j-1)|$ and $d_n=\det(A_n)$.
+  formula-small: >-
+    The omitted default families have
+    $\det(A_n)=1$ for the Pascal, Minij, Frank and Moler matrices,
+    $\det(A_n)=0$ for the Chow matrix when $n>1$,
+    $\det(A_n)=M(n)$ for the Redheffer matrix, and
+    $\det(A_n)=n+1$ for the second-difference matrix.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.matrix.constructor import matrix
+      from sage.rings.rational_field import QQ
+
+      A = matrix(QQ, 3, 3, lambda i, j: QQ(1) / QQ(i + j + 1))
+      A.det()
+Similar tables:
+  - table: HREF{T330}[Characteristic polynomials of the classical test matrices]
+    relation: stores the polynomials whose signed constant terms are the determinants listed here
+  - table: HREF{T327}[Condition numbers of the classical test matrices]
+    relation: stores finite 2-norm condition numbers for nonsingular members of these gallery families
+Links:
+  WikiDeterminant:
+    title: 'Wikipedia: Determinant'
+    url: https://en.wikipedia.org/wiki/Determinant
+  WikiHilbert:
+    title: 'Wikipedia: Hilbert matrix'
+    url: https://en.wikipedia.org/wiki/Hilbert_matrix
+  WikiLehmer:
+    title: 'Wikipedia: Lehmer matrix'
+    url: https://en.wikipedia.org/wiki/Lehmer_matrix
+  WikiPascal:
+    title: 'Wikipedia: Pascal matrix'
+    url: https://en.wikipedia.org/wiki/Pascal_matrix
+  WikiRedheffer:
+    title: 'Wikipedia: Redheffer matrix'
+    url: https://en.wikipedia.org/wiki/Redheffer_matrix
+  WikiVandermonde:
+    title: 'Wikipedia: Vandermonde matrix'
+    url: https://en.wikipedia.org/wiki/Vandermonde_matrix
+  MathWorksGallery:
+    title: 'MathWorks: gallery, test matrices'
+    url: https://www.mathworks.com/help/matlab/ref/gallery.html
+  TMTGallery:
+    title: 'Test Matrix Toolbox: gallery.m source'
+    url: https://github.com/carandraug/testmatrix/blob/master/Test%20Matrix%20Toolbox/gallery.m
+Tags:
+  - analysis
+  - algebraic
+Data properties:
+  type: Q
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds the listed nontrivial determinant families for $2\leq n\leq30$,
+    with only even orders of the Clement matrix because the odd orders are
+    singular, making 363 entries
+  rigour details: >-
+    The generator builds each matrix over $\mathbb{Q}$ and computes its
+    determinant exactly by fraction-free Bareiss elimination. Before the
+    entries were written, `agents/table-build/dry_run.py` computed all 363
+    entries, checked exactness, and measured the longest written value as 968
+    characters at the Parter matrix with $n=30$, with an entries block of 58.8
+    KB. The determinants were checked against the closed forms and recurrences
+    in the formulas, and every listed family with $n\leq6$ was also checked by
+    a direct Leibniz determinant over permutations. The omitted small families
+    were checked against CITE{formula-small}. The relation to
+    HREF{T330}[the characteristic polynomial table] was checked against the
+    stored T330 draft values on 138 overlapping rows.
+Display properties:
+  number-header: $\det(A_n)$
+Numbers: []
