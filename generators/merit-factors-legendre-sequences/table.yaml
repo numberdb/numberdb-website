@@ -3,9 +3,7 @@ Definition: >-
   For an odd prime $p$, the Legendre sequence $u^{(p)}=(u_0,\ldots,u_{p-1})$
   is defined by $u_0=1$ and $u_j=\left(\frac{j}{p}\right)$ for
   $1\leq j<p$, where $\left(\frac{\cdot}{p}\right)$ is the Legendre symbol
-  CITE{Legendre}. This table holds the aperiodic merit factor
-  $F_p=p^2/(2\sum_{k=1}^{p-1}c_k^2)$, where
-  $c_k=\sum_{j=0}^{p-1-k}u_ju_{j+k}$ and $c_0=p$.
+  CITE{Legendre}. This table holds its aperiodic merit factor $F_p$.
 Parameters:
   p:
     type: Z
@@ -24,6 +22,9 @@ Comments:
     $f_p$ is the HREF{Fekete_polynomials}[Fekete polynomial] with the same
     prime parameter.
 Formulas:
+  formula-merit-factor: >-
+    $F_p=p^2/(2\sum_{k=1}^{p-1}c_k^2)$, where
+    $c_k=\sum_{j=0}^{p-1-k}u_ju_{j+k}$ and $c_0=p$.
   formula-l4-norm: >-
     If $\|U_p\|_4^4$ denotes the integral of $|U_p(z)|^4$ over $|z|=1$ with
     normalized Haar measure, then $F_p=p^2/(\|U_p\|_4^4-p^2)$.
