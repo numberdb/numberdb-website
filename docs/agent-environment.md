@@ -5390,3 +5390,37 @@ omits changes what the rest of it renders as.
 Evidence: 2026-09-18, T330 critique. `/tmp/p330_a.html` and `/tmp/q330_f.html`
 (with `Data properties`) -> "Polynomials"; `/tmp/q330_b.html` through
 `/tmp/q330_k.html` and `/tmp/p330_[hij].html` (without) -> "Numbers".
+
+## A table assigned as a draft can be published under you; retry `/T<TID>` before building preview pieces
+
+What happened: the T331 critique was assigned with the usual note that "the key
+is in the environment for a draft", and the T329 and T330 critiques immediately
+before it had both been private drafts reconstructed through `/preview?table=`
+in ten or eleven pieces. `https://numberdb.org/T331` did answer 404
+unauthenticated at 14:05 UTC. At 14:09 the same request answered 200 with the
+whole rendered page, 235,805 bytes, and `GET /api/lookup?text=143/26880`
+returned `{"index": "lehmer,7", "table_id": "T331"}`, so the table was public
+and searchable by number. Nothing in the run caused it: the revision history
+shows three revisions by zeta3 at 13:58 and 14:04 and no later write, and
+publishing is not something this account can do.
+
+Two things follow. The rendered page a critique needs was available whole,
+which is better evidence than any number of preview pieces, and four minutes of
+assuming otherwise would have bought a piece-wise reconstruction with the
+`Parameters`, `Data properties` and `CITE`-target caveats the T221, T225, T226
+and T330 notes describe. And the audit's draft-link rule, which is guarded by
+`table.published`, had started firing: `GET /api/table/T331/audit` reported
+`HREF{T327} points at a draft`, as did T329's and T330's, because those two had
+been published in the same window.
+
+What to do instead: fetch `/T<TID>` unauthenticated first, whatever the
+assignment says the table's status is, and re-fetch once before concluding it
+is private. A 404 means "not published *yet*" and the window can be minutes
+wide when a batch is being reviewed. The audit endpoint is a second signal in
+the same direction: a `points at a draft` finding about some *other* table means
+the server thinks this one is published.
+
+Evidence: 2026-09-18, T331 critique. `curl -s -o /dev/null -w '%{http_code}'
+https://numberdb.org/T331` -> 404 at 14:05, 200 at 14:09;
+`https://numberdb.org/revisions/T331` shows revisions at 13:58 and 14:04 only;
+`GET /api/table/T331/audit` -> one finding, `clean: false`.
