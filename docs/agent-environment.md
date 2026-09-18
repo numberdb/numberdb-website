@@ -5626,7 +5626,8 @@ exactly one request this session, `/skill`, with a complete 47,534-byte body
 and `HTTP 000`, and refused every request after it; `curl --noproxy '*'`
 reached numberdb.org throughout, including `GET /api/table?id=T335`,
 `GET /api/table/T335/audit` and `/files/T335/generate.py` with the key on
-stdin through `-H @-`. That is the third session in a row with the same shape.
+stdin through `-H @-`. That is exactly the shape the T334 note above records,
+one session later, so it is the behaviour and not an accident of that run.
 
 Evidence: 2026-09-18, T335 critique. `/tmp/t335_render.py`,
 `/tmp/t335_render_out.txt` (`records: 6`, `tid: T1 tags: ['algebra',
