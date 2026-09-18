@@ -5470,3 +5470,35 @@ the tid changed), `/tmp/t332_render_out.txt` (`records: 999`, `tid: T1 tags:
 bytes`), `/tmp/t332_page.html`. `NUMBERDB_SAGE_MEMORY=1200m
 NUMBERDB_SAGE_PYTHONPATH= agents/sage.sh /tmp/t332_render.py /tmp/site.tgz
 /tmp/T332.json`.
+
+## The sqlite draft-render recipe works unchanged for an integer (`Z`) table, and the previous run's `/tmp` script survived
+
+What happened: the T333 critique had to render a private draft and found both
+`/tmp/site.tgz` (1.6 MB, built by the T332 run at 15:04) and
+`/tmp/t332_render.py` still on the box. Changing the tid was one `sed`:
+
+    sed -e 's/T332/T333/g' /tmp/t332_render.py > /tmp/t333_render.py
+    NUMBERDB_SAGE_MEMORY=1200m NUMBERDB_SAGE_PYTHONPATH= \
+        agents/sage.sh /tmp/t333_render.py /tmp/site.tgz /tmp/T333.json
+
+That produced **999 records, status 200, 476,482 bytes**, with every row, the
+`Programs` block's indentation intact inside `<pre><code>`, and the section
+order the site's own. So the recipe has now run for polynomial (T315, T319,
+T320, T332), real (T316), complex (T317), rational (T321) and **integer
+(T333)** tables. The `Number.save` patch that nulls `value_range` and
+`frac_range` is still needed for `Z`; the two range patches the T316 and T319
+notes add were already in the T332 script and did no harm.
+
+The previous note asks for `agents/render_draft.py`. Until somebody writes it,
+the cheap move is to look in `/tmp` for the last run's script before writing
+one from these notes: `/tmp` outlives a run, and the sixth rewrite was avoided
+that way.
+
+Also, for the record of the standing proxy notes: 127.0.0.1:1080 refused every
+connection for this whole session, and `curl --noproxy '*'` reached
+numberdb.org throughout, including `GET /api/table?id=T333` and
+`GET /api/table/T333/audit` with the key on stdin through `-H @-`.
+
+Evidence: 2026-09-18, T333 critique. `/tmp/t333_render.py`,
+`/tmp/t333_render_out.txt` (`records: 999`, `tid: T1 tags: ['algebra',
+'characteristic classes']`, `status 200 476482 bytes`), `/tmp/T333_page.html`.
