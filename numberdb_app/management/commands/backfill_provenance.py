@@ -302,6 +302,10 @@ class Command(BaseCommand):
 			if len(names) != 1:
 				contested += 1
 				continue
+			#Remembered either way, so that a dry run's later passes do not
+			#count a revision twice: without this the report says the sessions
+			#pass would claim revisions the ledger has already claimed.
+			self.claimed.add(revision_id)
 			if self.write:
 				TableRevision.objects.filter(id=revision_id,
 				                             agent_run__isnull=True).update(
@@ -411,6 +415,8 @@ class Command(BaseCommand):
 				       revision.author_id, revision.created.date())
 			else:
 				continue
+			if revision.id in self.claimed:
+				continue
 			groups[key].append((revision, generator, engine, model, produced))
 
 		for (kind, what, author_id, day), found in groups.items():
@@ -458,6 +464,7 @@ class Command(BaseCommand):
 		from numberdb_app.models import AgentRun, TableRevision
 
 		self.write = options['write']
+		self.claimed = set()
 		self.versions = self.load_versions(options['versions'])
 
 		runs, rows = [], []
@@ -473,10 +480,7 @@ class Command(BaseCommand):
 					rows.append(row)
 		self.stdout.write('ledger runs:        %d' % (len(runs),))
 
-		if self.write:
-			linked, contested = self.link_ledger_runs(runs, rows)
-		else:
-			linked = contested = 0
+		linked, contested = self.link_ledger_runs(runs, rows)
 		self.stdout.write('  revisions linked: %d  (contested, left alone: %d)'
 		                  % (linked, contested))
 
