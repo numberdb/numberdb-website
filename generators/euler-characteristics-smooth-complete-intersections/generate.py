@@ -206,11 +206,16 @@ def check_identities():
 
 
 def _flatten_numbers(node, path=()):
-    if isinstance(node, list):
+    if isinstance(node, (str, int)):
+        if len(path) == 2:
+            yield {"n": path[0], "d": path[1]}, node
+    elif isinstance(node, list):
         for item in node:
             yield from _flatten_numbers(item, path)
     elif isinstance(node, dict) and "number" in node:
-        params = node.get("params") or {}
+        params = node.get("params") or (
+            {"n": path[0], "d": path[1]} if len(path) == 2 else {}
+        )
         yield params, node["number"]
     elif isinstance(node, dict):
         for key, value in node.items():
