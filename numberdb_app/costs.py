@@ -89,7 +89,17 @@ def ingest(ledger_text, attribution_text='', dry_run=False):
 	engines = {}
 	unattached = rescued = 0
 
-	for row in csv.DictReader(io.StringIO(ledger_text or ''), delimiter='\t'):
+	rows = list(csv.DictReader(io.StringIO(ledger_text or ''), delimiter='\t'))
+
+	#The run itself, not only what it spent. A screening run, a triage run and
+	#the third of builds that fail or decline write no revision at all, so
+	#before this they existed only as a line in a file on whichever machine
+	#happened to run them. Costs are aggregated below; a run is a thing.
+	if not dry_run:
+		from .provenance import runs_from_ledger
+		runs_from_ledger(rows)
+
+	for row in rows:
 		tid = (row.get('table') or '').strip().upper()
 		if not tid:
 			tid = attributed.get((row.get('started') or '').strip(), '')
