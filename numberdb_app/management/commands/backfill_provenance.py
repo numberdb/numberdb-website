@@ -172,6 +172,10 @@ class Command(BaseCommand):
 		                    help='JSON from `agents/pipeline.py dump`')
 		parser.add_argument('--write', action='store_true',
 		                    help='save; without it nothing is written')
+		parser.add_argument('--operator', default='',
+		                    help='the account that started these campaigns; a '
+		                         'run has an operator even when an agent wrote '
+		                         'what it published')
 		parser.add_argument('--verbose-report', action='store_true')
 
 	#---------------------------------------------------------------- versions
@@ -245,6 +249,7 @@ class Command(BaseCommand):
 
 		fields = dict(
 			started=started,
+			operator=self.operator,
 			pipeline=pipeline,
 			pipeline_version=version,
 			pipeline_digest=digest,
@@ -295,6 +300,29 @@ class Command(BaseCommand):
 					table=table, created__gte=run.started,
 					created__lt=run.started + WINDOW):
 				claims[revision.id].append(run)
+
+		#A run that named no table is not lost: 36 of them, $174 of spend, and
+		#the revisions of one table sitting inside the run's window with nobody
+		#else claiming them. That is evidence, and one table's worth of it or
+		#none -- a window holding two tables says nothing about which was this
+		#run's work.
+		for run, row in zip(runs, rows):
+			if not run or (row.get('table') or '').strip():
+				continue
+			nearby = TableRevision.objects.filter(
+				created__gte=run.started,
+				created__lt=run.started + WINDOW).exclude(
+				id__in=list(claims)).only('id', 'table_id')
+			tables = {revision.table_id for revision in nearby}
+			if len(tables) != 1:
+				continue
+			for revision in nearby:
+				claims[revision.id].append(run)
+			if self.write:
+				run.notes = ('\n'.join(filter(None, [
+					run.notes, 'the ledger recorded no table; linked to the '
+					'only one edited inside this run\'s window.'])))
+				run.save(update_fields=['notes'])
 
 		linked = contested = 0
 		for revision_id, found in claims.items():
@@ -463,8 +491,19 @@ class Command(BaseCommand):
 	def handle(self, *args, **options):
 		from numberdb_app.models import AgentRun, TableRevision
 
+		from django.contrib.auth.models import User
+
 		self.write = options['write']
 		self.claimed = set()
+		#Who started the campaigns. The author of what a run published is the
+		#agent's own account -- that is what answers for the digits -- and the
+		#person who set it going is a different fact, recorded here because
+		#"nobody started this" is not true of any run in the ledgers.
+		self.operator = (User.objects.filter(
+			username=options['operator']).first()
+			if options['operator'] else None)
+		if options['operator'] and self.operator is None:
+			self.stderr.write('no account called %r' % (options['operator'],))
 		self.versions = self.load_versions(options['versions'])
 
 		runs, rows = [], []
