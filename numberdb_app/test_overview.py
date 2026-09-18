@@ -93,6 +93,33 @@ class TheOverviewShowsTheCorpus(TestCase):
 		rows = list(self.page('?sort_by=entries').context['rows'])
 		self.assertEqual(rows[0].table.tid, 'T751')
 
+	def test_it_says_how_many_entries_of_which_type(self):
+		#Both counts, because they answer different questions: one table of
+		#integers can hold more entries than every complex-valued table
+		#together, so a count of tables alone says the wrong thing.
+		self.refresh()
+		other = Table.objects.create(
+			tid='T751', tid_int=751, url='t751', title='Some rationals',
+			title_lowercase='some rationals', published=True)
+		commit_table(other,
+		             {'Title': 'Some rationals',
+		              'Parameters': {'n': {'type': 'Z'}},
+		              'Data properties': {'type': 'Q'},
+		              'Numbers': {'1': '1/2'}},
+		             author=self.author, message='m', via='orm')
+		from .management.commands.refresh_table_metrics import refresh
+
+		refresh(other)
+
+		body = self.page().content.decode()
+		self.assertIn('Entries by type', body)
+		#The type as it is declared, and what that means in words.
+		self.assertIn('integer', body)
+		self.assertIn('rational number', body)
+		types = body.split('Entries by type', 1)[1]
+		self.assertLess(types.index('>Z<'), types.index('>Q<'),
+		                'the commonest type should come first')
+
 	def test_a_stranger_cannot_see_it(self):
 		#Not secret, but it is a workbench: it names drafts and what they cost.
 		self.assertEqual(Client().get('/overview', HTTP_HOST='numberdb.org')

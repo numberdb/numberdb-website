@@ -2670,10 +2670,34 @@ def overview(request):
 			[row.document_bytes / 1024.0 for row in measured])),
 	]
 
+	#What the corpus holds, by kind of number. Entries rather than tables,
+	#because the two answer different questions and the table count alone is
+	#misleading: one table of integers can hold more entries than every
+	#complex-valued table together. Both are shown for that reason.
+	#
+	#Grouped on the type a table *declares*, which is what the entries were
+	#parsed as -- the vocabulary is open, so an unparsed type appears here
+	#under its own name rather than being folded into an "other".
+	from .common import type_names
+
+	by_type = {}
+	for row in rows:
+		found = by_type.setdefault(row.data_type or '', [0, 0])
+		found[0] += row.entry_count
+		found[1] += 1
+	types = [{'type': name or '(none declared)',
+	          'name': type_names.get(name, ''),
+	          'entries': entries, 'tables': tables}
+	         for name, (entries, tables) in sorted(
+		         by_type.items(), key=lambda item: -item[1][0])]
+	typed_total = sum(item['entries'] for item in types) or 0
+
 	return render(request, 'overview.html', {
 		'rows': rows,
 		'sortby': sortby,
 		'by': field,
+		'types': types,
+		'typed_total': typed_total,
 		'breakdown': breakdown,
 		'total_cost': spent,
 		'table_count': len(measured),
