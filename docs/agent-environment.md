@@ -4748,3 +4748,88 @@ Evidence: 2026-09-18, T317 critique. `/tmp/t317_programs.py` failed with
 `NameError: name 'Integer' is not defined` and then reproduced five of the
 table's stored values; `/tmp/t317_names.py` ran `snappy.Manifold(name)` for
 ten Rolfsen names.
+
+## The sqlite draft-render recipe needs the range patches for a *polynomial* table too, when one entry is a bare constant
+
+What happened: the T316 note above says the two patches
+(`RangeField.get_placeholder` to `%s`, and `Number.save` nulling `value_range`
+and `frac_range`) are what a *real* table needs, and that "T315 was a
+polynomial table and never reached this". T319 is a polynomial table and
+reached it on its first row:
+
+    Error saving number: {'raw_number': '1', 'parsed_repr': '1',
+      'parent': 'Integer Ring', 'is_polynomial_ring_parent': False,
+      'exception': "OperationalError('unrecognized token: \":\"')"}
+    sqlite3.OperationalError: unrecognized token: ":"
+
+$P_0=1$, so the entry is the bare string `1`, and the parser reads that as an
+element of the integer ring rather than of $\mathbb Z[x]$ -- which gives it the
+numeric range projection, and the postgres `::numrange` cast that sqlite
+refuses. T315's entries were all of positive degree, which is why it never hit
+it.
+
+What to do instead: apply both patches unconditionally, whatever the table's
+`type`. They are inert on a table that never writes a range, and one constant
+entry is enough to need them.
+
+Evidence: 2026-09-18, T319 critique. `/tmp/t319_render.py` (first run without
+the patches, the traceback above; with them, `records: 8`, `tid: T1`,
+`status 200 29495`), `/tmp/t319_page.html`.
+
+## `/preview?table=` needs `Parameters`, `Data properties` and a `Numbers` section, and blames the numbers when they are missing
+
+What happened: rendering T319's prose in slices through `/preview?table=` --
+the route the T314 and T317 critiques used, because the whole document does not
+fit a request line -- every slice that carried only prose answered 200 with
+
+    Error while parsing numbers: cannot access local variable
+    'number_section' where it is not associated with a value
+
+and no rendered table at all. The message names the numbers, but the slices
+that failed were the ones with no `Numbers` key; adding `Parameters`, `Data
+properties` and three entries to each slice rendered all of them. So a preview
+of a `Comments` block has to carry the scaffolding of a whole table, and the
+error it gives otherwise reads like a fault in the numbers a run did not send.
+
+The other half of the constraint is the request line: gunicorn refuses at 4094
+bytes with `Request Line is too large (6267 > 4094)`, and a URL-encoded YAML
+document runs about 1.6 times its own length, so a slice can carry roughly
+2,400 characters of YAML. T319's whole document is 4,641, which is why it went
+in four.
+
+What to do instead: build each preview slice as
+`Title + Parameters + <the section> + Data properties + Display properties +
+two or three entries`, keep it under about 2,400 characters of YAML, and read
+the `CITE`s with care -- a citation whose target is in a slice you left out
+renders as a `CITE-broken` span, which is an artefact of the slicing and not a
+fault in the table. The whole-page rebuild on sqlite (the note above) has
+neither problem and is what a finding should be quoted from.
+
+Evidence: 2026-09-18, T319 critique. `/tmp/prev.py` (four prose-only slices,
+all four with the `number_section` message), `/tmp/prev2.py` (the same four
+with scaffolding, 17-20 KB of rendered HTML each), and the 400 from
+`--data-urlencode table@/tmp/T319.yaml`.
+
+## `/files/<tid>/<name>` serves a draft's attachment to an API key, where `/T<n>` answers 404
+
+What happened: the T319 critique wanted the generator as a reader downloads it
+rather than as the repository holds it. `GET /T319` answers 404 to the zeta3
+key, as the T182 note records, but
+
+    curl -H "X-API-Key: ..." https://numberdb.org/files/T319/generate.py
+
+answers 200 with the file's own page: the size and revision date
+("4,923 bytes, as of the version from 2026-09-18 01:35 (current). Recorded
+here, not run.") and the source inside a `<pre>`, HTML-escaped. Unescaping that
+block gave a file byte-identical to
+`generators/shapiro-polynomials/generate.py`, which is how the two copies were
+compared without a session.
+
+So the file routes honour the key where the table routes do not. Useful: a
+critique can read the attachment a reader gets, and can check the claim that
+the repository copy and the attached one agree, which the skill's rule about
+generators living on the table makes worth checking.
+
+Evidence: 2026-09-18, T319 critique. `curl` above (200, 17,674 bytes of HTML,
+title `generate.py - Shapiro polynomials $P_n$ - NumberDB`), and `diff` of the
+unescaped `<pre>` against the repository copy, which is empty.
