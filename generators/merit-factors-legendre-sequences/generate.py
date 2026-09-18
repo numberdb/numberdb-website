@@ -1,4 +1,4 @@
-"""Merit factors of the Legendre sequences -- numberdb.org/T321 (table wanted: numberdb-data#160)
+"""Merit factors of the Legendre sequences -- numberdb.org/T321
 
 For an odd prime p, the Legendre sequence u^(p) has length p, with u_0 = 1
 and u_j = (j | p) for 1 <= j < p. Its aperiodic autocorrelations are
@@ -15,16 +15,9 @@ Run it with SageMath:
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # send it, with NUMBERDB_API_KEY set
 
-On the NumberDB build machine, where arguments are not passed through
-agents/sage.sh, publish with:
-
-    $ cat "$NUMBERDB_KEY_FILE" | NUMBERDB_KEY_FROM_STDIN=1 NUMBERDB_PUBLISH=1 \
-          agents/sage.sh generate.py
-
-The family convention from numberdb-data#160 is used here: coefficient and
-sequence indices run low degree first, the Legendre sequence has u_0 = 1, and
-the merit factor is aperiodic. The periodic merit factor and the merit factors
-of cyclically rotated Legendre sequences are different quantities.
+The Legendre sequence has u_0 = 1, and the merit factor is aperiodic. The
+periodic merit factor and the merit factors of cyclically rotated Legendre
+sequences are different quantities.
 
 The values are exact rational numbers. There is no precision to choose and no
 rounding.
