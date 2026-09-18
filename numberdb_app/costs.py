@@ -29,7 +29,15 @@ def parse_breakdown(row):
 	breakdown = (row.get('cost_by_model') or '').strip()
 	if breakdown:
 		found = []
-		for part in breakdown.split(','):
+		#Semicolons, because that is what `agents/ledger.py` writes -- and
+		#commas too, because this read only commas and the ledger only wrote
+		#semicolons, so every run that used a second model had that model's
+		#cost silently folded into the first one's name and then dropped as
+		#unparseable. The whole point of the column is the fallback run that
+		#spent money on two models.
+		import re as _re
+
+		for part in _re.split(r'[;,]', breakdown):
 			name, _, amount = part.partition('=')
 			name = name.strip()
 			try:

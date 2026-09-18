@@ -154,7 +154,10 @@ class ImportingTheLedger(TestCase):
 		from django.core.management import call_command
 
 		try:
-			call_command('import_agent_costs', path, verbosity=0)
+			#By name: the command took a positional path until costs began
+			#arriving over the API, and a stale call here reads as a broken
+			#importer rather than as a stale test.
+			call_command('import_agent_costs', ledger=path, verbosity=0)
 		finally:
 			os.unlink(path)
 
@@ -181,12 +184,17 @@ class ImportingTheLedger(TestCase):
 			TableCost.objects.get(table=self.table).cost_usd,
 			Decimal('10.8540'))
 
-	def test_a_run_about_no_table_is_skipped(self):
+	def test_a_run_about_no_table_is_kept_against_no_table(self):
+		#It used to be dropped, and dropping it made every total 22% short: a
+		#screening run, a triage run and the third of builds that fail or
+		#decline produce no table and cost real money. The row is kept with no
+		#table rather than thrown away.
 		self.run_import(self.ledger([{
 			'started': '20260908T000000Z', 'stage': 'ideas', 'engine': 'claude',
 			'cost_usd': '8.70', 'model': 'claude-fable-5-1', 'table': '',
 		}]))
-		self.assertEqual(TableCost.objects.count(), 0)
+		self.assertEqual(TableCost.objects.filter(table__isnull=True).count(), 1)
+		self.assertEqual(TableCost.objects.filter(table=self.table).count(), 0)
 
 	def test_the_total_lands_on_the_table(self):
 		self.run_import(self.ledger([

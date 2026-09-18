@@ -91,12 +91,13 @@ class TheSageWrapperKeepsRunsOffTheLiveSite(TestCase):
 		#The comments name `docker compose exec` to say why it is wrong, so
 		#this looks at the lines that run rather than the ones that explain.
 		body = instructions('agents/sage.sh')
-		self.assertIn('docker compose run --rm --no-deps', body)
+		self.assertIn('docker run --rm -i --name', body)
 		self.assertNotIn('docker compose exec', body)
 
 	def test_it_puts_the_client_on_the_path(self):
 		#Because the client is not installed in the image.
-		self.assertIn('PYTHONPATH=/app/clients/python', script('agents/sage.sh'))
+		self.assertIn('CLIENT_PATH="${NUMBERDB_SAGE_PYTHONPATH-/app/clients/python}"',
+		              script('agents/sage.sh'))
 
 	def test_it_mounts_read_only(self):
 		self.assertIn(':ro', script('agents/sage.sh'))
@@ -215,7 +216,7 @@ class TheCampaignSequencesRunsAndStops(TestCase):
 		#exhausted batch for another table until it ran out of turns.
 		body = script('agents/campaign.sh')
 		self.assertIn('git rev-parse HEAD', body)
-		self.assertIn('is finished; proposing the next batch', body)
+		self.assertIn('screening another family', body)
 
 	def test_the_campaign_stops_if_stage_one_proposes_no_batch(self):
 		#Otherwise it would spin between two runs that each do nothing.
@@ -226,11 +227,11 @@ class TheCampaignSequencesRunsAndStops(TestCase):
 		#On 2026-09-06 one wrote a 580-line batch, said out loud that it would
 		#not force-add against that decision, and was called a failure.
 		body = script('agents/campaign.sh')
-		self.assertIn('proposed no new batch', body)
+		self.assertIn('proposed no new batch', script('agents/propose-batch.sh'))
 		self.assertNotIn('committed nothing either', body)
 
 	def test_stage_one_is_not_asked_to_commit_what_it_cannot(self):
-		self.assertIn('Do not commit it', script('agents/campaign.sh'))
+		self.assertIn('Do not commit it', script('agents/propose-batch.sh'))
 
 	def test_a_campaign_can_be_stopped_between_tables(self):
 		#Twice a campaign was stopped by killing the process, and both times
@@ -240,7 +241,7 @@ class TheCampaignSequencesRunsAndStops(TestCase):
 
 	def test_each_table_is_read_by_a_session_that_did_not_build_it(self):
 		body = script('agents/campaign.sh')
-		self.assertIn('agents/run.sh critique', body)
+		self.assertIn('run_stage critic critique', body)
 
 	def test_a_failed_critique_does_not_stop_the_campaign(self):
 		#It reports and changes nothing, so its failure costs a missing file.
@@ -266,8 +267,12 @@ class TheCampaignSequencesRunsAndStops(TestCase):
 		#the next run refuses a dirty tree -- which limited a campaign to one
 		#table and a sweep of critiques to one report, both silently.
 		body = script('agents/run.sh')
-		self.assertIn('git add "$ledger"', body)
-		self.assertIn('next run refuses a dirty tree', body)
+		#The ledger stopped being tracked when `agents/runs/` did, so there is
+		#nothing to commit and nothing to dirty the tree. What has to stay true
+		#is that the run writes its line at all, and that the file it writes is
+		#the one the cost upload reads.
+		self.assertIn('>> "$ledger"', body)
+		self.assertIn('agents/runs/COSTS.tsv', body)
 
 
 class WhatARunRecordsAboutItself(TestCase):
@@ -336,7 +341,7 @@ class ACampaignReadsTheStatusItActuallyGot(TestCase):
 
 	def test_the_status_is_captured_from_the_command(self):
 		body = flat('agents/campaign.sh')
-		self.assertIn('agents/run.sh build "Build the highest-ranked', body)
+		self.assertIn('run_stage writer build "Build this table:', body)
 		self.assertIn('|| status=$?', body)
 
 	def test_it_does_not_read_the_status_of_a_negation(self):
@@ -500,7 +505,7 @@ class WhatToDoAboutAFailureIsAsked(TestCase):
 
 	def test_the_campaign_asks_before_deciding(self):
 		body = flat('agents/campaign.sh')
-		self.assertIn('agents/run.sh triage', body)
+		self.assertIn('run_stage critic triage', body)
 		self.assertIn('-verdict', body)
 
 	def test_it_acts_on_each_verdict(self):
@@ -529,7 +534,7 @@ class WhatToDoAboutAFailureIsAsked(TestCase):
 		#If the failure was the eight-hour boundary, triage shares that
 		#credential and cannot start either.
 		body = flat('agents/campaign.sh')
-		at = body.index('agents/run.sh triage')
+		at = body.index('run_stage critic triage')
 		self.assertIn('claude -p "Reply with exactly: ok"', body[:at])
 
 	def test_triage_does_not_inherit_the_automatic_retry(self):
@@ -610,14 +615,24 @@ class EitherEngineCanRunAnyStage(TestCase):
 
 	def test_the_writer_builds_and_repairs_and_the_critic_reads(self):
 		body = script('agents/campaign.sh')
-		self.assertIn('NUMBERDB_AGENT="$writer" agents/run.sh build', body)
-		self.assertIn('NUMBERDB_AGENT="$writer" agents/run.sh repair', body)
-		self.assertIn('NUMBERDB_AGENT="$critic" agents/run.sh critique', body)
-		self.assertIn('NUMBERDB_AGENT="$critic" agents/run.sh triage', body)
+		#Through `run_stage`, which names the role it is running as: that is
+		#what lets the role be handed to the other harness when one account's
+		#quota is spent, instead of the campaign stopping with work left.
+		self.assertIn('run_stage writer build', body)
+		self.assertIn('run_stage writer repair', body)
+		self.assertIn('run_stage critic critique', body)
+		self.assertIn('run_stage critic triage', body)
 
 	def test_the_miner_can_be_pointed_at_either(self):
 		#"the table topic miner should be optionally run via codex cli"
-		self.assertIn('NUMBERDB_AGENT="$miner" agents/run.sh ideas',
+		#The screening is its own job now, so that a machine which only
+		#screens can run it alone -- and either harness can be the one that
+		#does, including after the other has run out of quota.
+		body = script('agents/propose-batch.sh')
+		self.assertIn('NUMBERDB_AGENT="$1" agents/run.sh ideas', body)
+		self.assertIn('miner="${NUMBERDB_MINER:-${NUMBERDB_AGENT:-claude}}"',
+		              body)
+		self.assertIn('NUMBERDB_MINER="$miner" agents/propose-batch.sh',
 		              script('agents/campaign.sh'))
 
 	def test_each_falls_back_to_one_engine_for_everything(self):
@@ -627,7 +642,7 @@ class EitherEngineCanRunAnyStage(TestCase):
 	def test_the_campaign_says_which_engine_is_doing_what(self):
 		#It is written to the log, so a run that produced a bad table can be
 		#read back to see what made it.
-		self.assertIn('say "writer $writer, critic $critic, miner $miner"',
+		self.assertIn('writer $writer, critic $critic, miner $miner"',
 		              script('agents/campaign.sh'))
 
 
@@ -741,7 +756,9 @@ class CodexCanCommitWhatItWrites(TestCase):
 	def test_the_sandbox_is_still_a_sandbox(self):
 		#Writable: the workspace, /tmp and now .git. Not the whole disk.
 		body = script('agents/run.sh')
-		self.assertIn('sandbox_mode=workspace-write', body)
+		self.assertIn('codex_sandbox="${NUMBERDB_CODEX_SANDBOX:-workspace-write}"',
+		              body)
+		self.assertIn('-c "sandbox_mode=$codex_sandbox"', body)
 		#The flag, not the word: the comment above it explains why the
 		#config's danger-full-access is not what a run gets.
 		self.assertNotIn('sandbox_mode=danger-full-access', body)

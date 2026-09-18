@@ -229,11 +229,10 @@ What it should say: for a Sage newform returned by `Newforms(N, k)`, do not use
 coefficient field, `form.base_ring().degree()`, and check external label data
 such as LMFDB when the table is keyed by those labels.
 
-Evidence: `agents/sage.sh /tmp/check_t217_field.py
-generators/hecke-polynomials-weight2-newforms/generate.py`, 2026-09-11,
+Evidence: a check over
+`generators/hecke-polynomials-weight2-newforms/generate.py`, 2026-09-11,
 reported 44 `degree != dimension` mismatches using `form.parent().dimension()`;
-`agents/sage.sh /tmp/check_t217_lmfdb.py
-generators/hecke-polynomials-weight2-newforms/generate.py` reported
+a second check of the same generator against LMFDB reported
 `dimension matches coefficient-field degree: 50`.
 
 ## Compare a higher-precision rerun by rounding it back, not by taking its prefix
@@ -4804,7 +4803,7 @@ has no `Numbers` section and `generator.publish()` fails during
 block with `submit_entries(..., upsert=False)` or add a harmless first entry
 before using the generator's normal publish path; then run `verify()`.
 
-Evidence: T196, 2026-09-10; `NUMBERDB_PUBLISH=1 agents/sage.sh
+Evidence: T196, 2026-09-10; `NUMBERDB_PUBLISH=1
 generators/modified-bessel-i-values-rational-orders/generate.py` failed in
 `check_writable()` with the error above. `/tmp/fill_modified_bessel_i_direct.py`
 used `Entries`, `submit_entries` and `attach` with one run id; the API answered
@@ -4833,7 +4832,7 @@ previous table's note. A critique can check it in one loop: recompute every
 entry at the guard the note names and compare the widest radius with the
 figure the note gives.
 
-Evidence: `/tmp/crit199c.py` through `agents/sage.sh`, 2026-09-10:
+Evidence: a check script against the live table, 2026-09-10:
 `guard 64 bits 397 widest radius (1.6228328e-115, ('1/3', '5'))`,
 `guard 80 bits 413 widest radius (2.5062758e-120, ('1/3', '5'))`;
 `generators/modified-bessel-k-values-rational-orders/generate.py`
@@ -5089,7 +5088,7 @@ T-number as `.tid`, not `.id`. A neighbour-screening print loop should read
 `table.tid`, `table.url` and `table.title`.
 
 Evidence: `/tmp/numberdb_db_probe.py`, 2026-09-11. The first run through
-`agents/sage.sh` failed on `table.id`; the second printed `T142
+the first attempt failed on `table.id`; the second printed `T142
 Gauss_sums_of_primitive_Dirichlet_characters`, `T143
 Jacobi_sums_of_pairs_of_Dirichlet_characters_modulo_a_prime`, `T144
 Kloosterman_sums_modulo_a_prime` and the other neighbours with their slugs.
@@ -5388,7 +5387,7 @@ unchanged, and keep the ordinary entry formatting and precision checks in the
 replacement path.
 
 Evidence: T219, 2026-09-11. The first fill attempt with
-`NUMBERDB_PUBLISH=1 agents/sage.sh generators/closed-hodgson-weeks-census-volumes/generate.py`
+`NUMBERDB_PUBLISH=1` over `generators/closed-hodgson-weeks-census-volumes/generate.py`
 failed with the error above. `/tmp/fetch_t219_shape.py` then printed
 `has Numbers: False` and `has Data: False`. The patched direct fill wrote two
 entries and attached `closed_census_data.py` and `generate.py` in revision

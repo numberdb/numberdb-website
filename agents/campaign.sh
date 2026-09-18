@@ -51,6 +51,36 @@ miner="${NUMBERDB_MINER:-$default_engine}"
 #good a reason triage gives, the same table is not tried a third time.
 attempted=0
 
+# Run one stage, and hand it to the other harness if the first has no quota
+# left.
+#
+# One engine's quota is not both engines' quota, and every stage here can be
+# run by either -- that is what the three role variables are for. Until now an
+# exhausted account stopped the campaign: on 2026-09-18 codex ran out, the
+# runner fell back to a model the account cannot use at all, and the campaign
+# died with sixteen tables still to build while claude sat idle.
+#
+# `run.sh` exits 6 when it has spent every model its engine may use *and* the
+# other engine is installed. The role flips for the rest of the campaign,
+# because a quota that is gone stays gone for hours, and re-learning that
+# once per stage would cost a failed run each time.
+run_stage() {                    # role variable, stage, task...
+	local role="$1" stage="$2"; shift 2
+	local engine other status
+	eval "engine=\$$role"
+	if NUMBERDB_AGENT="$engine" agents/run.sh "$stage" "$@"; then
+		return 0
+	fi
+	status=$?
+	[ "$status" -eq 6 ] || return "$status"
+	#Written as an if, not as `[ ... ] && other=codex`: under `set -e` a test
+	#that is simply false ends the campaign.
+	if [ "$engine" = claude ]; then other=codex; else other=claude; fi
+	say "$engine has no quota left; $other takes over as $role for the rest of this campaign"
+	eval "$role=\"$other\""
+	NUMBERDB_AGENT="$other" agents/run.sh "$stage" "$@"
+}
+
 # Which proposals this campaign works from.
 #
 # The queue is the `proposal` issues in numberdb-data: one per family, each
@@ -243,12 +273,12 @@ while [ "$made" -lt "$builds" ]; do
 		say "$kind: $tid -- $(field "$next" title) (done $made)"
 		case "$kind" in
 			growth)
-				NUMBERDB_AGENT="$critic" agents/run.sh critique \
+				run_stage critic critique \
 					"Read $tid, which has $(field "$next" entries) entries in $(field "$next" bytes) bytes -- under a tenth of the soft limits of 1200 entries and 320 KB. The question is whether it can grow *naturally*: is its range the whole of what its definition promises, or was it stopped early? Read the skill on what makes a good range, read the table's own completeness note and its generator, and write agents/critiques/$tid-growth.md saying either how far it could go and by what method, or why it is already complete -- a named constant with one entry is finished, and saying so is a good answer. Change nothing." \
 					|| say "the growth question failed for $tid"
 				;;
 			sweep)
-				NUMBERDB_AGENT="$critic" agents/run.sh critique \
+				run_stage critic critique \
 					"Read $tid. Fetch the rendered page, read the document, run the audit on it, and write agents/critiques/$tid.md. This table has never been read by this pipeline -- most of the corpus below T127 was made by hand, before the skill existed -- so read it as a reader meeting it for the first time. Change nothing else." \
 					|| say "the critique failed for $tid"
 				;;
@@ -261,7 +291,7 @@ while [ "$made" -lt "$builds" ]; do
 			made=$((made + 1))
 			continue
 		fi
-		NUMBERDB_AGENT="$writer" agents/run.sh repair \
+		run_stage writer repair \
 			"Act on $report, for $tid. Check every finding against the live table before you change anything, verify what can be verified, and write ${report%.md}-repaired.md saying what you did with each." \
 			|| say "the repair failed for $tid; the report stands and somebody should read it"
 		made=$((made + 1))
@@ -293,7 +323,7 @@ while [ "$made" -lt "$builds" ]; do
 	#failed campaign that looked like a finished one. It said exactly that
 	#when an expired OAuth token stopped a build on 2026-09-03.
 	status=0
-	NUMBERDB_AGENT="$writer" agents/run.sh build "Build this table: $proposal. It is one of the family in numberdb-data issue #$in_family; read the family first with 'python3 agents/queue.py show $in_family', because the conventions its tables share are in it and the tables are meant to agree with each other. The screening is a claim about the corpus on the day it was made, so re-check the cheap half before you spend anything: already_here and already_asked from agents/table-ideas/screen.py, api/lookup on a few of the values you expect, and whether the tag it wants exists. If the corpus already holds this table, do not build it again: run 'python3 agents/queue.py built $in_family \"$proposal\" T<number>' with the number of the table that holds it, say so, and stop. If it should not be built for any other good reason -- the sources disagree about the definition, the data is not public, the family turns out not to be a table -- run 'python3 agents/queue.py skipped $in_family \"$proposal\" \"<the reason, in one line>\"' and stop; that is what keeps the next campaign from paying to reach the same conclusion. Otherwise claim it by creating its draft, as the prompt says: if the title is refused because it exists, that proposal is taken -- say so and stop, and the campaign will move on. Do not use the presence of a directory in generators/ to decide what is already built; another campaign may be building it in a tree you cannot see. Follow the order of work in the prompt. Do not publish." || status=$?
+	run_stage writer build "Build this table: $proposal. It is one of the family in numberdb-data issue #$in_family; read the family first with 'python3 agents/queue.py show $in_family', because the conventions its tables share are in it and the tables are meant to agree with each other. The screening is a claim about the corpus on the day it was made, so re-check the cheap half before you spend anything: already_here and already_asked from agents/table-ideas/screen.py, api/lookup on a few of the values you expect, and whether the tag it wants exists. If the corpus already holds this table, do not build it again: run 'python3 agents/queue.py built $in_family \"$proposal\" T<number>' with the number of the table that holds it, say so, and stop. If it should not be built for any other good reason -- the sources disagree about the definition, the data is not public, the family turns out not to be a table -- run 'python3 agents/queue.py skipped $in_family \"$proposal\" \"<the reason, in one line>\"' and stop; that is what keeps the next campaign from paying to reach the same conclusion. Otherwise claim it by creating its draft, as the prompt says: if the title is refused because it exists, that proposal is taken -- say so and stop, and the campaign will move on. Do not use the presence of a directory in generators/ to decide what is already built; another campaign may be building it in a tree you cannot see. Follow the order of work in the prompt. Do not publish." || status=$?
 	if [ "$status" -ne 0 ] && { [ "$status" -eq 5 ] || ! site_is_up; }; then
 		#Not a judgement at all: the site went away under the run. Asking
 		#triage would spend a second run to be told the same thing, and
@@ -321,7 +351,7 @@ while [ "$made" -lt "$builds" ]; do
 		if [ -n "$stamp" ] && [ "$attempted" -lt 2 ]; then
 			timeout 120 claude -p "Reply with exactly: ok" >/dev/null 2>&1 || true
 			say "the build run exited $status; asking what to do about it"
-			NUMBERDB_AGENT="$critic" agents/run.sh triage "The build run $stamp failed with status $status. Its log is agents/runs/$stamp-build.log and the campaign was at $before before it. Decide what happens next and write agents/runs/$stamp-verdict." \
+			run_stage critic triage "The build run $stamp failed with status $status. Its log is agents/runs/$stamp-build.log and the campaign was at $before before it. Decide what happens next and write agents/runs/$stamp-verdict." \
 				|| say "the triage run failed too"
 			if [ -f "agents/runs/$stamp-verdict" ]; then
 				verdict=$(head -1 "agents/runs/$stamp-verdict" | tr -d '[:space:]')
@@ -457,7 +487,7 @@ while [ "$made" -lt "$builds" ]; do
 	fi
 	if [ -n "$tid" ]; then
 		say "reading $tid as a reader would"
-		NUMBERDB_AGENT="$critic" agents/run.sh critique "Read $tid. Fetch the rendered page, read the document, run audit_table on it, and write agents/critiques/$tid.md. Change nothing else." \
+		run_stage critic critique "Read $tid. Fetch the rendered page, read the document, run audit_table on it, and write agents/critiques/$tid.md. Change nothing else." \
 			|| say "the critique run failed; the table stands and somebody should look"
 
 		#Stage four acts on what stage three found, having checked it first.
@@ -470,7 +500,7 @@ while [ "$made" -lt "$builds" ]; do
 		#Safe to leave unattended because an operated account's edits are never
 		#published as reviewed: whatever it writes waits in the queue.
 		say "acting on the critique of $tid"
-		NUMBERDB_AGENT="$writer" agents/run.sh repair "Act on agents/critiques/$tid.md, for $tid. Check every finding against the live table before you change anything, verify what can be verified, and write agents/critiques/$tid-repaired.md saying what you did with each." \
+		run_stage writer repair "Act on agents/critiques/$tid.md, for $tid. Check every finding against the live table before you change anything, verify what can be verified, and write agents/critiques/$tid-repaired.md saying what you did with each." \
 			|| say "the repair run failed; the critique stands and somebody should read it"
 	fi
 
