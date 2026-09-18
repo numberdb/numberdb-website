@@ -212,3 +212,4 @@ generators/
 #like a deliberate instruction rather than an accident.
 agents/campaign.stop
 agents/campaign.*.stop
+agents/runs/.pipeline-history.json
