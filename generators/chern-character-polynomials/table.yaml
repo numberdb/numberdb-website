@@ -1,0 +1,102 @@
+Title: Chern character polynomials $\mathrm{ch}_n(c_1,\dots,c_n)$
+Definition: >-
+  The entry is the homogeneous component $\mathrm{ch}_n(c_1,\dots,c_n)$
+  of the Chern character of a complex vector bundle, written as a polynomial
+  in the Chern classes $c_i$ CITE{ChernWiki}. It is defined by the Chern-root
+  formula in Formula CITE{formula-component}.
+Parameters:
+  n:
+    type: Z
+    title: degree
+    display: $n$
+    constraints: $n\geq 1$
+Comments:
+  comment-component: >-
+    The table stores one homogeneous component per row, not the total Chern
+    character $\operatorname{rank}+\mathrm{ch}_1+\mathrm{ch}_2+\cdots$
+    truncated at degree $n$.
+  comment-zero: >-
+    The degree-zero component is the rank of the vector bundle, not a universal
+    polynomial in the positive-degree Chern classes, so the table begins at
+    $n=1$.
+  comment-variables: >-
+    The variables are Chern classes. The polynomial $\mathrm{ch}_n$ is written
+    in $c_1,\dots,c_n$, where $c_j$ is the $j$-th elementary symmetric
+    polynomial in the Chern roots.
+  comment-range: >-
+    The polynomial $\mathrm{ch}_7$ has a nonzero $c_7$ term, so $\mathrm{ch}_6$
+    is the last entry that uses at most six variables.
+Formulas:
+  formula-component: >-
+    $\operatorname{ch}(E)=\operatorname{rank}(E)+\sum_{n\geq1}
+    \mathrm{ch}_n(c_1,c_2,\dots)=\sum_i e^{x_i}$, where the $x_i$ are the
+    Chern roots and $c_j=e_j(x_1,x_2,\dots)$.
+  formula-power-sum: >-
+    $\mathrm{ch}_n=p_n/n!$, where $p_n=\sum_i x_i^n$ is the $n$-th power sum
+    symmetric polynomial HREF{Power_sum_symmetric_polynomials} in the Chern
+    roots.
+  formula-newton: >-
+    The power sums are written in the Chern classes by Newton's identities:
+    $p_n-c_1p_{n-1}+c_2p_{n-2}-\cdots+(-1)^n n c_n=0$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb  # initialize Sage before named imports
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+      from sage.rings.rational_field import QQ
+
+      def factorial(n):
+          value = QQ(1)
+          for k in range(2, n + 1):
+              value *= QQ(k)
+          return value
+
+      def chern_character_component(n):
+          R = PolynomialRing(QQ, ["c%s" % i for i in range(1, n + 1)])
+          c = R.gens()
+          power_sums = {}
+          for m in range(1, n + 1):
+              total = R(0)
+              for j in range(1, m):
+                  total += (1 if j % 2 else -1) * c[j - 1] * power_sums[m - j]
+              total += (1 if (m + 1) % 2 == 0 else -1) * QQ(m) * c[m - 1]
+              power_sums[m] = total
+          return power_sums[n] / factorial(n)
+
+      print(chern_character_component(6))
+Similar tables:
+- table: HREF{T334}[Todd polynomials]
+  relation: store another universal characteristic-class polynomial in the same Chern-class variables
+- table: HREF{Power_sum_symmetric_polynomials}[Power sum symmetric polynomials]
+  relation: give the power sums $p_n$ whose Chern-class expressions determine these polynomials
+- table: HREF{Elementary_symmetric_polynomials}[Elementary symmetric polynomials]
+  relation: give the elementary symmetric functions $e_j$ that are renamed as Chern classes here
+Links:
+  ChernWiki:
+    title: 'Wikipedia: Chern class'
+    url: https://en.wikipedia.org/wiki/Chern_class#The_Chern_character
+Keywords:
+- Chern character polynomials
+- Chern character in Chern classes
+- characteristic class Chern character polynomial
+- Newton identities Chern character
+Tags:
+- characteristic classes
+- polynomial
+- algebra
+Data properties:
+  type: Q[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every entry with $1\leq n\leq 6$; $\mathrm{ch}_7$ is the first
+    component needing more than six variables, which is the most a stored
+    polynomial may have
+  rigour details: >-
+    The generator computes exact rational coefficients from Formula
+    CITE{formula-power-sum} and Formula CITE{formula-newton}. Every stored
+    component was checked against the Chern-root definition in Formula
+    CITE{formula-component}.
+Display properties:
+  number-header: $\mathrm{ch}_n$
