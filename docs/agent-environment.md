@@ -5282,3 +5282,34 @@ Evidence: 2026-09-18, T326 critique. `/tmp/prev326.py` and
 `/tmp/prev-*.html`; the five empty renders were 6.2 to 7.1 KB where a rendered
 piece is 14 to 20 KB. Nothing was listening on 127.0.0.1:1080 again, and
 `curl` without the proxy answered 200, as the note above already says.
+
+## A table's `Programs` snippet can be run verbatim by mounting `generate.py` beside a two-line runner
+
+What happened: the T328 critique wanted to know whether the `Programs` section
+works for a reader, not just whether it looks right. The snippet begins "In the
+directory containing the attached generate.py:" and then does `from generate
+import LebesgueConstantsInterpolationNodes`. `agents/sage.sh` copies every file
+named on its command line into `/work` and runs the first one there, and the
+container's working directory is `/work`, so a bare `from generate import ...`
+resolves with no path juggling:
+
+    agents/sage.sh /tmp/t328_programs.py \
+        generators/lebesgue-constants-interpolation-nodes/generate.py
+
+where `/tmp/t328_programs.py` is the snippet copied out of the document with
+nothing added. It printed a 157-digit ball for a degree one past the end of the
+table, in about ten seconds. That is a real check a critique can make cheaply,
+and it is a different check from reading the snippet: it catches a stale class
+name, a renamed parameter key, or a `value()` signature that has moved.
+
+This is not the `/work/generate.py` trap recorded above -- that one is about a
+*runner* that has to name mounted files by their `/work/<basename>` paths.
+Here the snippet names nothing, and the point is that it does not have to.
+
+What to do instead: when a critique reaches `Programs`, run it. Copy the code
+out of the document unchanged into `/tmp`, mount the generator after it, and
+see what comes back.
+
+Evidence: 2026-09-18, T328 critique. `/tmp/t328_programs.py` printed
+`cwd /work files ['generate.py', 't328_programs.py']` and then
+`[3.10630115936782781142310041352131153497964688837426131147957999585470682827311412948015953779308387471972389753583006165128609628163204672822101380196268442 +/- 8.93e-158]`.
