@@ -426,12 +426,60 @@ class NormalisedLevelOneHeckeEigenvalues(numberdb.Generator):
         }
 
 
+def fill_draft_once(generator, message):
+    """Fill a fresh draft without the client's empty upsert probe."""
+    from numberdb._generate import (
+        _check_precision,
+        _check_rigour,
+        _producer,
+        _run_name,
+        _source_files,
+    )
+    from numberdb._write import Entries, attach, submit_entries, to_text
+
+    table = generator.table
+    run = _run_name(generator)
+    entries = Entries(*generator.parameters)
+
+    for params in generator.enumerate():
+        params = dict(params)
+        wanted = generator.digits_for(params)
+        entry = generator._entry(params, wanted)
+        value = entry["number"]
+        identity = ",".join(str(params[name]) for name in generator.parameters)
+        _check_rigour(generator, table, identity, value)
+
+        written = to_text(value, wanted, generator.format)
+        _check_precision(table, identity, written, wanted, lowering=False)
+
+        record = dict(entry)
+        record.pop("digits", None)
+        entries.add(**params, **record, digits=wanted)
+
+    answer = submit_entries(
+        table,
+        entries,
+        message=message,
+        produced_by=_producer(generator, os.environ.get("NUMBERDB_ASSISTED_BY", "")),
+        upsert=False,
+        run=run,
+        rigour=generator.rigour,
+    )
+
+    for name, body in sorted(_source_files(generator).items()):
+        attach(table, name, body, run=run, message=message,
+               rigour=generator.rigour)
+
+    return answer
+
+
 if __name__ == "__main__":
     _key_from_stdin()
     generator = NormalisedLevelOneHeckeEigenvalues()
 
     if os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
-        print(generator.publish(
+        print(fill_draft_once(
+            generator,
             message=("normalised Hecke eigenvalues for level one cusp forms "
                      "with weights up to %d and primes up to %d")
                     % (MAX_WEIGHT, PRIMES[-1])))
