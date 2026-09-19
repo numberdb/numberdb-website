@@ -5955,3 +5955,131 @@ characteristic-class polynomial in the same family of proposals" -- prose
 about this site's queue, in the section the audit's own `sections` tuple
 names. `GET /api/table?id=T336` returns `Similar tables` as a JSON list, as
 do T334 and T335.
+
+## A public tag page lists private drafts, and `/files/<tid>` serves them to anybody
+
+What happened: the T337 critique checked, as a matter of routine, that the
+table's three tags reach other tables. `https://numberdb.org/tags/characteristic+classes`,
+fetched with **no key and no session**, answers 200 and lists six tables --
+among them **T336** and **T337**, both private drafts, with their titles and
+their entry counts:
+
+    T337:  $\hat A$-genus polynomials $\hat A_n(p_1,\dots,p_n)$
+           (6 rational polynomials)
+    T336:  Hirzebruch $L$-polynomials $L_n(p_1,\dots,p_n)$
+           (7 rational polynomials)
+
+Each row links to `/T337` and `/T336`, which answer 404 to the same
+unauthenticated client, because `views.table_by_tid` calls `_refuse_a_draft`
+and the tag view does not. So a public page both discloses the drafts and
+carries two broken links to them.
+
+The same hole is open one street over. `https://numberdb.org/files/T337`
+answers 200 with no key, and serves the draft's title, the message of its
+current revision ("shorten A-hat genus definition") and `generate.py` in full
+at `/files/T337/generate.py` -- 13,680 bytes. `views.table_files` and
+`views.table_file` do not call `_refuse_a_draft` either.
+
+This matters beyond tidiness. `_refuse_a_draft` answers 404 rather than 403
+deliberately, with a docstring saying why: "Answering 'you may not see this'
+would confirm that a table with that name or that number exists, which is the
+one thing a private draft should not tell a stranger." The tag page tells a
+stranger the number, the title, the type and the size; the files page hands
+over the code.
+
+What to do instead: nothing an agent can do -- this is a site fix, and a
+person has to make it. `/tags/<tag>`, `/files/<tid>`, `/files/<tid>/<name>`
+and `/bundle/<tid>` should each filter by the same `may_see` that
+`_refuse_a_draft` uses, and `views.tag` should exclude unpublished tables from
+its queryset rather than refusing after the fact, so the count at the top of
+the page is right too. Worth a test beside `test_drafts.py`, which already
+covers the table page.
+
+Meanwhile it is *useful* to a critique run, and that is worth saying out loud
+so nobody mistakes it for a feature: `/files/<tid>/generate.py` is the
+cheapest way to read a draft's attached generator from this box, needing no
+key and no Sage container. When it is fixed, fetch it with the key through
+the API or out of the bundle instead.
+
+Evidence: 2026-09-19, T337 critique. `curl -s https://numberdb.org/tags/characteristic+classes`
+with no headers -> 200, containing `<a href="/T337">` and `<a href="/T336">`;
+`curl -o /dev/null -w '%{http_code}' https://numberdb.org/T337` -> 404.
+`curl https://numberdb.org/files/T337` -> 200, `/tmp/files_nokey.html`.
+`_refuse_a_draft` is `numberdb_app/views.py:624`; the calls are at lines 612,
+620 and 1522 and nowhere else.
+
+## The SOCKS proxy was dead and was not needed: the builder reaches numberdb.org directly
+
+What happened: the T337 critique opened with the command the prompt gives,
+
+    curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/T337
+
+and got `exit 7` -- "failed to connect to proxy" -- five times running.
+Nothing was listening on 1080 and there was no `ssh -N -D` process on the
+box. The note above ("A test run can make the server unreachable while the
+site stays up") describes the proxy dying with its ssh and having to be
+restarted by hand, and that reads exactly like this; but `ssh` is refused to
+an agent, so there was nothing to restart.
+
+It did not matter. This run's environment has `NUMBERDB_REMOTE=local` and
+`NUMBERDB_MACHINE=aws-builder`: the agents are running **on** the builder,
+which talks to numberdb.org over the public internet like any outside
+contributor. `curl -s https://numberdb.org/` with no proxy flag answered 200
+in under a second, and every fetch in that critique -- the skill, the API,
+`/preview`, `/tags`, `/files`, Wikipedia -- went straight out.
+
+What to do instead: on the builder, drop `--socks5-hostname 127.0.0.1:1080`.
+Try the direct fetch first and only reach for the proxy if it fails; a dead
+proxy and a dead site look identical from behind the proxy, and on this
+machine the proxy is the more likely of the two to be the thing that is dead.
+`NUMBERDB_REMOTE` is the flag that says which situation you are in.
+
+Evidence: 2026-09-19. Five `curl --socks5-hostname` attempts, all exit 7;
+`ps aux | grep 'ssh -N'` and `ss -ltn | grep 1080` both empty; `curl -s -w
+'%{http_code}' https://numberdb.org/` -> 200, 19,903 bytes.
+
+## `/preview?table=<yaml>` renders a draft without a database, in pieces of about 4 KB
+
+What happened: before finding that `/tmp/t335_render.py` and the sqlite
+recipe were still on the box, the T337 critique rendered the draft the other
+way -- `views.preview` takes the whole document as a GET parameter and
+renders it with no database at all, which is the shortest path to "what does
+this actually look like" when the sqlite recipe is more than the question
+needs.
+
+It is bounded by the request line, twice over. nginx answers **414** above
+about 8 KB of URL, and gunicorn answers **400 "Request Line is too large
+(4901 > 4094)"** below that, so the working limit is about **4,000 characters
+of URL-encoded YAML** -- a fifth of a typical table. The document has to be
+split, and two things about splitting it are not obvious:
+
+* **Every chunk needs a `Numbers` key**, even one entry. Without it the page
+  renders with `Error while parsing numbers: cannot access local variable
+  'number_section'` and no table at all.
+* **A `CITE` whose target is in another chunk renders as `CITE-broken`**, with
+  the raw key printed at the reader. The first pass here put `Definition` and
+  `Formulas` in different chunks and produced three convincing "a raw key
+  leaks into the prose" findings, all of them artifacts. Keep a section and
+  everything it cites in the same chunk, or check the finding again with them
+  together before believing it.
+
+    python3 -c "import json,yaml; d=json.load(open('/tmp/T337.json')); \
+      sub={k:d[k] for k in ['Title','Definition','Formulas','Links']}; \
+      sub['Numbers']={'1': d['Numbers']['1']}; \
+      open('/tmp/c1.yaml','w').write(yaml.dump(sub,sort_keys=False,width=10**6))"
+    curl -s -G --data-urlencode "table@/tmp/c1.yaml" https://numberdb.org/preview
+
+`/preview/T337` -- the route that takes a tid -- is no use for this: it calls
+`_refuse_a_draft`, which tests `request.user`, and an API key is not a
+session.
+
+What to do instead: use the sqlite recipe when the question is about the whole
+page (section order, anchors, the numbering `Formulas`-before-`Comments`
+produces), and `/preview?table=` when it is about one section's prose and you
+want an answer in ten seconds. `/preview` is also the only one of the two that
+renders the *live* document rather than a reconstruction, so it is the right
+check for "does this edit render" before writing it.
+
+Evidence: 2026-09-19, T337 critique. 5,735 encoded characters -> gunicorn 400;
+11,296 -> nginx 414; 2,284 to 5,023 -> 200. `/preview/T337` with
+`X-API-Key` -> 404.
