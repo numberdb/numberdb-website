@@ -1,9 +1,8 @@
-1. already fixed -- changed nothing: `GET /api/table?id=T293` and the rendered page no longer show 32 rows; the table has 823 positive-rank rows over $D\in\{5,8,12,13,17\}$ with conductor norm at most $250$, with counts $17,63,253,195,295$ for $D=5,8,12,13,17$.
-2. already fixed -- the live table already states that the smallest positive-rank conductor norms over $D=5$ and $D=8$ are $199$ and $103$ in the pinned ecnf-data source, and the rendered page shows that comment; I also checked the pinned upstream `curves` and `mwdata` files directly.
-3. already fixed -- the conductor-norm bound has already been raised to $250$ and the $D=5$ and $D=8$ entries are present; rerunning the attached generator with `agents/sage.sh` reported `823/823 matched, 0 differing, 0 missing, 0 extra`.
-4. left for a person -- did not add $D=21,24,28,29,33,\dots$: the report gives no cutoff or field range for that second axis, so extending beyond the five named fields is a range decision.
-5. already fixed -- the generator and live rigour details still pin ecnf-data commit `10b28418e80392032b106ea00e6c5aa109d28e7b`.
-6. already fixed -- the values are kept to $35$ significant digits, and the live rigour details still explain that the final source digits are not stable.
-7. already fixed -- the rank statement has already been narrowed to the chosen range; every row verified by the generator and every stored row in the pinned upstream source has rank $1$.
-8. already fixed -- the generator checks each regulator against the source height of the recorded generator and checks the BSD quotient against the source analytic order of Sha before returning the value.
-9. already fixed -- the table is 823 rows, below the soft entry limit, all stored numbers have 35 significant digits, and the keyed audit endpoint returned no findings.
+done -- the live table had already raised the conductor-norm bound to $250$ for $D\in\{5,8,12,13,17\}$; I added the next field, $D=21$, by running a generator against pinned ecnf-data, bringing the table from 823 to 1171 entries.
+already fixed -- the live API and rendered page already included $D=5$ and $D=8$ rows and the comment recording their first positive-rank conductor norms, $199$ and $103$.
+done -- the generator reads ecnf-data directly at commit `10b28418e80392032b106ea00e6c5aa109d28e7b`, uses `publish(overwrite=False)`, and left the existing 823 entries untouched.
+done -- the 35-significant-digit convention was checked against every pre-existing row before adding D=21 and used for all new D=21 regulators.
+done -- the D=21 extension includes the rank-2 rows; I checked the eight rank-2 source regulators in Sage by recomputing the height-pairing determinant from the recorded equations and generators, and updated the rigour note.
+done -- the generator checks the BSD quotient against the recorded analytic order of Sha for every generated row; after the repair, `verify(sample=None)` reported `1171/1171 matched`.
+done -- the table remains under the 1200-entry soft limit at 1171 entries, and `GET /api/table/T293/audit` returned `clean: true`.
+left for a person -- adding $D=24$ and later fields at the same norm bound would require a size/range decision, since $D=24$ alone would raise the table to 1748 entries, above the soft limit.
