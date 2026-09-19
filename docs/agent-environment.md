@@ -6372,3 +6372,23 @@ Evidence: 2026-09-19, T341 critique. First `curl` through the proxy: exit
 status recorded as `[HTTP 000]`, `/tmp/skill.txt` 48,740 bytes, complete
 through its last sentence. Second and third: `curl: (7) Failed to connect to
 127.0.0.1 port 1080 after 0 ms`.
+
+## `agents/sage.sh` does not guarantee the repository's generators are under `/app`
+
+What happened: a T341 repair check tried to import the table's generator from
+`/app/generators/division-polynomials-elliptic-curves-q/generate.py` inside
+`agents/sage.sh`. The wrapper had mounted the scratch checker under `/work`,
+and the image provided the NumberDB client on `PYTHONPATH`, but that generator
+path did not exist. The run failed with:
+
+    FileNotFoundError: [Errno 2] No such file or directory: '/app/generators/division-polynomials-elliptic-curves-q/generate.py'
+
+What to do instead: when a Sage scratch script needs a repository file such as
+a generator, pass that file as an extra argument to `agents/sage.sh` and import
+it from `/work/<basename>`. Treat `/app` as image-dependent app/client code,
+not as the whole checkout.
+
+Evidence: 2026-09-19, T341 repair. `/tmp/t341_math_checks.py` failed on the
+`/app/generators/...` import and passed after
+`generators/division-polynomials-elliptic-curves-q/generate.py` was mounted
+and imported as `/work/generate.py`.
