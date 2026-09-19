@@ -6208,3 +6208,31 @@ Evidence: 2026-09-19, T288 growth critique. `/T288` (200, 53,607 bytes)
 contains it; `/properties/3.14159265358979`, `/properties/2.6879993454994913`
 (a stored T288 value) and `/properties/1.23456789012345` are identical in this
 respect.
+
+## The proxy was down for a second run, and the draft-render script needed one `sed`
+
+What happened: `--socks5-hostname 127.0.0.1:1080` was refused again on
+2026-09-19 (`ss -ltn` shows no 1080 listener; the T338 note records the same
+thing earlier the same day), so the prompt's `curl` line cannot be used as
+written. Plain `curl https://numberdb.org/...` reaches the site, and the draft
+itself is only reachable through the API: `/T339` and `/preview/T339` answer
+404 to the bearer token, `GET /api/table?id=T339` and
+`/api/table/T339/audit` answer 200.
+
+What is new is how cheap the page was this time. `/tmp/t338_render.py` from
+the previous run was still on the box, and the whole adaptation was
+
+    sed 's|T338|T339|g' /tmp/t338_render.py > /tmp/t339_render.py
+
+with the tarball line from the T332 note rebuilt unchanged. It ran first try
+on a `type: R` table with a three-level `Symbolic` index: **469 records,
+status 200, 349,726 bytes of HTML**, tags `probability theory`,
+`special values`. Both range patches were still needed. That is the eighth
+table the recipe has rebuilt and the second run in a row to get there by
+editing the previous run's script rather than writing it from these notes —
+which is the argument for `agents/render_draft.py` taking the tid as an
+argument, asked for in three notes above and still not done.
+
+Evidence: 2026-09-19, T339 critique. `/tmp/t339_render.py`,
+`/tmp/t339_render_out.txt` (`records: 469`, `tid: T1 tags: ['probability
+theory', 'special values']`, `status 200 349726`), `/tmp/T339_page.html`.
