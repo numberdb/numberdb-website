@@ -1,50 +1,46 @@
 """Regulators of elliptic curves over real quadratic fields -- numberdb.org/T293.
 
-For an elliptic curve E over K = Q(sqrt(D)), this stores the regulator of the
-Mordell-Weil lattice with the absolute Neron-Tate height pairing. In the range
-used here, every source curve has rank 0 or 1, so a positive-rank regulator is
-the height of the recorded generator and a rank-zero regulator is exactly 1.
-
 Run it with SageMath:
 
     $ sage -pip install numberdb          # once
-    $ sage -python generate.py            # check the table against this code
-    $ sage -python generate.py --publish  # fill the draft, with NUMBERDB_API_KEY set
+    $ sage -python generate.py            # preview the changes
+    $ sage -python generate.py --publish  # send them
 
-The curve list and regulator values are from John Cremona's ecnf-data
-repository, pinned in curve_data.py. Each row is checked against the source
-height column and against the Birch-Swinnerton-Dyer quotient using ecnf-data's
-Lvalue, Omega, torsion, finite Tamagawa product and Sha.
+The file reads the pinned ecnf-data commit named below and writes regulators
+of positive-rank elliptic curves over the six real quadratic fields of
+smallest discriminant, with conductor norm at most 250. It keeps 35
+significant digits from ecnf-data's `reg` field, checks the BSD quotient
+against the recorded analytic order of Sha, and checks the D=21 rank-2
+regulators by recomputing the height-pairing determinant from the recorded
+generators and equations.
 """
 
 import os
+import re
 import sys
-import time
-from decimal import Decimal, localcontext
+from decimal import Decimal, getcontext
+from urllib.request import urlopen
 
 import numberdb.sage as numberdb
-from numberdb._generate import _producer
-from numberdb._write import Entries, attach, submit_entries
-
-from curve_data import MAX_CONDUCTOR_NORM, RECORDS, SOURCE_COMMIT
-
-
-TABLE = os.environ.get("NUMBERDB_TABLE", "T293")
-DIGITS = 38
-BSD_RELATIVE_TOLERANCE = Decimal("5e-30")
-
-_RECORDS_BY_KEY = {
-    (
-        str(record["D"]),
-        record["conductor"],
-        record["class"],
-        str(record["curve"]),
-    ): record
-    for record in RECORDS
-}
+from sage.misc.sage_eval import sage_eval
+from sage.rings.number_field.number_field import NumberField
+from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+from sage.rings.rational_field import QQ
+from sage.rings.real_mpfr import RR
+from sage.schemes.elliptic_curves.constructor import EllipticCurve
 
 
-def _key_from_stdin():
+COMMIT = "10b28418e80392032b106ea00e6c5aa109d28e7b"
+BASE = f"https://raw.githubusercontent.com/JohnCremona/ecnf-data/{COMMIT}/RQF"
+FIELDS = (5, 8, 12, 13, 17, 21)
+CONDUCTOR_NORM_BOUND = 250
+DIGITS = 35
+BSD_TOLERANCE = Decimal("1e-25")
+
+getcontext().prec = 100
+
+
+def key_from_stdin():
     if os.environ.get("NUMBERDB_KEY_FROM_STDIN") != "1":
         return
     token = sys.stdin.read().strip()
@@ -54,182 +50,220 @@ def _key_from_stdin():
         os.environ["NUMBERDB_API_KEY"] = token
 
 
-def _decimal(text):
-    return Decimal(str(text).strip())
+def source_file(kind, D):
+    return urlopen(f"{BASE}/{kind}.2.2.{D}.1").read().decode().splitlines()
 
 
-def _relative_error(got, expected):
-    got = _decimal(got)
-    expected = _decimal(expected)
-    scale = max(abs(expected), Decimal(1))
-    return abs(got - expected) / scale
+def key_of(parts):
+    return (parts[1], parts[2], parts[3])
 
 
-def _require_close(label, got, expected, tolerance):
-    error = _relative_error(got, expected)
-    if error > tolerance:
-        raise ArithmeticError(
-            "%s: relative error %s is larger than %s; got %s, expected %s"
-            % (label, error, tolerance, got, expected)
+def label_of(parts):
+    return f"{parts[1]}-{parts[2]}{parts[3]}"
+
+
+def conductor_norm(parts):
+    return int(parts[1].split(".")[0])
+
+
+def sig_trunc(text, digits=DIGITS):
+    sign = ""
+    text = text.strip()
+    if text.startswith("-"):
+        sign, text = "-", text[1:]
+    out = []
+    count = 0
+    started = False
+    for char in text:
+        if char.isdigit():
+            if char != "0" or started:
+                started = True
+                if count >= digits:
+                    continue
+                count += 1
+            out.append(char)
+        else:
+            out.append(char)
+    result = "".join(out)
+    if result.endswith("."):
+        result = result[:-1]
+    return sign + result
+
+
+def normalize_latex(text):
+    text = text.replace("*w", "w")
+    text = text.replace(r"\phi", "w")
+    return re.sub(r"(?<![A-Za-z\\])a(?![A-Za-z])", "w", text)
+
+
+def tamagawa_product(local_data):
+    if not local_data or local_data == "[]":
+        return 1
+    product = 1
+    for item in local_data.split(";"):
+        if item:
+            product *= int(item.split(":")[-1])
+    return product
+
+
+def field_polynomial(D):
+    R = PolynomialRing(QQ, "x")
+    x = R.gen()
+    if D % 4 == 1:
+        return x * x - x - QQ(D - 1) / QQ(4)
+    return x * x - QQ(D) / QQ(4)
+
+
+def field(D):
+    return NumberField(field_polynomial(D), "w", check=False)
+
+
+def field_element(K, pair):
+    return QQ(pair[0]) + QQ(pair[1]) * K.gen()
+
+
+def parse_nf_element(K, text):
+    a, b = text.split(",")
+    return QQ(a) + QQ(b) * K.gen()
+
+
+def bsd_quotient(row, cp, D):
+    r = int(row["rank"])
+    torsion_order = Decimal(row["torsion_order"])
+    lvalue = Decimal(row["lvalue"])
+    omega = Decimal(row["omega"])
+    regulator = Decimal(row["reg"])
+    numerator = lvalue * torsion_order * torsion_order * Decimal(D).sqrt()
+    denominator = (Decimal(2) ** r) * omega * regulator * Decimal(cp)
+    return numerator / denominator
+
+
+def read_rows():
+    rows = []
+    for D in FIELDS:
+        curves = {}
+        for line in source_file("curves", D):
+            parts = line.split()
+            curves[key_of(parts)] = {
+                "ideal": normalize_latex(parts[4]),
+                "ainvs": parts[6],
+                "equation": normalize_latex(parts[10]),
+            }
+        local = {}
+        for line in source_file("local_data", D):
+            parts = line.split()
+            local[key_of(parts)] = parts[4] if len(parts) > 4 else ""
+        for line in source_file("mwdata", D):
+            parts = line.split()
+            if conductor_norm(parts) > CONDUCTOR_NORM_BOUND:
+                continue
+            if parts[4] == "?" or int(parts[4]) <= 0:
+                continue
+            curve = curves[key_of(parts)]
+            row = {
+                "D": D,
+                "label": label_of(parts),
+                "rank": parts[4],
+                "rank_bounds": parts[5],
+                "analytic_rank": parts[6],
+                "ngens": parts[7],
+                "gens": parts[8],
+                "heights": parts[9],
+                "reg": parts[10],
+                "torsion_order": parts[11],
+                "torsion_structure": parts[12],
+                "torsion_gens": parts[13],
+                "omega": parts[14],
+                "lvalue": parts[15],
+                "sha": parts[16],
+                "ideal": curve["ideal"],
+                "ainvs": curve["ainvs"],
+                "equation": curve["equation"],
+                "cp": tamagawa_product(local[key_of(parts)]),
+            }
+            check_source_row(row)
+            rows.append(row)
+    check_rank_two_determinants(rows)
+    return rows
+
+
+def check_source_row(row):
+    rank = int(row["rank"])
+    if rank == 1:
+        height = row["heights"].strip()[1:-1]
+        if sig_trunc(height, DIGITS) != sig_trunc(row["reg"], DIGITS):
+            raise ValueError(f'{row["D"]} {row["label"]}: rank-1 height disagrees with reg')
+    quotient = bsd_quotient(row, row["cp"], row["D"])
+    sha = Decimal(row["sha"])
+    if abs(quotient - sha) > BSD_TOLERANCE:
+        raise ValueError(
+            f'{row["D"]} {row["label"]}: BSD quotient {quotient} != Sha {sha}'
         )
 
 
-def _rank_one_height(record):
-    heights = record["heights"]
-    if not (heights.startswith("[") and heights.endswith("]")):
-        raise ArithmeticError("%s: malformed height list %s"
-                              % (record["label"], heights))
-    pieces = [part for part in heights[1:-1].split(",") if part]
-    if len(pieces) != 1:
-        raise ArithmeticError("%s: expected one generator height, got %s"
-                              % (record["label"], heights))
-    return pieces[0]
-
-
-def _check_rank_and_height(record):
-    rank = int(record["rank"])
-    if rank == 0:
-        if int(record["ngens"]) != 0 or record["regulator"] != "1":
-            raise ArithmeticError(
-                "%s: rank-zero row has ngens=%s and regulator=%s"
-                % (record["label"], record["ngens"], record["regulator"])
-            )
-        return
-    if rank != 1:
-        raise ArithmeticError("%s: rank %s is outside this generator's check"
-                              % (record["label"], rank))
-    if int(record["ngens"]) != 1:
-        raise ArithmeticError("%s: rank-one row has ngens=%s"
-                              % (record["label"], record["ngens"]))
-    _require_close(
-        "%s regulator against generator height" % record["label"],
-        record["regulator"],
-        _rank_one_height(record),
-        Decimal("1e-37"),
-    )
-
-
-def _check_bsd_quotient(record):
-    with localcontext() as context:
-        context.prec = 90
-        numerator = (
-            _decimal(record["lvalue"])
-            * Decimal(int(record["torsion_order"]) ** 2)
-            * Decimal(int(record["D"])).sqrt()
-        )
-        denominator = (
-            (Decimal(2) ** int(record["rank"]))
-            * _decimal(record["omega"])
-            * _decimal(record["regulator"])
-            * Decimal(int(record["tamagawa_product"]))
-        )
-        quotient = numerator / denominator
-
-    _require_close(
-        "%s BSD quotient" % record["label"],
-        quotient,
-        Decimal(int(record["sha"])),
-        BSD_RELATIVE_TOLERANCE,
-    )
-
-
-def _equation_with_w(record):
-    equation = record["equation"].replace("\\phi", "w")
-    if record["D"] != 5:
-        equation = equation.replace("a", "w")
-    return equation
-
-
-def _entry_comment(record):
-    return (
-        "LMFDB curve %s has conductor ideal $%s$, rank $%d$, and equation $%s$."
-        % (
-            record["label"],
-            record["conductor_ideal"],
-            int(record["rank"]),
-            _equation_with_w(record),
-        )
-    )
+def check_rank_two_determinants(rows):
+    by_D = {}
+    for row in rows:
+        if int(row["rank"]) == 2:
+            by_D.setdefault(row["D"], []).append(row)
+    for D, rank_two_rows in by_D.items():
+        K = field(D)
+        for row in rank_two_rows:
+            ainvs = [parse_nf_element(K, part) for part in row["ainvs"].split(";")]
+            E = EllipticCurve(K, ainvs)
+            gens = sage_eval(row["gens"], locals={"QQ": QQ})
+            points = [
+                E([field_element(K, coordinate) for coordinate in point])
+                for point in gens
+            ]
+            determinant = RR(E.height_pairing_matrix(points).det())
+            source = RR(row["reg"])
+            relative = abs(determinant - source) / max(abs(source), RR("1e-99"))
+            if relative > RR("1e-10"):
+                raise ValueError(
+                    f'{D} {row["label"]}: rank-2 determinant {determinant} '
+                    f"disagrees with source {source}"
+                )
 
 
 class RealQuadraticEllipticRegulators(numberdb.Generator):
-    """Generator for T293."""
-
-    table = TABLE
-    parameters = ("D", "conductor", "class", "curve")
+    table = "T293"
+    parameters = ("D", "label")
     type = "R"
     digits = DIGITS
     rigour = "heuristic"
-    files = ("generate.py", "curve_data.py")
+
+    def __init__(self):
+        self.rows = read_rows()
 
     def enumerate(self):
-        for record in RECORDS:
-            yield {
-                "D": str(record["D"]),
-                "conductor": record["conductor"],
-                "class": record["class"],
-                "curve": str(record["curve"]),
-            }
+        for row in self.rows:
+            yield {"D": str(row["D"]), "label": row["label"]}
 
     def value(self, params, digits):
-        record = _RECORDS_BY_KEY[
-            (
-                str(params["D"]),
-                params["conductor"],
-                params["class"],
-                str(params["curve"]),
-            )
-        ]
-        _check_rank_and_height(record)
-        _check_bsd_quotient(record)
-        value = 1 if int(record["rank"]) == 0 else record["regulator"]
-        return {"number": value, "comment": _entry_comment(record)}
-
-
-def _source_path(filename):
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
-
-
-def fill_draft_once(generator, message):
-    """Fill a fresh prose draft without the client's empty upsert probe."""
-    run = "real-quadratic-elliptic-regulators-%d" % int(time.time())
-    entries = Entries(*generator.parameters)
-    for params in generator.enumerate():
-        entries.add(**params, **generator.value(params, generator.digits))
-
-    answer = submit_entries(
-        generator.table,
-        entries,
-        message=message,
-        produced_by=_producer(generator),
-        upsert=False,
-        run=run,
-        rigour=generator.rigour,
-    )
-    for filename in generator.files:
-        with open(_source_path(filename), encoding="utf8") as handle:
-            attach(
-                generator.table,
-                filename,
-                handle.read(),
-                run=run,
-                message=message,
-                rigour=generator.rigour,
-            )
-    return answer
+        D = int(params["D"])
+        label = params["label"]
+        for row in self.rows:
+            if row["D"] == D and row["label"] == label:
+                field_label = f"2.2.{D}.1-{label}"
+                return {
+                    "number": sig_trunc(row["reg"], digits),
+                    "comment": (
+                        f"LMFDB curve {field_label} has conductor ideal "
+                        f'${row["ideal"]}$, rank ${row["rank"]}$, and equation '
+                        f'${row["equation"]}$.'
+                    ),
+                }
+        raise KeyError(params)
 
 
 if __name__ == "__main__":
-    _key_from_stdin()
+    key_from_stdin()
     generator = RealQuadraticEllipticRegulators()
     if os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
-        print(fill_draft_once(
-            generator,
-            "elliptic-curve regulators over real quadratic fields from "
-            "ecnf-data commit %s for conductor norm <= %d"
-            % (SOURCE_COMMIT[:12], MAX_CONDUCTOR_NORM),
+        print(generator.publish(
+            overwrite=False,
+            message="refresh rank-2-aware generator for conductor norm <= 250",
         ))
     else:
-        report = generator.verify(sample=None)
-        print(report)
-        sys.exit(0 if report.ok else 1)
+        print(generator.preview(overwrite=False))
