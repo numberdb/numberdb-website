@@ -3,13 +3,11 @@
 # a person's act on the site.
 Title: Minimisers in the core threshold formula of random $k$-uniform hypergraphs
 Definition: >-
-  For integers $k\geq2$ and $r\geq2$, other than $(k,r)=(2,2)$,
-  $\lambda_{k,r}$ is the positive $\lambda$ that minimises
-  $\lambda/(kQ(\lambda,r-1)^{k-1})$, where
-  $Q(\lambda,s)=\mathbb{P}(\mathrm{Po}(\lambda)\geq s)$. This minimum gives
-  the $r$-core threshold $c_{k,r}$ of a random $k$-uniform hypergraph
-  CITE{WikiHypergraph}; when $k=2$, it is half the usual average-degree
-  threshold of a random graph.
+  For integers $k\geq2$ and $r\geq2$, except $(2,2)$, $\lambda_{k,r}$ is
+  the positive $\lambda$ that minimises
+  $\lambda/(kQ(\lambda,r-1)^{k-1})$; here
+  $Q(\lambda,s)=\mathbb{P}(\mathrm{Po}(\lambda)\geq s)$. The formula is for
+  random $k$-uniform hypergraphs CITE{WikiHypergraph}.
 Keywords: random hypergraph core, Poisson parameter, core threshold minimiser
 Parameters:
   k:
