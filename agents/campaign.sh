@@ -330,6 +330,21 @@ while [ "$made" -lt "$builds" ]; do
 		say "the queue answered something this cannot read: $next"
 		exit 8
 	fi
+
+	# Claim it before spending anything, so that the worker beside this one
+	# takes a different table. The checklist is the queue and a claim is a
+	# `- [~]` on it, which `waiting()` has always skipped.
+	#
+	# Without this, two workers read the same checklist, pick the same first
+	# unbuilt title and spend fifteen minutes each discovering that the other
+	# took the draft -- the site refuses a duplicate title, which is safe and
+	# wasteful. A claim that is never settled is cleared by `release` below,
+	# or left as `- [~]` for a person if the campaign dies mid-build.
+	if ! python3 agents/queue.py claim "$in_family" "$proposal" \
+			--worker "$NAME" >/dev/null 2>&1; then
+		say "could not claim $proposal in #$in_family; another worker has it"
+		continue
+	fi
 	#Finish the family you are in. Set after the first build of a family, so
 	#that a campaign started with no preference still picks up where the last
 	#one stopped rather than opening a new family beside a half-built one.
@@ -503,6 +518,12 @@ while [ "$made" -lt "$builds" ]; do
 	if [ -n "$tid" ]; then
 		python3 agents/queue.py built "$in_family" "$proposal" "$tid" \
 			|| say "could not tick $proposal in #$in_family; do it by hand"
+	else
+		#Nothing was built, so the claim goes back: a proposal held by a
+		#worker that did not build it is invisible to every other worker, and
+		#the family would sit open with nobody able to take it.
+		python3 agents/queue.py release "$in_family" "$proposal" >/dev/null 2>&1 \
+			|| say "could not release $proposal in #$in_family; it reads as claimed"
 	fi
 	if [ -n "$tid" ]; then
 		say "reading $tid as a reader would"
