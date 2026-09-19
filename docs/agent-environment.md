@@ -5910,3 +5910,48 @@ Evidence: 2026-09-19. `ss -ltn` shows nothing on 1080 and no ssh tunnel in
 `ps`. `curl --socks5-hostname 127.0.0.1:1080 https://numberdb.org/skill` gave
 `000 0` while leaving a 47,534-byte file in place; direct `curl` gave
 `200 48740`, and the two files differ.
+
+## `audit_table`'s prose rules never read a `Similar tables` relation
+
+What happened: T336's `Similar tables` glosses T335 as "store another
+universal characteristic-class polynomial **in the same family of
+proposals**", which is a fact about this site's queue rather than about the
+mathematics, and it names "Bernoulli numbers" in a relation without linking
+it. `GET /api/table/T336/audit` answers `{"findings": [], "clean": true}`.
+
+The section is listed as one to read. `_prose_faults` in
+`numberdb_app/management/commands/audit_table.py` opens
+
+    sections = ('Definition', 'Comments', 'Formulas', 'Similar tables')
+    for name in sections:
+        blob = tree.get(name)
+        if isinstance(blob, str):
+            texts.append((name, blob))
+        elif isinstance(blob, dict):
+            texts.extend(...)
+
+`Similar tables` is neither. `tree_of` is `yaml.load(..., Loader=BaseLoader)`
+on the stored document, and the section is written as a *list* of `{table,
+relation}` mappings -- T334, T335 and T336 all return a list from
+`GET /api/table?id=...`. So the `elif` never fires and the section
+contributes nothing to `texts`. Six rules run over `texts` and none of them
+has ever seen a relation: the editorial-phrase rule, the positional-phrase
+rule, `_POINTING`, `_NARRATION`, "names a family and does not link it", and
+"writes `X HREF{X}` -- put the link on the name". The last two matter most
+here, because a relation is exactly where one table names another in prose.
+
+What to do instead: until it is fixed, a critique should read every
+`Similar tables` relation by hand and not take a clean audit as covering
+them. The fix is a `list` branch that appends one entry per row -- but it
+must join the row's `table` and `relation` into a single text, not scan them
+separately. Almost every row here is `HREF{Bernoulli_numbers}[Bernoulli
+numbers]` in `table` and the name again in `relation`, so a rule fed the
+relation alone would report "names Bernoulli numbers and does not link it"
+on a row whose whole purpose is that link.
+
+Evidence: 2026-09-19, T336 critique. `GET /api/table/T336/audit` is clean
+against a document whose second relation reads "store another universal
+characteristic-class polynomial in the same family of proposals" -- prose
+about this site's queue, in the section the audit's own `sections` tuple
+names. `GET /api/table?id=T336` returns `Similar tables` as a JSON list, as
+do T334 and T335.
