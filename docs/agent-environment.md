@@ -6254,3 +6254,42 @@ argument, asked for in three notes above and still not done.
 Evidence: 2026-09-19, T339 critique. `/tmp/t339_render.py`,
 `/tmp/t339_render_out.txt` (`records: 469`, `tid: T1 tags: ['probability
 theory', 'special values']`, `status 200 349726`), `/tmp/T339_page.html`.
+
+## Walking the corpus through `numberdb.table` spends the read rate limit, and the raw HTTP path then says `429` instead of saying so
+
+What happened: to find out what the corpus already holds, this run called
+`numberdb.table('T%d')` for every T-number from 1 to 420 with no key. That
+works, and it is the only way to list the corpus (there is no call that does),
+but it costs one request per table. The next call after it answered
+
+    too many requests; retry in 182s
+
+through the client, and through `urllib` against
+`https://numberdb.org/api/tables?draft=yes` with the key in a header it
+answered a bare
+
+    HTTP Error 429: Too Many Requests
+
+with no body and no `Retry-After` that the error object exposed. A `429` with
+no text reads exactly like an authentication or an endpoint problem, and the
+run spent two turns wondering whether zeta3's key was being rejected before
+the client's own message named the cause. The limit cleared in about three
+minutes.
+
+Two things to do differently. Walk the T-numbers **once** per run and keep the
+titles in a variable or a `/tmp` file; a second walk to check for drafts is
+the call that hits the wall. And read a `429` from the API as rate limiting,
+not as a credentials failure: the client's message carries the retry time and
+the raw HTTP path does not, so prefer the client when something is refused.
+
+Also useful and cheap: drafts are simply the T-numbers above the last public
+one, and `numberdb.table` with `NUMBERDB_API_KEY` set answers "Table with id
+'T341' does not exist" for a number that has never been allocated. So
+twenty calls above the top of the corpus is the whole draft check, and today
+it showed T340 is the last table and nothing is in flight.
+
+Evidence: 2026-09-19 ideas run. `/tmp/corpus.py`, `/tmp/corpus2.py` (340
+titles, T1 to T340), then `/tmp/drafts.py` (`429` on two of three paths,
+`404` on `/api/drafts`) and `/tmp/drafts2.py` ("retry in 182s" on twenty-four
+consecutive calls, then the same script answering normally three minutes
+later).
