@@ -1,0 +1,134 @@
+# The table document for numberdb.org/T340. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Capacity of the $(d,k)$ run-length-limited constrained codes
+Definition: >-
+  For $0\leq d<k\leq\infty$, a binary $(d,k)$ run-length-limited constrained
+  sequence has at least $d$ and at most $k$ zeros between consecutive $1$s
+  CITE{Kovacevic} CITE{WikiRLL}. The table gives the same capacity $C(d,k)$
+  as one number in two conventions, the logarithmic units `nats` and `bits`.
+Parameters:
+  d:
+    type: Z
+    title: minimum zero run length
+    display: $d$
+    constraints: $d\geq0$ and $d<k$
+  k:
+    type: Symbolic
+    title: maximum zero run length
+    display: $k$
+    constraints: $k$ is an integer with $d<k$, or $k=\infty$
+  unit:
+    type: Symbolic
+    title: logarithmic unit
+    display: unit
+    constraints: "`nats` or `bits`"
+Comments:
+  comment-addresses: >-
+    Entry addresses use `inf` for $k=\infty$.
+  comment-boundary: >-
+    The first and last zero runs are treated differently in different
+    presentations of run-length-limited constraints; changing those boundary
+    conventions changes $N_{d,k}(n)$ by only a bounded factor and does not
+    change $C(d,k)$ CITE{Kovacevic}.
+  comment-units: >-
+    The `nats` rows use the natural logarithm, and the `bits` rows use the
+    base-two logarithm.
+Formulas:
+  formula-root: >-
+    Let $\rho$ be the unique real number in $(0,1)$ satisfying
+    $\sum_{i=d+1}^{k+1}\rho^i=1$, where for $k=\infty$ the sum is infinite.
+    Then $C(d,k)=-\log\rho$ in nats. Equivalently, for finite $k$,
+    $\lambda=1/\rho$ is the largest positive root of
+    $\lambda^{k+1}=\lambda^{k-d}+\lambda^{k-d-1}+\cdots+1$ CITE{TangBahl}.
+  formula-infinite: >-
+    For $k=\infty$, the root equation in Formula CITE{formula-root} is
+    $\rho^{d+1}+\rho=1$.
+  formula-units: >-
+    $C_{\mathrm{bits}}(d,k)=C_{\mathrm{nats}}(d,k)/\log 2$.
+  formula-counts: >-
+    If $N_{d,k}(n)$ counts length-$n$ sequences satisfying the constraint, then
+    $C(d,k)=\lim_{n\to\infty}n^{-1}\log N_{d,k}(n)$. With boundary conventions
+    that do not affect the limit,
+    $S_{d,k}(n)=\sum_{i=d+1}^{k+1}S_{d,k}(n-i)$ counts $(d,k)$-constrained
+    words assembled from blocks $0^d1,\ldots,0^k1$ CITE{Kovacevic}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.rational_field import QQ
+      from sage.rings.real_mpfi import RealIntervalField
+
+      RIF = RealIntervalField(numberdb.bits(100, losing=96))
+      def capacity(d, k, unit='bits'):
+          def f(x):
+              if k is None:
+                  return x**(d + 1) + x - 1
+              return sum(x**i for i in range(d + 1, k + 2)) - 1
+          lo, hi = QQ(0), QQ(1)
+          for _ in range(420):
+              mid = (lo + hi)/2
+              if f(mid) < 0:
+                  lo = mid
+              else:
+                  hi = mid
+          c = -RIF(lo, hi).log()
+          return c if unit == 'nats' else c/RIF(2).log()
+      capacity(1, None, 'bits')
+Similar tables:
+  - table: HREF{Shannon_entropies_of_discrete_probability_distributions}[Shannon entropies of discrete probability distributions]
+    relation: stores Shannon entropy of named probability distributions, rather than the capacity of a constrained system
+  - table: HREF{Differential_entropies_of_continuous_probability_distributions}[Differential entropies of continuous probability distributions]
+    relation: uses the same nats and bits logarithmic units for continuous distributions
+  - table: HREF{Entropy_constants_of_lattice_models}[Entropy constants of lattice models]
+    relation: holds entropy per site for lattice models; its one-dimensional hard-core row has entropy $\log\varphi=C(1,\infty)$ in nats
+Links:
+  WikiRLL:
+    title: 'Wikipedia: Run-length limited'
+    url: https://en.wikipedia.org/wiki/Run-length_limited
+  Request43:
+    title: Requested in numberdb-data#43
+    url: https://github.com/numberdb/numberdb-data/issues/43
+References:
+  TangBahl:
+    bib: >-
+      D. T. Tang and L. R. Bahl, Block codes for a class of constrained
+      noiseless channels, Information and Control 17 (1970), no. 5, 436-461.
+    doi: 10.1016/S0019-9958(70)90369-4
+  Kovacevic:
+    bib: >-
+      Mladen Kovacevic, Runlength-limited sequences and shift-correcting
+      codes: asymptotic analysis, IEEE Transactions on Information Theory 65
+      (2019), no. 8, 4804-4814.
+    arxiv: '1803.06117'
+    doi: 10.1109/TIT.2019.2906973
+Keywords:
+  - information theory
+  - RLL capacity
+  - run-length-limited code
+  - runlength-limited code
+  - constrained coding
+  - Shannon capacity of a constrained system
+Tags:
+  - dynamical systems
+  - combinatorics
+  - special values
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every finite pair $0\leq d<k\leq28$, and every pair with
+    $k=\infty$ and $0\leq d\leq28$; the bits row for $(0,\infty)$ is omitted
+    because it is exactly $1$
+  rigour details: >-
+    Each row is computed by exact rational bisection of the unique root
+    $\rho$ in Formula CITE{formula-root}; the final rational interval is
+    converted to a Sage real interval, and the logarithm is taken in interval
+    arithmetic. The generator checks the root equation on every row and
+    compares the resulting growth rates with an independent Perron eigenvalue
+    computation for the finite-state graph of the constraint.
+Display properties:
+  number-header: $C(d,k)$
+Numbers: []

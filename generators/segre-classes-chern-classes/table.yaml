@@ -1,0 +1,105 @@
+# The table document for numberdb.org/T338. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Segre classes $s_n(c_1,\dots,c_n)$ in terms of Chern classes
+Definition: >-
+  The entry is the homogeneous component $s_n(c_1,\dots,c_n)$ of the total
+  Segre class of a complex vector bundle CITE{SegreWiki}, written as a
+  polynomial in the Chern classes $c_i$ CITE{ChernWiki}. It is defined by the
+  inverse relation in Formula CITE{formula-inverse}.
+Parameters:
+  n:
+    type: Z
+    title: degree
+    display: $n$
+    constraints: $n\geq 1$
+Comments:
+  comment-component: >-
+    The table stores one homogeneous component per row, not the total Segre
+    class $1+s_1+s_2+\cdots$ truncated at degree $n$.
+  comment-zero: >-
+    The constant component is $s_0=1$ and is stated in Formula
+    CITE{formula-zero}, rather than stored as a row.
+  comment-rank: >-
+    There is no rank parameter in the table. For a vector bundle of rank $r$,
+    the universal polynomial is specialised by setting $c_j=0$ for $j>r$.
+  comment-variables: >-
+    The variables are Chern classes: $c_j$ is the $j$-th
+    HREF{Elementary_symmetric_polynomials}[elementary symmetric polynomial]
+    in the Chern roots.
+  comment-range: >-
+    The component $s_n$ uses exactly the variables $c_1,\dots,c_n$; the
+    coefficient of $c_n$ is $-1$.
+Formulas:
+  formula-inverse: >-
+    If $c(E)=1+\sum_{j\geq1}c_j(E)$ and
+    $s(E)=1+\sum_{n\geq1}s_n(E)$, then $c(E)s(E)=1$. Equivalently,
+    $s_n=-\sum_{j=1}^n c_j s_{n-j}$ with $s_0=1$.
+  formula-roots: >-
+    If the $x_i$ are the Chern roots, then
+    $s_n(c_1,c_2,\dots)=(-1)^n h_n(x_1,x_2,\dots)$, where $h_n$ is the
+    HREF{Complete_homogeneous_symmetric_polynomials}[complete homogeneous
+    symmetric polynomial].
+  formula-zero: >-
+    $s_0=1$.
+  formula-first: >-
+    $s_1=-c_1$, $s_2=c_1^2-c_2$, and
+    $s_3=-c_1^3+2c_1c_2-c_3$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.all import PolynomialRing, ZZ
+
+      def segre_component(n):
+          R = PolynomialRing(ZZ, ["c%s" % i for i in range(1, n + 1)])
+          c = [R(1)] + list(R.gens())
+          s = [R(1)]
+          for m in range(1, n + 1):
+              s.append(-sum(c[j] * s[m - j] for j in range(1, m + 1)))
+          return s[n]
+
+      print(segre_component(6))
+Similar tables:
+  - table: HREF{Todd_polynomials}[Todd polynomials]
+    relation: store another universal characteristic-class polynomial in the same Chern-class variables
+  - table: HREF{Chern_character_polynomials}[Chern character polynomials]
+    relation: store another universal characteristic-class polynomial in the same Chern-class variables
+  - table: HREF{Complete_homogeneous_symmetric_polynomials}[Complete homogeneous symmetric polynomials]
+    relation: give the $h_n$ whose signed Chern-root expressions are stored here
+  - table: HREF{Elementary_symmetric_polynomials}[Elementary symmetric polynomials]
+    relation: give the elementary symmetric functions $e_j$ that are renamed as Chern classes here
+Links:
+  SegreWiki:
+    title: 'Wikipedia: Segre class'
+    url: https://en.wikipedia.org/wiki/Segre_class
+  ChernWiki:
+    title: 'Wikipedia: Chern class'
+    url: https://en.wikipedia.org/wiki/Chern_class
+Keywords:
+  - Segre class polynomials
+  - Segre classes in Chern classes
+  - characteristic class Segre polynomial
+  - inverse Chern class polynomials
+Tags:
+  - characteristic classes
+  - polynomial
+  - algebra
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every component with $1\leq n\leq 6$; $s_7$ is the first
+    component needing more than six variables, which is the most a stored
+    polynomial may have
+  rigour details: >-
+    The generator computes exact integer coefficients in
+    $\mathbb Z[c_1,\dots,c_6]$ from Formula CITE{formula-inverse}. Every
+    stored component is checked against the Chern-root identity in Formula
+    CITE{formula-roots} and by substituting the Chern classes of
+    $T\mathbb P^m$ for $1\leq n\leq m\leq 6$, which gives
+    $s_n(T\mathbb P^m)=(-1)^n\binom{m+n}{n}h^n$.
+Display properties:
+  number-header: $s_n$
+Numbers: []

@@ -1,0 +1,6 @@
+1. done -- changed the Definition to introduce the real vector bundle $E$, cite Pontryagin classes, and point to the component and characteristic-series formulas; checked the live API/page first and verified the generator's series under Sage.
+2. done -- narrowed the rigour details to the checks actually made and added the $\mathbb{HP}^2$ check; checked the raw generator under `agents/sage.sh`, which reported the printed-formula, root-product, K3 and HP^2 checks passing.
+3. done -- replaced the nonzero-coefficient assertion with $(-1)^n B_{2n}/(2\,(2n)!)$; checked the stored $p_n$ coefficients for $n=1,\dots,6$ and the nonzero $n=7$ coefficient under `agents/sage.sh`.
+4. done -- cited `PontryaginWiki` at the first mention of Pontryagin classes in the Definition; checked the live `Links` section and the rendered page citation.
+5. already fixed -- `/T336` now returns 200 and its canonical URL is `https://numberdb.org/T336`, so the related-table row is no longer a broken draft link and the final audit leaves it clean.
+6. declined -- the noted-only batch observations were not T337-specific faults, so I left the completeness wording, grading phrase, keywords, `Programs` block and duplicated printed formulas unchanged.

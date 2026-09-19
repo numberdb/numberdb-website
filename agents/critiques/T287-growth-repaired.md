@@ -1,0 +1,8 @@
+*done* -- Replaced the vague completeness note with one naming the T272 range and the checked bound $0<12-\xi_{12}<10^{-3}$; I reread the live API document and rendered page, ran the T287 generator verify, and checked the root gaps and $k-\xi_k=\xi_k^2/(e^{\xi_k}-1-\xi_k)$ in Sage.
+*left for a person* -- I did not extend T287 alone: live T272 still holds $3\leq k\leq12$, every T287 row comment points to a T272 row, and a coupled extension of both tables is a range decision.
+*done* -- Added T288 to Similar tables after checking all ten live T287 values are identical to T288's $\ell=1$, $3\leq k\leq12$ rows; I left the broader `repeats` search-folding decision for a person.
+*declined* -- I added no new rows: the generator verified the current 10 rows and Sage confirms later roots are cheap to compute, but extending the range is blocked on the coupled T272/T288 decision rather than on computation.
+*done* -- Used the "roots become the integer $k$" evidence only in narrowed form: Sage showed $12-\xi_{12}=0.000885\ldots$, $13-\xi_{13}=0.000382\ldots>10^{-4}$, and $15-\xi_{15}<10^{-4}$, so I did not copy the report's unsafe beyond-range $10^{-4}$ wording.
+*declined* -- `complete: no` stays as it was; the repair was to make `complete-note` say what finite range is covered and why.
+*declined* -- I did not change the generator's far-out mpmath tolerance, because the table still holds only $3\leq k\leq12$ and `agents/sage.sh generators/xorsat-threshold-equation-roots/generate.py` reports `10/10 matched`.
+*left for a person* -- I made no T272 edit; its own large-$k$ degeneration matters only if somebody chooses the coupled T272/T287 extension.

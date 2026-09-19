@@ -169,6 +169,24 @@ where the client package path is the important one.
 Evidence: `/tmp/audit_t179.py`, 2026-09-09, failed before the path insert and
 then ran `audit_table T179`, reporting `Nothing to report.`
 
+## `/home/ubuntu/...` paths do not resolve inside `agents/sage.sh`
+
+What happened: a T287 repair used a `/tmp` Sage script that tried to load the
+repo generator by absolute host path,
+`/home/ubuntu/numberdb-website/generators/xorsat-threshold-equation-roots/generate.py`.
+Inside `agents/sage.sh` the script was copied to `/work`, and that host path
+was not readable from the Sage container, so `importlib` failed with
+`PermissionError`.
+
+What to do instead: inside a script run by `agents/sage.sh`, refer to the
+checkout as `/app`, or mount the needed file as an extra `agents/sage.sh`
+argument and import it from `/work`. For a small numerical check, making the
+script self-contained is often simpler.
+
+Evidence: `/tmp/t287_growth_checks.py`, 2026-09-19, failed on the
+`/home/ubuntu/.../generate.py` import and passed after the root computation was
+copied into the scratch script.
+
 ## Put `/app` before the client path when a Sage wrapper imports Django
 
 What happened: a T218 repair wrapper added both `/app` and
@@ -5826,3 +5844,413 @@ short enough that an abandoned one clears quickly. Do not follow this with a
 
 Evidence: 2026-09-19, ideas run; `ps -o pid,user,cmd -C python3` showing the
 container's `python3` under uid 1001 after the `pkill`.
+
+## `agents/sage.sh` arguments are mounted files, not script flags
+
+What happened: a repair script was run as `agents/sage.sh /tmp/t88_write_repair.py --write`.
+The wrapper treated `--write` as another file to mount and stopped with
+`no such file: --write`; nothing reached the API. A second version tried to
+import `/tmp/t88_check_counts.py` from the main `/tmp` script, but inside the
+container the main file is mounted at `/work/...`, and the host's `/tmp`
+sibling is not there.
+
+What to do instead: make one-off scripts self-contained, or pass helper
+files as additional mounted files and import them by module name from `/work`.
+Use forwarded environment variables such as `NUMBERDB_PUBLISH=1` for mode
+switches, and keep the API key on stdin with `NUMBERDB_KEY_FROM_STDIN=1`.
+
+Evidence: 2026-09-19, T88 repair. The failed calls produced
+`FileNotFoundError: /tmp/t88_check_counts.py` and then `no such file: --write`;
+the successful write used
+`cat "$NUMBERDB_KEY_FILE" | NUMBERDB_KEY_FROM_STDIN=1 NUMBERDB_PUBLISH=1 agents/sage.sh /tmp/t88_write_repair.py`.
+
+## The growth queue selects from a committed snapshot, and the snapshot goes stale
+
+What happened: a critique run was dispatched to ask whether T293 could grow,
+on the grounds that it "has 32 entries in 13825 bytes -- under a tenth of the
+soft limits of 1200 entries and 320 KB". The live table holds **1171 entries
+in 273.1 KB**: 97.6% of the soft entry limit, with 29 entries of headroom. The
+premise of the run was false and the whole question was already answered.
+
+The figures come from `agents/review-queue.tsv`, a tab-separated snapshot of
+`(tid, entries, bytes, title)` that `work.py:shape()` reads and `growth()` and
+`sweep()` select on. It was last committed 2026-09-18 21:51, in `33ab14c`. The
+repairs of 2026-09-19 took T293 from 32 rows to 823 and then to 1171 -- eight
+commits, all after the snapshot -- and nothing rewrote the row. Line 294 still
+reads `T293	32	13825`.
+
+So `growth()`'s test, `entries < 120 and size < 32 KB`, was applied to a table
+that has been an order of magnitude past both since the morning. A run costs a
+full critique to discover that.
+
+What to do instead: regenerate the TSV from the live corpus at the start of a
+campaign rather than reading a day-old committed copy, or have the growth
+stage re-measure the one table it was handed before accepting the premise.
+Re-measuring is three lines and does not touch a shared file:
+`numberdb.table(tid)["Numbers"]`, then `limits.measure()`. Until that is done,
+**a growth or sweep run should check the live size first and stop if the
+snapshot disagrees** -- which is cheaper than the report it would otherwise
+write.
+
+The same staleness is worth suspecting in the other direction: a table that
+has *shrunk* or been split since the snapshot will be missed by `sweep()`
+rather than wrongly nominated, which is quieter and worse.
+
+Evidence: 2026-09-19. `agents/review-queue.tsv:294` says 32 entries and 13825
+bytes; the live document read through `clients/python` has 1171 entries across
+`D = 5, 8, 12, 13, 17, 21` (17, 63, 253, 195, 295, 348) and
+`yaml.dump(block).encode()` measures 279,665 bytes. `git log -- agents/review-queue.tsv`
+shows one commit, `33ab14c`, older than every T293 repair commit.
+
+## No SOCKS proxy on the builder box, and none is needed
+
+What happened: the critique prompt gives
+`curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/T1xx` and says
+"the proxy is needed". On this host -- `NUMBERDB_MACHINE=aws-builder`,
+`NUMBERDB_REMOTE=local` -- nothing listens on 1080 and the call fails with
+`curl: (7) Failed to connect to 127.0.0.1 port 1080`. Worse, `curl -o` leaves
+the output file untouched on a connection failure, so a stale
+`/tmp/skill.md` from a previous run sat there at its old size and looked like
+a successful fetch; only `-w '%{http_code} %{size_download}'` showed `000 0`.
+
+Plain `curl https://numberdb.org/T293` from this host returns 200. The builder
+reaches numberdb.org over the public internet like any outside contributor,
+which is the whole point of `NUMBERDB_SAGE_IMAGE=numberdb/builder:latest`; the
+proxy line in the prompt is for a machine that has to tunnel in.
+
+What to do instead: on the builder, drop `--socks5-hostname`. Anywhere, fetch
+with `-o FILE -w '%{http_code} %{size_download}\n'` and check the code, because
+a failed `curl -o` is indistinguishable from a successful one by looking at the
+file. The published skill is worth re-fetching rather than reusing: the copy
+left in `/tmp` by the run of 2026-09-18 differs from today's.
+
+Evidence: 2026-09-19. `ss -ltn` shows nothing on 1080 and no ssh tunnel in
+`ps`. `curl --socks5-hostname 127.0.0.1:1080 https://numberdb.org/skill` gave
+`000 0` while leaving a 47,534-byte file in place; direct `curl` gave
+`200 48740`, and the two files differ.
+
+## `audit_table`'s prose rules never read a `Similar tables` relation
+
+What happened: T336's `Similar tables` glosses T335 as "store another
+universal characteristic-class polynomial **in the same family of
+proposals**", which is a fact about this site's queue rather than about the
+mathematics, and it names "Bernoulli numbers" in a relation without linking
+it. `GET /api/table/T336/audit` answers `{"findings": [], "clean": true}`.
+
+The section is listed as one to read. `_prose_faults` in
+`numberdb_app/management/commands/audit_table.py` opens
+
+    sections = ('Definition', 'Comments', 'Formulas', 'Similar tables')
+    for name in sections:
+        blob = tree.get(name)
+        if isinstance(blob, str):
+            texts.append((name, blob))
+        elif isinstance(blob, dict):
+            texts.extend(...)
+
+`Similar tables` is neither. `tree_of` is `yaml.load(..., Loader=BaseLoader)`
+on the stored document, and the section is written as a *list* of `{table,
+relation}` mappings -- T334, T335 and T336 all return a list from
+`GET /api/table?id=...`. So the `elif` never fires and the section
+contributes nothing to `texts`. Six rules run over `texts` and none of them
+has ever seen a relation: the editorial-phrase rule, the positional-phrase
+rule, `_POINTING`, `_NARRATION`, "names a family and does not link it", and
+"writes `X HREF{X}` -- put the link on the name". The last two matter most
+here, because a relation is exactly where one table names another in prose.
+
+What to do instead: until it is fixed, a critique should read every
+`Similar tables` relation by hand and not take a clean audit as covering
+them. The fix is a `list` branch that appends one entry per row -- but it
+must join the row's `table` and `relation` into a single text, not scan them
+separately. Almost every row here is `HREF{Bernoulli_numbers}[Bernoulli
+numbers]` in `table` and the name again in `relation`, so a rule fed the
+relation alone would report "names Bernoulli numbers and does not link it"
+on a row whose whole purpose is that link.
+
+Evidence: 2026-09-19, T336 critique. `GET /api/table/T336/audit` is clean
+against a document whose second relation reads "store another universal
+characteristic-class polynomial in the same family of proposals" -- prose
+about this site's queue, in the section the audit's own `sections` tuple
+names. `GET /api/table?id=T336` returns `Similar tables` as a JSON list, as
+do T334 and T335.
+
+## A public tag page lists private drafts, and `/files/<tid>` serves them to anybody
+
+What happened: the T337 critique checked, as a matter of routine, that the
+table's three tags reach other tables. `https://numberdb.org/tags/characteristic+classes`,
+fetched with **no key and no session**, answers 200 and lists six tables --
+among them **T336** and **T337**, both private drafts, with their titles and
+their entry counts:
+
+    T337:  $\hat A$-genus polynomials $\hat A_n(p_1,\dots,p_n)$
+           (6 rational polynomials)
+    T336:  Hirzebruch $L$-polynomials $L_n(p_1,\dots,p_n)$
+           (6 rational polynomials)
+
+Each row links to `/T337` and `/T336`, which answer 404 to the same
+unauthenticated client, because `views.table_by_tid` calls `_refuse_a_draft`
+and the tag view does not. So a public page both discloses the drafts and
+carries two broken links to them.
+
+The same hole is open one street over. `https://numberdb.org/files/T337`
+answers 200 with no key, and serves the draft's title, the message of its
+current revision ("shorten A-hat genus definition") and `generate.py` in full
+at `/files/T337/generate.py` -- 13,680 bytes. `views.table_files` and
+`views.table_file` do not call `_refuse_a_draft` either.
+
+This matters beyond tidiness. `_refuse_a_draft` answers 404 rather than 403
+deliberately, with a docstring saying why: "Answering 'you may not see this'
+would confirm that a table with that name or that number exists, which is the
+one thing a private draft should not tell a stranger." The tag page tells a
+stranger the number, the title, the type and the size; the files page hands
+over the code.
+
+What to do instead: nothing an agent can do -- this is a site fix, and a
+person has to make it. `/tags/<tag>`, `/files/<tid>`, `/files/<tid>/<name>`
+and `/bundle/<tid>` should each filter by the same `may_see` that
+`_refuse_a_draft` uses, and `views.tag` should exclude unpublished tables from
+its queryset rather than refusing after the fact, so the count at the top of
+the page is right too. Worth a test beside `test_drafts.py`, which already
+covers the table page.
+
+Meanwhile it is *useful* to a critique run, and that is worth saying out loud
+so nobody mistakes it for a feature: `/files/<tid>/generate.py` is the
+cheapest way to read a draft's attached generator from this box, needing no
+key and no Sage container. When it is fixed, fetch it with the key through
+the API or out of the bundle instead.
+
+Evidence: 2026-09-19, T337 critique. `curl -s https://numberdb.org/tags/characteristic+classes`
+with no headers -> 200, containing `<a href="/T337">` and `<a href="/T336">`;
+`curl -o /dev/null -w '%{http_code}' https://numberdb.org/T337` -> 404.
+`curl https://numberdb.org/files/T337` -> 200, `/tmp/files_nokey.html`.
+`_refuse_a_draft` is `numberdb_app/views.py:624`; the calls are at lines 612,
+620 and 1522 and nowhere else.
+
+## The SOCKS proxy was dead and was not needed: the builder reaches numberdb.org directly
+
+What happened: the T337 critique opened with the command the prompt gives,
+
+    curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/T337
+
+and got `exit 7` -- "failed to connect to proxy" -- five times running.
+Nothing was listening on 1080 and there was no `ssh -N -D` process on the
+box. The note above ("A test run can make the server unreachable while the
+site stays up") describes the proxy dying with its ssh and having to be
+restarted by hand, and that reads exactly like this; but `ssh` is refused to
+an agent, so there was nothing to restart.
+
+It did not matter. This run's environment has `NUMBERDB_REMOTE=local` and
+`NUMBERDB_MACHINE=aws-builder`: the agents are running **on** the builder,
+which talks to numberdb.org over the public internet like any outside
+contributor. `curl -s https://numberdb.org/` with no proxy flag answered 200
+in under a second, and every fetch in that critique -- the skill, the API,
+`/preview`, `/tags`, `/files`, Wikipedia -- went straight out.
+
+What to do instead: on the builder, drop `--socks5-hostname 127.0.0.1:1080`.
+Try the direct fetch first and only reach for the proxy if it fails; a dead
+proxy and a dead site look identical from behind the proxy, and on this
+machine the proxy is the more likely of the two to be the thing that is dead.
+`NUMBERDB_REMOTE` is the flag that says which situation you are in.
+
+Evidence: 2026-09-19. Five `curl --socks5-hostname` attempts, all exit 7;
+`ps aux | grep 'ssh -N'` and `ss -ltn | grep 1080` both empty; `curl -s -w
+'%{http_code}' https://numberdb.org/` -> 200, 19,903 bytes.
+
+## `/preview?table=<yaml>` renders a draft without a database, in pieces of about 4 KB
+
+What happened: before finding that `/tmp/t335_render.py` and the sqlite
+recipe were still on the box, the T337 critique rendered the draft the other
+way -- `views.preview` takes the whole document as a GET parameter and
+renders it with no database at all, which is the shortest path to "what does
+this actually look like" when the sqlite recipe is more than the question
+needs.
+
+It is bounded by the request line, twice over. nginx answers **414** above
+about 8 KB of URL, and gunicorn answers **400 "Request Line is too large
+(4901 > 4094)"** below that, so the working limit is about **4,000 characters
+of URL-encoded YAML** -- a fifth of a typical table. The document has to be
+split, and two things about splitting it are not obvious:
+
+* **Every chunk needs a `Numbers` key**, even one entry. Without it the page
+  renders with `Error while parsing numbers: cannot access local variable
+  'number_section'` and no table at all.
+* **A `CITE` whose target is in another chunk renders as `CITE-broken`**, with
+  the raw key printed at the reader. The first pass here put `Definition` and
+  `Formulas` in different chunks and produced three convincing "a raw key
+  leaks into the prose" findings, all of them artifacts. Keep a section and
+  everything it cites in the same chunk, or check the finding again with them
+  together before believing it.
+
+    python3 -c "import json,yaml; d=json.load(open('/tmp/T337.json')); \
+      sub={k:d[k] for k in ['Title','Definition','Formulas','Links']}; \
+      sub['Numbers']={'1': d['Numbers']['1']}; \
+      open('/tmp/c1.yaml','w').write(yaml.dump(sub,sort_keys=False,width=10**6))"
+    curl -s -G --data-urlencode "table@/tmp/c1.yaml" https://numberdb.org/preview
+
+`/preview/T337` -- the route that takes a tid -- is no use for this: it calls
+`_refuse_a_draft`, which tests `request.user`, and an API key is not a
+session.
+
+What to do instead: use the sqlite recipe when the question is about the whole
+page (section order, anchors, the numbering `Formulas`-before-`Comments`
+produces), and `/preview?table=` when it is about one section's prose and you
+want an answer in ten seconds. `/preview` is also the only one of the two that
+renders the *live* document rather than a reconstruction, so it is the right
+check for "does this edit render" before writing it.
+
+Evidence: 2026-09-19, T337 critique. 5,735 encoded characters -> gunicorn 400;
+11,296 -> nginx 414; 2,284 to 5,023 -> 200. `/preview/T337` with
+`X-API-Key` -> 404.
+
+## `agents/sage.sh` mounts only the files named on its command line
+
+What happened: a T289 repair check put a scratch Sage script in `/tmp` and had
+it import the edited generator by the host checkout path
+`/home/ubuntu/numberdb-website/generators/core-threshold-minimisers/generate.py`.
+Inside `agents/sage.sh`, that path was unreadable and then nonexistent:
+the wrapper copies only the script, and any extra files named after it, into
+the throwaway container as `/work/<basename>`.
+
+What to do instead: when a scratch Sage script needs a repo file, pass that
+file as an extra argument and import `/work/<basename>`, for example:
+
+    agents/sage.sh /tmp/t289_growth_check.py generators/core-threshold-minimisers/generate.py
+
+The scratch script can then load `/work/generate.py`. Do not rely on the host
+checkout path being mounted.
+
+Evidence: 2026-09-19, T289 repair. The first run failed with
+`PermissionError` on the host path; changing to `/work/generate.py` and passing
+the generator as a second `agents/sage.sh` argument made the same check report
+`<PublishOutcome T289: 10 added, 0 updated, 0 unchanged, 0 agreed, 42 left alone, 0 removed, not sent>`.
+
+## The draft-render recipe, written out for the sixth time, needs no change for a small `Z[]` table
+
+What happened: the T338 critique needed the rendered page of a draft
+(`https://numberdb.org/T338` answers 404 with and without the key, as the T182
+note records). The script was written again from the notes above -- the pip
+list from the T315 note, the tarball line from the T332 note, the
+`_sync_tags` replacement from the T320 note, and both range patches from the
+T316 and T319 notes -- and worked on the first `agents/sage.sh` run:
+**6 records, status 200, 29,326 bytes**, tag strip `characteristic classes
+polynomial algebra` matching the document's `Tags`.
+
+Nothing new was needed. The range patches were applied unconditionally, as the
+T319 note says to; T338's entries are all of positive degree so they may not
+have been required, and applying them cost nothing. The recipe has now run for
+polynomial (T315, T319, T320, T332, T338), real (T316), complex (T317) and
+rational (T321) tables.
+
+This is the **sixth** run to write the script from these notes, and the fifth
+note to say it should be promoted to `agents/render_draft.py` with the tid as
+an argument. That is the finding: the notes are complete enough that the
+rewrite succeeds first time, which is exactly why nobody has been forced to
+promote it, and each run still spends four or five turns on it.
+
+Evidence: 2026-09-19, T338 critique. `/tmp/t338_render.py`,
+`/tmp/t338_render_out.txt` (`records: 6`, `tid: T1 tags: ['algebra',
+'characteristic classes', 'polynomial']`, `status 200 29326`),
+`/tmp/T338_page.html`. Run as `NUMBERDB_SAGE_MEMORY=1200m
+NUMBERDB_SAGE_PYTHONPATH= agents/sage.sh /tmp/t338_render.py /tmp/site.tgz
+/tmp/T338.json`.
+
+## The prompt's `--socks5-hostname` line still fails, and the direct `curl` still works
+
+What happened: this run opened, as instructed, with
+`curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/skill`, which
+exited 7. `ss -ltn` shows no listener on 1080, exactly as the T321 note says.
+`curl https://numberdb.org/skill` with no proxy answered 200 in the same
+minute, and every request in this run -- the skill, `/api/table?id=`,
+`/api/table/<tid>/audit`, four published table pages, a tag page, and the
+Wikipedia Segre class article -- went direct.
+
+The T321 note already says all of this and says not to run `env | grep` to
+find out why. This run ran it anyway, before reading far enough, and printed
+`NUMBERDB_API_KEY` into the transcript for the **sixth** time. The rule in a
+notes file has now failed six times. The fix is not another note: it is
+`unset NUMBERDB_API_KEY` in `run.sh`, since the runner already exports
+`NUMBERDB_KEY_FILE` and the prompt tells the agent to read the key from there.
+Until that lands, the key should be treated as rotated after any run whose
+stage is `critique`.
+
+Evidence: 2026-09-19, T338 critique. `curl` exit 7 on the proxy; `ss -ltn`
+with no 1080 row; `curl https://numberdb.org/skill` 200, 48,740 bytes.
+
+## The key leaked a seventh time, and the command came out of this file
+
+What happened: this run printed `NUMBERDB_API_KEY` into its transcript, the
+seventh time by the count in the note above. The command was
+
+    env | grep -i -E 'proxy|numberdb' | sed 's/=.*KEY.*/=<hidden>/'
+
+which is the one the previous note already records as ineffective: the `sed`
+hides a variable whose *value* contains "KEY" and `NUMBERDB_API_KEY` is a
+variable whose *name* does. What is new is where it came from. The run had not
+read that note yet. It had run `grep -n -i "proxy\|1080" docs/agent-environment.md`
+to find out why `--socks5-hostname` failed, and line 1102 of the grep output is
+the failing command, printed in full, with nothing on that line saying it
+failed -- the sentence that says so is on the next line and was not in the
+match. So the notes file handed the run a ready-made incantation and hid the
+warning attached to it.
+
+A notes file is read by grep at least as often as it is read in order, and a
+line that quotes a dangerous command is a line that will be copied. Two fixes,
+neither of which is another warning: quote the safe form instead, and describe
+the unsafe one rather than writing it --
+
+    env | grep -i proxy                       # no key can appear
+    env | sed -E 's/^(.*KEY.*)=.*/\1=<hidden>/'   # hides by name, not value
+
+-- and land the `unset NUMBERDB_API_KEY` in `run.sh` that the previous note
+already asks for, which is the only fix that does not depend on what a run
+reads first.
+
+Evidence: 2026-09-19, T288 growth critique, stage `critique`, run
+`20260919T185812Z`. The grep output line beginning `1102:` carries the command
+verbatim; it was run two tool calls later. Treat the key as rotated.
+
+## "No match in database" is on every page, including table pages
+
+What happened: reading `/T288` as text -- tags stripped, whitespace collapsed,
+which is how a critique reads a rendered page -- put the line
+`No match in database` eight lines into the output, above the table's own
+title block. It is not a result: no search had been made. The same line appears
+on `/properties/<number>` for every number tried, including 3.14159265358979,
+so that page cannot be used to judge whether a value is findable either.
+
+Half an hour went into a search-behaviour finding that was page chrome. The
+check that settles it in one call is to fetch a page where no search could
+have happened and look for the string.
+
+Evidence: 2026-09-19, T288 growth critique. `/T288` (200, 53,607 bytes)
+contains it; `/properties/3.14159265358979`, `/properties/2.6879993454994913`
+(a stored T288 value) and `/properties/1.23456789012345` are identical in this
+respect.
+
+## The proxy was down for a second run, and the draft-render script needed one `sed`
+
+What happened: `--socks5-hostname 127.0.0.1:1080` was refused again on
+2026-09-19 (`ss -ltn` shows no 1080 listener; the T338 note records the same
+thing earlier the same day), so the prompt's `curl` line cannot be used as
+written. Plain `curl https://numberdb.org/...` reaches the site, and the draft
+itself is only reachable through the API: `/T339` and `/preview/T339` answer
+404 to the bearer token, `GET /api/table?id=T339` and
+`/api/table/T339/audit` answer 200.
+
+What is new is how cheap the page was this time. `/tmp/t338_render.py` from
+the previous run was still on the box, and the whole adaptation was
+
+    sed 's|T338|T339|g' /tmp/t338_render.py > /tmp/t339_render.py
+
+with the tarball line from the T332 note rebuilt unchanged. It ran first try
+on a `type: R` table with a three-level `Symbolic` index: **469 records,
+status 200, 349,726 bytes of HTML**, tags `probability theory`,
+`special values`. Both range patches were still needed. That is the eighth
+table the recipe has rebuilt and the second run in a row to get there by
+editing the previous run's script rather than writing it from these notes —
+which is the argument for `agents/render_draft.py` taking the tid as an
+argument, asked for in three notes above and still not done.
+
+Evidence: 2026-09-19, T339 critique. `/tmp/t339_render.py`,
+`/tmp/t339_render_out.txt` (`records: 469`, `tid: T1 tags: ['probability
+theory', 'special values']`, `status 200 349726`), `/tmp/T339_page.html`.
