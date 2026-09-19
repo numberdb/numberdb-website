@@ -1,9 +1,9 @@
 """Regulators of elliptic curves over real quadratic fields -- numberdb.org/T293.
 
 For an elliptic curve E over K = Q(sqrt(D)), this stores the regulator of the
-Mordell-Weil lattice with the absolute Neron-Tate height pairing. In the range
-used here, every source curve has rank 0 or 1, so a positive-rank regulator is
-the height of the recorded generator and a rank-zero regulator is exactly 1.
+Mordell-Weil lattice with the absolute Neron-Tate height pairing. The table
+lists positive-rank curves; in the range used here, every source curve has
+rank 1, so the regulator is the height of the recorded generator.
 
 Run it with SageMath:
 
@@ -19,27 +19,23 @@ Lvalue, Omega, torsion, finite Tamagawa product and Sha.
 
 import os
 import sys
-import time
-from decimal import Decimal, localcontext
+from decimal import Decimal, ROUND_DOWN, localcontext
 
 import numberdb.sage as numberdb
-from numberdb._generate import _producer
-from numberdb._write import Entries, attach, submit_entries
 
 from curve_data import MAX_CONDUCTOR_NORM, RECORDS, SOURCE_COMMIT
 
 
 TABLE = os.environ.get("NUMBERDB_TABLE", "T293")
-DIGITS = 38
+DIGITS = 35
 BSD_RELATIVE_TOLERANCE = Decimal("5e-30")
 
 _RECORDS_BY_KEY = {
-    (
-        str(record["D"]),
+    (str(record["D"]), "%s-%s%s" % (
         record["conductor"],
         record["class"],
-        str(record["curve"]),
-    ): record
+        record["curve"],
+    )): record
     for record in RECORDS
 }
 
@@ -74,6 +70,21 @@ def _require_close(label, got, expected, tolerance):
         )
 
 
+def _truncate_significant(text, digits):
+    value = _decimal(text)
+    if not value:
+        return "0"
+    exponent = value.adjusted()
+    quantum = Decimal(1).scaleb(exponent - digits + 1)
+    with localcontext() as context:
+        context.prec = max(80, digits + abs(exponent) + 10)
+        truncated = value.quantize(quantum, rounding=ROUND_DOWN)
+    if -7 < exponent < digits:
+        return format(truncated, "f")
+    mantissa, _, power = format(truncated, "e").partition("e")
+    return "%se%d" % (mantissa, int(power))
+
+
 def _rank_one_height(record):
     heights = record["heights"]
     if not (heights.startswith("[") and heights.endswith("]")):
@@ -88,13 +99,6 @@ def _rank_one_height(record):
 
 def _check_rank_and_height(record):
     rank = int(record["rank"])
-    if rank == 0:
-        if int(record["ngens"]) != 0 or record["regulator"] != "1":
-            raise ArithmeticError(
-                "%s: rank-zero row has ngens=%s and regulator=%s"
-                % (record["label"], record["ngens"], record["regulator"])
-            )
-        return
     if rank != 1:
         raise ArithmeticError("%s: rank %s is outside this generator's check"
                               % (record["label"], rank))
@@ -141,11 +145,12 @@ def _equation_with_w(record):
 
 
 def _entry_comment(record):
+    conductor_ideal = record["conductor_ideal"].replace("*w", "w")
     return (
         "LMFDB curve %s has conductor ideal $%s$, rank $%d$, and equation $%s$."
         % (
             record["label"],
-            record["conductor_ideal"],
+            conductor_ideal,
             int(record["rank"]),
             _equation_with_w(record),
         )
@@ -156,7 +161,7 @@ class RealQuadraticEllipticRegulators(numberdb.Generator):
     """Generator for T293."""
 
     table = TABLE
-    parameters = ("D", "conductor", "class", "curve")
+    parameters = ("D", "label")
     type = "R"
     digits = DIGITS
     rigour = "heuristic"
@@ -166,68 +171,34 @@ class RealQuadraticEllipticRegulators(numberdb.Generator):
         for record in RECORDS:
             yield {
                 "D": str(record["D"]),
-                "conductor": record["conductor"],
-                "class": record["class"],
-                "curve": str(record["curve"]),
+                "label": "%s-%s%s" % (
+                    record["conductor"],
+                    record["class"],
+                    record["curve"],
+                ),
             }
 
     def value(self, params, digits):
-        record = _RECORDS_BY_KEY[
-            (
-                str(params["D"]),
-                params["conductor"],
-                params["class"],
-                str(params["curve"]),
-            )
-        ]
+        record = _RECORDS_BY_KEY[(str(params["D"]), params["label"])]
         _check_rank_and_height(record)
         _check_bsd_quotient(record)
-        value = 1 if int(record["rank"]) == 0 else record["regulator"]
-        return {"number": value, "comment": _entry_comment(record)}
-
-
-def _source_path(filename):
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
-
-
-def fill_draft_once(generator, message):
-    """Fill a fresh prose draft without the client's empty upsert probe."""
-    run = "real-quadratic-elliptic-regulators-%d" % int(time.time())
-    entries = Entries(*generator.parameters)
-    for params in generator.enumerate():
-        entries.add(**params, **generator.value(params, generator.digits))
-
-    answer = submit_entries(
-        generator.table,
-        entries,
-        message=message,
-        produced_by=_producer(generator),
-        upsert=False,
-        run=run,
-        rigour=generator.rigour,
-    )
-    for filename in generator.files:
-        with open(_source_path(filename), encoding="utf8") as handle:
-            attach(
-                generator.table,
-                filename,
-                handle.read(),
-                run=run,
-                message=message,
-                rigour=generator.rigour,
-            )
-    return answer
+        return {
+            "number": _truncate_significant(record["regulator"], digits),
+            "comment": _entry_comment(record),
+        }
 
 
 if __name__ == "__main__":
     _key_from_stdin()
     generator = RealQuadraticEllipticRegulators()
     if os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
-        print(fill_draft_once(
-            generator,
-            "elliptic-curve regulators over real quadratic fields from "
-            "ecnf-data commit %s for conductor norm <= %d"
-            % (SOURCE_COMMIT[:12], MAX_CONDUCTOR_NORM),
+        print(generator.publish(
+            message=(
+                "elliptic-curve regulators over real quadratic fields from "
+                "ecnf-data commit %s for conductor norm <= %d"
+                % (SOURCE_COMMIT[:12], MAX_CONDUCTOR_NORM)
+            ),
+            overwrite=False,
         ))
     else:
         report = generator.verify(sample=None)

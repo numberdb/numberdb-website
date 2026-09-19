@@ -1,56 +1,68 @@
-# The table document for numberdb.org/T293. It was created as a draft through
-# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
-# is a person's act on the site.
+# The table document for numberdb.org/T293. Publishing is a person's act on
+# the site; the generator beside this file fills and extends the entries.
 Title: Regulators of elliptic curves over real quadratic fields
 Definition: >-
-  Let $K=\mathbb{Q}(\sqrt{D})$ be a real quadratic field and let $E/K$ be an
-  elliptic curve of Mordell-Weil rank $r$. This table gives the regulator
-  $R_{E/K}=\det(\langle P_i,P_j\rangle)$ of the free part of $E(K)$, using
-  the absolute Neron-Tate height pairing and the ecnf-data Mordell-Weil basis
-  CITE{ecnf-data}.
-Keywords: Birch and Swinnerton-Dyer, BSD, elliptic regulator, Neron-Tate height, Hilbert modular form, base change, real quadratic field, Q(sqrt 5)
+  Let $K=\mathbb{Q}(\sqrt{D})$ and let $E/K$ be an LMFDB-labelled elliptic
+  curve of positive Mordell-Weil rank $r$. This table gives the regulator
+  $R_{E/K}$, the determinant of the absolute Néron-Tate height pairing on
+  $E(K)$ modulo torsion.
+Keywords: Birch and Swinnerton-Dyer, BSD, elliptic regulator, Neron-Tate height, real quadratic field, Q(sqrt 5), Q(sqrt 2), Q(sqrt 3), Q(sqrt 13), Q(sqrt 17)
 Parameters:
   D:
     type: Z
     title: field discriminant
     display: $D$
     constraints: positive fundamental discriminant
-  conductor:
+  label:
     type: Symbolic
-    title: LMFDB conductor label
-  class:
-    type: Symbolic
-    title: isogeny class label
-  curve:
-    type: Z
-    title: curve number in the LMFDB class
+    title: LMFDB curve label, without the field prefix
+    display: label
+    constraints: 'the LMFDB curve label with the field label $2.2.D.1$ removed: `31.1-a1` for the curve `2.2.5.1-31.1-a1`'
 Comments:
   comment-index: >-
-    The row with $D=5$, conductor label `31.1`, isogeny class `a`, and curve
-    number $1$ is the LMFDB curve `2.2.5.1-31.1-a1`. There is one row per
+    The label of a row is the LMFDB CITE{LMFDB} curve label with the field
+    label removed: the row with $D=12$ and label `47.1-b1` is the curve
+    `2.2.12.1-47.1-b1`, where `47.1` labels the conductor ideal, of norm $47$,
+    `b` is the isogeny class and `1` the curve in it. There is one row per
     curve rather than one row per isogeny class, since the regulator is
-    attached to the Mordell-Weil lattice of the curve.
+    attached to the Mordell-Weil lattice of the curve. A curve and its Galois
+    conjugate have the same regulator, so over $D=13$ the rows whose conductor
+    ideals are labelled `51.2` and `51.3` repeat one another with the curve
+    numbers exchanged. Curves in one isogeny class have regulators in a
+    rational ratio; in the class `17.1-a` over $D=17$ the ratios are powers of
+    $2$.
   comment-field-generator: >-
-    The generator $w$ of $K$ is the one used by LMFDB CITE{ecnf-data}: it
-    satisfies $w^2-w-1=0$ for $D=5$, $w^2-2=0$ for $D=8$, $w^2-3=0$ for
-    $D=12$, $w^2-w-3=0$ for $D=13$, and $w^2-w-4=0$ for $D=17$.
+    The generator $w$ of $K$ follows the LMFDB CITE{LMFDB} convention used in
+    ecnf-data CITE{ecnf-data}: it satisfies $w^2-w-1=0$ for $D=5$, $w^2-2=0$
+    for $D=8$, $w^2-3=0$ for $D=12$, $w^2-w-3=0$ for $D=13$, and $w^2-w-4=0$
+    for $D=17$.
   comment-rank-zero: >-
-    For rank $0$ curves the regulator is the determinant of the empty
-    height-pairing matrix, so it is $1$.
+    Rank $0$ curves are not listed; their regulator is the determinant of the
+    empty height-pairing matrix, so it is $1$.
   comment-convention: >-
     The height pairing is absolute. In PARI, `ellheightmatrix` over a
     quadratic field gives twice this height; the ecnf-data `reg` field and
     this table use the absolute convention that appears in CITE{formula-BSD}.
+  comment-basis: >-
+    If $P_1,\dots,P_r$ is a basis of $E(K)$ modulo torsion, then
+    $R_{E/K}=\det(\langle P_i,P_j\rangle)_{1\leq i,j\leq r}$; changing the
+    basis does not change this determinant.
+  comment-small-fields: >-
+    In the pinned ecnf-data source, the smallest conductor norms among
+    positive-rank curves over $D=5$ and $D=8$ are $199$ and $103$.
 Formulas:
   formula-BSD: >-
-    The Birch and Swinnerton-Dyer formula CITE{WikiBSD} in these
-    normalisations is
+    The Birch and Swinnerton-Dyer formula CITE{WikiBSD}, with the $L$-function
+    normalised as in the Definition, is
     $L^*(E/K,1)=2^r\Omega_{E/K}R_{E/K}|\operatorname{Sha}(E/K)|
     \prod_{\mathfrak p}c_{\mathfrak p}/(|E(K)_{\mathrm{tors}}|^2\sqrt{D})$.
-    Here $L^*(E/K,1)$ is the leading Taylor coefficient divided by $r!$,
-    $\Omega_{E/K}$ is the product over both real embeddings with real
-    components counted, and $R_{E/K}$ is the regulator for the absolute
-    Neron-Tate height.
+    Here $L^*(E/K,1)=L^{(r)}(E/K,1)/r!$ and the order of vanishing is $r$, as
+    the conjecture predicts; $\Omega_{E/K}$ is the product, over the two real
+    embeddings of $K$, of the real period of $E$ times the number of connected
+    components of $E(\mathbb{R})$ at that embedding; $R_{E/K}$ is the regulator
+    for the absolute Néron-Tate height; $\operatorname{Sha}(E/K)$ is the
+    Tate-Shafarevich group; and $c_{\mathfrak p}$ is the Tamagawa number at
+    $\mathfrak p$.
 Similar tables:
   - table: HREF{Regulators_of_elliptic_curves_over_Q_of_rank_1}[Regulators of elliptic curves over $\mathbb{Q}$ of rank $1$]
     relation: the same height-pairing regulator for elliptic curves over $\mathbb{Q}$ of rank $1$
@@ -59,7 +71,7 @@ Similar tables:
   - table: HREF{Regulators_of_elliptic_curves_over_Q_of_rank_3}[Regulators of elliptic curves over $\mathbb{Q}$ of rank $3$]
     relation: the same height-pairing regulator for elliptic curves over $\mathbb{Q}$ of rank $3$
   - table: HREF{Special_L-values_of_elliptic_curves_over_real_quadratic_fields}[Special $L$-values of elliptic curves over real quadratic fields]
-    relation: the $L^*(E/K,1)$ factor in the BSD formula for overlapping ecnf-data curves
+    relation: the $L^*(E/K,1)$ side of the Birch and Swinnerton-Dyer formula for the same ecnf-data curves
   - table: HREF{Regulators_of_real_quadratic_fields}[Regulators of real quadratic fields]
     relation: a different regulator, of the unit group of the base field
 Links:
@@ -72,7 +84,7 @@ Links:
   WikiBSD:
     title: 'Wikipedia: Birch and Swinnerton-Dyer conjecture'
     url: https://en.wikipedia.org/wiki/Birch_and_Swinnerton-Dyer_conjecture
-References:
+References: {}
 Tags:
   - number theory
   - elliptic curves
@@ -83,21 +95,22 @@ Data properties:
     - CITE{ecnf-data}
   complete: 'no'
   complete-note: >-
-    it holds every curve in ecnf-data with $D\in\{5,8,12,13,17\}$ and
-    conductor norm at most $60$
+    it holds every positive-rank curve in ecnf-data over the five real
+    quadratic fields of smallest discriminant, $D\in\{5,8,12,13,17\}$, with
+    conductor norm at most $250$
   rigour details: >-
     Entries are transcribed from the ecnf-data `reg` field at commit
-    `10b28418e80392032b106ea00e6c5aa109d28e7b`. In this range every curve has
-    rank $0$ or $1$: rank-zero regulators are stored as the exact value $1$,
-    and each rank-one regulator is compared with the source height of the
-    recorded generator. The generator also checks that the Birch and
-    Swinnerton-Dyer quotient in CITE{formula-BSD} gives the square integer
-    recorded by ecnf-data for each source row.
+    `10b28418e80392032b106ea00e6c5aa109d28e7b` and kept to $35$ significant
+    digits, because equality checks among Galois-conjugate curves and
+    same-regulator curves in this table show that the final source digits are
+    not stable. In this range every stored curve has rank $1$, and each
+    regulator is compared with the source height of the recorded generator.
+    The generator also checks that the Birch and Swinnerton-Dyer quotient in
+    CITE{formula-BSD} gives $|\operatorname{Sha}(E/K)|$, the analytic order of
+    the Tate-Shafarevich group recorded by ecnf-data for each source row.
 Display properties:
   number-header: $R_{E/K}$
   group parameters:
     - [D]
-    - [conductor]
-    - [class]
-    - [curve]
+    - [label]
 Numbers: []
