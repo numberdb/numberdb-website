@@ -6083,3 +6083,25 @@ check for "does this edit render" before writing it.
 Evidence: 2026-09-19, T337 critique. 5,735 encoded characters -> gunicorn 400;
 11,296 -> nginx 414; 2,284 to 5,023 -> 200. `/preview/T337` with
 `X-API-Key` -> 404.
+
+## `agents/sage.sh` mounts only the files named on its command line
+
+What happened: a T289 repair check put a scratch Sage script in `/tmp` and had
+it import the edited generator by the host checkout path
+`/home/ubuntu/numberdb-website/generators/core-threshold-minimisers/generate.py`.
+Inside `agents/sage.sh`, that path was unreadable and then nonexistent:
+the wrapper copies only the script, and any extra files named after it, into
+the throwaway container as `/work/<basename>`.
+
+What to do instead: when a scratch Sage script needs a repo file, pass that
+file as an extra argument and import `/work/<basename>`, for example:
+
+    agents/sage.sh /tmp/t289_growth_check.py generators/core-threshold-minimisers/generate.py
+
+The scratch script can then load `/work/generate.py`. Do not rely on the host
+checkout path being mounted.
+
+Evidence: 2026-09-19, T289 repair. The first run failed with
+`PermissionError` on the host path; changing to `/work/generate.py` and passing
+the generator as a second `agents/sage.sh` argument made the same check report
+`<PublishOutcome T289: 10 added, 0 updated, 0 unchanged, 0 agreed, 42 left alone, 0 removed, not sent>`.
