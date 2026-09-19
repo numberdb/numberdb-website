@@ -240,9 +240,12 @@ while [ "$made" -lt "$builds" ]; do
 	#Before anything is spent on this table.
 	wait_for_the_site || exit 7
 
-	if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+	#Critiques excepted, for the reason `run.sh` excepts them: this loop writes
+	#a person's demand into one and then runs the stage that acts on it, so
+	#counting that as an unfinished edit stops the campaign on its own input.
+	if [ -n "$(git status --porcelain --untracked-files=no -- . ':(exclude)agents/critiques')" ]; then
 		say "stopping: the tree has uncommitted changes"
-		git status --short --untracked-files=no
+		git status --short --untracked-files=no -- . ':(exclude)agents/critiques'
 		exit 3
 	fi
 
