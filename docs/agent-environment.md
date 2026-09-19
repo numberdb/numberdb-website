@@ -5751,3 +5751,78 @@ Evidence: 2026-09-18, ideas run. `/tmp/scipychk.py` through `agents/sage.sh`
 computed in `RealBallField(200)` in `/tmp/rll.py` (`1.304842242256`); the host
 attempt is the `ModuleNotFoundError: No module named 'numpy'` from the inline
 `python3 -c` in the same session.
+
+## `already_asked` also runs out of GitHub's rate limit, and `gh` here does not
+
+What happened: screening nine candidate names called
+`screen.already_asked` nine times in a minute. The first four answered; the
+other five returned `could not ask GitHub (HTTPError)`. Unauthenticated
+requests to `https://api.github.com/search/issues` are allowed ten a minute
+and sixty an hour, and the whole hour's allowance can be spent by one
+screening pass plus a couple of retries. The string it returns is not an empty
+list, so it does not read as "nobody asked", but the screen stops answering
+and waiting eight seconds between calls is not enough once the hourly budget
+is gone.
+
+What to do instead: `gh` is logged in on this box, so ask through it, which is
+authenticated and has a much larger allowance:
+
+    gh api -X GET search/issues \
+      -f q="repo:numberdb/numberdb-data in:title division polynomials" \
+      --jq '.items[] | "#\(.number) [\(.state)] \(.title)"'
+
+and for the proposal backlog rather than the requests:
+
+    gh api "repos/numberdb/numberdb-data/issues?state=open&labels=proposal" \
+      --jq '.[] | "#\(.number) \(.title)"'
+
+The same applies to `screen.requests`, which asks the ordinary issues endpoint
+and returns `[]` on any failure -- an empty backlog and an exhausted rate limit
+look identical there, which is the failure this module is otherwise careful
+about.
+
+Evidence: 2026-09-19, ideas run. `/tmp/scr2.py` (four answers, five
+`could not ask GitHub (HTTPError)`), `/tmp/scr3.py` with an eight-second sleep
+between calls (five more failures, then two answers), and the `gh api` calls
+above, which answered every name.
+
+## A long `agents/sage.sh` run piped into `tail` shows nothing at all until it ends
+
+What happened: a measurement script was run as
+`agents/sage.sh script.py 2>&1 | tail -40` in the background. It printed
+nothing for half an hour, so there was no way to tell which of its five
+sections was slow, and when it was killed the output was lost entirely. The
+script itself was fine; `tail` cannot print until the pipe closes, and
+`sage.sh`'s own `grep --line-buffered` only helps a reader who is watching the
+stream rather than the tail of it.
+
+What to do instead: redirect to a file and read the file, which streams:
+
+    agents/sage.sh script.py > /tmp/run.out 2>&1
+
+Also: `E.rank()` over Cremona's curves is what made that run long.
+`CremonaDatabase().allcurves(N)` returns `{label: [ainvs, rank, torsion]}`
+from the database immediately, and the rank is the same number. Twenty minutes
+of a run went into recomputing something the image already had on disk.
+
+Evidence: 2026-09-19, ideas run. `/tmp/nb/dp5.py` (killed at 30 minutes, no
+output) against `/tmp/nb/dp7.py` (same measurements taking ranks from
+`allcurves`, complete in about ten), and `/tmp/nb/dp8.py`, whose output
+appeared line by line in `/tmp/nb/dp7.out`.
+
+## Killing a background `agents/sage.sh` does not kill the work
+
+What happened: `pkill -f dp5.py` reported
+`killing pid ... failed: Operation not permitted` and left
+`python3 -u /work/dp5.py` running inside the container, which runs as another
+uid. The local wrapper died, the container did not, and the flock that
+serialises Sage runs was released only when the wrapper's own
+`timeout 1800 docker run` reaped it.
+
+What to do instead: let the `timeout` do it, or start runs with a `timeout`
+short enough that an abandoned one clears quickly. Do not follow this with a
+`docker rm`: `docker` is refused for agents here, and the container carries
+`--rm` anyway.
+
+Evidence: 2026-09-19, ideas run; `ps -o pid,user,cmd -C python3` showing the
+container's `python3` under uid 1001 after the `pkill`.
