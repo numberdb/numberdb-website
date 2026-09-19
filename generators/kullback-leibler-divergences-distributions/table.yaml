@@ -1,0 +1,162 @@
+# The table document for Kullback-Leibler divergences between probability
+# distributions. It began as proposal 3 of the information-theory family in
+# numberdb-data#164, answering numberdb-data#56. Created as a draft through
+# the API with X-Draft: yes, filled by generate.py beside it, and offered for
+# review. Publishing is a person's act.
+Title: Kullback-Leibler divergences between probability distributions
+Definition: >-
+  For probability measures $P$ and $Q$ with $P$ absolutely continuous with
+  respect to $Q$, the Kullback-Leibler divergence CITE{WikiKL} is
+  $D(P\|Q)=\int \log(\mathrm{d}P/\mathrm{d}Q)\,\mathrm{d}P$. This table gives
+  $D(P\|Q)$ for ordered pairs of named one-dimensional probability
+  distributions in SciPy standard forms, in the two logarithmic units nats and
+  bits.
+Tags:
+  - probability theory
+  - special values
+Keywords:
+  - information theory
+  - Kullback-Leibler divergence
+  - KL divergence
+  - relative entropy
+  - distribution divergence
+  - Bernoulli divergence
+  - binomial divergence
+  - geometric divergence
+  - negative binomial divergence
+  - Poisson divergence
+  - normal divergence
+  - exponential divergence
+Parameters:
+  distribution:
+    type: Symbolic
+    title: distribution family, in standard form
+    display: distribution
+    values:
+      bernoulli: $D(\operatorname{Bernoulli}(p)\|\operatorname{Bernoulli}(q))$ on $\{0,1\}$
+      binomial: $D(\operatorname{Binom}(n,p)\|\operatorname{Binom}(n,q))$
+      geometric: $D(\operatorname{Geom}(p)\|\operatorname{Geom}(q))$ on $\{1,2,\ldots\}$
+      negative-binomial: $D(\operatorname{NB}(r,p)\|\operatorname{NB}(r,q))$, failures before the $r$th success
+      poisson: $D(\operatorname{Poisson}(\lambda)\|\operatorname{Poisson}(\mu))$
+      normal: $D(N(\mu_1,\sigma_1^2)\|N(\mu_2,\sigma_2^2))$
+      exponential: $D(\operatorname{Exp}(\theta_1)\|\operatorname{Exp}(\theta_2))$, with scale parameters
+  shape:
+    type: Symbolic
+    title: shape parameter pair
+    display: shape
+    constraints: >-
+      the text before the semicolon gives the parameters of $P$, and the text
+      after it gives the parameters of $Q$; within each side the parameters
+      are in the order named by the distribution label and are separated by
+      commas
+  unit:
+    type: Symbolic
+    title: logarithmic unit
+    display: unit
+    values:
+      nats: nats
+      bits: bits
+Comments:
+  standard-forms: >-
+    The support and parameter order are those used by SciPy CITE{SciPyStats}.
+    In particular, the geometric distribution is supported on positive
+    integers, the negative binomial row counts failures before the $r$th
+    success, the normal row uses location $\mu$ and scale $\sigma$, and the
+    exponential row uses location $0$ and scale $\theta$.
+  ordered-divergence: >-
+    Kullback-Leibler divergence is not symmetric, so the shape
+    $a;b$ and the shape $b;a$ are different rows when both are in the chosen
+    range.
+  omitted-rational-rows: >-
+    Rows with $P=Q$ are omitted because $D(P\|Q)=0$. Normal rows with
+    $\sigma_1=\sigma_2$ are also omitted because
+    $D(N(\mu_1,\sigma^2)\|N(\mu_2,\sigma^2))=(\mu_1-\mu_2)^2/(2\sigma^2)$ is
+    an exact rational number for the parameters considered here.
+Formulas:
+  formula-units: >-
+    $D_{\mathrm{bits}}(P\|Q)=D_{\mathrm{nats}}(P\|Q)/\log 2$.
+  formula-discrete: >-
+    For discrete distributions with probabilities $p_x$ and $q_x$ on the
+    same support, $D(P\|Q)=\sum_x p_x\log(p_x/q_x)$.
+  formula-bernoulli: >-
+    $D(\operatorname{Bernoulli}(p)\|\operatorname{Bernoulli}(q))
+    =p\log(p/q)+(1-p)\log((1-p)/(1-q))$ nats.
+  formula-binomial: >-
+    $D(\operatorname{Binom}(n,p)\|\operatorname{Binom}(n,q))
+    =nD(\operatorname{Bernoulli}(p)\|\operatorname{Bernoulli}(q))$.
+  formula-geometric: >-
+    For geometric distributions on positive integers,
+    $D(\operatorname{Geom}(p)\|\operatorname{Geom}(q))
+    =\log(p/q)+\frac{1-p}{p}\log((1-p)/(1-q))$ nats.
+  formula-negative-binomial: >-
+    For negative binomial distributions counting failures before the $r$th
+    success,
+    $D(\operatorname{NB}(r,p)\|\operatorname{NB}(r,q))
+    =r\log(p/q)+r\frac{1-p}{p}\log((1-p)/(1-q))$ nats.
+  formula-poisson: >-
+    $D(\operatorname{Poisson}(\lambda)\|\operatorname{Poisson}(\mu))
+    =\lambda\log(\lambda/\mu)+\mu-\lambda$ nats.
+  formula-normal: >-
+    $D(N(\mu_1,\sigma_1^2)\|N(\mu_2,\sigma_2^2))
+    =\log(\sigma_2/\sigma_1)
+    +(\sigma_1^2+(\mu_1-\mu_2)^2)/(2\sigma_2^2)-1/2$ nats.
+  formula-exponential: >-
+    For exponential distributions with scale parameters $\theta_1$ and
+    $\theta_2$,
+    $D(\operatorname{Exp}(\theta_1)\|\operatorname{Exp}(\theta_2))
+    =\log(\theta_2/\theta_1)+\theta_1/\theta_2-1$ nats.
+Similar tables:
+  - table: HREF{Shannon_entropies_of_discrete_probability_distributions}[Shannon entropies of discrete probability distributions]
+    relation: stores Shannon entropy of one discrete distribution; when $Q$ is uniform on $n$ points, $D(P\|Q)=\log n-H(P)$
+  - table: HREF{Differential_entropies_of_continuous_probability_distributions}[Differential entropies of continuous probability distributions]
+    relation: stores entropy of one absolutely continuous distribution, using the same nats and bits units
+  - table: HREF{Capacity_of_the_run-length-limited_constrained_codes}[Capacity of the $(d,k)$ run-length-limited constrained codes]
+    relation: belongs to the same information-theory family and uses the same nats and bits units for logarithmic quantities
+Links:
+  WikiKL:
+    title: 'Wikipedia: Kullback-Leibler divergence'
+    url: https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence
+  SciPyStats:
+    title: 'SciPy: Statistical functions'
+    url: https://docs.scipy.org/doc/scipy/reference/stats.html
+  Request56:
+    title: Requested in numberdb-data#56
+    url: https://github.com/numberdb/numberdb-data/issues/56
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.rational_field import QQ
+      from sage.rings.real_arb import RealBallField
+
+      R = RealBallField(numberdb.bits(100, losing=96))
+      p = R(QQ(1) / QQ(2))
+      q = R(QQ(1) / QQ(3))
+      # KL divergence in nats from Bernoulli(1/2) to Bernoulli(1/3).
+      p * (p / q).log() + (1 - p) * ((1 - p) / (1 - q)).log()
+Data properties:
+  type: R
+  rigour: proven
+  complete: no
+  complete-note: >-
+    it holds ordered distinct Bernoulli and geometric pairs with
+    $p,q\in\{1/2,1/3,1/4,1/5,1/10,11/100\}$; binomial
+    $\operatorname{Binom}(n,p)$ pairs for $2\leq n\leq20$ and ordered
+    distinct $p,q\in\{1/2,1/3,1/4,1/10\}$; negative binomial pairs for
+    $2\leq r\leq10$ and the same ordered distinct $p,q$; Poisson pairs with
+    $\lambda,\mu\in\{1/2,1,3/2,2,5,10\}$ and $\lambda\neq\mu$; normal pairs
+    $N(0,\sigma_1^2)$ and $N(0,\sigma_2^2)$ with ordered distinct
+    $\sigma_1,\sigma_2\in\{1/2,1,2,3\}$; and exponential pairs with ordered
+    distinct scale parameters
+    $\theta_1,\theta_2\in\{1/2,1,2,3,10\}$, each in nats and bits
+  rigour details: >-
+    Each entry is computed from the closed forms in Formulas in Sage real
+    ball arithmetic at `numberdb.bits(digits, losing=128)`. The generator's
+    integrity check compares finite discrete rows with SciPy 1.17.1
+    `stats.entropy`, compares the infinite discrete rows with independent
+    SciPy probability mass sums, and compares the normal and exponential rows
+    with SciPy numerical expectations under the first distribution.
+Display properties:
+  number-header: $D(P\|Q)$
+Numbers: []
