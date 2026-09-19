@@ -1,9 +1,9 @@
-1. done -- the live table still had 32 positive-rank rows over $D=12,13,17$ and a completeness note for $D\in\{5,8,12,13,17\}$ with conductor norm at most $60$; extended it to conductor norm at most $250$ over the same five fields.
-2. done -- checked the pinned ecnf-data commit directly and confirmed the first positive-rank conductor norms are $199$ for $D=5$ and $103$ for $D=8$; added that fact as a table comment.
-3. done -- regenerated the source data from ecnf-data commit `10b28418e80392032b106ea00e6c5aa109d28e7b`, previewed the generator, and added 791 rows without removing the existing 32.
-4. left for a person -- did not add $D=21,24,28,29,33,\dots$: the report gives no cutoff, and using the same conductor-norm bound $250$ would produce 3577 rows and rank-$2$ cases, beyond the table's usual soft entry limit.
-5. done -- kept the values at $35$ significant digits by truncating the source regulator strings, and a full preview checked that all 32 old rows remained unchanged byte-for-byte.
-6. done -- rechecked the rank statement for the chosen extension: all 823 stored rows over $D\in\{5,8,12,13,17\}$ with conductor norm at most $250$ have rank $1$.
-7. done -- the generator checked every stored regulator against the source height of the recorded generator and checked the Birch and Swinnerton-Dyer quotient against the recorded analytic order of Sha.
-8. already fixed -- the live table no longer has the four-parameter address warned about in the report; it uses the two parameters $D$ and the LMFDB label without the field prefix.
-9. done -- measured the final table at 823 rows, with counts $17,63,253,195,295$ for $D=5,8,12,13,17$, then verified `823/823 matched` and the audit endpoint returned no findings.
+1. already fixed -- changed nothing: the live table no longer has 32 rows; it has 823 positive-rank rows over $D\in\{5,8,12,13,17\}$ with conductor norm at most $250$, with counts $17,63,253,195,295$ for $D=5,8,12,13,17$.
+2. already fixed -- the live table already states that the smallest positive-rank conductor norms over $D=5$ and $D=8$ are $199$ and $103$ in the pinned ecnf-data source, and the rendered page shows that comment.
+3. already fixed -- the conductor-norm bound has already been raised to $250$ and the $D=5$ and $D=8$ entries are present; running the generator with `agents/sage.sh` reported `823/823 matched, 0 differing, 0 missing, 0 extra`.
+4. left for a person -- did not add $D=21,24,28,29,33,\dots$: the report gives no cutoff or field range for that second axis, so extending beyond the five named fields is a range decision.
+5. already fixed -- the generator and live rigour details still pin ecnf-data commit `10b28418e80392032b106ea00e6c5aa109d28e7b`.
+6. already fixed -- the values are kept to $35$ significant digits, and the live rigour details still explain that the final source digits are not stable.
+7. already fixed -- the rank statement has already been narrowed to the chosen range; every row verified by the generator is rank $1$.
+8. already fixed -- the generator checks each regulator against the source height of the recorded generator and checks the BSD quotient against the source analytic order of Sha before returning the value.
+9. already fixed -- the final table is 823 rows, below the soft entry limit, and the keyed audit endpoint returned no findings.
