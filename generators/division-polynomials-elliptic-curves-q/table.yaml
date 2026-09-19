@@ -3,10 +3,10 @@
 # is a person's act on the site.
 Title: Division polynomials $\psi_n$ of elliptic curves over $\mathbb{Q}$
 Definition: >-
-  Let $E/\mathbb{Q}$ be the elliptic curve with reduced global minimal model
-  $y^2+a_1xy+a_3y=x^3+a_2x^2+a_4x+a_6$ recovered from $(c_4,c_6)$. The entry
-  is the $n$-th division polynomial $\psi_n$ CITE{SageDivision} of this model,
-  stored as an element of $\mathbb{Z}[x,y]$ that is linear in $y$.
+  Let $E/\mathbb{Q}$ be the elliptic curve with reduced global minimal
+  Weierstrass model recovered from $(c_4,c_6)$ by Formula
+  CITE{formula-model-from-invariants}. The entry is the $n$-th division
+  polynomial $\psi_n$ CITE{SageDivision} of this model in $\mathbb{Z}[x,y]$.
 Parameters:
   N:
     type: Z
@@ -29,18 +29,29 @@ Parameters:
 Comments:
   comment-curve-labels: >-
     The curve is identified by $N$, $c_4$ and $c_6$. Each entry comment gives
-    its Cremona label, since Cremona and LMFDB curve numbers in the same
-    isogeny class need not agree.
+    the curve's Cremona label. LMFDB CITE{LMFDB} numbers curves within an
+    isogeny class differently from Cremona's tables CITE{SageCremona}, so a
+    label here is not an LMFDB label.
   comment-even-polynomials: >-
     This table stores $\psi_n$ itself. For even $n$, the $x$-only polynomial
     without the two-torsion factor is $\psi_n/(2y+a_1x+a_3)$. PARI/GP's
     `elldivpol` CITE{PARIelldivpol} and Sage's default
-    `division_polynomial` CITE{SageDivision} use the other $x$-only
-    convention, $\psi_n(2y+a_1x+a_3)$.
+    `division_polynomial` CITE{SageDivision} use the $x$-only convention in
+    Formula CITE{formula-pari-convention}.
 Formulas:
+  formula-model-from-invariants: >-
+    For the reduced models in this table, $b_2$ is the unique element of
+    $\{-4,-3,0,1,4,5\}$ with $b_2\equiv -c_6\pmod{12}$,
+    $b_4=(b_2^2-c_4)/24$, and
+    $b_6=(-c_6-b_2^3+36b_2b_4)/216$. The model has
+    $a_1\equiv b_2\pmod 2$, $a_3\equiv b_6\pmod 2$ with
+    $a_1,a_3\in\{0,1\}$ and $a_2\in\{-1,0,1\}$, and
+    $a_2=(b_2-a_1^2)/4$, $a_4=(b_4-a_1a_3)/2$ and
+    $a_6=(b_6-a_3^2)/4$.
   formula-b-invariants: >-
     $b_2=a_1^2+4a_2$, $b_4=a_1a_3+2a_4$, $b_6=a_3^2+4a_6$, and
-    $b_8=a_1^2a_6+4a_2a_6-a_1a_3a_4+a_2a_3^2-a_4^2$.
+    $b_8=a_1^2a_6+4a_2a_6-a_1a_3a_4+a_2a_3^2-a_4^2$. On $E$,
+    $(2y+a_1x+a_3)^2=4x^3+b_2x^2+2b_4x+b_6$.
   formula-initial: >-
     $\psi_0=0$, $\psi_1=1$, $\psi_2=2y+a_1x+a_3$,
     $\psi_3=3x^4+b_2x^3+3b_4x^2+3b_6x+b_8$, and
@@ -54,7 +65,7 @@ Formulas:
   formula-pari-convention: >-
     If $f_n$ is PARI/GP's `elldivpol(E,n)`, then
     $f_n(x)=\psi_n(x)$ for odd $n$ and
-    $f_n(x)=\psi_n(x,y)(2y+a_1x+a_3)$ for even $n$.
+    $f_n(x)=\psi_n(x,y)\cdot(2y+a_1x+a_3)$ for even $n$.
 Programs:
   program-pari:
     language: PARI/GP
@@ -65,7 +76,11 @@ Programs:
       if(n % 2, elldivpol(E,n), (elldivpol(E,n)/elldivpol(E,2))*(2*y+a1*x+a3))
 Similar tables:
   - table: HREF{Highest_known_rank_of_elliptic_curves_over_Q_with_given_torsion}[Highest known ranks of elliptic curves over $\mathbb{Q}$ with prescribed torsion subgroup]
-    relation: records rational torsion subgroups of elliptic curves over $\mathbb{Q}$, while the roots of these polynomials detect torsion points on individual curves
+    relation: records the highest known rank for each rational torsion subgroup, while the roots of $\psi_n$ detect torsion points on individual curves
+  - table: HREF{Faltings_heights_of_elliptic_curves_over_Q}[Faltings heights of elliptic curves over $\mathbb{Q}$]
+    relation: uses the same $(N,c_4,c_6)$ curve index and records Faltings heights
+  - table: HREF{Regulators_of_elliptic_curves_over_Q_of_rank_1}[Regulators of elliptic curves over $\mathbb{Q}$ of rank $1$]
+    relation: uses the same $(N,c_4,c_6)$ curve index for rank $1$ curves and records their regulators
 Links:
   SageDivision:
     title: 'SageMath reference: division_polynomial'
@@ -76,9 +91,9 @@ Links:
   PARIelldivpol:
     title: 'PARI/GP manual: elldivpol'
     url: https://pari.math.u-bordeaux.fr/dochtml/html-stable/Elliptic_curves.html#elldivpol
-  Requested10:
-    title: Requested in numberdb-data#10
-    url: https://github.com/numberdb/numberdb-data/issues/10
+  LMFDB:
+    title: 'LMFDB: Elliptic curves over Q'
+    url: https://www.lmfdb.org/EllipticCurve/Q/
 Keywords:
   - elliptic curve division polynomial
   - division polynomial
