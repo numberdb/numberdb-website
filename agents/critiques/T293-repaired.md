@@ -1,12 +1,9 @@
-1. done -- removed the 553 rank-$0$ rows after checking the live table had 585 rows, 553 of rank $0$ and 32 of rank $1$; kept a rank-$0$ comment and narrowed the completeness note to positive-rank curves.
-2. done -- shortened the remaining regulators to 35 significant digits after Sage checked the conjugate/isogenous equal-value pairs agree for only 35 or 36 significant digits.
-3. done -- expanded `comment-index` to explain Galois-conjugate repeated rows and rational regulator ratios in isogeny classes; Sage checked the cited conjugations and the $17.1$-a power-of-$2$ ratios.
-4. done -- removed `*w` from every remaining conductor ideal comment and checked the post-write table has no `*w`.
-5. done -- added `display` labels for `conductor`, `class` and `curve`.
-6. done -- removed the serialized `"null"` reference; before the edit the audit endpoint returned 500, and after the edit it returned JSON.
-7. done -- rewrote `formula-BSD` to remove the double $r!$, name the periods, $\operatorname{Sha}$ and Tamagawa numbers, and state the order-of-vanishing convention.
-8. done -- rewrote the Definition to omit the source basis, added the basis formula in a comment, and changed Neron-Tate to Néron-Tate in the reader-facing prose.
-9. done -- rewrote the T292 Similar tables relation to name the $L^*(E/K,1)$ side of the BSD formula; the link still waits on T292 being published.
-10. left for a person -- rewrote the completeness note for positive-rank curves over the five smallest real quadratic discriminants, but left the conductor-norm bound at $60$ because raising it is a new range decision.
-11. done -- removed the unsupported Hilbert modular form/base change keywords, added all five quadratic fields, and cited LMFDB at the first relevant mentions.
-12. done -- rewrote `rigour details` to name $|\operatorname{Sha}(E/K)|$ as the analytic order of the Tate-Shafarevich group recorded by ecnf-data.
+1. done -- the live table still had 32 positive-rank rows over $D=12,13,17$ and a completeness note for $D\in\{5,8,12,13,17\}$ with conductor norm at most $60$; extended it to conductor norm at most $250$ over the same five fields.
+2. done -- checked the pinned ecnf-data commit directly and confirmed the first positive-rank conductor norms are $199$ for $D=5$ and $103$ for $D=8$; added that fact as a table comment.
+3. done -- regenerated the source data from ecnf-data commit `10b28418e80392032b106ea00e6c5aa109d28e7b`, previewed the generator, and added 791 rows without removing the existing 32.
+4. left for a person -- did not add $D=21,24,28,29,33,\dots$: the report gives no cutoff, and using the same conductor-norm bound $250$ would produce 3577 rows and rank-$2$ cases, beyond the table's usual soft entry limit.
+5. done -- kept the values at $35$ significant digits by truncating the source regulator strings, and a full preview checked that all 32 old rows remained unchanged byte-for-byte.
+6. done -- rechecked the rank statement for the chosen extension: all 823 stored rows over $D\in\{5,8,12,13,17\}$ with conductor norm at most $250$ have rank $1$.
+7. done -- the generator checked every stored regulator against the source height of the recorded generator and checked the Birch and Swinnerton-Dyer quotient against the recorded analytic order of Sha.
+8. already fixed -- the live table no longer has the four-parameter address warned about in the report; it uses the two parameters $D$ and the LMFDB label without the field prefix.
+9. done -- measured the final table at 823 rows, with counts $17,63,253,195,295$ for $D=5,8,12,13,17$, then verified `823/823 matched` and the audit endpoint returned no findings.
