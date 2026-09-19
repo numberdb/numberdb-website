@@ -5845,3 +5845,68 @@ Evidence: 2026-09-19, T88 repair. The failed calls produced
 `FileNotFoundError: /tmp/t88_check_counts.py` and then `no such file: --write`;
 the successful write used
 `cat "$NUMBERDB_KEY_FILE" | NUMBERDB_KEY_FROM_STDIN=1 NUMBERDB_PUBLISH=1 agents/sage.sh /tmp/t88_write_repair.py`.
+
+## The growth queue selects from a committed snapshot, and the snapshot goes stale
+
+What happened: a critique run was dispatched to ask whether T293 could grow,
+on the grounds that it "has 32 entries in 13825 bytes -- under a tenth of the
+soft limits of 1200 entries and 320 KB". The live table holds **1171 entries
+in 273.1 KB**: 97.6% of the soft entry limit, with 29 entries of headroom. The
+premise of the run was false and the whole question was already answered.
+
+The figures come from `agents/review-queue.tsv`, a tab-separated snapshot of
+`(tid, entries, bytes, title)` that `work.py:shape()` reads and `growth()` and
+`sweep()` select on. It was last committed 2026-09-18 21:51, in `33ab14c`. The
+repairs of 2026-09-19 took T293 from 32 rows to 823 and then to 1171 -- eight
+commits, all after the snapshot -- and nothing rewrote the row. Line 294 still
+reads `T293	32	13825`.
+
+So `growth()`'s test, `entries < 120 and size < 32 KB`, was applied to a table
+that has been an order of magnitude past both since the morning. A run costs a
+full critique to discover that.
+
+What to do instead: regenerate the TSV from the live corpus at the start of a
+campaign rather than reading a day-old committed copy, or have the growth
+stage re-measure the one table it was handed before accepting the premise.
+Re-measuring is three lines and does not touch a shared file:
+`numberdb.table(tid)["Numbers"]`, then `limits.measure()`. Until that is done,
+**a growth or sweep run should check the live size first and stop if the
+snapshot disagrees** -- which is cheaper than the report it would otherwise
+write.
+
+The same staleness is worth suspecting in the other direction: a table that
+has *shrunk* or been split since the snapshot will be missed by `sweep()`
+rather than wrongly nominated, which is quieter and worse.
+
+Evidence: 2026-09-19. `agents/review-queue.tsv:294` says 32 entries and 13825
+bytes; the live document read through `clients/python` has 1171 entries across
+`D = 5, 8, 12, 13, 17, 21` (17, 63, 253, 195, 295, 348) and
+`yaml.dump(block).encode()` measures 279,665 bytes. `git log -- agents/review-queue.tsv`
+shows one commit, `33ab14c`, older than every T293 repair commit.
+
+## No SOCKS proxy on the builder box, and none is needed
+
+What happened: the critique prompt gives
+`curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/T1xx` and says
+"the proxy is needed". On this host -- `NUMBERDB_MACHINE=aws-builder`,
+`NUMBERDB_REMOTE=local` -- nothing listens on 1080 and the call fails with
+`curl: (7) Failed to connect to 127.0.0.1 port 1080`. Worse, `curl -o` leaves
+the output file untouched on a connection failure, so a stale
+`/tmp/skill.md` from a previous run sat there at its old size and looked like
+a successful fetch; only `-w '%{http_code} %{size_download}'` showed `000 0`.
+
+Plain `curl https://numberdb.org/T293` from this host returns 200. The builder
+reaches numberdb.org over the public internet like any outside contributor,
+which is the whole point of `NUMBERDB_SAGE_IMAGE=numberdb/builder:latest`; the
+proxy line in the prompt is for a machine that has to tunnel in.
+
+What to do instead: on the builder, drop `--socks5-hostname`. Anywhere, fetch
+with `-o FILE -w '%{http_code} %{size_download}\n'` and check the code, because
+a failed `curl -o` is indistinguishable from a successful one by looking at the
+file. The published skill is worth re-fetching rather than reusing: the copy
+left in `/tmp` by the run of 2026-09-18 differs from today's.
+
+Evidence: 2026-09-19. `ss -ltn` shows nothing on 1080 and no ssh tunnel in
+`ps`. `curl --socks5-hostname 127.0.0.1:1080 https://numberdb.org/skill` gave
+`000 0` while leaving a 47,534-byte file in place; direct `curl` gave
+`200 48740`, and the two files differ.
