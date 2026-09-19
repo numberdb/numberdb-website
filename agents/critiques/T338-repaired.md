@@ -1,0 +1,6 @@
+1. done -- Changed the complete-homogeneous similar-table relation to say that table gives $h_n$ in the Chern roots and T338 stores $(-1)^n h_n$ rewritten in Chern classes; checked the live document/page still had the old wording and Sage verified $s_n=(-1)^n h_n$ for $1\leq n\leq7$.
+2. done -- Defined $h$ as the hyperplane class in rigour details; checked in Sage that substituting the Chern classes of $T\mathbb P^m$ gives $s_n(T\mathbb P^m)=(-1)^n\binom{m+n}{n}h^n$ for $1\leq n\leq m\leq6$.
+3. done -- Removed the separate $s_0=1$ formula and rewrote the constant-component comment to say the table begins at $n=1$; checked the recurrence formula still states $s_0=1$ and the repaired audit is clean.
+4. done -- Removed the formula that only reprinted rows 1 to 3; checked in Sage that rows 1 to 6 match the recurrence from the stored inverse formula.
+5. done -- Distinguished the Chern-character similar-table relation by naming $\operatorname{ch}(E)=\sum_i e^{x_i}$; checked the linked Chern character table's live formula states that relation.
+6. done -- Changed the Sage program to print `segre_component(7)`; checked the updated snippet under Sage and it prints the $s_7$ polynomial with the seventh variable $c_7$.
