@@ -5682,3 +5682,72 @@ Evidence: 2026-09-18, T335 critique. `/tmp/t335_render.py`,
 `/tmp/t335_render_out.txt` (`records: 6`, `tid: T1 tags: ['algebra',
 'characteristic classes', 'polynomial']`, `status 200 28833 bytes`),
 `/tmp/T335_page.html`.
+
+## The corpus reached 334 tables the same day the last note said 269
+
+What happened: the note above records 269 tables on 2026-09-18, against the
+126 that `agents/table-ideas/PROMPT.md` still claims. Walking the T-numbers
+again that evening returns **T1 to T335 with T75 absent, 334 tables**: sixty-five
+more in one day, T336 and beyond answering "does not exist". Four areas the
+ideas run had picked as uncovered were built in that window -- hyperbolic
+3-manifold volumes (T219, T221, T225), Bernstein-Sato polynomials (T290),
+Faltings heights (T211), genus-2 periods and special L-values (T212, T213).
+
+What to do instead: walk the T-numbers at the *start* of the run and do not
+reuse a figure from any note, including this one; the number moves by dozens
+between runs. A run that screens against yesterday's picture will propose
+tables that exist. The loop costs about four minutes for 340 numbers.
+
+Evidence: 2026-09-18, ideas run. `/tmp/corpus.py` and `/tmp/corpus2.py`,
+`PYTHONPATH=clients/python`, printing `Title` and `Tags` for T1..T399; the last
+table returned is T335 *Chern character polynomials*.
+
+## `screen.already_asked` cannot find the request a proposal answers
+
+What happened: the ideas run proposed tables answering numberdb-data#55
+*Entropy of interesting probability spaces* and #56 *Kullback-Leibler
+divergence of interesting pairs of distributions*, and `already_asked` returned
+`[]` for both, and for every other row of the batch. It is not the rate limit
+this time (the note above) -- the queries were answered.
+
+The reason is the query it builds: the first three words longer than four
+characters of the proposed name, joined into a GitHub `in:title` conjunction.
+For "Entropies of discrete probability distributions" that is
+`in:title Entropies discrete probability`, and GitHub's issue search does not
+stem, so *Entropy of interesting probability spaces* does not match on
+"Entropies", nor on "discrete", which the issue's title does not contain. The
+same for "Kullback-Leibler divergences" against a title reading "divergence".
+So the function reliably answers "nobody asked for this" about the very issue
+the proposal cites, and a run that treats it as the duplicate check will report
+the backlog as empty.
+
+What to do instead: read `python3 agents/table-ideas/screen.py requests` in
+full -- it is 65 lines -- and match proposals to requests by hand. Use
+`already_asked` only as a check for *closed* issues, and expect it to miss
+those too when the wording differs. The function would be more useful querying
+one distinguishing word at a time and pooling the results.
+
+Evidence: 2026-09-18, ideas run. `/tmp/screen4.py`, six proposals, every
+`already_asked` line `[]`; the two issues it should have found are open and
+listed by `screen.py requests` as #55 and #56.
+
+## SciPy 1.17.1 is in the builder image, and the host `python3` has neither SciPy nor NumPy
+
+What happened: the run wanted `scipy.stats` entropies as an independent check,
+which is the comparison T241's `rigour details` reports. `python3 -c "import
+scipy"` on the host fails with `ModuleNotFoundError`, and so does `numpy`; the
+same script through `agents/sage.sh` prints `scipy 1.17.1` and evaluates
+`stats.poisson(1).entropy()`, `stats.binom(10,1/3).entropy()` and
+`stats.entropy(p, q)` without further installation.
+
+What to do instead: do not fall back to hand-written float loops on the host
+for a check that wants a library. Put the check in a file and run it through
+`agents/sage.sh`, which has Sage, arb through Sage's ball fields, and SciPy in
+the same interpreter -- so the ball value and the independent library value can
+be compared in one script rather than across two environments.
+
+Evidence: 2026-09-18, ideas run. `/tmp/scipychk.py` through `agents/sage.sh`
+(`scipy 1.17.1`, `poisson(1) 1.3048422422562516`), against the same quantity
+computed in `RealBallField(200)` in `/tmp/rll.py` (`1.304842242256`); the host
+attempt is the `ModuleNotFoundError: No module named 'numpy'` from the inline
+`python3 -c` in the same session.
