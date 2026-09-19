@@ -1,8 +1,8 @@
 """Characteristic polynomials of the monodromy of the simple and unimodal singularities -- numberdb.org/T291
 
-For each modulus-zero normal form f and each number n of variables from the
-corank through 3, this stores the exact characteristic polynomial Delta_f(t)
-of the geometric monodromy on the middle homology of the Milnor fibre.
+For each normal form f in the range described by the table, this stores the
+exact characteristic polynomial Delta_f(t) of the geometric monodromy on the
+reduced middle homology of the Milnor fibre.
 
 The generator computes the rational monodromy exponents
 
@@ -37,9 +37,10 @@ from sage.rings.rational_field import QQ
 
 
 TABLE = "T291"
-VARIABLES = ("x", "y", "z")
-MAX_A = 12
-MAX_D = 12
+VARIABLES = ("x", "y", "z", "w")
+MU_BOUND = 14
+MAX_A = MU_BOUND
+MAX_D = MU_BOUND
 
 _ZT = PolynomialRing(ZZ, "t")
 _t = _ZT.gen()
@@ -47,7 +48,8 @@ _t = _ZT.gen()
 
 class Singularity:
 
-    def __init__(self, label, weights, monomials, latex, basis=None):
+    def __init__(self, label, weights, monomials, latex, basis=None,
+                 corank=None, mu=None, hyperbolic=None):
         self.label = label
         self.weights = tuple(QQ(weight) for weight in weights)
         self.monomials = tuple(
@@ -56,11 +58,14 @@ class Singularity:
         )
         self.latex = latex
         self.basis = None if basis is None else tuple(tuple(item) for item in basis)
-        self.mu = int(re.search(r"\d+$", label).group(0))
+        self._corank = len(self.weights) if corank is None else int(corank)
+        self.mu = (int(re.search(r"\d+$", label).group(0))
+                   if mu is None else int(mu))
+        self.hyperbolic = hyperbolic
 
     @property
     def corank(self):
-        return len(self.weights)
+        return self._corank
 
 
 def q(n, d=1):
@@ -85,6 +90,43 @@ def rectangle_basis(*bounds):
 
 def d_basis(k):
     return [(0, j) for j in range(k - 1)] + [(1, 0)]
+
+
+def hyperbolic_key(p, q, r):
+    return "T%d_%d_%d" % (p, q, r)
+
+
+def hyperbolic_triples(mu_bound=MU_BOUND):
+    for p in range(2, mu_bound + 2):
+        for q_ in range(p, mu_bound + 2):
+            for r in range(q_, mu_bound + 2):
+                if p + q_ + r - 1 > mu_bound:
+                    continue
+                if q(1, p) + q(1, q_) + q(1, r) < 1:
+                    yield p, q_, r
+
+
+def hyperbolic_singularity(p, q_, r):
+    if p == 2:
+        return Singularity(
+            hyperbolic_key(p, q_, r),
+            (),
+            ((1, (q_, 0)), (1, (0, r)), (1, (2, 2))),
+            "x^{%d}+y^{%d}+a x^2y^2" % (q_, r),
+            corank=2,
+            mu=p + q_ + r - 1,
+            hyperbolic=(p, q_, r),
+        )
+    return Singularity(
+        hyperbolic_key(p, q_, r),
+        (),
+        ((1, (p, 0, 0)), (1, (0, q_, 0)), (1, (0, 0, r)),
+         (1, (1, 1, 1))),
+        "x^{%d}+y^{%d}+z^{%d}+axyz" % (p, q_, r),
+        corank=3,
+        mu=p + q_ + r - 1,
+        hyperbolic=(p, q_, r),
+    )
 
 
 def singularities():
@@ -196,6 +238,8 @@ def singularities():
     ]
     for item in fixed:
         yield item
+    for triple in hyperbolic_triples():
+        yield hyperbolic_singularity(*triple)
 
 
 SPECS = tuple(singularities())
@@ -267,8 +311,44 @@ def polynomial_from_cyclotomic_factors(factors):
     return polynomial
 
 
+def cyclotomic_factors_from_polynomial(polynomial):
+    remaining = _ZT(polynomial)
+    factors = []
+    for order in range(1, 4 * (int(polynomial.degree()) + 2)):
+        factor = _ZT.cyclotomic_polynomial(order)
+        multiplicity = 0
+        while remaining.degree() >= factor.degree():
+            quotient, remainder = remaining.quo_rem(factor)
+            if remainder:
+                break
+            multiplicity += 1
+            remaining = quotient
+        if multiplicity:
+            factors.append((ZZ(order), multiplicity))
+        if remaining == 1:
+            return factors
+    raise ArithmeticError("could not factor %s into cyclotomic polynomials"
+                          % polynomial)
+
+
+def hyperbolic_base_polynomial(p, q_, r):
+    def quotient(order):
+        return sum(_t ** exponent for exponent in range(order))
+
+    return (_t - 1) ** 2 * quotient(p) * quotient(q_) * quotient(r)
+
+
+def hyperbolic_polynomial(spec, n):
+    base = hyperbolic_base_polynomial(*spec.hyperbolic)
+    if (ZZ(n) - 3) % 2 == 0:
+        return base
+    return (-1) ** spec.mu * base(-_t)
+
+
 def monodromy_polynomial(label, n):
     spec = SPEC_BY_LABEL[label]
+    if spec.hyperbolic is not None:
+        return hyperbolic_polynomial(spec, n)
     return polynomial_from_cyclotomic_factors(
         cyclotomic_factors_from_exponents(monodromy_exponents(spec, ZZ(n))))
 
@@ -283,6 +363,13 @@ def factor_latex(factors):
     return r"\,".join(pieces) if pieces else "1"
 
 
+def cyclotomic_factors_for(spec, n):
+    if spec.hyperbolic is not None:
+        return cyclotomic_factors_from_polynomial(
+            monodromy_polynomial(spec.label, n))
+    return cyclotomic_factors_from_exponents(monodromy_exponents(spec, n))
+
+
 def normal_form_latex(spec, n):
     pieces = [spec.latex]
     for variable in VARIABLES[spec.corank:n]:
@@ -291,11 +378,11 @@ def normal_form_latex(spec, n):
 
 
 def entry_comment(spec, n):
-    factors = cyclotomic_factors_from_exponents(monodromy_exponents(spec, n))
-    return (
-        r"$f=%s$, with $\mu=%d$; $\Delta_f(t)=%s$."
-        % (normal_form_latex(spec, n), spec.mu, factor_latex(factors))
-    )
+    factors = cyclotomic_factors_for(spec, n)
+    generic = " with generic $a$" if spec.hyperbolic is not None else ""
+    return (r"$f=%s$%s, with $\mu=%d$; $\Delta_f(t)=%s$."
+            % (normal_form_latex(spec, n), generic, spec.mu,
+               factor_latex(factors)))
 
 
 def singular_expression(spec, n):
@@ -315,6 +402,10 @@ def singular_expression(spec, n):
     for variable in VARIABLES[spec.corank:n]:
         terms.append("%s^2" % variable)
     return "+".join(terms)
+
+
+def n_values(spec):
+    return range(spec.corank, max(3, spec.corank + 1) + 1)
 
 
 def parse_singular_spectrum(values_text, multiplicities_text):
@@ -372,15 +463,16 @@ def coxeter_polynomial(label):
 
 def run_integrity_checks():
     for spec in SPECS:
-        if len(milnor_basis_exponents(spec)) != spec.mu:
+        if (spec.hyperbolic is None
+                and len(milnor_basis_exponents(spec)) != spec.mu):
             raise AssertionError("%s has wrong Milnor basis length" % spec.label)
-        for n in range(spec.corank, 4):
+        for n in n_values(spec):
             polynomial = monodromy_polynomial(spec.label, n)
             if polynomial.degree() != spec.mu:
                 raise AssertionError("%s n=%d has degree %d, not mu=%d"
                                      % (spec.label, n, polynomial.degree(),
                                         spec.mu))
-            if n < 3:
+            if n < max(n_values(spec)):
                 suspended = monodromy_polynomial(spec.label, n + 1)
                 expected = (-1) ** spec.mu * polynomial(-_t)
                 if suspended != expected:
@@ -404,7 +496,7 @@ def run_singular_checks():
 
     checked = 0
     for spec in SPECS:
-        for n in range(spec.corank, 4):
+        for n in n_values(spec):
             formula = monodromy_polynomial(spec.label, n)
             independent = singular_spectrum_polynomial(spec, n)
             if formula != independent:
@@ -424,7 +516,7 @@ class MonodromyCharacteristicSimpleUnimodal(numberdb.Generator):
 
     def enumerate(self):
         for spec in SPECS:
-            for n in range(spec.corank, 4):
+            for n in n_values(spec):
                 yield {"singularity": spec.label, "n": str(n)}
 
     def value(self, params, digits):
@@ -493,9 +585,9 @@ if __name__ == "__main__":
         sys.exit(0)
 
     if os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
-        print(fill_draft_once(
-            generator,
-            message="exact singularity monodromy characteristic polynomials"))
+        print(generator.publish(
+            overwrite=False,
+            message="extend singularity monodromy characteristic polynomials"))
     else:
         report = generator.verify(sample=None)
         print(report)
