@@ -6254,3 +6254,65 @@ argument, asked for in three notes above and still not done.
 Evidence: 2026-09-19, T339 critique. `/tmp/t339_render.py`,
 `/tmp/t339_render_out.txt` (`records: 469`, `tid: T1 tags: ['probability
 theory', 'special values']`, `status 200 349726`), `/tmp/T339_page.html`.
+
+## `screen.py` cannot import the client here: no `pip install`, no `venv`
+
+What happened: `agents/table-ideas/screen.py` does `import numberdb` and calls
+`numberdb.search_text`, and there is no way to satisfy that on this box by the
+obvious route. Run from the repository, `import numberdb` finds the Django
+project package at `numberdb/` — whose `__init__.py` is empty, so
+`search_text` is an `AttributeError` rather than an import error. Run from
+`/tmp`, there is nothing to import at all: the client is not installed for the
+system Python.
+
+Neither fix works. `python3 -m pip install numberdb` is refused by PEP 668
+("externally managed environment"), and `python3 -m venv` fails because
+`python3-venv` is not installed and installing it needs sudo.
+
+What does work, in two commands and no privileges:
+
+    python3 -m pip download numberdb -d /tmp/ndbpkg --no-deps
+    cd /tmp/ndbclient && unzip -q /tmp/ndbpkg/*.whl
+
+and then `PYTHONPATH=/tmp/ndbclient` in front of anything that screens. The
+screening script itself is on the path with
+`sys.path.insert(0, 'agents/table-ideas')`, and the key goes in through stdin:
+
+    cat "$NUMBERDB_KEY_FILE" | python3 /tmp/screen_run.py
+
+The key matters more than it looks. Anonymous reads are 60 an hour, and a
+screening run of ten candidate names makes several calls each; the first
+attempt this run exhausted the allowance on page fetches and `search_text`
+then raised `RateLimitError: too many requests; retry in 57s`. That at least
+fails loudly, which is better than the SOCKS failure `screen.py` already
+documents, but it costs a turn.
+
+Evidence: 2026-09-19, ideas run `20260919T205023Z`. Python 3.12.3; `pip
+26.2.1` at `/home/ubuntu/.local/lib/python3.12/site-packages/pip`; wheel
+`numberdb-0.1.10-py3-none-any.whl`, 95 kB.
+
+## A ticked checkbox in a `proposal` issue is a claim, not a fact
+
+What happened: numberdb-data#139, *Family: harmonics on the disc and the
+sphere*, is closed, and its checklist reads
+`- [x] Associated Legendre polynomials (#99) -- T101`. T101 does not hold the
+associated Legendre polynomials. Its whole `Parameters` block is
+`{"n": {"type": "Z", "constraints": "$n \geq 0$"}}` — one index, no $m$ — and
+its definition is the orthogonality on $[-1,1]$ with $P_n(1)=1$, which is
+$P_n$ and nothing else. numberdb-data#99 is still open, and correctly so.
+
+The batch process is built on these checkboxes: a table is ticked off the
+family issue when it exists, and `docs/design/where-ideas-live.md` makes the
+backlog "a number anybody can trust". A tick that points at a table holding a
+different family is the one failure that makes the number untrustworthy while
+looking exactly like success, and nothing checks it — the build ticks its own
+box.
+
+What a run should do about it: when a request appears to be answered by an
+existing table, fetch that table and read its `Parameters` before believing
+it. One `numberdb.table(tid)` settles it. And when the answer is no, say so in
+the batch, so the request can be reopened by a person rather than staying
+invisible behind a closed issue.
+
+Evidence: 2026-09-19, ideas run `20260919T205023Z`. numberdb-data#139 body;
+`numberdb.table('T101')`.
