@@ -1,94 +1,73 @@
-"""Which work comes next, and why.
+"""What the pipeline offers next, and what it must not offer twice.
 
     python3 agents/test_work.py
 
-One pipeline, four sources. The ordering is the whole of the policy, and it
-is the kind of thing that looks obviously right and is quietly wrong: the
-first version of the proposal queue preferred the newest family, and stranded
-the one nobody had started.
+The network is not exercised: `demands()` is given issues, and the rest reads
+files in a temporary directory. What is tested is the part that went wrong --
+whether an item that has been acted on comes back.
 """
-import io
 import os
+import shutil
 import sys
 import tempfile
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-import work  # noqa: E402
+import work  # noqa: E402  (the file under test)
 
 
-class WhatComesNext(unittest.TestCase):
+ISSUES = [{'number': 155, 'title': 'Extend T293 (regulators over real '
+                                   'quadratic fields): raise the bound',
+           'body': 'More fields, please.'},
+          {'number': 160, 'title': 'T137 wants a reference', 'body': ''},
+          {'number': 161, 'title': 'nothing to do with a table', 'body': ''}]
+
+
+class ADemandIsActedOnOnce(unittest.TestCase):
 
 	def setUp(self):
-		self.room = tempfile.mkdtemp()
-		self.real = (work.SHAPE, work.CRITIQUES, work.demands, work.proposal,
-		             work.REVIEW_EVERY)
-		work.SHAPE = os.path.join(self.room, 'shape.tsv')
-		work.CRITIQUES = os.path.join(self.room, 'critiques')
-		os.makedirs(work.CRITIQUES)
-		with io.open(work.SHAPE, 'w', encoding='utf-8') as handle:
-			handle.write('tid\tentries\tbytes\ttitle\n')
-			#Two hand-made tables, one small new one, one full new one.
-			handle.write('T3\t40\t9000\tAn old table\n')
-			handle.write('T4\t50\t9000\tAnother old table\n')
-			handle.write('T280\t20\t6000\tA new small table\n')
-			handle.write('T281\t900\t200000\tA new full table\n')
-		work.demands = lambda: []
-		work.proposal = lambda: {'kind': 'proposal', 'title': 'a new table'}
+		self.critiques = tempfile.mkdtemp()
+		self.real_critiques, work.CRITIQUES = work.CRITIQUES, self.critiques
+		self.real_api = work.proposals.api
+		work.proposals.api = lambda path: list(ISSUES)
 
 	def tearDown(self):
-		(work.SHAPE, work.CRITIQUES, work.demands, work.proposal,
-		 work.REVIEW_EVERY) = self.real
+		work.CRITIQUES = self.real_critiques
+		work.proposals.api = self.real_api
+		shutil.rmtree(self.critiques, ignore_errors=True)
 
-	def test_a_demand_from_a_person_comes_first(self):
-		#Somebody is waiting, and nobody waits for a sweep.
-		work.demands = lambda: [{'kind': 'demand', 'issue': 1, 'tid': 'T3',
-		                         'title': 'make it longer', 'body': 'please'}]
+	def wrote(self, name):
+		with open(os.path.join(self.critiques, name), 'w') as handle:
+			handle.write('# a report\n')
+
+	def test_an_issue_naming_a_table_is_work(self):
+		found = work.demands()
+		self.assertEqual([item['tid'] for item in found], ['T293', 'T137'])
+		#The third issue names no table, so there is nothing to act on.
+		self.assertEqual(len(found), 2)
+
+	def test_a_demand_whose_repair_has_reported_is_done(self):
+		#The fault this exists for: `pick()` puts a person's demand before
+		#everything else, and nothing marked one as acted on -- so a campaign
+		#repaired T293 twenty-six times for $58 and built no table. The mark is
+		#the repair's own report, which is also what a person would read.
+		self.wrote('T293-repaired.md')
+		self.assertEqual([item['tid'] for item in work.demands()], ['T137'])
+
+	def test_a_critique_without_a_repair_is_not_done(self):
+		#Written but not acted on: the work is still waiting.
+		self.wrote('T293.md')
+		self.assertIn('T293', [item['tid'] for item in work.demands()])
+
+	def test_the_demand_comes_before_the_other_kinds(self):
+		#Somebody is waiting for it, which is the whole of the ordering rule.
 		self.assertEqual(work.pick(done=0)['kind'], 'demand')
-		self.assertEqual(work.pick(done=1)['kind'], 'demand')
 
-	def test_building_and_reviewing_take_turns(self):
-		#A campaign that only builds never returns to what it built.
-		work.REVIEW_EVERY = 2
-		self.assertEqual(work.pick(done=0)['kind'], 'proposal')
-		self.assertIn(work.pick(done=1)['kind'], ('growth', 'sweep'))
-		self.assertEqual(work.pick(done=2)['kind'], 'proposal')
-
-	def test_reviewing_can_be_turned_off(self):
-		work.REVIEW_EVERY = 0
-		for done in range(4):
-			self.assertEqual(work.pick(done=done)['kind'], 'proposal')
-
-	def test_growth_asks_the_newest_small_table(self):
-		#The one whose generator is still understood, and whose range was
-		#most likely chosen in a hurry.
-		self.assertEqual(work.growth()[0]['tid'], 'T280')
-
-	def test_a_full_table_is_not_asked_to_grow(self):
-		self.assertNotIn('T281', [w['tid'] for w in work.growth()])
-
-	def test_the_sweep_starts_at_the_oldest(self):
-		self.assertEqual(work.sweep()[0]['tid'], 'T3')
-
-	def test_a_table_already_read_is_not_read_again(self):
-		io.open(os.path.join(work.CRITIQUES, 'T3.md'), 'w').write('read')
-		self.assertEqual(work.sweep()[0]['tid'], 'T4')
-
-	def test_a_table_already_asked_about_growth_is_not_asked_again(self):
-		io.open(os.path.join(work.CRITIQUES, 'T280-growth.md'), 'w').write('x')
-		self.assertNotIn('T280', [w['tid'] for w in work.growth()])
-
-	def test_a_demand_is_written_where_repair_looks(self):
-		#With its provenance: a person is authoritative about what is wanted
-		#and not about what is true.
-		path = work.write_demand({'kind': 'demand', 'issue': 155, 'tid': 'T9',
-		                          'title': 'Extend it', 'body': 'More D.'})
-		body = io.open(path, encoding='utf-8').read()
-		self.assertTrue(path.endswith('T9.md'))
-		self.assertIn('numberdb-data#155', body)
-		self.assertIn('claim', body)
-		self.assertIn('More D.', body)
+	def test_and_when_every_demand_is_done_the_other_kinds_run(self):
+		self.wrote('T293-repaired.md')
+		self.wrote('T137-repaired.md')
+		self.assertEqual(work.demands(), [])
 
 
 if __name__ == '__main__':

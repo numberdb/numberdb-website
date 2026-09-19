@@ -58,6 +58,15 @@ class TheRunnerFencesOffWhatItCannotUndo(TestCase):
 		self.assertIn('uncommitted changes', body)
 		self.assertIn('exit 3', body)
 
+	def test_the_same_item_twice_stops_the_campaign(self):
+		#A queue that is not being consumed looks exactly like work being
+		#done: on 2026-09-19 a demand had no "done" mark and the loop repaired
+		#T293 twenty-six times for $58, building nothing. Whatever the reason,
+		#the second identical item stops rather than paying again.
+		body = script('agents/campaign.sh')
+		self.assertIn('the queue offered the same item twice', body)
+		self.assertIn('last_item', body)
+
 	def test_a_critique_waiting_to_be_acted_on_is_not_a_dirty_tree(self):
 		#The campaign writes a person's demand into agents/critiques/ and then
 		#starts the run that acts on it. Those files are data -- .gitignore
