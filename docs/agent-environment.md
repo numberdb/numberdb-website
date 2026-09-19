@@ -6254,3 +6254,47 @@ argument, asked for in three notes above and still not done.
 Evidence: 2026-09-19, T339 critique. `/tmp/t339_render.py`,
 `/tmp/t339_render_out.txt` (`records: 469`, `tid: T1 tags: ['probability
 theory', 'special values']`, `status 200 349726`), `/tmp/T339_page.html`.
+
+## `screen.py` run from the repository root cannot ask the corpus, and says so quietly
+
+What happened: `agents/table-ideas/screen.py` imports `numberdb` to run
+`already_here`. From the repository root, `numberdb` is the Django project
+package in `numberdb/`, which has no client API, so the import succeeds and
+the attribute lookup fails:
+
+    AttributeError: module 'numberdb' has no attribute 'search_text'
+
+`already_here` catches everything by design and returns
+
+    ["(could not ask the corpus: AttributeError: module 'numberdb' has no attribute 'search_text')"]
+
+which is a string in a list, exactly like a real answer, printed among real
+answers. A run that screens eight proposals this way gets eight of them and
+can conclude the corpus holds nothing similar to any of them.
+
+`python3 agents/table-ideas/screen.py requests` is unaffected -- that path
+never imports `numberdb` -- so the module looks like it is working.
+
+What to do: put the client ahead of the repository root, and take the root off
+the path, before importing `screen`:
+
+    import sys
+    sys.path.insert(0, '<repo>/clients/python')
+    sys.path.insert(0, '<repo>/agents/table-ideas')
+    sys.path = [p for p in sys.path if p not in ('', '<repo>')]
+    from screen import already_here
+
+The same shadowing is the reason `agents/sage.sh` exists and is documented in
+its header for `sage -python`; this is the third place it bites, and the first
+where the failure is silent. `screen.already_here` could distinguish the two
+cases -- an `AttributeError` on `search_text` means the wrong package was
+imported, not that the corpus is unreachable -- and say so.
+
+Evidence: 2026-09-19 ideas run, from `/home/ubuntu/numberdb-campaign-w4`:
+
+    python3 -c "import sys; sys.path.insert(0,'agents/table-ideas'); import screen;
+                print(screen.already_here('Babenko-Beckner inequality'))"
+    ["(could not ask the corpus: AttributeError: ...)"]
+
+and the same call from a process with `clients/python` first returned the four
+tables that really match.
