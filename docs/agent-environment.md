@@ -5967,7 +5967,7 @@ their entry counts:
     T337:  $\hat A$-genus polynomials $\hat A_n(p_1,\dots,p_n)$
            (6 rational polynomials)
     T336:  Hirzebruch $L$-polynomials $L_n(p_1,\dots,p_n)$
-           (7 rational polynomials)
+           (6 rational polynomials)
 
 Each row links to `/T337` and `/T336`, which answer 404 to the same
 unauthenticated client, because `views.table_by_tid` calls `_refuse_a_draft`
