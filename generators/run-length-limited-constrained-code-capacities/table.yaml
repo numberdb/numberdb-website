@@ -3,12 +3,10 @@
 # is a person's act on the site.
 Title: Capacity of the $(d,k)$ run-length-limited constrained codes
 Definition: >-
-  For integers $d,k$ with $0\leq d<k\leq\infty$, a binary $(d,k)$
-  run-length-limited constrained sequence has at least $d$ and at most $k$
-  zeros between consecutive $1$s CITE{Kovacevic} CITE{WikiRLL}. The capacity
-  $C(d,k)$ is $\lim_{n\to\infty}n^{-1}\log N_{d,k}(n)$, where
-  $N_{d,k}(n)$ counts the length-$n$ sequences satisfying the constraint, in
-  the logarithmic unit named by `unit`.
+  For $0\leq d<k\leq\infty$, a binary $(d,k)$ run-length-limited constrained
+  sequence has at least $d$ and at most $k$ zeros between consecutive $1$s
+  CITE{Kovacevic} CITE{WikiRLL}. The table gives the same capacity $C(d,k)$
+  in the two logarithmic units `nats` and `bits`.
 Parameters:
   d:
     type: Z
@@ -49,7 +47,9 @@ Formulas:
   formula-units: >-
     $C_{\mathrm{bits}}(d,k)=C_{\mathrm{nats}}(d,k)/\log 2$.
   formula-counts: >-
-    With boundary conventions that do not affect the limit,
+    If $N_{d,k}(n)$ counts length-$n$ sequences satisfying the constraint, then
+    $C(d,k)=\lim_{n\to\infty}n^{-1}\log N_{d,k}(n)$. With boundary conventions
+    that do not affect the limit,
     $S_{d,k}(n)=\sum_{i=d+1}^{k+1}S_{d,k}(n-i)$ counts $(d,k)$-constrained
     words assembled from blocks $0^d1,\ldots,0^k1$ CITE{Kovacevic}.
 Programs:
