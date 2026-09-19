@@ -5,12 +5,11 @@
 # beside it, and offered for review. Publishing is a person's act.
 Title: Kullback-Leibler divergences between probability distributions
 Definition: >-
-  For probability measures $P$ and $Q$ with $P$ absolutely continuous with
-  respect to $Q$, the Kullback-Leibler divergence CITE{WikiKL} is
-  $D(P\|Q)=\int \log(\mathrm{d}P/\mathrm{d}Q)\,\mathrm{d}P$. This table gives
-  $D(P\|Q)$ for ordered pairs of named one-dimensional probability
-  distributions in SciPy standard forms, in the two logarithmic units nats and
-  bits.
+  For probability measures $P\ll Q$, the Kullback-Leibler divergence
+  CITE{WikiKL} is the relative entropy $D(P\|Q)$. This table gives it as one
+  number in two conventions, the logarithmic units `nats` and `bits`, for
+  ordered pairs of named one-dimensional distributions in SciPy standard
+  forms.
 Tags:
   - probability theory
   - special values
@@ -73,6 +72,8 @@ Comments:
     $D(N(\mu_1,\sigma^2)\|N(\mu_2,\sigma^2))=(\mu_1-\mu_2)^2/(2\sigma^2)$ is
     an exact rational number for the parameters considered here.
 Formulas:
+  formula-measure: >-
+    $D(P\|Q)=\int \log(\mathrm{d}P/\mathrm{d}Q)\,\mathrm{d}P$.
   formula-units: >-
     $D_{\mathrm{bits}}(P\|Q)=D_{\mathrm{nats}}(P\|Q)/\log 2$.
   formula-discrete: >-
