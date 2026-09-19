@@ -5826,3 +5826,22 @@ short enough that an abandoned one clears quickly. Do not follow this with a
 
 Evidence: 2026-09-19, ideas run; `ps -o pid,user,cmd -C python3` showing the
 container's `python3` under uid 1001 after the `pkill`.
+
+## `agents/sage.sh` arguments are mounted files, not script flags
+
+What happened: a repair script was run as `agents/sage.sh /tmp/t88_write_repair.py --write`.
+The wrapper treated `--write` as another file to mount and stopped with
+`no such file: --write`; nothing reached the API. A second version tried to
+import `/tmp/t88_check_counts.py` from the main `/tmp` script, but inside the
+container the main file is mounted at `/work/...`, and the host's `/tmp`
+sibling is not there.
+
+What to do instead: make one-off scripts self-contained, or pass helper
+files as additional mounted files and import them by module name from `/work`.
+Use forwarded environment variables such as `NUMBERDB_PUBLISH=1` for mode
+switches, and keep the API key on stdin with `NUMBERDB_KEY_FROM_STDIN=1`.
+
+Evidence: 2026-09-19, T88 repair. The failed calls produced
+`FileNotFoundError: /tmp/t88_check_counts.py` and then `no such file: --write`;
+the successful write used
+`cat "$NUMBERDB_KEY_FILE" | NUMBERDB_KEY_FROM_STDIN=1 NUMBERDB_PUBLISH=1 agents/sage.sh /tmp/t88_write_repair.py`.
