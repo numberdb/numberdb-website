@@ -1,0 +1,4 @@
+left for a person -- the stale `agents/review-queue.tsv` finding concerns campaign selection rather than T293 itself; the live table was reread through `/api/table?id=T293`, and the environment note already records that the snapshot says 32 entries while the table now has 1171.
+done -- added a deliberate-range clause to `complete-note`, after checking the live document and rendered page; `agents/sage.sh /tmp/t293_counts.py` confirmed the pinned ecnf-data counts, including $N\leq250$ giving 1171 entries and $N\leq255$ giving 1213.
+declined -- left the six-field conductor-norm window as it is; the live per-discriminant counts still show the raggedness, but replacing the range with 195 curves per field is a reader-serving judgement rather than a defect.
+declined -- kept the entry comments; the live page still has one conductor-ideal/rank/equation comment per entry, those facts are not otherwise in the row, and entries rather than bytes are the binding limit.
