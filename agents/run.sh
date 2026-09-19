@@ -88,9 +88,15 @@ command -v "$engine" >/dev/null || { echo "no $engine on PATH" >&2; exit 2; }
 
 # A run starts from a clean tree so that what it changed is what it committed,
 # and a failed run can be thrown away with git.
-if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+# Except the critiques, which are data and say so in .gitignore -- 256 of them
+# are tracked anyway, from before that decision, so *writing* one dirties the
+# tree. That is not a half-finished edit; it is the campaign handing this run
+# its input. On 2026-09-19 a hundred-table campaign stopped on its first item
+# for exactly this: `work.py` wrote a person's demand into
+# agents/critiques/T293.md, and the run that was to act on it refused to start.
+if [ -n "$(git status --porcelain --untracked-files=no -- . ':(exclude)agents/critiques')" ]; then
 	echo "Refusing: the tree has uncommitted changes." >&2
-	git status --short --untracked-files=no >&2
+	git status --short --untracked-files=no -- . ':(exclude)agents/critiques' >&2
 	exit 3
 fi
 
