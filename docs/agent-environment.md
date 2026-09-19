@@ -6293,3 +6293,26 @@ titles, T1 to T340), then `/tmp/drafts.py` (`429` on two of three paths,
 `404` on `/api/drafts`) and `/tmp/drafts2.py` ("retry in 182s" on twenty-four
 consecutive calls, then the same script answering normally three minutes
 later).
+
+## `queue.py built` closes a family whose remaining entries are only claimed
+
+What happened: T341 was the first table in numberdb-data#165 to become an
+offered draft. The other four checklist lines were still marked `[~]`, claimed
+by another worker, not `[x]` with T-numbers. Running
+
+    python3 agents/queue.py built 165 'Division polynomials $\psi_n$ of elliptic curves over $\mathbb{Q}$ -- numberdb-data#10' T341
+
+ticked T341, answered and closed numberdb-data#10, and then closed #165 with
+"the family is built". The body still had four claimed lines. The reason is in
+`queue.py`: `parse_family()` treats `~` as `done`, and `cmd_built()` closes the
+family when `waiting(family)` is empty. That is right for keeping a claimed
+line out of `next`, but wrong for deciding that every table exists.
+
+What to do instead until the tool changes: after `built` on a partially
+claimed family, check the issue body. If any `[~]` lines remain, reopen the
+family and leave a comment saying the built table is done but claimed sibling
+tables are not. Do not create `agents/runs/batch-exhausted` from this state.
+
+Evidence: 2026-09-19, T341 build. #165 was reopened with the comment
+"T341 is built, but the remaining checklist lines are still claims rather than
+built tables, so the family is not exhausted yet."
