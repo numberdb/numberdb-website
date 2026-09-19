@@ -96,11 +96,27 @@ def _ordered_probabilities():
         for a in range(1, b)
         if QQ(a) / QQ(b) <= QQ(1) / QQ(2)
     }
-    grid.update(QQ(k) / QQ(100) for k in range(1, 12))
+    grid.update(QQ(k) / QQ(100) for k in range(1, 51))
     seen = set()
     ordered = []
     for value in COMMON_PROBABILITIES:
         if value in grid and value not in seen:
+            ordered.append(value)
+            seen.add(value)
+    for value in sorted(grid, key=lambda x: (x.denominator(), x.numerator())):
+        if value not in seen:
+            ordered.append(value)
+            seen.add(value)
+    return tuple(ordered)
+
+
+def _ordered_common_probability_grid():
+    grid = set(COMMON_PROBABILITIES)
+    grid.update(QQ(k) / QQ(100) for k in range(1, 51))
+    seen = set()
+    ordered = []
+    for value in COMMON_PROBABILITIES:
+        if value not in seen:
             ordered.append(value)
             seen.add(value)
     for value in sorted(grid, key=lambda x: (x.denominator(), x.numerator())):
@@ -371,15 +387,15 @@ def _comment(distribution, shape, unit):
     if unit != "nats":
         return ""
     if distribution == "bernoulli" and shape == "1/2":
-        return "The omitted bits row is exactly $1$."
+        return "In bits this entropy is exactly $1$."
     if distribution == "geometric" and shape == "1/2":
-        return "The omitted bits row is exactly $2$."
+        return "In bits this entropy is exactly $2$."
     if distribution == "discrete-uniform":
         n = int(shape)
         if _power_of_two(n):
-            return "The omitted bits row is exactly $%d$." % (n.bit_length() - 1)
+            return "In bits this entropy is exactly $%d$." % (n.bit_length() - 1)
     if distribution == "binomial" and shape == "2,1/2":
-        return "The omitted bits row is exactly $3/2$."
+        return "In bits this entropy is exactly $3/2$."
     return ""
 
 
@@ -459,7 +475,7 @@ class ShannonEntropies(numberdb.Generator):
                     if not _skip_entry("binomial", shape, unit):
                         yield {"distribution": "binomial", "shape": shape, "unit": unit}
 
-        for p in COMMON_PROBABILITIES:
+        for p in _ordered_common_probability_grid():
             shape = _format_probability(p)
             for unit in ("nats", "bits"):
                 if not _skip_entry("geometric", shape, unit):
@@ -487,7 +503,7 @@ class ShannonEntropies(numberdb.Generator):
             for unit in ("nats", "bits"):
                 yield {"distribution": "hypergeometric", "shape": shape, "unit": unit}
 
-        for p in COMMON_PROBABILITIES:
+        for p in _ordered_common_probability_grid():
             shape = _format_probability(p)
             for unit in ("nats", "bits"):
                 yield {"distribution": "logarithmic", "shape": shape, "unit": unit}
