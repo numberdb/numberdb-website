@@ -379,10 +379,13 @@ def normal_form_latex(spec, n):
 
 def entry_comment(spec, n):
     factors = cyclotomic_factors_for(spec, n)
-    generic = " with generic $a$" if spec.hyperbolic is not None else ""
-    return (r"$f=%s$%s, with $\mu=%d$; $\Delta_f(t)=%s$."
-            % (normal_form_latex(spec, n), generic, spec.mu,
-               factor_latex(factors)))
+    if spec.hyperbolic is not None:
+        return (r"$f=%s$ with generic $a$ and $\mu=%d$; "
+                r"$\Delta_f(t)=%s$."
+                % (normal_form_latex(spec, n), spec.mu,
+                   factor_latex(factors)))
+    return (r"$f=%s$, with $\mu=%d$; $\Delta_f(t)=%s$."
+            % (normal_form_latex(spec, n), spec.mu, factor_latex(factors)))
 
 
 def singular_expression(spec, n):
