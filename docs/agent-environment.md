@@ -169,6 +169,24 @@ where the client package path is the important one.
 Evidence: `/tmp/audit_t179.py`, 2026-09-09, failed before the path insert and
 then ran `audit_table T179`, reporting `Nothing to report.`
 
+## `/home/ubuntu/...` paths do not resolve inside `agents/sage.sh`
+
+What happened: a T287 repair used a `/tmp` Sage script that tried to load the
+repo generator by absolute host path,
+`/home/ubuntu/numberdb-website/generators/xorsat-threshold-equation-roots/generate.py`.
+Inside `agents/sage.sh` the script was copied to `/work`, and that host path
+was not readable from the Sage container, so `importlib` failed with
+`PermissionError`.
+
+What to do instead: inside a script run by `agents/sage.sh`, refer to the
+checkout as `/app`, or mount the needed file as an extra `agents/sage.sh`
+argument and import it from `/work`. For a small numerical check, making the
+script self-contained is often simpler.
+
+Evidence: `/tmp/t287_growth_checks.py`, 2026-09-19, failed on the
+`/home/ubuntu/.../generate.py` import and passed after the root computation was
+copied into the scratch script.
+
 ## Put `/app` before the client path when a Sage wrapper imports Django
 
 What happened: a T218 repair wrapper added both `/app` and
