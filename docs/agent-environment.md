@@ -6316,3 +6316,59 @@ tables are not. Do not create `agents/runs/batch-exhausted` from this state.
 Evidence: 2026-09-19, T341 build. #165 was reopened with the comment
 "T341 is built, but the remaining checklist lines are still claims rather than
 built tables, so the family is not exhausted yet."
+
+## The "look in `/tmp` for the previous run's render script" shortcut failed, on the seventh write-out
+
+What happened: the T341 critique needed the rendered page of a private draft
+(`/T341` answers 404 anonymously and with the key; `GET /api/table?id=T341`
+and `/api/table/T341/audit` answer 200). The T333 and T339 notes above say the
+cheap move is to look in `/tmp` for the last run's script before writing one
+from these notes, and that has now worked twice running. It did not work here:
+`/tmp` held sixty-odd scripts from the T341 *build*, an hour earlier, and
+neither `/tmp/site.tgz` nor any `*_render.py` was among them. So the script was
+written from the notes for the **seventh** time.
+
+Two things worth recording about that. It worked first try again, from the pip
+list in the T315 note, the tarball line in the T332 note, the `_sync_tags`
+replacement in the T320 note and both range patches from T316 and T319:
+**805 records, status 200, 617,248 bytes**, tag strip `number theory
+elliptic curves polynomial` matching the document's `Tags`. And the shortcut's
+failure mode is quiet — `/tmp` was full of files, just not that one — so a run
+that greps `/tmp` for `render` and finds nothing should stop looking and write
+the script rather than hunting further.
+
+This is the ninth table the recipe has rebuilt (polynomial T315/T319/T320/
+T332/T338, real T316, complex T317, rational T321, integer T333, rational
+polynomial T334/T335, real T339, and now a four-parameter `Z[]` table with 805
+entries) and the sixth note to ask for `agents/render_draft.py` taking the tid
+as an argument. The survival of `/tmp` across runs is not a substitute: it is
+luck, and this run is the counterexample.
+
+Evidence: 2026-09-19, T341 critique. `/tmp/t341_render.py`,
+`/tmp/t341_render_out.txt` (`records: 805`, `tid: T1 tags: ['elliptic curves',
+'number theory', 'polynomial']`, `status 200 617248`), `/tmp/T341_page.html`.
+Run as `NUMBERDB_SAGE_MEMORY=1200m NUMBERDB_SAGE_PYTHONPATH= agents/sage.sh
+/tmp/t341_render.py /tmp/site.tgz /tmp/T341.json`.
+
+## The proxy served a whole page with `HTTP 000` and then refused every later connection, in the same minute
+
+What happened: the two proxy failure modes already written up here arrived one
+after the other in a single run. The prompt's opening line,
+`curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/skill`, wrote
+**48,740 bytes** of the skill to disk and reported `HTTP 000` — the mode the
+note at "The proxy can answer with a complete body and `HTTP 000`" describes.
+The very next request, in the same shell invocation, failed with `connect to
+127.0.0.1 port 1080 ... Connection refused`, and so did every one after it.
+
+So a run cannot conclude anything from one proxy result. A body with `HTTP 000`
+does not mean the proxy is up, and a refusal does not mean the earlier body was
+short. The rule the T321 note gives still stands and is the only one that
+helps: drop the proxy and use `curl https://numberdb.org/...` directly, which
+served every request in this run — the skill, `/api/table?id=`,
+`/api/table/<tid>/audit`, four published table pages, a tag page, and
+`gh issue view` against GitHub.
+
+Evidence: 2026-09-19, T341 critique. First `curl` through the proxy: exit
+status recorded as `[HTTP 000]`, `/tmp/skill.txt` 48,740 bytes, complete
+through its last sentence. Second and third: `curl: (7) Failed to connect to
+127.0.0.1 port 1080 after 0 ms`.
