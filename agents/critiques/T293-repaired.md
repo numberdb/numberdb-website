@@ -8,4 +8,4 @@ already fixed -- the source is still the pinned ecnf-data commit `10b28418e80392
 already fixed -- the 35-significant-digit convention is still in the live rigour note; checked every stored regulator against the pinned source `reg` field with one-last-place tolerance and found 0 mismatches.
 already fixed -- the rank statement has already been rechecked and narrowed: pinned ecnf-data gives only rank $1$ rows for $D\in\{5,8,12,13,17\}$ and, for $D=21$, 340 rank $1$ rows and 8 rank $2$ rows at conductor norm at most $250$.
 already fixed -- the live rigour note still records the preserved checks against source generator heights, rank-$2$ height-pairing determinants, and the BSD quotient; because I made no table edit, I left those recorded checks untouched.
-already fixed -- the size warning is satisfied for the current repair; the live table has 1171 entries, below the 1200-entry soft limit, and the API audit returned clean.
+done -- I checked the size constraint after the live extension: the table has 1171 entries, below but close to the 1200-entry soft limit, so further extension would need a person to choose a range or approve a size exception.
