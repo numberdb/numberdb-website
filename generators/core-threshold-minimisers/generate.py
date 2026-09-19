@@ -1,13 +1,14 @@
-"""Minimisers of the core threshold -- numberdb.org/T289.
+"""Minimisers in the core threshold formula of random k-uniform hypergraphs.
 
-For k >= 3 and r >= 2, lambda_{k,r} is the positive value at which
+For k >= 2 and r >= 2, except (k, r) = (2, 2), lambda_{k,r} is the
+positive value at which
 
     lambda / (k * P(Poisson(lambda) >= r - 1)^(k - 1))
 
 attains the random k-uniform hypergraph r-core threshold c_{k,r}.
 
-This table stores lambda_{k,r} for 3 <= k <= 8 and 2 <= r <= 8 at 100 digits
-in ball arithmetic, matching the companion core-threshold table T273.
+This table stores lambda_{k,r} for 3 <= k <= 8 and 2 <= r <= 8, and for the
+graph case k = 2 with 3 <= r <= 12, at 100 digits in ball arithmetic.
 
 Run it with SageMath:
 
@@ -42,11 +43,16 @@ from sage.rings.real_mpfr import RealField
 
 TABLE = os.environ.get("NUMBERDB_TABLE", "T289")
 
-# The range matches T273, the companion core-threshold table.
-K_MIN = 3
-K_MAX = 8
-R_MIN = 2
-R_MAX = 8
+# The hypergraph rows match T273, the companion core-threshold table. The
+# graph rows match T156, where the thresholds are stored but the minimisers are
+# only named in entry comments.
+HYPERGRAPH_K_MIN = 3
+HYPERGRAPH_K_MAX = 8
+HYPERGRAPH_R_MIN = 2
+HYPERGRAPH_R_MAX = 8
+GRAPH_K = 2
+GRAPH_R_MIN = 3
+GRAPH_R_MAX = 12
 
 # Bits of working precision beyond what the written digits need. Measured at
 # 100 digits: every minimiser ball has radius below 2e-106.
@@ -59,6 +65,7 @@ BRACKET_GUARD = 6
 THRESHOLD_TABLE = "T273"
 GRAPH_CORE_TABLE = "T156"
 THRESHOLD_SLUG = "Core_thresholds_of_random_k-uniform_hypergraphs"
+GRAPH_CORE_SLUG = "k-core_thresholds_of_the_Erd\u0151s_R\u00e9nyi_random_graph"
 
 
 def _key_from_stdin():
@@ -147,18 +154,27 @@ class CoreThresholdMinimisers(numberdb.Generator):
     rigour = "proven"
 
     def enumerate(self):
-        for k in range(K_MIN, K_MAX + 1):
-            for r in range(R_MIN, R_MAX + 1):
+        for r in range(GRAPH_R_MIN, GRAPH_R_MAX + 1):
+            yield {"k": str(GRAPH_K), "r": str(r)}
+        for k in range(HYPERGRAPH_K_MIN, HYPERGRAPH_K_MAX + 1):
+            for r in range(HYPERGRAPH_R_MIN, HYPERGRAPH_R_MAX + 1):
                 yield {"k": str(k), "r": str(r)}
 
     def value(self, params, digits):
         k = int(params["k"])
         r = int(params["r"])
         lam = minimiser(k, r, digits)
-        comment = (
-            r"The associated core threshold is "
-            r"HREF{%s#%d,%d}[$c_{%d,%d}$]." % (THRESHOLD_SLUG, k, r, k, r)
-        )
+        if k == GRAPH_K:
+            comment = (
+                r"The corresponding graph $r$-core threshold is "
+                r"HREF{%s#%d}[$c_%d$], in average-degree normalisation."
+                % (GRAPH_CORE_SLUG, r, r)
+            )
+        else:
+            comment = (
+                r"The associated core threshold is "
+                r"HREF{%s#%d,%d}[$c_{%d,%d}$]." % (THRESHOLD_SLUG, k, r, k, r)
+            )
         return {"number": lam, "comment": comment}
 
 
@@ -248,8 +264,8 @@ def run_integrity_checks():
     threshold_table = _api_table(THRESHOLD_TABLE)
     graph_table = _api_table(GRAPH_CORE_TABLE)
 
-    for k in range(K_MIN, K_MAX + 1):
-        for r in range(R_MIN, R_MAX + 1):
+    for k in range(HYPERGRAPH_K_MIN, HYPERGRAPH_K_MAX + 1):
+        for r in range(HYPERGRAPH_R_MIN, HYPERGRAPH_R_MAX + 1):
             lam = minimiser(k, r, 100)
 
             independent_lam = _mpmath_minimiser(k, r)
@@ -273,7 +289,7 @@ def run_integrity_checks():
                     % (k, r, rounded, expected)
                 )
 
-    for r in range(3, R_MAX + 1):
+    for r in range(GRAPH_R_MIN, GRAPH_R_MAX + 1):
         graph_lam = minimiser(2, r, 100)
         graph_comment = _stored_comment(graph_table, r)
         expected = _comment_minimiser_prefix(graph_comment)
@@ -341,11 +357,10 @@ if __name__ == "__main__":
     generator = CoreThresholdMinimisers()
     run_integrity_checks()
     if "--publish" in sys.argv or os.environ.get("NUMBERDB_PUBLISH") == "1":
-        print(fill_draft_once(
-            generator,
+        print(generator.publish(
+            overwrite=False,
             message=(
-                "minimisers lambda_{k,r} of the random k-uniform hypergraph "
-                "core threshold for 3 <= k <= 8 and 2 <= r <= 8"
+                "added graph-case minimisers lambda_{2,r} for 3 <= r <= 12"
             ),
         ))
     else:
