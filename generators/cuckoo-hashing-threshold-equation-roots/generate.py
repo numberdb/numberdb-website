@@ -1,9 +1,8 @@
 """Roots of the cuckoo hashing threshold equation -- numberdb.org/T288.
 
-For k >= 2 and ell >= 1, xi_{k,ell} is the nonnegative auxiliary root used in
-the orientability threshold for cuckoo hashing with k choices and bucket
-capacity ell. Except for the removable row xi_{2,1} = 0, it is the positive
-solution of
+For k >= 2 and ell >= 1 with (k, ell) != (2, 1), xi_{k,ell} is the positive
+auxiliary root used in the orientability threshold for cuckoo hashing with k
+choices and bucket capacity ell. It is the solution of
 
     k ell = xi Q(xi, ell) / Q(xi, ell + 1),
 
@@ -11,8 +10,8 @@ where Q(x, s) = P(Poisson(x) >= s). The threshold is
 
     c^*_{k,ell} = xi / (k Q(xi, ell)^(k - 1)).
 
-This table stores xi_{k,ell} for 2 <= k <= 7 and 1 <= ell <= 6 at 100 digits
-in ball arithmetic, matching the companion cuckoo hashing threshold table T274.
+This table stores xi_{k,ell} for 2 <= k <= 12 and 1 <= ell <= 8, except
+(k, ell) = (2, 1), at 100 digits in ball arithmetic.
 
 Run it with SageMath:
 
@@ -23,8 +22,7 @@ Run it with SageMath:
 The positive root is enclosed by bisection on the sign of
 xi Q(xi,ell) / Q(xi,ell+1) - k ell. The signs at both ends of the final
 bracket are checked in ball arithmetic, and that bracket is the stored
-enclosure. The row (k, ell) = (2, 1) is exact: the root equation is understood
-by removable extension at xi = 0.
+enclosure.
 """
 
 import json
@@ -43,11 +41,12 @@ from sage.rings.real_mpfr import RealField
 
 TABLE = os.environ.get("NUMBERDB_TABLE", "T288")
 
-# The range matches T274, the companion cuckoo hashing threshold table.
+# The range includes the ell = 1 roots held by T287 and bucket capacity 8,
+# which is a common implementation size.
 K_MIN = 2
-K_MAX = 7
+K_MAX = 12
 ELL_MIN = 1
-ELL_MAX = 6
+ELL_MAX = 8
 
 # Bits of working precision beyond what the written digits need. Measured at
 # 100 digits: every positive-root ball has radius below 2e-106.
@@ -59,6 +58,8 @@ BRACKET_GUARD = 6
 
 THRESHOLD_TABLE = "T274"
 XORSAT_ROOT_TABLE = "T287"
+THRESHOLD_LINK_K_MAX = 7
+THRESHOLD_LINK_ELL_MAX = 6
 
 PUBLISHED_TEN_DIGITS = {
     (3, 1): "0.9179352767",
@@ -129,19 +130,17 @@ def root_function(x, k, ell):
 
 def threshold_from_xi(x, k, ell):
     """The orientability threshold at a candidate root."""
-    if k == 2 and ell == 1:
-        return QQ(1) / QQ(2)
     return x / (k * poisson_tail(x, ell) ** (k - 1))
 
 
 def root(k, ell, digits):
     """A ball enclosing xi_{k,ell}, found by bisection with sign checks."""
-    if k == 2 and ell == 1:
-        return QQ(0)
     if k < 2:
         raise ValueError("the formula is used here only for k >= 2")
     if ell < 1:
         raise ValueError("the formula is used here only for ell >= 1")
+    if k == 2 and ell == 1:
+        raise ValueError("k=2, ell=1 has no positive root")
 
     bits = numberdb.bits(digits, losing=WORKING_GUARD)
     RBF, RR = RealBallField(bits), RealField(bits)
@@ -194,33 +193,31 @@ class CuckooHashingThresholdEquationRoots(numberdb.Generator):
     def enumerate(self):
         for k in range(K_MIN, K_MAX + 1):
             for ell in range(ELL_MIN, ELL_MAX + 1):
+                if k == 2 and ell == 1:
+                    continue
                 yield {"k": str(k), "ell": str(ell)}
 
     def value(self, params, digits):
         k = int(params["k"])
         ell = int(params["ell"])
         xi = root(k, ell, digits)
-        if k == 2 and ell == 1:
-            comment = (
-                r"This is the removable limiting root; the associated "
-                r"threshold is HREF{T274#2,1}[$c^*_{2,1}=1/2$]."
-            )
-        else:
-            comment = (
+        parts = []
+        if k <= THRESHOLD_LINK_K_MAX and ell <= THRESHOLD_LINK_ELL_MAX:
+            parts.append(
                 r"The associated cuckoo hashing threshold is "
                 r"HREF{T274#%d,%d}[$c^*_{%d,%d}$]." % (k, ell, k, ell)
             )
-            if ell == 1 and k >= 3:
-                comment += r" This is also HREF{T287#%d}[$\xi_{%d}$]." % (k, k)
-        return {"number": xi, "comment": comment}
+        if ell == 1 and k >= 3:
+            parts.append(r"This is also HREF{T287#%d}[$\xi_{%d}$]." % (k, k))
+        entry = {"number": xi}
+        if parts:
+            entry["comment"] = " ".join(parts)
+        return entry
 
 
 def _mpmath_root(k, ell, digits=120):
     """Independent numerical root using mpmath's incomplete gamma function."""
     from mpmath import mp
-
-    if k == 2 and ell == 1:
-        return mp.mpf("0")
 
     mp.dps = digits + 30
 
@@ -270,6 +267,15 @@ def _stored_number(table, k, ell=None):
     return record["number"] if isinstance(record, dict) else record
 
 
+def _has_stored_number(table, k, ell=None):
+    numbers = table.get("Numbers") or {}
+    if str(k) not in numbers:
+        return False
+    if ell is None:
+        return True
+    return str(ell) in numbers[str(k)]
+
+
 def _stored_real_ball(field, text):
     """Read the database's exact rational or decimal spelling as a ball."""
     text = str(text)
@@ -292,6 +298,8 @@ def run_integrity_checks():
 
     for k in range(K_MIN, K_MAX + 1):
         for ell in range(ELL_MIN, ELL_MAX + 1):
+            if k == 2 and ell == 1:
+                continue
             xi = root(k, ell, 100)
             independent_xi = _mpmath_root(k, ell)
             independent = RBF(str(independent_xi))
@@ -309,11 +317,14 @@ def run_integrity_checks():
                         % (k, ell, rounded, expected)
                     )
 
-            stored_threshold = _stored_real_ball(RBF, _stored_number(threshold_table, k, ell))
-            if not (abs(RBF(threshold) - stored_threshold) < tolerance):
-                raise ArithmeticError(
-                    "T274 threshold comparison failed for k=%d, ell=%d" % (k, ell)
+            if _has_stored_number(threshold_table, k, ell):
+                stored_threshold = _stored_real_ball(
+                    RBF, _stored_number(threshold_table, k, ell)
                 )
+                if not (abs(RBF(threshold) - stored_threshold) < tolerance):
+                    raise ArithmeticError(
+                        "T274 threshold comparison failed for k=%d, ell=%d" % (k, ell)
+                    )
 
             if ell == 1 and k >= 3 and xorsat_root_table is not None:
                 stored_xorsat = _stored_real_ball(RBF, _stored_number(xorsat_root_table, k))
@@ -372,12 +383,12 @@ if __name__ == "__main__":
     generator = CuckooHashingThresholdEquationRoots()
     run_integrity_checks()
     if "--publish" in sys.argv or os.environ.get("NUMBERDB_PUBLISH") == "1":
-        print(fill_draft_once(
-            generator,
+        print(generator.publish(
             message=(
                 "roots xi_{k,ell} of the cuckoo hashing threshold equation "
-                "for 2 <= k <= 7 and 1 <= ell <= 6"
+                "for 2 <= k <= 12 and 1 <= ell <= 8"
             ),
+            overwrite=False,
         ))
     else:
         report = generator.verify(sample=None)
