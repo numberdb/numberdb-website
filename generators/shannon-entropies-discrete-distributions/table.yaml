@@ -8,7 +8,9 @@ Definition: >-
   For a discrete random variable $X$ with probability mass function $p$, the
   Shannon entropy CITE{WikiShannonEntropy} is
   $H(X)=-\sum_x p(x)\log p(x)$. This table gives $H(X)$ for named discrete
-  probability distributions in their SciPy standard forms, in nats and in bits.
+  probability distributions in their SciPy standard forms. The nats and bits
+  rows are the same entropy in two logarithmic conventions: nats use natural
+  logarithms, and bits divide the nats value by $\log 2$.
 Tags:
   - probability theory
   - special values
