@@ -1,0 +1,6 @@
+1. done -- rewrote and reattached the generator so it no longer enumerates or special-cases $(k,\ell)=(2,1)$; checked first that the stale file failed as 35/36 with one missing row, then checked the edited generator under `agents/sage.sh`.
+2. done -- added the missing $\ell=1$ rows for $8\leq k\leq12$; the generator's integrity check compared every $\ell=1$, $3\leq k\leq12$ root against T287 before publishing.
+3. done -- extended the bucket-capacity range through $\ell=8$ while avoiding T274 entry links for rows T274 does not hold; the generator checked every new root against an independent mpmath computation and bracket sign changes.
+4. done -- extended T288 to $2\leq k\leq12$, $1\leq\ell\leq8$, excluding $(2,1)$, by running the generator with `publish(overwrite=False)`; preview said 52 added, 35 left alone, 0 removed, and final verify was 87/87 matched.
+5. declined -- did not add the near-integer asymptotic to the table prose, because it is a future range boundary rather than a correction; the extension stops at the proposed rectangle and the live `complete-note` now says what range was chosen.
+6. done -- did not create broken T274 entry links when extending T288; new rows link to T287 where applicable, and the rigour details now say the T274 threshold comparison is only for rows that T274 also holds.
