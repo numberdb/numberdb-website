@@ -1,0 +1,140 @@
+# The table document for Shannon entropies of discrete probability
+# distributions. It began as proposal 1 of
+# agents/table-ideas/BATCH-2026-09-18T2152.md, answering numberdb-data#55.
+# Created as draft T339 through the API, filled by generate.py beside it, and
+# offered for review. Publishing is a person's act.
+Title: Shannon entropies of discrete probability distributions
+Definition: >-
+  For a discrete random variable $X$ with probability mass function $p$, the
+  Shannon entropy CITE{WikiShannonEntropy} is
+  $H(X)=-\sum_x p(x)\log p(x)$. This table gives $H(X)$ for named discrete
+  probability distributions in their SciPy standard forms, in nats and in bits.
+Tags:
+  - probability theory
+  - special values
+Keywords:
+  - information theory
+  - Shannon entropy
+  - discrete entropy
+  - distribution entropy
+  - binary entropy function
+  - Bernoulli entropy
+  - binomial entropy
+  - geometric entropy
+  - negative binomial entropy
+  - Poisson entropy
+  - hypergeometric entropy
+  - logarithmic series entropy
+  - Zipf entropy
+  - Benford entropy
+Parameters:
+  distribution:
+    type: Symbolic
+    title: distribution family, in standard form
+    display: distribution
+    values:
+      bernoulli: Bernoulli$(p)$ on $\{0,1\}$
+      binomial: binomial $\operatorname{Binom}(n,p)$
+      geometric: geometric with success probability $p$ on $\{1,2,\ldots\}$
+      negative-binomial: negative binomial counting failures before $r$ successes
+      poisson: Poisson$(\lambda)$
+      discrete-uniform: uniform on $\{1,\ldots,n\}$
+      hypergeometric: hypergeometric with population $N$, successes $K$, and draws $n$
+      logarithmic: logarithmic series with parameter $p$ on $\{1,2,\ldots\}$
+      zipf: Zipfian on $\{1,\ldots,N\}$ with exponent $s$
+      benford: Benford leading-digit distribution on $\{1,\ldots,9\}$
+  shape:
+    type: Symbolic
+    title: shape parameter or tuple of shape parameters
+    display: shape
+    constraints: >-
+      the value is `-` for a distribution with no shape parameter; otherwise
+      it is the displayed integer, rational, half-integer or comma-separated
+      tuple named by the distribution
+  unit:
+    type: Symbolic
+    title: logarithmic unit
+    display: unit
+    values:
+      nats: nats
+      bits: bits
+Comments:
+  standard-forms: >-
+    The support and parameter order are those used by SciPy CITE{SciPyStats}.
+    In particular, the geometric and logarithmic series distributions are
+    supported on positive integers, and the negative binomial row counts
+    failures before the $r$th success.
+  omitted-rational-bits: >-
+    Rows whose bit value is an exact rational number are omitted: the
+    Bernoulli$(1/2)$ row in bits, the geometric$(1/2)$ row in bits, and the
+    bits rows for uniform distributions on $2^m$ points.
+  bernoulli: >-
+    The Bernoulli rows are the binary entropy function $H_2(p)$.
+Formulas:
+  formula-units: >-
+    $H_{\mathrm{bits}}(X)=H_{\mathrm{nats}}(X)/\log 2$.
+  formula-bernoulli-symmetry: >-
+    $H(\operatorname{Bernoulli}(p))=H(\operatorname{Bernoulli}(1-p))$.
+  formula-binomial-symmetry: >-
+    $H(\operatorname{Binom}(n,p))=H(\operatorname{Binom}(n,1-p))$.
+  formula-uniform: >-
+    The uniform distribution on $n$ points has entropy $\log n$ nats.
+  formula-geometric: >-
+    For the geometric distribution on positive integers,
+    $H=-\log p-\frac{1-p}{p}\log(1-p)$ nats.
+  formula-benford: >-
+    Benford's law has probabilities
+    $p_d=\log_{10}(1+1/d)$ for $1\leq d\leq9$.
+Similar tables:
+  - table: HREF{Differential_entropies_of_continuous_probability_distributions}[Differential entropies of continuous probability distributions]
+    relation: the same entropy functional for absolutely continuous distributions
+  - table: HREF{Entropy_constants_of_lattice_models}[Entropy constants of lattice models]
+    relation: entropy per site in lattice models is a limiting entropy rather than the entropy of one named distribution
+Links:
+  WikiShannonEntropy:
+    title: 'Wikipedia: Entropy in information theory'
+    url: https://en.wikipedia.org/wiki/Entropy_(information_theory)
+  SciPyStats:
+    title: 'SciPy: Statistical functions'
+    url: https://docs.scipy.org/doc/scipy/reference/stats.html
+  RequestedIssue55:
+    title: Requested in numberdb-data#55
+    url: https://github.com/numberdb/numberdb-data/issues/55
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.rational_field import QQ
+      from sage.rings.real_arb import RealBallField
+
+      R = RealBallField(numberdb.bits(100, losing=96))
+      p = R(QQ(1) / QQ(3))
+      # Entropy in nats of Bernoulli(1/3).
+      -p * p.log() - (1 - p) * (1 - p).log()
+Data properties:
+  type: R
+  rigour: proven
+  complete: no
+  complete-note: >-
+    it holds Bernoulli$(p)$ for reduced $p\leq1/2$ with denominator at most
+    $12$, together with $p=0.01,\ldots,0.10$; binomial
+    $\operatorname{Binom}(n,p)$ for $2\leq n\leq20$ and
+    $p\in\{1/2,1/3,1/4,1/10\}$; geometric and logarithmic series rows for
+    $p\in\{1/2,1/3,1/4,1/5,1/10,11/100\}$; negative binomial rows for
+    $2\leq r\leq10$ and $p\in\{1/2,1/3,1/4,1/10\}$; Poisson$(\lambda)$ for
+    $\lambda=1/2,1,3/2,\ldots,10,11,\ldots,20$; uniform rows for
+    $2\leq n\leq30$; selected hypergeometric rows with
+    $N\in\{10,20\}$; Zipfian rows with $s\in\{1,2,3\}$ and
+    $N\in\{10,100\}$; and Benford's leading-digit law, each in nats and in
+    bits except where the bit value is an exact rational number
+  rigour details: >-
+    Each entry was computed in Sage real ball arithmetic at
+    `numberdb.bits(digits, losing=128)`. Finite distributions used exact
+    probabilities. The geometric and uniform rows used the closed forms in
+    Formulas. Infinite logarithmic series, negative binomial and Poisson rows
+    were summed with explicit positive tail bounds and the bound was added to
+    the returned ball. Every entry was compared with SciPy 1.17.1 `stats`
+    entropy methods before the draft was filled.
+Display properties:
+  number-header: $H(X)$
