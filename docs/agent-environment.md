@@ -6157,3 +6157,54 @@ stage is `critique`.
 
 Evidence: 2026-09-19, T338 critique. `curl` exit 7 on the proxy; `ss -ltn`
 with no 1080 row; `curl https://numberdb.org/skill` 200, 48,740 bytes.
+
+## The key leaked a seventh time, and the command came out of this file
+
+What happened: this run printed `NUMBERDB_API_KEY` into its transcript, the
+seventh time by the count in the note above. The command was
+
+    env | grep -i -E 'proxy|numberdb' | sed 's/=.*KEY.*/=<hidden>/'
+
+which is the one the previous note already records as ineffective: the `sed`
+hides a variable whose *value* contains "KEY" and `NUMBERDB_API_KEY` is a
+variable whose *name* does. What is new is where it came from. The run had not
+read that note yet. It had run `grep -n -i "proxy\|1080" docs/agent-environment.md`
+to find out why `--socks5-hostname` failed, and line 1102 of the grep output is
+the failing command, printed in full, with nothing on that line saying it
+failed -- the sentence that says so is on the next line and was not in the
+match. So the notes file handed the run a ready-made incantation and hid the
+warning attached to it.
+
+A notes file is read by grep at least as often as it is read in order, and a
+line that quotes a dangerous command is a line that will be copied. Two fixes,
+neither of which is another warning: quote the safe form instead, and describe
+the unsafe one rather than writing it --
+
+    env | grep -i proxy                       # no key can appear
+    env | sed -E 's/^(.*KEY.*)=.*/\1=<hidden>/'   # hides by name, not value
+
+-- and land the `unset NUMBERDB_API_KEY` in `run.sh` that the previous note
+already asks for, which is the only fix that does not depend on what a run
+reads first.
+
+Evidence: 2026-09-19, T288 growth critique, stage `critique`, run
+`20260919T185812Z`. The grep output line beginning `1102:` carries the command
+verbatim; it was run two tool calls later. Treat the key as rotated.
+
+## "No match in database" is on every page, including table pages
+
+What happened: reading `/T288` as text -- tags stripped, whitespace collapsed,
+which is how a critique reads a rendered page -- put the line
+`No match in database` eight lines into the output, above the table's own
+title block. It is not a result: no search had been made. The same line appears
+on `/properties/<number>` for every number tried, including 3.14159265358979,
+so that page cannot be used to judge whether a value is findable either.
+
+Half an hour went into a search-behaviour finding that was page chrome. The
+check that settles it in one call is to fetch a page where no search could
+have happened and look for the string.
+
+Evidence: 2026-09-19, T288 growth critique. `/T288` (200, 53,607 bytes)
+contains it; `/properties/3.14159265358979`, `/properties/2.6879993454994913`
+(a stored T288 value) and `/properties/1.23456789012345` are identical in this
+respect.
