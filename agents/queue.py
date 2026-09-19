@@ -61,7 +61,7 @@ SCREENED_FINDER = re.compile(r'<!-- screened: (\d{4}-\d{2}-\d{2}) -->')
 #: the same conclusion.
 ITEM = re.compile(r'^- \[([ xX\-~])\] (.+?)'
                   r'(?:\s+\(answers ([^)]+)\))?'
-                  r'(?:\s+--\s+(T\d+|skipped:.*?))?\s*$')
+                  r'(?:\s+--\s+(T\d+|skipped:.*?|claimed.*?))?\s*$')
 
 #: How long a screening stays believable. Six weeks is not a measurement; it
 #: is the age at which this corpus has visibly moved -- of 89 proposals
@@ -378,7 +378,7 @@ def _tick(family, title, tid, why=None):
 	hit = False
 	for line in family['body'].splitlines():
 		found = ITEM.match(line)
-		if found and not hit and found.group(1) == ' ':
+		if found and not hit and found.group(1) in (' ', '~'):
 			#Titles drift between the proposal and the table -- "Values of the
 			#digamma function at rational numbers" was proposed and built as
 			#"Values of the digamma function $\\psi(x)$ at rational numbers" --
@@ -509,6 +509,87 @@ def answer_request(number, tid, family_number=None):
 	print('  #%d answered by %s; closed' % (number, tid))
 
 
+def claim(family, title, worker=''):
+	"""Mark a proposal as being built, so another worker takes a different one.
+
+	`- [~] Title -- claimed by <worker>`. The parser has always read `~` as
+	settled, so a claimed proposal drops out of `waiting()` at once and
+	`next_table()` hands the next worker something else. Nothing else changes:
+	the box is ticked properly when the table exists.
+
+	Claiming is what makes more than one worker possible. Without it two
+	workers read the same checklist, pick the same first unbuilt title, and
+	spend fifteen minutes each discovering that the other has taken the draft
+	-- the site refuses the second title, which is safe and wasteful.
+
+	Not a lock. A claim that is never settled leaves `- [~]` behind, and
+	`release` clears it; a campaign that dies mid-build leaves one for a
+	person to look at, which is the right amount of ceremony for a checklist
+	in an issue.
+	"""
+	lines, hit = [], False
+	for line in family['body'].splitlines():
+		found = ITEM.match(line)
+		if found and not hit and found.group(1) == ' ' \
+				and _same_subject(found.group(2), title):
+			asked = (' (answers %s)' % found.group(3)
+			         if found.group(3) else '')
+			line = '- [~] %s%s -- claimed%s' % (
+				found.group(2).strip(), asked,
+				' by %s' % worker if worker else '')
+			hit = True
+		lines.append(line)
+	return '\n'.join(lines) if hit else None
+
+
+def release(family, title):
+	"""Give a claimed proposal back, unbuilt."""
+	lines, hit = [], False
+	for line in family['body'].splitlines():
+		found = ITEM.match(line)
+		if found and not hit and found.group(1) == '~' \
+				and _same_subject(found.group(2), title):
+			asked = (' (answers %s)' % found.group(3)
+			         if found.group(3) else '')
+			line = '- [ ] %s%s' % (found.group(2).strip(), asked)
+			hit = True
+		lines.append(line)
+	return '\n'.join(lines) if hit else None
+
+
+def cmd_claim(args):
+	issue = api('repos/%s/issues/%d' % (REPO, args.number))
+	family = parse_family(issue)
+	if family is None:
+		print('#%d is not a family' % args.number, file=sys.stderr)
+		return 2
+	body = claim(family, args.title, getattr(args, 'worker', ''))
+	if body is None:
+		print('#%d has no unclaimed table like %r'
+		      % (args.number, args.title), file=sys.stderr)
+		return 1
+	api('repos/%s/issues/%d' % (REPO, args.number), 'PATCH', {'body': body})
+	print('#%d: %s claimed%s' % (args.number, args.title,
+	                             ' by %s' % args.worker if args.worker else ''))
+	return 0
+
+
+def cmd_release(args):
+	issue = api('repos/%s/issues/%d' % (REPO, args.number))
+	family = parse_family(issue)
+	if family is None:
+		print('#%d is not a family' % args.number, file=sys.stderr)
+		return 2
+	body = release(family, args.title)
+	if body is None:
+		print('#%d has nothing claimed like %r' % (args.number, args.title),
+		      file=sys.stderr)
+		return 1
+	api('repos/%s/issues/%d' % (REPO, args.number), 'PATCH', {'body': body})
+	print('#%d: %s released' % (args.number, args.title))
+	return 0
+
+
 def cmd_answered(args):
 	"""Close a request by hand, for a table that answered it long ago."""
 	answer_request(args.number, args.tid)
@@ -561,6 +642,17 @@ def main(argv=None):
 	skipped.add_argument('title')
 	skipped.add_argument('why')
 	skipped.set_defaults(run=cmd_built, tid=None)
+
+	claiming = sub.add_parser('claim')
+	claiming.add_argument('number', type=int)
+	claiming.add_argument('title')
+	claiming.add_argument('--worker', default='')
+	claiming.set_defaults(run=cmd_claim)
+
+	releasing = sub.add_parser('release')
+	releasing.add_argument('number', type=int)
+	releasing.add_argument('title')
+	releasing.set_defaults(run=cmd_release)
 
 	answered = sub.add_parser('answered')
 	answered.add_argument('number', type=int, help='the table wanted issue')

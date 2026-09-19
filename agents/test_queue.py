@@ -206,6 +206,37 @@ class WhatAnIssueSays(unittest.TestCase):
 	#No word-counting separates them. The build re-checks the corpus before it
 	#spends anything, which is where that judgement belongs.
 
+	def test_a_claim_takes_a_proposal_out_of_the_queue(self):
+		#What makes more than one worker possible: two workers reading one
+		#checklist would otherwise pick the same first unbuilt title and spend
+		#fifteen minutes each discovering that the other took the draft.
+		body = q.claim(self.family, self.batch['proposals'][0], 'worker-2')
+		self.assertIn('- [~]', body)
+		self.assertIn('claimed by worker-2', body)
+		after = q.parse_family({'number': 42, 'title': 't', 'body': body})
+		self.assertEqual([i['title'] for i in q.waiting(after)],
+		                 [self.batch['proposals'][1]])
+
+	def test_a_claimed_proposal_is_ticked_when_its_table_exists(self):
+		claimed = q.parse_family(
+			{'number': 42, 'title': 't',
+			 'body': q.claim(self.family, self.batch['proposals'][0], 'w')})
+		body = q._tick(claimed, self.batch['proposals'][0], 'T400')
+		self.assertIn('-- T400', body)
+		after = q.parse_family({'number': 42, 'title': 't', 'body': body})
+		built = [i for i in after['items'] if i['built']][0]
+		self.assertEqual(built['tid'], 'T400')
+		#and the request it answers survives the round trip
+		self.assertEqual(built['answers'], [7])
+
+	def test_a_claim_that_built_nothing_goes_back(self):
+		claimed = q.parse_family(
+			{'number': 42, 'title': 't',
+			 'body': q.claim(self.family, self.batch['proposals'][0], 'w')})
+		body = q.release(claimed, self.batch['proposals'][0])
+		after = q.parse_family({'number': 42, 'title': 't', 'body': body})
+		self.assertEqual(len(q.waiting(after)), 2)
+
 	def test_a_table_from_another_family_ticks_nothing(self):
 		self.assertIsNone(q._tick(self.family, 'Salem numbers below 1.3',
 		                          'T300'))
