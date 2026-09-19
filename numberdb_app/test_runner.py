@@ -58,6 +58,15 @@ class TheRunnerFencesOffWhatItCannotUndo(TestCase):
 		self.assertIn('uncommitted changes', body)
 		self.assertIn('exit 3', body)
 
+	def test_a_critique_waiting_to_be_acted_on_is_not_a_dirty_tree(self):
+		#The campaign writes a person's demand into agents/critiques/ and then
+		#starts the run that acts on it. Those files are data -- .gitignore
+		#says so -- and 256 of them are tracked from before that decision, so
+		#without this exclusion the run refuses its own input: a hundred-table
+		#campaign stopped on its first item that way.
+		body = script('agents/run.sh')
+		self.assertIn("':(exclude)agents/critiques'", body)
+
 	def test_the_key_comes_from_a_file_and_not_from_the_caller(self):
 		#This asserted that NUMBERDB_API_KEY never appeared, which is what
 		#left every read anonymous: the client takes the key from the
