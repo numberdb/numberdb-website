@@ -166,6 +166,17 @@ cleanup() {
 trap cleanup EXIT
 
 # --no-deps so this never restarts the site's own containers.
+# Polled rather than blocked, and the wait is said out loud every minute.
+#
+# `flock -w 3600` waits in silence, and silence is the one thing a run cannot
+# afford: four workers share this box, so a Sage call may queue behind
+# another worker's -- and an agent watching a command that has printed
+# nothing for ten minutes is an agent about to decide something. A line a
+# minute keeps the command visibly alive, and twenty minutes is long enough
+# for any generator here (the worst measured is three minutes a value) and
+# short enough that a wedged lock is reported rather than waited out.
+#
+# The original note, still true of why there is a lock at all:
 # `flock -w` waits rather than failing outright: a queued run is what somebody
 # wants, and a refusal would only be retried by hand. `--rm` and a name let the
 # cleanup below reach the container if this end dies first, which is the other
@@ -206,7 +217,16 @@ trap cleanup EXIT
 
 name="numberdb-agent-run-$run_id"
 run_there \
-	"exec 9>'$LOCK'; flock -w 3600 9 || { echo 'another run held the lock for an hour' >&2; exit 75; }; \
+	"exec 9>'$LOCK'; \
+	 waited=0; \
+	 until flock -n 9; do \
+		if [ \$waited -ge ${LOCK_WAIT:-1200} ]; then \
+			echo 'the Sage box has been busy for twenty minutes; try again' >&2; \
+			exit 75; \
+		fi; \
+		[ \$((waited % 60)) -eq 0 ] && echo \"waiting for the Sage lock: another worker is using it (\${waited}s)\" >&2; \
+		sleep 15; waited=\$((waited + 15)); \
+	 done; \
 	 timeout $TIMEOUT docker run --rm -i --name '$name' \
 		--memory='$MEMORY' --memory-swap='$MEMORY' \
 		${pythonpath[*]} \
