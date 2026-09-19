@@ -5,11 +5,11 @@
 # beside it, and offered for review. Publishing is a person's act.
 Title: Kullback-Leibler divergences between probability distributions
 Definition: >-
-  For probability measures $P\ll Q$, the Kullback-Leibler divergence
-  CITE{WikiKL} is the relative entropy $D(P\|Q)$. This table gives it as one
-  number in two conventions, the logarithmic units `nats` and `bits`, for
-  ordered pairs of named one-dimensional distributions in SciPy standard
-  forms.
+  For probability measures $P$ absolutely continuous with respect to $Q$, the
+  Kullback-Leibler divergence CITE{WikiKL} is
+  $D(P\|Q)=\int\log(\mathrm{d}P/\mathrm{d}Q)\,\mathrm{d}P$. The table gives it
+  in nats and bits, two conventions for the same number, for SciPy standard
+  one-dimensional distribution pairs.
 Tags:
   - probability theory
   - special values
@@ -37,7 +37,7 @@ Parameters:
       geometric: $D(\operatorname{Geom}(p)\|\operatorname{Geom}(q))$ on $\{1,2,\ldots\}$
       negative-binomial: $D(\operatorname{NB}(r,p)\|\operatorname{NB}(r,q))$, failures before the $r$th success
       poisson: $D(\operatorname{Poisson}(\lambda)\|\operatorname{Poisson}(\mu))$
-      normal: $D(N(\mu_1,\sigma_1^2)\|N(\mu_2,\sigma_2^2))$
+      normal: $D(N(\mu_1,\sigma_1^2)\|N(\mu_2,\sigma_2^2))$, with location and scale parameters
       exponential: $D(\operatorname{Exp}(\theta_1)\|\operatorname{Exp}(\theta_2))$, with scale parameters
   shape:
     type: Symbolic
@@ -45,9 +45,11 @@ Parameters:
     display: shape
     constraints: >-
       the text before the semicolon gives the parameters of $P$, and the text
-      after it gives the parameters of $Q$; within each side the parameters
-      are in the order named by the distribution label and are separated by
-      commas
+      after it gives the parameters of $Q$; when a count parameter is shared
+      by both distributions, such as $n$ for binomial rows or $r$ for negative
+      binomial rows, it is written once at the start before the semicolon;
+      within each side the remaining parameters are in the order named by the
+      distribution label and are separated by commas
   unit:
     type: Symbolic
     title: logarithmic unit
@@ -67,13 +69,8 @@ Comments:
     $a;b$ and the shape $b;a$ are different rows when both are in the chosen
     range.
   omitted-rational-rows: >-
-    Rows with $P=Q$ are omitted because $D(P\|Q)=0$. Normal rows with
-    $\sigma_1=\sigma_2$ are also omitted because
-    $D(N(\mu_1,\sigma^2)\|N(\mu_2,\sigma^2))=(\mu_1-\mu_2)^2/(2\sigma^2)$ is
-    an exact rational number for the parameters considered here.
+    Rows with $P=Q$ are omitted because $D(P\|Q)=0$.
 Formulas:
-  formula-measure: >-
-    $D(P\|Q)=\int \log(\mathrm{d}P/\mathrm{d}Q)\,\mathrm{d}P$.
   formula-units: >-
     $D_{\mathrm{bits}}(P\|Q)=D_{\mathrm{nats}}(P\|Q)/\log 2$.
   formula-discrete: >-
@@ -112,7 +109,7 @@ Similar tables:
   - table: HREF{Differential_entropies_of_continuous_probability_distributions}[Differential entropies of continuous probability distributions]
     relation: stores entropy of one absolutely continuous distribution, using the same nats and bits units
   - table: HREF{Capacity_of_the_run-length-limited_constrained_codes}[Capacity of the $(d,k)$ run-length-limited constrained codes]
-    relation: belongs to the same information-theory family and uses the same nats and bits units for logarithmic quantities
+    relation: stores capacity of a constrained binary system, a logarithmic growth rate, rather than a divergence between two probability laws
 Links:
   WikiKL:
     title: 'Wikipedia: Kullback-Leibler divergence'
@@ -120,9 +117,6 @@ Links:
   SciPyStats:
     title: 'SciPy: Statistical functions'
     url: https://docs.scipy.org/doc/scipy/reference/stats.html
-  Request56:
-    title: Requested in numberdb-data#56
-    url: https://github.com/numberdb/numberdb-data/issues/56
 Programs:
   program-sage:
     language: Sage
@@ -139,25 +133,31 @@ Programs:
 Data properties:
   type: R
   rigour: proven
-  complete: no
+  complete: 'no'
   complete-note: >-
     it holds ordered distinct Bernoulli and geometric pairs with
-    $p,q\in\{1/2,1/3,1/4,1/5,1/10,11/100\}$; binomial
+    $p,q\in\{1/2,1/3,1/4,1/5,1/10,11/100\}$, chosen to include small
+    unit-fraction probabilities and one two-decimal probability; binomial
     $\operatorname{Binom}(n,p)$ pairs for $2\leq n\leq10$ and ordered
     distinct $p,q\in\{1/2,1/3,1/4,1/10\}$; negative binomial pairs for
-    $2\leq r\leq10$ and the same ordered distinct $p,q$; Poisson pairs with
+    $2\leq r\leq10$ and ordered distinct
+    $p,q\in\{1/2,1/3,1/4,1/10\}$; Poisson pairs with
     $\lambda,\mu\in\{1/2,1,3/2,2,5,10\}$ and $\lambda\neq\mu$; normal pairs
     $N(0,\sigma_1^2)$ and $N(0,\sigma_2^2)$ with ordered distinct
-    $\sigma_1,\sigma_2\in\{1/2,1,2,3\}$; and exponential pairs with ordered
+    $\sigma_1,\sigma_2\in\{1/2,1,2,3\}$ and both locations fixed at $0$,
+    because a difference of means contributes the exact rational term
+    $(\mu_1-\mu_2)^2/(2\sigma_2^2)$; and exponential pairs with ordered
     distinct scale parameters
-    $\theta_1,\theta_2\in\{1/2,1,2,3,10\}$, each in nats and bits
+    $\theta_1,\theta_2\in\{1/2,1,2,3,10\}$, each in nats and bits, with the
+    smaller binomial and negative binomial probability set keeping those
+    two-parameter families to reference size
   rigour details: >-
     Each entry was computed from the closed forms in Formulas in Sage real
     ball arithmetic at `numberdb.bits(digits, losing=128)`. All 676 entries
     were compared with SciPy 1.17.1: finite discrete rows with
     `stats.entropy`, infinite discrete rows with independent probability mass
     sums, and the normal and exponential rows with numerical expectations
-    under the first distribution. The largest difference was
+    under $P$. The largest difference was
     $3.06\cdot10^{-13}$ bits, on the exponential row with shape `10;1/2`.
 Display properties:
   number-header: $D(P\|Q)$
