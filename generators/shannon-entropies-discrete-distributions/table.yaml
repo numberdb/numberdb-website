@@ -67,7 +67,8 @@ Comments:
   omitted-rational-bits: >-
     Rows whose bit value is an exact rational number are omitted: the
     Bernoulli$(1/2)$ row in bits, the geometric$(1/2)$ row in bits, and the
-    bits rows for uniform distributions on $2^m$ points.
+    bits rows for $\operatorname{Binom}(2,1/2)$ and for uniform distributions
+    on $2^m$ points.
   bernoulli: >-
     The Bernoulli rows are the binary entropy function $H_2(p)$.
 Formulas:
@@ -118,14 +119,16 @@ Data properties:
   complete: no
   complete-note: >-
     it holds Bernoulli$(p)$ for reduced $p\leq1/2$ with denominator at most
-    $12$, together with $p=0.01,\ldots,0.10$; binomial
+    $12$, together with $p=0.01,\ldots,0.11$; binomial
     $\operatorname{Binom}(n,p)$ for $2\leq n\leq20$ and
     $p\in\{1/2,1/3,1/4,1/10\}$; geometric and logarithmic series rows for
     $p\in\{1/2,1/3,1/4,1/5,1/10,11/100\}$; negative binomial rows for
     $2\leq r\leq10$ and $p\in\{1/2,1/3,1/4,1/10\}$; Poisson$(\lambda)$ for
     $\lambda=1/2,1,3/2,\ldots,10,11,\ldots,20$; uniform rows for
-    $2\leq n\leq30$; selected hypergeometric rows with
-    $N\in\{10,20\}$; Zipfian rows with $s\in\{1,2,3\}$ and
+    $2\leq n\leq30$; hypergeometric rows with $(N,K,n)$ in
+    $\{10\}\times\{2,5\}\times\{2,5,8\}$ and
+    $\{20\}\times\{2,5,10\}\times\{2,5,10\}$; Zipfian rows with
+    $s\in\{1,2,3\}$ and
     $N\in\{10,100\}$; and Benford's leading-digit law, each in nats and in
     bits except where the bit value is an exact rational number
   rigour details: >-
@@ -134,7 +137,9 @@ Data properties:
     probabilities. The geometric and uniform rows used the closed forms in
     Formulas. Infinite logarithmic series, negative binomial and Poisson rows
     were summed with explicit positive tail bounds and the bound was added to
-    the returned ball. Every entry was compared with SciPy 1.17.1 `stats`
-    entropy methods before the draft was filled.
+    the returned ball. All 469 entries were compared with SciPy 1.17.1
+    `stats` entropy methods before the draft was filled; the largest
+    difference was $3.32\cdot10^{-10}$ bits, on the negative binomial row
+    with $r=9$ and $p=1/10$.
 Display properties:
   number-header: $H(X)$
