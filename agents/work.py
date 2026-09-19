@@ -88,7 +88,19 @@ def read(tid, suffix=''):
 #---------------------------------------------------------------- the kinds
 
 def demands():
-	"""Open `enhancement` issues that name a table in their title or body."""
+	"""Open `enhancement` issues that name a table, and have not been acted on.
+
+	**Once each.** Growth asks its question once (`<tid>-growth.md`) and a
+	sweep reads a table once (`<tid>.md`); a demand had no such mark, so
+	`pick()` -- which puts a person's demand before everything else -- handed
+	the same issue back every time round the loop. A hundred-table campaign
+	spent $58 repairing T293 twenty-six times and built nothing.
+
+	The mark is the repair's own report, `<tid>-repaired.md`: written by the
+	stage that acted on the demand, and the same file a person would read to
+	see what was done. The issue stays open until somebody is satisfied, which
+	is a person's judgement and not this loop's.
+	"""
 	found = []
 	try:
 		issues = proposals.api(
@@ -106,8 +118,11 @@ def demands():
 		#The first T-number in the title, or failing that in the body: an
 		#issue about T293 may mention T137 in passing, and the one it is
 		#*about* is the one it leads with.
+		tid = 'T%s' % tids[0]
+		if read(tid, '-repaired'):
+			continue
 		found.append({'kind': 'demand', 'issue': issue['number'],
-		              'tid': 'T%s' % tids[0], 'title': issue['title'],
+		              'tid': tid, 'title': issue['title'],
 		              'body': issue.get('body') or ''})
 	return found
 

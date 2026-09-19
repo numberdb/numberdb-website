@@ -266,6 +266,22 @@ while [ "$made" -lt "$builds" ]; do
 		say "nothing waiting anywhere and no screening to be had; stopping"
 		exit 6
 	fi
+
+	# The same item twice is a queue that is not being consumed, and the loop
+	# cannot tell the difference between that and work. On 2026-09-19 a
+	# demand had no "done" mark, so this loop repaired T293 twenty-six times
+	# for $58 and built nothing; the spend looked exactly like progress.
+	#
+	# Policy, not judgement: whatever the reason, the second identical item
+	# stops the campaign rather than paying for it again.
+	this_item=$(printf '%s|%s|%s' "$(field "$next" kind)" \
+		"$(field "$next" tid)" "$(field "$next" title)")
+	if [ "$this_item" = "${last_item:-}" ]; then
+		say "the queue offered the same item twice: $this_item"
+		say "stopping: something is not marking work as done, and paying for it again would not help"
+		exit 8
+	fi
+	last_item="$this_item"
 	kind=$(field "$next" kind)
 	tid=$(field "$next" tid)
 
