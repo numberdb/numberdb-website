@@ -1,18 +1,22 @@
 # The table document for numberdb.org/T289. It was created as a draft through
 # the API (X-Draft: yes) and is filled by generate.py beside it; publishing is
 # a person's act on the site.
-Title: Minimisers of the core threshold
+Title: Minimisers in the core threshold formula of random $k$-uniform hypergraphs
 Definition: >-
-  For $k\geq3$ and $r\geq2$, $\lambda_{k,r}$ is the positive minimiser in
-  CITE{formula-threshold}, the formula for the random $k$-uniform hypergraph
-  CITE{WikiHypergraph} $r$-core threshold.
-Keywords: peeling threshold, pure literal rule, invertible Bloom lookup table, 2-core
+  For integers $k\geq2$ and $r\geq2$, other than $(k,r)=(2,2)$,
+  $\lambda_{k,r}$ is the positive $\lambda$ that minimises
+  $\lambda/(kQ(\lambda,r-1)^{k-1})$, where
+  $Q(\lambda,s)=\mathbb{P}(\mathrm{Po}(\lambda)\geq s)$. This minimum gives
+  the $r$-core threshold $c_{k,r}$ of a random $k$-uniform hypergraph
+  CITE{WikiHypergraph}; when $k=2$, it is half the usual average-degree
+  threshold of a random graph.
+Keywords: random hypergraph core, Poisson parameter, core threshold minimiser
 Parameters:
   k:
     type: Z
     title: edge size
     display: $k$
-    constraints: $k\geq3$
+    constraints: $k\geq2$
   r:
     type: Z
     title: minimum degree of the core
@@ -20,10 +24,12 @@ Parameters:
     constraints: $r\geq2$
 Comments:
   comment-convention: >-
-    The notation and indexing match
+    For $k\geq3$, the notation and indexing match
     HREF{Core_thresholds_of_random_k-uniform_hypergraphs}[the core threshold
-    table]: $\lambda_{k,r}$ gives
-    $c_{k,r}=\lambda_{k,r}/(kQ(\lambda_{k,r},r-1)^{k-1})$.
+    table], whose $c_{k,r}$ is obtained from $\lambda_{k,r}$ by
+    CITE{formula-threshold}. The $k=2$ rows use the same minimisation for the
+    HREF{k-core_thresholds_of_the_Erdős_Rényi_random_graph}[graph core
+    threshold table], which writes thresholds in average-degree normalisation.
 Formulas:
   formula-tail: >-
     $Q(\lambda,s)=\mathbb{P}(\mathrm{Po}(\lambda)\geq s)
@@ -31,11 +37,8 @@ Formulas:
   formula-minimiser: >-
     The minimiser $\lambda_{k,r}$ is the unique positive zero of
     $g(\lambda)=Q(\lambda,r-1)
-    -(k-1)e^{-\lambda}\lambda^{r-1}/(r-2)!$. The sign of $g$ is the sign of
-    the derivative of
-    $\lambda/Q(\lambda,r-1)^{k-1}$, and
-    $g'(\lambda)=e^{-\lambda}\lambda^{r-2}((k-1)\lambda-(k-1)(r-1)+1)/(r-2)!$,
-    so $g$ decreases and then increases, with one positive zero.
+    -(k-1)e^{-\lambda}\lambda^{r-1}/(r-2)!$. The derivative is
+    $g'(\lambda)=e^{-\lambda}\lambda^{r-2}((k-1)\lambda-(k-1)(r-1)+1)/(r-2)!$.
   formula-threshold: >-
     $c_{k,r}=\min_{\lambda>0}\lambda/(kQ(\lambda,r-1)^{k-1})
     =\lambda_{k,r}/(kQ(\lambda_{k,r},r-1)^{k-1})$ CITE{Molloy}
@@ -63,8 +66,8 @@ Programs:
 Similar tables:
   - table: HREF{Core_thresholds_of_random_k-uniform_hypergraphs}[Core thresholds of random $k$-uniform hypergraphs]
     relation: thresholds obtained from these minimisers by the formula for $c_{k,r}$
-  - table: HREF{k-core_thresholds_of_the_Erdős_Rényi_random_graph}[$k$-core thresholds of the Erdos-Renyi random graph]
-    relation: the graph case, obtained by the same minimisation when the edge size is $2$ and written in average degree rather than edge density
+  - table: HREF{k-core_thresholds_of_the_Erdős_Rényi_random_graph}[$k$-core thresholds of the Erdős–Rényi random graph]
+    relation: graph-case thresholds obtained from the same minimisers at edge size $2$ and written in average degree rather than edge density
 Links:
   WikiHypergraph:
     title: 'Wikipedia: Hypergraph'
@@ -92,22 +95,26 @@ Data properties:
   complete: 'no'
   complete-note: >-
     it holds $\lambda_{k,r}$ for every $3\leq k\leq8$ and $2\leq r\leq8$,
-    matching the companion core-threshold table
+    and for edge size $k=2$ with $3\leq r\leq12$; $(2,2)$ is omitted because
+    the minimum is approached as $\lambda\to0$ and has no positive minimiser
   rigour details: >-
     Each entry is computed in ball arithmetic with 64 guard bits beyond the
-    100 digits written. The minimiser $\lambda_{k,r}$ is the unique minimiser
-    because the sign of the derivative is the sign of $g$ in
-    CITE{formula-minimiser}: $g$ decreases and then increases, so it is
-    negative before $\lambda_{k,r}$ and positive after it. The computation
-    encloses $\lambda_{k,r}$ by bisection on the sign of $g$ between
+    100 digits written. The function
+    $\lambda/(kQ(\lambda,r-1)^{k-1})$ has only one minimiser because the sign
+    of its derivative is the sign of $g$ in CITE{formula-minimiser}; the
+    displayed derivative $g'$ is negative below $(r-1)-1/(k-1)$ and positive
+    above it, so $g$ first decreases from $0$ and then increases to $1$,
+    crossing zero once on $(0,\infty)$. The computation encloses
+    $\lambda_{k,r}$ by bisection on the sign of $g$ between
     $(r-1)-1/(k-1)$ and $4(k+r)+10$, each sign decided in ball arithmetic,
     down to a bracket of half-width $10^{-106}$ whose ends are checked to
     give opposite signs; that bracket is the stored ball. The Poisson tail is
     the finite sum in CITE{formula-tail}. The generator compares every row
     with an mpmath computation at 120 digits that writes $Q$ as the
     regularised incomplete gamma function, compares every derived threshold
-    with HREF{Core_thresholds_of_random_k-uniform_hypergraphs}[the core
-    threshold table], and checks the $k=2$ extension against
+    for the $k\geq3$ rows with
+    HREF{Core_thresholds_of_random_k-uniform_hypergraphs}[the core threshold
+    table], and checks the edge-size-$2$ rows against
     HREF{k-core_thresholds_of_the_Erdős_Rényi_random_graph}[the graph-core
     threshold table].
 Display properties:
