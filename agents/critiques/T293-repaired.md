@@ -1,8 +1,8 @@
-done -- the live table had already raised the conductor-norm bound to $250$ for $D\in\{5,8,12,13,17\}$; I added the next field, $D=21$, by running a generator against pinned ecnf-data, bringing the table from 823 to 1171 entries.
-already fixed -- the live API and rendered page already included $D=5$ and $D=8$ rows and the comment recording their first positive-rank conductor norms, $199$ and $103$.
-done -- the generator reads ecnf-data directly at commit `10b28418e80392032b106ea00e6c5aa109d28e7b`, uses `publish(overwrite=False)`, and left the existing 823 entries untouched.
-done -- the 35-significant-digit convention was checked against every pre-existing row before adding D=21 and used for all new D=21 regulators.
-done -- the D=21 extension includes the rank-2 rows; I checked the eight rank-2 source regulators in Sage by recomputing the height-pairing determinant from the recorded equations and generators, and updated the rigour note.
-done -- the generator checks the BSD quotient against the recorded analytic order of Sha for every generated row; after the repair, `verify(sample=None)` reported `1171/1171 matched`.
-done -- the table remains under the 1200-entry soft limit at 1171 entries, and `GET /api/table/T293/audit` returned `clean: true`.
-left for a person -- adding $D=24$ and later fields at the same norm bound would require a size/range decision, since $D=24$ alone would raise the table to 1748 entries, above the soft limit.
+already fixed -- the opening claim no longer applies: the live API and rendered page now show 1171 regulators over $D\in\{5,8,12,13,17,21\}$ with conductor norm at most $250$, not 32 regulators over three fields; I checked the live document, page, and pinned ecnf-data labels.
+already fixed -- the $D=5$ and $D=8$ conductor claim is now in the table as `comment-small-fields`; I checked the pinned `mwdata` files and found the first positive-rank rows at norms $199$ and $103$.
+already fixed -- the conductor-norm bound has already been raised to $250$; the pinned source has 1171 positive-rank rows in the six-field slice, and the live table has exactly those labels with no missing or extra rows.
+already fixed -- the field-growth axis has already been acted on by adding $D=21$; adding $D=24$ and later fields is left to the existing size decision, since $D=24$ alone would raise the table from 1171 to 1748 entries, above the 1200-entry soft limit.
+already fixed -- the live rigour details still cite ecnf-data commit `10b28418e80392032b106ea00e6c5aa109d28e7b`; I read the raw files at that commit rather than using the LMFDB API.
+already fixed -- the 35-significant-digit convention is already applied; I checked all 1171 live numbers have 35 significant digits and match the corresponding source regulator prefix.
+already fixed -- the old rank-1-only note is gone and the rank-2 case is handled; I checked the live comments give 340 rank-1 and 8 rank-2 rows over $D=21$, and Sage recomputed the eight rank-2 height-pairing determinants within $3\cdot10^{-16}$ of the stored/source regulators.
+already fixed -- the live rigour details keep the source-height and BSD-quotient checks; I verified the visible source coverage and regulator transcription, and `GET /api/table/T293/audit` returned `clean: true`.
