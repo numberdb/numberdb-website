@@ -6,7 +6,7 @@ Definition: >-
   For $0\leq d<k\leq\infty$, a binary $(d,k)$ run-length-limited constrained
   sequence has at least $d$ and at most $k$ zeros between consecutive $1$s
   CITE{Kovacevic} CITE{WikiRLL}. The table gives the same capacity $C(d,k)$
-  in the two logarithmic units `nats` and `bits`.
+  as one number in two conventions, the logarithmic units `nats` and `bits`.
 Parameters:
   d:
     type: Z
