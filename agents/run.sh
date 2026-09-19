@@ -762,6 +762,28 @@ agents/sync-costs.sh || true
 #failed to file its paperwork has still produced a table.
 agents/archive-run.sh "$log" || true
 
+#And what this run committed, to the remote.
+#
+#The preflight refuses to start from a commit nobody else can fetch, because
+#a recorded pipeline version that names one is a note to itself. Enforcing
+#that at the start and never pushing means the *second* run of a campaign
+#refuses: the first commits its work, HEAD leaves the remote behind, and the
+#campaign stops with ninety-nine items to go. That is exactly how the
+#hundred-table campaign of 2026-09-19 stopped twice. So the run that made the
+#commits is the run that pushes them.
+#
+#Best effort, like the two above: a run that has done its work and written
+#its ledger line must not be failed by a network error. The next run's
+#preflight says so plainly enough.
+if [ "${NUMBERDB_PUSH:-1}" = "1" ] \
+		&& [ -n "$(git log --oneline origin/main..HEAD 2>/dev/null)" ]; then
+	if git push --quiet origin HEAD 2>/dev/null; then
+		echo "=== pushed $(git rev-parse --short HEAD)"
+	else
+		echo "=== could not push; the next run will refuse to start until somebody does"
+	fi
+fi
+
 echo "=== finished with status $status; transcript in $log"
 tail -1 "$ledger" | awk -F'\t' '{printf "=== %s turns, $%s\n", $4, $5}'
 exit "$status"
