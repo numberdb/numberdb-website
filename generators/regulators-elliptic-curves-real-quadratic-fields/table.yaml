@@ -6,7 +6,7 @@ Definition: >-
   curve of positive Mordell-Weil rank $r$. This table gives the regulator
   $R_{E/K}$, the determinant of the absolute Néron-Tate height pairing on
   $E(K)$ modulo torsion.
-Keywords: Birch and Swinnerton-Dyer, BSD, elliptic regulator, Neron-Tate height, real quadratic field, Q(sqrt 5), Q(sqrt 2), Q(sqrt 3), Q(sqrt 13), Q(sqrt 17)
+Keywords: Birch and Swinnerton-Dyer, BSD, elliptic regulator, Neron-Tate height, real quadratic field, Q(sqrt 5), Q(sqrt 2), Q(sqrt 3), Q(sqrt 13), Q(sqrt 17), Q(sqrt 21)
 Parameters:
   D:
     type: Z
@@ -34,8 +34,8 @@ Comments:
   comment-field-generator: >-
     The generator $w$ of $K$ follows the LMFDB CITE{LMFDB} convention used in
     ecnf-data CITE{ecnf-data}: it satisfies $w^2-w-1=0$ for $D=5$, $w^2-2=0$
-    for $D=8$, $w^2-3=0$ for $D=12$, $w^2-w-3=0$ for $D=13$, and $w^2-w-4=0$
-    for $D=17$.
+    for $D=8$, $w^2-3=0$ for $D=12$, $w^2-w-3=0$ for $D=13$, $w^2-w-4=0$
+    for $D=17$, and $w^2-w-5=0$ for $D=21$.
   comment-rank-zero: >-
     Rank $0$ curves are not listed; their regulator is the determinant of the
     empty height-pairing matrix, so it is $1$.
@@ -95,19 +95,24 @@ Data properties:
     - CITE{ecnf-data}
   complete: 'no'
   complete-note: >-
-    it holds every positive-rank curve in ecnf-data over the five real
-    quadratic fields of smallest discriminant, $D\in\{5,8,12,13,17\}$, with
+    it holds every positive-rank curve in ecnf-data over the six real
+    quadratic fields of smallest discriminant, $D\in\{5,8,12,13,17,21\}$, with
     conductor norm at most $250$
   rigour details: >-
     Entries are transcribed from the ecnf-data `reg` field at commit
     `10b28418e80392032b106ea00e6c5aa109d28e7b` and kept to $35$ significant
     digits, because equality checks among Galois-conjugate curves and
     same-regulator curves in this table show that the final source digits are
-    not stable. In this range every stored curve has rank $1$, and each
-    regulator is compared with the source height of the recorded generator.
-    The generator also checks that the Birch and Swinnerton-Dyer quotient in
-    CITE{formula-BSD} gives $|\operatorname{Sha}(E/K)|$, the analytic order of
-    the Tate-Shafarevich group recorded by ecnf-data for each source row.
+    not stable. The rows over $D\in\{5,8,12,13,17\}$ all have rank $1$; over
+    $D=21$ the table includes rank $1$ and rank $2$ curves. For rank $1$ rows,
+    the regulator is checked against the source height of the recorded
+    generator. For the rank $2$ rows over $D=21$, the determinant of the
+    height-pairing matrix was recomputed in Sage from the recorded generators
+    and equations and compared with the source regulator at Sage's ordinary
+    height-computation precision. The generator also checks that the Birch and
+    Swinnerton-Dyer quotient in CITE{formula-BSD} gives
+    $|\operatorname{Sha}(E/K)|$, the analytic order of the Tate-Shafarevich
+    group recorded by ecnf-data for each source row.
 Display properties:
   number-header: $R_{E/K}$
   group parameters:
