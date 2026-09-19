@@ -1,8 +1,8 @@
-# The table document for Kullback-Leibler divergences between probability
-# distributions. It began as proposal 3 of the information-theory family in
-# numberdb-data#164, answering numberdb-data#56. Created as a draft through
-# the API with X-Draft: yes, filled by generate.py beside it, and offered for
-# review. Publishing is a person's act.
+# The table document for numberdb.org/T343, Kullback-Leibler divergences
+# between probability distributions. It began as proposal 3 of the
+# information-theory family in numberdb-data#164, answering numberdb-data#56.
+# Created as a draft through the API with X-Draft: yes, filled by generate.py
+# beside it, and offered for review. Publishing is a person's act.
 Title: Kullback-Leibler divergences between probability distributions
 Definition: >-
   For probability measures $P$ and $Q$ with $P$ absolutely continuous with
