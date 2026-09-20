@@ -1,0 +1,4 @@
+1. already fixed -- the live API document and rendered page now have `comment-bound`, explaining that Salem numbers below $1.3$ are called small and that the cutoff lies below the plastic-constant accumulation point; I checked the Sac-Epee paper for the terminology and ran Sage checks that the live table still has 47 reciprocal-polynomial entries below $1.3$, with the plastic root at about $1.324717957$.
+2. declined -- the range has not moved, so the generator still only needs the Mossinghoff truncation check; no Sac-Epee rounded rows are being added, and the authenticated audit is clean.
+3. left for a person -- a separate table indexed by degree would be a new table-design decision, not a repair to T284, so I did not create it.
+4. declined -- the noted-only items require no table edit: the degree-$46$ caveat remains in `complete-note`, the table still has 47 entries below $1.3$, and `GET /api/table/T284/audit` returned `findings: []` and `clean: true`.
