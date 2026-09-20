@@ -6813,3 +6813,39 @@ Evidence: 2026-09-20, `ps aux` shows
 ... fill_verify_quartic.py` from 12:24 holding `/tmp/numberdb-sage.lock`,
 with this run's `bash -c exec 9>'/tmp/numberdb-sage.lock' ... until flock -n 9`
 still spinning at 12:53.
+
+## The search bar misses polynomials that `search_polynomial` finds
+
+What happened: with the API rate-limited, this run screened five proposed
+polynomials through the site's search bar instead, at
+`https://numberdb.org/?q=<polynomial>`, and got nothing for any of them. That
+looked like a clean negative until the same queries went through the API an
+hour later, where two controls settled it:
+
+| query | search bar | `numberdb.search_polynomial` |
+|---|---|---|
+| `3*x^2 + 3*x + 1` | T233 | T116, T233, T245 |
+| `4*x^2 - 2` (= $H_2$, in T103) | **nothing** | T103 |
+| `8*x^3 - 12*x` (= $H_3$, in T103) | **nothing** | not retried |
+
+So the bar returns a false negative on published entries, and it returned one
+on every query tried that had both a coefficient and a minus sign, while
+`+`-only queries came back. `2*x` and `x - 1` also came back, so it is not
+the minus alone. The bar also answers a query it found nothing for with the
+plain front page -- no "N results for" line at all -- so a caller parsing for
+a result marker cannot tell a miss from a parse failure.
+
+Two things follow for a run. **Screen polynomials through
+`numberdb.search_polynomial`, never through the bar**; if the API is
+rate-limited, wait for it rather than substituting. And a negative from the
+bar is not evidence of anything until a control that *is* in the corpus comes
+back from the same query shape.
+
+Worth a person's time as a bug: it is the search a reader holding a
+polynomial actually uses.
+
+Evidence: 2026-09-20, `/tmp/s6.py` output --
+`search_polynomial('4*x^2 - 2') -> [Result('4*x^2 - 2', table="Hermite
+polynomials in physicist's convention")]`, against
+`curl --get --data-urlencode 'q=4*x^2 - 2' https://numberdb.org/` returning
+the front page with no results section.
