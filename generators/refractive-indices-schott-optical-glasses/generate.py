@@ -25,7 +25,13 @@ from collections import defaultdict
 from decimal import Decimal, ROUND_HALF_UP, getcontext
 from pathlib import Path
 
-import numberdb.sage as numberdb
+try:
+    import numberdb.sage as numberdb
+except (ImportError, ModuleNotFoundError) as exc:
+    if getattr(exc, "name", None) not in (None, "sage") \
+            or "needs SageMath" not in str(exc):
+        raise
+    import numberdb
 
 DIGITS = 6
 DECIMAL_PLACES = Decimal("0.00001")
