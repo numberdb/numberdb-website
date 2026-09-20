@@ -1,6 +1,6 @@
 server {
     listen 80;
-    server_name ${SERVER_NAME};
+    server_name ${SERVER_NAME} www.${SERVER_NAME};
 
     # This block is nearly all redirects, and would otherwise have been the one
     # place still logging full addresses -- every visitor passes through it
@@ -17,6 +17,25 @@ server {
     location / {
         return 301 https://$host$request_uri;
     }
+}
+
+# One site, one host.
+#
+# `www.numberdb.org` resolved here and was served the whole site, so every
+# page existed twice and each copy's canonical link named its own host --
+# which is what Google reported as "duplicate without user-selected
+# canonical" on fourteen pages. A permanent redirect settles it before
+# anything is rendered, and the certificate already covers both names.
+server {
+    listen 443 ssl http2;
+    server_name www.${SERVER_NAME};
+
+    ssl_certificate /etc/letsencrypt/live/${SERVER_NAME}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${SERVER_NAME}/privkey.pem;
+
+    access_log /var/log/nginx/access.log anonymised;
+
+    return 301 https://${SERVER_NAME}$request_uri;
 }
 
 server {
