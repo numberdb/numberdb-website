@@ -1,0 +1,113 @@
+# Draft document for numberdb.org/T371, built from numberdb-data issue #172.
+# Created as a draft through the API with X-Draft: yes, to be filled by
+# generate.py beside it and offered for review. Publishing is a person's act.
+Title: Secondary polynomials of the Hermite polynomials in physicist's convention $q_n$
+Definition: >-
+  For $n\geq0$, let $H_n$ be the
+  HREF{Hermite_polynomials_H}[Hermite polynomial in physicist's convention].
+  The secondary polynomial $q_n$ is
+  $q_n(x)=\int_{-\infty}^{\infty}(H_n(t)-H_n(x))/(t-x)\,\rho(t)\,dt$
+  CITE{Wiki}, where $\rho(t)=e^{-t^2}/\sqrt{\pi}$ is the probability
+  density proportional to the Hermite weight.
+Parameters:
+  n:
+    type: Z
+    title: degree
+    display: $n$
+    constraints: $n\geq0$
+Comments:
+  comment-normalisation: >-
+    The weight is normalised to a probability density, so $m_0=1$. With the
+    unnormalised weight $e^{-t^2}$ the same integral is $\sqrt{\pi}$ times
+    this table's polynomial, which is not a polynomial over $\mathbb{Z}$ or
+    $\mathbb{Q}$.
+  comment-recurrence: >-
+    Equivalently, $q_n$ is the numerator polynomial for the recurrence of
+    $H_n$. Since $H_0=1$, $H_1=2x$ and
+    $H_{n+1}=2xH_n-2nH_{n-1}$, the corresponding numerator sequence has
+    $q_0=0$, $q_1=2$ and the same recurrence. This is the zeroth
+    corecursive polynomial, or the order-one associated monic polynomial
+    after undoing the monic rescaling, in the terminology of CITE{DLMF}.
+  comment-weights: >-
+    At the roots $x_1<\cdots<x_n$ of $H_n$,
+    $q_n(x_k)/H_n'(x_k)$ is $w_k/\sqrt{\pi}$, where $w_k$ is the weight of
+    the $n$-point HREF{Nodes_and_weights_of_Gauss_Hermite_quadrature}[Gauss-Hermite
+    quadrature] rule for the unnormalised weight $e^{-x^2}$.
+  comment-small: >-
+    The first values are $q_0=0$, $q_1=2$, $q_2=4x$,
+    $q_3=8x^2-8$ and $q_4=16x^3-40x$.
+Formulas:
+  formula-recurrence: >-
+    $q_0=0$, $q_1=2$, and
+    $q_{n+1}(x)=2xq_n(x)-2nq_{n-1}(x)$ for $n\geq1$.
+  formula-moments: >-
+    If $H_n(x)=\sum_{j=0}^{n}c_jx^j$, then
+    $q_n(x)=\sum_{j=1}^{n}c_j\sum_{i=0}^{j-1}m_i x^{j-1-i}$, where
+    $m_i=\int_{-\infty}^{\infty}t^i\rho(t)\,dt$ is $0$ for odd $i$ and
+    $(i-1)!!/2^{i/2}$ for even $i$.
+  formula-pade: >-
+    Let $F(z)=\int_{-\infty}^{\infty}\rho(t)/(z-t)\,dt$. Then
+    $q_n(z)/H_n(z)$ is the $n$-th convergent of the Stieltjes continued
+    fraction for $F(z)$.
+  formula-weights: >-
+    At a root $x_k$ of $H_n$,
+    $q_n(x_k)/H_n'(x_k)=w_k/\sqrt{\pi}$, the normalised Gauss-Hermite
+    quadrature weight at $x_k$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.integer_ring import ZZ
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+      R = PolynomialRing(ZZ, "x")
+      x = R.gen()
+      q_prev = R.zero()
+      q = R(2)
+      for n in range(1, 10):
+          q_prev, q = q, 2*x*q - 2*n*q_prev
+      q
+Similar tables:
+  - table: HREF{Hermite_polynomials_H}[Hermite polynomials in physicist's convention]
+    relation: the $H_n$ these are the secondary polynomials of, and the recurrence they share
+  - table: HREF{Nodes_and_weights_of_Gauss_Hermite_quadrature}[Nodes and weights of Gauss-Hermite quadrature]
+    relation: the weights divided by $\sqrt{\pi}$ are $q_n(x_k)/H_n'(x_k)$ at the nodes
+  - table: HREF{Secondary_polynomials_of_the_Legendre_polynomials}[Secondary polynomials of the Legendre polynomials]
+    relation: the same construction for the Legendre weight, in the unnormalised convention already used there
+Links:
+  Wiki:
+    title: 'Wikipedia: Secondary polynomials'
+    url: https://en.wikipedia.org/wiki/Secondary_polynomials
+  Wiki-Hermite:
+    title: 'Wikipedia: Hermite polynomials'
+    url: https://en.wikipedia.org/wiki/Hermite_polynomials
+  DLMF:
+    title: 'DLMF 18.30: associated orthogonal polynomials'
+    url: https://dlmf.nist.gov/18.30
+  Request93:
+    title: 'Requested in numberdb-data#93'
+    url: https://github.com/numberdb/numberdb-data/issues/93
+Tags:
+  - polynomial
+  - orthogonal polynomials
+  - continued fractions
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every $n\leq50$, matching the range of
+    HREF{Hermite_polynomials_H}[the physicists' Hermite polynomial table]
+  rigour details: >-
+    Every value is exact, a polynomial with integer coefficients, so there is
+    no precision to choose. The generator builds $q_n$ from the exact
+    recurrence CITE{formula-recurrence}. Before the values were written, the
+    recurrence values were checked against the defining integral evaluated
+    exactly from the moments in CITE{formula-moments}, against a direct
+    polynomial long-division computation of that integral, against the
+    degree and parity forced by the definition, and against the normalised
+    Gauss-Hermite weight identity CITE{formula-weights} through the stored
+    range.
+Display properties:
+  number-header: $q_n(x)$
