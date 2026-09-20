@@ -6711,3 +6711,32 @@ It applies (4) and (5)." A 693-byte slice confirmed that a longer
 `number-header`, `$P_\ell^m(x)$, with $y=(1-x^2)^{1/2}$`, renders intact, and
 that `repeats: HREF{slug}[caption]` renders the caption where a bare
 `HREF{slug}` renders the slug with its underscores.
+
+## The 320 MB cap kills mpmath's oscillatory tail sum before the clock does
+
+What happened: the T283 growth read timed the table's own generator at a
+claimed 110 digits (working `dps` 125) to find out what raising the whole table
+from 50 digits to the recommended 100 would cost. `agents/sage.sh` ran $n=200$
+in 24.5 s and $n=100$ in 225.7 s, and then **exit 137** on $n=50$ — SIGKILL from
+the kernel, not `timeout`, which exits 124. The default `NUMBERDB_SAGE_MEMORY`
+is `320m`, and `mp.nsum(..., method="r+s")` over quadratures between the zeros
+of $J_0$ holds every partial in the acceleration table at full working
+precision, so the footprint grows with the number of terms — and the number of
+terms grows as $n$ falls, because $J_0(x)^n$ decays like $x^{-n/2}$. The
+generator's docstring already records an earlier OOM on a 2 GB build machine
+from the same place, which is why it computes each value in a child process.
+
+Two things follow for whoever sizes the next call. **Exit 137 is the memory cap
+and exit 124 is the clock**, and they want different fixes: `NUMBERDB_TIMEOUT`
+for the second, `NUMBERDB_SAGE_MEMORY` for the first. And **a run that gets
+cheaper along its parameter can still be killed at the cheap end** — the cost
+here falls with $n$ but the memory rises, so probing the far end tells you
+nothing about the near one. Order a probe cheapest-first and stream its output
+to a file rather than through `tail`, which buffers the whole pipeline: a first
+attempt at this ran 28 minutes and showed nothing at all, because `| tail -10`
+held every line until the pipe closed.
+
+Evidence: 2026-09-20, T283 growth report. `timeout 2000 agents/sage.sh
+/tmp/cost.py > /tmp/cost.out` wrote two timing lines and then `EXIT 137`;
+the same algorithm at working `dps` 55 and 63 ran $n=7$ in 50.3 s and 49.3 s
+inside the same 320 MB.
