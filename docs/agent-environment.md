@@ -6740,3 +6740,31 @@ Evidence: 2026-09-20, T283 growth report. `timeout 2000 agents/sage.sh
 /tmp/cost.py > /tmp/cost.out` wrote two timing lines and then `EXIT 137`;
 the same algorithm at working `dps` 55 and 63 ran $n=7$ in 50.3 s and 49.3 s
 inside the same 320 MB.
+
+## `git add -A` drops your critique without saying so
+
+What happened: this run wrote `agents/critiques/T283-growth.md`, ran
+`git add -A && git commit`, and got a commit containing the lesson proposal and
+this file and **not the report**. `.gitignore:168` excludes
+`agents/critiques/`, deliberately — critiques are what a run produced on a
+particular afternoon, which the repository calls data and keeps outside itself.
+`git add -A` honours that silently: no warning, exit 0, and the commit looks
+fine. The next command, `git add -A && git commit`, then said "nothing to
+commit, working tree clean", which reads like the edit never happened.
+
+In practice 289 critiques *are* tracked, 16 of them growth reports, so the
+convention is to override the rule file by file. `git add -f <path>` is what
+the earlier runs used and what works.
+
+`.gitignore:172-178` already records the mirror-image trap for
+`agents/lessons/PROPOSALS.md` — `git add` on a *tracked* file under an ignored
+directory prints "the following paths are ignored", exits 1, and stages it
+anyway, so `git add ... && git commit ...` stages and never commits. Both traps
+are the same shape and neither is visible in the output you get. **Name the
+file to `git add -f` when it lives under `agents/`, and check `git log -1
+--stat` rather than the exit code.**
+
+Evidence: 2026-09-20, T283 growth report. `git check-ignore -v
+agents/critiques/T283-growth.md` answers `.gitignore:168 agents/critiques/`;
+commit b6464a0 shows two files and not the third; `git ls-files
+agents/critiques/ | wc -l` is 289.
