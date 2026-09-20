@@ -49,7 +49,8 @@ Comments:
   comment-source: >-
     The source files give the refractive-index formula and the catalogue
     conditions. The values here are for the relative index in air, not the
-    absolute index against vacuum.
+    absolute index against vacuum. A value is listed only when the wavelength
+    lies in the fitted range stated by the source file.
   comment-duplicates: >-
     Some catalogue types have identical dispersion coefficients in the source.
     When this occurs, the affected entries carry a comment naming the sibling
@@ -98,7 +99,11 @@ Tags:
 Data properties:
   type: R
   rigour: measured
-  complete: 'yes'
+  complete: 'no'
+  complete-note: >-
+    it holds each of the six listed Fraunhofer lines when that wavelength lies
+    in the source file's fitted range; the only omitted value is the $g$ line
+    for SF6G05, whose source fit begins at $460\,\mathrm{nm}$
   rigour details: >-
     The generator reads the Schott optical-glass records from the
     refractiveindex.info database at commit
