@@ -854,10 +854,34 @@ def create_table(tree, author=None, message='', produced_by='', strict=False,
 	#database error page after the author had written the whole document.
 	existing = Table.objects.filter(title=title).first()
 	if existing is not None:
+		#What to do about it, not only that it happened. A build that dies
+		#between creating its draft and filling it leaves an empty table
+		#holding the title, and every later attempt at that proposal was told
+		#only "already exists" -- so it stopped, and the draft sat empty for
+		#twenty hours while the proposal it blocked could never be built by
+		#anybody. The refusal now says which table, what state it is in, and
+		#which of the two things to do.
+		state = 'published' if existing.published else 'an unpublished draft'
+		if not existing.published and not has_entries(
+				tree_of(existing.head_revision) if existing.head_revision
+				else {}):
+			advice = ('It is %s with no entries yet -- an earlier run created '
+			          'it and stopped before filling it. Continue *that* '
+			          'table rather than making another: write its document '
+			          'and send its entries to %s.'
+			          % (state, existing.tid))
+		elif not existing.published:
+			advice = ('It is %s and already has entries. Check whether it is '
+			          'the table you were about to build; if it is, it is '
+			          'built, and what it needs is review rather than a '
+			          'second copy.' % (state,))
+		else:
+			advice = ('It is %s, so this proposal is answered. Record it '
+			          'against the proposal rather than building it twice.'
+			          % (state,))
 		raise ValueError(
-			'A table called %r already exists (%s). Give this one a title that '
-			'distinguishes it, or edit the existing table instead.'
-			% (title, existing.tid))
+			'A table called %r already exists (%s). %s'
+			% (title, existing.tid, advice))
 
 	#One transaction around the number and the first revision both, so a
 	#document refused for being over a hard limit leaves no half-made table
