@@ -6662,10 +6662,13 @@ here:
   than at import time, so the first three screens of a session look fine.
 * `agents/sage.sh` takes a lock on the Sage host and holds it for the life of
   the run, so a check started while another campaign's *build* is going
-  produces no output at all until that build finishes -- fifteen minutes and
-  counting, in this run's case, for a script that takes seconds. Start the Sage
-  check before writing the prose, not after, and read the output file rather
-  than waiting on the terminal.
+  produces no output at all until that build finishes. This run started a
+  twenty-second script, waited fifty-five minutes without a byte of output, and
+  stopped it. A stage-one check does not need Sage: exact rational polynomial
+  arithmetic is `fractions.Fraction`, and roots to double precision are
+  twenty lines of Durand-Kerner, which is enough to show that a proposed check
+  works. Keep Sage for the build, where the digits matter, and say in the
+  proposal which precision the screening actually reached.
 
 ## The repository's own `numberdb/` shadows the client, for plain Python too
 
