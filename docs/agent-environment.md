@@ -6482,3 +6482,69 @@ Evidence: 2026-09-20 ideas run. `already_asked('Refractive indices of the
 Schott optical glasses')` and the four sibling titles returning `[]`;
 `already_asked('Refraction indices of important materials')` returning
 `['#63 [open] Refraction indices of important materials']`.
+
+## An unreviewed value is held out of search and is not marked, so the page and the search contradict each other
+
+What happened: T286 was grown from 50 to 79 entries on 2026-09-20 and T300
+with it. Pasting any of the 29 new values into `/api/lookup` -- at 10, 12, 16,
+20 or 30 significant digits -- returns nothing, while every one of the 50 older
+rows is returned at every precision. T300 shows the identical cut at the same
+rank, with polynomials instead of reals. The rows are plainly on the page and
+answer no search at all.
+
+The mechanism is not a bug: `_identifiable` in `numberdb_app/search.py` filters
+`reviewed = True`, and the growth wrote a new head revision whose new rows
+nobody has reviewed. The skill says so in section 9, and gives the reason a
+reader should not mind: "a reader looking at a table can see an entry is
+unreviewed, and somebody typing digits into a search box cannot."
+
+The bug is that on a published table they cannot see it. The dagger exists for
+exactly this -- `numberdb_app/templates/includes/not-findable-mark.html`, whose
+own comment says it is there because otherwise "the number is plainly here, yet
+searching for it finds nothing, and a reader has no way to tell that this is
+deliberate". It is driven by `not_findable`, set at `numberdb_app/views.py:1350`
+from `findable_by_number(number)`, and that function reads
+`exact_relative_width` and nothing else. It cannot know a row is unreviewed, so
+it never marks one. The fetched `/T286` contains no dagger and no other review
+marker anywhere.
+
+Two consequences for a run. A growth repair that publishes new rows on a
+reviewed table delivers nothing to a reader until somebody reviews it, and the
+run cannot tell from the page that this is so -- checking that the new values
+answer `/api/lookup` is the only way, and a run that skips it will report a
+range as delivered when it is invisible. And a critique that finds rows
+unfindable should suspect the review flag before suspecting the values: the
+boundary falling exactly at the table's previous range is the signature.
+
+Evidence: 2026-09-20. `/api/lookup` with the key, ranks 1..50 of T286 returning
+their own row at every precision and ranks 51..79 returning nothing at any;
+T300 ranks 1, 30, 50 found and 51, 60, 79 not; `git show d6b11a7` for the
+growth that added them.
+
+## The review queue hands out a table's old size, and three runs were sent at T286
+
+What happened: `agents/review-queue.tsv` row 287 reads
+`T286  50  18526  Pisot numbers...`. The live table has held 79 entries and
+22,602 bytes since 02:52 that morning. The brief for the `w4` growth run
+repeated the stale figures, and `w2` and `w3` had each already written
+`agents/critiques/T286-growth.md` -- two full critiques of a range that a
+repair had already changed, and a third dispatched afterwards against the
+number the queue still held.
+
+The queue is a snapshot and does not claim otherwise; what makes it expensive
+here is that entry count and byte size are exactly the two numbers a growth
+critique is asked to reason about, so a stale row does not merely misinform the
+run, it sets it the wrong question. Three runs on one table also collide on one
+path: all three wrote the same `agents/critiques/T286-growth.md` on three
+branches, which is a conflict on every merge, unlike the lesson proposals,
+which are deliberately given per-run filenames for this reason.
+
+What to do instead: fetch `GET /api/table?id=T<n>` and count the entries before
+believing the brief's size, and say in the report when they disagree. If a
+campaign is going to dispatch growth work, the queue row wants refreshing when
+a repair writes entries -- or the critique path wants the run stamp the lesson
+proposals already carry.
+
+Evidence: 2026-09-20. `agents/review-queue.tsv:287`; `len(Numbers) == 79` from
+`GET /api/table?id=T286`; commits `d7e3f0c` (w2), `0e48aec` (w3) and `d6b11a7`
+(the repair between them).
