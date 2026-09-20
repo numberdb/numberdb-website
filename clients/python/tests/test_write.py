@@ -1831,7 +1831,27 @@ class TestAComplexNumberIsAPairOfComponents:
 
     def test_a_fraction_is_written_in_lowest_terms(self):
         value = numberdb.ComplexInterval(Fraction(5, 65), 0)
-        assert to_text(value) == '1/13 + i * 0'
+        #And a zero imaginary part is not written: the value is 1/13, which is
+        #a real number however it was computed.
+        assert to_text(value) == '1/13'
+
+    def test_a_real_number_computed_in_a_complex_field_is_written_as_real(self):
+        #T346 stored 188 entries reading `4.3463... + i * [0, 0]`: an interval
+        #notation for nothing, in a field that is not uncertain, on a number
+        #that is real. The same table writes its rational roots as `-9/4`, so
+        #it was already inconsistent with itself.
+        from numberdb._write import _complex_text
+
+        for zero in ('0', '-0', '[0, 0]', '0.000', '[0.0000 +/- 0]'):
+            assert _complex_text('4.3463', zero) == '4.3463', zero
+
+    def test_an_imaginary_part_that_is_small_is_not_zero(self):
+        #The distinction the check has to keep: 1e-90 is a number, and a
+        #value that is nearly real is not a real one.
+        from numberdb._write import _complex_text
+
+        assert _complex_text('2', '1e-90') == '2 + i * 1e-90'
+        assert _complex_text('2', '[1.5 +/- 2e-3]') == '2 + i * [1.5 +/- 2e-3]'
 
     def test_an_integer_component_stays_an_integer(self):
         value = numberdb.ComplexInterval(0, -1)

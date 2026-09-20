@@ -400,8 +400,36 @@ def _complex_text(real, imag):
     A negative imaginary part keeps its sign in `b` -- `2 + i * -1`, never
     `2 - i * 1` -- so the separator is always `+` and nothing has to be read
     twice to work out what is being subtracted.
+
+    **A zero imaginary part is not written at all.** A real number computed in
+    a complex field arrives here with an imaginary part of exactly zero, and
+    writing it produced `4.3463... + i * [0, 0]`: an interval notation for
+    nothing, in a field that is not uncertain, on a number that is real. T346
+    stored 188 of them. The value is real, so it is written as a real -- which
+    is also how the same table already writes the roots that are rational.
     """
+    if _is_written_zero(imag):
+        return real
     return '%s + i * %s' % (real, imag)
+
+
+#: How a zero imaginary part can arrive, written. `[0, 0]` is an exact zero
+#: interval and `[0.0000 +/- 0]` a ball of no radius around it; both mean the
+#: number is real, and so does a plain `0`.
+def _is_written_zero(text):
+    stripped = str(text).strip()
+    if stripped in ('0', '-0', '[0, 0]', '[-0, 0]', '[0, -0]'):
+        return True
+    #`[0.000... +/- 0]` and `0.000...`: zero however many places it is given
+    #to, and no uncertainty.
+    body = stripped.strip('[]')
+    if '+/-' in body:
+        centre, _, radius = body.partition('+/-')
+        return _is_written_zero(centre) and _is_written_zero(radius)
+    try:
+        return float(body) == 0.0 and 'e' not in body.lower()
+    except ValueError:
+        return False
 
 
 def _truncate(text, digits):
