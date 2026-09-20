@@ -3,11 +3,10 @@
 # it and offered for review. Publishing is a person's act.
 Title: Values of the lower incomplete gamma function $\gamma(a,x)$
 Definition: >-
-  For real $x>0$ and $a\notin\mathbb{Z}_{\leq0}$, the lower incomplete gamma
-  function is $\gamma(a,x)=\int_0^x t^{a-1}e^{-t}\,\mathrm{d}t$ for $a>0$,
-  continued meromorphically in $a$ for the other stored real parameters
-  CITE{DLMFDefinition}. This table gives real principal values at rational
-  parameters $a$ and positive rational arguments $x$.
+  The lower incomplete gamma function is
+  $\gamma(a,x)=\int_0^x t^{a-1}e^{-t}\,\mathrm{d}t$ for $a>0$ and $x>0$
+  CITE{DLMFDefinition}. This table gives its real principal values at rational
+  $a\notin\mathbb{Z}_{\leq0}$ and rational $x>0$.
 Keywords:
   - incomplete gamma function
   - lower incomplete gamma
@@ -99,7 +98,6 @@ Links:
 Tags:
   - special values
   - special functions
-  - hypergeometric functions
 Data properties:
   type: R
   rigour: proven
