@@ -1,0 +1,7 @@
+done -- added `repeats: HREF{Values_of_the_exponential_integral}` and narrowed the exponential-integral relation to the shared range; checked the live T351 and T188 documents, including all 50 common $a=0$ and $E_1$ strings through $x=5$.
+done -- rewrote the completeness note to use $a\in\tfrac12\mathbb{Z}$ and list the seven stored $a$ values; checked the live table still has 700 entries with parameter order $a,x$.
+done -- defined $\gamma(a,x)$ in the complement formula; checked the DLMF definition and kept the integral statement to $a>0$ with analytic continuation for nonintegral negative $a$.
+done -- removed "principal real values" from the definition and moved the branch point to the comment about $\Gamma(a,z)$; checked that the defining integral is single-valued and real for real $a$ and positive real $x$.
+done -- added the chi-squared survival interpretation to the regularized-function comment and the range rationale to the completeness note; checked it by substituting $u=t/2$ in the chi-squared density, giving $Q(a,x)=\Pr(\chi^2_{2a}>2x)$.
+done -- measured the arb guard with Sage over all 700 entries, found worst radius $1.3956138\cdot10^{-115}$ at $a=0,x=99/10$, wrote the weaker bound $<2\cdot10^{-115}$, and named the recurrence in the rigour details.
+done -- linked Tricomi's function at its first formula-section mention and clarified the corresponding $U$ parameters in Similar tables; checked the live T209 slug and that the relation is not a repeat declaration.

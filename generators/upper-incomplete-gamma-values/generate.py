@@ -1,8 +1,7 @@
 """Values of the upper incomplete gamma function Gamma(a,x) -- numberdb.org/T351
 
-For each half-integer parameter a with -1/2 <= a <= 5/2 and each argument
-x = k/10 with 1 <= k <= 100, this stores the principal real value of the upper
-incomplete gamma function Gamma(a,x).
+For each a in (1/2)Z with -1/2 <= a <= 5/2 and each argument x = k/10 with
+1 <= k <= 100, this stores the upper incomplete gamma function Gamma(a,x).
 
 Run it with SageMath:
 
