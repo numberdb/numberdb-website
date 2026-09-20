@@ -6333,3 +6333,26 @@ Evidence: 2026-09-20, T286 growth repair preview. The helper
 `/tmp/preview_pisot_extension.py` loaded `T286_generate.py` and
 `T300_generate.py` after the two repository `generate.py` files were copied to
 those names.
+
+## A Sage probe can sit twelve minutes behind another campaign's lock
+
+What happened: an ideas run measuring a proposed table called
+`agents/sage.sh` on a scratch script that takes about forty seconds to run.
+It printed `waiting for the Sage lock: another worker is using it` once a
+minute for twelve minutes before starting, because a build in another
+worktree held `/tmp/numberdb-sage.lock` for its own run. The call was in the
+foreground, so it hit the tool's 600 s limit first and was moved to the
+background, and the run had to come back for the answer.
+
+None of that is a fault: `agents/sage.sh` says out loud that it is queued,
+which is exactly what it should do, and `LOCK_WAIT` defaults to 1200 s. The
+lesson is about how to call it while a campaign is running. Start Sage probes
+in the background and do something else meanwhile — screening, reading
+tables, drafting — rather than blocking a turn on a forty-second script that
+may not start for a quarter of an hour. Waiting time is not a measure of what
+the script costs.
+
+Evidence: 2026-09-20, ideas run `20260920T025445Z`.
+`/tmp/claude-.../tasks/bbwbb2j45.output` opens with twelve
+`waiting for the Sage lock` lines at sixty-second intervals, then runs to
+completion in seconds. `agents/sage.sh` lines 169-179 and 220-227.
