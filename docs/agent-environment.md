@@ -6542,3 +6542,37 @@ against the live entry comments before running it with `--publish`.
 
 Evidence: 2026-09-20, T286 growth critique. `git log --oneline -- generators/
 pisot-numbers-less-than-golden-ratio/` showed one commit, `--all` showed two.
+
+## A private draft's files and revision history are public; only the table page refuses
+
+What happened: reading draft T353, `https://numberdb.org/T353` and its slug
+`/Values_of_the_incomplete_beta_function` both answered 404 to an anonymous
+`curl`, as they should. Three neighbouring addresses answered 200 to the same
+anonymous request:
+
+    /files/T353                 200  the title, and the list of attachments
+    /files/T353/generate.py     200  the whole attached generator, as source
+    /revisions/T353             200  every revision, with the document diffs
+
+The diffs include the draft's prose in full, so the revision page hands over
+what the table page is refusing. `views.table_by_url` and `views.table_by_tid`
+call `_refuse_a_draft`, and so does `views.preview` (a note further up records
+that `/preview/T133` used to leak a draft and was fixed). `views.table_files`,
+`views.table_file` and the revisions view do `get_object_or_404(Table, ...)`
+and no permission check at all.
+
+Worth knowing for two different reasons. It is a leak, and somebody should put
+`_refuse_a_draft` on those three views. And until then it is also the cheapest
+way for a run with no key to read a draft's attached generator, which is
+otherwise only in `generators/` on whichever branch built it -- though a run
+that has a key should use `GET /api/table?id=T353`, which is the supported
+route and answers with the document rather than with HTML.
+
+Evidence: 2026-09-20, T353 critique. `curl -sS -o /dev/null -w '%{http_code}'`
+with no `Authorization` header: `T353` 404, `Values_of_the_incomplete_beta_
+function` 404, `preview/T353` 404, `discussion/T353` 404, `edit/T353` 302,
+`files/T353` 200 (14,930 bytes), `files/T353/generate.py` 200 (19,003 bytes),
+`revisions/T353` 200 (168 KB of text after stripping tags, carrying the
+`rigour details` diff of the 03:05 revision verbatim). The generator served
+that way is byte-identical to
+`generators/values-incomplete-beta-function/generate.py`.
