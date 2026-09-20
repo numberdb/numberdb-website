@@ -16,7 +16,8 @@ recurrence with the defining moment formula, with a plain Python fractions
 implementation of the same formula, with the shifted monic associated-Hermite
 recurrence, and with the Gauss-Hermite quadrature identity
 q_n(x_k)/H_n'(x_k) = w_k/sqrt(pi) at the roots of H_n, checked exactly as a
-polynomial congruence modulo H_n.
+polynomial congruence modulo H_n. They also check the Pade property of
+q_n/H_n for the Stieltjes transform of the probability Hermite weight.
 """
 
 import os
@@ -189,10 +190,30 @@ def check_identities():
         if congruence != expected:
             raise ArithmeticError("Gauss-Hermite congruence failed at n=%d" % n)
 
+    for n in range(1, UP_TO + 1):
+        coefficients = HERMITE[n].list()
+        for exponent in range(n):
+            coefficient = sum(
+                coefficients[degree] * moment(degree + exponent)
+                for degree in range(len(coefficients))
+            )
+            if coefficient != 0:
+                raise ArithmeticError(
+                    "Pade remainder coefficient %d failed at n=%d"
+                    % (exponent, n)
+                )
+        first_remainder = sum(
+            coefficients[degree] * moment(degree + n)
+            for degree in range(len(coefficients))
+        )
+        if first_remainder == 0:
+            raise ArithmeticError("first Pade remainder vanished at n=%d" % n)
+
     longest = max((len(str(SECONDARY[n])), n) for n in range(UP_TO + 1))
     print("integrity checks passed for q_0 through q_%d" % UP_TO)
     print("moment formula and plain Python fraction checks passed")
     print("associated-Hermite recurrence and Gauss-Hermite congruence passed")
+    print("Stieltjes-transform Pade check passed")
     print("longest polynomial has %d characters at n=%d" % (longest[0], longest[1]))
 
 
