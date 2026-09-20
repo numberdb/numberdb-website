@@ -6316,3 +6316,20 @@ invisible behind a closed issue.
 
 Evidence: 2026-09-19, ideas run `20260919T205023Z`. numberdb-data#139 body;
 `numberdb.table('T101')`.
+
+## `agents/sage.sh` mounts extra files by basename
+
+What happened: checking T286 and T300 together needed a Sage helper script to
+import two different generator files. Passing both repository paths directly
+would mount both as `/work/generate.py`, because `agents/sage.sh` uses
+`basename "$file"` for each `-v` target. The safe pattern is to copy scratch
+inputs to distinct names first, such as `/tmp/T286_generate.py` and
+`/tmp/T300_generate.py`, and import those names from the helper.
+
+This is about the wrapper, not Sage or the NumberDB client, so it belongs here
+rather than in the public table skill.
+
+Evidence: 2026-09-20, T286 growth repair preview. The helper
+`/tmp/preview_pisot_extension.py` loaded `T286_generate.py` and
+`T300_generate.py` after the two repository `generate.py` files were copied to
+those names.
