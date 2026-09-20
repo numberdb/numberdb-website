@@ -6691,3 +6691,50 @@ like the corpus being unreachable. A script in `/tmp` run as
 briefly wrote down "the client loads its names lazily, so `dir()` is empty" as
 a lesson about the client. Print `numberdb.__file__` before believing anything
 about the package.
+
+## `agents/sage.sh` gives up after twenty minutes, and `LOCK_WAIT` is how you wait longer
+
+A stage-one run on 2026-09-20 started a two-minute check under
+`agents/sage.sh` and watched it print `waiting for the Sage lock: another
+worker is using it` every sixty seconds. The lock is held for the life of
+another campaign's *build*, which is tens of minutes, and the wait loop in
+`agents/sage.sh` stops at `${LOCK_WAIT:-1200}` seconds with
+
+    the Sage box has been busy for twenty minutes; try again
+
+and exit 75. `LOCK_WAIT=4000 agents/sage.sh script.py` waits longer, and
+`NUMBERDB_TIMEOUT` (default 1800) is the separate cap on the run itself once
+the lock is taken. Neither is documented anywhere but in the script.
+
+The note above -- that a stage-one check does not need Sage -- is the better
+answer. The same run rewrote its checks in plain Python with a hand-built
+$\mathbb{F}_{p^f}$ (fifty lines: polynomial multiplication modulo a primitive
+polynomial, a discrete-log table, a trace) and had every identity it needed
+inside ten minutes, at double precision, while the Sage run was still queued.
+Precision is what Sage is for; an identity that holds to $10^{-14}$ is already
+enough to write down a check for somebody else to run properly.
+
+## `pkill -f` matches the harness's own wrapper, so it kills the shell issuing it
+
+`pkill -f "sage.sh /tmp/sums.py"` returned exit 144 and killed the command
+that ran it, before the rest of the compound command could start the
+replacement job. The pattern matched two processes: the intended one, and the
+`bash -c` the tool harness wraps every command in, whose *command line
+contains the text of the command being run* -- including the pattern. Anything
+of the form `pkill -f "<words from this very command>"` is self-referential.
+
+Kill by pid (`pgrep -f ... | grep -v $$`), or make the pattern one that cannot
+occur in the killing command, or just let the job finish. The symptom is an
+exit code in the 130-144 range from a command that looks like it should have
+worked, and no output from anything after the `pkill`.
+
+## arXiv's export API answers over HTTPS and returns nothing over HTTP
+
+`curl "http://export.arxiv.org/api/query?search_query=..."` returned an empty
+body with no error; the same URL with `https://` returned the Atom feed. The
+earlier note here says only that "the arXiv export API and Crossref could be
+reached", which is true and was read as covering both schemes. Use `https`.
+`https://arxiv.org/abs/<id>` also answers 200 and is what
+`screen.source_names_it` can be pointed at when a family has no encyclopedia
+article: the abstract page contains the title, which is usually where the
+family is named.
