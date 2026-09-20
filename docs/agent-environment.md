@@ -6476,3 +6476,25 @@ reaching the site from this box:
 Evidence: 2026-09-20, T285 growth critique. `pgrep -a -f 1080` and
 `ss -ltnp` while the proxy was down; `curl -o /dev/null -w '%{http_code}'`
 direct to numberdb.org returning 200 in the same minute.
+
+## `queue.py built` can close a family while another line is only claimed
+
+What happened: after T358 was built from issue #167, running
+
+    python3 agents/queue.py built 167 "Sharp Gagliardo-Nirenberg constants of Del Pino and Dolbeault" T358
+
+ticked the Gagliardo-Nirenberg line and then closed the family issue with
+"Every table in this family now exists." The checklist still had the Nash
+line as `[~] ... claimed by w1`, not `[x]`, but `cmd_built` closes when
+`waiting(family)` is empty, and a live claim is not waiting.
+
+That is right for dispatching new workers and wrong for deciding that a family
+is complete. A claimed line is work in progress, not a settled table. When
+`queue.py built` closes a family, read the checklist before trusting the close;
+if any line is still `[~]`, reopen the issue and say which line remains
+claimed.
+
+Evidence: issue #167, 2026-09-20. The command printed `#167 closed; the family
+is built` while the issue body still contained `Sharp constant in Nash's
+inequality ... -- claimed by w1 at 2026-09-20T04:51Z`. The run reopened #167
+with a comment after T358 was offered for review.
