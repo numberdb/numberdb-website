@@ -6392,3 +6392,91 @@ Evidence: 2026-09-19, T341 repair. `/tmp/t341_math_checks.py` failed on the
 `/app/generators/...` import and passed after
 `generators/division-polynomials-elliptic-curves-q/generate.py` was mounted
 and imported as `/work/generate.py`.
+
+## `audit_table`'s unlinked-family check cannot see a family whose name differs from its title
+
+What happened: T347's Definition says "the $n$-th division polynomial" and does
+not link T341, the table of exactly those polynomials, which the corpus holds
+and which T347 links from two other sections. `audit_table` returned
+`clean: true`.
+
+It is right by its own rule, and the rule is the limit. The check bares each
+other table's title of LaTeX and looks for that whole string in the prose
+(`_bare_title`, `audit_table.py:65`, and the loop at :912). T341's title,
+"Division polynomials $\psi_n$ of elliptic curves over $\mathbb{Q}$", bares to
+
+    Division polynomials of elliptic curves over
+
+-- forty-three characters ending in a preposition, which is not a phrase
+anybody writes inside a sentence. `_FRAGMENT` would have emptied it had the
+title ended in "of" or "for", but "over" is not in that tuple, so the table is
+not skipped either: it is checked for, against a string that can never occur.
+Every table whose title ends "... of elliptic curves over $\mathbb{Q}$" is in
+the same position, and there are at least four of them.
+
+So the skill's "link the first mention" rule is enforced only where an author
+happens to quote a title verbatim, which is the case it least needs enforcing.
+A critique should read the Definition for named families by hand and not take
+`clean` as an answer about them. Fixing the check properly means matching a
+distinctive *head* of the title rather than the whole of it, which is a real
+piece of work and not a notes-file matter.
+
+The second blind spot in the same command is already written up in
+`agents/critiques/T341.md` and is still there: `unresolved_citations` checks
+that every `CITE{}` resolves and nothing checks the other direction, so a Link
+declared and never cited passes. T347 carries `SageDivision` that way, and it
+is not decoration -- it is the citation belonging to a sentence about the
+division-polynomial convention that T347 dropped when it copied T341's Links
+block. Declared-but-uncited is one set difference over the document and would
+have caught it.
+
+Evidence: 2026-09-20, T347 critique. `GET /api/table/T347/audit` returned
+`{"findings": [], "clean": true}`. `_FRAGMENT` is
+`('for','of','at','in','with','to','and','or','the','a','an')` at
+`numberdb_app/management/commands/audit_table.py:61`.
+
+## The T344 render script ran for T347 with one `sed` and no other change
+
+What happened: `/tmp/site.tgz` (1.6 MB) and `/tmp/t344_render.py` were both
+still on the box from the previous run, so rebuilding T347's draft page was
+
+    sed -e 's/T344/T347/g' /tmp/t344_render.py > /tmp/t347_render.py
+    NUMBERDB_SAGE_MEMORY=1200m NUMBERDB_SAGE_PYTHONPATH= \
+        agents/sage.sh /tmp/t347_render.py /tmp/site.tgz /tmp/T347.json
+
+giving **250 records, status 200, 233,003 bytes**, 250 unique entry anchors,
+and the tag strip `['elliptic curves', 'number theory']` matching the
+document's `Tags` -- the T320 check, made first.
+
+This is the **seventh** run to reach for this recipe and the sixth note asking
+for it to become `agents/render_draft.py` with the tid as an argument. Nothing
+new was needed for a `Z` table with five nested parameter groups. Recorded only
+to keep the count honest: the reason nobody promotes it is that the `sed` keeps
+working, and the reason it keeps working is that six runs before this one wrote
+the notes down.
+
+Evidence: 2026-09-20, T347 critique. `/tmp/t347_render.py`,
+`/tmp/t347_render_out.txt`, `/tmp/T347_page.html`.
+
+## `sage.all` is the workaround for the elliptic-curve constructor, and a critique may use it
+
+What happened: `/tmp/t347_check.py` used the named import
+`from sage.schemes.elliptic_curves.constructor import EllipticCurve` after
+`import numberdb.sage as numberdb` and raised `ImportError: cannot import name
+PolynomialSequence_generic` inside `Sequence(x).universe()`, exactly as the
+T347 build's proposal
+(`agents/lessons/proposals/20260920T004028Z-build.md`) predicts.
+`from sage.all import EllipticCurve` worked immediately.
+
+Worth stating here because the build's note is about *generators*, where
+`sage.all` is refused by `agents/table-build/dry_run.py` and the portable
+import matters. A critique's checking script is not attached to a table and is
+not run by anybody else, so it should just use `sage.all` and spend its turns
+on the table. The first run of `/tmp/t347_check.py` still printed the one
+answer it had reached before the traceback -- the rank-one curve count -- which
+is worth designing for: put the cheap database queries before the first object
+construction, and a script that dies still tells you something.
+
+Evidence: 2026-09-20, T347 critique. `/tmp/t347_check.py` exit 1 after printing
+`rank-one curves with N<=60 in the mini Cremona database: 5`;
+`/tmp/t347_check2.py`, identical but for the import, exit 0.
