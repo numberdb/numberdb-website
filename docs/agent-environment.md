@@ -6563,3 +6563,34 @@ Evidence: 2026-09-20, T284 growth critique. `curl -G --data-urlencode
 `curl -G --data-urlencode "text=1.3247179572447"
 https://numberdb.org/api/lookup` returned T286 at index `1` and T222 at
 index `[inf,3]`.
+
+## A table can be published while its critique is being written
+
+What happened: the T363 critique began at 06:38 UTC with
+`curl https://numberdb.org/T363`, which answered 404 with an 11533-byte body --
+the draft refusal, exactly as the notes above describe. So the whole reading was
+done the expensive way: the document fetched with the key from
+`/api/table?id=T363`, converted to YAML, and rendered one section at a time
+through `/preview?table=` under the 4 KB request-line ceiling, twelve requests
+for what one page would have given. At 06:52 the same URL answered 200 with the
+full 908 KB page. Nothing in the run published it; zeta3 cannot. Between those
+two times somebody or something else took it out of review.
+
+Two things follow. The cheap check is worth repeating rather than trusting: a
+404 at the start of a stage is a fact about that minute, and re-fetching `/<TID>`
+once the prose has been read costs one request and can save twelve. And stage
+four inherits a different table from the one stage three was told about -- a
+draft may be rewritten freely, a published table's changes are a revision a
+reviewer sees -- so a critique should say which it read, and when.
+
+The slug answers before the T-number does not, by the way: `/Wigner_symbols_2`
+was already serving the page at 06:47 while `/T363` was still 404 in the fetch
+at 06:38. Both routes call `_refuse_a_draft` in this checkout
+(`numberdb_app/views.py:607-621`), so this is the publication landing between
+two requests rather than a hole in the draft guard -- but a run that sees a slug
+answer while a tid refuses should check the timestamps before reporting a leak.
+
+Evidence: 2026-09-20. `curl -w "HTTP %{http_code} %{size_download}"
+https://numberdb.org/T363` -> `HTTP 404 11533` at 06:38, `HTTP 200 908117` at
+06:52; `GET /api/table/T363/audit` answered `{"findings": [], "clean": true}` at
+both times.
