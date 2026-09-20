@@ -6666,3 +6666,25 @@ here:
   counting, in this run's case, for a script that takes seconds. Start the Sage
   check before writing the prose, not after, and read the output file rather
   than waiting on the terminal.
+
+## The repository's own `numberdb/` shadows the client, for plain Python too
+
+`agents/sage.sh` warns that `sage -python script.py` finds the Django project
+package rather than the client. The same happens to `python3 -c` and to any
+script run with the repository root as the working directory, because
+`sys.path[0]` is then the repository and `numberdb/__init__.py` there is a
+zero-byte Django package. It imports without complaint and has nothing in it,
+so the failure looks like a broken client:
+
+    $ cd /home/ubuntu/numberdb-campaign-w2
+    $ PYTHONPATH=clients/python python3 -c "import numberdb; print(hasattr(numberdb,'search'))"
+    False
+
+and `screen.already_here` answers `(could not ask the corpus: AttributeError:
+module 'numberdb' has no attribute 'search_text')` for every name, which reads
+like the corpus being unreachable. A script in `/tmp` run as
+`PYTHONPATH=<abs>/clients/python python3 /tmp/x.py` works, because
+`sys.path[0]` is then `/tmp`. This run lost two screens to it and, worse,
+briefly wrote down "the client loads its names lazily, so `dir()` is empty" as
+a lesson about the client. Print `numberdb.__file__` before believing anything
+about the package.
