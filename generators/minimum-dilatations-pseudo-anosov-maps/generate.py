@@ -1,9 +1,10 @@
 """Minimum dilatations of pseudo-Anosov maps -- numberdb.org/T285
 
 This table holds the exact values of the orientable-foliation minimum
-dilatations delta_g^+ for closed orientable surfaces of genus 1 through 5.
-The values are the largest real roots of the polynomials stated by Lanneau
-and Thiffeault.
+dilatations delta_g^+ for closed orientable surfaces of genus 1 through 5,
+and genus 7 and 8. The values are largest real roots of the polynomials
+stated by Lanneau and Thiffeault, with the genus 7 and 8 bounds realized by
+the later cited constructions.
 
 Run it with SageMath:
 
@@ -34,6 +35,8 @@ POLYNOMIALS = {
     3: x**6 - x**4 - x**3 - x**2 + 1,
     4: x**8 - x**5 - x**4 - x**3 + 1,
     5: x**10 + x**9 - x**7 - x**6 - x**5 - x**4 - x**3 + x + 1,
+    7: x**14 + x**13 - x**9 - x**8 - x**7 - x**6 - x**5 + x + 1,
+    8: x**16 - x**9 - x**8 - x**7 + 1,
 }
 
 SOURCE_ROUNDED = {
@@ -41,6 +44,8 @@ SOURCE_ROUNDED = {
     3: "1.40127",
     4: "1.28064",
     5: "1.17628",
+    7: "1.11548110945659",
+    8: "1.12876",
 }
 
 
@@ -102,6 +107,13 @@ def _entry_comment(g):
         return "This is $(3+\\sqrt5)/2$."
     if g == 5:
         return "This is HREF{T284#1,1,0,-1,-1,-1}[Lehmer's number]."
+    if g == 7:
+        return ("Aaber and Dunfield, and independently Kin and Takasawa, "
+                "realized Lanneau and Thiffeault's lower bound for this "
+                "genus CITE{AD} CITE{KT}.")
+    if g == 8:
+        return ("Hironaka realized Lanneau and Thiffeault's lower bound for "
+                "this genus CITE{Hironaka}.")
     return None
 
 
