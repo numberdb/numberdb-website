@@ -1,12 +1,12 @@
-# Draft document for T281, built from numberdb-data issues #120 and #149.
-# Created as a draft through the API with X-Draft: yes, filled by generate.py
-# beside it, and offered for review. Publishing is a person's act.
+# Metadata draft for T281, Davenport-Stothers polynomial triples. Values are
+# produced by generate.py; the live table stores the full Numbers block.
 Title: Davenport-Stothers polynomial triples
 Definition: >-
-  A Davenport-Stothers polynomial triple of type $M$ is a triple
+  A Davenport-Stothers polynomial triple of half-degree $M$ is a triple
   $f,g,h\in\mathbb Q[t]$ with $h=f^3-g^2\ne0$, $\deg f=2M$,
-  $\deg g=3M$ and $\deg h=M+1$. The half-degree $M$ and the tree label
-  identify one equivalence class, and the part is one of its three polynomials.
+  $\deg g=3M$ and $\deg h=M+1$. Each row stores one representative of a
+  listed equivalence class of such triples, and the part is one of its three
+  polynomials.
 Parameters:
   M:
     type: Z
@@ -14,18 +14,20 @@ Parameters:
     display: $M$
     constraints: a positive integer with $\deg f=2M$
     values:
-      1: $M=1$
-      2: $M=2$
-      3: $M=3$
-      4: $M=4$
-      5: $M=5$
+      1: '1'
+      2: '2'
+      3: '3'
+      4: '4'
+      5: '5'
   tree:
     type: Symbolic
-    title: tree label
-    constraints: a label for the equivalence class of the Hall dessin represented by the row
+    title: equivalence class
+    constraints: one of the equivalence classes of triples of the given half-degree
     values:
       unique: unique
-      Birch: Birch
+      Birch: Birch symmetric
+      Elkies: Elkies primitive
+    display: class
   part:
     type: Symbolic
     title: part
@@ -35,32 +37,46 @@ Parameters:
       g: $g(t)$
       h: $h(t)$
 Comments:
+  comment-bound: >-
+    Davenport's polynomial bound says that if $\deg f=2M$ and $f^3\ne g^2$,
+    then $\deg(f^3-g^2)\geq M+1$ CITE{Montanus2006}. The rows attain the
+    bound, so $\deg h=M+1$ is the extremal case, the polynomial analogue of
+    HREF{Good_examples_of_Hall's_conjecture}[Hall's conjecture].
   comment-equivalence: >-
-    Two triples are equivalent in the sense of CITE{Montanus2006} when
-    constants $u,w\in\mathbb C^*$ and $v\in\mathbb C$ carry $f_1,g_1,h_1$
-    to $w^2 f_1(ut+v)$, $w^3 g_1(ut+v)$ and $w^6 h_1(ut+v)$. The table
-    stores one representative of each class printed here, with the variable
-    renamed to $t$.
-  comment-tree-label: >-
-    For $M\leq4$, CITE{Montanus2006} states that the displayed triples are
-    the only ones up to equivalence, so their tree label is `unique`. For
-    $M=5$, the stored row is Birch's symmetric example.
+    Triples $(f,g,h)$ and $(f_1,g_1,h_1)$ are equivalent in the sense of
+    CITE{Montanus2006} if $f_1(t)=w^2f(ut+v)$, $g_1(t)=w^3g(ut+v)$ and
+    $h_1(t)=w^6h(ut+v)$ for some $u,w\in\mathbb C^*$ and $v\in\mathbb C$.
+    The table stores, for each listed class, a representative from
+    CITE{Montanus2006} or CITE{ElkiesANTS}, with the variable renamed to $t$
+    where needed. An equivalent representative can have different coefficients
+    until this substitution is made.
+  comment-hall-tree: >-
+    For a triple, the rational function $f(t)^3/h(t)=1+g(t)^2/h(t)$ is a
+    Belyi map CITE{Montanus2006}. Its dessin has $2M$ vertices over $0$, each
+    of valence $3$, $3M$ vertices over $1$, each of valence $2$, and $M+1$
+    faces. Montanus's Hall tree is obtained from this dessin by removing the
+    markings and cutting off the faces; it is a plane tree with $M+1$ leaves
+    and $M-1$ trivalent internal vertices.
+  comment-class-count: >-
+    Montanus gives one deformation class, hence one equivalence class of
+    triples, for each $M\leq4$, four for $M=5$, and in general $D(M)$, the
+    number of triangulations of a convex $(M+1)$-gon up to rotation
+    CITE{Montanus2006}. At $M=5$, two of the four classes are exchanged by
+    complex conjugation, so neither has a real representative
+    CITE{Montanus2006}; the two classes stored here are the rational Birch and
+    Elkies examples CITE{ElkiesANTS}.
 Formulas:
-  formula-defining-relation:
-    name: defining relation
-    text: $h(t)=f(t)^3-g(t)^2$.
-  formula-belyi-map:
-    name: Belyi map
-    text: >-
-      $f(t)^3/h(t)=1+g(t)^2/h(t)$ is the Belyi map attached to the Hall
-      dessin of the triple CITE{SijslingVoight}.
+  formula-defining-relation: $h(t)=f(t)^3-g(t)^2$.
+  formula-belyi-map: >-
+    The Belyi map attached to the Hall dessin of the triple is
+    $f(t)^3/h(t)=1+g(t)^2/h(t)$ CITE{Montanus2006}.
 Similar tables:
   - table: HREF{Good_examples_of_Hall's_conjecture}[Good examples of Hall's conjecture]
     relation: records integer near-collisions of squares and cubes rather than polynomial ones
   - table: HREF{Known_solutions_of_the_Fermat-Catalan_equation}[Known solutions of the Fermat-Catalan equation]
-    relation: records another family where perfect powers nearly coincide
+    relation: records coprime perfect powers whose sum is a perfect power exactly
   - table: HREF{Counterexamples_to_Euler's_sum_of_powers_conjecture}[Counterexamples to Euler's sum of powers conjecture]
-    relation: records exact integer parts of another perfect-power identity
+    relation: records integer solutions of $\sum a_i^k=b^k$ with fewer than $k$ terms
 Links:
   WikiHall:
     title: "Wikipedia: Hall's conjecture"
@@ -79,6 +95,12 @@ References:
       Jeroen Sijsling and John Voight, On computing Belyi maps, Publications
       mathematiques de Besancon (2014), 73-131.
     arxiv: '1311.2529'
+  ElkiesANTS:
+    bib: >-
+      Noam D. Elkies, Rational points near curves and small nonzero
+      $|x^3-y^2|$ via lattice reduction, Algorithmic Number Theory (ANTS-IV),
+      Lecture Notes in Computer Science 1838 (2000), 33-63.
+    arxiv: math/0005139
 Keywords:
   - Davenport-Stothers triples
   - Davenport-Stothers pairs
@@ -94,17 +116,20 @@ Data properties:
   rigour: exact
   complete: 'no'
   complete-note: >-
-    it holds the five examples printed in CITE{Montanus2006}; that source
-    states uniqueness up to equivalence for the $M\leq4$ rows, while the
-    $M=5$ row is Birch's symmetric example
+    it holds the rational classes listed in CITE{ElkiesANTS}: the unique class
+    for each $M\leq4$ and the Birch and Elkies classes at $M=5$; Elkies states
+    that the existence of any rational class with $M>5$ is open
   sources:
     - CITE{Montanus2006}
     - CITE{SijslingVoight}
+    - CITE{ElkiesANTS}
   rigour details: >-
     Every stored value is an exact polynomial over $\mathbb Q$. The generator
-    transcribes $f$ and $h$ from CITE{Montanus2006}, derives $g$ as the exact
-    square root of $f^3-h$, and checks $h=f^3-g^2$ and the degree conditions
-    exactly. The $M=5$ row is also checked against Example 1.8 of
-    CITE{SijslingVoight}, which prints $f$, $g$ and $h$.
+    transcribes $f$ from CITE{Montanus2006} for the Montanus rows and from
+    CITE{ElkiesANTS} for the Elkies row, derives $g$ as the polynomial part of
+    $f^{3/2}$ at infinity, sets $h=f^3-g^2$, and checks the degree conditions
+    and the extremality criterion $2fg'-3f'g\in\mathbb Q^*$ exactly. The Birch
+    $M=5$ row is also checked against Example 1.8 of CITE{SijslingVoight},
+    which prints $f$, $g$ and $h$.
 Display properties:
   number-header: $f(t)$, $g(t)$, or $h(t)$
