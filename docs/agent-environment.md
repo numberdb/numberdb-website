@@ -6615,3 +6615,38 @@ returning 429 and a JSON body with no `Title` in it (the failure presents as
 `KeyError: 'Title'` from whatever parses the response); the same URL with the
 key returning 200 immediately afterwards. `numberdb_app/throttle.py:47` and
 `requester_of`.
+
+## `/preview` renders nothing at all unless the piece you send carries a `Numbers` block
+
+What happened: the T361 critique took the note above -- "reach for `/preview`
+first and keep the Sage box for the whole page" -- and sent the draft's
+Definition, Parameters and Links as one piece. The response was 200 and the
+preview area was empty, above a banner reading
+
+    Error while parsing numbers: cannot access local variable
+    'number_section' where it is not associated with a value
+
+which reads like a bug in the site and is not: `table_context` builds the
+number section first and gives up on the whole document when there is no
+`Numbers` key, so a piece carrying only prose renders as nothing whatever is
+wrong with the prose. Three calls were spent deciding whether the Definition
+itself was at fault.
+
+What to do instead: put a one-entry stub in every piece --
+`Numbers: {'1': {'0': 'z'}}`, with a `Data properties: type` the stub parses
+under -- and carry `Title` and `Parameters` along with it. The stub costs
+about 60 bytes of the roughly 3.3 kB the request line allows. Sending the YAML
+as `curl -s -G --data-urlencode table@/dev/stdin https://numberdb.org/preview`
+keeps the document off the command line and out of the process table; 2.3 kB
+of YAML went through that way in one call, which was Definition, Parameters,
+Formulas, Comments and Links together and enough to see that the page draws
+Formulas before Comments and numbers them (1) to (6) in one sequence.
+
+Also, for the standing proxy notes: 127.0.0.1:1080 refused every connection
+again today (`curl: (7)`, `ss -ltn` shows no listener), and plain
+`curl https://numberdb.org/skill` answered 200 in the same second. That is now
+the usual state rather than the exception.
+
+Evidence: 2026-09-20, T361 critique. `/tmp/prev-a.html` (the empty preview and
+the `number_section` banner), `/tmp/prev-all.html` (2316 bytes of YAML, 200,
+the full prose of a private draft rendered without a key or a container).
