@@ -6738,3 +6738,57 @@ Evidence: 2026-09-20. `for t in T359 T365 T364; do curl -o /dev/null -w
 '%{http_code}' https://numberdb.org/$t; curl -o /dev/null -w '%{http_code}'
 "https://numberdb.org/files/$t/generate.py?raw=1"; done` -> `404 200` three
 times; T366 the same, 15,562 bytes.
+
+## A PostScript paper needs no inflating, and the `zlib` route on a PDF garbles a formula
+
+What happened: the T281 growth critique turned on three papers this box cannot
+read the normal way. There is no `pdftotext`, no `pypdf`, no `fitz` and no
+`pdftoppm`, so `Read` on a PDF answers "pdftoppm is not installed" and the
+`zlib` stream trick (note above) is what is left. Two things came out of using
+it in earnest:
+
+* **A `.ps` file needs nothing at all.** Elkies and Watkins's Hall-polynomial
+  paper is dvips output, and `re.findall(r'\((?:\\.|[^\\()])*\)', raw)` joined
+  with spaces gave 66 KB of readable text -- tables, number-field polynomials
+  and all -- with no decompression step. PDFs need the Flate streams inflated
+  first; PostScript from dvips has the text in literal parentheses.
+* **The failure mode on a PDF is a wrong character, not a missing paragraph.**
+  Montanus's article gave up its whole argument, but the closed formula for the
+  number of classes came out with `C((m-1)/3)` where the paper has
+  `C((m-1)/2)`. Nothing about the extracted text says which digit is wrong. It
+  was caught only because the same article prints the first sixteen values of
+  the sequence, and the formula as extracted does not reproduce them.
+
+What to do instead: prefer `arxiv.org/e-print/<id>` (note above) and, for a
+paper only on an author's page, try `.ps` before giving up. When a formula has
+to come out of the `zlib` route, check it against something else printed in the
+same paper -- a table of values, a worked example -- before building on it. Half
+this critique's arithmetic would have been wrong on a `/3`.
+
+Evidence: 2026-09-20, T281 growth critique. `/tmp/montanus.pdf` (216,981 bytes)
+-> `/tmp/montanus.txt` (82,512 characters) via inflate;
+`magma.maths.usyd.edu.au/~watkins/papers/hall.ps` (536,450 bytes) ->
+`/tmp/hall.txt` (66,203 characters) with no inflate; `arxiv.org/e-print/math/0005139`
+-> `antsiv.tex`, where `grep -n 18553` found the polynomial in one command.
+
+## A Gröbner run killed at the memory cap exits 137 with nothing printed
+
+What happened: a primary decomposition in 9 variables through
+`agents/sage.sh` printed its first two lines and then stopped. The container was
+killed at the memory cap, not at the timeout: exit 137, no traceback, no
+Singular error, and the output simply ends mid-section. The same script had
+finished the 7-variable case in the same run, so there was nothing wrong with
+the code. Two runs were spent before that was clear.
+
+What to do instead: read exit 137 plus truncated output as "the cap", not as a
+bug, and reduce the problem (a finite field instead of `QQ` did not help here;
+fewer variables is the only thing that does). And **do not background
+`agents/sage.sh ... | tail -N`**: `tail` buffers until the pipeline ends, so the
+task's output file stays empty for the whole run and there is no way to see
+which step is slow. Redirect to a file and poll it -- `sage.sh` already runs
+`sage -python -u` and greps line-buffered, so a redirect streams.
+
+Evidence: 2026-09-20, T281 growth critique. `/tmp/modp.out` ends after
+`== M = 5 over GF(32003) ==` with `[done rc=137]`; the $\mathbb Q$ run of the
+same decomposition at $M=4$ took 418 s for the saturation alone and is in the
+task output for `bckbc2zrm`.
