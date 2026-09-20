@@ -6747,3 +6747,71 @@ no network.
 Evidence: 2026-09-20, T364 critique. `curl` with and without a browser
 user-agent, on `4.0.2048.1`, `4.4.2048.2` and `4.0.2048.9` alike, all 200
 "Checking your browser"; `oeis.org` 403 with a `cf_chl_opt` challenge page.
+
+## The key does not lift the 429 here, because four workers share zeta3's allowance
+
+What happened: an ideation run walked `numberdb.table('T1')` to `T299` to see
+the corpus, spent the anonymous allowance, and then could not `search_text`
+for half an hour. The note above says to send the key, which moves the count
+from `ip:<address>` (60 an hour) to `key:<n>` (1000 an hour). The key did not
+help: `GET /api/table?id=T92` with `X-API-Key` set answered `HTTP Error 429`
+in the same second that the anonymous call did, and the client reported the
+same sentence for both, `too many requests; retry in 1847s`. Four workers on
+this box publish and verify with the same zeta3 key, so the key bucket is
+shared exactly as the IP bucket is, and it had already been spent by somebody
+else's build. The window is fixed and aligned to the hour
+(`window_start = now - now % 3600`), so the wait is until the next hour
+boundary and not an hour from the refusal.
+
+What to do instead: do not survey the corpus through `/api/*` at all. The
+site's pages are rendered server-side and are not rate limited --
+`/tables` (paginated, every title), `/tags`, and `/T<id>` (definition,
+parameters, formulas, comments, similar tables, completeness note) -- so a
+screening pass costs nothing. Keep the API for the entries and for
+`search_text`, which reads definitions and comments that no page listing
+gives. When a run does hit 429, the message does not say which bucket it
+was; check `date -u` against the hour boundary rather than trusting the
+"retry in" arithmetic to mean your own spending.
+
+Evidence: 2026-09-20, w4 ideation. `numberdb.table('T300')` and eight more,
+`RateLimitError: too many requests; retry in 1860s`; the authenticated
+`urllib` request to the same path, `HTTP Error 429`;
+`numberdb_app/throttle.py:57` `IDENTIFIED_LIMIT = 1000` and `requester_of`
+scoping by `key:%d`. `curl -s https://numberdb.org/tables` answered 200
+throughout.
+
+## Piping `agents/sage.sh` through `tail` hides the lock heartbeat, and a queued run then looks hung
+
+What happened: three background Sage runs in this session printed nothing at
+all for fifteen minutes, because each was written as
+`agents/sage.sh script.py 2>&1 | tail -60`. `tail` buffers until its input
+closes, so the "waiting for the Sage lock: another worker is using it (60s)"
+line the script prints once a minute -- which exists precisely so that a
+queued run is visibly alive -- never reached the log. The run was
+indistinguishable from a wedged one, and two were killed on that suspicion
+while they were merely waiting their turn behind another worker's build.
+
+What to do instead: redirect rather than pipe, `agents/sage.sh script.py >
+/tmp/out.txt 2>&1`, and read the file. Four workers share one Sage box and a
+wait of five to twenty minutes for the lock is ordinary, so the heartbeat is
+the only thing distinguishing "queued" from "dead".
+
+Evidence: 2026-09-20, w4 ideation. `/tmp/w4/out5.txt` after redirecting:
+six lines, `waiting for the Sage lock ... (0s)` through `(300s)`, while the
+`tail`-piped runs before it showed zero bytes for the same condition.
+
+## `pkill -f` kills the shell that invokes it, when the pattern is in that shell's own command line
+
+What happened: `pkill -f 'check4.py'` was run from a `bash -c` that also
+contained a heredoc writing `check5.py`. The `bash -c` process carries its
+whole script as its command line, so it matched its own pattern, killed
+itself, and the file it was about to write never appeared -- the tool
+reported only `Exit code 144` and no other error.
+
+What to do instead: break the pattern so it cannot match itself,
+`pkill -f 'chec[k]4.py'`, which is the same trick as `ps aux | grep '[s]sh'`.
+Or find the pid first and kill it by number.
+
+Evidence: 2026-09-20, w4 ideation. The call that ended 144 wrote nothing;
+`ls /tmp/w4/check5.py` reported no such file; the bracketed form a moment
+later killed only the target and returned 0.
