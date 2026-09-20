@@ -6498,3 +6498,31 @@ Evidence: issue #167, 2026-09-20. The command printed `#167 closed; the family
 is built` while the issue body still contained `Sharp constant in Nash's
 inequality ... -- claimed by w1 at 2026-09-20T04:51Z`. The run reopened #167
 with a comment after T358 was offered for review.
+
+## `npm install` in a fresh `/tmp` directory installs nothing, because `/tmp/package.json` exists
+
+What happened: the T358 critique needed `mathjax-full` to typeset the table's
+TeX outside a browser. `mkdir /tmp/mj358 && cd /tmp/mj358 && npm install
+mathjax-full@3` printed
+
+    up to date, audited 9 packages in 560ms
+
+and created no `node_modules` in that directory. npm walks up for the nearest
+`package.json`, and an earlier run on this box left one at `/tmp/package.json`
+with `mathjax-full` already in it, so the install was a no-op against
+`/tmp/node_modules`. "up to date" is the success message, so nothing said the
+install had happened somewhere else, and the next command failed on a missing
+module in a directory npm had just reported as fine.
+
+What to do instead: the packages are already there. Write the script wherever
+is convenient and run it with `NODE_PATH=/tmp/node_modules node check.js`;
+`/tmp/node_modules` currently holds `mathjax-full`, `speech-rule-engine`,
+`mj-context-menu`, `@xmldom`, `commander`, `esm`, `mhchemparser` and
+`wicked-good-xpath`. If a run needs a package that is not there, install it
+from `/tmp` itself so it lands beside the others, or pass `--prefix` a
+directory that has its own `package.json`. Do not conclude from "up to date"
+that the current directory got anything.
+
+Evidence: 2026-09-20, T358 critique. `ls -la /tmp/mj358/` immediately after the
+install showed two entries, `.` and `..`; `ls /tmp/node_modules` showed the
+eight packages; `/tmp/package.json` exists and is not this repository's.
