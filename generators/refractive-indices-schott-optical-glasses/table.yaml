@@ -1,0 +1,113 @@
+# The table document for T367, "Refractive indices of the Schott optical
+# glasses". Created as a draft through the API and filled by generate.py beside
+# it; publishing is a person's act on the site.
+Title: Refractive indices of the Schott optical glasses
+Definition: >-
+  For each listed Schott optical glass and Fraunhofer spectral line, this
+  table gives the refractive index $n$ relative to air at
+  $20\,^\circ\mathrm{C}$ and $0.10133\,\mathrm{MPa}$, using the Schott
+  catalogue data collected in the refractiveindex.info database CITE{RII}
+  CITE{SchottZemax}.
+Keywords:
+  - Schott optical glass
+  - Schott glass
+  - optical glass
+  - refractive index
+  - Fraunhofer line
+  - Sellmeier equation
+Parameters:
+  maker:
+    type: Symbolic
+    title: maker
+    display: maker
+    constraints: the optical-glass maker named by the source
+    values:
+      Schott: Schott
+  glass:
+    type: Symbolic
+    title: glass
+    display: glass
+    constraints: a Schott optical-glass catalogue name, written verbatim from the source
+  line:
+    type: Symbolic
+    title: Fraunhofer line
+    display: $\lambda$
+    constraints: one of the six listed Fraunhofer lines
+    values:
+      g: mercury g line, 435.8343 nm
+      F: hydrogen F line, 486.1327 nm
+      e: mercury e line, 546.0740 nm
+      d: helium d line, 587.5618 nm
+      C: hydrogen C line, 656.2725 nm
+      r: helium r line, 706.5188 nm
+Comments:
+  comment-wavelengths: >-
+    The lower-case $d$ line is the helium line at $587.5618\,\mathrm{nm}$.
+    It is not the sodium $D$ line, whose mean wavelength is about
+    $589.3\,\mathrm{nm}$. The Schott data sheets CITE{SchottDataSheets}
+    list both lines separately.
+  comment-source: >-
+    The source files give the refractive-index formula and the catalogue
+    conditions. The values here are for the relative index in air, not the
+    absolute index against vacuum.
+  comment-duplicates: >-
+    Some catalogue types have identical dispersion coefficients in the source.
+    When this occurs, the affected entries carry a comment naming the sibling
+    glass types; the catalogue distinguishes those types by properties such as
+    transmittance, not by dispersion.
+Formulas:
+  formula-sellmeier: >-
+    For source records of formula type 2, the refractive index is computed
+    from the Sellmeier equation
+    $n(\lambda)^2-1=\sum_{j=1}^3 B_j\lambda^2/(\lambda^2-C_j)$, with
+    $\lambda$ measured in micrometres.
+Programs:
+  program-python:
+    language: Python
+    code: |-
+      from decimal import Decimal, getcontext
+
+      getcontext().prec = 50
+      wavelength_um = Decimal("587.5618") / Decimal(1000)
+      B1 = Decimal("1.03961212")
+      C1 = Decimal("0.00600069867")
+      B2 = Decimal("0.231792344")
+      C2 = Decimal("0.0200179144")
+      B3 = Decimal("1.01046945")
+      C3 = Decimal("103.560653")
+
+      x = wavelength_um * wavelength_um
+      n2 = 1 + B1*x/(x-C1) + B2*x/(x-C2) + B3*x/(x-C3)
+      print(getcontext().sqrt(n2))
+Links:
+  RII:
+    title: 'refractiveindex.info database: Schott optical glasses'
+    url: https://github.com/polyanskiy/refractiveindex.info-database/tree/c5c2f188e848453def5970e347399d653df2ffc2/database/data/specs/schott/optical
+  SchottZemax:
+    title: SCHOTT Zemax catalog 2017-01-20b
+    url: https://refractiveindex.info/download/data/2017/schott_2017-01-20b.agf
+  SchottDataSheets:
+    title: SCHOTT glass data sheets 2017-01-20
+    url: https://refractiveindex.info/download/data/2017/schott_2017-01-20.pdf
+  Request63:
+    title: Requested in numberdb-data#63
+    url: https://github.com/numberdb/numberdb-data/issues/63
+Tags:
+  - optics
+  - physics
+Data properties:
+  type: R
+  rigour: measured
+  complete: 'yes'
+  rigour details: >-
+    The generator reads the Schott optical-glass records from the
+    refractiveindex.info database at commit
+    `c5c2f188e848453def5970e347399d653df2ffc2`, evaluates the source
+    Sellmeier formula CITE{formula-sellmeier} at the six listed wavelengths,
+    and rounds each result to five decimal places, the precision used for the
+    line refractive indices in the Schott data sheets. The entries are marked
+    measured because the source coefficients are fitted catalogue data rather
+    than exact or proven quantities.
+Display properties:
+  number-header: $n$
+Numbers: []
