@@ -6526,3 +6526,40 @@ that the current directory got anything.
 Evidence: 2026-09-20, T358 critique. `ls -la /tmp/mj358/` immediately after the
 install showed two entries, `.` and `..`; `ls /tmp/node_modules` showed the
 eight packages; `/tmp/package.json` exists and is not this repository's.
+
+## `/api/search` with the wrong parameter answers `{"results": []}`, which reads like an empty corpus
+
+What happened: looking for a table holding the plastic constant, I called
+`GET /api/search?q=plastic`, then the same with `Pisot` and `Salem`. All
+three answered `{"results": [], "messages": [], "time_request": "0.000s"}`
+and status 200, which says the corpus holds nothing of the kind. It holds
+T286, "Pisot numbers less than the golden ratio", whose first entry is the
+plastic constant.
+
+`/api/search` is the *numeric* endpoint. It reads
+`request.GET.get('expression', default=None)` and, when that is absent,
+returns `wrap_response(None, messages)` with `messages` still empty
+(`numberdb_app/api.py:145-147`). So a caller who passes any other parameter
+name gets a successful, empty, unexplained answer. `time_request: 0.000s` is
+the only tell, and it is not one anybody reads. The three calls before those
+had answered `429` with a clear rate-limit message, which made the empty
+results look like the API working again.
+
+The endpoint that answers "what does the corpus hold near this number" is
+`/api/lookup`, which takes `?number=<json>` or `?text=<term>`; that one found
+T286 immediately. Text search over titles and tags is the client's
+`search_text`, not an HTTP parameter on `/api/search`.
+
+What to do instead: use `/api/lookup?text=...` for a number and
+`search_text` for a name, and treat an empty `results` with empty `messages`
+from `/api/search` as "I called it wrong" rather than as an answer. The fix
+on the site is one line -- append a message saying `expression` is required
+when it is missing -- and until it is there, an empty result from that
+endpoint means nothing.
+
+Evidence: 2026-09-20, T284 growth critique. `curl -G --data-urlencode
+"q=plastic" https://numberdb.org/api/search` returned
+`{"results": [], "messages": [], "time_request": "0.000s"}`;
+`curl -G --data-urlencode "text=1.3247179572447"
+https://numberdb.org/api/lookup` returned T286 at index `1` and T222 at
+index `[inf,3]`.
