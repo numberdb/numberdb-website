@@ -112,6 +112,9 @@ Links:
   Request99:
     title: 'Requested in numberdb-data#99'
     url: https://github.com/numberdb/numberdb-data/issues/99
+  Request139:
+    title: 'Requested in numberdb-data#139'
+    url: https://github.com/numberdb/numberdb-data/issues/139
 Keywords:
   - associated Legendre functions
   - Ferrers functions
