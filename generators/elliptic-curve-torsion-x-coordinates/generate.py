@@ -13,7 +13,6 @@ polynomial elldivpol(E,n) for 2 <= n <= 5.
 
 import os
 import sys
-from fractions import Fraction
 
 import numberdb.sage as numberdb
 from sage.databases.cremona import CremonaDatabase
@@ -135,14 +134,14 @@ def sorted_roots(polynomial):
 def rational_root(root, rational_roots):
     for value in rational_roots:
         if root == QQbar(value):
-            return Fraction(int(value.numerator()), int(value.denominator()))
+            return value
     return None
 
 
 def complex_value(root, rational_roots):
     rational = rational_root(root, rational_roots)
     if rational is not None:
-        return numberdb.ComplexInterval(rational, 0)
+        return rational
     value = CIF(root)
     if not is_finite_interval(value.real()) or not is_finite_interval(value.imag()):
         raise ArithmeticError("non-finite root interval: %s" % value)
