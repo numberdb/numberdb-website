@@ -10,11 +10,6 @@ Run it with SageMath:
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # fill the draft, with NUMBERDB_API_KEY set
 
-For this repository's build environment, use:
-
-    $ agents/sage.sh generate.py
-    $ cat "$NUMBERDB_KEY_FILE" | NUMBERDB_KEY_FROM_STDIN=1 NUMBERDB_PUBLISH=1 agents/sage.sh generate.py
-
 Values are computed as real parts of complex balls using arb's complete and
 upper incomplete gamma functions. The imaginary parts are checked to contain
 zero. The ``self_check()`` function verifies the recurrence, special-value
@@ -199,7 +194,7 @@ def fill_draft_once(generator, message):
         message=message,
         produced_by=_producer(
             generator,
-            assisted_by=os.environ.get("NUMBERDB_ASSISTED_BY", "codex-cli"),
+            assisted_by=os.environ.get("NUMBERDB_ASSISTED_BY"),
         ),
         upsert=False,
         run=run,

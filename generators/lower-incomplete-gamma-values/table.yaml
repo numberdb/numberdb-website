@@ -5,7 +5,8 @@ Title: Values of the lower incomplete gamma function $\gamma(a,x)$
 Definition: >-
   The lower incomplete gamma function is
   $\gamma(a,x)=\int_0^x t^{a-1}e^{-t}\,\mathrm{d}t$ for $a>0$ and $x>0$
-  CITE{DLMFDefinition}. This table gives its real principal values at rational
+  CITE{DLMFDefinition}, and by analytic continuation in $a$ elsewhere in this
+  table. This table gives its real values at rational
   $a\notin\mathbb{Z}_{\leq0}$ and rational $x>0$.
 Keywords:
   - incomplete gamma function
@@ -25,9 +26,8 @@ Parameters:
     constraints: $x\in\mathbb{Q}$ and $x>0$
 Comments:
   comment-principal: >-
-    For positive real $x$ and real $a\notin\mathbb{Z}_{\leq0}$, the stored
-    value is real and agrees with the principal branch obtained from the
-    analytic continuation in $a$.
+    For real $a\notin\mathbb{Z}_{\leq0}$ and real $x>0$, the continued value
+    is real. The continuation in $a$ is unique, so no branch has to be chosen.
   comment-regularized: >-
     The regularized lower incomplete gamma function is
     $P(a,x)=\gamma(a,x)/\Gamma(a)$ when $\Gamma(a)$ is finite
@@ -36,7 +36,10 @@ Comments:
     $2x$. The regularized value is not stored here.
   comment-pole: >-
     The value at $a=0$ is not included because $\gamma(a,x)$ has a pole there.
-    The companion upper incomplete gamma table stores $\Gamma(0,x)=E_1(x)$.
+    HREF{Values_of_the_upper_incomplete_gamma_function}[The table of the
+    upper incomplete gamma function] stores $\Gamma(0,x)$, which is
+    HREF{Values_of_the_exponential_integral}[the exponential integral
+    $E_1(x)$] for positive $x$.
 Formulas:
   formula-complement: >-
     If $a\ne0,-1,-2,\ldots$, then
@@ -102,15 +105,17 @@ Data properties:
   type: R
   rigour: proven
   rigour details: >-
-    Values are computed as real parts of Sage complex balls with arb at
-    `numberdb.bits(digits, losing=64)` bits from exact rational parameters and
-    arguments, using the complement formula CITE{formula-complement}. The
-    imaginary part is required to contain zero. The widest returned ball had
-    radius less than $10^{-117}$ for 100 requested digits. The entries are
-    checked against the recurrence CITE{formula-recurrence}, against the
-    error-function identity CITE{formula-erf}, against the elementary integer
-    formula CITE{formula-integers}, and against the Kummer relation
-    CITE{formula-kummer}.
+    The entries are checked against the Kummer relation CITE{formula-kummer} on
+    every stored entry and against the recurrence CITE{formula-recurrence}
+    wherever both rows $a$ and $a+1$ are stored. They are also checked against
+    the error-function identity CITE{formula-erf} on the row $a=1/2$ and
+    against the elementary integer formula CITE{formula-integers} on the rows
+    $a=1$ and $a=2$. Values are computed as real parts of Sage complex balls
+    with arb at `numberdb.bits(digits, losing=64)` bits from exact rational
+    parameters and arguments, using the complement formula
+    CITE{formula-complement}. The imaginary part is required to contain zero.
+    The widest returned ball had radius less than $10^{-117}$ for 100
+    requested digits.
   complete: 'no'
   complete-note: >-
     it holds $\gamma(a,x)$ at every $a\in\tfrac12\mathbb{Z}$ with
