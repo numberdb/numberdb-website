@@ -2,13 +2,15 @@
 
 This generator fills T353 with real values of the unregularised incomplete
 beta function on the rational grid stated in the table. Rows known to be
-rational because both parameters are positive integers are omitted.
+rational by `_is_rational_row` are omitted: both parameters integral, or one
+strict half-integer parameter paired with an integral parameter at a square
+argument, with the mirrored case at a square value of `1 - x`.
 
 Run it with SageMath:
 
     $ sage -pip install numberdb          # once
     $ sage -python generate.py            # check the table against this code
-    $ sage -python generate.py --publish  # fill the draft, with NUMBERDB_API_KEY set
+    $ sage -python generate.py --publish  # send changes, with NUMBERDB_API_KEY set
 """
 
 import os
@@ -136,71 +138,12 @@ class IncompleteBetaValues(numberdb.Generator):
         return incomplete_beta(x, a, b, digits)
 
 
-def fill_draft_once(generator, message):
-    """Fill a fresh draft without the empty upsert probe."""
-    from numberdb._generate import (
-        _check_precision,
-        _check_rigour,
-        _producer,
-        _run_name,
-        _source_files,
-    )
-    from numberdb._write import Entries, attach, submit_entries, to_text
-
-    table = generator.table
-    run = _run_name(generator)
-    entries = Entries(*generator.parameters)
-
-    for params in generator.enumerate():
-        params = dict(params)
-        wanted = generator.digits_for(params)
-        entry = generator._entry(params, wanted)
-        value = entry["number"]
-        identity = ",".join(str(params[name]) for name in generator.parameters)
-        _check_rigour(generator, table, identity, value)
-
-        written = to_text(value, wanted, generator.format)
-        _check_precision(table, identity, written, wanted, lowering=False)
-
-        record = dict(entry)
-        record.pop("digits", None)
-        entries.add(**params, **record, digits=wanted)
-
-    answer = submit_entries(
-        table,
-        entries,
-        message=message,
-        produced_by=_producer(
-            generator,
-            assisted_by=os.environ.get("NUMBERDB_ASSISTED_BY", "codex-cli"),
-        ),
-        upsert=False,
-        run=run,
-        rigour=generator.rigour,
-    )
-
-    files = _source_files(generator)
-    stored = []
-    for name, body in sorted(files.items()):
-        attach(table, name, body, run=run, message=message,
-               rigour=generator.rigour)
-        stored.append(name)
-
-    return {
-        "tid": answer.get("tid", table),
-        "revision": answer.get("revision"),
-        "entries": len(entries),
-        "files": stored,
-    }
-
-
 if __name__ == "__main__":
     _key_from_stdin()
     generator = IncompleteBetaValues()
     if os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
-        print(fill_draft_once(
-            generator,
-            message="fill incomplete beta values in ball arithmetic"))
+        print(generator.publish(
+            message="recompute incomplete beta values in ball arithmetic"))
     else:
         report = generator.verify(sample=None)
         print(report)
