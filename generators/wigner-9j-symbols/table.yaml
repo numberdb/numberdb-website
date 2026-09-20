@@ -1,0 +1,146 @@
+# Draft document for T363, the Wigner 9j symbol table from numberdb-data#168.
+# Publishing is a person's act.
+Title: Wigner $9j$ symbols
+Definition: >-
+  Wigner $9j$ symbols are the Wigner-convention recoupling coefficients
+  $\begin{Bmatrix}j_1&j_2&j_3\\j_4&j_5&j_6\\j_7&j_8&j_9\end{Bmatrix}$
+  for four angular momenta CITE{DLMF-9j}.
+Parameters:
+  j1:
+    type: Q
+    title: first angular momentum
+    display: $j_1$
+    constraints: $j_1$ is a nonnegative integer or half-integer
+  j2:
+    type: Q
+    title: second angular momentum
+    display: $j_2$
+    constraints: $j_2$ is a nonnegative integer or half-integer
+  j3:
+    type: Q
+    title: third angular momentum
+    display: $j_3$
+    constraints: $j_3$ is a nonnegative integer or half-integer
+  j4:
+    type: Q
+    title: fourth angular momentum
+    display: $j_4$
+    constraints: $j_4$ is a nonnegative integer or half-integer
+  j5:
+    type: Q
+    title: fifth angular momentum
+    display: $j_5$
+    constraints: $j_5$ is a nonnegative integer or half-integer
+  j6:
+    type: Q
+    title: sixth angular momentum
+    display: $j_6$
+    constraints: $j_6$ is a nonnegative integer or half-integer
+  j7:
+    type: Q
+    title: seventh angular momentum
+    display: $j_7$
+    constraints: $j_7$ is a nonnegative integer or half-integer
+  j8:
+    type: Q
+    title: eighth angular momentum
+    display: $j_8$
+    constraints: $j_8$ is a nonnegative integer or half-integer
+  j9:
+    type: Q
+    title: ninth angular momentum
+    display: $j_9$
+    constraints: $j_9$ is a nonnegative integer or half-integer
+Comments:
+  comment-symmetry: >-
+    A Wigner $9j$ symbol has 72 row, column and transposition symmetries.
+    Even permutations of rows or columns and transposition leave the symbol
+    unchanged. An odd row or column permutation multiplies it by $(-1)^R$,
+    where $R=j_1+\cdots+j_9$. Each class is stored once, under the
+    lexicographically largest array among the 72 images, with the value for
+    that representative.
+  comment-admissible: >-
+    A Wigner $9j$ symbol is zero unless each of the three row triads
+    $(j_1,j_2,j_3)$, $(j_4,j_5,j_6)$ and $(j_7,j_8,j_9)$, and each of the
+    three column triads $(j_1,j_4,j_7)$, $(j_2,j_5,j_8)$ and
+    $(j_3,j_6,j_9)$, satisfies the triangle inequalities and has an integer
+    sum. This condition is necessary but not sufficient: of the 251 canonical
+    classes with all $j_i\leq2$ satisfying these six triad conditions, 20
+    vanish.
+  comment-zeros: >-
+    Rows whose value is zero are omitted, as is the trivial all-zero symbol
+    $\begin{Bmatrix}0&0&0\\0&0&0\\0&0&0\end{Bmatrix}$, whose value is $1$.
+  comment-algebraic: >-
+    Every stored value is algebraic. The generator represents each term of
+    the finite sums as a rational multiple of the square root of a rational
+    number before summing it in ball arithmetic.
+Formulas:
+  formula-6j-sum: >-
+    The $9j$ symbol is the finite sum
+    $\begin{aligned}
+    \begin{Bmatrix}j_1&j_2&j_3\\j_4&j_5&j_6\\j_7&j_8&j_9\end{Bmatrix}
+    &=\sum_j(-1)^{2j}(2j+1)
+    \begin{Bmatrix}j_1&j_4&j_7\\j_8&j_9&j\end{Bmatrix}
+    \begin{Bmatrix}j_2&j_5&j_8\\j_4&j&j_6\end{Bmatrix}
+    \begin{Bmatrix}j_3&j_6&j_9\\j&j_1&j_2\end{Bmatrix}.
+    \end{aligned}$ The sum is over the nonnegative integer or half-integer
+    $j$ for which all three HREF{T253}[Wigner $6j$ symbols] are admissible
+    CITE{DLMF-9j}.
+  formula-3j-sum: >-
+    Equivalently, the $9j$ symbol is the sum over all magnetic quantum
+    numbers of the product of the six HREF{T252}[Wigner $3j$ symbols] attached
+    to the three rows and three columns of the array CITE{DLMF-9j}.
+  formula-zero-entry: >-
+    If $j_6=j_3$, $j_8=j_7$ and $j_9=0$, then
+    $\begin{Bmatrix}j_1&j_2&j_3\\j_4&j_5&j_3\\j_7&j_7&0\end{Bmatrix}
+    =(-1)^{j_2+j_4+j_3+j_7}
+    \begin{Bmatrix}j_1&j_2&j_3\\j_5&j_4&j_7\end{Bmatrix}/
+    \sqrt{(2j_3+1)(2j_7+1)}$ CITE{DLMF-9j-properties}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.functions.wigner import wigner_9j
+
+      wigner_9j(0, 1, 1, 1, 1, 1, 1, 1, 1)    # 1/18
+Similar tables:
+  - table: HREF{T253}[Wigner $6j$ symbols]
+    relation: Wigner $9j$ symbols are finite signed sums of products of three Wigner $6j$ symbols
+  - table: HREF{T252}[Clebsch-Gordan coefficients and Wigner $3j$ symbols]
+    relation: Wigner $9j$ symbols are finite sums of products of six Wigner $3j$ symbols
+  - table: HREF{T35}[Algebraic numbers of degree 2]
+    relation: individual summands in the finite sums are rational numbers or quadratic algebraic numbers
+Links:
+  DLMF-9j:
+    title: 'DLMF 34.6: definition of the Wigner 9j symbol'
+    url: https://dlmf.nist.gov/34.6
+  DLMF-9j-properties:
+    title: 'DLMF 34.7: properties of the Wigner 9j symbol'
+    url: https://dlmf.nist.gov/34.7
+  Sage:
+    title: 'SageMath: Wigner, Clebsch-Gordan, Racah, and Gaunt coefficients'
+    url: https://doc.sagemath.org/html/en/reference/functions/sage/functions/wigner.html
+Keywords:
+  - Wigner 9j symbol
+  - Wigner 9-j symbol
+  - angular momentum coupling
+  - recoupling coefficient
+Tags:
+  - special functions
+  - physics
+  - algebraic
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every canonical symmetry class with all $j_i\leq2$ whose value is
+    not zero, other than the symbol with every $j_i=0$; this cutoff covers the
+    small angular momenta through $2$ and gives 230 rows
+  rigour details: |-
+    The generator evaluates CITE{formula-6j-sum}. Each Wigner $6j$ symbol in the sum is evaluated from Racah's finite sum with exact rational arithmetic, using integer-scaled angular momenta so every factorial argument is checked before it is used. The generator keeps each term as a rational coefficient times the square root of a squarefree rational number. Sums that are rational are written exactly; the remaining real algebraic values are converted to arb balls for storage.
+
+    Before any entry is returned, the generator recomputes every row at all 72 symmetry images and requires the phase rule in CITE{comment-symmetry}. It checks every row against the finite sum of Wigner $3j$ symbols in CITE{formula-3j-sum}, and it checks the zero-entry formula CITE{formula-zero-entry} wherever that formula applies.
+Display properties:
+  number-header: $\begin{Bmatrix}j_1&j_2&j_3\\j_4&j_5&j_6\\j_7&j_8&j_9\end{Bmatrix}$
+Numbers: []
