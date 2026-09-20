@@ -6400,3 +6400,58 @@ Evidence: 2026-09-20, `/tmp/crit345/{a,b}.yaml` (the `number_section` error,
 both 200) against `/tmp/crit345/{a2,b2}.yaml` (full render), and
 `/tmp/crit345/d2.yaml` (no `complete-note`) against `/tmp/crit345/d3.yaml`
 (the same piece with the duplicate `Data properties` removed).
+
+## The SOCKS proxy is dead on this box and nothing needs it: HTTPS goes out directly
+
+What happened: the 2026-09-20 growth critique of T293 started with the shape
+every earlier run used, `curl --socks5-hostname 127.0.0.1:1080`. The first two
+requests answered -- the skill and the T293 page, both complete -- and every
+request after that returned status `000` with an empty body, for eight minutes
+across three shapes of retry. That is the failure this file already describes
+for a dead `ssh -N -D` tunnel, and the conclusion it invites is that the site
+is unreachable.
+
+It was not. Nothing is listening on 1080 at all (`ss -ltn` shows no such
+socket, and no `ssh` process holds one), `ALL_PROXY` is set but **empty**, and
+`NUMBERDB_REMOTE=local` -- this worker is on the build box, where `agents/sage.sh`
+runs `docker` without ssh. From here, plain `curl https://numberdb.org/T7`
+answers 200 and `curl https://raw.githubusercontent.com/...` answers, with no
+proxy flag at all. The earlier note in this file, that "the machine reaches it
+only through `ALL_PROXY=socks5h://127.0.0.1:1080`", is no longer true of this
+host.
+
+What to do instead: fetch without the `--socks5-hostname` flag, and only reach
+for the proxy if a direct request fails. If both fail, check `ss -ltn | grep
+1080` before deciding the site is down -- a dead proxy and a dead site produce
+the same `000`, and on this box the proxy is dead by default.
+
+Evidence: 2026-09-20. `--socks5-hostname 127.0.0.1:1080` returning `000` on
+twelve consecutive attempts to `/T7` and `/api/table?id=T7`; the same URLs
+without the flag returning 200 and 429 respectively (the 429 being the
+anonymous rate limit, which is itself proof the request arrived).
+
+## A new critique in `agents/critiques/` needs `git add -f`, or the run loses its report
+
+What happened: `agents/critiques/` is in `.gitignore` -- the rule is
+deliberate and the comment beside it explains why, that a critique is data
+rather than code. In practice 275 of the 276 files in that directory are
+tracked, force-added by the runs that wrote them, so the ignore rule is
+overridden every time rather than honoured.
+
+The trap is the difference between a new file and a tracked one. For a file
+git already tracks, `git add` under an ignored directory prints "the following
+paths are ignored", exits 1, **and stages it anyway** -- which this file
+already records. For a *new* file it refuses outright and stages nothing, so
+`git add ... && git commit ...` stops at the `&&` and the report is never
+committed. That is not hypothetical here: `agents/critiques/T293-growth-repaired.md`
+is tracked and `T293-growth.md` was not, so an earlier growth run's repair
+report survived and the critique it was repairing did not.
+
+What to do instead: `git add -f agents/critiques/<TID>.md` for a report the
+run is writing for the first time, and check `git log --oneline -1` after the
+commit rather than trusting the `&&`.
+
+Evidence: 2026-09-20. `git add agents/critiques/T293-growth.md` exiting 1 with
+"The following paths are ignored by one of your .gitignore files:
+agents/critiques"; `git ls-files agents/critiques | wc -l` giving 275 against
+276 files on disk; `.gitignore` line 168.
