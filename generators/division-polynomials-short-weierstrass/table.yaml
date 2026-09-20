@@ -8,7 +8,6 @@ Tags:
 - number theory
 - elliptic curves
 - polynomial
-- torsion
 Parameters:
   n:
     type: Z
