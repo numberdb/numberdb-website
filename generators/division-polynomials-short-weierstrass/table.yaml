@@ -16,18 +16,30 @@ Parameters:
     constraints: $n\geq1$
 Comments:
 - This is the full division polynomial $\psi_n$. For even $n$ it includes the factor $\psi_2=2y$ rather than the $x$-only quotient $\psi_n/\psi_2$.
-- The variables are named $x$, $y$, $A$ and $B$. Under the specialisation to a short model $y^2=x^3+Ax+B$, the roots of $\psi_n$ are the nonzero $n$-torsion points away from the poles of $x$.
+- The variables are named $x$, $y$, $A$ and $B$. Specialise $A$ and $B$ to elements of a field $K$ whose characteristic does not divide $2n$, with $4A^3+27B^2\ne0$. As a function on $E$, $\psi_n$ then vanishes exactly at the points $P\ne O$ of $E(\overline{K})$ with $nP=O$; for odd $n$, its roots in $x$ are the $x$-coordinates of those points.
 Display properties:
   number-header: $\psi_n(x,y)$
 Formulas:
   formula-initial: $\psi_0=0$, $\psi_1=1$, $\psi_2=2y$, $\psi_3=3x^4+6Ax^2+12Bx-A^2$, and $\psi_4=4y(x^6+5Ax^4+20Bx^3-5A^2x^2-4ABx-A^3-8B^2)$.
-  formula-recurrence: For $m\geq2$, $\psi_{2m+1}=\psi_{m+2}\psi_m^3-\psi_{m-1}\psi_{m+1}^3$. For $m\geq3$, $\psi_{2m}=(\psi_m/\psi_2)(\psi_{m+2}\psi_{m-1}^2-\psi_{m-2}\psi_{m+1}^2)$ in the coordinate ring of $E$.
-  formula-pari-convention: If $f_n$ is PARI/GP's `elldivpol(E,n)` for the short model $E:y^2=x^3+Ax+B$, then $f_n(x)=\psi_n(x)$ for odd $n$ and $f_n(x)=\psi_n(x,y)\cdot2y$ for even $n$.
+  formula-recurrence: For $m\geq2$, $\psi_{2m+1}=\psi_{m+2}\psi_m^3-\psi_{m-1}\psi_{m+1}^3$. For $m\geq3$, $\psi_{2m}=(\psi_m/\psi_2)(\psi_{m+2}\psi_{m-1}^2-\psi_{m-2}\psi_{m+1}^2)$, where $\psi_m/\psi_2$ is taken in the coordinate ring of $E$.
+  formula-pari-convention: If $f_n$ is PARI/GP's `elldivpol(E,n)` or Sage's default `E.division_polynomial(n)` CITE{SageDivision} for the short model $E:y^2=x^3+Ax+B$, then $f_n(x)=\psi_n(x)$ for odd $n$ and $f_n(x)=\psi_n(x,y)\cdot2y$ for even $n$. Sage's `E.division_polynomial_0(n)` CITE{SageDivision} gives $\psi_n$ for odd $n$ and $\psi_n/(2y)$ for even $n$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      S.<A,B> = QQ[]
+      F = S.fraction_field()
+      E = EllipticCurve(F, [A, B])
+      R.<x,y> = S[]
+      n = 8
+      q = sum(R(S(c))*x^i for i, c in enumerate(E.division_polynomial_0(n).list()))
+      psi = q if n % 2 else 2*y*q
+      psi       # the row for n = 8, in the table's convention
 Similar tables:
 - table: HREF{Division_polynomials_psi_n_of_elliptic_curves_over_mathbb_Q}[Division polynomials $\psi_n$ of elliptic curves over $\mathbb{Q}$]
-  relation: specialises division polynomials to reduced global minimal models of elliptic curves over $\mathbb{Q}$, while this table keeps the universal short-model coefficients $A$ and $B$
+  relation: holds division polynomials for individual curves over $\mathbb{Q}$ in their reduced global minimal Weierstrass models; this table keeps $A$ and $B$ formal in a short model
 - table: HREF{Highest_known_rank_of_elliptic_curves_over_Q_with_given_torsion}[Highest known ranks of elliptic curves over $\mathbb{Q}$ with prescribed torsion subgroup]
-  relation: records rational torsion subgroups, while the roots of division polynomials detect torsion points on individual elliptic curves
+  relation: records the highest known rank for each rational torsion subgroup, while the roots of $\psi_n$ detect torsion points on individual curves
 Links:
   Wiki:
     title: 'Wikipedia: Division polynomials'
@@ -35,6 +47,9 @@ Links:
   PARIelldivpol:
     title: 'PARI/GP manual: elldivpol'
     url: https://pari.math.u-bordeaux.fr/dochtml/html-stable/Elliptic_curves.html#elldivpol
+  SageDivision:
+    title: 'SageMath reference: division_polynomial'
+    url: https://doc.sagemath.org/html/en/reference/arithmetic_curves/sage/schemes/elliptic_curves/ell_generic.html#sage.schemes.elliptic_curves.ell_generic.EllipticCurve_generic.division_polynomial
 Data properties:
   type: Z[]
   rigour: exact
