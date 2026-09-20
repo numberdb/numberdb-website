@@ -1,0 +1,11 @@
+1. done -- deleted `Request57`, added `SobolevWiki`, and cited it in the definition; I checked issue 57 with `agents/queue.py show 57` and did not mark it answered because it asks for the ordinary Laplacian $p$-family, not this table.
+2. done -- replaced the ambiguous `$L^2$-unitary Fourier transform` sentence with the explicit $(2\pi)^{-n/2}\int e^{-ix\cdot\xi}$ convention, added the $s=1$ gradient normalisation, and attached the same convention note in `generate.py`; I checked the generator still verified `610/610 matched`.
+3. done -- removed `formula-classical`; I checked the classical-table relation remains in `comment-classical` and `Similar tables`.
+4. done -- replaced the keyword `Lieb sharp constant` with `fractional Laplacian`; I checked the live draft had no indexed occurrence of `Laplacian` before the edit.
+5. done -- expanded `complete-note` with a range reason, but narrowed the report's proposed wording because `formula-sharp` applies beyond these rows; the note now says the denominator-$4$ grid includes common half- and integer-order cases while keeping the table to reference size.
+6. done -- added `equals` links on the 14 `$s=1$` rows whose T92 anchors exist; I checked the anchors against live T92 and reran the T354 generator verification, which reported `610/610 matched`.
+7. declined -- left the two tags unchanged; the post-repair audit still reports the same two tag findings, but both tags already belong to T92 and T354 is correctly reusing existing tags rather than inventing new ones.
+8. done -- rewrote the two pointing phrases as `$S_{n,s}$` and `$S_{n,1}$`; I checked the repaired prose contains no `displayed inequality`, `above`, `below`, `the former`, or `the latter`.
+9. done -- defined `\dot H^s(\mathbb{R}^n)` in `comment-fourier` as the distributions with `$|\xi|^s\widehat u(\xi)\in L^2$`.
+10. done -- removed the computation-restated-as-check sentence from `rigour details` and left the independent checks, the special value and the $s=1$ comparison; I checked the generator still verifies all rows.
+11. done -- changed the Sage program to use `reciprocal_square` and `print(reciprocal_square.rsqrt())`; I ran the snippet under `agents/sage.sh` and checked it prints the stored `$S_{3,1/2}$` prefix.
