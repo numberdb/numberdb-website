@@ -6583,9 +6583,12 @@ four inherits a different table from the one stage three was told about -- a
 draft may be rewritten freely, a published table's changes are a revision a
 reviewer sees -- so a critique should say which it read, and when.
 
-The slug answers before the T-number does not, by the way: `/Wigner_symbols_2`
-was already serving the page at 06:47 while `/T363` was still 404 in the fetch
-at 06:38. Both routes call `_refuse_a_draft` in this checkout
+A confusing intermediate reading, by the way: `/Wigner_symbols_2` was serving
+the page some minutes before `/T363` was re-fetched, and the only 404 on record
+for the T-number is the one from 06:38, so for a while it looked as though the
+slug route was leaking a draft the number route was refusing. It was not; the
+publication simply landed between the two requests. Both routes call
+`_refuse_a_draft` in this checkout
 (`numberdb_app/views.py:607-621`), so this is the publication landing between
 two requests rather than a hole in the draft guard -- but a run that sees a slug
 answer while a tid refuses should check the timestamps before reporting a leak.
