@@ -6544,3 +6544,38 @@ The fix on the site is to make the preview form a POST, or to raise
 `limit_request_line`. Until then, a contributor who pastes a whole table into
 the preview box gets a bare gunicorn 400 page with no hint that the table was
 fine.
+
+## `QQbar` comparisons crash in the Sage of `numberdb/web:latest`
+
+What happened: checking whether 25 candidate rows were Salem numbers, the
+first spelling enumerated conjugates and compared `abs(root)` to 1 over
+`QQbar`. On degree 32 it died with
+
+    NameError: name 'RR_1_10' is not defined
+
+raised from `sage/rings/qqbar.py`, in the `sqrt` reached while exactifying
+`abs(root)` for the comparison. It is a name that exists in that module's
+namespace in other Sage versions, so this is the image's Sage, not the script.
+
+Anything that compares two `QQbar` elements is exposed — `sorted()`,
+`max()`, `in`, `==` against a non-rational — and the failure arrives as a
+`NameError` from deep inside a Sage file, which reads like a broken install
+rather than like a comparison you chose to make.
+
+What to do instead: stay in `RealIntervalField`/`ComplexIntervalField` and
+decide by interval, or reformulate the question so it becomes an exact
+rational computation. For root patterns on the unit circle the reformulation
+is the trace polynomial, which is written up as a lesson proposal; it is also
+enormously faster.
+
+One more thing about the same run: this builder has **no way to read a PDF**
+— no `pdftotext`, no `pypdf`, no `PyPDF2`, and the `Read` tool's PDF path
+needs `pdftoppm`. For an arXiv reference, fetch
+`https://arxiv.org/e-print/<id>`, which is the gzipped LaTeX source: it is
+smaller than the PDF, the tables in it are machine-readable rows rather than
+typeset glyphs, and nothing has to be installed.
+
+Evidence: 2026-09-20, T284 growth reading. `/tmp/check_extension.py` under
+`agents/sage.sh` first with `f.roots(QQbar)`, then with
+`g.number_of_roots_in_interval`; arXiv:2409.11159 was read from
+`smallSalemNumbers6.tex`, 8,692 bytes gzipped against 117,994 for the PDF.
