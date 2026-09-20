@@ -1,0 +1,6 @@
+done -- reattached the seven-genus `generate.py`; before changing it I checked the live attachment still enumerated only $g=1,\ldots,5$, compared it with the updated source, and ran it under `agents/sage.sh`, which reported `7/7 matched, 0 differing, 0 missing, 0 extra`.
+done -- changed the completeness note to say what genus $6$ is waiting for: Lanneau and Thiffeault's lower bound for genus $6$ is $\delta_5^+$ itself, and Hironaka's survey states that the exact value is not known. I checked the live note still had the old wording and verified in Sage that $x^{12}-x^7-x^6-x^5+1=(x^2-x+1)P_5(x)$ with the same real root greater than $1$ as $P_5$.
+declined -- left the $g=7$ and $g=8$ entry comments as they are, because they state which realization theorem turns the cited lower bound into an exact value.
+left for a person -- the two new values still wait on review for numeric search, and zeta3 may not publish or review them.
+declined -- did not add neighbouring families to T285; the braid, nonorientable-surface, and Lanneau-Thiffeault-root families are different quantities and would need separate tables.
+declined -- did not edit the stale campaign/w3 generator or `table.yaml`; the live repair used the verified updated generator from `main`, and the worktree lag is already recorded as an environment trap rather than a table fault.
