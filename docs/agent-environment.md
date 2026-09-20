@@ -6275,3 +6275,52 @@ Evidence: 2026-09-20, T344 build. `queue.py built` printed `#165 closed; the
 family is built`; `queue.py show 165` still listed three `[~] claimed` items.
 The run reopened #165 and commented that T344 was built but the family should
 stay open for stale-claim recovery.
+
+## A tag page is `/tags/<name>`, not `/tag/<name>`, and the wrong one answers 404
+
+What happened: the T344 critique checked whether the draft's three tags group
+anything, and asked for `https://numberdb.org/tag/number%20theory`. All three
+answered **404**, which reads exactly like three invented tags -- the failure
+the skill warns about, where a tag made up from the plural in one's head
+groups nothing. They are all real. The route is `/tags/<name>` with spaces as
+`+`: `/tags/number+theory`, `/tags/elliptic+curves`, `/tags/polynomial` all
+answer 200, and `/tags` lists all 51 with their hrefs.
+
+What to do instead: read the hrefs off `/tags` rather than building a tag URL
+from the name. One fetch of `/tags` answers the question for every tag in a
+document at once, and it is the same page a reader would use.
+
+Evidence: 2026-09-20, T344 critique. `/tag/number%20theory` 404;
+`/tags` 200 with 51 tag links, three of which are the document's.
+
+## The draft-render recipe, tenth table, one `sed` again -- and the previous run's script was on the box
+
+What happened: T344 is a private draft (`/T344` 404 anonymously,
+`GET /api/table?id=T344` and `/api/table/T344/audit` 200 with the key on stdin
+through `-H @-`). `/tmp/t343_render.py` and `/tmp/site.tgz` were both still on
+the box from the previous run, so the whole adaptation was
+
+    sed 's|T343|T344|g' /tmp/t343_render.py > /tmp/t344_render.py
+
+with `/tmp/site.tgz` rebuilt from the tarball line in the T332 note rather
+than trusted. First try, on a **multivariate** `Z[]` table -- entries in
+`Z[x,y,A,B]`, which the recipe had not previously been run on: **7 records,
+status 200, 29,537 bytes**, tags `elliptic curves`, `number theory`,
+`polynomial`. Both range patches were still applied and did no harm.
+
+That is the third run in a row to get the page by editing the previous run's
+script, and the ninth or tenth table the recipe has rebuilt. Four notes above
+now ask for `agents/render_draft.py` taking the tid as an argument. The saving
+is no longer the rewrite -- the notes make that succeed first time -- it is
+the four turns spent locating which note holds which patch.
+
+Also, for the standing proxy notes and without listing the environment to find
+out why: the prompt's `curl -s --socks5-hostname 127.0.0.1:1080` line was
+refused outright (exit 7, "Connection refused"), and plain `curl` reached
+numberdb.org, en.wikipedia.org and pari.math.u-bordeaux.fr throughout.
+
+Evidence: 2026-09-20, T344 critique. `/tmp/t344_render.py`,
+`/tmp/t344_render_out.txt` (`records: 7`, `tid: T1 tags: ['elliptic curves',
+'number theory', 'polynomial']`, `status 200 29537`), `/tmp/T344_page.html`.
+Run as `NUMBERDB_SAGE_MEMORY=1200m NUMBERDB_SAGE_PYTHONPATH= agents/sage.sh
+/tmp/t344_render.py /tmp/site.tgz /tmp/T344.json`.
