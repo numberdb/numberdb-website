@@ -229,6 +229,31 @@ class WhatAnIssueSays(unittest.TestCase):
 		#and the request it answers survives the round trip
 		self.assertEqual(built['answers'], [7])
 
+	def test_a_claim_older_than_its_worker_is_work_again(self):
+		#The failure this prevents: four workers died within an hour, every
+		#remaining proposal was held by one of them, and the queue read empty
+		#-- so each new campaign exited on its banner with a hundred tables to
+		#build. A claim is a courtesy between workers, not a lock.
+		import datetime
+
+		body = q.claim(self.family, self.batch['proposals'][0], 'w3')
+		fresh = q.parse_family({'number': 42, 'title': 't', 'body': body})
+		self.assertEqual(len(q.waiting(fresh)), 1)
+
+		stale = body.replace(
+			datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%MZ'),
+			'2026-01-01T00:00Z')
+		after = q.parse_family({'number': 42, 'title': 't', 'body': stale})
+		self.assertEqual(len(q.waiting(after)), 2)
+		#and another worker may take it over
+		self.assertIsNotNone(q.claim(after, self.batch['proposals'][0], 'w9'))
+
+	def test_a_claim_with_no_time_on_it_is_stale(self):
+		#Written before claims were timed. Better read as abandoned than left
+		#holding a proposal for ever.
+		self.assertTrue(q.stale_claim({'claimed': 'claimed by w2'}))
+		self.assertFalse(q.stale_claim({'claimed': ''}))
+
 	def test_a_claim_that_built_nothing_goes_back(self):
 		claimed = q.parse_family(
 			{'number': 42, 'title': 't',
