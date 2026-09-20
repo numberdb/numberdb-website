@@ -1,0 +1,97 @@
+Title: Values of the incomplete elliptic integral of the first kind $F(\varphi,m)$
+Definition: >-
+  Legendre's incomplete elliptic integral of the first kind is
+  $F(\varphi,m)=\int_0^\varphi (1-m\sin^2\theta)^{-1/2}\,d\theta$
+  CITE{DLMFDefinitions}, in the parameter convention $m=k^2$. This table gives
+  its real principal values at $\varphi=t\pi$ and rational $m$.
+Keywords:
+- incomplete elliptic integral
+- elliptic integral of the first kind
+- Legendre normal form
+- elliptic amplitude
+- Appell hypergeometric function
+Parameters:
+  phi:
+    type: Q
+    title: amplitude ratio
+    display: $\varphi/\pi$
+    constraints: $0<\varphi/\pi\leq 1/2$
+  m:
+    type: Q
+    title: elliptic parameter
+    display: $m$
+    constraints: $0\leq m<1$
+Comments:
+  comment-parameter: >-
+    The stored elliptic parameter is $m=k^2$, matching
+    HREF{Complete_elliptic_integral_of_the_first_kind_K}[the complete first-kind
+    table] and Sage's ball arithmetic convention. The DLMF writes the same
+    function as $F(\varphi,k)$ with the modulus $k$ CITE{DLMFDefinitions}, so a
+    DLMF check value must have its modulus squared before it is compared with a
+    row here.
+  comment-amplitude: >-
+    The amplitude is stored by the rational number $t=\varphi/\pi$, as in
+    HREF{Rational_multiples_of_pi}[the table of rational multiples of $\pi$].
+    This keeps the complete endpoint $\varphi=\pi/2$ as the row $t=1/2$.
+Formulas:
+  formula-complete: >-
+    In this table's parameter convention, $F(\pi/2,m)=K(m)$ CITE{DLMFSpecialCases}.
+  formula-zero-parameter: >-
+    $F(\varphi,0)=\varphi$ CITE{DLMFSpecialCases}.
+  formula-appell: >-
+    $F(\varphi,m)=\sin\varphi\,F_1(1/2;1/2,1/2;3/2;\sin^2\varphi,m\sin^2\varphi)$
+    CITE{DLMFSeries}, where $F_1$ is Appell's hypergeometric function.
+Programs:
+  program-sage:
+    language: Sage
+    code: |
+      import numberdb.sage as numberdb
+      from sage.rings.complex_arb import ComplexBallField
+      from sage.rings.rational_field import QQ
+
+      CBF = ComplexBallField(numberdb.bits(100, losing=64))
+      phi = CBF.pi() * CBF(QQ(1) / QQ(4))
+      m = CBF(QQ(1) / QQ(2))
+      phi.elliptic_f(m).real()
+Similar tables:
+- table: HREF{Complete_elliptic_integral_of_the_first_kind_K}[Complete elliptic integral of the first kind $K(m)$]
+  relation: the entries with $\varphi=\pi/2$ are the complete integral by CITE{formula-complete}
+- table: HREF{Rational_multiples_of_pi}[Rational multiples of pi]
+  relation: the entries with $m=0$ are rational multiples of $\pi$ by CITE{formula-zero-parameter}
+- table: HREF{Complete_elliptic_integral_of_the_second_kind_E}[Complete elliptic integral of the second kind $E(m)$]
+  relation: the complete second-kind companion in the same parameter convention
+- table: HREF{Complete_elliptic_integral_of_the_third_kind_Pi}[Complete elliptic integral of the third kind $\Pi(n,m)$]
+  relation: the third kind reduces to the first kind when its characteristic is zero
+Links:
+  DLMFDefinitions:
+    title: 'DLMF 19.2: Definitions'
+    url: https://dlmf.nist.gov/19.2
+  DLMFSpecialCases:
+    title: 'DLMF 19.6(ii): Special cases for $F(\varphi,k)$'
+    url: https://dlmf.nist.gov/19.6.ii
+  DLMFSeries:
+    title: 'DLMF 19.5.4_1: series and Appell form for $F(\varphi,k)$'
+    url: https://dlmf.nist.gov/19.5.E4_1
+Tags:
+- special values
+- special functions
+- hypergeometric functions
+- period
+- elliptic curves
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds the twelve amplitudes $\varphi=t\pi$ with
+    $t\in\{1/24,1/12,1/8,1/6,5/24,1/4,7/24,1/3,3/8,5/12,11/24,1/2\}$
+    and every reduced elliptic parameter $m=a/b\in[0,1)$ with $b\leq12$
+  rigour details: >-
+    Each value was computed as a Sage complex ball with arb at
+    `numberdb.bits(digits, losing=64)` bits, with the imaginary part checked to
+    contain zero, and returned as its real part. The identities
+    CITE{formula-complete} and CITE{formula-zero-parameter} were checked across
+    the stored rows where they apply, and representative rows were checked
+    against mpmath quadrature at higher precision.
+Display properties:
+  number-header: $F(\varphi,m)$
