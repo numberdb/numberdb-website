@@ -71,7 +71,7 @@ Similar tables:
   - table: HREF{Regulators_of_elliptic_curves_over_Q_of_rank_3}[Regulators of elliptic curves over $\mathbb{Q}$ of rank $3$]
     relation: the same height-pairing regulator for elliptic curves over $\mathbb{Q}$ of rank $3$
   - table: HREF{Special_L-values_of_elliptic_curves_over_real_quadratic_fields}[Special $L$-values of elliptic curves over real quadratic fields]
-    relation: the $L^*(E/K,1)$ side of the Birch and Swinnerton-Dyer formula for the same ecnf-data curves
+    relation: the $L^*(E/K,1)$ side of the Birch and Swinnerton-Dyer formula for elliptic curves from the same ecnf-data source
   - table: HREF{Regulators_of_real_quadratic_fields}[Regulators of real quadratic fields]
     relation: a different regulator, of the unit group of the base field
 Links:
@@ -97,7 +97,10 @@ Data properties:
   complete-note: >-
     it holds every positive-rank curve in ecnf-data over the six real
     quadratic fields of smallest discriminant, $D\in\{5,8,12,13,17,21\}$, with
-    conductor norm at most $250$
+    conductor norm at most $250$; this reaches the first curves of rank $2$
+    among those fields, at conductor norm $235$ over $D=21$, and the same
+    source gives $1213$ entries at conductor norm $N\leq255$, above the
+    $1200$-entry soft limit
   rigour details: >-
     Entries are transcribed from the ecnf-data `reg` field at commit
     `10b28418e80392032b106ea00e6c5aa109d28e7b` and kept to $35$ significant
