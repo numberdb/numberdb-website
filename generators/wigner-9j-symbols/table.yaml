@@ -64,9 +64,9 @@ Comments:
     $(j_1,j_2,j_3)$, $(j_4,j_5,j_6)$ and $(j_7,j_8,j_9)$, and each of the
     three column triads $(j_1,j_4,j_7)$, $(j_2,j_5,j_8)$ and
     $(j_3,j_6,j_9)$, satisfies the triangle inequalities and has an integer
-    sum. This condition is necessary but not sufficient: of the 251 canonical
-    classes with all $j_i\leq2$ satisfying these six triad conditions, 20
-    vanish.
+    sum. This condition is necessary but not sufficient: of the 803 nontrivial
+    canonical classes with all $j_i\leq5/2$ satisfying these six triad
+    conditions, 39 vanish.
   comment-zeros: >-
     Rows whose value is zero are omitted, as is the trivial all-zero symbol
     $\begin{Bmatrix}0&0&0\\0&0&0\\0&0&0\end{Bmatrix}$, whose value is $1$.
@@ -134,13 +134,14 @@ Data properties:
   rigour: proven
   complete: 'no'
   complete-note: >-
-    it holds every canonical symmetry class with all $j_i\leq2$ whose value is
+    it holds every canonical symmetry class with all $j_i\leq5/2$ whose value is
     not zero, other than the symbol with every $j_i=0$; this cutoff covers the
-    small angular momenta through $2$ and gives 230 rows
+    small angular momenta through $5/2$ and gives 764 rows, while extending the
+    same rectangle to $j_i\leq3$ would give 2393 rows
   rigour details: |-
     The generator evaluates CITE{formula-6j-sum}. Each Wigner $6j$ symbol in the sum is evaluated from Racah's finite sum with exact rational arithmetic, using integer-scaled angular momenta so every factorial argument is checked before it is used. The generator keeps each term as a rational coefficient times the square root of a squarefree rational number. Sums that are rational are written exactly; the remaining real algebraic values are converted to arb balls for storage.
 
-    Before any entry is returned, the generator recomputes every row at all 72 symmetry images and requires the phase rule in CITE{comment-symmetry}. It checks every row against the finite sum of Wigner $3j$ symbols in CITE{formula-3j-sum}, and it checks the zero-entry formula CITE{formula-zero-entry} wherever that formula applies.
+    Before any entry is returned, the generator recomputes every row at all 72 symmetry images and requires the row, column and transposition phase rule stated in the comments. It checks every row against the finite sum of Wigner $3j$ symbols in CITE{formula-3j-sum}, and it checks the zero-entry formula CITE{formula-zero-entry} wherever that formula applies.
 Display properties:
   number-header: $\begin{Bmatrix}j_1&j_2&j_3\\j_4&j_5&j_6\\j_7&j_8&j_9\end{Bmatrix}$
 Numbers: []
