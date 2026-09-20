@@ -6579,3 +6579,71 @@ Evidence: 2026-09-20, T284 growth reading. `/tmp/check_extension.py` under
 `agents/sage.sh` first with `f.roots(QQbar)`, then with
 `g.number_of_roots_in_interval`; arXiv:2409.11159 was read from
 `smallSalemNumbers6.tex`, 8,692 bytes gzipped against 117,994 for the PDF.
+
+## The tag-reach audit tells a draft that a tag "reaches only this table" when the one table it counted is a different, published one
+
+What happened: `GET /api/table/T359/audit` on the Nash draft returned two
+findings and nothing else:
+
+    Tags: "functional analysis" reaches only this table; a tag that leads nowhere else leads nowhere
+    Tags: "inequality" reaches only this table; a tag that leads nowhere else leads nowhere
+
+Both tags reach T92, "Best Sobolev constant for $W^{1,p}(\mathbb{R}^n)$", which
+is published and answers `/T92` with no key at all. The rule
+(`numberdb_app/management/commands/audit_table.py:415`) reads
+`Tag.table_count <= 1` and then names the table in the message as though the one
+it counted were this one. For a draft it never is: the draft is not in the
+count, so a count of 1 means *some other table*, and the sentence a reviewer
+reads is false in its words as well as in its conclusion. The natural repair --
+dropping the family tag for a vaguer one that "reaches" more -- would break the
+route the batch exists to build.
+
+What to do instead: on a draft, read this finding as "one public table carries
+this tag", and find out which with `curl -sS -G https://numberdb.org/api/lookup
+--data-urlencode text=<tag>` or an authenticated `GET /api/tag?url=<tag>`. If
+that table exists and is the right neighbour, keep the tag and record the
+finding in the report. The same conclusion was reached independently by the
+build run (`agents/lessons/proposals/20260920T045108Z-build.md`); what is new
+here is that the message misnames the table, which is a site bug and not a
+judgement call. Fixing it means either counting drafts or saying "reaches no
+other table" and naming the one it found.
+
+Evidence: 2026-09-20, T359 critique. `GET /api/table/T359/audit` with the
+zeta3 key; `curl https://numberdb.org/T92` answers 200 unauthenticated and its
+`Tags` are exactly `["functional analysis", "inequality"]`; T354, T355, T356,
+T357 and T358 carry the same pair.
+
+## `agents/table-build/PROMPT.md` tells a build to do what the skill forbids, and on T359 it emptied the backlog into one table's `Links`
+
+What happened: draft T359 carries 29 links, 28 of them "Requested in
+numberdb-data#N" for N in 6, 9, 10, 17, ..., 165 -- every one a **closed** issue
+asking for a different table (Ramsey numbers, knot polynomials, Maass form
+coefficients, volumes of hyperbolic manifolds). Not one of them asks for Nash's
+inequality; the nearest, #57, is T92's and T354's request. They are in the
+stored document and in `generators/sharp-constant-nash-inequality/table.yaml`
+from line 54, so this was written by the build, not by an edit afterwards.
+
+The rule it came from is `agents/table-build/PROMPT.md` line 34: "If the
+checklist line says `(answers #N)` ... Put the request in the table's `Links`,
+as *'Requested in numberdb-data#N'*, because the provenance of an idea is owed
+to whoever had it." The published skill says the opposite, in section 9: "A
+'table wanted' issue is answered **in the issue**, not in the table. ... The
+table carries no trace of the request." Critiques of T339 and T354 have both
+reported the one-link form of this as a fault, and T354 was repaired by deleting
+it -- so the campaign is manufacturing a finding, repairing it, and
+manufacturing it again. T359 is the case where the rule did not merely conflict
+with the skill but misfired: it was given, or inferred, a whole list of closed
+issues rather than the one a table answers.
+
+What to do instead: a person should reconcile the two. The provenance the
+prompt wants is already kept where it belongs -- `agents/queue.py built`
+comments on the issue with the table's address and closes it, which is the
+record, and it survives without putting a GitHub link on an encyclopedic page.
+Until then, a build following that prompt should add at most the single issue
+its checklist line names, and a critique should keep reporting it.
+
+Evidence: 2026-09-20, T359 critique (`agents/critiques/T359.md`, finding 1).
+The 28 issue titles were read from
+`https://api.github.com/repos/numberdb/numberdb-data/issues/N`; every one
+returned `"state": "closed"`. The sibling drafts T354 to T358 carry one link
+each.
