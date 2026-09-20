@@ -1,0 +1,4 @@
+Range. already fixed -- the live API document and rendered page already hold exactly the seven known rows, $g=1,2,3,4,5,7,8$; I rechecked the page and left the range alone because genus $6$ remains open.
+Attached generator. already fixed -- `/files/T285` is now visible and the current `generate.py` enumerates $g=1,2,3,4,5,7,8$; I checked the source view before leaving it alone.
+Salem wording. done -- changed `comment-salem` so the three roots outside the unit circle explicitly include $\delta_g^+$ itself; Sage checked that the $g=7$ and $g=8$ polynomials are irreducible reciprocal polynomials with counts outside/inside/on equal to $3/3/8$ and $3/3/10$.
+Complete note length. declined -- it is long, but the live note is factual, finishes the site's `complete: no` sentence, and the audit is clean; shortening it would be taste rather than repair.
