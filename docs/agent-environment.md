@@ -6480,3 +6480,65 @@ construction, and a script that dies still tells you something.
 Evidence: 2026-09-20, T347 critique. `/tmp/t347_check.py` exit 1 after printing
 `rank-one curves with N<=60 in the mini Cremona database: 5`;
 `/tmp/t347_check2.py`, identical but for the import, exit 0.
+
+## The key leaked from `env` a fifth time, and the prompt's own `curl` line is what leads there
+
+What happened: the T286 growth critique of 2026-09-20 (campaign `w3`, run
+`20260920T023018Z`) ran `env | grep -i -E "numberdb|proxy"` and printed
+`NUMBERDB_API_KEY` in full. The note above records four earlier occurrences and
+names the fix; this is the fifth, and the path to it is the same every time.
+
+The critique prompt tells the run to fetch the site with
+
+    curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/T1xx
+
+and says "the proxy is needed". On this box it is not: `ALL_PROXY` is empty,
+`NUMBERDB_REMOTE=local`, nothing is listening on 1080, and the command fails in
+zero milliseconds with `Failed to connect to 127.0.0.1 port 1080`. The obvious
+next move -- look at the environment to find the proxy -- is what prints the
+key, and it is the move the prompt has just induced. The note of 2026-09-17
+already says "run the direct `curl` before looking at the environment at all",
+and a run that has not yet read this file cannot know that.
+
+So this is not a rule anybody is failing to follow. It is a prompt that sends
+every critique run at a proxy that is not there, and an environment that has
+the key sitting in it when they arrive. Two changes would each end it
+independently, and the second is the one already named above:
+
+  * the critique prompt should give the `curl` without the proxy flag, or say
+    that `ALL_PROXY` decides whether it is needed;
+  * `run.sh` should unset `NUMBERDB_API_KEY` after writing the key file, so
+    that `env` has nothing to leak and `NUMBERDB_KEY_FILE` is the only route.
+
+This run's log is a fifth to scrub and a fifth reason to rotate the key.
+
+Evidence: 2026-09-20, `agents/runs/20260920T023018Z-critique.log`. The proxied
+`curl` returned `curl: (7) Failed to connect to 127.0.0.1 port 1080 after 0 ms`;
+`curl -sS https://numberdb.org/skill` with no proxy answered `200 48740` on the
+next call.
+
+## A critique worktree can hold a generator two commits behind the table it describes
+
+What happened: reading T286 from branch `campaign/w3`, the checked-in
+`generators/pisot-numbers-less-than-golden-ratio/generate.py` produces entry
+comments reading "$P_{2}$ family; minimal polynomial ...", and a `table.yaml`
+whose `complete-note` is "it holds the first $50$ ranks in increasing order".
+The live table says "A root of $P_{2}$, with minimal polynomial ..." and gives
+the full range and the reason for stopping. The repair is real and committed --
+`2cffd60 fix: keep T286 generator aligned with reviewed table` -- but on
+another branch, and `git log` limited to this worktree's branch shows only the
+original build commit.
+
+Two consequences for a critique run. Reading the repository copy and reporting
+its faults would have reported faults that were fixed three hours earlier; the
+rendered page is the only thing that is current, which is what the prompt says
+and is worth a second reason. And a later run that extends the range from this
+checkout would publish the draft prose over the reviewed prose, because
+`--publish` sends the generator's comments and not a diff.
+
+What to do instead: `git log --all --oneline -- <generator dir>` before
+believing a checked-in generator is what filled the table, and diff its output
+against the live entry comments before running it with `--publish`.
+
+Evidence: 2026-09-20, T286 growth critique. `git log --oneline -- generators/
+pisot-numbers-less-than-golden-ratio/` showed one commit, `--all` showed two.
