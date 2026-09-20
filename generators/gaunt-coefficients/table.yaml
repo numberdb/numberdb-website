@@ -1,0 +1,129 @@
+# The table document for numberdb.org/T362. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act.
+Title: Gaunt coefficients $G(\ell_1m_1;\ell_2m_2;\ell_3m_3)$
+Definition: >-
+  The Gaunt coefficient $G(\ell_1m_1;\ell_2m_2;\ell_3m_3)$ is the integral
+  over the unit sphere of the product of three complex spherical harmonics
+  $Y_{\ell_i}^{m_i}(\theta,\varphi)$, using the DLMF Wigner convention
+  CITE{DLMF-Gaunt} and the Condon-Shortley phase convention.
+Parameters:
+  l1:
+    type: Z
+    title: first degree
+    display: $\ell_1$
+    constraints: $\ell_1\geq0$
+  m1:
+    type: Z
+    title: first order
+    display: $m_1$
+    constraints: $-\ell_1\leq m_1\leq \ell_1$
+  l2:
+    type: Z
+    title: second degree
+    display: $\ell_2$
+    constraints: $\ell_2\geq0$
+  m2:
+    type: Z
+    title: second order
+    display: $m_2$
+    constraints: $-\ell_2\leq m_2\leq \ell_2$
+  l3:
+    type: Z
+    title: third degree
+    display: $\ell_3$
+    constraints: $\ell_3\geq0$
+  m3:
+    type: Z
+    title: third order
+    display: $m_3$
+    constraints: $-\ell_3\leq m_3\leq \ell_3$
+Comments:
+  comment-conventions: >-
+    This table uses the same Condon-Shortley complex spherical harmonics as
+    HREF{Clebsch-Gordan_coefficients_and_Wigner_symbols}[the Wigner $3j$
+    table]. DLMF's associated Legendre functions use a different phase in
+    Chapter 14; the spherical harmonics convention is the one in DLMF
+    34.3.22 CITE{DLMF-Gaunt}.
+  comment-symmetry: >-
+    A Gaunt coefficient is unchanged by any permutation of the three pairs
+    $(\ell_i,m_i)$ and by replacing all three $m_i$ by $-m_i$. Each class is
+    stored once, under the lexicographically largest
+    $(\ell_1,m_1,\ell_2,m_2,\ell_3,m_3)$, so a coefficient in another
+    arrangement is found by applying those symmetries first.
+  comment-zeros: >-
+    Rows whose coefficient is zero are omitted. The conditions in
+    CITE{formula-selection} are necessary and not sufficient for a row to be
+    present.
+  comment-form: >-
+    Every nonzero coefficient is a rational multiple of $\sqrt{q/\pi}$ for
+    some positive rational number $q$. Thus none of the rows is an exact
+    rational number, unlike some rows of HREF{Clebsch-Gordan_coefficients_and_Wigner_symbols}[the
+    Wigner $3j$ table].
+Formulas:
+  formula-integral: >-
+    $G(\ell_1m_1;\ell_2m_2;\ell_3m_3)=
+    \int_0^{2\pi}\int_0^\pi
+    Y_{\ell_1}^{m_1}(\theta,\varphi)Y_{\ell_2}^{m_2}(\theta,\varphi)
+    Y_{\ell_3}^{m_3}(\theta,\varphi)\sin\theta\,d\theta\,d\varphi$
+    CITE{DLMF-Gaunt}.
+  formula-3j: >-
+    $G(\ell_1m_1;\ell_2m_2;\ell_3m_3)=
+    \sqrt{\frac{(2\ell_1+1)(2\ell_2+1)(2\ell_3+1)}{4\pi}}
+    \begin{pmatrix}\ell_1&\ell_2&\ell_3\\0&0&0\end{pmatrix}
+    \begin{pmatrix}\ell_1&\ell_2&\ell_3\\m_1&m_2&m_3\end{pmatrix}$
+    CITE{DLMF-Gaunt}.
+  formula-selection: >-
+    The coefficient is zero unless $|\ell_r-\ell_s|\leq\ell_t\leq
+    \ell_r+\ell_s$ for every permutation of $1,2,3$, unless
+    $\ell_1+\ell_2+\ell_3$ is even, unless $m_1+m_2+m_3=0$, and unless
+    $|m_i|\leq\ell_i$ for each $i$ CITE{DLMF-Gaunt}.
+  formula-l-zero: >-
+    $G(00;\ell m;\ell,-m)=(-1)^m/(2\sqrt{\pi})$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.functions.wigner import gaunt
+
+      gaunt(1, 1, 0, 1, -1, 0)    # -1/(2*sqrt(pi))
+Similar tables:
+  - table: HREF{Clebsch-Gordan_coefficients_and_Wigner_symbols}[Clebsch-Gordan coefficients and Wigner $3j$ symbols]
+    relation: the Gaunt coefficients are products of two Wigner $3j$ symbols with an elementary factor in CITE{formula-3j}
+  - table: HREF{Algebraic_numbers_of_degree_2}[Algebraic numbers of degree 2]
+    relation: after multiplication by $\sqrt{\pi}$, every coefficient here is a rational number or a quadratic algebraic number
+Links:
+  DLMF-Gaunt:
+    title: 'DLMF 34.3(vii): relations to Legendre polynomials and spherical harmonics'
+    url: https://dlmf.nist.gov/34.3#vii
+  Sage:
+    title: 'SageMath: Wigner, Clebsch-Gordan, Racah, and Gaunt coefficients'
+    url: https://doc.sagemath.org/html/en/reference/functions/sage/functions/wigner.html
+  Request-128:
+    title: Requested in numberdb-data#128
+    url: https://github.com/numberdb/numberdb-data/issues/128
+Keywords:
+  - Gaunt coefficient
+  - Gaunt integral
+  - spherical harmonics
+  - Wigner 3j symbol
+  - angular momentum coupling
+  - Condon-Shortley phase
+Tags:
+  - special functions
+  - physics
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every nonzero canonical symmetry class with
+    $\ell_1,\ell_2,\ell_3\leq7$; this cutoff gives 752 rows and a 157 KB
+    entries block, close to half the soft block limit
+  rigour details: |-
+    The generator evaluates the Wigner $3j$ finite sums in CITE{formula-3j} with exact rational arithmetic, using integer-scaled angular momenta so every factorial argument is checked before it is used. The exact result is a rational multiple of $\sqrt{q/\pi}$ with $q\in\mathbb{Q}_{>0}$, converted to an arb ball for the stored real value.
+
+    Before any entry is returned, every row is compared with SageMath's exact `gaunt` function CITE{Sage}. The generator also recomputes every row at all pair permutations and simultaneous sign changes, checks CITE{formula-l-zero} wherever one degree is zero, and checks the $m_i=0$ rows by exact integration of products of Legendre polynomials.
+Display properties:
+  number-header: $G(\ell_1m_1;\ell_2m_2;\ell_3m_3)$
+Numbers: []
