@@ -1,0 +1,131 @@
+# Draft document for numberdb.org/T375, built from numberdb-data issue #173.
+# Created as a draft through the API with X-Draft: yes, to be filled by
+# generate.py beside it and offered for review. Publishing is a person's act.
+Title: Values of the Legendre functions of the second kind $Q_\nu(x)$
+Definition: >-
+  This table gives the real principal values of the Legendre function of the
+  second kind $Q_\nu(x)$ CITE{DLMFDefinitions}, the order-zero associated
+  Legendre function of the second kind, for rational degree $\nu\geq0$ and
+  rational argument $x>1$.
+Keywords:
+  - Legendre Q
+  - Legendre function of the second kind
+  - associated Legendre function
+Parameters:
+  nu:
+    type: Q
+    title: degree
+    display: $\nu$
+    constraints: $\nu\in\mathbb{Q}$, $\nu\geq0$
+  x:
+    type: Q
+    title: argument
+    display: $x$
+    constraints: $x>1$
+Comments:
+  comment-branch: >-
+    The values use the real branch on $(1,\infty)$. In Sage and mpmath this is
+    the type 3 branch of `legendre_Q` or `legenq`; the type 2 branch differs on
+    this interval by an imaginary multiple of $\pi$.
+  comment-ferrers: >-
+    This is the associated Legendre function $Q_\nu(x)$ on $x>1$, not the
+    Ferrers function $\mathsf{Q}_\nu(x)$ on $-1<x<1$.
+  comment-secondary: >-
+    For nonnegative integer degree,
+    HREF{Secondary_polynomials_of_the_Legendre_polynomials}[the secondary
+    Legendre polynomial table] gives the polynomial part of $Q_n(x)$ in its
+    unnormalised density convention.
+Formulas:
+  formula-hypergeometric: >-
+    For $x>1$,
+    $Q_\nu(x)=\frac{\sqrt{\pi}\Gamma(\nu+1)}
+    {2^{\nu+1}\Gamma(\nu+3/2)x^{\nu+1}}\,
+    {}_2F_1\!\left((\nu+2)/2,(\nu+1)/2;\nu+3/2;1/x^2\right)$
+    CITE{DLMFDefinitions}, where ${}_2F_1$ is the
+    HREF{Values_of_the_Gauss_hypergeometric_function}[Gauss hypergeometric function].
+  formula-recurrence: >-
+    $(\nu+2)Q_{\nu+2}(x)-(2\nu+3)xQ_{\nu+1}(x)+(\nu+1)Q_\nu(x)=0$
+    CITE{DLMFRecurrences}.
+  formula-initial-values: >-
+    $Q_0(x)=\tfrac12\log((x+1)/(x-1))$ and
+    $Q_1(x)=xQ_0(x)-1$ for $x>1$.
+  formula-integer-degree: >-
+    For $n\in\mathbb{Z}_{\geq0}$,
+    $Q_n(x)=\tfrac12 P_n(x)\log((x+1)/(x-1))-\tfrac12 q_n(x)$,
+    where $P_n$ is the HREF{Legendre_polynomials}[Legendre polynomial] and
+    $q_n$ is the
+    HREF{Secondary_polynomials_of_the_Legendre_polynomials}[secondary Legendre
+    polynomial] in the unnormalised convention of that table CITE{DLMFIntegerDegree}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |
+      import numberdb.sage as numberdb
+      from sage.rings.complex_arb import ComplexBallField
+      from sage.rings.rational_field import QQ
+
+      CBF = ComplexBallField(numberdb.bits(100, losing=96))
+      nu = CBF(QQ(0))
+      x = CBF(QQ(2))
+      a = (nu + 2) / 2
+      b = (nu + 1) / 2
+      c = nu + CBF(QQ(3) / QQ(2))
+      z = 1 / (x*x)
+      value = CBF.pi().sqrt() * (nu + 1).gamma() * z.hypergeometric([a, b], [c]) / (
+          CBF(2) ** (nu + 1) * c.gamma() * x ** (nu + 1))
+      value.real()
+  program-python:
+    language: Python
+    code: |
+      import mpmath
+
+      mpmath.mp.dps = 100
+      mpmath.legenq(0, 0, 2, type=3).real
+Similar tables:
+  - table: HREF{Legendre_polynomials}[Legendre polynomials]
+    relation: the polynomial solution of Legendre's differential equation, appearing in CITE{formula-integer-degree}
+  - table: HREF{Secondary_polynomials_of_the_Legendre_polynomials}[Secondary polynomials of the Legendre polynomials]
+    relation: gives the polynomial part of the integer-degree values by CITE{formula-integer-degree}
+  - table: HREF{Associated_Legendre_polynomials}[Associated Legendre polynomials $P_\ell^m$]
+    relation: the integer-degree, integer-order first-kind associated solutions of Legendre's equation
+  - table: HREF{Values_of_the_Gauss_hypergeometric_function}[Values of the Gauss hypergeometric function ${}_2F_1(a,b;c;z)$]
+    relation: contains the hypergeometric function in CITE{formula-hypergeometric}
+Links:
+  DLMFDefinitions:
+    title: 'DLMF 14.3: definitions and hypergeometric representations'
+    url: https://dlmf.nist.gov/14.3
+  DLMFIntegerDegree:
+    title: 'DLMF 14.7(i): integer degree and order'
+    url: https://dlmf.nist.gov/14.7#i
+  DLMFRecurrences:
+    title: 'DLMF 14.10: recurrence relations and derivatives'
+    url: https://dlmf.nist.gov/14.10
+  Wiki:
+    title: 'Wikipedia: Legendre function'
+    url: https://en.wikipedia.org/wiki/Legendre_function
+Tags:
+  - special values
+  - special functions
+  - hypergeometric functions
+  - orthogonal polynomials
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds $Q_\nu(x)$ at every half-integer degree
+    $\nu=0,\tfrac12,1,\ldots,15$, and at $\nu=\tfrac13$ and
+    $\nu=\tfrac23$, for every rational $x=a/b>1$ in lowest terms with
+    $b\leq4$ and $x\leq5$
+  rigour details: >-
+    Each value is computed as a Sage complex ball with arb at
+    `numberdb.bits(digits, losing=96)` bits from CITE{formula-hypergeometric}
+    and returned as its real part after checking that the imaginary part
+    contains zero. The entries were checked against mpmath's type 3 `legenq`
+    at 150 decimal digits, against CITE{formula-recurrence}, against
+    CITE{formula-initial-values}, and against CITE{formula-integer-degree}
+    wherever those formulas apply. The widest returned ball had radius less
+    than $3.1\cdot10^{-126}$ for 100 requested digits.
+Display properties:
+  number-header: $Q_\nu(x)$
+Numbers: []
