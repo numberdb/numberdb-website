@@ -6647,3 +6647,43 @@ The 28 issue titles were read from
 `https://api.github.com/repos/numberdb/numberdb-data/issues/N`; every one
 returned `"state": "closed"`. The sibling drafts T354 to T358 carry one link
 each.
+
+## `audit_table` demands Sage of a generator that does not use it
+
+What happened: `GET /api/table/T283/audit` returned `"clean": false` with two
+findings -- `generate.py does not say how to install what it imports` and
+`generate.py does not give the command to run it in its first forty lines`.
+Both are false. The generator's docstring says, in its first twelve lines:
+
+    $ pip install numberdb mpmath        # once
+    $ python3 generate.py                # check the table against this code
+    $ python3 generate.py --publish      # send it, with NUMBERDB_API_KEY set
+
+The rule
+(`numberdb_app/management/commands/audit_table.py:307-316`) greps the file for
+the literal strings `sage -pip install numberdb` and `sage -python
+generate.py`. T283's generator imports `mpmath` and `numberdb` and nothing
+else, so Sage is not how it is run, and satisfying the rule would mean writing
+a command into the docstring that does not work.
+
+Why it matters beyond one table: the intent of the rule is good -- the file is
+downloaded by somebody with neither the repository nor a way to guess the
+command -- and a table that satisfies the intent is told it does not. An agent
+reading the audit and obeying it makes the generator worse. The rule also
+cannot be satisfied by a pure-Python generator at all, so every such table
+will read `"clean": false` forever, which is how a check stops being read.
+
+What to do meanwhile: when an audit fires either of these two findings, open
+the attached file before acting on it. If it names an interpreter and an
+install line for the interpreter it actually uses, the finding is an artefact
+and the right move is to say so in the report rather than to edit the file.
+
+What the fix looks like: match an install line and a run line for the file's
+own interpreter -- accept `pip install` as well as `sage -pip install`, and
+`python3 <name>` / `python <name>` as well as `sage -python <name>`, resolving
+`<name>` from the attachment rather than hard-coding `generate.py`.
+
+Evidence: 2026-09-20, `GET /api/table/T283/audit`; the attached file is
+rev 2132 of `/files/T283/generate.py`, byte-identical to
+`generators/mahler-measures-short-random-walks/generate.py`. Written up in
+`agents/critiques/T283-growth.md` §5.
