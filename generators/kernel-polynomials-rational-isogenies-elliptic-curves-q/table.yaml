@@ -1,5 +1,5 @@
 Title: Kernel polynomials of rational isogenies of elliptic curves over $\mathbb{Q}$
-Definition: Let $E/\mathbb{Q}$ be the elliptic curve with reduced global minimal Weierstrass model recovered from $(c_4,c_6)$ by Formula CITE{formula-model-from-invariants}. For a rational isogeny $\varphi:E\to E'$ of prime degree $\ell\geq5$, the entry is the monic kernel polynomial $K_\varphi(x)\in\mathbb{Q}[x]$ CITE{LMFDBIsogeny}, whose roots are the $x$-coordinates of the nonzero points of $\ker\varphi$.
+Definition: Let $E/\mathbb{Q}$ be the reduced global minimal model recovered from $(c_4,c_6)$ by Formula CITE{formula-model-from-invariants}. For a rational isogeny $\varphi:E\to E'$ of prime degree $\ell\geq5$, the entry is its monic kernel polynomial $K_\varphi(x)\in\mathbb{Q}[x]$ CITE{LMFDBIsogeny}.
 Keywords:
   - elliptic curve isogeny kernel polynomial
   - kernel polynomial
@@ -32,6 +32,7 @@ Parameters:
     title: invariant $c_6$ of the target curve $E'$
     display: $c'_6$
 Comments:
+  comment-roots: The roots of $K_\varphi(x)$ are the $x$-coordinates of the nonzero points of $\ker\varphi$.
   comment-curve-labels: The source curve is identified by $N$, $c_4$ and $c_6$. The target invariants $c'_4$ and $c'_6$ distinguish rational isogenies of the same degree from the same source curve. Each entry comment gives the source and target Cremona labels. LMFDB CITE{LMFDB} numbers curves within an isogeny class differently from Cremona's tables CITE{SageCremona}, so those labels are not LMFDB labels.
   comment-low-degree: Degree $2$ and degree $3$ rational isogenies are not listed. Their kernel polynomials are linear, so their roots are already $x$-coordinates of torsion points rather than genuinely new polynomials.
 Formulas:
