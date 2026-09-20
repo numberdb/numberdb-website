@@ -1,13 +1,9 @@
 Title: Secondary polynomials of the Jacobi polynomials $q_n^{(\alpha,\beta)}$
 Definition: >-
-  For $n\geq0$ and $\alpha,\beta>-1$, the secondary polynomial of the
-  HREF{Jacobi_polynomials}[Jacobi polynomial] $P_n^{(\alpha,\beta)}$ is
-  $q_n^{(\alpha,\beta)}(x)=\int_{-1}^{1}\dfrac{P_n^{(\alpha,\beta)}(t)-P_n^{(\alpha,\beta)}(x)}{t-x}\rho_{\alpha,\beta}(t)\,\mathrm{d}t$
-  CITE{Wiki}, where $\rho_{\alpha,\beta}(t)$ is the probability density
-  proportional to $(1-t)^\alpha(1+t)^\beta$ on $[-1,1]$ and
-  $P_n^{(\alpha,\beta)}(1)=\binom{n+\alpha}{n}$. It is a polynomial of degree
-  $n-1$ with rational coefficients for the rational parameters listed here,
-  and $q_0^{(\alpha,\beta)}=0$.
+  For $n\geq0$ and $\alpha,\beta>-1$, $q_n^{(\alpha,\beta)}$ is the secondary
+  polynomial of the Jacobi polynomial $P_n^{(\alpha,\beta)}$, taken with
+  respect to the probability-normalised Jacobi weight on $[-1,1]$ CITE{Wiki}.
+  The table uses $q_0^{(\alpha,\beta)}=0$.
 Parameters:
   alpha:
     type: R
@@ -22,6 +18,12 @@ Parameters:
     display: $n$
     constraints: $n\geq0$
 Comments:
+  comment-jacobi: >-
+    $P_n^{(\alpha,\beta)}$ is the
+    HREF{Jacobi_polynomials}[Jacobi polynomial] normalised by
+    $P_n^{(\alpha,\beta)}(1)=\binom{n+\alpha}{n}$, as in the Jacobi-polynomial
+    table. It is orthogonal for the weight
+    $(1-t)^\alpha(1+t)^\beta$ on $[-1,1]$.
   comment-normalisation: >-
     The normalising constant of the Jacobi weight is
     $2^{\alpha+\beta+1}B(\alpha+1,\beta+1)$. Dividing by it makes
@@ -51,6 +53,9 @@ Comments:
     order one, of the Jacobi family. They are not the associated Jacobi
     polynomials obtained by changing $\alpha$ and $\beta$.
 Formulas:
+  formula-definition: >-
+    $q_n^{(\alpha,\beta)}(x)=\int_{-1}^{1}\dfrac{P_n^{(\alpha,\beta)}(t)-P_n^{(\alpha,\beta)}(x)}{t-x}\rho_{\alpha,\beta}(t)\,\mathrm{d}t$,
+    where $\rho_{\alpha,\beta}(t)=\dfrac{(1-t)^\alpha(1+t)^\beta}{2^{\alpha+\beta+1}B(\alpha+1,\beta+1)}$.
   formula-moments: >-
     If $P_n^{(\alpha,\beta)}(x)=\sum_{j=0}^n c_jx^j$, then
     $q_n^{(\alpha,\beta)}(x)=\sum_{j=1}^n c_j\sum_{i=0}^{j-1}m_i x^{j-1-i}$,
