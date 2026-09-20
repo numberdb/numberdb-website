@@ -233,14 +233,65 @@ class SecondaryHermitePolynomials(numberdb.Generator):
         return SECONDARY[int(params["n"])]
 
 
+def fill_draft_once(generator, message):
+    """Fill a fresh draft without the client's empty upsert probe."""
+    from numberdb._generate import (
+        _check_precision,
+        _check_rigour,
+        _producer,
+        _run_name,
+        _source_files,
+    )
+    from numberdb._write import Entries, attach, submit_entries, to_text
+
+    table = generator.table
+    run = _run_name(generator)
+    entries = Entries(*generator.parameters)
+
+    for params in generator.enumerate():
+        params = dict(params)
+        wanted = generator.digits_for(params)
+        entry = generator._entry(params, wanted)
+        value = entry["number"]
+        identity = ",".join(str(params[name]) for name in generator.parameters)
+        _check_rigour(generator, table, identity, value)
+
+        written = to_text(value, wanted, generator.format)
+        _check_precision(table, identity, written, wanted, lowering=False)
+
+        record = dict(entry)
+        record.pop("digits", None)
+        entries.add(**params, **record, digits=wanted)
+
+    answer = submit_entries(
+        table,
+        entries,
+        message=message,
+        produced_by=_producer(generator, os.environ.get("NUMBERDB_ASSISTED_BY", "")),
+        upsert=False,
+        run=run,
+        rigour=generator.rigour,
+    )
+
+    for name, body in sorted(_source_files(generator).items()):
+        attach(table, name, body, run=run, message=message,
+               rigour=generator.rigour)
+
+    return answer
+
+
 if __name__ == "__main__":
     _key_from_stdin()
     check_identities()
     generator = SecondaryHermitePolynomials()
     if "--publish" in sys.argv or bool(int(os.environ.get("NUMBERDB_PUBLISH", "0"))):
-        print(generator.publish(message="exact Hermite secondary polynomials from recurrence"))
-    else:
-        report = generator.verify()
+        print(fill_draft_once(
+            generator,
+            message="exact Hermite secondary polynomials from recurrence"))
+    elif os.environ.get("NUMBERDB_API_KEY"):
+        report = generator.verify(sample=None)
         print(report)
         if not report.ok:
             sys.exit(1)
+    else:
+        print("identity checks passed; NUMBERDB_API_KEY is not set, so verify() was skipped")
