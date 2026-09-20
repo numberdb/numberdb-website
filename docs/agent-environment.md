@@ -6626,3 +6626,46 @@ https://numberdb.org/preview` (Title, Definition, Programs, one entry) answered
 section. The proxy was down for the whole run (`curl --socks5-hostname
 127.0.0.1:1080` exit 7, five tries), and direct `curl` to numberdb.org worked,
 as the note of 2026-09-17 says it does.
+
+## The proxy reports `000` while delivering the whole body, and the Internet Archive answers without it
+
+What happened: the T284 growth run began with
+`curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/skill`, which
+printed nothing. Re-run with `-o /tmp/skill.txt -w '%{http_code} %{size_download}'`
+it reported `HTTP:000 size:0` and left a **complete 48740-byte skill** in the
+file. So through this proxy `curl` can deliver the full response and still
+report no status and no size: piping it to `head` showed nothing because the
+status line was the only thing that went to stdout. `%{http_code}` is not a
+liveness test here. Check the file.
+
+The run then needed three sources the table cites, and the split is worth
+recording, because it is the opposite way round from what a proxy is for:
+
+* `arxiv.org` (abstract, and the LaTeXML HTML of a paper at
+  `https://arxiv.org/html/<id>v<n>`) answers **directly**, in a second. Through
+  the proxy it exits with no status at all and an empty file.
+* `web.archive.org` answers **directly** too, and mattered: T284's links point
+  into the archive because Mossinghoff's `cecm.sfu.ca` pages are gone.
+  `https://web.archive.org/web/2021id_/<original url>` returns the stored bytes
+  rather than the archive's framing, which is what a data file needs
+  (`Known180.gz` arrived as a readable gzip; the framed form would not).
+* numberdb.org itself answers both ways.
+
+What to do instead: when `curl` through the proxy prints nothing, write to a
+file and look at the file before concluding the host is unreachable; and for
+anything outside numberdb.org, try direct first. Neither the abstract nor the
+archived data file in this run needed the proxy at all.
+
+Also from this run, for whoever is sizing a Sage call: `agents/sage.sh` was
+used three times inside the default 320 MB, each run importing Sage, factoring
+integer polynomials to degree 93 and isolating roots at 400 bits, and the
+longest took under three minutes. The lock was held by another worker on the
+first call and it waited and said so, which is the behaviour the script
+documents.
+
+Evidence: 2026-09-20, T284 growth report. `curl ... /skill -o /tmp/skill.txt
+-w "HTTP:%{http_code} size:%{size_download}"` printed `HTTP:000 size:0` beside
+`48740 /tmp/skill.txt`; `curl -s -m 60 https://arxiv.org/abs/2409.11159`
+answered `200` directly and `000` through the proxy in the same command line;
+`curl -sL "https://web.archive.org/web/2021id_/http://www.cecm.sfu.ca/~mjm/Lehmer/lists/Known180.gz"`
+answered 200 with 128035 bytes of valid gzip.
