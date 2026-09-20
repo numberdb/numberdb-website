@@ -6609,3 +6609,60 @@ Evidence: 2026-09-20. `curl -w "HTTP %{http_code} %{size_download}"
 https://numberdb.org/T363` -> `HTTP 404 11533` at 06:38, `HTTP 200 908117` at
 06:52; `GET /api/table/T363/audit` answered `{"findings": [], "clean": true}` at
 both times.
+
+## Another campaign may own the family you are about to propose
+
+Stage one screens the corpus and the `table wanted` backlog, and both of those
+checks look backwards. Neither sees what a campaign running in parallel decided
+an hour ago. On 2026-09-20 this cost a run its batch: the optics family --
+refractive indices, Sellmeier coefficients, Abbe numbers, the uniaxial crystals
+-- was screened, checked against the corpus by name and by value, and half
+written up before `already_asked('optical material')` turned up
+**numberdb-data#170**, *Family: Optical constants of materials*, opened at
+04:05 that morning by the w3 campaign, with its first table marked
+
+    - [~] Refractive indices of the Schott optical glasses (answers #63) -- claimed by w3 at 2026-09-20T07:59Z
+
+that is, claimed three minutes after this run started. The two proposals agreed
+on the anchor request, the material list, the Fraunhofer lines and the
+relative-to-air convention, which is reassuring about the screening and useless
+as work.
+
+So, before settling on a family, list the open proposals rather than only the
+open requests:
+
+    gh api "repos/numberdb/numberdb-data/issues?state=open&labels=proposal&per_page=100" \
+        --jq '.[] | "\(.number)\t\(.title)"'
+
+It is one request, it costs nothing, and it is the only check that sees a
+sibling campaign. `agents/table-ideas/screen.py requests` does not: it asks for
+`table wanted`, and a proposal carries `proposal`.
+
+Two smaller things met on the same morning, both about reaching GitHub from
+here:
+
+* `gh issue view <n> --repo numberdb/numberdb-data` fails outright with
+  `GraphQL: Projects (classic) is being deprecated ... (repository.issue.projectCards)`,
+  for every issue. `gh api repos/numberdb/numberdb-data/issues/<n> --jq ...`
+  answers normally, and is what a run should use for an issue body.
+* `screen.already_asked` builds its query from the first three words of the
+  name longer than four letters and asks GitHub for them `in:title`, which is a
+  literal match: "Refractive" does not find "Refraction", and no title this run
+  tried found #63 or #170. It is also rate-limited -- after about twenty calls
+  in a screening session it began returning
+  `['could not ask GitHub (HTTPError)']`, which is a failure that reads exactly
+  like "nobody asked for this". Treat an `HTTPError` line as an unanswered
+  question and re-run it, and search the subject as well as the name.
+
+## Two more small ones for a stage-one run
+
+* The `numberdb` client is not installed in a worktree. `PYTHONPATH=clients/python`
+  in front of the command is what makes `import numberdb` work, and without it
+  `screen.already_here` raises `ModuleNotFoundError` on its first call rather
+  than at import time, so the first three screens of a session look fine.
+* `agents/sage.sh` takes a lock on the Sage host and holds it for the life of
+  the run, so a check started while another campaign's *build* is going
+  produces no output at all until that build finishes -- fifteen minutes and
+  counting, in this run's case, for a script that takes seconds. Start the Sage
+  check before writing the prose, not after, and read the output file rather
+  than waiting on the terminal.
