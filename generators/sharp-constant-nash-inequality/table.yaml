@@ -1,0 +1,171 @@
+# The table document for numberdb.org/T359. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Sharp constant in Nash's inequality
+Definition: >-
+  Let $n$ be a positive integer. This table stores the least constant $C_n$
+  such that Nash's inequality
+  $\|u\|_2^{2+4/n}\leq C_n\|\nabla u\|_2^2\|u\|_1^{4/n}$
+  holds for every $u\in L^1(\mathbb{R}^n)\cap W^{1,2}(\mathbb{R}^n)$
+  CITE{CarlenLoss1993}.
+Parameters:
+  n:
+    type: Z
+    title: dimension
+    display: $n$
+    constraints: positive integer
+Formulas:
+  formula-constant: >-
+    $C_n=\frac{2(1+n/2)^{1+2/n}}{n\lambda_n\kappa_n^{2/n}}$,
+    where $\kappa_n=\pi^{n/2}/\Gamma(1+n/2)$ is the volume of the unit
+    ball in $\mathbb{R}^n$ and $\lambda_n=j_{n/2,1}^2$ is the first
+    positive radial Neumann eigenvalue of $-\Delta$ on the unit ball.
+    CITE{CarlenLoss1993}
+  formula-one-dimensional: >-
+    In dimension $1$, the first zero is $j_{1/2,1}=\pi$, so
+    $C_1=27/(16\pi^2)$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.integer_ring import ZZ
+      from sage.rings.real_arb import RealBallField
+
+      n = ZZ(1)
+      R = RealBallField(numberdb.bits(100, losing=256))
+      C1 = ZZ(27) / (ZZ(16) * R.pi() ** 2)
+      C1
+Similar tables:
+  - table: HREF{Best_Sobolev_constant_in_W1pRn}[Best Sobolev constant for $W^{1,p}(\mathbb{R}^n)$]
+    relation: another sharp Euclidean functional-inequality constant, with its constant written in the lower-bound direction
+  - table: HREF{T354}[Sharp constants in the fractional Sobolev inequality]
+    relation: the fractional Sobolev member of the same sharp-inequality family
+  - table: HREF{T355}[Sharp constants in the Hardy-Littlewood-Sobolev inequality]
+    relation: the Hardy-Littlewood-Sobolev member of the same sharp-inequality family
+  - table: HREF{T356}[Babenko-Beckner constants of the Hausdorff-Young inequality]
+    relation: another sharp constant in a classical functional inequality
+  - table: HREF{T357}[Sharp constants in Young's convolution inequality]
+    relation: another sharp constant in the upper-bound direction for a classical functional inequality
+Links:
+  NashWiki:
+    title: 'Wikipedia: Sobolev inequality, Nash inequality section'
+    url: https://en.wikipedia.org/wiki/Sobolev_inequality#Nash_inequality
+  Requested6:
+    title: Requested in numberdb-data#6
+    url: https://github.com/numberdb/numberdb-data/issues/6
+  Requested9:
+    title: Requested in numberdb-data#9
+    url: https://github.com/numberdb/numberdb-data/issues/9
+  Requested10:
+    title: Requested in numberdb-data#10
+    url: https://github.com/numberdb/numberdb-data/issues/10
+  Requested17:
+    title: Requested in numberdb-data#17
+    url: https://github.com/numberdb/numberdb-data/issues/17
+  Requested18:
+    title: Requested in numberdb-data#18
+    url: https://github.com/numberdb/numberdb-data/issues/18
+  Requested19:
+    title: Requested in numberdb-data#19
+    url: https://github.com/numberdb/numberdb-data/issues/19
+  Requested21:
+    title: Requested in numberdb-data#21
+    url: https://github.com/numberdb/numberdb-data/issues/21
+  Requested28:
+    title: Requested in numberdb-data#28
+    url: https://github.com/numberdb/numberdb-data/issues/28
+  Requested29:
+    title: Requested in numberdb-data#29
+    url: https://github.com/numberdb/numberdb-data/issues/29
+  Requested30:
+    title: Requested in numberdb-data#30
+    url: https://github.com/numberdb/numberdb-data/issues/30
+  Requested34:
+    title: Requested in numberdb-data#34
+    url: https://github.com/numberdb/numberdb-data/issues/34
+  Requested36:
+    title: Requested in numberdb-data#36
+    url: https://github.com/numberdb/numberdb-data/issues/36
+  Requested38:
+    title: Requested in numberdb-data#38
+    url: https://github.com/numberdb/numberdb-data/issues/38
+  Requested42:
+    title: Requested in numberdb-data#42
+    url: https://github.com/numberdb/numberdb-data/issues/42
+  Requested44:
+    title: Requested in numberdb-data#44
+    url: https://github.com/numberdb/numberdb-data/issues/44
+  Requested56:
+    title: Requested in numberdb-data#56
+    url: https://github.com/numberdb/numberdb-data/issues/56
+  Requested57:
+    title: Requested in numberdb-data#57
+    url: https://github.com/numberdb/numberdb-data/issues/57
+  Requested60:
+    title: Requested in numberdb-data#60
+    url: https://github.com/numberdb/numberdb-data/issues/60
+  Requested65:
+    title: Requested in numberdb-data#65
+    url: https://github.com/numberdb/numberdb-data/issues/65
+  Requested70:
+    title: Requested in numberdb-data#70
+    url: https://github.com/numberdb/numberdb-data/issues/70
+  Requested91:
+    title: Requested in numberdb-data#91
+    url: https://github.com/numberdb/numberdb-data/issues/91
+  Requested94:
+    title: Requested in numberdb-data#94
+    url: https://github.com/numberdb/numberdb-data/issues/94
+  Requested109:
+    title: Requested in numberdb-data#109
+    url: https://github.com/numberdb/numberdb-data/issues/109
+  Requested124:
+    title: Requested in numberdb-data#124
+    url: https://github.com/numberdb/numberdb-data/issues/124
+  Requested131:
+    title: Requested in numberdb-data#131
+    url: https://github.com/numberdb/numberdb-data/issues/131
+  Requested134:
+    title: Requested in numberdb-data#134
+    url: https://github.com/numberdb/numberdb-data/issues/134
+  Requested164:
+    title: Requested in numberdb-data#164
+    url: https://github.com/numberdb/numberdb-data/issues/164
+  Requested165:
+    title: Requested in numberdb-data#165
+    url: https://github.com/numberdb/numberdb-data/issues/165
+Keywords:
+  - Nash inequality
+  - Nash's inequality
+Tags:
+  - functional analysis
+  - inequality
+References:
+  CarlenLoss1993:
+    bib: >-
+      E. A. Carlen and M. Loss, Sharp constant in Nash's inequality,
+      International Mathematics Research Notices 1993 (1993), no. 7, 213-215.
+    doi: 10.1155/S1073792893000224
+  HaberlSchuster2009:
+    bib: >-
+      C. Haberl and F. E. Schuster, Asymmetric affine $L_p$ Sobolev
+      inequalities, Journal of Functional Analysis 257 (2009), 641-658.
+    doi: 10.1016/j.jfa.2009.04.006
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every dimension $n\leq20$
+  rigour details: >-
+    The generator isolates $j_{n/2,1}$ by sign changes using Sage's
+    arb-backed `RealBallField`. For integer orders it evaluates the Bessel
+    function by a rigorously tailed alternating power series and recurrence;
+    for half-integer orders it uses the spherical-Bessel recurrence from
+    sine and cosine. The one-dimensional value is checked against
+    $27/(16\pi^2)$.
+Display properties:
+  number-header: $C_n$
+  group parameters:
+    - [n]
