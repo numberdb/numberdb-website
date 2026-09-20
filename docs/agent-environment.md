@@ -6768,3 +6768,48 @@ Evidence: 2026-09-20, T283 growth report. `git check-ignore -v
 agents/critiques/T283-growth.md` answers `.gitignore:168 agents/critiques/`;
 commit b6464a0 shows two files and not the third; `git ls-files
 agents/critiques/ | wc -l` is 289.
+
+## OEIS refuses everything this machine sends it
+
+What happened: the ideation run wanted the OEIS entry for a coefficient
+triangle -- `agents/lessons/PROPOSALS.md` already carries a lesson saying to
+look for one, because OEIS holds polynomial families as flattened triangles.
+Every request from this box came back as a Cloudflare managed challenge:
+`https://oeis.org/search?fmt=json&q=...` answers **403** with
+`cf-mitigated: challenge`, and the same URL with a browser `User-Agent`
+answers 200 with a "Just a moment..." interstitial and no results. Both are
+indistinguishable from "no match" if the caller only parses for hits.
+
+This is not a lesson for the skill: a contributor with a browser passes the
+challenge without noticing it. It is a fact about scripted access from this
+host.
+
+What to do: do not treat a missing OEIS hit as evidence of anything here.
+Name the search a builder should run and say it was not run, as
+`BATCH-2026-09-20T1214.md` does for two Hermite triangles.
+
+Evidence: 2026-09-20, `curl -s -i "https://oeis.org/search?fmt=json&q=1,-2,-5,-9,8"`
+-> `HTTP/2 403`, `cf-mitigated: challenge`, `server: cloudflare`.
+
+## The Sage lock is a table-build's for hours, so an ideas run cannot plan on Sage
+
+What happened: an independent cross-check was sent to `agents/sage.sh` at
+12:40. A `table-build` run had taken the lock at 12:24 with
+`timeout 11000` -- three hours -- so the check sat in the `flock` loop, which
+gives up at 1200 s. Four workers share one Sage box and one lock; the ideas
+stage is the one that queues behind everybody, because its Sage work is
+optional while a build's is not.
+
+Two things follow. **Start any Sage call early**, before writing anything that
+depends on it, so the twenty minutes of waiting overlap with the writing. And
+**do not pipe `agents/sage.sh` through `tail`** while you are watching it: the
+lock-wait lines go to stderr a minute apart precisely so a run looks alive,
+and `| tail -40` holds every one of them until the command ends, which is the
+same silence the `-u` and `--line-buffered` flags inside the script exist to
+prevent.
+
+Evidence: 2026-09-20, `ps aux` shows
+`timeout 11000 docker run ... numberdb-agent-run-1789907095-618700-20219
+... fill_verify_quartic.py` from 12:24 holding `/tmp/numberdb-sage.lock`,
+with this run's `bash -c exec 9>'/tmp/numberdb-sage.lock' ... until flock -n 9`
+still spinning at 12:53.
