@@ -5,8 +5,14 @@ The table stores the lower-bound direction
 
     S_{n,s} ||u||_{L^(2n/(n-2s))} <= ||(-Delta)^(s/2) u||_2,
 
-where (-Delta)^(s/2) is the Fourier multiplier |xi|^s for the L^2-unitary
-Fourier transform. Some sources state the reciprocal square of this constant.
+where the Fourier transform is
+
+    uhat(xi) = (2*pi)^(-n/2) int u(x) exp(-i x.xi) dx,
+
+so (-Delta)^(s/2) is the Fourier multiplier |xi|^s and
+||(-Delta)^(1/2) u||_2 = ||grad u||_2. The homogeneous space Hdot^s consists
+of distributions with |xi|^s uhat(xi) in L^2. Some sources state the
+reciprocal square of this constant.
 
 Run it with SageMath:
 
