@@ -6792,3 +6792,38 @@ Evidence: 2026-09-20, T281 growth critique. `/tmp/modp.out` ends after
 `== M = 5 over GF(32003) ==` with `[done rc=137]`; the $\mathbb Q$ run of the
 same decomposition at $M=4$ took 418 s for the saturation alone and is in the
 task output for `bckbc2zrm`.
+
+## A `/preview?table=` piece with no `Numbers` key renders nothing and blames a local variable
+
+What happened: the T372 critique rendered a private draft through
+`/preview?table=<json>` in pieces, as the T221 and T225 notes describe. The
+first six pieces carried `Title`, `Parameters`, `Display properties` and the
+one section under test, and no entries -- there was no reason to send entries to
+read the Comments block. All six answered HTTP 200 and rendered no table at
+all, printing instead
+
+    Error while parsing numbers: cannot access local variable 'number_section'
+    where it is not associated with a value
+
+above a dump of the submitted YAML. That is a Django message from the preview
+view, not a YAML error, and it says nothing about the missing key; the piece
+looks exactly like a document the parser choked on. Adding `"Numbers": {"3":
+"x^2 - 2"}` to the same six pieces made all six render in full.
+
+What to do instead: put a `Numbers` key in **every** preview piece, one entry is
+enough. Together with the T225 note -- entries need `Parameters` beside them or
+they render as bare keys -- the working shape for a piece is: `Title`,
+`Parameters`, `Display properties`, one entry, and the section under test, plus
+`Links` when that section `CITE`s and `Formulas` when it cites a formula label.
+A `CITE` whose target is not in the piece renders as the bare key
+(`formula-recurrence` in running text), which is the piece's fault and not the
+table's.
+
+Evidence: 2026-09-20, T372 critique. `/tmp/prev372.py` and `/tmp/crit372/*.html`
+before and after: `a_def` 8,160 bytes with the error, 18,752 bytes with one
+entry added. Also for the record of the standing proxy notes: 127.0.0.1:1080
+served `https://numberdb.org/skill` once and then refused every connection
+(`curl: (7)`, `ss -ltn` showing no listener), and direct `curl` answered
+everything for the rest of the run, including `/api/table`, `/api/lookup`,
+`/preview` and `dlmf.nist.gov`. `--retry-all-errors` does not help: a refused
+connection retries instantly and fails the same way.

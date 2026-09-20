@@ -29,6 +29,22 @@ it twice:
 
     python3 agents/queue.py built <family> "<the proposal's title>" T<number>
 
+**If the title is refused because a table already has it, read what the
+refusal says.** It names the table and its state, and there are three:
+
+  * *an unpublished draft with no entries* -- an earlier run created it and
+    died before filling it. **Continue that table.** Write its document and
+    send its entries to the T-number it names; do not invent a second title
+    to get around the refusal, and do not stop. This is the ordinary way a
+    build resumes after a machine restart, and the draft cannot be built by
+    anybody until somebody does it.
+  * *an unpublished draft that already has entries* -- somebody is building
+    it right now, or was. Say so and stop; the claim on the proposal expires
+    in ninety minutes and whoever is free then will find it.
+  * *published* -- the proposal is answered. Record it with
+    `python3 agents/queue.py built <family> "<the proposal>" T<number>` and
+    stop, which is what keeps the next campaign from paying to find out.
+
 **If the checklist line says `(answers #N)`, somebody asked for this table in
 2021 and has been waiting since.** Two things follow. Put the request in the
 table's `Links`, as *"Requested in numberdb-data#N"*, because the provenance
