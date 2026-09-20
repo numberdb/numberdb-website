@@ -1,0 +1,109 @@
+# Draft document for T351, values of the upper incomplete gamma function.
+# Created through the API with X-Draft: yes, to be filled by generate.py beside
+# it and offered for review. Publishing is a person's act.
+Title: Values of the upper incomplete gamma function $\Gamma(a,x)$
+Definition: >-
+  For real $x>0$, the upper incomplete gamma function is
+  $\Gamma(a,x)=\int_x^\infty t^{a-1}e^{-t}\,\mathrm{d}t$ CITE{DLMFDefinition}.
+  This table gives the principal real values of $\Gamma(a,x)$ at rational
+  parameters $a$ and positive rational arguments $x$.
+Keywords:
+  - incomplete gamma function
+  - upper incomplete gamma
+  - regularized incomplete gamma
+  - chi-squared distribution
+Parameters:
+  a:
+    type: Q
+    title: parameter
+    display: $a$
+    constraints: $a\in\mathbb{Q}$
+  x:
+    type: Q
+    title: argument
+    display: $x$
+    constraints: $x\in\mathbb{Q}$ and $x>0$
+Comments:
+  comment-principal: >-
+    The table stores the unregularized upper incomplete gamma function. For
+    $x>0$ and real $a$ the defining integral is real, and the principal value
+    agrees with that integral.
+  comment-regularized: >-
+    The regularized upper incomplete gamma function is
+    $Q(a,x)=\Gamma(a,x)/\Gamma(a)$ when $\Gamma(a)$ is finite
+    CITE{DLMFDefinition}. The regularized value is not stored here.
+Formulas:
+  formula-complement: >-
+    If $a\ne0,-1,-2,\ldots$, then
+    $\gamma(a,x)+\Gamma(a,x)=\Gamma(a)$ CITE{DLMFDefinition}.
+  formula-recurrence: >-
+    $\Gamma(a+1,x)=a\Gamma(a,x)+x^ae^{-x}$ CITE{DLMFRecurrence}.
+  formula-exponential-integral: >-
+    $\Gamma(0,x)=E_1(x)$ CITE{DLMFSpecial}.
+  formula-erfc: >-
+    $\Gamma(1/2,x)=\sqrt{\pi}\operatorname{erfc}(\sqrt{x})$
+    CITE{DLMFSpecial}.
+  formula-integers: >-
+    For nonnegative integers $n$,
+    $\Gamma(n+1,x)=n!e^{-x}\sum_{k=0}^n x^k/k!$ CITE{DLMFSpecial}.
+  formula-tricomi: >-
+    $\Gamma(a,x)=x^ae^{-x}U(1,a+1,x)$, where $U$ is Tricomi's
+    confluent hypergeometric function CITE{DLMFKummer}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.complex_arb import ComplexBallField
+      from sage.rings.rational_field import QQ
+
+      CBF = ComplexBallField(numberdb.bits(100, losing=64))
+      a = CBF(QQ(1) / QQ(2))
+      x = CBF(1)
+      value = a.gamma_inc(x)
+      print(value.real())
+Similar tables:
+  - table: HREF{Values_of_the_Gamma_function_at_rational_numbers}[Values of the Gamma function at rational numbers]
+    relation: >-
+      for $a\ne0,-1,-2,\ldots$, the lower and upper incomplete gamma
+      functions sum to $\Gamma(a)$
+  - table: HREF{Values_of_the_exponential_integral}[Values of the exponential integral]
+    relation: the row $a=0$ is the exponential integral $E_1(x)$
+  - table: HREF{Values_of_the_complementary_error_function}[Values of the complementary error function $\operatorname{erfc}(x)$]
+    relation: the row $a=1/2$ is $\sqrt{\pi}\operatorname{erfc}(\sqrt{x})$
+  - table: HREF{Values_of_Tricomi's_confluent_hypergeometric_function}[Values of Tricomi's confluent hypergeometric function $U(a,b,z)$]
+    relation: $\Gamma(a,x)=x^ae^{-x}U(1,a+1,x)$
+Links:
+  DLMFDefinition:
+    title: 'DLMF 8.2: Definitions and Basic Properties'
+    url: https://dlmf.nist.gov/8.2
+  DLMFSpecial:
+    title: 'DLMF 8.4: Special Values'
+    url: https://dlmf.nist.gov/8.4
+  DLMFRecurrence:
+    title: 'DLMF 8.8: Recurrence Relations and Derivatives'
+    url: https://dlmf.nist.gov/8.8
+  DLMFKummer:
+    title: 'DLMF 13.6: Relations to Other Functions'
+    url: https://dlmf.nist.gov/13.6
+Tags:
+  - special values
+  - special functions
+  - hypergeometric functions
+Data properties:
+  type: R
+  rigour: proven
+  rigour details: >-
+    Values are computed as real parts of Sage complex balls with arb at
+    `numberdb.bits(digits, losing=64)` bits from exact rational parameters and
+    arguments. The imaginary part is required to contain zero. The entries are
+    checked against CITE{formula-recurrence}, against
+    HREF{Values_of_the_exponential_integral}[the exponential integral table]
+    on the $a=0$ row, against the erfc identity in CITE{formula-erfc}, and
+    against the elementary integer formula CITE{formula-integers}.
+  complete: 'no'
+  complete-note: >-
+    it holds every half-integer parameter $a$ with $-1/2\leq a\leq5/2$ and
+    every argument $x=k/10$ with $1\leq k\leq100$
+Display properties:
+  number-header: $\Gamma(a,x)$
