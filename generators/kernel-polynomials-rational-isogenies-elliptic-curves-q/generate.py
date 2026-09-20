@@ -15,8 +15,7 @@ The rings are named rather than taken from `sage.all`, so this runs on a
 modular passagemath as well as on a full SageMath. `numberdb.sage` is imported
 first because it is what initialises Sage.
 
-Answers numberdb-data#10, numberdb-data#126, numberdb-data#127, and
-numberdb-data#128, in the family numberdb-data#165.
+Answers numberdb-data#10 in the family numberdb-data#165.
 """
 
 import os
@@ -36,7 +35,6 @@ from sage.schemes.elliptic_curves.constructor import EllipticCurve
 
 TABLE = os.environ.get("NUMBERDB_TABLE", "T345")
 CONDUCTOR_BOUND = 300
-PRIME_DEGREES = tuple(ZZ(p) for p in (5, 7, 11, 13, 17, 19, 37))
 
 QX = PolynomialRing(QQ, "x")
 qqbar._init_qqbar()
@@ -100,42 +98,44 @@ def _records():
         source_c4 = ZZ(source.c4())
         source_c6 = ZZ(source.c6())
         isogenies = []
-        for ell in PRIME_DEGREES:
-            for phi in source.isogenies_prime_degree(ell):
-                target = phi.codomain().minimal_model()
-                target_c4 = ZZ(target.c4())
-                target_c6 = ZZ(target.c6())
-                try:
-                    target_label = target.cremona_label()
-                except Exception:  # noqa: BLE001
-                    target_label = "target with c4=%s, c6=%s" % (
-                        target_c4, target_c6)
-                polynomial = QX(phi.kernel_polynomial())
-                params = {
-                    "N": str(conductor),
-                    "c4": str(source_c4),
-                    "c6": str(source_c6),
-                    "ell": str(ell),
-                    "target_c4": str(target_c4),
-                    "target_c6": str(target_c6),
-                }
-                key = _record_key(params)
-                if key in seen:
-                    raise ArithmeticError(
-                        "the parameters do not distinguish an isogeny: %s"
-                        % (",".join(key),))
-                seen.add(key)
-                isogenies.append({
-                    "source": source,
-                    "source_ainvs": ainvs,
-                    "source_label": source_label,
-                    "target_label": target_label,
-                    "target_c4": target_c4,
-                    "target_c6": target_c6,
-                    "ell": ell,
-                    "params": params,
-                    "polynomial": polynomial,
-                })
+        for phi in source.isogenies_prime_degree():
+            ell = ZZ(phi.degree())
+            if ell < 5:
+                continue
+            target = phi.codomain().minimal_model()
+            target_c4 = ZZ(target.c4())
+            target_c6 = ZZ(target.c6())
+            try:
+                target_label = target.cremona_label()
+            except Exception:  # noqa: BLE001
+                target_label = "target with c4=%s, c6=%s" % (
+                    target_c4, target_c6)
+            polynomial = QX(phi.kernel_polynomial())
+            params = {
+                "N": str(conductor),
+                "c4": str(source_c4),
+                "c6": str(source_c6),
+                "ell": str(ell),
+                "target_c4": str(target_c4),
+                "target_c6": str(target_c6),
+            }
+            key = _record_key(params)
+            if key in seen:
+                raise ArithmeticError(
+                    "the parameters do not distinguish an isogeny: %s"
+                    % (",".join(key),))
+            seen.add(key)
+            isogenies.append({
+                "source": source,
+                "source_ainvs": ainvs,
+                "source_label": source_label,
+                "target_label": target_label,
+                "target_c4": target_c4,
+                "target_c6": target_c6,
+                "ell": ell,
+                "params": params,
+                "polynomial": polynomial,
+            })
 
         records.extend(sorted(
             isogenies,
