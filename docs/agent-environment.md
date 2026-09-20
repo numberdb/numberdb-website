@@ -6669,3 +6669,45 @@ Evidence: 2026-09-20, T284 growth report. `curl ... /skill -o /tmp/skill.txt
 answered `200` directly and `000` through the proxy in the same command line;
 `curl -sL "https://web.archive.org/web/2021id_/http://www.cecm.sfu.ca/~mjm/Lehmer/lists/Known180.gz"`
 answered 200 with 128035 bytes of valid gzip.
+
+## Every `/preview?table=` slice needs a `Numbers` section, and a sliced `CITE{formula-*}` renders bare
+
+What happened: the T360 critique rendered its draft through
+`GET /preview?table=<yaml>`, following the note above. The first five slices
+were built as section groups with no entries in them -- `Comments` + `Links`,
+`Formulas`, `Data properties`, `Similar tables`, `Programs` -- and every one
+answered **200 with an empty table body** and the message
+
+    Error while parsing numbers: cannot access local variable
+    'number_section' where it is not associated with a value
+
+That is a bug in the renderer, not in the document: `table_context` leaves
+`number_section` unbound when the tree has no `Numbers`, and the resulting
+`UnboundLocalError` is caught and reported as a parse error. A draft cannot
+hit it, because a table with no numbers is not committed, but a preview slice
+hits it every time. Adding one entry to each slice -- the whole of `Numbers`
+is `{'1': {'1': '-y'}}` -- made all five render.
+
+Second trap in the same recipe, and this one produces a *plausible* wrong
+reading rather than an obvious failure. `CITE{formula-definition}` resolves
+against labels in the same document, so in a slice that omits `Formulas` it
+renders as the bare key text: the rigour note read "applies formula-definition
+for nonnegative order, and applies formula-negative-order for negative order",
+which looks exactly like the broken-citation fault a critique is hunting for.
+With `Formulas` in the same slice the same text renders "applies (4) and (5)".
+The existing note already says to keep `Formulas` and `Comments` together; it
+holds for `Data properties` too, since `rigour details` is prose that cites.
+
+What to do instead: build slices from a helper that always attaches a
+one-entry `Numbers` and always carries `Formulas` alongside anything that
+cites a formula label. And before reporting a bare `CITE{}` as a finding,
+re-render it in a slice that contains its target.
+
+Evidence: 2026-09-20, T360 critique. Five slices of 1130 to 2528 encoded bytes
+answered 200 with the `number_section` message and no body; the same five with
+`Numbers: {'1': {'1': -y}}` appended rendered every section. A slice of
+`Formulas` + `Data properties` + one entry rendered "How they were obtained:
+It applies (4) and (5)." A 693-byte slice confirmed that a longer
+`number-header`, `$P_\ell^m(x)$, with $y=(1-x^2)^{1/2}$`, renders intact, and
+that `repeats: HREF{slug}[caption]` renders the caption where a bare
+`HREF{slug}` renders the slug with its underscores.
