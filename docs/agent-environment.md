@@ -6815,3 +6815,31 @@ Or find the pid first and kill it by number.
 Evidence: 2026-09-20, w4 ideation. The call that ended 144 wrote nothing;
 `ls /tmp/w4/check5.py` reported no such file; the bracketed form a moment
 later killed only the target and returned 0.
+
+## An ideation check that is exact arithmetic does not need the Sage box at all
+
+What happened: the w4 ideation queued three runs on `agents/sage.sh` to check
+a family of polynomials with rational coefficients. All three sat behind
+another worker's fill for twenty minutes and none of them ever ran. The same
+checks -- eight orthogonal families built from their three-term recurrences,
+their secondary polynomials from a moment sum, four exact cross-identities and
+a table of entry sizes -- ran locally in `python3` with
+`fractions.Fraction` in about ninety seconds, and the float part (Gauss
+weights by bisection, agreeing with the published Gauss-Legendre and
+Gauss-Laguerre values to ten places) needed nothing either. This box has no
+`mpmath` and no `numpy` outside the container, but it has `fractions`,
+`math.comb` and `math.factorial`, which is the whole of what an exact-family
+check needs.
+
+What to do instead: before queueing on the shared box, ask what the check
+actually needs. Ball arithmetic, `arb`, PARI, LMFDB data, a special function:
+those need the container. Exact rational or polynomial arithmetic, a
+recurrence, a divisibility, a size measurement: write it in plain Python and
+keep the box for the builds, which have no alternative. Four workers share one
+lock, and a twenty-minute queue for something `Fraction` can do is the
+ideation stage taxing the build stage.
+
+Evidence: 2026-09-20, w4 ideation. `/tmp/w4/out5.txt`, nine lines of
+`waiting for the Sage lock`, ending unrun; `/tmp/w4/local.py` and
+`/tmp/w4/local.out`, 98 lines, every check in the batch, exit 0.
+`python3 -c "import mpmath"` and `import numpy` both `ModuleNotFoundError`.
