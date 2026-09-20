@@ -6792,3 +6792,28 @@ Evidence: 2026-09-20, T281 growth critique. `/tmp/modp.out` ends after
 `== M = 5 over GF(32003) ==` with `[done rc=137]`; the $\mathbb Q$ run of the
 same decomposition at $M=4$ took 418 s for the saturation alone and is in the
 task output for `bckbc2zrm`.
+
+## `screen.py`'s corpus check needs `clients/python` on the path, and says nothing about it
+
+What happened: an ideation run imported `already_here` from
+`agents/table-ideas/screen.py` in a plain `python3` on the build box and got
+
+    ModuleNotFoundError: No module named 'numberdb'
+
+from inside `already_here`, which does `import numberdb` lazily. The client is
+not installed anywhere on this host; it lives in the repository at
+`clients/python`, which is also why `agents/sage.sh` sets `PYTHONPATH` to
+`/app/clients/python` inside the container. A run outside the container has to
+do it itself:
+
+    sys.path.insert(0, 'clients/python')
+
+The repository root is not a substitute: there is a `numberdb/` directory
+there, and it is the site's own package with no client API in it, so a run
+that happens to pick it up gets a different and more confusing error.
+
+What to do instead: any scratch script that screens a proposal starts with
+`sys.path.insert(0, 'clients/python')` and `sys.path.insert(0,
+'agents/table-ideas')`, in that order, and runs from the worktree root.
+
+Evidence: 2026-09-20, ideation run for the moments batch, `/tmp/s1.py`.
