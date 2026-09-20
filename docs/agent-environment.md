@@ -6439,3 +6439,40 @@ to drop ` is ` from the format string and let each caller supply its own verb.
 
 Evidence: 2026-09-20, `GET /api/table/T355/audit`; `numberdb_app/limits.py`
 lines 296-308.
+
+## The SOCKS proxy can vanish in the middle of a run, and the read path for a document is `/api/table?id=`
+
+What happened, in one T285 critique run on 2026-09-20, four things about
+reaching the site from this box:
+
+* **The proxy served two requests and then was gone.** The skill page and the
+  T285 page came back through `--socks5-hostname 127.0.0.1:1080`, and every
+  later request answered `curl: (7) Failed to connect to 127.0.0.1 port 1080`.
+  This is not the failure already recorded above, where the `ssh -N -D` process
+  stays alive on a dead connection and requests time out with status `000`:
+  here `pgrep -f 1080` found no process and `ss -ltn` showed nothing listening.
+  It does not come back, and nothing an agent may run restarts it.
+* **Direct `curl` works and is the way through.** `https://numberdb.org/`,
+  `https://export.arxiv.org/api/query?...`, `https://arxiv.org/e-print/<id>`
+  and `https://api.semanticscholar.org/graph/v1/...` all answered without a
+  proxy. Two notes: arXiv's API answers `301` on `http`, so use `https` or
+  `-L`; Semantic Scholar answers `429` with a JSON body rather than an HTTP
+  error, so a run that parses the body silently sees an empty result list.
+* **`GET /api/table/T285` answers `{"error": "Use POST or PUT."}`.** That path
+  is the write endpoint. The read is `GET /api/table?id=T285`, which is what
+  `numberdb/__init__.py:354` sends. The audit is the other shape,
+  `GET /api/table/T285/audit`, so the two sit one slash apart and guessing
+  between them costs a request.
+* **Anonymous requests share a 60-per-hour bucket**, and its message says so
+  with a `retry_after`. Sending the key on every request avoids it; a run that
+  fetches a rendered page a few times and then forgets the key on one API call
+  can be told the limit is exceeded when it has made a dozen requests.
+* **`/T<n>/files` and `/T<n>/history` need a browser session**, and answer the
+  "Nothing at this address" page to an anonymous `curl` even for a public
+  table. There is no `GET` for an attached file over the API either, so a run
+  cannot check whether the `generate.py` attached to a table still matches the
+  repository copy. That check needs a person with a login.
+
+Evidence: 2026-09-20, T285 growth critique. `pgrep -a -f 1080` and
+`ss -ltnp` while the proxy was down; `curl -o /dev/null -w '%{http_code}'`
+direct to numberdb.org returning 200 in the same minute.
