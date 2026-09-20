@@ -108,11 +108,13 @@ Data properties:
     The generator reads the Schott optical-glass records from the
     refractiveindex.info database at commit
     `c5c2f188e848453def5970e347399d653df2ffc2`, evaluates the source
-    Sellmeier formula CITE{formula-sellmeier} at the six listed wavelengths,
-    and rounds each result to five decimal places, the precision used for the
-    line refractive indices in the Schott data sheets. The entries are marked
-    measured because the source coefficients are fitted catalogue data rather
-    than exact or proven quantities.
+    Sellmeier formula CITE{formula-sellmeier} at the listed wavelengths, and
+    uses the source file's printed `nd` value for the lower-case $d$ line.
+    The other line values are rounded to five decimal places, the precision
+    used for the line refractive indices in the Schott data sheets. The
+    entries are marked measured because the source coefficients and printed
+    `nd` values are fitted catalogue data rather than exact or proven
+    quantities.
 Display properties:
   number-header: $n$
 Numbers: []
