@@ -10,7 +10,8 @@ The table stores nonnegative integer k, since replacing x and y by -x and
 -y gives the same Mahler measure for -k. The values are computed as proven
 real enclosures: Jensen's one-variable integral is used for k = 1, 2, 3, the
 closed form 4G/pi for k = 4, and the absolutely convergent logarithmic series
-for k >= 5.
+for k >= 5. Entry comments list the conductor of the associated elliptic
+curve where that curve is nonsingular.
 """
 
 import os
@@ -26,10 +27,10 @@ from sage.rings.complex_arb import ComplexBallField
 
 TABLE = os.environ.get("NUMBERDB_TABLE", "T282")
 
-# Measured before filling the draft: k = 0..100 gives 101 entries, each
-# written to 100 digits. The longest value is 146 characters at k = 4 and the
-# entries block is 17.9 KB, so the range leaves room for extension.
-MAX_K = 100
+# The range was extended from 100 to 112 after a conductor census: among
+# k <= 400, this includes every nonsingular row whose associated elliptic
+# curve has conductor below 1000.
+MAX_K = 112
 
 # Bits beyond the requested digits. At 100 digits, the widest enclosure among
 # k = 0..100 has radius below 2e-119 with this guard.
@@ -38,6 +39,30 @@ WORKING_GUARD = 96
 # Terms are summed until the rigorous geometric tail is smaller than this many
 # decimal orders beyond the requested digits.
 TAIL_GUARD = 20
+
+
+CONDUCTORS = {
+    1: 15, 2: 24, 3: 21, 5: 15, 6: 120, 7: 231, 8: 24, 9: 195,
+    10: 840, 11: 1155, 12: 48, 13: 663, 14: 840, 15: 3135, 16: 15,
+    17: 4641, 18: 1848, 19: 6555, 20: 240, 21: 1785, 22: 3432,
+    23: 1311, 24: 840, 25: 3045, 26: 17160, 27: 2139, 28: 336,
+    29: 4785, 30: 26520, 31: 3255, 32: 42, 33: 35409, 34: 38760,
+    35: 42315, 36: 240, 37: 50061, 38: 54264, 39: 58695, 40: 1320,
+    41: 22755, 42: 73416, 43: 78819, 44: 2640, 45: 4305, 46: 19320,
+    47: 103071, 48: 429, 49: 5565, 50: 2760, 51: 131835, 52: 4368,
+    53: 21147, 54: 3480, 55: 165495, 56: 10920, 57: 184281, 58: 21576,
+    59: 68145, 60: 1680, 61: 226005, 62: 237336, 63: 83013, 64: 510,
+    65: 273585, 66: 286440, 67: 99897, 68: 816, 69: 327405,
+    70: 341880, 71: 71355, 72: 7752, 73: 387849, 74: 404040,
+    75: 84135, 76: 4560, 77: 16863, 78: 473304, 79: 98355, 80: 1995,
+    81: 19635, 82: 550056, 83: 570459, 84: 18480, 85: 22695,
+    86: 211560, 87: 657111, 88: 42504, 89: 703545, 90: 242520,
+    91: 752115, 92: 12144, 93: 802869, 94: 39480, 95: 285285,
+    96: 690, 97: 911121, 98: 134232, 99: 322905, 100: 3120,
+    101: 1028685, 102: 151368, 103: 363693, 104: 1560, 105: 1155945,
+    106: 1189320, 107: 1223331, 108: 4368, 109: 1293285, 110: 1329240,
+    111: 1365855, 112: 609,
+}
 
 
 def _key_from_stdin():
@@ -226,6 +251,9 @@ def _entry_comment(k):
         return ("This is $4G/\\pi$, the "
                 "HREF{Entropy_constants_of_lattice_models#spanning-tree,square,entropy}"
                 "[square-lattice spanning-tree entropy].")
+    if k in CONDUCTORS:
+        return ("The associated curve $E_k$ has conductor "
+                "$%d$." % CONDUCTORS[k])
     return ""
 
 

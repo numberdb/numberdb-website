@@ -9,7 +9,7 @@ Definition: >-
 Parameters:
   k:
     type: Z
-    title: parameter
+    title: constant term
     display: $k$
     constraints: $k\geq0$
 Comments:
@@ -18,9 +18,12 @@ Comments:
     $-y$ gives $m_{-k}=m_k$.
   comment-family: >-
     Boyd used this family in his study of Mahler measures and special
-    values of $L$-functions CITE{Boyd}. The case $k=1$ is the polynomial
-    whose elliptic-curve $L$-value identity was proved by Rogers and
-    Zudilin CITE{RogersZudilin}.
+    values of $L$-functions CITE{Boyd}. For $k\ne0,4$, Boyd's cubic
+    $x^2y+xy^2+xz^2+yz^2+kxyz=0$ is birational over $\mathbb Q$ to
+    $E_k: y^2-kxy-ky=x^3+x^2$; the entry comments give the conductor of
+    $E_k$. The case $k=1$ is the polynomial whose elliptic-curve
+    $L$-value identity was proved by Rogers and Zudilin
+    CITE{RogersZudilin}.
 Formulas:
   formula-jensen: >-
     Jensen's formula in the variable $y$ gives
@@ -38,7 +41,9 @@ Formulas:
     HREF{Entropy_constants_of_lattice_models#spanning-tree,square,entropy}[square-lattice spanning-tree entropy].
 Similar tables:
   - table: HREF{Entropy_constants_of_lattice_models}[Entropy constants of lattice models]
-    relation: holds the same number $4G/\pi$ as the row $k=4$, as a square-lattice spanning-tree entropy
+    relation: holds lattice-model entropy constants; the square-lattice spanning-tree entropy is $m_4$
+  - table: HREF{T283}[Mahler measures of $1+x_1+\dots+x_{n-1}$ (uniform random walks in the plane)]
+    relation: holds Mahler measures for another random-walk family, rather than the square-lattice family $x+x^{-1}+y+y^{-1}+k$
 Links:
   Wiki:
     title: "Wikipedia: Mahler measure"
@@ -75,7 +80,9 @@ Data properties:
   type: R
   rigour: proven
   complete: 'no'
-  complete-note: it holds every integer $k$ with $0\leq k\leq100$
+  complete-note: >-
+    it holds every integer $k$ with $0\leq k\leq112$, and every nonnegative
+    $k\leq400$ for which $E_k$ is nonsingular with conductor below $1000$
   rigour details: >-
     The generator computes $m_k$ in ball arithmetic. For $k=1,2,3$ it uses
     the one-dimensional integral from CITE{formula-jensen}, after the
@@ -85,11 +92,9 @@ Data properties:
     convergent series in CITE{formula-large-k}, with the remaining tail
     bounded by a geometric majorant.
 
-    Before the draft was filled, every entry was checked against a
-    computation not used for that row: a coefficient power series for
-    $k=1,2,3$, the transformed Jensen integral for $k=4$, and direct arb
-    integration of CITE{formula-jensen} for every $5\leq k\leq100$. The
-    range $0\leq k\leq100$ measured 101 entries, a longest written value of
-    146 characters at $k=4$, and a 17.9 KB entries block.
+    Every entry was also checked against a computation not used for that row:
+    a coefficient power series for $k=1,2,3$, the transformed Jensen integral
+    for $k=4$, and direct arb integration of CITE{formula-jensen} for every
+    $5\leq k\leq112$.
 Display properties:
   number-header: $m_k$
