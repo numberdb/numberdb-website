@@ -6650,3 +6650,29 @@ the usual state rather than the exception.
 Evidence: 2026-09-20, T361 critique. `/tmp/prev-a.html` (the empty preview and
 the `number_section` banner), `/tmp/prev-all.html` (2316 bytes of YAML, 200,
 the full prose of a private draft rendered without a key or a container).
+
+## `queue.py skipped` can close a family while another table is only claimed
+
+What happened: numberdb-data#168 had one active claimed item,
+`Wigner $9j$ symbols -- claimed by w2`, and one final candidate,
+`Normalisation constants of the real spherical harmonics -- not proposed`.
+The screening report itself said the final candidate should not be built:
+readers hold the normalised polynomial products, not the standalone factors,
+and those products would be irrational-coefficient polynomials outside the
+table types NumberDB can store. Running
+`python3 agents/queue.py skipped 168 ...` correctly marked that line skipped,
+but then printed `#168 closed; the family is built` because `waiting()` treats
+an active claim as settled. The issue was closed with a comment saying every
+table in the family exists, while the 9j table was still only claimed.
+
+What to do instead: after settling a line in a family that still contains
+`[~]` claims, check the issue before trusting the close message. Reopen it and
+leave a correction if a claimed table is not built yet. The queue logic should
+distinguish "no unclaimed work for another worker" from "the family is built";
+only built or skipped checklist lines should trigger the family-closing
+comment.
+
+Evidence: 2026-09-20, #168. The skipped command output included both
+`left alone (...)` and `#168 closed; the family is built`; `gh issue reopen 168`
+and a corrective comment reopened it because the Wigner 9j line remained
+`[~] ... claimed by w2`.
