@@ -6676,3 +6676,74 @@ Evidence: 2026-09-20, #168. The skipped command output included both
 `left alone (...)` and `#168 closed; the family is built`; `gh issue reopen 168`
 and a corrective comment reopened it because the Wigner 9j line remained
 `[~] ... claimed by w2`.
+
+## A `/preview` slice breaks the cross-references into the sections you left out
+
+What happened: reading the T364 draft meant slicing the document into pieces
+small enough for `GET /preview?table=...` (the query is limited: 4.3 kB of
+YAML answered 414, and everything under about 2.4 kB went through). One piece
+carried `Comments` and `Links` but not `Formulas`. Its comment
+
+    $w_K$ is part of the class number formula CITE{formula-class-number}.
+
+rendered as
+
+    $w_K$ is part of the class number formula formula-class-number.
+
+-- the bare key, in the middle of a sentence, with the `CITE{}` stripped and
+no anchor. That reads exactly like a real fault, and it was nearly written up
+as one. It is the slicing: `CITE{}` resolves against the keys of the document
+it is *given*, and `formula-class-number` is a key of `Formulas`, which that
+piece did not contain. A `CITE` to a missing key degrades to its own key
+rather than erroring, so the only signal is a sentence that reads wrong.
+
+Rendering the same comment with `Formulas` present gives
+`<a class="CITE" href="#formula-class-number">(2)</a>`, which is right; so
+does the published sibling table, `https://numberdb.org/Regulators_of_cubic_fields`,
+whose identical `CITE{formula-class-number}` renders as "(1)".
+
+What to do instead: a `/preview` piece must carry every section the prose in
+it cites -- `Formulas` when a comment cites a formula, `Links` when anything
+cites a link, `Parameters` and `Display properties` when you want the number
+header and the entry labels. Cheaper: strip the *bodies* rather than the
+sections, so the keys survive. Sending `Formulas` as
+`{'formula-regulator': 'A.', 'formula-class-number': <the real text>,
+'formula-product': 'C.'}` keeps the numbering and the anchors and costs
+nothing, and is how the "(2)" above was confirmed. Before reporting a
+cross-reference as broken, re-render it with the cited section present.
+
+Two other facts about the numbering, for the same reason: the page draws
+`Formulas` before `Comments` and numbers them in one sequence, so a piece
+holding only `Comments` numbers them from (1) and a reader of the whole page
+sees them from (4) when there are three formulas. Quote the numbers the whole
+document produces, not the ones a slice produces.
+
+Evidence: 2026-09-20, T364 critique. `/tmp/prev-c2.html` (the bare key) and
+`/tmp/prev-f.html` (the same comment with three `Formulas` keys present,
+rendering `(2)`); `/tmp/prev-e.html`, a document with two stub formulas and
+two stub comments, numbering them (1), (2), (3), (4).
+
+## LMFDB and OEIS are both unreachable from this machine
+
+What happened: the T364 critique wanted to check the 456 LMFDB number-field
+labels its entry comments carry, and to name the OEIS sequences of quartic
+field discriminants. Neither site answers. `https://www.lmfdb.org/NumberField/4.0.117.1`
+returns 200 with `<title>Checking your browser - reCAPTCHA</title>` and no
+content, for every label tried, valid or not -- so a label check by HTTP
+status is worse than useless, since a nonexistent label answers 200 too.
+`https://oeis.org/search?q=A006832&fmt=text` returns 403 behind a Cloudflare
+interstitial. The plain Wikipedia and PARI documentation URLs in the same
+table answered 200 in the same second, so it is those two sites and not the
+network.
+
+What to do instead: check LMFDB and OEIS claims against something else, or
+state in the report that they are unchecked and say why. Do not read a 200
+from lmfdb.org as a label existing. Internal consistency is often available in
+their place: for T364 the LMFDB label's signature component could be checked
+against the signature stated in the same comment, and its index component
+against the table's own $k$, on all 456 rows, which is a real check that needs
+no network.
+
+Evidence: 2026-09-20, T364 critique. `curl` with and without a browser
+user-agent, on `4.0.2048.1`, `4.4.2048.2` and `4.0.2048.9` alike, all 200
+"Checking your browser"; `oeis.org` 403 with a `cf_chl_opt` challenge page.
