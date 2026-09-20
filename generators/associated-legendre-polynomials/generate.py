@@ -11,11 +11,11 @@ Run it with SageMath:
     $ sage -python generate.py --publish  # fill the draft, with NUMBERDB_API_KEY set
 
 The coefficients are exact rationals. The generator computes ordinary
-Legendre polynomials by Bonnet's recurrence, then applies Rodrigues' formula
-for nonnegative order and the standard negative-order relation. Before any
-value is written it checks the initial rows, the negative-order relation, the
-three-term recurrence in l, exact orthogonality for each nonnegative m, and
-the m = 0 match with the ordinary Legendre polynomials.
+Legendre polynomials by Bonnet's recurrence, differentiates them for
+nonnegative order, and applies the standard negative-order relation. Before
+any value is written it checks the initial rows, the negative-order relation,
+the three-term recurrence in l, exact orthogonality for each nonnegative m,
+and the m = 0 match with the ordinary Legendre polynomials.
 """
 
 import os
