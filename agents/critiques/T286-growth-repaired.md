@@ -1,0 +1,5 @@
+1. left for a person -- Confirmed the live page still shows no not-findable marker and the API write account cannot review rows; this is a review/site-marker issue, not a T286 document edit.
+2. done -- Rewrote the completeness note to state the cutoff criterion; checked in Sage from the exact $P_n$, $Q_n$ and $E$ families that the first 79 ranks are $E$ plus $P_n,Q_n$ for $2\leq n\leq40$, that $P_{40}$ is $1.954\cdot10^{-9}$ below $\varphi$, and that $P_{72}$ and $Q_{72}$ are within $10^{-15}$ of $\varphi$.
+3. declined -- Left the range at 79 because the finding itself says that range is defensible, and growing again before the current unreviewed rows are reviewed would add more values that answer no search.
+4. declined -- The Coxeter links that exist are still true, and extending T222 is a separate range decision rather than a repair to T286.
+5. done -- Changed the Programs snippet from `range(2, 30)` to `range(2, 41)` while making finding 2's edit; checked through Sage's preparser that the snippet now builds 79 polynomials and still returns the expected first ten minimal polynomials.
