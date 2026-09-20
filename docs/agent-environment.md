@@ -6364,3 +6364,45 @@ Evidence: 2026-09-20, T286 growth critique.
 `/suggestions?term=1.324717957` -> T286 row 1. Same pattern on the golden
 ratio: `1.61803398874989` -> nothing, `1.618033988749895` -> five tables,
 `/suggestions?term=1.61803398874989` -> T32's `phi` row.
+
+## A `/preview?table=` chunk that leaves out `Formulas` calls every `CITE{formula-…}` broken
+
+What happened: the T349 critique needed the rendered page and went to
+`/preview?table=` first, because the whole-page rebuild takes a Sage run and
+the preview route takes a `curl`. The document does not fit -- nginx answers
+`Request Line is too large (7020 > 4094)` -- so it was sent section by
+section: `Definition` with `Links` and a couple of rows, then `Comments`, then
+`Formulas`, then `Data properties`.
+
+The `Data properties` chunk rendered
+
+    <span class="CITE-broken" title="this table defines no reference by that
+    name">formula-complete</span>
+
+for the `CITE{formula-complete}` in `rigour details`, and that is exactly what
+a real broken citation looks like on a page. It is an artefact of the chunk:
+the label is defined in `Formulas`, and `Formulas` had been left out to fit
+the request line. Sending `Data properties` and `Formulas` together rendered
+`(1)` and `(2)`, which is what the live page does.
+
+What to do instead: preview chunks are fine for looking at prose, mathematics
+and the column headers, but a chunk is not a page and a *missing* cross
+reference in one proves nothing. Every `CITE{}` and `HREF{}` check belongs on
+the whole document -- the sqlite rebuild recipe above -- or on the live site.
+If a chunk must be used, carry `Links`, `Formulas` and `References` in every
+one of them, since those are what labels resolve against.
+
+Also, on this box the route to a rendered draft is the sqlite rebuild and
+nothing else, and the two wrong turns before it cost four commands:
+`NUMBERDB_SAGE_IMAGE` here defaults to `numberdb/builder:latest`, which has no
+`/app` and no Django (`FileNotFoundError: /app`, from the T136 `RequestFactory`
+recipe); `numberdb/web:latest` is not on this machine (`pull access denied for
+numberdb/web`); and `NUMBERDB_REMOTE=linode`, which would reach the machine
+that does have it, stops at `scp: Connection closed`. The previous run's
+`/tmp/t350_render.py` was still on the box and needed only its tid changed,
+as the T344 note says it was for T343.
+
+Evidence: 2026-09-20, T349 critique. `/tmp/prev-props.html` (the broken
+citation) against `/tmp/prev-props2.html` (the same field with `Formulas`
+present, rendering `(1)` and `(2)`); `/tmp/t349_render_out.txt`
+(`records: 552`, `status 200`, 324,545 bytes).
