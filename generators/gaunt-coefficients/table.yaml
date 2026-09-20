@@ -94,7 +94,7 @@ Similar tables:
     relation: after multiplication by $\sqrt{\pi}$, every coefficient here is a rational number or a quadratic algebraic number
 Links:
   DLMF-Gaunt:
-    title: 'DLMF 34.3(vii): relations to Legendre polynomials and spherical harmonics'
+    title: 'DLMF 34.3(vii): spherical harmonic triple products'
     url: https://dlmf.nist.gov/34.3#vii
   Sage:
     title: 'SageMath: Wigner, Clebsch-Gordan, Racah, and Gaunt coefficients'
@@ -123,7 +123,7 @@ Data properties:
   rigour details: |-
     The generator evaluates the Wigner $3j$ finite sums in CITE{formula-3j} with exact rational arithmetic, using integer-scaled angular momenta so every factorial argument is checked before it is used. The exact result is a rational multiple of $\sqrt{q/\pi}$ with $q\in\mathbb{Q}_{>0}$, converted to an arb ball for the stored real value.
 
-    Before any entry is returned, every row is compared with SageMath's exact `gaunt` function CITE{Sage}. The generator also recomputes every row at all pair permutations and simultaneous sign changes, checks CITE{formula-l-zero} wherever one degree is zero, and checks the $m_i=0$ rows by exact integration of products of Legendre polynomials.
+    Before any entry is returned, every row is compared with SageMath's exact `gaunt` function CITE{Sage}. The generator also recomputes every row at all pair permutations and simultaneous sign changes, checks CITE{formula-l-zero} wherever one degree is zero, and checks the $m_i=0$ rows by exact integration of products of HREF{Legendre_polynomials}[Legendre polynomials].
 Display properties:
   number-header: $G(\ell_1m_1;\ell_2m_2;\ell_3m_3)$
 Numbers: []
