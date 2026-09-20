@@ -6548,3 +6548,70 @@ proposals already carry.
 Evidence: 2026-09-20. `agents/review-queue.tsv:287`; `len(Numbers) == 79` from
 `GET /api/table?id=T286`; commits `d7e3f0c` (w2), `0e48aec` (w3) and `d6b11a7`
 (the repair between them).
+
+## The sqlite draft-render recipe dies with a traceback when the page is the fault, and that is the answer
+
+What happened: the T357 critique ran the recipe above -- API document, Sage
+container, throwaway sqlite, `views.table_by_tid` -- and the script stopped
+after `records: 1120` and `tid: T1` with a traceback and no HTML. That is not
+the recipe failing. The table's `Programs` section is a string where
+`table_context` wants a `{language, code}` record, so the view raises
+`ValueError` out of `views.py:1461` and `render_table` does not catch it: the
+page really is a 500, and the dead script is what a 500 looks like from here.
+
+The trap is that every earlier note about this recipe treats a traceback as
+something wrong with the harness -- a missing range patch, a `to_tsvector`
+call, a `_sync_tags` signature -- and three of them were. The way to tell is
+where the traceback starts. A frame inside `numberdb_app/views.py` with the
+document's own field named in the message is the table; a frame in
+`django.db`, `flatten` or `editing` is the recipe.
+
+What to do instead, two lines on the script:
+
+    import traceback
+    try:
+        response = views.table_by_tid(request, table.tid)
+    except Exception:
+        print('=== THE PAGE RAISED ==='); traceback.print_exc(); raise SystemExit(0)
+
+so a run that finds this gets a readable result instead of a non-zero exit,
+and then a second run with the offending field replaced in `tree` before
+`create_table` -- `tree['Programs'] = {'program-sage': {'language': 'Sage',
+'code': 'pass\n'}}` -- renders the rest of the page, which is what the
+critique still needs for everything that is not finding 1.
+
+Also worth knowing before reaching for the container at all: `/preview?table=`
+on the live site renders a document through the same `table_context` with no
+account, no draft and no Django here, in one `curl`. It is capped near a 4 kB
+request line, so it takes a document a few sections at a time, but it located
+this fault to one field in three calls and the whole-page rebuild only
+confirmed it. Reach for it first and keep the Sage box for the whole page.
+
+Evidence: 2026-09-20, T357 critique. `/tmp/t357_render.py` (traceback:
+`views.py:914` -> `views.py:1461` -> `views.py:444` -> `views.py:613`),
+`/tmp/t357_render_fixed.py` (`status 200 731648`), `/tmp/T357_page.html`;
+`curl -s --get --data-urlencode "table@/tmp/doc.yaml"
+https://numberdb.org/preview` returning the same message in an `alert-danger`
+banner. `/tmp/site.tgz` and the previous run's `t355_render.py` were both
+still on this box and needed one `sed`.
+
+## The anonymous API allowance is per IP, and four workers on this box share it
+
+What happened: a read of `GET /api/table?id=T92` without the key answered 429
+in the middle of the T357 critique, having made about fifteen anonymous API
+calls itself. `throttle.ANONYMOUS_LIMIT` is 60 an hour against
+`ip:<address>`, so every worker on this machine spends the same allowance, and
+the one that trips it is not the one that spent it. Page routes (`/tables`,
+`/tags`, `/preview`) are not limited at all -- only `/api/*` is.
+
+What to do instead: send the key on every `/api/*` call, including reads of
+public tables, where it is not needed for permission but moves the count to
+`key:<n>` with a 1000-an-hour allowance. `curl -s -H "X-API-Key: $(cat
+"$NUMBERDB_KEY_FILE")" ...` is the shape, and it keeps one run from spending
+another's allowance.
+
+Evidence: 2026-09-20, T357 critique. `GET /api/table?id=T92` with no key
+returning 429 and a JSON body with no `Title` in it (the failure presents as
+`KeyError: 'Title'` from whatever parses the response); the same URL with the
+key returning 200 immediately afterwards. `numberdb_app/throttle.py:47` and
+`requester_of`.
