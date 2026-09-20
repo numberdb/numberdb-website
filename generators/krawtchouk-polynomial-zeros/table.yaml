@@ -1,10 +1,9 @@
 Title: Zeros of the Krawtchouk polynomials $K_n(x;p,N)$
 Definition: >-
   For rational $0<p<1$, integer $N\geq1$ and degree $1\leq n\leq N$, let
-  $x_1<\cdots<x_n$ be the zeros of the Askey-normalised
-  HREF{Krawtchouk_polynomials_in_the_Askey_normalisation}[Krawtchouk
-  polynomial] $K_n(x;p,N)={}_2F_1(-n,-x;-N;p^{-1})$ CITE{DLMFExplicit}.
-  This table gives the zero $x_k$.
+  $x_1<\cdots<x_n$ be the zeros of the Askey-normalised Krawtchouk polynomial
+  $K_n(x;p,N)={}_2F_1(-n,-x;-N;p^{-1})$ CITE{DLMFExplicit}. This table gives
+  the zero $x_k$.
 Keywords:
   - Krawtchouk polynomial roots
   - Kravchuk polynomial zeros
