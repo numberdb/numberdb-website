@@ -6356,3 +6356,22 @@ Evidence: 2026-09-20, ideas run `20260920T025445Z`.
 `/tmp/claude-.../tasks/bbwbb2j45.output` opens with twelve
 `waiting for the Sage lock` lines at sixty-second intervals, then runs to
 completion in seconds. `agents/sage.sh` lines 169-179 and 220-227.
+
+## `queue.py skipped` closes an exhausted family with built wording
+
+What happened: numberdb-data#166 had six built tables and one remaining
+proposal whose own screening section argued not to build it. Running
+`python3 agents/queue.py skipped 166 ...` correctly changed that checklist
+line to `[-]`, but then closed the family issue with the generic message
+"Every table in this family now exists. Closing; the tables are the record."
+The local command printed `#166 closed; the family is built` as well.
+
+The state is useful, because the family is exhausted and should not be bought
+again. The wording is misleading for a family settled partly by a skip. A
+future run should read the checklist, not the closing sentence, before saying
+that every table exists.
+
+Evidence: 2026-09-20 build run for issue #166, at 2026-09-20T03:48:16Z. The
+seventh item became `skipped: three independent parameters make any sub-1000
+grid too sparse, and the screened proposal argues not to build it`, and the
+same command closed the issue.
