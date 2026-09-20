@@ -6406,3 +6406,40 @@ Evidence: 2026-09-20, T349 critique. `/tmp/prev-props.html` (the broken
 citation) against `/tmp/prev-props2.html` (the same field with `Formulas`
 present, rendering `(1)` and `(2)`); `/tmp/t349_render_out.txt`
 (`records: 552`, `status 200`, 324,545 bytes).
+
+## Reading a paper on this runner: no `pdftotext`, but `arxiv.org/e-print` gives the LaTeX
+
+What happened: the T285 growth critique turned on what four papers actually
+prove, and the numbers in their theorem statements. This box has no
+`pdftotext`, no `pypdf` and no `fitz`, so a downloaded PDF is a wall -- an
+earlier critique of the same table got at Lanneau and Thiffeault's
+introduction by inflating the PDF's Flate streams with `zlib` and reading
+what fell out, which produced part of the paper and no way to tell which
+part was missing. That is how a run ends up quoting an abstract.
+
+What to do instead: `curl -sSL https://arxiv.org/e-print/<id> -o src.tar.gz`
+and untar it. For all five papers read today it was the author's LaTeX --
+`systole.tex`, `LT.tex`, `small-bundles.tex`, `whitehead-sister.tex`,
+`traintrack.tex` -- where `grep -n "realizing\|\\\\begin{theorem}"` finds a
+statement in one command, and a theorem's own words can be quoted rather than
+paraphrased from an abstract. Two cautions: cross-references are `\ref{}`
+labels, so a theorem's *number* is not in the source and must not be invented
+(write "their lower-bound theorem", not "Theorem 1.3"); and a few submissions
+are a single gzipped `.tex` rather than a tarball, so `tar xzf` failing is not
+an error worth stopping on -- `gunzip` it.
+
+Metadata to go with it, both reachable from here without the proxy:
+`https://export.arxiv.org/api/query?id_list=<id>` gives title, authors,
+abstract and `journal_ref`/`doi` for a `References` entry, and
+`https://api.crossref.org/works?query.bibliographic=<title words>` fills in a
+journal reference arXiv does not carry (that is where Kin-Takasawa's
+J. Math. Soc. Japan 65 (2013), doi:10.2969/jmsj/06520411 came from). The
+arXiv API also searches titles and abstracts --
+`search_query=all:%22minimum+dilatation%22&sortBy=submittedDate` -- which is
+the only literature search available here: there is no MathSciNet, no zbMATH
+and no full-text or citation search, so "nothing later settles this" is a
+claim about titles and abstracts and should be written as one.
+
+Evidence: 2026-09-20, T285 growth critique. Direct `curl` to `arxiv.org`,
+`export.arxiv.org` and `api.crossref.org` all answered 200 without the proxy,
+which was refusing connections on port 1080 throughout the run as usual.
