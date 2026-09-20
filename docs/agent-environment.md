@@ -6254,3 +6254,24 @@ argument, asked for in three notes above and still not done.
 Evidence: 2026-09-19, T339 critique. `/tmp/t339_render.py`,
 `/tmp/t339_render_out.txt` (`records: 469`, `tid: T1 tags: ['probability
 theory', 'special values']`, `status 200 349726`), `/tmp/T339_page.html`.
+
+## `queue.py built` can close a family whose remaining entries are only claimed
+
+What happened: after T344 was built and offered for review, `python3
+agents/queue.py built 165 'Division polynomials $\psi_n$ of the curve
+$y^2=x^3+Ax+B$' T344` correctly ticked the proposal, but it also closed
+numberdb-data#165 with "Every table in this family now exists." Three sibling
+proposals were not built or skipped; they were `[~] claimed by w2/w3/w4`.
+`waiting()` treats fresh claims as not waiting, and `cmd_built()` closes a
+family when `waiting(family)` is empty. `cmd_stale()` only scans open
+families, so a premature close can hide a dead worker's stale claim.
+
+What to do: after running `queue.py built` in a family where other checklist
+items are still only claimed, run `queue.py show <family>` and check whether
+the helper closed the issue. If it did, reopen the issue and leave a short
+comment saying which table was built and which items remain only claimed.
+
+Evidence: 2026-09-20, T344 build. `queue.py built` printed `#165 closed; the
+family is built`; `queue.py show 165` still listed three `[~] claimed` items.
+The run reopened #165 and commented that T344 was built but the family should
+stay open for stale-claim recovery.
