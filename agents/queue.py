@@ -235,6 +235,8 @@ def parse_family(issue):
 			items.append({'title': title.strip(),
 			              'done': settled,
 			              'built': mark.lower() == 'x',
+			              'claimed': (tail or '') if (tail or '').startswith(
+				              'claimed') else '',
 			              'answers': [int(n) for n in
 			                          re.findall(r'\d+', asked or '')],
 			              'tid': tail if (tail or '').startswith('T') else None,
@@ -264,8 +266,46 @@ def families(state='open'):
 	              reverse=True)
 
 
+#: How long a claim holds a proposal. A worker that dies mid-build leaves its
+#: claim behind, and with four workers that is not a rare event: on
+#: 2026-09-20 all four died within an hour and every remaining proposal was
+#: held by one of them, so the queue read empty and each new campaign exited
+#: on the banner. A claim is a courtesy between workers, not a lock, and a
+#: courtesy that outlives its worker is just a stuck queue.
+#:
+#: Ninety minutes is longer than any build measured here -- the slowest was
+#: 67 -- and short enough that a machine restarted at lunch is working again
+#: by the time anybody looks.
+CLAIM_MINUTES = 90
+
+
+def _claim_age(item):
+	"""Minutes since a claim was made, or None if it carries no time."""
+	found = re.search(r'at (\d{4}-\d{2}-\d{2}T\d{2}:\d{2})Z',
+	                  item.get('claimed') or '')
+	if not found:
+		return None
+	try:
+		when = datetime.datetime.strptime(found.group(1), '%Y-%m-%dT%H:%M')
+	except ValueError:
+		return None
+	return (datetime.datetime.utcnow() - when).total_seconds() / 60.0
+
+
+def stale_claim(item):
+	"""Is this claim old enough that the worker holding it is gone?"""
+	if not (item.get('claimed') or ''):
+		return False
+	age = _claim_age(item)
+	#A claim with no time on it was written before claims were timed; treat it
+	#as stale rather than letting it hold a proposal for ever.
+	return age is None or age > CLAIM_MINUTES
+
+
 def waiting(family):
-	return [item for item in family['items'] if not item['done']]
+	"""Proposals nobody is building: unsettled, or claimed and abandoned."""
+	return [item for item in family['items']
+	        if not item['done'] or stale_claim(item)]
 
 
 def started(family):
@@ -530,13 +570,16 @@ def claim(family, title, worker=''):
 	lines, hit = [], False
 	for line in family['body'].splitlines():
 		found = ITEM.match(line)
-		if found and not hit and found.group(1) == ' ' \
+		stale = found and found.group(1) == '~' and stale_claim(
+			{'claimed': (found.group(4) or '')})
+		if found and not hit and (found.group(1) == ' ' or stale) \
 				and _same_subject(found.group(2), title):
 			asked = (' (answers %s)' % found.group(3)
 			         if found.group(3) else '')
-			line = '- [~] %s%s -- claimed%s' % (
+			line = '- [~] %s%s -- claimed%s at %s' % (
 				found.group(2).strip(), asked,
-				' by %s' % worker if worker else '')
+				' by %s' % worker if worker else '',
+				datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%MZ'))
 			hit = True
 		lines.append(line)
 	return '\n'.join(lines) if hit else None
