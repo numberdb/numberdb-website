@@ -1,0 +1,101 @@
+Title: Kernel polynomials of rational isogenies of elliptic curves over $\mathbb{Q}$
+Definition: Let $E/\mathbb{Q}$ be the elliptic curve with reduced global minimal Weierstrass model recovered from $(c_4,c_6)$ by Formula CITE{formula-model-from-invariants}. For a rational isogeny $\varphi:E\to E'$ of prime degree $\ell\geq5$, the entry is the monic kernel polynomial $K_\varphi(x)\in\mathbb{Q}[x]$ CITE{LMFDBIsogeny}, whose roots are the $x$-coordinates of the nonzero points of $\ker\varphi$.
+Keywords:
+  - elliptic curve isogeny kernel polynomial
+  - kernel polynomial
+  - Velu isogeny
+Parameters:
+  N:
+    type: Z
+    title: conductor of the source curve $E$
+    display: $N$
+    constraints: $N\geq1$
+  c4:
+    type: Z
+    title: invariant $c_4$ of the reduced global minimal model of $E$
+    display: $c_4$
+  c6:
+    type: Z
+    title: invariant $c_6$ of the reduced global minimal model of $E$
+    display: $c_6$
+  ell:
+    type: Z
+    title: isogeny degree
+    display: $\ell$
+    constraints: $\ell$ is prime and $\ell\geq5$
+  target_c4:
+    type: Z
+    title: invariant $c_4$ of the target curve $E'$
+    display: $c'_4$
+  target_c6:
+    type: Z
+    title: invariant $c_6$ of the target curve $E'$
+    display: $c'_6$
+Comments:
+  comment-curve-labels: The source curve is identified by $N$, $c_4$ and $c_6$. The target invariants $c'_4$ and $c'_6$ distinguish rational isogenies of the same degree from the same source curve. Each entry comment gives the source and target Cremona labels. LMFDB CITE{LMFDB} numbers curves within an isogeny class differently from Cremona's tables CITE{SageCremona}, so those labels are not LMFDB labels.
+  comment-low-degree: Degree $2$ and degree $3$ rational isogenies are not listed. Their kernel polynomials are linear, so their roots are already $x$-coordinates of torsion points rather than genuinely new polynomials.
+Formulas:
+  formula-model-from-invariants: For the reduced models in this table, $b_2$ is the unique element of $\{-4,-3,0,1,4,5\}$ with $b_2\equiv -c_6\pmod{12}$, $b_4=(b_2^2-c_4)/24$, and $b_6=(-c_6-b_2^3+36b_2b_4)/216$. The model has $a_1\equiv b_2\pmod 2$, $a_3\equiv b_6\pmod 2$ with $a_1,a_3\in\{0,1\}$ and $a_2\in\{-1,0,1\}$, and $a_2=(b_2-a_1^2)/4$, $a_4=(b_4-a_1a_3)/2$ and $a_6=(b_6-a_3^2)/4$.
+  formula-divides: For prime $\ell\geq5$, $K_\varphi(x)$ has degree $(\ell-1)/2$ and divides the division polynomial $\psi_\ell(x)$ in $\mathbb{Q}[x]$.
+Similar tables:
+  - table: HREF{Division_polynomials_psi_n_of_elliptic_curves_over_mathbb_Q}[Division polynomials $\psi_n$ of elliptic curves over $\mathbb{Q}$]
+    relation: stores the division polynomial that each listed kernel polynomial divides
+  - table: HREF{Modular_polynomials_for_j-invariant}[Modular polynomials for the $j$-invariant]
+    relation: stores modular equations whose roots determine which curves are $\ell$-isogenous
+  - table: HREF{Canonical_modular_polynomials}[Canonical modular polynomials $\Phi^c_\ell$]
+    relation: stores smaller modular equations for the same prime-degree isogeny relation
+  - table: HREF{Weil_polynomials_of_abelian_varieties_over_prime_fields}[Weil polynomials of abelian varieties over prime fields]
+    relation: indexes isogeny classes of abelian varieties over finite fields rather than explicit kernels of isogenies over $\mathbb{Q}$
+Links:
+  LMFDBIsogeny:
+    title: 'LMFDB knowl: Isogenies of elliptic curves'
+    url: https://www.lmfdb.org/knowledge/show/ec.isogeny
+  LMFDB:
+    title: 'LMFDB: Elliptic curves over Q'
+    url: https://www.lmfdb.org/EllipticCurve/Q/
+  SageCremona:
+    title: "SageMath reference: Cremona's tables of elliptic curves"
+    url: https://doc.sagemath.org/html/en/reference/databases/sage/databases/cremona.html
+  SageIsogenies:
+    title: 'SageMath reference: isogenies of elliptic curves'
+    url: https://doc.sagemath.org/html/en/reference/arithmetic_curves/sage/schemes/elliptic_curves/ell_rational_field.html#sage.schemes.elliptic_curves.ell_rational_field.EllipticCurve_rational_field.isogenies_prime_degree
+  Requested10:
+    title: 'Requested in numberdb-data#10'
+    url: https://github.com/numberdb/numberdb-data/issues/10
+  Requested126:
+    title: 'Requested in numberdb-data#126'
+    url: https://github.com/numberdb/numberdb-data/issues/126
+  Requested127:
+    title: 'Requested in numberdb-data#127'
+    url: https://github.com/numberdb/numberdb-data/issues/127
+  Requested128:
+    title: 'Requested in numberdb-data#128'
+    url: https://github.com/numberdb/numberdb-data/issues/128
+Programs:
+  program-sage:
+    language: Sage
+    code: |
+      E = EllipticCurve('11a1')
+      for phi in E.isogenies_prime_degree(5):
+          print(phi.codomain().cremona_label(), phi.kernel_polynomial())
+Tags:
+  - number theory
+  - elliptic curves
+  - polynomial
+Data properties:
+  type: Q[]
+  rigour: exact
+  complete: no
+  complete-note: it holds every rational isogeny of prime degree $\ell\geq5$ whose source curve lies in Sage's mini Cremona database CITE{SageCremona} with conductor $N\leq300$
+  sources:
+    - CITE{SageCremona}
+    - CITE{SageIsogenies}
+  rigour details: The generator reads exact Weierstrass coefficients from Sage's mini Cremona database CITE{SageCremona}, enumerates Sage's exact rational isogenies of prime degree $\ell\geq5$ CITE{SageIsogenies}, and stores each monic kernel polynomial in $\mathbb{Q}[x]$. It verifies every row has degree $(\ell-1)/2$, divides the exact division polynomial $\psi_\ell$ of the source curve, and has a target curve whose $(c_4,c_6)$ invariants are the target parameters. On the rows where HREF{Division_polynomials_psi_n_of_elliptic_curves_over_mathbb_Q}[the division-polynomial table] contains the same source curve and $\ell=5$, it verifies divisibility against that stored row too.
+Display properties:
+  number-header: $K_\varphi(x)$
+  group parameters:
+    - [N]
+    - [c4, c6]
+    - [ell]
+    - [target_c4, target_c6]
+Numbers: []
