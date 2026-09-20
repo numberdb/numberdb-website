@@ -519,11 +519,18 @@ while [ "$made" -lt "$builds" ]; do
 		python3 agents/queue.py built "$in_family" "$proposal" "$tid" \
 			|| say "could not tick $proposal in #$in_family; do it by hand"
 	else
-		#Nothing was built, so the claim goes back: a proposal held by a
-		#worker that did not build it is invisible to every other worker, and
-		#the family would sit open with nobody able to take it.
-		python3 agents/queue.py release "$in_family" "$proposal" >/dev/null 2>&1 \
-			|| say "could not release $proposal in #$in_family; it reads as claimed"
+		#Nothing was built, and the claim *stays*. Releasing it here is what
+		#the loop did first, and the queue then offered the same proposal back
+		#to the same worker on the next turn -- which the repeat guard read,
+		#correctly, as nothing marking work as done, and stopped the campaign.
+		#
+		#A claim expires after ninety minutes, so the proposal is not lost: it
+		#is out of this worker's way now and back in the queue for whoever is
+		#free then, which is what "try it again later" means with four workers
+		#and no memory between them. A proposal that should never be tried
+		#again is a different thing and has its own mark: `queue.py skipped`,
+		#which the build run is told to use.
+		say "left $proposal claimed; it frees itself in ninety minutes"
 	fi
 	if [ -n "$tid" ]; then
 		say "reading $tid as a reader would"

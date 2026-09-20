@@ -58,6 +58,16 @@ class TheRunnerFencesOffWhatItCannotUndo(TestCase):
 		self.assertIn('uncommitted changes', body)
 		self.assertIn('exit 3', body)
 
+	def test_a_build_that_made_nothing_keeps_its_claim(self):
+		#Releasing it put the same proposal back in front of the same worker
+		#on the next turn, which the repeat guard read as a queue that is not
+		#being consumed -- and stopped the campaign. The claim expires by
+		#itself, so the proposal reaches another worker without this one
+		#having to hold it or hand it straight back.
+		body = script('agents/campaign.sh')
+		self.assertIn('frees itself in ninety minutes', body)
+		self.assertNotIn('queue.py release', body)
+
 	def test_the_same_item_twice_stops_the_campaign(self):
 		#A queue that is not being consumed looks exactly like work being
 		#done: on 2026-09-19 a demand had no "done" mark and the loop repaired
