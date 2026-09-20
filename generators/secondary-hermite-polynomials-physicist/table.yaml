@@ -3,8 +3,7 @@
 # generate.py beside it and offered for review. Publishing is a person's act.
 Title: Secondary polynomials of the Hermite polynomials in physicist's convention $q_n$
 Definition: >-
-  For $n\geq0$, let $H_n$ be the
-  HREF{Hermite_polynomials_H}[Hermite polynomial in physicist's convention].
+  For $n\geq0$, let $H_n$ be the Hermite polynomial in physicist's convention.
   The secondary polynomial $q_n$ is
   $q_n(x)=\int_{-\infty}^{\infty}(H_n(t)-H_n(x))/(t-x)\,\rho(t)\,dt$
   CITE{Wiki}, where $\rho(t)=e^{-t^2}/\sqrt{\pi}$ is the probability
@@ -23,7 +22,7 @@ Comments:
     $\mathbb{Q}$.
   comment-recurrence: >-
     Equivalently, $q_n$ is the numerator polynomial for the recurrence of
-    $H_n$. Since $H_0=1$, $H_1=2x$ and
+    HREF{Hermite_polynomials_H}[$H_n$]. Since $H_0=1$, $H_1=2x$ and
     $H_{n+1}=2xH_n-2nH_{n-1}$, the corresponding numerator sequence has
     $q_0=0$, $q_1=2$ and the same recurrence. This is the zeroth
     corecursive polynomial, or the order-one associated monic polynomial
