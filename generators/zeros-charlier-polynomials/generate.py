@@ -20,21 +20,23 @@ import json
 import os
 import sys
 import urllib.request
-from decimal import Decimal
+from decimal import Decimal, localcontext
 from fractions import Fraction
 from functools import lru_cache
 
 import numberdb.sage as numberdb
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+from sage.rings.qqbar import AA
 from sage.rings.rational_field import QQ
+from sage.rings.real_arb import RealBallField
 from sage.rings.real_mpfi import RealIntervalField
 
 
 TABLE = os.environ.get("NUMBERDB_TABLE", "T368")
 
 # The a-values are the grid inherited from T267. Measured before filling the
-# draft: n <= 11 gives 660 entries. The dry-run measurement reports a longest
-# raw interval string of 263 characters and a 138.4 KB entries block; n <= 12
+# draft: n <= 12 gives 780 entries. The dry-run measurement reports a longest
+# raw ball string of 150 characters and a 146.7 KB entries block; n <= 13
 # crosses the 160 KB build target.
 A_VALUES = (
     QQ(1) / QQ(4),
@@ -48,7 +50,7 @@ A_VALUES = (
     QQ(3),
     QQ(4),
 )
-MAX_N = 11
+MAX_N = 12
 DIGITS = 100
 WORKING_GUARD = 96
 
@@ -82,47 +84,41 @@ def charlier_polynomial(n, a):
     return R(current)
 
 
-def _contains_exact(interval, exact):
-    try:
-        return interval.lower() <= exact <= interval.upper()
-    except TypeError:
-        field = interval.parent()
-        return (interval - field(exact)).contains_zero()
-
-
 def _as_order_key(root):
     if hasattr(root, "lower"):
         return root.lower()
-    return QQ(root)
+    return root
 
 
 @lru_cache(maxsize=None)
 def _roots(a_text, n, digits):
-    """The roots of C_n(x; a), exact where rational and otherwise intervals."""
+    """The roots of C_n(x; a), exact where rational and otherwise balls."""
     a = QQ(a_text)
     n = int(n)
     if n == 1:
         return (a,)
 
     polynomial = charlier_polynomial(n, a)
-    field = RealIntervalField(numberdb.bits(digits, losing=WORKING_GUARD))
-    intervals = sorted(
-        polynomial.roots(field, multiplicities=False),
+    ball_field = RealBallField(numberdb.bits(digits, losing=WORKING_GUARD))
+    algebraic_roots = sorted(
+        polynomial.roots(AA, multiplicities=False),
         key=_as_order_key,
     )
-    if len(intervals) != n:
-        raise ArithmeticError("got %d roots for a=%s, n=%d" % (len(intervals), a, n))
+    if len(algebraic_roots) != n:
+        raise ArithmeticError(
+            "got %d roots for a=%s, n=%d" % (len(algebraic_roots), a, n)
+        )
 
     exact_roots = sorted(polynomial.roots(QQ, multiplicities=False))
     roots = []
-    for interval in intervals:
+    for root in algebraic_roots:
         exact = None
         for candidate in exact_roots:
-            if _contains_exact(interval, candidate):
+            if root == AA(candidate):
                 exact = candidate
                 break
         if exact is None:
-            roots.append(interval)
+            roots.append(ball_field(root))
         else:
             roots.append(exact)
             exact_roots.remove(exact)
@@ -207,12 +203,20 @@ def _decimal_parts(text):
     else:
         mantissa, exponent = lower, 0
     decimals = len(mantissa.split(".", 1)[1]) if "." in mantissa else 0
-    quantum = Decimal(1).scaleb(exponent - decimals)
-    centre = Decimal(text)
-    lo, hi = centre - quantum, centre + quantum
+    precision = max(200, sum(1 for character in mantissa if character.isdigit()) + 20)
+    with localcontext() as context:
+        context.prec = precision
+        quantum = Decimal(1).scaleb(exponent - decimals)
+        centre = Decimal(text)
+        lo, hi = centre - quantum, centre + quantum
     if lo > hi:
         lo, hi = hi, lo
     return Fraction(lo), Fraction(hi)
+
+
+def _is_exact_text(text):
+    text = str(text).lower()
+    return not text.startswith("[") and "." not in text and "e" not in text
 
 
 def _fraction_to_qq(value):
@@ -222,11 +226,17 @@ def _fraction_to_qq(value):
 def _written_interval(value):
     from numberdb._write import to_text
 
-    if getattr(value.parent(), "is_exact", lambda: False)():
+    type_name = type(value).__name__.lower()
+    has_error_radius = (
+        hasattr(value, "lower")
+        or "ball" in type_name
+        or "interval" in type_name
+    )
+    if not has_error_radius and getattr(value.parent(), "is_exact", lambda: False)():
         exact = QQ(value)
         return exact, exact
     text = to_text(value, DIGITS)
-    if "/" in text and "." not in text and "e" not in text:
+    if _is_exact_text(text):
         exact = QQ(text)
         return exact, exact
     lo, hi = _decimal_parts(text)
@@ -326,7 +336,7 @@ def _stored_to_values(stored):
     values = {}
     field = RealIntervalField(numberdb.bits(DIGITS, losing=WORKING_GUARD))
     for key, text in stored.items():
-        if "/" in text and "." not in text and "e" not in text:
+        if _is_exact_text(text):
             values[key] = QQ(text)
         else:
             low, high = _decimal_parts(text)
