@@ -1,0 +1,1 @@
+left for a person -- the original report `agents/critiques/T362.md` is missing, so there is no finding list to repair; I checked the live API document, saw `/T362` return 404 as a private draft, ran the API audit clean, and verified the generator against the live table with 752/752 entries matched.
