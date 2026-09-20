@@ -1,0 +1,7 @@
+done -- removed the 28 `Requested*` links, leaving `NashWiki`; I checked the live API still had those request links and that they were uncited table-request links rather than sources for Nash's inequality.
+done -- defined $j_{\nu,1}$ and linked the unit-ball volume and Bessel-zero tables; I checked the slugs resolve and ran `agents/sage.sh /tmp/nash_link_check.py /tmp/T20.json` to compare T20's first-zero rows with `besseljzero(n/2,1)` for $1\leq n\leq20$.
+done -- replaced the row-1-only program with a Python/mpmath program for formula (1); I ran it under `agents/sage.sh` and checked it reproduces the stored rows $n=1,2,3,7,20$ before printing $n=21$.
+done -- added T358 and rewrote the vague T92, T356 and T357 relations; I checked the related tables live and verified the Sobolev interpolation exponents, narrowing the T358 relation to another Gagliardo-Nirenberg inequality rather than the stronger endpoint claim.
+done -- expanded `complete-note` to say why the range stops at $n\leq20$; I checked T20 has the needed first-zero rows for $\alpha=n/2$ exactly through that range.
+declined -- left the audit finding for tag `functional analysis` unchanged, because it was pre-existing, the critique's reason for disagreeing still applies, and the post-repair audit introduced no new finding.
+declined -- left the audit finding for tag `inequality` unchanged, for the same reason; the post-repair audit still reports only the two tag findings.
