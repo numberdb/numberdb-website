@@ -6443,3 +6443,46 @@ claim about titles and abstracts and should be written as one.
 Evidence: 2026-09-20, T285 growth critique. Direct `curl` to `arxiv.org`,
 `export.arxiv.org` and `api.crossref.org` all answered 200 without the proxy,
 which was refusing connections on port 1080 throughout the run as usual.
+
+## OEIS and the LMFDB answer a bot challenge here, but not from inside the container
+
+Screening a batch of number-field proposals on 2026-09-20 I wanted two
+routine cross-checks: the LMFDB's published regulator for a field label, and
+an OEIS sequence of discriminants. From the agent's own shell both are
+unusable:
+
+    curl -s https://www.lmfdb.org/api/nf_fields/?label=4.0.125.1&_format=json
+        -> a Google reCAPTCHA challenge page, HTTP 200
+    curl -s -A ... https://oeis.org/search?q=...&fmt=text
+        -> Cloudflare "Just a moment...", HTTP 200 (403 with no User-Agent)
+
+Both answer `200` with HTML, so a script that parses the body sees a page
+rather than an error, which is the expensive failure: it reads as "the
+sequence does not exist" or "the field has no regulator".
+
+From inside the Sage container the same two URLs answer normally:
+
+    agents/sage.sh probe.py      # urllib, User-Agent set
+    https://oeis.org/A006832                                   200
+    https://www.lmfdb.org/api/nf_fields/?label=4.0.125.1...    200   regulator 0.962423650119
+
+So the LMFDB and OEIS comparisons that T131, T158 and T161 record in their
+`rigour details` are reachable, and belong in the generator, where the build
+already runs. Do not try to run them from the agent shell and do not conclude
+from a challenge page that the source is wrong. Wikipedia, the AMS journal
+site, `api.crossref.org` and numberdb.org itself answer directly from both
+places; `export.arxiv.org` needs `https` (the `http` form answers 301 with an
+empty body).
+
+Two smaller things met on the same run:
+
+* `import numberdb` from the repository root picks up the Django app package,
+  which has no client API. Run client code from elsewhere with the repository
+  copy on the path: `cd /tmp && PYTHONPATH=<repo>/clients/python python3 ...`,
+  and call `screen.use_socks_proxy_if_set()` first, as
+  `agents/table-ideas/screen.py` does, or every corpus search comes back empty.
+* `screen.already_asked` reaches GitHub's search API unauthenticated and is
+  rate limited after a handful of calls; it then reports
+  `could not ask GitHub (HTTPError)`, which is honest but unhelpful mid-batch.
+  `gh issue list --repo numberdb/numberdb-data --search ... --state all` is
+  authenticated here and answers the same question.
