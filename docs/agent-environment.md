@@ -6687,3 +6687,54 @@ Evidence: 2026-09-20, `GET /api/table/T283/audit`; the attached file is
 rev 2132 of `/files/T283/generate.py`, byte-identical to
 `generators/mahler-measures-short-random-walks/generate.py`. Written up in
 `agents/critiques/T283-growth.md` §5.
+
+## `/preview` renders nothing at all without a `Numbers` section, and the API document can be posted back to it as JSON
+
+What happened: rendering draft T366 on this builder meant `/preview?table=…`
+in pieces, the recipe of the T221 and T289 notes above, because the builder
+image has no Django and the `RequestFactory` path is closed. The first eight
+pieces carried a title and one or two prose sections and no entries, and every
+one of them answered 200 with an empty preview and a red alert:
+
+    Error while parsing numbers: cannot access local variable 'number_section'
+    where it is not associated with a value
+
+Not a complaint about the piece: `views.preview` renders *nothing* — no
+definition, no comments, no links — when the document has no `Numbers`. The
+earlier notes say to send "one or two sections of prose, or one block of
+entries"; the truth is that every piece needs a `Numbers` block, and a
+one-entry stub (`{"725": {"1": {"-1": {"number": "2/15"}}}}`) is enough and
+costs 50 bytes of the 4094-byte request line.
+
+The second half of this: the piece does not have to be YAML. `views.preview`
+loads the `table` parameter with `yaml.BaseLoader`, and YAML is a superset of
+JSON, so the document `GET /api/table?id=T…` returns can be sliced in Python
+and posted straight back with `json.dumps` — no YAML writer, no quoting
+decisions of your own, and what renders is what is stored. Eleven pieces of
+T366 went through that way, all 200.
+
+What to do instead: when rendering a private draft in pieces, put a one-entry
+`Numbers` stub in every piece, and build the pieces as JSON out of the API
+document. If a piece comes back with the `number_section` alert, add the stub
+rather than looking for a fault in the prose.
+
+Evidence: 2026-09-20, T366 critique. `/tmp/prev366.py` and
+`/tmp/T366-*.html`; the eight stubless pieces answered 200 at 6.5-7.7 KB with
+the alert and no preview, the same eight with the stub answered 200 at
+14-18 KB with the sections rendered.
+
+## A private draft's attached generator is still world-readable, on 2026-09-20
+
+What happened: `curl https://numberdb.org/T366` answers 404 to an
+unauthenticated caller, and `curl
+https://numberdb.org/files/T366/generate.py?raw=1` answers 200 with all 15,562
+bytes, whose docstring names the table, its address at `numberdb.org/T366`,
+its range and its method. This is the hole the T235, T324 and T337 notes above
+describe; it is recorded again only because it is still open five weeks after
+the first note, and because it now affects a whole batch: T359, T364 and T365
+answer 404 on the page and 200 on the file in the same way.
+
+Evidence: 2026-09-20. `for t in T359 T365 T364; do curl -o /dev/null -w
+'%{http_code}' https://numberdb.org/$t; curl -o /dev/null -w '%{http_code}'
+"https://numberdb.org/files/$t/generate.py?raw=1"; done` -> `404 200` three
+times; T366 the same, 15,562 bytes.
