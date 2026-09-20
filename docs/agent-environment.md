@@ -6486,3 +6486,61 @@ Two smaller things met on the same run:
   `could not ask GitHub (HTTPError)`, which is honest but unhelpful mid-batch.
   `gh issue list --repo numberdb/numberdb-data --search ... --state all` is
   authenticated here and answers the same question.
+
+## The audit's tag finding blames the draft for a count it did not make
+
+What happened: `GET /api/table/T354/audit` on a private draft reported, twice,
+
+    Tags: "functional analysis" reaches only this table; a tag that leads nowhere else leads nowhere
+    Tags: "inequality" reaches only this table; a tag that leads nowhere else leads nowhere
+
+Neither tag reaches T354. Both reach **T92**, and T354 is the second table to
+carry them. The check (`numberdb_app/management/commands/audit_table.py`,
+around line 414) reads `Tag.objects.values_list('name', 'table_count')`, and
+`table_count` counts *published* tables. A draft is not in it, so the count of
+1 the check found belongs to some other table, and the message attributes it
+to the one being audited. On a draft the sentence is always false in the
+literal thing it says, and it is most misleading exactly when the draft is
+doing the right thing: reusing an existing tag that one published table
+already carries.
+
+The finding still points at something real — two is under the skill's bar of
+three — but the reader has to go to `/tags/<tag>` to find out that the tag
+reaches anything at all, and the obvious reaction to the message as written is
+to invent a new tag, which is the opposite of what the skill asks.
+
+What it should say: name the tables. "reaches 1 other table (T92)" for a
+draft, "reaches no other table" when the count really is zero once this table
+is excluded. Excluding the audited table from the count is the other half:
+for a published table `table_count` includes it, for a draft it does not, so
+the same message means two different things depending on a state the caller
+cannot see.
+
+## `/preview` is a GET form and gunicorn refuses the request line past 4094
+
+What happened: rendering a reconstructed draft through
+`curl --get --data-urlencode "table@file.yaml" https://numberdb.org/preview`
+answered 400 with
+
+    Request Line is too large (4626 > 4094)
+
+which is gunicorn's `limit_request_line` default. `numberdb_app/views.preview`
+reads `request.GET.get('table')`, and the editor's own form in
+`templates/.../preview` is `method="get"`, so this is not an artefact of
+driving it with curl: the preview editor on the site cannot preview any table
+whose YAML percent-encodes past about 4 KB, which is nearly every real table.
+Measured on T354's prose block: 3000 bytes of YAML answered 200, 3500 answered
+400.
+
+For an agent this only means rendering a draft in pieces — section by section,
+with two or three entries each, which is what the T271 and T354 critiques did
+and which is enough to see every rendering fault. Sections render
+independently except for `CITE` and `HREF`, so send `Comments`, `Formulas` and
+`References` together or the citations render as bare keys and look broken
+when they are not. The same goes for `rigour details`, whose `CITE`s resolve
+against `Formulas`.
+
+The fix on the site is to make the preview form a POST, or to raise
+`limit_request_line`. Until then, a contributor who pastes a whole table into
+the preview box gets a bare gunicorn 400 page with no hint that the table was
+fine.
