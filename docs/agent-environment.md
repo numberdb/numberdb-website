@@ -6843,3 +6843,56 @@ Evidence: 2026-09-20, w4 ideation. `/tmp/w4/out5.txt`, nine lines of
 `waiting for the Sage lock`, ending unrun; `/tmp/w4/local.py` and
 `/tmp/w4/local.out`, 98 lines, every check in the batch, exit 0.
 `python3 -c "import mpmath"` and `import numpy` both `ModuleNotFoundError`.
+
+## `curl -o /tmp/Txxx.html` through the dead proxy leaves the *previous* run's page in place, and it reads like a fetch
+
+What happened: the T283 critique opened with
+`curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/T283 -o /tmp/T283.html`,
+the documented shape. The proxy was already dead, so curl exited 7 having
+written nothing. But `-o` does not truncate a file it never gets bytes for, and
+another run on this box had fetched the same page to the same path eleven hours
+earlier. `wc -c` reported 108650 bytes, the file parsed, it was T283, and the
+table it described was real -- just the table as of 05:44 rather than now. The
+critique then read an eleven-hour-old page believing it had just fetched it,
+and only noticed on `stat`, which showed `05:44` against a session that started
+at 16:11. In between, another worker had added two entries and changed the
+title, so the "rendering" and the API document disagreed for a reason that had
+nothing to do with rendering.
+
+The status line does not save you either. The first call printed
+`HTTP 000 size 0` immediately above a `wc -c` of 48740 for the same file. Two
+numbers, one from curl and one from the file, and they were about different
+things.
+
+Three things make this specific to this box rather than to curl: the proxy is
+an `ssh -N -D` tunnel that stays listening after its connection dies, so
+failure is silent and total; `/tmp` is shared between every worker and every
+run, and the natural filename for a page is `/tmp/T283.html` for all of them;
+and four workers are reading and repairing the same corpus, so a stale page is
+a *plausible* page rather than obvious rubbish.
+
+What to do instead, cheapest first:
+
+  * Write to a path no other run uses -- the batch or run prefix that
+    `docs/` already asks for elsewhere, `/tmp/w4/T283.html`, not `/tmp/T283.html`.
+  * Give curl `--fail --show-error` and check `$?`, or just `-w '%{http_code}'`
+    *and act on it* rather than printing it beside a byte count.
+  * When a page and the API disagree, `stat` the file before believing either.
+  * Fetch from inside `agents/sage.sh` instead. The container reaches
+    numberdb.org when this runner's `curl` cannot: `urllib` with the key on
+    `X-API-Key` returned both `/api/table?id=T283` and the rendered `/T283`
+    (110562 bytes) in the same run that every local `curl` failed. It costs a
+    Sage-lock wait, so batch the page fetch with whatever else the run needs
+    from the box.
+
+The proxy half of this is already recorded above ("The proxy does not recover
+on its own"); what is new is that a dead proxy plus `-o` plus a shared `/tmp`
+produces a confident wrong answer rather than an error.
+
+Evidence: 2026-09-20 critique of T283. `stat /tmp/T283.html` ->
+`2026-09-20 05:44:26`, `stat /tmp/skill.txt` -> `16:03:00`, both from other
+runs; `curl ... -w 'HTTP %{http_code} size %{size_download}'` printing
+`HTTP 000 size 0` while `wc -c` printed 48740; five later `curl` attempts all
+exit 7. The stale page showed 198 entries and the title "(short random walks)";
+`GET /api/table?id=T283` from the container at 16:45 showed 200 entries and
+"(uniform random walks in the plane)".
