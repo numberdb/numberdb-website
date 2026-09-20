@@ -252,11 +252,21 @@ def main():
     generator = EllipticCurveTorsionXCoordinates()
     generator.run_integrity_checks()
     if os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
-        print(generator.publish(message="filled torsion x-coordinate roots"))
+        print(
+            generator.publish(
+                message="filled torsion x-coordinate roots",
+                restating=flag("NUMBERDB_RESTATING"),
+                lowering=flag("NUMBERDB_LOWERING"),
+            )
+        )
         return
     report = generator.verify(sample=None)
     print(report)
     raise SystemExit(0 if report.ok else 1)
+
+
+def flag(name):
+    return os.environ.get(name, "").strip().lower() in ("1", "yes", "true", "on")
 
 
 if __name__ == "__main__":
