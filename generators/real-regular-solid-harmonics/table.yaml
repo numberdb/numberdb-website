@@ -96,8 +96,8 @@ Data properties:
     would make a 1378-character row
   rigour details: >-
     Every entry is exact, a polynomial over $\mathbb{Q}$ in $x,y,z$. The
-    generator computes the Legendre polynomials by Bonnet's recurrence over
-    $\mathbb{Q}$, differentiates them, and applies
+    generator computes HREF{Legendre_polynomials}[the Legendre polynomials]
+    by Bonnet's recurrence over $\mathbb{Q}$, differentiates them, and applies
     CITE{formula-associated-legendre}.
 
     Before entries are written, the generator checks the degree-one and
