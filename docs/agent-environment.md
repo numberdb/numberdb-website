@@ -6455,3 +6455,30 @@ Evidence: 2026-09-20. `git add agents/critiques/T293-growth.md` exiting 1 with
 "The following paths are ignored by one of your .gitignore files:
 agents/critiques"; `git ls-files agents/critiques | wc -l` giving 275 against
 276 files on disk; `.gitignore` line 168.
+
+## `screen.py`'s `already_asked` misses the request it is screening against, when the request spells the word differently
+
+What happened: five proposals answering numberdb-data#63, *Refraction indices
+of important materials*, were screened with `already_asked` on their own
+titles. It returned `[]` for all five, which reads as "nobody has asked for
+this" -- the opposite of the truth, since the whole batch is anchored on #63.
+
+The cause is in the helper: it takes the words of the name that are longer
+than four letters, sends the first three to GitHub's issue search as
+`in:title`, and GitHub does not stem. "Refractive" is not "Refraction", so the
+query never matches the issue. Searching the issue's own wording finds it at
+once. This is the opposite behaviour to `already_here`, which goes through
+`numberdb.search_text` and *does* stem, so the two halves of the same screen
+disagree about what counts as the same word.
+
+What to do instead: when a batch is anchored on a request, confirm the anchor
+by hand -- `screen.py requests` prints the open ones with their titles -- and
+treat an empty `already_asked` as "not found under this spelling" rather than
+as "not asked". A near-miss is likeliest exactly where it matters most, on the
+request the proposal is answering, because the proposal has been renamed to
+something more precise than the request.
+
+Evidence: 2026-09-20 ideas run. `already_asked('Refractive indices of the
+Schott optical glasses')` and the four sibling titles returning `[]`;
+`already_asked('Refraction indices of important materials')` returning
+`['#63 [open] Refraction indices of important materials']`.
