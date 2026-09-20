@@ -6738,3 +6738,23 @@ reached", which is true and was read as covering both schemes. Use `https`.
 `screen.source_names_it` can be pointed at when a family has no encyclopedia
 article: the abstract page contains the title, which is usually where the
 family is named.
+
+## lmfdb.org answers a reCAPTCHA challenge here, with HTTP 200
+
+`curl https://www.lmfdb.org/Character/Dirichlet/7/2` returns 200 and 21 KB
+whose title is `Checking your browser - reCAPTCHA`; the same happens to
+`https://www.lmfdb.org/knowledge/show/character.dirichlet.kloosterman_sum`.
+The root `https://www.lmfdb.org/` answers with the real page, so a
+reachability test on the front page says the site is fine.
+
+Two things follow. A check that reads a value off an LMFDB page -- which is
+what T142 and T144 used, and what the twisted Kloosterman sums would use --
+**cannot be run from this box**, and a proposal citing it must say the check
+was named rather than performed. And `screen.source_names_it` pointed at an
+LMFDB URL reports "the source does not mention ..." for a page it never saw,
+which is a false negative of exactly the kind that check exists to avoid: cite
+Wikipedia, MathWorld, DLMF or an arXiv abstract page for the screen, and keep
+the LMFDB link in the table for the reader, who is not behind this proxy.
+
+Evidence: 2026-09-20, `/tmp/chi72.html`, HTTP 200, `<title>Checking your
+browser - reCAPTCHA</title>`, 3 references to `accounts.google`.
