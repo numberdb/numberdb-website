@@ -3,14 +3,10 @@
 # is a person's act on the site.
 Title: Elliptic divisibility sequences $W_n$ of points on elliptic curves over $\mathbb{Q}$
 Definition: >-
-  Let $E/\mathbb{Q}$ be the elliptic curve with reduced global minimal
-  Weierstrass model recovered from $(c_4,c_6)$ by Formula
-  CITE{formula-model-from-invariants}, and let $P=(x_P,y_P)$ be an integral
-  point of infinite order on that model. The entry is
-  $W_n(P)=\psi_n(P)$, where $\psi_n$ is the
-  HREF{Division_polynomials_psi_n_of_elliptic_curves_over_mathbb_Q}[$n$-th
-  division polynomial] of $E$ in the Ward elliptic divisibility sequence
-  convention CITE{Stange}.
+  Let $E/\mathbb{Q}$ be the reduced global minimal Weierstrass model recovered
+  from $(c_4,c_6)$ by Formula CITE{formula-model-from-invariants}. For an
+  integral nontorsion point $P=(x_P,y_P)$ on $E$, the entry is
+  $W_n(P)=\psi_n(P)$, where $\psi_n$ is the $n$-th division polynomial.
 Parameters:
   N:
     type: Z
@@ -41,8 +37,8 @@ Parameters:
 Comments:
   comment-convention: >-
     This table uses the division-polynomial convention $W_n(P)=\psi_n(P)$ for
-    elliptic divisibility sequences CITE{WikiEDS}. It does not store the
-    denominator sequence obtained from writing $x(nP)=A_n/D_n^2$.
+    elliptic divisibility sequences CITE{WikiEDS} CITE{Stange}. It does not
+    store the denominator sequence obtained from writing $x(nP)=A_n/D_n^2$.
   comment-curve-labels: >-
     The curve is identified by $N$, $c_4$ and $c_6$. Each entry comment gives
     the curve's Cremona label. LMFDB CITE{LMFDB} numbers curves within an
@@ -117,7 +113,6 @@ Keywords:
 Tags:
   - number theory
   - elliptic curves
-  - torsion
 Data properties:
   type: Z
   rigour: exact
