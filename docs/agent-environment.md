@@ -6298,3 +6298,105 @@ Evidence: 2026-09-19 ideas run, from `/home/ubuntu/numberdb-campaign-w4`:
 
 and the same call from a process with `clients/python` first returned the four
 tables that really match.
+
+## `/files/<tid>`, `/history/<tid>` and `/revisions/<tid>` make no draft check, and `/history/<unknown tid>` answers 500
+
+What happened: the T345 critique needed the attached generator and reached it
+at `https://numberdb.org/files/T345/generate.py`, which answered 200 to a
+request carrying no credentials at all, and `https://numberdb.org/files/T345`
+answered 200 with the table's title, the current revision's date and message,
+and the file listing. Reading the views afterwards, only three routes call the
+draft guard:
+
+    numberdb_app/views.py:612   table_by_tid   _refuse_a_draft(request, table)
+    numberdb_app/views.py:620   table_by_url   _refuse_a_draft(request, table)
+    numberdb_app/views.py:1522  preview        _refuse_a_draft(request, table)
+
+`table_files`, `table_file`, `revision_history`, `table_history`,
+`table_bundle` and `entry_blame` all reach the table with a bare
+`get_object_or_404(Table, tid=tid)` and no `may_see` check. The API does the
+right thing (`api._may_see_draft`, and the `preview` route's own comment
+records the same hole being closed there for `/preview/T133`), so this is one
+family of routes that was missed rather than a design decision.
+
+I could not demonstrate it against a live draft: T345 was published between
+01:05 and 01:20 while this run was reading it, and T346 and T347 were public
+too, so by the time the files route was tried there was no private draft left
+on the site to try it on. The gap is read off the code, not off a response.
+What a draft would leak if the gap is real is its existence, its title, its
+revision messages and its attached `generate.py` -- everything except the
+values -- to anybody who counts upwards from the last public T-number.
+
+Separately, `/history/<tid>` answers **500** for a tid that does not exist
+(`T348`, `T400`, `T9999` all do) where `/T<tid>` answers 404. Whatever guard
+is added should raise `Http404` on the missing-table path at the same time.
+
+Evidence: 2026-09-20, T345 critique. `curl -s -o /dev/null -w '%{http_code}'`
+with no key: `/files/T345` 200, `/files/T345/generate.py` 200,
+`/files/T345/generate.py?raw=1` 200, `/history/T345` 200, `/T348` 404,
+`/history/T348` 500. `grep -n _refuse_a_draft numberdb_app/views.py` gives the
+three lines above and no others.
+
+## Two things on every table page are the site's furniture and not a table's fault
+
+What happened: the T345 critique had to decide twice whether something on the
+rendered page was a fault in the table. Both were the template's, and both are
+on the published T341 as well, so the test is one `curl` of any public table.
+
+*The last parameter column header ends with a bare `&nbsp`*, no semicolon:
+
+    <div class="table-param-group-header">
+      $c'_4$,&nbsp;$c'_6$&nbsp
+    </div>
+
+Browsers resolve `&nbsp` without the semicolon by the HTML5 legacy rule, so
+nothing is visibly wrong, but it is a malformed entity emitted once per table
+and it is not something an author wrote.
+
+*"No match in database" appears above the title* of every table page, drafts
+and published tables alike. It belongs to the page's own value-lookup widget
+and says nothing about the table under it.
+
+What to do instead: when a rendered page shows something odd, fetch a
+published table and look for the same string before writing it down as a
+finding. `grep -c '&nbsp[^;]'` and `grep -c 'No match in database'` each
+return 1 on both T345 and T341.
+
+Evidence: 2026-09-20, `/tmp/T345_page.html` (rebuilt draft) and
+`/tmp/crit345/t341.html` (live, published).
+
+## `/preview?table=` renders nothing at all if a piece carries `Numbers: []`, and a duplicate section key silently wins
+
+What happened: the T345 critique rendered the draft's prose in pieces through
+`/preview?table=`, as the T221 and T225 notes describe. Two ways the pieces
+came back empty, neither of which those notes covers.
+
+*`Numbers: []` on a table with named parameters kills the whole render.* The
+first two pieces ended each with `Numbers: []` -- the shape the API accepts
+when claiming a draft -- and the page answered 200 with the preview area
+replaced by
+
+    Error while parsing numbers: cannot access local variable
+    'number_section' where it is not associated with a value
+
+and no prose at all. Not "the entries did not render": nothing rendered. The
+same pieces with `Parameters` and one real nested entry rendered in full.
+
+*Concatenating pieces from fragments duplicates a YAML key, and the last one
+wins in silence.* The shared fragment used for every piece carried its own
+`Data properties: {type, rigour}`, so the piece meant to show `complete-note`
+and `rigour details` rendered only "type" and "rigour" -- PyYAML takes the
+later mapping for a duplicate key without a warning, and the section that was
+the point of the request was gone. It read exactly like the site refusing to
+render those fields.
+
+What to do instead: build preview pieces from one fragment that carries
+`Parameters`, `Display properties` and one real entry and *nothing else*, and
+add the section under test on top. If a field you sent is missing from the
+rendered page, grep the piece for a second occurrence of its section key
+before concluding the renderer drops it.
+
+Evidence: 2026-09-20, `/tmp/crit345/{a,b}.yaml` (the `number_section` error,
+both 200) against `/tmp/crit345/{a2,b2}.yaml` (full render), and
+`/tmp/crit345/d2.yaml` (no `complete-note`) against `/tmp/crit345/d3.yaml`
+(the same piece with the duplicate `Data properties` removed).
