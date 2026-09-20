@@ -144,9 +144,31 @@ def complex_value(root, rational_roots):
     if rational is not None:
         return rational
     value = CIF(root)
+    exact = exact_complex_value(value)
+    if exact is not None:
+        return exact
     if not is_finite_interval(value.real()) or not is_finite_interval(value.imag()):
         raise ArithmeticError("non-finite root interval: %s" % value)
     return value
+
+
+def exact_complex_value(value):
+    real = value.real()
+    imag = value.imag()
+    try:
+        if real.lower() != real.upper() or imag.lower() != imag.upper():
+            return None
+        return numberdb.ComplexInterval(
+            fraction_from_endpoint(real.lower()),
+            fraction_from_endpoint(imag.lower()),
+        )
+    except (TypeError, ValueError, AttributeError):
+        return None
+
+
+def fraction_from_endpoint(endpoint):
+    rational = QQ(endpoint)
+    return Fraction(int(rational.numerator()), int(rational.denominator()))
 
 
 def is_finite_interval(interval):
