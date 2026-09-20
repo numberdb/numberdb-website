@@ -218,16 +218,56 @@ def polynomial_latex(polynomial):
     return latex(polynomial)
 
 
+COXETER_TRIANGLES = {
+    1: [(7, 3)],
+    7: [(8, 3)],
+    19: [(9, 3)],
+    23: [(10, 3), (5, 4)],
+    41: [(11, 3)],
+}
+
+
+def coxeter_triangle_link(pair):
+    r, s = pair
+    return ("HREF{Growth_rates_of_hyperbolic_Coxeter_triangle_groups#"
+            "[%d,%d]}[$\\Delta(2,%d,%d)$]" % (r, s, s, r))
+
+
+def sentence_comment(record, polynomial):
+    return ("This Salem number has degree $%d$, with minimal polynomial $%s$. "
+            % (record["degree"], polynomial_latex(polynomial)))
+
+
 def entry_comment(record, polynomial):
+    if record["rank"] in COXETER_TRIANGLES:
+        links = [
+            coxeter_triangle_link(pair)
+            for pair in COXETER_TRIANGLES[record["rank"]]
+        ]
+        if len(links) == 1:
+            group = "the Coxeter triangle group %s" % links[0]
+        else:
+            group = "the Coxeter triangle groups %s and %s" % (
+                links[0], links[1])
+        comment = sentence_comment(record, polynomial)
+        if record["rank"] == 1:
+            comment += ("It is Lehmer's number and the growth rate of %s."
+                        % group)
+        else:
+            comment += "It is the growth rate of %s." % group
+        return comment
+
+    if record["recent"]:
+        comment = sentence_comment(record, polynomial)
+        if record["degree"] > 44:
+            comment += ("It is the only entry in Mossinghoff's list with "
+                        "degree greater than $44$. ")
+        comment += ("It is one of four small Salem numbers discovered by "
+                    "Mossinghoff CITE{Mossinghoff1998}.")
+        return comment
+
     comment = ("degree $%d$; minimal polynomial $%s$"
                % (record["degree"], polynomial_latex(polynomial)))
-    if record["rank"] == 1:
-        comment += "; this is Lehmer's number"
-    if record["degree"] > 44:
-        comment += ("; this is the one known small Salem number in "
-                    "Mossinghoff's list with degree greater than $44$")
-    elif record["recent"]:
-        comment += "; Mossinghoff marks this row as a recent discovery"
     return comment + "."
 
 

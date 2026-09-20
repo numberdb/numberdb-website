@@ -1,0 +1,9 @@
+1. declined -- did not grow the table; checked the live API/page show 198 rows, $n=3$ through $n=200$ with no gaps, and the skill's reference-not-dump rule supports stopping rather than adding the cheap tail.
+2. declined -- left $\mu_1$ and $\mu_2$ out of the rows; checked $m(1)=0$ and numerically checked $m(1+x)=0$ under `agents/sage.sh`, and `comment-indexing` already states the exact zero values.
+3. done -- changed `complete-note` from "as far as the table goes" to the explicit range $n=3$ to $n=200$; checked the live rows before changing it and reread the rendered page after.
+4. done -- changed the title parenthetical to "(uniform random walks in the plane)"; checked BSWZ's abstract for the short-walk usage and checked `Keywords` still contains "short random walk".
+5. declined -- left "the fifty digits stored for each $n$" unchanged; checked all 198 rows have 50 significant digits, so the critique was counting decimal places rather than NumberDB digits.
+6. done -- attached `eta-integrals.py` beside `generate.py`; checked `/files/T283` had only `generate.py`, ran the eta script under `agents/sage.sh` with `4/4 matched`, and checked the attached raw file is byte-identical to the repository copy.
+7. declined -- left the two audit findings alone as audit artefacts; checked `generate.py` already gives `pip install numberdb mpmath` and `python3 generate.py` commands for the pure-Python generator, and the post-edit audit reports only those same two findings.
+8. declined -- left the uncommented rows uncommented; checked `formula-bessel` covers the rows from $n=7$ on, so per-row comments there would only repeat a table formula.
+9. declined -- did not edit the generator's cost estimates; the measured timings are machine-dependent, and the stale estimate is not a table prose/value fault.

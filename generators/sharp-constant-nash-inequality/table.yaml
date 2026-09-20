@@ -1,0 +1,92 @@
+# The table document for numberdb.org/T359. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Sharp constant in Nash's inequality
+Definition: >-
+  Let $n$ be a positive integer. This table stores the least constant $C_n$
+  such that Nash's inequality CITE{NashWiki}
+  $\|u\|_2^{2+4/n}\leq C_n\|\nabla u\|_2^2\|u\|_1^{4/n}$
+  holds for every $u\in L^1(\mathbb{R}^n)\cap W^{1,2}(\mathbb{R}^n)$
+  CITE{CarlenLoss1993}.
+Parameters:
+  n:
+    type: Z
+    title: dimension
+    display: $n$
+    constraints: positive integer
+Formulas:
+  formula-constant: >-
+    $C_n=\frac{2(1+n/2)^{1+2/n}}{n\lambda_n\kappa_n^{2/n}}$,
+    where $\kappa_n=\pi^{n/2}/\Gamma(1+n/2)$ is
+    HREF{Volume_of_the_unit_ball}[the volume of the unit ball] in
+    $\mathbb{R}^n$, $j_{\nu,1}$ is
+    HREF{Zeros_of_Bessel_J_functions}[the first positive zero of the
+    Bessel function $J_\nu$], and $\lambda_n=j_{n/2,1}^2$ is the first
+    positive radial Neumann eigenvalue of $-\Delta$ on the unit ball.
+    CITE{CarlenLoss1993}, CITE{HaberlSchuster2009}
+  formula-one-dimensional: >-
+    In dimension $1$, $j_{1/2,1}=\pi$, so $C_1=27/(16\pi^2)$.
+Programs:
+  program-mpmath:
+    language: Python
+    code: |-
+      from mpmath import mp, besseljzero, gamma, pi, mpf
+
+      mp.dps = 120
+      n = mpf(21)
+      lam = besseljzero(n / 2, 1) ** 2
+      kappa = pi ** (n / 2) / gamma(1 + n / 2)
+      2 * (1 + n / 2) ** (1 + 2 / n) / (n * lam * kappa ** (2 / n))
+Similar tables:
+  - table: HREF{Best_Sobolev_constant_in_W1pRn}[Best Sobolev constant for $W^{1,p}(\mathbb{R}^n)$]
+    relation: its $p=2$ Sobolev constant and interpolation between $L^1$ and $L^{2n/(n-2)}$ give a non-sharp constant in Nash's inequality for $n\geq3$
+  - table: HREF{T354}[Sharp constants in the fractional Sobolev inequality]
+    relation: the fractional Sobolev member of the same sharp-inequality family
+  - table: HREF{T355}[Sharp constants in the Hardy-Littlewood-Sobolev inequality]
+    relation: the Hardy-Littlewood-Sobolev member of the same sharp-inequality family
+  - table: HREF{T358}[Sharp Gagliardo-Nirenberg constants of Del Pino and Dolbeault]
+    relation: another sharp Gagliardo-Nirenberg inequality on $\mathbb{R}^n$, in the Del Pino-Dolbeault range rather than the $L^1$ Nash form
+  - table: HREF{T356}[Babenko-Beckner constants of the Hausdorff-Young inequality]
+    relation: another sharp upper-bound constant, for the Fourier transform rather than Nash interpolation
+  - table: HREF{T357}[Sharp constants in Young's convolution inequality]
+    relation: another sharp upper-bound constant for an $L^p$ inequality on $\mathbb{R}^n$, for convolution rather than Nash interpolation
+Links:
+  NashWiki:
+    title: 'Wikipedia: Sobolev inequality, Nash inequality section'
+    url: https://en.wikipedia.org/wiki/Sobolev_inequality#Nash_inequality
+Keywords:
+  - Nash inequality
+  - Nash's inequality
+Tags:
+  - functional analysis
+  - inequality
+References:
+  CarlenLoss1993:
+    bib: >-
+      E. A. Carlen and M. Loss, Sharp constant in Nash's inequality,
+      International Mathematics Research Notices 1993 (1993), no. 7, 213-215.
+    doi: 10.1155/S1073792893000224
+  HaberlSchuster2009:
+    bib: >-
+      C. Haberl and F. E. Schuster, Asymmetric affine $L_p$ Sobolev
+      inequalities, Journal of Functional Analysis 257 (2009), 641-658.
+    doi: 10.1016/j.jfa.2009.04.006
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every dimension $n\leq20$, matching the range in which
+    HREF{Zeros_of_Bessel_J_functions}[the Bessel-zero table] has the
+    needed first-zero rows $j_{n/2,1}$
+  rigour details: >-
+    The generator isolates $j_{n/2,1}$ by sign changes using Sage's
+    arb-backed `RealBallField`. For integer orders it evaluates the Bessel
+    function by a rigorously tailed alternating power series and recurrence;
+    for half-integer orders it uses the spherical-Bessel recurrence from
+    sine and cosine. The one-dimensional value is checked against
+    $27/(16\pi^2)$.
+Display properties:
+  number-header: $C_n$
+  group parameters:
+    - [n]
