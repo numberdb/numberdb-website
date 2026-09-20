@@ -5902,6 +5902,18 @@ bytes; the live document read through `clients/python` has 1171 entries across
 `yaml.dump(block).encode()` measures 279,665 bytes. `git log -- agents/review-queue.tsv`
 shows one commit, `33ab14c`, older than every T293 repair commit.
 
+It happened again the next day, which is the argument for fixing it rather than
+remembering it. On 2026-09-20 a growth run was dispatched on T283, "which has 4
+entries in 6756 bytes". Line 284 of the same snapshot still carries that row and
+the table's *old* title, "(short random walks)". The live table has been
+published since, is titled "(uniform random walks in the plane)", and holds 200
+entries from $n=1$ to $n=200$ -- the five commits from `1b43a91` to `bfe6872`
+built the generator that did it. The premise was false in the same direction and
+for the same reason. The re-measure suggested above would have caught both; so
+would comparing the snapshot's title against the live one, which is one string
+comparison and catches a row that has been rewritten as well as one that has
+grown.
+
 ## No SOCKS proxy on the builder box, and none is needed
 
 What happened: the critique prompt gives
