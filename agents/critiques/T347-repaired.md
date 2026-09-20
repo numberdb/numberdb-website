@@ -1,0 +1,9 @@
+done -- finding 1: clarified in `comment-convention` that T347 stores the full $\psi_n$ with $\psi_2=2y+a_1x+a_3$, and narrowed the Sage sentence to `two_torsion_multiplicity=1` versus Sage's default `2`; checked the generator verified 250/250 entries and Sage showed the stored full values differ from Sage's default on 57a1 and 58a1.
+done -- finding 1a: cited `SageDivision` from the convention comment instead of leaving it as an uncited link; checked the post-edit audit is clean.
+declined -- finding 2: the requested Definition HREF was tried and then removed because `GET /api/table/T347/audit` reports that table links do not belong in Definitions; I kept the T341 HREF at the first Comments mention and checked the final audit is clean.
+done -- finding 3: rewrote `complete-note` so the table holds $W_n(P)$ for $1\leq n\leq50$ and then names the curve and point range; checked in Sage that the rank-one curves with $N\leq60$ are exactly 37a1, 43a1, 53a1, 57a1 and 58a1 and that the stored points are Sage's first generators after the $W_2(P)>0$ sign choice.
+done -- finding 4: removed the clause about generator points listed in the source file from `rigour details`; checked the generator still verifies all entries and exact point-multiplication identities.
+done -- finding 5: replaced the layout note with the Cremona labels 37a1, 43a1, 53a1, 57a1 and 58a1 in `comment-curve-labels`; checked the rendered page contains the labels in Comments and the final audit is clean.
+done -- finding 6: added the divisibility property $W_m(P)\mid W_n(P)$ for $m\mid n$ to the recurrence formula; checked all stored pairs with $m\mid n$ in Sage.
+done -- finding 7a: changed the Sage program to `EllipticCurve('37a1')`; checked in Sage that this form reproduces the first ten stored terms.
+done -- finding 7b: swapped the convention citations to `CITE{Stange} CITE{WikiEDS}`; checked the rendered page shows the ordered references in the revised comment.
