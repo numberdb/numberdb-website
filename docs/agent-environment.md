@@ -6849,3 +6849,39 @@ Evidence: 2026-09-20, `/tmp/s6.py` output --
 polynomials in physicist's convention")]`, against
 `curl --get --data-urlencode 'q=4*x^2 - 2' https://numberdb.org/` returning
 the front page with no results section.
+
+## `audit_table` checks that every CITE has a Link, never that every Link is cited
+
+What happened: T368 was read with `GET /api/table/T368/audit`, which answered
+`findings: []`, `clean: true`. Its `Links` block held sixteen entries, of which
+fourteen were `Requested in numberdb-data#N` and only two were cited by any
+sentence. Thirteen of the fourteen named issues about other subjects
+entirely -- Kloosterman sums, metric entropy of dynamical systems, optical
+constants -- and they render as `[3]` through `[16]` in the reference list at
+the bottom of the page, where a reader can click every one of them.
+
+The command checks the arrow in one direction only. `unresolved_citations`
+(line 322) yields "CITE{x} is not a Link or a Reference" for a citation with no
+target; the `Links` loop below it (line 372) only asks whether a link points at
+something the database holds itself. Neither notices a link that nothing points
+at, so an orphan link is invisible to the audit however many there are.
+
+This is not the first time: the T348 critique reported the same shape as its
+finding 2, and the T339, T341, T360 and T365 critiques all quote a
+`Requested in numberdb-data#N` link in their rendered-page transcripts. The
+build prompt asks for exactly one of them
+(`agents/table-build/PROMPT.md`, "If the checklist line says `(answers #N)`"),
+so any count above the number of requests a table answers is a mistake a check
+could catch.
+
+What to do: add a check to `audit_table` for a `Links` or `References` entry
+that no `CITE{}` in the document names, reported as a count rather than one
+finding per link. Until then, a critique has to list the `Links` keys and grep
+the prose for each -- the audit being clean says nothing about them.
+
+Evidence: 2026-09-20, T368 critique. `GET /api/table/T368/audit` ->
+`{"tid": "T368", "title": "Zeros of the Charlier polynomials $C_n(x;a)$",
+"findings": [], "clean": true}`. `GET /api/table?id=T368` -> `Links` with 16
+keys, 14 matching `^Request`; the only `CITE{}`s in the document are
+`CITE{DLMFDefinitions}` in `Definition` and `CITE{DLMFRecurrence}` in
+`rigour details`.
