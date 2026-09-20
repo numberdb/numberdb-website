@@ -13,6 +13,7 @@ polynomial elldivpol(E,n) for 2 <= n <= 5.
 
 import os
 import sys
+from fractions import Fraction
 
 import numberdb.sage as numberdb
 from sage.databases.cremona import CremonaDatabase
@@ -134,7 +135,7 @@ def sorted_roots(polynomial):
 def rational_root(root, rational_roots):
     for value in rational_roots:
         if root == QQbar(value):
-            return value
+            return Fraction(int(value.numerator()), int(value.denominator()))
     return None
 
 
