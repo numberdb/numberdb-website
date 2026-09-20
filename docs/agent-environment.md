@@ -6375,3 +6375,67 @@ Evidence: 2026-09-20 build run for issue #166, at 2026-09-20T03:48:16Z. The
 seventh item became `skipped: three independent parameters make any sub-1000
 grid too sparse, and the screened proposal argues not to build it`, and the
 same command closed the issue.
+
+## `audit_table`'s tag check is off by one on a draft, so a shared tag is reported as leading nowhere
+
+What happened: the T355 critique read
+`Tags: "functional analysis" reaches only this table; a tag that leads nowhere
+else leads nowhere`, and the same for `inequality`. Both are false. Each tag
+reaches T92, *Best Sobolev constant for $W^{1,p}(\mathbb{R}^n)$*, which is
+published: `https://numberdb.org/tags/functional+analysis` and
+`/tags/inequality` each list it, and `/tags` counts each as "(1 table, 1024
+entries)".
+
+The cause: the check reads `Tag.table_count`
+(`numberdb_app/management/commands/audit_table.py:414`) and fires on
+`reach <= 1`. That counter is recomputed over `tag.public_tables`, published
+only (`numberdb_app/editing.py:730`, and deliberately -- a count that includes
+a draft says a table exists that nobody may look at). So when the table being
+audited is a draft it is **not** in its own tags' counts, and `<= 1` means "at
+most one *other* published table" rather than "only this one". The threshold is
+right for a published table and one too high for a draft, and every table is a
+draft when it is audited.
+
+Two consequences, and the second has already cost something. The message names
+the wrong table: the one table the tag reaches is not this one. And a run that
+obeys the finding deletes a correct tag -- `agents/critiques/T218-repaired.md`
+records exactly that, a `modular form` tag removed from draft T218 because T84
+was the only published table carrying it.
+
+What to do meanwhile: before acting on this finding, fetch
+`https://numberdb.org/tags/<tag>` and look. If a published table is listed, the
+finding is wrong and the tag is doing its job; if the page is empty or the tag
+is absent from `/tags`, the finding is right. The fix in the code is to count
+the audited table itself when it is unpublished, or to compare against
+`reach <= 0` for a draft.
+
+Evidence: 2026-09-20, T355 critique. `GET /api/table/T355/audit` with the
+zeta3 key gave both tag findings; `/tags/functional+analysis` and
+`/tags/inequality` each returned T92 to an anonymous `curl`.
+
+## The audit's size finding reads "this table holds is 1240 entries"
+
+What happened: the same audit's third line was
+
+    size: this table holds is 1240 entries, above the usual limit of 1200
+
+`numberdb_app/limits.py` builds that sentence as
+`'%s is %s %s, above the usual limit of %s' % (what, actual, unit, soft)` with
+`what='this table holds'` passed in from the `entries` call, so the verb
+arrives twice. All three callers are wrong in the same way, and only the
+entry-count one is reachable often enough to have been seen:
+
+    this table holds is 1240 entries, above the usual limit of 1200
+    the longest value writes is 600 digits, above the usual limit of 500
+    the entries block is is 400000 bytes, above the usual limit of 327680
+
+Only the separate hard-limit message for a complete table
+(`limits.py:316`, "this table holds %s entries") builds its sentence whole,
+which is why it reads correctly.
+
+Cosmetic, and worth fixing because this string is what a reviewer reads in the
+review queue. The fix is either to drop `holds`/`is` from the two call sites or
+to drop ` is ` from the format string and let each caller supply its own verb.
+
+Evidence: 2026-09-20, `GET /api/table/T355/audit`; `numberdb_app/limits.py`
+lines 296-308.
