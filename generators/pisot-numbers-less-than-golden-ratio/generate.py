@@ -1,6 +1,6 @@
 """Pisot numbers less than the golden ratio -- numberdb.org/T286
 
-This table stores the first 50 Pisot-Vijayaraghavan numbers in the interval
+This table stores the first 79 Pisot-Vijayaraghavan numbers in the interval
 (1, phi), ordered increasingly. Dufresnoy and Pisot classified this interval;
 the generator uses the two polynomial families recorded in Bertin et al. and
 McKee-Smyth, plus the one exceptional polynomial.
@@ -9,7 +9,7 @@ Run it with SageMath:
 
     $ sage -pip install numberdb          # once
     $ sage -python generate.py            # check the table against this code
-    $ sage -python generate.py --publish  # fill the draft, with NUMBERDB_API_KEY set
+    $ sage -python generate.py --publish  # send it, with NUMBERDB_API_KEY set
 """
 
 import os
@@ -26,8 +26,9 @@ from sage.rings.real_mpfi import RealIntervalField
 
 
 TABLE = "T286"
-RANKS = 50
-MAX_N = 80
+FAMILY_N = 40
+RANKS = 2 * FAMILY_N - 1
+MAX_N = FAMILY_N + 1
 WORKING_GUARD = 256
 
 R = PolynomialRing(QQ, "x")
@@ -128,30 +129,54 @@ def records(digits):
             }
 
     ordered = sorted(by_polynomial.values(), key=lambda record: _root_sort_key(record["root"]))
-    if len(ordered) < RANKS + 1:
+    if len(ordered) < RANKS:
         raise ArithmeticError("only found %d Pisot roots" % len(ordered))
     first_ten = tuple(record["polynomial"] for record in ordered[:10])
     if first_ten != SOURCE_FIRST_TEN:
         raise ArithmeticError("first ten minimal polynomials do not match the source list")
+    cutoff = ordered[RANKS - 1]["root"]
+    guard_roots = {
+        record["family"]: record["root"]
+        for record in ordered
+        if record["family"] in ("P", "Q") and record["n"] == MAX_N
+    }
+    for family in ("P", "Q"):
+        root = guard_roots.get(family)
+        if root is None:
+            raise ArithmeticError("no %s_%d root found" % (family, MAX_N))
+        if root.lower() <= cutoff.upper():
+            raise ArithmeticError(
+                "%s_%d does not prove that the first %d ranks are complete"
+                % (family, MAX_N, RANKS)
+            )
     return tuple(ordered[:RANKS])
 
 
-def family_comment(record):
-    if record["family"] == "E":
-        return "exceptional Dufresnoy-Pisot polynomial"
-    return "$%s_{%d}$ family" % (record["family"], record["n"])
-
-
 def entry_comment(rank, record):
-    pieces = [
-        "%s; minimal polynomial $%s$"
-        % (family_comment(record), latex(record["polynomial"]))
-    ]
+    polynomial = latex(record["polynomial"])
+    if record["family"] == "E":
+        comment = (
+            "The root in $(1,\\varphi)$ of $E$, with minimal polynomial $%s$."
+            % polynomial
+        )
+    else:
+        comment = (
+            "A root of $%s_{%d}$, with minimal polynomial $%s$."
+            % (record["family"], record["n"], polynomial)
+        )
     if rank == 1:
-        pieces.append("this is the plastic ratio")
+        comment += " This is the plastic ratio, the smallest Pisot number."
     elif rank == 4:
-        pieces.append("this is the supergolden ratio")
-    return "; ".join(pieces) + "."
+        comment += " This is the supergolden ratio."
+    if record["family"] == "P" and 2 <= record["n"] <= 11:
+        coxeter_n = record["n"] + 1
+        comment += (
+            " It is the growth rate of "
+            "HREF{Growth_rates_of_hyperbolic_Coxeter_triangle_groups#[inf,%d]}"
+            "[$\\Delta(2,%d,\\infty)$]."
+            % (coxeter_n, coxeter_n)
+        )
+    return comment
 
 
 class PisotNumbersBelowGoldenRatio(numberdb.Generator):
@@ -178,7 +203,9 @@ def main():
     _key_from_stdin()
     generator = PisotNumbersBelowGoldenRatio()
     if os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
-        print(generator.publish(message="isolated Pisot roots from exact polynomials"))
+        print(generator.publish(
+            overwrite=False,
+            message="isolated Pisot roots from exact polynomials"))
     else:
         report = generator.verify(sample=None)
         print(report)

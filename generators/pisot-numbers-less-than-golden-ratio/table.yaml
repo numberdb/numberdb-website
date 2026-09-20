@@ -2,10 +2,8 @@
 # through the API (X-Draft: yes), filled by generate.py beside it, and left
 # offered for review; publishing is a person's act on the site.
 Title: Pisot numbers less than the golden ratio
-Definition: >-
-  Let $\varphi=(1+\sqrt5)/2$ be the golden ratio. For an integer $r\geq1$,
-  $\theta_r$ is the $r$-th smallest Pisot-Vijayaraghavan number CITE{Wiki}
-  in the interval $(1,\varphi)$.
+Definition: Let $\varphi=(1+\sqrt5)/2$ be the golden ratio. For an integer $r\geq1$, $\theta_r$
+  is the $r$-th smallest Pisot-Vijayaraghavan number CITE{Wiki} in the interval $(1,\varphi)$.
 Parameters:
   r:
     type: Z
@@ -13,96 +11,94 @@ Parameters:
     display: $r$
     constraints: $r\geq1$
 Comments:
-  comment-classification: >-
-    Dufresnoy and Pisot determined all Pisot numbers in $(1,\varphi)$
-    CITE{DP}. In the form used here, they are the Pisot roots of
-    $P_n(x)=x^n(x^2-x-1)+1$, of
-    $Q_n(x)=x^n(x^2-x-1)+x^2-1$, and of the exceptional polynomial
-    $x^6-2x^5+x^4-x^2+x-1$ CITE{Bertin} CITE{McKeeSmyth}.
-  comment-mahler: >-
-    Each number is an algebraic unit, so it is also the Mahler measure of its
-    minimal polynomial.
+  comment-classification: Dufresnoy and Pisot proved that HREF{Golden_ratio#phi}[$\varphi$]
+    is the smallest limit point of the set of Pisot numbers and determined all Pisot numbers
+    in $(1,\varphi)$ CITE{DP}. The Pisot numbers in $(1,\varphi)$ therefore have a well-defined
+    increasing order and converge to $\varphi$. They are the roots in $(1,\varphi)$ of the
+    polynomials in CITE{formula-families} CITE{Bertin} CITE{McKeeSmyth}.
+  comment-coxeter: For every $n\geq2$, the root of $P_n$ in $(1,\varphi)$ is the growth rate,
+    with respect to the three reflection generators, of the Coxeter triangle group $\Delta(2,n+1,\infty)$
+    CITE{Floyd}.
+  comment-mahler: Each number is an algebraic unit. Its conjugates other than itself lie inside
+    the unit disc, so it is the Mahler measure of its minimal polynomial.
 Formulas:
-  formula-families: >-
-    The generator forms $P_n(x)=x^n(x^2-x-1)+1$ for $n\geq2$,
-    $Q_n(x)=x^n(x^2-x-1)+x^2-1$ for $n\geq2$, and
-    $E(x)=x^6-2x^5+x^4-x^2+x-1$, removes repeated minimal polynomials, and
-    orders their Pisot roots increasingly.
+  formula-families: The set $\{\theta_r:r\geq1\}$ consists of the roots in $(1,\varphi)$ of
+    $P_n(x)=x^n(x^2-x-1)+1$ and $Q_n(x)=x^n(x^2-x-1)+x^2-1$ for $n\geq2$, together with the
+    root in $(1,\varphi)$ of $E(x)=x^6-2x^5+x^4-x^2+x-1$.
 Programs:
   program-sage:
     language: Sage
-    code: |-
-      R.<x> = QQ[]
-      P = lambda n: x^n*(x^2 - x - 1) + 1
-      Q = lambda n: x^n*(x^2 - x - 1) + x^2 - 1
-      E = x^6 - 2*x^5 + x^4 - x^2 + x - 1
-      RR = RealIntervalField(400)
-      phi = (RR(1) + RR(5).sqrt())/2
-      def pisot_root(f):
-          out = []
-          for g, e in f.factor():
-              out += [(g, root) for root, m in g.roots(RR)
-                      if root.lower() > 1 and root.upper() < phi.lower()]
-          return out[0]
-      sorted(pisot_root(f) for f in [P(n) for n in range(2, 30)]
-             + [Q(n) for n in range(2, 30)] + [E])[:10]
+    code: "R.<x> = QQ[]\nP = lambda n: x^n*(x^2 - x - 1) + 1\nQ = lambda n: x^n*(x^2 - x -\
+      \ 1) + x^2 - 1\nE = x^6 - 2*x^5 + x^4 - x^2 + x - 1\nIR = RealIntervalField(400)\nphi\
+      \ = (IR(1) + IR(5).sqrt())/2\ndef pisot_root(f):\n    out = []\n    for g, e in f.factor():\n\
+      \        out += [(g, root) for root, m in g.roots(IR)\n                if root.lower()\
+      \ > 1 and root.upper() < phi.lower()]\n    return out[0]\npolys = [P(n) for n in range(2,\
+      \ 30)] + [Q(n) for n in range(2, 30)] + [E]\nsorted((pisot_root(f) for f in polys),\
+      \ key=lambda t: t[1].lower())[:10]"
 Similar tables:
-  - table: HREF{Growth_rates_of_hyperbolic_Coxeter_triangle_groups}[Growth rates of hyperbolic Coxeter triangle groups]
-    relation: holds several of the same Pisot numbers as Coxeter growth rates, indexed by Coxeter diagram rather than by rank among Pisot numbers
-  - table: HREF{T284}[Salem numbers less than $1.3$]
-    relation: stores Salem numbers, the companion class of algebraic integers in Lehmer's problem
-  - table: HREF{T32}[Golden ratio]
-    relation: holds the smallest accumulation point of the set of Pisot numbers
+- table: HREF{Growth_rates_of_hyperbolic_Coxeter_triangle_groups}[Growth rates of hyperbolic
+    Coxeter triangle groups]
+  relation: holds the same numbers as growth rates of the Coxeter groups $\Delta(2,n+1,\infty)$
+    for the overlapping roots of $P_n$
+- table: HREF{T300}[Minimal polynomials of the Pisot numbers less than the golden ratio]
+  relation: holds the minimal polynomial of each $\theta_r$ here, over the same range
+- table: HREF{T284}[Salem numbers less than $1.3$]
+  relation: stores Salem numbers, the companion class of algebraic integers in Lehmer's problem
+- table: HREF{T32}[Golden ratio]
+  relation: holds the smallest accumulation point of the set of Pisot numbers
 Links:
   Wiki:
-    title: "Wikipedia: Pisot-Vijayaraghavan number"
+    title: 'Wikipedia: Pisot-Vijayaraghavan number'
     url: https://en.wikipedia.org/wiki/Pisot%E2%80%93Vijayaraghavan_number
 References:
   DP:
-    bib: >-
-      J. Dufresnoy and Ch. Pisot, Etude de certaines fonctions meromorphes
-      bornees sur le cercle unite. Application a un ensemble ferme d'entiers
-      algebriques, Annales Scientifiques de l'Ecole Normale Superieure 72
-      (1955), 69-92.
+    bib: J. Dufresnoy and Ch. Pisot, Etude de certaines fonctions meromorphes bornees sur
+      le cercle unite. Application a un ensemble ferme d'entiers algebriques, Annales Scientifiques
+      de l'Ecole Normale Superieure 72 (1955), 69-92.
+  Floyd:
+    bib: W. J. Floyd, Growth of planar Coxeter groups, P.V. numbers, and Salem numbers, Math.
+      Ann. 293 (1992), no. 3, 475-483.
+    zbl: '0735.51016'
+    mr: '1170521'
   Bertin:
-    bib: >-
-      M.-J. Bertin, A. Decomps-Guilloux, M. Grandet-Hugot,
-      M. Pathiaux-Delefosse and J.-P. Schreiber, Pisot and Salem Numbers,
-      Birkhauser, 1992.
+    bib: M.-J. Bertin, A. Decomps-Guilloux, M. Grandet-Hugot, M. Pathiaux-Delefosse and J.-P.
+      Schreiber, Pisot and Salem Numbers, Birkhauser, 1992.
     doi: 10.1007/978-3-0348-8632-1
   McKeeSmyth:
-    bib: >-
-      James McKee and Chris Smyth, Salem numbers, Pisot numbers, Mahler
-      measure and graphs, Experimental Mathematics 14 (2005), 211-229.
+    bib: James McKee and Chris Smyth, Salem numbers, Pisot numbers, Mahler measure and graphs,
+      Experimental Mathematics 14 (2005), 211-229.
     arxiv: math/0503480
     doi: 10.1080/10586458.2005.10128918
 Keywords:
-  - Pisot number
-  - Pisot-Vijayaraghavan number
-  - PV number
-  - plastic ratio
-  - supergolden ratio
-  - Lehmer problem
-  - Mahler measure
-  - algebraic entropy
+- Pisot number
+- Pisot-Vijayaraghavan number
+- PV number
+- plastic ratio
+- supergolden ratio
+- Lehmer problem
+- Mahler measure
+- algebraic entropy
 Tags:
-  - number theory
-  - algebraic
+- number theory
+- algebraic
 Data properties:
   type: R
   rigour: proven
   complete: 'no'
-  complete-note: it holds the first $50$ ranks in increasing order
-  rigour details: >-
-    The generator uses the Dufresnoy-Pisot classification as recorded in
-    CITE{Bertin} and CITE{McKeeSmyth}. It forms the exact integer polynomials
-    in CITE{formula-families}, factors them over $\mathbb Q$, selects the
-    unique irreducible factor with a real root in $(1,\varphi)$, and isolates
-    that root in interval arithmetic before writing $100$ digits. It verifies
-    that the first ten minimal polynomials agree with the source table quoted
-    by Wikipedia's small-Pisot-numbers section, including the plastic and
-    supergolden ratios. Before the draft was filled, the range measured $50$
-    entries, a longest written value of $258$ characters at $r=1$, and a
-    $19.9$ KB entries block.
+  complete-note: it holds the root of $E$ and the roots of $P_n$ and $Q_n$ for $2\leq n\leq40$,
+    which are $\theta_1$ to $\theta_{79}$; at $n=40$ the largest root is still more than $1.9\cdot10^{-9}$
+    below $\varphi$, while by $n=72$ the roots are within $10^{-15}$ of $\varphi$
+  rigour details: 'The generator uses the Dufresnoy-Pisot classification as recorded in CITE{Bertin}
+    and CITE{McKeeSmyth}. It forms the exact integer polynomials in CITE{formula-families},
+    factors them over $\mathbb Q$, selects the unique irreducible factor with a real root
+    in $(1,\varphi)$, and isolates that root in interval arithmetic before writing $100$ digits.
+    It verifies that the first ten minimal polynomials agree with the source table quoted
+    by Wikipedia''s small-Pisot-numbers section, including the plastic and supergolden ratios.
+
+
+    The roots from $P_n$ and $Q_n$ used here increase with $n$: at a root of $P_n$, $P_{n+1}(x)=1-x<0$,
+    and at a root of $Q_n$, $Q_{n+1}(x)=-(x-1)^2(x+1)<0$, while both next polynomials are
+    positive at $\varphi$. The computed ordering has $P_{41}$ and $Q_{41}$ larger than $\theta_{79}$,
+    so the first $79$ ranks are accounted for.'
 Display properties:
   number-header: $\theta_r$
