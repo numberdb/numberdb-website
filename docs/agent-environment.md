@@ -6576,3 +6576,53 @@ function` 404, `preview/T353` 404, `discussion/T353` 404, `edit/T353` 302,
 `rigour details` diff of the 03:05 revision verbatim). The generator served
 that way is byte-identical to
 `generators/values-incomplete-beta-function/generate.py`.
+
+## Rendering a draft when the run is on the builder image: `/preview?table=`, 4094 bytes at a time
+
+What happened: the note above ("Rendering a draft's page as its owner sees
+it") says to render with Django's `RequestFactory` in the throwaway. The T356
+critique could not: this campaign sets `NUMBERDB_SAGE_IMAGE` to the builder,
+whose container has no `/app`, no Django and no database -- the client is at
+`/opt/numberdb-client` -- so `import django` fails before anything else. That
+is the point of the builder image and not a fault in it, but it removes the
+only documented way to see a draft's page.
+
+`GET /preview?table=<yaml>` is the way through. It renders through the same
+`table_context` the table page uses (`build_preview_context` exists precisely
+so the two cannot drift), it needs no session and no key, and it takes the
+document in the query string rather than by tid -- `/preview/<tid>` calls
+`_refuse_a_draft` and 404s, the query form does not, because the document is
+the caller's own.
+
+Two limits to plan around:
+
+* **The request line is capped at 4094 bytes.** A whole table document does not
+  fit; T356's prose alone with three entries was 6273 bytes and answered
+  `400 Request Line is too large (6273 > 4094)`. Send section groups: pull the
+  document with `GET /api/table?id=<tid>`, build several small YAML trees from
+  it with a couple of entries each, and `curl -sG --data-urlencode
+  "table@/tmp/part.yaml" https://numberdb.org/preview` for each. Keep `Formulas`
+  and `Comments` together -- their `(1)`, `(2)` labels are numbered across both,
+  and a `CITE{}` of a formula label renders broken if the formula is in another
+  slice. Likewise keep `References` and `Links` with anything that cites them.
+* **What preview does not show.** `table_context(preview=True)` blanks the tag
+  list, so tags render on the real page and not here.
+
+The failure this was chasing is worth the trouble: a `Programs` entry written
+as a string instead of a `language`/`code` mapping raises inside
+`table_context`, `render_table` catches nothing, and the table page is a 500
+with no section of it readable. Preview turns that into a visible
+`alert-danger` line naming the field. Nothing but a rendering shows it: the
+document round-trips through the API, and `audit_table` guards its own
+`Programs` check with `isinstance(program, dict)` and says nothing.
+
+Evidence: 2026-09-20, T356 critique. `agents/sage.sh /tmp/probe.py` printed
+`sys.path` beginning `/work`, `/opt/numberdb-client`, with no `/app` and no
+Django; `/tmp/crit356.py`, written to the `RequestFactory` recipe, died at
+`import django`. `curl -sG --data-urlencode "table@/tmp/pv_d.yaml"
+https://numberdb.org/preview` (Title, Definition, Programs, one entry) answered
+200 with `Error while Parse program sage: string indices must be integers, not
+'str'` and an empty body; the same four slices without `Programs` rendered every
+section. The proxy was down for the whole run (`curl --socks5-hostname
+127.0.0.1:1080` exit 7, five tries), and direct `curl` to numberdb.org worked,
+as the note of 2026-09-17 says it does.
