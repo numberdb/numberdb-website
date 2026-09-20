@@ -4,7 +4,7 @@
 Title: Sharp constant in Nash's inequality
 Definition: >-
   Let $n$ be a positive integer. This table stores the least constant $C_n$
-  such that Nash's inequality
+  such that Nash's inequality CITE{NashWiki}
   $\|u\|_2^{2+4/n}\leq C_n\|\nabla u\|_2^2\|u\|_1^{4/n}$
   holds for every $u\in L^1(\mathbb{R}^n)\cap W^{1,2}(\mathbb{R}^n)$
   CITE{CarlenLoss1993}.
@@ -20,7 +20,7 @@ Formulas:
     where $\kappa_n=\pi^{n/2}/\Gamma(1+n/2)$ is the volume of the unit
     ball in $\mathbb{R}^n$ and $\lambda_n=j_{n/2,1}^2$ is the first
     positive radial Neumann eigenvalue of $-\Delta$ on the unit ball.
-    CITE{CarlenLoss1993}
+    CITE{CarlenLoss1993}, CITE{HaberlSchuster2009}
   formula-one-dimensional: >-
     In dimension $1$, the first zero is $j_{1/2,1}=\pi$, so
     $C_1=27/(16\pi^2)$.
