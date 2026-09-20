@@ -6324,3 +6324,43 @@ Evidence: 2026-09-20, T344 critique. `/tmp/t344_render.py`,
 'number theory', 'polynomial']`, `status 200 29537`), `/tmp/T344_page.html`.
 Run as `NUMBERDB_SAGE_MEMORY=1200m NUMBERDB_SAGE_PYTHONPATH= agents/sage.sh
 /tmp/t344_render.py /tmp/site.tgz /tmp/T344.json`.
+
+## The search box and `/api/search` read the same decimal two different ways
+
+What happened: checking how a reader would find a row of T286, I searched the
+live site for `1.32471795724474` (fifteen correct digits of the plastic
+ratio, which T286 and T222 both hold) and got nothing, while
+`1.324717957244746` returned both tables. Sixteen digits match, fifteen do
+not. Typing the same short string into the site's own search box finds the
+row: `/suggestions?term=1.3247` returns T286 row 1 and T222's `[inf,3]`.
+
+The two front doors parse differently, and only one of them is the parser the
+comments describe:
+
+* `numberdb_app/views.py` (the search box) calls
+  `utils.utils.parse_real_interval(term)`, which reads a decimal as "last
+  given digit possibly off by one" -- `1.3247` becomes
+  `[1.3246, 1.3248]`, and everything in it is a hit.
+* `numberdb_app/api.py` (`/api/search`, and so the client's
+  `search_by_expression`) calls `evaluate_search_program(program)` instead.
+  The expression is *evaluated*, so `1.3247` is a point at double precision,
+  `blur_real_interval` widens it by four ulps, and a stored value differing
+  in the fifth place is nowhere near it.
+
+So `parse_real_interval`'s "treat the last given digit as possibly off by 1"
+branch -- which is the behaviour the search box's users get and the behaviour
+the code comments explain -- never runs on the API path at all. A run that
+probes search through `curl /api/search` and concludes "the corpus does not
+hold this number" is measuring the strict path and may be wrong. Probe
+`/suggestions?term=` as well, or hand the client a ball.
+
+Not proposed as a lesson: a contributor meets the client and the search box,
+where the behaviour is the forgiving one. This is a disagreement between two
+of the site's own entry points.
+
+Evidence: 2026-09-20, T286 growth critique.
+`/api/search?expression=1.32471795724474` -> `results: []`;
+`?expression=1.324717957244746` -> T222 and T286;
+`/suggestions?term=1.324717957` -> T286 row 1. Same pattern on the golden
+ratio: `1.61803398874989` -> nothing, `1.618033988749895` -> five tables,
+`/suggestions?term=1.61803398874989` -> T32's `phi` row.
