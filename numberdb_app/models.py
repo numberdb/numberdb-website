@@ -2359,10 +2359,20 @@ class TableCost(models.Model):
 	runs = models.IntegerField(default = 0)
 
 	class Meta:
-		unique_together = ('table', 'model', 'role')
+		#: Campaign and batch belong in the key, because the importer groups by
+		#: them: one table's build cost is several rows when several campaigns
+		#: worked on it, which is the point of recording which campaign spent
+		#: what. They were added to the grouping and not to the constraint, and
+		#: nothing noticed while the ledger's stale header meant both columns
+		#: always read empty -- repairing that header turned every cost upload
+		#: into `duplicate key value violates unique constraint`, a 500 on
+		#: /api/costs, and an overview whose total fell by half because the
+		#: replace had deleted before the insert failed.
+		unique_together = ('table', 'model', 'role', 'campaign', 'batch')
 		indexes = [
 			models.Index(fields = ['model']),
 			models.Index(fields = ['role']),
+			models.Index(fields = ['campaign']),
 		]
 
 	def __str__(self):
