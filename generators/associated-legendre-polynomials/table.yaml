@@ -1,0 +1,146 @@
+# Draft document for T360, the associated Legendre polynomials requested in
+# numberdb-data#99. Publishing is a person's act.
+Title: Associated Legendre polynomials $P_\ell^m$
+Definition: >-
+  The associated Legendre polynomial $P_\ell^m(x)$ is the
+  Condon-Shortley phase convention obtained by differentiating the
+  ordinary Legendre polynomial $P_\ell(x)$ CITE{Wiki}.
+Parameters:
+  l:
+    type: Z
+    title: degree
+    display: $\ell$
+    constraints: $\ell\geq0$
+  m:
+    type: Z
+    title: order
+    display: $m$
+    constraints: $|m|\leq\ell$
+Comments:
+  comment-representation: >-
+    Entries are exact polynomials in $x$ and $y$, where
+    $y=(1-x^2)^{1/2}$. Substituting this value of $y$ gives the usual
+    function $P_\ell^m(x)$ on $-1\leq x\leq1$.
+  comment-phase: >-
+    The table includes the Condon-Shortley phase $(-1)^m$. DLMF writes the
+    Ferrers function $\mathsf{P}_\ell^m$ without this phase, so a value read
+    from DLMF 14.7 must be multiplied by $(-1)^m$ before comparison
+    CITE{DLMF}.
+  comment-negative-order: >-
+    Negative orders use
+    $P_\ell^{-m}(x)=(-1)^m(\ell-m)!/(\ell+m)!\,P_\ell^m(x)$ for
+    $m>0$ CITE{Wiki} CITE{MathWorld}.
+  comment-repetition: >-
+    The rows with $m=0$ are the HREF{Legendre_polynomials}[Legendre
+    polynomials].
+Formulas:
+  formula-definition: >-
+    $P_\ell^m(x)=(-1)^m(1-x^2)^{m/2}\frac{d^m}{dx^m}P_\ell(x)$ for
+    $0\leq m\leq\ell$ CITE{Wiki}.
+  formula-rodrigues: >-
+    $P_\ell^m(x)=\frac{(-1)^m}{2^\ell\ell!}(1-x^2)^{m/2}
+    \frac{d^{\ell+m}}{dx^{\ell+m}}(x^2-1)^\ell$ for
+    $0\leq m\leq\ell$ CITE{Wiki}.
+  formula-negative-order: >-
+    $P_\ell^{-m}(x)=(-1)^m(\ell-m)!/(\ell+m)!\,P_\ell^m(x)$ for
+    $m>0$ CITE{Wiki} CITE{MathWorld}.
+  formula-recurrence: >-
+    $(\ell-m+1)P_{\ell+1}^m(x)=(2\ell+1)xP_\ell^m(x)
+    -(\ell+m)P_{\ell-1}^m(x)$ CITE{Wiki}.
+  formula-orthogonality: >-
+    For fixed $m\geq0$,
+    $\int_{-1}^1P_\ell^m(x)P_k^m(x)\,dx
+    =2(\ell+m)!/((2\ell+1)(\ell-m)!)$ if $k=\ell$, and is $0$ if
+    $k\ne\ell$ CITE{Wiki}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+      from sage.rings.rational_field import QQ
+
+      R = PolynomialRing(QQ, 'x')
+      x = R.gen()
+      S = PolynomialRing(QQ, ('x', 'y'))
+      X, y = S.gens()
+
+      def legendre_polynomials(up_to):
+          polynomials = [R(1), x]
+          for n in range(1, up_to):
+              polynomials.append(((2*n + 1)*x*polynomials[n]
+                                  - n*polynomials[n - 1]) / QQ(n + 1))
+          return polynomials[:up_to + 1]
+
+      P = legendre_polynomials(26)
+
+      def factorial(n):
+          value = QQ(1)
+          for k in range(2, n + 1):
+              value *= k
+          return value
+
+      def lift(poly):
+          return sum(QQ(c) * X**int(e) for e, c in R(poly).dict().items())
+
+      def associated(l, m):
+          order = abs(m)
+          derivative = P[l]
+          for _ in range(order):
+              derivative = derivative.derivative()
+          value = QQ((-1)**order) * y**order * lift(derivative)
+          if m < 0:
+              value *= QQ((-1)**order) * factorial(l - order) / factorial(l + order)
+          return S(value)
+
+      associated(26, 1)             # the next row after this table
+Similar tables:
+  - table: HREF{Legendre_polynomials}[Legendre polynomials]
+    relation: the rows with $m=0$ are the ordinary Legendre polynomials
+  - table: HREF{Jacobi_polynomials}[Jacobi polynomials]
+    relation: for fixed order, associated Legendre polynomials are Jacobi polynomials multiplied by $(1-x^2)^{m/2}$
+Links:
+  Wiki:
+    title: 'Wikipedia: Associated Legendre functions'
+    url: https://en.wikipedia.org/wiki/Associated_Legendre_polynomials
+  DLMF:
+    title: 'DLMF 14.3: Definitions and Hypergeometric Representations'
+    url: https://dlmf.nist.gov/14.3
+  MathWorld:
+    title: 'MathWorld: Associated Legendre Polynomial'
+    url: https://mathworld.wolfram.com/AssociatedLegendrePolynomial.html
+  Request99:
+    title: 'Requested in numberdb-data#99'
+    url: https://github.com/numberdb/numberdb-data/issues/99
+Keywords:
+  - associated Legendre functions
+  - Ferrers functions
+  - Condon-Shortley phase
+  - spherical harmonics
+Tags:
+  - special functions
+  - polynomial
+  - orthogonal polynomials
+Data properties:
+  type: Q[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every row with $0\leq\ell\leq25$ and $|m|\leq\ell$
+  repeats: HREF{Legendre_polynomials}
+  rigour details: >-
+    Every entry is exact, a polynomial over $\mathbb{Q}$ in $x$ and $y$ with
+    $y=(1-x^2)^{1/2}$. The generator computes the ordinary Legendre
+    polynomials by Bonnet's recurrence, applies CITE{formula-definition} for
+    nonnegative order, and applies CITE{formula-negative-order} for negative
+    order. Before entries are written, it checks the initial rows through
+    $\ell=3$, the negative-order relation, the recurrence
+    CITE{formula-recurrence}, the exact orthogonality relation
+    CITE{formula-orthogonality}, and the $m=0$ rows against the generated
+    Legendre polynomials. The build also read
+    HREF{Legendre_polynomials}[the published Legendre polynomial table] and
+    checked that every stored row with $m=0$ agrees with it through
+    $\ell=25$.
+Display properties:
+  number-header: $P_\ell^m(x)$
+Numbers: []
