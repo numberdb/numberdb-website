@@ -1,0 +1,122 @@
+Title: Secondary polynomials of the Jacobi polynomials $q_n^{(\alpha,\beta)}$
+Definition: >-
+  For $n\geq0$ and $\alpha,\beta>-1$, the secondary polynomial of the
+  HREF{Jacobi_polynomials}[Jacobi polynomial] $P_n^{(\alpha,\beta)}$ is
+  $q_n^{(\alpha,\beta)}(x)=\int_{-1}^{1}\dfrac{P_n^{(\alpha,\beta)}(t)-P_n^{(\alpha,\beta)}(x)}{t-x}\rho_{\alpha,\beta}(t)\,\mathrm{d}t$
+  CITE{Wiki}, where $\rho_{\alpha,\beta}(t)$ is the probability density
+  proportional to $(1-t)^\alpha(1+t)^\beta$ on $[-1,1]$ and
+  $P_n^{(\alpha,\beta)}(1)=\binom{n+\alpha}{n}$. It is a polynomial of degree
+  $n-1$ with rational coefficients for the rational parameters listed here,
+  and $q_0^{(\alpha,\beta)}=0$.
+Parameters:
+  alpha:
+    type: R
+    display: $\alpha$
+    constraints: $\alpha>-1$
+  beta:
+    type: R
+    display: $\beta$
+    constraints: $\beta>-1$
+  n:
+    type: Z
+    display: $n$
+    constraints: $n\geq0$
+Comments:
+  comment-normalisation: >-
+    The normalising constant of the Jacobi weight is
+    $2^{\alpha+\beta+1}B(\alpha+1,\beta+1)$. Dividing by it makes
+    $q_1^{(\alpha,\beta)}=(\alpha+\beta+2)/2$ and keeps every stored entry in
+    $\mathbb{Q}[x]$. The unnormalised weight would multiply each entry by the
+    normalising constant, which is not rational for most rational
+    $\alpha,\beta$.
+  comment-grid: >-
+    The stored grid follows the rational entries of the Jacobi-polynomial
+    table: $\alpha,\beta\in\{-\frac12,0,\frac12,1,\frac32,2\}$ with
+    $\alpha<\beta$, and $0\leq n\leq10$. The symbolic $a,b$ rows of that table
+    are not repeated, because after probability normalisation the coefficients
+    of $q_n^{(a,b)}$ are rational functions of $a$ and $b$, not polynomials
+    over $\mathbb{Q}$.
+  comment-legendre: >-
+    The Legendre case $\alpha=\beta=0$ is not stored here. The
+    HREF{Secondary_polynomials_of_the_Legendre_polynomials}[Legendre
+    secondary-polynomial table] uses the density $1$ on $[-1,1]$, whose total
+    mass is $2$, so it holds twice the probability-normalised values.
+  comment-quadrature: >-
+    At the roots $x_1<\cdots<x_n$ of $P_n^{(\alpha,\beta)}$,
+    $q_n^{(\alpha,\beta)}(x_k)/(P_n^{(\alpha,\beta)})'(x_k)$ is the weight of
+    the probability-normalised $n$-point Gauss-Jacobi quadrature rule. A
+    general Gauss-Jacobi quadrature table is not in this corpus.
+  comment-names: >-
+    These are also the numerator polynomials, or associated polynomials of
+    order one, of the Jacobi family. They are not the associated Jacobi
+    polynomials obtained by changing $\alpha$ and $\beta$.
+Formulas:
+  formula-moments: >-
+    If $P_n^{(\alpha,\beta)}(x)=\sum_{j=0}^n c_jx^j$, then
+    $q_n^{(\alpha,\beta)}(x)=\sum_{j=1}^n c_j\sum_{i=0}^{j-1}m_i x^{j-1-i}$,
+    where
+    $m_i=\sum_{k=0}^{i}\binom{i}{k}2^k(-1)^{i-k}\dfrac{(\beta+1)_k}{(\alpha+\beta+2)_k}$
+    is the $i$-th moment of the probability density $\rho_{\alpha,\beta}$.
+  formula-recurrence: >-
+    $q_0^{(\alpha,\beta)}=0$, $q_1^{(\alpha,\beta)}=(\alpha+\beta+2)/2$, and
+    for $n\geq2$ the $q_n^{(\alpha,\beta)}$ satisfy the same three-term
+    recurrence as the Jacobi polynomials:
+    $2n(n+\alpha+\beta)(2n+\alpha+\beta-2)q_n=(2n+\alpha+\beta-1)((2n+\alpha+\beta)(2n+\alpha+\beta-2)x+\alpha^2-\beta^2)q_{n-1}-2(n+\alpha-1)(n+\beta-1)(2n+\alpha+\beta)q_{n-2}$.
+  formula-quadrature: >-
+    If $x_k$ is a root of $P_n^{(\alpha,\beta)}$, then
+    $w_k=\dfrac{q_n^{(\alpha,\beta)}(x_k)}{(P_n^{(\alpha,\beta)})'(x_k)}$ and
+    $\sum_{k=1}^n w_k=1$ for the probability-normalised Gauss-Jacobi rule.
+  formula-pade: >-
+    $q_n^{(\alpha,\beta)}(z)/P_n^{(\alpha,\beta)}(z)$ is the $[n-1/n]$ Pade
+    approximant at $z=\infty$ to
+    $\int_{-1}^{1}(z-t)^{-1}\rho_{\alpha,\beta}(t)\,\mathrm{d}t$, the
+    Stieltjes transform of the probability density CITE{DLMF}.
+Similar tables:
+  - table: HREF{Jacobi_polynomials}[Jacobi polynomials]
+    relation: the $P_n^{(\alpha,\beta)}$ these are the secondary polynomials of, and the recurrence they share
+  - table: HREF{Secondary_polynomials_of_the_Legendre_polynomials}[Secondary polynomials of the Legendre polynomials]
+    relation: the Legendre case, stored with density $1$ rather than probability density $\frac12$
+  - table: HREF{Secondary_polynomials_of_the_Laguerre_polynomials}[Secondary polynomials of the Laguerre polynomials]
+    relation: the same probability-normalised construction for the Laguerre weight on $[0,\infty)$
+Links:
+  Wiki:
+    title: 'Wikipedia: Secondary polynomials'
+    url: https://en.wikipedia.org/wiki/Secondary_polynomials
+  DLMF:
+    title: 'DLMF 18.30.23-25: Stieltjes continued fractions'
+    url: https://dlmf.nist.gov/18.30#E23
+  numberdb-data-11:
+    title: 'Requested in numberdb-data#11'
+    url: https://github.com/numberdb/numberdb-data/issues/11
+  numberdb-data-62:
+    title: 'Requested in numberdb-data#62'
+    url: https://github.com/numberdb/numberdb-data/issues/62
+  numberdb-data-93:
+    title: 'Requested in numberdb-data#93'
+    url: https://github.com/numberdb/numberdb-data/issues/93
+  numberdb-data-171:
+    title: 'Requested in numberdb-data#171'
+    url: https://github.com/numberdb/numberdb-data/issues/171
+Tags:
+  - polynomial
+  - orthogonal polynomials
+  - continued fractions
+Data properties:
+  type: Q[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds the rational Jacobi-polynomial grid of T106 with
+    $\alpha<\beta$, $\alpha,\beta\in\{-\frac12,0,\frac12,1,\frac32,2\}$ and
+    $n\leq10$
+  rigour details: >-
+    Every value is exact, a polynomial with rational coefficients, so there is
+    no precision to choose. The generator computes $P_n^{(\alpha,\beta)}$ from
+    its binomial formula and evaluates the defining integral from the exact
+    moments of the probability density. Before the entries are written, they
+    are checked against the same three-term recurrence as the Jacobi
+    polynomials, against an independent plain Python fractions computation,
+    against direct rational quadrature for a control case, and against the
+    probability-normalised Legendre relation to T133.
+Display properties:
+  number-header: $q_n^{(\alpha,\beta)}(x)$
