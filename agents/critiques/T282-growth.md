@@ -35,10 +35,14 @@ finding 4.
   answered the first request of the session and refused every later one
   (`000`); that is already in `docs/agent-environment.md` and I have not
   re-recorded it.
-- **Rendering:** `/T282` returns 200 and renders. The Numbers block, the
-  parameter line, all three formulas, both comments and the whole of Data
-  properties read as text. No `Math input error`, no `argument ()`, no broken
-  `HREF`.
+- **Rendering:** `/T282` returns 200. The Numbers block, the parameter line,
+  all three formulas, both comments and the whole of Data properties were read
+  as text stripped out of the HTML. The parameter line reads
+  "$k$ — constant term ($k\geq0$)", not `argument ()`; both `HREF`s in formula
+  (3) come through as links and every `CITE` as a numbered reference. I cannot
+  say there is no `Math input error`: this page typesets with MathJax in the
+  browser, so a `curl` of it never carries that failure. What I can say is that
+  the `$` delimiters balance and no `<` appears inside the mathematics.
 - **Audit:** `GET /api/table/T282/audit` returns `"findings": []`,
   `"clean": true`. No Django here, so no `manage.py audit_table`. The audit has
   no opinion about a range and I have no quarrel with it.
