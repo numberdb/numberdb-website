@@ -6896,3 +6896,29 @@ runs; `curl ... -w 'HTTP %{http_code} size %{size_download}'` printing
 exit 7. The stale page showed 198 entries and the title "(short random walks)";
 `GET /api/table?id=T283` from the container at 16:45 showed 200 entries and
 "(uniform random walks in the plane)".
+
+## `agents/sage.sh` forwards stdin, but a host `/tmp` side file is not the same `/tmp`
+
+What happened: the T283 repair prepared the exact YAML edit in
+`/tmp/t283_edited.yaml` on the host, then ran
+`agents/sage.sh /tmp/check_t283_prepared_program.py` to execute the prepared
+`Programs` snippet. The wrapper copied the script into its work area, but the
+script's `open("/tmp/t283_edited.yaml")` failed with `FileNotFoundError`: that
+path was the wrapper's `/tmp`, not the host scratch file.
+
+What to do instead: pass the data through stdin when a Sage-wrapper check needs
+a host scratch artifact:
+
+```
+agents/sage.sh /tmp/check_t283_prepared_program.py < /tmp/t283_edited.yaml
+```
+
+The prompt already says stdin is forwarded, and this is the practical reason
+to use it. A script path under host `/tmp` is enough for the wrapper to run the
+script; other host `/tmp` files are not automatically visible at the same
+absolute path inside the wrapper.
+
+Evidence: 2026-09-20 T283 repair. The first exact-snippet check failed on
+`open("/tmp/t283_edited.yaml")`; the same script changed to read
+`sys.stdin.read()` succeeded under `agents/sage.sh` and checked $\mu_{200}$
+against the stored last digit.
