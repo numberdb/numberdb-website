@@ -7345,3 +7345,58 @@ reads as a missing attribute rather than a wrong package:
     sys.path.insert(0, 'agents/table-ideas') # screen.use_socks_proxy_if_set
 
 Run it from anywhere else and the import fails outright instead.
+
+## `both signs` renders as "(Unknown key)" too, on every table that carries it
+
+What happened: reading T13 for a growth critique, its *Data properties*
+section ended with
+
+    both signs: True (Unknown key)
+
+This is the same renderer fault already recorded twice above for
+`Size exception`, but with a much larger blast radius:
+`docs/design/table-schema.md:70` lists `both signs` as a corpus key on **25
+tables**, `numberdb_app/entries_form.py:76` passes it through untouched, and
+`numberdb_app/test_review.py:359` asserts behaviour for it. It is as
+established as a key gets here, and the page tells the reader it is
+unrecognised on every one of those 25 tables.
+
+The cause is unchanged: `property_names` in `numberdb_app/views.py:1110` lists
+`type`, `complete`, `sources`, `relative precision`, `absolute precision`,
+`reliability`, `rigour`, `rigour details` and `repeats`, and the `else` branch
+at line 1199 appends `(Unknown key)` to anything else.
+
+What to do instead: as with `Size exception`, report it and leave the table
+alone -- the key is right and the label map is wrong. A fix is one line,
+`'both signs': 'Both signs occur'`, and the two other names that have turned
+up unlabelled (`Size exception`, `url`) could go in the same commit, ideally
+with a test that every key named in `docs/design/table-schema.md` has a label.
+
+Evidence: 2026-09-21, T13 growth critique. `curl --noproxy '*'
+https://numberdb.org/T13` renders `both signs: True (Unknown key)`;
+`api/table?id=T13` shows `Data properties: {type: Q, both signs: "True",
+rigour: exact, rigour details: ...}`, so the table's own field is intact.
+
+## The SOCKS proxy was down for this whole run, and `--noproxy '*'` was the way through
+
+What happened: every `curl --socks5-hostname 127.0.0.1:1080` in this run
+failed with "Connection refused", with `ALL_PROXY` empty and
+`NUMBERDB_REMOTE=local`, exactly as the 2026-09-13 note above predicts. The
+first fetch of `/skill` came back with 48,740 bytes *and* a status of `000`,
+which is worth knowing on its own: the body was complete and usable while
+the status line said the request had failed, so a run that checks only
+`%{http_code}` throws away a good answer.
+
+`curl --noproxy '*' https://numberdb.org/...` answered 200 for every page,
+file, `api/table?id=`, `api/lookup` and `api/table/T13/audit` request this
+critique needed. The stage prompt's `--socks5-hostname` incantation is now
+wrong on this box more often than it is right.
+
+What to do instead: try direct first here, and keep the proxy form for when
+`ALL_PROXY` is actually set. When a fetch reports `000`, check whether the
+file it wrote is non-empty before retrying.
+
+Evidence: 2026-09-21, T13 growth critique. Three `--socks5-hostname` attempts
+at `https://numberdb.org/T13` gave `000 0` and
+"connect to 127.0.0.1 port 1080 ... Connection refused"; the same URL with
+`--noproxy '*'` gave `200 58287`.
