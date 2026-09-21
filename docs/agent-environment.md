@@ -6982,3 +6982,70 @@ Evidence: 2026-09-21T20:03Z ideas run. `agents/sage.sh` with
 `NUMBERDB_SAGE_MEMORY=600m` printed only `=== A. Watson integrals: midpoint rule
 in float64, extrapolated in 1/N ===` and exited 0; the chunked version printed
 all nine grid values and three extrapolations under the default 320 MB.
+
+## `/preview?table=` needs a `Numbers` section, or it errors on an unbound variable
+
+What happened: the T390 critique rendered a private draft the way the T221
+note describes -- pieces of the document sent to `/preview?table=...`, each
+under the 4094-byte request line. Ten of the thirteen pieces carried prose
+only (Definition, Comments, Formulas, References) and every one of them came
+back 200 with
+
+    Error while parsing numbers: cannot access local variable
+    'number_section' where it is not associated with a value
+
+and the textarea echoing the YAML where the rendered table should have been.
+Nothing was rendered, and the error names "parsing numbers" rather than the
+missing section, so it reads like the numbers were malformed rather than
+absent. Adding one stub entry to each piece --
+
+    Numbers:
+      unit-square:
+        '1': '19.739...'
+
+-- made all ten render. This is the site's own bug, not the recipe's: the
+same YAML with no `Numbers` is what somebody typing into the preview editor
+has after their first paragraph, so a contributor drafting a table in the
+browser hits it before they have a single value.
+
+What to do instead: when rendering a draft in pieces, put `Parameters` and a
+one-entry `Numbers` in *every* piece, not only the ones under test. Budget
+for it: the stub costs about 250 bytes of the 4 KB. The T221 note above
+should be read with this amendment.
+
+Evidence: 2026-09-21, T390 critique. `/tmp/render390.py` first run, pieces
+`a` through `j`: 200, 6.1-6.6 KB each, all carrying the `number_section`
+message; second run with the stub: 200, 14.6-16.5 KB each, all rendering.
+`numberdb_app/views.py:1507` is where `current_job` is pasted into the
+message.
+
+## The environment was listed before the direct `curl`, for the fifth time
+
+What happened: the T390 critique opened with the prompt's
+`curl --socks5-hostname 127.0.0.1:1080 https://numberdb.org/T390`, got exit 7,
+and ran `env | grep -i -E 'proxy|numberdb'` to find out why -- which is
+exactly what the note above ("`20260915T221028Z`") says not to do, and for
+exactly the same reason: `ALL_PROXY` is empty on this box and plain `curl`
+works. The direct `curl` should have been the next command after the exit 7,
+not the third.
+
+Two things did go right and are worth keeping. The mask was
+`sed -E 's/(KEY|TOKEN|SECRET)[A-Z_]*=.*/\1=<hidden>/I'` rather than the
+`s/=.*KEY.*/=<hidden>/` of the earlier runs, and it redacted both
+`NUMBERDB_KEY` and `NUMBERDB_API_KEY`; the older mask redacts neither,
+because it matches lines whose *value* contains "KEY". If a run must list the
+environment, that is the mask. And the run never needed to: `NUMBERDB_KEY_FILE`
+is set here (`/home/ubuntu/.config/numberdb/zeta3-key`), so
+`{ printf 'Authorization: Bearer '; cat "$NUMBERDB_KEY_FILE"; } | curl -s -H @-`
+worked as the note further up describes.
+
+What to do instead: on any failure of the proxied `curl`, retry without
+`--socks5-hostname` before anything else. Unsetting `NUMBERDB_API_KEY` and
+`NUMBERDB_KEY` in `run.sh`, still not done, would end the question for good --
+the prompt tells a run the key is in a file, and the runner then puts it in
+two variables as well.
+
+Evidence: 2026-09-21T21:21Z critique run. Proxied `curl` exit 7,
+`HTTP 000`; `curl -s https://numberdb.org/T390` answered 404 (the draft is
+private, which is correct) and `curl -s https://numberdb.org/skill` answered
+200 with 48 KB.
