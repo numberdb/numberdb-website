@@ -61,7 +61,8 @@ SCREENED_FINDER = re.compile(r'<!-- screened: (\d{4}-\d{2}-\d{2}) -->')
 #: the same conclusion.
 ITEM = re.compile(r'^- \[([ xX\-~])\] (.+?)'
                   r'(?:\s+\(answers ([^)]+)\))?'
-                  r'(?:\s+--\s+(T\d+|skipped:.*?|claimed.*?))?\s*$')
+                  r'(?:\s+--\s+(\[?T\d+\]?(?:\([^)]*\))?'
+                  r'|skipped:.*?|claimed.*?))?\s*$')
 
 #: How long a screening stays believable. Six weeks is not a measurement; it
 #: is the age at which this corpus has visibly moved -- of 89 proposals
@@ -239,7 +240,7 @@ def parse_family(issue):
 				              'claimed') else '',
 			              'answers': [int(n) for n in
 			                          re.findall(r'\d+', asked or '')],
-			              'tid': tail if (tail or '').startswith('T') else None,
+			              'tid': _tid_in(tail),
 			              'why': tail if (tail or '').startswith('skipped') else None})
 	return {'number': issue['number'], 'title': issue['title'],
 	        'batch': marker.group(1), 'body': body, 'items': items,
@@ -444,6 +445,17 @@ def cmd_post(args):
 	return 0
 
 
+def _tid_in(tail):
+	"""The T-number a checklist tail *names*, plainly or as a link.
+
+	Anchored at the start, because a skip reason mentions tables too --
+	`skipped: the corpus holds this as T187 under another name` -- and a
+	search anywhere in the tail read that proposal as built, as T187.
+	"""
+	found = re.match(r'\[?(T\d+)\]?(?:\(|$|\s)', (tail or '').strip())
+	return found.group(1) if found else None
+
+
 def _tick(family, title, tid, why=None):
 	"""The checklist with one more box settled, or None if nothing matched."""
 	lines = []
@@ -466,8 +478,11 @@ def _tick(family, title, tid, why=None):
 					line = '- [-] %s%s -- skipped: %s' % (
 						found.group(2).strip(), asked, why)
 				else:
-					line = '- [x] %s%s -- %s' % (found.group(2).strip(),
-					                             asked, tid)
+					#A link, not a bare number: the family issue is where
+					#somebody looks to see what became of a batch, and four
+					#hops to find out where T226 lives is three too many.
+					line = '- [x] %s%s -- [%s](%s/%s)' % (
+						found.group(2).strip(), asked, tid, SITE, tid)
 				hit = True
 		lines.append(line)
 	return '\n'.join(lines) if hit else None
@@ -541,9 +556,23 @@ def cmd_built(args):
 		for asked in _answered(family, args.title):
 			answer_request(asked, args.tid, args.number)
 	if not waiting(family):
+		#With the list, so the issue closes as a page somebody can read: what
+		#was proposed, what it became, and which request it answered.
+		lines = ['Every table in this family now exists. '
+		         'Closing; the tables are the record.', '']
+		for item in family['items']:
+			if item.get('tid'):
+				answered = (' (asked for in %s)'
+				            % ', '.join('#%d' % n for n in item['answers'])
+				            if item.get('answers') else '')
+				lines.append('- [%s](%s/%s) -- %s%s'
+				             % (item['tid'], SITE, item['tid'],
+				                item['title'], answered))
+			elif item.get('done'):
+				lines.append('- %s -- %s' % (item['title'],
+				                             item.get('why') or 'settled'))
 		api('repos/%s/issues/%d/comments' % (REPO, args.number), 'POST',
-		    {'body': 'Every table in this family now exists. '
-		             'Closing; the tables are the record.'})
+		    {'body': '\n'.join(lines)})
 		api('repos/%s/issues/%d' % (REPO, args.number), 'PATCH',
 		    {'state': 'closed'})
 		print('#%d closed; the family is built' % args.number)
