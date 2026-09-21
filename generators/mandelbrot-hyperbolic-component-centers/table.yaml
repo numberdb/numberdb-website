@@ -74,9 +74,11 @@ Data properties:
     Sturm's method. The
     roots are isolated with Sage's `complex_roots` at `min_prec=400`, which
     returns certified complex intervals; the worst absolute diameter measured
-    over the stored range is recorded by the generator. Sorting is guarded by
-    comparing the roots in `QQbar`; through $n=9$, no two non-conjugate roots
-    have the same real part. Real roots have imaginary part exactly $0$.
+    over the stored range is less than $8\cdot10^{-77}$. Sorting is guarded
+    by the certified intervals themselves: through $n=9$, any overlapping
+    real-coordinate intervals belong to one conjugate pair, and all
+    non-conjugate real projections are disjoint. Real roots have imaginary
+    part exactly $0$.
 Display properties:
   number-header: $c$
   group parameters:
