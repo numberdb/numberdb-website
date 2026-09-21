@@ -49,7 +49,16 @@ import queue as proposals  # noqa: E402  (the proposal queue, same directory)
 SHAPE = os.path.join(HERE, 'review-queue.tsv')
 
 #: Where a critique lands, and therefore how we know a table has been read.
-CRITIQUES = os.path.join(HERE, 'critiques')
+#
+# **Shared between workers, or it is not a memory at all.** Each worker has
+# its own worktree, so this was four separate directories and each worker only
+# knew what *it* had asked: 352 growth questions were put to about 115 tables,
+# T293 was asked twelve times, and a campaign of 200 items spent most of itself
+# re-asking questions another worker had already answered. Point every worker
+# at one directory with NUMBERDB_CRITIQUES and "at most once per table" means
+# what it says.
+CRITIQUES = os.environ.get('NUMBERDB_CRITIQUES') or os.path.join(HERE,
+                                                                'critiques')
 
 #: A table under a tenth of both soft limits is small enough to ask about.
 #: Not "small": the limits are 1200 entries and 320 KB, and a tenth of both is
