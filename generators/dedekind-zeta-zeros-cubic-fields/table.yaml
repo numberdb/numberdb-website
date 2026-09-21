@@ -1,0 +1,143 @@
+# The table document for numberdb.org/T385. It was created as a draft through
+# the API with X-Draft: yes and filled by generate.py beside it. Publishing is
+# a person's act.
+Title: Zeros of the Dedekind zeta functions of cubic fields
+Definition: >-
+  Let $K$ be a cubic field CITE{WikiCubic} of discriminant $D$, and let
+  $\zeta_K(s)=\sum_{\mathfrak a}N(\mathfrak a)^{-s}$ be its Dedekind zeta
+  function CITE{Wiki}, summed over the nonzero ideals of $\mathcal O_K$.
+  Listed are the positive ordinates $t_n$ of zeros
+  $\zeta_K(1/2+\mathrm{i}t_n)=0$ on the critical line, ordered increasingly
+  from $n=1$ for each field.
+Keywords:
+  - Dedekind zeta zeros
+  - cubic field zeta zeros
+  - number field zeta zeros
+  - cubic field L-function zeros
+Parameters:
+  D:
+    type: Z
+    title: discriminant of $K$
+    display: $D$
+    constraints: $D$ the discriminant of a cubic field
+  k:
+    type: Z
+    title: index of $K$ among the cubic fields of discriminant $D$
+    display: $k$
+    constraints: $k\geq1$
+  n:
+    type: Z
+    title: index of the positive zero
+    display: $n$
+    constraints: $n\geq1$
+    comments: >-
+      For fixed $D$ and $k$, the positive ordinates are ordered increasingly
+      and counted from $n=1$.
+Comments:
+  comment-index: >-
+    The fields of discriminant $D$ are numbered $k=1,2,\ldots$ by reducing
+    their defining polynomials with PARI's `polredabs` and sorting the
+    reduced polynomials lexicographically by coefficient vector. This is the
+    same $D,k$ convention used for
+    HREF{Residues_of_Dedekind_zeta_functions_of_cubic_fields}[the table of
+    residues of Dedekind zeta functions of cubic fields].
+  comment-field-comments: >-
+    Each entry comment gives the reduced defining polynomial $f$, so that
+    $K=\mathbb Q(a)$ with $f(a)=0$; the signature; the Galois group of the
+    Galois closure as $C3$ or $S3$; and the LMFDB number-field label.
+  comment-symmetry: >-
+    The Dirichlet coefficients of $\zeta_K(s)$ are real, so non-real zeros
+    occur in conjugate pairs. Only the positive ordinates $t_n>0$ are listed.
+  comment-real-zeros: >-
+    The trivial real zeros are not entries. For a cubic field with signature
+    $(r_1,r_2)$, $\zeta_K(s)$ has trivial zeros at the negative even integers,
+    and it also has trivial zeros at the negative odd integers when $r_2=1$.
+    The table records the critical-line zeros returned by PARI's `lfunzeros`;
+    it does not assert that these are all nontrivial zeros.
+  comment-cyclic-fields: >-
+    When the Galois closure is $C3$, the quotient
+    $\zeta_K(s)/\zeta(s)$ factors into two primitive cubic Dirichlet
+    $L$-functions. The entry comments for the conductor-$7$ field identify
+    the corresponding rows of
+    HREF{Zeros_of_Dirichlet_L_functions}[the Dirichlet zero table].
+Formulas:
+  formula-completed: >-
+    The completed Dedekind zeta function is
+    $\Lambda_K(s)=|D|^{s/2}\pi^{-r_1s/2}(2\pi)^{-r_2s}
+    \Gamma(s/2)^{r_1}\Gamma(s)^{r_2}\zeta_K(s)$, and it satisfies
+    $\Lambda_K(s)=\Lambda_K(1-s)$.
+Programs:
+  program-pari:
+    language: PARI/GP
+    code: |-
+      default(realprecision, 80);
+      f = x^3 - x^2 + 1;       \\ D = -23
+      lfunzeros(lfuncreate(bnfinit(f, 1)), 60, 16)[1]
+Similar tables:
+  - table: HREF{Zeros_of_the_Riemann_zeta_function}[Zeros of the Riemann zeta function]
+    relation: stores zero ordinates for the degree-one factor $\zeta(s)$
+  - table: HREF{Zeros_of_Dirichlet_L_functions}[Zeros of Dirichlet $L$-functions]
+    relation: stores zero ordinates for Dirichlet $L$-functions, including the factors of the cyclic cubic rows
+  - table: HREF{Zeros_of_the_L-functions_of_level_one_cusp_forms}[Zeros of the $L$-functions of level one cusp forms]
+    relation: uses the same agreement-checked PARI `lfunzeros` convention for another family of $L$-functions
+  - table: HREF{Residues_of_Dedekind_zeta_functions_of_cubic_fields}[Residues of Dedekind zeta functions of cubic fields]
+    relation: stores the residue at $s=1$ for cubic fields with the same $D,k$ convention
+  - table: HREF{Values_of_Dedekind_zeta_functions_of_cubic_fields_at_2}[Values of Dedekind zeta functions of cubic fields at $2$]
+    relation: stores another value of $\zeta_K(s)$ for cubic fields with the same $D,k$ convention
+  - table: HREF{Values_of_Dedekind_zeta_functions_of_totally_real_cubic_fields_at_negative_odd_integers}[Values of Dedekind zeta functions of totally real cubic fields at negative odd integers]
+    relation: stores exact real-axis values for the totally real cubic fields under the same $D,k$ convention
+Links:
+  Wiki:
+    title: 'Wikipedia: Dedekind zeta function'
+    url: https://en.wikipedia.org/wiki/Dedekind_zeta_function
+  WikiCubic:
+    title: 'Wikipedia: Cubic field'
+    url: https://en.wikipedia.org/wiki/Cubic_field
+  PARILfun:
+    title: 'PARI/GP reference: L-functions'
+    url: https://pari.math.u-bordeaux.fr/dochtml/html-stable/_L_minusfunctions.html
+  PARInflist:
+    title: 'PARI/GP reference: nflist'
+    url: https://pari.math.u-bordeaux.fr/dochtml/html-stable/General_number_fields.html#nflist
+  LMFDBComplex:
+    title: 'LMFDB: cubic number fields of signature (1,1)'
+    url: https://www.lmfdb.org/NumberField/?degree=3&signature=%5B1%2C1%5D
+  LMFDBReal:
+    title: 'LMFDB: cubic number fields of signature (3,0)'
+    url: https://www.lmfdb.org/NumberField/?degree=3&signature=%5B3%2C0%5D
+  Request72:
+    title: Requested in numberdb-data#72
+    url: https://github.com/numberdb/numberdb-data/issues/72
+Tags:
+  - number theory
+  - L-function
+  - zero
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: >-
+    it holds the first ten positive zero ordinates for every cubic field with
+    $|D|\leq500$, the 58 complex and 12 totally real fields in that range
+  rigour details: >-
+    The generator enumerates the fields with PARI's `nflist("C3", [1, 500])`
+    and `nflist("S3", [1, 500])` CITE{PARInflist}, reduces their defining
+    polynomials with `polredabs`, sorts them by increasing $|D|$ and then by
+    $k$, and refuses to run unless it finds 70 fields, 58 with negative
+    discriminant and 12 with positive discriminant. This agrees with the same
+    enumeration at $|D|\leq3000$ used by the cubic Dedekind residue and value
+    tables.
+
+    For each field it forms `lfuncreate(bnfinit(f, 1))` and uses PARI/GP's
+    `lfunzeros` CITE{PARILfun} at 80 and 120 decimal working digits, with
+    search height 60 and zero mesh 16. It stores only digits that agree
+    between those two computations. PARI's zero search is not a certified
+    enclosure method and may miss zeros, so the table does not claim proven
+    zeros. Before the draft was filled, a dry run measured the chosen range:
+    every field with $|D|\leq500$ had at least ten positive ordinates below
+    height 60, and the largest tenth ordinate was
+    $17.1012633035818315519487234446\ldots$ for $D=-23$.
+Display properties:
+  number-header: $t_n$
+  group parameters: [['D'], ['k'], ['n']]
+Numbers: []
