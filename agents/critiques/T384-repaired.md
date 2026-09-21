@@ -1,0 +1,5 @@
+done -- deleted the twelve `Requested*` issue links, after the live API document and preview still showed them; checked the skill's issue-provenance rule and GitHub issue #176 showed they were request provenance, not cited sources.
+done -- rewrote the Definition and `comment-order`, and added `formula-order`; checked all 15 stored rows in Sage against exact resultants and checked $\operatorname{Res}(g_n,f_m)=(-1)^{mn}\operatorname{Res}(f_m,g_n)$ over the same rings.
+done -- linked `HREF{Elementary_symmetric_polynomials}[the elementary symmetric polynomials]` in `rigour details`; checked the live table at that address and T381's analogous rigour sentence.
+done -- added `CITE{ResultantWiki}` beside the first "Sylvester matrix" in `formula-sylvester`; checked the declared Resultant article defines and links the Sylvester matrix.
+done -- changed the `Programs` snippet to `from sage.all import ZZ, PolynomialRing` and `print(f.resultant(g))`; ran it under `agents/sage.sh` and checked the output equals the stored $(2,3)$ entry.
