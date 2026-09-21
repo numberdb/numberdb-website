@@ -3,12 +3,10 @@
 # a person's act.
 Title: Zeros of the Dedekind zeta functions of cubic fields
 Definition: >-
-  Let $K$ be a cubic field CITE{WikiCubic} of discriminant $D$, and let
-  $\zeta_K(s)=\sum_{\mathfrak a}N(\mathfrak a)^{-s}$ be its Dedekind zeta
-  function CITE{Wiki}, summed over the nonzero ideals of $\mathcal O_K$.
-  Listed are the positive ordinates $t_n$ of zeros
-  $\zeta_K(1/2+\mathrm{i}t_n)=0$ on the critical line, ordered increasingly
-  from $n=1$ for each field.
+  Let $K$ be a cubic field CITE{WikiCubic} of discriminant $D$, with Dedekind
+  zeta function $\zeta_K(s)$ CITE{Wiki}. Listed are the positive ordinates
+  $t_n$ of critical-line zeros $\zeta_K(1/2+\mathrm{i}t_n)=0$, ordered
+  increasingly from $n=1$ for each field.
 Keywords:
   - Dedekind zeta zeros
   - cubic field zeta zeros
