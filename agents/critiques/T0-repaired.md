@@ -1,0 +1,6 @@
+done -- changed `Similar tables` from `contained in` to `includes $0$ as its entry $n=0$`; checked the live API and rendered page still had the old wording, checked T2's live bundle and page show an `n=0` row equal to `HREF{Zero}`, and narrowed the report's proposed wording because T2 currently lists only `-10..10`.
+declined -- left the definition's `HREF{Integers}` despite the audit warning; checked the pre-edit and post-edit audits both report only that existing finding, and the report was right that the first-mention link serves the reader.
+declined -- did not try to fix text-search ranking from T0; checked the report's issue is ranking behavior, and adding a repeated `zero` keyword would be index padding rather than table content.
+declined -- made no edits for the noted `Programs`, exact rigour sentence, single tag, or noun-phrase definition; checked the live audit did not object to them and the report marked them as notes only.
+declined -- made no edits for the report's checks that already held: the page renders, value search serves `0`, T2 points back with `equals`, T0 is one complete one-entry table, and its comments are not search advice.
+declined -- added no lesson or environment note; the report's search-ranking lesson already exists, and the rate-limit behavior met during repair is already recorded in the repo.
