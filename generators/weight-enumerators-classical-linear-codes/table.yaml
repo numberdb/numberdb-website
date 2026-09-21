@@ -1,0 +1,117 @@
+# Draft document for T388, Weight enumerators of the classical linear codes.
+# It was created through the API with X-Draft: yes, then filled by generate.py
+# beside it and offered for review. Publishing is a person's act on the site.
+Title: Weight enumerators of the classical linear codes
+Definition: >-
+  For a named classical linear code $C$ over a finite field, this table gives
+  the Hamming weight enumerator
+  $W_C(x)=\sum_{i=0}^n A_i x^i$ CITE{WikiWeightEnumerator}, where $A_i$ is
+  the number of codewords of Hamming weight $i$.
+Keywords:
+  - weight enumerator
+  - weight distribution
+  - Golay code
+  - Hamming code
+  - Reed-Muller
+  - simplex code
+  - quadratic residue code
+  - BCH
+Parameters:
+  family:
+    type: Symbolic
+    title: code family
+    display: $C$
+    constraints: one of the named linear-code families listed in the comments
+    values:
+      hamming: Hamming code
+      simplex: simplex code
+      golay: Golay code
+      rm: Reed-Muller code
+      qr: quadratic-residue code
+      bch: BCH code
+  a:
+    type: Z
+    title: first code parameter
+    display: $a$
+    constraints: the first integer parameter for the named family, as listed in the comments
+  b:
+    type: Z
+    title: second code parameter
+    display: $b$
+    constraints: the second integer parameter for the named family, as listed in the comments
+Comments:
+  comment-family-parameters: >-
+    Entry addresses use `hamming,q,m` and `simplex,q,m` for the $q$-ary
+    Hamming code and its dual simplex code; `golay,q,n` for the binary and
+    ternary Golay codes of length $n$; `rm,r,m` for the binary Reed-Muller
+    code $RM(r,m)$; `qr,q,n` for the quadratic-residue code over
+    $\mathbb{F}_q$ of length $n$; and `bch,n,delta` for the binary primitive
+    narrow-sense BCH code of length $n$ and designed distance $\delta$.
+  comment-dehomogenised: >-
+    This table stores the dehomogenised enumerator
+    $W_C(x)=\sum_i A_i x^i$. The homogeneous form is recovered as
+    $W_C(X,Y)=X^n W_C(Y/X)$.
+  comment-weight-variable: >-
+    The coefficient of $x^i$ counts codewords of Hamming weight $i$, so
+    $A_0=1$ and $W_C(1)=|C|$.
+  comment-bch-convention: >-
+    The BCH rows use Sage's primitive narrow-sense binary BCH construction.
+    For these rows the actual minimum distance is stated in the entry comment.
+Formulas:
+  formula-macwilliams: >-
+    If $C$ is a linear code over $\mathbb{F}_q$ and $C^\perp$ is its dual,
+    then $W_{C^\perp}(x)=|C|^{-1}(1+(q-1)x)^n
+    W_C((1-x)/(1+(q-1)x))$.
+  formula-simplex: >-
+    The $q$-ary simplex code with parameter $m$ has
+    $W_C(x)=1+(q^m-1)x^{q^{m-1}}$.
+Similar tables:
+  - table: HREF{Krawtchouk_polynomials_of_the_Hamming_scheme}[Krawtchouk polynomials of the Hamming scheme]
+    relation: the Krawtchouk polynomials are the kernel of the MacWilliams transform for Hamming weight enumerators
+Links:
+  WikiWeightEnumerator:
+    title: 'Wikipedia: Weight enumerator'
+    url: https://en.wikipedia.org/wiki/Weight_enumerator
+  WikiLinearCode:
+    title: 'Wikipedia: Linear code'
+    url: https://en.wikipedia.org/wiki/Linear_code
+  WikiHamming:
+    title: 'Wikipedia: Hamming code'
+    url: https://en.wikipedia.org/wiki/Hamming_code
+  WikiSimplex:
+    title: 'Wikipedia: Simplex code'
+    url: https://en.wikipedia.org/wiki/Simplex_code
+  WikiGolay:
+    title: 'Wikipedia: Golay code'
+    url: https://en.wikipedia.org/wiki/Golay_code
+  WikiReedMuller:
+    title: 'Wikipedia: Reed-Muller code'
+    url: https://en.wikipedia.org/wiki/Reed-Muller_code
+  WikiQR:
+    title: 'Wikipedia: Quadratic residue code'
+    url: https://en.wikipedia.org/wiki/Quadratic_residue_code
+  WikiBCH:
+    title: 'Wikipedia: BCH code'
+    url: https://en.wikipedia.org/wiki/BCH_code
+Tags:
+  - polynomial
+  - combinatorics
+  - coding theory
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds the finite set of small named classical codes enumerated by the
+    generator
+  sources:
+    - CITE{WikiWeightEnumerator}
+    - CITE{WikiLinearCode}
+  rigour details: >-
+    The entries are exact integer polynomials. The generator constructs each
+    listed code over its finite field and counts the Hamming weights of its
+    codewords exactly, then checks the result against independent formulas
+    and dual-code identities before filling the draft.
+Display properties:
+  number-header: $W_C(x)$
+Numbers: []
