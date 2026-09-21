@@ -7274,3 +7274,28 @@ Evidence: 2026-09-21, T18 critique. `text=3.14159265358979` returns
 `results[0].table.tid = T20` and `results[1].table.tid = T7` with `tables`
 absent; `text=Feigenbaum` returns `tables = [T18, T169]` with `results`
 absent.
+
+## `Size exception` permits the API write, but the audit still reports the size breach
+
+What happened: repairing T18 added `Data properties: Size exception` to explain
+the 1019-digit values. The strict `/api/table/T18` write was then accepted,
+which shows the write path found the stated reason. A keyed
+`GET /api/table/T18/audit` still returned
+`size: the longest value writes is 1019 digits, above the usual limit of 500`.
+
+The split is in the site code: `limits.enforce(..., strict=True)` honours
+`limits.stated_reason(tree)`, while the audit reports the raw result of
+`limits.check(tree)`. That makes the audit useful as a reminder of the limit,
+but it does not by itself mean the `Size exception` field is missing or in the
+wrong section.
+
+What to do instead: after adding a real `Size exception`, fix any new audit
+findings, but treat an unchanged `size:` finding as the audit restating the
+limit. The separate renderer issue, where `Size exception` appears with
+`(Unknown key)`, is recorded above and is the page label map rather than a
+table field problem.
+
+Evidence: 2026-09-21, T18 repair. Revision
+`ddba0a772e9111beb3954d557ee9ee3e130e8f726c6003bcb10d644df2985e57`
+has `Size exception` under `Data properties`; the final keyed audit has only
+the same `size:` finding.
