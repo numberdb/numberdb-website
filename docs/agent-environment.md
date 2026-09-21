@@ -7759,3 +7759,93 @@ Evidence: 2026-09-21, T10 repair. The old
 `agents/sage.sh`; after replacing it with a standalone Sage file, the same
 downloaded path printed the two stored entries and `/api/table/T10/audit`
 returned `{"findings": [], "clean": true}`.
+
+## A private draft's `/files` and `/history` are served to anybody; its page is not
+
+What happened: the T382 critique fetched the draft's attached generator to
+read it, and noticed afterwards that the fetch had worked with no key at all.
+Probing every draft-adjacent route anonymously, against draft T382:
+
+    /T382               404      correct
+    /bundle/T382        404      correct
+    /blame/T382         404      correct
+    /discuss/T382       404      correct
+    /preview/T382       404      correct
+    /files/T382         200      the file listing
+    /files/T382/generate.py  200 20,517 bytes, the whole source
+    /history/T382       200      title in <title>, commit metadata
+
+`views.table_files` and `views.table_file` never call `_refuse_a_draft`;
+`views.table_history` does not either. Every route that does call it answers
+404. So a draft is invisible, answers no search and refuses its own page,
+while its attached `generate.py` -- which carries the table's mathematics, its
+T-number and its title in the docstring -- is readable by anybody who guesses
+the number. `_refuse_a_draft`'s own docstring says the 404 exists so that
+nothing confirms a table with that number exists; these three routes confirm
+it and then hand over the contents.
+
+What to do instead: for an agent, two things. Do not treat a draft as private
+while it is being built -- it is not, in the one place a build puts a whole
+file. And when a run needs a draft's attached file, `curl` reaches it with no
+key, which is convenient and is also the bug: do not take that 200 as evidence
+that the key worked. The fix is one `_refuse_a_draft(request, table)` in each
+of the three views, and it belongs to somebody who can deploy.
+
+Evidence: 2026-09-21, T382 critique. The eight-route probe above;
+`numberdb_app/views.py` `table_files` (3126), `table_file` (3217),
+`table_history` (2406) against `table_by_tid` (654) and `entry_blame` (3613),
+which guard correctly.
+
+## A seven-variable polynomial search answers HTTP 500
+
+What happened: checking how wide a polynomial the corpus can find, for the
+T382 critique. Five and six variables are accepted and answer normally; seven
+does not answer at all:
+
+    numberdb.search_polynomial('a0*a1*a2*a3*a4*a5 - 7')   ->  0 results
+    numberdb.search_polynomial('a0*a1*a2*a3*a4*a5*a6 - 7')
+        -> TransportError: HTTP 500 from
+           https://numberdb.org/api/lookup?polynomial=a0%2A...%2Aa6+-+7
+
+The limit itself is real and is recorded as a lesson proposal (a polynomial
+table whose variable count grows with its index should stop at six). What
+belongs here is the shape of the refusal: a 500 rather than a message, so a
+contributor probing the limit sees a server error and reasonably concludes the
+site is down rather than that the query was too wide. A run that meets a 500
+from `/api/lookup` should count the variables before blaming the server.
+
+Evidence: 2026-09-21, T382 critique, `/tmp/psearch4.py` through
+`agents/sage.sh`.
+
+## The draft page is session-authenticated, but `/files/<tid>/<name>` is not the same route
+
+What happened: reaching draft T382 for the critique cost four attempts, and
+the notes above give the answer for each one separately but never in one list.
+For the next run, in order:
+
+  * `GET /T382` answers 404 to the zeta3 bearer token. The HTML table view
+    authenticates by session; the token is never consulted. This is the
+    T182 note.
+  * `GET /api/table?id=T382` with `Authorization: Bearer` answers 200 with the
+    document. Note the shape: `?id=`, not `/api/table/T382` -- that path is
+    `api.write_table` and answers 405 to a GET, which reads like a broken key.
+  * `GET /api/table/T382/audit` with the same header answers the audit. This
+    one *is* under the path.
+  * `/preview?table=<yaml>` renders any document anonymously, but nginx caps
+    the request line at 4094 bytes, so a document over about 2.5 KB has to be
+    cut into slices. It is the fastest way to check one section's rendering
+    and a poor way to read a page: a slice that omits `Links` renders its
+    `CITE{}` as the bare key, which looks exactly like a broken citation.
+  * The sqlite draft-render recipe (note above) is the one that gives the
+    whole page, and `/tmp/t381_render.py` plus `/tmp/site.tgz` from the
+    previous run were still on the box, so it cost one `sed`.
+
+Also: `agents/sage.sh` on this box defaults to the builder image, which has
+Sage and the client and **no Django**. A `RequestFactory` script fails there
+with `ModuleNotFoundError: No module named 'django'`, and
+`NUMBERDB_SAGE_IMAGE=numberdb/web:latest` does not rescue it -- the builder
+has no such image, and `NUMBERDB_REMOTE=linode` answers `scp: Connection
+closed`. The sqlite recipe exists precisely because neither works.
+
+Evidence: 2026-09-21, T382 critique. `/tmp/t382_render.py` (T381's script,
+tid changed): `records: 5`, `status 200 29869`.
