@@ -133,8 +133,9 @@ independently before publication — §6 says how.
 ## 4. What growth would cost and what it would buy
 
 **Size never binds.** At 100 significant digits a value is 102–103 characters.
-The current block spends about 344 bytes an entry including record structure, so
-a table to $d = 32$ is roughly 11 KB: 3% of the block limit and 3% of the entry
+The current block spends about 344 bytes an entry including record structure,
+and its values average only 71 characters, so at 100 digits a table to
+$d = 32$ is roughly 12 KB: under 4% of the block limit and 3% of the entry
 limit. Even $d \leq 100$ would be inside every limit. The constraint the skill
 names as usually binding — readability of the largest entry — does not bite
 either: the entries do not grow, they shrink.
@@ -145,7 +146,7 @@ significant digits and asking `/api/lookup`, over all 374 published tables:
 
 | query length | $d=9\dots24$: how many of the 16 get any hit |
 |---|---|
-| 4 significant digits | 10 of 16 (all incidental — T340, T353, T209, T363, …) |
+| 4 significant digits | 11 of 16 (all incidental — T340, T353, T209, T363, …) |
 | 5 significant digits | 4 of 16 |
 | 6 significant digits | **0 of 16** |
 | 8 significant digits | **0 of 16** |
