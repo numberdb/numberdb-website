@@ -7492,3 +7492,36 @@ a proposed table's name would have reached it.
 
 Evidence: 2026-09-21 ideas run, `already_asked` on all five names, `[]` each
 time, against #108 open and directly on the subject.
+
+## `/tags/<name>` now answers 404 for a tag that does not exist, not 500
+
+What happened: the T379 critique wanted to know whether the corpus has a tag
+for random matrices, so that a table tagged `groups` and `probability theory`
+could be compared with the two siblings it was built beside, which are tagged
+`number theory` and `L-function`. The existing note above, from the T317
+critique of 2026-09-18, says that `/tags/<name>` answers **500** with an empty
+body for a name that does not exist, and that a 500 therefore has to be read
+as "no such tag".
+
+That is no longer true, and the change is worth having because it is the
+difference between a probe that is ambiguous and one that is not.
+`/tags/random-matrix`, `/tags/random_matrix` and `/tags/random matrix` all
+answer **404**, as do the three names the older note recorded as 500:
+`/tags/knot`, `/tags/hyperbolic` and `/tags/zzz-nonsense-tag`.
+`/tags/L-function`, `/tags/groups`, `/tags/probability theory` and
+`/tags/algebraic` answer 200 with their table lists. So the site now
+distinguishes "this tag does not exist" from "the tag page is broken", and
+`views.tag` presumably handles `Tag.DoesNotExist`.
+
+What to do instead: probe a tag name with `curl -o /dev/null -w '%{http_code}'`
+and read 404 as "no such tag" and 200 as "it exists". The older note's advice
+to get a table's own tags from `GET /api/table?id=T<n>` rather than from the
+tag pages still stands, and `/tags` is still an infinite-scroll page that
+lists almost nothing to a plain `curl`, so probing names one at a time is
+still the only enumeration from here.
+
+Evidence: 2026-09-21, T379 critique. Ten probes: `random-matrix` 404,
+`random_matrix` 404, `random matrix` 404, `knot` 404, `hyperbolic` 404,
+`zzz-nonsense-tag` 404, `L-function` 200, `groups` 200, `probability theory`
+200, `algebraic` 200. The superseded note is "`/tags/<name>` answers 500, not
+404, for a tag that does not exist".
