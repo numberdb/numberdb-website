@@ -2,10 +2,10 @@
 # values, and is filled by generate.py beside it. Publishing is a person's act.
 Title: Centers of the hyperbolic components of the Mandelbrot set
 Definition: >-
-  Let $f_c(z)=z^2+c$. For each period $n$, the entries are the roots of the
-  Gleason polynomial $G_n(c)$ CITE{BuffFloydKochParry2022}, equivalently the
-  Mandelbrot-set parameters CITE{WikiMandelbrot} for which the critical point
-  $0$ has exact period $n$.
+  Let $f_c(z)=z^2+c$. For each period $n$, the entries are the centers of the
+  period-$n$ hyperbolic components CITE{WikiMandelbrot}, the parameters $c$
+  for which the critical point $0$ has exact period $n$; equivalently, the
+  roots of the Gleason polynomial $G_n(c)$ CITE{BuffFloydKochParry2022}.
 Parameters:
   n:
     type: Z
@@ -27,7 +27,11 @@ Comments:
     member of a conjugate pair is listed immediately before the positive one.
   comment-logistic: >-
     This table uses the $c$-parameter for $z\mapsto z^2+c$. The real logistic
-    parameter $r$ used in the similar tables is related by $c=-r(r-2)/4$.
+    parameter $r$ of
+    HREF{Bifurcation_points_of_the_period-doubling_cascade_of_the_logistic_map}[the
+    period-doubling cascade] and of
+    HREF{Periodic_windows_of_the_logistic_map_by_kneading_word}[the periodic
+    windows] is related by $c=-r(r-2)/4$.
 Formulas:
   formula-iterate: >-
     $F_0(c)=0$ and $F_{m+1}(c)=F_m(c)^2+c$.
@@ -35,6 +39,27 @@ Formulas:
     $G_n(c)=\prod_{d\mid n}F_d(c)^{\mu(n/d)}$.
   formula-degree: >-
     For $n\geq1$, $\deg G_n=\sum_{d\mid n}\mu(n/d)2^{d-1}$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.arith.misc import divisors
+      from sage.rings.integer_ring import ZZ
+      from sage.rings.complex_interval_field import ComplexIntervalField
+
+      R.<c> = ZZ[]
+      F = [R(0)]
+      for _ in range(9):
+          F.append(F[-1]^2 + c)
+
+      def G(n):
+          q = F[n]
+          for d in divisors(n):
+              if d < n:
+                  q //= G(d)
+          return q
+
+      G(3).roots(ComplexIntervalField(400))   # the three period-3 centers
 Similar tables:
   - table: HREF{Bifurcation_points_of_the_period-doubling_cascade_of_the_logistic_map}[Bifurcation points of the period-doubling cascade of the logistic map]
     relation: stores the real period-doubling centers and bifurcation points in both the logistic $r$ normalisation and the $c$ normalisation
