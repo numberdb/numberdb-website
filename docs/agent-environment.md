@@ -6868,3 +6868,36 @@ section 4 should still lead the stage.
 Evidence: 2026-09-21, ideation run `20260921T184313Z`,
 `agents/table-ideas/BATCH-2026-09-21T1843.md`; the `gh api graphql` query over
 `issues(labels:["table wanted"], states:CLOSED)` returning 126 nodes.
+
+## A table can be published while the critique is reading it: retry `/Txxx` before rebuilding its page
+
+What happened: the T389 critique started at 19:38 with `curl
+https://numberdb.org/T389`, which answered 404 -- the table page
+authenticates by session, so a draft is Not Found to the zeta3 bearer token
+as well (the T182 and T315 notes). The run then read the prose through
+`/preview?table=` in pieces, which is the documented fallback on this builder
+box. At 19:45 the same URL answered 200 and 580,935 bytes: somebody had
+reviewed and published the table between the two fetches, seven minutes
+apart. The head revision was written at 19:35, four minutes before the run
+began, so a critique queued straight after a build is reading a table that is
+about to stop being a draft.
+
+Two smaller facts from the same attempt. `NUMBERDB_SAGE_IMAGE` is
+`numberdb/builder:latest` on this machine and the `RequestFactory` recipe
+needs the site image, so
+`NUMBERDB_SAGE_IMAGE=numberdb/web:latest agents/sage.sh render.py` fails with
+`docker: pull access denied for numberdb/web` rather than with anything about
+Django -- the builder has neither the image nor a database, which is what the
+sqlite rebuild note exists for. And `/tables` lists a table's number, title
+and entry count; it was fetched here only after publication, so this run saw
+no evidence either way about whether a draft appears in it.
+
+What to do instead: in a critique, fetch `/Txxx` once at the start and once
+more before writing the report. A 404 at the start is worth one retry at the
+end rather than a conclusion, because the published page is what a reader
+gets and it costs one request. Where it is still 404, the piecewise
+`/preview` route and the sqlite rebuild are unchanged.
+
+Evidence: 2026-09-21, run `20260921T193752Z`, `/tmp/T389.html` (404, 11,533
+bytes at 19:38; 200, 580,935 bytes at 19:45), `/files/T389` naming the head
+revision "write exact MDS weight enumerator draft" of 19:35.
