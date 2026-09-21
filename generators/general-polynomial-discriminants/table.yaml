@@ -4,10 +4,9 @@
 Title: Discriminants of the general polynomial of degree $n$
 Definition: >-
   For $n\geq 1$, let $f(x)=\sum_{i=0}^n a_i x^i$ be the general degree-$n$
-  polynomial with formal coefficients $a_0,\dots,a_n$ and leading coefficient
-  $a_n$. The entry is the discriminant $\operatorname{disc}(f)$ as in
-  CITE{DiscriminantWiki} with the normalisation stated by Formula
-  CITE{formula-resultant} for the resultant.
+  polynomial with formal coefficients and leading coefficient $a_n$. The entry
+  is the discriminant $\operatorname{disc}(f)$ using Formula
+  CITE{formula-resultant} as its convention.
 Parameters:
   n:
     type: Z
@@ -23,6 +22,9 @@ Comments:
     $\operatorname{disc}(a_0+a_1x)=1$.
   comment-variables: >-
     The entry for degree $n$ is written in the variables $a_0,\dots,a_n$.
+  comment-source: >-
+    The source CITE{DiscriminantWiki} gives the same discriminant convention
+    through the root product in Formula CITE{formula-roots}.
 Formulas:
   formula-resultant: >-
     $\operatorname{disc}(f)=(-1)^{n(n-1)/2}a_n^{-1}
@@ -71,7 +73,6 @@ Keywords:
 Tags:
   - polynomial
   - algebra
-  - invariant theory
 Data properties:
   type: Z[]
   rigour: exact
