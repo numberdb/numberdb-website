@@ -3,8 +3,8 @@
 # beside it and offered for review. Publishing is a person's act on the site.
 Title: Weight enumerators of the classical linear codes
 Definition: >-
-  For a named classical linear code $C$ over a finite field, this table gives
-  the Hamming weight enumerator
+  For a named classical linear code $C$ over a finite field CITE{WikiLinearCode},
+  this table gives the Hamming weight enumerator
   $W_C(x)=\sum_{i=0}^n A_i x^i$ CITE{WikiWeightEnumerator}, where $A_i$ is
   the number of codewords of Hamming weight $i$.
 Keywords:
@@ -42,11 +42,13 @@ Parameters:
 Comments:
   comment-family-parameters: >-
     Entry addresses use `hamming,q,m` and `simplex,q,m` for the $q$-ary
-    Hamming code and its dual simplex code; `golay,q,n` for the binary and
-    ternary Golay codes of length $n$; `rm,r,m` for the binary Reed-Muller
-    code $RM(r,m)$; `qr,q,n` for the quadratic-residue code over
-    $\mathbb{F}_q$ of length $n$; and `bch,n,delta` for the binary primitive
-    narrow-sense BCH code of length $n$ and designed distance $\delta$.
+    Hamming code CITE{WikiHamming} and its dual simplex code
+    CITE{WikiSimplex}; `golay,q,n` for the binary and ternary Golay codes
+    CITE{WikiGolay} of length $n$; `rm,r,m` for the binary Reed-Muller code
+    $RM(r,m)$ CITE{WikiReedMuller}; `qr,q,n` for the quadratic-residue code
+    CITE{WikiQR} over $\mathbb{F}_q$ of length $n$; and `bch,n,delta` for the
+    binary primitive narrow-sense BCH code CITE{WikiBCH} of length $n$ and
+    designed distance $\delta$.
   comment-dehomogenised: >-
     This table stores the dehomogenised enumerator
     $W_C(x)=\sum_i A_i x^i$. The homogeneous form is recovered as
@@ -65,6 +67,19 @@ Formulas:
   formula-simplex: >-
     The $q$-ary simplex code with parameter $m$ has
     $W_C(x)=1+(q^m-1)x^{q^{m-1}}$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.integer_ring import ZZ
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+      from sage.rings.rational_field import QQ
+
+      R = PolynomialRing(ZZ, "x")
+      x = R.gen()
+      # Weight enumerator of the binary [7,4,3] Hamming code.
+      ((1 + x)**7 + 7 * (1 + x)**3 * (1 - x)**4) / QQ(8)
 Similar tables:
   - table: HREF{Krawtchouk_polynomials_of_the_Hamming_scheme}[Krawtchouk polynomials of the Hamming scheme]
     relation: the Krawtchouk polynomials are the kernel of the MacWilliams transform for Hamming weight enumerators
@@ -102,16 +117,27 @@ Data properties:
   rigour: exact
   complete: 'no'
   complete-note: >-
-    it holds the finite set of small named classical codes enumerated by the
-    generator
+    it holds the Hamming and simplex rows with $q=2$ and $2\leq m\leq6$,
+    $q=3$ and $2\leq m\leq4$, and $q=4$ and $2\leq m\leq3$; every binary
+    Reed-Muller row $RM(r,m)$ with $2\leq m\leq5$; the binary and ternary
+    Golay codes, ordinary and extended; the quadratic-residue rows
+    $(q,n)=(2,7),(3,11),(3,13),(2,17),(2,23),(2,31)$; and the binary
+    primitive narrow-sense BCH rows $(n,\delta)=(15,3),(15,5),(15,7),(31,7)$
+    and $(31,11)$
   sources:
     - CITE{WikiWeightEnumerator}
     - CITE{WikiLinearCode}
   rigour details: >-
-    The entries are exact integer polynomials. The generator constructs each
-    listed code over its finite field and counts the Hamming weights of its
-    codewords exactly, then checks the result against independent formulas
-    and dual-code identities before filling the draft.
+    The entries are exact integer polynomials. Before the draft was filled,
+    `agents/table-build/dry_run.py` computed all 53 entries, checked
+    exactness, and measured the longest written value as 1183 characters at
+    the binary Hamming row `hamming,2,6`, with an entries block of 12.6 KB.
+    The generator checks $W_C(1)=|C|$, the stated minimum distance, and the
+    degree bound on every row. It checks Hamming rows from the simplex rows by
+    the MacWilliams identity, Reed-Muller rows against their dual
+    Reed-Muller rows, the perfect binary and ternary Golay rows against the
+    corresponding quadratic-residue constructions, and every BCH and
+    quadratic-residue cyclic generator polynomial against its defining roots.
 Display properties:
   number-header: $W_C(x)$
 Numbers: []
