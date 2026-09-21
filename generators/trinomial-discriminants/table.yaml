@@ -1,0 +1,115 @@
+# The table document for numberdb.org/T383. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Discriminants of the trinomials $x^n+ax^m+b$
+Definition: >-
+  For integers $n>m\geq1$, let $f_{n,m}(x)=x^n+a x^m+b$ with formal
+  coefficients $a$ and $b$. The entry is the discriminant
+  $\operatorname{disc}(f_{n,m})$ CITE{DiscriminantWiki} with the normalization
+  of Formula CITE{formula-resultant}.
+Parameters:
+  n:
+    type: Z
+    title: degree
+    display: $n$
+    constraints: $n\geq2$
+  m:
+    type: Z
+    title: middle exponent
+    display: $m$
+    constraints: $1\leq m<n$
+Comments:
+  comment-coefficients: >-
+    The coefficient $a$ multiplies $x^m$ and $b$ is the constant term. The
+    leading coefficient is $1$, and all other coefficients are $0$.
+  comment-specialisation: >-
+    This is the specialization of HREF{T381}[the discriminant of the general
+    degree-$n$ polynomial] obtained by setting the leading coefficient to $1$,
+    the coefficient of $x^m$ to $a$, the constant term to $b$, and all other
+    coefficients to $0$.
+Formulas:
+  formula-resultant: >-
+    $\operatorname{disc}(f_{n,m})=(-1)^{n(n-1)/2}
+    \operatorname{Res}(f_{n,m},f_{n,m}')$, where the resultant is normalized
+    as in CITE{ResultantWiki} by
+    $\operatorname{Res}(f,g)=\prod_{f(\alpha)=0}g(\alpha)$ for monic $f$.
+  formula-swan: >-
+    Swan's formula CITE{Swan1962} gives
+    $\operatorname{disc}(x^n+a x^m+b)=(-1)^{n(n-1)/2}b^{m-1}
+    \left(n^{n/d}b^{(n-m)/d}-(-1)^{n/d}
+    (n-m)^{(n-m)/d}m^{m/d}a^{n/d}\right)^d$, where
+    $d=\gcd(n,m)$.
+  formula-quadratic: $\operatorname{disc}(x^2+a x+b)=a^2-4b$.
+  formula-cubic: >-
+    $\operatorname{disc}(x^3+a x+b)=-4a^3-27b^2$ and
+    $\operatorname{disc}(x^3+a x^2+b)=-4a^3b-27b^2$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from math import gcd
+      from sage.rings.integer_ring import ZZ
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+      n = 8
+      m = 3
+      R = PolynomialRing(ZZ, ["a", "b"])
+      a, b = R.gens()
+      d = gcd(n, m)
+      sign = -1 if (n * (n - 1) // 2) % 2 else 1
+      middle = ZZ(n - m) ** ((n - m) // d) * ZZ(m) ** (m // d) * a ** (n // d)
+      inner = ZZ(n) ** (n // d) * b ** ((n - m) // d) - (-1) ** (n // d) * middle
+      disc = sign * b ** (m - 1) * inner ** d
+      disc
+Similar tables:
+  - table: HREF{T381}[Discriminants of the general polynomial of degree $n$]
+    relation: >-
+      gives the same discriminant before the specialization $a_n=1$, $a_m=a$,
+      $a_0=b$, and all other coefficients $0$
+  - table: HREF{T382}[Discriminants of the depressed polynomial of degree $n$]
+    relation: >-
+      gives the same discriminant for the rows with $m\leq n-2$ before
+      specializing the depressed polynomial to keep only the $x^m$ and constant
+      terms
+Links:
+  DiscriminantWiki:
+    title: 'Wikipedia: Discriminant'
+    url: https://en.wikipedia.org/wiki/Discriminant
+  ResultantWiki:
+    title: 'Wikipedia: Resultant'
+    url: https://en.wikipedia.org/wiki/Resultant
+References:
+  Swan1962:
+    bib: >-
+      Richard G. Swan, Factorization of polynomials over finite fields,
+      Pacific Journal of Mathematics 12 (1962), no. 3, 1099-1106.
+    url: https://msp.org/pjm/1962/12-3/pjm-v12-n3-p27-p.pdf
+Keywords:
+  - trinomial discriminant
+  - discriminant of a trinomial
+  - Swan trinomial discriminant
+  - polynomial discriminant
+  - discriminant in coefficients
+Tags:
+  - polynomial
+  - algebra
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every pair $n>m\geq1$ with $n\leq37$, a complete initial triangle
+    of degree pairs; the first omitted half-degree row, at $(n,m)=(38,19)$,
+    is already 1412 characters when expanded
+  rigour details: >-
+    The generator computes exact integer coefficients in $\mathbb Z[a,b]$ from
+    Swan's formula CITE{Swan1962}, and all arithmetic is exact. It checks the
+    resultant identity in Formula CITE{formula-resultant} for all pairs with
+    $n\leq12$, compares the quadratic and cubic rows from Formula
+    CITE{formula-quadratic} and Formula CITE{formula-cubic} against the stored
+    values, and compares integer specializations of every stored pair with
+    Sage's exact univariate discriminant over $\mathbb Z[x]$.
+Display properties:
+  number-header: $\operatorname{disc}(f_{n,m})$
+Numbers: []
