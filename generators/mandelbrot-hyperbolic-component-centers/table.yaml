@@ -2,11 +2,10 @@
 # values, and is filled by generate.py beside it. Publishing is a person's act.
 Title: Centers of the hyperbolic components of the Mandelbrot set
 Definition: >-
-  Let $f_c(z)=z^2+c$ and let $F_0(c)=0$,
-  $F_{m+1}(c)=F_m(c)^2+c=f_c^{m+1}(0)$. For each period $n$, the entries are
-  the roots of the Gleason polynomial $G_n(c)$ CITE{BuffFloydKochParry2022},
-  so they are the parameters $c$ for which the critical point $0$ of the
-  Mandelbrot-set family CITE{WikiMandelbrot} has exact period $n$.
+  Let $f_c(z)=z^2+c$. For each period $n$, the entries are the roots of the
+  Gleason polynomial $G_n(c)$ CITE{BuffFloydKochParry2022}, equivalently the
+  Mandelbrot-set parameters CITE{WikiMandelbrot} for which the critical point
+  $0$ has exact period $n$.
 Parameters:
   n:
     type: Z
