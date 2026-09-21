@@ -7574,3 +7574,28 @@ say that the publisher's own page could not be fetched.
 `WebSearch` is not granted to this account -- it answers "Claude requested
 permissions to use WebSearch, but you haven't granted it yet" -- so the
 Wikipedia, OEIS and Crossref APIs above are the whole of search from here.
+
+## `agents/sage.sh` exit 137 is the container being killed, not the script failing
+
+What happened: a scan run under `timeout 900 agents/sage.sh probe3.py` printed
+one line and stopped, and the wrapper reported `exit 137`. 137 is
+128 + SIGKILL, which here means the `docker run` was killed -- the memory cap
+(`NUMBERDB_SAGE_MEMORY`, 900m in this campaign, with `--memory-swap` equal to
+it so the container gets no swap at all) or the inner `timeout $TIMEOUT`, not
+anything the script did. The script was an mpmath grid scan at `mp.dps = 40`
+accumulating a list of some fifteen thousand `(float, float, float)` tuples
+alongside Sage's own 98 MB, and it died with no traceback and no partial
+output beyond what it had already flushed.
+
+Two things to do with that. **Read 137 as "the container was killed" and look
+at the cap before looking at the code** -- it is not the same as a Python
+exception, which arrives with a traceback, or the crash-handler hang described
+above, which arrives as a process sleeping with no CPU. And **redirect to a
+file and read the file while it runs**, as the note above says: the one line
+the scan did print was in `probe3.out` the whole time, which is how it was
+clear the run had started rather than queued behind the Sage lock.
+
+Evidence: 2026-09-21 ideas run. `/tmp/w3ideas/probe3.py`, 900 s, exit 137, 51
+bytes of output; the same question answered in under a minute by
+`/tmp/w3ideas/probe5.py`, which evaluates about 1100 points and holds none of
+them.
