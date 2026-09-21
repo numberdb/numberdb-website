@@ -1,0 +1,100 @@
+# Draft document for T386, zeros of the Hurwitz zeta function. Publishing is
+# a person's act; this draft was left offered for review.
+Title: Zeros of the Hurwitz zeta function $\zeta(s,a)$
+Definition: >-
+  For rational $a$ with $0<a\leq1$, this table gives the non-real zeros
+  $\rho$ of the Hurwitz zeta function $\zeta(s,a)$ CITE{Wiki}, with
+  $\operatorname{Im}\rho>0$. For each fixed $a$, the zeros are ordered by
+  increasing imaginary part, with ties broken by increasing real part, and
+  counted from $n=1$.
+Keywords:
+  - Hurwitz zeta zeros
+  - zeros of the Hurwitz zeta function
+Parameters:
+  a:
+    type: Q
+    title: Hurwitz parameter
+    display: $a$
+    constraints: $a\in\mathbb{Q}$; $0<a\leq1$
+  n:
+    type: Z
+    title: zero index
+    display: $n$
+    constraints: $n\geq1$
+Comments:
+  comment-conjugates: >-
+    For real $a$, $\zeta(\overline{s},a)=\overline{\zeta(s,a)}$, so
+    non-real zeros occur in conjugate pairs. Only the zeros with positive
+    imaginary part are listed.
+  comment-real-zeros: >-
+    Real zeros are not entries. The case $a=1$ has the trivial zeros at the
+    negative even integers, and real zeros for other $a$ are a separate
+    one-real-variable question studied in the literature.
+  comment-strip: >-
+    Spira proved that, for fixed $a$, the complex zeros of $\zeta(s,a)$ lie
+    in a vertical strip CITE{Spira}. The table therefore uses a height bound,
+    not a real-part bound, for the computed range.
+  comment-special-a: >-
+    At $a=1$, $\zeta(s,a)$ is the Riemann zeta function. At $a=1/2$,
+    $\zeta(s,1/2)=(2^s-1)\zeta(s)$, so the listed zeros come from
+    HREF{Zeros_of_the_Riemann_zeta_function}[the Riemann zeta zeros] and the
+    zeros $2\pi\mathrm{i}k/\log 2$ of $2^s-1$.
+  comment-standard-range: >-
+    The table uses the standard Hurwitz range $0<a\leq1$. Arguments larger
+    than $1$ are related by $\zeta(s,a+1)=\zeta(s,a)-a^{-s}$ and are not used
+    as parameters here.
+Formulas:
+  formula-half: $\zeta(s,1/2)=(2^s-1)\zeta(s)$.
+  formula-shift: $\zeta(s,a+1)=\zeta(s,a)-a^{-s}$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.rings.complex_arb import ComplexBallField
+      from sage.rings.rational_field import QQ
+
+      C = ComplexBallField(200)
+      s = C(QQ(1)/2) + C.gen() * C(14)
+      C(s).zeta(C(QQ(1)/3))
+Similar tables:
+  - table: HREF{Values_of_the_Hurwitz_zeta_function_at_pairs_of_rational_numbers}[Values of the Hurwitz zeta function at pairs of rational numbers]
+    relation: stores values of the same function rather than its zeros
+  - table: HREF{Zeros_of_the_Riemann_zeta_function}[Zeros of the Riemann zeta function]
+    relation: gives the ordinates of the $a=1$ special case
+  - table: HREF{Zeros_of_the_polygamma_functions}[Zeros of the polygamma functions $\psi^{(n)}$]
+    relation: stores real zeros of functions built from Hurwitz zeta values in the other variable
+  - table: HREF{Zeros_of_Dirichlet_L_functions}[Zeros of Dirichlet $L$-functions]
+    relation: stores zeros of finite linear combinations of rational-parameter Hurwitz zeta functions
+  - table: HREF{Zeros_of_the_Dedekind_zeta_functions_of_cubic_fields}[Zeros of the Dedekind zeta functions of cubic fields]
+    relation: uses the same agreement-checked convention for another zeta-zero family
+Links:
+  Wiki:
+    title: 'Wikipedia: Hurwitz zeta function'
+    url: https://en.wikipedia.org/wiki/Hurwitz_zeta_function
+References:
+  Spira:
+    bib: Robert Spira, Math. Comp. 30 (1976), no. 136, 863-866.
+    doi: 10.1090/S0025-5718-1976-0409382-2
+Tags:
+  - zero
+  - L-function
+  - special functions
+Data properties:
+  type: C
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: >-
+    it holds the non-real zeros with $0<\operatorname{Im}\rho\leq40$ for
+    rational $a\in(0,1]$ in lowest terms with denominator at most $4$
+  rigour details: >-
+    The generator first finds roots with mpmath at 50 and 65 decimal working
+    digits and stores only digits that agree between the two runs. The listed
+    values were then checked by evaluating $\zeta(s,a)$ in Sage's arb-backed
+    complex ball field, and after filling the stored centres were checked
+    against the special cases $a=1$ and $a=1/2$. The zero search is not a
+    certified enclosure method, so the table does not claim proven zeros.
+Display properties:
+  number-header: $\rho_n(a)$
+  group parameters:
+    - [a]
+    - [n]
