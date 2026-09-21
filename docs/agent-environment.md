@@ -7008,3 +7008,35 @@ Evidence: 2026-09-21, T393 build. `queue.py built` closed #180 at 22:44 UTC;
 `python3 agents/queue.py show 180` immediately afterwards showed the three
 remaining `[~]` lines. The issue was reopened with
 `gh issue reopen 180 --repo numberdb/numberdb-data`.
+
+## OEIS is still 403 here, and for a constant the b-file alone identifies the entry
+
+What happened: the T393 critique wanted to know which of A091670, A091671 and
+A091672 is which Watson integral, so that three OEIS links could be
+recommended with the mapping checked rather than guessed. The 2026-09-12 note
+above still holds nine days later: `https://oeis.org/A091670`,
+`.../A091670/internal` and `search?q=id:A091670&fmt=json` all answer 403 with
+the Cloudflare "Just a moment..." page, with or without a browser User-Agent,
+while `https://oeis.org/A091670/b091670.txt` answers 200.
+
+The addition: for a **constant**, the b-file is not a weaker substitute for
+the entry page, it is the whole answer. The file is the decimal expansion one
+digit per line, with the offset in the first column, so joining the second
+column and placing the point at the offset reconstructs the number to a
+thousand places. Matching that against the stored values identified all three
+sequences without reading a name: A091670 is the stored $A_3^{*}$ row digit
+for digit, three times A091671 agrees with the $A_3$ row to all 100 digits,
+and three times A091672 agrees with the $\mathbb{Z}^3$ row to 99, the
+hundredth differing by rounding. That also confirmed the table's own
+$I_1, I_2, I_3$ normalisation sentence from a source independent of the closed
+forms it computes from.
+
+What to do instead: when the OEIS evidence you want is *which* A-number holds
+*which* constant, fetch `A<n>/b<n>.txt`, rebuild the decimal from the offset,
+and compare digits. Reserve "the entry page was not read" for the cases where
+the name, the formula or the cross-references are what you needed.
+
+Evidence: 2026-09-21, T393 critique. `/tmp/b091670.txt`, `/tmp/b091671.txt`,
+`/tmp/b091672.txt`, all 200; the three digit comparisons against
+`/tmp/T393.json`; `curl -A 'Mozilla/5.0 ...' https://oeis.org/A091670/internal`
+-> 403.
