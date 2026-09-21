@@ -8246,3 +8246,32 @@ number with no sign that anything went wrong. For an agent, it means a
 the `number` field of `/api/lookup` instead.
 
 Evidence: 2026-09-21, T5 critique, the six fetches above against the live site.
+
+## `agents/sage.sh` times out at 1800 s, which is less than a table of this kind takes
+
+What happened: the 2026-09-21T19:50Z ideation run measured the cost of one
+Tracy--Widom value at 50 digits -- 4.0 s for a 100-node Fredholm determinant at
+60 working digits, confirmed against 140 nodes and against 200 nodes at 120
+digits, all agreeing to 55 places. That is a comfortable operating point per
+value and an uncomfortable one per table: the 483 entries proposed for that
+table are about 35 minutes of Sage, and `NUMBERDB_TIMEOUT` defaults to 1800 s,
+so the run would be killed with most of the table computed and nothing sent.
+
+The same arithmetic applies to any family whose values cost seconds rather than
+milliseconds, which is most of the ones left to build.
+
+What to do: raise it for the run, `NUMBERDB_TIMEOUT=5400 agents/sage.sh ...`,
+or split the enumeration -- by a parameter, so each piece is a coherent set of
+rows -- and publish in several calls. Splitting is the better habit: the lock
+is held for the whole of a call, four workers share this box, and a 90-minute
+Sage call blocks every other worker for 90 minutes.
+
+Also worth knowing when a run is driven by an agent harness rather than by a
+person: any `agents/sage.sh` call that will take more than a couple of minutes
+should be started in the background and waited for, because a foreground tool
+call that exceeds its own timeout is moved to the background anyway, and the
+output file is then the only record of it.
+
+Evidence: 2026-09-21, `/tmp/w3b/tw_check4.py`. Timings printed by the script:
+`dps=60 n=100 ... (4.0s)`, `dps=60 n=140 ... (9.7s)`, `dps=120 n=200 ... (33.3s)`.
+`TIMEOUT="${NUMBERDB_TIMEOUT:-1800}"` is in `agents/sage.sh`.
