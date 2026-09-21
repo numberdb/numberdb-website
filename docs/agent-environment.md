@@ -7736,3 +7736,26 @@ to an image that includes the Django app and its dependencies.
 Evidence: 2026-09-21, T381 build. `/tmp/audit_t381_manage.py` failed inside
 `agents/sage.sh` with `No module named 'django'`; local `python3 manage.py
 audit_table T381 --links` failed with the same missing-Django import error.
+
+## The API audit's generator-command check skips `generate.sage`
+
+What happened: T10's attached `generate.sage` imported `utils.utils` helpers
+from the old data repository. Downloading it from the table and running it
+through `agents/sage.sh` failed with `ModuleNotFoundError: No module named
+'utils'`, so a reader without that checkout could not reproduce the table.
+`GET /api/table/T10/audit` was clean before the repair. Reading the audit code
+showed why: the check that a generator says how to install and run what it
+imports only inspects attachments whose names end in `generate.py`, while
+T10's attachment is named `generate.sage`.
+
+What to do instead: for `.sage` attachments, run the downloaded file directly
+under `agents/sage.sh` when the critique or repair depends on it, even if the
+API audit is clean. If the site-side audit is extended, the command check
+should treat `generate.sage` the same way it treats `generate.py`, with the
+appropriate run command in the header.
+
+Evidence: 2026-09-21, T10 repair. The old
+`https://numberdb.org/files/T10/generate.sage?raw=1` failed under
+`agents/sage.sh`; after replacing it with a standalone Sage file, the same
+downloaded path printed the two stored entries and `/api/table/T10/audit`
+returned `{"findings": [], "clean": true}`.
