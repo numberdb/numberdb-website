@@ -656,4 +656,8 @@ if [ -n "$(git log --oneline @{u}..HEAD 2>/dev/null)" ]; then
 	fi
 fi
 
-say "made $made table(s)"
+#Items of work, not tables: a growth question that found nothing to do and a
+	#build that declined both count, and calling them tables made two workers
+	#look as though they had built two hundred when between them they had
+	#built a dozen.
+	say "made $made item(s) of work"
