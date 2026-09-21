@@ -7678,3 +7678,40 @@ name from here and said so in the critique.
 Evidence: 2026-09-21, T380 critique. `b065463.txt` 200, 531 bytes, 98 digits,
 all agreeing with T380's $k=1$ entry; `A065463`, `A065463/internal`,
 `search?q=id:A065463&fmt=text` and `search?q=0.70444…&fmt=json` all 403.
+
+## The SOCKS proxy at 127.0.0.1:1080 is not running on the builder box
+
+What happened: the critique prompt gives one way to look at a table,
+
+    curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/T1xx
+
+and says "the proxy is needed". On this host nothing listens on 1080, so the
+first three fetches of the run returned nothing at all. Worse, they returned
+nothing *quietly*: `curl -s ... -o file` with a dead proxy exits non-zero but
+the pipeline around it exited 0, and a stale copy of the page from a previous
+run was still sitting at the scratch path, so `wc -c` on it reported 48740
+bytes and the run nearly read a day-old skill as the current one. Only `-v`
+said "connect to 127.0.0.1 port 1080 ... Connection refused".
+
+The proxy belongs to the setup where the agents run somewhere that cannot
+reach numberdb.org directly. This campaign runs on the aws-builder box with
+`NUMBERDB_REMOTE=local`, which has ordinary outbound network: plain
+`curl https://numberdb.org/T11` answers 200, `https://numberdb.org/skill`
+answers 200, and `https://oeis.org/A000142/b000142.txt` answers 200. The
+Python client works the same way, with `clients/python` on `PYTHONPATH`.
+
+What to do instead: try the fetch without the proxy before concluding the site
+is down, and check the status code rather than the size of the output file --
+`-w '%{http_code} %{size_download}\n'`, and a scratch path unique to the run
+so that a previous run's copy cannot be mistaken for this one's. `ss -ltn`
+answers the question about 1080 in one command.
+
+One note for whoever fixes the prompt: `import numberdb` from the repository
+root finds the Django project package `numberdb/`, which exports nothing, and
+raises `AttributeError: module 'numberdb' has no attribute 'search_text'` --
+the same collision `agents/sage.sh` documents for `sage -python`. Run the
+client from `/tmp`, or anywhere that is not the checkout.
+
+Evidence: 2026-09-21, T11 critique run. `curl --socks5-hostname
+127.0.0.1:1080` exit 7 on every attempt, `ss -ltn` showing only 22 and the two
+resolvers; the same URLs 200 without it.
