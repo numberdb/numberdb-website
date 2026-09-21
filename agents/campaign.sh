@@ -106,8 +106,20 @@ family="${NUMBERDB_FAMILY:-}"
 # difference matters: zero means pay for a screening, and unreadable means
 # stop, because a campaign that reads "zero" from a broken `gh` would pay for
 # a screening every time round the loop.
+# How many proposals are waiting, or nothing if GitHub could not be asked.
+#
+# `set -o pipefail` is on, so a queue.py that exits non-zero -- a rate limit,
+# a network blip, four workers asking at once -- made this command
+# substitution fail, and `set -e` then killed the campaign *silently*, in the
+# middle of `top_up_if_low`, before the check below could say "the queue
+# could not be read". Three workers died that way within a minute of each
+# other and the logs' last line was the previous item.
+#
+# So the failure is tolerated here and reported by the caller, which can tell
+# the difference between "nobody is waiting" and "nobody answered".
 queue_waiting() {
-	python3 agents/queue.py open 2>/dev/null | awk '/ waiting$/ {print $1}' | tail -1
+	python3 agents/queue.py open 2>/dev/null \
+		| awk '/ waiting$/ {print $1}' | tail -1 || true
 }
 
 # The next table, as JSON: family, title, batch, screened, waiting.
@@ -148,16 +160,39 @@ propose_a_batch() {
 # five tables waiting, another batch is five days of nobody's time.
 top_up_if_low() {
 	local waiting remaining low="${NUMBERDB_QUEUE_LOW:-8}"
-	waiting=$(queue_waiting)
+	waiting=$(queue_waiting || true)
 	if [ -z "$waiting" ]; then
-		say "stopping: the queue could not be read (is gh logged in?)"
-		exit 8
+		#Asked again before giving up: with four workers the commonest reason
+		#is that GitHub refused one request, and a campaign that stops for
+		#that has thrown away an hour of quota for a hiccup.
+		sleep 20
+		waiting=$(queue_waiting || true)
+	fi
+	if [ -z "$waiting" ]; then
+		say "the queue could not be read twice (is gh logged in? rate limit?)"
+		if [ -z "$(queue_next)" ]; then
+			say "stopping: and there is no work waiting either"
+			exit 8
+		fi
+		say "carrying on with the work already in hand"
+		return 0
 	fi
 	remaining=$((builds - made))
 	if [ "$waiting" -eq 0 ] \
 	   || { [ "$waiting" -lt "$low" ] && [ "$remaining" -gt "$waiting" ]; }; then
 		say "$waiting proposals waiting; screening another family"
-		propose_a_batch || exit $?
+		#A screening that fails is not the end of a campaign: demands, growth
+		#and sweeps are work too, and the queue may be low only because the
+		#other workers are holding claims.
+		if ! propose_a_batch; then
+			local status=$?
+			say "the screening failed with status $status"
+			if [ -z "$(queue_next)" ]; then
+				say "stopping: no screening to be had and nothing waiting"
+				exit "$status"
+			fi
+			say "carrying on with the work that is already waiting"
+		fi
 	fi
 }
 
