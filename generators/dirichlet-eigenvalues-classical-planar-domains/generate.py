@@ -192,7 +192,7 @@ class DirichletEigenvaluesClassicalPlanarDomains(numberdb.Generator):
     parameters = ("domain", "n")
     type = "R"
     digits = DIGITS
-    rigour = "heuristic (agreement-checked)"
+    rigour = "heuristic"
 
     def enumerate(self):
         for domain in DOMAINS:

@@ -1,17 +1,33 @@
 Title: Dirichlet eigenvalues of the classical planar domains
 Definition: >
   For a bounded planar domain $\Omega$, this table gives the Dirichlet
-  eigenvalues $\lambda_n(\Omega)$ of the positive Laplacian, ordered by
-  $-\Delta u=\lambda u$ on $\Omega$ with $u=0$ on $\partial\Omega$.
-  The index $n$ starts at $1$ and counts multiplicity.
+  eigenvalues $\lambda_n(\Omega)$ of $-\Delta u=\lambda u$ on $\Omega$
+  with $u=0$ on $\partial\Omega$, listed in increasing order. The index
+  $n$ starts at $1$ and repeats eigenvalues according to multiplicity.
 Parameters:
   domain:
     type: Symbolic
     title: domain
     display: $\Omega$
-    constraints: >
-      $\Omega$ is one of the explicitly described planar domains in the
-      comments.
+    constraints: $\Omega$ is one of the listed classical planar domains.
+    values:
+      unit-square: unit square
+      rectangle-1x2: $1\times2$ rectangle
+      unit-disk: unit disk
+      half-disk: half disk
+      quarter-disk: quarter disk
+      annulus-1-2: annulus of radii $1$ and $2$
+      sector-60: circular sector of angle $\pi/3$
+      equilateral-triangle: equilateral triangle
+      right-isosceles-triangle: right-isosceles triangle
+      hemiequilateral-triangle: hemiequilateral triangle
+      l-shape: L-shaped membrane
+      gww-drum-1: first Gordon-Webb-Wolpert drum
+      gww-drum-2: second Gordon-Webb-Wolpert drum
+      regular-pentagon: regular pentagon
+      regular-hexagon: regular hexagon
+      regular-heptagon: regular heptagon
+      regular-octagon: regular octagon
   n:
     type: Z
     title: eigenvalue index
@@ -26,7 +42,9 @@ Comments:
     The domains are not rescaled. The unit square is $[0,1]^2$, the
     $1\times2$ rectangle is $[0,1]\times[0,2]$, the unit disk and the
     circular sectors have radius $1$, and the annulus is
-    $\{(x,y):1<x^2+y^2<4\}$.
+    $\{(x,y):1<x^2+y^2<4\}$. The half disk is the sector of angle
+    $\pi$, the quarter disk is the sector of angle $\pi/2$, and the
+    60-degree sector has angle $\pi/3$.
   triangles: >
     The equilateral triangle has vertices $(0,0)$, $(1,0)$ and
     $(1/2,\sqrt3/2)$. The right-isosceles triangle has vertices
@@ -34,16 +52,17 @@ Comments:
     half of the unit-side equilateral triangle with vertices $(0,0)$,
     $(1/2,0)$ and $(1/2,\sqrt3/2)$.
   polygons: >
-    The regular polygons have circumradius $1$. The regular $s$-gon
-    is centered at the origin and has a vertex at $(1,0)$.
+    The regular polygons have circumradius $1$. Each is centered at the
+    origin and has a vertex at $(1,0)$.
   l-shape: >
     The L-shape is $[-1,1]^2\setminus((0,1]\times[-1,0])$, the MATLAB
-    logo domain made from three unit squares.
+    logo domain CITE{MATLABLShape}, made from three unit squares.
   gww: >
     The Gordon-Webb-Wolpert drums are the two eight-sided polygons
-    used in CITE{COMSOLGWW}. The first has vertices $(-3,-3)$,
-    $(-3,-1)$, $(1,3)$, $(1,1)$, $(3,1)$, $(1,-1)$, $(-1,-1)$ and
-    $(-1,-3)$. The second has vertices $(-3,1)$, $(1,1)$, $(1,3)$,
+    used in CITE{COMSOLGWW}. The first Gordon-Webb-Wolpert drum has
+    vertices $(-3,-3)$, $(-3,-1)$, $(1,3)$, $(1,1)$, $(3,1)$,
+    $(1,-1)$, $(-1,-1)$ and $(-1,-3)$. The second
+    Gordon-Webb-Wolpert drum has vertices $(-3,1)$, $(1,1)$, $(1,3)$,
     $(3,1)$, $(1,-1)$, $(-1,-1)$, $(-1,-3)$ and $(-3,-1)$.
 Formulas:
   square-rectangle: >
@@ -51,14 +70,15 @@ Formulas:
     $\pi^2(j^2/a^2+k^2/b^2)$ with $j,k\geq1$.
   disk-sector: >
     For a disk or circular sector of radius $1$, separation of variables
-    gives eigenvalues $j_{\nu,k}^2$, where $j_{\nu,k}$ is the $k$th
-    positive zero of $J_\nu$. The unit disk uses $\nu=0,1,2,\ldots$,
-    with multiplicity two for $\nu>0$; a sector of angle $\alpha$ uses
-    $\nu=m\pi/\alpha$ for $m\geq1$.
+    gives eigenvalues $j_{\nu,k}^2$, where $j_{\nu,k}$ is
+    HREF{Zeros_of_Bessel_J_functions}[the $k$th positive zero of $J_\nu$].
+    The unit disk uses $\nu=0,1,2,\ldots$, with multiplicity two for
+    $\nu>0$; a sector of angle $\alpha$ uses $\nu=m\pi/\alpha$ for
+    $m\geq1$.
   annulus: >
     The annulus entries are the squares of the positive roots of
-    $J_m(k)Y_m(2k)-J_m(2k)Y_m(k)=0$, with $m=0,1,2,\ldots$ and
-    multiplicity two for $m>0$.
+    $J_m(\kappa)Y_m(2\kappa)-J_m(2\kappa)Y_m(\kappa)=0$, with
+    $\kappa>0$, $m=0,1,2,\ldots$ and multiplicity two for $m>0$.
   equilateral: >
     For the unit-side equilateral triangle, the Dirichlet eigenvalues are
     $\frac{16\pi^2}{9}(j^2+jk+k^2)$ with $j,k\geq1$ CITE{IntegrablePolygons}.
@@ -75,7 +95,9 @@ Similar tables:
       the disk and sector eigenvalues are squares of Bessel-zero entries
   - table: HREF{Local_extrema_of_Bessel_J_functions}[Local extrema of Bessel functions of the first kind $J_\alpha$]
     relation: >
-      the companion Neumann disk table uses squares of these extrema
+      the extrema of $J_\alpha$ give Neumann disk eigenvalues, in
+      parallel with the Bessel zeros used here for Dirichlet disk and
+      sector eigenvalues
 Links:
   MATLABLShape:
     title: "MathWorks: Eigenvalues and Eigenmodes of L-Shaped Membrane"
@@ -108,23 +130,64 @@ References:
       polygons, Journal of Fourier Analysis and Applications 31 (2025).
     doi: "10.1007/s00041-025-10202-6"
 Programs:
-  sage: >
-    In SageMath, use `bessel_J(nu, x)` and root isolation for the Bessel
-    zero formulas, and use the formulas above for the separable polygons.
+  sage:
+    language: Sage
+    code: |
+      import mpmath as mp
+
+      mp.mp.dps = 50
+
+      # These formulas cover the rectangle, disk, sector, annulus, and triangle rows.
+      def annulus_root():
+          def determinant(x):
+              return (mp.besselj(0, x) * mp.bessely(0, 2*x)
+                      - mp.besselj(0, 2*x) * mp.bessely(0, x))
+          left = mp.mpf("3.0")
+          right = mp.mpf("3.2")
+          f_left = determinant(left)
+          f_right = determinant(right)
+          if f_left * f_right >= 0:
+              raise ValueError("the annulus bracket does not change sign")
+          for _ in range(250):
+              middle = (left + right) / 2
+              f_middle = determinant(middle)
+              if f_left * f_middle <= 0:
+                  right = middle
+                  f_right = f_middle
+              else:
+                  left = middle
+                  f_left = f_middle
+          return (left + right) / 2
+
+      values = [
+          ("unit square", 2 * mp.pi**2),
+          ("1 x 2 rectangle", 5 * mp.pi**2 / 4),
+          ("unit disk", mp.besseljzero(0, 1)**2),
+          ("half disk", mp.besseljzero(1, 1)**2),
+          ("quarter disk", mp.besseljzero(2, 1)**2),
+          ("annulus of radii 1 and 2", annulus_root()**2),
+          ("sector of angle pi/3", mp.besseljzero(3, 1)**2),
+          ("equilateral triangle", 16 * mp.pi**2 / 3),
+          ("right-isosceles triangle", 5 * mp.pi**2),
+          ("hemiequilateral triangle", 112 * mp.pi**2 / 9),
+      ]
+      for name, value in values:
+          print(name, mp.nstr(value, 32))
 Data properties:
   type: R
-  rigour: heuristic (agreement-checked)
+  rigour: heuristic
   complete: no
-  complete-note: >
-    it holds the first Dirichlet eigenvalue for each listed domain
+  complete-note: it holds the first Dirichlet eigenvalue for each listed domain
   rigour details: >
-    Closed-form rows are computed from the displayed formulas at two working
-    precisions and compared. The L-shape value is transcribed from Jones's
-    hundred-digit computation and checked against the first value reported by
-    Trefethen and Betcke. The Gordon-Webb-Wolpert value is transcribed from
-    Driscoll's twelve-digit table and stored for both isospectral drums. The
-    regular-polygon rows are transcribed from Jones's area-$\pi$ values and
-    rescaled to circumradius $1$.
+    The rectangle, disk, circular-sector, annulus and triangle rows are
+    computed from the displayed formulas at two working precisions and
+    compared. The L-shape value is transcribed from CITE{Jones}'s
+    hundred-digit computation and checked against the first value reported
+    by CITE{TrefethenBetcke}. The Gordon-Webb-Wolpert value is transcribed
+    from CITE{Driscoll}'s twelve-digit table and stored for both isospectral
+    drums. The regular-polygon rows are transcribed from CITE{Jones}'s
+    area-$\pi$ values and rescaled to circumradius $1$; these six
+    single-source transcriptions are not agreement checks.
 Display properties:
   number-header: $\lambda_n(\Omega)$
   group parameters:
