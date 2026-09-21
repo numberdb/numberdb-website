@@ -1,0 +1,85 @@
+# The table document for numberdb.org/T392. It was created first, with no
+# values, and is filled by generate.py beside it. Publishing is a person's act.
+Title: Centers of the hyperbolic components of the Mandelbrot set
+Definition: >-
+  Let $f_c(z)=z^2+c$ and let $F_0(c)=0$,
+  $F_{m+1}(c)=F_m(c)^2+c=f_c^{m+1}(0)$. For each period $n$, the entries are
+  the roots of the Gleason polynomial $G_n(c)$ CITE{BuffFloydKochParry2022},
+  so they are the parameters $c$ for which the critical point $0$ of the
+  Mandelbrot-set family CITE{WikiMandelbrot} has exact period $n$.
+Parameters:
+  n:
+    type: Z
+    title: period
+    display: $n$
+    constraints: $n\geq1$
+  i:
+    type: Z
+    title: position in the sorted root list
+    display: $i$
+    constraints: $1\leq i\leq\deg G_n$
+Comments:
+  comment-gleason: >-
+    The polynomial $G_n$ is the exact-period factor of $F_n$: $G_1=c$, and
+    for $n>1$, $G_n=F_n/\prod_{d\mid n,\;d<n}G_d$.
+  comment-order: >-
+    Within a fixed period $n$, roots are sorted by increasing real part, with
+    ties sorted by increasing imaginary part. Thus the negative-imaginary
+    member of a conjugate pair is listed immediately before the positive one.
+  comment-logistic: >-
+    This table uses the $c$-parameter for $z\mapsto z^2+c$. The real logistic
+    parameter $r$ used in the similar tables is related by $c=-r(r-2)/4$.
+Formulas:
+  formula-iterate: >-
+    $F_0(c)=0$ and $F_{m+1}(c)=F_m(c)^2+c$.
+  formula-gleason: >-
+    $G_n(c)=\prod_{d\mid n}F_d(c)^{\mu(n/d)}$.
+  formula-degree: >-
+    For $n\geq1$, $\deg G_n=\sum_{d\mid n}\mu(n/d)2^{d-1}$.
+Similar tables:
+  - table: HREF{Bifurcation_points_of_the_period-doubling_cascade_of_the_logistic_map}[Bifurcation points of the period-doubling cascade of the logistic map]
+    relation: stores the real period-doubling centers and bifurcation points in both the logistic $r$ normalisation and the $c$ normalisation
+  - table: HREF{Periodic_windows_of_the_logistic_map_by_kneading_word}[Periodic windows of the logistic map by kneading word]
+    relation: stores real superstable periodic windows in both the logistic $r$ normalisation and the $c$ normalisation
+Links:
+  WikiMandelbrot:
+    title: 'Wikipedia: Mandelbrot set'
+    url: https://en.wikipedia.org/wiki/Mandelbrot_set
+References:
+  BuffFloydKochParry2022:
+    bib: Xavier Buff, William Floyd, Sarah Koch, and Walter Parry, Factoring Gleason polynomials modulo 2, Journal de théorie des nombres de Bordeaux 34 (2022), no. 3, 787-812.
+    doi: 10.5802/jtnb.1228
+Keywords:
+  - Mandelbrot set center
+  - Mandelbrot centre
+  - hyperbolic component center
+  - hyperbolic component centre
+  - Gleason polynomial
+  - complex quadratic polynomial
+Tags:
+  - dynamical systems
+  - bifurcation theory
+  - zero
+Data properties:
+  type: C
+  rigour: proven
+  complete: 'no'
+  complete-note: it holds every center with exact period $n\leq9$
+  rigour details: >-
+    The generator constructs each $F_n$ and $G_n$ exactly in $\mathbb Z[c]$.
+    It checks $G_1=c$, $G_2=c+1$,
+    $G_3=c^3+2c^2+c+1$, and
+    $G_4=c^6+3c^5+3c^4+3c^3+2c^2+1$, checks the degrees
+    against Formula CITE{formula-degree}, and counts the real roots by
+    Sturm's method. The
+    roots are isolated with Sage's `complex_roots` at `min_prec=400`, which
+    returns certified complex intervals; the worst absolute diameter measured
+    over the stored range is recorded by the generator. Sorting is guarded by
+    comparing the roots in `QQbar`; through $n=9$, no two non-conjugate roots
+    have the same real part. Real roots have imaginary part exactly $0$.
+Display properties:
+  number-header: $c$
+  group parameters:
+    - [n]
+    - [i]
+Numbers: []
