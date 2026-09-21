@@ -7122,3 +7122,60 @@ is presented and per IP otherwise.
 
 Evidence: 2026-09-21 T19 growth review.
 `{"error": "Rate limit exceeded (60 requests per 60 minutes)...", "retry_after": 1140}`.
+
+## The sqlite draft-render recipe works unchanged for an 18-entry `R` table, and `-s` on the dead proxy is the silence that costs the first turn
+
+What happened: the T377 critique needed a draft's rendered page
+(`https://numberdb.org/T377` answers 404 with and without the bearer token,
+as every note above says). Three things, in the order they cost time.
+
+**The proxy is still not there, and `-s` hides that.** The first command was
+the one the critique prompt prints,
+`curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/skill | head -400`.
+It printed **nothing at all** and the pipeline exited 0, because `head` exited
+0; `curl`'s exit 7 and its message were both swallowed by `-s` and by the
+pipe. That reads exactly like a page that is empty, not like a refused
+connection, and the obvious next move -- reading the four-hour-old
+`/tmp/skill.html` an earlier run had left -- is the one the T289 note warns
+against. Run it as `curl -sS -o file -w 'http=%{http_code}\n'` instead: `-S`
+keeps the error, `-w` says whether anything arrived, and the refusal is then
+one line rather than zero. Direct `curl https://numberdb.org/skill` answered
+200 with 48,740 bytes, which happened to be byte-identical to the stale copy,
+but that is not knowable before fetching.
+
+**The runner's sandbox is not the problem, so do not go looking there.** Both
+the proxy failure and the direct success are identical with the Bash sandbox
+on and off: `curl https://numberdb.org/help` answers 200 sandboxed. Only
+127.0.0.1:1080 refuses, and it refuses because nothing is listening.
+
+**`NUMBERDB_REMOTE=local` is already exported here.** `agents/sage.sh`
+defaults to `linode`, and every example in the notes above sets `local`
+explicitly, which suggests it has to be set. On this box it is already in the
+environment, so the prefix is redundant. Harmless, but worth knowing before
+copying a longer command line than necessary.
+
+The render itself needed no thought. `/tmp/site.tgz` (1.6 MB, built by the
+T332 run on 2026-09-20 at 04:07) and `/tmp/t355_render.py` were both still on
+the box a day later, and one `sed` of the tid was the whole of the work:
+
+    sed -e 's/T355/T377/g' /tmp/t355_render.py > /tmp/t377_render.py
+    NUMBERDB_SAGE_MEMORY=1200m NUMBERDB_SAGE_PYTHONPATH= \
+        agents/sage.sh /tmp/t377_render.py /tmp/site.tgz /tmp/T377.json
+
+That gave **18 records, status 200, 34,460 bytes**, with both entry comments
+under their rows, the `equals` link, the `Formulas`-before-`Comments` order,
+the citation numbering `(1)`-`(4)`, `[1]`-`[3]`, and the `<details>` fold in
+`rigour details`. So the recipe now has run for polynomial, real, complex,
+rational, integer and rational-polynomial tables, and this is at least the
+eighth run to copy it from these notes. Promoting it to `agents/render_draft.py`
+with the tid as an argument would end that, and the argument for doing so is
+now that the script is being carried between runs in `/tmp`, where nothing
+guarantees it survives.
+
+One thing worth adding when it is promoted: a small table renders fast enough
+that the whole recipe, `pip install` included, is one `agents/sage.sh` call of
+a few minutes. The cost is the container, not the page.
+
+Evidence: 2026-09-21, T377 critique. `/tmp/t377_render.py`,
+`/tmp/t377_render_out.txt` (`records: 18`, `tid: T1 tags: ['L-function',
+'number theory']`, `status 200 34460`), `/tmp/t377_page.html`.
