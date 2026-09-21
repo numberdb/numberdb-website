@@ -37,12 +37,12 @@ GROUPS = ("C3", "S3")
 
 T4_MATCHES = {
     (49, 1): {
-        1: "HREF{Zeros_of_Dirichlet_L_functions#7,2,1}[the T4 row $(7,2,1)$]",
-        2: "HREF{Zeros_of_Dirichlet_L_functions#7,4,1}[the T4 row $(7,4,1)$]",
-        3: "HREF{Zeros_of_Dirichlet_L_functions#7,4,2}[the T4 row $(7,4,2)$]",
-        4: "HREF{Zeros_of_Dirichlet_L_functions#7,2,2}[the T4 row $(7,2,2)$]",
-        5: "HREF{Zeros_of_Dirichlet_L_functions#7,2,3}[the T4 row $(7,2,3)$]",
-        6: "HREF{Zeros_of_Dirichlet_L_functions#7,4,3}[the T4 row $(7,4,3)$]",
+        1: "HREF{Zeros_of_Dirichlet_L_functions#7,2,1}[T4 $(7,2,1)$]",
+        2: "HREF{Zeros_of_Dirichlet_L_functions#7,4,1}[T4 $(7,4,1)$]",
+        3: "HREF{Zeros_of_Dirichlet_L_functions#7,4,2}[T4 $(7,4,2)$]",
+        4: "HREF{Zeros_of_Dirichlet_L_functions#7,2,2}[T4 $(7,2,2)$]",
+        5: "HREF{Zeros_of_Dirichlet_L_functions#7,2,3}[T4 $(7,2,3)$]",
+        6: "HREF{Zeros_of_Dirichlet_L_functions#7,4,3}[T4 $(7,4,3)$]",
     },
 }
 
@@ -184,14 +184,14 @@ def _zero_text(D, k, n, working_digits):
 
 def _field_comment(field, n):
     signature = "$(3,0)$" if field["D"] > 0 else "$(1,1)$"
+    polynomial = str(field["poly"]).replace("*", "").replace(" ", "")
     text = (
-        "$K=\\mathbb{Q}(a)$ with $%s=0$; signature %s; Galois closure %s; "
-        "LMFDB %s."
-        % (str(field["poly"]).replace("*", ""), signature, field["group"], field["lmfdb_label"])
+        "$%s=0$; signature %s; %s; LMFDB %s."
+        % (polynomial, signature, field["group"], field["lmfdb_label"])
     )
     match = T4_MATCHES.get((field["D"], field["k"]), {}).get(int(n))
     if match:
-        text += " This ordinate is also %s." % match
+        text += " Also %s." % match
     return text
 
 
