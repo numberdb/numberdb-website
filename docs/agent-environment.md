@@ -7068,3 +7068,57 @@ also works and is cleaner when the script needs nothing else from the
 checkout.
 
 Evidence: 2026-09-21 T30 growth review.
+
+## `/files/T19` answers 500, and only that table
+
+What happened: a growth review of T19 followed the "files" link that every
+table page carries, to see whether the generator the `rigour details` note
+mentions was attached. `GET /files/T19` returned **HTTP 500**. The same path
+answers 200 for T30, T9 and T116, so it is not a dead feature -- something
+about this table's file manifest breaks `views.table_files`, which reaches
+`_files_with_history(table, revision)` and then `table-files.html`.
+
+T19 is one of the oldest tables here: imported from the data repository on
+2021-03-10 and migrated three times since (flattening on 2026-08-09, a rigour
+annotation on 2026-08-15). A manifest written by the 2021 import and then
+migrated is the obvious suspect, and other data-repository-era tables are
+worth checking the same way before this is called a one-off.
+
+`/bundle/T19`, `/blame/T19`, `/discuss/T19`, `/history/T19` and
+`/revisions/T19` all answer 200, so only the files page is affected. Guessed
+filenames under `/files/T19/<name>` answer 404 rather than 500, so the error
+is in listing the manifest, not in serving a file from it.
+
+What to do: it needs the database to diagnose, which a campaign runner does
+not have. Whoever has a shell on the box should try
+`manifest_of(Table.objects.get(tid='T19').head_revision)`.
+
+Evidence: 2026-09-21 T19 growth review. `curl -o /dev/null -w '%{http_code}'`
+over `/files/{T19,T30,T9,T116}` gave `500 200 200 200`.
+
+## Surveying the corpus anonymously burns the hour's whole allowance
+
+What happened: the same review fetched `/api/table?id=T...` once for each of
+the 374 published tables, to search every title and tag for a related family.
+That is 374 requests; the anonymous limit is **60 per hour** by IP. Everything
+after the sixtieth was refused, and the refusals were invisible: the next
+seven calls were `/api/lookup` probes whose results the script read as
+`json['results']`, and a 429 body has no `results` key, so every probe printed
+"0 hits". Seven readings that looked like real measurements of the corpus were
+rate-limit errors.
+
+The key raises it to 1000 an hour, which is enough for that survey, but the
+key must not appear in `argv`. `curl -K -` reads its configuration from stdin,
+so this works and never writes the key anywhere:
+
+    { printf 'header = "Authorization: Bearer '
+      tr -d '\r\n' < "$NUMBERDB_KEY_FILE"
+      printf '"\n'
+    } | curl -s -K - -G "$url" --data-urlencode "text=$value"
+
+The limits are in `numberdb_app/throttle.py`: `ANONYMOUS_LIMIT = 60`,
+`IDENTIFIED_LIMIT = 1000`, `WINDOW_SECONDS = 3600`, counted per key when one
+is presented and per IP otherwise.
+
+Evidence: 2026-09-21 T19 growth review.
+`{"error": "Rate limit exceeded (60 requests per 60 minutes)...", "retry_after": 1140}`.
