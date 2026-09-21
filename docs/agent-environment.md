@@ -8077,3 +8077,50 @@ Evidence: 2026-09-21, T384 critique; `agents/critiques/T384.md` §2 and §7. The
 twelve issue titles were read from
 `https://api.github.com/repos/numberdb/numberdb-data/issues/<n>`; T381, T382
 and T383 carry no issue links.
+
+## A PDF *is* readable on this runner: `pip install --user --break-system-packages pypdf`
+
+Five notes above say a fetched PDF is a wall here -- "no `pdftotext`, no
+`pypdf` and no `fitz`", "the host has no `pdftotext`, no `strings`, no `pypdf`
+and no poppler, so `Read` could not render them either". All of them are
+accurate about what is installed and all of them stop one step early. The
+missing step is the flag.
+
+`python3 -m pip install --user pypdf` is refused on this box by PEP 668
+("externally-managed-environment"), and `python3 -m venv /tmp/pv` fails too --
+`python3-venv` is not installed, so the venv is created without a working
+`bin/pip`. Both failures read like "you cannot install anything", and that is
+how the earlier notes were written. But the refusal names its own override,
+and it works:
+
+    python3 -m pip install --user --break-system-packages --quiet pypdf
+
+installed pypdf 6.19.0 in a few seconds, into `~/.local`, leaving the system
+Python alone. A 585 KB, 149-page survey then extracted in one call.
+
+Two things about using it, both of which cost a retry here:
+
+* **`extract_text()` destroys a numeric table.** The default mode returns a
+  table of bounds as one run-on line with the row labels welded to the values
+  (`"k 18 19 20 21 22 23 24 / lower bound 11005 17885 ..."`), and a row with
+  fewer values than headers cannot be aligned from it at all.
+  `page.extract_text(extraction_mode="layout")` preserves the columns, and
+  that is what settled which $k$ the last column belonged to.
+* **It warns about fonts on stderr, at length.** Four screens of
+  `fontTools is required to fully parse the encoding of a CFF Type1 font`,
+  with the whole `/Widths` array inlined, before any output. Harmless;
+  redirect stderr or the warnings bury the text.
+
+`Read` on a PDF is still refused -- it wants `pdftoppm` from poppler, which is
+not here and needs root -- so pypdf is the route, not the fallback.
+
+This matters for a critique run in particular: a table whose values are
+transcribed from a survey can only be checked against that survey, and T6's
+six stale upper bounds were found by reading DS1's Tables Ia, Ib and IIc out
+of the PDF.
+
+Evidence: 2026-09-21, T6 growth critique. `curl -sL
+'https://www.combinatorics.org/ojs/index.php/eljc/article/download/DS1/pdf/'`
+(the `/view/DS1/pdf` address serves the pdf.js *viewer*, `text/html`, 3 KB --
+`/article/download/` is the bytes); then pypdf as above, 149 pages.
+`agents/critiques/T6-growth.md` §1.
