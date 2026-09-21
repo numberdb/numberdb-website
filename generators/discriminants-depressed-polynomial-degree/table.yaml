@@ -75,7 +75,6 @@ Keywords:
 Tags:
   - polynomial
   - algebra
-  - invariant theory
 Data properties:
   type: Z[]
   rigour: exact
@@ -88,13 +87,14 @@ Data properties:
     The generator computes exact integer coefficients in
     $\mathbb Z[a_0,\dots,a_{n-2}]$ from the resultant identity in Formula
     CITE{formula-resultant}, and all arithmetic is exact. It checks Formula
-    CITE{formula-roots} by substituting the elementary symmetric polynomials
-    of the roots after imposing $a_{n-1}=0$, compares the quadratic and cubic
-    rows from Formula CITE{formula-quadratic} and Formula CITE{formula-cubic}
-    against the stored values, compares degrees $2$ through $5$ with the
-    specialization of HREF{T381}[the general-polynomial discriminant], and
-    compares integer specializations with Sage's exact univariate discriminant
-    over $\mathbb Z[x]$.
+    CITE{formula-roots} by substituting
+    HREF{Elementary_symmetric_polynomials}[the elementary symmetric
+    polynomials] of the roots after imposing $a_{n-1}=0$, compares the
+    quadratic and cubic rows from Formula CITE{formula-quadratic} and Formula
+    CITE{formula-cubic} against the stored values, compares degrees $2$
+    through $5$ with the specialization of HREF{T381}[the general-polynomial
+    discriminant], and compares integer specializations with Sage's exact
+    univariate discriminant over $\mathbb Z[x]$.
 Display properties:
   number-header: $\operatorname{disc}(f_n)$
 Numbers: []
