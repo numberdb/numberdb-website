@@ -59,7 +59,7 @@ Programs:
       f = prod(j = 0, k - 1, factorial(j)/factorial(j + k))
       a * f
 Similar tables:
-  - table: HREF{Arithmetic_factors_zeta_moments}[Arithmetic factors $a_k$ in the moments of the Riemann zeta function]
+  - table: HREF{T377}[Arithmetic factors $a_k$ in the moments of the Riemann zeta function]
     relation: stores the Euler-product factor $a_k$ in the same normalisation
   - table: HREF{Values_of_the_Barnes_G-function_at_rational_numbers}[Values of the Barnes $G$-function at rational numbers]
     relation: contains the Barnes $G$-function values used in $f_U(k)=G(1+k)^2/G(1+2k)$
@@ -101,7 +101,7 @@ Data properties:
     140-digit and 160-digit computations. The checks include $c_1=1$,
     $c_2=1/(2\pi^2)$, the integer rows against PARI's `prodeulerrat`
     CITE{PARIProdEulerRat}, and the computed $a_k$ values against
-    HREF{Arithmetic_factors_zeta_moments}[the arithmetic-factor table].
+    HREF{T377}[the arithmetic-factor table].
 Display properties:
   number-header: $c_k$
 Numbers: []
