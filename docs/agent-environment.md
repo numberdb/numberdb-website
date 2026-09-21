@@ -8324,3 +8324,75 @@ test, `ANONYMOUS_LIMIT = 60`, `IDENTIFIED_LIMIT = 1000`. The generally useful
 half of this -- `/bundle/Tn` as the free way to read a document -- is proposed
 as a lesson in `agents/lessons/proposals/20260921T201824Z-critique.md`, since a
 contributor on a laptop meets the same limit.
+
+## Workers share `/tmp`, so a scratch file named after a stdlib module hijacks imports
+
+Three commands in the 2026-09-21T20:40Z ideation run came back carrying
+another run's work: a `python3` invocation that should have printed five lines
+of filter coefficients printed the full stored documents of T215, T216 and
+T218 instead, then failed. Nothing in the failing script mentions those tables.
+
+The cause is a file another worker left in `/tmp`:
+
+    $ head -3 /tmp/inspect.py
+    import sys, json
+    sys.path.insert(0,'/home/ubuntu/numberdb-campaign-w3/agents/table-ideas')
+    sys.path.insert(0,'/home/ubuntu/numberdb-campaign-w3/clients/python')
+
+It is somebody's scratch script that dumps a list of tables. Because it is
+named `inspect.py`, anything run with `/tmp` on `sys.path` — a script *in*
+`/tmp`, a `cd /tmp` before `python3 -c`, a `sys.path.insert(0, '/tmp')` to
+reach a data module — imports it in place of the standard library's
+`inspect`. The symptom is delayed and misleading: `inspect` is imported by
+Ubuntu's `apport` excepthook, so the hijack usually surfaces *while another
+error is being reported*, and the other run's output appears in the middle of
+your traceback. It also makes the real error unreadable: the excepthook itself
+then fails with `module 'inspect' has no attribute 'get_annotations'`.
+
+The campaign prompt tells every run to keep scratch in `/tmp`, and four
+workers share this box, so this will keep happening. What to do:
+
+* put a run's scratch in its own directory, `/tmp/<run>/...`, and never on
+  `sys.path` unless it holds only the run's own modules;
+* never name a scratch file after a standard-library module — `inspect.py`,
+  `types.py`, `token.py`, `code.py`, `copy.py`, `random.py` are the ones that
+  bite, and `inspect.py` is the worst because of the excepthook;
+* if output from tables you never mentioned appears in a run, look for
+  `/tmp/*.py` shadowing a stdlib name before looking anywhere else.
+
+Do not delete another worker's file to fix your own run; move your own path
+instead. This run reached its reference module by copying it to `/tmp/w3ref/`
+and putting that directory on `PYTHONPATH`, which worked first time.
+
+## `pip install --user` is refused here; `--target` is the way in
+
+PEP 668 marks this Python as externally managed, so
+`python3 -m pip install --user PyWavelets` refuses with "externally-managed-
+environment". `python3 -m venv` does not rescue it either: `ensurepip` is not
+installed, so venv creation fails with "you need to install the python3-venv
+package". What works, without `--break-system-packages` and without touching
+the system site-packages:
+
+    python3 -m pip install --quiet --target /tmp/<run>lib PyWavelets
+    PYTHONPATH=/tmp/<run>lib python3 ...
+
+Worth knowing because an independent reference implementation is often the
+only external check a table has, and installing one takes a minute. (`pip`
+itself is not on the PATH as a command; `python3 -m pip` is.)
+
+## The `table wanted` backlog is empty as of 2026-09-21
+
+`screen.py requests` prints nothing, and that is the true answer rather than a
+failure: all 126 `table wanted` issues in `numberdb/numberdb-data` are closed
+with `state_reason: completed`, 82 of them during September 2026. The issues
+still open are this campaign's own `proposal`s (#179, and #180 which appeared
+during the hour this note was written) and two `enhancement`s on T88 and T223,
+none of them a request. A stage-one run told to start from the open requests
+should say so
+and pick an area instead; three consecutive runs have now done that.
+
+Worth checking before each run rather than assuming, since the campaign opens
+`proposal` issues continuously and a request could reappear:
+
+    gh api 'repos/numberdb/numberdb-data/issues?state=open&per_page=100' \
+      --jq '.[] | "\(.number) \([.labels[].name]|join(",")) \(.title)"'
