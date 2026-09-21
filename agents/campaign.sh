@@ -171,6 +171,18 @@ propose_a_batch() {
 # five tables waiting, another batch is five days of nobody's time.
 top_up_if_low() {
 	local waiting remaining low="${NUMBERDB_QUEUE_LOW:-8}"
+
+	# A builder does not buy proposals.
+	#
+	# Whether the queue needs refilling is a question about the *shared*
+	# queue, and four workers answering it independently is how one day
+	# produced ten screening runs at $6 to $15 each: every worker that found
+	# the queue empty decided the remedy was to buy more. With a pool, the
+	# producer is one process -- agents/screener.sh -- and the builders only
+	# consume. NUMBERDB_SCREEN=0 says which this is.
+	if [ "${NUMBERDB_SCREEN:-1}" = 0 ]; then
+		return 0
+	fi
 	waiting=$(queue_waiting || true)
 	if [ -z "$waiting" ]; then
 		#Asked again before giving up: with four workers the commonest reason
@@ -309,9 +321,27 @@ while [ "$made" -lt "$builds" ]; do
 	#list of claims about one table, and an agent that checks each and acts.
 	next=$(python3 agents/work.py next --done "$made" 2>/dev/null || true)
 	if [ -z "$next" ]; then
+		#A builder waits; a lone campaign stops.
+		#
+		#With a producer beside it, an empty queue is a moment, not an end:
+		#the screener is probably mid-run and will have proposals in a
+		#quarter of an hour. Exiting here is what made the pool evaporate --
+		#three workers gone within a minute of each other, each having
+		#correctly observed that there was nothing to do *that second*.
+		if [ "${NUMBERDB_SCREEN:-1}" = 0 ]; then
+			idle=$((${idle:-0} + 1))
+			if [ "$idle" -ge "${NUMBERDB_IDLE_GIVE_UP:-12}" ]; then
+				say "nothing to do for $idle checks; stopping and letting the supervisor decide"
+				exit 0
+			fi
+			say "nothing waiting; the screener is the one who fills the queue -- waiting ${NUMBERDB_IDLE_WAIT:-300}s"
+			sleep "${NUMBERDB_IDLE_WAIT:-300}"
+			continue
+		fi
 		say "nothing waiting anywhere and no screening to be had; stopping"
 		exit 6
 	fi
+	idle=0
 
 	# The same item twice is a queue that is not being consumed, and the loop
 	# cannot tell the difference between that and work. On 2026-09-19 a
