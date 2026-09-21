@@ -305,29 +305,41 @@ be cheap, and both would have fired here.
 `reliability` could stop asking for help. The scheme is sound and I want it
 recorded so the next person does not rediscover it:
 
-- Arb (`ComplexBallField.integral`) gives a rigorous enclosure of
-  $\int_0^S g(s)^d ds$, and `bessel_I` is rigorously enclosed at any argument —
-  I checked it at $s = 10^{62}$.
 - The tail has an elementary envelope. From
   $g(s) = \frac{1}{\pi}\int_0^\pi e^{-s(1-\cos t)}dt$ and $1-\cos t \geq
   2t^2/\pi^2$ on $[0,\pi]$, $g(s) \leq \sqrt{\pi/(8s)}$, so
-  $\int_S^\infty g^d \leq (\pi/8)^{d/2} S^{1-d/2}/(d/2-1)$, which is added to the
-  ball as a one-sided error. For 60 digits this needs $S = 10^{18}$ at $d = 9$
-  and $S = 10^{62}$ at $d = 4$.
-- **The trap**, which cost me two runs: Arb integrates over complex *ellipses*
-  with foci at the ends of the interval, and for a long interval $[a,b]$ with
-  $b \gg a$ those reach into $\mathrm{Re}(x) < 0$, where $e^{-x}I_0(x)$ contains
-  $e^{-2x}$ and the bound explodes. `CBF.integral(f, 10^3, 10^5)` at $d = 9$
-  returned a ball of radius **1e193465**, and summing such pieces gives `nan`
-  with no indication of which one was responsible. Intervals with $b = 2a$ keep
-  every ellipse in $\mathrm{Re}(x) > a/2$ and the bound stays tame — but that is
-  about fifty pieces to reach $10^{18}$ and two hundred to reach $10^{62}$, and
-  the run did not finish inside the budget I gave it.
+  $\int_S^\infty g^d \leq (\pi/8)^{d/2} S^{1-d/2}/(d/2-1)$, which can be added to
+  the ball as a one-sided error. For 60 digits that needs $S = 10^{18}$ at
+  $d = 9$ and $S = 10^{62}$ at $d = 4$.
+- **Arb will not carry the finite part that far, and the reason is not the
+  interval, it is the ball.** `CBF.integral(f, 10^3, 10^5)` at $d = 9$ came back
+  with radius **1e193465**; I first read that as Arb's integration contour
+  reaching somewhere the integrand is large, and that was wrong. The cause is
+  pointwise. Sage 10.9 has `ComplexBall.bessel_I(nu)` and no *scaled* variant, so
+  $e^{-x}I_0(x)$ is enclosed by computing $e^{-x}$ and $I_0(x)$ as separate balls
+  and multiplying, and the exponential cancellation that makes the function
+  small is thrown away. On the ball $[1000, 2000]$:
 
-So the rigorous version is unfinished, not blocked. Whoever does item 3 should
-budget for it, or find a sharper tail bound than the crude $\sqrt{\pi/(8s)}$ —
-the asymptotic series with a proved remainder would cut $S$ from $10^{62}$ to
-something small, and arb bounds that series itself.
+      wide ball              [+/- 2.01e+3]
+      exp(-x)*I0(x) on it    [+/- 2.49e+432]
+
+  and $\ln(10)\cdot 432 = 995$, which is the ball's diameter. The enclosure of
+  $g$ is widened by $e^{\mathrm{diam}}$ and of $g^d$ by $e^{d\,\mathrm{diam}}$,
+  whatever the interval is called. Splitting with $b = 2a$ does not help: at
+  $d = 9$ every one of the 51 pieces came back with radius 1–5 against true
+  values below $10^{-14}$, the sum straddled zero, and $1 - 1/(d\cdot\text{sum})$
+  was `nan`. That took 577 s to learn.
+
+So the useful thing this cost me is a bound on the method, not a result. To keep
+$e^{d\,\mathrm{diam}}$ under 2 the pieces must have diameter below
+$\ln 2/d \approx 0.08$ at $d = 9$, which is about 39,000 pieces to reach
+$S = 3000$ and not a finite computation to reach $10^{18}$. **So the tail cannot
+come from ball integration at all; it has to come from a proved analytic bound**
+— the asymptotic series for $I_0$ with a remainder bound, which is what the
+mpmath computation in §3 already uses numerically and would only need
+justifying. That, plus Arb over $[0, S]$ for a few-thousand $S$ in narrow
+pieces, is the route I would now recommend, and `RealBall` has no Bessel
+functions at all in Sage 10.9, so it has to be `ComplexBallField`.
 
 ---
 
