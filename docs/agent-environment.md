@@ -7299,3 +7299,49 @@ Evidence: 2026-09-21, T18 repair. Revision
 `ddba0a772e9111beb3954d557ee9ee3e130e8f726c6003bcb10d644df2985e57`
 has `Size exception` under `Data properties`; the final keyed audit has only
 the same `size:` finding.
+
+## arXiv's export API answers 406 from this box; `gh` is logged in and works
+
+A stage-one run wanted the arXiv abstract page that defines a family, and
+queried `export.arxiv.org/api/query`. Every form of the request answered
+`HTTP Error 406: Not Acceptable`: plain `http`, `https`, with and without a
+browser-like `User-Agent`, with and without `Accept: application/atom+xml`.
+Ordinary arXiv pages are fine -- `https://arxiv.org/abs/1512.08261` fetches
+and the proposal screen reads it -- so it is the API endpoint, not arXiv, that
+is unreachable. Do not spend turns on it; fetch the `abs` page directly if you
+already know the identifier, or send the `web-fetch` subagent, which reached
+arXiv's own search pages when this one could not.
+
+GitHub is the other way round. `gh` is authenticated here (account
+`bmatschke`, `GH_TOKEN`), so
+
+    gh search issues --repo numberdb/numberdb-data simplex --limit 8 \
+        --json number,state,title
+
+answers where `screen.already_asked` stops. That function goes to the
+unauthenticated search API, which allows about ten requests a minute: screening
+a batch of eight names calls it once per name, and in one run the first eight
+answered and every call after that returned
+`could not ask GitHub (HTTPError)`. The marker is honest -- it does not look
+like an empty answer -- but a whole batch can be screened against nothing if
+the limit is hit early. Screen with `gh` for the sweep and keep
+`already_asked` for the exact request titles.
+
+## The corpus is T1 to T378, and nothing lists it
+
+The stage-one prompt still says 126 tables exist. Walking T-numbers with the
+client on 2026-09-21 found 378, with T75 missing and no gap after that. The
+walk is about 400 HTTP reads and takes three or four minutes; it is the only
+way to see the whole corpus, because no call lists it, and it is worth doing
+once per batch: searching for a word finds tables that share the word, and a
+walk finds the neighbour whose title shares nothing.
+
+From a checkout, the client is not what `import numberdb` finds. The
+repository root holds the Django application package of the same name, which
+has no `search_text` and no `table`, and the import succeeds, so the failure
+reads as a missing attribute rather than a wrong package:
+
+    sys.path.insert(0, 'clients/python')     # before importing numberdb
+    sys.path.insert(0, 'agents/table-ideas') # screen.use_socks_proxy_if_set
+
+Run it from anywhere else and the import fails outright instead.
