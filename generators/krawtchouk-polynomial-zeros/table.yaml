@@ -1,0 +1,107 @@
+Title: Zeros of the Krawtchouk polynomials $K_n(x;p,N)$
+Definition: >-
+  For rational $0<p<1$, integer $N\geq1$ and degree $1\leq n\leq N$, let
+  $x_1<\cdots<x_n$ be the zeros of the Askey-normalised Krawtchouk polynomial
+  $K_n(x;p,N)={}_2F_1(-n,-x;-N;p^{-1})$ CITE{DLMFExplicit}. This table gives
+  the zero $x_k$.
+Keywords:
+  - Krawtchouk polynomial roots
+  - Kravchuk polynomial zeros
+  - Delsarte linear programming bound
+  - Hamming scheme roots
+Parameters:
+  p:
+    type: Q
+    title: success probability
+    display: $p$
+    constraints: $0<p<1$
+  N:
+    type: Z
+    title: support endpoint
+    display: $N$
+    constraints: $N\geq1$
+  n:
+    type: Z
+    title: degree
+    display: $n$
+    constraints: $1\leq n\leq N$
+  k:
+    type: Z
+    title: zero index
+    display: $k$
+    constraints: $1\leq k\leq n$
+    comments: >-
+      For fixed $p$, $N$ and $n$, the zeros are ordered increasingly and
+      counted from $k=1$.
+Comments:
+  comment-normalisation: >-
+    Multiplying a polynomial by a nonzero scalar does not change its zeros.
+    Thus the Askey normalisation fixes the parameter names and order, but not
+    a different set of roots.
+  comment-hamming: >-
+    If $\mathcal{K}_n(x;N,q)$ denotes
+    HREF{Krawtchouk_polynomials_of_the_Hamming_scheme}[the Hamming-scheme
+    Krawtchouk polynomial], then
+    $\mathcal{K}_n(x;N,q)=\binom{N}{n}(q-1)^nK_n(x;1-1/q,N)$. Hence the
+    Hamming-scheme roots for $q=2,3,4$ are the rows with
+    $p=1/2,2/3,3/4$.
+  comment-location: >-
+    Since $K_n(x;p,N)$ is orthogonal on $\{0,1,\ldots,N\}$ for $0<p<1$,
+    all $n$ zeros are simple and lie in the open interval $(0,N)$
+    CITE{DLMFDefinitions} CITE{DLMFZeros}.
+Formulas:
+  formula-generating-function: >-
+    For $x=0,1,\ldots,N$,
+    $\sum_{n=0}^{N}\binom{N}{n}K_n(x;p,N)t^n =
+    (1-\frac{1-p}{p}t)^x(1+t)^{N-x}$ CITE{DLMFGenerating}.
+  formula-reflection: >-
+    $K_n(N-x;p,N)=\left(-\frac{1-p}{p}\right)^nK_n(x;1-p,N)$.
+Similar tables:
+  - table: HREF{Krawtchouk_polynomials_in_the_Askey_normalisation}[Krawtchouk polynomials $K_n(x;p,N)$ in the Askey normalisation]
+    relation: stores the polynomials whose zeros are listed here, on the same $p$, $N$ and $n$ grid
+  - table: HREF{Krawtchouk_polynomials_of_the_Hamming_scheme}[Krawtchouk polynomials of the Hamming scheme]
+    relation: have the same zeros at $p=1-1/q$, where the two normalisations differ by the positive scalar $\binom{N}{n}(q-1)^n$
+Links:
+  DLMFDefinitions:
+    title: 'DLMF 18.19: Hahn class definitions'
+    url: https://dlmf.nist.gov/18.19
+  DLMFExplicit:
+    title: 'DLMF 18.20.6: Krawtchouk polynomial hypergeometric representation'
+    url: https://dlmf.nist.gov/18.20.E6
+  DLMFGenerating:
+    title: 'DLMF 18.23.3: Krawtchouk generating function'
+    url: https://dlmf.nist.gov/18.23.E3
+  DLMFZeros:
+    title: 'DLMF 18.2(vi): zeros of orthogonal polynomials'
+    url: https://dlmf.nist.gov/18.2.vi
+  RequestedNumberdbData11:
+    title: 'Requested in numberdb-data#11'
+    url: https://github.com/numberdb/numberdb-data/issues/11
+Tags:
+  - orthogonal polynomials
+  - zero
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds $p\in\{\tfrac14,\tfrac13,\tfrac12,\tfrac23,\tfrac34\}$, every
+    support endpoint $1\leq N\leq16$, every degree
+    $1\leq n\leq\min(N,4)$, and every zero $1\leq k\leq n$; the full grid
+    of the Askey-normalised Krawtchouk polynomial table would continue through
+    $n=N$, and the degrees $n>4$ are omitted to keep this zeros table within
+    the entry limit
+  rigour details: >-
+    The generator builds $K_n(x;p,N)$ exactly in $\mathbb Q[x]$, using Sage
+    rationals for every division, and isolates its roots in Sage's real
+    interval field. Each stored interval is returned only after Sage has
+    isolated all $n$ simple real roots. The generator checks the exact
+    polynomial against the generating function CITE{formula-generating-function},
+    checks Vieta's formula for the isolated intervals, checks the reflection
+    relation CITE{formula-reflection} on the stored grid, and checks the
+    Hamming-scheme scaling relation against an independently computed
+    Hamming-scheme polynomial for $q=2,3,4$.
+Display properties:
+  number-header: $x_k$
+  group parameters: [['p'], ['N'], ['n'], ['k']]
+Numbers: []
