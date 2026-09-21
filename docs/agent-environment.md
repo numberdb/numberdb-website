@@ -8188,3 +8188,61 @@ comments. That is the only way to check the thing a reader will copy.
 Evidence: 2026-09-21, T385 critique. `/tmp/t385_pari.py`,
 `/tmp/t385_pari_out.txt` (first zero `5.1156833288151175985533564203781...`,
 matching the stored `(-23,1,1)`).
+
+## Every NumberDB page says "No match in database" when you fetch it with `curl`
+
+What happened: the T5 critique needed to know whether a reader arriving with
+2.3728596 lands on T5. Stripping the tags out of a fetch of
+`/properties/2.3728596` gave "No match in database", which reads exactly like
+an answer, and three tool calls went into believing it. It is not an answer. The
+string lives in `numberdb_app/templates/includes/searchbar.html:163` as
+
+    <span style="display:none" id="msg-no-entry">No match in database</span>
+
+-- a hidden element the search box's JavaScript unhides when a query returns
+nothing. The search bar is on every page, so `/T5`, `/tags`, `/history/T5` and
+`/files/T5` all carry it too, and any text extraction that drops attributes
+prints it. A control settles it in one call: 2.685452001 is Khinchin's constant
+and is in T170, and `/properties/2.685452001` says "No match in database" just
+the same.
+
+What to do instead: never read a lookup result out of fetched HTML. Ask
+`/api/lookup?text=<term>` (or `?number=<json>`), which returns JSON with
+`results` and `tables`, and run one known-present value alongside the query as a
+control. More generally, a string that appears on a page that does no lookup at
+all is furniture, and checking it against a second page is cheaper than
+believing it.
+
+Evidence: 2026-09-21, T5 critique. `curl -s --get --data-urlencode
+"text=2.3728596" https://numberdb.org/api/lookup` gives `{"results": []}` --
+the real negative -- while `text=2.685452001` gives T170 and `text=2.2` gives
+100 results. The hidden span is in the template named above.
+
+## `/properties/<x>` displays the wrong number for a short decimal
+
+What happened: while checking the above, `https://numberdb.org/properties/2.2`
+came back titled "Properties of 3.?" and its body reads `Number: 3.?` --
+next to "Simplest contained rational number: 9/4" and "Continued fraction:
+[2, ...]", both of which are right for 2.2 and neither of which is consistent
+with 3. The interval built from the input is correct; only its printed form is
+wrong, and `3.?` means [2.5, 3.5], which does not contain 2.2 at all.
+
+It is confined to inputs with about one decimal place, where the parsed
+interval's endpoints disagree in the first decimal and the pretty-printer falls
+back to zero decimals:
+
+    2.2 -> 3.?      2.4 -> 3.?      2.9 -> 3.?
+    1.5 -> 2.?      3.7 -> 4.?      2.0 -> 2.?
+    2.3728596 -> 2.372860?   (correct)
+
+Suspect `real_interval_to_pretty_string` in `utils/utils.py`, reached from
+`views.properties`; I did not read it, and did not try to fix it. Note that
+2.0 is right and 2.2 is not, so whatever it is, it is not simply rounding.
+
+Why it is worth writing down: this is the page the site offers a reader who has
+a number and no table, and for a one-decimal number it shows them a different
+number with no sign that anything went wrong. For an agent, it means a
+`/properties/` page is not usable as a parse of what you asked about -- read
+the `number` field of `/api/lookup` instead.
+
+Evidence: 2026-09-21, T5 critique, the six fetches above against the live site.
