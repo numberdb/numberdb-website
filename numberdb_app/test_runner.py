@@ -77,6 +77,16 @@ class TheRunnerFencesOffWhatItCannotUndo(TestCase):
 		self.assertIn('the queue offered the same item twice', body)
 		self.assertIn('last_item', body)
 
+	def test_an_unpushed_commit_is_pushed_rather_than_refused(self):
+		#The rule is right and the refusal was not: it stopped the campaign
+		#three times in two days, and every time the remedy was one command
+		#nobody was there to type. A commit made in this tree is this tree's
+		#to publish.
+		body = script('agents/run.sh')
+		self.assertIn('pushed $(git rev-parse --short HEAD) before starting',
+		              body)
+		self.assertIn('could not be pushed', body)
+
 	def test_a_critique_waiting_to_be_acted_on_is_not_a_dirty_tree(self):
 		#The campaign writes a person's demand into agents/critiques/ and then
 		#starts the run that acts on it. Those files are data -- .gitignore

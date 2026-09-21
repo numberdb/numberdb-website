@@ -70,3 +70,45 @@ def waiting_for_review(request):
 	if not user or not is_board_member(user):
 		return {'tables_waiting_for_review': 0}
 	return {'tables_waiting_for_review': len(waiting())}
+
+
+def canonical_origin(request):
+	"""Which host this site calls itself, for canonical links.
+
+	Built from the request until now, so `numberdb.org/T313` declared the apex
+	canonical and `www.numberdb.org/T313` declared www -- two complete copies
+	of the site, each insisting it was the original. Google reported fourteen
+	pages as "duplicate without user-selected canonical"; that is what it was
+	looking at.
+
+	A canonical address is a decision about the site, so it comes from
+	settings. `NUMBERDB_CANONICAL_ORIGIN` when it is set; otherwise the first
+	allowed host, which is right in production and harmless in development.
+	"""
+	from django.conf import settings
+
+	import re
+
+	origin = getattr(settings, 'NUMBERDB_CANONICAL_ORIGIN', '')
+	if not origin:
+		#A name, not a number: ALLOWED_HOSTS here reads
+		#`['.localhost', '127.0.0.1', '45.33.90.86', 'numberdb.org',
+		#'.numberdb.org']`, and the first entry that is neither a wildcard nor
+		#localhost is the server's IP address -- which would have put
+		#`https://45.33.90.86/T313` on every page as the address to index.
+		def looks_like_a_site(host):
+			if host in ('*', 'localhost', '127.0.0.1'):
+				return False
+			if host.startswith('.') or host.startswith('www.'):
+				return False
+			if re.fullmatch(r'[\d.]+', host) or ':' in host:
+				return False        # an IPv4 or IPv6 address
+			return '.' in host
+
+		hosts = [h for h in getattr(settings, 'ALLOWED_HOSTS', [])
+		         if looks_like_a_site(h)]
+		if hosts:
+			origin = 'https://%s' % (hosts[0],)
+		else:
+			origin = '%s://%s' % (request.scheme, request.get_host())
+	return {'canonical_origin': origin.rstrip('/')}
