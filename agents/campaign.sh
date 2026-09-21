@@ -338,19 +338,37 @@ while [ "$made" -lt "$builds" ]; do
 		say "$kind: $tid -- $(field "$next" title) (done $made)"
 		case "$kind" in
 			growth)
+				started=yes
 				run_stage critic critique \
 					"Read $tid, which has $(field "$next" entries) entries in $(field "$next" bytes) bytes -- under a tenth of the soft limits of 1200 entries and 320 KB. The question is whether it can grow *naturally*: is its range the whole of what its definition promises, or was it stopped early? Read the skill on what makes a good range, read the table's own completeness note and its generator, and write $critiques/$tid-growth.md saying either how far it could go and by what method, or why it is already complete -- a named constant with one entry is finished, and saying so is a good answer. Change nothing." \
-					|| say "the growth question failed for $tid"
+					|| { status=$?; started=no;
+					     say "the growth question failed for $tid (status $status)"; }
 				;;
 			sweep)
 				run_stage critic critique \
 					"Read $tid. Fetch the rendered page, read the document, run the audit on it, and write $critiques/$tid.md. This table has never been read by this pipeline -- most of the corpus below T127 was made by hand, before the skill existed -- so read it as a reader meeting it for the first time. Change nothing else." \
-					|| say "the critique failed for $tid"
+					|| { status=$?; started=no;
+					     say "the sweep failed for $tid (status $status)"; }
 				;;
 		esac
 
 		report="$critiques/$tid.md"
 		[ "$kind" = growth ] && report="$critiques/$tid-growth.md"
+		# A run that never started has not asked anything, and must not be
+		# written down as having asked. `run.sh` exits 2, 3 or 5 from its
+		# preflight -- bad usage, a tree it will not start in, a site that is
+		# not answering -- and on 2026-09-21 a worker whose HEAD was unpushed
+		# marked eleven tables as swept without reading one of them, which is
+		# a lie that would have kept them from ever being read.
+		if [ "${started:-yes}" = no ]; then
+			case "${status:-1}" in
+				2|3|5)
+					say "the run refused to start, so $tid has not been looked at"
+					say "stopping: the next run would refuse for the same reason"
+					exit "$status"
+					;;
+			esac
+		fi
 		if [ ! -f "$report" ]; then
 			# Say so in the file the next campaign will look for.
 			#
@@ -585,6 +603,18 @@ while [ "$made" -lt "$builds" ]; do
 	if [ -n "$tid" ]; then
 		python3 agents/queue.py built "$in_family" "$proposal" "$tid" \
 			|| say "could not tick $proposal in #$in_family; do it by hand"
+	elif [ "${status:-0}" = 2 ] || [ "${status:-0}" = 3 ] \
+			|| [ "${status:-0}" = 5 ]; then
+		#The build never started -- a preflight refusal, not a decline -- so
+		#the proposal has not been tried and the claim goes straight back. A
+		#worker whose runs all refuse would otherwise claim a family's every
+		#proposal in a minute and hold them for ninety, which is what happened
+		#to numberdb-data#178.
+		say "the build refused to start; giving $proposal back"
+		python3 agents/queue.py release "$in_family" "$proposal" >/dev/null 2>&1 \
+			|| say "could not release $proposal in #$in_family"
+		say "stopping: the next run would refuse for the same reason"
+		exit "${status:-3}"
 	else
 		#Nothing was built, and the claim *stays*. Releasing it here is what
 		#the loop did first, and the queue then offered the same proposal back
