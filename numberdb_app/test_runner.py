@@ -66,7 +66,11 @@ class TheRunnerFencesOffWhatItCannotUndo(TestCase):
 		#having to hold it or hand it straight back.
 		body = script('agents/campaign.sh')
 		self.assertIn('frees itself in ninety minutes', body)
-		self.assertNotIn('queue.py release', body)
+		#Released only when the build never started: a preflight refusal is
+		#not a decline, and a worker whose runs all refuse would otherwise
+		#take a family's every proposal in a minute and hold them for ninety.
+		self.assertIn('the build refused to start; giving $proposal back',
+		              body)
 
 	def test_the_same_item_twice_stops_the_campaign(self):
 		#A queue that is not being consumed looks exactly like work being
@@ -76,6 +80,26 @@ class TheRunnerFencesOffWhatItCannotUndo(TestCase):
 		body = script('agents/campaign.sh')
 		self.assertIn('the queue offered the same item twice', body)
 		self.assertIn('last_item', body)
+
+	def test_a_builder_does_not_buy_proposals(self):
+		#Refilling a shared queue is a global decision, and four builders
+		#making it independently ran ten screenings in a day at $6 to $15
+		#each. One producer -- agents/screener.sh -- and the pool consumes.
+		body = script('agents/campaign.sh')
+		self.assertIn('"${NUMBERDB_SCREEN:-1}" = 0', body)
+		self.assertIn('the screener is the one who fills the queue', body)
+		supervisor = script('agents/workers.sh')
+		self.assertIn('NUMBERDB_SCREEN=0', supervisor)
+		self.assertIn('start_screener', supervisor)
+
+	def test_the_screener_holds_a_target_depth(self):
+		#It asks, and if the queue is deep enough it waits: a screening costs
+		#about ten dollars and takes twenty minutes.
+		body = script('agents/screener.sh')
+		self.assertIn('proposals waiting, which is enough', body)
+		self.assertIn('NUMBERDB_QUEUE_TARGET', body)
+		#And it builds nothing.
+		self.assertNotIn('campaign.sh', body)
 
 	def test_a_question_nobody_answered_is_still_written_down(self):
 		#The report is the mark: work.py offers a table for growth until

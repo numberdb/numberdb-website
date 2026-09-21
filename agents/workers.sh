@@ -76,12 +76,41 @@ start() {                        # one worker, in its own tree
 		NUMBERDB_MACHINE="${NUMBERDB_MACHINE:-$(hostname -s)}" \
 		NUMBERDB_CODEX_SANDBOX="${NUMBERDB_CODEX_SANDBOX:-danger-full-access}" \
 		NUMBERDB_CRITIQUES="$NUMBERDB_CRITIQUES" \
+		NUMBERDB_SCREEN=0 \
 			setsid nohup agents/campaign.sh "$budget" \
 				>> "agents/runs/campaign-$name.log" 2>&1 < /dev/null &
 	)
 }
 
-say "keeping $workers worker(s) alive, looking every ${every}s"
+#: The producer. One process screens; the builders only consume, which is the
+#: whole of the arrangement: refilling a shared queue is a global decision and
+#: four builders making it independently ran ten screenings in a day.
+screener_running() {
+	local pid
+	for pid in $(pgrep -f 'screener\.sh' 2>/dev/null || true); do
+		[ -n "$pid" ] && return 0
+	done
+	return 1
+}
+
+start_screener() {
+	say "starting the screener"
+	(
+		cd "$here"
+		[ -f "$HOME/.numberdb-gh" ] && . "$HOME/.numberdb-gh"
+		export GH_TOKEN
+		NUMBERDB_CAMPAIGN="screener" \
+		NUMBERDB_MINER="${NUMBERDB_MINER:-claude}" \
+		NUMBERDB_REMOTE="${NUMBERDB_REMOTE:-local}" \
+		NUMBERDB_KEY="${NUMBERDB_KEY:-$HOME/.config/numberdb/zeta3-key}" \
+		NUMBERDB_MACHINE="${NUMBERDB_MACHINE:-$(hostname -s)}" \
+		NUMBERDB_CRITIQUES="$NUMBERDB_CRITIQUES" \
+			setsid nohup agents/screener.sh \
+				>> agents/runs/screener.log 2>&1 < /dev/null &
+	)
+}
+
+say "keeping $workers builder(s) and one screener alive, looking every ${every}s"
 say "critiques shared in $NUMBERDB_CRITIQUES"
 
 while true; do
@@ -91,6 +120,11 @@ while true; do
 			exit 0
 		fi
 	done
+
+	if ! screener_running; then
+		start_screener || true
+		sleep 10
+	fi
 
 	for n in $(seq 1 "$workers"); do
 		name="w$n"
