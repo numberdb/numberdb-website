@@ -3,11 +3,9 @@
 # Numbers: [] so generate.py can fill it once. Publishing is a person's act.
 Title: Arithmetic factors $a_k$ in the moments of the Riemann zeta function
 Definition: >-
-  For a positive rational number $k$, $a_k$ is the arithmetic Euler-product
-  factor in the conjectural leading constant for the averaged $2k$-th moment
-  of the Riemann zeta function $\zeta(s)$ CITE{WikiZeta} on the critical line.
-  It is the Euler product in CITE{formula-ak}, normalized so that
-  CITE{formula-moment} has $c_k=a_k f_U(k)$.
+  For $k>0$ rational, $a_k$ is the Euler product in CITE{formula-ak}. It is
+  the arithmetic factor in CITE{formula-moment} for the averaged $2k$-th
+  moment of $\zeta(s)$ CITE{WikiZeta}.
 Keywords:
   - Riemann zeta moment
   - zeta moment
@@ -26,8 +24,8 @@ Comments:
     The parameter is $k$, not the full exponent $2k$: $k=1$ is the second
     moment and $k=2$ is the fourth moment.
   comment-factor: >-
-    The table stores the arithmetic factor $a_k$ alone. It does not include
-    the random-matrix factor $f_U(k)$ in the leading constant.
+    The leading constant is normalized as $c_k=a_k f_U(k)$. This table stores
+    the arithmetic factor $a_k$ alone, not the random-matrix factor $f_U(k)$.
 Formulas:
   formula-moment: >-
     $\frac1T\int_0^T |\zeta(1/2+it)|^{2k}\,dt\sim
@@ -72,9 +70,8 @@ References:
       Proceedings of the London Mathematical Society 91 (2005), 33-104.
     arxiv: math/0206018
 Tags:
-  - moments
+  - number theory
   - L-function
-  - random matrix theory
 Data properties:
   type: R
   rigour: heuristic (agreement-checked)

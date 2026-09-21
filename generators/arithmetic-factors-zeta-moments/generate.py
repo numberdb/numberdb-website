@@ -3,10 +3,16 @@
 This generator fills T377 with the arithmetic Euler-product factors in the
 Keating-Snaith and CFKRS leading constants for zeta moments.
 
-Run it with SageMath through the repository wrapper:
+Run it with SageMath:
 
-    $ agents/sage.sh agents/table-build/dry_run.py generators/arithmetic-factors-zeta-moments/generate.py
-    $ cat "$NUMBERDB_KEY_FILE" | NUMBERDB_KEY_FROM_STDIN=1 agents/sage.sh generators/arithmetic-factors-zeta-moments/generate.py --publish
+    $ sage -pip install numberdb          # once
+    $ sage -python generate.py            # check the table against this code
+    $ sage -python generate.py --publish  # fill the draft, with NUMBERDB_API_KEY set
+
+In this checkout, use the repository wrapper:
+
+    $ agents/sage.sh generators/arithmetic-factors-zeta-moments/generate.py
+    $ cat "$NUMBERDB_KEY_FILE" | NUMBERDB_KEY_FROM_STDIN=1 NUMBERDB_PUBLISH=1 agents/sage.sh generators/arithmetic-factors-zeta-moments/generate.py
 """
 
 import os
