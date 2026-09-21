@@ -7400,3 +7400,45 @@ Evidence: 2026-09-21, T13 growth critique. Three `--socks5-hostname` attempts
 at `https://numberdb.org/T13` gave `000 0` and
 "connect to 127.0.0.1 port 1080 ... Connection refused"; the same URL with
 `--noproxy '*'` gave `200 58287`.
+
+## `/tables?page=N` lists the whole public corpus in eight reads, and the walk is only needed for what it hides
+
+What happened: the note above says nothing lists the corpus, and a walk of
+about 400 HTTP reads is the only way to see it. There is a listing:
+`https://numberdb.org/tables` renders fifty tables a page, titles linked as
+`/T<n>`, and nine pages cover everything. Scraping
+`href="/(T\d+)"[^>]*>(.*?)</a>` out of them gave 374 distinct tables in eight
+seconds of wall clock, which is the survey a proposal run actually needs --
+every title in one file, to read rather than to search.
+
+What it does not give is drafts and withdrawn tables. The listing stopped at
+T375 and skipped T75 and T342, where the walk of the same day found 378. So
+the two differ by exactly the tables that are not public, and the cheap route
+is: list for the survey, and walk only when the question is which T-numbers
+exist.
+
+    curl -s "https://numberdb.org/tables?page=$p" -o /tmp/tables_$p.html
+
+Evidence: 2026-09-21 ideas run; `/tmp/corpus.txt`, 374 titles, missing 75,
+342, 376, 377, 378 against the walk's T1 to T378.
+
+## OEIS b-files answer 200 while every OEIS page answers 403
+
+What happened: the Cloudflare note above stands -- `https://oeis.org/A022166`
+and `https://oeis.org/search?q=...&fmt=text` both answered 403 in this run,
+with the "Just a moment..." interstitial. But the static b-file at
+`https://oeis.org/A022166/b022166.txt` answered 200 with its numbers.
+
+So the challenge is on the application, not on the whole host, and a check
+against OEIS is still possible for anybody who already knows the A-number:
+fetch the b-file and compare the terms. What cannot be done from here is
+*finding* the A-number, or screening a name with `source_names_it` against an
+oeis.org URL.
+
+What to do instead: as the earlier note says, cite Wikipedia, MathWorld, nLab
+or DLMF for the screen, and quote measured terms in the proposal. Add the
+b-file route for the build, which is the run that actually needs the numbers.
+
+Evidence: 2026-09-21 ideas run. `curl -s -o /dev/null -w '%{http_code}'` gave
+403 for `https://oeis.org/A022166`, 403 for the `fmt=json` search, and 200 for
+`https://oeis.org/A022166/b022166.txt`.
