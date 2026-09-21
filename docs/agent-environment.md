@@ -7179,3 +7179,98 @@ a few minutes. The cost is the container, not the page.
 Evidence: 2026-09-21, T377 critique. `/tmp/t377_render.py`,
 `/tmp/t377_render_out.txt` (`records: 18`, `tid: T1 tags: ['L-function',
 'number theory']`, `status 200 34460`), `/tmp/t377_page.html`.
+
+## This machine cannot read a PDF at all, and three of the sources a constants table wants answer 403
+
+What happened: the T18 growth critique wanted Briggs, *A precise calculation
+of the Feigenbaum constants*, Math. Comp. 57 (1991), for its table of
+constants at critical orders other than 2. Every route failed, and the
+failures are worth separating because only the last one is about the paper:
+
+- `curl` to the AMS PDF (`ams.org/journals/mcom/...`, the `doi-access=free`
+  copy) answers **403** with an HTML body, as the note above about the AMS
+  already records for a different paper.
+- `oeis.org/AXXXXXX` and `oeis.org/search` answer **403** with a Cloudflare
+  "Just a moment..." page, with or without a browser User-Agent. The b-files
+  still answer 200, exactly as the 2026-09-12 note says, and they were enough:
+  `oeis.org/A195102/b195102.txt` gave 49 digits of $|\alpha|$ at $z=4$ and
+  `b006890.txt`/`b006891.txt` gave 1019 and 1018 digits of $\delta$ and
+  $\alpha$ -- which is to say the whole of what T18 stores, reachable without
+  the entry pages.
+- The author's own copy, `keithbriggs.info/documents/Keith_Briggs_PhD.pdf`,
+  answers **200** and 1.8 MB. It cannot be read here. `Read` on a PDF reports
+  `pdftoppm is not installed. Install poppler-utils`, and the system Python
+  has neither `pypdf` nor `PyPDF2`, so there is no text extraction either.
+  Pulling the `stream` objects apart with `zlib` by hand gets 369 KB of bytes
+  in a custom font encoding with no usable ASCII in it: the string
+  "Feigenbaum" occurs zero times in a thesis about Feigenbaum scaling.
+
+What to do instead: for a paper, try the arXiv TeX source first (the
+2026-09-12 note), then the author's institutional page, then zbMATH's review,
+and treat a PDF as unreadable from this machine unless somebody installs
+`poppler-utils`. For OEIS, go straight to the b-file: it carries the digits,
+which is usually the whole reason a constants table wants the entry. What
+reached the critique in the end was Wikipedia's `action=raw`
+(`en.wikipedia.org/w/index.php?title=Feigenbaum_constants&action=raw`, 15 KB,
+200), which carries the reference list and the "other values" section, and
+`plouffe.fr`, which answers 200 and holds the source the table actually cites.
+
+Installing `poppler-utils` on the runner would remove one whole class of dead
+end; it is a hundred-odd kilobytes and `Read` already knows how to use it.
+
+Evidence: 2026-09-21, T18 critique. `/tmp/briggs.pdf` (403, 5666 bytes of
+HTML), `/tmp/briggs_phd.pdf` (200, 1,845,560 bytes, unreadable),
+`/tmp/oeis1.json` (403), `/tmp/wiki_feig.txt` (200, 15,415 bytes).
+
+## A stale file in `/tmp` makes a failed `curl` look like a successful one
+
+What happened: the first command of the T18 critique was the prompt's own
+recipe, `curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/skill`,
+which printed nothing; the second wrote it to `/tmp/skill.txt` with
+`-w 'HTTP:%{http_code} size:%{size_download}'` and reported **`HTTP:000
+size:0`** -- and then `wc -c /tmp/skill.txt` said **48740**. The file was a
+day old, left by the run of 2026-09-20 16:03, and reading it would have been
+reading yesterday's skill while believing it had just been fetched. It
+happened to be identical to the live one, which is the unlucky outcome: the
+run would have learned nothing from being wrong.
+
+The proxy was down in the way the notes above describe, `ALL_PROXY` was empty,
+`NUMBERDB_REMOTE=local`, and plain `curl https://numberdb.org/skill` answered
+200 at once.
+
+What to do instead: two habits, both cheap. Write fetches to a name that
+carries the run id, or delete the target first; and when a fetch reports
+`000`, check `ls -l --time-style=full-iso` on the file before reading it. The
+prompt's proxy recipe is the one the campaign hands every stage, so this will
+keep happening: the `000` is the signal, and it is easy to skim past when a
+file of the right size is sitting there.
+
+Evidence: 2026-09-21, T18 critique. `/tmp/skill.txt`, mtime
+`2026-09-20 16:03:00`, fetched again as `/tmp/skill-live.txt` (200, 48,740
+bytes); `diff` reported no difference, and the critique used the live copy.
+
+## A digit query to `/api/lookup` answers under `results`; a word answers under `tables`
+
+What happened: the T18 critique measured what the corpus answers for a dozen
+candidate constants by piping `/api/lookup` into a one-line Python filter that
+read `d['tables']` -- which is the right key for the text lookups the
+2026-09-01 note above describes, and the wrong one for a number. Every query
+printed `no match`, **including $\delta$ itself**, which the table plainly
+holds. The critique nearly recorded "T18's own values are unfindable" as a
+finding.
+
+A number answers under `results`, each record carrying `number.param`,
+`number.exact_text` and a `table` block with the `tid`; a word answers under
+`tables`. The Python client hides this -- `SearchResults` is a list of results
+that also carries `.tables`, and its docstring warns about the converse case,
+a text search that matches a table and no number -- so the trap is specific to
+reaching the API with `curl`, which is how every run on this box searches.
+
+What to do instead: read both keys, or check `len(d.get('results', []))` and
+`len(d.get('tables', []))` and print whichever is non-empty. A lookup that
+returns neither is the only real "no match".
+
+Evidence: 2026-09-21, T18 critique. `text=3.14159265358979` returns
+`results[0].table.tid = T20` and `results[1].table.tid = T7` with `tables`
+absent; `text=Feigenbaum` returns `tables = [T18, T169]` with `results`
+absent.
