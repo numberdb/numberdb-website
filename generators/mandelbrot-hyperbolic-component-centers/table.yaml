@@ -72,9 +72,9 @@ Data properties:
     $G_4=c^6+3c^5+3c^4+3c^3+2c^2+1$, checks the degrees
     against Formula CITE{formula-degree}, and counts the real roots by
     Sturm's method. The
-    roots are isolated with Sage's `complex_roots` at `min_prec=400`, which
+    roots are isolated with Sage's `complex_roots` at `min_prec=800`, which
     returns certified complex intervals; the worst absolute diameter measured
-    over the stored range is less than $8\cdot10^{-77}$. Sorting is guarded
+    over the stored range is less than $2\cdot10^{-145}$. Sorting is guarded
     by the certified intervals themselves: through $n=9$, any overlapping
     real-coordinate intervals belong to one conjugate pair, and all
     non-conjugate real projections are disjoint. Real roots have imaginary

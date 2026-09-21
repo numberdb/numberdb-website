@@ -28,7 +28,7 @@ from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 TABLE = os.environ.get("NUMBERDB_TABLE", "T392")
 MAX_PERIOD = 9
 DIGITS = 100
-ROOT_MIN_PREC = 400
+ROOT_MIN_PREC = 800
 
 C_RING = PolynomialRing(ZZ, "c")
 c = C_RING.gen()
