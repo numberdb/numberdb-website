@@ -8124,3 +8124,67 @@ Evidence: 2026-09-21, T6 growth critique. `curl -sL
 (the `/view/DS1/pdf` address serves the pdf.js *viewer*, `text/html`, 3 KB --
 `/article/download/` is the bytes); then pypdf as above, 149 pages.
 `agents/critiques/T6-growth.md` §1.
+
+## `/tags/<name>` now answers 404 for a tag that does not exist, not 500
+
+What happened: the T317 critique of 2026-09-18 recorded that a missing tag
+answers **500** with an empty body, and told a later run to read a 500 as "no
+such tag". That is no longer true. On 2026-09-21 `/tags/zzz-nonsense-tag`,
+`/tags/knot`, `/tags/hyperbolic` and `/tags/zeros` all answer **404**, while
+`/tags/zero`, `/tags/L-function` and `/tags/number%20theory` answer 200 with
+their table lists. So probing a tag name by hand is now a clean question with
+a clean answer, and a 500 from that route would today mean a real fault rather
+than a missing row.
+
+What to do instead: read 404 as "no such tag" and stop treating a 500 there as
+routine. Getting a table's own tags from `GET /api/table?id=T<n>` is still the
+cheaper route when you have the table in hand.
+
+Evidence: 2026-09-21, T385 critique, checking that T385's three tags exist.
+Seven `curl -o /dev/null -w '%{http_code}'` requests, direct (the SOCKS proxy
+on 1080 refuses connections on this box, as six notes above already say).
+
+## The sqlite draft-render recipe works unchanged on a 700-row real table
+
+What happened: the T385 critique needed the rendered page of a 700-entry `R`
+draft. The recipe from the T315 and T316 notes ran with no new patch --
+`/tmp/t344_render.py` with the tid and the tarball name changed, as
+`NUMBERDB_SAGE_MEMORY=1200m NUMBERDB_SAGE_PYTHONPATH= agents/sage.sh
+/tmp/t385_render.py /tmp/site385.tgz /tmp/T385.json`. `records: 700`,
+`status 200`, 529,195 bytes of HTML, with the four column headers, all 700
+entry comments, the entry anchors (`id="-23,1,1"`) and the whole prose.
+Both existing patches were still needed: `RangeField.get_placeholder` and the
+`Number.save` that nulls `value_range` and `frac_range`.
+
+Two practical notes for the next run. Build the tarball fresh from the
+worktree you are in rather than reusing `/tmp/site.tgz`, which belongs to
+whichever campaign made it last. And send the run's whole stdout to a file --
+`agents/sage.sh ... > /tmp/t385_render_out.txt 2>&1` -- then split on the
+`=== HTML ===` markers in a second step: the tool result truncates around
+100 KB and this page is five times that.
+
+This is the fourth table rendered this way (T315, T316, T344, T385). The
+script still only exists as a `/tmp` copy edited per run, and still wants
+promoting to `agents/render_draft.py` with the tid as an argument.
+
+Evidence: 2026-09-21, T385 critique. `/tmp/t385_render.py`,
+`/tmp/t385_render_out.txt`, `/tmp/T385_page.html`.
+
+## `gp` is on the PATH inside the `agents/sage.sh` container
+
+What happened: the T385 critique had to check that the table's printed PARI/GP
+program runs as printed. `shutil.which('gp')` inside the container answers
+`/home/sage/sage/local/bin/gp`, so the program can be piped to it verbatim --
+`subprocess.run([gp, '-q'], input=PROGRAM, capture_output=True, text=True)` --
+rather than translated into Sage's `pari` interface, which is a translation the
+reader never makes. `default(realprecision, 80)` and `lfunzeros(lfuncreate(
+bnfinit(f, 1)), 60, 16)` both worked; the run took a couple of minutes and
+stayed well inside the 1200m cap.
+
+What to do instead: when a table's `Programs` block is PARI/GP, run it through
+`gp -q` in the container exactly as the page prints it, including the `\\`
+comments. That is the only way to check the thing a reader will copy.
+
+Evidence: 2026-09-21, T385 critique. `/tmp/t385_pari.py`,
+`/tmp/t385_pari_out.txt` (first zero `5.1156833288151175985533564203781...`,
+matching the stored `(-23,1,1)`).
