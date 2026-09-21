@@ -7608,3 +7608,73 @@ Evidence: 2026-09-21 ideas run. `/tmp/w3ideas/probe3.py`, 900 s, exit 137, 51
 bytes of output; the same question answered in under a minute by
 `/tmp/w3ideas/probe5.py`, which evaluates about 1100 points and holds none of
 them.
+
+## `/preview?table=<yaml>` renders a document to anybody, in 2.5 KB bites: the request line is capped at 4094 bytes
+
+What happened: the T380 critique wanted the rendered page before setting up
+the sqlite recipe, and tried the one route that needs neither a session nor a
+database. `views.preview` reads its YAML from `request.GET['table']` and
+renders it with the same template the table page uses, with no authentication
+at all, so a draft's own document can be pushed through it:
+
+    curl -s -G --data-urlencode "table@/tmp/doc.yaml" https://numberdb.org/preview
+
+The whole 7.7 KB document answered **414**. Trimmed to 4.8 KB it answered
+**400**, with a body that names the real limit: `Request Line is too large
+(5992 > 4094)`. That is gunicorn's `limit_request_line`, so the ceiling is on
+the URL and about 2.5 KB of YAML fits once it is percent-encoded. Five
+requests, each `Title:` plus one top-level section plus two or three entries,
+rendered the whole of T380 at 200.
+
+What to do instead: use it for a quick look at one section, and know what
+chunking costs. A `CITE{formula-ak}` whose `Formulas` block is not in the same
+chunk renders as the bare key `formula-ak` rather than as `(2)`, and the
+`(1)`, `[1]` numbering restarts in every chunk, so nothing about citation
+numbering or ordering can be read from it. `HREF{T379}` renders as
+`<a href="T379">`, a relative link, in the preview and on the real page alike;
+from `/T380` or from the long-url slug that resolves to `/T379`, so a
+T-number is a working address and not only a slug.
+
+For the page as a reader gets it, the sqlite draft-render recipe above is
+still the answer: `/T380` is 404 to `curl` with `X-API-Key`, because the HTML
+views authenticate a session and the API key only reaches `/api/...`. It ran
+unchanged here for an 18-entry `R` table -- `sed s/T379/T380/` over the
+previous run's script, `/tmp/site.tgz` from 2026-09-21 09:04, 200 and 40,063
+bytes -- which is now at least the ninth run to copy it out of these notes.
+
+Evidence: 2026-09-21, T380 critique. `/tmp/w3crit/p1.yaml` … `p6.yaml` (200
+each, 14-20 KB), `/tmp/w3crit/A.yaml` (400, "Request Line is too large (5992 >
+4094)"), `/tmp/w3crit/T380-preview.yaml` (414),
+`/tmp/w3crit/t380_render_out.txt`.
+
+## An OEIS b-file identifies a *constant* as well as a sequence, to about a hundred digits
+
+What happened: the T380 critique suspected that the table's $k=1$ value,
+$0.70444220099916559\ldots$, was a constant tabulated elsewhere. Everything
+that would confirm it by name is 403 from here: `oeis.org/A065463`,
+`oeis.org/A065463/internal`, and the `fmt=json` and `fmt=text` searches, by
+`curl` and by `urllib` alike. The b-file answered 200, as the note above says
+it does, and for a decimal-expansion sequence a b-file is the digits, one to a
+line:
+
+    # A065463 (b-file synthesized from sequence entry)
+    0 7
+    1 0
+    2 4
+    ...
+
+Joining the second column gives 98 digits, which agreed with the stored value
+digit for digit. So the identification is checkable from here even though the
+sequence's name, its formula and its references are not readable at all.
+
+What to do instead: when a value looks like a known constant, get an A-number
+from somewhere reachable -- Wikipedia's API answers 200, and a guess from
+memory costs one request to refute -- and then confirm it against
+`https://oeis.org/A<n>/b<n>.txt` by joining the second column. Say in the
+report that the digits matched and that the entry's own page could not be
+read, rather than asserting what OEIS calls it: this run could not confirm the
+name from here and said so in the critique.
+
+Evidence: 2026-09-21, T380 critique. `b065463.txt` 200, 531 bytes, 98 digits,
+all agreeing with T380's $k=1$ entry; `A065463`, `A065463/internal`,
+`search?q=id:A065463&fmt=text` and `search?q=0.70444…&fmt=json` all 403.
