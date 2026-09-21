@@ -6829,3 +6829,42 @@ What to do instead: any scratch script that screens a proposal starts with
 'agents/table-ideas')`, in that order, and runs from the worktree root.
 
 Evidence: 2026-09-20, ideation run for the moments batch, `/tmp/s1.py`.
+
+## The `table wanted` backlog is empty, so the ideation stage's first instruction has nothing to act on
+
+What happened: an ideation run followed `agents/table-ideas/PROMPT.md`, whose
+central instruction is to "Start from the open requests, and build the family
+around one", and got nothing back:
+
+    $ python3 agents/table-ideas/screen.py requests
+    (no output)
+
+That is not a proxy failure or a rate limit. `screen.requests` swallows every
+exception and returns `[]`, so an empty list and an unreachable GitHub look
+identical -- but `gh` agrees:
+
+    $ gh issue list --repo numberdb/numberdb-data --state open --limit 500
+    178  OPEN  Family: what a code weighs                       proposal
+    177  OPEN  Family: the zeros of the zeta functions ...      proposal
+    137  OPEN  Extend T223 to all finite-volume ... groups      enhancement
+    133  OPEN  Need update of T88 ...                           enhancement
+
+All 126 issues labelled `table wanted` are closed, every one with state reason
+`COMPLETED`, and 103 of those closures are dated 2026-09-18 to 2026-09-21. The
+backlog the prompt was written around -- "81 requests sat open", "most of them
+written in 2021 and waiting since" -- was drained this week by the campaign
+itself. The two remaining open issues that are not proposals are enhancements
+to existing tables, which is build work rather than ideation.
+
+What to do instead: an ideation run today cannot anchor on a request and should
+say so in its batch rather than treating the empty list as a tool failure and
+spending turns on the proxy. Choose the area the other way round, from what the
+corpus does not cover, and record in the batch that no proposal cites a request
+because none is open. Two things would be worth a person's time: making
+`screen.requests` distinguish "no open requests" from "could not ask GitHub",
+since right now those are the same value; and deciding whether `PROMPT.md`'s
+section 4 should still lead the stage.
+
+Evidence: 2026-09-21, ideation run `20260921T184313Z`,
+`agents/table-ideas/BATCH-2026-09-21T1843.md`; the `gh api graphql` query over
+`issues(labels:["table wanted"], states:CLOSED)` returning 126 nodes.
