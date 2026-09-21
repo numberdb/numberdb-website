@@ -1,0 +1,139 @@
+# The table document for numberdb.org/T384. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Resultants of two monic polynomials
+Definition: >-
+  For integers $m,n\geq1$, let
+  $f_m(x)=x^m+\sum_{i=0}^{m-1}a_i x^i$ and
+  $g_n(x)=x^n+\sum_{j=0}^{n-1}b_j x^j$ be monic polynomials with formal
+  coefficients. The entry is the resultant
+  $\operatorname{Res}(f_m,g_n)$ CITE{ResultantWiki}, normalized by Formula
+  CITE{formula-roots}.
+Parameters:
+  m:
+    type: Z
+    title: degree of $f_m$
+    display: $m$
+    constraints: $m\geq1$
+  n:
+    type: Z
+    title: degree of $g_n$
+    display: $n$
+    constraints: $n\geq1$
+Comments:
+  comment-coefficients: >-
+    The coefficient $a_i$ multiplies $x^i$ in $f_m$, and $b_j$ multiplies
+    $x^j$ in $g_n$. The entry for $(m,n)$ is written in the variables
+    $a_0,\dots,a_{m-1},b_0,\dots,b_{n-1}$.
+  comment-order: >-
+    The resultant is ordered: $\operatorname{Res}(g_n,f_m)=(-1)^{mn}
+    \operatorname{Res}(f_m,g_n)$ after the two polynomials are interchanged.
+Formulas:
+  formula-roots: >-
+    If $\alpha_1,\dots,\alpha_m$ are the roots of $f_m$, counted with
+    multiplicity, then
+    $\operatorname{Res}(f_m,g_n)=\prod_{r=1}^m g_n(\alpha_r)$.
+  formula-sylvester: >-
+    $\operatorname{Res}(f_m,g_n)$ is the determinant of the Sylvester matrix
+    of $f_m$ and $g_n$.
+  formula-linear: $\operatorname{Res}(x+a_0,x+b_0)=b_0-a_0$.
+  formula-linear-quadratic: >-
+    $\operatorname{Res}(x+a_0,x^2+b_1x+b_0)=a_0^2-a_0b_1+b_0$.
+  formula-quadratic-linear: >-
+    $\operatorname{Res}(x^2+a_1x+a_0,x+b_0)=b_0^2-a_1b_0+a_0$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.integer_ring import ZZ
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+      m = 2
+      n = 3
+      R = PolynomialRing(ZZ, ["a%s" % i for i in range(m)] + ["b%s" % j for j in range(n)])
+      gens = R.gens()
+      a = gens[:m]
+      b = gens[m:]
+      S = PolynomialRing(R, "x")
+      x = S.gen()
+      f = x**m + sum(a[i] * x**i for i in range(m))
+      g = x**n + sum(b[j] * x**j for j in range(n))
+      f.resultant(g)
+Similar tables:
+  - table: HREF{T381}[Discriminants of the general polynomial of degree $n$]
+    relation: >-
+      uses the same resultant normalization to define the discriminant of one
+      polynomial and its derivative
+  - table: HREF{T383}[Discriminants of the trinomials $x^n+ax^m+b$]
+    relation: >-
+      uses resultants to state the discriminants of a sparse monic polynomial
+      family
+Links:
+  ResultantWiki:
+    title: 'Wikipedia: Resultant'
+    url: https://en.wikipedia.org/wiki/Resultant
+  Requested20:
+    title: Requested in numberdb-data#20
+    url: https://github.com/numberdb/numberdb-data/issues/20
+  Requested24:
+    title: Requested in numberdb-data#24
+    url: https://github.com/numberdb/numberdb-data/issues/24
+  Requested25:
+    title: Requested in numberdb-data#25
+    url: https://github.com/numberdb/numberdb-data/issues/25
+  Requested26:
+    title: Requested in numberdb-data#26
+    url: https://github.com/numberdb/numberdb-data/issues/26
+  Requested68:
+    title: Requested in numberdb-data#68
+    url: https://github.com/numberdb/numberdb-data/issues/68
+  Requested71:
+    title: Requested in numberdb-data#71
+    url: https://github.com/numberdb/numberdb-data/issues/71
+  Requested87:
+    title: Requested in numberdb-data#87
+    url: https://github.com/numberdb/numberdb-data/issues/87
+  Requested95:
+    title: Requested in numberdb-data#95
+    url: https://github.com/numberdb/numberdb-data/issues/95
+  Requested108:
+    title: Requested in numberdb-data#108
+    url: https://github.com/numberdb/numberdb-data/issues/108
+  Requested121:
+    title: Requested in numberdb-data#121
+    url: https://github.com/numberdb/numberdb-data/issues/121
+  Requested123:
+    title: Requested in numberdb-data#123
+    url: https://github.com/numberdb/numberdb-data/issues/123
+  Requested128:
+    title: Requested in numberdb-data#128
+    url: https://github.com/numberdb/numberdb-data/issues/128
+Keywords:
+  - polynomial resultant
+  - resultant in coefficients
+  - monic polynomial resultant
+  - Sylvester resultant
+Tags:
+  - polynomial
+  - algebra
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every pair $m,n\geq1$ with $m+n\leq6$; the next antidiagonal
+    would use seven coefficient variables, more than polynomial search accepts
+  rigour details: >-
+    The generator computes exact integer coefficients in polynomial rings over
+    $\mathbb Z$ from the resultant, and all arithmetic is exact. It checks
+    Formula CITE{formula-roots} by substituting elementary symmetric functions
+    of independent roots, compares the small rows from Formula
+    CITE{formula-linear}, Formula CITE{formula-linear-quadratic}, and Formula
+    CITE{formula-quadratic-linear} against the stored values, compares every
+    stored row with an independently assembled Sylvester determinant, and
+    compares integer specializations with Sage's exact univariate resultant
+    over $\mathbb Z[x]$.
+Display properties:
+  number-header: $\operatorname{Res}(f_m,g_n)$
+Numbers: []
