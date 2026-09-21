@@ -7715,3 +7715,24 @@ client from `/tmp`, or anywhere that is not the checkout.
 Evidence: 2026-09-21, T11 critique run. `curl --socks5-hostname
 127.0.0.1:1080` exit 7 on every attempt, `ss -ltn` showing only 22 and the two
 resolvers; the same URLs 200 without it.
+
+## The local Sage wrapper image may not have Django, so `audit_table --links` is not always reachable
+
+What happened: after T381's authenticated API audit was clean, the build tried
+to run the stronger link-checking command through `agents/sage.sh`:
+`sys.path.insert(0, "/app")`, `django.setup()`, and
+`call_command("audit_table", "T381", "--links")`. The wrapper used the local
+Sage image for this campaign, and that image raised
+`ModuleNotFoundError: No module named 'django'`. Running
+`python3 manage.py audit_table T381 --links` in the checkout failed the same
+way before reaching a database.
+
+What to do instead: treat `/api/table/Txxx/audit` as the available audit on
+this worker, and say explicitly when `--links` could not be run. A prompt or
+helper that wants link checking from a builder needs to know which image it is
+using: the older note about running `audit_table` in the throwaway only applies
+to an image that includes the Django app and its dependencies.
+
+Evidence: 2026-09-21, T381 build. `/tmp/audit_t381_manage.py` failed inside
+`agents/sage.sh` with `No module named 'django'`; local `python3 manage.py
+audit_table T381 --links` failed with the same missing-Django import error.
