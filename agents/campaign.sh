@@ -341,7 +341,28 @@ while [ "$made" -lt "$builds" ]; do
 		report="agents/critiques/$tid.md"
 		[ "$kind" = growth ] && report="agents/critiques/$tid-growth.md"
 		if [ ! -f "$report" ]; then
-			say "no report at $report; moving on"
+			# Say so in the file the next campaign will look for.
+			#
+			# The report *is* the mark: `work.py` offers a table for growth
+			# until `<tid>-growth.md` exists and for a sweep until
+			# `<tid>.md` does. A run that produced neither left the table
+			# exactly as it found it, so the queue offered it again, and the
+			# repeat guard -- correctly -- stopped the campaign. Three
+			# workers stopped that way on T293 within a minute.
+			#
+			# A note saying the question was asked and went unanswered is
+			# both true and enough: a person reading the queue sees a table
+			# nobody could report on, rather than a table nobody tried.
+			say "no report at $report; writing down that the run produced none"
+			mkdir -p agents/critiques
+			{
+				printf '# %s: the %s run produced no report\n\n' "$tid" "$kind"
+				printf 'Asked on %s by campaign %s and the run ended without\n' \
+					"$(date -u +%Y-%m-%d)" "$NAME"
+				printf 'writing one. That is a fact about the run, not about the\n'
+				printf 'table: somebody should look, and until then this file is\n'
+				printf 'what stops the queue offering %s round and round.\n' "$tid"
+			} > "$report"
 			made=$((made + 1))
 			continue
 		fi
