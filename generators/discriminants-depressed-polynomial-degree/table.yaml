@@ -1,0 +1,100 @@
+# The table document for numberdb.org/T382. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Discriminants of the depressed polynomial of degree $n$
+Definition: >-
+  For $n\geq2$, let $f_n(x)=x^n+\sum_{i=0}^{n-2} a_i x^i$ be the monic
+  depressed polynomial CITE{DepressedPolynomialWiki}, with the coefficient of
+  $x^{n-1}$ equal to $0$. The entry is the discriminant
+  $\operatorname{disc}(f_n)$ CITE{DiscriminantWiki} with the normalization of
+  Formula CITE{formula-resultant}.
+Parameters:
+  n:
+    type: Z
+    title: degree
+    display: $n$
+    constraints: $n\geq2$
+Comments:
+  comment-coefficients: >-
+    The variable $a_i$ multiplies $x^i$, so $a_0$ is the constant term and the
+    variables in the degree-$n$ entry are $a_0,\dots,a_{n-2}$.
+  comment-specialisation: >-
+    This is the specialization of HREF{T381}[the discriminant of the general
+    degree-$n$ polynomial] obtained by setting $a_n=1$ and $a_{n-1}=0$.
+Formulas:
+  formula-resultant: >-
+    $\operatorname{disc}(f_n)=(-1)^{n(n-1)/2}\operatorname{Res}(f_n,f_n')$,
+    where the resultant is normalized as in CITE{ResultantWiki} by
+    $\operatorname{Res}(f,g)=\prod_{f(\alpha)=0}g(\alpha)$ for monic $f$.
+  formula-roots: >-
+    Equivalently, if $f_n(x)=\prod_{j=1}^n(x-\alpha_j)$, then
+    $\operatorname{disc}(f_n)=\prod_{1\leq i<j\leq n}
+    (\alpha_i-\alpha_j)^2$.
+  formula-quadratic: $\operatorname{disc}(x^2+a_0)=-4a_0$.
+  formula-cubic: $\operatorname{disc}(x^3+a_1x+a_0)=-4a_1^3-27a_0^2$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.integer_ring import ZZ
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+      n = 5
+      R = PolynomialRing(ZZ, ["a%s" % i for i in range(n - 1)])
+      a = R.gens()
+      S = PolynomialRing(R, "x")
+      x = S.gen()
+      f = x**n + sum(a[i] * x**i for i in range(n - 1))
+      sign = -1 if (n * (n - 1) // 2) % 2 else 1
+      sign * f.resultant(f.derivative())
+Similar tables:
+  - table: HREF{T381}[Discriminants of the general polynomial of degree $n$]
+    relation: >-
+      gives the same discriminant before the specialization $a_n=1$ and
+      $a_{n-1}=0$
+Links:
+  DepressedPolynomialWiki:
+    title: 'Wikipedia: Depressed polynomial'
+    url: https://en.wikipedia.org/wiki/Depressed_polynomial
+  DiscriminantWiki:
+    title: 'Wikipedia: Discriminant'
+    url: https://en.wikipedia.org/wiki/Discriminant
+  ResultantWiki:
+    title: 'Wikipedia: Resultant'
+    url: https://en.wikipedia.org/wiki/Resultant
+Keywords:
+  - depressed polynomial discriminant
+  - monic depressed polynomial
+  - polynomial discriminant
+  - cubic discriminant
+  - quartic discriminant
+  - quintic discriminant
+  - sextic discriminant
+  - discriminant in coefficients
+Tags:
+  - polynomial
+  - algebra
+  - invariant theory
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every degree $2\leq n\leq6$; the degree $7$ entry has six
+    coefficient variables but is about 8099 characters, beyond the readable
+    range chosen here
+  rigour details: >-
+    The generator computes exact integer coefficients in
+    $\mathbb Z[a_0,\dots,a_{n-2}]$ from the resultant identity in Formula
+    CITE{formula-resultant}, and all arithmetic is exact. It checks Formula
+    CITE{formula-roots} by substituting the elementary symmetric polynomials
+    of the roots after imposing $a_{n-1}=0$, compares the quadratic and cubic
+    rows from Formula CITE{formula-quadratic} and Formula CITE{formula-cubic}
+    against the stored values, compares degrees $2$ through $5$ with the
+    specialization of HREF{T381}[the general-polynomial discriminant], and
+    compares integer specializations with Sage's exact univariate discriminant
+    over $\mathbb Z[x]$.
+Display properties:
+  number-header: $\operatorname{disc}(f_n)$
+Numbers: []
