@@ -61,7 +61,8 @@ SCREENED_FINDER = re.compile(r'<!-- screened: (\d{4}-\d{2}-\d{2}) -->')
 #: the same conclusion.
 ITEM = re.compile(r'^- \[([ xX\-~])\] (.+?)'
                   r'(?:\s+\(answers ([^)]+)\))?'
-                  r'(?:\s+--\s+(T\d+|skipped:.*?|claimed.*?))?\s*$')
+                  r'(?:\s+--\s+(\[?T\d+\]?(?:\([^)]*\))?'
+                  r'|skipped:.*?|claimed.*?))?\s*$')
 
 #: How long a screening stays believable. Six weeks is not a measurement; it
 #: is the age at which this corpus has visibly moved -- of 89 proposals
@@ -239,7 +240,7 @@ def parse_family(issue):
 				              'claimed') else '',
 			              'answers': [int(n) for n in
 			                          re.findall(r'\d+', asked or '')],
-			              'tid': tail if (tail or '').startswith('T') else None,
+			              'tid': _tid_in(tail),
 			              'why': tail if (tail or '').startswith('skipped') else None})
 	return {'number': issue['number'], 'title': issue['title'],
 	        'batch': marker.group(1), 'body': body, 'items': items,
@@ -303,9 +304,32 @@ def stale_claim(item):
 
 
 def waiting(family):
-	"""Proposals nobody is building: unsettled, or claimed and abandoned."""
+	"""Proposals nobody is building: unsettled, or claimed and abandoned.
+
+	Reads the checklist and nothing else, so that anything asking "what is
+	left in this family" -- a report, a test, a person -- gets an answer
+	without a network call. What the *site* holds is consulted where the
+	choice is actually made, in `next_table`.
+	"""
 	return [item for item in family['items']
 	        if not item['done'] or stale_claim(item)]
+
+
+def unheld(family, mine=''):
+	"""The same, minus whatever another worker is holding on the site.
+
+	The checklist is what a person reads; the site is what decides. A
+	proposal claimed there a second ago has no mark on its line yet, and two
+	workers reading the line would both take it.
+	"""
+	free = waiting(family)
+	if not free or os.environ.get('NUMBERDB_CLAIM_SITE') == '0':
+		return free
+	held = held_by_others(family['number'], mine)
+	if not held:
+		return free
+	return [item for item in free
+	        if not any(_same_subject(item['title'], title) for title in held)]
 
 
 def started(family):
@@ -336,15 +360,24 @@ def next_table(prefer=None):
 	open_ones = [f for f in families() if waiting(f)]
 	if not open_ones:
 		return None
+	#What another worker is holding on the site is not offered here: the
+	#checklist mark is written after the claim, so a line can look free for
+	#the second it takes to write it.
+	mine = os.environ.get('NUMBERDB_CAMPAIGN', '')
 	if prefer is not None:
 		for family in open_ones:
 			if family['number'] == int(prefer):
-				return family, waiting(family)[0]
+				free = unheld(family, mine)
+				if free:
+					return family, free[0]
 
 	by_age = sorted(open_ones, key=lambda f: (f['screened'] or '', f['number']))
 	half_built = [f for f in by_age if started(f)]
-	first = (half_built or by_age)[0]
-	return first, waiting(first)[0]
+	for family in (half_built + [f for f in by_age if f not in half_built]):
+		free = unheld(family, mine)
+		if free:
+			return family, free[0]
+	return None
 
 
 #---------------------------------------------------------------- the commands
@@ -412,6 +445,17 @@ def cmd_post(args):
 	return 0
 
 
+def _tid_in(tail):
+	"""The T-number a checklist tail *names*, plainly or as a link.
+
+	Anchored at the start, because a skip reason mentions tables too --
+	`skipped: the corpus holds this as T187 under another name` -- and a
+	search anywhere in the tail read that proposal as built, as T187.
+	"""
+	found = re.match(r'\[?(T\d+)\]?(?:\(|$|\s)', (tail or '').strip())
+	return found.group(1) if found else None
+
+
 def _tick(family, title, tid, why=None):
 	"""The checklist with one more box settled, or None if nothing matched."""
 	lines = []
@@ -434,8 +478,11 @@ def _tick(family, title, tid, why=None):
 					line = '- [-] %s%s -- skipped: %s' % (
 						found.group(2).strip(), asked, why)
 				else:
-					line = '- [x] %s%s -- %s' % (found.group(2).strip(),
-					                             asked, tid)
+					#A link, not a bare number: the family issue is where
+					#somebody looks to see what became of a batch, and four
+					#hops to find out where T226 lives is three too many.
+					line = '- [x] %s%s -- [%s](%s/%s)' % (
+						found.group(2).strip(), asked, tid, SITE, tid)
 				hit = True
 		lines.append(line)
 	return '\n'.join(lines) if hit else None
@@ -509,9 +556,23 @@ def cmd_built(args):
 		for asked in _answered(family, args.title):
 			answer_request(asked, args.tid, args.number)
 	if not waiting(family):
+		#With the list, so the issue closes as a page somebody can read: what
+		#was proposed, what it became, and which request it answered.
+		lines = ['Every table in this family now exists. '
+		         'Closing; the tables are the record.', '']
+		for item in family['items']:
+			if item.get('tid'):
+				answered = (' (asked for in %s)'
+				            % ', '.join('#%d' % n for n in item['answers'])
+				            if item.get('answers') else '')
+				lines.append('- [%s](%s/%s) -- %s%s'
+				             % (item['tid'], SITE, item['tid'],
+				                item['title'], answered))
+			elif item.get('done'):
+				lines.append('- %s -- %s' % (item['title'],
+				                             item.get('why') or 'settled'))
 		api('repos/%s/issues/%d/comments' % (REPO, args.number), 'POST',
-		    {'body': 'Every table in this family now exists. '
-		             'Closing; the tables are the record.'})
+		    {'body': '\n'.join(lines)})
 		api('repos/%s/issues/%d' % (REPO, args.number), 'PATCH',
 		    {'state': 'closed'})
 		print('#%d closed; the family is built' % args.number)
@@ -547,6 +608,102 @@ def answer_request(number, tid, family_number=None):
 	    {'body': '\n'.join(body)})
 	api('repos/%s/issues/%d' % (REPO, number), 'PATCH', {'state': 'closed'})
 	print('  #%d answered by %s; closed' % (number, tid))
+
+
+#: Whether the site answered the last time it was asked. None until it has
+#: been tried; False stops the rest of this process asking again, because a
+#: campaign that waits ten seconds per family for a site that is down is
+#: slower than having no lock at all.
+_SITE_IS_THERE = None
+
+#: Where the site is, and the key that may claim on it.
+SITE = os.environ.get('NUMBERDB_HOST', 'https://numberdb.org').rstrip('/')
+KEY_FILE = os.environ.get('NUMBERDB_KEY',
+                          os.path.expanduser('~/.config/numberdb/zeta3-key'))
+
+
+def _site(path, method='GET', payload=None):
+	"""One request to numberdb.org, or None if it could not be made.
+
+	Small and dependency-free on purpose: this module runs on build machines
+	that carry no client library, and the only thing it needs from the site is
+	the claim endpoint.
+	"""
+	import urllib.error
+	import urllib.request
+
+	data = json.dumps(payload).encode() if payload is not None else None
+	request = urllib.request.Request(SITE + path, data=data, method=method)
+	request.add_header('Content-Type', 'application/json')
+	try:
+		with open(KEY_FILE) as handle:
+			token = handle.read().strip()
+		if token:
+			request.add_header('Authorization', 'Bearer %s' % (token,))
+	except OSError:
+		pass
+	proxy = os.environ.get('ALL_PROXY') or ''
+	if proxy:
+		#The laptop reaches the site only through a tunnel; a build machine
+		#does not and must not try.
+		pass
+	global _SITE_IS_THERE
+	if _SITE_IS_THERE is False:
+		#Asked once and it was not. A queue that waits thirty seconds per
+		#family for a site that is down is slower than no lock at all.
+		return None, None
+	try:
+		with urllib.request.urlopen(request, timeout=10) as answer:
+			_SITE_IS_THERE = True
+			return answer.status, json.loads(answer.read() or b'null')
+	except urllib.error.HTTPError as refused:
+		try:
+			return refused.code, json.loads(refused.read() or b'null')
+		except ValueError:
+			return refused.code, None
+	except Exception:                                    # noqa: BLE001
+		_SITE_IS_THERE = False
+		return None, None
+
+
+def held_by_others(family_number, mine=''):
+	"""Proposals of this family that somebody else is holding, by title."""
+	status, answer = _site('/api/claim?family=%d' % (family_number,))
+	if status != 200 or not isinstance(answer, dict):
+		return set()
+	return {row['proposal'] for row in answer.get('claims') or []
+	        if not mine or row.get('worker') != mine}
+
+
+def take(family_number, title, worker=''):
+	"""Claim a proposal on the site. True if it is ours.
+
+	The site is the lock: `(family, proposal)` is unique there, so exactly one
+	worker's insert succeeds and the rest are told who holds it. The checklist
+	mark below is written afterwards for whoever reads the issue -- it is a
+	trace, not the decision, because rewriting an issue body is a read, an
+	edit and a write, and two workers doing that in the same second lose one
+	another's edit. Every proposal of #178 was claimed that way in one minute
+	and none was built.
+	"""
+	status, answer = _site('/api/claim', 'POST',
+	                       {'family': family_number, 'proposal': title,
+	                        'worker': worker})
+	if status == 201:
+		return True
+	if status == 409:
+		return False
+	#The site could not be asked. Refusing to work because the lock is
+	#unreachable would stop the campaign for an outage; the duplicate-title
+	#refusal still stands behind us, so this falls through to the checklist
+	#and carries on.
+	return status is None
+
+
+def give_back(family_number, title):
+	"""Release a claim on the site."""
+	_site('/api/claim', 'DELETE',
+	      {'family': family_number, 'proposal': title})
 
 
 def claim(family, title, worker=''):
@@ -601,6 +758,10 @@ def release(family, title):
 
 
 def cmd_claim(args):
+	if not take(args.number, args.title, getattr(args, 'worker', '')):
+		print('#%d: %s is held by another worker' % (args.number, args.title),
+		      file=sys.stderr)
+		return 1
 	issue = api('repos/%s/issues/%d' % (REPO, args.number))
 	family = parse_family(issue)
 	if family is None:
@@ -618,6 +779,7 @@ def cmd_claim(args):
 
 
 def cmd_release(args):
+	give_back(args.number, args.title)
 	issue = api('repos/%s/issues/%d' % (REPO, args.number))
 	family = parse_family(issue)
 	if family is None:
