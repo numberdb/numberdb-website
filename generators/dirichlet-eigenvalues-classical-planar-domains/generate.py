@@ -243,8 +243,9 @@ def fill_draft_once(generator, message):
 
     for params in generator.enumerate():
         params = dict(params)
-        wanted = generator.digits_for(params)
-        entry = generator._entry(params, wanted)
+        requested = generator.digits_for(params)
+        entry = generator._entry(params, requested)
+        wanted = entry.get("digits", requested)
         value = entry["number"]
         identity = ",".join(str(params[name]) for name in generator.parameters)
         _check_rigour(generator, table, identity, value)
