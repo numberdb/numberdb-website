@@ -1,0 +1,5 @@
+done -- §1 changed `Similar tables` to `includes $1$ as its entry $n=1$`; checked live T1 still said `contained in`, T2 is indexed by `n`, T2's row `1` equals `HREF{One}`, and the Sage check passed.
+done -- §2 added `multiplicative identity` to `Keywords`; checked `search_text('multiplicative identity')` was empty before and returns T1 after, with `additive identity` returning T0 as the control.
+done -- §3 rewrote `comment-successor` as a full sentence naming the Peano axioms; checked the live comment was still the fragment `Successor of HREF{Zero}[zero].` and the rendered page now shows the new sentence.
+declined -- §4 left the Definition link to `HREF{Integers}`; the audit before and after has only this same finding, and here the link names the first mention of the integers rather than adding a relation clause.
+declined -- §5 made no edits to the noted-only items; they are global migrated rigour text, low-value wording/link/program/tag choices, or invisible storage shape, as the critique says.
