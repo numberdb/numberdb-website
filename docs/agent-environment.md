@@ -7930,3 +7930,85 @@ until they are, an empty `results` from `api/search` proves nothing.
 Evidence: 2026-09-21, T383 critique. `curl -s -G --data-urlencode
 "q=Chebyshev" https://numberdb.org/api/search` returned no results while
 `https://numberdb.org/?q=Chebyshev` returned 12; `numberdb_app/api.py:146`.
+
+## `screen.py requests` says the same thing when the backlog is empty and when GitHub is unreachable
+
+What happened: the ideation run of 2026-09-21T1426 was told to propose a batch
+from the open `table wanted` issues. `python3 agents/table-ideas/screen.py
+requests` printed nothing at all, which is what it prints when
+`requests()` cannot reach GitHub -- the function catches every exception and
+returns `[]`, exactly as `already_here` was fixed *not* to do. The corpus
+search worked in the same session, so the run had no way to tell an empty
+backlog from a dead call without asking another way.
+
+It was really empty. `gh issue list --repo numberdb/numberdb-data --label
+"table wanted" --state all --limit 300` returns 126 issues and every one is
+closed, 105 of them between 2026-09-18 and 2026-09-21. The whole 2021 backlog
+has been answered, and four issues are open in the repository: #176 and #177
+(proposals from today's other runs) and #133 and #137 (enhancements to
+existing tables).
+
+What to do instead: until `requests()` distinguishes them, confirm with `gh`
+before concluding anything from its silence, and say in the batch which of the
+two it was. The fix is the one `already_here` already carries: return a
+one-line complaint rather than an empty list, so that a failed question and an
+empty answer do not look the same.
+
+The stage prompt should also learn from it. "Start from the open requests, and
+build the family around one" has no fallback written into it, and a run that
+follows it literally today has nothing to do.
+
+Evidence: 2026-09-21, table-ideas run. `screen.py requests` printed nothing;
+`gh issue list ... --label "table wanted" --state all` returned 126 closed and
+0 open.
+
+## `source_names_it` matches substrings, so a plural or a hyphen fails a good source
+
+What happened: screening the batch above, four sources that name the family
+perfectly well were reported as not naming it.
+
+* `Weight enumerators of the classical linear codes` against Wikipedia's
+  *Enumerator polynomial*: "the source does not mention enumerators,
+  classical". The article says "enumerator" throughout and never the plural,
+  and `classical` is the corpus's own word for a curated list (T327, T329),
+  not a word any source uses.
+* `Extremal weight enumerators of Type II self-dual codes` against three arXiv
+  abstracts on exactly that subject: "does not mention self". `_distinguishing`
+  splits `self-dual` into `self` and `dual`, and those abstracts write "Type II
+  codes" where a textbook writes "self-dual doubly even".
+
+The check is doing what it says -- each distinguishing word must appear as a
+substring of the page -- and the effect is that the name a table should carry
+fails against the source that defines it, while the bare mathematical name
+passes.
+
+What to do instead: screen the family's name in the singular and without the
+house words, and record both that name and the proposed title in the batch.
+Worth fixing in `screen.py`: stem the words the way the corpus search does, or
+at least try each word with and without a trailing `s`, and glue a hyphenated
+pair back together before looking for it.
+
+Evidence: 2026-09-21. `source_names_it('weight enumerator of a linear code',
+'https://en.wikipedia.org/wiki/Enumerator_polynomial')` returns `None`;
+`source_names_it('Weight enumerators of the classical linear codes', <same
+url>)` complains about `enumerators, classical`.
+
+## Piping `agents/sage.sh` into `tail` hides the run until it ends
+
+What happened: a check was started as a background command,
+`agents/sage.sh script.py 2>&1 | tail -80`, so that only the interesting end
+of the output would come back. `tail` buffers everything until its input
+closes, so the task's output file stayed 0 bytes for twenty-five minutes and
+there was no way to tell a run waiting on the Sage lock from a run computing,
+or from a run that had wedged.
+
+That is the one thing `sage.sh` works hardest to prevent: it passes `-u` to
+Sage and `--line-buffered` to its own grep precisely so a long run says
+something every minute.
+
+What to do instead: redirect rather than pipe (`agents/sage.sh script.py >
+/tmp/run.log 2>&1 &`) and read the log, or run it in the foreground. If only
+the tail is wanted, take it after the run, from the file.
+
+Evidence: 2026-09-21, table-ideas run; the background task's output file was
+empty for the whole run and arrived complete at exit.
