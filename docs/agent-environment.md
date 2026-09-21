@@ -6940,3 +6940,50 @@ because every ideation run needs the two lines and none of them is in a
 template.
 
 Evidence: same run.
+
+## `curl` is challenged where `urllib` is not: lmfdb.org, arxiv.org, mathworld
+
+What happened: `curl https://www.lmfdb.org/api/...` came back as a Google
+reCAPTCHA challenge page, `curl https://arxiv.org/abs/...` as a 5 kB stub and
+`curl https://mathworld.wolfram.com/...` as a 1.6 kB stub, so an hour was
+spent concluding that three sources were unreachable and designing around it.
+They are not. The same URLs through `urllib` with the screen's own header,
+
+    urllib.request.Request(url, headers={'User-Agent': 'numberdb-proposal-screen'})
+
+answered 200 with the real body: the LMFDB API returned
+`{"table": "mf_newforms", ... "label": "23.2.a.a"}` and the arXiv abstract
+page returned 44 kB. This is the same distinction the OEIS note above
+records, and it is not the SOCKS proxy here -- `ALL_PROXY` is empty on this
+host, so both paths go direct and only the client differs.
+
+What to do instead: probe sources the way `source_names_it` does, with
+`urllib` and that header. Do not conclude "blocked" from a `curl` result.
+
+Two exceptions found by doing it: `lmfdb.org/knowledge/show/...` **is**
+challenged even through `urllib` -- four attempts, all 11 kB reCAPTCHA pages
+-- while `lmfdb.org/api/...` and `lmfdb.org/knowledge/?search=...` answer
+normally; and `export.arxiv.org/api/query` answers 406 for every header
+tried, while the `arxiv.org/abs/` page it would have pointed at is fine.
+
+Evidence: 2026-09-21T02:43Z ideas run, while screening the names in
+`BATCH-2026-09-21T0243.md`.
+
+## A challenge page can make `source_names_it` report success
+
+What happened: the reCAPTCHA page served for
+`lmfdb.org/knowledge/show/cmf.satake_angles` echoes the requested URL, so the
+words "satake" and "angles" are in the text the check greps, and the first
+call reported only that the page "does not mention newforms" -- which reads
+exactly like a real source with a singular in it. Later calls against the
+same URL reported the words missing, because the challenge page is not served
+identically each time, and the inconsistency is the only reason it was
+noticed at all.
+
+What to do instead: when a source check passes or nearly passes, look at the
+body once. Anything containing "recaptcha", "enable javascript", or little
+beyond the URL is not a source. This is written up for the skill in
+`agents/lessons/proposals/20260921T024346Z-ideas.md` as well, because it is
+true of any grep-the-page check and not only of this host.
+
+Evidence: same run.
