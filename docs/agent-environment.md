@@ -7442,3 +7442,31 @@ b-file route for the build, which is the run that actually needs the numbers.
 Evidence: 2026-09-21 ideas run. `curl -s -o /dev/null -w '%{http_code}'` gave
 403 for `https://oeis.org/A022166`, 403 for the `fmt=json` search, and 200 for
 `https://oeis.org/A022166/b022166.txt`.
+
+## A segfault inside `agents/sage.sh` can hang for the whole timeout and print nothing
+
+What happened: a checks script ran for 900 seconds under
+`timeout 900 agents/sage.sh script.py 2>&1 | tail -30`, was killed with exit
+143, and printed nothing at all -- not the twenty lines it had already
+produced before it stopped. Inside the container the process was sleeping with
+one second of CPU after twelve minutes, which reads exactly like a slow
+computation.
+
+It was not slow. The script had crashed: a symmetric-function basis conversion
+segfaults when `sage.all` has not been imported (see the lesson file for the
+mathematics of that), and cysignals' SIGSEGV handler tries to attach gdb,
+which is not installed in `numberdb/builder:latest`. Run directly to a file
+the same crash prints its banner and exits in seconds; under the pipeline it
+sat there.
+
+Two things to do differently. **Do not pipe `agents/sage.sh` into `tail` or
+`head`**: the pipe buffers everything, so a killed run loses the output it had
+already written, and a run in trouble looks identical to a run that is
+working. Redirect to a file and read the file, which also lets you watch it
+while it runs. And when a container is sleeping with no CPU, suspect a crash
+handler rather than a long computation.
+
+Evidence: 2026-09-21 ideas run. `/tmp/hom_checks.py`, 900 s, exit 143, empty
+output; the same script redirected to `/tmp/probe.out` gave
+"Unhandled SIGSEGV ... Attaching gdb to process id 1. Cannot find gdb
+installed" in under a minute.
