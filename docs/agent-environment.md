@@ -6901,3 +6901,50 @@ gets and it costs one request. Where it is still 404, the piecewise
 Evidence: 2026-09-21, run `20260921T193752Z`, `/tmp/T389.html` (404, 11,533
 bytes at 19:38; 200, 580,935 bytes at 19:45), `/files/T389` naming the head
 revision "write exact MDS weight enumerator draft" of 19:35.
+
+## The read lockout is per IP and a key does not lift it, so a corpus walk costs the box its hour
+
+What happened: this ideation run had no `table wanted` issue to anchor on and
+needed to know what the corpus covers instead. There is no call that lists the
+tables, so it walked them: `numberdb.table('T%d')` for 1 to 460, eight threads,
+which found all 389 that exist. The next call, an ordinary
+`numberdb.search_text('quantile')`, raised
+
+    numberdb._errors.RateLimitError: too many requests; retry in 2532s
+
+Forty-two minutes, and the whole screening stage of the run depends on that
+one function.
+
+The new part is what does not help. The note above from 2026-09-16 records
+that "authenticated `curl` to `/api/table?id=T260` answered 200 throughout" a
+lockout; that is no longer so. With `NUMBERDB_API_KEY` set from
+`$NUMBERDB_KEY_FILE` and the client confirming it (`Client().api_key` truthy),
+every call still refused, and so did `curl` with the bearer header:
+
+    authenticated /api/table:  429
+    anonymous     /api/table:  429
+    authenticated /api/lookup: 429
+
+So the budget is spent per address and counts authenticated requests too. Four
+workers share this box, so one run's sweep locks out the other three and the
+Sage container as well.
+
+What to do instead: walk the corpus **once** per campaign, not once per run,
+and keep the dump. This run wrote titles, tags, keyword lists and the first
+300 characters of every definition to a file, which is enough to answer
+`already_here` offline for any proposal and costs nothing to re-read:
+
+    {"T241": {"Title": "Differential entropies of continuous probability
+     distributions", "Tags": [...], "Keywords": [...], "Definition": "..."}}
+
+Put it somewhere a later run will find it rather than in `/tmp`, which is also
+shared: a file called `/tmp/corpus.json` already existed here, written by
+another worker at 18:55 with a different schema, and reading it back silently
+answered the wrong question until its keys were printed. Name scratch files
+for the run that makes them.
+
+Evidence: 2026-09-21, ideation run `20260921T200608Z`. `/tmp/w2-ideas/corpus.py`
+(389 tables, `TABLES_FOUND 259` then 126 then 15 over three passes);
+`/tmp/w2-ideas/q.py` refused at 20:12 with `retry in 2532s`;
+`/tmp/w2-ideas/here.py` refused with a key at 20:33 with `retry in 1678s`; the
+three `curl` codes above at 20:36.
