@@ -3,11 +3,10 @@
 # person's review act on the site.
 Title: Daubechies extremal-phase scaling filters $h^{(N)}_k$
 Definition: >-
-  For $N\geq 1$, the Daubechies extremal-phase scaling filter
-  $h^{(N)}$ is the low-pass reconstruction filter of the orthogonal
-  Daubechies wavelet `dbN` in the PyWavelets convention CITE{PyWavelets}.
-  It has support $0\leq k\leq 2N-1$ and is normalised by
-  $\sum_{k=0}^{2N-1} h^{(N)}_k=\sqrt2$.
+  For $N\geq 1$, the Daubechies extremal-phase scaling filter $h^{(N)}$ is
+  the low-pass reconstruction filter with $\sum_k h^{(N)}_k=\sqrt2$, whose
+  spectral factor chooses the root outside the unit circle from each
+  reciprocal pair. PyWavelets returns it as `dbN`.rec_lo CITE{PyWavelets}.
 Parameters:
   N:
     type: Z
@@ -24,15 +23,16 @@ Comments:
     The orientation is PyWavelets' `rec_lo` order: $h^{(2)}_0=0.48296\ldots$
     and the energy is concentrated near the $k=0$ end. PyWavelets' `dec_lo`
     filter is the reverse order CITE{PyWavelets}; reversing the order gives
-    the other extremal phase convention.
+    the other extremal phase convention. The filter $h^{(N)}$ is also written
+    $D_{2N}$, after its number of taps CITE{Wiki}, so $D_4$ is $N=2$ and
+    PyWavelets `db4` is $N=4$. The case $N=1$ is the Haar filter, with both
+    taps equal to $1/\sqrt2$.
   comment-normalisation: >-
     Some tables of Daubechies coefficients, including the table in the
     Wikipedia article CITE{Wiki}, are normalised to sum to $2$. Those
     coefficients are $\sqrt2$ times the values stored here.
   comment-high-pass: >-
-    The high-pass wavelet coefficients are obtained from the same numbers by
-    reversal and alternating signs. This table stores only the low-pass
-    scaling filter.
+    This table stores only the low-pass scaling filter.
   comment-construction: >-
     The construction uses the Daubechies spectral factorisation
     CITE{DaubechiesBook}. From each reciprocal pair of nonzero roots it
@@ -48,8 +48,7 @@ Formulas:
     P_N\left(\frac{2-z-z^{-1}}{4}\right)$, where
     $H_N(z)=\sum_{k=0}^{2N-1}h^{(N)}_kz^k$.
   formula-orthogonality: >-
-    $\sum_k h^{(N)}_k h^{(N)}_{k-2m}=1$ for $m=0$, and the same sum is $0$
-    for every nonzero integer $m$.
+    $\sum_k h^{(N)}_k h^{(N)}_{k-2m}=\delta_{m,0}$ for every integer $m$.
   formula-moments: >-
     $\sum_{k=0}^{2N-1}(-1)^k k^r h^{(N)}_k=0$ for $0\leq r<N$.
   formula-high-pass: >-
@@ -57,24 +56,23 @@ Formulas:
     filter.
   formula-db2: >-
     For $N=2$,
-    $h_0=(1+\sqrt3)/(4\sqrt2)$,
-    $h_1=(3+\sqrt3)/(4\sqrt2)$,
-    $h_2=(3-\sqrt3)/(4\sqrt2)$ and
-    $h_3=(1-\sqrt3)/(4\sqrt2)$.
+    $h^{(2)}_0=(1+\sqrt3)/(4\sqrt2)$,
+    $h^{(2)}_1=(3+\sqrt3)/(4\sqrt2)$,
+    $h^{(2)}_2=(3-\sqrt3)/(4\sqrt2)$ and
+    $h^{(2)}_3=(1-\sqrt3)/(4\sqrt2)$.
 Programs:
   program-pywavelets:
     language: Python
     code: |-
       import pywt
 
-      pywt.Wavelet("db4").rec_lo
+      N = 4
+      k = 0
+      pywt.Wavelet("db%d" % N).rec_lo[k]
 Links:
   PyWavelets:
     title: 'PyWavelets: Wavelets'
     url: https://pywavelets.readthedocs.io/en/latest/ref/wavelets.html
-  PyWaveletsFunctions:
-    title: 'PyWavelets: orthogonal_filter_bank source'
-    url: https://github.com/PyWavelets/pywt/blob/main/pywt/_functions.py
   Wiki:
     title: 'Wikipedia: Daubechies wavelet'
     url: https://en.wikipedia.org/wiki/Daubechies_wavelet
@@ -85,16 +83,15 @@ References:
   DaubechiesBook:
     bib: Ingrid Daubechies, Ten Lectures on Wavelets, CBMS-NSF Regional Conference Series in Applied Mathematics 61, SIAM, 1992
     doi: 10.1137/1.9781611970104
-Keywords: Daubechies wavelet, Daubechies filters, dbN, D2, D4, D6, D8, D10, D14, D20
+Keywords: Daubechies wavelet, Daubechies filters, Haar wavelet, Haar filter, signal processing, dbN, D2, D4, D6, D8, D10, D12, D14, D16, D18, D20, D22, D24, D26, D28, D30, D32, D34, D36, D38, D40, D42, D44, D46, D48, D50
 Tags:
-  - signal processing
   - analysis
   - algebraic
 Data properties:
   type: R
   rigour: proven
   complete: 'no'
-  complete-note: it holds every extremal-phase Daubechies low-pass filter with $1\leq N\leq 25$
+  complete-note: it holds every extremal-phase Daubechies low-pass filter with $1\leq N\leq 25$, a 650-entry reference range chosen to stay comfortably below the recommended thousand-entry size
   rigour details: >-
     The generator builds $P_N$ over $\mathbb{Q}$, computes its roots in
     Sage's exact algebraic closure, chooses the root outside the unit circle
@@ -103,7 +100,8 @@ Data properties:
     every $1\leq N\leq 25$ it checks the normalisation, the first $N$
     vanishing moments, and the even-shift orthogonality relations. The build
     run also compared every stored coefficient against the independent
-    MusicDSP `daub.h` coefficient file CITE{MusicDSP}.
+    MusicDSP `daub.h` coefficient file, to the 61 significant digits carried
+    by that file CITE{MusicDSP}.
 Display properties:
   number-header: $h^{(N)}_k$
 Numbers: []
