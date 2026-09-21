@@ -1,0 +1,7 @@
+done -- Extended the table from $0\leq n\leq100$ to $0\leq n\leq170$ with a `numberdb.Generator` and `publish(overwrite=False)`, after `preview` reported 70 missing and no differing entries; checked $n!$ for $0..170$ against direct factorials, products, the recurrence $n!=(n)(n-1)!$, and Legendre trailing-zero counts.
+done -- Added `complete-note` saying the table holds every $n!$ for $0\leq n\leq170$ and that this is the finite double-precision range; checked `170!` has 307 digits, converts to a finite double, and `171!` overflows.
+done -- Replaced the broken Sage set-comprehension program with a one-value Sage snippet; the keyed audit had reported the stale `0..100` range after the extension, and the final keyed audit returned clean.
+done -- Changed the definition to state $0! = 1$ as the empty product, after confirming the live table still had the $n=0$ row and the old definition.
+done -- Added T9 to `Similar tables` and linked the Gamma function in the factorial formula; checked the live T9 stores $\Gamma(1)$ through $\Gamma(30)$ with `equals` links to $0!$ through $29!$.
+done -- Replaced the stale attached `generate.sage` and added `generate.py` with the generator that enumerates $0..170$ and returns `ZZ(n).factorial()`; keyed `verify(sample=None)` matched 171/171 after the edit.
+declined -- Left `Comments` and `Keywords` empty, because the critique found no missing convention or search term there and the title already carries the term a reader would type.
