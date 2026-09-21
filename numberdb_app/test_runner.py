@@ -77,6 +77,27 @@ class TheRunnerFencesOffWhatItCannotUndo(TestCase):
 		self.assertIn('the queue offered the same item twice', body)
 		self.assertIn('last_item', body)
 
+	def test_a_question_nobody_answered_is_still_written_down(self):
+		#The report is the mark: work.py offers a table for growth until
+		#<tid>-growth.md exists. A run that produced none left the table as it
+		#found it, the queue offered it again, and the repeat guard stopped
+		#the campaign -- three workers on T293 within a minute.
+		body = script('agents/campaign.sh')
+		self.assertIn('writing down that the run produced none', body)
+		self.assertIn('run produced no report', body)
+
+	def test_a_queue_that_cannot_be_read_does_not_kill_the_campaign(self):
+		#`set -o pipefail` plus `set -e` meant that one refused GitHub request
+		#ended the campaign inside top_up_if_low, before the check that was
+		#written to report it could run: three workers died within a minute of
+		#each other and each log's last line was the previous item.
+		body = script('agents/campaign.sh')
+		self.assertIn('queue_waiting || true', body)
+		self.assertIn('could not be read twice', body)
+		#And a failed screening is not the end either, while other work waits.
+		self.assertIn('the screening failed with status', body)
+		self.assertIn('carrying on with the work that is already waiting', body)
+
 	def test_an_unpushed_commit_is_pushed_rather_than_refused(self):
 		#The rule is right and the refusal was not: it stopped the campaign
 		#three times in two days, and every time the remedy was one command
