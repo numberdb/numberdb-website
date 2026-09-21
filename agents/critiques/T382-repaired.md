@@ -1,0 +1,4 @@
+1. done -- clarified the T381 specialization in the comment and Similar tables row, and replaced the foreign $a_{n-1}=0$ phrase in `rigour details` with the sum-zero root condition; checked the live text still had the issue and Sage verified T381 specializes to T382 for degrees $2$ through $5$.
+2. done -- added formal coefficients to the Definition and then shortened it after audit reported the first wording was too long; checked the live Definition lacked the phrase and the final audit is clean.
+3. done -- changed the completeness note to say the degree $7$ entry has 8099 characters and 320 terms, too long to read on a page; checked in Sage that degree $6$ recomputes to the stored value and degree $7$ has exactly those counts.
+4. left for a person -- T381 and T382 still return 404 on the rendered page routes, while the API can see both drafts; publishing T381 before or with T382 is a reviewer decision, not a document edit I can make.
