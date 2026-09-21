@@ -4,10 +4,10 @@
 # Publishing is a person's act.
 Title: Moments of the characteristic polynomials of unitary, orthogonal and symplectic matrices
 Definition: >-
-  For $G\in\{U,O,USp\}$ and positive integer $k$, this table stores the
-  exact rational random-matrix factor $g_G(k)=e_G(k)! f_G(k)$ in the CFKRS
-  conductor normalisation CITE{CFKRS}. The exponents are
-  $e_U(k)=k^2$, $e_O(k)=k(k-1)/2$, and $e_{USp}(k)=k(k+1)/2$.
+  For positive integer $k$ and compact symmetry type $G\in\{U,O,USp\}$,
+  $g_G(k)=e_G(k)! f_G(k)$ is the exact rational CFKRS random-matrix factor
+  for characteristic-polynomial moments CITE{CFKRS}. The parameter $G$
+  chooses which symmetry type the same factor is attached to.
 Keywords:
   - random matrix factor
   - characteristic polynomial moment
@@ -41,7 +41,8 @@ Comments:
     used by the Euler-product tables in this family are not included here.
 Formulas:
   formula-factor: >-
-    $f_G(k)=g_G(k)/e_G(k)!$ is the random-matrix factor in the leading term.
+    $f_G(k)=g_G(k)/e_G(k)!$ is the random-matrix factor in the leading term,
+    with $e_U(k)=k^2$, $e_O(k)=k(k-1)/2$, and $e_{USp}(k)=k(k+1)/2$.
   formula-unitary: >-
     $g_U(k)=k^2!\prod_{j=0}^{k-1}\frac{j!}{(k+j)!}$. Thus
     $g_U(1),g_U(2),g_U(3),g_U(4),g_U(5)=1,2,42,24024,701149020$
@@ -93,7 +94,6 @@ References:
     doi: 10.1088/0305-4470/34/22/304
     arxiv: cond-mat/0101469
 Tags:
-  - moments
   - groups
   - probability theory
 Data properties:
