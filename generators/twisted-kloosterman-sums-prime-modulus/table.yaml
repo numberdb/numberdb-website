@@ -1,0 +1,130 @@
+# The table document for twisted Kloosterman sums modulo a prime, from
+# numberdb-data issue #174, answering numberdb-data issue #13. Created as a
+# draft through the API (X-Draft: yes) and filled by generate.py beside it;
+# publishing is a person's act on the site.
+Title: Twisted Kloosterman sums modulo a prime
+Keywords:
+  - Salié sums
+  - Salie sums
+Definition: >-
+  For a prime $p$, a nontrivial Dirichlet character
+  $\chi=\chi_p(n,\cdot)$ in Conrey's labelling CITE{CL}, and an integer $a$
+  with $1\leq a\leq p-1$, this table lists the twisted Kloosterman sum
+  $K(a,\chi;p)=\sum_{x=1}^{p-1}\chi(x)e^{2\pi i(ax+\bar x)/p}$ CITE{Wiki},
+  where $\bar x$ is the inverse of $x$ modulo $p$.
+Parameters:
+  p:
+    type: Z
+    title: prime modulus
+    display: $p$
+    constraints: $p$ prime, $p\geq5$
+  n:
+    type: Z
+    title: Conrey index of $\chi$
+    display: $n$
+    constraints: $2\leq n\leq p-1$
+    comments: The pair $(p,n)$ uniquely determines the nontrivial character $\chi=\chi_p(n,\cdot)$.
+  a:
+    type: Z
+    title: coefficient of $x$ in the exponent
+    display: $a$
+    constraints: $1\leq a\leq p-1$
+Comments:
+  comment-conrey: >-
+    The Conrey label $(p,n)$ CITE{CL} names the character $\chi_p(n,\cdot)$
+    with $\chi_p(g^r,g^s)=e^{2\pi i rs/(p-1)}$, where $g$ is the least
+    positive integer generating $(\mathbb{Z}/p^k\mathbb{Z})^\times$ for every
+    $k\geq1$, which for the primes here is the least primitive root modulo
+    $p$. The trivial character is $\chi_p(1,\cdot)$ and is excluded because
+    HREF{Kloosterman_sums_modulo_a_prime}[Kloosterman sums modulo a prime]
+    lists those values. The quadratic character is $\chi_p(p-1,\cdot)$; its
+    entries here are Salié sums.
+  comment-two-parameters: >-
+    The two-parameter twisted sum is
+    $K(a,b,\chi;p)=\sum_{x=1}^{p-1}\chi(x)e^{2\pi i(ax+b\bar x)/p}$. For
+    $p\nmid b$, $K(a,b,\chi;p)=\chi(b)K(ab,\chi;p)$ by the change of variable
+    $x=by$. The cases with $a=0$ or $b=0$ are Gauss sums of $\chi$ or
+    $\bar\chi$, which are listed in
+    HREF{Gauss_sums_of_primitive_Dirichlet_characters}[the Gauss-sum table].
+  comment-algebraic: >-
+    $K(a,\chi;p)$ is an algebraic integer in
+    $\mathbb{Z}[\zeta_p,\zeta_d]$, where $d$ is the order of $\chi$ and
+    $\zeta_m=e^{2\pi i/m}$ is a HREF{Roots_of_unity}[root of unity]. Each
+    entry's comment gives $d$ and the degree over $\mathbb{Q}$; when that
+    degree is at most $12$, it also gives the minimal polynomial. The entries
+    with the quadratic character are the classical Salié sums CITE{Salie}.
+Formulas:
+  formula-two-parameters: >-
+    $K(a,b,\chi;p)=\chi(b)K(ab,\chi;p)$ for $p\nmid b$.
+  formula-gauss-boundary: >-
+    For a nontrivial character $\chi$ modulo $p$,
+    $K(a,0,\chi;p)=\bar\chi(a)\tau(\chi)$ and
+    $K(0,b,\chi;p)=\chi(b)\tau(\bar\chi)$ when $p\nmid ab$, where
+    $\tau(\chi)$ is the HREF{Gauss_sums_of_primitive_Dirichlet_characters}[Gauss sum].
+  formula-conjugate: >-
+    $\overline{K(a,\chi;p)}=\bar\chi(-1)K(a,\bar\chi;p)$.
+  formula-weil: >-
+    $|K(a,\chi;p)|\leq2\sqrt p$ for nontrivial $\chi$ and $p\nmid a$
+    CITE{Weil}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      chi = [c for c in DirichletGroup(7) if c.conrey_number() == 2][0]   # chi_7(2, .)
+      chi.kloosterman_sum(3, 1)                                           # exact, in a cyclotomic field
+      CBF = ComplexBallField(400)
+      sum(CBF(chi(x)) * (2*CBF.pi()*CBF(0,1)*(3*x + inverse_mod(x, 7))/7).exp() for x in range(1, 7))
+Similar tables:
+  - table: HREF{Kloosterman_sums_modulo_a_prime}[Kloosterman sums modulo a prime]
+    relation: the same sums with the trivial character $\chi_p(1,\cdot)$
+  - table: HREF{Gauss_sums_of_primitive_Dirichlet_characters}[Gauss sums of primitive Dirichlet characters]
+    relation: the boundary cases $a=0$ or $b=0$ of the two-parameter twisted sums
+  - table: HREF{Jacobi_sums_of_pairs_of_Dirichlet_characters_modulo_a_prime}[Jacobi sums of pairs of Dirichlet characters modulo a prime]
+    relation: the same characters under the same Conrey labels
+  - table: HREF{Roots_of_unity}[Roots of unity]
+    relation: the values $\chi(x)$ and $e^{2\pi i(ax+\bar x)/p}$ that are summed
+Links:
+  Wiki:
+    title: 'Wikipedia: Kloosterman sum'
+    url: https://en.wikipedia.org/wiki/Kloosterman_sum
+  LMFDB:
+    title: 'LMFDB: Dirichlet characters'
+    url: https://www.lmfdb.org/Character/Dirichlet/
+  CL:
+    title: 'LMFDB knowl: Conrey label'
+    url: https://www.lmfdb.org/knowledge/show/character.dirichlet.conrey
+  Request13:
+    title: 'Requested in numberdb-data#13'
+    url: https://github.com/numberdb/numberdb-data/issues/13
+References:
+  Salie:
+    bib: >-
+      H. Salié, Über die Kloostermanschen Summen $S(u,v;q)$, Mathematische
+      Zeitschrift 34 (1932), 91-109.
+  Weil:
+    bib: >-
+      A. Weil, On some exponential sums, Proceedings of the National Academy
+      of Sciences of the USA 34 (1948), 204-207.
+  Katz:
+    bib: >-
+      N. M. Katz, Gauss Sums, Kloosterman Sums, and Monodromy Groups, Annals
+      of Mathematics Studies 116, Princeton University Press, 1988.
+Tags:
+  - algebraic
+  - number theory
+Data properties:
+  type: C
+  rigour: proven
+  complete: 'no'
+  complete-note: every nontrivial character and every nonzero $a$ for the primes $5\leq p\leq19$ is here
+  rigour details: >-
+    Each value is a complex ball at 397 bits: the sum of the $p-1$ terms
+    $\chi(x)e^{2\pi ir}$, where $r$ is the exact rational $(ax+\bar x)/p$
+    reduced modulo $1$, each term arb's exponential of a ball containing its
+    exact argument. The generator builds $\chi_p(n,\cdot)$ from Conrey's
+    definition, not from a library, and requires it to agree with Sage's
+    character on every value before any entry at that prime is returned. A
+    hundred digits are written. The remaining checks are stated in the
+    generator attached to the table.
+Display properties:
+  number-header: $K(a,\chi;p)$
