@@ -111,10 +111,26 @@ fi
 # in the label it records rather than pretending.
 if [ "${NUMBERDB_ALLOW_UNPUSHED:-0}" != "1" ] \
 		&& [ -z "$(git branch -r --contains HEAD 2>/dev/null)" ]; then
-	echo "Refusing: HEAD is not on any remote, so the version this run would" >&2
-	echo "record names a commit nobody else can fetch. Push first:" >&2
-	echo "    git push origin $(git rev-parse --abbrev-ref HEAD)" >&2
-	exit 3
+	# Push it rather than refuse it.
+	#
+	# The rule is right -- a recorded pipeline version naming a commit nobody
+	# can fetch is a note to itself -- but as a refusal it stopped the
+	# campaign three times in two days, and every time the remedy was one
+	# command that nobody was there to type. A commit made in this tree is
+	# this tree's to publish, and a run that pushes at the end can push at the
+	# start too.
+	#
+	# Refused only if the push fails, which means something a machine should
+	# not decide: no credentials, a diverged branch, a rejected update.
+	if git push --quiet origin HEAD 2>/dev/null; then
+		echo "=== pushed $(git rev-parse --short HEAD) before starting"
+	else
+		echo "Refusing: HEAD is not on any remote and could not be pushed, so" >&2
+		echo "the version this run would record names a commit nobody else" >&2
+		echo "can fetch. Push it yourself:" >&2
+		echo "    git push origin $(git rev-parse --abbrev-ref HEAD)" >&2
+		exit 3
+	fi
 fi
 
 mkdir -p agents/runs

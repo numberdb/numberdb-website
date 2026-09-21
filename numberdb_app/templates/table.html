@@ -16,9 +16,15 @@ from the title and is deliberately *not* updated when a table is renamed,
 because every link anybody has written points at it. The consequence is that a
 renamed table keeps a slug naming a title it no longer has, which is fine for a
 link that must keep working and wrong for the address to quote.
+
+**And on which host.** This was built from the request, so numberdb.org said
+it was canonical and www.numberdb.org said *it* was -- two complete copies of
+the site, each insisting it was the original, which is exactly the "duplicate
+without user-selected canonical" Google reported on fourteen pages. The host
+is a property of the site and comes from settings now.
 {% endcomment %}
 {% block extra_head %}
-  <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{% url 'db:table' table.tid %}">
+  <link rel="canonical" href="{{ canonical_origin }}{% url 'db:table' table.tid %}">
 {% endblock %}
 
 {% block breadcrumb %}
