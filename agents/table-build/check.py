@@ -93,7 +93,7 @@ def exactness(values):
                         'it can fail' % (key, coefficient))
                     break
                 continue
-            if name not in ('Integer', 'Rational', 'int', 'Fraction'):
+            if name not in ('Integer', 'Rational', 'int'):
                 complaints.append('%s: coefficient of unexpected type %s'
                                   % (key, name))
                 break
