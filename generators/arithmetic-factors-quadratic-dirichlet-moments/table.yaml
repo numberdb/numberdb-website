@@ -1,0 +1,159 @@
+# Draft document for T380, Arithmetic factors in the moments of quadratic
+# Dirichlet L-functions. It was created through the API with X-Draft: yes and
+# Numbers: [] so generate.py can fill it once. Publishing is a person's act.
+Title: Arithmetic factors in the moments of quadratic Dirichlet $L$-functions
+Definition: >-
+  For $k>0$ rational, $A_k$ is the positive real Euler product in
+  CITE{formula-ak}. It is the arithmetic factor in the CFKRS moment
+  conjecture for central values $L(1/2,\chi_d)$ of quadratic Dirichlet
+  $L$-functions CITE{WikiDirichlet} CITE{CFKRS}.
+Keywords:
+  - quadratic Dirichlet L-function moment
+  - Dirichlet L-function moment
+  - arithmetic factor
+  - Euler product
+  - symplectic family
+  - Keating-Snaith
+  - CFKRS
+Parameters:
+  k:
+    type: Q
+    title: moment parameter
+    display: $k$
+    constraints: $k>0$
+Comments:
+  comment-indexing: >-
+    The same key $k$ is used throughout the moment-constant family. In this
+    symplectic family it is the power of $L(1/2,\chi_d)$, while in the zeta
+    table the same $k$ labels the $2k$-th absolute moment.
+  comment-factor: >-
+    This table stores the arithmetic factor $A_k$ alone. The leading constant
+    pairs it with the symplectic random-matrix factor $f_{USp}(k)$, whose
+    integer normalisation $g_{USp}(k)$ is stored in
+    HREF{T379}[the random-matrix factor table].
+  comment-branches: >-
+    The rational powers in CITE{formula-ak} are taken on positive real bases.
+    Since $p>1$, both $1-p^{-1/2}$ and $1+p^{-1/2}$ are positive.
+Formulas:
+  formula-moment: >-
+    Conjecturally, the leading coefficient in the CFKRS polynomial for
+    $\sum_d^* L(1/2,\chi_d)^k$ is $A_k f_{USp}(k)$, with exponent
+    $k(k+1)/2$ in the logarithm of the conductor.
+  formula-ak: >-
+    $A_k=\prod_p (1-p^{-1})^{k(k+1)/2}
+    \frac{\frac12\left((1-p^{-1/2})^{-k}+(1+p^{-1/2})^{-k}\right)+p^{-1}}
+    {1+p^{-1}}$, where the product runs over rational primes.
+  formula-integer-local-factor: >-
+    If $k$ is a positive integer, the local factor in CITE{formula-ak} is
+    $(1-p^{-1})^{k(k+1)/2}
+    \frac{(1-p^{-1})^{-k}\sum_{m=0}^{\lfloor k/2\rfloor}
+    {k\choose 2m}p^{-m}+p^{-1}}{1+p^{-1}}$.
+  formula-control: >-
+    $A_1=\prod_p(1-1/(p(p+1)))$.
+Programs:
+  program-pari-integers:
+    language: PARI/GP
+    code: |-
+      \\ positive integer k only
+      default(realprecision, 140)
+      k = 3
+      e = k*(k + 1)/2
+      s = sum(m = 0, floor(k/2), binomial(k, 2*m)/p^m)
+      prodeulerrat((1 - 1/p)^e * ((s/(1 - 1/p)^k + 1/p)/(1 + 1/p)), 1, 2)
+Similar tables:
+  - table: HREF{T377}[Arithmetic factors $a_k$ in the moments of the Riemann zeta function]
+    relation: stores the analogous arithmetic factor for the unitary zeta-moment family
+  - table: HREF{T379}[Moments of the characteristic polynomials of unitary, orthogonal and symplectic matrices]
+    relation: stores the random-matrix factors paired with arithmetic factors in this moment-constant family
+Links:
+  WikiDirichlet:
+    title: 'Wikipedia: Dirichlet L-function'
+    url: https://en.wikipedia.org/wiki/Dirichlet_L-function
+  PARIProdEulerRat:
+    title: 'PARI/GP reference: prodeulerrat'
+    url: https://pari.math.u-bordeaux.fr/dochtml/html-stable/Sums__products__integrals_and_similar_functions.html
+  Request20:
+    title: Requested in numberdb-data#20
+    url: https://github.com/numberdb/numberdb-data/issues/20
+  Request23:
+    title: Requested in numberdb-data#23
+    url: https://github.com/numberdb/numberdb-data/issues/23
+  Request24:
+    title: Requested in numberdb-data#24
+    url: https://github.com/numberdb/numberdb-data/issues/24
+  Request25:
+    title: Requested in numberdb-data#25
+    url: https://github.com/numberdb/numberdb-data/issues/25
+  Request26:
+    title: Requested in numberdb-data#26
+    url: https://github.com/numberdb/numberdb-data/issues/26
+  Request35:
+    title: Requested in numberdb-data#35
+    url: https://github.com/numberdb/numberdb-data/issues/35
+  Request49:
+    title: Requested in numberdb-data#49
+    url: https://github.com/numberdb/numberdb-data/issues/49
+  Request51:
+    title: Requested in numberdb-data#51
+    url: https://github.com/numberdb/numberdb-data/issues/51
+  Request68:
+    title: Requested in numberdb-data#68
+    url: https://github.com/numberdb/numberdb-data/issues/68
+  Request71:
+    title: Requested in numberdb-data#71
+    url: https://github.com/numberdb/numberdb-data/issues/71
+  Request72:
+    title: Requested in numberdb-data#72
+    url: https://github.com/numberdb/numberdb-data/issues/72
+  Request86:
+    title: Requested in numberdb-data#86
+    url: https://github.com/numberdb/numberdb-data/issues/86
+  Request87:
+    title: Requested in numberdb-data#87
+    url: https://github.com/numberdb/numberdb-data/issues/87
+  Request95:
+    title: Requested in numberdb-data#95
+    url: https://github.com/numberdb/numberdb-data/issues/95
+  Request108:
+    title: Requested in numberdb-data#108
+    url: https://github.com/numberdb/numberdb-data/issues/108
+  Request121:
+    title: Requested in numberdb-data#121
+    url: https://github.com/numberdb/numberdb-data/issues/121
+  Request123:
+    title: Requested in numberdb-data#123
+    url: https://github.com/numberdb/numberdb-data/issues/123
+  Request132:
+    title: Requested in numberdb-data#132
+    url: https://github.com/numberdb/numberdb-data/issues/132
+  Request136:
+    title: Requested in numberdb-data#136
+    url: https://github.com/numberdb/numberdb-data/issues/136
+References:
+  CFKRS:
+    bib: >-
+      J. Brian Conrey, David W. Farmer, Jon P. Keating, Michael O.
+      Rubinstein and Nina C. Snaith, Integral moments of L-functions,
+      Proceedings of the London Mathematical Society 91 (2005), 33-104.
+    arxiv: math/0206018
+Tags:
+  - number theory
+  - L-function
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: >-
+    it holds $k=1/2,1,3/2,\ldots,6$ and every integer $7\leq k\leq12$
+  rigour details: >-
+    The generator computes the small-prime local factors directly, computes
+    the middle prime range from the exact power-series coefficients of the
+    logarithm of the local factor in CITE{formula-ak}, and computes the
+    remaining prime tail from prime-zeta values. The written 100 digits were
+    computed with 140-digit settings and recomputed with 160-digit settings;
+    the written digits agreed. The checks include CITE{formula-control} and
+    the integer rows against PARI's `prodeulerrat` applied to
+    CITE{formula-integer-local-factor} CITE{PARIProdEulerRat}.
+Display properties:
+  number-header: $A_k$
+Numbers: []
