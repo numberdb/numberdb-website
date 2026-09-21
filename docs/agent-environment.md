@@ -8012,3 +8012,68 @@ the tail is wanted, take it after the run, from the file.
 
 Evidence: 2026-09-21, table-ideas run; the background task's output file was
 empty for the whole run and arrived complete at exit.
+
+## `/preview` renumbers citations per piece, so a `CITE` whose target is in another piece renders as its bare key
+
+What happened: the T384 critique rendered a private draft through
+`GET /preview?table=<json>` in thirteen pieces, the recipe of the T289 and
+T366 notes above. The first piece carried `Title`, `Definition`, `Parameters`
+and `Display properties`, and the Definition came back reading
+
+    ... the resultant $\operatorname{Res}(f_m,g_n)$ ResultantWiki, normalized
+    by Formula formula-roots.
+
+which looks exactly like the fault the critique prompt sends a reader to find:
+a citation that did not resolve. It is not. `CITE{}` is numbered against the
+`Links` and `Formulas` of the document it is given, and that piece had
+neither, so the renderer fell back to printing the key. The same Definition
+sent again with `Formulas` and one `Links` entry beside it rendered
+"... $\operatorname{Res}(f_m,g_n)$ **[1]**, normalized by Formula **(1)**".
+
+The numbering is also relative, not absolute: a piece carrying only the second
+and third links numbers them `[1]` and `[2]`. So neither the presence of a
+citation's text nor the number it carries can be read off a piece.
+
+What to do instead: when rendering a draft in pieces, put every `CITE` target
+in the same piece as the prose that cites it -- the whole of `Formulas` and
+the whole of `Links` if they fit, and if they do not, accept that the numbers
+shown are that piece's and check only that each key resolved to *something*.
+Never report an unresolved `CITE` or a wrong citation number from a piece
+without re-sending the prose with its targets attached.
+
+Evidence: 2026-09-21, T384 critique. `/tmp/T384-def.html` and
+`/tmp/T384-links.html` show `ResultantWiki` and `formula-roots` as plain text;
+`/tmp/T384-cite.html`, the same Definition with `Formulas` and the single
+cited link, shows `[1]` and `Formula (1)`. `/tmp/prev384.py` and
+`/tmp/prev384b.py`.
+
+## `audit_table` cannot tell an off-topic issue link from a source, and T384 shipped twelve
+
+What happened: draft T384, "Resultants of two monic polynomials", carried
+twelve `Links` entries titled "Requested in numberdb-data#20" through "#128",
+none cited from any prose and none about resultants -- the twelve issues ask
+for elliptic curve data, Selberg data, Waring's problem, Chern polynomials and
+eight other families, and the request this table answers, numberdb-data#176,
+is not among them. `GET /api/table/T384/audit` answered
+`{"findings": [], "clean": true}`.
+
+Nothing mechanical separates them from a source: they are well-formed URLs to
+a repository that exists and answers 200, so even `audit_table --links` would
+have passed them. The rule they break -- the skill's "a table wanted issue is
+answered in the issue, not in the table" -- is about what a link is *for*,
+which is why it reached a reader rather than a checker.
+
+Two checks would mechanise most of it, for whoever owns the audit: **a `Links`
+entry that no prose cites**, and **a link whose host and path are the data
+repository's issue tracker**. The first is the more general and would also
+catch the "bibliography nobody points at" the skill calls furniture.
+
+Note too that `--links` is a flag on `manage.py audit_table` and cannot be
+asked for over `/api/table/<tid>/audit`, so a run auditing over the API -- the
+only route on the builder, which has no Django -- has not checked the links at
+all and should say so.
+
+Evidence: 2026-09-21, T384 critique; `agents/critiques/T384.md` §2 and §7. The
+twelve issue titles were read from
+`https://api.github.com/repos/numberdb/numberdb-data/issues/<n>`; T381, T382
+and T383 carry no issue links.
