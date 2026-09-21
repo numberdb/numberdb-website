@@ -1,0 +1,97 @@
+# Created as draft T355 through the API (X-Draft: yes), to be filled by
+# generate.py beside it and offered for review. Publishing is a person's act.
+Title: Sharp constants in the Hardy-Littlewood-Sobolev inequality
+Definition: >-
+  Let $0<\lambda<n$, let $p=2n/(2n-\lambda)$, and let $f,g\in
+  L^p(\mathbb{R}^n)$. This table gives the sharp constant
+  $C_{n,\lambda}$ in the diagonal Hardy-Littlewood-Sobolev inequality
+  CITE{Lieb1983}
+  $|\iint_{\mathbb{R}^n\times\mathbb{R}^n}\overline{f(x)}g(y)
+  |x-y|^{-\lambda}\,dx\,dy|\leq C_{n,\lambda}\|f\|_p\|g\|_p$.
+Keywords:
+  - Hardy-Littlewood-Sobolev inequality
+  - Hardy–Littlewood–Sobolev inequality
+  - HLS inequality
+  - sharp HLS constant
+Parameters:
+  n:
+    type: Z
+    title: dimension
+    display: $n$
+    constraints: $n\geq1$
+  lambda:
+    type: Q
+    title: singular exponent
+    display: $\lambda$
+    constraints: $0<\lambda<n$
+Comments:
+  comment-diagonal: >-
+    This is the diagonal case $p=q=2n/(2n-\lambda)$. The table stores the
+    upper-bound constant in the direction displayed in the definition.
+Formulas:
+  formula-constant: >-
+    $C_{n,\lambda}=\pi^{\lambda/2}
+    \frac{\Gamma((n-\lambda)/2)}{\Gamma(n-\lambda/2)}
+    \left(\frac{\Gamma(n)}{\Gamma(n/2)}\right)^{1-\lambda/n}$ CITE{FrankLieb}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.rational_field import QQ
+      from sage.rings.real_arb import RealBallField
+
+      n = 3
+      lam = QQ(3) / QQ(2)
+      R = RealBallField(numberdb.bits(100, losing=160))
+      C = (R.pi() ** (R(lam) / 2)
+           * R((QQ(n) - lam) / 2).gamma()
+           / R(QQ(n) - lam / 2).gamma()
+           * (R(QQ(n)).gamma() / R(QQ(n) / 2).gamma()) ** (1 - R(lam) / n))
+Similar tables:
+  - table: HREF{Best_Sobolev_constant_in_W1pRn}[Best Sobolev constant for $W^{1,p}(\mathbb{R}^n)$]
+    relation: the $p=2$ Sobolev rows are dual to the $\lambda=n-2$ Hardy-Littlewood-Sobolev rows, with the reciprocal inequality direction
+Links:
+  ArxivFrankLieb:
+    title: 'arXiv: A new, rearrangement-free proof of the sharp Hardy-Littlewood-Sobolev inequality'
+    url: https://arxiv.org/abs/1010.5821
+References:
+  Lieb1983:
+    bib: Elliott H. Lieb, Sharp constants in the Hardy-Littlewood-Sobolev and related inequalities, Annals of Mathematics (2) 118 (1983), no. 2, 349-374.
+    doi: 10.2307/1970935
+    mr: '0717827'
+    zbl: '0527.42011'
+  FrankLieb:
+    bib: Rupert L. Frank and Elliott H. Lieb, A new, rearrangement-free proof of the sharp Hardy-Littlewood-Sobolev inequality, Spectral Theory, Function Spaces and Inequalities, Oper. Theory Adv. Appl. 219, Birkhauser/Springer Basel AG, Basel, 2012, 55-67.
+    arxiv: '1010.5821'
+Tags:
+  - functional analysis
+  - inequality
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every dimension $n\leq20$ and every exponent of denominator at
+    most $4$ in the admissible range
+  Size exception: >-
+    The family uses the complete rectangle $n\leq20$ and denominator at most
+    $4$. This gives 1240 short entries, only forty above the soft entry limit;
+    the longest written value is 166 characters and the entries block is about
+    262 KB, below the soft block limit.
+  rigour details: >-
+    Each value is computed from CITE{formula-constant} in Sage's real ball
+    field, using exact rational parameters and 160 guard bits beyond the 100
+    digits written.
+
+    Before the entries were written, `agents/table-build/dry_run.py` computed
+    all 1240 entries, checked that every value carried its own enclosure, and
+    measured the longest written value as 166 characters. The rows with
+    $\lambda=n-2$ were checked against HREF{Best_Sobolev_constant_in_W1pRn}[the
+    Sobolev constant table] by the duality relation
+    $C_{n,n-2}=1/(A_nS_{n,2}^2)$, where
+    $A_n=2^{-2}\pi^{-n/2}\Gamma((n-2)/2)$ is the Green kernel constant for
+    $(-\Delta)^{-1}$ in the Fourier convention of CITE{FrankLieb}.
+Display properties:
+  number-header: $C_{n,\lambda}$
+Numbers: []

@@ -1,0 +1,111 @@
+# The table document for numberdb.org/T358, the sharp Del Pino-Dolbeault
+# Gagliardo-Nirenberg constants. It began as proposal 5 of the sharp
+# inequalities family in numberdb-data#167. Created as a draft through the API
+# with X-Draft: yes, filled by generate.py, and offered for review. Publishing
+# is a person's act.
+Title: Sharp Gagliardo-Nirenberg constants of Del Pino and Dolbeault
+Definition: >-
+  Let $n\geq3$, let $1<a\leq n/(n-2)$, and put
+  $\theta=n(a-1)/(a(n+2-(n-2)a))$. The number $A_{n,a}$ is the least constant
+  in the Del Pino-Dolbeault Gagliardo-Nirenberg inequality CITE{WikiGN} CITE{DelPinoDolbeault2002},
+  $\|u\|_{L^{2a}(\mathbb{R}^n)}\leq A_{n,a}\|\nabla u\|_{L^2}^{\theta}
+  \|u\|_{L^{a+1}}^{1-\theta}$.
+Tags:
+  - functional analysis
+  - inequality
+Keywords:
+  - Gagliardo-Nirenberg inequality
+  - Gagliardo–Nirenberg inequality
+  - Del Pino-Dolbeault constant
+  - Del Pino-Dolbeault inequality
+  - sharp interpolation constant
+Parameters:
+  n:
+    type: Z
+    title: dimension
+    display: $n$
+    constraints: $n\geq 3$
+  a:
+    type: Q
+    title: interpolation exponent
+    display: $a$
+    constraints: $1<a\leq n/(n-2)$
+Comments:
+  family: >-
+    The table holds the $a>1$ Del Pino-Dolbeault family. The companion family
+    with $a<1$ has a different closed form and is not held here.
+  endpoint: >-
+    At $a=n/(n-2)$, the inequality becomes the Sobolev inequality and
+    $A_{n,a}=1/S_{n,2}$, where $S_{n,2}$ is the constant in
+    HREF{T92}[the Sobolev constant table].
+  notation: >-
+    Some sources write this exponent as $p$ or write the left exponent as
+    $2\sigma+2$. Here $a$ is the parameter in the displayed inequality.
+Formulas:
+  formula-constant: >-
+    With $y=(a+1)/(a-1)$,
+    $A_{n,a}=\left(\frac{y(a-1)^2}{2\pi n}\right)^{\theta/2}
+    \left(\frac{2y-n}{2y}\right)^{1/(2a)}
+    \left(\frac{\Gamma(y)}{\Gamma(y-n/2)}\right)^{\theta/n}$.
+  formula-endpoint: >-
+    At the Sobolev endpoint, $A_{n,n/(n-2)}=1/S_{n,2}$, where
+    $S_{n,2}$ is the constant in HREF{T92}[the Sobolev constant table].
+  formula-extremal: >-
+    Equality is attained, up to the usual translations and dilations, by
+    $u(x)=(1+|x|^2)^{-1/(a-1)}$.
+Similar tables:
+  - table: HREF{T92}[Best Sobolev constant for $W^{1,p}(\mathbb{R}^n)$]
+    relation: the endpoint $a=n/(n-2)$ is the reciprocal of the $p=2$ row
+  - table: HREF{T354}[Sharp constants in the fractional Sobolev inequality]
+    relation: another sharp Sobolev-scale inequality, with the constant stored in the lower-bound direction
+  - table: HREF{T355}[Sharp constants in the Hardy-Littlewood-Sobolev inequality]
+    relation: another sharp conformal inequality whose constants are finite products of powers of $\pi$ and Gamma values
+  - table: HREF{T356}[Babenko-Beckner constants of the Hausdorff-Young inequality]
+    relation: another sharp constant table in this family of classical inequalities
+  - table: HREF{T357}[Sharp constants in Young's convolution inequality]
+    relation: another upper-bound sharp constant table in this family of classical inequalities
+Links:
+  WikiGN:
+    title: 'Wikipedia: Gagliardo-Nirenberg interpolation inequality'
+    url: https://en.wikipedia.org/wiki/Gagliardo%E2%80%93Nirenberg_interpolation_inequality
+References:
+  DelPinoDolbeault2002:
+    bib: M. del Pino and J. Dolbeault, Best constants for Gagliardo-Nirenberg inequalities and applications to nonlinear diffusions, J. Math. Pures Appl. (9) 81 (2002), no. 9, 847-875.
+    doi: 10.1016/S0021-7824(02)01266-7
+    mr: '1940370'
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.rational_field import QQ
+      from sage.rings.real_arb import RealBallField
+
+      R = RealBallField(numberdb.bits(100, losing=160))
+      n = QQ(3)
+      a = QQ(2)
+      theta = n * (a - 1) / (a * (n + 2 - (n - 2) * a))
+      y = (a + 1) / (a - 1)
+      A = (R(y * (a - 1)**2) / (2 * R.pi() * R(n)))**(R(theta) / 2)
+      A *= ((2 * R(y) - R(n)) / (2 * R(y)))**(R(QQ(1) / (2 * a)))
+      A *= (R(y).gamma() / R(y - n / 2).gamma())**(R(theta / n))
+      A
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every dimension $3\leq n\leq20$, every rational exponent $a$ in
+    the open admissible range whose reduced denominator is at most $8$, and
+    the Sobolev endpoint $a=n/(n-2)$ in each dimension
+  rigour details: >-
+    Each value is computed from CITE{formula-constant} in Sage's real ball
+    field, using exact rational values of $a$ and 160 guard bits beyond the
+    100 digits written. The endpoint rows are checked against the reciprocal
+    of the $s=1$ rows of HREF{T354}[the fractional Sobolev constant table],
+    and also against the $p=2$ rows of HREF{T92}[the Sobolev constant table]
+    where that table carries them. The formula is checked independently by
+    evaluating the three displayed norms on CITE{formula-extremal}.
+Display properties:
+  number-header: $A_{n,a}$
+Numbers: []

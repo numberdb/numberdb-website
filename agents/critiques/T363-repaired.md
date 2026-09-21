@@ -1,0 +1,6 @@
+done -- changed the Sage program example to the stored canonical row and narrowed the caveat to say Sage raises on many stored arrays; checked the live row set, the example's canonical representative, and Sage's current failures with `agents/sage.sh`.
+done -- extended `comment-symmetry` with the search consequence for other arrangements; checked every live row is canonical, 345 rows have odd $R$, and the opposite-sign lookup still returns no table.
+done -- replaced `comment-algebraic` with the sharper stored-range statement; checked the live rows against the generator's exact terms, with 339 rational rows, 425 single-square-root rows, and no multi-radical rows.
+done -- changed the T35 similar-table relation to describe the stored non-rational values; checked the same exact-term computation shows every non-rational stored value is quadratic.
+done -- rewrote the admissible-class count so the all-zero exclusion is stated before the arithmetic; checked the generator count gives 803 admissible canonical classes other than all-zero and 39 vanish.
+done -- changed `rigour details` to cite `CITE{comment-symmetry}`; checked the authenticated table readback and `GET /api/table/T363/audit`, which returned clean.

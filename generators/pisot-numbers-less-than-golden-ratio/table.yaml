@@ -2,10 +2,8 @@
 # through the API (X-Draft: yes), filled by generate.py beside it, and left
 # offered for review; publishing is a person's act on the site.
 Title: Pisot numbers less than the golden ratio
-Definition: >-
-  Let $\varphi=(1+\sqrt5)/2$ be the golden ratio. For an integer $r\geq1$,
-  $\theta_r$ is the $r$-th smallest Pisot-Vijayaraghavan number CITE{Wiki}
-  in the interval $(1,\varphi)$.
+Definition: Let $\varphi=(1+\sqrt5)/2$ be the golden ratio. For an integer $r\geq1$, $\theta_r$
+  is the $r$-th smallest Pisot-Vijayaraghavan number CITE{Wiki} in the interval $(1,\varphi)$.
 Parameters:
   r:
     type: Z
@@ -57,39 +55,39 @@ Similar tables:
     relation: holds the smallest accumulation point of the set of Pisot numbers
 Links:
   Wiki:
-    title: "Wikipedia: Pisot-Vijayaraghavan number"
+    title: 'Wikipedia: Pisot-Vijayaraghavan number'
     url: https://en.wikipedia.org/wiki/Pisot%E2%80%93Vijayaraghavan_number
 References:
   DP:
-    bib: >-
-      J. Dufresnoy and Ch. Pisot, Etude de certaines fonctions meromorphes
-      bornees sur le cercle unite. Application a un ensemble ferme d'entiers
-      algebriques, Annales Scientifiques de l'Ecole Normale Superieure 72
-      (1955), 69-92.
+    bib: J. Dufresnoy and Ch. Pisot, Etude de certaines fonctions meromorphes bornees sur
+      le cercle unite. Application a un ensemble ferme d'entiers algebriques, Annales Scientifiques
+      de l'Ecole Normale Superieure 72 (1955), 69-92.
+  Floyd:
+    bib: W. J. Floyd, Growth of planar Coxeter groups, P.V. numbers, and Salem numbers, Math.
+      Ann. 293 (1992), no. 3, 475-483.
+    zbl: '0735.51016'
+    mr: '1170521'
   Bertin:
-    bib: >-
-      M.-J. Bertin, A. Decomps-Guilloux, M. Grandet-Hugot,
-      M. Pathiaux-Delefosse and J.-P. Schreiber, Pisot and Salem Numbers,
-      Birkhauser, 1992.
+    bib: M.-J. Bertin, A. Decomps-Guilloux, M. Grandet-Hugot, M. Pathiaux-Delefosse and J.-P.
+      Schreiber, Pisot and Salem Numbers, Birkhauser, 1992.
     doi: 10.1007/978-3-0348-8632-1
   McKeeSmyth:
-    bib: >-
-      James McKee and Chris Smyth, Salem numbers, Pisot numbers, Mahler
-      measure and graphs, Experimental Mathematics 14 (2005), 211-229.
+    bib: James McKee and Chris Smyth, Salem numbers, Pisot numbers, Mahler measure and graphs,
+      Experimental Mathematics 14 (2005), 211-229.
     arxiv: math/0503480
     doi: 10.1080/10586458.2005.10128918
 Keywords:
-  - Pisot number
-  - Pisot-Vijayaraghavan number
-  - PV number
-  - plastic ratio
-  - supergolden ratio
-  - Lehmer problem
-  - Mahler measure
-  - algebraic entropy
+- Pisot number
+- Pisot-Vijayaraghavan number
+- PV number
+- plastic ratio
+- supergolden ratio
+- Lehmer problem
+- Mahler measure
+- algebraic entropy
 Tags:
-  - number theory
-  - algebraic
+- number theory
+- algebraic
 Data properties:
   type: R
   rigour: proven

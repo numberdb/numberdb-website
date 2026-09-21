@@ -26,8 +26,9 @@ from sage.rings.real_mpfi import RealIntervalField
 
 TABLE = "T300"
 ROOT_TABLE = "Pisot_numbers_less_than_the_golden_ratio"
-RANKS = 50
-MAX_N = 80
+FAMILY_N = 40
+RANKS = 2 * FAMILY_N - 1
+MAX_N = FAMILY_N + 1
 WORKING_GUARD = 256
 
 R = PolynomialRing(QQ, "x")
@@ -162,12 +163,29 @@ def family_label(record):
     return "$%s_{%d}$" % (record["family"], record["n"])
 
 
-def entry_comment(rank, record):
+def polynomial_relation(rank, record):
+    if record["family"] == "E":
+        return "$m_{%d}(x)=E(x)$" % rank
+    if record["family"] == "Q":
+        return "$m_{%d}(x)=Q_{%d}(x)$" % (rank, record["n"])
+    divisor = "x-1" if record["n"] % 2 == 0 else "x^2-1"
     return (
-        "HREF{%s#%d}[$\\theta_{%d}$] is the root in $(1,\\varphi)$; "
-        "this polynomial is selected from %s."
-        % (ROOT_TABLE, rank, rank, family_label(record))
+        "$P_{%d}(x)=(%s)\\,m_{%d}(x)$"
+        % (record["n"], divisor, rank)
     )
+
+
+def entry_comment(rank, record):
+    comment = (
+        "%s, and the root of $m_{%d}$ in $(1,\\varphi)$ is "
+        "HREF{%s#%d}[$\\theta_{%d}$]"
+        % (polynomial_relation(rank, record), rank, ROOT_TABLE, rank, rank)
+    )
+    if rank == 1:
+        comment += ", the plastic ratio and the smallest Pisot number"
+    elif rank == 4:
+        comment += ", the supergolden ratio"
+    return comment + "."
 
 
 def check_against_root_table(digits):
@@ -213,7 +231,9 @@ def main():
     _key_from_stdin()
     generator = PisotMinimalPolynomialsBelowGoldenRatio()
     if os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
-        print(generator.publish(message="computed Pisot minimal polynomials from exact families"))
+        print(generator.publish(
+            overwrite=False,
+            message="computed Pisot minimal polynomials from exact families"))
     else:
         report = generator.verify(sample=None)
         if report.ok:

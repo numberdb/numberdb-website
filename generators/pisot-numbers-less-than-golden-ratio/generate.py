@@ -1,6 +1,6 @@
 """Pisot numbers less than the golden ratio -- numberdb.org/T286
 
-This table stores the first 50 Pisot-Vijayaraghavan numbers in the interval
+This table stores the first 79 Pisot-Vijayaraghavan numbers in the interval
 (1, phi), ordered increasingly. Dufresnoy and Pisot classified this interval;
 the generator uses the two polynomial families recorded in Bertin et al. and
 McKee-Smyth, plus the one exceptional polynomial.
@@ -26,8 +26,9 @@ from sage.rings.real_mpfi import RealIntervalField
 
 
 TABLE = "T286"
-RANKS = 50
-MAX_N = 80
+FAMILY_N = 40
+RANKS = 2 * FAMILY_N - 1
+MAX_N = FAMILY_N + 1
 WORKING_GUARD = 256
 
 R = PolynomialRing(QQ, "x")
@@ -202,7 +203,9 @@ def main():
     _key_from_stdin()
     generator = PisotNumbersBelowGoldenRatio()
     if os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
-        print(generator.publish(message="isolated Pisot roots from exact polynomials"))
+        print(generator.publish(
+            overwrite=False,
+            message="isolated Pisot roots from exact polynomials"))
     else:
         report = generator.verify(sample=None)
         print(report)
