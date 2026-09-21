@@ -12,6 +12,10 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+#The site is the lock in real use; these tests are about the text in an issue,
+#so they run with it switched off rather than making a request per family.
+os.environ.setdefault('NUMBERDB_CLAIM_SITE', '0')
+
 import queue as q  # noqa: E402  (the file under test, not the stdlib module)
 
 
