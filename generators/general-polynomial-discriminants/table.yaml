@@ -1,0 +1,96 @@
+# The table document for numberdb.org/T381. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Discriminants of the general polynomial of degree $n$
+Definition: >-
+  For $n\geq 1$, let $f(x)=\sum_{i=0}^n a_i x^i$ be the general degree-$n$
+  polynomial with formal coefficients $a_0,\dots,a_n$ and leading coefficient
+  $a_n$. The entry is the discriminant $\operatorname{disc}(f)$ as in
+  CITE{DiscriminantWiki} with the normalisation stated by Formula
+  CITE{formula-resultant} for the resultant.
+Parameters:
+  n:
+    type: Z
+    title: degree
+    display: $n$
+    constraints: $n\geq 1$
+Comments:
+  comment-coefficients: >-
+    The coefficient $a_i$ multiplies $x^i$, so $a_0$ is the constant term and
+    $a_n$ is the leading coefficient.
+  comment-linear: >-
+    For $n=1$, the product over pairs of roots is empty and
+    $\operatorname{disc}(a_0+a_1x)=1$.
+  comment-variables: >-
+    The entry for degree $n$ is written in the variables $a_0,\dots,a_n$.
+Formulas:
+  formula-resultant: >-
+    $\operatorname{disc}(f)=(-1)^{n(n-1)/2}a_n^{-1}
+    \operatorname{Res}(f,f')$, where the resultant is normalized as in
+    CITE{ResultantWiki} by $\operatorname{Res}(f,g)=a_n^{\deg g}
+    \prod_{f(\alpha)=0}g(\alpha)$.
+  formula-roots: >-
+    Equivalently, if
+    $f(x)=a_n\prod_{j=1}^n(x-\alpha_j)$, then
+    $\operatorname{disc}(f)=a_n^{2n-2}\prod_{1\leq i<j\leq n}
+    (\alpha_i-\alpha_j)^2$.
+  formula-quadratic: >-
+    $\operatorname{disc}(a_0+a_1x+a_2x^2)=a_1^2-4a_0a_2$.
+  formula-cubic: >-
+    $\operatorname{disc}(a_0+a_1x+a_2x^2+a_3x^3)
+    =a_1^2a_2^2-4a_0a_2^3-4a_1^3a_3+18a_0a_1a_2a_3-27a_0^2a_3^2$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.all import PolynomialRing, ZZ
+
+      n = 5
+      R = PolynomialRing(ZZ, ["a%s" % i for i in range(n + 1)])
+      a = R.gens()
+      S = PolynomialRing(R, "x")
+      x = S.gen()
+      f = sum(a[i] * x**i for i in range(n + 1))
+      sign = 1 if (n * (n - 1) // 2) % 2 == 0 else -1
+      numerator = sign * f.resultant(f.derivative())
+      disc, rem = numerator.quo_rem(a[n])
+      assert rem == 0
+      disc
+Links:
+  DiscriminantWiki:
+    title: 'Wikipedia: Discriminant'
+    url: https://en.wikipedia.org/wiki/Discriminant
+  ResultantWiki:
+    title: 'Wikipedia: Resultant'
+    url: https://en.wikipedia.org/wiki/Resultant
+Keywords:
+  - general polynomial discriminant
+  - universal polynomial discriminant
+  - discriminant in coefficients
+  - polynomial discriminant
+Tags:
+  - polynomial
+  - algebra
+  - invariant theory
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every degree $1\leq n\leq 5$; degree $6$ would use seven
+    coefficient variables, more than polynomial search accepts, and the degree
+    $5$ entry is already 1338 characters
+  rigour details: >-
+    The generator computes exact integer coefficients in
+    $\mathbb Z[a_0,\dots,a_5]$ from the resultant identity in Formula
+    CITE{formula-resultant} and all arithmetic is exact. It checks Formula
+    CITE{formula-roots} by substituting
+    $a_i=a_n(-1)^{n-i}e_{n-i}(\alpha_1,\dots,\alpha_n)$ for every stored
+    degree, compares the quadratic and cubic rows from Formula
+    CITE{formula-quadratic} and Formula CITE{formula-cubic} against the
+    stored values, and compares
+    integer specialisations with Sage's exact univariate discriminant over
+    $\mathbb Z[x]$.
+Display properties:
+  number-header: $\operatorname{disc}(f)$
+Numbers: []
