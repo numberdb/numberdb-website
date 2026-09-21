@@ -147,8 +147,11 @@ class WhatAnIssueSays(unittest.TestCase):
 
 	def test_ticking_a_box_records_the_table(self):
 		body = q._tick(self.family, self.batch['proposals'][0], 'T226')
+		#Written as a link: the family issue is where somebody looks to see
+		#what became of a batch, and a bare number makes them go and find it.
 		self.assertIn('- [x] Values of the Bessel functions at rational '
-		              'arguments (answers #7) -- T226', body)
+		              'arguments (answers #7) -- [T226](', body)
+		self.assertIn('/T226)', body)
 		after = q.parse_family({'number': 42, 'title': 't', 'body': body})
 		self.assertEqual(len(q.waiting(after)), 1)
 
@@ -161,7 +164,7 @@ class WhatAnIssueSays(unittest.TestCase):
 		               'Values of the Bessel functions $J_\\nu$ and $Y_\\nu$ '
 		               'at rational arguments', 'T226')
 		self.assertIsNotNone(body)
-		self.assertIn('-- T226', body)
+		self.assertIn('[T226](', body)
 
 	def test_an_en_dash_is_a_separator(self):
 		#The batches write `Euler–Lehmer` and the table that answers it is
@@ -226,7 +229,7 @@ class WhatAnIssueSays(unittest.TestCase):
 			{'number': 42, 'title': 't',
 			 'body': q.claim(self.family, self.batch['proposals'][0], 'w')})
 		body = q._tick(claimed, self.batch['proposals'][0], 'T400')
-		self.assertIn('-- T400', body)
+		self.assertIn('[T400](', body)
 		after = q.parse_family({'number': 42, 'title': 't', 'body': body})
 		built = [i for i in after['items'] if i['built']][0]
 		self.assertEqual(built['tid'], 'T400')
@@ -266,6 +269,17 @@ class WhatAnIssueSays(unittest.TestCase):
 		after = q.parse_family({'number': 42, 'title': 't', 'body': body})
 		self.assertEqual(len(q.waiting(after)), 2)
 
+	def test_a_table_named_in_a_skip_reason_is_not_the_built_table(self):
+		#`skipped: the corpus holds this as T187 under another name` names a
+		#table and does not claim to have built one; reading the tail loosely
+		#made that proposal read as built, as T187.
+		body = q._tick(self.family, self.batch['proposals'][0], None,
+		               why='the corpus holds this as T187 under another name')
+		after = q.parse_family({'number': 42, 'title': 't', 'body': body})
+		settled = [i for i in after['items'] if i['done']][0]
+		self.assertIsNone(settled['tid'])
+		self.assertFalse(settled['built'])
+
 	def test_a_table_from_another_family_ticks_nothing(self):
 		self.assertIsNone(q._tick(self.family, 'Salem numbers below 1.3',
 		                          'T300'))
@@ -274,8 +288,8 @@ class WhatAnIssueSays(unittest.TestCase):
 		once = q._tick(self.family, self.batch['proposals'][0], 'T226')
 		family = q.parse_family({'number': 42, 'title': 't', 'body': once})
 		twice = q._tick(family, self.batch['proposals'][1], 'T227')
-		self.assertIn('-- T226', twice)
-		self.assertIn('-- T227', twice)
+		self.assertIn('[T226](', twice)
+		self.assertIn('[T227](', twice)
 		after = q.parse_family({'number': 42, 'title': 't', 'body': twice})
 		self.assertEqual(q.waiting(after), [])
 
