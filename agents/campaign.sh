@@ -38,6 +38,17 @@ cd "$here"
 
 builds="${1:-999}"
 made=0
+
+# Where critiques live, and why it can be somewhere else.
+#
+# The file is the memory: `work.py` offers a table for growth until
+# `<tid>-growth.md` exists and for a sweep until `<tid>.md` does. With four
+# workers in four worktrees that was four separate memories -- 352 growth
+# questions went to about 115 tables and T293 was asked twelve times. One
+# directory, shared, and the rule means what it says.
+critiques="${NUMBERDB_CRITIQUES:-agents/critiques}"
+export NUMBERDB_CRITIQUES="$critiques"
+mkdir -p "$critiques"
 # Batches in a row that produced no table. Reset by a build that makes one.
 empty=0
 # One engine per kind of work rather than one per campaign: the stages differ
@@ -328,18 +339,18 @@ while [ "$made" -lt "$builds" ]; do
 		case "$kind" in
 			growth)
 				run_stage critic critique \
-					"Read $tid, which has $(field "$next" entries) entries in $(field "$next" bytes) bytes -- under a tenth of the soft limits of 1200 entries and 320 KB. The question is whether it can grow *naturally*: is its range the whole of what its definition promises, or was it stopped early? Read the skill on what makes a good range, read the table's own completeness note and its generator, and write agents/critiques/$tid-growth.md saying either how far it could go and by what method, or why it is already complete -- a named constant with one entry is finished, and saying so is a good answer. Change nothing." \
+					"Read $tid, which has $(field "$next" entries) entries in $(field "$next" bytes) bytes -- under a tenth of the soft limits of 1200 entries and 320 KB. The question is whether it can grow *naturally*: is its range the whole of what its definition promises, or was it stopped early? Read the skill on what makes a good range, read the table's own completeness note and its generator, and write $critiques/$tid-growth.md saying either how far it could go and by what method, or why it is already complete -- a named constant with one entry is finished, and saying so is a good answer. Change nothing." \
 					|| say "the growth question failed for $tid"
 				;;
 			sweep)
 				run_stage critic critique \
-					"Read $tid. Fetch the rendered page, read the document, run the audit on it, and write agents/critiques/$tid.md. This table has never been read by this pipeline -- most of the corpus below T127 was made by hand, before the skill existed -- so read it as a reader meeting it for the first time. Change nothing else." \
+					"Read $tid. Fetch the rendered page, read the document, run the audit on it, and write $critiques/$tid.md. This table has never been read by this pipeline -- most of the corpus below T127 was made by hand, before the skill existed -- so read it as a reader meeting it for the first time. Change nothing else." \
 					|| say "the critique failed for $tid"
 				;;
 		esac
 
-		report="agents/critiques/$tid.md"
-		[ "$kind" = growth ] && report="agents/critiques/$tid-growth.md"
+		report="$critiques/$tid.md"
+		[ "$kind" = growth ] && report="$critiques/$tid-growth.md"
 		if [ ! -f "$report" ]; then
 			# Say so in the file the next campaign will look for.
 			#
@@ -354,7 +365,7 @@ while [ "$made" -lt "$builds" ]; do
 			# both true and enough: a person reading the queue sees a table
 			# nobody could report on, rather than a table nobody tried.
 			say "no report at $report; writing down that the run produced none"
-			mkdir -p agents/critiques
+			mkdir -p "$critiques"
 			{
 				printf '# %s: the %s run produced no report\n\n' "$tid" "$kind"
 				printf 'Asked on %s by campaign %s and the run ended without\n' \
@@ -590,7 +601,7 @@ while [ "$made" -lt "$builds" ]; do
 	fi
 	if [ -n "$tid" ]; then
 		say "reading $tid as a reader would"
-		run_stage critic critique "Read $tid. Fetch the rendered page, read the document, run audit_table on it, and write agents/critiques/$tid.md. Change nothing else." \
+		run_stage critic critique "Read $tid. Fetch the rendered page, read the document, run audit_table on it, and write $critiques/$tid.md. Change nothing else." \
 			|| say "the critique run failed; the table stands and somebody should look"
 
 		#Stage four acts on what stage three found, having checked it first.
@@ -603,7 +614,7 @@ while [ "$made" -lt "$builds" ]; do
 		#Safe to leave unattended because an operated account's edits are never
 		#published as reviewed: whatever it writes waits in the queue.
 		say "acting on the critique of $tid"
-		run_stage writer repair "Act on agents/critiques/$tid.md, for $tid. Check every finding against the live table before you change anything, verify what can be verified, and write agents/critiques/$tid-repaired.md saying what you did with each." \
+		run_stage writer repair "Act on $critiques/$tid.md, for $tid. Check every finding against the live table before you change anything, verify what can be verified, and write $critiques/$tid-repaired.md saying what you did with each." \
 			|| say "the repair run failed; the critique stands and somebody should read it"
 	fi
 
