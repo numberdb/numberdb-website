@@ -6987,3 +6987,84 @@ beyond the URL is not a source. This is written up for the skill in
 true of any grep-the-page check and not only of this host.
 
 Evidence: same run.
+
+## `agents/critiques/` is ignored and its files are tracked anyway: a critique needs `git add -f`
+
+What happened: the T30 growth review wrote
+`agents/critiques/T30-growth.md` and ran `git add ... && git commit ...`.
+`git add` exited 1 with "The following paths are ignored by one of your
+.gitignore files", `.gitignore:168` being `agents/critiques/`, and because
+the file was new and untracked it staged *nothing* -- so the `&&` chain
+stopped and the report was not committed. That is a different outcome from
+the one `.gitignore` itself documents a few lines further down, where `git
+add` on an *already tracked* file under an ignored directory exits 1 and
+stages it anyway; there the commit is skipped but the work survives in the
+index, and here nothing happens at all.
+
+The ignore is not the last word. `git ls-files agents/critiques` lists 312
+files, 23 of them `*-growth.md`, the most recent being
+`agents/critiques/T280-growth.md`, committed 2026-09-20. So the practice for
+critiques is to force-add them, and the stage-three prompt's "commit your own
+report" assumes it.
+
+Note that this is the opposite of the ruling recorded above for
+`agents/table-ideas/BATCH-*.md`, which says not to `git add -f` because the
+ignore is the owner's decision that agent output is data. Two directories
+under the same kind of rule, treated oppositely, and the history is the only
+thing that says which is which. A run that reads the batch note and
+generalises it will leave its critique uncommitted.
+
+What to do instead: `git add -f agents/critiques/<TID>*.md`, and check with
+`git log --oneline -1 -- <path>` that the commit actually took the file
+rather than trusting the exit code of a chain. For a directory you have not
+written to before, `git ls-files <dir> | wc -l` settles in one command
+whether the ignore is honoured in practice.
+
+Evidence: 2026-09-21 T30 growth review;
+`git check-ignore -v agents/critiques/T30-growth.md` -> `.gitignore:168`.
+
+## The revision history is at `/revisions/T<n>`, not `/T<n>/history`
+
+What happened: reading T30's provenance, `curl https://numberdb.org/T30/history`
+returned the 404 page, which is also what a private draft returns, so for a
+moment it looked as though the history were not public. It is: the link under
+the title on the table page is `/revisions/T30`, and it answers 200 with the
+full list -- five revisions for T30, one real one from the data repository on
+2021-03-12 and four migrations since, with a diff viewer between any two.
+`/discuss/T<n>` is the discussion page by the same pattern.
+
+Also useful while reading a table by name: `numberdb.table('Integers')`
+accepts the slug as well as the T-number, while the URL `/<slug>/json` is a
+404 -- the slug resolves as a page (`/Integers` is 200) but not as a JSON
+endpoint.
+
+What to do instead: take the history and discussion addresses off the page
+rather than guessing them:
+
+    grep -oE 'href="[^"]*"[^>]*>\s*(history|discussion)' /tmp/T30.html
+
+Evidence: same run; `curl -o /dev/null -w '%{http_code}'` gave 404 for
+`/T30/history` and `/Integers/json`, 200 for `/revisions/T30` and `/Integers`.
+
+## In the worktree root, plain `python3` imports the site package, and `PYTHONPATH` cannot outrank it
+
+What happened: a screening script run from `/home/ubuntu/numberdb-campaign-w3`
+called `numberdb.table('T30')` and died with
+
+    AttributeError: module 'numberdb' has no attribute 'table'
+
+`PYTHONPATH=clients/python python3 -c ...` fails the same way. The reason is
+that `python3 -c` puts the current directory at the front of `sys.path`,
+ahead of everything `PYTHONPATH` contributes, and the repository root holds
+the site's own `numberdb/` package. This is the same shadowing the note above
+records for `/app` under `django.setup()`, but it needs no Django and no
+container: it is what happens to any script started from the checkout, and
+`PYTHONPATH` looks like the fix and is not.
+
+What to do instead: `sys.path.insert(0, 'clients/python')` inside the script,
+before `import numberdb`, and confirm with `print(numberdb.__file__)` that it
+ends in `clients/python/numberdb/__init__.py`. Running from `/tmp` instead
+also works and is cleaner when the script needs nothing else from the
+checkout.
+
+Evidence: 2026-09-21 T30 growth review.
