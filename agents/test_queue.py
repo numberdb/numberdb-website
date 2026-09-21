@@ -274,6 +274,16 @@ class WhatAnIssueSays(unittest.TestCase):
 		self.assertIn('-- T227', twice)
 		after = q.parse_family({'number': 42, 'title': 't', 'body': twice})
 		self.assertEqual(q.waiting(after), [])
+		self.assertTrue(q.finished(after))
+
+	def test_a_fresh_claim_does_not_finish_the_family(self):
+		claimed = q.parse_family(
+			{'number': 42, 'title': 't',
+			 'body': q.claim(self.family, self.batch['proposals'][1], 'w')})
+		body = q._tick(claimed, self.batch['proposals'][0], 'T226')
+		after = q.parse_family({'number': 42, 'title': 't', 'body': body})
+		self.assertEqual(q.waiting(after), [])
+		self.assertFalse(q.finished(after))
 
 
 class WhichTableIsNext(unittest.TestCase):

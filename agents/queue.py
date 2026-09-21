@@ -313,6 +313,12 @@ def started(family):
 	return any(item['done'] for item in family['items'])
 
 
+def finished(family):
+	"""Has every proposal in the family been built or deliberately skipped?"""
+	return bool(family['items']) and all(
+		item['built'] or item.get('why') for item in family['items'])
+
+
 def next_table(prefer=None):
 	"""The next table to build.
 
@@ -508,7 +514,7 @@ def cmd_built(args):
 		print('#%d: %s is %s' % (args.number, args.tid, args.title))
 		for asked in _answered(family, args.title):
 			answer_request(asked, args.tid, args.number)
-	if not waiting(family):
+	if finished(family):
 		api('repos/%s/issues/%d/comments' % (REPO, args.number), 'POST',
 		    {'body': 'Every table in this family now exists. '
 		             'Closing; the tables are the record.'})
