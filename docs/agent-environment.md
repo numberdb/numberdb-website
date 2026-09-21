@@ -8275,3 +8275,52 @@ output file is then the only record of it.
 Evidence: 2026-09-21, `/tmp/w3b/tw_check4.py`. Timings printed by the script:
 `dps=60 n=100 ... (4.0s)`, `dps=60 n=140 ... (9.7s)`, `dps=120 n=200 ... (33.3s)`.
 `TIMEOUT="${NUMBERDB_TIMEOUT:-1800}"` is in `agents/sage.sh`.
+
+## The keyed API allowance is shared by every concurrent run on this box, and a 429 spends it further
+
+What happened: a growth review wanted to know which tables link to
+`HREF{Integers}`, and walked `/api/table?id=Tn` for n = 1..400. Anonymously it
+got 43 documents and then `HTTP 429`, which the note at "Anonymous reads are
+rate limited per IP" already predicts. The repair that note prescribes -- send
+the key -- did not work either: all 400 requests were refused with
+
+    {"error": "Rate limit exceeded (1000 requests per 60 minutes)",
+     "retry_after": 2228}
+
+That is the *identified* limit, not the anonymous one, so the key had
+authenticated (a bad token answers 403, not 429) and its thousand-an-hour was
+already gone. Four campaign workers run on this box and they all read
+`NUMBERDB_KEY_FILE`, and `requester_of` scopes the counter to `key:<pk>`, so
+they share one allowance. A run can therefore start into an allowance that
+someone else has already spent, and its own sweep is what finishes it off for
+everyone.
+
+Worse, retrying does not wait it out: `_consume` in `numberdb_app/throttle.py`
+increments the window counter and only then compares it with the limit, so a
+refused request is charged exactly like a served one. The 400 refusals above
+each cost a unit. A sweep that trips the limit has to be abandoned, not
+retried, or it spends the next window too.
+
+What to do instead: do not fan out over the corpus from a worker at all -- it
+is not this run's allowance to spend. Read one table at a time, and read it
+from `/bundle/Tn`, which is a site page (`views.table_bundle`) and outside the
+limiter entirely: it returns a zip holding `Tn/table.yaml`, the whole stored
+document plus any attached generator, and it kept answering 200 throughout the
+lockout. Checked at one moment: `/api/table?id=T30` 429, `/bundle/T30` 200,
+`/T30` 200. `throttle.py`'s docstring states the exemption -- "Only `/api/*` is
+limited. The site's own pages, including advanced search, are rendered
+server-side and never call the API" -- so the rendered page, `/bundle`,
+`/files`, `/history` and `/revisions` are all free. Reserve the API for search,
+lookup and writing, which are the things no page does.
+
+If a corpus-wide survey really is needed, it should be a single `manage.py`
+command on the server rather than 400 HTTP requests from here.
+
+Evidence: 2026-09-21, T2 growth review (`agents/critiques/T2-growth.md` §1,
+§11). Anonymous walk: 43 documents then 357 × 429. Keyed walk: 400 × 429,
+body as quoted, `retry_after` 2228 s. `numberdb_app/throttle.py`:
+`requester_of` returning `'key:%d'`, `_consume` incrementing before the limit
+test, `ANONYMOUS_LIMIT = 60`, `IDENTIFIED_LIMIT = 1000`. The generally useful
+half of this -- `/bundle/Tn` as the free way to read a document -- is proposed
+as a lesson in `agents/lessons/proposals/20260921T201824Z-critique.md`, since a
+contributor on a laptop meets the same limit.
