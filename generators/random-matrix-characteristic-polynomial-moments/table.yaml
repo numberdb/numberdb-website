@@ -1,0 +1,114 @@
+# Draft document for T379, Moments of the characteristic polynomials of
+# unitary, orthogonal and symplectic matrices. It was created through the API
+# with X-Draft: yes and Numbers: [] so generate.py can fill it once.
+# Publishing is a person's act.
+Title: Moments of the characteristic polynomials of unitary, orthogonal and symplectic matrices
+Definition: >-
+  For $G\in\{U,O,USp\}$ and positive integer $k$, this table stores the
+  exact rational random-matrix factor $g_G(k)=e_G(k)! f_G(k)$ in the CFKRS
+  conductor normalisation CITE{CFKRS}. The exponents are
+  $e_U(k)=k^2$, $e_O(k)=k(k-1)/2$, and $e_{USp}(k)=k(k+1)/2$.
+Keywords:
+  - random matrix factor
+  - characteristic polynomial moment
+  - unitary group
+  - orthogonal group
+  - symplectic group
+  - Keating-Snaith
+  - CFKRS
+Parameters:
+  group:
+    type: Symbolic
+    title: matrix group
+    display: $G$
+    values:
+      U: $U$
+      O: $O$
+      USp: $USp$
+  k:
+    type: Z
+    title: moment parameter
+    display: $k$
+    constraints: $k\geq1$
+Comments:
+  comment-indexing: >-
+    The parameter is $k$, not the full unitary exponent $2k$: $k=1$ is the
+    second moment in the unitary zeta-family normalisation and $k=2$ is the
+    fourth moment.
+  comment-integer-k: >-
+    The product formulas CITE{formula-unitary} through CITE{formula-orthogonal}
+    are the exact CFKRS factors for positive integer $k$. The half-integer rows
+    used by the Euler-product tables in this family are not included here.
+Formulas:
+  formula-factor: >-
+    $f_G(k)=g_G(k)/e_G(k)!$ is the random-matrix factor in the leading term.
+  formula-unitary: >-
+    $g_U(k)=k^2!\prod_{j=0}^{k-1}\frac{j!}{(k+j)!}$. Thus
+    $g_U(1),g_U(2),g_U(3),g_U(4),g_U(5)=1,2,42,24024,701149020$
+    CITE{CFKRS}.
+  formula-symplectic: >-
+    $g_{USp}(k)=\left(k(k+1)/2\right)!\prod_{j=1}^{k}\frac{j!}{(2j)!}$
+    CITE{CFKRS}.
+  formula-orthogonal: >-
+    $g_O(k)=2^{k-1}\left(k(k-1)/2\right)!\prod_{j=1}^{k-1}\frac{j!}{(2j)!}$
+    CITE{CFKRS}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.arith.misc import factorial
+      from sage.rings.rational_field import QQ
+
+      k = 5
+      QQ(factorial(k*k)) * prod(
+          QQ(factorial(j)) / QQ(factorial(k+j))
+          for j in range(k))
+Similar tables:
+  - table: HREF{T377}[Arithmetic factors $a_k$ in the moments of the Riemann zeta function]
+    relation: stores the arithmetic factor paired with $f_U(k)$ in the zeta moment leading constant
+  - table: HREF{T378}[Leading constants $c_k$ of the moments of the Riemann zeta function]
+    relation: stores $c_k=a_k f_U(k)$ in the same unitary normalisation
+Links:
+  WikiRMT:
+    title: 'Wikipedia: Random matrix'
+    url: https://en.wikipedia.org/wiki/Random_matrix
+References:
+  KeatingSnaith:
+    bib: >-
+      J. P. Keating and N. C. Snaith, Random matrix theory and
+      $\zeta(1/2+it)$, Communications in Mathematical Physics 214 (2000),
+      57-89.
+    doi: 10.1007/s002200000261
+  CFKRS:
+    bib: >-
+      J. Brian Conrey, David W. Farmer, Jon P. Keating, Michael O.
+      Rubinstein and Nina C. Snaith, Integral moments of L-functions,
+      Proceedings of the London Mathematical Society 91 (2005), 33-104.
+    arxiv: math/0206018
+  MehtaNormand:
+    bib: >-
+      Madan Lal Mehta and Jean-Marie Normand, Moments of the characteristic
+      polynomial in the three ensembles of random matrices, Journal of Physics A:
+      Mathematical and General 34 (2001), 4627-4639.
+    doi: 10.1088/0305-4470/34/22/304
+    arxiv: cond-mat/0101469
+Tags:
+  - moments
+  - groups
+  - probability theory
+Data properties:
+  type: Q
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds $G=U,O,USp$ for every positive integer $1\leq k\leq12$
+  rigour details: >-
+    The generator evaluates the factorial products in CITE{formula-unitary},
+    CITE{formula-symplectic}, and CITE{formula-orthogonal} over $\mathbb Q$.
+    Before the draft was filled, the unitary rows were checked against the
+    printed values $1,2,42,24024,701149020$, and the symplectic and orthogonal
+    rows were checked by extracting the leading terms from the corresponding
+    CFKRS random-matrix moment formulas after the conductor normalisation.
+Display properties:
+  number-header: $g_G(k)$
+Numbers: []
