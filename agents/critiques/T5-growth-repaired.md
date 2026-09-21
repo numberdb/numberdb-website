@@ -1,0 +1,10 @@
+done -- §2 narrowed the interval from `[2, 2.3728596]` to `[2, 2.371177]`, added `CITE{DupontEtAl}` and made it the source; checked arXiv:2608.16884, whose abstract and introduction state `$\omega<2.371177$` and say the bound is rigorously certified.
+declined -- §3 left `Programs` empty; the live table still has one uncomputed theorem-bound interval, and no Sage or library incantation can produce another value of `$\omega$`.
+done -- §4 changed the definition to say matrices are over a field and narrowed the rigour note instead of asserting field-independence; checked the 2020 Alman and Vassilevska Williams paper, which says the value could depend on the field but the algorithms discussed work over any field.
+done -- §5 added `complete: yes` and `complete-note: it holds the single interval of theorem bounds for $\omega$`; checked the rendered sentence reads as a coverage claim, not as a claim that `$\omega$` is known exactly.
+left for a person -- §6 did not create the sibling table of fast matrix multiplication algorithm exponents; those values are not values of `$\omega$`, and deciding a new table's mixed exact/decimal convention is outside this T5 repair.
+declined -- §7 made no numeric-search edit; the post-repair interval remains far too wide to be searchable by number, and the rendered dagger still correctly warns readers.
+declined -- §8 left the three one-table tags in place; the pre- and post-repair audits report exactly the same tag findings, and no existing broader tag fits T5 without making the subject less findable.
+done -- §9 first bullet changed the trivial-algorithm comment so $O(n^3)$ proves only `$\omega\leq 3$` and the lower bound is attributed separately to input and output size.
+done -- §9 second bullet replaced the stale Wikipedia link with `Wikipedia: Computational complexity of matrix multiplication`, the page that carries the bound timeline, and cited it from the bounds comment.
+declined -- §9 third bullet left `Similar tables` empty; the live corpus still has no matrix-multiplication-exponent sibling table to relate to T5.
