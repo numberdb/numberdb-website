@@ -8441,3 +8441,45 @@ substitute: point it at a candidate URL and it answers whether the page names
 the family. For finding a URL in the first place, the arXiv API over
 `https://export.arxiv.org/api/query?search_query=all:%22<phrase>%22` with a
 browser user agent works from here and settled two names this run.
+
+## `cd /tmp` is not a clean directory: a previous run's scratch shadows the client
+
+The workaround above -- `cd /tmp && PYTHONPATH=<checkout>/clients/python
+python3 script.py` -- assumes `/tmp` holds nothing importable. It does not.
+`/tmp` on this machine is the accumulated scratch of every run that has ever
+followed "keep scratch out of the repository", and it contained a
+`numberdb.py` left by one of them. Python puts the script's directory first,
+so that file won, and
+
+    cd /tmp && python3 -c "import numberdb; print(numberdb.__file__)"
+
+printed a Sage-flavoured dump of T216 from somebody else's debugging script
+before raising. The symptom is the strangest possible one: a stack trace whose
+body is another run's output.
+
+Work in a subdirectory made for the run, not in `/tmp` itself:
+
+    mkdir -p /tmp/<run>-scratch && cd /tmp/<run>-scratch
+
+and the shadowing goes away. Worth folding into the paragraph above, since
+that paragraph currently recommends the directory that broke.
+
+## The system `python3` has no numpy and no scipy
+
+    $ python3 -c "import numpy"
+    ModuleNotFoundError: No module named 'numpy'
+
+So a numerical check written locally is pure Python or it is nothing. For an
+ideation run that is usually enough -- a few hundred points, some gradient
+descent -- and it avoids `agents/sage.sh` for work that does not need Sage.
+When it is not enough, `agents/sage.sh` has the container with both. Do not
+`pip install` into the system Python to get around this.
+
+## Not every published source answers from here
+
+`hydra.nat.uni-magdeburg.de`, which is Wikipedia's cited host for Specht's
+census of circle packings, returned `curl` code `000` -- no connection at all
+-- while `www.packomania.com` answered normally and `neilsloane.com` answered
+normally. So a `source_names_it` failure can mean the host is down or is
+unreachable from this machine rather than that the citation is wrong, and it
+is worth trying a second host before concluding anything about the source.
