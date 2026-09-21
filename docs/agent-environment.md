@@ -6982,3 +6982,29 @@ source.
 Evidence: 2026-09-21, ideation run `20260921T200608Z`. Background task
 `bjotrmcqq`, 21 lines, "completed (exit code 0)", nothing computed; the retry
 `b5upx4fii` with `LOCK_WAIT=2400` produced the whole verification.
+
+## `queue.py built` closes a family while sibling proposals are only claimed
+
+What happened: #180 had four proposals, three still marked `[~] claimed by
+w1` and one Watson-integral proposal built as T393. Running
+
+    python3 agents/queue.py built 180 "Watson integrals of the cubic lattices" T393
+
+correctly ticked the Watson line, but then printed `#180 closed; the family is
+built` and closed the issue. The body still had three claimed, unbuilt lines:
+Epstein zeta values, Madelung constants and Kronecker limit constants.
+
+The cause is in `queue.py`: `parse_family()` treats `~` as `done`, and
+`cmd_built()` closes the family when `waiting(family)` is empty. A claim is a
+lock with a ninety-minute expiry, not a built table. Closing the family hides
+those proposals if the claiming worker dies before ticking them.
+
+What to do instead: after running `queue.py built` on a family with sibling
+claims, check the issue state and reopen it if any checklist line is still
+`[~]`. Longer term, `cmd_built()` should close only when every item is built
+or skipped, not merely claimed.
+
+Evidence: 2026-09-21, T393 build. `queue.py built` closed #180 at 22:44 UTC;
+`python3 agents/queue.py show 180` immediately afterwards showed the three
+remaining `[~]` lines. The issue was reopened with
+`gh issue reopen 180 --repo numberdb/numberdb-data`.
