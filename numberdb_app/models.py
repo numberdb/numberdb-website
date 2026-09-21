@@ -1516,6 +1516,65 @@ class WikipediaNumber(models.Model):
 	)
 
 
+class ProposalClaim(models.Model):
+	"""One worker's hold on one proposal, decided here rather than in an issue.
+
+	Four builders share a queue, and the queue is a checklist in a GitHub
+	issue. Claiming a line of it means reading the body, editing one line and
+	writing the body back, which is not atomic: two workers claiming in the
+	same second lose one another's edit, and on 2026-09-21 every proposal of
+	numberdb-data#178 was claimed within one minute while none was built.
+
+	What made that harmless rather than wasteful was the site: a table's title
+	is unique, so the second draft creation is refused. That is real mutual
+	exclusion, and it arrives fifteen minutes too late -- after the second
+	worker has done the thinking. This is the same guarantee, at the start:
+	the unique constraint below is the lock, `INSERT` is the attempt, and a
+	worker either holds the proposal or is told who does.
+
+	**A claim expires.** A worker that dies holding one must not keep a
+	proposal out of the queue for ever; ninety minutes is longer than any
+	build measured here and short enough that a machine restarted at lunch is
+	working again by the time anybody looks. Expiry is read, never swept: a
+	row that has aged out is taken over in place, so there is nothing to run
+	and nothing to forget to run.
+	"""
+
+	#: The family issue the proposal belongs to, by number.
+	family = models.IntegerField(db_index = True)
+
+	#: The proposal's title, as the checklist writes it. Long, because the
+	#: batches write sentences: "Volumes of the Birkhoff polytopes. Rank last;
+	#: the case against is real".
+	proposal = models.CharField(max_length = 300)
+
+	#: Which worker holds it -- `w3`, a campaign stamp, a person's name. Not a
+	#: foreign key: the holder is a process, not an account, and the account
+	#: that publishes what it builds is recorded on the revision instead.
+	worker = models.CharField(max_length = 64, blank = True, default = '')
+
+	claimed_at = models.DateTimeField(auto_now_add = True, db_index = True)
+
+	#: How long a claim holds, in minutes. The same ninety the checklist mark
+	#: used, so the two agree while both exist.
+	MINUTES = 90
+
+	class Meta:
+		unique_together = ('family', 'proposal')
+		indexes = [models.Index(fields = ['family', 'claimed_at'])]
+
+	def __str__(self):
+		return '#%d %s (%s)' % (self.family, self.proposal[:40],
+		                        self.worker or 'unnamed')
+
+	@property
+	def expired(self):
+		from django.utils import timezone
+
+		age = timezone.now() - self.claimed_at
+		return age.total_seconds() > self.MINUTES * 60
+
+
 class AgentRun(models.Model):
 	"""One run of something that wrote to this database.
 

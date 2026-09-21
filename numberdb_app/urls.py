@@ -47,6 +47,9 @@ urlpatterns = [
     re_path(r'^api/table/(?P<tid>[Tt]?\d+)/offer$', api.offer_table, name='api-offer-table'),
     re_path(r'^api/table/(?P<tid>[Tt]?\d+)/lease$', api.table_lease, name='api-table-lease'),
     path('api/costs', api.costs, name='api-costs'),
+    #The lock on a proposal. A checklist in an issue cannot be claimed
+    #atomically; a unique constraint can.
+    path('api/claim', api.claim, name='api-claim'),
     re_path(r'^api/table/(?P<tid>[Tt]?\d+)/audit$', api.audit, name='api-audit'),
     re_path(r'^api/table/(?P<tid>[Tt]?\d+)/file/(?P<name>[-\w./]+)$', api.write_file, name='api-write-file'),
     path('api/tag', api.tag, name='api-tag'),

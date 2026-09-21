@@ -1356,6 +1356,122 @@ LEASE_MINUTES = getattr(settings, 'NUMBERDB_LEASE_MINUTES', 20)
 @csrf_exempt
 @rate_limited
 @csrf_exempt
+@csrf_exempt
+def claim(request):
+	"""Take, give back, or look at the holds on a family's proposals.
+
+	    POST   /api/claim  {family, proposal, worker}  -> 201, or 409 with who
+	    DELETE /api/claim  {family, proposal}          -> 200
+	    GET    /api/claim?family=178                   -> what is held now
+
+	The queue is a checklist in a GitHub issue, and claiming a line of it by
+	rewriting the body is not atomic: two workers claiming in the same second
+	lose one another's edit. Here the database's unique constraint is the
+	lock, so exactly one POST wins and the other is told who holds it.
+
+	A claim expires after `ProposalClaim.MINUTES`, and an expired one is taken
+	over in place rather than swept: a worker that died holding a proposal
+	must not keep it out of the queue, and a sweep is a job somebody has to
+	remember to run.
+	"""
+	from django.db import IntegrityError, transaction
+	from django.utils import timezone
+
+	from .models import ProposalClaim
+
+	if request.method == 'GET':
+		family = request.GET.get('family')
+		rows = ProposalClaim.objects.all()
+		if family:
+			try:
+				rows = rows.filter(family=int(family))
+			except ValueError:
+				return JsonResponse({'error': 'family must be a number.'},
+				                    status=400)
+		return JsonResponse({'claims': [
+			{'family': row.family, 'proposal': row.proposal,
+			 'worker': row.worker, 'since': row.claimed_at.isoformat(),
+			 'expired': row.expired}
+			for row in rows.order_by('family', 'proposal') if not row.expired]})
+
+	user, refusal = _writer_of(request)
+	if refusal is not None:
+		return refusal
+
+	if request.method not in ('POST', 'DELETE'):
+		return JsonResponse({'error': 'Use GET, POST or DELETE.'}, status=405)
+
+	#Read here rather than through `_document_of`, which is about *table*
+	#documents and refuses anything without a Title. A claim is two fields.
+	try:
+		said = json.loads(request.body.decode('utf8', 'replace') or '{}')
+	except ValueError:
+		said = None
+	if not isinstance(said, dict):
+		return JsonResponse(
+			{'error': 'Send JSON with family and proposal.'}, status=400)
+	try:
+		family = int(said.get('family'))
+	except (TypeError, ValueError):
+		return JsonResponse({'error': 'family must be a number.'}, status=400)
+	proposal = str(said.get('proposal') or '').strip()[:300]
+	if not proposal:
+		return JsonResponse({'error': 'proposal is required.'}, status=400)
+
+	if request.method == 'DELETE':
+		gone, _ = ProposalClaim.objects.filter(family=family,
+		                                       proposal=proposal).delete()
+		return JsonResponse({'released': bool(gone)})
+
+	worker = str(said.get('worker') or '').strip()[:64]
+	try:
+		#In a savepoint of its own: the insert is *expected* to fail when
+		#another worker got there first, and an IntegrityError raised straight
+		#into the request's transaction leaves it unusable for everything
+		#after -- including the query that reads who holds the claim.
+		with transaction.atomic():
+			ProposalClaim.objects.create(family=family, proposal=proposal,
+			                             worker=worker)
+		return JsonResponse({'claimed': True, 'worker': worker}, status=201)
+	except IntegrityError:
+		pass
+
+	#Somebody has it. Theirs if it is live; ours if it has aged out, and taken
+	#over in one update so that two workers arriving at an expired claim
+	#cannot both believe they took it.
+	held = ProposalClaim.objects.filter(family=family,
+	                                    proposal=proposal).first()
+	if held is None:
+		#Released between the insert and the read.
+		try:
+			with transaction.atomic():
+				ProposalClaim.objects.create(family=family, proposal=proposal,
+				                             worker=worker)
+			return JsonResponse({'claimed': True, 'worker': worker},
+			                    status=201)
+		except IntegrityError:
+			held = ProposalClaim.objects.filter(
+				family=family, proposal=proposal).first()
+		if held is None:
+			return JsonResponse({'claimed': False,
+			                     'detail': 'Taken and released again; try once more.'},
+			                    status=409)
+	if held.expired:
+		taken = ProposalClaim.objects.filter(
+			pk=held.pk, claimed_at=held.claimed_at).update(
+				worker=worker, claimed_at=timezone.now())
+		if taken:
+			return JsonResponse({'claimed': True, 'worker': worker,
+			                     'took_over_from': held.worker}, status=201)
+		held.refresh_from_db()
+	return JsonResponse(
+		{'claimed': False, 'worker': held.worker,
+		 'since': held.claimed_at.isoformat(),
+		 'detail': 'Another worker holds this proposal; it frees itself %d '
+		           'minutes after it was taken.' % (ProposalClaim.MINUTES,)},
+		status=409)
+
+
 def costs(request):
 	"""Take an agent ledger and put its costs on the tables.
 
