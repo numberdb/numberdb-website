@@ -6827,3 +6827,60 @@ served `https://numberdb.org/skill` once and then refused every connection
 everything for the rest of the run, including `/api/table`, `/api/lookup`,
 `/preview` and `dlmf.nist.gov`. `--retry-all-errors` does not help: a refused
 connection retries instantly and fails the same way.
+
+## `source_names_it` matches literal substrings, so a plural name fails a singular page
+
+What happened: the proposal for a table of trinomial discriminants was screened
+as "Discriminants of trinomials" and refused twice, by two pages that both
+describe the family: <https://en.wikipedia.org/wiki/Discriminant> "does not
+mention trinomials", <https://en.wikipedia.org/wiki/Trinomial> "does not mention
+discriminants". Both are true as written. Wikipedia's discriminant article uses
+the word "trinomial" in the singular, and the trinomial article the word
+"discriminant" in the singular, and `_distinguishing` keeps whatever plural the
+proposed *name* was written in while the page match is a plain `w not in text`.
+MathWorld's `PolynomialDiscriminant` refuses for the same reason. Screening the
+same family as "Discriminant of a trinomial" passes against both pages.
+
+`GENERIC` already drops some plurals -- `polynomials`, `numbers`, `functions`,
+`values` -- which is why this has not bitten before: the words it bites are the
+distinguishing ones, and those are exactly the words the check exists to test.
+
+What to do instead: when `source_names_it` refuses a family you are confident
+is real, screen the singular form of the name before concluding the source is
+wrong, and record which form passed. A fix would stem both sides, or strip a
+trailing `s` from each distinguishing word before the match; that is a change to
+`screen.py` and wants a test, so it is not made here.
+
+Evidence: 2026-09-20 ideas run. `source_names_it("Discriminants of
+trinomials", "https://en.wikipedia.org/wiki/Trinomial")` -> "the source does not
+mention discriminants"; `source_names_it("Discriminant of a trinomial", same
+url)` -> None. Same pair against `.../Discriminant` and against
+`mathworld.wolfram.com/PolynomialDiscriminant.html`.
+
+## oeis.org answers a Cloudflare challenge here, so an A-number cannot be verified
+
+What happened: a proposal wanted to cite the OEIS sequence counting the terms of
+the discriminant of the general polynomial of degree $n$ (2, 5, 16, 59, 246,
+1103 for $n=2$ to $7$, measured in Sage). `curl https://oeis.org/search?q=id:A007878&fmt=text`
+returned the "Just a moment..." interstitial: an HTML page with a JavaScript
+challenge, HTTP 200, no sequence data. Plain `curl` to Wikipedia, MathWorld,
+doi.org and numberdb.org all answered normally in the same run.
+
+That matters twice over. A citation nobody can read is not a citation, so the
+A-number was left out of the batch with the measured terms given instead, for a
+builder to look up. And `source_names_it` against an `oeis.org` URL will refuse
+every family for want of the words, while looking exactly like a family nobody
+names: the earlier run's screen of `https://oeis.org/A002965` reported "the
+source does not mention discriminants, trinomials", which is a statement about
+the challenge page and not about OEIS.
+
+What to do instead: screen against Wikipedia, MathWorld, DLMF, doi.org or an
+arXiv abstract, which answer. If a proposal rests on an OEIS sequence, quote the
+first terms and say they were measured, and leave the A-number for somebody with
+a browser. `export.arxiv.org` was also unreachable from this run (`curl` wrote a
+zero-byte file, over both http and https), so an arXiv abstract page may not
+answer either; test it before relying on it.
+
+Evidence: 2026-09-20 ideas run, the OEIS response quoted above, and
+`curl -s --max-time 60 'http://export.arxiv.org/api/query?...' -o /tmp/ax.xml`
+giving `0 /tmp/ax.xml`.
