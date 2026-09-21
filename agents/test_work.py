@@ -70,5 +70,34 @@ class ADemandIsActedOnOnce(unittest.TestCase):
 		self.assertEqual(work.demands(), [])
 
 
+class TheMemoryIsShared(unittest.TestCase):
+	"""Four workers, one record of what has been asked."""
+
+	def setUp(self):
+		self.shared = tempfile.mkdtemp()
+		self.real = work.CRITIQUES
+
+	def tearDown(self):
+		work.CRITIQUES = self.real
+		shutil.rmtree(self.shared, ignore_errors=True)
+
+	def test_the_directory_comes_from_the_environment(self):
+		#Each worker has its own worktree, so a per-tree directory is four
+		#separate memories: 352 growth questions went to about 115 tables and
+		#T293 was asked twelve times before this.
+		import importlib
+		import os
+
+		os.environ['NUMBERDB_CRITIQUES'] = self.shared
+		try:
+			importlib.reload(work)
+			self.assertEqual(work.CRITIQUES, self.shared)
+			open(os.path.join(self.shared, 'T99-growth.md'), 'w').close()
+			self.assertTrue(work.read('T99', '-growth'))
+		finally:
+			del os.environ['NUMBERDB_CRITIQUES']
+			importlib.reload(work)
+
+
 if __name__ == '__main__':
 	unittest.main(verbosity=1)
