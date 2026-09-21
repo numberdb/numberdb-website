@@ -6884,3 +6884,59 @@ answer either; test it before relying on it.
 Evidence: 2026-09-20 ideas run, the OEIS response quoted above, and
 `curl -s --max-time 60 'http://export.arxiv.org/api/query?...' -o /tmp/ax.xml`
 giving `0 /tmp/ax.xml`.
+
+## oeis.org *does* answer, from Python with the SOCKS proxy installed
+
+What happened: the note above records that `curl https://oeis.org/...` gets a
+Cloudflare interstitial here, so an A-number cannot be verified. That is still
+true of `curl`, but it is not true of the route `screen.py` already uses. From
+`python3` with `screen.use_socks_proxy_if_set()` called first, and
+`urllib.request` with a `User-Agent` header,
+
+    https://oeis.org/search?q=6,6,1,7,0,7,1,8,2,2,6,7,1,7,6&fmt=json
+
+returned JSON naming **A073012**, *Decimal expansion of Robbins constant*, and
+three further digit searches answered the same way (A091505, A103983). So a
+proposal can verify an A-number after all, and -- more useful -- can search
+OEIS *by the digits of a constant it has just computed*, which is the strongest
+independent check available to an ideation run.
+
+What to do instead: reach OEIS the way `already_here` reaches numberdb, not
+with `curl`. The difference is the SOCKS proxy: `curl` honours `ALL_PROXY` and
+urllib does not, so `use_socks_proxy_if_set()` installs it into the socket
+layer, and that path is evidently not the one Cloudflare challenges.
+
+Evidence: 2026-09-21T02:08Z ideas run, four `fmt=json` digit searches, all
+answered with results.
+
+## The LMFDB JSON API is reachable, and is how to test whether a family is a formula
+
+What happened: `https://www.lmfdb.org/api/<table>/?_format=json&_fields=...&_limit=n`
+answered 200 for `mf_newforms` and `lfunc_lfunctions` throughout this run, with
+no key and no rate-limit trouble at a few hundred rows. One `_limit=200` request
+came back as non-JSON (an HTML error page) and the same query at `_limit=100`
+answered, so keep pages small and check that the body parses before
+`json.load`.
+
+Evidence: same run; the analytic-conductor finding in
+`agents/table-ideas/BATCH-2026-09-21T0208.md` rests entirely on it.
+
+## `screen.already_here` needs `clients/python` on `sys.path`
+
+What happened: `python3 -c "from screen import already_here; already_here(...)"`
+from the repository root raises `ModuleNotFoundError: No module named
+'numberdb'`. The client is not installed in this environment; it lives at
+`clients/python`, the same place `agents/sage.sh` puts on `PYTHONPATH` inside
+the container. A screening script run outside the container has to do it
+itself:
+
+    sys.path.insert(0, 'clients/python')
+    sys.path.insert(0, 'agents/table-ideas')
+
+This is the loud failure rather than the quiet one -- `already_here` catches
+exceptions *inside* the search and reports them, but the import happens before
+that -- so it costs a minute and not an hour. Worth writing down anyway,
+because every ideation run needs the two lines and none of them is in a
+template.
+
+Evidence: same run.
