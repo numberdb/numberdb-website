@@ -8483,3 +8483,46 @@ census of circle packings, returned `curl` code `000` -- no connection at all
 normally. So a `source_names_it` failure can mean the host is down or is
 unreachable from this machine rather than that the citation is wrong, and it
 is worth trying a second host before concluding anything about the source.
+
+## `screen.py` asks GitHub anonymously, and cannot tell "no" from "not answered"
+
+`already_asked` and `requests` in `agents/table-ideas/screen.py` reach
+`api.github.com` through plain `urllib` with no credential. Anonymous requests
+are allowed 60 an hour from an address, so a screening loop over a handful of
+candidates runs out part-way through:
+
+    Mathieu characteristic values -> []
+    spheroidal eigenvalues        -> []
+    Slepian                       -> ['could not ask GitHub (HTTPError)']
+    Lame eigenvalues              -> ['could not ask GitHub (HTTPError)']
+
+`already_asked` at least says so. `requests()` does not: its `except
+Exception: return []` turns a 403 into an empty backlog, and an empty backlog
+is the single most consequential thing an ideation run can be told, because
+the prompt's step 4 is built on it. `python3 agents/table-ideas/screen.py
+requests` printing nothing means either "no open requests" or "GitHub declined
+to answer", and the two look identical.
+
+`gh` on this machine is authenticated (account `bmatschke`, `GH_TOKEN`), so
+confirm with it before believing either answer:
+
+    gh issue list --repo numberdb/numberdb-data --label "table wanted" \
+        --state all --limit 500 --json number,state
+
+On 2026-09-21 that returned 126 issues, all closed, all with `state_reason`
+`completed` -- so the backlog really is empty, but only `gh` could establish
+it. The fix in `screen.py` is to read `GH_TOKEN` (or shell out to `gh`) and to
+let `requests()` raise rather than return `[]`; the module's own docstring
+for `already_here` already makes exactly this argument about the corpus
+client, and the GitHub calls were not given the same treatment.
+
+## Read the skill from the checkout, not from numberdb.org
+
+Fetching <https://numberdb.org/skill> returned HTTP 200 and 39,428 of its
+48,689 characters -- section 7, "Rigour", and everything after it was
+silently missing, and re-fetching reproduced the same split. The same file is
+in the checkout at `.claude/skills/numberdb-table/SKILL.md`, complete, and is
+what the site serves. Read that. The truncation is a property of the fetching
+tool rather than of the site, but the effect is that a run which fetches the
+URL is working from a skill with the rigour section cut off and no sign that
+anything is missing.
