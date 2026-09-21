@@ -7849,3 +7849,36 @@ closed`. The sqlite recipe exists precisely because neither works.
 
 Evidence: 2026-09-21, T382 critique. `/tmp/t382_render.py` (T381's script,
 tid changed): `records: 5`, `status 200 29869`.
+
+## The builder image has no `RealBall.str`, under `sage.all` or otherwise
+
+What happened: the T8 growth review needed to print more than sixteen digits
+of a ball to compare them against a stored value, and
+
+    value = RealBallField(4000)(1).exp()
+    value.str(radius=False)
+
+raised `AttributeError: 'sage.rings.real_arb.RealBall' object has no attribute
+'str'`. The skill lists `RealBall.str` among the things the *named imports* do
+not bring, which reads as "`from sage.all import ...` would have it". On this
+image it does not: the same call fails identically after `from sage.all import
+RealBallField`, so the method is absent from the build rather than hidden by
+an import. `RBF(e)` coerced fine through `sage.all` in the same script, so
+Sage itself was loaded.
+
+What to do instead: go through a real field, which is present.
+
+    printer = RealField(4000)
+    printer(value.mid()).str(base=10, no_sci=2)
+
+That prints the midpoint to full precision and drops the radius, which is what
+`str(radius=False)` was for. Where the radius matters, `value.rad()` prints on
+its own and `repr(value)` gives the `[x +/- r]` form at whatever width the
+default formatter chooses.
+
+Whether the skill's sentence should change is a separate question — a
+contributor on full SageMath may well have the method — so this is recorded
+here rather than proposed as a lesson.
+
+Evidence: 2026-09-21, T8 growth review, `/tmp/t8check2.py` and
+`/tmp/t8check3.py` through `agents/sage.sh`.
