@@ -7882,3 +7882,51 @@ here rather than proposed as a lesson.
 
 Evidence: 2026-09-21, T8 growth review, `/tmp/t8check2.py` and
 `/tmp/t8check3.py` through `agents/sage.sh`.
+
+## A `/preview` piece with no `Numbers` key renders no sections at all, only a Django error
+
+What happened: the T383 critique sliced its draft's document into
+`/preview?table=` pieces, as the T221 and T225 notes describe. The first six
+pieces carried prose only -- Title, Definition, Parameters, Comments, Formulas
+-- and every one of them answered 200 with no preview in it, just the line
+
+    Error while parsing numbers: cannot access local variable
+    'number_section' where it is not associated with a value
+
+which reads like the slice was malformed. It was not: `views.preview` builds
+the value block before the sections and leaves `number_section` unbound when
+the document has no `Numbers` key, so an absent key is an unbound local rather
+than an empty table. The existing note says a piece shows no *values* without
+`Parameters`; this is one step earlier and loses the whole page.
+
+What to do instead: put a one-entry `Numbers` in every slice, real or not --
+`Numbers: {2: {1: 'a^2 - 4*b'}}` was enough -- alongside the `Parameters` the
+earlier note asks for. Then the prose sections render. Worth fixing in
+`views.py` as well: the same document posted with no numbers in the editor
+gives an author the same message.
+
+Evidence: 2026-09-21, T383 critique. `/tmp/render383.py`, eight slices, all
+200; the six without a `Numbers` key rendered the error line and nothing else,
+and the same six rendered in full once one entry was added.
+
+## The `/api/docs` page documents `q` for `/api/search`, which reads `expression`
+
+What happened: the same critique called `GET /api/search?q=...` because the
+API documentation page says so: under `GET /api/search` it lists one
+parameter, "q -- the term: a decimal, a fraction, a p-adic, a polynomial, an
+expression such as pi, or words". `api.advanced_search_results` reads
+`request.GET.get('expression')` and nothing else, and returns an empty
+envelope when it is absent, so every documented call answers
+`{"results": [], "messages": []}`. The endpoint is the advanced-search
+evaluator: `expression=pi` works, `expression=x^2-4*y` answers "Unknown or
+not-allowed name 'x'", and a polynomial is looked up through
+`/api/lookup?polynomial=...` instead. The documented `q` and the documented
+"a polynomial" are both wrong for this endpoint.
+
+What to do instead: use `api/lookup` for a number or a polynomial and the
+package for text search. The docs page and the view should be made to agree;
+until they are, an empty `results` from `api/search` proves nothing.
+
+Evidence: 2026-09-21, T383 critique. `curl -s -G --data-urlencode
+"q=Chebyshev" https://numberdb.org/api/search` returned no results while
+`https://numberdb.org/?q=Chebyshev` returned 12; `numberdb_app/api.py:146`.
