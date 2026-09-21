@@ -8396,3 +8396,48 @@ Worth checking before each run rather than assuming, since the campaign opens
 
     gh api 'repos/numberdb/numberdb-data/issues?state=open&per_page=100' \
       --jq '.[] | "\(.number) \([.labels[].name]|join(",")) \(.title)"'
+
+## `import numberdb` from the repository root finds the Django app, not the client
+
+`screen.py`'s `already_here` imports `numberdb`, and run from the checkout it
+gets `/home/ubuntu/numberdb-campaign-w3/numberdb/__init__.py` -- the Django
+project package, which has no `search_text` and no `table`. Plain `python3`
+outside the checkout has no `numberdb` at all, so the failure reads as
+`ModuleNotFoundError` in one place and as a missing attribute in the other,
+and neither says "you are looking at the wrong package".
+
+The shape that works, and the only one that worked here:
+
+    cd /tmp && PYTHONPATH=<checkout>/clients/python python3 script.py
+
+with `sys.path.insert(0, '<checkout>/agents/table-ideas')` inside the script
+for `screen` itself. `cd /tmp` is load-bearing: Python puts the script's
+directory on `sys.path` ahead of `PYTHONPATH`, so running from the checkout
+loses to the app package however `PYTHONPATH` is set. `agents/sage.sh` already
+handles this inside the container; it is the *local* reads -- which is most of
+a stage-one run -- that have no wrapper.
+
+## `screen.py requests` cannot tell "none" from "GitHub unreachable"
+
+`requests()` swallows every exception and returns `[]`, so an empty print
+means either that no `table wanted` issue is open or that the call failed.
+Both were live possibilities this run: the anonymous GitHub search API does
+answer, but it answers `0` for this repository's label query regardless, and
+the count only became trustworthy through `gh`, which is authenticated here:
+
+    gh issue list --repo numberdb/numberdb-data --label "table wanted" \
+      --state open --json number --jq length
+
+`already_here` was written not to have this bug -- it returns
+`(could not ask the corpus: ...)` rather than `[]` -- and `requests()` should
+be brought into line with it. Until it is, confirm an empty backlog with `gh`
+before reporting it.
+
+## `WebSearch` is not granted in this campaign
+
+The tool exists but the permission is not, so a run cannot search for a
+source. `screen.py`'s `source_names_it` fetches over plain HTTP and is the
+substitute: point it at a candidate URL and it answers whether the page names
+the family. For finding a URL in the first place, the arXiv API over
+`https://export.arxiv.org/api/query?search_query=all:%22<phrase>%22` with a
+browser user agent works from here and settled two names this run.
