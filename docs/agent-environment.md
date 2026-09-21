@@ -7551,6 +7551,15 @@ That resolves `numberdb` to `clients/python/numberdb/__init__.py` and
 same variable makes `screen.py`'s `already_here` work. `agents/sage.sh` is
 unaffected; it sets the path inside the container itself.
 
+Update from the 2026-09-21 T12 repair: the noisy `/tmp` import was a stale
+`/tmp/inspect.py` scratch script. Running any Python script from `/tmp` put
+`/tmp` first on `sys.path`, so later imports of the standard-library
+`inspect` module executed that scratch script instead. Its top-level code made
+anonymous `numberdb.table(...)` calls, printed several whole table summaries
+and eventually hit the anonymous rate limit. Use a per-run empty directory
+under `/tmp`, or `python3 -I -S` when only the standard library is needed, and
+do not leave scratch files in `/tmp` with standard-library module names.
+
 ## What `source_names_it` can and cannot fetch from here
 
 Screening a proposal against a journal paper mostly does not work from this
