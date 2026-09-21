@@ -1,0 +1,116 @@
+Title: Residues of Dedekind zeta functions of quartic fields
+Definition: Let $K$ be a quartic field CITE{Wiki-quartic} of discriminant $D$
+  and $\zeta_K(s)=\sum_{\mathfrak{a}}N(\mathfrak{a})^{-s}$ its Dedekind zeta
+  function CITE{Wiki}, summed over the nonzero ideals of $\mathcal{O}_K$.
+  Listed is $\kappa_K=\lim_{s\to 1}(s-1)\zeta_K(s)$, the residue of
+  $\zeta_K$ at its pole $s=1$.
+Keywords:
+- Dedekind zeta residue
+- quartic number field
+Parameters:
+  D:
+    type: Z
+    title: discriminant of $K$
+    display: $D$
+    constraints: $D$ the discriminant of a quartic field
+  k:
+    type: Z
+    title: index of $K$ among the quartic fields of discriminant $D$
+    display: $k$
+    constraints: $k\geq 1$
+Comments:
+  comment-index: The fields of discriminant $D$ are numbered $k=1,2,\ldots$
+    by reducing their defining polynomials with PARI's `polredabs` and sorting
+    the reduced polynomials lexicographically by coefficient vector. This is
+    the same $D,k$ convention used for HREF{Residues_of_Dedekind_zeta_functions_of_cubic_fields}[the
+    table of residues of Dedekind zeta functions of cubic fields].
+  comment-signature: The sign of $D$ does not determine the signature of a
+    quartic field. A negative discriminant means signature $(2,1)$, while a
+    positive discriminant can mean either signature $(4,0)$ or $(0,2)$. The
+    signature is therefore stated in each entry comment.
+  comment-entries: The comment on each entry gives the reduced defining
+    polynomial $f$, so that $K=\mathbb{Q}(a)$ with $f(a)=0$; the signature; the
+    Galois group of the Galois closure as a 4T label; the class number $h_K$;
+    the number $w_K$ of roots of unity in $K$; and the LMFDB label.
+  comment-roots-of-unity: Among these 456 fields, $w_K=2$ for 338 fields,
+    $w_K=4$ for 44 fields, $w_K=6$ for 71 fields, and the three remaining
+    fields have $w_K=8$, $10$ and $12$. This factor is visible in the class
+    number formula CITE{formula-class-number}; the entries with $D=125$ and
+    $D=144$ are the cyclotomic fields $\mathbb{Q}(\zeta_5)$ and
+    $\mathbb{Q}(\zeta_{12})$.
+  comment-not-completed: The residue is that of $\zeta_K$ itself. The completed
+    Dedekind zeta function has a different residue at $s=1$.
+Formulas:
+  formula-class-number: $\kappa_K=\frac{2^{r_1}(2\pi)^{r_2}h_KR_K}{w_K\sqrt{|D|}}$,
+    where $(r_1,r_2)$ is the signature, $h_K$ is the class number, $R_K$ is the
+    regulator and $w_K$ is the number of roots of unity in $K$ CITE{WikiCNF}
+    CITE{LMFDB-CNF}.
+Programs:
+  program-pari:
+    language: PARI/GP
+    code: "default(realprecision, 80);\nf = x^4 - x^3 + x^2 - x + 1;       \\\\ D = 125\nK = bnfinit(f, 1); bnfcertify(K);\n2^K.r1 * (2*Pi)^K.r2 * K.no * K.reg / (K.tu[1] * sqrt(abs(K.disc)))\npolcoef(lfunrootres(lfuncreate(f))[1][1][2], -1)"
+Similar tables:
+- table: HREF{Residues_of_Dedekind_zeta_functions_of_quadratic_fields}[Residues
+    of Dedekind zeta functions of quadratic fields]
+  relation: the same residue for degree two, where $\kappa_K=L(1,\chi_D)$ is
+    a single Dirichlet $L$-value
+- table: HREF{Residues_of_Dedekind_zeta_functions_of_cubic_fields}[Residues of
+    Dedekind zeta functions of cubic fields]
+  relation: the same residue for degree three, with the same $D,k$ convention
+    for non-isomorphic fields sharing a discriminant
+- table: HREF{Values_of_Dirichlet_L-functions_at_positive_integers}[Values of
+    Dirichlet $L$-functions at positive integers]
+  relation: for abelian quartic fields, the quotient $\zeta_K(s)/\zeta(s)$
+    factors into Dirichlet $L$-functions
+Links:
+  Wiki:
+    title: 'Wikipedia: Dedekind zeta function'
+    url: https://en.wikipedia.org/wiki/Dedekind_zeta_function
+  Wiki-quartic:
+    title: 'Wikipedia: Quartic field'
+    url: https://en.wikipedia.org/wiki/Quartic_field
+  WikiCNF:
+    title: 'Wikipedia: Class number formula'
+    url: https://en.wikipedia.org/wiki/Class_number_formula
+  LMFDB-CNF:
+    title: 'LMFDB: analytic class number formula'
+    url: https://www.lmfdb.org/knowledge/show/nf.class_number_formula
+  LMFDB-quartic:
+    title: 'LMFDB: quartic number fields'
+    url: https://www.lmfdb.org/NumberField/?degree=4
+  Request42:
+    title: Requested in numberdb-data#42
+    url: https://github.com/numberdb/numberdb-data/issues/42
+Tags:
+- number theory
+- L-function
+- special values
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: it holds the same 456 quartic fields with $|D|\leq 5000$ under
+    the same $D$ and $k$
+  rigour details: Each value is a real ball from the class number formula
+    CITE{formula-class-number} at 525 bits, using `numberdb.bits(100,
+    losing=192)`. The fields are enumerated by PARI's `nflist("C4", [1, 5000])`,
+    `nflist("V4", [1, 5000])`, `nflist("D4", [1, 5000])`, `nflist("A4", [1, 5000])`
+    and `nflist("S4", [1, 5000])`, then sorted by $|D|$, positive $D$ before
+    negative $D$ at the same absolute value, and then by $k$; the generator
+    refuses to run unless it finds 456 fields with signature counts 20 of
+    $(4,0)$, 180 of $(2,1)$ and 256 of $(0,2)$.
+
+    The class number, roots of unity and fundamental units are PARI's, from
+    `bnfinit(f, 1)`, and `bnfcertify` is required to return 1 for every field.
+    The fundamental units are taken exactly as polynomials in $a$; PARI's
+    floating regulator is not used for the stored value. The roots of the
+    reduced polynomial are isolated as complex balls, the units are evaluated
+    at those roots by Horner's rule, and the regulator is the determinant of
+    the logarithmic embedding matrix, with weight 1 on real embeddings and
+    weight 2 on complex embeddings. The value is then formed with arb's $\pi$
+    and square root. The dry run checked that every row carries 100 digits,
+    and compared all 456 residues with PARI's `lfunrootres(lfuncreate(f))`, a
+    computation from the Dedekind zeta function rather than from `bnfinit`;
+    there were no disagreements at the 100 digits stored here.
+Display properties:
+  number-header: $\kappa_K$

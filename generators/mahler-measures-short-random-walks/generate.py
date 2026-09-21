@@ -8,6 +8,12 @@ Run it:
     $ python3 generate.py                # check the table against this code
     $ python3 generate.py --publish      # send it, with NUMBERDB_API_KEY set
 
+The same file also runs under SageMath:
+
+    $ sage -pip install numberdb mpmath  # once
+    $ sage -python generate.py           # check the table against this code
+    $ sage -python generate.py --publish # send it, with NUMBERDB_API_KEY set
+
 The table held four values when this was written: n = 3 and 4 from Smyth's
 closed forms, n = 5 and 6 from conjectural Rodriguez Villegas eta-integrals.
 That range is bibliographic and not a limit of what can be computed: the

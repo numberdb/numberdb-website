@@ -1,0 +1,130 @@
+# The table document for numberdb.org/T341. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Division polynomials $\psi_n$ of elliptic curves over $\mathbb{Q}$
+Definition: >-
+  Let $E/\mathbb{Q}$ be the elliptic curve with reduced global minimal
+  Weierstrass model recovered from $(c_4,c_6)$ by Formula
+  CITE{formula-model-from-invariants}. The entry is the $n$-th division
+  polynomial $\psi_n$ CITE{SageDivision} of this model in $\mathbb{Z}[x,y]$.
+Parameters:
+  N:
+    type: Z
+    title: conductor of $E$
+    display: $N$
+    constraints: $N\geq1$
+  c4:
+    type: Z
+    title: invariant $c_4$ of the reduced global minimal model of $E$
+    display: $c_4$
+  c6:
+    type: Z
+    title: invariant $c_6$ of the reduced global minimal model of $E$
+    display: $c_6$
+  n:
+    type: Z
+    title: division-polynomial index
+    display: $n$
+    constraints: $n\geq1$
+Comments:
+  comment-curve-labels: >-
+    The curve is identified by $N$, $c_4$ and $c_6$. Each entry comment gives
+    the curve's Cremona label. LMFDB CITE{LMFDB} numbers curves within an
+    isogeny class differently from Cremona's tables CITE{SageCremona}, so a
+    label here is not an LMFDB label.
+  comment-even-polynomials: >-
+    This table stores $\psi_n$ itself. For even $n$, the $x$-only polynomial
+    without the two-torsion factor is $\psi_n/(2y+a_1x+a_3)$. PARI/GP's
+    `elldivpol` CITE{PARIelldivpol} and Sage's default
+    `division_polynomial` CITE{SageDivision} use the $x$-only convention in
+    Formula CITE{formula-pari-convention}.
+Formulas:
+  formula-model-from-invariants: >-
+    For the reduced models in this table, $b_2$ is the unique element of
+    $\{-4,-3,0,1,4,5\}$ with $b_2\equiv -c_6\pmod{12}$,
+    $b_4=(b_2^2-c_4)/24$, and
+    $b_6=(-c_6-b_2^3+36b_2b_4)/216$. The model has
+    $a_1\equiv b_2\pmod 2$, $a_3\equiv b_6\pmod 2$ with
+    $a_1,a_3\in\{0,1\}$ and $a_2\in\{-1,0,1\}$, and
+    $a_2=(b_2-a_1^2)/4$, $a_4=(b_4-a_1a_3)/2$ and
+    $a_6=(b_6-a_3^2)/4$.
+  formula-b-invariants: >-
+    $b_2=a_1^2+4a_2$, $b_4=a_1a_3+2a_4$, $b_6=a_3^2+4a_6$, and
+    $b_8=a_1^2a_6+4a_2a_6-a_1a_3a_4+a_2a_3^2-a_4^2$. On $E$,
+    $(2y+a_1x+a_3)^2=4x^3+b_2x^2+2b_4x+b_6$.
+  formula-initial: >-
+    $\psi_0=0$, $\psi_1=1$, $\psi_2=2y+a_1x+a_3$,
+    $\psi_3=3x^4+b_2x^3+3b_4x^2+3b_6x+b_8$, and
+    $\psi_4=\psi_2(2x^6+b_2x^5+5b_4x^4+10b_6x^3+10b_8x^2+
+    (b_2b_8-b_4b_6)x+b_4b_8-b_6^2)$.
+  formula-recurrence: >-
+    For $m\geq2$,
+    $\psi_{2m+1}=\psi_{m+2}\psi_m^3-\psi_{m-1}\psi_{m+1}^3$. For $m\geq3$,
+    $\psi_{2m}=(\psi_m/\psi_2)(\psi_{m+2}\psi_{m-1}^2-
+    \psi_{m-2}\psi_{m+1}^2)$ in the coordinate ring of $E$.
+  formula-pari-convention: >-
+    If $f_n$ is PARI/GP's `elldivpol(E,n)`, then
+    $f_n(x)=\psi_n(x)$ for odd $n$ and
+    $f_n(x)=\psi_n(x,y)\cdot(2y+a_1x+a_3)$ for even $n$.
+Programs:
+  program-pari:
+    language: PARI/GP
+    code: |-
+      \\ Full psi_n for y^2 + a1*x*y + a3*y = x^3 + a2*x^2 + a4*x + a6.
+      a1 = 0; a2 = 0; a3 = 1; a4 = -1; a6 = 0; n = 4;
+      E = ellinit([a1,a2,a3,a4,a6]);
+      if(n % 2, elldivpol(E,n), (elldivpol(E,n)/elldivpol(E,2))*(2*y+a1*x+a3))
+Similar tables:
+  - table: HREF{Highest_known_rank_of_elliptic_curves_over_Q_with_given_torsion}[Highest known ranks of elliptic curves over $\mathbb{Q}$ with prescribed torsion subgroup]
+    relation: records the highest known rank for each rational torsion subgroup, while the roots of $\psi_n$ detect torsion points on individual curves
+  - table: HREF{Faltings_heights_of_elliptic_curves_over_Q}[Faltings heights of elliptic curves over $\mathbb{Q}$]
+    relation: uses the same $(N,c_4,c_6)$ curve index and records Faltings heights
+  - table: HREF{Regulators_of_elliptic_curves_over_Q_of_rank_1}[Regulators of elliptic curves over $\mathbb{Q}$ of rank $1$]
+    relation: uses the same $(N,c_4,c_6)$ curve index for rank $1$ curves and records their regulators
+Links:
+  SageDivision:
+    title: 'SageMath reference: division_polynomial'
+    url: https://doc.sagemath.org/html/en/reference/arithmetic_curves/sage/schemes/elliptic_curves/ell_generic.html#sage.schemes.elliptic_curves.ell_generic.EllipticCurve_generic.division_polynomial
+  SageCremona:
+    title: "SageMath reference: Cremona's tables of elliptic curves"
+    url: https://doc.sagemath.org/html/en/reference/databases/sage/databases/cremona.html
+  PARIelldivpol:
+    title: 'PARI/GP manual: elldivpol'
+    url: https://pari.math.u-bordeaux.fr/dochtml/html-stable/Elliptic_curves.html#elldivpol
+  LMFDB:
+    title: 'LMFDB: Elliptic curves over Q'
+    url: https://www.lmfdb.org/EllipticCurve/Q/
+Keywords:
+  - elliptic curve division polynomial
+  - division polynomial
+  - torsion polynomial
+Tags:
+  - number theory
+  - elliptic curves
+  - polynomial
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every curve in Sage's mini Cremona database CITE{SageCremona}
+    with conductor $N\leq60$, and every $n$ with $1\leq n\leq5$
+  sources:
+    - CITE{SageCremona}
+  rigour details: >-
+    The generator reads exact Weierstrass coefficients from Sage's mini
+    Cremona database CITE{SageCremona} and computes the division polynomials
+    by the exact recurrences in Formula CITE{formula-recurrence}, reducing
+    products in the coordinate ring of $E$. It verifies every row against
+    PARI/GP's exact `elldivpol` CITE{PARIelldivpol}: odd $n$ rows agree
+    directly, and even $n$ rows agree after multiplying the stored $\psi_n$ by
+    $2y+a_1x+a_3$, as in Formula CITE{formula-pari-convention}. It also
+    verifies the expected degree and leading coefficient for every row and the
+    example $\psi_3=3x^4-6x^2+3x-1$ for the curve 37a1.
+Display properties:
+  number-header: $\psi_n(x,y)$
+  group parameters:
+    - [N]
+    - [c4, c6]
+    - [n]
+Numbers: []

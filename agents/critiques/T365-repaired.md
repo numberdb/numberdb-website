@@ -1,0 +1,8 @@
+done -- Replaced the completeness note with the explicit range and signature counts; checked the live note still dangled, preview-rendered the replacement, and verified in Sage/PARI that the generator has 456 fields over 405 discriminants with signature counts 20, 180 and 256 and the same identities as the live table.
+done -- Clarified that $k$ sorts by $(a_3,a_2,a_1,a_0)$ for $x^4+a_3x^3+a_2x^2+a_1x+a_0$ and added that $k$ agrees with the LMFDB label suffix; checked `_coeff_key`, all 456 live comments, all 456 LMFDB labels, and the 18 discriminants where highest-first and lowest-first orders differ.
+done -- Defined the 4T labels in the entry-comment description; checked the generator enumerates `C4`, `V4`, `D4`, `A4` and `S4` as 4T1 through 4T5, with counts 7, 30, 195, 2 and 222.
+done -- Rewrote the roots-of-unity exception sentence to name all three cyclotomic fields in the same order as $w_K=8,10,12$ and replaced "This factor" with "$w_K$"; checked the live counts and exceptional rows, and PARI `nfisisom` against the relevant cyclotomic polynomials.
+done -- Removed the `Request42` link; checked it was not cited from prose and the post-edit API audit is clean.
+done -- Raised the PARI example from 80 to 110 digits and labelled its two computations; checked both PARI routes at 110 digits match the stored $D=125,k=1$ value prefix.
+declined -- Did not add the ideal-count asymptotic for $\kappa_K$; the report marked it as an addition rather than a fault, and the existing definition already identifies the stored residue.
+declined -- Left the semicolon-separated entry comments alone; the report identified them as a house convention for this six-field record rather than a repair request.
