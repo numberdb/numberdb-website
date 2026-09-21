@@ -7525,3 +7525,52 @@ Evidence: 2026-09-21, T379 critique. Ten probes: `random-matrix` 404,
 `zzz-nonsense-tag` 404, `L-function` 200, `groups` 200, `probability theory`
 200, `algebraic` 200. The superseded note is "`/tags/<name>` answers 500, not
 404, for a tag that does not exist".
+
+## The `numberdb` client is not installed for the system Python on the builder
+
+What happened: `python3 agents/table-ideas/screen.py`'s `already_here` returned
+`(could not ask the corpus: AttributeError: module 'numberdb' has no attribute
+'search_text')` when run from the repository root, because `import numberdb`
+there finds the Django project package `numberdb/`, which has no client API.
+Run from `/tmp` it was worse: `import numberdb` printed about 100 KB of table
+documents to stdout and *then* raised `ModuleNotFoundError`, so the same call
+looked like a corpus dump followed by a failure. `importlib.util.find_spec`
+says `None` from that directory and there is no `numberdb` module, package,
+`.pth` or `sitecustomize.py` under `/tmp`; whatever produces the dump was left
+behind by an earlier run and was not tracked down. Either way the client is not
+on the system path.
+
+What to do instead: point `PYTHONPATH` at the repository's client and work from
+a directory that is neither the repository root nor `/tmp`.
+
+    mkdir -p /tmp/<run>/ && cd /tmp/<run>
+    PYTHONPATH=/home/ubuntu/numberdb-campaign-wN/clients/python python3 screen-ish.py
+
+That resolves `numberdb` to `clients/python/numberdb/__init__.py` and
+`search_text`, `table` and the rest work against the public site over HTTP. The
+same variable makes `screen.py`'s `already_here` work. `agents/sage.sh` is
+unaffected; it sets the path inside the container itself.
+
+## What `source_names_it` can and cannot fetch from here
+
+Screening a proposal against a journal paper mostly does not work from this
+box, and the failures are all HTTP rather than mathematical:
+
+* `www.ams.org` answers **403** to the screen's user agent, for both the
+  article landing page and the PDF, so no Math. Comp. paper can be screened
+  directly. `doi.org/10.1090/...` redirects there and answers 403 too.
+* `zbmath.org` answers **403**.
+* `export.arxiv.org/api/query` answers **406** over both http and https.
+* `en.wikipedia.org` (page and `w/api.php`), `oeis.org` (page and
+  `search?fmt=json`) and `api.crossref.org` all answer **200**.
+
+So: find the paper through `https://api.crossref.org/works?query.bibliographic=...`,
+which returns the title, year, journal and DOI as JSON, and cite
+`https://api.crossref.org/works/<doi>` as the URL `source_names_it` is run
+against. That proves the paper exists and is called what the proposal says,
+which is all the check claims; the proposal should cite the DOI to a reader and
+say that the publisher's own page could not be fetched.
+
+`WebSearch` is not granted to this account -- it answers "Claude requested
+permissions to use WebSearch, but you haven't granted it yet" -- so the
+Wikipedia, OEIS and Crossref APIs above are the whole of search from here.
