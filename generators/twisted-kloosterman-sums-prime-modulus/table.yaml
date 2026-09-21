@@ -87,9 +87,6 @@ Links:
   Wiki:
     title: 'Wikipedia: Kloosterman sum'
     url: https://en.wikipedia.org/wiki/Kloosterman_sum
-  LMFDB:
-    title: 'LMFDB: Dirichlet characters'
-    url: https://www.lmfdb.org/Character/Dirichlet/
   CL:
     title: 'LMFDB knowl: Conrey label'
     url: https://www.lmfdb.org/knowledge/show/character.dirichlet.conrey
@@ -105,10 +102,6 @@ References:
     bib: >-
       A. Weil, On some exponential sums, Proceedings of the National Academy
       of Sciences of the USA 34 (1948), 204-207.
-  Katz:
-    bib: >-
-      N. M. Katz, Gauss Sums, Kloosterman Sums, and Monodromy Groups, Annals
-      of Mathematics Studies 116, Princeton University Press, 1988.
 Tags:
   - algebraic
   - number theory
@@ -116,15 +109,22 @@ Data properties:
   type: C
   rigour: proven
   complete: 'no'
-  complete-note: every nontrivial character and every nonzero $a$ for the primes $5\leq p\leq19$ is here
+  complete-note: every nontrivial character and every nonzero $a$ for the primes $5\leq p\leq13$ is here, 264 entries
   rigour details: >-
     Each value is a complex ball at 397 bits: the sum of the $p-1$ terms
     $\chi(x)e^{2\pi ir}$, where $r$ is the exact rational $(ax+\bar x)/p$
     reduced modulo $1$, each term arb's exponential of a ball containing its
     exact argument. The generator builds $\chi_p(n,\cdot)$ from Conrey's
     definition, not from a library, and requires it to agree with Sage's
-    character on every value before any entry at that prime is returned. A
-    hundred digits are written. The remaining checks are stated in the
-    generator attached to the table.
+    character on every value before any entry at that prime is returned. The
+    resulting ball must overlap an enclosure of Sage's exact
+    `kloosterman_sum(a, 1)` for the same character. The generator checks
+    Salié's closed form on every quadratic-character entry, writes the
+    nonsquare Salié sums as exact zeros, and checks the two-parameter
+    reduction, the two Gauss-sum boundary formulas, complex conjugation and
+    Weil's bound over the whole range. The degree and each printed minimal
+    polynomial come from Sage's exact cyclotomic value, and the polynomial is
+    required to vanish at that exact value. A private dry run computed all
+    entries and measured a 131.4 KB entries block.
 Display properties:
   number-header: $K(a,\chi;p)$
