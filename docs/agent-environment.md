@@ -6884,3 +6884,101 @@ answer either; test it before relying on it.
 Evidence: 2026-09-20 ideas run, the OEIS response quoted above, and
 `curl -s --max-time 60 'http://export.arxiv.org/api/query?...' -o /tmp/ax.xml`
 giving `0 /tmp/ax.xml`.
+
+## `screen.py requests` prints nothing both when the backlog is empty and when GitHub is unreachable
+
+What happened: the ideas run of 2026-09-21 was told to anchor a batch on the open
+`table wanted` issues. `python3 agents/table-ideas/screen.py requests` printed
+nothing at all. That is a state the prompt does not describe and that reads, at
+first, exactly like a broken network: the same command had listed the backlog in
+every earlier run.
+
+It was the truthful answer. The GitHub search API reports 0 open and 126 closed
+`table wanted` issues, and the closures are dated 2026-09-20 and 2026-09-21,
+eleven of them within the same second at `10:39`, each with a comment naming the
+table that answers it. The 2021 backlog is gone.
+
+The trouble is that `requests()` cannot say which of the two happened:
+
+    except Exception as trouble:                     # noqa: BLE001
+        return []
+
+`already_here` in the same module goes out of its way to avoid exactly this --
+"A failed question and an empty answer must not look the same" -- and
+`requests` does the thing that comment forbids. Everything downstream of it
+then reads an outage as an empty backlog, which is the most consequential
+misreading available at this stage, since a run that believes the backlog is
+empty stops looking for an anchor.
+
+What to do instead: when `requests` prints nothing, confirm it against the API
+before concluding anything, which is one command:
+
+    curl -s 'https://api.github.com/search/issues?q=repo:numberdb/numberdb-data+label:%22table+wanted%22+state:open&per_page=1' \
+      | python3 -c 'import sys,json; print(json.load(sys.stdin)["total_count"])'
+
+A fix would return `None` on failure and `[]` on an empty list, and print
+"could not ask GitHub" for the first; that is a change to `screen.py` and wants
+a test, so it is not made here.
+
+Evidence: 2026-09-21T20:03Z ideas run. `screen.py requests` printed nothing;
+the search API answered `total_count: 0` for open and `126` for closed; the
+repository's own open-issue list held three issues, none of them labelled
+`table wanted`.
+
+## Give `source_names_it` the family name, not the table title
+
+What happened: the same run screened its proposed titles rather than the names of
+the families, and got refusals that mean nothing:
+
+    "Values of the Epstein zeta function of the classical lattices"
+        -> the source does not mention lattices
+    "Madelung constants of the hypercubic lattices"
+        -> the source does not mention hypercubic, lattices
+
+The Wikipedia article on the Epstein zeta function exists and names it; what it
+does not contain is the scope phrase a numberdb title adds to say which members
+the table holds. `_distinguishing` keeps every word that is not in `GENERIC`, and
+`classical`, `hypercubic`, `cubic`, `ionic` and `structures` are all scope rather
+than name.
+
+It cuts both ways, and the second half is the useful half: `"Madelung constants
+of the ionic crystal structures"` and `"Watson integrals of the cubic lattices"`
+both passed, because those pages happen to contain "ionic", "crystal",
+"structures" and "cubic". So a title that passes tells you nothing extra, and a
+title that fails tells you nothing at all.
+
+What to do instead: screen the name of the family -- "Epstein zeta function",
+"Madelung constant", "Watson's triple integrals" -- and record the full title
+separately. This is the same failure mode as the plural note above: the check
+tests words, and the words that matter are the ones naming the object.
+
+Evidence: 2026-09-21T20:03Z ideas run, the two refusals above, against
+`en.wikipedia.org/wiki/Epstein_zeta_function` and
+`en.wikipedia.org/wiki/Madelung_constant`; `source_names_it("Epstein zeta
+function", same url)` and `source_names_it("Madelung constant", same url)` both
+returned `None`.
+
+## A tensor-product numpy grid is the easiest way to hit the 320 MB container cap
+
+What happened: a check integrated a two-dimensional Brillouin-zone integral by a
+midpoint rule built as an outer product, `c[:, None] * c[None, :]`, at
+$N=2000, 4000, 8000$. At $N=8000$ that is a $8000\times8000$ float64 array, 512
+MB, against `NUMBERDB_SAGE_MEMORY` of 320 MB and about 100 MB already spent on
+importing Sage. The container died having printed only the script's first header
+line and exited 0, so the run looked like a script that produced no output
+rather than one that was killed.
+
+Raising the cap is the wrong reflex; the note at the top of `agents/sage.sh`
+explains why, and the memory was never needed. Summing the grid in row blocks
+of 256 gave the identical answer in a few seconds inside the default cap.
+
+What to do instead: never materialise an $N\times N$ grid whose $N$ you are
+sweeping. Loop over row blocks and accumulate a scalar. And read a Sage run that
+stops after its first `print` as a kill rather than as a silent failure: with
+`-u` set by the wrapper, the output that exists is the output that happened
+before the process died.
+
+Evidence: 2026-09-21T20:03Z ideas run. `agents/sage.sh` with
+`NUMBERDB_SAGE_MEMORY=600m` printed only `=== A. Watson integrals: midpoint rule
+in float64, extrapolated in 1/N ===` and exited 0; the chunked version printed
+all nine grid values and three extrapolations under the default 320 MB.
