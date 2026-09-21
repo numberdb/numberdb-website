@@ -7470,3 +7470,25 @@ Evidence: 2026-09-21 ideas run. `/tmp/hom_checks.py`, 900 s, exit 143, empty
 output; the same script redirected to `/tmp/probe.out` gave
 "Unhandled SIGSEGV ... Attaching gdb to process id 1. Cannot find gdb
 installed" in under a minute.
+
+## `already_asked` cannot find the request a proposal answers
+
+What happened: this batch was built on numberdb-data#108, *Chern polynomials
+of interesting complex vector bundles*, and `already_asked` returned `[]` for
+every one of its five table names, including "Chern numbers of the
+Grassmannians". The function takes the words of the name longer than four
+letters, keeps the first three, and asks GitHub for issues whose title
+contains all of them. "Chern numbers Grassmannians" does not match a title
+that says "Chern polynomials of interesting complex vector bundles", so the
+anchor of the batch was invisible to the check meant to find it.
+
+That matters because an empty answer reads as "nobody asked for this", which
+is the opposite of what was true. `already_asked` is a duplicate check --
+it catches a family somebody has already requested *under the same name* --
+and it is not a way to find the request a proposal answers. For that, read
+`screen.py requests` and the issue bodies; #108's second line, naming
+homogeneous and toric manifolds, is what decided this batch, and no search on
+a proposed table's name would have reached it.
+
+Evidence: 2026-09-21 ideas run, `already_asked` on all five names, `[]` each
+time, against #108 open and directly on the subject.
