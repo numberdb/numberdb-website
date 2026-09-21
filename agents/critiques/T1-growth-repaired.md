@@ -1,0 +1,8 @@
+done -- Left T1 at its single entry and did not add a generator; checked the live document still has no parameters, `Numbers: ["1"]`, type `Z`, and exact rigour, and used uniqueness of a multiplicative identity: if $e$ and $e'$ are identities then $e=ee'=e'$.
+done -- Added `complete: yes` and `complete-note: it holds the single number named by the definition`; checked the live table had neither field and that T8 uses the same wording for a one-number table.
+done -- Changed the definition link from `HREF{Integers#1}[integers]` to `HREF{Integers}[integers]` and removed the doubled space in that sentence; checked the rendered page had linked to `Integers?entry=1` and that `/api/table?url=Integers` is the Integers table.
+done -- Changed the Similar tables target from `HREF{Integers#1}[integers]` to `HREF{Integers}[integers]`; checked the relation is "contained in", which means the table of integers rather than its row `1`.
+declined -- Did not act on the audit finding as stated by moving the definition link out of the definition; the same audit finding was present before the edit, and the link is the first mention of a corpus table that explains the ring of integers.
+declined -- Did not change search behaviour or add entries to compensate for `text=1`; live lookup still caps numeric results at 100 without T1's value row, while T1 is reachable as a table hit and by `neutral element`, so this is not a T1 table repair.
+declined -- Did not add another tag; the live audit did not object to `integer`, and the critique named no existing second tag that would honestly fit T1.
+declined -- Did not change `rigour details`; checked it is the standard exact-value sentence and matches the table's exact integer value.
