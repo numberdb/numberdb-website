@@ -16,6 +16,7 @@ Keywords:
   - simplex code
   - quadratic residue code
   - BCH
+  - coding theory
 Parameters:
   family:
     type: Symbolic
@@ -111,7 +112,6 @@ Links:
 Tags:
   - polynomial
   - combinatorics
-  - coding theory
 Data properties:
   type: Z[]
   rigour: exact
