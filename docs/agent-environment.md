@@ -6948,3 +6948,37 @@ Evidence: 2026-09-21, ideation run `20260921T200608Z`. `/tmp/w2-ideas/corpus.py`
 `/tmp/w2-ideas/q.py` refused at 20:12 with `retry in 2532s`;
 `/tmp/w2-ideas/here.py` refused with a key at 20:33 with `retry in 1678s`; the
 three `curl` codes above at 20:36.
+
+## `agents/sage.sh` exits 0 when it gives up waiting for the Sage lock
+
+What happened: a verification script was run in the background as
+`agents/sage.sh verify.py 2>&1 | tail -60`. Twenty minutes later the task
+reported "completed (exit code 0)" and the output was twenty-one lines of
+
+    waiting for the Sage lock: another worker is using it (0s)
+    ...
+    waiting for the Sage lock: another worker is using it (1140s)
+    the Sage box has been busy for twenty minutes; try again
+
+The script never ran. The remote `exec` does `exit 75` for exactly this case,
+but the last line of `sage.sh` pipes the ssh through
+`grep --line-buffered -viE 'collecting static|...'`, and a pipeline's status is
+its last command's, so `sage.sh` returns grep's 0. A caller that tests `$?`
+concludes the run succeeded and finds an empty result.
+
+Two further consequences of the same line, both met in this run. Piping
+`agents/sage.sh` into `tail` hides the "waiting for the Sage lock" notices
+until the command ends, so a queued run looks identical to a hung one for
+however long it queues; redirect to a file and poll it instead. And four
+workers really do contend: the first attempt queued out after twenty minutes,
+and the retry with `LOCK_WAIT=2400` waited another two before starting.
+
+What to do instead: pass `LOCK_WAIT` generously on a run that must happen,
+send the output to a file rather than through `tail`, and check the output for
+`the Sage box has been busy` rather than trusting the exit status. A
+`PIPESTATUS[0]` or a `set -o pipefail` in `sage.sh` would fix it at the
+source.
+
+Evidence: 2026-09-21, ideation run `20260921T200608Z`. Background task
+`bjotrmcqq`, 21 lines, "completed (exit code 0)", nothing computed; the retry
+`b5upx4fii` with `LOCK_WAIT=2400` produced the whole verification.
