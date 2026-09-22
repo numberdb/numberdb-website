@@ -4,10 +4,10 @@
 Title: Momentum thickness $\delta_2$ of the Falkner-Skan wedge flows
 Definition: >-
   For the upper-branch solution $f$ of the Falkner-Skan boundary-layer problem
-  CITE{FalknerSkan} CITE{Wiki}, with wedge parameter $\beta=2m/(m+1)$, this
-  table gives the dimensionless momentum thickness
-  $\delta_2=\int_0^\infty f^{\prime}(\eta)(1-f^{\prime}(\eta))\,d\eta$ in two
-  normalisations, related by CITE{formula-conversion}.
+  CITE{FalknerSkan} CITE{Wiki}, this table gives the dimensionless momentum
+  thickness $\delta_2=\int_0^\infty f^{\prime}(\eta)(1-f^{\prime}(\eta))\,d\eta$.
+  It is one number in two conventions, wedge and Hartree, related by
+  CITE{formula-conversion}.
 Keywords: Falkner Skan, boundary layer, momentum thickness, wedge flow
 Parameters:
   beta:
