@@ -1,0 +1,111 @@
+# The table document for numberdb-data#190, proposal 3. Created as draft T419
+# through the API (X-Draft: yes) and filled by generate.py beside it;
+# publishing is a person's act on the site.
+Title: Momentum thickness $\delta_2$ of the Falkner-Skan wedge flows
+Definition: >-
+  For the upper-branch solution $f$ of the Falkner-Skan boundary-layer problem
+  CITE{FalknerSkan}, with wedge parameter $\beta=2m/(m+1)$, this table gives
+  the dimensionless momentum thickness
+  $\delta_2=\int_0^\infty f^{\prime}(\eta)(1-f^{\prime}(\eta))\,d\eta$.
+  The wedge normalisation uses $\eta=y\sqrt{u_e/(\nu x)}$; the Hartree
+  normalisation uses $\eta_\beta=\eta/\sqrt{2-\beta}$.
+Keywords: Falkner Skan, boundary layer, momentum thickness, wedge flow
+Parameters:
+  beta:
+    type: Q
+    title: wedge parameter
+    display: $\beta$
+    constraints: $\beta_s<\beta<2$, where $\beta_s=-0.19883\ldots$ is the separation value
+  branch:
+    type: Symbolic
+    title: solution branch
+    display: branch
+    constraints: one of `upper` and `lower`
+    values:
+      upper: upper branch
+      lower: lower branch
+  normalisation:
+    type: Symbolic
+    title: normalisation
+    display: normalisation
+    constraints: one of `wedge` and `hartree`
+    values:
+      wedge: wedge coordinate $\eta$
+      hartree: Hartree coordinate $\eta_\beta$
+Comments:
+  comment-normalisations: >-
+    Falkner and Skan's equation is commonly tabulated in Hartree's coordinate
+    CITE{Hartree}. The two coordinates differ by the factor
+    $\eta_\beta=\eta/\sqrt{2-\beta}$, so the thickness values differ by the
+    reciprocal factor.
+  comment-endpoint: >-
+    The endpoint $\beta=2$ is not listed. It is a limiting favourable
+    Falkner-Skan profile, but $m=\beta/(2-\beta)$ and the coordinate
+    conversion between the wedge and Hartree normalisations are singular
+    there, so it is outside the range where the two stored normalisations
+    determine each other.
+  comment-branch: >-
+    For $\beta_s<\beta<0$ a second, reversed-flow solution is known. This
+    draft lists the upper branch, the branch tabulated in the classical
+    boundary-layer tables CITE{SchlichtingGersten}.
+Formulas:
+  formula-m: >-
+    $m=\beta/(2-\beta)$ for $\beta<2$.
+  formula-conversion: >-
+    If $\delta_{2,\mathrm{w}}$ and $\delta_{2,\mathrm{H}}$ are the wedge and
+    Hartree normalisations, then
+    $\delta_{2,\mathrm{H}}=\delta_{2,\mathrm{w}}/\sqrt{2-\beta}$.
+  formula-momentum: >-
+    With $\delta_1$ the displacement thickness in the same normalisation, the
+    Hartree form satisfies
+    $f^{\prime\prime}(0)=\beta\delta_1+(1+\beta)\delta_2$.
+Similar tables:
+  - table: HREF{T415}[displacement thickness $\delta_1$ of the Falkner-Skan wedge flows]
+    relation: the same upper-branch solutions and normalisations, storing the displacement thickness instead of the momentum thickness
+Links:
+  Wiki:
+    title: 'Wikipedia: Falkner-Skan boundary layer'
+    url: https://en.wikipedia.org/wiki/Falkner%E2%80%93Skan_boundary_layer
+  Fitzpatrick:
+    title: 'Richard Fitzpatrick: Self-Similar Boundary Layers'
+    url: https://farside.ph.utexas.edu/teaching/336L/Fluidhtml/node112.html
+  Review:
+    title: 'On Solving the Nonlinear Falkner-Skan Boundary-Value Problem: A Review'
+    url: https://www.mdpi.com/2311-5521/6/4/153
+References:
+  FalknerSkan:
+    bib: >-
+      Falkner, V. M. and Skan, S. W., Some approximate solutions of the
+      boundary layer equations, Philosophical Magazine 12 (1931), 865-896.
+    doi: 10.1080/14786443109461870
+  Hartree:
+    bib: >-
+      Hartree, D. R., On an equation occurring in Falkner and Skan's
+      approximate treatment of the equations of the boundary layer,
+      Proceedings of the Cambridge Philosophical Society 33 (1937), 223-239.
+    doi: 10.1017/S0305004100019575
+  SchlichtingGersten:
+    bib: >-
+      Schlichting, H. and Gersten, K., Boundary-Layer Theory, 9th ed.,
+      Springer, 2017.
+Tags:
+  - analysis
+  - physics
+  - fluid dynamics
+Data properties:
+  type: R
+  complete: 'no'
+  complete-note: >-
+    it holds every two-decimal $\beta$ with $-0.19\leq\beta<2$ on the upper
+    branch, in both the wedge and Hartree normalisations
+  rigour: heuristic (agreement-checked)
+  rigour details: >-
+    The values are computed by shooting for the wall shear in the Hartree
+    form and integrating the Falkner-Skan equation to a finite cutoff in the
+    similarity variable. The generator compares two fixed-step Runge-Kutta
+    integrations with different working precisions and step sizes, checks the
+    momentum-integral identity on every row, and checks the Blasius row
+    against Töpfer's scaling.
+Display properties:
+  number-header: $\delta_2$
+Numbers: []
