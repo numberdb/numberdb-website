@@ -268,6 +268,26 @@ in `/tmp` and run `cat "$NUMBERDB_KEY_FILE" | python3 /tmp/script.py`, or keep
 the code in a `python3 -c '...'` argument that reads `sys.stdin`. Do not use
 `python3 - <<'PY' ... PY` for a program that also needs stdin for the key.
 
+The failure has a second, quieter shape, met again in the T2 critique of
+2026-09-22. `cat "$NUMBERDB_KEY_FILE" | python3 - <<'EOF' ... EOF` does not
+crash: the heredoc simply replaces the pipe, `python3 -` reads the program from
+it, and the script's own `sys.stdin.read()` afterwards returns the empty
+string. Nothing is echoed and nothing raises. An empty `X-API-Key` header is
+not an invalid key either -- `requester_of` in `numberdb_app/throttle.py` only
+looks a token up if one is present -- so the request is simply anonymous, and
+the answer is
+
+    {"error": "Rate limit exceeded (60 requests per 60 minutes).
+     An API key raises this limit; see /help#section-api."}
+
+which reads as though the key is present and the allowance merely low. It is
+the opposite: that sentence is appended *only* when the scope starts with
+`ip:`, so its presence is the site telling you no key arrived. The one-line
+test is the same request through `curl -H "X-API-Key: $K"`; if that answers 200
+at the same moment, the key is fine and the script never received it. Four
+workers share this box and so share the anonymous sixty, so one run's unkeyed
+loop spends the hour for all of them.
+
 Evidence: T271 repair, 2026-09-16. The corrected sender lived at
 `/tmp/t271_post_edit.py` and the API accepted the edit through
 `cat "$NUMBERDB_KEY_FILE" | python3 /tmp/t271_post_edit.py`.
@@ -8526,3 +8546,11 @@ what the site serves. Read that. The truncation is a property of the fetching
 tool rather than of the site, but the effect is that a run which fetches the
 URL is working from a skill with the rigour section cut off and no sign that
 anything is missing.
+
+Confirmed on 2026-09-22, and narrowed: `curl -s https://numberdb.org/skill`
+returned 48,740 bytes, byte-identical to
+`.claude/skills/numberdb-table/SKILL.md` (`diff` reports no difference). So the
+site serves the whole file and `curl` receives the whole file; it is the
+summarising fetch tool that truncates. Either source is safe, and `curl` into
+`/tmp` then reading the file is the way to get it from the URL the prompt
+names.
