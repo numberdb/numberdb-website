@@ -75,6 +75,13 @@ def _beta_value(label):
     return mp.mpf(label)
 
 
+def _hundredths_from_label(label):
+    sign = -1 if label.startswith("-") else 1
+    text = label[1:] if sign < 0 else label
+    whole, frac = text.split(".")
+    return sign * (100 * int(whole) + int(frac))
+
+
 def _decimal_text(value, digits):
     text = mp.nstr(value, n=digits, strip_zeros=False, min_fixed=-6, max_fixed=100)
     if "." not in text and "e" not in text.lower():
@@ -236,7 +243,7 @@ class FalknerSkanWallShear(numberdb.Generator):
         return cache[hundredths]
 
     def _hartree_root(self, beta_label):
-        hundredths = int(mp.mpf(beta_label) * 100)
+        hundredths = _hundredths_from_label(beta_label)
         coarse = self._root_with(hundredths, COARSE, self._coarse_roots, "_coarse_last")
         if hundredths not in self._fine_roots:
             fine = _solve_root(_beta_value(beta_label), coarse, FINE)
