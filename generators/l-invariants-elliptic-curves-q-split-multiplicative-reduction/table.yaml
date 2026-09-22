@@ -1,0 +1,126 @@
+# The table document for a draft to be created on numberdb.org. Publishing is
+# a person's act on the site; the generator beside this file fills the entries.
+Title: $\mathcal{L}$-invariants of elliptic curves over $\mathbb{Q}$ with split multiplicative reduction
+Definition: >-
+  Let $E/\mathbb{Q}$ be the reduced global minimal model recovered from
+  $(c_4,c_6)$ by Formula CITE{formula-model-from-invariants}, and let $p$ be a
+  prime of split multiplicative reduction for $E$. If $q_E\in\mathbb{Q}_p$ is
+  the Tate period and $\log_p$ is the Iwasawa $p$-adic logarithm with
+  $\log_p(p)=0$, this table gives the Mazur-Tate-Teitelbaum invariant
+  $\mathcal{L}_E=\log_p(q_E)/\operatorname{ord}_p(q_E)$ CITE{MTT}.
+Keywords:
+  - L-invariant
+  - Mazur-Tate-Teitelbaum invariant
+  - MTT invariant
+  - Tate period
+  - exceptional zero
+Parameters:
+  N:
+    type: Z
+    title: conductor of $E$
+    display: $N$
+    constraints: $N\geq1$
+  c4:
+    type: Z
+    title: invariant $c_4$ of the reduced global minimal model of $E$
+    display: $c_4$
+  c6:
+    type: Z
+    title: invariant $c_6$ of the reduced global minimal model of $E$
+    display: $c_6$
+  p:
+    type: Z
+    title: prime of split multiplicative reduction
+    display: $p$
+    constraints: $p$ is prime and $E$ has split multiplicative reduction at $p$
+Comments:
+  comment-index: >-
+    The curve is identified by $N$, $c_4$ and $c_6$. Each entry comment gives
+    the Cremona label from Sage's mini Cremona database CITE{SageCremona} and
+    the corresponding LMFDB CITE{LMFDB} label.
+  comment-log-branch: >-
+    The logarithm is Iwasawa's branch, so $\log_p(p)=0$. With another branch,
+    the quotient $\log_p(q_E)/\operatorname{ord}_p(q_E)$ changes by the chosen
+    value of $\log_p(p)$.
+  comment-precision: >-
+    The $p$-adic precision is the least $n$ with $p^n\geq10^{50}$, for example
+    $O(2^{167})$, $O(3^{105})$, $O(5^{72})$, $O(7^{60})$ and $O(11^{49})$.
+Formulas:
+  formula-model-from-invariants: >-
+    For the reduced models in this table, $b_2$ is the unique element of
+    $\{-4,-3,0,1,4,5\}$ with $b_2\equiv -c_6\pmod{12}$,
+    $b_4=(b_2^2-c_4)/24$, and
+    $b_6=(-c_6-b_2^3+36b_2b_4)/216$. The model has
+    $a_1\equiv b_2\pmod 2$, $a_3\equiv b_6\pmod 2$ with
+    $a_1,a_3\in\{0,1\}$ and $a_2\in\{-1,0,1\}$, and
+    $a_2=(b_2-a_1^2)/4$, $a_4=(b_4-a_1a_3)/2$ and
+    $a_6=(b_6-a_3^2)/4$.
+  formula-l-invariant: >-
+    If $q_E$ is the Tate period of $E$ at the split multiplicative prime $p$,
+    then $\mathcal{L}_E=\log_p(q_E)/\operatorname{ord}_p(q_E)$, where
+    $\log_p$ is the branch with $\log_p(p)=0$.
+Similar tables:
+  - table: HREF{Kernel_polynomials_of_rational_isogenies_of_elliptic_curves_over_mathbb_Q}[Kernel polynomials of rational isogenies of elliptic curves over $\mathbb{Q}$]
+    relation: uses the same $(N,c_4,c_6)$ curve indexing for a different invariant of elliptic curves over $\mathbb{Q}$
+  - table: HREF{Division_polynomials_psi_n_of_elliptic_curves_over_mathbb_Q}[Division polynomials $\psi_n$ of elliptic curves over $\mathbb{Q}$]
+    relation: stores another family attached to individual elliptic curves over $\mathbb{Q}$
+  - table: HREF{Regulators_of_elliptic_curves_over_Q_of_rank_1}[Regulators of elliptic curves over $\mathbb{Q}$ of rank $1$]
+    relation: stores the real Neron-Tate height regulator rather than the $p$-adic exceptional-zero invariant
+Links:
+  SageCremona:
+    title: "SageMath reference: Cremona's tables of elliptic curves"
+    url: https://doc.sagemath.org/html/en/reference/databases/sage/databases/cremona.html
+  SageTate:
+    title: "SageMath reference: Tate's parametrisation of p-adic curves with multiplicative reduction"
+    url: https://doc.sagemath.org/html/en/reference/arithmetic_curves/sage/schemes/elliptic_curves/ell_tate_curve.html
+  LMFDB:
+    title: 'LMFDB: elliptic curves over Q'
+    url: https://www.lmfdb.org/EllipticCurve/Q/
+References:
+  MTT:
+    bib: >-
+      Barry Mazur, John Tate and Jeremy Teitelbaum, On $p$-adic analogues of
+      the conjectures of Birch and Swinnerton-Dyer, Inventiones Mathematicae
+      84 (1986), 1-48.
+    doi: 10.1007/BF01388731
+Programs:
+  program-sage:
+    language: Sage
+    code: |
+      E = EllipticCurve('11a1')
+      p = 11
+      precision = 49
+      E.tate_curve(p).L_invariant(prec=precision)
+Tags:
+  - number theory
+  - elliptic curves
+  - p-adic
+  - L-function
+  - Iwasawa theory
+Data properties:
+  type: Qp
+  rigour: proven
+  complete: no
+  complete-note: >-
+    it holds every curve in Sage's mini Cremona database CITE{SageCremona} with
+    conductor $N\leq100$ and every prime $p$ of split multiplicative reduction
+    for that curve
+  sources:
+    - CITE{SageCremona}
+    - CITE{SageTate}
+  rigour details: >-
+    The generator reads exact Weierstrass coefficients from Sage's mini Cremona
+    database CITE{SageCremona}, builds the curve over $\mathbb{Q}$, and asks
+    Sage's Tate-curve implementation CITE{SageTate} for the
+    Mazur-Tate-Teitelbaum $\mathcal{L}$-invariant at each split multiplicative
+    prime. For every row it independently recomputes the Tate period $q_E$ to
+    ten extra $p$-adic digits and checks
+    $\mathcal{L}_E=\log_p(q_E)/\operatorname{ord}_p(q_E)$ using the explicit
+    branch `p_branch=0`, which is the convention $\log_p(p)=0$.
+Display properties:
+  number-header: $\mathcal{L}_E$
+  group parameters:
+    - [N]
+    - [c4, c6]
+    - [p]
+Numbers: []
