@@ -3,17 +3,19 @@
 # publishing is a person's act on the site.
 Title: Eigenvalues of the quartic anharmonic oscillator $-y''+(x^2+\lambda x^4)y$
 Definition: >-
-  For $\lambda>0$, this table gives the eigenvalue $E_n(\lambda)$ of the
-  Schrodinger operator
+  For $\lambda>0$, this table gives the eigenvalues $E_n(\lambda)$ of the
+  Schrödinger operator
   $-y''(x)+(x^2+\lambda x^4)y(x)=E y(x)$ on $L^2(\mathbb{R})$
-  CITE{BenderWu1969}. The operator has no factor of $1/2$ multiplying
-  $-y''$, and the level index $n$ starts at $0$ for the ground state.
+  CITE{BenderWu1969}. The eigenvalues are listed in increasing order, and the
+  level index $n$ starts at $0$ for the ground state.
 Keywords:
   - anharmonic oscillator
   - quartic oscillator
   - quartic anharmonic oscillator
+  - Schrödinger equation
   - Schrodinger equation
   - energy levels
+  - Bender–Wu
   - Bender-Wu
   - coupling constant
 Parameters:
@@ -35,29 +37,28 @@ Comments:
   comment-zero-coupling: >-
     The harmonic limit $\lambda=0$ is not included. In this convention it has
     the exact eigenvalues $E_n(0)=2n+1$.
-  comment-benchmarks: >-
-    The powers of ten in $\lambda$ are the benchmark couplings tabulated by
-    Taseli and Demiralp for the even levels CITE{TaseliDemiralp1988}.
 Formulas:
   formula-scaling: >-
-    If $E_n(\alpha,\beta)$ denotes the $n$th eigenvalue of
+    If $\mathcal{E}_n(\alpha,\beta)$ denotes the $n$th eigenvalue of
     $-y''+(\alpha x^2+\beta x^4)y=E y$, then
-    $E_n(\alpha,\beta)=\alpha^{1/2}E_n(\beta\alpha^{-3/2})$
-    for $\alpha>0$ and $\beta>0$.
+    $\mathcal{E}_n(\alpha,\beta)=\alpha^{1/2}E_n(\beta\alpha^{-3/2})$
+    for $\alpha>0$ and $\beta>0$. Thus
+    $E_n(\lambda)=\mathcal{E}_n(1,\lambda)$.
   formula-bender-wu: >-
-    If $e_n(g)$ is the $n$th eigenvalue of the Bender-Wu Hamiltonian
-    $\frac12p^2+\frac12x^2+g x^4$, then
+    With $p=-i\,\frac{d}{dx}$, if $e_n(g)$ is the $n$th eigenvalue of the
+    common $\frac12p^2+\frac12x^2+g x^4$ normalisation, then
     $e_n(g)=\frac12 E_n(2g)$ CITE{BenderWu1969}.
   formula-older-convention: >-
-    If $f_n(g)$ is the $n$th eigenvalue of
-    $p^2+\frac14x^2+g x^4$, then $f_n(g)=\frac12 E_n(8g)$.
+    With $p=-i\,\frac{d}{dx}$, if $f_n(g)$ is the $n$th eigenvalue of
+    the $p^2+\frac14x^2+g x^4$ normalisation used by Bender and Wu, then
+    $f_n(g)=\frac12 E_n(8g)$ CITE{BenderWu1969}.
 Similar tables:
   - table: HREF{T390}[Dirichlet eigenvalues of the classical planar domains]
-    relation: stores eigenvalues of differential operators with boundary conditions rather than one-dimensional confining Schrodinger operators
+    relation: stores eigenvalues of differential operators with boundary conditions rather than one-dimensional confining Schrödinger operators
   - table: HREF{T103}[Hermite polynomials in physicist's convention]
-    relation: the generator uses the corresponding harmonic-oscillator basis
+    relation: in the harmonic limit $\lambda=0$, the eigenfunctions are the Hermite functions $H_n(x)e^{-x^2/2}$, up to normalisation
   - table: HREF{T104}[Hermite polynomials in probabilist's convention]
-    relation: the same basis is often written in the probabilists' normalisation
+    relation: in the harmonic limit $\lambda=0$, the eigenfunctions are $He_n(z)e^{-z^2/4}$ with $z=\sqrt{2}x$, up to normalisation
 Links:
   Wiki:
     title: 'Wikipedia: Anharmonic oscillator'
@@ -70,18 +71,18 @@ References:
     doi: 10.1103/PhysRev.184.1231
   TaseliDemiralp1988:
     bib: >-
-      H. Taseli and M. Demiralp, Studies on algebraic methods to solve linear
+      H. Taşeli and M. Demiralp, Studies on algebraic methods to solve linear
       eigenvalue problems: generalised anharmonic oscillators, Journal of
       Physics A: Mathematical and General 21 (1988), 3903-3919.
     doi: 10.1088/0305-4470/21/20/010
-  FernandezGarcia2022:
+  Fernandez2022:
     bib: >-
-      F. M. Fernandez and J. Garcia, On the Rayleigh-Ritz variational method,
-      2022.
+      F. M. Fernández, On the Rayleigh-Ritz variational method, 2022.
     arxiv: 2206.05122
 Tags:
   - eigenvalue
   - physics
+  - analysis
 Data properties:
   type: R
   rigour: heuristic (agreement-checked)
@@ -96,13 +97,14 @@ Data properties:
     $\omega_1=\max(1.3,(1+3\lambda)^{1/3})$ and
     $\omega_2=1.18\omega_1$. Eigenvalues of the finite Galerkin matrices are
     isolated by Sturm counts from an $LDL^T$ factorisation, rather than by a
-    dense eigensolver. Each stored interval is the union of the four computed
-    values and must retain the 50 digits written. Rayleigh-Ritz eigenvalues
-    are upper bounds for the true eigenvalues by the variational principle
-    CITE{FernandezGarcia2022}, so the agreement between truncations is not a
-    rigorous error bound. Before entries are written, the generator checks the
-    $\lambda=0$ harmonic-oscillator control for both parities, checks the even
-    levels against the values tabulated by Taseli and Demiralp
+    dense eigensolver. Each entry is the decimal whose last-place interval
+    contains the union of the four computed values; the generator refuses to
+    write a row unless that still leaves 50 significant digits. Rayleigh-Ritz
+    eigenvalues are upper bounds for the true eigenvalues by the variational
+    principle CITE{Fernandez2022}, so the agreement between truncations is not
+    a rigorous error bound. Before entries are written, the generator checks
+    the $\lambda=0$ harmonic-oscillator control for both parities, checks the
+    even levels against the values tabulated by Taşeli and Demiralp
     CITE{TaseliDemiralp1988}, and checks that all stored rows retain at least
     50 digits across the four runs.
 Display properties:
