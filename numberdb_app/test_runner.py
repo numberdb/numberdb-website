@@ -939,3 +939,58 @@ class ARunAboutASingleDigitTableIsAttributedToIt(TestCase):
 		#and pretending otherwise would put it on whichever table happened to
 		#be mentioned in passing.
 		self.assertEqual(self.about('Propose a batch from the open issues.'), '')
+
+
+class AStageReportsTheStatusItGot(TestCase):
+	"""`run_stage` returned 0 for every failure, and nothing noticed.
+
+	`$?` read after `if cmd; then ...; fi` is the status of the *`if`*, not of
+	`cmd`, and an `if` whose condition failed and which has no `else` succeeds.
+	So `status=$?` on the line after `fi` was 0 whenever the run had failed,
+	`run_stage` returned 0, and the campaign believed every build had worked.
+
+	Two things that exist for exactly these moments never ran: the triage that
+	decides what to do about a failed build, and the handover to the other
+	engine when one is out of quota -- `[ "$status" -eq 6 ]` could not be true
+	because the status was always 0.
+
+	What it looked like: on 2026-09-22 a worker walked a whole family of
+	proposals, refusing each at preflight because its HEAD was unpushed. Each
+	refusal printed to the log and then read as "no table from that one;
+	moving on". It spent nothing, reported nothing, and consumed the queue,
+	and the campaign looked like a quiet night rather than a stopped one.
+
+	The semantics are demonstrated here in bash rather than asserted against
+	the text of the script, because the mistake was about what the shell does
+	and a test written by reading the line would have repeated it.
+	"""
+
+	def bash(self, body):
+		out = subprocess.run(['bash', '-c', body], capture_output=True,
+		                     text=True)
+		return out.stdout.strip()
+
+	def test_the_shell_really_behaves_this_way(self):
+		#The trap itself: `fi` swallows the failure.
+		self.assertEqual(self.bash(
+			'fail() { return 3; }; if fail; then :; fi; echo $?'), '0')
+		#And the idiom that does not.
+		self.assertEqual(self.bash(
+			'fail() { return 3; }; s=0; fail || s=$?; echo $s'), '3')
+
+	def test_run_stage_does_not_read_status_after_fi(self):
+		body = script('agents/campaign.sh')
+		start = body.index('run_stage() {')
+		stage = body[start:body.index('\n}', start)]
+		self.assertIn('|| status=$?', stage)
+		self.assertNotIn('\tstatus=$?', stage)
+
+	def test_the_quota_handover_is_still_reachable(self):
+		#It was dead code for as long as the status was always 0: nothing
+		#could equal 6. This is the campaign's whole answer to one
+		#subscription running out mid-run.
+		body = script('agents/campaign.sh')
+		start = body.index('run_stage() {')
+		stage = body[start:body.index('\n}', start)]
+		self.assertIn('-ne 6', stage)
+		self.assertIn('takes over as', stage)
