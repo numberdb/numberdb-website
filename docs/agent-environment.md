@@ -8717,3 +8717,26 @@ version skew rather than the wrong package. Run screening and client code from
 `clients/python`, or put it on `PYTHONPATH` explicitly. `agents/sage.sh`
 already does this for Sage runs (`PYTHONPATH=/app/clients/python`); nothing
 does it for a plain `python3` at the root.
+
+## Do not pipe a long `agents/sage.sh` run through `tail` or `head`
+
+2026-09-22, proposal run. A timing sweep was started as
+
+	agents/sage.sh /tmp/matroid_timing.py 2>&1 | tail -40
+
+and printed nothing at all in twenty-eight minutes, then exited 143. `tail`
+holds the whole stream until its input closes, so nothing reaches the log while
+the run is alive -- and when `NUMBERDB_TIMEOUT` killed the container, the rows
+it had already computed died in `tail`'s buffer with it. The run looked
+identical to one that had hung on its first case.
+
+`agents/sage.sh` already goes to some trouble to keep a run visibly alive:
+`-u` on the interpreter, `--line-buffered` on its own `grep`, a line a minute
+while waiting for the Sage lock. A `tail` or `head` on the caller's side undoes
+all of it. Redirect to a file and `Read` the file:
+
+	agents/sage.sh /tmp/script.py > /tmp/run.log 2>&1
+
+The same run redirected that way streamed each row as it finished, and the
+three cases that overran their budget were visible as they happened rather than
+inferred from an exit code.
