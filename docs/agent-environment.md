@@ -8901,3 +8901,37 @@ uses, fetched as wikitext with
 `https://en.wikipedia.org/w/index.php?title=...&action=raw`, which is enough
 to tell whether a stored A-number is the one the literature uses for that
 sequence — but not enough to confirm what a particular A-number holds.
+
+## Maxima is unusable in the image `agents/sage.sh` runs
+
+2026-09-22, ideation run. Any symbolic call that routes through Maxima raises
+on import inside the throwaway container:
+
+    sage: expr.simplify_full()
+    AttributeError: module 'sage.functions' has no attribute 'other'
+      File ".../sage/interfaces/maxima_lib.py", line 1209, in <module>
+        sage.functions.other: "MABS",
+
+So `simplify_full`, `simplify_factorial`, `integrate` and everything else that
+hands off to Maxima is unavailable here. This is the modular passagemath
+install in the deployed image, not a bug in the script, and it is worth
+knowing before a derivation is written against it: do the algebra as explicit
+polynomial or rational-function work (`cancel`, `expand`, `gcd`, `lcm`,
+`Poly`), which needs no simplifier. `sympy` is present and works, but
+`sympy.simplify` on a modest rational function did not return in ten minutes
+in this container, while `cancel`/`expand`/`Poly` finished in seconds.
+
+## `screen.py requests` says nothing whether the backlog is empty or GitHub is
+
+2026-09-22, ideation run. `python3 agents/table-ideas/screen.py requests`
+printed nothing, and the honest reading needed a second source. `requests()`
+returns `[]` from its `except Exception` branch as well as when the label
+genuinely has no open issues, so an unreachable GitHub, a proxy that is down
+and an empty backlog are one output — the failure mode the same module
+documents for `already_here` and guards against there.
+
+The backlog really is empty: `gh issue list --repo numberdb/numberdb-data
+--state all --label "table wanted"` returns 126 issues, all closed, and the
+only open issues are four `proposal` and two `enhancement`. Confirm with `gh`
+before reporting an empty backlog as a finding, and note that `gh` works from
+this runner while `urllib` against api.github.com may not.
