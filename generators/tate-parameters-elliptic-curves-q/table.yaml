@@ -1,0 +1,113 @@
+# The table document for numberdb.org/T409. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Tate parameters $q_E$ of elliptic curves over $\mathbb{Q}$
+Definition: >-
+  Let $E/\mathbb{Q}$ be the reduced global minimal Weierstrass model recovered
+  from $(c_4,c_6)$ by Formula CITE{formula-model-from-invariants}. If $E$ has
+  split multiplicative reduction at the prime $p$, the entry is the Tate
+  parameter $q_E\in p\mathbb{Z}_p$ of the Tate curve over $\mathbb{Q}_p$
+  isomorphic to $E$ CITE{WikiTate} CITE{SageTate}.
+Parameters:
+  N:
+    type: Z
+    title: conductor of $E$
+    display: $N$
+    constraints: $N\geq1$
+  c4:
+    type: Z
+    title: invariant $c_4$ of the reduced global minimal model of $E$
+    display: $c_4$
+  c6:
+    type: Z
+    title: invariant $c_6$ of the reduced global minimal model of $E$
+    display: $c_6$
+  p:
+    type: Z
+    title: prime of split multiplicative reduction
+    display: $p$
+    constraints: $p$ is prime and $E$ has split multiplicative reduction at $p$
+Comments:
+  comment-curve-labels: >-
+    The curve is identified by $N$, $c_4$ and $c_6$. Each entry comment gives
+    the curve's Cremona label. LMFDB CITE{LMFDB} numbers curves within an
+    isogeny class differently from Cremona's tables CITE{SageCremona}, so the
+    LMFDB label is also given when it differs.
+  comment-precision: >-
+    The $p$-adic precision is absolute: the stored value has $O(p^n)$ with the
+    least $n$ satisfying $p^n\geq10^{50}$. For example, this gives
+    $O(3^{105})$, $O(5^{72})$, $O(7^{60})$ and $O(11^{49})$.
+Formulas:
+  formula-model-from-invariants: >-
+    For the reduced models in this table, $b_2$ is the unique element of
+    $\{-4,-3,0,1,4,5\}$ with $b_2\equiv -c_6\pmod{12}$,
+    $b_4=(b_2^2-c_4)/24$, and
+    $b_6=(-c_6-b_2^3+36b_2b_4)/216$. The model has
+    $a_1\equiv b_2\pmod 2$, $a_3\equiv b_6\pmod 2$ with
+    $a_1,a_3\in\{0,1\}$ and $a_2\in\{-1,0,1\}$, and
+    $a_2=(b_2-a_1^2)/4$, $a_4=(b_4-a_1a_3)/2$ and
+    $a_6=(b_6-a_3^2)/4$.
+  formula-j-invariant: >-
+    For the Tate parameter $q_E$, the $j$-invariant satisfies
+    $j(E)=j(q_E)=q_E^{-1}+744+196884q_E+21493760q_E^2+\cdots$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      E = EllipticCurve('11a1')
+      E.tate_curve(ZZ(11)).parameter(44)
+Similar tables:
+  - table: HREF{Faltings_heights_of_elliptic_curves_over_Q}[Faltings heights of elliptic curves over $\mathbb{Q}$]
+    relation: uses the same $(N,c_4,c_6)$ curve index and records Faltings heights
+  - table: HREF{Division_polynomials_psi_n_of_elliptic_curves_over_mathbb_Q}[Division polynomials $\psi_n$ of elliptic curves over $\mathbb{Q}$]
+    relation: uses the same $(N,c_4,c_6)$ curve index and records division polynomials
+  - table: HREF{Regulators_of_elliptic_curves_over_Q_of_rank_1}[Regulators of elliptic curves over $\mathbb{Q}$ of rank $1$]
+    relation: uses the same $(N,c_4,c_6)$ curve index for rank-one curves and records their regulators
+Links:
+  WikiTate:
+    title: 'Wikipedia: Tate curve'
+    url: https://en.wikipedia.org/wiki/Tate_curve
+  SageTate:
+    title: 'SageMath reference: Tate curves'
+    url: https://doc.sagemath.org/html/en/reference/arithmetic_curves/sage/schemes/elliptic_curves/ell_tate_curve.html
+  SageCremona:
+    title: "SageMath reference: Cremona's tables of elliptic curves"
+    url: https://doc.sagemath.org/html/en/reference/databases/sage/databases/cremona.html
+  LMFDB:
+    title: 'LMFDB: Elliptic curves over Q'
+    url: https://www.lmfdb.org/EllipticCurve/Q/
+Keywords:
+  - Tate parameter
+  - Tate curve parameter
+  - q-parameter of an elliptic curve
+Tags:
+  - p-adic
+  - elliptic curves
+  - number theory
+  - Iwasawa theory
+Data properties:
+  type: Qp
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every curve in Sage's mini Cremona database CITE{SageCremona}
+    with conductor $N\leq100$, and every prime $p$ at which that curve has
+    split multiplicative reduction
+  sources:
+    - CITE{SageCremona}
+  rigour details: >-
+    The generator reads Weierstrass coefficients from Sage's mini Cremona
+    database CITE{SageCremona}, constructs the corresponding reduced minimal
+    curves in Sage, filters to split multiplicative primes, and asks Sage's
+    `TateCurve.parameter` CITE{SageTate} for $q_E$ with enough relative
+    precision to reach the absolute $O(p^n)$ convention stated above. It
+    verifies every stored value against Formula CITE{formula-j-invariant}; if
+    $v=v_p(q_E)$, the comparison is required to agree to at least $n-2v$ after
+    the loss from forming $q_E^{-1}$.
+Display properties:
+  number-header: $q_E$
+  group parameters:
+    - [N]
+    - [c4, c6]
+    - [p]
+Numbers: []
