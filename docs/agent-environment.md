@@ -7379,3 +7379,28 @@ Evidence: 2026-09-22 ideation run, two invocations of
 `agents/sage.sh /tmp/nb/check2.py` twenty minutes apart; the first returned
 the message above after 1140 seconds of waiting, exit code 0, no output from
 the script itself.
+
+## A long Sage run can starve a whole Falkner-Skan family
+
+What happened: on 2026-09-22, four workers in the same Falkner-Skan family
+queued Sage jobs at once. The lock behaved correctly, but one dry run was
+started with a multi-hour timeout:
+
+    timeout 10800 docker run ...
+
+A displacement-thickness check waited 20 minutes and got the wrapper's busy
+message; with `LOCK_WAIT=8000` it was still waiting after more than half an
+hour. During that time the draft had been claimed on the site, but it could
+not be filled or audited because every required computation had to use the
+same runner.
+
+What to do instead: do short smoke checks before starting a full dry run for
+one table in a family, and avoid queuing every worker's full-grid computation
+at the same time. If a long dry run is unavoidable, set expectations in the
+campaign output before other workers spend their default twenty-minute wait
+windows behind it.
+
+Evidence: T415 build run, 2026-09-22. The queued command was
+`agents/sage.sh /tmp/run_falkner_checks.py .../generate.py`; process listing
+showed another worker holding `/tmp/numberdb-sage.lock` through a
+`timeout 10800 docker run` dry run.
