@@ -7433,3 +7433,62 @@ take the successful fetch as evidence that the draft itself is public.
 Evidence: 2026-09-22T10:44:07Z repair of T408. `/T408` and `/preview/T408`
 were 404; `/api/table/T408/file/generate.py` was 405; `/files/T408/generate.py?raw=1`
 returned 262 lines of Python.
+
+## The Django-in-the-throwaway trick for rendering a draft is gone: the campaign now runs the builder image
+
+What happened: the T410 critique of 2026-09-22 followed the note above,
+"Rendering a draft's page as its owner sees it, without a session", and the
+script died on its third line with `ModuleNotFoundError: No module named
+'django'`. A probe run printed `sys.executable` inside the container as
+`/home/sage/sage/local/var/lib/sage/venv-python3.12/bin/python3`, found no
+`django/__init__.py` anywhere under `/usr/lib`, `/usr/local/lib`, `/opt` or
+`/app`, and reported `no /app`. The environment explains it:
+`NUMBERDB_SAGE_IMAGE=numberdb/builder:latest` and
+`NUMBERDB_SAGE_PYTHONPATH=` (empty) are set for the campaign, and
+`agents/sage.sh` says in its own comments what the builder is -- a machine
+that "does nothing else, running an image with no Django and no app, which
+talks to numberdb.org over the public API like any outside contributor".
+`RequestFactory`, `call_command('audit_table', ...)` and `tree_of(head)` are
+all unreachable from there. So is the database.
+
+What to do instead, and it works: `/preview?table=<yaml>` renders an arbitrary
+document with no session and no key, which is the whole point of that route.
+Fetch the document with `GET /api/table?id=T410` and the key, dump it back to
+YAML, and send it to `/preview`. Two limits bite, in this order:
+
+- nginx answers `414 Request-URI Too Large` first, and then
+- gunicorn answers `400 Bad Request` with `Request Line is too large
+  (6383 > 4094)`, which is the real limit: `limit_request_line` is 4094 bytes
+  for the whole request line, so about 4000 bytes of URL-encoded YAML.
+
+T410's prose alone encodes to 7643 bytes, so the document has to be sliced.
+What worked was one request per group of sections, each carrying `Title` and
+one real entry, seven in all. Two things to know when slicing:
+
+- **Without a `Numbers` block the preview renders nothing.** It prints "Error
+  while parsing numbers: cannot access local variable 'number_section'" and
+  then echoes the YAML in the textarea, which looks like a rendering and is
+  not. Always attach at least one entry.
+- **`CITE{}` resolves against the slice, not the table.** A slice holding the
+  `Definition` but not `References` renders `CITE{MTT}` as a `CITE-broken`
+  span. That is the slicing, not the table. Keep `References` and `Links` in
+  any slice whose prose cites them.
+- Pick the shortest real entry rather than inventing one. In a `Qp` table the
+  large primes are the cheap ones: T410's fifty-digit values run 445 characters
+  at $p=11$ and 269 at $p=89$, because `O(89^26)` needs half as many terms as
+  `O(11^49)`.
+
+Also in this run: the SOCKS proxy the prompt names was not merely wedged, it
+was not there at all -- nothing was listening on 127.0.0.1:1080 and
+`ALL_PROXY` was empty -- while direct `curl https://numberdb.org/...` answered
+200 throughout. That is the fourth time; the note above already says to run
+the direct `curl` before looking at the environment, and it was right.
+
+And `GET /api/table/<tid>/audit` runs `findings_for(table)` only. There is no
+`--links` pass behind it, so a critique that can reach the audit only through
+the API has not had the link checks run and should resolve the table's
+`HREF{}` targets itself. T410's three resolved, all published.
+
+Evidence: 2026-09-22 critique of T410. `/tmp/crit410_render.py` (failed),
+`/tmp/crit410_probe.py` (the probe), `/tmp/T410_R1.yaml` .. `/tmp/T410_R7.yaml`
+and the seven `200` responses from `/preview`.
