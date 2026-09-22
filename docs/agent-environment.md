@@ -7069,3 +7069,35 @@ What to do instead: when a generator reads companion files, pass each one to
 Evidence: 2026-09-22, T395 build. The first fill attempt stopped with the
 `FileNotFoundError` above; rerunning with `table.yaml` as a second file reached
 the site and filled draft T395.
+
+## `/tmp` is shared by every worker on this box, so a file named after your table may be another run's
+
+What happened: the T400 critique started by fetching the document to
+`/tmp/t400doc.json` and found, already sitting there, `/tmp/T400.json` (26,579
+bytes, the same size as the document it was about to fetch) and
+`/tmp/T400-revised.yaml`, both written three minutes earlier by another worker.
+Four campaign workers run on this machine, `agents/run.sh` gives none of them a
+private scratch directory, and the convention every run follows is to name
+scratch after the tid -- `/tmp/T398.json`, `/tmp/t398_render.py`,
+`/tmp/T396-render.html`. So the obvious shortcut, "the document is already in
+`/tmp`, read that", reads a file that another run may be part-way through
+writing, and for a critique it would mean reporting on a document nobody has
+published, possibly a repair in progress.
+
+The same collision damages the other direction: writing `/tmp/T400.json`
+overwrites whatever the other worker left there.
+
+What to do instead: fetch your own copy every time -- it is one `curl` and a
+few KB -- and put scratch in a directory of your own, `/tmp/crit400/`, named
+for the run and not only for the table. The existing notes that say "the
+previous run's `/tmp` script survived" are about *scripts*, which are worth
+reusing; a *document* in `/tmp` is not evidence about the database.
+
+A related symptom worth recognising: if the draft you are reading seems to
+change between two reads, it may actually be changing. Say which revision you
+read and when.
+
+Evidence: 2026-09-22, T400 critique. `ls -la /tmp/T400*` at 06:13Z showed
+`T400.json` and `T400-revised.yaml` dated 06:10, neither written by this run;
+`GET /api/table?id=T400` returned 26,579 bytes at 06:13Z, and everything in
+`agents/critiques`-style report `T400.md` is from that fetch.
