@@ -1,7 +1,7 @@
 # Draft document for T402, Epstein zeta values of the classical lattices.
 # It began as proposal 1 of numberdb-data#180. It was created as a draft
-# through the API, filled by generate.py beside it, and offered for review.
-# Publishing is a person's act.
+# through the API and is filled by generate.py beside it. Publishing is a
+# person's act.
 Title: Values of the Epstein zeta function of the classical lattices
 Definition: >-
   For a lattice $L\subset\mathbb{R}^n$ with Gram matrix $G$ in the
@@ -10,10 +10,10 @@ Definition: >-
   classical-lattice packing table], the Epstein zeta function CITE{WikiEpstein}
   is
   $Z_L(s)=\sum_{0\ne x\in\mathbb{Z}^n}(x^{\mathsf{T}}Gx)^{-s}$, for rational
-  $s>n/2$. Listed are values for $\mathbb{Z}^n$, the root lattices, their
-  duals, the laminated lattices $\Lambda_n$ and the Coxeter-Todd lattice
+  $s>n/2$. The parameter domain follows $\mathbb{Z}^n$, the root lattices,
+  their duals, the laminated lattices $\Lambda_n$ and the Coxeter-Todd lattice
   $K_{12}$, using the Gram matrices of the Catalogue of Lattices
-  CITE{Catalogue}.
+  CITE{Catalogue}; the data properties say which finite block is listed here.
 Keywords:
   - Epstein zeta function
   - Epstein zeta
@@ -125,21 +125,23 @@ Data properties:
   rigour: proven
   complete: 'no'
   complete-note: >-
-    it holds every lattice of
+    it holds every lattice of dimension at most $8$ in
     HREF{Packing_densities_and_Hermite_numbers_of_the_classical_lattices}[the
-    classical-lattice packing table], with every integer or half-integer
-    $s$ satisfying $n/2<s\leq n/2+3$, together with the rows $s=3$ for
-    $n\leq5$ and $s=6$ for $n\leq11$
+    classical-lattice packing table], with every integer or half-integer $s$
+    satisfying $n/2<s\leq n/2+3$, together with the rows $s=3$ and $s=6$
+    wherever they converge in those dimensions
   rigour details: >-
     Each entry is computed in arb ball arithmetic from the Epstein-Terras
     incomplete-gamma expansion CITE{Terras}, with `pari(G).qfrep(B, 0)` used
     to count one vector from each pair $\pm x$ of vectors of norm
     $x^{\mathsf{T}}Gx=m$ and a factor of $2$ applied to the contribution. The
-    same expansion is evaluated for the dual Gram matrix, and the truncation
-    bounds use the explicit positive tails of the upper incomplete-gamma
-    series. The generator checks the $\mathbb{Z}^2$, $A_2$ and $E_8$ closed
-    forms above wherever their parameters appear, and checks the
+    same expansion is evaluated for the dual Gram matrix, with a split
+    parameter chosen to balance the two `qfrep` bounds. The omitted positive
+    tails are added as arb radii, using a cube-and-shell bound from the inverse
+    row-sum lower bound for the Gram matrix. The generator checks the
+    $\mathbb{Z}^2$, $A_2$ and $E_8$ closed forms above wherever their
+    parameters appear, and checks the
     Lennard-Jones values for $\mathbb{Z}^3$, $A_3$ and $A_3^{*}$ at $s=3$ and
-    $s=6$ against a direct summation over lattice vectors at lower precision.
+    $s=6$ against the quoted constants in CITE{LatticeSums}.
 Display properties:
   number-header: $Z_L(s)$
