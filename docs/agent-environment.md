@@ -8740,3 +8740,49 @@ all of it. Redirect to a file and `Read` the file:
 The same run redirected that way streamed each row as it finished, and the
 three cases that overran their budget were visible as they happened rather than
 inferred from an exit code.
+
+## The SOCKS proxy on 1080 is not the only way out, and it goes down
+
+2026-09-22, critique run. `curl --socks5-hostname 127.0.0.1:1080
+https://numberdb.org/T5` succeeded once and then failed for the rest of the
+run with exit 7, "Failed to connect to 127.0.0.1 port 1080 after 0 ms", which
+`curl -s` reports as `rc=000` with an empty file and reads exactly like the
+site being down. The site was up throughout.
+
+`curl --noproxy '*'` reaches numberdb.org and arxiv.org directly from the
+runner and answers 200. So a run that needs a page can carry on: try the proxy,
+and on exit 7 try direct before concluding anything about the server.
+`agents/sage.sh` is unaffected -- it does not use the proxy, and a
+`urllib.request.urlopen` inside the container is a third route to the same page
+when both fail here.
+
+## `numberdb_app/prose.py` folds `rigour details` by the length of its markup
+
+The fold on a long `rigour details` note (`FOLD_ABOVE = 400`) is measured
+against the rendered HTML, not the text. On T5 the note is three sentences and
+349 characters of prose; rendered it is 450, of which 101 are the two
+`<p class="prose-paragraph">` wrappers and the anchor that one `CITE{...}`
+expands into (`<a class="CITE" href="#DupontEtAl">[3]</a>` is 42 characters for
+a citation the reader sees as `[3]`). So the note folds, and its last sentence
+-- the one saying the interval is ignorance rather than error -- is behind a
+"more" disclosure. The revision it replaced was 330 characters of text with no
+citation and did not fold.
+
+The effect is that the field penalises the notes that cite their source, which
+is the opposite of what it is for. `render()` should compare
+`strip_tags(head) + strip_tags(rest)` against `FOLD_ABOVE`.
+
+## `help.html` quotes two tables' values as literals, and both have drifted
+
+`numberdb_app/templates/help.html:362` explains why some numbers are not
+findable by number, using the two tables the corpus has of that shape: "The
+exponent of matrix multiplication is only known to lie somewhere in
+[2, 2.3728596], and the diagonal Ramsey number R(5,5) somewhere in [43, 48]."
+
+T5 now holds `[2, 2.371177]` and T6 holds `[43, 46]`. Both quotations are
+stale, and the dagger on T5's only entry links a reader straight to them, so
+the page that explains the entry contradicts it. The passage is about the
+*width* of the intervals, so the fix is to say the width and stop quoting
+digits that live in a table and will move again. `help.html:253` quotes
+`[2, 2.3728596]` too, but only as an example of interval *syntax*, where it is
+still correct.
