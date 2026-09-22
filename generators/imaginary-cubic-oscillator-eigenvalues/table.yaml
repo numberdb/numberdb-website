@@ -1,0 +1,84 @@
+# Draft table document for T407.
+Title: Eigenvalues of the imaginary cubic oscillator $-y''+ix^3y$
+Definition: This table gives the eigenvalues $E_n$ of the $L^2(\mathbb{R})$
+  Schrödinger problem $-y''+ix^3y=Ey$ CITE{BenderBoettcher}. The Hamiltonian
+  is $-d^2/dx^2+ix^3$, with no factor of $1/2$ on the kinetic term. The index
+  $n$ starts at $0$ for the ground state, and the real eigenvalues are listed
+  in increasing order CITE{DoreyDunningTateo}.
+Keywords:
+- imaginary cubic oscillator
+- Bender oscillator
+- Bender-Boettcher oscillator
+- PT-symmetric quantum mechanics
+- PT symmetry
+- Schrödinger equation
+- energy levels
+- anharmonic oscillator
+Parameters:
+  n:
+    type: Z
+    title: eigenvalue index
+    display: $n$
+    constraints: $n\geq0$
+Comments:
+  comment-sign: The references usually write the potential as $-ix^3$ CITE{Handy}.
+    Replacing $x$ by $-x$ changes $ix^3$ to $-ix^3$, so the two signs have the
+    same spectrum.
+  comment-pt: The operator is a standard example in PT-symmetric quantum mechanics
+    CITE{WikiPT}.
+Formulas:
+  formula-scaling: For $g>0$, the eigenvalues of $-d^2/dx^2+igx^3$ are
+    $g^{2/5}E_n$.
+Programs:
+  program-sage:
+    language: Sage
+    code: 'Run `generate.py` with SageMath. It forms the banded harmonic-basis
+      Galerkin determinant and bisects its first five real roots.'
+Links:
+  WikiPT:
+    title: 'Wikipedia: PT-symmetric quantum mechanics'
+    url: https://en.wikipedia.org/wiki/Non-Hermitian_quantum_mechanics#PT-symmetry
+References:
+  BenderBoettcher:
+    bib: >-
+      Carl M. Bender and Stefan Boettcher, Real spectra in non-Hermitian Hamiltonians
+      having PT symmetry, Physical Review Letters 80 (1998), 5243-5246.
+    doi: 10.1103/PhysRevLett.80.5243
+    arxiv: physics/9712001
+  DoreyDunningTateo:
+    bib: >-
+      Patrick Dorey, Clare Dunning and Roberto Tateo, Spectral equivalences,
+      Bethe ansatz equations, and reality properties in PT-symmetric quantum mechanics,
+      Journal of Physics A: Mathematical and General 34 (2001), 5679-5704.
+    doi: 10.1088/0305-4470/34/28/305
+    arxiv: hep-th/0103051
+  Handy:
+    bib: >-
+      C. R. Handy, Generating converging eigenenergy bounds for the discrete states
+      of the -ix^3 non-Hermitian potential, Journal of Physics A: Mathematical and
+      General 34 (2001), L271-L277.
+    doi: 10.1088/0305-4470/34/19/102
+    arxiv: math-ph/0104035
+Tags:
+- eigenvalue
+- physics
+- quantum mechanics
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: it holds the first five levels, the low-lying range for which CITE{Handy}
+    gives independent EMM bounds
+  rigour details: The generator uses the harmonic-oscillator basis for
+    $-d^2/dx^2+\omega^2x^2$ and multiplies the $n$th basis vector by $i^n$,
+    which turns the Galerkin matrix for $-d^2/dx^2+ix^3$ into a real banded
+    matrix. It computes roots of $\det(H_N-E)$ by bisection with a banded
+    Gaussian determinant at 560-bit precision, for $N=320,360$ and for
+    $\omega=1.39,1.41$. Each stored row is the real interval spanning those
+    four computations; the widest interval retains 56.7 decimal digits. The
+    first five intervals are checked to lie inside Handy's EMM bounds for
+    $-ix^3$ CITE{Handy}. A trial with $N=140,160$ and $\omega=1.3,1.5$
+    retained only 5.1 digits by $n=17$, so this draft stops at the first five
+    levels rather than storing a longer weakly checked range.
+Display properties:
+  number-header: $E_n$
