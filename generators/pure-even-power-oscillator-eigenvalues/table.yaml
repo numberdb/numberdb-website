@@ -1,0 +1,108 @@
+# Draft document for T405. Created through the API with X-Draft: yes and
+# filled by generate.py beside it; publishing is a person's act on the site.
+Title: Eigenvalues of the pure quartic, sextic and octic oscillators $-y''+x^{2m}y$
+Definition: >-
+  For an integer $m\geq2$, this table gives the eigenvalue $E^{(m)}_n$
+  of the Schrodinger operator
+  $-y''(x)+x^{2m}y(x)=E y(x)$ on $L^2(\mathbb{R})$ CITE{Biswas1973}.
+  The operator has no factor of $1/2$ multiplying $-y''$, and the level
+  index $n$ starts at $0$ for the ground state.
+Keywords:
+  - anharmonic oscillator
+  - pure quartic oscillator
+  - quartic oscillator
+  - sextic oscillator
+  - octic oscillator
+  - decic oscillator
+  - monomial potential
+  - power-law potential
+  - Schrodinger equation
+  - energy levels
+  - Bender-Wu
+Parameters:
+  m:
+    type: Z
+    title: power parameter
+    display: $m$
+    constraints: integer with $m\geq2$
+  n:
+    type: Z
+    title: energy level
+    display: $n$
+    constraints: integer with $n\geq0$
+Comments:
+  comment-powers: >-
+    The entries with $m=2,3,4,5$ are the pure quartic, sextic, octic and
+    decic oscillators. The harmonic case $m=1$ is not included, because this
+    convention gives the exact eigenvalues $2n+1$.
+  comment-literature: >-
+    The pure quartic ground state is a standard benchmark for numerical
+    eigenvalue methods CITE{Blinder2019}. Sextic and octic anharmonicities
+    occur in the same oscillator literature CITE{IshkhanyanLevai2020},
+    CITE{PathakMandal2002}.
+Formulas:
+  formula-scaling: >-
+    If $a>0$ and $b>0$, the eigenvalues of
+    $-a y''+b x^{2m}y=E y$ are
+    $a^{m/(m+1)} b^{1/(m+1)} E^{(m)}_n$.
+  formula-wkb: >-
+    As $n\to\infty$,
+    $E^{(m)}_n\sim\left[
+    \frac{\sqrt{\pi}\,\Gamma(3/2+1/(2m))}
+    {\Gamma(1+1/(2m))}\left(n+\frac12\right)
+    \right]^{2m/(m+1)}$.
+Similar tables:
+  - table: HREF{T390}[Dirichlet eigenvalues of the classical planar domains]
+    relation: stores eigenvalues of differential operators with boundary conditions rather than one-dimensional confining Schrodinger operators
+  - table: HREF{T55}[Zeros of the Airy function of the first kind Ai]
+    relation: gives the levels for the related linear potential on a half-line
+  - table: HREF{T57}[Local extrema of the Airy function of the first kind Ai]
+    relation: gives the even-parity levels for the related symmetric linear potential
+  - table: HREF{T103}[Hermite polynomials in physicist's convention]
+    relation: the generator uses the corresponding harmonic-oscillator basis
+  - table: HREF{T104}[Hermite polynomials in probabilist's convention]
+    relation: the same basis is often written in the probabilists' normalisation
+References:
+  Biswas1973:
+    bib: >-
+      S. N. Biswas, K. Datta, R. P. Saxena, P. K. Srivastava and V. S.
+      Varma, Eigenvalues of $\lambda x^{2m}$ anharmonic oscillators,
+      Journal of Mathematical Physics 14 (1973), 1190-1195.
+    doi: 10.1063/1.1666462
+  Blinder2019:
+    bib: >-
+      S. M. Blinder, Eigenvalues for a pure quartic oscillator, 2019.
+    arxiv: 1903.07471
+  IshkhanyanLevai2020:
+    bib: >-
+      A. M. Ishkhanyan and G. Levai, Hermite function solutions of the
+      Schrodinger equation for the sextic oscillator, Physica Scripta 95
+      (2020), 085202.
+    arxiv: 2003.08184
+    doi: 10.1088/1402-4896/ab9923
+  PathakMandal2002:
+    bib: >-
+      A. Pathak and S. Mandal, Classical and quantum oscillators of sextic
+      and octic anharmonicities, Physics Letters A 298 (2002), 259-270.
+    arxiv: quant-ph/0206011
+    doi: 10.1016/S0375-9601(02)00500-5
+Tags:
+  - eigenvalue
+  - physics
+  - quantum mechanics
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: >-
+    it holds $0\leq n\leq19$ for $m=2,3,4,5$, the pure quartic through
+    decic wells used as numerical oscillator benchmarks
+  rigour details: >-
+    The generator computes Rayleigh-Ritz eigenvalues in a harmonic-oscillator
+    basis, with even and odd parity separated. Each entry is computed from
+    four Galerkin matrices, using two truncations and two basis frequencies;
+    the stored interval is the union of those four values and must retain at
+    least the 50 digits written.
+Display properties:
+  number-header: $E^{(m)}_n$
+Numbers: []
