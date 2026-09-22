@@ -7568,3 +7568,36 @@ Evidence: 2026-09-22 build run for "Values of the Epstein zeta function of the
 classical lattices"; `/tmp/epstein_cheap_checks.py` through `agents/sage.sh`
 printed the `already_here` transport error, and direct `curl` retries timed out
 against both HTTPS and HTTP.
+
+## A private draft's files, and their contents, are served to anybody
+
+What happened: reading T411, which is a draft, `/T411` answered 404 as it
+should. `/files/T411` answered **200** to a request carrying no key and no
+cookie, and rendered the draft's title, its revision message ("replaced
+malformed claim entries with keyed double well table"), its file listing and
+a "back to table" link. `/files/T411/generate.py?raw=1` then handed over all
+7994 bytes of the generator, docstring and conventions and all.
+
+The table page and the preview route both call `_refuse_a_draft`, which exists
+precisely so that a stranger cannot learn that a table with that number
+exists. `numberdb_app/views.py:table_files` (3126) and `table_file` (3217)
+both do `get_object_or_404(Table, tid=tid)` and go straight on. So the guard
+is on two of the four routes that can show a draft.
+
+This is worth noticing twice. It is a hole, and it is also a hole this
+campaign has been walking through: the accepted-lesson proposal from the T406
+critique tells a later run to read a draft's slug from "the 'back to table'
+link on `/files/T<n>`", which only works because of this.
+
+What to do instead: add `_refuse_a_draft(request, table)` after the
+`get_object_or_404` in both views, and give `numberdb_app/test_*.py` the two
+cases -- anonymous `GET /files/T<draft>` and `GET /files/T<draft>/<name>` both
+404. Until then, do not treat "I could fetch it without a key" as evidence
+that a draft is public.
+
+Evidence: 2026-09-22, T411 critique. `curl -sS -o /dev/null -w '%{http_code}'
+https://numberdb.org/T411` returned 404 and
+`https://numberdb.org/files/T411` returned 200 in the same minute, from a
+shell with no cookie jar; `curl https://numberdb.org/files/T411/generate.py?raw=1`
+returned `200 7994` and the file begins `"""Eigenvalues of the quartic double
+well -- numberdb.org/T411`.
