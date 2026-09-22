@@ -35,15 +35,15 @@ ETA_MAX = "18"
 FIRST_ROOT_GUESS = "0.08569974405981233"
 
 COARSE = {
-    "dps": 70,
-    "order": 60,
-    "step": "0.05",
+    "dps": 60,
+    "order": 50,
+    "step": "0.1",
     "eta_max": ETA_MAX,
 }
 FINE = {
-    "dps": 90,
-    "order": 70,
-    "step": "0.025",
+    "dps": 75,
+    "order": 60,
+    "step": "0.05",
     "eta_max": ETA_MAX,
 }
 
