@@ -252,7 +252,8 @@ def fill_draft_once(generator, message):
         entry = generator._entry(params, wanted)
         value = entry["number"]
         identity = ",".join(str(params[name]) for name in generator.parameters)
-        _check_rigour(generator, table, identity, value)
+        bounded = True if generator.type == "Qp" else None
+        _check_rigour(generator, table, identity, value, bounded=bounded)
 
         written = to_text(value, wanted, generator.format)
         _check_precision(table, identity, written, wanted, lowering=False)
