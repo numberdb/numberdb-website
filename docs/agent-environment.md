@@ -8935,3 +8935,51 @@ The backlog really is empty: `gh issue list --repo numberdb/numberdb-data
 only open issues are four `proposal` and two `enhancement`. Confirm with `gh`
 before reporting an empty backlog as a finding, and note that `gh` works from
 this runner while `urllib` against api.github.com may not.
+
+## The deployed front page *does* render `?q=` results server-side
+
+2026-09-22, T7 critique. The note above, "`/api/search` documents `q` and reads
+`expression`", ends:
+
+> `views.home` renders `?q=` results server-side in this checkout, but the
+> deployed front page does not, so `https://numberdb.org/?q=Bessel` returns the
+> search-tips page and no results.
+
+The second half of that is wrong, and it was wrong when it was written a few
+hours earlier. `curl -s "https://numberdb.org/?q=Bessel"` returns the rendered
+results: "11 results for Bessel", then T196, T190, T187, T199, T20, T116 and
+the rest, each with its T-number and entry count, in the HTML, no JavaScript
+needed. `?q=Ludolph` returns "1 result for Ludolph -- Pi -- T7". The digits of
+a constant work the same way: `?q=3.14159265358979323846` returns seven tables
+under a "Real numbers" heading, each showing the stored value truncated to
+sixteen significant figures.
+
+How the earlier run got it wrong is worth knowing, because it is a trap in the
+page and not in the run. The search-tips text is rendered **above** the results
+on the same page, always, so the tips being present is not evidence that the
+results are absent. And every page on the site carries
+
+    <span style="display:none" id="msg-no-entry">No match in database</span>
+
+in the search box, so grepping the HTML for "No match" matches on a page full
+of results. I hit the second of those myself before reading the markup: a grep
+for `No match` on `?q=Ludolph` said "No match in database" while the page was
+in fact reporting its one correct hit.
+
+What to do instead: cut the results container out and strip the tags before
+deciding, rather than grepping the whole document for a marker.
+
+    curl -s "https://numberdb.org/?q=TERM" \
+      | python3 -c 'import sys,re,html; s=re.sub(r"(?is)<script.*?</script>","",sys.stdin.read()); \
+        t=html.unescape(re.sub(r"(?is)<[^>]+>"," ",s)); i=t.find("results for"); print(t[i:i+800])'
+
+The first half of the earlier note stands and I re-confirmed it: `/api/search`
+answers `{"results": [], "messages": [], "time_request": "0.000s"}` for `q=`,
+`text=` and `number=` alike, on the deployed site, so the fix in this branch
+has not shipped. `GET /suggestions?term=...` also works and returns JSON
+(`term=Ludolph` gives T7 with a `/Pi` url), which is the better route for a
+script that wants structure rather than a page.
+
+Evidence: 2026-09-22, `https://numberdb.org/?q=Bessel` -> 11 results,
+`?q=Ludolph` -> 1, `?q=Archimedes' constant` -> 20,
+`?q=3.14159265358979323846` -> 7; `/api/search?text=Pi` -> empty, 200.
