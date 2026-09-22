@@ -7168,3 +7168,41 @@ Evidence: 2026-09-22, issue #180. The same false closure had already happened
 after T393 and was corrected by reopening the issue. It happened again after
 T403 and was corrected with
 <https://github.com/numberdb/numberdb-data/issues/180#issuecomment-5773287406>.
+
+## `/history`, `/revisions` and `/files` render a private draft to anybody who guesses the number
+
+What happened: reading T403 as a draft, `/T403` answered 404 to an anonymous
+request, as it should -- `_refuse_a_draft` in `numberdb_app/views.py`, "not
+found, rather than forbidden, to anybody else". So did `/discuss/T403`,
+`/bundle/T403`, `/blame/T403` and `/preview/T403`. Four sibling routes did
+not. With no key, no cookie and no session:
+
+    /revisions/T403        200   title, both revision messages, the author,
+                                 the assisting tool, and a unified diff that
+                                 contains every stored value in full
+    /files/T403            200   title, revision message, file manifest
+    /files/T403/generate.py 200  the 15 KB of generator source
+    /history/T403          200   title and tag list
+
+`views.table_files` (line 3079), `views.table_file` (line 3170),
+`views.table_history` and `views.revision_history` each do
+`get_object_or_404(Table, tid=tid)` and never call `_refuse_a_draft`. This is
+the same fault that was fixed on `/preview/<tid>` and is commented at
+`views.py:1513` -- "rendered a private draft to anybody who guessed its
+number, which is the one thing a draft is supposed not to do" -- reappearing
+on routes that were added or changed since. It defeats the reason unreviewed
+values are held out of search: they reach a reader anyway, in full, at a
+guessable address.
+
+What to do instead: call `_refuse_a_draft(request, table)` immediately after
+the `get_object_or_404` in all four views. The recurrence is the argument for
+testing the route list rather than one route: a test beside
+`numberdb_app/test_preview_privacy.py` that walks every URL pattern taking a
+`T\d+` and asserts 404 for an anonymous client on a draft would have caught
+all four, and will catch the fifth.
+
+Evidence: 2026-09-22, T403 critique. `for p in T403 discuss/T403 history/T403
+revisions/T403 files/T403 bundle/T403 blame/T403 preview/T403; do curl -sS -o
+/dev/null -w "%{http_code}" https://numberdb.org/$p; done` gave
+404 404 200 200 200 404 404 404, and `/revisions/T403` printed the hundred
+digits of all seven rows.
