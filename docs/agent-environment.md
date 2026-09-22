@@ -7404,3 +7404,75 @@ Evidence: T415 build run, 2026-09-22. The queued command was
 `agents/sage.sh /tmp/run_falkner_checks.py .../generate.py`; process listing
 showed another worker holding `/tmp/numberdb-sage.lock` through a
 `timeout 10800 docker run` dry run.
+
+## `oeis.org` does answer here, to `urllib` with an honest bot User-Agent, and never to `curl`
+
+What happened: two notes above say OEIS cannot be reached from this machine --
+"answers a Cloudflare challenge here" (2026-09-20) and "cannot be reached from
+this machine at all ... with or without a browser `User-Agent`" (2026-09-22,
+earlier the same day as this one). Both are right about what they tried and
+both conclusions are too strong. From the same box, at 23:15 on 2026-09-22,
+OEIS answered in under a third of a second:
+
+    urllib.request.urlopen(urllib.request.Request(
+        'https://oeis.org/search?q=id:A002559&fmt=json',
+        headers={'User-Agent': 'numberdb-proposal'}), timeout=30)
+    -> 200, 13715 bytes, 0.28 s
+
+What divides the successes from the 403s is not the network and not the
+sequence. Measured, all in one minute:
+
+| client | User-Agent | result |
+|---|---|---|
+| `urllib` | `numberdb-proposal`, `nb`, `x` | 200, with the data |
+| `urllib` | none (so `Python-urllib/3.x`) | 403 |
+| `urllib` | `Mozilla/5.0` | 403 |
+| `curl` | none | 403 |
+| `curl` | `-A numberdb-proposal` | 403 |
+| `curl` | a full Chrome UA string | 403 |
+
+So the rule is: **`urllib` with a plain, non-browser, non-default
+`User-Agent`**. `curl` is refused whatever it claims to be, which is why the
+earlier notes -- both of which used `curl` -- concluded the site was
+unreachable; and a browser UA is refused too, which is why "with or without a
+browser User-Agent" did not find the way through. It is a bot rule that lets an
+honest bot in and challenges anything that claims to be a browser without
+being one.
+
+What to do instead: an A-number *can* be verified here, and OEIS is worth
+using for the check the skill asks for. `fmt=json` gives the record (`data`,
+`name`); `fmt=text` gives the `%N` line. Note also that
+`screen.source_names_it` already sends `User-Agent: numberdb-proposal-screen`,
+so screening a proposal against an `oeis.org` URL works too -- the earlier note
+that it "will refuse every family for want of the words" no longer holds.
+
+Evidence: 2026-09-22 ideas run. The table above; and the batch's Markov
+numbers were checked against A002559 (42 terms, exact match) and Freiman's
+constant against A118472 (40 digits, exact match), both fetched this way.
+
+## `source_names_it` fails a possessive name against Wikipedia, which renders the apostrophe as U+2019
+
+What happened: screening `Hall's ray` against
+`https://en.wikipedia.org/wiki/Markov_spectrum` complained that "the source
+does not mention hall's". The article does -- the phrase "known as Hall's ray"
+is in it -- but rendered with U+2019, the typographic right single quote, while
+`_distinguishing` keeps `hall's` with U+0027 and the check is a literal
+substring test. The page reads perfectly well and the name is right; only the
+character differs.
+
+Two tells that it is this and not a wrong name: the complaint names a word
+*with an apostrophe in it*, and the same name passes against MathWorld, which
+writes a plain `'` (`Freiman's constant` passed against
+`mathworld.wolfram.com/FreimansConstant.html` in the same run).
+
+What to do instead: when a possessive name is refused, look for the phrase on
+the page before believing the complaint, and screen the possessive against
+MathWorld rather than Wikipedia, or drop the possessive from the name given to
+the screen (`Hall ray`, `Freiman constant`) since the rest of the words carry
+the identification anyway. A fix would be to fold U+2019 to `'` in
+`source_names_it` before the substring test; it belongs beside the note above
+about plurals, which is the same class of failure at the character level.
+
+Evidence: 2026-09-22 ideas run. `source_names_it("Hall's ray", <Markov
+spectrum>)` complained; a fetch of the same URL, tags stripped, contains
+`hall’s ray` and not `hall's ray`.
