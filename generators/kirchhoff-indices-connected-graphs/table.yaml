@@ -1,0 +1,135 @@
+# Draft document for Kirchhoff indices of connected graphs T400.
+# Created through the API with X-Draft: yes. Publishing is a person's act.
+Title: Kirchhoff indices of connected graphs
+Definition: >-
+  The Kirchhoff index $\mathrm{Kf}(G)$ of a connected simple graph $G$ is the
+  sum of the resistance distances $\Omega_G(u,v)$ over all unordered pairs of
+  distinct vertices of $G$ CITE{MathWorldKirchhoff} CITE{WikiResistance}.
+  Each edge of $G$ is taken to have resistance $1$, and $G$ is named by its
+  canonical graph6 string CITE{Graph6}.
+Parameters:
+  g:
+    type: Symbolic
+    title: graph
+    constraints: a simple connected graph, named by its canonical graph6 string
+    display: $G$
+Comments:
+  comment-graph6: >-
+    Graphs are named by their graph6 string CITE{Graph6}, McKay's compact
+    encoding, taken after a canonical relabelling so that the name depends on
+    the graph and not on how its vertices happen to be numbered. Recover the
+    graph in Sage with `Graph(name)`, and produce the name used here with
+    `g.canonical_label(algorithm='sage').graph6_string()`. The same names index
+    HREF{Characteristic_polynomials_of_connected_graphs}[the characteristic
+    polynomials], HREF{Laplacian_polynomials_of_connected_graphs}[the
+    Laplacian polynomials], HREF{Chromatic_polynomials_of_connected_graphs}[the
+    chromatic polynomials], and HREF{Tutte_polynomials_of_connected_graphs}[the
+    Tutte polynomials].
+  comment-convention: >-
+    The Laplacian is the combinatorial Laplacian $L(G)=D(G)-A(G)$, not the
+    normalised Laplacian and not the signless Laplacian $D(G)+A(G)$. The
+    resistance distance $\Omega_G(u,v)$ is the effective resistance between
+    $u$ and $v$ in the electrical network obtained by replacing each edge by a
+    unit resistor.
+  comment-order: >-
+    The Laplacian eigenvalues are ordered
+    $\mu_1(G)\geq\mu_2(G)\geq\cdots\geq\mu_n(G)=0$, with multiplicity. The
+    formula using Laplacian eigenvalues sums over the nonzero eigenvalues.
+  comment-named: >-
+    Thirty-five of the $996$ graphs here have a name in common use, and their
+    entries give it. The other entries are identified by their canonical
+    graph6 strings.
+Formulas:
+  formula-laplacian-spectrum: >-
+    If $G$ has $n$ vertices and nonzero Laplacian eigenvalues
+    $\mu_1,\ldots,\mu_{n-1}$, then
+    $\mathrm{Kf}(G)=n\sum_{i=1}^{n-1}1/\mu_i$ CITE{WikiResistance}.
+  formula-laplacian-polynomial: >-
+    If
+    $\lambda(G,x)=x^n+c_{n-1}x^{n-1}+\cdots+c_2x^2+c_1x$ is
+    HREF{Laplacian_polynomials_of_connected_graphs}[the Laplacian polynomial]
+    of a connected graph on $n$ vertices, then
+    $\mathrm{Kf}(G)=-n c_2/c_1$.
+  formula-complete: >-
+    $\mathrm{Kf}(K_n)=n-1$.
+  formula-path-cycle: >-
+    $\mathrm{Kf}(P_n)=(n^3-n)/6$ for $n\geq1$, and
+    $\mathrm{Kf}(C_n)=(n^3-n)/12$ for $n\geq3$.
+  formula-star: >-
+    $\mathrm{Kf}(K_{1,n-1})=(n-1)^2$ for $n\geq1$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.graphs.graph import Graph
+      from sage.rings.rational_field import QQ
+
+      G = Graph('FjaHw')               # the Moser spindle, by its name here
+      p = G.laplacian_matrix().charpoly()
+      n = G.num_verts()
+      -QQ(n) * QQ(p[n - 2]) / QQ(p[1])
+      G.canonical_label(algorithm='sage').graph6_string()
+Similar tables:
+  - table: HREF{Laplacian_polynomials_of_connected_graphs}[Laplacian polynomials of connected graphs]
+    relation: stores $\lambda(G,x)=\det(xI-L(G))$ for the same graphs under the same names; $\mathrm{Kf}(G)$ is assembled from the two lowest-order nonzero coefficients of $\lambda(G,x)$
+  - table: HREF{Characteristic_polynomials_of_connected_graphs}[Characteristic polynomials of connected graphs]
+    relation: stores the characteristic polynomials $\det(xI-A(G))$ of the same graphs under the same names
+  - table: HREF{Chromatic_polynomials_of_connected_graphs}[Chromatic polynomials of connected graphs]
+    relation: uses the same canonical graph6 index for connected graphs on at most seven vertices
+  - table: HREF{Tutte_polynomials_of_connected_graphs}[Tutte polynomials of connected graphs]
+    relation: uses the same canonical graph6 index for connected graphs on at most seven vertices
+  - table: HREF{Matching-generating_polynomials_of_connected_graphs}[Matching-generating polynomials of connected graphs]
+    relation: uses the same graph names and stores the ordinary generating polynomial for matching counts
+  - table: HREF{Signed_matching_polynomials_of_connected_graphs}[Signed matching polynomials of connected graphs]
+    relation: uses the same graph names and stores the signed matching polynomials
+Links:
+  MathWorldKirchhoff:
+    title: 'MathWorld: Kirchhoff Index'
+    url: https://mathworld.wolfram.com/KirchhoffIndex.html
+  WikiResistance:
+    title: 'Wikipedia: Resistance distance'
+    url: https://en.wikipedia.org/wiki/Resistance_distance
+  Graph6:
+    title: 'Brendan McKay: graph6 and sparse6 formats'
+    url: https://users.cecs.anu.edu.au/~bdm/data/formats.html
+References:
+  KleinRandic:
+    bib: >-
+      D. J. Klein and M. Randic, Resistance distance, Journal of Mathematical
+      Chemistry 12 (1993), 81-95.
+    doi: 10.1007/BF01164627
+Keywords:
+  - resistance distance
+  - graph resistance
+  - Kirchhoff index
+  - graph invariant
+  - Laplacian spectrum
+  - chemical graph theory
+Tags:
+  - combinatorics
+Data properties:
+  type: Q
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every connected graph on at most $7$ vertices, all $996$ of them
+  rigour details: >-
+    The generator enumerates connected simple graphs with $1\leq |V(G)|\leq7$
+    using Sage, takes each graph's `canonical_label(algorithm='sage')`, and
+    stores the canonical graph6 string. It computes $L(G)=D(G)-A(G)$ exactly
+    over $\mathbb{Z}$, computes $\lambda(G,x)=\det(xI-L(G))$ exactly, and
+    returns $-n c_2/c_1$ as a rational number.
+
+    The build checked that the 996 graph6 strings are exactly the keys of
+    HREF{Characteristic_polynomials_of_connected_graphs}[the characteristic
+    polynomial table]. The coefficient formula agreed with an exact
+    resistance-distance computation from the inverse of $L+J/n$ on every row.
+    Formula CITE{formula-laplacian-polynomial} agreed with the stored
+    HREF{Laplacian_polynomials_of_connected_graphs}[the Laplacian polynomial]
+    on every row. Formulas CITE{formula-complete}, CITE{formula-path-cycle},
+    and CITE{formula-star} agreed for every complete graph, path, cycle, and
+    star in the table.
+Display properties:
+  number-header: $\mathrm{Kf}(G)$
+  group parameters: [['g']]
+Numbers: []
