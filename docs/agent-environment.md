@@ -7364,3 +7364,54 @@ and run `verify()` normally once entries exist.
 Evidence: 2026-09-22 build run for T408. The direct entries POST stored 12
 entries and attached the 8552-byte generator at revision
 `4fb0dc4a942c075008c5b617e835cfdb2d5e67ad5cdc527cfcd6110c5a435c18`.
+
+## A critique run on the build box cannot render a draft with Django; `/preview` renders it anonymously instead
+
+What happened: the T136/T137 note above says to render a private draft with
+Django's `RequestFactory` in the throwaway. That has stopped working on this
+machine, and the reason is not the script. `NUMBERDB_SAGE_IMAGE` is
+`numberdb/builder:latest` here, which is the image with no Django and no app:
+`/app` does not exist, the client is at `/opt/numberdb-client`, and
+`import django` is `ModuleNotFoundError`. Asking for the other image is worse
+than useless -- `NUMBERDB_SAGE_IMAGE=numberdb/web:latest agents/sage.sh ...`
+exits 125 with "pull access denied for numberdb/web", because this box has
+never had it. A build box has no database and should not have one, which is
+the same reason `GET /api/table/<tid>/audit` exists; rendering needs the same
+treatment and does not have it yet.
+
+What to do instead: `GET /preview?table=<yaml>` renders any document through
+the site's own renderer, needs no key and no session, and stores nothing. So:
+fetch the document with the key (`/api/table?id=T408` answers a draft to its
+owner), dump it back to YAML, and send it to `/preview`. Two things to know.
+The request line is capped at 4094 bytes -- a 5 KB document answers `400
+Request Line is too large`, and `POST /preview` is `403`, so a document has to
+be split into pieces of about 2.5 KB of YAML and rendered several times. And
+each piece must carry the `References` and `Links` that its prose cites:
+a `CITE{}` whose target was left in another piece renders as
+`<span class="CITE-broken">`, which reads exactly like a fault in the table.
+Dump multi-line strings as YAML literal blocks (`style='|'`), or `safe_dump`
+folds the newlines and the paragraph structure you are trying to look at is
+your own.
+
+Evidence: 2026-09-22 critique of T408. `/tmp/crit408.py` (Django, failed),
+`/tmp/probe408.py` (the image probe), and the four `/preview` fetches that
+worked. Rendering the whole 4840-byte document at once: `400`, "Request Line
+is too large (5956 > 4094)".
+
+## The SOCKS proxy on 127.0.0.1:1080 was refused, and plain `curl` reached the site
+
+What happened: the campaign prompt gives
+`curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/...` as the
+shape, and every such call failed with "connect to 127.0.0.1 port 1080 ...
+Connection refused". The same URL with no proxy answered 200. This is the
+state the note at "On this box `curl https://numberdb.org/...` with no proxy
+works" describes, reached again: `ALL_PROXY` is set in the environment but
+nothing is listening on 1080.
+
+What to do instead: try the direct fetch before concluding the site is down.
+A refused connection on 1080 and a dead tunnel on 1080 look identical from
+the `--socks5-hostname` side, and only one of them is a reason to stop.
+
+Evidence: 2026-09-22, `curl -sv --socks5-hostname 127.0.0.1:1080
+https://numberdb.org/skill` -> "Connection refused"; `curl -s
+https://numberdb.org/skill` -> 48740 bytes, exit 0.
