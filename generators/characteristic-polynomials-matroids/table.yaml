@@ -15,6 +15,154 @@ Parameters:
     constraints: >-
       a simple uniform matroid $U_{r,n}$, or a simple matroid named as
       `sage.matroids.catalog` names it
+    values:
+      U(2,2): $U_{2,2}$
+      U(2,3): $U_{2,3}$
+      U(2,4): $U_{2,4}$
+      U(2,5): $U_{2,5}$
+      U(2,6): $U_{2,6}$
+      U(2,7): $U_{2,7}$
+      U(2,8): $U_{2,8}$
+      U(2,9): $U_{2,9}$
+      U(2,10): $U_{2,10}$
+      U(2,11): $U_{2,11}$
+      U(3,3): $U_{3,3}$
+      U(3,4): $U_{3,4}$
+      U(3,5): $U_{3,5}$
+      U(3,6): $U_{3,6}$
+      P6: P6
+      Q6: Q6
+      R6: R6
+      Whirl3: Whirl3
+      U(3,7): $U_{3,7}$
+      Fano: Fano
+      NonFano: NonFano
+      O7: O7
+      P7: P7
+      RelaxedNonFano: RelaxedNonFano
+      TippedFree3spike: TippedFree3spike
+      U(3,8): $U_{3,8}$
+      AG23minus: AG23minus
+      U(3,9): $U_{3,9}$
+      A9: A9
+      AG23: AG23
+      BB9: BB9
+      FN9: FN9
+      NonPappus: NonPappus
+      Pappus: Pappus
+      R9: R9
+      TernaryDowling3: TernaryDowling3
+      U(3,10): $U_{3,10}$
+      NonDesargues: NonDesargues
+      U(3,11): $U_{3,11}$
+      BetsyRoss: BetsyRoss
+      PG23: PG23
+      U(4,4): $U_{4,4}$
+      U(4,5): $U_{4,5}$
+      U(4,6): $U_{4,6}$
+      U(4,7): $U_{4,7}$
+      FanoDual: FanoDual
+      NonFanoDual: NonFanoDual
+      U(4,8): $U_{4,8}$
+      AG23minusDY: AG23minusDY
+      AG32: AG32
+      AG32prime: AG32prime
+      F8: F8
+      J: J
+      KP8: KP8
+      L8: L8
+      LP8: LP8
+      NonVamos: NonVamos
+      NotP8: NotP8
+      P8: P8
+      P8p: P8p
+      P8pp: P8pp
+      Q8: Q8
+      R8: R8
+      S8: S8
+      Sp8: Sp8
+      Sp8pp: Sp8pp
+      T8: T8
+      TQ8: TQ8
+      Vamos: Vamos
+      WQ8: WQ8
+      Whirl4: Whirl4
+      U(4,9): $U_{4,9}$
+      Block_9_4: Block_9_4
+      FX9: FX9
+      K33dual: K33dual
+      KQ9: KQ9
+      KR9: KR9
+      M8591: M8591
+      P9: P9
+      PP9: PP9
+      R9A: R9A
+      R9B: R9B
+      TQ9: TQ9
+      TQ9p: TQ9p
+      U(4,10): $U_{4,10}$
+      D10: D10
+      U(4,11): $U_{4,11}$
+      U(5,5): $U_{5,5}$
+      U(5,6): $U_{5,6}$
+      U(5,7): $U_{5,7}$
+      U(5,8): $U_{5,8}$
+      U(5,9): $U_{5,9}$
+      BB9gDY: BB9gDY
+      TicTacToe: TicTacToe
+      U(5,10): $U_{5,10}$
+      Block_10_5: Block_10_5
+      FF10: FF10
+      FK10: FK10
+      FP10: FP10
+      FT10: FT10
+      FU10: FU10
+      FY10: FY10
+      FZ10: FZ10
+      GK10: GK10
+      GP10: GP10
+      KF10: KF10
+      KT10: KT10
+      N1: N1
+      PK10: PK10
+      PP10: PP10
+      Q10: Q10
+      R10: R10
+      TK10: TK10
+      TQ10: TQ10
+      TU10: TU10
+      UG10: UG10
+      UK10: UK10
+      UQ10: UQ10
+      UT10: UT10
+      U(5,11): $U_{5,11}$
+      FA11: FA11
+      FS12: FS12
+      U(6,6): $U_{6,6}$
+      U(6,7): $U_{6,7}$
+      U(6,8): $U_{6,8}$
+      U(6,9): $U_{6,9}$
+      U(6,10): $U_{6,10}$
+      K5dual: K5dual
+      U(6,11): $U_{6,11}$
+      NestOfTwistedCubes: NestOfTwistedCubes
+      R12: R12
+      T12: T12
+      U(7,7): $U_{7,7}$
+      U(7,8): $U_{7,8}$
+      U(7,9): $U_{7,9}$
+      U(7,10): $U_{7,10}$
+      U(7,11): $U_{7,11}$
+      U(8,8): $U_{8,8}$
+      U(8,9): $U_{8,9}$
+      U(8,10): $U_{8,10}$
+      U(8,11): $U_{8,11}$
+      U(9,9): $U_{9,9}$
+      U(9,10): $U_{9,10}$
+      U(9,11): $U_{9,11}$
+      U(10,10): $U_{10,10}$
+      U(10,11): $U_{10,11}$
+      U(11,11): $U_{11,11}$
 Comments:
   comment-index: >-
     Uniform matroids are written `U(r,n)` for $U_{r,n}$. The named matroids use
@@ -29,39 +177,53 @@ Comments:
   comment-flats: >-
     Equivalently, for a loopless matroid,
     $\chi_M(q)=\sum_{F\in L(M)}\mu(\varnothing,F)q^{r(E)-r(F)}$, where
-    $L(M)$ is the lattice of flats and $\mu$ is its Mobius function
+    $L(M)$ is the lattice of flats and $\mu$ is its Möbius function
     CITE{WikiMatroid}.
   comment-variable: >-
     The variable is $q$. Sage prints the same polynomial in a variable called
     `l` unless another variable is supplied.
+  comment-whitney: >-
+    The coefficients are the Whitney numbers of the first kind:
+    $\chi_M(q)=\sum_{i=0}^{r(E)}w_i(M)q^{r(E)-i}$, where
+    $w_i(M)=\sum_{F\in L(M),\,r(F)=i}\mu(\varnothing,F)$.
 Formulas:
   formula-tutte: >-
     If $T_M(x,y)$ is the Tutte polynomial of a rank $r(M)$ matroid, then
-    $\chi_M(q)=(-1)^{r(M)}T_M(1-q,0)$.
+    $\chi_M(q)=(-1)^{r(M)}T_M(1-q,0)$. For cycle matroids of connected
+    graphs, $T_M(x,y)$ is stored in
+    HREF{Tutte_polynomials_of_connected_graphs}[Tutte polynomials of connected
+    graphs].
   formula-uniform: >-
     For $1\leq r\leq n$,
     $\chi_{U_{r,n}}(q)=\sum_{k=0}^{r-1}(-1)^k\binom{n}{k}q^{r-k}
     +(-1)^r\binom{n-1}{r-1}$.
   formula-graphic: >-
     If $G$ has $c$ connected components and $M(G)$ is its cycle matroid, then
-    $P_G(q)=q^c\chi_{M(G)}(q)$, where $P_G(q)$ is the chromatic polynomial of
-    $G$.
+    $P_G(q)=q^c\chi_{M(G)}(q)$, where $P_G(q)$ is
+    HREF{Chromatic_polynomials_of_connected_graphs}[the chromatic polynomial]
+    of $G$.
 Programs:
   program-sage:
     language: Sage
     code: |-
       from sage.matroids.catalog import Fano
+      from sage.matroids.matroids_catalog import Uniform
       from sage.rings.integer_ring import ZZ
       from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 
       R = PolynomialRing(ZZ, "q")
       q = R.gen()
       R(Fano().characteristic_polynomial(q))
+      R(Uniform(3, 12).characteristic_polynomial(q))
 Similar tables:
   - table: HREF{Chromatic_polynomials_of_connected_graphs}[Chromatic polynomials of connected graphs]
-    relation: holds $P_G(q)$ for connected graphs on at most seven vertices, related to this table by formula CITE{formula-graphic} when $M=M(G)$
+    relation: holds $P_G(q)$ for connected graphs on at most seven vertices; formula CITE{formula-graphic} gives $\chi_{M(G)}(q)$
   - table: HREF{Tutte_polynomials_of_connected_graphs}[Tutte polynomials of connected graphs]
-    relation: holds graph Tutte polynomials, whose cycle-matroid form specializes to characteristic polynomials by formula CITE{formula-tutte}
+    relation: holds $T_G(x,y)$ for connected graphs on at most seven vertices; $T_G(x,y)=T_{M(G)}(x,y)$, so formula CITE{formula-tutte} gives $\chi_{M(G)}(q)$
+  - table: HREF{Ehrhart_polynomials_of_the_hypersimplices}[Ehrhart polynomials of the hypersimplices]
+    relation: holds the Ehrhart polynomial of the hypersimplex $\Delta(k,n)$, the matroid polytope of the uniform matroid $U_{k,n}$ whose characteristic polynomial is stored here
+  - table: HREF{Ehrhart_h-star-polynomials_of_the_hypersimplices}[Ehrhart $h^*$-polynomials of the hypersimplices]
+    relation: holds the Ehrhart $h^*$-polynomial of the hypersimplex $\Delta(k,n)$, the matroid polytope of the uniform matroid $U_{k,n}$
 Links:
   SageMatroid:
     title: "SageMath: the abstract Matroid class"
@@ -87,16 +249,18 @@ Keywords:
 Tags:
   - polynomial
   - combinatorics
-  - matroid
 Data properties:
   type: Z[]
   rigour: exact
   complete: 'no'
   complete-note: >-
-    it holds every uniform matroid $U_{r,n}$ with $2\leq r\leq n\leq11$ and
-    every simple non-graphic Sage catalog matroid with at most $600$ flats,
-    apart from catalog aliases for uniform matroids that are listed as
-    `U(r,n)`
+    it holds every simple uniform matroid $U_{r,n}$ with
+    $2\leq r\leq n\leq11$, and every simple non-graphic Sage catalog matroid
+    whose lattice-of-flats computation stayed within the build cutoff of
+    $600$ flats; graphic catalog matroids are omitted because
+    $P_G(q)=q^c\chi_{M(G)}(q)$ puts their values in the graph-indexed
+    chromatic-polynomial table, and catalog aliases for uniform matroids are
+    listed as `U(r,n)`
   rigour details: >-
     Every entry is an exact polynomial with integer coefficients. The generator
     computes Sage's characteristic polynomial for each finite matroid and
@@ -104,8 +268,9 @@ Data properties:
 
     Before the values were written, the build checked exactness, compared every
     uniform row with formula CITE{formula-uniform}, checked every row against an
-    independent computation from the Mobius function of the lattice of flats,
-    and checked the graphic matroids $M(K_4)$ and $M(K_5)$ against formula
+    independent computation from the Möbius function of the lattice of flats,
+    and, as a control on matroids this table does not hold, computed
+    $\chi_{M(K_4)}$ and $\chi_{M(K_5)}$ and checked them against formula
     CITE{formula-graphic}.
 Display properties:
   number-header: $\chi_M(q)$
