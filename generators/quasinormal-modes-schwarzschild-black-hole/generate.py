@@ -18,6 +18,7 @@ For this repository's build environment, use:
 import os
 import sys
 import time
+from decimal import Decimal, localcontext
 from functools import lru_cache
 
 import numberdb.sage as numberdb
@@ -212,9 +213,41 @@ def _as_fraction(value, digits=45):
     return str(mp.nstr(value, digits, min_fixed=-100, max_fixed=100))
 
 
+def _last_decimal_place(text):
+    mantissa, _, exponent = text.lower().partition("e")
+    power = int(exponent or 0)
+    mantissa = mantissa.lstrip("+-")
+    if "." in mantissa:
+        power -= len(mantissa.rsplit(".", 1)[1])
+    return Decimal(1).scaleb(power)
+
+
+def _decimal_endpoint(value):
+    text = format(value, "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text or "0"
+
+
+def _widened_equal_endpoints(text):
+    digits = sum(1 for character in text if character.isdigit())
+    with localcontext() as context:
+        context.prec = digits + 5
+        midpoint = Decimal(text)
+        step = _last_decimal_place(text)
+        return (
+            _decimal_endpoint(midpoint - step),
+            _decimal_endpoint(midpoint + step),
+        )
+
+
 def _real_interval(a, b):
-    low, high = (a, b) if a <= b else (b, a)
-    return RealInterval(_as_fraction(low), _as_fraction(high))
+    low, high = (_as_fraction(a), _as_fraction(b))
+    if low == high:
+        low, high = _widened_equal_endpoints(low)
+    elif mp.mpf(high) < mp.mpf(low):
+        low, high = high, low
+    return RealInterval(low, high)
 
 
 def _complex_interval(first, second):

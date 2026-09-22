@@ -3,20 +3,16 @@
 Title: Quasinormal modes of the Schwarzschild black hole
 Definition: >-
   For a Schwarzschild black hole of mass $M$, this table gives the
-  dimensionless quasinormal-mode frequencies $M\omega_{s\ell n}$ of the
-  spin-$s$ Regge-Wheeler or Zerilli equation CITE{Leaver}. Perturbations use
-  the time dependence $\exp(-i\omega t)$, so a damped mode has
-  $\operatorname{Im}(\omega)<0$.
+  dimensionless quasinormal-mode frequencies $M\omega_{s\ell n}$: the values
+  of $\omega$ for which the spin-$s$ Regge-Wheeler equation has a solution
+  that is purely ingoing at the horizon and purely outgoing at infinity
+  CITE{Leaver}.
 Parameters:
   s:
     type: Z
-    title: spin weight of the perturbing field
+    title: spin of the perturbing field
     display: $s$
     constraints: $s\in\{0,1,2\}$
-    comments: >-
-      The values $s=0,1,2$ correspond respectively to scalar, electromagnetic
-      and gravitational perturbations. They are enumerated in the order
-      $2,0,1$ so the gravitational modes appear first.
   l:
     type: Z
     title: spherical-harmonic degree
@@ -27,23 +23,31 @@ Parameters:
     title: overtone number
     display: $n$
     constraints: $n\geq0$
-    comments: >-
-      For fixed $s$ and $\ell$, the modes are ordered by increasing
-      $|\operatorname{Im}\omega|$; $n=0$ is the least-damped mode.
 Comments:
+  comment-conventions: >-
+    Perturbations use the time dependence $\exp(-i\omega t)$, so a damped
+    mode has $\operatorname{Im}(\omega)<0$. The values $s=0,1,2$ correspond
+    respectively to scalar, electromagnetic and gravitational perturbations.
+    For fixed $s$ and $\ell$, the modes are ordered by increasing
+    $|\operatorname{Im}\omega|$; $n=0$ is the least-damped mode.
   comment-units: >-
-    The units are geometric units $G=c=1$, with $M=1$ in the stored
-    dimensionless value. Berti's Schwarzschild data CITE{BertiTables} is
-    tabulated as $2M\omega_R,2M\omega_I$ with $\omega_I>0$, so the generator
-    divides those reference values by two and compares them with
-    $M\omega_R-iM\omega_I$.
+    The stored value is the dimensionless product $M\omega$ in geometric units
+    $G=c=1$. Berti's Schwarzschild tables CITE{BertiTables} give
+    $2M\omega_R$ and $2M\omega_I$ with $\omega_I>0$, so a value read from
+    there is twice this one and its imaginary part has the opposite sign.
+  comment-regge-wheeler-zerilli: >-
+    For $s=2$, the polar Zerilli equation is isospectral to the axial
+    Regge-Wheeler equation, so the table serves both. The qnm package
+    CITE{Stein} indexes these modes by the Teukolsky spin weight $-s$, so the
+    gravitational modes of this table are its $s=-2$.
   comment-schwarzschild-degeneracy: >-
     The Schwarzschild spectrum is independent of the azimuthal number $m$, so
     $m$ is not a parameter of this table.
 Formulas:
   formula-eikonal: >-
-    In the eikonal regime,
-    $\sqrt{27}\,M\omega_{s\ell n}\sim \ell+\frac12-i(n+\frac12)$.
+    As $\ell\to\infty$ with $s$ and $n$ fixed,
+    $\sqrt{27}\,M\omega_{s\ell n}=\ell+\tfrac12-i(n+\tfrac12)+O(\ell^{-1})$,
+    independently of $s$ CITE{BertiCardosoStarinets}.
 Programs:
   program-python:
     language: Python
@@ -103,11 +107,10 @@ Tags:
 Data properties:
   type: C
   rigour: heuristic (agreement-checked)
-  complete: no
+  complete: 'no'
   complete-note: >-
-    it holds the modes for $s=2$ and $2\leq\ell\leq6$, for $s=0$ and
-    $0\leq\ell\leq4$, for $s=1$ and $1\leq\ell\leq5$, and for
-    $n=0$
+    it holds $s=2$ for $2\leq\ell\leq6$, $s=1$ for $1\leq\ell\leq5$ and
+    $s=0$ for $0\leq\ell\leq4$, in every case only the fundamental mode $n=0$
   rigour details: >-
     The generator solves Leaver's continued-fraction equation CITE{Leaver} by
     Newton iteration on the real and imaginary parts. The right infinite tail
