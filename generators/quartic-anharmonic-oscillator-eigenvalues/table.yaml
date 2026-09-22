@@ -1,0 +1,111 @@
+# Draft document for T404, the quartic anharmonic oscillator eigenvalues. Created
+# through the API with X-Draft: yes and filled by generate.py beside it;
+# publishing is a person's act on the site.
+Title: Eigenvalues of the quartic anharmonic oscillator $-y''+(x^2+\lambda x^4)y$
+Definition: >-
+  For $\lambda>0$, this table gives the eigenvalue $E_n(\lambda)$ of the
+  Schrodinger operator
+  $-y''(x)+(x^2+\lambda x^4)y(x)=E y(x)$ on $L^2(\mathbb{R})$
+  CITE{BenderWu1969}. The operator has no factor of $1/2$ multiplying
+  $-y''$, and the level index $n$ starts at $0$ for the ground state.
+Keywords:
+  - anharmonic oscillator
+  - quartic oscillator
+  - quartic anharmonic oscillator
+  - Schrodinger equation
+  - energy levels
+  - Bender-Wu
+  - coupling constant
+Parameters:
+  lambda:
+    type: Q
+    title: quartic coupling
+    display: $\lambda$
+    constraints: $\lambda>0$
+  n:
+    type: Z
+    title: energy level
+    display: $n$
+    constraints: integer with $n\geq0$
+Comments:
+  comment-index: >-
+    The index $n$ is the number of nodes of the square-integrable
+    eigenfunction. The rows with even $n$ have even parity, and the rows with
+    odd $n$ have odd parity.
+  comment-zero-coupling: >-
+    The harmonic limit $\lambda=0$ is not included. In this convention it has
+    the exact eigenvalues $E_n(0)=2n+1$.
+  comment-benchmarks: >-
+    The powers of ten in $\lambda$ are the benchmark couplings tabulated by
+    Taseli and Demiralp for the even levels CITE{TaseliDemiralp1988}.
+Formulas:
+  formula-scaling: >-
+    If $E_n(\alpha,\beta)$ denotes the $n$th eigenvalue of
+    $-y''+(\alpha x^2+\beta x^4)y=E y$, then
+    $E_n(\alpha,\beta)=\alpha^{1/2}E_n(\beta\alpha^{-3/2})$
+    for $\alpha>0$ and $\beta>0$.
+  formula-bender-wu: >-
+    If $e_n(g)$ is the $n$th eigenvalue of the Bender-Wu Hamiltonian
+    $\frac12p^2+\frac12x^2+g x^4$, then
+    $e_n(g)=\frac12 E_n(2g)$ CITE{BenderWu1969}.
+  formula-older-convention: >-
+    If $f_n(g)$ is the $n$th eigenvalue of
+    $p^2+\frac14x^2+g x^4$, then $f_n(g)=\frac12 E_n(8g)$.
+Similar tables:
+  - table: HREF{T390}[Dirichlet eigenvalues of the classical planar domains]
+    relation: stores eigenvalues of differential operators with boundary conditions rather than one-dimensional confining Schrodinger operators
+  - table: HREF{T103}[Hermite polynomials in physicist's convention]
+    relation: the generator uses the corresponding harmonic-oscillator basis
+  - table: HREF{T104}[Hermite polynomials in probabilist's convention]
+    relation: the same basis is often written in the probabilists' normalisation
+Links:
+  Wiki:
+    title: 'Wikipedia: Anharmonic oscillator'
+    url: https://en.wikipedia.org/wiki/Anharmonic_oscillator
+References:
+  BenderWu1969:
+    bib: >-
+      C. M. Bender and T. T. Wu, Anharmonic oscillator, Physical Review 184
+      (1969), 1231-1260.
+    doi: 10.1103/PhysRev.184.1231
+  TaseliDemiralp1988:
+    bib: >-
+      H. Taseli and M. Demiralp, Studies on algebraic methods to solve linear
+      eigenvalue problems: generalised anharmonic oscillators, Journal of
+      Physics A: Mathematical and General 21 (1988), 3903-3919.
+    doi: 10.1088/0305-4470/21/20/010
+  FernandezGarcia2022:
+    bib: >-
+      F. M. Fernandez and J. Garcia, On the Rayleigh-Ritz variational method,
+      2022.
+    arxiv: 2206.05122
+Tags:
+  - eigenvalue
+  - physics
+  - quantum mechanics
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: >-
+    it holds $0\leq n\leq10$ for $\lambda=10^k$ with $-3\leq k\leq3$, the
+    powers of ten commonly used as benchmark couplings
+  rigour details: >-
+    The generator computes Rayleigh-Ritz eigenvalues in a harmonic-oscillator
+    basis, with even and odd parity separated. For each coupling it uses the
+    two truncations $N=180$ and $N=260$, and the two basis frequencies
+    $\omega_1=\max(1.3,(1+3\lambda)^{1/3})$ and
+    $\omega_2=1.18\omega_1$. Eigenvalues of the finite Galerkin matrices are
+    isolated by Sturm counts from an $LDL^T$ factorisation, rather than by a
+    dense eigensolver. Each stored interval is the union of the four computed
+    values and must retain the 50 digits written. Rayleigh-Ritz eigenvalues
+    are upper bounds for the true eigenvalues by the variational principle
+    CITE{FernandezGarcia2022}, so the agreement between truncations is not a
+    rigorous error bound. Before entries are written, the generator checks the
+    $\lambda=0$ harmonic-oscillator control for both parities, checks the even
+    levels against the values tabulated by Taseli and Demiralp
+    CITE{TaseliDemiralp1988}, and checks that all stored rows retain at least
+    50 digits across the four runs.
+Display properties:
+  number-header: $E_n(\lambda)$
+Numbers: []
