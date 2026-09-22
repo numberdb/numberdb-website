@@ -41,7 +41,7 @@ from scipy.optimize import brentq
 
 TABLE = os.environ.get("NUMBERDB_TABLE", "T419")
 
-DIGITS = 10
+DIGITS = 8
 
 RUNS = {
     40: {"eta_max": 18.0, "rtol": 2e-11, "atol": 2e-13, "xtol": 2e-13},
