@@ -640,6 +640,42 @@ while [ "$made" -lt "$builds" ]; do
 		say "no table number in the transcript or the generator; skipping the critique and the repair"
 	fi
 
+	# A draft that was claimed and never filled is not a built table.
+	#
+	# The build claims its proposal by creating the draft, which is what puts
+	# a number in the transcript -- so `tid` is set from the moment the title
+	# is taken, an hour before any value is computed. A run that got that far
+	# and then could not finish leaves an empty table behind and still looks,
+	# from here, exactly like one that worked.
+	#
+	# On 2026-09-22 four workers drew Falkner-Skan proposals from the same
+	# family, every one of which needs Sage, and this machine runs one Sage
+	# container at a time on two cores. T415's build waited, gave up, wrote
+	# "Blocked before the fill step. I claimed the draft as T415 but did not
+	# fill", and exited 0 for $32.31. The campaign read that as a table and
+	# spent a critique reading a page with no numbers on it.
+	#
+	# Ask the site rather than the transcript: the draft either holds values
+	# or it does not, and that is one request with no judgement in it. The
+	# proposal goes back, because nothing about it has been settled -- the
+	# next worker to take it starts from the draft that is already there.
+	if [ -n "$tid" ]; then
+		filled=$(curl -sS --max-time 30 --noproxy '*' \
+			-H "Authorization: Bearer $(cat "${NUMBERDB_KEY:-$HOME/.config/numberdb/zeta3-key}")" \
+			"${NUMBERDB_HOST:-https://numberdb.org}/api/table?id=$tid" 2>/dev/null \
+			| python3 -c 'import json,sys
+try: print(len(json.load(sys.stdin).get("Numbers") or {}))
+except Exception: print("unknown")' 2>/dev/null || echo unknown)
+		if [ "$filled" = 0 ]; then
+			say "$tid was claimed but never filled; it is a draft, not a table"
+			say "giving $proposal back so the next run continues that draft"
+			python3 agents/queue.py release "$in_family" "$proposal" \
+				>/dev/null 2>&1 || true
+			made=$((made + 1))
+			continue
+		fi
+	fi
+
 	#Tick the box while the number is in hand. Not at the end of the campaign
 	#and not by the agent: the campaign is the only party that knows both the
 	#proposal it handed out and the table that came back, and a family whose
