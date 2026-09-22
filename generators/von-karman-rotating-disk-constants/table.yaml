@@ -5,9 +5,8 @@ Title: Constants of the von Kármán rotating-disk flow
 Definition: >-
   The von Kármán rotating-disk flow is the similarity solution for an infinite
   disk rotating in an otherwise quiescent incompressible Newtonian fluid
-  CITE{WikiVonKarman} CITE{VonKarman}. This table gives the radial wall shear
-  $F'(0)$, the azimuthal wall shear $G'(0)$, and the positive axial inflow
-  constant $-H_\infty$ of that solution.
+  CITE{WikiVonKarman} CITE{VonKarman}. This table gives its three classical
+  characteristic constants.
 Keywords:
   - von Karman rotating disk
   - von Kármán rotating disk
@@ -79,7 +78,6 @@ References:
       Zeitschrift für angewandte Mathematik und Physik 55 (2004), 235-246.
     doi: 10.1007/s00033-003-2096-6
 Tags:
-  - fluid dynamics
   - analysis
   - physics
 Data properties:
@@ -95,5 +93,5 @@ Data properties:
     White, Mohr and Newman CITE{WhiteMohrNewman} and the no-slip case of
     Miklavčič and Wang CITE{MiklavcicWang}.
 Display properties:
-  number-header: constant
+  number-header: $F'(0)$, $G'(0)$, $-H_\infty$
 Numbers: []
