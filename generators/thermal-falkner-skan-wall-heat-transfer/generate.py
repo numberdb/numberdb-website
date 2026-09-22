@@ -41,7 +41,7 @@ NORMALISATIONS = ("wedge", "hartree")
 BETA_VALUES = tuple(
     sorted(
         [Fraction(-19, 100), Fraction(-1, 10)]
-        + [Fraction(n, 10) for n in range(14)],
+        + [Fraction(n, 10) for n in range(11)],
         key=lambda value: (abs(value), value < 0, value),
     )
 )
