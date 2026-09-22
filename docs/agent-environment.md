@@ -8843,3 +8843,61 @@ candidate names in one go, the first few answer and the rest come back as
 `could not ask GitHub (HTTPError)`. `gh search issues --repo
 numberdb/numberdb-data --match title <word>` is authenticated, is not limited
 at that rate, and reports the same thing.
+
+## `/suggestions` answers 500 for almost every hyphenated word
+
+2026-09-22, critique run, found while looking up a slug to link. The
+type-ahead endpoint behind the site's search box:
+
+    curl -s -o /dev/null -w '%{http_code}' 'https://numberdb.org/suggestions?term=k-core'
+    500
+
+Not only that term. `self-avoiding`, `q-Catalan`, `Erdos-Renyi`, `x-yz`,
+`a-bc`, `a-ab` and `1-ab` all answer 500; `k core`, `matrix+multiplication`,
+`core`, `abc`, `a-b`, `x-y`, `x-y-z`, `a-b+c`, `x^2-1` and `1-2` all answer
+200. The pattern is not the hyphen: it is whether the term parses as a
+polynomial with **two or more terms, one of which is a product of distinct
+variables**. `views.py:1965` runs `parse_polynomial(term)` on every search
+term and, when it has at least two terms, builds `Polynomial(sage_polynomial=n)`
+from it; `a-b` is two degree-one terms and survives, `a-ab` has the monomial
+`a*b` and does not. Every multi-letter word after a hyphen is such a monomial,
+because the parser reads `core` as `c*o*r*e`.
+
+Three of those failing terms name tables in this corpus, so the effect is
+reader-facing: typing "self-avoiding" or "q-Catalan" into the search box shows
+**nothing at all** — not a dropdown, not "No match in database" — because
+`includes/searchbar.html:222`'s `$.getJSON` has no failure path, so on a 500 the callback never
+runs and neither branch of the no-match logic is reached. The form submit
+behind it still works, which is why this has probably been sitting there.
+
+For a run, the practical part: `/suggestions?term=...` is the word-search
+route that works (see the note on `/api/search` reading `expression`), and it
+has this hole in it. Ask it for a slug with one plain word — `kissing`,
+`Erdos` — rather than the table's hyphenated name, and treat a 500 from it as
+this rather than as the site being down.
+
+## oeis.org answers this runner with a Cloudflare challenge
+
+2026-09-22, critique run. Checking what T6's `Links` entry
+<https://oeis.org/A059442> actually holds, to see whether a table of the
+diagonal Ramsey numbers is pointing at the off-diagonal array:
+
+    https://oeis.org/A059442                     403
+    https://oeis.org/A059442/list                403
+    https://oeis.org/search?q=id:A059442&fmt=text 403
+    (all three again with a desktop Chrome user agent)  403
+
+Each answers "Just a moment... Enable JavaScript and cookies to continue" —
+Cloudflare's managed challenge, not a rate limit, so retrying and waiting do
+not help. The SOCKS proxy was down in the same run, so there was no second
+route, and the link went unchecked in the critique.
+
+This is not the OEIS timeout already noted for `audit_table --links` from the
+throwaway container: that was a slow answer from inside the Sage image, and
+this is a refusal to this host. Wikipedia, arxiv.org and numberdb.org all
+answer this runner directly and 200 in the same minutes. What did work as a
+substitute: the Wikipedia article on the same subject cites the A-numbers it
+uses, fetched as wikitext with
+`https://en.wikipedia.org/w/index.php?title=...&action=raw`, which is enough
+to tell whether a stored A-number is the one the literature uses for that
+sequence — but not enough to confirm what a particular A-number holds.
