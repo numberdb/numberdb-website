@@ -7215,3 +7215,66 @@ are running:
 
 Evidence: 2026-09-22T1633 ideas run; the same script failed from the repository
 root and answered from `/tmp` with the path inserted.
+
+## Polynomial rings over `Qp` do not import in the Sage image `agents/sage.sh` uses
+
+What happened: the T414 critique tried to run the table's own `Programs`
+snippet, which builds `R.<x> = K[]` over `K = Qp(p, prec=...)` and takes
+`.roots()`. Constructing that ring raises
+
+    ImportError: .../sage/rings/polynomial/polynomial_integer_dense_ntl
+    .cpython-312-x86_64-linux-gnu.so: undefined symbol:
+    _ZN3NTL5coeffERKNS_3ZZXEl
+
+`PolynomialRing(QQ, 'x')` and `PolynomialRing(ZZ, 'x')` both construct fine in
+the same session, so this is one broken NTL link in the image rather than a
+general breakage: `polynomial_padic_capped_relative_dense` imports
+`polynomial_integer_dense_ntl` at module level, and nothing over `QQ` or `ZZ`
+goes near it. A reader on an ordinary SageMath install is very unlikely to
+meet it, so this is not a fault in any table whose snippet uses that ring --
+but a run cannot execute such a snippet here, and should say so rather than
+reporting the snippet as checked.
+
+What to do instead: for a $p$-adic root of a quadratic, `.sqrt()` on the
+discriminant needs no polynomial ring and reproduces the same values:
+
+    K = Qp(p, prec=precision + 5)
+    alpha = (a + (K(a)**2 - 4*p).sqrt()) / 2
+    (alpha if alpha.valuation() == 0 else p / alpha).add_bigoh(precision)
+
+Evidence: 2026-09-22, T414 critique. `/tmp/ntlprobe.py` through
+`agents/sage.sh` printed `QQ ok`, `ZZ ok`, `Qp(5) FAILED ImportError`; the
+`.sqrt()` route reproduced all 58 stored values for $p=5$, $11$, $97$
+character for character.
+
+## `agents/runs` is 630 MB of transcripts and every repo-wide search reads them
+
+What happened: an ordinary orientation grep --
+
+    grep -rn "MIDDLEWARE" -A 15 $(find . -name settings.py ...) | head -25
+
+-- returned 58 KB, of which about 54 KB was three matches inside
+`agents/runs/*.log`. Those files are JSONL transcripts in which every tool
+call quotes its command *and* its whole output, so a search for any source
+symbol matches the log lines that happen to quote a previous run doing the
+same search, and prints a JSON line tens of kilobytes long. `head -25` does
+not help: the lines are long, not numerous.
+
+This is the `static/vendor/mathjax/tex-svg.js` note one directory over, and
+the `.ignore` file that was written for it does not cover this case: it
+excludes `static/vendor/`, `staticfiles/` and the built client, not
+`agents/runs/`. The directory is 630 MB across 494 files and grows with every
+run, so the cost grows too -- and the output that lands in the context is
+exactly the other-people's-transcripts material a run is told not to go
+reading.
+
+What to do instead: until `agents/runs/` is added to `.ignore`, name the
+directories on any repo-wide search (`numberdb_app`, `clients`, `utils`,
+`generators`, `docs`) rather than searching `.`. A run that wants a
+repository-wide sweep and cannot enumerate the directories should pass
+`--glob '!agents/runs/**'` to ripgrep.
+
+Evidence: 2026-09-22, T414 critique, the sixth Bash call of the run: 58.3 KB
+of output where the three source matches were 3.5 KB, the rest three log
+lines from `20260922T172530Z-critique.log` and `20260913T002636Z-repair.log`.
+`du -sh agents/runs` -> 630M, 494 files.
