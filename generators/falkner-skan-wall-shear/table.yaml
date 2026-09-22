@@ -1,0 +1,102 @@
+# The table document for numberdb.org/T418. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Wall shear $f''(0)$ of the Falkner–Skan wedge flows
+Definition: >-
+  For a rational Hartree pressure-gradient parameter $\beta$, let $f$ be the
+  upper-branch solution of the Falkner–Skan boundary-value problem
+  $f'''+ff''+\beta(1-(f')^2)=0$, $f(0)=f'(0)=0$, and
+  $f'(\infty)=1$ CITE{Fitzpatrick} CITE{Asaithambi}. The rows store the wall
+  shear $f''(0)$ in the Hartree and wedge normalisations.
+Parameters:
+  beta:
+    type: Q
+    title: Hartree pressure-gradient parameter
+    display: $\beta$
+    constraints: rational number with $\beta_s<\beta<2$, where $\beta_s$ is the separation parameter
+  branch:
+    type: Symbolic
+    title: branch
+    display: branch
+    values:
+      upper: upper
+      lower: lower
+  normalisation:
+    type: Symbolic
+    title: normalisation
+    display: normalisation
+    values:
+      wedge: wedge
+      hartree: Hartree
+Comments:
+  comment-normalisations: >-
+    The Hartree normalisation uses the coordinate in which the differential
+    equation is $f'''+ff''+\beta(1-(f')^2)=0$. The wedge normalisation uses
+    $\eta=y\sqrt{u_e/(\nu x)}$ and $\psi=\sqrt{\nu x u_e}\,f(\eta)$, where
+    $u_e(x)=U_0(x/L)^m$ and $m=\beta/(2-\beta)$.
+  comment-branch: >-
+    The upper branch is the forward-flow solution. For $\beta<0$ a lower
+    reversed-flow branch also exists, so the branch parameter is present even
+    though this draft fills only the upper branch.
+Formulas:
+  formula-beta-m: >-
+    The wedge exponent and Hartree parameter are related by
+    $m=\beta/(2-\beta)$.
+  formula-normalisation: >-
+    For $\beta<2$, the two stored normalisations satisfy
+    $f''_{\mathrm{Hartree}}(0)=\sqrt{2-\beta}\,f''_{\mathrm{wedge}}(0)$.
+Programs:
+  program-python:
+    language: Sage
+    code: |-
+      import mpmath as mp
+
+      beta = mp.mpf("0.5")
+      s = mp.mpf("0.927680039836651139219126137984")
+
+      def rhs(eta, y):
+          f, fp, fpp = y
+          return [fp, fpp, -f*fpp - beta*(1 - fp*fp)]
+
+      sol = mp.odefun(rhs, 0, (mp.mpf(0), mp.mpf(0), s))
+      sol(18)[1]
+Links:
+  Fitzpatrick:
+    title: 'Self-Similar Boundary Layers, Richard Fitzpatrick'
+    url: https://farside.ph.utexas.edu/teaching/336L/Fluidhtml/node112.html
+References:
+  Asaithambi:
+    bib: 'A. Asaithambi, On solving the nonlinear Falkner-Skan boundary-value problem: a review, Fluids 6 (2021), 153.'
+    doi: 10.3390/fluids6040153
+Keywords:
+  - Falkner-Skan wall shear
+  - Falkner-Skan skin friction
+  - Blasius boundary layer
+  - Hiemenz flow
+  - boundary layer
+Tags:
+  - fluid dynamics
+  - analysis
+  - physics
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: >-
+    it holds every two-decimal $\beta$ with $-0.19\leq\beta\leq1.99$ on the
+    upper branch, in the wedge and Hartree normalisations
+  rigour details: >-
+    Each Hartree-normalised value is found by shooting on $f''(0)$, integrating
+    the initial-value problem with a constant-memory Taylor method and imposing
+    $f'(\eta_{\max})=1$ at $\eta_{\max}=18$. The generator computes each value
+    twice, with different working precision and Taylor step size, and stores
+    the digits that agree. The $\beta=0$ row is also checked by Toepfer's
+    scaling of the Blasius equation, and selected rows are checked against the
+    values tabulated in CITE{Asaithambi}.
+Display properties:
+  number-header: $f''(0)$
+  group parameters:
+    - [beta]
+    - [branch]
+    - [normalisation]
+Numbers: []
