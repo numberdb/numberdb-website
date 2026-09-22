@@ -7875,3 +7875,59 @@ Evidence: T415 build run, 2026-09-22. The queued command was
 `agents/sage.sh /tmp/run_falkner_checks.py .../generate.py`; process listing
 showed another worker holding `/tmp/numberdb-sage.lock` through a
 `timeout 10800 docker run` dry run.
+
+## A private draft's files and history are readable by anybody who guesses the number
+
+What happened: reading T420 as a draft, `/T420` answered 404 as it should --
+the table view calls `_refuse_a_draft` -- but `/files/T420` answered 200 with
+the draft's title and its file list, `/files/T420/generate.py` answered 200
+with the whole 22 KB of the generator, and `/history/T420` answered 200. All
+three with no key, no session and no cookie. `/preview/T420`, `/bundle/T420`
+and `/discuss/T420` all refused correctly. The same held on T417, T418 and
+T419, so it is the route and not this table.
+
+The cause is visible in `numberdb_app/views.py`: `table_bundle` does
+`get_object_or_404` and then `if not may_see(table, request.user): raise
+Http404`, while `table_files`, `table_file` and `table_history` do the
+`get_object_or_404` and stop. A draft is supposed to be invisible -- the
+docstring of `_refuse_a_draft` says answering anything but 404 "would confirm
+that a table with that name or that number exists" -- and these three routes
+confirm it, name it, and hand over the code.
+
+What to do instead: put the same `may_see` guard on `table_files`,
+`table_file`, `table_history`, and check `revision_history` and `entry_blame`
+while there; a test that a stranger gets 404 from every per-table route of an
+unpublished table is the one that keeps it. Until then, do not treat "the
+draft page 404s" as evidence that a draft is private, and be aware that a
+critique run can read another run's unfinished generator without meaning to.
+
+Evidence: 2026-09-22, T420 critique. `curl -s -o /dev/null -w '%{http_code}'`
+with no credentials: `/T420` 404, `/files/T420` 200 (13239 bytes),
+`/files/T420/generate.py` 200 (22935 bytes), `/history/T420` 200,
+`/bundle/T420` 404, `/discuss/T420` 404.
+
+## Every `/preview` piece must carry a `Numbers` block
+
+What happened: rendering T420's prose through `/preview?table=<yaml>` in
+pieces, as the T289 and T221 notes describe, the first four pieces returned
+200 and rendered nothing at all after the `-- preview --` heading. At the top
+of each was
+
+    Error while parsing numbers: cannot access local variable
+    'number_section' where it is not associated with a value
+
+which is an `UnboundLocalError` shown as a message: a document with no
+`Numbers` key never sets `number_section`, and the renderer gives up before
+any section is built. Adding one entry -- the same entry to every piece --
+made all of them render, sections, CITE numbers, folded rigour note and all.
+
+What to do instead: when splitting a document to get under the ~4 KB request
+line, send `Title`, `Parameters`, one entry and the sections you are reading.
+The entry costs about 80 bytes and is what makes the rest appear. The earlier
+notes on `/preview` happen to have carried an entry in each piece and so did
+not meet this.
+
+Evidence: 2026-09-22, T420 critique. `/tmp/T420-[acde].html`, 200 and empty;
+`/tmp/T420b-[acde].html`, same pieces plus `Numbers: {beta: ...}`, 200 and
+complete. The SOCKS proxy on 127.0.0.1:1080 refused every connection again in
+this run; direct `curl https://numberdb.org/...` worked throughout.
