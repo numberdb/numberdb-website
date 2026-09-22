@@ -7570,3 +7570,35 @@ opens with the proxy form of the command and still calls it needed, and the
 should change: it has not been needed in any run recorded here.
 
 Evidence: 2026-09-22, T413 critique.
+
+## `agents/sage.sh` can wait out its full lock window, and it does not pass script arguments
+
+What happened: a build run for numberdb-data#190 created draft T416 and then
+needed the required `agents/table-build/dry_run.py` pass. Two attempts to run a
+long Sage calculation through `agents/sage.sh` waited twenty minutes on
+`/tmp/numberdb-sage.lock` and exited 75 with
+
+    the Sage box has been busy for twenty minutes; try again
+
+The lock is doing its job: another worker was using the only Sage container.
+The practical consequence is that a run can make progress on source files and
+commits while the numerical step is temporarily impossible, but it should not
+start a second Sage command. The same build also tried
+`agents/sage.sh agents/table-build/dry_run.py generate.py`; that cannot work
+because the wrapper mounts extra files but runs only the first script, with no
+arguments. The immediate failure was `ModuleNotFoundError: No module named
+'check'`, because `check.py` was not mounted, and even with it mounted the
+generator path would not have been passed.
+
+What to do instead: wait for the lock rather than running around it. For
+`dry_run.py`, mount a small driver script that imports `dry_run` and calls
+`dry_run.main(["/work/generate.py"])`, and mount `dry_run.py`, `check.py`, and
+the generator beside it:
+
+    NUMBERDB_TIMEOUT=7200 agents/sage.sh /tmp/run_numberdb_dry.py \
+        agents/table-build/dry_run.py agents/table-build/check.py \
+        generators/.../generate.py
+
+Evidence: 2026-09-22, T416 build. `/tmp/run_numberdb_dry.py`; repeated
+`agents/sage.sh` exits 75 before the dry run could start, and the first direct
+wrapper call to `dry_run.py` failed without `check.py`.
