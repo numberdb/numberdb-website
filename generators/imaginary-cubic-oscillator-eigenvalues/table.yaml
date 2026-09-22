@@ -1,10 +1,8 @@
 # Draft table document for T407.
 Title: Eigenvalues of the imaginary cubic oscillator $-y''+ix^3y$
-Definition: This table gives the eigenvalues $E_n$ of the $L^2(\mathbb{R})$
-  Schrödinger problem $-y''+ix^3y=Ey$ CITE{BenderBoettcher}. The Hamiltonian
-  is $-d^2/dx^2+ix^3$, with no factor of $1/2$ on the kinetic term. The index
-  $n$ starts at $0$ for the ground state, and the real eigenvalues are listed
-  in increasing order CITE{DoreyDunningTateo}.
+Definition: This table gives the real eigenvalues $E_n$ of $-y''+ix^3y=Ey$
+  on $L^2(\mathbb{R})$, ordered increasingly with $n=0$ for the ground state
+  CITE{BenderBoettcher} CITE{DoreyDunningTateo}.
 Keywords:
 - imaginary cubic oscillator
 - Bender oscillator
@@ -21,6 +19,8 @@ Parameters:
     display: $n$
     constraints: $n\geq0$
 Comments:
+  comment-convention: The Hamiltonian is $-d^2/dx^2+ix^3$, with no factor of
+    $1/2$ on the kinetic term.
   comment-sign: The references usually write the potential as $-ix^3$ CITE{Handy}.
     Replacing $x$ by $-x$ changes $ix^3$ to $-ix^3$, so the two signs have the
     same spectrum.
@@ -62,7 +62,6 @@ References:
 Tags:
 - eigenvalue
 - physics
-- quantum mechanics
 Data properties:
   type: R
   rigour: heuristic (agreement-checked)
