@@ -11,8 +11,9 @@ Run it with SageMath:
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # send it, with NUMBERDB_API_KEY set
 
-The range is 1 <= d <= 14, the initial segment displayed by OEIS A013587 and
-including the d <= 12 table of Di Francesco and Itzykson.
+The range is 1 <= d <= 14. At d = 14 the values already have 35 digits, so
+the table records the small-degree counts rather than reproducing the 169-term
+OEIS b-file.
 """
 
 import os

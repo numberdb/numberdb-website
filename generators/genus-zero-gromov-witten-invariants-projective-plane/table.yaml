@@ -15,17 +15,17 @@ Parameters:
     constraints: $d\geq 1$
 Comments:
   point-conditions: >-
-    Since $\mathbb P^2$ is homogeneous, $N_d$ is the enumerative count of
-    degree-$d$ rational plane curves through $3d-1$ points in general position
-    CITE{KM1994}. The condition count $3d-1$ is the dimension of the family of
-    degree-$d$ rational plane curves in $\mathbb P^2$.
+    Since $\mathbb P^2$ is homogeneous, $N_d$ is the enumerative count
+    CITE{EnumWiki} of degree-$d$ rational curves in $\mathbb P^2$ through
+    $3d-1$ points in general position CITE{KM1994}. The condition count
+    $3d-1$ is the dimension of that family.
   convention: >-
     The table uses the usual complex enumerative convention. It does not store
-    real or tropical refinements of the same counts.
+    Welschinger's signed real counts, which are different invariants.
 Formulas:
   kontsevich-recursion: >-
     $N_1=1$, and for $d\geq 2$,
-    $N_d=\sum_{a+b=d}N_aN_ba^2b\left(b\binom{3d-4}{3a-2}
+    $N_d=\sum_{a+b=d,\;a,b\geq 1}N_aN_ba^2b\left(b\binom{3d-4}{3a-2}
     -a\binom{3d-4}{3a-1}\right)$ CITE{KM1994}.
 Programs:
   program-python:
@@ -45,7 +45,7 @@ Programs:
               values[d] = total
           return values
 
-      plane_gromov_witten(10)[10]
+      plane_gromov_witten(15)[15]
 Links:
   GWWiki:
     title: 'Wikipedia: Gromov-Witten invariant'
@@ -78,18 +78,20 @@ Keywords:
   - enumerative geometry projective plane
 Tags:
   - combinatorics
+  - sequence
 Data properties:
   type: Z
   rigour: exact
   complete: 'no'
   complete-note: >-
-    it holds the initial values with $1\leq d\leq 14$, including the
-    $d\leq 12$ values tabulated by Di Francesco and Itzykson
+    it holds every degree $1\leq d\leq 14$; by then the values have 35 digits,
+    so the table stops with the small-degree counts rather than reproducing the
+    169-term OEIS b-file
   rigour details: >-
     The generator evaluates Formula CITE{kontsevich-recursion} in exact
-    integer arithmetic. The values were compared with OEIS A013587 for every
-    entry, and the entries with $d\leq 12$ were compared with the table in
-    CITE{DFI1995}.
+    integer arithmetic. The values were compared with OEIS A013587 CITE{OEIS}
+    for every entry, and the entries with $d\leq 12$ were compared with the
+    table in CITE{DFI1995}.
 Display properties:
   number-header: $N_d$
 Numbers: []
