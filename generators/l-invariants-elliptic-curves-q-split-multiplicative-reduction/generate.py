@@ -30,6 +30,7 @@ DECIMAL_DIGITS = 50
 PRECISION_TARGET = ZZ(10) ** DECIMAL_DIGITS
 LOG_GUARD = 10
 COMPUTE_GUARD = 10
+AGREEMENT_GUARD = 20
 
 _RECORDS = None
 _BY_KEY = None
@@ -119,6 +120,12 @@ def records():
             tate_curve = curve.tate_curve(p)
             value = tate_curve.L_invariant(
                 precision + COMPUTE_GUARD).add_bigoh(precision)
+            repeated = tate_curve.L_invariant(
+                precision + AGREEMENT_GUARD).add_bigoh(precision)
+            if value != repeated:
+                raise ArithmeticError(
+                    "%s at p=%s: computations at two precisions disagree: "
+                    "%s and %s" % (cremona_label, p, value, repeated))
             expected = independent_l_invariant(tate_curve, p, precision)
             if value != expected:
                 raise ArithmeticError(
@@ -163,7 +170,7 @@ class EllipticCurveMTTLInvariants(numberdb.Generator):
     parameters = ("N", "c4", "c6", "p")
     type = "Qp"
     digits = DECIMAL_DIGITS
-    rigour = "proven"
+    rigour = "heuristic (agreement-checked)"
 
     def enumerate(self):
         for row in records():

@@ -99,7 +99,7 @@ Tags:
   - Iwasawa theory
 Data properties:
   type: Qp
-  rigour: proven
+  rigour: heuristic (agreement-checked)
   complete: no
   complete-note: >-
     it holds every curve in Sage's mini Cremona database CITE{SageCremona} with
@@ -113,8 +113,12 @@ Data properties:
     database CITE{SageCremona}, builds the curve over $\mathbb{Q}$, and asks
     Sage's Tate-curve implementation CITE{SageTate} for the
     Mazur-Tate-Teitelbaum $\mathcal{L}$-invariant at each split multiplicative
-    prime. For every row it independently recomputes the Tate period $q_E$ to
-    ten extra $p$-adic digits and checks
+    prime. The table is declared heuristic (agreement-checked), not proven,
+    because Sage returns fixed-precision $p$-adic values rather than certified
+    enclosures. For every row the generator computes the value at two working
+    precisions, truncates both to the stored $p$-adic precision, and checks
+    that they agree. It also recomputes the Tate period $q_E$ to ten extra
+    $p$-adic digits and checks
     $\mathcal{L}_E=\log_p(q_E)/\operatorname{ord}_p(q_E)$ using the explicit
     branch `p_branch=0`, which is the convention $\log_p(p)=0$.
 Display properties:
