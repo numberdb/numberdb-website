@@ -18,6 +18,7 @@ import re
 import sys
 from decimal import Decimal, localcontext
 
+import numberdb._generate as numberdb_generate
 import numberdb.sage as numberdb
 from sage.databases.cremona import CremonaDatabase, cremona_to_lmfdb
 from sage.libs.pari import pari
@@ -40,6 +41,31 @@ PARI_RELATIVE_TOLERANCE = Decimal("1e-25")
 
 _RECORDS = None
 _BY_KEY = None
+
+
+_ORIGINAL_CARRIES_ITS_OWN_ERROR = numberdb_generate._carries_its_own_error
+
+
+def is_padic_value(value):
+    name = type(value).__name__.lower()
+    if "padic" in name or "p-adic" in name:
+        return True
+    parent = getattr(value, "parent", None)
+    if parent is None:
+        return False
+    try:
+        return "-adic" in str(parent())
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def carries_its_own_error_including_padics(value):
+    if is_padic_value(value):
+        return True
+    return _ORIGINAL_CARRIES_ITS_OWN_ERROR(value)
+
+
+numberdb_generate._carries_its_own_error = carries_its_own_error_including_padics
 
 
 def key_from_stdin():
