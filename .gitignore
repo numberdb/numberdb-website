@@ -212,4 +212,12 @@ generators/
 #like a deliberate instruction rather than an accident.
 agents/campaign.stop
 agents/campaign.*.stop
+#The same for the two flags the supervisor and the producer read. They were
+#added with `workers.sh` and `screener.sh` and not here, so stopping the pool
+#the documented way -- `touch agents/workers.stop` -- left an untracked file
+#in the tree, and `run.sh` refuses to start in a tree that is not clean. The
+#gesture for "stop after this item" would have become "stop, and do not start
+#again until somebody works out why".
+agents/workers.stop
+agents/screener.stop
 agents/runs/.pipeline-history.json

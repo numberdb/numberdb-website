@@ -42,8 +42,17 @@ screen() {
 	NUMBERDB_AGENT="$1" agents/run.sh ideas "Propose a batch from the open 'table wanted' issues, screening every candidate, in an area the corpus does not already cover. Write it to agents/table-ideas/BATCH-$(date -u +%Y-%m-%dT%H%M).md. Do not commit it: batches are data and .gitignore excludes them. Do not open an issue for it either; this job does that with what you wrote."
 }
 
-if ! screen "$miner"; then
-	status=$?
+# `$?` inside `if ! cmd` is the status of the negation, not of the command --
+# it is 0 whenever the command failed. So every refusal from `run.sh` was read
+# as "exit 0", the handover to the other engine never fired, and this script
+# exited 0 having screened nothing. `screener.sh` believed it and said "a
+# family was opened": between 07:57 and 08:03 on 2026-09-22 it said so eleven
+# times while `run.sh` was refusing, first because HEAD was unpushed and then
+# because the Sage image it wanted was not on the machine. The queue stayed at
+# zero and four builders sat idle against a screener reporting success.
+status=0
+screen "$miner" || status=$?
+if [ "$status" -ne 0 ]; then
 	if [ "$status" -eq 6 ]; then
 		say "$miner has no quota left; $other screens instead"
 		screen "$other"
