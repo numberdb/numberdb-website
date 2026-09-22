@@ -7492,3 +7492,25 @@ the API has not had the link checks run and should resolve the table's
 Evidence: 2026-09-22 critique of T410. `/tmp/crit410_render.py` (failed),
 `/tmp/crit410_probe.py` (the probe), `/tmp/T410_R1.yaml` .. `/tmp/T410_R7.yaml`
 and the seven `200` responses from `/preview`.
+## The site can pass preflight and then wedge before the draft claim
+
+What happened: a build run for numberdb-data#180 read `https://numberdb.org/skill`
+successfully at the start and `agents/run.sh` had already made the queue-level
+claim. Before the required database draft could be created, every route to
+numberdb.org stopped answering: direct `curl https://numberdb.org/skill` timed
+out during the TLS handshake, `curl http://numberdb.org/skill` connected to
+port 80 and then received no bytes for sixty seconds, and the same check from
+`agents/sage.sh` failed with `_ssl.c:983: The handshake operation timed out`.
+The required `screen.already_here`, `/api/tag?url=lattice_sums`, `/api/lookup`
+checks and `POST /api/tables` could not be completed.
+
+What to do instead: do not build unclaimed work. Release the queue courtesy
+claim if this happens before a draft exists, record that no T-number was
+created, and let the campaign preflight or `site_is_up` wait for the site to
+return before retrying. Treat `already_here` returning a transport error as an
+unanswered question, not as "nothing similar is here".
+
+Evidence: 2026-09-22 build run for "Values of the Epstein zeta function of the
+classical lattices"; `/tmp/epstein_cheap_checks.py` through `agents/sage.sh`
+printed the `already_here` transport error, and direct `curl` retries timed out
+against both HTTPS and HTTP.
