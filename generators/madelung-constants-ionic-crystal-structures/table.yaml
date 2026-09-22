@@ -1,0 +1,126 @@
+# The table document for numberdb.org/T403. It was created as a draft through
+# the NumberDB draft API with no entries. Publishing remains a separate human
+# review act.
+Title: Madelung constants of the ionic crystal structures
+Definition: >-
+  For an ionic crystal structure with formal charges $q_j$ on a periodic
+  point-ion arrangement, listed is the positive Madelung constant $M$ in
+  $E_{\rm f.u.}=-M e^2/(4\pi\varepsilon_0 r_0)$, where $E_{\rm f.u.}$ is the
+  electrostatic energy per formula unit and $r_0$ is the shortest
+  cation-anion distance CITE{Wiki}.
+Keywords:
+  - Madelung constant
+  - Madelung constants
+  - lattice energy
+  - Born-Lande equation
+  - ionic crystal
+  - ionic crystals
+  - rock salt
+  - rocksalt
+  - sodium chloride
+  - NaCl
+  - caesium chloride
+  - cesium chloride
+  - CsCl
+  - zinc blende
+  - zincblende
+  - sphalerite
+  - ZnS
+  - fluorite
+  - calcium fluoride
+  - CaF2
+  - antifluorite
+  - anti-fluorite
+  - cuprite
+  - Cu2O
+  - wurtzite
+Parameters:
+  structure:
+    title: crystal structure
+    type: Symbolic
+    values:
+      rock-salt: rock salt
+      caesium-chloride: caesium chloride
+      zincblende: zincblende
+      fluorite: fluorite
+      antifluorite: antifluorite
+      cuprite: cuprite
+      wurtzite: wurtzite
+    display: structure
+Comments:
+  comment-conventions: >-
+    The sign convention puts the minus sign in the energy formula and stores
+    $M>0$. The charges in the Ewald sum are the formal ionic charges, so the
+    fluorite, antifluorite and cuprite rows include charge products with
+    magnitudes larger than one.
+  comment-distance: >-
+    The normalising distance is the nearest cation-anion distance. In terms of
+    a cubic lattice parameter $a$, it is $a/2$ for rock salt,
+    $\sqrt3 a/2$ for caesium chloride, and $\sqrt3 a/4$ for zincblende,
+    fluorite, antifluorite and cuprite.
+  comment-scope: >-
+    The wurtzite row is the ideal wurtzite structure with
+    $c/a=\sqrt{8/3}$ and internal coordinate $u=3/8$, so
+    $r_0=a\sqrt{3/8}$. Rutile, anatase and corundum are not included because
+    their Madelung constants depend on structural parameters rather than on the
+    structure name alone.
+Formulas:
+  formula-ewald: >-
+    For a neutral unit cell with volume $V$, charges $q_i$ and positions
+    $r_i$, the generator evaluates
+    $\frac12\sum_{i,j}\sum_n' q_iq_j\,\operatorname{erfc}(\alpha|r_i-r_j+n|)
+    /|r_i-r_j+n| + \frac{2\pi}{V}\sum_{k\ne0} |\sum_i q_i e^{ik\cdot r_i}|^2
+    e^{-|k|^2/(4\alpha^2)}/|k|^2
+    -\alpha\pi^{-1/2}\sum_iq_i^2$, then multiplies the result by
+    $-r_0$ and divides by the number of formula units in the cell
+    CITE{Ewald}.
+  formula-rock-salt: >-
+    The rock-salt row also satisfies Benson's identity
+    $M=12\pi\sum_{m,n\geq1,\ m,n\ {\rm odd}}
+    \operatorname{sech}^2(\frac{\pi}{2}\sqrt{m^2+n^2})$
+    CITE{MathWorld}.
+Similar tables:
+  - table: HREF{Watson_integrals_of_the_cubic_lattices}[Watson integrals of the cubic lattices]
+    relation: another lattice-sum table in the same screened family
+  - table: HREF{Packing_densities_and_Hermite_numbers_of_the_classical_lattices}[Packing densities and Hermite numbers of the classical lattices]
+    relation: records geometric invariants of the classical lattices that underlie several of these crystal structures
+  - table: HREF{Kissing_numbers}[Kissing numbers $\tau_n$]
+    relation: another nearest-neighbour invariant of lattices and sphere arrangements
+  - table: HREF{Fine-structure_constant}[Fine-structure constant]
+    relation: the same electromagnetic constants appear in the lattice-energy normalisation
+Links:
+  Wiki:
+    title: 'Wikipedia: Madelung constant'
+    url: https://en.wikipedia.org/wiki/Madelung_constant
+  MathWorld:
+    title: 'MathWorld: Madelung Constants'
+    url: https://mathworld.wolfram.com/MadelungConstants.html
+  LibreTexts:
+    title: 'LibreTexts: Madelung Constants'
+    url: https://chem.libretexts.org/Bookshelves/Inorganic_Chemistry/Map:_Inorganic_Chemistry_(Housecroft)/06:_Structures_and_Energetics_of_Metallic_and_Ionic_solids/6.13:_Lattice_Energy_-_Estimates_from_an_Electrostatic_Model/6.13E:_Madelung_Constants
+References:
+  Ewald:
+    bib: >-
+      P. P. Ewald, Die Berechnung optischer und elektrostatischer
+      Gitterpotentiale, Annalen der Physik 369 (1921), no. 3, 253-287.
+    doi: 10.1002/andp.19213690304
+Tags:
+  - lattice sums
+  - chemistry
+  - physics
+  - special values
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'yes'
+  rigour details: >-
+    The generator computes the neutral-cell Ewald sum in arb ball arithmetic
+    with $\alpha=4$, including explicit upper bounds for the omitted real-space
+    and reciprocal-space tails. It writes $100$ digits. Before the draft was
+    filled, the rock-salt row was checked against Benson's rapidly convergent
+    $\operatorname{sech}^2$ series, and the rows for rock salt, caesium
+    chloride, zincblende, fluorite, cuprite and ideal wurtzite were checked
+    against published prefixes.
+Display properties:
+  number-header: $M$
+Numbers: []
