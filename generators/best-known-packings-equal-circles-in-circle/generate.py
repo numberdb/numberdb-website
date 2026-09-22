@@ -197,7 +197,7 @@ def _exact_value(n, normalisation, digits):
 def _proof_sentence(n):
     key = PROVEN_BY.get(n)
     if key:
-        return "CITE{%s} proves optimality." % (key,)
+        return "Optimality is proven by CITE{%s}." % (key,)
     return "Packomania CITE{Packomania} lists this as the best packing known; optimality is open."
 
 
