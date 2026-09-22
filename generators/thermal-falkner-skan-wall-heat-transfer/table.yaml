@@ -3,11 +3,11 @@
 # Numbers: [] so generate.py can fill it once. Publishing is a person's act.
 Title: Wall heat transfer $-\theta'(0)$ of the thermal Falkner–Skan boundary layer
 Definition: >-
-  For the upper-branch Falkner-Skan similarity solution $f$ of the wedge
-  boundary layer CITE{FSWiki}, this table gives the wall heat-transfer
-  coefficient $-\theta'(0)$ for the constant-property thermal boundary layer
-  with uniform wall temperature and no viscous dissipation. In the wedge
-  normalisation, with $m=\beta/(2-\beta)$, the temperature satisfies
+  For a Falkner-Skan similarity solution $f$ of the wedge boundary layer
+  CITE{FSWiki}, this table gives the wall heat-transfer coefficient
+  $-\theta'(0)$ for the constant-property thermal boundary layer with uniform
+  wall temperature and no viscous dissipation. In the wedge normalisation,
+  with $m=\beta/(2-\beta)$, the temperature satisfies
   $\theta''+\frac{m+1}{2}\mathrm{Pr}\,f\theta'=0$,
   $\theta(0)=1$ and $\theta(\infty)=0$.
 Keywords:
