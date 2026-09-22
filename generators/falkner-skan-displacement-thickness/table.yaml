@@ -1,0 +1,96 @@
+Title: Displacement thickness $\delta_1$ of the Falkner-Skan wedge flows
+Definition: >-
+  For the Falkner-Skan upper-branch solution $f$ with wedge parameter
+  $\beta=2m/(m+1)$, this table gives the dimensionless displacement thickness
+  $\delta_1=\int_0^\infty (1-f'(\eta))\,d\eta$. The wedge normalisation uses
+  $\eta=y\sqrt{u_e/(\nu x)}$; the Hartree normalisation uses
+  $\eta_\beta=\eta\sqrt{(m+1)/2}$.
+Keywords:
+  - Falkner Skan displacement thickness
+  - Blasius displacement thickness
+  - Hartree profiles
+Parameters:
+  beta:
+    type: Q
+    title: wedge parameter
+    display: $\beta$
+    constraints: $\beta_s<\beta<2$, where $\beta_s=-0.19883\ldots$ is the separation value
+  branch:
+    type: Symbolic
+    title: solution branch
+    display: branch
+    constraints: one of `upper` and `lower`
+    values:
+      upper: upper branch
+      lower: lower branch
+  normalisation:
+    type: Symbolic
+    title: normalisation
+    display: normalisation
+    constraints: one of `wedge` and `hartree`
+    values:
+      wedge: wedge coordinate $\eta$
+      hartree: Hartree coordinate $\eta_\beta$
+Comments:
+  comment-branches: >-
+    For $\beta_s<\beta<0$ there is also a reversed-flow lower branch. This
+    table fills the upper branch, the branch tabulated by Hartree profiles
+    CITE{SchlichtingGersten}.
+  comment-normalisations: >-
+    The two normalisations are both common in the literature. At $\beta=0$,
+    the wedge form is the Blasius equation
+    $2f'''+ff''=0$, while the Hartree form is $f'''+ff''=0$.
+Formulas:
+  formula-m: $m=\beta/(2-\beta)$.
+  formula-conversion: >-
+    If $\delta_{1,\mathrm{w}}$ and $\delta_{1,\mathrm{H}}$ are the wedge and
+    Hartree normalisations, then
+    $\delta_{1,\mathrm{H}}=\sqrt{(m+1)/2}\,\delta_{1,\mathrm{w}}$.
+  formula-momentum: >-
+    With $\delta_2$ the momentum thickness in the same normalisation, the
+    Hartree form satisfies
+    $f''(0)=\beta\delta_1+(1+\beta)\delta_2$.
+Links:
+  Wiki:
+    title: "Wikipedia: Falkner-Skan boundary layer"
+    url: https://en.wikipedia.org/wiki/Falkner%E2%80%93Skan_boundary_layer
+  Fitzpatrick:
+    title: "Richard Fitzpatrick: Self-Similar Boundary Layers"
+    url: https://farside.ph.utexas.edu/teaching/336L/Fluidhtml/node112.html
+  Review:
+    title: "On Solving the Nonlinear Falkner-Skan Boundary-Value Problem: A Review"
+    url: https://www.mdpi.com/2311-5521/6/4/153
+References:
+  SchlichtingGersten:
+    bib: Schlichting, H. and Gersten, K., Boundary-Layer Theory, 9th ed., Springer, 2017.
+  FalknerSkan:
+    bib: Falkner, V. M. and Skan, S. W., Some approximate solutions of the boundary layer equations, Philosophical Magazine 12 (1931), 865-896.
+    doi: 10.1080/14786443109461870
+  Hartree:
+    bib: Hartree, D. R., On an equation occurring in Falkner and Skan approximate treatment of the equations of the boundary layer, Proceedings of the Cambridge Philosophical Society 33 (1937), 223-239.
+    doi: 10.1017/S0305004100019575
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      # The attached generate.py reproduces the stored grid and its checks.
+Data properties:
+  type: R
+  complete: no
+  complete-note: >-
+    it holds every $\beta=a/100$ with $-19\leq a\leq199$ on the upper branch,
+    in both the wedge and Hartree normalisations
+  rigour: heuristic (agreement-checked)
+  rigour details: >-
+    The values are finite-interval boundary-value solves on $0\leq\eta\leq40$
+    using SciPy's collocation solver with tolerance $10^{-10}$, stored to 12
+    significant digits. The generator checks selected rows against a
+    fixed-step RK4 shooting computation, checks the rounded Hartree-profile
+    values tabulated by Schlichting and Gersten, and checks the momentum
+    integral identity over the whole stored grid.
+Display properties:
+  number-header: $\delta_1$
+Tags:
+  - analysis
+  - physics
+  - fluid dynamics

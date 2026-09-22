@@ -9476,3 +9476,276 @@ properly. A run that wants the rendering needs `/preview` or a session.
 Evidence: 2026-09-22, T412 critique. `numberdb_app/views.py` `_refuse_a_draft`
 via `editing.may_see(table, request.user)`; `numberdb_app/api.py:1543` `audit`
 via `_may_see_draft(request, table)`.
+## `screen.py requests` cannot tell an empty backlog from a refused question
+
+What happened: `python3 agents/table-ideas/screen.py requests` printed nothing.
+That is the correct answer today — all 126 `table wanted` issues are closed —
+but it is also what the script prints when GitHub declines to answer, because
+`requests()` catches every exception and returns `[]`. The stage's whole
+instruction is "start from the open requests", so the difference between "there
+are none" and "I could not ask" decides whether the run is finished or blocked.
+
+What to do instead: confirm with the authenticated CLI, which is on this box
+and says which of the two it is:
+
+    gh issue list --repo numberdb/numberdb-data --label "table wanted" \
+        --state open --limit 200
+
+Same rule as `already_here`: a failed question and an empty answer must not
+look the same. `requests()` would be better raising.
+
+Evidence: 2026-09-22T1633 ideas run. `screen.py requests` silent; `gh` returned
+zero open and 126 closed, so the silence was real that time.
+
+## `already_asked` rate-limits after about one call per run
+
+What happened: screening six names, the first `already_asked` answered and the
+other five returned `could not ask GitHub (HTTPError)`. It uses the
+unauthenticated GitHub *search* API, whose limit is ten requests a minute for
+anonymous callers and is shared with everything else on the machine.
+
+What to do instead: run it once for the family's distinguishing word, and put
+the rest of the question through `gh issue list --search`, which is
+authenticated here and has a far larger budget:
+
+    for q in quantile "critical value" Kolmogorov; do
+        gh issue list --repo numberdb/numberdb-data --state all --search "$q" \
+            --limit 8 --json number,title,state
+    done
+
+A run that reports "no issue asks for it" on the strength of five HTTPErrors
+has not checked anything.
+
+Evidence: 2026-09-22T1633 ideas run, `/tmp/screenrun.py`, six names, five
+HTTPErrors.
+
+## `source_names_it` does not stem, and the site's search does
+
+What happened: four proposals titled *Quantiles of the …* failed the source
+check against Wikipedia articles that name the family perfectly well, because
+those articles write "quantile function" and the check looks for the literal
+`quantiles`. Re-run with the singular, the same pages pass. The site's text
+index stems (the skill records that "regulator" matches "regular"), so the
+screen is stricter than the thing it is standing in for.
+
+What to do instead: when the only missing word is an inflection, re-run with
+the other form, read the page to confirm by hand, and say both in the batch
+rather than renaming a table to suit a substring test. Renaming is the real
+hazard here: the title is what a reader's search reaches, and bending it to
+please `source_names_it` makes the table worse at the only job the title has.
+
+Evidence: 2026-09-22T1633 ideas run. `Quantiles of the chi-squared
+distribution` failed against
+`https://en.wikipedia.org/wiki/Chi-squared_distribution`; `Quantile of the
+chi-squared distribution` passed against the same URL.
+
+## `import numberdb` from the repository root finds the Django project
+
+What happened: `python3 -c "import numberdb; numberdb.search_text(...)"` run
+from `/home/ubuntu/numberdb-website` fails with `module 'numberdb' has no
+attribute 'search_text'`. The repository's own `numberdb/` package — the Django
+project, with `settings`, `urls`, `wsgi` — shadows the client, because the
+working directory is on `sys.path` first. `agents/sage.sh` documents the
+equivalent trap for `sage -python`; the same thing happens to plain `python3`,
+and the error names the attribute rather than the cause.
+
+What to do instead: put the client ahead of it explicitly, from wherever you
+are running:
+
+    PYTHONPATH=/home/ubuntu/numberdb-website/clients/python python3 script.py
+    # or, inside the script, before importing:
+    sys.path.insert(0, '/home/ubuntu/numberdb-website/clients/python')
+
+`/tmp` is not a fix on its own — the client is not installed there either.
+
+Evidence: 2026-09-22T1633 ideas run; the same script failed from the repository
+root and answered from `/tmp` with the path inserted.
+
+## Polynomial rings over `Qp` do not import in the Sage image `agents/sage.sh` uses
+
+What happened: the T414 critique tried to run the table's own `Programs`
+snippet, which builds `R.<x> = K[]` over `K = Qp(p, prec=...)` and takes
+`.roots()`. Constructing that ring raises
+
+    ImportError: .../sage/rings/polynomial/polynomial_integer_dense_ntl
+    .cpython-312-x86_64-linux-gnu.so: undefined symbol:
+    _ZN3NTL5coeffERKNS_3ZZXEl
+
+`PolynomialRing(QQ, 'x')` and `PolynomialRing(ZZ, 'x')` both construct fine in
+the same session, so this is one broken NTL link in the image rather than a
+general breakage: `polynomial_padic_capped_relative_dense` imports
+`polynomial_integer_dense_ntl` at module level, and nothing over `QQ` or `ZZ`
+goes near it. A reader on an ordinary SageMath install is very unlikely to
+meet it, so this is not a fault in any table whose snippet uses that ring --
+but a run cannot execute such a snippet here, and should say so rather than
+reporting the snippet as checked.
+
+What to do instead: for a $p$-adic root of a quadratic, `.sqrt()` on the
+discriminant needs no polynomial ring and reproduces the same values:
+
+    K = Qp(p, prec=precision + 5)
+    alpha = (a + (K(a)**2 - 4*p).sqrt()) / 2
+    (alpha if alpha.valuation() == 0 else p / alpha).add_bigoh(precision)
+
+Evidence: 2026-09-22, T414 critique. `/tmp/ntlprobe.py` through
+`agents/sage.sh` printed `QQ ok`, `ZZ ok`, `Qp(5) FAILED ImportError`; the
+`.sqrt()` route reproduced all 58 stored values for $p=5$, $11$, $97$
+character for character.
+
+## `agents/runs` is 630 MB of transcripts and every repo-wide search reads them
+
+What happened: an ordinary orientation grep --
+
+    grep -rn "MIDDLEWARE" -A 15 $(find . -name settings.py ...) | head -25
+
+-- returned 58 KB, of which about 54 KB was three matches inside
+`agents/runs/*.log`. Those files are JSONL transcripts in which every tool
+call quotes its command *and* its whole output, so a search for any source
+symbol matches the log lines that happen to quote a previous run doing the
+same search, and prints a JSON line tens of kilobytes long. `head -25` does
+not help: the lines are long, not numerous.
+
+This is the `static/vendor/mathjax/tex-svg.js` note one directory over, and
+the `.ignore` file that was written for it does not cover this case: it
+excludes `static/vendor/`, `staticfiles/` and the built client, not
+`agents/runs/`. The directory is 630 MB across 494 files and grows with every
+run, so the cost grows too -- and the output that lands in the context is
+exactly the other-people's-transcripts material a run is told not to go
+reading.
+
+What to do instead: until `agents/runs/` is added to `.ignore`, name the
+directories on any repo-wide search (`numberdb_app`, `clients`, `utils`,
+`generators`, `docs`) rather than searching `.`. A run that wants a
+repository-wide sweep and cannot enumerate the directories should pass
+`--glob '!agents/runs/**'` to ripgrep.
+
+Evidence: 2026-09-22, T414 critique, the sixth Bash call of the run: 58.3 KB
+of output where the three source matches were 3.5 KB, the rest three log
+lines from `20260922T172530Z-critique.log` and `20260913T002636Z-repair.log`.
+`du -sh agents/runs` -> 630M, 494 files.
+
+## `screen.py requests` returns `[]` for an empty backlog and for an unreachable GitHub
+
+What happened: the ideation stage is told to start from the open `table
+wanted` issues and is given
+
+    python3 agents/table-ideas/screen.py requests
+
+which printed nothing. That reads as a broken network, and the first response
+is to go looking for a proxy problem. It was the truth: every one of the 126
+`table wanted` issues ever filed is now closed, and the only issues still open
+in numberdb-data are #133 and #137 (`enhancement`) and the latest `proposal`.
+The backlog the prompt describes -- "81 requests sat open" -- is gone.
+
+The two states are indistinguishable from the output, because `requests()`
+catches every exception and returns `[]`:
+
+    except Exception as trouble:                     # noqa: BLE001
+        return []
+
+which is the failure mode `already_here` in the same file has a long comment
+warning against, ten lines up. `already_asked` has the same shape in a
+milder form: it returns `['could not ask GitHub (HTTPError)']`, which does
+say something, and it fires in ordinary use, because the unauthenticated
+GitHub search API rate-limits after a handful of calls and a batch screens a
+dozen names.
+
+What to do instead: cross-check with `gh`, which is authenticated in this
+environment and is not subject to the same limit:
+
+    gh issue list --repo numberdb/numberdb-data --label "table wanted" \
+        --state open --limit 200 --json number,title
+
+An empty answer from that one is an empty backlog. `gh issue list --search
+"<word> in:title" --state all` covers what `already_asked` could not.
+
+Worth fixing in `screen.py` rather than remembering: `requests()` should let
+the exception through, or print the reason to stderr, so that "nobody has
+asked for anything" and "GitHub did not answer" stop looking alike.
+
+Evidence: 2026-09-22 ideation run. `screen.py requests` printed nothing, exit
+0. `gh issue list --label "table wanted" --state closed` returned 126 and
+`--state open` returned none. During screening, `already_asked` returned
+`could not ask GitHub (HTTPError)` for the 7th and 8th of ten names in one
+run, while `gh` answered both.
+
+## The stage-one prompt's corpus size is stale by a factor of three
+
+What happened: `agents/table-ideas/PROMPT.md` says "126 tables exist" and the
+skill says 107. The corpus is 413 tables, T1 to T414 with T75 absent, and the
+tables built in the last week -- T340 onward -- are where most of the near
+misses for a new proposal are. A run that screens against the older part of
+the corpus is screening against a third of it and will propose duplicates:
+T348 (Gauss hypergeometric), T349 and T350 (incomplete elliptic integrals),
+T388 and T389 (weight enumerators) are all things a batch might reach for.
+
+`search_text` reaches the new tables, so screening by name is unaffected. What
+is affected is the walk a run does to decide what subject is uncovered: it has
+to go past T339, and the number in the prompt gives no hint that it should.
+
+What to do instead: walk until the T-numbers stop answering rather than to the
+number in the prompt, and expect the corpus to have grown since it was
+written. Both figures are worth updating whenever somebody edits either file;
+neither has a test holding it to the truth.
+
+Evidence: 2026-09-22 ideation run. Walking `numberdb.table('T%d')` for
+1..339 found 338; extending to 430 found T340 through T414, none of which the
+prompt's count allows for.
+
+## `agents/sage.sh` gives up after twenty minutes of waiting and exits 0
+
+What happened: an ideation run needed two Sage passes to check the values it
+was proposing. The first waited 7 minutes for the lock and then ran in under a
+minute. The second waited the full twenty:
+
+    waiting for the Sage lock: another worker is using it (0s)
+    ... (once a minute) ...
+    waiting for the Sage lock: another worker is using it (1140s)
+    the Sage box has been busy for twenty minutes; try again
+
+    [exited with code 0]
+
+Two things follow. The wrapper **gives up** rather than queueing
+indefinitely, so a long-running build by another worker can cost a whole
+computation; and it gives up with **exit status 0**, so a caller that checks
+`$?`, or a pipeline whose last stage is `| tail`, sees success and an empty
+result. The message is the only signal, and a run that pipes the output
+through `tail` sees nothing at all until the very end, because `tail` buffers
+to EOF.
+
+What to do instead: when a Sage check matters, run it without a pipe so the
+per-minute lock messages are visible as they arrive, grep the output for
+"has been busy" before trusting an empty result, and expect to retry.
+Schedule the checks a stage needs early rather than at the end, since the
+twenty-minute ceiling means a run can lose one pass entirely with several
+workers active.
+
+Evidence: 2026-09-22 ideation run, two invocations of
+`agents/sage.sh /tmp/nb/check2.py` twenty minutes apart; the first returned
+the message above after 1140 seconds of waiting, exit code 0, no output from
+the script itself.
+
+## A long Sage run can starve a whole Falkner-Skan family
+
+What happened: on 2026-09-22, four workers in the same Falkner-Skan family
+queued Sage jobs at once. The lock behaved correctly, but one dry run was
+started with a multi-hour timeout:
+
+    timeout 10800 docker run ...
+
+A displacement-thickness check waited 20 minutes and got the wrapper's busy
+message; with `LOCK_WAIT=8000` it was still waiting after more than half an
+hour. During that time the draft had been claimed on the site, but it could
+not be filled or audited because every required computation had to use the
+same runner.
+
+What to do instead: do short smoke checks before starting a full dry run for
+one table in a family, and avoid queuing every worker's full-grid computation
+at the same time. If a long dry run is unavoidable, set expectations in the
+campaign output before other workers spend their default twenty-minute wait
+windows behind it.
+
+Evidence: T415 build run, 2026-09-22. The queued command was
+`agents/sage.sh /tmp/run_falkner_checks.py .../generate.py`; process listing
+showed another worker holding `/tmp/numberdb-sage.lock` through a
+`timeout 10800 docker run` dry run.
