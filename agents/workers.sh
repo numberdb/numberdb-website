@@ -85,6 +85,15 @@ start() {                        # one worker, in its own tree
 #: The producer. One process screens; the builders only consume, which is the
 #: whole of the arrangement: refilling a shared queue is a global decision and
 #: four builders making it independently ran ten screenings in a day.
+#:
+#: It gets the *same* environment a builder gets, and not a shorter one. A
+#: screening run computes -- it checks candidate values before proposing them
+#: -- so it needs Sage exactly as a build does, and `start_screener` used to
+#: leave the three NUMBERDB_SAGE_* settings out. `sage.sh` then fell back to
+#: its default image, `numberdb/web:latest`, which does not exist on a build
+#: machine: only `numberdb/builder:latest` does. Every screening refused with
+#: "agents/sage.sh cannot run", the queue sat at zero, and the builders had
+#: nothing to take.
 screener_running() {
 	local pid
 	for pid in $(pgrep -f 'screener\.sh' 2>/dev/null || true); do
@@ -105,6 +114,10 @@ start_screener() {
 		NUMBERDB_KEY="${NUMBERDB_KEY:-$HOME/.config/numberdb/zeta3-key}" \
 		NUMBERDB_MACHINE="${NUMBERDB_MACHINE:-$(hostname -s)}" \
 		NUMBERDB_CRITIQUES="$NUMBERDB_CRITIQUES" \
+		NUMBERDB_CODEX_SANDBOX="${NUMBERDB_CODEX_SANDBOX:-danger-full-access}" \
+		NUMBERDB_SAGE_IMAGE="${NUMBERDB_SAGE_IMAGE:-numberdb/builder:latest}" \
+		NUMBERDB_SAGE_PYTHONPATH="${NUMBERDB_SAGE_PYTHONPATH:-}" \
+		NUMBERDB_SAGE_MEMORY="${NUMBERDB_SAGE_MEMORY:-900m}" \
 			setsid nohup agents/screener.sh \
 				>> agents/runs/screener.log 2>&1 < /dev/null &
 	)
