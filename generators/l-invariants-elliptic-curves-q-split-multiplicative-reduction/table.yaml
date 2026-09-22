@@ -2,12 +2,10 @@
 # a person's act on the site; the generator beside this file fills the entries.
 Title: $\mathcal{L}$-invariants of elliptic curves over $\mathbb{Q}$ with split multiplicative reduction
 Definition: >-
-  Let $E/\mathbb{Q}$ be the reduced global minimal model recovered from
-  $(c_4,c_6)$ by Formula CITE{formula-model-from-invariants}, and let $p$ be a
-  prime of split multiplicative reduction for $E$. If $q_E\in\mathbb{Q}_p$ is
-  the Tate period and $\log_p$ is the Iwasawa $p$-adic logarithm with
-  $\log_p(p)=0$, this table gives the Mazur-Tate-Teitelbaum invariant
-  $\mathcal{L}_E=\log_p(q_E)/\operatorname{ord}_p(q_E)$ CITE{MTT}.
+  For the elliptic curve $E/\mathbb{Q}$ identified by the parameters and a
+  prime $p$ of split multiplicative reduction, this table gives the
+  Mazur-Tate-Teitelbaum $\mathcal{L}$-invariant CITE{MTT}, with the
+  normalization in Formula CITE{formula-l-invariant}.
 Keywords:
   - L-invariant
   - Mazur-Tate-Teitelbaum invariant
@@ -96,7 +94,6 @@ Tags:
   - elliptic curves
   - p-adic
   - L-function
-  - Iwasawa theory
 Data properties:
   type: Qp
   rigour: heuristic (agreement-checked)
