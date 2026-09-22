@@ -7458,3 +7458,90 @@ proposal to match whatever page happens to fetch.
 
 Evidence: 2026-09-22 ideas run, the `source_names_it` lines quoted in
 `agents/table-ideas/BATCH-2026-09-22T0807.md`.
+
+## A long mpmath loop under `agents/sage.sh` stops part-way with no traceback
+
+What happened: an ideation run checked the Falkner-Skan boundary layer by
+integrating an ODE at several parameter values with `mpmath.odefun`. At
+`mp.dps = 30` and `eta_max = 18` the script printed the first parameter's
+result and then stopped -- no traceback, no message, and the rest of the loop
+simply absent from the output. Repeating at `mp.dps = 20` and `eta_max = 13`
+got two parameters further and stopped the same way. The container has 320 MB
+(`NUMBERDB_SAGE_MEMORY`), `odefun` holds a Taylor cache per solution, and a
+shooting iteration builds a fresh solution every call.
+
+A third run, redirected to a file instead of piped, printed `EXIT 137`: the
+container is being killed, and the cap is the reason. The first two runs were
+piped through `tail`, so the exit status reported was `tail`'s `0` and the
+container's own status never reached the transcript. A killed run read exactly
+like a finished one.
+
+The fix that worked was not more memory but less solver: a hand-rolled
+fixed-step RK4 over the same interval holds five `mpf` numbers, runs in
+constant memory, and reaches ten digits in a second — plenty for checking a
+proposal's values against the literature. Reserve `odefun` for the runs that
+need thirty digits, and give those one parameter per script.
+
+What to do instead: do not pipe `agents/sage.sh` through `tail` or `head` --
+redirect to a file and read that, so the exit code is the container's. Flush
+after every parameter (`sys.stdout.flush()`), put few parameters in one
+script, `del` and `gc.collect()` each solution, and raise
+`NUMBERDB_SAGE_MEMORY` rather than assuming a silent stop is a hang.
+
+Evidence: 2026-09-22 ideas run, `/tmp/w/fs.py` (one of six parameters) and
+`/tmp/w/fs2.py` (two of five).
+
+## `screen.py already_asked` rate-limits at about ten calls, and says so in a way that reads like "nobody asked"
+
+What happened: screening eleven candidate names in one loop, the last call
+returned `could not ask GitHub (HTTPError)`. GitHub's search API allows ten
+requests a minute unauthenticated, and `already_asked` catches every exception
+and returns the message as though it were a result row. It is visible if you
+read it and invisible if you skim, and an empty answer and a failed question
+look nearly the same -- the failure mode `already_here` was already fixed for.
+
+What to do instead: for a batch, ask once rather than eleven times. The whole
+repository is 130-odd issues:
+
+    gh issue list --repo numberdb/numberdb-data --state all --limit 300 \
+      --json number,title,state --jq '.[] | select(.title|test("(?i)<words>"))'
+
+and filter locally. Use `already_asked` for one-off checks.
+
+Evidence: 2026-09-22 ideas run, `/tmp/w/scr.py`, eleven names, the eleventh
+failing.
+
+## `agents/sage.sh` can wait many minutes for the lock while a build campaign runs
+
+What happened: an ideation run's checks queued behind another campaign's build
+on the same machine, printing `waiting for the Sage lock: another worker is
+using it` once a minute for over four minutes before starting. The lock is
+doing its job -- two Sage processes on this server is what it exists to
+prevent -- but a run that budgets a two-minute timeout for a thirty-second
+computation will time out in the queue and not in the work.
+
+What to do instead: run Sage checks in the background from the first call, not
+after a foreground attempt times out, and treat the waiting lines as progress
+rather than as a hang. `pgrep -fa codex` or `pgrep -fa claude` says whether
+another campaign is on the machine.
+
+Evidence: 2026-09-22 ideas run; `/tmp/w/fs3.out` shows five waiting lines.
+
+## `oeis.org` cannot be reached from this machine at all
+
+What happened: a proposal wanted to cite the OEIS entry for the Blasius
+constant, which the skill names as one of the four kinds of real check. Every
+request to `https://oeis.org/search?...`, with `fmt=json` or `fmt=text`, with
+or without a browser `User-Agent`, answers with a Cloudflare "Just a moment"
+interstitial and HTTP 403. There is no A-number in the batch as a result, and
+the proposal says so rather than guessing one.
+
+What to do instead: say in the batch that OEIS was unreachable and leave the
+citation to a build on a machine that can reach it. Do not quote an A-number
+from memory: an A-number that names the wrong sequence reads exactly like one
+that names the right one, which is the failure `source_names_it` exists to
+prevent and cannot catch here.
+
+Evidence: 2026-09-22 ideas run. `curl -s https://oeis.org/search?q=0.332057336215196&fmt=json`
+returned `403` and the challenge page; Wikipedia and `dlmf.nist.gov` answered
+normally from the same shell minutes earlier.

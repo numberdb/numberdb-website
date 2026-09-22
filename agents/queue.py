@@ -544,6 +544,33 @@ def cmd_built(args):
 		return 2
 	body = _tick(family, args.title, args.tid, getattr(args, 'why', None))
 	if body is None:
+		#Already ticked, with this very table? Then it is done, and saying so
+		#is the whole answer.
+		#
+		#Two parties tick the same box on purpose. The build does it when it
+		#finishes, because its prompt tells it to; the campaign does it again
+		#because it is the only party holding both the proposal it handed out
+		#and the number that came back. Whichever is second used to fail, and
+		#the campaign turned that into "could not tick <title> in #185; do it
+		#by hand" -- which sends a person after work that is already done. It
+		#said exactly that twice on 2026-09-22, for T404 and T386, both of
+		#which were ticked correctly.
+		#
+		#A *different* table against the same proposal is not this, and still
+		#stops: that is two tables built for one line, which is the thing the
+		#tick exists to prevent.
+		for item in family['items']:
+			if not item.get('built') \
+					or not _same_subject(item['title'], args.title):
+				continue
+			if item.get('tid') in (None, args.tid):
+				print('#%d: %s is already %s'
+				      % (args.number, args.title, item.get('tid') or args.tid))
+				return 0
+			print('#%d: %s is already recorded as %s, not %s'
+			      % (args.number, args.title, item['tid'], args.tid),
+			      file=sys.stderr)
+			return 1
 		print('#%d has no unbuilt table like %r' % (args.number, args.title),
 		      file=sys.stderr)
 		return 1
