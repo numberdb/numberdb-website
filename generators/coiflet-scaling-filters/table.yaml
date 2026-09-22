@@ -1,0 +1,101 @@
+# Table document for numberdb.org/T401. It was claimed first as an empty
+# draft through the API, then filled by generate.py beside it. Publishing is a
+# person's review act on the site.
+Title: Coiflet scaling filters $h^{(K)}_k$
+Definition: >-
+  For $K\geq 1$, the Coiflet scaling filter $h^{(K)}$ is PyWavelets'
+  `coifK` low-pass reconstruction filter, normalised by
+  $\sum_k h^{(K)}_k=\sqrt2$, with $6K$ taps CITE{PyWavelets}.
+Parameters:
+  K:
+    type: Z
+    title: Coiflet order
+    display: $K$
+    constraints: $K\geq 1$
+  k:
+    type: Z
+    title: tap index
+    display: $k$
+    constraints: $0\leq k\leq 6K-1$
+Comments:
+  comment-order: >-
+    The order $K$ is PyWavelets' `coifK` index. The same filter is sometimes
+    named by its number of taps, so `coif1` has six taps and is also written
+    $C6$ CITE{Wiki}.
+  comment-orientation: >-
+    The orientation is PyWavelets' `rec_lo` order. PyWavelets' `dec_lo`
+    filter is the reverse order CITE{PyWavelets}.
+  comment-normalisation: >-
+    Some tables of Coiflet coefficients are normalised to sum to $2$. Those
+    coefficients are $\sqrt2$ times the values stored here.
+  comment-high-pass: >-
+    This table stores only the low-pass scaling filter. The high-pass
+    coefficients are these values up to sign and reversal, with the sign
+    convention stated in the formulas.
+  comment-construction: >-
+    The moment conditions used here are the Coiflet conditions described by
+    Daubechies CITE{DaubechiesBook}, with the PyWavelets coefficient rows
+    selecting the root of the nonlinear system CITE{PyWaveletsSource}.
+Formulas:
+  formula-orthogonality: >-
+    $\sum_k h^{(K)}_k h^{(K)}_{k-2m}=\delta_{m,0}$ for every integer $m$.
+  formula-wavelet-moments: >-
+    $\sum_{k=0}^{6K-1}(-1)^k k^r h^{(K)}_k=0$ for $0\leq r<2K$.
+  formula-scaling-moments: >-
+    $\sum_{k=0}^{6K-1}(k-2K)^r h^{(K)}_k=0$ for $1\leq r<2K$.
+  formula-high-pass: >-
+    $g^{(K)}_k=(-1)^k h^{(K)}_{6K-1-k}$ gives the corresponding high-pass
+    filter.
+  formula-sum-two: >-
+    Coefficients in the normalisation $\sum_k \widetilde h^{(K)}_k=2$ are
+    $\widetilde h^{(K)}_k=\sqrt2\,h^{(K)}_k$.
+Similar tables:
+  Daubechies_extremal-phase_scaling_filters: >-
+    the extremal-phase Daubechies scaling filters, using the same
+    normalisation and reconstruction-filter orientation
+  Symlet_scaling_filters_(least-asymmetric_Daubechies): >-
+    the least-asymmetric Daubechies scaling filters, using the same
+    normalisation and reconstruction-filter orientation
+Programs:
+  program-pywavelets:
+    language: Python
+    code: |-
+      import pywt
+
+      K = 4
+      k = 0
+      pywt.Wavelet("coif%d" % K).rec_lo[k]
+Links:
+  PyWavelets:
+    title: 'PyWavelets: Wavelet object'
+    url: https://pywavelets.readthedocs.io/en/latest/regression/wavelet.html
+  PyWaveletsSource:
+    title: 'PyWavelets: built-in wavelet coefficients'
+    url: https://github.com/PyWavelets/pywt/blob/main/pywt/_extensions/c/wavelets_coeffs.template.h
+  Wiki:
+    title: 'Wikipedia: Coiflet'
+    url: https://en.wikipedia.org/wiki/Coiflet
+References:
+  DaubechiesBook:
+    bib: Ingrid Daubechies, Ten Lectures on Wavelets, CBMS-NSF Regional Conference Series in Applied Mathematics 61, SIAM, 1992
+    doi: 10.1137/1.9781611970104
+Keywords: Coiflet, Coiflets, Coifman wavelet, Daubechies Coiflet, signal processing, coifK, coif1, coif2, coif3, coif4, coif5, coif6, coif7, coif8, coif9, coif10, coif11, coif12, coif13, coif14, coif15, coif16, coif17, C6, C12, C18, C24, C30
+Tags:
+  - analysis
+  - algebraic
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: it holds the PyWavelets built-in Coiflet reference range, $1\leq K\leq 17$
+  rigour details: >-
+    The generator solves the Coiflet polynomial equations with Newton
+    iteration at 180 and 240 decimal working digits, started from PyWavelets'
+    source coefficient rows CITE{PyWaveletsSource}. It writes only 100-digit
+    coefficients that agree at the two working precisions. It checks the
+    normalisation, the first $2K$ wavelet moments, the first $2K-1$ centered
+    scaling moments, the even-shift orthogonality relations, and agreement
+    with the PyWavelets source row in `rec_lo` order.
+Display properties:
+  number-header: $h^{(K)}_k$
+Numbers: []
