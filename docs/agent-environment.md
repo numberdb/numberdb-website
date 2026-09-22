@@ -7049,3 +7049,25 @@ Evidence: 2026-09-21T21:21Z critique run. Proxied `curl` exit 7,
 `HTTP 000`; `curl -s https://numberdb.org/T390` answered 404 (the draft is
 private, which is correct) and `curl -s https://numberdb.org/skill` answered
 200 with 48 KB.
+
+## `queue.py built` can close a family while other lines are only claimed
+
+What happened: after T394 was offered for review, `python3 agents/queue.py
+built 183 "Best known packings of equal circles in a circle" T394` correctly
+changed that checklist line to `[x]`, but also printed `#183 closed; the family
+is built`. A fresh `queue.py show 183` still showed four other proposals as
+`[~] ... claimed by w1`, not `[x]` or `[-]`.
+
+Why: `parse_family()` sets `done` true for `~`, so the close check in
+`cmd_built` treats active or stale claims as settled. That may be harmless
+when the claims are genuinely concurrent, but it makes the printed line read
+stronger than the visible checklist.
+
+What to do instead: after `queue.py built` says it closed a family, run
+`queue.py show <family>` before assuming the whole family is finished. If other
+lines are still `[~]`, do not create `agents/runs/batch-exhausted`; leave the
+other workers' claims alone and report the actual checklist state.
+
+Evidence: 2026-09-22 build of T394. The command printed `#183 closed; the
+family is built`; immediately after, `queue.py show 183` showed T394 as `[x]`
+and the other proposals still claimed by w1.
