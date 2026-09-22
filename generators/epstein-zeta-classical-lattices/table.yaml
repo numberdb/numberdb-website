@@ -1,0 +1,145 @@
+# Draft document for T402, Epstein zeta values of the classical lattices.
+# It began as proposal 1 of numberdb-data#180. It was created as a draft
+# through the API, filled by generate.py beside it, and offered for review.
+# Publishing is a person's act.
+Title: Values of the Epstein zeta function of the classical lattices
+Definition: >-
+  For a lattice $L\subset\mathbb{R}^n$ with Gram matrix $G$ in the
+  normalisation of
+  HREF{Packing_densities_and_Hermite_numbers_of_the_classical_lattices}[the
+  classical-lattice packing table], the Epstein zeta function CITE{WikiEpstein}
+  is
+  $Z_L(s)=\sum_{0\ne x\in\mathbb{Z}^n}(x^{\mathsf{T}}Gx)^{-s}$, for rational
+  $s>n/2$. Listed are values for $\mathbb{Z}^n$, the root lattices, their
+  duals, the laminated lattices $\Lambda_n$ and the Coxeter-Todd lattice
+  $K_{12}$, using the Gram matrices of the Catalogue of Lattices
+  CITE{Catalogue}.
+Keywords:
+  - Epstein zeta function
+  - Epstein zeta
+  - lattice sum
+  - Lennard-Jones lattice constants
+  - Lennard-Jones A6
+  - Lennard-Jones A12
+  - face-centred cubic
+  - body-centred cubic
+Tags:
+  - lattice sums
+  - special values
+  - discrete geometry
+  - number theory
+  - statistical mechanics
+Parameters:
+  family:
+    type: Symbolic
+    title: family of the lattice
+    values:
+      Z: $\mathbb{Z}^n$
+      A: $A_n$
+      A*: $A_n^{*}$
+      D: $D_n$
+      D*: $D_n^{*}$
+      E: $E_n$
+      E*: $E_n^{*}$
+      Lambda: $\Lambda_n$
+      K: $K_n$
+    display: family
+  n:
+    type: Z
+    title: dimension
+    display: $n$
+    constraints: >-
+      $n\geq1$ for $\mathbb{Z}^n$ and $A_n$; $n\geq4$ for $D_n$;
+      $n\in\{6,7,8\}$ for $E_n$; $n\geq3$ for $A_n^{*}$; $n\geq5$ for
+      $D_n^{*}$; $n\in\{6,7\}$ for $E_n^{*}$; $n\geq9$ for $\Lambda_n$;
+      $n=12$ for $K_n$
+  s:
+    type: Q
+    title: exponent
+    display: $s$
+    constraints: $s\in\frac12\mathbb{Z}$ and $s>n/2$
+Comments:
+  comment-normalisation: >-
+    The root lattices use minimal norm $2$, while $\mathbb{Z}^n$ uses minimal
+    norm $1$. The value is scale-dependent: if $cL$ means all lengths are
+    multiplied by $c$, then $Z_{cL}(s)=c^{-2s}Z_L(s)$.
+  comment-cubic-names: >-
+    In dimension $3$, $A_3$ is the face-centred cubic lattice and $A_3^{*}$ is
+    the body-centred cubic lattice in the physics convention. These names
+    refer to the same rows indexed here by `family` and $n$.
+  comment-convergent-range: >-
+    This table contains values in the absolutely convergent range $s>n/2$.
+    The meromorphic continuation, including the pole at $s=n/2$ and the value
+    at $s=0$, is not listed here.
+  comment-lennard-jones: >-
+    If $\mu$ is the minimal norm of the Gram matrix used here, the
+    Lennard-Jones lattice constant in nearest-neighbour scale is
+    $A_{2s}(L)=\mu^s Z_L(s)$ CITE{LatticeSums}. Thus $A_6$ and $A_{12}$ are
+    obtained from the rows with $s=3$ and $s=6$ wherever those rows converge.
+Formulas:
+  formula-length-exponent: >-
+    If $\widetilde Z_L(t)=\sum_{0\ne x\in L}|x|^{-t}$ is the convention using
+    the length exponent, then $\widetilde Z_L(t)=Z_L(t/2)$.
+  formula-square-lattice: >-
+    For $s>1$, $Z_{\mathbb{Z}^2}(s)=4\zeta(s)\beta(s)$, where $\beta(s)$ is
+    the Dirichlet beta function.
+  formula-hexagonal-lattice: >-
+    For $s>1$, $Z_{A_2}(s)=2^{-s}\,6\zeta(s)L(s,\chi_{-3})$.
+  formula-e8: >-
+    For $s>4$, $Z_{E_8}(s)=240\,2^{-s}\zeta(s)\zeta(s-3)$, because the theta
+    series of $E_8$ is the Eisenstein series $E_4$.
+Similar tables:
+  - table: HREF{Packing_densities_and_Hermite_numbers_of_the_classical_lattices}[Packing densities and Hermite numbers of the classical lattices]
+    relation: the same lattice families, dimensions and Gram normalisations
+  - table: HREF{Covering_radii_and_covering_densities_of_the_classical_lattices}[Covering radii and covering densities of the classical lattices]
+    relation: another geometric table using the same classical-lattice keys
+  - table: HREF{Kissing_numbers}[Kissing numbers $\tau_n$]
+    relation: lists kissing numbers of the optimal lattices, and its comments link the classical lattices that attain known cases
+  - table: HREF{Watson_integrals_of_the_cubic_lattices}[Watson integrals of the cubic lattices]
+    relation: another lattice sum for $\mathbb{Z}^3$, $A_3$ and $A_3^{*}$, integrated over the dual torus instead of summed over nonzero lattice vectors
+  - table: HREF{Values_of_the_Riemann_zeta_function_at_rational_numbers}[Values of the Riemann zeta function at rational numbers]
+    relation: supplies the $\zeta$ factors in the closed forms for $\mathbb{Z}^2$, $A_2$ and $E_8$
+  - table: HREF{Values_of_Dirichlet_L-functions_at_positive_integers}[Values of Dirichlet L-functions at positive integers]
+    relation: contains the Dirichlet $L$-values that appear in the closed form for $A_2$
+  - table: HREF{Q-expansion_of_the_Eisenstein_series_E4}[$q$-expansion of the Eisenstein series $E_4$]
+    relation: its coefficients are the theta-series coefficients used in the closed form for $E_8$
+Links:
+  WikiEpstein:
+    title: 'Wikipedia: Epstein zeta function'
+    url: https://en.wikipedia.org/wiki/Epstein_zeta_function
+  Catalogue:
+    title: 'G. Nebe and N. J. A. Sloane, A Catalogue of Lattices'
+    url: https://www.math.rwth-aachen.de/~Gabriele.Nebe/LATTICES/
+References:
+  LatticeSums:
+    bib: >-
+      Jonathan M. Borwein, M. L. Glasser, R. C. McPhedran, J. G. Wan and
+      I. J. Zucker, Lattice Sums Then and Now, Encyclopedia of Mathematics and
+      its Applications 150, Cambridge University Press, 2013.
+  Terras:
+    bib: >-
+      Audrey Terras, Harmonic Analysis on Symmetric Spaces and Applications II,
+      Springer, 1988.
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every lattice of
+    HREF{Packing_densities_and_Hermite_numbers_of_the_classical_lattices}[the
+    classical-lattice packing table], with every integer or half-integer
+    $s$ satisfying $n/2<s\leq n/2+3$, together with the rows $s=3$ for
+    $n\leq5$ and $s=6$ for $n\leq11$
+  rigour details: >-
+    Each entry is computed in arb ball arithmetic from the Epstein-Terras
+    incomplete-gamma expansion CITE{Terras}, with `pari(G).qfrep(B, 0)` used
+    to count one vector from each pair $\pm x$ of vectors of norm
+    $x^{\mathsf{T}}Gx=m$ and a factor of $2$ applied to the contribution. The
+    same expansion is evaluated for the dual Gram matrix, and the truncation
+    bounds use the explicit positive tails of the upper incomplete-gamma
+    series. The generator checks the $\mathbb{Z}^2$, $A_2$ and $E_8$ closed
+    forms above wherever their parameters appear, and checks the
+    Lennard-Jones values for $\mathbb{Z}^3$, $A_3$ and $A_3^{*}$ at $s=3$ and
+    $s=6$ against a direct summation over lattice vectors at lower precision.
+Display properties:
+  number-header: $Z_L(s)$
