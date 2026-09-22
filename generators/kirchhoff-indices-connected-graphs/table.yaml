@@ -2,11 +2,9 @@
 # Created through the API with X-Draft: yes. Publishing is a person's act.
 Title: Kirchhoff indices of connected graphs
 Definition: >-
-  The Kirchhoff index $\mathrm{Kf}(G)$ of a connected simple graph $G$ is the
-  sum of the resistance distances $\Omega_G(u,v)$ over all unordered pairs of
-  distinct vertices of $G$ CITE{MathWorldKirchhoff} CITE{WikiResistance}.
-  Each edge of $G$ is taken to have resistance $1$, and $G$ is named by its
-  canonical graph6 string CITE{Graph6}.
+  For a connected simple graph $G$,
+  $\mathrm{Kf}(G)=\sum_{\{u,v\}\subset V(G)}\Omega_G(u,v)$, where $\Omega_G$
+  is resistance distance CITE{MathWorldKirchhoff} CITE{WikiResistance}.
 Parameters:
   g:
     type: Symbolic
