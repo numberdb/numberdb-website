@@ -1,0 +1,142 @@
+# The table document for numberdb.org/T412. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Cyclotomic $p$-adic regulators of elliptic curves over $\mathbb{Q}$ of rank $1$
+Definition: >-
+  Let $E/\mathbb{Q}$ be the elliptic curve with reduced global minimal
+  Weierstrass model recovered from $(c_4,c_6)$ by Formula
+  CITE{formula-model-from-invariants}, and let $p\geq5$ be a prime of good
+  ordinary reduction for $E$. The entry is the cyclotomic $p$-adic regulator
+  $\operatorname{Reg}_p(E/\mathbb{Q})$, the determinant of the cyclotomic
+  $p$-adic height pairing in the Mazur-Tate-Teitelbaum normalisation
+  CITE{MTT} CITE{SagePadic}.
+Parameters:
+  N:
+    type: Z
+    title: conductor of $E$
+    display: $N$
+    constraints: $N\geq1$
+  c4:
+    type: Z
+    title: invariant $c_4$ of the reduced global minimal model of $E$
+    display: $c_4$
+  c6:
+    type: Z
+    title: invariant $c_6$ of the reduced global minimal model of $E$
+    display: $c_6$
+  p:
+    type: Z
+    title: good ordinary prime
+    display: $p$
+    constraints: $p\geq5$ is prime and $E$ has good ordinary reduction at $p$
+Comments:
+  comment-curve-labels: >-
+    The curve is identified by $N$, $c_4$ and $c_6$. Each entry comment gives
+    the curve's Cremona label from Sage's mini Cremona database
+    CITE{SageCremona}; it also gives the LMFDB CITE{LMFDB} label when the two
+    labels differ.
+  comment-normalisation: >-
+    This table uses Sage's cyclotomic normalisation CITE{SagePadic}, the
+    Mazur-Tate-Teitelbaum normalisation in which the $p$-adic regulator
+    appears in the $p$-adic Birch and Swinnerton-Dyer formula CITE{MTT}. The
+    values are not divided by $\log_p(1+p)$, and they use the sign convention
+    implemented by Sage.
+  comment-primes: >-
+    The table includes only primes of good ordinary reduction. At supersingular
+    primes the corresponding height takes values outside $\mathbb{Q}_p$, and
+    Sage's cyclotomic `padic_regulator` method is implemented only for
+    $p\geq5$.
+  comment-anomalous: >-
+    A negative valuation can occur at anomalous primes. For example, the row
+    for 43a1 at $p=5$ has valuation $-1$.
+  comment-precision: >-
+    The stored $p$-adic precision is the least $n$ with $p^n\geq10^{50}$, for
+    example $O(5^{72})$, $O(7^{60})$, $O(11^{49})$ and $O(13^{45})$.
+Formulas:
+  formula-model-from-invariants: >-
+    For the reduced models in this table, $b_2$ is the unique element of
+    $\{-4,-3,0,1,4,5\}$ with $b_2\equiv -c_6\pmod{12}$,
+    $b_4=(b_2^2-c_4)/24$, and
+    $b_6=(-c_6-b_2^3+36b_2b_4)/216$. The model has
+    $a_1\equiv b_2\pmod 2$, $a_3\equiv b_6\pmod 2$ with
+    $a_1,a_3\in\{0,1\}$ and $a_2\in\{-1,0,1\}$, and
+    $a_2=(b_2-a_1^2)/4$, $a_4=(b_4-a_1a_3)/2$ and
+    $a_6=(b_6-a_3^2)/4$.
+  formula-rank-one-regulator: >-
+    If $P$ generates the free part of $E(\mathbb{Q})$, then
+    $\operatorname{Reg}_p(E/\mathbb{Q})=h_p(P)$, where $h_p$ is the
+    cyclotomic $p$-adic height pairing in the normalisation of
+    CITE{comment-normalisation}.
+  formula-quadratic-height: >-
+    The cyclotomic $p$-adic height is quadratic:
+    $h_p(mP)=m^2h_p(P)$ for $m\in\mathbb{Z}$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      E = EllipticCurve('37a1')
+      p = 5
+      precision = 72
+      E.padic_regulator(p, precision)
+Similar tables:
+  - table: HREF{Regulators_of_elliptic_curves_over_Q_of_rank_1}[Regulators of elliptic curves over $\mathbb{Q}$ of rank $1$]
+    relation: stores the Neron-Tate regulator of the same rank-one curves instead of the cyclotomic $p$-adic regulator
+  - table: HREF{Special_value_of_L-function_of_elliptic_curves_over_Q_of_rank_1}[Special $L$-values of elliptic curves over $\mathbb{Q}$ of rank $1$]
+    relation: stores the complex $L$-value side of the Birch and Swinnerton-Dyer formula for the same rank
+  - table: HREF{Real_periods_of_elliptic_curves_over_Q_of_rank_1}[Real periods of elliptic curves over $\mathbb{Q}$ of rank $1$]
+    relation: stores the real periods appearing with the regulator in the complex Birch and Swinnerton-Dyer formula
+  - table: HREF{mathcal_L-invariants_of_elliptic_curves_over_mathbb_Q_with_split_multiplicative_reduction}[$\mathcal{L}$-invariants of elliptic curves over $\mathbb{Q}$ with split multiplicative reduction]
+    relation: stores the Mazur-Tate-Teitelbaum exceptional-zero invariant at split multiplicative primes
+Links:
+  SagePadic:
+    title: 'SageMath reference: padic_regulator and padic_height'
+    url: https://doc.sagemath.org/html/en/reference/arithmetic_curves/sage/schemes/elliptic_curves/ell_rational_field.html
+  SageCremona:
+    title: "SageMath reference: Cremona's tables of elliptic curves"
+    url: https://doc.sagemath.org/html/en/reference/databases/sage/databases/cremona.html
+  LMFDB:
+    title: 'LMFDB: elliptic curves over Q'
+    url: https://www.lmfdb.org/EllipticCurve/Q/
+References:
+  MTT:
+    bib: Barry Mazur, John Tate and Jeremy Teitelbaum, On $p$-adic analogues of the conjectures of Birch and Swinnerton-Dyer, Inventiones Mathematicae 84 (1986), 1-48.
+    doi: 10.1007/BF01388731
+Keywords:
+  - p-adic regulator
+  - cyclotomic p-adic height
+  - p-adic height
+  - Mazur-Tate-Teitelbaum regulator
+Tags:
+  - p-adic
+  - elliptic curves
+  - number theory
+Data properties:
+  type: Qp
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: >-
+    it holds every rank-one curve in Sage's mini Cremona database
+    CITE{SageCremona} with conductor $N\leq175$, and every good ordinary
+    prime $p\in\{5,7,11,13\}$ for that curve
+  sources:
+    - CITE{SageCremona}
+    - CITE{SagePadic}
+  rigour details: >-
+    The generator reads exact Weierstrass coefficients from Sage's mini
+    Cremona database CITE{SageCremona}, constructs the reduced global minimal
+    curve over $\mathbb{Q}$, and filters to rank-one curves and good ordinary
+    primes. It computes Sage's cyclotomic `padic_regulator` CITE{SagePadic} at
+    the stored precision and at a higher working precision, truncates both to
+    the precision in CITE{comment-precision}, and checks that they agree. It
+    also computes Sage's cyclotomic height of the Mordell-Weil generator and
+    checks Formula CITE{formula-rank-one-regulator} and Formula
+    CITE{formula-quadratic-height} on every row. The table is declared
+    heuristic (agreement-checked), not proven, because Sage returns
+    fixed-precision $p$-adic values rather than certified enclosures.
+Display properties:
+  number-header: $\operatorname{Reg}_p(E/\mathbb{Q})$
+  group parameters:
+    - [N]
+    - [c4, c6]
+    - [p]
+Numbers: []
