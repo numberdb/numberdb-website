@@ -7206,3 +7206,136 @@ revisions/T403 files/T403 bundle/T403 blame/T403 preview/T403; do curl -sS -o
 /dev/null -w "%{http_code}" https://numberdb.org/$p; done` gave
 404 404 200 200 200 404 404 404, and `/revisions/T403` printed the hundred
 digits of all seven rows.
+## A `/preview?table=` piece with no `Numbers` key renders nothing and blames a local variable
+
+What happened: the T372 critique rendered a private draft through
+`/preview?table=<json>` in pieces, as the T221 and T225 notes describe. The
+first six pieces carried `Title`, `Parameters`, `Display properties` and the
+one section under test, and no entries -- there was no reason to send entries to
+read the Comments block. All six answered HTTP 200 and rendered no table at
+all, printing instead
+
+    Error while parsing numbers: cannot access local variable 'number_section'
+    where it is not associated with a value
+
+above a dump of the submitted YAML. That is a Django message from the preview
+view, not a YAML error, and it says nothing about the missing key; the piece
+looks exactly like a document the parser choked on. Adding `"Numbers": {"3":
+"x^2 - 2"}` to the same six pieces made all six render in full.
+
+What to do instead: put a `Numbers` key in **every** preview piece, one entry is
+enough. Together with the T225 note -- entries need `Parameters` beside them or
+they render as bare keys -- the working shape for a piece is: `Title`,
+`Parameters`, `Display properties`, one entry, and the section under test, plus
+`Links` when that section `CITE`s and `Formulas` when it cites a formula label.
+A `CITE` whose target is not in the piece renders as the bare key
+(`formula-recurrence` in running text), which is the piece's fault and not the
+table's.
+
+Evidence: 2026-09-20, T372 critique. `/tmp/prev372.py` and `/tmp/crit372/*.html`
+before and after: `a_def` 8,160 bytes with the error, 18,752 bytes with one
+entry added. Also for the record of the standing proxy notes: 127.0.0.1:1080
+served `https://numberdb.org/skill` once and then refused every connection
+(`curl: (7)`, `ss -ltn` showing no listener), and direct `curl` answered
+everything for the rest of the run, including `/api/table`, `/api/lookup`,
+`/preview` and `dlmf.nist.gov`. `--retry-all-errors` does not help: a refused
+connection retries instantly and fails the same way.
+
+## `source_names_it` matches literal substrings, so a plural name fails a singular page
+
+What happened: the proposal for a table of trinomial discriminants was screened
+as "Discriminants of trinomials" and refused twice, by two pages that both
+describe the family: <https://en.wikipedia.org/wiki/Discriminant> "does not
+mention trinomials", <https://en.wikipedia.org/wiki/Trinomial> "does not mention
+discriminants". Both are true as written. Wikipedia's discriminant article uses
+the word "trinomial" in the singular, and the trinomial article the word
+"discriminant" in the singular, and `_distinguishing` keeps whatever plural the
+proposed *name* was written in while the page match is a plain `w not in text`.
+MathWorld's `PolynomialDiscriminant` refuses for the same reason. Screening the
+same family as "Discriminant of a trinomial" passes against both pages.
+
+`GENERIC` already drops some plurals -- `polynomials`, `numbers`, `functions`,
+`values` -- which is why this has not bitten before: the words it bites are the
+distinguishing ones, and those are exactly the words the check exists to test.
+
+What to do instead: when `source_names_it` refuses a family you are confident
+is real, screen the singular form of the name before concluding the source is
+wrong, and record which form passed. A fix would stem both sides, or strip a
+trailing `s` from each distinguishing word before the match; that is a change to
+`screen.py` and wants a test, so it is not made here.
+
+Evidence: 2026-09-20 ideas run. `source_names_it("Discriminants of
+trinomials", "https://en.wikipedia.org/wiki/Trinomial")` -> "the source does not
+mention discriminants"; `source_names_it("Discriminant of a trinomial", same
+url)` -> None. Same pair against `.../Discriminant` and against
+`mathworld.wolfram.com/PolynomialDiscriminant.html`.
+
+## oeis.org answers a Cloudflare challenge here, so an A-number cannot be verified
+
+What happened: a proposal wanted to cite the OEIS sequence counting the terms of
+the discriminant of the general polynomial of degree $n$ (2, 5, 16, 59, 246,
+1103 for $n=2$ to $7$, measured in Sage). `curl https://oeis.org/search?q=id:A007878&fmt=text`
+returned the "Just a moment..." interstitial: an HTML page with a JavaScript
+challenge, HTTP 200, no sequence data. Plain `curl` to Wikipedia, MathWorld,
+doi.org and numberdb.org all answered normally in the same run.
+
+That matters twice over. A citation nobody can read is not a citation, so the
+A-number was left out of the batch with the measured terms given instead, for a
+builder to look up. And `source_names_it` against an `oeis.org` URL will refuse
+every family for want of the words, while looking exactly like a family nobody
+names: the earlier run's screen of `https://oeis.org/A002965` reported "the
+source does not mention discriminants, trinomials", which is a statement about
+the challenge page and not about OEIS.
+
+What to do instead: screen against Wikipedia, MathWorld, DLMF, doi.org or an
+arXiv abstract, which answer. If a proposal rests on an OEIS sequence, quote the
+first terms and say they were measured, and leave the A-number for somebody with
+a browser. `export.arxiv.org` was also unreachable from this run (`curl` wrote a
+zero-byte file, over both http and https), so an arXiv abstract page may not
+answer either; test it before relying on it.
+
+Evidence: 2026-09-20 ideas run, the OEIS response quoted above, and
+`curl -s --max-time 60 'http://export.arxiv.org/api/query?...' -o /tmp/ax.xml`
+giving `0 /tmp/ax.xml`.
+
+## `agents/sage.sh` forwards stdin, but the installed client does not read a key from it
+
+What happened: a table build tried the documented shape
+`cat "$NUMBERDB_KEY_FILE" | NUMBERDB_KEY_FROM_STDIN=1 agents/sage.sh generate.py`
+with `NUMBERDB_PUBLISH=1`. The wrapper forwarded `NUMBERDB_KEY_FROM_STDIN`, but
+the installed Python client only looks for `NUMBERDB_API_KEY`, `.env`, or
+`~/.config/numberdb/env`; it never reads stdin. The generator reached the
+package's preliminary `check_writable` call and failed with "writing needs an
+API key".
+
+What to do instead: use a scratch wrapper that reads stdin, calls
+`numberdb.configure(api_key=token)`, imports the generator, and then calls
+`publish()` or `verify()`. Keep the wrapper in `/tmp` and keep the key in
+memory only. If `publish()` is blocked by the empty-draft preflight, compute the
+entries through the generator and submit them with the package's
+`Entries`/`submit_entries` helpers, then attach `generate.py` with the same run
+id.
+
+Evidence: 2026-09-21, T376. The first publish attempt failed before computing
+entries with `UnauthorizedError: writing needs an API key`; the stdin-configured
+scratch wrappers `/tmp/submit_twisted_entries.py` and `/tmp/verify_twisted.py`
+filled and verified the draft without putting the key in an argument or file.
+
+## A closed request can contain a stale wrong T-number, so read the table it names
+
+What happened: numberdb-data issue #13 had an older closing comment saying the
+request was answered by `T368`, but `https://numberdb.org/api/table?id=T368`
+is "Zeros of the Charlier polynomials $C_n(x;a)$", not twisted Kloosterman
+sums. The live corpus search and the table contents showed that the requested
+twisted table did not exist yet, so the build continued and created T376.
+
+What to do instead: treat an issue-closing T-number as a claim to verify, not
+as proof. Fetch the table and read its title and definition before running
+`queue.py built` or stopping as a duplicate. If the named table is unrelated,
+continue the normal duplicate checks against the corpus and say what was found.
+
+Evidence: 2026-09-21, numberdb-data #13 and #174. `queue.py show 174` still
+listed "Twisted Kloosterman sums modulo a prime (numberdb-data#13)" as open
+work; the issue comment named T368; `api/table?id=T368` returned the Charlier
+zeros table; T376 was then built and `queue.py built 174 ... T376` added the
+correct answer.

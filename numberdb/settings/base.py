@@ -28,6 +28,12 @@ BASE_DIR = Path(__file__).resolve(strict=True).parents[2]
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())
+
+#: Which address this site calls its own, for canonical links and for the
+#: sitemap. One host, decided here: a canonical built from the request made
+#: www.numberdb.org declare itself canonical while numberdb.org declared
+#: itself, and a crawler shown two originals indexes neither.
+NUMBERDB_CANONICAL_ORIGIN = config('NUMBERDB_CANONICAL_ORIGIN', default='')
 DATABASES = {
     'default': dj_database_url.config(
         default=config('DATABASE_URL')
@@ -47,6 +53,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.postgres',
     'django.contrib.sites',
+    #For /sitemap.xml: the app carries the templates the sitemap views render,
+    #and without it they raise TemplateDoesNotExist rather than saying what is
+    #missing.
+    'django.contrib.sitemaps',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
@@ -98,6 +108,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.request', #allauth
+                'numberdb_app.context_processors.canonical_origin',
                 'numberdb_app.context_processors.review_access',
                 'numberdb_app.context_processors.site_notice',
                 'numberdb_app.context_processors.drafts_in_progress',

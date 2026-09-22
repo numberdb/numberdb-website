@@ -1,4 +1,8 @@
+from django.contrib.sitemaps.views import index as sitemap_index
+from django.contrib.sitemaps.views import sitemap as sitemap_section
 from django.urls import path, re_path
+
+from .sitemaps import SITEMAPS
 
 from . import views
 from . import api
@@ -14,6 +18,25 @@ urlpatterns = [
     #The conventional place a language model looks for a site's documents.
     path('llms.txt', views.llms_txt, name='llms-txt'),
 
+    #Where the pages are, and which of them are for readers. Both were 404
+    #until Google reported 73 pages "crawled, currently not indexed": a
+    #corpus of several hundred tables discoverable only by following links.
+    #
+    #The sitemap is generated from the database on request rather than
+    #written to a file: this corpus gains tables nightly, and a stored
+    #sitemap is a stale one. See numberdb_app/sitemaps.py.
+    path('robots.txt', views.robots_txt, name='robots-txt'),
+    #The index reverses the name of the section view to write its links, and
+    #these routes live in the `db` namespace, so it has to be told the
+    #namespaced name -- otherwise it reverses the bare name, finds nothing,
+    #and answers 500 on a page whose whole job is to be fetched by a robot.
+    path('sitemap.xml', sitemap_index,
+         {'sitemaps': SITEMAPS,
+          'sitemap_url_name': 'db:sitemap-section'},
+         name='sitemap-index'),
+    path('sitemap-<section>.xml', sitemap_section, {'sitemaps': SITEMAPS},
+         name='sitemap-section'),
+
     path('api/docs', views.api_reference, name='api-reference'),
     path('api/search', api.advanced_search_results, name='api-search'),
     path('api/lookup', api.lookup, name='api-lookup'),
@@ -24,6 +47,9 @@ urlpatterns = [
     re_path(r'^api/table/(?P<tid>[Tt]?\d+)/offer$', api.offer_table, name='api-offer-table'),
     re_path(r'^api/table/(?P<tid>[Tt]?\d+)/lease$', api.table_lease, name='api-table-lease'),
     path('api/costs', api.costs, name='api-costs'),
+    #The lock on a proposal. A checklist in an issue cannot be claimed
+    #atomically; a unique constraint can.
+    path('api/claim', api.claim, name='api-claim'),
     re_path(r'^api/table/(?P<tid>[Tt]?\d+)/audit$', api.audit, name='api-audit'),
     re_path(r'^api/table/(?P<tid>[Tt]?\d+)/file/(?P<name>[-\w./]+)$', api.write_file, name='api-write-file'),
     path('api/tag', api.tag, name='api-tag'),

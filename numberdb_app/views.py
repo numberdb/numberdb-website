@@ -146,6 +146,46 @@ def skill(request):
 	return HttpResponse(body, content_type='text/markdown; charset=utf-8')
 
 
+def robots_txt(request):
+	"""What a crawler may read, and where the map is.
+
+	There was no robots.txt at all, so every private corner was crawled and
+	reported back as an error: `/overview` as a redirect to a login page,
+	`/review` as a 404, an API path as a 401. None of those are faults on the
+	site; they are pages a crawler should not have been in.
+
+	`Disallow` is not a security measure and nothing here depends on it being
+	obeyed -- the permission checks do that. It is a courtesy that keeps a
+	crawler's report about the pages that are for readers.
+	"""
+	from django.http import HttpResponse
+
+	lines = [
+		'User-agent: *',
+		#Machine surfaces and private ones. Each of these answered a crawler
+		#with a redirect, a 401 or a 404 -- true answers to a request that
+		#should not have been made.
+		'Disallow: /api/',
+		'Disallow: /accounts/',
+		'Disallow: /profile',
+		'Disallow: /overview',
+		'Disallow: /review',
+		'Disallow: /edit/',
+		'Disallow: /preview',
+		'Disallow: /debug',
+		#The same table in other clothes. A crawler that fetches these finds
+		#the page it already has, spends the budget, and indexes neither.
+		'Disallow: /bundle/',
+		'Disallow: /blame/',
+		'Disallow: /revisions/',
+		'',
+		'Sitemap: %s://%s/sitemap.xml' % (request.scheme,
+		                                  request.get_host()),
+		'',
+	]
+	return HttpResponse('\n'.join(lines), content_type='text/plain')
+
+
 def llms_txt(request):
 	"""An index of this site for a language model, at the conventional path.
 
@@ -389,7 +429,14 @@ def tags(request):
 
 def tag(request, tag_url):
 	page = request.GET.get('page', 1)
-	tag = Tag.from_url(tag_url)
+	#A tag nobody has used is a page that does not exist, and said so with an
+	#error page and HTTP 500 -- which is a claim that this site is broken.
+	#Google counted it among its critical issues, and it was the only 5xx
+	#there.
+	try:
+		tag = Tag.from_url(tag_url)
+	except Tag.DoesNotExist:
+		raise Http404('No tag called %r.' % (tag_url,))
 	#tag = Tag.objects.get(name=tag_name)
 	tables = tag.public_tables
 	sortby_default = 'entry_count'

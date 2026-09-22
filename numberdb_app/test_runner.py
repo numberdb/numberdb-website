@@ -66,7 +66,11 @@ class TheRunnerFencesOffWhatItCannotUndo(TestCase):
 		#having to hold it or hand it straight back.
 		body = script('agents/campaign.sh')
 		self.assertIn('frees itself in ninety minutes', body)
-		self.assertNotIn('queue.py release', body)
+		#Released only when the build never started: a preflight refusal is
+		#not a decline, and a worker whose runs all refuse would otherwise
+		#take a family's every proposal in a minute and hold them for ninety.
+		self.assertIn('the build refused to start; giving $proposal back',
+		              body)
 
 	def test_the_same_item_twice_stops_the_campaign(self):
 		#A queue that is not being consumed looks exactly like work being
@@ -76,6 +80,57 @@ class TheRunnerFencesOffWhatItCannotUndo(TestCase):
 		body = script('agents/campaign.sh')
 		self.assertIn('the queue offered the same item twice', body)
 		self.assertIn('last_item', body)
+
+	def test_a_builder_does_not_buy_proposals(self):
+		#Refilling a shared queue is a global decision, and four builders
+		#making it independently ran ten screenings in a day at $6 to $15
+		#each. One producer -- agents/screener.sh -- and the pool consumes.
+		body = script('agents/campaign.sh')
+		self.assertIn('"${NUMBERDB_SCREEN:-1}" = 0', body)
+		self.assertIn('the screener is the one who fills the queue', body)
+		supervisor = script('agents/workers.sh')
+		self.assertIn('NUMBERDB_SCREEN=0', supervisor)
+		self.assertIn('start_screener', supervisor)
+
+	def test_the_screener_holds_a_target_depth(self):
+		#It asks, and if the queue is deep enough it waits: a screening costs
+		#about ten dollars and takes twenty minutes.
+		body = script('agents/screener.sh')
+		self.assertIn('proposals waiting, which is enough', body)
+		self.assertIn('NUMBERDB_QUEUE_TARGET', body)
+		#And it builds nothing.
+		self.assertNotIn('campaign.sh', body)
+
+	def test_a_question_nobody_answered_is_still_written_down(self):
+		#The report is the mark: work.py offers a table for growth until
+		#<tid>-growth.md exists. A run that produced none left the table as it
+		#found it, the queue offered it again, and the repeat guard stopped
+		#the campaign -- three workers on T293 within a minute.
+		body = script('agents/campaign.sh')
+		self.assertIn('writing down that the run produced none', body)
+		self.assertIn('run produced no report', body)
+
+	def test_a_queue_that_cannot_be_read_does_not_kill_the_campaign(self):
+		#`set -o pipefail` plus `set -e` meant that one refused GitHub request
+		#ended the campaign inside top_up_if_low, before the check that was
+		#written to report it could run: three workers died within a minute of
+		#each other and each log's last line was the previous item.
+		body = script('agents/campaign.sh')
+		self.assertIn('queue_waiting || true', body)
+		self.assertIn('could not be read twice', body)
+		#And a failed screening is not the end either, while other work waits.
+		self.assertIn('the screening failed with status', body)
+		self.assertIn('carrying on with the work that is already waiting', body)
+
+	def test_an_unpushed_commit_is_pushed_rather_than_refused(self):
+		#The rule is right and the refusal was not: it stopped the campaign
+		#three times in two days, and every time the remedy was one command
+		#nobody was there to type. A commit made in this tree is this tree's
+		#to publish.
+		body = script('agents/run.sh')
+		self.assertIn('pushed $(git rev-parse --short HEAD) before starting',
+		              body)
+		self.assertIn('could not be pushed', body)
 
 	def test_a_critique_waiting_to_be_acted_on_is_not_a_dirty_tree(self):
 		#The campaign writes a person's demand into agents/critiques/ and then
@@ -838,3 +893,49 @@ class ABuildIsAttributedToTheTableItMade(TestCase):
 	def test_it_does_not_use_the_campaigns_variable(self):
 		body = script('agents/run.sh')
 		self.assertNotIn('"$before"..HEAD', body)
+
+
+class ARunAboutASingleDigitTableIsAttributedToIt(TestCase):
+	"""T1 through T9 exist, and every run about one was recorded as table-less.
+
+	`run.sh` reads the table out of its own task text, and the pattern was
+	`\bT[0-9]{2,4}\b` -- two digits at the least. The corpus starts at T1, so
+	the nine oldest tables, the hand-made ones, could never be matched. On
+	2026-09-22 a worker swept T0 through T9 overnight and its fifteen repairs,
+	$44.63, went into the ledger with an empty table column; the overview
+	showed those tables as having cost nothing to maintain.
+
+	The pattern is exercised here rather than asserted as a string, because
+	what went wrong was the pattern's *meaning* and a test comparing source
+	text to source text would have been written with the same mistake in it.
+	"""
+
+	def about(self, task):
+		"""What run.sh would attribute this task to."""
+		import re
+
+		found = re.search(r'\bT[0-9]{1,4}\b', task)
+		return found.group(0) if found else ''
+
+	def test_the_pattern_in_the_script_is_the_one_tested_here(self):
+		self.assertIn(r"'\bT[0-9]{1,4}\b'", script('agents/run.sh'))
+
+	def test_a_single_digit_table_is_found(self):
+		for tid in ('T1', 'T5', 'T9'):
+			with self.subTest(tid=tid):
+				self.assertEqual(
+					self.about('Act on critiques/%s.md, for %s. Check every '
+					           'finding.' % (tid, tid)), tid)
+
+	def test_the_longer_numbers_still_work(self):
+		for tid in ('T42', 'T127', 'T1024'):
+			with self.subTest(tid=tid):
+				self.assertEqual(self.about('Read %s and write a report.'
+				                            % (tid,)), tid)
+
+	def test_a_task_naming_no_table_is_still_table_less(self):
+		#An ideas run proposes a batch and is about no table at all. That is
+		#not a fault to fix: $1168 of screening is correctly unattributed,
+		#and pretending otherwise would put it on whichever table happened to
+		#be mentioned in passing.
+		self.assertEqual(self.about('Propose a batch from the open issues.'), '')
