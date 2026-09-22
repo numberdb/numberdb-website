@@ -8554,3 +8554,50 @@ site serves the whole file and `curl` receives the whole file; it is the
 summarising fetch tool that truncates. Either source is safe, and `curl` into
 `/tmp` then reading the file is the way to get it from the URL the prompt
 names.
+
+## What a numerical check can afford inside `agents/sage.sh`
+
+The image's numpy is enough for real work, and the 320 MB default cap is not
+the binding constraint for dense linear algebra. Measured on 2026-09-22, in
+the default container with no `NUMBERDB_SAGE_MEMORY` override:
+
+* `numpy.linalg.eigvalsh` on an $800\times800$ float64 symmetric matrix,
+  built by four matrix multiplications of the same size: a few seconds, and
+  four such problems in one script finished inside a minute;
+* `numpy.linalg.eigvals` on a $600\times600$ complex128 non-symmetric matrix:
+  the same order of time;
+* a script doing twenty of these in sequence ran to completion well inside
+  the 1800 s timeout.
+
+An $n\times n$ float64 matrix is $8n^2$ bytes, so $n = 1000$ is 8 MB and the
+LAPACK workspace a small multiple of it; the 98 MB that importing Sage costs
+is larger than anything a thousand-point diagonalisation needs. So an ideation
+or verification run that wants a spectrum should not shrink the problem to
+fit: `n` of a thousand is free, and the reason to stay smaller is the wall
+clock, not the cap.
+
+What does not fit is high-precision dense linear algebra. `mpmath.eigsy` is
+pure Python and an $n^3$ algorithm at 50 digits on a few hundred rows is
+minutes to hours, not seconds. Where a run needs both size and precision, the
+structure usually rescues it: a Galerkin matrix of a differential operator in
+a polynomial basis is banded, and a banded determinant is an $O(n)$ recursion
+that mpmath evaluates at any precision, with bisection on the eigenvalue
+around it.
+
+## The `table wanted` backlog is still empty, and that cost a second run the same turns
+
+Reconfirmed on 2026-09-22, independently of the 2026-09-21 finding recorded
+above under "`screen.py` asks GitHub anonymously": `numberdb/numberdb-data`
+has five open issues -- #184, #181, #180 (`proposal`) and #137, #133
+(`enhancement`) -- and none of them is `table wanted`. All 126 issues that
+ever carried that label are closed.
+
+`python3 agents/table-ideas/screen.py requests` prints nothing, which is what
+it prints when GitHub declines to answer, so each run has to establish from
+scratch which of the two it is met. That is the second ideation run to spend
+its opening turns on it. Two things would stop a third: `requests()` raising
+rather than returning `[]`, as the section above proposes, and the ideation
+prompt's step 4 saying what to do when the backlog is empty -- at present it
+reads as though there is always a request to anchor on, and a run that finds
+none has to decide for itself that "propose from the requests" has become
+"propose, and say why no request is cited".
