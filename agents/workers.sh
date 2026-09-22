@@ -53,6 +53,42 @@ mkdir -p "$NUMBERDB_CRITIQUES"
 
 say() { printf '\n=== %s %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 
+# Which engine reads and which proposes, when one of them may be gone.
+#
+# The writer is codex and the other two roles were claude, which is the right
+# split while both work. A subscription ends on a date, though, and the pool
+# should not need a person awake at that moment: `run.sh` exits 6 when it has
+# spent every model its engine may use, and `campaign.sh` hands that stage to
+# the other engine for the rest of the run. That covers claude going away
+# *during* a campaign, and costs nothing -- the refusal happens in preflight,
+# before a run spends anything.
+#
+# What it does not cover is claude being gone *before* a campaign starts: each
+# restart would rediscover it, one refusal at a time, for ever. So the
+# supervisor asks once, here, and tells the workers what it found. A wrong
+# answer is cheap in both directions: if claude recovers, the next supervisor
+# start picks it up again, and if it dies later the handover still fires.
+#
+# NUMBERDB_CRITIC or NUMBERDB_MINER set explicitly wins over the probe.
+engine_for_reading() {
+	if [ -n "${NUMBERDB_CRITIC:-}" ] || [ -n "${NUMBERDB_MINER:-}" ]; then
+		return 0
+	fi
+	if ! command -v claude >/dev/null 2>&1; then
+		say "no claude on PATH; codex reads and proposes"
+		NUMBERDB_CRITIC=codex NUMBERDB_MINER=codex
+		export NUMBERDB_CRITIC NUMBERDB_MINER
+		return 0
+	fi
+	if timeout 120 claude -p 'Reply with exactly: ok' >/dev/null 2>&1; then
+		say "claude answers; it reads and proposes, codex writes"
+	else
+		say "claude did not answer; codex reads and proposes for this run"
+		NUMBERDB_CRITIC=codex NUMBERDB_MINER=codex
+		export NUMBERDB_CRITIC NUMBERDB_MINER
+	fi
+}
+
 tree_of() {                      # worker name -> its working tree
 	if [ "$1" = w1 ]; then echo "$here"; else echo "$here/../numberdb-campaign-$1"; fi
 }
@@ -139,7 +175,10 @@ start_screener() {
 	)
 }
 
+engine_for_reading
+
 say "keeping $workers builder(s) and one screener alive, looking every ${every}s"
+say "writer ${NUMBERDB_WRITER:-codex}, critic ${NUMBERDB_CRITIC:-claude}, miner ${NUMBERDB_MINER:-claude}"
 say "critiques shared in $NUMBERDB_CRITIQUES"
 
 while true; do
