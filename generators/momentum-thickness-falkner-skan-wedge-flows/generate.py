@@ -66,8 +66,16 @@ def _mpq(q):
 
 
 def _beta_key(beta):
-    beta = QQ(beta)
+    beta = _qq_from_text(beta)
     return str(beta)
+
+
+def _qq_from_text(text):
+    text = str(text).strip()
+    if "/" in text:
+        numerator, denominator = text.split("/", 1)
+        return QQ(int(numerator)) / QQ(int(denominator))
+    return QQ(int(text))
 
 
 def _format_decimal(value, digits):
