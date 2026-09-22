@@ -1,0 +1,127 @@
+# Draft document for T417, Wall heat transfer of the thermal Falkner-Skan
+# boundary layer. It was created through the API with X-Draft: yes and
+# Numbers: [] so generate.py can fill it once. Publishing is a person's act.
+Title: Wall heat transfer $-\theta'(0)$ of the thermal Falkner–Skan boundary layer
+Definition: >-
+  For the upper-branch Falkner-Skan similarity solution $f$ of the wedge
+  boundary layer CITE{FSWiki}, this table gives the wall heat-transfer
+  coefficient $-\theta'(0)$ for the constant-property thermal boundary layer
+  with uniform wall temperature and no viscous dissipation. In the wedge
+  normalisation, with $m=\beta/(2-\beta)$, the temperature satisfies
+  $\theta''+\frac{m+1}{2}\mathrm{Pr}\,f\theta'=0$,
+  $\theta(0)=1$ and $\theta(\infty)=0$.
+Keywords:
+  - Nusselt
+  - Pohlhausen
+  - laminar
+  - flat plate
+  - Prandtl
+  - Blasius
+  - Falkner-Skan
+  - wedge flow
+Parameters:
+  beta:
+    type: Q
+    title: Falkner-Skan pressure-gradient parameter
+    display: $\beta$
+    constraints: $\beta_s<\beta\leq2$, where $\beta_s$ is the separation value
+  branch:
+    type: Symbolic
+    title: solution branch
+    display: branch
+    values:
+      upper: upper
+      lower: lower
+  prandtl:
+    type: Q
+    title: Prandtl number
+    display: $\mathrm{Pr}$
+    constraints: $\mathrm{Pr}>0$
+  normalisation:
+    type: Symbolic
+    title: normalisation of the wall-normal coordinate
+    display: normalisation
+    values:
+      wedge: wedge
+      hartree: Hartree
+Comments:
+  comment-normalisations: >-
+    The wedge normalisation uses $\eta=y\sqrt{u_e/(\nu x)}$ and
+    $\psi=\sqrt{\nu x u_e}\,f(\eta)$, so that
+    $f'''+\frac{m+1}{2}ff''+m(1-f'^2)=0$. The Hartree normalisation uses
+    $\eta_H=\eta\sqrt{(m+1)/2}$ and $f_H=\sqrt{(m+1)/2}\,f$, giving
+    $f_H'''+f_Hf_H''+\beta(1-f_H'^2)=0$. The two entries with the same
+    $\beta$, branch and $\mathrm{Pr}$ are the same physical heat transfer
+    coefficient in the two standard similarity coordinates.
+  comment-range: >-
+    The beta grid is the thermal table's coarse wedge-flow grid: $\beta=-0.19$
+    and then $-0.1,0,0.1,\ldots,2.0$. It is coarser than the two-decimal
+    velocity-table grid because $\mathrm{Pr}$ is the second physical argument
+    varied in heat-transfer tables. The Prandtl grid contains liquid-metal
+    values, air at $0.7$ and $0.72$, water near room temperature at $7$,
+    round decades and the large-$\mathrm{Pr}$ oil values.
+  comment-correlation: >-
+    The textbook flat-plate correlation
+    $\mathrm{Nu}_x=0.332\,\mathrm{Re}_x^{1/2}\mathrm{Pr}^{1/3}$
+    CITE{NusseltWiki} uses the Blasius $\mathrm{Pr}=1$ value as a practical
+    coefficient. The exact ratio $-\theta'(0)/\mathrm{Pr}^{1/3}$ is not
+    constant as $\mathrm{Pr}$ varies.
+Formulas:
+  formula-quadrature: >-
+    In Hartree variables, $-\theta_H'(0)=\left(\int_0^\infty
+    \exp\left(-\mathrm{Pr}\int_0^\eta f_H(s)\,ds\right)\,d\eta\right)^{-1}$.
+  formula-conversion: >-
+    With $m=\beta/(2-\beta)$, $-\theta'_{\mathrm{wedge}}(0)=
+    \sqrt{(m+1)/2}\,[-\theta'_{\mathrm{Hartree}}(0)]$.
+  formula-reynolds: >-
+    At $\beta=0$ and $\mathrm{Pr}=1$, Reynolds's analogy gives
+    $-\theta'_{\mathrm{wedge}}(0)=f''_{\mathrm{wedge}}(0)$ and
+    $-\theta'_{\mathrm{Hartree}}(0)=f''_{\mathrm{Hartree}}(0)$.
+  formula-beta-m: >-
+    The pressure-gradient exponent and the Falkner-Skan parameter are related
+    by $m=\beta/(2-\beta)$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      # The attached generate.py computes the table. To reproduce one row:
+      #   sage -python generate.py --only beta=0,branch=upper,prandtl=0.7,normalisation=wedge
+Links:
+  FSWiki:
+    title: 'Wikipedia: Falkner-Skan boundary layer'
+    url: https://en.wikipedia.org/wiki/Falkner%E2%80%93Skan_boundary_layer
+  NusseltWiki:
+    title: 'Wikipedia: Nusselt number'
+    url: https://en.wikipedia.org/wiki/Nusselt_number
+  PrandtlWiki:
+    title: 'Wikipedia: Prandtl number'
+    url: https://en.wikipedia.org/wiki/Prandtl_number
+References:
+  Schlichting:
+    bib: H. Schlichting and K. Gersten, Boundary-Layer Theory, ninth edition, Springer, 2017.
+  Iyer:
+    bib: Sameer Iyer, Stability of the favorable Falkner-Skan profiles for the stationary Prandtl equations, 2024.
+    arxiv: '2403.07791'
+Tags:
+  - fluid dynamics
+  - analysis
+  - physics
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  rigour details: >-
+    Values are computed in Hartree variables by a shooting method for the
+    Falkner-Skan initial slope, followed by an augmented initial-value
+    integration of the thermal quadrature. Each value is computed twice at
+    the working precisions stated in `generate.py`, and only the digits common
+    to both runs are written. The row $\beta=0$, $\mathrm{Pr}=1$ is also
+    checked against Reynolds's analogy in CITE{formula-reynolds}.
+  complete: 'no'
+  complete-note: >-
+    it holds the upper branch for $\beta=-0.19$ and for every tenth from
+    $\beta=-0.1$ through $\beta=2.0$, with $\mathrm{Pr}=0.001,0.003,0.01,
+    0.03,0.1,0.3,0.6,0.7,0.72,1,2,3,5,7,10,30,100,300,1000$, in both the
+    wedge and Hartree normalisations
+Display properties:
+  number-header: $-\theta'(0)$
+Numbers: []
