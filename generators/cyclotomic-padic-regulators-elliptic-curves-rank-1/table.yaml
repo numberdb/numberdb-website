@@ -3,13 +3,11 @@
 # is a person's act on the site.
 Title: Cyclotomic $p$-adic regulators of elliptic curves over $\mathbb{Q}$ of rank $1$
 Definition: >-
-  Let $E/\mathbb{Q}$ be the elliptic curve with reduced global minimal
-  Weierstrass model recovered from $(c_4,c_6)$ by Formula
-  CITE{formula-model-from-invariants}, and let $p\geq5$ be a prime of good
-  ordinary reduction for $E$. The entry is the cyclotomic $p$-adic regulator
-  $\operatorname{Reg}_p(E/\mathbb{Q})$, the determinant of the cyclotomic
-  $p$-adic height pairing in the Mazur-Tate-Teitelbaum normalisation
-  CITE{MTT} CITE{SagePadic}.
+  Let $E/\mathbb{Q}$ be the curve identified by $(N,c_4,c_6)$ in Formula
+  CITE{formula-model-from-invariants}, and let $p$ be a good ordinary prime.
+  The entry is its cyclotomic $p$-adic regulator
+  $\operatorname{Reg}_p(E/\mathbb{Q})$ in the normalisation of
+  CITE{comment-normalisation}.
 Parameters:
   N:
     type: Z
