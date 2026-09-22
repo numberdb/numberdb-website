@@ -7346,3 +7346,36 @@ neither has a test holding it to the truth.
 Evidence: 2026-09-22 ideation run. Walking `numberdb.table('T%d')` for
 1..339 found 338; extending to 430 found T340 through T414, none of which the
 prompt's count allows for.
+
+## `agents/sage.sh` gives up after twenty minutes of waiting and exits 0
+
+What happened: an ideation run needed two Sage passes to check the values it
+was proposing. The first waited 7 minutes for the lock and then ran in under a
+minute. The second waited the full twenty:
+
+    waiting for the Sage lock: another worker is using it (0s)
+    ... (once a minute) ...
+    waiting for the Sage lock: another worker is using it (1140s)
+    the Sage box has been busy for twenty minutes; try again
+
+    [exited with code 0]
+
+Two things follow. The wrapper **gives up** rather than queueing
+indefinitely, so a long-running build by another worker can cost a whole
+computation; and it gives up with **exit status 0**, so a caller that checks
+`$?`, or a pipeline whose last stage is `| tail`, sees success and an empty
+result. The message is the only signal, and a run that pipes the output
+through `tail` sees nothing at all until the very end, because `tail` buffers
+to EOF.
+
+What to do instead: when a Sage check matters, run it without a pipe so the
+per-minute lock messages are visible as they arrive, grep the output for
+"has been busy" before trusting an empty result, and expect to retry.
+Schedule the checks a stage needs early rather than at the end, since the
+twenty-minute ceiling means a run can lose one pass entirely with several
+workers active.
+
+Evidence: 2026-09-22 ideation run, two invocations of
+`agents/sage.sh /tmp/nb/check2.py` twenty minutes apart; the first returned
+the message above after 1140 seconds of waiting, exit code 0, no output from
+the script itself.
