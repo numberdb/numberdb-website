@@ -9067,3 +9067,44 @@ succeeded; the next `--socks5-hostname` request and every one after it gave
 `curl: (7) connect to 127.0.0.1 port 1080 ... Connection refused`, while
 `curl --noproxy '*' https://numberdb.org/api/table/T9/audit` answered 105
 bytes of JSON.
+## `agents/sage.sh` forwards stdin, but the installed client does not read a key from it
+
+What happened: a table build tried the documented shape
+`cat "$NUMBERDB_KEY_FILE" | NUMBERDB_KEY_FROM_STDIN=1 agents/sage.sh generate.py`
+with `NUMBERDB_PUBLISH=1`. The wrapper forwarded `NUMBERDB_KEY_FROM_STDIN`, but
+the installed Python client only looks for `NUMBERDB_API_KEY`, `.env`, or
+`~/.config/numberdb/env`; it never reads stdin. The generator reached the
+package's preliminary `check_writable` call and failed with "writing needs an
+API key".
+
+What to do instead: use a scratch wrapper that reads stdin, calls
+`numberdb.configure(api_key=token)`, imports the generator, and then calls
+`publish()` or `verify()`. Keep the wrapper in `/tmp` and keep the key in
+memory only. If `publish()` is blocked by the empty-draft preflight, compute the
+entries through the generator and submit them with the package's
+`Entries`/`submit_entries` helpers, then attach `generate.py` with the same run
+id.
+
+Evidence: 2026-09-21, T376. The first publish attempt failed before computing
+entries with `UnauthorizedError: writing needs an API key`; the stdin-configured
+scratch wrappers `/tmp/submit_twisted_entries.py` and `/tmp/verify_twisted.py`
+filled and verified the draft without putting the key in an argument or file.
+
+## A closed request can contain a stale wrong T-number, so read the table it names
+
+What happened: numberdb-data issue #13 had an older closing comment saying the
+request was answered by `T368`, but `https://numberdb.org/api/table?id=T368`
+is "Zeros of the Charlier polynomials $C_n(x;a)$", not twisted Kloosterman
+sums. The live corpus search and the table contents showed that the requested
+twisted table did not exist yet, so the build continued and created T376.
+
+What to do instead: treat an issue-closing T-number as a claim to verify, not
+as proof. Fetch the table and read its title and definition before running
+`queue.py built` or stopping as a duplicate. If the named table is unrelated,
+continue the normal duplicate checks against the corpus and say what was found.
+
+Evidence: 2026-09-21, numberdb-data #13 and #174. `queue.py show 174` still
+listed "Twisted Kloosterman sums modulo a prime (numberdb-data#13)" as open
+work; the issue comment named T368; `api/table?id=T368` returned the Charlier
+zeros table; T376 was then built and `queue.py built 174 ... T376` added the
+correct answer.

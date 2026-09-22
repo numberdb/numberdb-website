@@ -1,0 +1,117 @@
+Title: Zeros of the derivative $\zeta'(s)$ of the Riemann zeta function
+Definition: >-
+  $\zeta(s)$ is the Riemann zeta function CITE{DLMFZeta}. The table holds
+  the non-real zeros $\rho_n$ of its derivative $\zeta'(s)$ with
+  $\operatorname{Im}\rho_n>0$, ordered by increasing imaginary part and
+  indexed from $n=1$.
+Keywords:
+  - zeta derivative zeros
+  - Riemann hypothesis
+  - Speiser theorem
+Parameters:
+  n:
+    type: Z
+    title: index of the zero
+    display: $n$
+    constraints: $n\geq1$
+    comments: >-
+      The zeros are ordered by increasing imaginary part; if two zeros had
+      the same imaginary part, they would be ordered by increasing real part.
+Comments:
+  comment-conjugates: >-
+    Since $\zeta'(\overline{s})=\overline{\zeta'(s)}$, the conjugate
+    $\overline{\rho_n}$ is a zero whenever $\rho_n$ is. Only the zeros with
+    positive imaginary part are entries.
+  comment-real-zeros: >-
+    The real zeros of $\zeta'$ are not entries. There is one such zero in
+    each interval $(-2m-2,-2m)$ for $m\geq1$; the first is
+    $-2.717262829204574\ldots$ CITE{OEISImag}.
+  comment-rh: >-
+    Speiser's theorem, in the form used by Levinson and Montgomery
+    CITE{LevMon74}, says that the Riemann hypothesis is equivalent to
+    $\zeta'$ having no non-real zeros with $0<\operatorname{Re}s<1/2$.
+Formulas:
+  formula-conjugation: >-
+    $\zeta'(\overline{s})=\overline{\zeta'(s)}$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage
+      from sage.rings.complex_arb import ComplexBallField
+
+      C = ComplexBallField(200)
+      z = C("2.4631618694543212858743950533",
+            "23.2983204927628579020109616")
+      for _ in range(5):
+          z = z - z.zetaderiv(1) / z.zetaderiv(2)
+      print(z)
+Similar tables:
+  - table: HREF{Zeros_of_the_Riemann_zeta_function}[Zeros of the Riemann zeta function]
+    relation: >-
+      stores the imaginary parts of zeros of $\zeta(s)$ itself; Speiser's
+      theorem relates the Riemann hypothesis to the horizontal distribution
+      of the zeros stored here
+  - table: HREF{Values_of_the_derivative_of_the_Riemann_zeta_function_at_rational_numbers}[Values of the derivative $\zeta'(s)$ of the Riemann zeta function at rational numbers]
+    relation: >-
+      stores values of the same function $\zeta'(s)$ at rational arguments
+      rather than its zeros
+  - table: HREF{Values_of_the_logarithmic_derivative_of_the_Riemann_zeta_function_at_rational_numbers}[Values of the logarithmic derivative $\zeta'(s)/\zeta(s)$ of the Riemann zeta function at rational numbers]
+    relation: >-
+      stores the logarithmic derivative; away from zeros of $\zeta(s)$, a
+      zero of $\zeta'(s)$ is a zero of $\zeta'(s)/\zeta(s)$
+  - table: HREF{Zeros_of_Dirichlet_L_functions}[Zeros of Dirichlet $L$-functions]
+    relation: stores zero ordinates for Dirichlet $L$-functions
+  - table: HREF{Zeros_of_the_L-functions_of_level_one_cusp_forms}[Zeros of the $L$-functions of level one cusp forms]
+    relation: stores zero ordinates for another family of $L$-functions
+  - table: HREF{Zeros_of_the_Dedekind_zeta_functions_of_cubic_fields}[Zeros of the Dedekind zeta functions of cubic fields]
+    relation: stores zero ordinates for Dedekind zeta functions in the same proposal family
+  - table: HREF{Keiper-Li_coefficients}[Keiper-Li coefficients]
+    relation: stores the coefficients whose positivity is Li's criterion for the Riemann hypothesis
+  - table: HREF{Taylor_coefficients_of_completed_Riemann_zeta_function_at_1_over_2}[Taylor coefficients of the completed Riemann zeta function at $1/2$]
+    relation: stores coefficients at the centre of the critical strip for another Riemann-hypothesis criterion
+Links:
+  DLMFZeta:
+    title: 'DLMF 25.2: Definition and Expansions'
+    url: https://dlmf.nist.gov/25.2
+  OEISReal:
+    title: >-
+      OEIS A356216: real part of the first zero of $\zeta'(s)$
+    url: https://oeis.org/A356216
+  OEISImag:
+    title: >-
+      OEIS A356092: imaginary part of the first zero of $\zeta'(s)$
+    url: https://oeis.org/A356092
+References:
+  LevMon74:
+    bib: >-
+      N. Levinson and H. L. Montgomery, Zeros of the derivatives of the
+      Riemann zeta-function, Acta Math. 133 (1974), 49-65.
+    doi: 10.1007/BF02392141
+Tags:
+  - zero
+  - L-function
+Data properties:
+  type: C
+  rigour: proven
+  rigour details: >-
+    The generator locates candidates by Newton iteration applied to
+    $f(s)=\zeta'(s)$ and $f'(s)=\zeta''(s)$ in arb complex ball arithmetic.
+    It runs two seed grids, one on half-integer heights and one on offset
+    quarter-integer heights, and refuses to continue unless both grids find
+    the same 58 candidates with $0<\operatorname{Im}\rho\leq200$.
+
+    Each candidate is refined and then certified by a Krawczyk step on a
+    complex ball $B$: with $m$ the centre of $B$ and
+    $Y=1/\zeta''(m)$, the computed set
+    $m-Y\zeta'(m)+(1-Y\zeta''(B))(B-m)$ must lie in the interior of $B$.
+    This proves that $B$ contains a unique zero of $\zeta'$.
+
+    The first entry is checked against the OEIS decimal expansions
+    CITE{OEISReal} and CITE{OEISImag}.
+  complete: 'no'
+  complete-note: >-
+    it holds the 58 certified non-real zeros found by the generator with
+    $0<\operatorname{Im}\rho\leq200$; both seed grids found the same set
+Display properties:
+  number-header: $\rho_n$

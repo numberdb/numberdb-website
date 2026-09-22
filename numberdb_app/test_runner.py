@@ -66,7 +66,11 @@ class TheRunnerFencesOffWhatItCannotUndo(TestCase):
 		#having to hold it or hand it straight back.
 		body = script('agents/campaign.sh')
 		self.assertIn('frees itself in ninety minutes', body)
-		self.assertNotIn('queue.py release', body)
+		#Released only when the build never started: a preflight refusal is
+		#not a decline, and a worker whose runs all refuse would otherwise
+		#take a family's every proposal in a minute and hold them for ninety.
+		self.assertIn('the build refused to start; giving $proposal back',
+		              body)
 
 	def test_the_same_item_twice_stops_the_campaign(self):
 		#A queue that is not being consumed looks exactly like work being
@@ -76,6 +80,47 @@ class TheRunnerFencesOffWhatItCannotUndo(TestCase):
 		body = script('agents/campaign.sh')
 		self.assertIn('the queue offered the same item twice', body)
 		self.assertIn('last_item', body)
+
+	def test_a_builder_does_not_buy_proposals(self):
+		#Refilling a shared queue is a global decision, and four builders
+		#making it independently ran ten screenings in a day at $6 to $15
+		#each. One producer -- agents/screener.sh -- and the pool consumes.
+		body = script('agents/campaign.sh')
+		self.assertIn('"${NUMBERDB_SCREEN:-1}" = 0', body)
+		self.assertIn('the screener is the one who fills the queue', body)
+		supervisor = script('agents/workers.sh')
+		self.assertIn('NUMBERDB_SCREEN=0', supervisor)
+		self.assertIn('start_screener', supervisor)
+
+	def test_the_screener_holds_a_target_depth(self):
+		#It asks, and if the queue is deep enough it waits: a screening costs
+		#about ten dollars and takes twenty minutes.
+		body = script('agents/screener.sh')
+		self.assertIn('proposals waiting, which is enough', body)
+		self.assertIn('NUMBERDB_QUEUE_TARGET', body)
+		#And it builds nothing.
+		self.assertNotIn('campaign.sh', body)
+
+	def test_a_question_nobody_answered_is_still_written_down(self):
+		#The report is the mark: work.py offers a table for growth until
+		#<tid>-growth.md exists. A run that produced none left the table as it
+		#found it, the queue offered it again, and the repeat guard stopped
+		#the campaign -- three workers on T293 within a minute.
+		body = script('agents/campaign.sh')
+		self.assertIn('writing down that the run produced none', body)
+		self.assertIn('run produced no report', body)
+
+	def test_a_queue_that_cannot_be_read_does_not_kill_the_campaign(self):
+		#`set -o pipefail` plus `set -e` meant that one refused GitHub request
+		#ended the campaign inside top_up_if_low, before the check that was
+		#written to report it could run: three workers died within a minute of
+		#each other and each log's last line was the previous item.
+		body = script('agents/campaign.sh')
+		self.assertIn('queue_waiting || true', body)
+		self.assertIn('could not be read twice', body)
+		#And a failed screening is not the end either, while other work waits.
+		self.assertIn('the screening failed with status', body)
+		self.assertIn('carrying on with the work that is already waiting', body)
 
 	def test_an_unpushed_commit_is_pushed_rather_than_refused(self):
 		#The rule is right and the refusal was not: it stopped the campaign

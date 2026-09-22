@@ -680,6 +680,42 @@ because the answer knows which form matched. It does not work for
 transformations with no usable inverse, which is where storing the image is
 the only option.
 
+### Which side to transform is a cost knob, and conjugation measures it
+
+The choice of side is not one decision but two, and they separate cleanly.
+
+Where a transformation is invertible **and commutes with the matching**,
+transforming the term and transforming the entries return the same hits. The
+side is then purely a trade of index size against query cost, and either
+answer is correct -- which means it should be settled by measurement rather
+than argued. Where it does not commute, or has no usable inverse, the two
+sides answer different questions and coverage decides. Allowing both is what
+makes the first kind a knob at all.
+
+Complex conjugation is the tidiest instance there is, and T392 measures it.
+The centers of the hyperbolic components of the Mandelbrot set are the roots
+of the Gleason polynomials, which have integer coefficients, so the entries
+are closed under conjugation: of 488 values for $n \leq 9$, 66 are real and
+the other 422 are 211 conjugate pairs. They are stored as they are because
+`search_complex_numbers` matches a query box against four indexed columns and
+knows nothing of signs -- drop the upper half and a reader holding $a + bi$ is
+told the number is unknown.
+
+Conjugation is its own inverse and commutes with the box search exactly: for a
+conjugate-closed set, reflecting the query box in the real axis finds what
+reflecting the stored boxes would. So the trade here has no coverage in it at
+all -- 43% of that table's index rows against one extra box comparison per
+complex query, for identical answers. Real entries are self-conjugate and pay
+nothing either way. The hit does have to report the conjugate as the form that
+matched, which is the rule three paragraphs up, not a new cost.
+
+What is missing before any of this is the declaration. `both signs` is the
+existing annotation of exactly this kind and it is descriptive only:
+`validate.py`, `review.py` and `entries_form.py` know the key, `search.py`
+does not. A transformation the search acts on has to be a property the table
+asserts and the query path reads -- and a wrong assertion is a false hit
+rather than a missing one, which is the worse failure of the two.
+
 ### For now
 
 Each table should hold the most natural form of its objects, so that the
