@@ -1,11 +1,10 @@
 Title: The Falkner–Skan separation parameter
 Definition: >-
-  The Falkner-Skan separation parameter is the Hartree pressure-gradient value
-  $\beta_s$ for which the boundary-value problem
+  The Falkner-Skan separation parameter $\beta_s$ is the Hartree
+  pressure-gradient value for which the boundary-value problem
   $f''' + f f'' + \beta(1-(f')^2)=0$, $f(0)=f'(0)=0$ and
   $f'(\infty)=1$ has zero wall shear, $f''(0)=0$
-  CITE{WikiFalknerSkan} CITE{BeldenEtAl}. This table also gives the equivalent
-  power-law exponent $m_s$ in $u_e(x)=U_0(x/L)^m$.
+  CITE{WikiFalknerSkan} CITE{BeldenEtAl}.
 Keywords:
   - Falkner Skan separation parameter
   - Falkner-Skan separation parameter
@@ -26,8 +25,8 @@ Comments:
     The row labelled $\beta_s$ is the parameter used in the Falkner-Skan
     equation in this table. The row labelled $m_s$ is included because many
     boundary-layer sources quote the same separation point as the exponent in
-    the external velocity law. The two rows are one separation point written in
-    two invertible parameterisations.
+    the external velocity law $u_e(x)=U_0(x/L)^m$. The two rows are one
+    separation point written in two invertible parameterisations.
   comment-branches: >-
     At $\beta=\beta_s$ the forward-flow and reversed-flow branches meet. For
     $0>\beta>\beta_s$, Stewartson found a second branch with $f''(0)<0$
