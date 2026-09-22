@@ -1,0 +1,95 @@
+Title: The Falkner–Skan separation parameter
+Definition: >-
+  The Falkner-Skan separation parameter is the Hartree pressure-gradient value
+  $\beta_s$ for which the boundary-value problem
+  $f''' + f f'' + \beta(1-(f')^2)=0$, $f(0)=f'(0)=0$ and
+  $f'(\infty)=1$ has zero wall shear, $f''(0)=0$
+  CITE{WikiFalknerSkan} CITE{BeldenEtAl}. This table also gives the equivalent
+  power-law exponent $m_s$ in $u_e(x)=U_0(x/L)^m$.
+Keywords:
+  - Falkner Skan separation parameter
+  - Falkner-Skan separation parameter
+  - Hartree separation parameter
+  - boundary layer separation
+  - separation beta
+Parameters:
+  parameterisation:
+    type: Symbolic
+    title: parameterisation
+    display: parameterisation
+    constraints: either `beta` or `m`
+    values:
+      beta: Hartree pressure-gradient parameter $\beta_s$
+      m: power-law exponent $m_s$
+Comments:
+  comment-parameterisations: >-
+    The row labelled $\beta_s$ is the parameter used in the Falkner-Skan
+    equation in this table. The row labelled $m_s$ is included because many
+    boundary-layer sources quote the same separation point as the exponent in
+    the external velocity law. The two rows are one separation point written in
+    two invertible parameterisations.
+  comment-branches: >-
+    At $\beta=\beta_s$ the forward-flow and reversed-flow branches meet. For
+    $0>\beta>\beta_s$, Stewartson found a second branch with $f''(0)<0$
+    CITE{Stewartson}.
+Formulas:
+  formula-conversion: >-
+    The two parameterisations are related by
+    $m_s=\beta_s/(2-\beta_s)$ and $\beta_s=2m_s/(1+m_s)$.
+Links:
+  WikiFalknerSkan:
+    title: "Wikipedia: Falkner-Skan boundary layer"
+    url: https://en.wikipedia.org/wiki/Falkner%E2%80%93Skan_boundary_layer
+  Fitzpatrick:
+    title: "Richard Fitzpatrick: Self-Similar Boundary Layers"
+    url: https://farside.ph.utexas.edu/teaching/336L/Fluidhtml/node112.html
+References:
+  FalknerSkan:
+    bib: >-
+      V. M. Falkner and S. W. Skan, Solutions of the boundary-layer equations,
+      The London, Edinburgh, and Dublin Philosophical Magazine and Journal of
+      Science 12 (1931), 865-896.
+    doi: 10.1080/14786443109461870
+  Hartree:
+    bib: >-
+      D. R. Hartree, On an equation occurring in Falkner and Skan's approximate
+      treatment of the equations of the boundary layer, Mathematical
+      Proceedings of the Cambridge Philosophical Society 33 (1937), 223-239.
+    doi: 10.1017/S0305004100019575
+  Stewartson:
+    bib: >-
+      K. Stewartson, Further solutions of the Falkner-Skan equation,
+      Mathematical Proceedings of the Cambridge Philosophical Society 50
+      (1954), 454-465.
+    doi: 10.1017/S030500410002956X
+  BeldenEtAl:
+    bib: >-
+      E. R. Belden, Z. A. Dickman, S. J. Weinstein, A. D. Archibee, E.
+      Burroughs and N. S. Barlow, Asymptotic Approximant for the Falkner-Skan
+      Boundary-Layer equation, arXiv preprint, 2019.
+    arxiv: '1907.09912'
+Programs:
+  program-python:
+    language: Python
+    code: |-
+      from mpmath import mp
+      mp.dps = 50
+      # The attached generate.py solves for beta_s and converts it to m_s.
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: yes
+  rigour details: >-
+    The attached generator computes $\beta_s$ by imposing $f''(0)=0$ and
+    solving for the value of $\beta$ for which the finite-interval solution has
+    $f'(\eta_{\max})=1$. It requires agreement between independent working
+    precisions and truncation lengths, converts $m_s$ from the same computed
+    $\beta_s$, and checks the result against a collocation boundary-value solve
+    and the printed value $\beta_s=-0.198837735$ in CITE{BeldenEtAl}.
+Display properties:
+  number-header: separation parameter
+Tags:
+  - analysis
+  - physics
+  - fluid dynamics
+Numbers: []
