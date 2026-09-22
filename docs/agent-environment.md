@@ -8601,3 +8601,52 @@ prompt's step 4 saying what to do when the backlog is empty -- at present it
 reads as though there is always a request to anchor on, and a run that finds
 none has to decide for itself that "propose from the requests" has become
 "propose, and say why no request is cited".
+
+## A `url` on an entry is printed, not linked, and the audit never resolves a same-table `#fragment`
+
+Two site faults met while reading T4. Neither is the table's to fix, and both
+are visible to any reader of the live page.
+
+**`url` renders as plain text.** `url` is a declared entry annotation
+(`numberdb_app/validate.py:64`, beside `comment`, `proof`, `both signs`), and
+`number-extra-info-snippet.html` prints every annotation as
+`{{ key|safe }}: {{ value|safe }}` after `render_text`, which handles
+mathematics, `CITE{}` and `HREF{}` but does not turn a bare URL into an anchor.
+So all 1075 T4 entries show the literal text
+`url: https://www.lmfdb.org/Character/Dirichlet/8/5`, which a reader has to
+copy by hand. This is not one table's problem: `test_entry_notes.py` names "a
+link to the curve in LMFDB on every elliptic curve entry" as one of the 9252
+annotations across thirteen tables that the template used to drop entirely, so
+whatever those tables meant by `url` is being shown the same way. A one-line
+fix in `_render_text` -- anchor a value that is exactly one `http(s)://` URL,
+for the `url` key only -- would make every one of them clickable, and there is
+nothing an author can write instead: `HREF{}` resolves internal slugs only.
+
+**The audit cannot see a broken same-table entry link.** In
+`numberdb_app/management/commands/audit_table.py:324` the HREF check does
+
+	target = href.split('#')[0]
+	if target and not target.startswith(('http://', 'https://')):
+
+so for `HREF{#CL}` the target is `''` and the whole check is skipped. The
+fragment is never resolved against the entries, and `HREF{#anything}` is
+accepted unconditionally -- stored, published, and reported `clean: true` --
+while the rendered page answers `?entry=CL` with the warning banner "This table
+has no entry CL. It may have been renumbered or removed; the table itself is
+shown below." T4 has carried one since it was written. The check has the entry
+records to hand: `_entry_records(tree)` is already defined in the same file and
+used by `_indexed_as_many_as_written`, so resolving the fragment is a
+containment test, not new machinery. Worth a finding and a test; the authoring
+side of it is in
+`agents/lessons/proposals/20260922T015529Z-critique.md`.
+
+Also, smaller, in the same code path: `_reference_href`'s docstring says
+`#CL -> ?entry=CL#CL`, and it returns `?entry=CL` with no fragment, so the
+browser does not scroll even when the entry does exist.
+
+Evidence: 2026-09-22, T4 critique. `GET /api/table/T4/audit` ->
+`{"tid": "T4", "title": "Zeros of Dirichlet L-series", "findings": [], "clean":
+true}`; `curl -w '%{http_code}' 'https://numberdb.org/T4?entry=CL'` -> 200 with
+`<li class="alert-warning">`; the rendered `/T4` contains
+`url: https://www.lmfdb.org/Character/Dirichlet/3/2 <br>` with no `<a>` around
+it, 1075 times.
