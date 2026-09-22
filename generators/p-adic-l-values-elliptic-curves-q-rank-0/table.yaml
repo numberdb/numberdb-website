@@ -1,0 +1,127 @@
+# The table document for draft T413 on numberdb.org. Publishing is a person's
+# act on the site; the generator beside this file fills the entries.
+Title: Values $L_p(E,1)$ of the $p$-adic $L$-function of elliptic curves over $\mathbb{Q}$ of rank 0
+Definition: >-
+  For the rank-zero elliptic curve $E/\mathbb{Q}$ identified by the parameters
+  and a prime $p$ of good ordinary reduction, this table gives the central
+  value $L_p(E,1)$ of Sage's cyclotomic $p$-adic $L$-function
+  CITE{SagePadicLseries}, in the normalization of Mazur-Tate-Teitelbaum
+  CITE{MTT}.
+Keywords:
+  - p-adic L-function
+  - p-adic L-series
+  - Mazur-Tate-Teitelbaum p-adic L-function
+  - ordinary prime
+  - central L-value
+Parameters:
+  N:
+    type: Z
+    title: conductor of $E$
+    display: $N$
+    constraints: $N\geq1$
+  c4:
+    type: Z
+    title: invariant $c_4$ of the reduced global minimal model of $E$
+    display: $c_4$
+  c6:
+    type: Z
+    title: invariant $c_6$ of the reduced global minimal model of $E$
+    display: $c_6$
+  p:
+    type: Z
+    title: ordinary prime
+    display: $p$
+    constraints: $p\geq5$ is prime and $E$ has good ordinary reduction at $p$
+Comments:
+  comment-index: >-
+    The curve is identified by $N$, $c_4$ and $c_6$. Each entry comment gives
+    the Cremona label from Sage's mini Cremona database CITE{SageCremona} and
+    the corresponding LMFDB CITE{LMFDB} label.
+  comment-normalization: >-
+    Sage writes the cyclotomic variable as $T=\gamma^{s-1}-1$ with
+    $\gamma=1+p$. The value stored here is the constant term at $T=0$; no
+    derivative and no division by $\log_p(\gamma)$ is applied.
+  comment-precision: >-
+    The $p$-adic precision is the least $n$ with $p^n\geq10^{50}$, for example
+    $O(5^{72})$, $O(7^{60})$, $O(11^{49})$, $O(13^{45})$ and $O(29^{35})$.
+Formulas:
+  formula-model-from-invariants: >-
+    For the reduced models in this table, $b_2$ is the unique element of
+    $\{-4,-3,0,1,4,5\}$ with $b_2\equiv -c_6\pmod{12}$,
+    $b_4=(b_2^2-c_4)/24$, and
+    $b_6=(-c_6-b_2^3+36b_2b_4)/216$. The model has
+    $a_1\equiv b_2\pmod 2$, $a_3\equiv b_6\pmod 2$ with
+    $a_1,a_3\in\{0,1\}$ and $a_2\in\{-1,0,1\}$, and
+    $a_2=(b_2-a_1^2)/4$, $a_4=(b_4-a_1a_3)/2$ and
+    $a_6=(b_6-a_3^2)/4$.
+  formula-interpolation: >-
+    If $a_p=p+1-\#E(\mathbb{F}_p)$ and $\alpha$ is the unit root of
+    $x^2-a_px+p$, then
+    $L_p(E,1)=(1-\alpha^{-1})^2L(E,1)/\Omega_E$, where $\Omega_E$ is the
+    Neron period of $E$.
+Similar tables:
+  - table: HREF{Tate_parameters_q_E_of_elliptic_curves_over_mathbb_Q}[Tate parameters $q_E$ of elliptic curves over $\mathbb{Q}$]
+    relation: uses the same $(N,c_4,c_6)$ curve indexing for a local $p$-adic invariant at multiplicative primes
+  - table: HREF{mathcal_L-invariants_of_elliptic_curves_over_mathbb_Q_with_split_multiplicative_reduction}[$\mathcal{L}$-invariants of elliptic curves over $\mathbb{Q}$ with split multiplicative reduction]
+    relation: stores the exceptional-zero invariant for the same Mazur-Tate-Teitelbaum normalization at split multiplicative primes
+  - table: HREF{Special_value_of_L-function_of_elliptic_curves_over_Q_of_rank_1}[Special $L$-values of elliptic curves over $\mathbb{Q}$ of rank $1$]
+    relation: stores real leading coefficients of the complex $L$-function rather than $p$-adic central values
+Links:
+  SageCremona:
+    title: "SageMath reference: Cremona's tables of elliptic curves"
+    url: https://doc.sagemath.org/html/en/reference/databases/sage/databases/cremona.html
+  SagePadicLseries:
+    title: "SageMath reference: p-adic L-functions of elliptic curves"
+    url: https://doc.sagemath.org/html/en/reference/arithmetic_curves/sage/schemes/elliptic_curves/padic_lseries.html
+  LMFDB:
+    title: 'LMFDB: elliptic curves over Q'
+    url: https://www.lmfdb.org/EllipticCurve/Q/
+References:
+  MTT:
+    bib: >-
+      Barry Mazur, John Tate and Jeremy Teitelbaum, On $p$-adic analogues of
+      the conjectures of Birch and Swinnerton-Dyer, Inventiones Mathematicae
+      84 (1986), 1-48.
+    doi: 10.1007/BF01388731
+Programs:
+  program-sage:
+    language: Sage
+    code: |
+      E = EllipticCurve('11a1')
+      p = 5
+      Lp = E.padic_lseries(p)
+      Lp.series(1, prec=1).list()[0]
+Tags:
+  - number theory
+  - elliptic curves
+  - p-adic
+  - L-function
+Data properties:
+  type: Qp
+  rigour: proven
+  complete: no
+  complete-note: >-
+    it holds every curve in Sage's mini Cremona database CITE{SageCremona} with
+    conductor $N\leq30$ and rank $0$, for every ordinary prime $p$ with
+    $5\leq p\leq29$ and $p\nmid N$
+  sources:
+    - CITE{SageCremona}
+    - CITE{SagePadicLseries}
+  rigour details: >-
+    The generator reads exact Weierstrass coefficients and ranks from Sage's
+    mini Cremona database CITE{SageCremona}, builds each curve over
+    $\mathbb{Q}$, and uses Sage's modular-symbol machinery and the
+    interpolation formula documented for the ordinary $p$-adic $L$-series
+    CITE{SagePadicLseries}. The unit root $\alpha$ is Hensel-lifted in
+    $\mathbb{Q}_p$ to the stored precision, and the rational factor
+    $L(E,1)/\Omega_E$ is the exact normalized modular symbol at $0$. The
+    generator checks $\alpha^2-a_p\alpha+p=0$ to the stored precision and
+    checks the rational factor against PARI's complex $L$-value computation
+    for each curve.
+Display properties:
+  number-header: $L_p(E,1)$
+  group parameters:
+    - [N]
+    - [c4, c6]
+    - [p]
+Numbers: []
