@@ -7071,3 +7071,55 @@ other workers' claims alone and report the actual checklist state.
 Evidence: 2026-09-22 build of T394. The command printed `#183 closed; the
 family is built`; immediately after, `queue.py show 183` showed T394 as `[x]`
 and the other proposals still claimed by w1.
+
+## Do not try to render a draft on the *host*: Django installs there, Sage does not, and `numberdb/web:latest` cannot be pulled
+
+What happened: the T399 critique knew it needed the rendered page and reached
+for the host rather than the Sage container, because installing Django looked
+like the short way round. Four dead ends in a row, none of them written down
+anywhere:
+
+  * `NUMBERDB_SAGE_IMAGE=numberdb/web:latest agents/sage.sh ...` fails
+    immediately with `pull access denied for numberdb/web, repository does not
+    exist`. The image is built on the site's host and never pushed anywhere, so
+    on this builder it does not exist and cannot be fetched. `agents/on-server.sh`
+    is the same wall: it is `docker compose run web`, and `web` is that image.
+  * `python3 -m venv` is broken on this box -- `ensurepip is not available`,
+    and `apt install python3.12-venv` needs a sudo this run does not spend. The
+    working form is `python3 -m pip install --target /tmp/somedir ...` and then
+    `sys.path.insert(0, '/tmp/somedir')`; `--user` and `--target` cannot be
+    combined.
+  * Django then installs and imports fine, and `django.setup()` dies at
+    `numberdb_app/models.py:22`, `from sage.all import infinity, ceil, log, I`.
+    There is no Sage on this host at all. That import is at module scope, so no
+    amount of settings fiddling gets past it, and shimming `sage.all` would fake
+    exactly the arithmetic (`CIF`, `RIF`) that a critique is reading the page to
+    check.
+  * `psycopg2-binary` is needed even for sqlite, and `django-anymail` too --
+    both are imported at app-loading time by `INSTALLED_APPS`.
+
+The answer is the one already written up seven times above: the render happens
+**inside `agents/sage.sh`**, because that container is the only place where Sage
+and a network (to `pip install` Django) exist together. The host has the network
+and no Sage; the site's host has Sage and is not reachable. There is no third
+place.
+
+What to do instead: go straight to the sqlite draft-render recipe. Check
+`/tmp` first -- `/tmp/t398_render.py` and `/tmp/site.tgz` were both still there
+from the run two hours earlier, and
+
+    sed -e 's/T398/T399/g' -e 's/t398/t399/g' /tmp/t398_render.py > /tmp/t399_render.py
+    NUMBERDB_SAGE_MEMORY=1200m NUMBERDB_SAGE_PYTHONPATH= \
+        agents/sage.sh /tmp/t399_render.py /tmp/site.tgz /tmp/T399.json
+
+gave `records: 15`, `tid: T1 tags: ['physics']`, `status 200 36137` on the first
+attempt. That is the tenth run to use this recipe and at least the sixth to
+write or adapt the script by hand. `agents/render_draft.py` taking a tid still
+does not exist.
+
+Evidence: 2026-09-22, T399 critique. The four failures above in order
+(`docker: pull access denied`, `ensurepip is not available`,
+`Can not combine '--user' and '--target'`, `ModuleNotFoundError: No module
+named 'sage'`), then `/tmp/t399_render_out.txt` at 36,137 bytes of HTML between
+the markers. Nothing is listening on port 1080 (the note above still holds);
+`curl https://numberdb.org/...` direct answered every request this run made.
