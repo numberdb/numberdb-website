@@ -121,14 +121,37 @@ if [ "${NUMBERDB_ALLOW_UNPUSHED:-0}" != "1" ] \
 	# start too.
 	#
 	# Refused only if the push fails, which means something a machine should
-	# not decide: no credentials, a diverged branch, a rejected update.
+	# not decide: no credentials, a genuine conflict, a rejected update.
+	#
+	# *Being behind is not one of those.* It was treated as one, and it is
+	# the way this has actually failed: twice on 2026-09-22, and both times
+	# the tree was simply behind `origin` with its own commits on top. The
+	# first cost a day -- w1 refused every build, walked a whole family of
+	# proposals at no cost and reported nothing -- and the second stranded
+	# five lessons written by runs, one commit behind. Replaying this tree's
+	# own unpushed commits onto the branch they belong to is mechanical: the
+	# commits are not on the remote yet, so nothing anybody else has is
+	# rewritten, and a conflict aborts back to where we started.
+	branch=$(git rev-parse --abbrev-ref HEAD)
 	if git push --quiet origin HEAD 2>/dev/null; then
 		echo "=== pushed $(git rev-parse --short HEAD) before starting"
+	#`--quiet` is not quiet on a conflict: the "Patch failed at" advice goes to
+	#*stdout*, so both streams are sent away. It is not lost -- the refusal
+	#below says what to do, and the tree is put back as it was found.
+	elif git fetch --quiet origin "$branch" >/dev/null 2>&1 \
+			&& git rev-parse --verify --quiet "origin/$branch" >/dev/null 2>&1 \
+			&& git rebase --quiet "origin/$branch" >/dev/null 2>&1 \
+			&& git push --quiet origin HEAD >/dev/null 2>&1; then
+		echo "=== was behind origin/$branch; rebased and pushed $(git rev-parse --short HEAD)"
 	else
+		#Leave the tree as it was found. A half-finished rebase is a worse
+		#thing to hand a person than the refusal they were going to get.
+		git rebase --abort >/dev/null 2>&1 || true
 		echo "Refusing: HEAD is not on any remote and could not be pushed, so" >&2
 		echo "the version this run would record names a commit nobody else" >&2
-		echo "can fetch. Push it yourself:" >&2
-		echo "    git push origin $(git rev-parse --abbrev-ref HEAD)" >&2
+		echo "can fetch. Rebasing onto origin/$branch did not settle it, so" >&2
+		echo "this needs a person. Push it yourself:" >&2
+		echo "    git push origin $branch" >&2
 		exit 3
 	fi
 fi
