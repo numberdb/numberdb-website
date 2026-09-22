@@ -9399,3 +9399,80 @@ Evidence: 2026-09-22 build run for "Values of the Epstein zeta function of the
 classical lattices"; `/tmp/epstein_cheap_checks.py` through `agents/sage.sh`
 printed the `already_here` transport error, and direct `curl` retries timed out
 against both HTTPS and HTTP.
+
+## The builder image has no Django, so the `RequestFactory` render of a draft does not work in every campaign
+
+What happened: the T412 critique followed the note above, "Rendering a draft's
+page as its owner sees it, without a session", and the script died at `import
+django`. This campaign sets `NUMBERDB_SAGE_IMAGE=numberdb/builder:latest` and
+`NUMBERDB_SAGE_PYTHONPATH=` (empty) in the environment, and the builder image
+is deliberately Django-free: it talks to numberdb.org over the public API like
+an outside contributor. Overriding
+`NUMBERDB_SAGE_IMAGE=numberdb/web:latest` for one run does not help on this
+box either -- the web image is not here, and `docker` answers "pull access
+denied for numberdb/web, repository does not exist". `docker` itself is a
+refused command for a run, so there is nothing else to try.
+
+What to do instead: check `NUMBERDB_SAGE_IMAGE` before reaching for the
+`RequestFactory` recipe. On a builder box the routes that work are the public
+ones: `GET /api/table?id=<tid>` with the key for the document, `GET
+/api/table/<tid>/audit` with the key for the audit, and `/preview` for the
+rendering (next note). The `RequestFactory` recipe is for a run whose Sage host
+is the web host.
+
+Evidence: 2026-09-22, T412 critique. `/tmp/render412.py` through
+`agents/sage.sh` gave `ModuleNotFoundError: No module named 'django'`; the same
+with `NUMBERDB_SAGE_IMAGE=numberdb/web:latest` gave docker exit 125.
+
+## `/preview?table=<yaml>` renders a draft for anybody, in 4 KB bites
+
+What happened: the T412 critique needed the rendered page and had no session,
+no Django and no database. `/preview/<tid>` makes the same draft check the
+table page makes, so it answers 404 -- but `/preview?table=<yaml>` takes the
+document in the query string and renders it for an anonymous caller, because
+it is the table editor's own preview and belongs to nobody. Round-tripping the
+document out of `GET /api/table?id=T412` through `yaml.dump` and back into that
+route gives the page as the site draws it: section order, `CITE{}` numbering,
+the parameter group headers, the value column header, the entry comments.
+
+Three things it costs:
+
+* **The request line is capped at 4094 bytes** (gunicorn answers `Bad Request
+  ... Request Line is too large (6131 > 4094)`; nginx answers 414 above its own
+  limit first). T412's prose alone is about 6 KB encoded, so the document has
+  to go in chunks, each a valid table. Six chunks covered every section.
+* **A document with no `Numbers` key is refused**, with an internal error
+  printed on the page: `Error while parsing numbers: cannot access local
+  variable 'number_section' where it is not associated with a value`. Put one
+  entry in every chunk.
+* **The nesting of `Numbers` must match the chunk's own metadata.** With
+  `Display properties: group parameters`, the tree is one level per *group*
+  (`N` / `c4,c6` / `p`); with `Parameters` and no groups, one level per
+  parameter. Getting it wrong does not error: the wrong nesting rendered the
+  prime as the value and the actual number vanished, which looked like a fault
+  in the table rather than in the request.
+
+What to do instead: use it, and keep the chunks honest -- include whatever a
+chunk's `CITE{}` keys point at, or they render as the bare key and read like a
+broken citation. The leaked `UnboundLocalError` is a small site bug worth
+fixing separately: a table with no numbers should say so.
+
+Evidence: 2026-09-22, T412 critique; `/tmp/prevD1.yaml` through
+`/tmp/prevD8.yaml` and the six 200 responses from `curl -G --data-urlencode
+table@... https://numberdb.org/preview`.
+
+## An API key opens the audit of a draft and not its page
+
+What happened: `GET /api/table/T412/audit` with `X-API-Key` answered 200 for a
+private draft owned by the same account, and `GET /T412` with the identical
+header answered 404. That is not a permissions failure: the HTML views
+authenticate by session (`request.user`), and only the API routes read the key,
+so a draft's page is 404 to a key-holding `curl` however well entitled it is.
+
+What to do instead: do not read the 404 as "the draft is gone" or "the key is
+wrong" -- check `GET /api/table?id=<tid>` and the audit route, which answer
+properly. A run that wants the rendering needs `/preview` or a session.
+
+Evidence: 2026-09-22, T412 critique. `numberdb_app/views.py` `_refuse_a_draft`
+via `editing.may_see(table, request.user)`; `numberdb_app/api.py:1543` `audit`
+via `_may_see_draft(request, table)`.
