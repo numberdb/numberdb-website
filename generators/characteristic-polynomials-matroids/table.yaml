@@ -1,0 +1,112 @@
+# Draft document for T396, built from numberdb-data issue #186.
+# Created as a draft through the API with X-Draft: yes, filled by generate.py
+# beside it, and offered for review. Publishing is a person's act.
+Title: Characteristic polynomials of matroids
+Definition: >-
+  For a finite matroid $M$ on ground set $E$ with rank function $r$, this
+  table stores the characteristic polynomial
+  $\chi_M(q)=\sum_{S\subseteq E}(-1)^{|S|}q^{r(E)-r(S)}$
+  CITE{SageMatroid}.
+Parameters:
+  matroid:
+    type: Symbolic
+    title: matroid
+    display: $M$
+    constraints: >-
+      a simple uniform matroid $U_{r,n}$, or a simple matroid named as
+      `sage.matroids.catalog` names it
+Comments:
+  comment-index: >-
+    Uniform matroids are written `U(r,n)` for $U_{r,n}$. The named matroids use
+    the constructors in Sage's matroid catalog CITE{SageCatalog}, which includes
+    Oxley's appendix CITE{Oxley}. The catalog's uniform aliases `U24`, `U25`,
+    `U35`, and `U36` are represented here by `U(2,4)`, `U(2,5)`, `U(3,5)`, and
+    `U(3,6)`.
+  comment-simple: >-
+    A loop makes $\chi_M(q)=0$. For a loopless matroid, parallel elements do
+    not change the lattice of flats, so $\chi_M(q)$ is the characteristic
+    polynomial of the simplification. This table stores simple matroids.
+  comment-flats: >-
+    Equivalently, for a loopless matroid,
+    $\chi_M(q)=\sum_{F\in L(M)}\mu(\varnothing,F)q^{r(E)-r(F)}$, where
+    $L(M)$ is the lattice of flats and $\mu$ is its Mobius function
+    CITE{WikiMatroid}.
+  comment-variable: >-
+    The variable is $q$. Sage prints the same polynomial in a variable called
+    `l` unless another variable is supplied.
+Formulas:
+  formula-tutte: >-
+    If $T_M(x,y)$ is the Tutte polynomial of a rank $r(M)$ matroid, then
+    $\chi_M(q)=(-1)^{r(M)}T_M(1-q,0)$.
+  formula-uniform: >-
+    For $1\leq r\leq n$,
+    $\chi_{U_{r,n}}(q)=\sum_{k=0}^{r-1}(-1)^k\binom{n}{k}q^{r-k}
+    +(-1)^r\binom{n-1}{r-1}$.
+  formula-graphic: >-
+    If $G$ has $c$ connected components and $M(G)$ is its cycle matroid, then
+    $P_G(q)=q^c\chi_{M(G)}(q)$, where $P_G(q)$ is the chromatic polynomial of
+    $G$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.matroids.catalog import Fano
+      from sage.rings.integer_ring import ZZ
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+      R = PolynomialRing(ZZ, "q")
+      q = R.gen()
+      R(Fano().characteristic_polynomial(q))
+Similar tables:
+  - table: HREF{Chromatic_polynomials_of_connected_graphs}[Chromatic polynomials of connected graphs]
+    relation: holds $P_G(q)$ for connected graphs on at most seven vertices, related to this table by formula CITE{formula-graphic} when $M=M(G)$
+  - table: HREF{Tutte_polynomials_of_connected_graphs}[Tutte polynomials of connected graphs]
+    relation: holds graph Tutte polynomials, whose cycle-matroid form specializes to characteristic polynomials by formula CITE{formula-tutte}
+Links:
+  SageMatroid:
+    title: "SageMath: the abstract Matroid class"
+    url: https://doc.sagemath.org/html/en/reference/matroids/sage/matroids/matroid.html
+  SageCatalog:
+    title: "SageMath: catalog of matroids"
+    url: https://doc.sagemath.org/html/en/reference/matroids/sage/matroids/matroids_catalog.html
+  WikiMatroid:
+    title: "Wikipedia: Matroid"
+    url: https://en.wikipedia.org/wiki/Matroid
+References:
+  Oxley:
+    bib: >-
+      James Oxley, Matroid Theory, second ed., Oxford Graduate Texts in
+      Mathematics 21, Oxford University Press, Oxford, 2011.
+    doi: 10.1093/acprof:oso/9780198566946.001.0001
+Keywords:
+  - matroid characteristic polynomial
+  - Whitney numbers of the first kind
+  - lattice of flats
+  - uniform matroid
+  - Fano matroid
+Tags:
+  - polynomial
+  - combinatorics
+  - matroid
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds every uniform matroid $U_{r,n}$ with $2\leq r\leq n\leq11$ and
+    every simple non-graphic Sage catalog matroid with at most $600$ flats,
+    apart from catalog aliases for uniform matroids that are listed as
+    `U(r,n)`
+  rigour details: >-
+    Every entry is an exact polynomial with integer coefficients. The generator
+    computes Sage's characteristic polynomial for each finite matroid and
+    coerces it to $\mathbb{Z}[q]$.
+
+    Before the values were written, the build checked exactness, compared every
+    uniform row with formula CITE{formula-uniform}, checked every row against an
+    independent computation from the Mobius function of the lattice of flats,
+    and checked the graphic matroids $M(K_4)$ and $M(K_5)$ against formula
+    CITE{formula-graphic}.
+Display properties:
+  number-header: $\chi_M(q)$
+  group parameters: [['matroid']]
