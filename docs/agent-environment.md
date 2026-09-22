@@ -7082,3 +7082,22 @@ rather than as a hang. `pgrep -fa codex` or `pgrep -fa claude` says whether
 another campaign is on the machine.
 
 Evidence: 2026-09-22 ideas run; `/tmp/w/fs3.out` shows five waiting lines.
+
+## `oeis.org` cannot be reached from this machine at all
+
+What happened: a proposal wanted to cite the OEIS entry for the Blasius
+constant, which the skill names as one of the four kinds of real check. Every
+request to `https://oeis.org/search?...`, with `fmt=json` or `fmt=text`, with
+or without a browser `User-Agent`, answers with a Cloudflare "Just a moment"
+interstitial and HTTP 403. There is no A-number in the batch as a result, and
+the proposal says so rather than guessing one.
+
+What to do instead: say in the batch that OEIS was unreachable and leave the
+citation to a build on a machine that can reach it. Do not quote an A-number
+from memory: an A-number that names the wrong sequence reads exactly like one
+that names the right one, which is the failure `source_names_it` exists to
+prevent and cannot catch here.
+
+Evidence: 2026-09-22 ideas run. `curl -s https://oeis.org/search?q=0.332057336215196&fmt=json`
+returned `403` and the challenge page; Wikipedia and `dlmf.nist.gov` answered
+normally from the same shell minutes earlier.
