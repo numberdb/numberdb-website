@@ -8650,3 +8650,70 @@ true}`; `curl -w '%{http_code}' 'https://numberdb.org/T4?entry=CL'` -> 200 with
 `<li class="alert-warning">`; the rendered `/T4` contains
 `url: https://www.lmfdb.org/Character/Dirichlet/3/2 <br>` with no `<a>` around
 it, 1075 times.
+
+## The `table wanted` backlog is empty, and `screen.py requests` says so silently
+
+2026-09-22, proposal run. `python3 agents/table-ideas/screen.py requests`
+prints nothing. That is correct: 126 issues in numberdb/numberdb-data have
+carried the label `table wanted` and **0 of them are open**. The six open
+issues are #185, #184, #181 and #180 (`proposal`, opened by earlier runs of
+this stage) and #137 and #133 (`enhancement`, both asking to extend a table
+that exists).
+
+Two things follow for whoever runs this stage next.
+
+The stage prompt tells a run to start from the open requests and to anchor its
+batch on one. There is nothing to anchor on, and there will not be until
+somebody files a new request, so every run from here on will spend its first
+turns discovering this. The prompt should say what to do instead.
+
+And `requests()` (`agents/table-ideas/screen.py:239`) catches every exception
+and returns `[]`, so an empty backlog and an unreachable GitHub print exactly
+the same nothing. `already_here`, two functions above it in the same file,
+carries a comment about precisely this -- "A failed question and an empty
+answer must not look the same" -- and returns a complaint string instead.
+`requests()` should do the same.
+
+Evidence:
+
+	$ python3 agents/table-ideas/screen.py requests
+	$ curl -s 'https://api.github.com/search/issues?q=repo:numberdb/numberdb-data+label:"table+wanted"' | jq .total_count
+	126
+	$ curl -s 'https://api.github.com/search/issues?q=repo:numberdb/numberdb-data+label:"table+wanted"+state:open' | jq .total_count
+	0
+
+## What the deployed image does not have, for a batch about matroids
+
+2026-09-22, same run, `agents/sage.sh` against `numberdb/web:latest`, Sage
+10.9. Three absences that decide whether a proposed table can be built here:
+
+* **`matroid_database` is not installed**, so `matroids.AllMatroids(n)` raises
+  `FeatureNotPresentError` and there is no way to enumerate all matroids on a
+  given ground set. A table indexed the way T125 and T126 are indexed -- *all*
+  small objects -- is therefore not buildable for matroids in this image. The
+  128 named matroids of `sage.matroids.catalog` and the uniform matroids are.
+* **LattE's `count` is not on the path**, so
+  `Polyhedron.ehrhart_polynomial()` raises `FeatureNotPresentError`. T232-T235
+  and T242-T245 exist, so whatever computed those did not go through that
+  method; anything new wanting an Ehrhart polynomial of a polytope has to find
+  the same route or another one.
+* **Sage has no matroid Kazhdan-Lusztig machinery at all.** The only matroid
+  methods matching `kazhdan`, `z_poly`, `chow` or `augmented` are `chow_ring`
+  and `augmented_bergman_complex`. `chow_ring(QQ, False).hilbert_series()` and
+  `chow_ring(QQ, True).hilbert_series()` both work and give the Chow and
+  augmented Chow polynomials; $P_M$, $Q_M$ and $Z_M$ have to be implemented.
+
+Memory: the Kazhdan-Lusztig recursion over `M.flats(r)` reached rank 5 on 10
+elements inside the default 320 MB. One probe was killed at 600 MB, and the
+cause was a cache keyed on `M.tutte_polynomial()`, not the recursion.
+
+## `import numberdb` from the repository root finds the Django app
+
+Running a screening script from `/home/ubuntu/numberdb-campaign-w3` imports the
+project package `numberdb/`, whose `dir()` is empty of everything the client
+has -- `search_text`, `table`, `configure` are all absent, and the traceback
+says `module 'numberdb' has no attribute 'tables'`, which reads like a client
+version skew rather than the wrong package. Run screening and client code from
+`clients/python`, or put it on `PYTHONPATH` explicitly. `agents/sage.sh`
+already does this for Sage runs (`PYTHONPATH=/app/clients/python`); nothing
+does it for a plain `python3` at the root.
