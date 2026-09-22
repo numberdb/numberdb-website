@@ -7030,13 +7030,19 @@ result and then stopped -- no traceback, no message, and the rest of the loop
 simply absent from the output. Repeating at `mp.dps = 20` and `eta_max = 13`
 got two parameters further and stopped the same way. The container has 320 MB
 (`NUMBERDB_SAGE_MEMORY`), `odefun` holds a Taylor cache per solution, and a
-shooting iteration builds a fresh solution every call, so the cap is the
-obvious suspect; the run did not confirm it.
+shooting iteration builds a fresh solution every call.
 
-It was hidden, and that is the part worth writing down: both runs were piped
-through `tail`, so the exit status reported was `tail`'s `0` and the
-container's own status never reached the transcript. A truncated run read
-exactly like a finished one.
+A third run, redirected to a file instead of piped, printed `EXIT 137`: the
+container is being killed, and the cap is the reason. The first two runs were
+piped through `tail`, so the exit status reported was `tail`'s `0` and the
+container's own status never reached the transcript. A killed run read exactly
+like a finished one.
+
+The fix that worked was not more memory but less solver: a hand-rolled
+fixed-step RK4 over the same interval holds five `mpf` numbers, runs in
+constant memory, and reaches ten digits in a second — plenty for checking a
+proposal's values against the literature. Reserve `odefun` for the runs that
+need thirty digits, and give those one parameter per script.
 
 What to do instead: do not pipe `agents/sage.sh` through `tail` or `head` --
 redirect to a file and read that, so the exit code is the container's. Flush
