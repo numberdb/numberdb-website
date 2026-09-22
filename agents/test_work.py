@@ -99,5 +99,49 @@ class TheMemoryIsShared(unittest.TestCase):
 			importlib.reload(work)
 
 
+class ATableIsReviewedOnce(unittest.TestCase):
+	"""One critique and one repair, not one of each kind of question."""
+
+	def setUp(self):
+		self.critiques = tempfile.mkdtemp()
+		self.real, work.CRITIQUES = work.CRITIQUES, self.critiques
+
+	def tearDown(self):
+		work.CRITIQUES = self.real
+		shutil.rmtree(self.critiques, ignore_errors=True)
+
+	def wrote(self, name):
+		open(os.path.join(self.critiques, name), 'w').close()
+
+	def test_a_table_nobody_has_read_is_waiting(self):
+		self.assertFalse(work.considered('T50'))
+
+	def test_any_of_the_three_marks_it_read(self):
+		#Each kind used to look only for its own file, so a table that had
+		#been swept and repaired was still offered as one nobody had asked
+		#about growing. 117 of 404 tables went through twice that way.
+		for suffix in ('', '-growth', '-repaired'):
+			with self.subTest(suffix=suffix):
+				self.wrote('T60%s.md' % suffix)
+				self.assertTrue(work.considered('T60'))
+				os.remove(os.path.join(self.critiques, 'T60%s.md' % suffix))
+
+	def test_a_swept_table_is_not_then_asked_about_growth(self):
+		#The sweep read the whole table, its range included. Asking
+		#afterwards whether the range could grow is the same reader meeting
+		#the same table a second time, at a critique and a repair apiece.
+		self.wrote('T70.md')
+		self.assertTrue(work.considered('T70'))
+
+	def test_a_person_may_still_ask_about_a_table_that_was_read(self):
+		#A demand is not one of the pipeline's own questions: somebody opened
+		#an issue, and "we have already looked at that one" is not an answer
+		#to a person. `demands()` stays gated on the repair alone.
+		self.assertNotIn('demand', work.QUESTIONS)
+		self.wrote('T80.md')
+		self.assertTrue(work.considered('T80'))
+		self.assertFalse(work.read('T80', '-repaired'))
+
+
 if __name__ == '__main__':
 	unittest.main(verbosity=1)

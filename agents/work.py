@@ -94,6 +94,30 @@ def read(tid, suffix=''):
 	return os.path.exists(_critique(tid, suffix))
 
 
+#: The questions a review run can put to a table. A demand is not among them:
+#: that is a person asking, and a person may ask about a table the pipeline
+#: has already read.
+QUESTIONS = ('', '-growth', '-repaired')
+
+
+def considered(tid):
+	"""Has this table been reviewed at all?
+
+	**One critique and one repair per table is enough.** The two review kinds
+	each remembered only their own question -- `sweep` looked for `<tid>.md`
+	and `growth` for `<tid>-growth.md` -- so a table that had been read in
+	full was still offered as a table nobody had asked about growing. Of 404
+	tables in the shared memory, 117 had been through both, 45 of those three
+	times over, and each pass is a critique and a repair at five to ten
+	dollars apiece.
+
+	The kinds are not independent questions. A sweep reads the whole table,
+	its range included, and says so; asking afterwards whether the range
+	could grow is the same reader meeting the same table a second time.
+	"""
+	return any(read(tid, suffix) for suffix in QUESTIONS)
+
+
 #---------------------------------------------------------------- the kinds
 
 def demands():
@@ -141,7 +165,7 @@ def growth():
 	waiting = []
 	for tid, entries, size, title in shape():
 		if entries < ROOM_ENTRIES and size < ROOM_BYTES \
-				and not read(tid, '-growth'):
+				and not considered(tid):
 			waiting.append({'kind': 'growth', 'tid': tid, 'title': title,
 			                'entries': entries, 'bytes': size})
 	#Newest first: a table built last week is the one whose generator is still
@@ -154,7 +178,7 @@ def sweep():
 	"""Tables nobody has ever read."""
 	waiting = [{'kind': 'sweep', 'tid': tid, 'title': title,
 	            'entries': entries, 'bytes': size}
-	           for tid, entries, size, title in shape() if not read(tid)]
+	           for tid, entries, size, title in shape() if not considered(tid)]
 	#Oldest first: these are the hand-made tables, and they have waited
 	#longest.
 	waiting.sort(key=lambda w: int(w['tid'][1:]))
