@@ -1,0 +1,67 @@
+Title: Eigenvalues of the pure quartic, sextic, octic and decic oscillators $-y''+x^{2m}y$
+Definition: For $m\geq2$, let $E^{(m)}_n$ be the $n$th eigenvalue of $-y''+x^{2m}y=Ey$ on $L^2(\mathbb R)$, with no factor of $\tfrac12$ on the kinetic term. The index $n$ starts at $0$ for the ground state and equals the number of nodes of the eigenfunction.
+Parameters:
+  m:
+    type: Z
+    title: exponent half-degree
+    display: $m$
+    constraints: $m\geq2$
+  n:
+    type: Z
+    title: energy level
+    display: $n$
+    constraints: $n\geq0$
+Comments:
+  comment-names: The rows $m=2,3,4,5$ are the pure quartic, sextic, octic and decic anharmonic oscillators, respectively CITE{WikiAnharmonic}.
+  comment-normalisation: With the same kinetic-term normalisation, the harmonic oscillator $-y''+x^2y=Ey$ has eigenvalues $2n+1$.
+  comment-parity: The potential is even, so the eigenfunctions alternate parity. Even $n$ gives an even eigenfunction and odd $n$ gives an odd eigenfunction.
+Formulas:
+  formula-homogeneous-scaling: If $E^{(m)}_n(\beta)$ is the eigenvalue of $-y''+\beta x^{2m}$ with $\beta>0$, then $E^{(m)}_n(\beta)=\beta^{1/(m+1)}E^{(m)}_n$.
+  formula-half-kinetic: The operator $-\tfrac12 y''+\lambda x^{2m}$ has eigenvalues $2^{-m/(m+1)}\lambda^{1/(m+1)}E^{(m)}_n$ in this table's normalisation.
+  formula-quartic-scaling: For quartic potentials $V=\alpha x^2+\beta x^4$ with $\beta>0$, $E_n(\alpha,\beta)=\beta^{1/3}E_n(\alpha\beta^{-2/3},1)$.
+Similar tables:
+  - table: HREF{Dirichlet_eigenvalues_of_the_classical_planar_domains}[Dirichlet eigenvalues of the classical planar domains]
+    relation: also stores spectra of differential operators, with a two-dimensional Laplacian rather than a one-dimensional Schrödinger operator
+  - table: HREF{Eigenvalues_of_the_classical_symmetric_test_matrices}[Eigenvalues of the classical symmetric test matrices]
+    relation: stores numerical eigenvalues of finite symmetric matrices rather than eigenvalues of an unbounded differential operator
+Links:
+  WikiAnharmonic:
+    title: "Wikipedia: Anharmonic oscillator"
+    url: https://en.wikipedia.org/wiki/Anharmonic_oscillator
+References:
+  Macfarlane1999:
+    bib: M. H. Macfarlane, A high-precision study of anharmonic-oscillator spectra, Annals of Physics 271 (1999), 159-202.
+    doi: 10.1006/aphy.1998.5854
+  Mushtaq2020:
+    bib: A. Mushtaq, A. Noreen and K. Olaussen, Numerical solutions of quantum mechanical eigenvalue problems, Frontiers in Physics 8 (2020), article 390.
+    doi: 10.3389/fphy.2020.00390
+Keywords:
+  - anharmonic oscillator
+  - pure anharmonic oscillator
+  - pure quartic oscillator
+  - pure sextic oscillator
+  - pure octic oscillator
+  - pure decic oscillator
+  - quartic oscillator
+  - sextic oscillator
+  - octic oscillator
+  - decic oscillator
+  - Schrödinger equation
+  - energy levels
+  - Bender-Wu
+Tags:
+  - eigenvalue
+  - physics
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: no
+  complete-note: it holds the first three levels $0\leq n\leq2$ for $m=2,3,4,5$, the pure quartic, sextic, octic and decic oscillators
+  rigour details: The generator forms the Galerkin matrix of $-y''+x^{2m}$ in the harmonic-oscillator basis and finds finite-matrix eigenvalues by bisection using an $LDL^T$ Sturm count, without a dense high-precision eigensolver. For $m=2,3$ it compares truncations $N=700,900$ at basis frequencies $\omega=2,5/2$; for $m=4$ it compares $N=800,1000$ at $\omega=3,7/2$; for $m=5$ it compares $N=1600,2000$ at $\omega=4,5$. The stored rows are the digits common to all four computations for that $m$, and the worst stored row retained 51 matching significant digits.
+
+    As controls, the same code with $m=1$ gives the harmonic-oscillator eigenvalues $2n+1$, and the three quartic rows agree with the 30-decimal values in CITE{Mushtaq2020}. The high-precision spectral study CITE{Macfarlane1999} gives an outside reference for the $x^{2m}$ oscillator family and its scaling conventions.
+Display properties:
+  number-header: $E^{(m)}_n$
+  group parameters:
+    - [m]
+    - [n]
