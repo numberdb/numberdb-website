@@ -8786,3 +8786,60 @@ the page that explains the entry contradicts it. The passage is about the
 digits that live in a table and will move again. `help.html:253` quotes
 `[2, 2.3728596]` too, but only as an example of interval *syntax*, where it is
 still correct.
+
+## `/api/search` documents `q` and reads `expression`
+
+2026-09-22, proposal run. `/api/docs` describes the endpoint as
+
+    GET /api/search    q    the term: a decimal, a fraction, a p-adic, a
+                            polynomial, an expression such as pi, or words
+                            returns matching numbers, and the tables and tags
+                            whose text matched
+
+`numberdb_app/api.py:151` reads `request.GET.get('expression', default=None)`
+and, when it is absent, returns `wrap_response(None, messages)` with `messages`
+still empty. So `GET /api/search?q=Bessel` answers
+
+    {"results": [], "messages": [], "time_request": "0.000s"}
+
+200, no error, no message -- which is exactly what a term matching nothing
+returns. A script screening a proposal against the corpus that way concludes
+the corpus is empty and reports that every family it looked at is new. This run
+lost several turns to it before checking the view.
+
+Two fixes, and the second matters more than the first: rename the parameter, or
+accept both. And an error path with nothing in `messages` should not exist --
+`already_here` in `agents/table-ideas/screen.py` has the rule written on it
+("A failed question and an empty answer must not look the same") and the API
+breaks it.
+
+The word search the site's own search bar uses is `GET /suggestions?term=...`,
+which answers tables, tags and numbers with their titles and slugs, and is the
+route for a script outside the container. `views.home` renders `?q=` results
+server-side in this checkout, but the deployed front page does not, so
+`https://numberdb.org/?q=Bessel` returns the search-tips page and no results.
+
+## Screening a batch: `source_names_it` wants the title's words, `already_asked` runs out of GitHub
+
+2026-09-22, proposal run, both in `agents/table-ideas/screen.py`.
+
+`source_names_it(name, url)` requires *every* distinguishing word of `name` to
+appear in the page. The corpus names a table for its index as well as its
+quantity -- "... of connected graphs" -- and an encyclopedia article names the
+quantity in the singular, so
+
+    source_names_it('Estrada index', wikipedia Estrada_index)               OK
+    source_names_it('Estrada index of connected graphs', same page)
+        the source does not mention indices, connected, graphs
+
+Both results are right and only the first is the question the check exists to
+ask. Screen the quantity name against the source that defines it, and the full
+title separately; where the full title fails on the index phrase alone, say so
+in the proposal rather than renaming the table to please the screen.
+
+`already_asked(name)` goes to `api.github.com/search/issues` with no
+credentials, and that endpoint allows 10 requests a minute. Screening eight
+candidate names in one go, the first few answer and the rest come back as
+`could not ask GitHub (HTTPError)`. `gh search issues --repo
+numberdb/numberdb-data --match title <word>` is authenticated, is not limited
+at that rate, and reports the same thing.
