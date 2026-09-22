@@ -1,0 +1,95 @@
+# The table document for numberdb.org/T398. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Genus-zero Gromov-Witten invariants $N_d$ of the projective plane
+Definition: >-
+  For $d\geq 1$, $N_d$ is the genus-zero Gromov-Witten invariant
+  $\langle [\mathrm{pt}],\ldots,[\mathrm{pt}]\rangle_{0,d}^{\mathbb P^2}$
+  with $3d-1$ point insertions CITE{GWWiki}. Since $\mathbb P^2$ is
+  homogeneous, this invariant is the enumerative count of degree-$d$ rational
+  plane curves through $3d-1$ points in general position CITE{KM1994}.
+Parameters:
+  d:
+    type: Z
+    title: degree
+    display: $d$
+    constraints: $d\geq 1$
+Comments:
+  point-conditions: >-
+    The condition count is $3d-1$, the dimension of the family of degree-$d$
+    rational plane curves in $\mathbb P^2$.
+  convention: >-
+    The table uses the usual complex enumerative convention. It does not store
+    real or tropical refinements of the same counts.
+Formulas:
+  kontsevich-recursion: >-
+    $N_1=1$, and for $d\geq 2$,
+    $N_d=\sum_{a+b=d}N_aN_ba^2b\left(b\binom{3d-4}{3a-2}
+    -a\binom{3d-4}{3a-1}\right)$ CITE{KM1994}.
+Programs:
+  program-python:
+    language: Python
+    code: |-
+      from math import comb
+
+      def plane_gromov_witten(limit):
+          values = {1: 1}
+          for d in range(2, limit + 1):
+              total = 0
+              for a in range(1, d):
+                  b = d - a
+                  total += (values[a] * values[b] * a * a * b
+                            * (b * comb(3 * d - 4, 3 * a - 2)
+                               - a * comb(3 * d - 4, 3 * a - 1)))
+              values[d] = total
+          return values
+
+      plane_gromov_witten(10)[10]
+Links:
+  GWWiki:
+    title: 'Wikipedia: Gromov-Witten invariant'
+    url: https://en.wikipedia.org/wiki/Gromov%E2%80%93Witten_invariant
+  EnumWiki:
+    title: 'Wikipedia: Enumerative geometry'
+    url: https://en.wikipedia.org/wiki/Enumerative_geometry
+  OEIS:
+    title: OEIS A013587
+    url: https://oeis.org/A013587
+References:
+  KM1994:
+    bib: >-
+      M. Kontsevich and Yu. Manin, Gromov-Witten classes, quantum cohomology,
+      and enumerative geometry, Communications in Mathematical Physics 164
+      (1994), 525-562.
+    doi: 10.1007/BF02101490
+    arxiv: hep-th/9402147
+  DFI1995:
+    bib: >-
+      P. Di Francesco and C. Itzykson, Quantum intersection rings, in The
+      Moduli Space of Curves, Progress in Mathematics 129, Birkhauser Boston,
+      1995, 81-148.
+    doi: 10.1007/978-1-4612-4264-2_4
+    arxiv: hep-th/9412175
+Keywords:
+  - rational plane curves
+  - Kontsevich recursion
+  - projective plane Gromov-Witten invariants
+  - enumerative geometry projective plane
+Tags:
+  - enumerative geometry
+  - combinatorics
+Data properties:
+  type: Z
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it holds the initial values with $1\leq d\leq 14$, including the
+    $d\leq 12$ values tabulated by Di Francesco and Itzykson
+  rigour details: >-
+    The generator evaluates Formula CITE{kontsevich-recursion} in exact
+    integer arithmetic. The values were compared with OEIS A013587 for every
+    entry, and the entries with $d\leq 12$ were compared with the table in
+    CITE{DFI1995}.
+Display properties:
+  number-header: $N_d$
+Numbers: []
