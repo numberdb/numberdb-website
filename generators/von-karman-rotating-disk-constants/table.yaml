@@ -1,0 +1,93 @@
+# Draft document for numberdb.org/T421, constants of the von Kármán
+# rotating-disk flow. It was created through the API with X-Draft: yes.
+# Publishing is a person's act on the site.
+Title: Constants of the von Kármán rotating-disk flow
+Definition: >-
+  The von Kármán rotating-disk flow is the similarity solution for an infinite
+  disk rotating in an otherwise quiescent incompressible Newtonian fluid
+  CITE{WikiVonKarman} CITE{VonKarman}. This table gives the radial wall shear
+  $F'(0)$, the azimuthal wall shear $G'(0)$, and the positive axial inflow
+  constant $-H_\infty$ of that solution.
+Keywords:
+  - von Karman rotating disk
+  - von Kármán rotating disk
+  - rotating-disk flow
+  - Cochran rotating disk constants
+  - axial inflow rotating disk
+Parameters:
+  constant:
+    type: Symbolic
+    title: component of the similarity solution
+    display: component
+    constraints: one of `radial-shear`, `azimuthal-shear` and `axial-inflow`
+    values:
+      radial-shear: $F'(0)$
+      azimuthal-shear: $G'(0)$
+      axial-inflow: $-H_\infty$
+Comments:
+  comment-sign: >-
+    The axial velocity is negative far from the disk in this convention. The
+    `axial-inflow` row stores the positive constant $-H_\infty$, so that the
+    dimensional far-field velocity is $-\sqrt{\nu\Omega}\,(-H_\infty)$.
+  comment-components: >-
+    The three rows are parts of one similarity solution: two wall derivatives
+    and one far-field constant. They are kept together because the classical
+    numerical tables and the White, Mohr and Newman comparison CITE{WhiteMohrNewman}
+    quote them as one set of characteristic parameters.
+Formulas:
+  formula-similarity: >-
+    With $\eta=z\sqrt{\Omega/\nu}$, the dimensional velocities are
+    $u_r=r\Omega F(\eta)$, $u_\theta=r\Omega G(\eta)$ and
+    $u_z=\sqrt{\nu\Omega}\,H(\eta)$.
+  formula-equations: >-
+    The similarity functions satisfy
+    $2F+H'=0$, $F^2-G^2+HF'=F''$ and $2FG+HG'=G''$, with
+    $F(0)=H(0)=0$, $G(0)=1$ and $F(\infty)=G(\infty)=0$.
+  formula-far-field: >-
+    $H_\infty=\lim_{\eta\to\infty}H(\eta)$.
+Programs:
+  program-python:
+    language: Python
+    code: |-
+      from mpmath import mp
+      mp.dps = 50
+      # The attached generate.py solves the two shooting equations for F'(0)
+      # and G'(0), then reads H at the same finite endpoint.
+Links:
+  WikiVonKarman:
+    title: "Wikipedia: Von Kármán swirling flow"
+    url: https://en.wikipedia.org/wiki/Von_K%C3%A1rm%C3%A1n_swirling_flow
+References:
+  VonKarman:
+    bib: >-
+      T. von Kármán, Über laminare und turbulente Reibung, Zeitschrift für
+      angewandte Mathematik und Mechanik 1 (1921), 233-252.
+  Cochran:
+    bib: >-
+      W. G. Cochran, The flow due to a rotating disc, Mathematical Proceedings
+      of the Cambridge Philosophical Society 30 (1934), 365-375.
+    doi: 10.1017/S0305004100012561
+  WhiteMohrNewman:
+    bib: >-
+      R. E. White, C. M. Mohr Jr. and J. Newman, The fluid motion due to a
+      rotating disk, Journal of the Electrochemical Society 123 (1976),
+      383-385.
+    doi: 10.1149/1.2132830
+Tags:
+  - fluid dynamics
+  - analysis
+  - physics
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: yes
+  rigour details: >-
+    The values are computed by shooting on $F'(0)$ and $G'(0)$ in the
+    finite-interval boundary-value problem. The generator solves the same
+    shooting equations at two working precisions, requires the 30 stored digits
+    to agree, checks the first derivative of the integrated $H$ against
+    $H'=-2F$, and checks the rounded values against the constants printed by
+    White, Mohr and Newman CITE{WhiteMohrNewman}.
+Display properties:
+  number-header: constant
+Numbers: []
