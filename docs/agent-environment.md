@@ -7931,3 +7931,21 @@ Evidence: 2026-09-22, T420 critique. `/tmp/T420-[acde].html`, 200 and empty;
 `/tmp/T420b-[acde].html`, same pieces plus `Numbers: {beta: ...}`, 200 and
 complete. The SOCKS proxy on 127.0.0.1:1080 refused every connection again in
 this run; direct `curl https://numberdb.org/...` worked throughout.
+
+## `queue.py built` can close a family while another row is only claimed
+
+What happened: T421 was marked built in family #190 with
+`python3 agents/queue.py built 190 "Constants of the von Kármán rotating-disk flow" T421`.
+The helper correctly ticked the T421 row, but then closed #190 even though the
+thermal Falkner-Skan row still read `[~] ... claimed by w1`. A claimed row is
+not built; closing the family hides the remaining work from the campaign.
+
+What to do instead: after running `queue.py built`, read the family issue back.
+If any row is still `[~]`, reopen the issue and leave a correction comment.
+The helper should distinguish "nothing waiting because another worker has a
+claim" from "everything in the family is built or skipped".
+
+Evidence: 2026-09-22, T421 build. `queue.py built` printed `#190 closed; the
+family is built`; `python3 agents/queue.py show 190` immediately afterwards
+still showed the wall heat-transfer proposal as claimed. The run reopened
+#190 and commented that only T421 was built.
