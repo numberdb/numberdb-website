@@ -7476,3 +7476,54 @@ about plurals, which is the same class of failure at the character level.
 Evidence: 2026-09-22 ideas run. `source_names_it("Hall's ray", <Markov
 spectrum>)` complained; a fetch of the same URL, tags stripped, contains
 `hall’s ray` and not `hall's ray`.
+
+## The twenty-minute give-up exits 75; the 0 came from the caller's pipe
+
+What happened: the note above, added earlier on 2026-09-22, says
+`agents/sage.sh` gives up after twenty minutes *and exits 0*, "because the
+script's status is the status of the `grep` at the end of its pipeline". The
+give-up is real and happened twice more tonight, once for each of two
+scripts. The exit status is not 0:
+
+    $ timeout 1800 agents/sage.sh /tmp/ideas2249/check3.py
+    waiting for the Sage lock: another worker is using it (0s)
+    ... (once a minute) ...
+    the Sage box has been busy for twenty minutes; try again
+    [exited with code 75]
+
+`agents/sage.sh` runs under `set -euo pipefail`, so the trailing
+`grep -viE ...` does not mask the failure and 75 comes through. The zero in
+the earlier report came from the **caller's own pipe**: that run invoked
+
+    timeout 1800 agents/sage.sh script.py 2>&1 | tail -60
+
+and a pipeline's status is its last command's, so `tail` reported 0 whatever
+Sage did. Same advice as before, for a better reason: run it without a pipe.
+Then `$?` is 75 on a lock timeout and is worth testing for, rather than having
+to grep the output for "has been busy".
+
+Evidence: 2026-09-22 ideas run, two invocations twenty minutes apart. The
+first, piped through `tail -60`, ended `[exited with code 0]`; the second, run
+bare, ended `[exited with code 75]`. Both printed the busy message and neither
+ran a line of the script.
+
+## Four workers can hold the Sage lock for the whole of an ideation run
+
+What happened: an ideation run needed Sage twice and got it neither time --
+forty minutes of waiting in twenty-minute blocks, while a Falkner-Skan build
+family occupied the box. The proposals were checked in plain Python instead
+(exact integer arithmetic plus `decimal`), and the batch says so.
+
+What to do instead: at ideation, **ask whether the check needs Sage at all**.
+Markov triples, binary quadratic forms, continued fractions of quadratic
+irrationals, modular inverses and the digits of an algebraic number are all
+exact integer arithmetic; `decimal` at 140 digits with `Decimal.sqrt` settles
+a square root to more places than a proposal needs, and `fractions.Fraction`
+settles a continued fraction exactly. Sage earns the wait when the check needs
+a special function, ball arithmetic for a transcendental, or a library routine
+(`BinaryQF.cycle`, `elliptic_k`, SnapPy). Otherwise the local interpreter is
+both faster and available.
+
+Evidence: 2026-09-22 ideas run. Two `agents/sage.sh` invocations, both timed
+out on the lock; the same mathematics ran locally in 12 seconds, and eight
+OEIS sequences were compared against it over plain HTTP.
