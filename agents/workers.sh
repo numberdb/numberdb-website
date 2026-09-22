@@ -20,6 +20,22 @@
 # name, which is what the ledger, the claims and the run records are keyed by.
 # They share one critique directory, because "ask a table this question at
 # most once" is a promise about the corpus, not about a worktree.
+#
+# **Editing this file does nothing until the supervisor itself is restarted.**
+# Bash parses a function when it reads it, so a long-running `workers.sh` goes
+# on starting workers from the `start()` and `start_screener()` it read at
+# launch, however many times the file on disk has changed since. On 2026-09-22
+# the screener was fixed, killed, and restarted by the supervisor -- with the
+# old environment, because the supervisor was three hours older than the fix.
+# The processes it starts are `setsid`, so it can be replaced without touching
+# them:
+#
+#     kill <supervisor pid>                     # the workers keep running
+#     setsid nohup agents/workers.sh 4 >> agents/runs/workers.log 2>&1 &
+#
+# Never `pkill -f workers.sh` and never `pkill -f campaign.sh`: the pattern
+# matches every worker's loop as readily as the supervisor, and killing all
+# four at once is a mistake this project has made more than once.
 set -euo pipefail
 
 here=$(cd "$(dirname "$0")/.." && pwd)

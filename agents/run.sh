@@ -715,7 +715,12 @@ fi
 # A build does not know it in advance -- the number is allocated when the draft
 # is created -- so it is read afterwards out of the generator the run
 # committed, whose first docstring line names it by convention.
-about=$(printf '%s' "${task:-}" | grep -oE '\bT[0-9]{2,4}\b' | head -1 || true)
+# `{1,4}` and not `{2,4}`: the corpus starts at T1, and nine tables have a
+# single-digit number. Every run about one of them was recorded with no table
+# against it -- w3's overnight sweep of T0 through T9 on 2026-09-22 put
+# fifteen repairs and $44 nowhere -- and the overview showed the oldest,
+# hand-made tables as having cost nothing to maintain.
+about=$(printf '%s' "${task:-}" | grep -oE '\bT[0-9]{1,4}\b' | head -1 || true)
 if [ -z "$about" ]; then
 	generator=$(git diff --name-only "$head_before"..HEAD -- generators/ \
 	            2>/dev/null | grep -E 'generate\.py$' | head -1 || true)
