@@ -7040,3 +7040,32 @@ Evidence: 2026-09-21, T393 critique. `/tmp/b091670.txt`, `/tmp/b091671.txt`,
 `/tmp/b091672.txt`, all 200; the three digit comparisons against
 `/tmp/T393.json`; `curl -A 'Mozilla/5.0 ...' https://oeis.org/A091670/internal`
 -> 403.
+
+## `agents/sage.sh` mounts only the files named on its command line
+
+What happened: the T395 Symlet generator followed the newer table-build
+pattern used by T391: `generate.py` reads `table.yaml` beside itself and sends
+the full document only after computing all entries. Running
+
+    cat "$NUMBERDB_KEY_FILE" | NUMBERDB_KEY_FROM_STDIN=1 NUMBERDB_PUBLISH=1 \
+        agents/sage.sh generators/symlet-scaling-filters/generate.py
+
+computed the entries and then failed before any API write:
+
+    FileNotFoundError: [Errno 2] No such file or directory: '/work/table.yaml'
+
+The wrapper copies each file argument into `/work` and mounts it read-only.
+It does not mount the generator's containing directory, so files that are
+beside the script in the checkout are absent in the container unless they are
+named explicitly.
+
+What to do instead: when a generator reads companion files, pass each one to
+`agents/sage.sh`:
+
+    cat "$NUMBERDB_KEY_FILE" | NUMBERDB_KEY_FROM_STDIN=1 NUMBERDB_PUBLISH=1 \
+        agents/sage.sh generators/symlet-scaling-filters/generate.py \
+        generators/symlet-scaling-filters/table.yaml
+
+Evidence: 2026-09-22, T395 build. The first fill attempt stopped with the
+`FileNotFoundError` above; rerunning with `table.yaml` as a second file reached
+the site and filled draft T395.
