@@ -27,7 +27,9 @@ Hartree momentum integral. The 30 stored digits must agree between 42- and
 """
 
 import gc
+import json
 import os
+import subprocess
 import sys
 
 import numberdb.sage as numberdb
@@ -45,6 +47,7 @@ NORMALISATIONS = ("wedge", "hartree")
 BETAS = tuple(QQ(k) / QQ(100) for k in range(-19, 134))
 
 _CACHE = {}
+WORKER_CHUNK = 16
 
 
 def _progress(message):
@@ -211,28 +214,136 @@ def _solve_direction(betas, first_guesses, dps):
     return out
 
 
+def _record(shear, end):
+    return {
+        "shear": shear,
+        "delta1": end[3],
+        "delta2": end[4],
+    }
+
+
+def _as_json_record(record, dps):
+    places = dps + 20
+    return {
+        "shear": mp.nstr(record["shear"], places, min_fixed=-100, max_fixed=100),
+        "delta1": mp.nstr(record["delta1"], places, min_fixed=-100, max_fixed=100),
+        "delta2": mp.nstr(record["delta2"], places, min_fixed=-100, max_fixed=100),
+    }
+
+
+def _from_json_record(record):
+    return {
+        "shear": mp.mpf(record["shear"]),
+        "delta1": mp.mpf(record["delta1"]),
+        "delta2": mp.mpf(record["delta2"]),
+    }
+
+
+def _solve_sequence(betas, dps, first_guesses=None, history=None, seeds=None):
+    out = {}
+    shears = [mp.mpf(s) for s in (history or [])]
+    for index, beta in enumerate(betas):
+        if seeds is not None:
+            shear, end = _solve_from_seed(beta, seeds[str(beta)], dps)
+        elif len(shears) >= 2:
+            predicted = shears[-1] + (shears[-1] - shears[-2])
+            shear, end = _solve_near(beta, predicted, dps)
+        elif first_guesses is not None and index == 0:
+            shear, end = _solve_secant(beta, first_guesses[0], first_guesses[1], dps)
+        elif len(shears) == 1:
+            direction = mp.mpf("0.01")
+            if betas and betas[0] < 0:
+                direction = -direction
+            shear, end = _solve_secant(
+                beta, shears[-1] + direction, shears[-1] + 2 * direction, dps
+            )
+        else:
+            raise ValueError("no continuation data for beta %s" % (beta,))
+        out[beta] = _record(shear, end)
+        shears.append(shear)
+    return out
+
+
+def _worker_main():
+    payload = json.loads(sys.stdin.read())
+    dps = int(payload["dps"])
+    betas = [_qq_from_text(text) for text in payload["betas"]]
+    first = payload.get("first_guesses")
+    history = payload.get("history") or []
+    seeds = payload.get("seeds")
+    if first is not None:
+        first = [mp.mpf(first[0]), mp.mpf(first[1])]
+    solved = _solve_sequence(betas, dps, first_guesses=first, history=history, seeds=seeds)
+    print(
+        json.dumps(
+            {str(beta): _as_json_record(record, dps) for beta, record in solved.items()},
+            sort_keys=True,
+        )
+    )
+
+
+def _worker(payload):
+    command = [sys.executable, __file__, "--worker"]
+    run = subprocess.run(
+        command,
+        input=json.dumps(payload),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if run.returncode != 0:
+        raise RuntimeError(
+            "worker failed with %d\nstdout:\n%s\nstderr:\n%s"
+            % (run.returncode, run.stdout[-2000:], run.stderr[-4000:])
+        )
+    data = json.loads(run.stdout)
+    return {key: _from_json_record(value) for key, value in data.items()}
+
+
+def _solve_chunks(betas, dps, first_guesses=None, history=None, seeds=None):
+    out = {}
+    history = list(history or [])
+    for start in range(0, len(betas), WORKER_CHUNK):
+        chunk = betas[start : start + WORKER_CHUNK]
+        payload = {
+            "dps": dps,
+            "betas": [str(beta) for beta in chunk],
+            "history": [mp.nstr(mp.mpf(s), dps + 20) for s in history[-2:]],
+        }
+        if start == 0 and first_guesses is not None:
+            payload["first_guesses"] = [
+                mp.nstr(mp.mpf(first_guesses[0]), dps + 20),
+                mp.nstr(mp.mpf(first_guesses[1]), dps + 20),
+            ]
+        if seeds is not None:
+            payload["seeds"] = {str(beta): mp.nstr(seeds[beta], dps + 20) for beta in chunk}
+        solved = _worker(payload)
+        for beta in chunk:
+            record = solved[str(beta)]
+            out[beta] = record
+            history.append(record["shear"])
+        _progress("  dps %d beta %s" % (dps, chunk[-1]))
+    return out
+
+
 def _solve_grid(dps, seeds=None):
     mp.dps = dps
     _progress("computing Falkner-Skan grid at %d decimal digits" % (dps,))
     if seeds is not None:
-        out = {}
-        for index, beta in enumerate(BETAS):
-            out[beta] = _solve_from_seed(beta, seeds[beta], dps)
-            if index % 10 == 0 or index + 1 == len(BETAS):
-                _progress("  dps %d beta %s" % (dps, beta))
-        return out
+        return _solve_chunks(list(BETAS), dps, seeds=seeds)
 
     zero = QQ(0)
     positives = [QQ(k) / QQ(100) for k in range(0, 134)]
     negatives = [QQ(k) / QQ(100) for k in range(-1, -20, -1)]
 
-    out = _solve_direction(positives, (mp.mpf("0.46"), mp.mpf("0.48")), dps)
-    zero_shear = out[zero][0]
+    out = _solve_chunks(positives, dps, first_guesses=(mp.mpf("0.46"), mp.mpf("0.48")))
+    zero_shear = out[zero]["shear"]
     out.update(
-        _solve_direction(
+        _solve_chunks(
             negatives,
-            (zero_shear - mp.mpf("0.01"), zero_shear - mp.mpf("0.02")),
             dps,
+            first_guesses=(zero_shear - mp.mpf("0.01"), zero_shear - mp.mpf("0.02")),
+            history=[zero_shear],
         )
     )
     return out
@@ -248,11 +359,11 @@ def _values_for_digits(digits):
     high_dps = digits + HIGH_EXTRA_DIGITS
 
     low = _solve_grid(low_dps)
-    seeds = {beta: low[beta][0] for beta in low}
+    seeds = {beta: low[beta]["shear"] for beta in low}
     high = _solve_grid(high_dps, seeds=seeds)
 
     topfer = _topfer_blasius_shear(high_dps)
-    blasius = high[QQ(0)][1][4]
+    blasius = high[QQ(0)]["delta2"]
     if abs(topfer - blasius) > mp.mpf("1e-32"):
         raise ArithmeticError(
             "Toepfer Blasius check failed: %s versus %s"
@@ -265,11 +376,11 @@ def _values_for_digits(digits):
         wedge_factor = mp.sqrt(2 - beta_mp)
         for normalisation in NORMALISATIONS:
             if normalisation == "hartree":
-                low_value = low[beta][1][4]
-                high_value = high[beta][1][4]
+                low_value = low[beta]["delta2"]
+                high_value = high[beta]["delta2"]
             else:
-                low_value = wedge_factor * low[beta][1][4]
-                high_value = wedge_factor * high[beta][1][4]
+                low_value = wedge_factor * low[beta]["delta2"]
+                high_value = wedge_factor * high[beta]["delta2"]
             low_text = _format_decimal(low_value, digits)
             high_text = _format_decimal(high_value, digits)
             if low_text != high_text:
@@ -330,6 +441,9 @@ def self_check(digits=DIGITS):
 
 
 if __name__ == "__main__":
+    if "--worker" in sys.argv:
+        _worker_main()
+        sys.exit(0)
     _key_from_stdin()
     generator = FalknerSkanMomentumThickness()
     mode = os.environ.get("NUMBERDB_PUBLISH")
