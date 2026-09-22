@@ -152,15 +152,26 @@ def _sturm_count(packed_rows, band, point):
     return count
 
 
+def _safe_sturm_count(packed_rows, band, point):
+    try:
+        return _sturm_count(packed_rows, band, point)
+    except ArithmeticError as trouble:
+        if "pivot vanished" not in str(trouble):
+            raise
+        field = point.parent()
+        shifted = point + field(2) ** (-(field.precision() // 2))
+        return _sturm_count(packed_rows, band, shifted)
+
+
 def _bisect_eigenvalue(packed_rows, band, index):
     field = RealField(WORKING_BITS)
     low = field(0)
     high = field(2)
-    while _sturm_count(packed_rows, band, high) <= index:
+    while _safe_sturm_count(packed_rows, band, high) <= index:
         high *= 2
     for _ in range(BISECTION_STEPS):
         middle = (low + high) / 2
-        if _sturm_count(packed_rows, band, middle) <= index:
+        if _safe_sturm_count(packed_rows, band, middle) <= index:
             low = middle
         else:
             high = middle
