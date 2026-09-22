@@ -7127,3 +7127,24 @@ or in the campaign brief beside the sentence about the key file. The zeta3 key
 should be rotated after this run, as after the previous two.
 
 Evidence: 2026-09-22, T401 critique, second tool call of the run.
+
+## Private-draft rendering needs a site image, not the current builder image
+
+What happened: the T401 repair tried to follow the documented RequestFactory
+recipe for rendering a private draft as its owner. In this campaign
+environment, `agents/sage.sh` runs `numberdb/builder:latest` with an empty
+`NUMBERDB_SAGE_PYTHONPATH`; that image has the NumberDB client but no Django,
+so importing `django` failed before the script could reach the table. Pointing
+the wrapper at `numberdb/web:latest` also failed on this machine because that
+image was not present locally and could not be pulled.
+
+What to do instead: treat the RequestFactory recipe as requiring a site image
+or a local Django install, not just `agents/sage.sh`. If neither is available,
+record that the private rendered page could not be checked from this machine,
+then use the authenticated API document and `/api/table/<tid>/audit` for the
+checks that do not require browser/session rendering.
+
+Evidence: 2026-09-22, T401 repair. `agents/sage.sh /tmp/t401_render_probe.py`
+failed with `ModuleNotFoundError: No module named 'django'`; rerunning with
+`NUMBERDB_SAGE_IMAGE=numberdb/web:latest` failed with Docker's
+`pull access denied for numberdb/web`.
