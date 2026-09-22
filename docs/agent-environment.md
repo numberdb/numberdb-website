@@ -7415,3 +7415,21 @@ the `--socks5-hostname` side, and only one of them is a reason to stop.
 Evidence: 2026-09-22, `curl -sv --socks5-hostname 127.0.0.1:1080
 https://numberdb.org/skill` -> "Connection refused"; `curl -s
 https://numberdb.org/skill` -> 48740 bytes, exit 0.
+
+## The `/files/<tid>/<name>` route served an attachment for a private draft
+
+What happened: T408 was an unpublished draft. `GET /T408` returned 404 with
+the private-draft "there is no page here" text, and `GET /preview/T408`
+returned 404 as well. The API file route was write-only, as documented:
+`GET /api/table/T408/file/generate.py` answered 405 with `Use POST or PUT`.
+But `GET /files/T408/generate.py?raw=1` returned the attached generator
+without a session or API key.
+
+What to do instead: treat attachments fetched this way as private draft
+material even when the route serves them. Use them only to check the draft you
+are repairing, do not quote or redistribute them outside the run, and do not
+take the successful fetch as evidence that the draft itself is public.
+
+Evidence: 2026-09-22T10:44:07Z repair of T408. `/T408` and `/preview/T408`
+were 404; `/api/table/T408/file/generate.py` was 405; `/files/T408/generate.py?raw=1`
+returned 262 lines of Python.
