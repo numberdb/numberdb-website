@@ -5,8 +5,8 @@ Title: Momentum thickness $\delta_2$ of the Falkner–Skan wedge flows
 Definition: >-
   The Falkner-Skan wedge flow is the upper-branch solution of the boundary
   layer problem $f''' + f f'' + \beta(1-(f')^2)=0$, with $f(0)=f'(0)=0$
-  and $f'(\infty)=1$ CITE{Hartree}. In the Hartree normalisation, the
-  momentum thickness is
+  and $f'(\infty)=1$ CITE{WikiFalknerSkan} CITE{FalknerSkan} CITE{Hartree}.
+  In the Hartree normalisation, the momentum thickness is
   $\delta_2(\beta)=\int_0^\infty f'(\eta)(1-f'(\eta))\,\mathrm{d}\eta$.
 Keywords:
   - Falkner Skan
@@ -34,10 +34,10 @@ Parameters:
     type: Symbolic
     title: normalisation
     display: normalisation
-    constraints: either `hartree` or `wedge`
+    constraints: either `wedge` or `hartree`
     values:
-      hartree: Hartree
       wedge: wedge
+      hartree: Hartree
 Comments:
   comment-normalisations: >-
     The `hartree` rows use Hartree's coordinate and equation. The `wedge` rows
@@ -53,9 +53,9 @@ Comments:
   comment-range: >-
     The present rows stop at $\beta=1.33$, the largest two-decimal grid point
     not exceeding the Hartree and Schlichting tabulation endpoint
-    $\beta=4/3$. The profiles with $4/3<\beta<2$ are not included here because
-    sources disagree about whether they belong to the physical wedge-flow
-    table.
+    $\beta=4/3$ CITE{SchlichtingGersten}. The profiles with $4/3<\beta<2$ are
+    not included here because sources disagree about whether they belong to
+    the physical wedge-flow table.
 Formulas:
   formula-m-beta: >-
     The Hartree parameter and the power-law exponent in
@@ -115,10 +115,13 @@ Data properties:
   rigour details: >-
     Values are computed by shooting on $f''(0)$ in the Hartree equation and
     integrating the momentum-thickness quadrature along the same numerical
-    solution. Each stored row is computed at two working precisions, and the
-    stored digits are required to agree. The generator checks the Blasius row
-    against Toepfer's scaling and checks Formula CITE{formula-momentum-integral}
-    on every computed Hartree row.
+    solution. Continuation in $\beta$ keeps the secant iteration on the upper
+    branch, and each candidate root is rejected unless $f'(18)$ is $1$,
+    $f''(18)$ is negligible, and Formula CITE{formula-momentum-integral} holds.
+    Each stored row is computed at 42 and 50 decimal working precision, and the
+    30 stored digits are required to agree. The generator checks the Blasius row
+    against Toepfer's scaling and checks the $\beta=-0.10$ wedge row against
+    Schlichting and Gersten's printed value $\beta_2=0.746$ CITE{SchlichtingGersten}.
 Display properties:
   number-header: $\delta_2$
 Numbers: []
