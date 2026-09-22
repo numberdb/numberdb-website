@@ -1,0 +1,7 @@
+done -- §1 Definition: added a one-sentence definition of the integers as the elements of $\mathbb{Z}$, with `CITE{Wiki}`; checked the live API, rendered page, and audit still had an empty definition before changing it.
+done -- §2 Search: added the existing `integer` tag and `whole number` as a keyword; checked the live search miss, the existing `integer` tag on T0 and T1, and used `whole number` only as a keyword because the term is ambiguous.
+done -- §3 Similar tables: added `HREF{Rational_numbers}[rational numbers]` with relation "the field of fractions of $\mathbb{Z}$"; checked T30 defines $\mathbb{Q}$ from `HREF{Integers}` and declares `repeats: HREF{Integers}`.
+done -- §4 Completeness note: added that the table holds every integer $n$ with $-10 \leq n \leq 10$ as examples rather than a reference list; checked the stored rows are exactly that range.
+done -- §5 Value header: changed the value column header to `$n$`; checked every stored value equals its parameter, so the ordinal header was the false part.
+done -- §6 Program: changed the Sage snippet to `N = 20; numbers = [-N..N]` on two lines; checked the snippet under Sage's preparsed namespace before writing it.
+declined -- §7 Noted-only items: left the row order, shared rigour prose, existing `ring` and `Abelian group` tags, and template `&nbsp` rendering alone because the report itself did not recommend T2 edits for them.
