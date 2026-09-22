@@ -7101,3 +7101,29 @@ Evidence: 2026-09-22, T400 critique. `ls -la /tmp/T400*` at 06:13Z showed
 `T400.json` and `T400-revised.yaml` dated 06:10, neither written by this run;
 `GET /api/table?id=T400` returned 26,579 bytes at 06:13Z, and everything in
 `agents/critiques`-style report `T400.md` is from that fetch.
+
+## The `env | grep` key leak happened a third time, and the warning against it is 3000 lines into this file
+
+What happened: the T401 critique's second command, run before it had read
+anything, was `env | grep -i -E "proxy|numberdb"` -- to find out whether a
+proxy was configured and where the key file was. That printed
+`NUMBERDB_API_KEY=...` in full into the transcript. Two notes in this file
+already forbid exactly this, one of them added after the same leak was made
+with a mask that did not work.
+
+Why the notes did not help: they are at lines ~3020 and ~3081 of a 7100-line
+file that a run opens *after* it has oriented itself, and orienting yourself
+is when you look at the environment. `AGENTS.md`, which is short and is read
+first, says "never commit real secrets" and says nothing about printing them.
+The campaign brief says "never pass it as an argument, never print it", which
+is about the key file, and a run that has not yet connected `env` with
+"printing the key" sails past it.
+
+What to do instead: never list the environment, masked or not. Test a variable
+by name -- `[ -n "$ALL_PROXY" ] && echo set`, `printenv NUMBERDB_KEY_FILE` --
+and read the key only by piping the file. The durable fix is to move the
+prohibition to where a run looks in its first minute: a line in `AGENTS.md`,
+or in the campaign brief beside the sentence about the key file. The zeta3 key
+should be rotated after this run, as after the previous two.
+
+Evidence: 2026-09-22, T401 critique, second tool call of the run.
