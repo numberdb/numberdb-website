@@ -2,11 +2,11 @@
 # act on the site; the generator beside this file fills the entries.
 Title: Values $L_p(E,1)$ of the $p$-adic $L$-function of elliptic curves over $\mathbb{Q}$ of rank 0
 Definition: >-
-  For the rank-zero elliptic curve $E/\mathbb{Q}$ identified by the parameters
-  and a prime $p$ of good ordinary reduction, this table gives the central
-  value $L_p(E,1)$ of Sage's cyclotomic $p$-adic $L$-function
-  CITE{SagePadicLseries}, in the normalization of Mazur-Tate-Teitelbaum
-  CITE{MTT}.
+  For the rank-zero elliptic curve $E/\mathbb{Q}$ with conductor $N$ and
+  invariants $c_4$ and $c_6$, and a prime $p$ of good ordinary reduction, this
+  table gives the value at $s=1$ of the cyclotomic $p$-adic $L$-function of
+  Mazur, Tate and Teitelbaum CITE{MTT}, as computed by Sage
+  CITE{SagePadicLseries}.
 Keywords:
   - p-adic L-function
   - p-adic L-series
@@ -31,12 +31,13 @@ Parameters:
     type: Z
     title: ordinary prime
     display: $p$
-    constraints: $p\geq5$ is prime and $E$ has good ordinary reduction at $p$
+    constraints: $p$ is a prime of good ordinary reduction for $E$
 Comments:
   comment-index: >-
-    The curve is identified by $N$, $c_4$ and $c_6$. Each entry comment gives
-    the Cremona label from Sage's mini Cremona database CITE{SageCremona} and
-    the corresponding LMFDB CITE{LMFDB} label.
+    Each entry comment gives the Cremona label from Sage's mini Cremona
+    database CITE{SageCremona} and the corresponding LMFDB CITE{LMFDB} label.
+    LMFDB numbers curves within an isogeny class differently from Cremona's
+    tables, so the two labels can have different final indices.
   comment-normalization: >-
     Sage writes the cyclotomic variable as $T=\gamma^{s-1}-1$ with
     $\gamma=1+p$. The value stored here is the constant term at $T=0$; no
@@ -44,11 +45,17 @@ Comments:
   comment-precision: >-
     The $p$-adic precision is the least $n$ with $p^n\geq10^{50}$, for example
     $O(5^{72})$, $O(7^{60})$, $O(11^{49})$, $O(13^{45})$ and $O(29^{35})$.
+  comment-repeated-values: >-
+    For a fixed $p$, CITE{formula-interpolation} shows that the value depends
+    only on $a_p$ and on $L(E,1)/\Omega_E$. Curves sharing those data at that
+    prime have the same entry.
 Formulas:
   formula-model-from-invariants: >-
-    For the reduced models in this table, $b_2$ is the unique element of
-    $\{-4,-3,0,1,4,5\}$ with $b_2\equiv -c_6\pmod{12}$,
-    $b_4=(b_2^2-c_4)/24$, and
+    The reduced global minimal model is
+    $y^2+a_1xy+a_3y=x^3+a_2x^2+a_4x+a_6$, with
+    $b_2=a_1^2+4a_2$, $b_4=a_1a_3+2a_4$ and $b_6=a_3^2+4a_6$. Given
+    $(c_4,c_6)$, $b_2$ is the unique element of $\{-4,-3,0,1,4,5\}$ with
+    $b_2\equiv -c_6\pmod{12}$, $b_4=(b_2^2-c_4)/24$, and
     $b_6=(-c_6-b_2^3+36b_2b_4)/216$. The model has
     $a_1\equiv b_2\pmod 2$, $a_3\equiv b_6\pmod 2$ with
     $a_1,a_3\in\{0,1\}$ and $a_2\in\{-1,0,1\}$, and
@@ -58,7 +65,7 @@ Formulas:
     If $a_p=p+1-\#E(\mathbb{F}_p)$ and $\alpha$ is the unit root of
     $x^2-a_px+p$, then
     $L_p(E,1)=(1-\alpha^{-1})^2L(E,1)/\Omega_E$, where $\Omega_E$ is the
-    Neron period of $E$.
+    real Néron period of $E$.
 Similar tables:
   - table: HREF{Tate_parameters_q_E_of_elliptic_curves_over_mathbb_Q}[Tate parameters $q_E$ of elliptic curves over $\mathbb{Q}$]
     relation: uses the same $(N,c_4,c_6)$ curve indexing for a local $p$-adic invariant at multiplicative primes
@@ -89,8 +96,12 @@ Programs:
     code: |
       E = EllipticCurve('11a1')
       p = 5
+      n = 72  # least n with 5^n >= 10^50
       Lp = E.padic_lseries(p)
-      Lp.series(1, prec=1).list()[0]
+      alpha = Lp.alpha(n)
+      symbol = E.modular_symbol(sign=+1, implementation='eclib')(0)
+      ratio = QQ(symbol) / QQ(E.real_components())
+      (ratio * (1 - 1 / alpha)**2).add_bigoh(n)
 Tags:
   - number theory
   - elliptic curves
@@ -99,7 +110,7 @@ Tags:
 Data properties:
   type: Qp
   rigour: proven
-  complete: no
+  complete: 'no'
   complete-note: >-
     it holds every curve in Sage's mini Cremona database CITE{SageCremona} with
     conductor $N\leq30$ and rank $0$, for every ordinary prime $p$ with
