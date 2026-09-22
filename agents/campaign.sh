@@ -207,8 +207,11 @@ top_up_if_low() {
 		#A screening that fails is not the end of a campaign: demands, growth
 		#and sweeps are work too, and the queue may be low only because the
 		#other workers are holding claims.
-		if ! propose_a_batch; then
-			local status=$?
+		#`$?` inside `if ! cmd` is the status of the negation and not of the
+		#command; see the same fix at the build stage below.
+		local status=0
+		propose_a_batch || status=$?
+		if [ "$status" -ne 0 ]; then
 			say "the screening failed with status $status"
 			if [ -z "$(queue_next)" ]; then
 				say "stopping: no screening to be had and nothing waiting"
