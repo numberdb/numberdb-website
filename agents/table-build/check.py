@@ -70,6 +70,17 @@ def exactness(values):
                 #Plain `str`, with a point, for the same reasons as above; a
                 #string without a point is an exact integer and is not this.
                 continue
+            if _is_padic(coefficient):
+                #A p-adic value carries its own precision as an O(p^n) term,
+                #so it is bounded in the same sense as a real ball. The type
+                #is not an error, but a bare p-adic with no absolute precision
+                #would be.
+                if coefficient.precision_absolute() is None:
+                    complaints.append(
+                        '%s: p-adic value %r has no absolute precision'
+                        % (key, coefficient))
+                    break
+                continue
             if isinstance(coefficient, float) or 'float' in name.lower():
                 complaints.append(
                     '%s: coefficient %r is a %s, not exact -- something '
@@ -223,6 +234,12 @@ def _is_enclosure(value):
     name = type(value).__name__
     return ('Ball' in name or 'IntervalFieldElement' in name
             or 'Interval' in name)
+
+
+def _is_padic(value):
+    """Whether this is a Sage p-adic with an explicit precision cap."""
+    name = type(value).__name__.lower()
+    return 'padic' in name and hasattr(value, 'precision_absolute')
 
 
 def _is_finite(value):
