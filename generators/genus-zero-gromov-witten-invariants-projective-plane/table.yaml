@@ -3,11 +3,10 @@
 # is a person's act on the site.
 Title: Genus-zero Gromov-Witten invariants $N_d$ of the projective plane
 Definition: >-
-  For $d\geq 1$, $N_d$ is the genus-zero Gromov-Witten invariant
-  $\langle [\mathrm{pt}],\ldots,[\mathrm{pt}]\rangle_{0,d}^{\mathbb P^2}$
-  with $3d-1$ point insertions CITE{GWWiki}. Since $\mathbb P^2$ is
-  homogeneous, this invariant is the enumerative count of degree-$d$ rational
-  plane curves through $3d-1$ points in general position CITE{KM1994}.
+  For $d\geq 1$,
+  $N_d=\langle [\mathrm{pt}],\ldots,[\mathrm{pt}]\rangle_{0,d}^{\mathbb P^2}$
+  is the genus-zero Gromov-Witten invariant with $3d-1$ point insertions
+  CITE{GWWiki}.
 Parameters:
   d:
     type: Z
@@ -16,8 +15,10 @@ Parameters:
     constraints: $d\geq 1$
 Comments:
   point-conditions: >-
-    The condition count is $3d-1$, the dimension of the family of degree-$d$
-    rational plane curves in $\mathbb P^2$.
+    Since $\mathbb P^2$ is homogeneous, $N_d$ is the enumerative count of
+    degree-$d$ rational plane curves through $3d-1$ points in general position
+    CITE{KM1994}. The condition count $3d-1$ is the dimension of the family of
+    degree-$d$ rational plane curves in $\mathbb P^2$.
   convention: >-
     The table uses the usual complex enumerative convention. It does not store
     real or tropical refinements of the same counts.
@@ -76,7 +77,6 @@ Keywords:
   - projective plane Gromov-Witten invariants
   - enumerative geometry projective plane
 Tags:
-  - enumerative geometry
   - combinatorics
 Data properties:
   type: Z
