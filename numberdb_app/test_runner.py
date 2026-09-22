@@ -994,3 +994,124 @@ class AStageReportsTheStatusItGot(TestCase):
 		stage = body[start:body.index('\n}', start)]
 		self.assertIn('-ne 6', stage)
 		self.assertIn('takes over as', stage)
+
+
+class ATreeThatIsMerelyBehindPushesItself(TestCase):
+	"""Being behind `origin` is not a thing a person needs to decide.
+
+	`run.sh` will not start from a commit no one else can fetch, because the
+	pipeline version it records would name a commit that exists on one disk.
+	That rule is right. Enforcing it by refusing when the push fails was not:
+	the way it actually failed, twice on 2026-09-22, was a tree simply behind
+	`origin` with its own commits on top.
+
+	The first cost a day. w1 refused every build, walked a whole family of
+	proposals at no cost, and reported nothing -- the refusal printed to the
+	log and read as "no table from that one; moving on". The second stranded
+	five lessons written by runs, one commit behind.
+
+	Replaying this tree's own unpushed commits onto the branch they belong to
+	is mechanical: they are not on the remote, so nothing anybody else holds
+	is rewritten. A conflict is different, and still stops for a person -- but
+	it must leave the tree exactly as it was found, because a half-finished
+	rebase is worse to hand somebody than the refusal they were going to get.
+	"""
+
+	def repos(self, conflicting):
+		"""A remote, and a clone one commit behind it with a commit of its own."""
+		import subprocess
+		import tempfile
+
+		root = tempfile.mkdtemp()
+		self.addCleanup(__import__('shutil').rmtree, root, True)
+
+		def git(where, *args):
+			return subprocess.run(('git',) + args, cwd=where,
+			                      capture_output=True, text=True)
+
+		subprocess.run(['git', 'init', '-q', '--bare', 'remote.git'], cwd=root)
+		subprocess.run(['git', 'init', '-q', 'a'], cwd=root)
+		a = os.path.join(root, 'a')
+		for key, value in (('user.email', 't@t'), ('user.name', 't')):
+			git(a, 'config', key, value)
+		git(a, 'checkout', '-q', '-b', 'main')
+		open(os.path.join(a, 'f'), 'w').write('base\n')
+		git(a, 'add', '-A'); git(a, 'commit', '-qm', 'one')
+		git(a, 'remote', 'add', 'origin', '../remote.git')
+		git(a, 'push', '-q', 'origin', 'main')
+
+		subprocess.run(['git', 'clone', '-q', '-b', 'main', 'remote.git', 'b'],
+		               cwd=root)
+		b = os.path.join(root, 'b')
+		for key, value in (('user.email', 't@t'), ('user.name', 't')):
+			git(b, 'config', key, value)
+
+		#The remote moves on.
+		open(os.path.join(a, 'f'), 'w' if conflicting else 'a').write('theirs\n')
+		git(a, 'commit', '-qam', 'theirs'); git(a, 'push', '-q', 'origin', 'main')
+
+		#And this tree commits on the stale base -- to the same line, or not.
+		name = 'f' if conflicting else 'g'
+		open(os.path.join(b, name), 'w').write('ours\n')
+		git(b, 'add', '-A'); git(b, 'commit', '-qm', 'ours')
+		git(b, 'fetch', '-q', 'origin')
+		return b, git
+
+	def preflight(self):
+		"""The push block lifted out of run.sh, so this cannot test a copy.
+
+		Taken from the script rather than retyped: a second copy of the logic
+		would go on passing after the real one changed, which is the failure
+		mode a test like this exists to avoid.
+		"""
+		body = script('agents/run.sh')
+		start = body.index('\tbranch=$(git rev-parse --abbrev-ref HEAD)')
+		end = body.index('\n\t\texit 3\n\tfi\n', start)
+		block = body[start:end] + '\n\t\texit 3\n\tfi\n'
+		#Dedented, and with the exit turned into a word, so a refusal is a
+		#result to assert on rather than the end of the shell.
+		return ('\n'.join(line[1:] if line.startswith('\t') else line
+		                  for line in block.splitlines())
+		        .replace('exit 3', 'echo refused'))
+
+	def recover(self, where):
+		import subprocess
+
+		return subprocess.run(['bash', '-c', self.preflight()], cwd=where,
+		                      capture_output=True, text=True).stdout.strip()
+
+	def test_the_block_was_found_and_is_the_real_one(self):
+		text = self.preflight()
+		self.assertIn('git rebase --quiet "origin/$branch"', text)
+		self.assertIn('git rebase --abort', text)
+		self.assertIn('git push --quiet origin HEAD', text)
+		#The conflict advice git writes to stdout must be sent away, or the
+		#run's own log fills with it and a caller reading the last line of
+		#output gets git's instructions instead of the answer.
+		self.assertIn('git rebase --quiet "origin/$branch" >/dev/null 2>&1',
+		              text)
+
+	def test_behind_without_a_conflict_is_recovered(self):
+		import subprocess
+
+		where, git = self.repos(conflicting=False)
+		self.assertIn('rebased and pushed', self.recover(where))
+		#Nothing of this tree's own was dropped to achieve it.
+		log = git(where, 'log', '--oneline').stdout
+		self.assertIn('ours', log)
+		self.assertIn('theirs', log)
+		behind = git(where, 'rev-list', '--count', 'HEAD..origin/main').stdout
+		self.assertEqual(behind.strip(), '0')
+
+	def test_a_real_conflict_still_stops_for_a_person(self):
+		where, git = self.repos(conflicting=True)
+		before = git(where, 'rev-parse', 'HEAD').stdout.strip()
+		self.assertTrue(self.recover(where).endswith('refused'))
+		#And leaves the tree exactly as it was found: same commit, no rebase
+		#half-done, nothing modified. `run.sh` also refuses to start in a
+		#tree that is not clean, so a stranded rebase would turn one refusal
+		#into two.
+		self.assertEqual(git(where, 'rev-parse', 'HEAD').stdout.strip(), before)
+		self.assertEqual(git(where, 'status', '--porcelain').stdout.strip(), '')
+		for leftover in ('rebase-merge', 'rebase-apply'):
+			self.assertFalse(os.path.isdir(os.path.join(where, '.git', leftover)))
