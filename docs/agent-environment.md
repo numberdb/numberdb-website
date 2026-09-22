@@ -9202,3 +9202,21 @@ proposal to match whatever page happens to fetch.
 
 Evidence: 2026-09-22 ideas run, the `source_names_it` lines quoted in
 `agents/table-ideas/BATCH-2026-09-22T0807.md`.
+
+## The runner may expose the API key in the environment as well as in the key file
+
+What happened: the build prompt says the API key is in the file named by
+`NUMBERDB_KEY_FILE`, and to pipe that file into commands rather than passing
+or printing the key. On the 2026-09-22 build runner, `NUMBERDB_API_KEY` was
+also set in the process environment. A broad environment dump therefore prints
+the key even when the run never reads the key file.
+
+What to do instead: do not run broad `env` diagnostics in a transcript. Ask
+for specific non-secret variables, or filter out `NUMBERDB_API_KEY` before
+printing. Commands that write to NumberDB should still read
+`$NUMBERDB_KEY_FILE` or stdin, because that is the convention shared with
+`agents/sage.sh`.
+
+Evidence: 2026-09-22 build run for T404. `env | rg '^NUMBERDB'` included
+`NUMBERDB_API_KEY`; subsequent commands used `cat "$NUMBERDB_KEY_FILE"` without
+printing the token.
