@@ -1,0 +1,124 @@
+# Draft document for numberdb.org/T416, the Falkner-Skan momentum thickness
+# table. It was created through the API with X-Draft: yes and is to be filled
+# by generate.py beside it. Publishing is a person's act on the site.
+Title: Momentum thickness $\delta_2$ of the Falkner–Skan wedge flows
+Definition: >-
+  The Falkner-Skan wedge flow is the upper-branch solution of the boundary
+  layer problem $f''' + f f'' + \beta(1-(f')^2)=0$, with $f(0)=f'(0)=0$
+  and $f'(\infty)=1$ CITE{Hartree}. In the Hartree normalisation, the
+  momentum thickness is
+  $\delta_2(\beta)=\int_0^\infty f'(\eta)(1-f'(\eta))\,\mathrm{d}\eta$.
+Keywords:
+  - Falkner Skan
+  - Falkner-Skan
+  - boundary layer
+  - wedge flow
+  - momentum thickness
+  - Blasius boundary layer
+  - Hiemenz flow
+Parameters:
+  beta:
+    type: Q
+    title: Hartree pressure-gradient parameter
+    display: $\beta$
+    constraints: $\beta$ is rational and lies on a Falkner-Skan upper branch
+  branch:
+    type: Symbolic
+    title: branch
+    display: branch
+    constraints: either `upper` or `lower`
+    values:
+      upper: upper branch
+      lower: lower branch
+  normalisation:
+    type: Symbolic
+    title: normalisation
+    display: normalisation
+    constraints: either `hartree` or `wedge`
+    values:
+      hartree: Hartree
+      wedge: wedge
+Comments:
+  comment-normalisations: >-
+    The `hartree` rows use Hartree's coordinate and equation. The `wedge` rows
+    use $\eta_w=y\sqrt{u_e/(\nu x)}$ and
+    $f''' + \tfrac{m+1}{2}f f'' + m(1-(f')^2)=0$, where
+    $m=\beta/(2-\beta)$. Formula CITE{formula-normalisation} gives the
+    conversion between the two dimensionless thicknesses.
+  comment-branch: >-
+    The upper branch is the solution with $f''(0)>0$ and $f'(\eta)$ tending to
+    $1$ from below. Hartree identifies this branch as the one used for the
+    boundary-layer application when negative-$\beta$ solutions are not unique
+    CITE{Hartree}.
+  comment-range: >-
+    The present rows stop at $\beta=1.33$, the largest two-decimal grid point
+    not exceeding the Hartree and Schlichting tabulation endpoint
+    $\beta=4/3$. The profiles with $4/3<\beta<2$ are not included here because
+    sources disagree about whether they belong to the physical wedge-flow
+    table.
+Formulas:
+  formula-m-beta: >-
+    The Hartree parameter and the power-law exponent in
+    $u_e(x)=U_0(x/L)^m$ are related by $m=\beta/(2-\beta)$.
+  formula-normalisation: >-
+    The wedge and Hartree coordinates satisfy
+    $\eta_H=\eta_w/\sqrt{2-\beta}$, so
+    $\delta_{2,\mathrm{wedge}}=\sqrt{2-\beta}\,\delta_{2,\mathrm{Hartree}}$.
+  formula-momentum-integral: >-
+    In Hartree's normalisation, the momentum integral gives
+    $f''(0)=\beta\delta_1+(1+\beta)\delta_2$.
+Programs:
+  program-python:
+    language: Python
+    code: |-
+      from mpmath import mp
+      mp.dps = 50
+
+      beta = mp.mpf("0")
+      # See the attached generate.py for the shooting calculation and checks.
+Links:
+  WikiFalknerSkan:
+    title: 'Wikipedia: Falkner-Skan boundary layer'
+    url: https://en.wikipedia.org/wiki/Falkner%E2%80%93Skan_boundary_layer
+References:
+  FalknerSkan:
+    bib: >-
+      V. M. Falkner and S. W. Skan, Solutions of the boundary-layer equations,
+      The London, Edinburgh, and Dublin Philosophical Magazine and Journal of
+      Science 12 (1931), 865-896.
+    doi: 10.1080/14786443109461870
+  Hartree:
+    bib: >-
+      D. R. Hartree, On an equation occurring in Falkner and Skan's approximate
+      treatment of the equations of the boundary layer, Mathematical
+      Proceedings of the Cambridge Philosophical Society 33 (1937), 223-239.
+    doi: 10.1017/S0305004100019575
+  SchlichtingGersten:
+    bib: >-
+      H. Schlichting and K. Gersten, Boundary-Layer Theory, ninth edition,
+      Springer, Berlin, 2017.
+    doi: 10.1007/978-3-662-52919-5
+Tags:
+  - analysis
+  - physics
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  sources:
+    - CITE{Hartree}
+    - CITE{SchlichtingGersten}
+  complete: 'no'
+  complete-note: >-
+    it holds both Hartree and wedge normalisations on the upper branch for
+    every two-decimal value of $\beta$ from $-0.19$ through $1.33$; the lower
+    branch and the profiles with $4/3<\beta<2$ are not included
+  rigour details: >-
+    Values are computed by shooting on $f''(0)$ in the Hartree equation and
+    integrating the momentum-thickness quadrature along the same numerical
+    solution. Each stored row is computed at two working precisions, and the
+    stored digits are required to agree. The generator checks the Blasius row
+    against Toepfer's scaling and checks Formula CITE{formula-momentum-integral}
+    on every computed Hartree row.
+Display properties:
+  number-header: $\delta_2$
+Numbers: []
