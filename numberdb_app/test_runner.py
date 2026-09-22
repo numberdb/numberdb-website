@@ -1115,3 +1115,52 @@ class ATreeThatIsMerelyBehindPushesItself(TestCase):
 		self.assertEqual(git(where, 'status', '--porcelain').stdout.strip(), '')
 		for leftover in ('rebase-merge', 'rebase-apply'):
 			self.assertFalse(os.path.isdir(os.path.join(where, '.git', leftover)))
+
+
+class AFinishedDraftIsActuallyOffered(TestCase):
+	"""The offer was proxy-only, so nothing built on the builder was offered.
+
+	A build leaves a draft; somebody has to be asked to look at it. The
+	campaign does the asking, because it is holding the number -- and it did
+	so through `ALL_PROXY=socks5h://127.0.0.1:1080`, which is the laptop's
+	tunnel. The build machine has no such proxy and reaches the site directly,
+	so every offer there died with "Failed to connect to 127.0.0.1 port 1080".
+
+	Two things then hid it. The answer went to `>/dev/null 2>&1`, so nothing
+	could be said about what actually happened; and the failure branch said
+	"it may already be published", which is a guess, and a plausible one. By
+	2026-09-22 seven drafts had collected, four of them finished tables
+	waiting on a review nobody had been asked for.
+
+	`sync-costs.sh` had already met this and answers it the same way: direct
+	first, then the tunnel. The rule is that the laptop can only reach the
+	site through a proxy and the builder cannot reach the proxy, so neither
+	order works alone and the fallback is the whole mechanism.
+	"""
+
+	def offer_block(self):
+		body = script('agents/campaign.sh')
+		start = body.index('\tif [ -n "$tid" ]; then\n\t\toffer()')
+		return body[start:body.index('\n\tfi\n', start)]
+
+	def test_it_tries_direct_before_the_tunnel(self):
+		block = self.offer_block()
+		self.assertIn("--noproxy '*'", block)
+		self.assertIn('ALL_PROXY=', block)
+		self.assertLess(block.index("--noproxy '*'"), block.index('ALL_PROXY='))
+
+	def test_the_answer_is_not_thrown_away(self):
+		#It is the only thing that can tell "already published" from "no
+		#entries yet" from "the site was unreachable", and the campaign
+		#reported the first of those whatever had happened.
+		block = self.offer_block()
+		self.assertNotIn('>/dev/null 2>&1', block)
+		self.assertIn('ready_for_review', block)
+
+	def test_each_outcome_says_what_it_was(self):
+		block = self.offer_block()
+		self.assertIn('is offered for review', block)
+		self.assertIn('could not reach the site', block)
+		self.assertIn('was not offered', block)
+		#And no longer guesses on the API's behalf.
+		self.assertNotIn('it may already be published', block)
