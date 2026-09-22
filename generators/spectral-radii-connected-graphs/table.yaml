@@ -1,0 +1,122 @@
+# Draft document for spectral radii of connected graphs T397.
+# Created through the API with X-Draft: yes. Publishing is a person's act.
+Title: Spectral radii of connected graphs
+Definition: >-
+  The spectral radius $\lambda_1(G)$ of a connected simple graph $G$ is the
+  largest eigenvalue of its $0$-$1$ adjacency matrix $A(G)$, with no loops,
+  where $G$ is named by its canonical graph6 string CITE{Graph6}
+  CITE{WikiSpectralGraphTheory}.
+Parameters:
+  g:
+    type: Symbolic
+    title: graph
+    constraints: a simple connected graph, named by its canonical graph6 string
+    display: $G$
+Comments:
+  comment-graph6: >-
+    Graphs are named by their graph6 string CITE{Graph6}, McKay's compact
+    encoding, taken after a canonical relabelling so that the name depends on
+    the graph and not on how its vertices happen to be numbered. Recover the
+    graph in Sage with `Graph(name)`, and produce the name used here with
+    `g.canonical_label(algorithm='sage').graph6_string()`. The same names index
+    HREF{Characteristic_polynomials_of_connected_graphs}[the characteristic
+    polynomials], HREF{Laplacian_polynomials_of_connected_graphs}[the
+    Laplacian polynomials], HREF{Chromatic_polynomials_of_connected_graphs}[the
+    chromatic polynomials], and HREF{Tutte_polynomials_of_connected_graphs}[the
+    Tutte polynomials].
+  comment-convention: >-
+    The matrix $A(G)$ is the adjacency matrix of a simple graph, with a $1$
+    for each edge and a $0$ otherwise. The table uses $A(G)$ itself, not the
+    combinatorial Laplacian $D(G)-A(G)$, the normalised Laplacian, or the
+    signless Laplacian $D(G)+A(G)$.
+  comment-order: >-
+    The adjacency eigenvalues are ordered
+    $\lambda_1(G)\geq\lambda_2(G)\geq\cdots\geq\lambda_n(G)$, with
+    multiplicity, so the value stored here is the largest adjacency
+    eigenvalue.
+  comment-named: >-
+    Thirty-five of the $996$ graphs here have a name in common use, and their
+    entries give it. The other entries are identified by their canonical
+    graph6 strings.
+Formulas:
+  formula-characteristic: >-
+    $\lambda_1(G)$ is the largest real root of
+    HREF{Characteristic_polynomials_of_connected_graphs}[the characteristic
+    polynomial] $\phi(G,x)=\det(xI-A(G))$.
+  formula-complete: >-
+    $\lambda_1(K_n)=n-1$.
+  formula-complete-bipartite: >-
+    $\lambda_1(K_{m,n})=\sqrt{mn}$.
+  formula-paths-cycles: >-
+    $\lambda_1(P_n)=2\cos(\pi/(n+1))$ for $n\geq1$, and
+    $\lambda_1(C_n)=2$ for $n\geq3$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.graphs.graph import Graph
+      from sage.rings.qqbar import AA
+
+      G = Graph('FjaHw')               # the Moser spindle, by its name here
+      roots = G.adjacency_matrix().charpoly().roots(ring=AA)
+      max(root for root, multiplicity in roots)
+      G.canonical_label(algorithm='sage').graph6_string()
+Similar tables:
+  - table: HREF{Characteristic_polynomials_of_connected_graphs}[Characteristic polynomials of connected graphs]
+    relation: stores $\phi(G,x)=\det(xI-A(G))$ for the same graphs under the same names; $\lambda_1(G)$ is the largest real root of $\phi(G,x)$
+  - table: HREF{Laplacian_polynomials_of_connected_graphs}[Laplacian polynomials of connected graphs]
+    relation: stores the characteristic polynomial of $D(G)-A(G)$ for the same graphs under the same names
+  - table: HREF{Signed_matching_polynomials_of_connected_graphs}[Signed matching polynomials of connected graphs]
+    relation: uses the same graph names, and on trees its polynomial equals $\det(xI-A(G))$
+  - table: HREF{Matching-generating_polynomials_of_connected_graphs}[Matching-generating polynomials of connected graphs]
+    relation: uses the same graph names and stores the ordinary generating polynomial for matching counts
+  - table: HREF{Chromatic_polynomials_of_connected_graphs}[Chromatic polynomials of connected graphs]
+    relation: uses the same canonical graph6 index for connected graphs on at most seven vertices
+  - table: HREF{Tutte_polynomials_of_connected_graphs}[Tutte polynomials of connected graphs]
+    relation: uses the same canonical graph6 index for connected graphs on at most seven vertices
+Links:
+  Graph6:
+    title: 'Brendan McKay: graph6 and sparse6 formats'
+    url: https://users.cecs.anu.edu.au/~bdm/data/formats.html
+  WikiSpectralGraphTheory:
+    title: 'Wikipedia: Spectral graph theory'
+    url: https://en.wikipedia.org/wiki/Spectral_graph_theory
+Keywords:
+  - adjacency spectral radius
+  - Perron root
+  - graph spectrum
+  - spectral graph theory
+Tags:
+  - combinatorics
+  - graph theory
+  - eigenvalue
+Data properties:
+  type: R
+  digits: '100'
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds every connected graph on at most $7$ vertices, all $996$ of them
+  rigour details: >-
+    The generator enumerates connected simple graphs with $1\leq |V(G)|\leq7$
+    using Sage, takes each graph's `canonical_label(algorithm='sage')`, and
+    stores the canonical graph6 string. It computes $\det(xI-A(G))$ exactly
+    over $\mathbb{Z}$, isolates the roots in `AA`, selects the largest root
+    exactly, and converts that root to a `RealIntervalField` at
+    `numberdb.bits(100, losing=64)`, except when the largest root is rational
+    and is returned exactly.
+
+    The build checked that the 996 graph6 strings are exactly the keys of
+    HREF{Characteristic_polynomials_of_connected_graphs}[the characteristic
+    polynomial table]. The largest root agreed with the largest root computed
+    from the stored characteristic polynomial on every row. Sage's adjacency
+    matrix `eigenvalues()` agreed on every row. Formula CITE{formula-complete} agreed for
+    $K_1,\ldots,K_7$; formula CITE{formula-complete-bipartite} agreed for
+    $K_{1,1}$, $K_{1,2}$, $K_{1,3}$, $K_{1,4}$, $K_{1,5}$, $K_{1,6}$,
+    $K_{2,2}$, $K_{2,3}$, $K_{2,4}$, $K_{2,5}$, $K_{3,3}$, and $K_{3,4}$;
+    and formula CITE{formula-paths-cycles} agreed for every path and cycle in
+    the table.
+Display properties:
+  number-header: $\lambda_1(G)$
+  group parameters: [['g']]
+Numbers: []
