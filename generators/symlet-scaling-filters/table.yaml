@@ -1,0 +1,101 @@
+# Table document for numberdb.org/T395. It was claimed first as an empty
+# draft through the API, then filled by generate.py beside it. Publishing is a
+# person's review act on the site.
+Title: Symlet scaling filters $h^{(N)}_k$ (least-asymmetric Daubechies)
+Definition: >-
+  For $N\geq 2$, the Symlet scaling filter $h^{(N)}$ is the
+  least-asymmetric Daubechies low-pass reconstruction filter in PyWavelets'
+  `symN` convention, normalised by $\sum_k h^{(N)}_k=\sqrt2$ CITE{PyWavelets}.
+Parameters:
+  N:
+    type: Z
+    title: number of vanishing moments
+    display: $N$
+    constraints: $N\geq 2$
+  k:
+    type: Z
+    title: tap index
+    display: $k$
+    constraints: $0\leq k\leq 2N-1$
+Comments:
+  comment-orientation: >-
+    The orientation is PyWavelets' `rec_lo` order. PyWavelets' `dec_lo`
+    filter is the reverse order CITE{PyWavelets}.
+  comment-normalisation: >-
+    Some tables of Daubechies coefficients are normalised to sum to $2$.
+    Those coefficients are $\sqrt2$ times the values stored here.
+  comment-high-pass: >-
+    This table stores only the low-pass scaling filter. The high-pass
+    coefficients are these values up to sign and reversal, with the sign
+    convention stated in the formulas.
+  comment-construction: >-
+    The construction uses the Daubechies spectral factorisation
+    CITE{DaubechiesBook}. The
+    HREF{Daubechies_extremal-phase_scaling_filters}[Daubechies extremal-phase
+    scaling filters] choose the root outside the unit circle from each
+    reciprocal pair; the Symlet convention uses the root choices that give the
+    least-asymmetric `symN` filters CITE{PyWaveletsSource}.
+Formulas:
+  formula-daubechies-polynomial: >-
+    $P_N(y)=\sum_{j=0}^{N-1}\binom{N-1+j}{j}y^j$.
+  formula-spectral-factor: >-
+    $H_N(z)H_N(z^{-1})=
+    2\left(\frac{2+z+z^{-1}}{4}\right)^N
+    P_N\left(\frac{2-z-z^{-1}}{4}\right)$, where
+    $H_N(z)=\sum_{k=0}^{2N-1}h^{(N)}_kz^k$.
+  formula-orthogonality: >-
+    $\sum_k h^{(N)}_k h^{(N)}_{k-2m}=\delta_{m,0}$ for every integer $m$.
+  formula-moments: >-
+    $\sum_{k=0}^{2N-1}(-1)^k k^r h^{(N)}_k=0$ for $0\leq r<N$.
+  formula-high-pass: >-
+    $g^{(N)}_k=(-1)^k h^{(N)}_{2N-1-k}$ gives the corresponding high-pass
+    filter.
+Similar tables:
+  Daubechies_extremal-phase_scaling_filters: >-
+    the extremal-phase Daubechies scaling filters, using the same
+    normalisation and orientation but a different spectral factor
+Programs:
+  program-pywavelets:
+    language: Python
+    code: |-
+      import pywt
+
+      N = 4
+      k = 0
+      pywt.Wavelet("sym%d" % N).rec_lo[k]
+Links:
+  PyWavelets:
+    title: 'PyWavelets: Wavelets'
+    url: https://pywavelets.readthedocs.io/en/latest/ref/wavelets.html
+  PyWaveletsSource:
+    title: 'PyWavelets: built-in wavelet coefficients'
+    url: https://github.com/PyWavelets/pywt/blob/main/pywt/_extensions/c/wavelets_coeffs.template.h
+  Wiki:
+    title: 'Wikipedia: Symlet'
+    url: https://en.wikipedia.org/wiki/Symlet
+References:
+  DaubechiesBook:
+    bib: Ingrid Daubechies, Ten Lectures on Wavelets, CBMS-NSF Regional Conference Series in Applied Mathematics 61, SIAM, 1992
+    doi: 10.1137/1.9781611970104
+Keywords: Symlet, Symlets, least asymmetric Daubechies, Daubechies least-asymmetric wavelet, signal processing, symN, sym2, sym3, sym4, sym5, sym6, sym7, sym8, sym9, sym10, sym11, sym12, sym13, sym14, sym15, sym16, sym17, sym18, sym19, sym20
+Tags:
+  - analysis
+  - algebraic
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: it holds the PyWavelets built-in Symlet reference range, $2\leq N\leq 20$
+  rigour details: >-
+    The generator builds $P_N$ over $\mathbb{Q}$ and computes its roots in
+    Sage's exact algebraic closure. For each $2\leq N\leq 20$, its root-choice
+    string is the one obtained by enumerating the conjugate-pair choices in
+    the spectral factor and selecting the exact factor nearest to PyWavelets'
+    source coefficient row CITE{PyWaveletsSource}. It then converts the exact
+    algebraic coefficients to real balls before writing 100 digits. For every
+    stored filter it checks the normalisation, the first $N$ vanishing
+    moments, the even-shift orthogonality relations, and agreement with the
+    PyWavelets source coefficient row.
+Display properties:
+  number-header: $h^{(N)}_k$
+Numbers: []
