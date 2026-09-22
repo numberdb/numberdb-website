@@ -783,8 +783,6 @@ def _via(request):
 
 @csrf_exempt
 @rate_limited
-@csrf_exempt
-@rate_limited
 def offer_table(request, tid):
 	"""Offer a filled draft for review. POST, key required.
 
@@ -1355,8 +1353,6 @@ LEASE_MINUTES = getattr(settings, 'NUMBERDB_LEASE_MINUTES', 20)
 
 @csrf_exempt
 @rate_limited
-@csrf_exempt
-@csrf_exempt
 def claim(request):
 	"""Take, give back, or look at the holds on a family's proposals.
 
@@ -1472,6 +1468,8 @@ def claim(request):
 		status=409)
 
 
+@csrf_exempt
+@rate_limited
 def costs(request):
 	"""Take an agent ledger and put its costs on the tables.
 
@@ -1541,6 +1539,7 @@ def costs(request):
 	return JsonResponse(summary)
 
 
+@rate_limited
 def audit(request, tid):
 	"""What the audit says about this table, for a machine that cannot run it.
 
@@ -1574,6 +1573,8 @@ def audit(request, tid):
 	})
 
 
+@csrf_exempt
+@rate_limited
 def table_lease(request, tid):
 	"""Claim a table for the length of a run, refresh the claim, or drop it.
 
