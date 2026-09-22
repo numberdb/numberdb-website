@@ -7345,3 +7345,22 @@ prevent and cannot catch here.
 Evidence: 2026-09-22 ideas run. `curl -s https://oeis.org/search?q=0.332057336215196&fmt=json`
 returned `403` and the challenge page; Wikipedia and `dlmf.nist.gov` answered
 normally from the same shell minutes earlier.
+
+## The deployed entries API refused the Python client's empty upsert on an empty draft
+
+What happened: filling T408 with `Generator.publish()` computed the entries
+and then failed before sending them. The client first calls `check_writable`,
+which sends an empty upsert to `/api/table/T408/entries`; the deployed site
+answered `400` with `A value in these entries cannot be read as a number.
+'str' object has no attribute 'items'`. At that point the draft had prose but
+no `Numbers` section.
+
+What to do instead: compute the records with the same generator and send them
+directly to `/api/table/<tid>/entries` as a list of `{params, number}` records,
+using replace mode rather than the empty upsert probe. Then attach
+`generate.py` through `/api/table/<tid>/file/generate.py` with the same run id,
+and run `verify()` normally once entries exist.
+
+Evidence: 2026-09-22 build run for T408. The direct entries POST stored 12
+entries and attached the 8552-byte generator at revision
+`4fb0dc4a942c075008c5b617e835cfdb2d5e67ad5cdc527cfcd6110c5a435c18`.
