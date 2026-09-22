@@ -187,6 +187,26 @@ Evidence: `/tmp/t287_growth_checks.py`, 2026-09-19, failed on the
 `/home/ubuntu/.../generate.py` import and passed after the root computation was
 copied into the scratch script.
 
+## A missing critique file is a campaign setup fault, not a table finding
+
+What happened: a repair run was assigned
+`/home/ubuntu/numberdb-critiques/T395.md`, but that file was not present in the
+critique directory or the campaign checkout. The table itself existed as a
+draft visible to zeta3 through the API, and its audit was clean, but without
+the critique report there were no findings to check, accept or decline
+finding-by-finding.
+
+What to do instead: write the `*-repaired.md` file saying the report was
+missing, record any live checks that were actually run, and make no table edit
+from inference. A clean audit or a plausible neighboring critique is not a
+substitute for the missing report.
+
+Evidence: on 2026-09-22, `sed -n '1,240p'
+/home/ubuntu/numberdb-critiques/T395.md` failed with "No such file or
+directory"; authenticated `GET /api/table?id=T395` returned the Symlet scaling
+filter draft, and authenticated `GET /api/table/T395/audit` returned
+`{"findings": [], "clean": true}`.
+
 ## Put `/app` before the client path when a Sage wrapper imports Django
 
 What happened: a T218 repair wrapper added both `/app` and
