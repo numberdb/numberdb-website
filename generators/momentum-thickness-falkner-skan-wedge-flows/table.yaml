@@ -4,8 +4,8 @@
 Title: Momentum thickness $\delta_2$ of the Falkner-Skan wedge flows
 Definition: >-
   For the upper-branch solution $f$ of the Falkner-Skan boundary-layer problem
-  CITE{FalknerSkan}, with wedge parameter $\beta=2m/(m+1)$, this table gives
-  the dimensionless momentum thickness
+  CITE{FalknerSkan} CITE{Wiki}, with wedge parameter $\beta=2m/(m+1)$, this
+  table gives the dimensionless momentum thickness
   $\delta_2=\int_0^\infty f^{\prime}(\eta)(1-f^{\prime}(\eta))\,d\eta$.
   The wedge normalisation uses $\eta=y\sqrt{u_e/(\nu x)}$; the Hartree
   normalisation uses $\eta_\beta=\eta/\sqrt{2-\beta}$.
@@ -48,6 +48,9 @@ Comments:
     For $\beta_s<\beta<0$ a second, reversed-flow solution is known. This
     draft lists the upper branch, the branch tabulated in the classical
     boundary-layer tables CITE{SchlichtingGersten}.
+  comment-review: >-
+    The review CITE{Review} surveys numerical methods for the Falkner-Skan
+    boundary-value problem.
 Formulas:
   formula-m: >-
     $m=\beta/(2-\beta)$ for $\beta<2$.
@@ -88,6 +91,13 @@ References:
     bib: >-
       Schlichting, H. and Gersten, K., Boundary-Layer Theory, 9th ed.,
       Springer, 2017.
+Programs:
+  program-sage:
+    language: Sage
+    code: >-
+      # The attached generate.py reproduces the stored grid by shooting the
+      # Falkner-Skan boundary-value problem and checking paired DOP853
+      # integrations.
 Tags:
   - analysis
   - physics
@@ -96,14 +106,14 @@ Data properties:
   type: R
   complete: 'no'
   complete-note: >-
-    it holds every two-decimal $\beta$ with $-0.19\leq\beta<2$ on the upper
+    it holds every two-decimal $\beta$ with $-0.19\leq\beta\leq1$ on the upper
     branch, in both the wedge and Hartree normalisations
   rigour: heuristic (agreement-checked)
   rigour details: >-
     The values are computed by shooting for the wall shear in the Hartree
     form and integrating the Falkner-Skan equation to a finite cutoff in the
-    similarity variable. The generator compares two fixed-step Runge-Kutta
-    integrations with different working precisions and step sizes, checks the
+    similarity variable. The generator compares two adaptive DOP853
+    integrations with different tolerances and cutoffs, checks the
     momentum-integral identity on every row, and checks the Blasius row
     against Töpfer's scaling.
 Display properties:
