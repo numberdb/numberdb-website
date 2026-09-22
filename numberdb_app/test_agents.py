@@ -444,6 +444,13 @@ class TheToolkitUnderstandsInexactTables(TestCase):
 		complaints = self.check().exactness(values)
 		self.assertTrue(any('not finite' in c for c in complaints), complaints)
 
+	def test_a_p_adic_value_is_not_a_complaint(self):
+		#A p-adic table should return the Sage object, whose O-term states
+		#the precision. It is the p-adic analogue of a real interval here.
+		from sage.rings.padics.factory import Qp
+		values = {'p=5': Qp(5, 20)(1 + 5 + 5 ** 2)}
+		self.assertEqual(self.check().exactness(values), [])
+
 	def test_a_float_is_still_a_complaint(self):
 		self.assertTrue(any('not exact' in c
 		                    for c in self.check().exactness({'n=0': 1.5})))

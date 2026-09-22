@@ -93,6 +93,12 @@ def exactness(values):
                         'it can fail' % (key, coefficient))
                     break
                 continue
+            if _is_p_adic(coefficient):
+                #A p-adic value also carries its own precision, in its O(p^n)
+                #term. It is not exact in the integer/rational sense, but it
+                #is exactly the object a Qp table should return for proven
+                #p-adic digits.
+                continue
             if name not in ('Integer', 'Rational', 'int'):
                 complaints.append('%s: coefficient of unexpected type %s'
                                   % (key, name))
@@ -223,6 +229,17 @@ def _is_enclosure(value):
     name = type(value).__name__
     return ('Ball' in name or 'IntervalFieldElement' in name
             or 'Interval' in name)
+
+
+def _is_p_adic(value):
+    """Whether this is a Sage p-adic element, with precision in its O-term."""
+    name = type(value).__name__.lower()
+    if 'padic' in name or 'p-adic' in name:
+        return True
+    try:
+        return '-adic' in str(value.parent())
+    except Exception:                                    # noqa: BLE001
+        return False
 
 
 def _is_finite(value):
