@@ -7278,3 +7278,71 @@ Evidence: 2026-09-22, T414 critique, the sixth Bash call of the run: 58.3 KB
 of output where the three source matches were 3.5 KB, the rest three log
 lines from `20260922T172530Z-critique.log` and `20260913T002636Z-repair.log`.
 `du -sh agents/runs` -> 630M, 494 files.
+
+## `screen.py requests` returns `[]` for an empty backlog and for an unreachable GitHub
+
+What happened: the ideation stage is told to start from the open `table
+wanted` issues and is given
+
+    python3 agents/table-ideas/screen.py requests
+
+which printed nothing. That reads as a broken network, and the first response
+is to go looking for a proxy problem. It was the truth: every one of the 126
+`table wanted` issues ever filed is now closed, and the only issues still open
+in numberdb-data are #133 and #137 (`enhancement`) and the latest `proposal`.
+The backlog the prompt describes -- "81 requests sat open" -- is gone.
+
+The two states are indistinguishable from the output, because `requests()`
+catches every exception and returns `[]`:
+
+    except Exception as trouble:                     # noqa: BLE001
+        return []
+
+which is the failure mode `already_here` in the same file has a long comment
+warning against, ten lines up. `already_asked` has the same shape in a
+milder form: it returns `['could not ask GitHub (HTTPError)']`, which does
+say something, and it fires in ordinary use, because the unauthenticated
+GitHub search API rate-limits after a handful of calls and a batch screens a
+dozen names.
+
+What to do instead: cross-check with `gh`, which is authenticated in this
+environment and is not subject to the same limit:
+
+    gh issue list --repo numberdb/numberdb-data --label "table wanted" \
+        --state open --limit 200 --json number,title
+
+An empty answer from that one is an empty backlog. `gh issue list --search
+"<word> in:title" --state all` covers what `already_asked` could not.
+
+Worth fixing in `screen.py` rather than remembering: `requests()` should let
+the exception through, or print the reason to stderr, so that "nobody has
+asked for anything" and "GitHub did not answer" stop looking alike.
+
+Evidence: 2026-09-22 ideation run. `screen.py requests` printed nothing, exit
+0. `gh issue list --label "table wanted" --state closed` returned 126 and
+`--state open` returned none. During screening, `already_asked` returned
+`could not ask GitHub (HTTPError)` for the 7th and 8th of ten names in one
+run, while `gh` answered both.
+
+## The stage-one prompt's corpus size is stale by a factor of three
+
+What happened: `agents/table-ideas/PROMPT.md` says "126 tables exist" and the
+skill says 107. The corpus is 413 tables, T1 to T414 with T75 absent, and the
+tables built in the last week -- T340 onward -- are where most of the near
+misses for a new proposal are. A run that screens against the older part of
+the corpus is screening against a third of it and will propose duplicates:
+T348 (Gauss hypergeometric), T349 and T350 (incomplete elliptic integrals),
+T388 and T389 (weight enumerators) are all things a batch might reach for.
+
+`search_text` reaches the new tables, so screening by name is unaffected. What
+is affected is the walk a run does to decide what subject is uncovered: it has
+to go past T339, and the number in the prompt gives no hint that it should.
+
+What to do instead: walk until the T-numbers stop answering rather than to the
+number in the prompt, and expect the corpus to have grown since it was
+written. Both figures are worth updating whenever somebody edits either file;
+neither has a test holding it to the truth.
+
+Evidence: 2026-09-22 ideation run. Walking `numberdb.table('T%d')` for
+1..339 found 338; extending to 430 found T340 through T414, none of which the
+prompt's count allows for.
