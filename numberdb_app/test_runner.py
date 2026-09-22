@@ -893,3 +893,49 @@ class ABuildIsAttributedToTheTableItMade(TestCase):
 	def test_it_does_not_use_the_campaigns_variable(self):
 		body = script('agents/run.sh')
 		self.assertNotIn('"$before"..HEAD', body)
+
+
+class ARunAboutASingleDigitTableIsAttributedToIt(TestCase):
+	"""T1 through T9 exist, and every run about one was recorded as table-less.
+
+	`run.sh` reads the table out of its own task text, and the pattern was
+	`\bT[0-9]{2,4}\b` -- two digits at the least. The corpus starts at T1, so
+	the nine oldest tables, the hand-made ones, could never be matched. On
+	2026-09-22 a worker swept T0 through T9 overnight and its fifteen repairs,
+	$44.63, went into the ledger with an empty table column; the overview
+	showed those tables as having cost nothing to maintain.
+
+	The pattern is exercised here rather than asserted as a string, because
+	what went wrong was the pattern's *meaning* and a test comparing source
+	text to source text would have been written with the same mistake in it.
+	"""
+
+	def about(self, task):
+		"""What run.sh would attribute this task to."""
+		import re
+
+		found = re.search(r'\bT[0-9]{1,4}\b', task)
+		return found.group(0) if found else ''
+
+	def test_the_pattern_in_the_script_is_the_one_tested_here(self):
+		self.assertIn(r"'\bT[0-9]{1,4}\b'", script('agents/run.sh'))
+
+	def test_a_single_digit_table_is_found(self):
+		for tid in ('T1', 'T5', 'T9'):
+			with self.subTest(tid=tid):
+				self.assertEqual(
+					self.about('Act on critiques/%s.md, for %s. Check every '
+					           'finding.' % (tid, tid)), tid)
+
+	def test_the_longer_numbers_still_work(self):
+		for tid in ('T42', 'T127', 'T1024'):
+			with self.subTest(tid=tid):
+				self.assertEqual(self.about('Read %s and write a report.'
+				                            % (tid,)), tid)
+
+	def test_a_task_naming_no_table_is_still_table_less(self):
+		#An ideas run proposes a batch and is about no table at all. That is
+		#not a fault to fix: $1168 of screening is correctly unattributed,
+		#and pretending otherwise would put it on whichever table happened to
+		#be mentioned in passing.
+		self.assertEqual(self.about('Propose a batch from the open issues.'), '')
