@@ -6968,8 +6968,8 @@ There are none. The 2026-09-22 run replaced that anchor with the corpus's own
 shape: walk `numberdb.table('T1')` through `T420`, which answers for 403 tables
 (T1 to T404, with T75 absent), list the subjects it reaches, and propose into
 one it does not reach at all. That walk is the only way to see the shape, since
-there is no call that lists the corpus, and it took about four minutes with
-eight threads.
+there is no call that lists the corpus; eight threads did 260 T-numbers in one
+call, and the two calls covering T1 to T420 were a few minutes between them.
 
 What to do instead: when `requests` is empty and `gh` confirms it, say so in
 the batch as a result rather than hunting for something to cite, and choose the
