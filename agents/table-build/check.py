@@ -93,6 +93,12 @@ def exactness(values):
                         'it can fail' % (key, coefficient))
                     break
                 continue
+            if _is_p_adic(coefficient):
+                #A p-adic value is exact modulo its stated O(p^n), and the
+                #precision is part of the Sage object that the client writes.
+                #Treat it like a finite enclosure rather than like a stray
+                #coefficient type.
+                continue
             if name not in ('Integer', 'Rational', 'int'):
                 complaints.append('%s: coefficient of unexpected type %s'
                                   % (key, name))
@@ -235,6 +241,20 @@ def _is_finite(value):
     except Exception:                                    # noqa: BLE001
         return False
     return True
+
+
+def _is_p_adic(value):
+    """Whether this is a Sage p-adic element carrying finite precision."""
+    parent = getattr(value, 'parent', None)
+    if not callable(parent):
+        return False
+    try:
+        if 'adic' not in str(parent()).lower():
+            return False
+        precision = value.precision_absolute()
+    except Exception:                                    # noqa: BLE001
+        return False
+    return precision is not None
 
 
 def measure(values):
