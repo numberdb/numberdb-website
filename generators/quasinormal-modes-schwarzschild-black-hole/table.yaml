@@ -1,0 +1,135 @@
+# Created as draft T399 through the API (X-Draft: yes), to be filled by
+# generate.py beside it and offered for review. Publishing is a person's act.
+Title: Quasinormal modes of the Schwarzschild black hole
+Definition: >-
+  For a Schwarzschild black hole of mass $M$, this table gives the
+  dimensionless quasinormal-mode frequencies $M\omega_{s\ell n}$ of the
+  spin-$s$ Regge-Wheeler or Zerilli equation CITE{Leaver}. Perturbations use
+  the time dependence $\exp(-i\omega t)$, so a damped mode has
+  $\operatorname{Im}(\omega)<0$.
+Parameters:
+  s:
+    type: Z
+    title: spin weight of the perturbing field
+    display: $s$
+    constraints: $s\in\{0,1,2\}$
+    comments: >-
+      The values $s=0,1,2$ correspond respectively to scalar, electromagnetic
+      and gravitational perturbations. They are enumerated in the order
+      $2,0,1$ so the gravitational modes appear first.
+  l:
+    type: Z
+    title: spherical-harmonic degree
+    display: $\ell$
+    constraints: $\ell\geq s$
+  n:
+    type: Z
+    title: overtone number
+    display: $n$
+    constraints: $n\geq0$
+    comments: >-
+      For fixed $s$ and $\ell$, the modes are ordered by increasing
+      $|\operatorname{Im}\omega|$; $n=0$ is the least-damped mode.
+Comments:
+  comment-units: >-
+    The units are geometric units $G=c=1$, with $M=1$ in the stored
+    dimensionless value. Berti's Schwarzschild data CITE{BertiTables} is
+    tabulated as $2M\omega_R,2M\omega_I$ with $\omega_I>0$, so the generator
+    divides those reference values by two and compares them with
+    $M\omega_R-iM\omega_I$.
+  comment-schwarzschild-degeneracy: >-
+    The Schwarzschild spectrum is independent of the azimuthal number $m$, so
+    $m$ is not a parameter of this table.
+Formulas:
+  formula-eikonal: >-
+    In the eikonal regime,
+    $\sqrt{27}\,M\omega_{s\ell n}\sim \ell+\frac12-i(n+\frac12)$.
+Programs:
+  program-python:
+    language: Python
+    code: |-
+      from qnm.schwarzschild.tabulated import QNMDict
+      schwarzschild = QNMDict(init=True)
+      schwarzschild(-2, 2, 0)[0]
+Links:
+  BHPToolkitQNM:
+    title: 'Black Hole Perturbation Toolkit: qnm'
+    url: https://bhptoolkit.org/modules/qnm/
+  BertiTables:
+    title: 'Emanuele Berti: Ringdown, quasinormal modes and light rings'
+    url: https://pages.jh.edu/eberti2/ringdown/
+References:
+  Leaver:
+    bib: >-
+      E. W. Leaver, An analytic representation for the quasi-normal modes of
+      Kerr black holes, Proceedings of the Royal Society of London. Series A
+      402 (1985), 285-298.
+    doi: 10.1098/rspa.1985.0119
+  BertiCardosoStarinets:
+    bib: >-
+      Emanuele Berti, Vitor Cardoso and Andrei O. Starinets, Quasinormal modes
+      of black holes and black branes, Classical and Quantum Gravity 26
+      (2009), 163001.
+    arxiv: "0905.2975"
+    doi: 10.1088/0264-9381/26/16/163001
+  Stein:
+    bib: >-
+      Leo C. Stein, qnm: A Python package for calculating Kerr quasinormal
+      modes, separation constants, and spherical-spheroidal mixing
+      coefficients, Journal of Open Source Software 4 (2019), 1683.
+    arxiv: "1908.10377"
+    doi: 10.21105/joss.01683
+  CookZalutskiy:
+    bib: >-
+      Gregory B. Cook and Maxim Zalutskiy, Gravitational perturbations of the
+      Kerr geometry: High-accuracy study, Physical Review D 90 (2014), 124021.
+    arxiv: "1410.7698"
+    doi: 10.1103/PhysRevD.90.124021
+  DolanOttewill:
+    bib: >-
+      Sam R. Dolan and Adrian C. Ottewill, On an expansion method for black
+      hole quasinormal modes and Regge poles, Classical and Quantum Gravity 26
+      (2009), 225003.
+    arxiv: "0908.0329"
+    doi: 10.1088/0264-9381/26/22/225003
+Keywords:
+  - Schwarzschild quasinormal mode
+  - black hole quasinormal frequency
+  - ringdown frequency
+  - Regge-Wheeler mode
+  - Zerilli mode
+Tags:
+  - physics
+Data properties:
+  type: C
+  rigour: heuristic (agreement-checked)
+  complete: no
+  complete-note: >-
+    it holds the modes for $s=2$ and $2\leq\ell\leq6$, for $s=0$ and
+    $0\leq\ell\leq4$, for $s=1$ and $1\leq\ell\leq5$, and for
+    $n=0$
+  rigour details: >-
+    The generator solves Leaver's continued-fraction equation CITE{Leaver} by
+    Newton iteration on the real and imaginary parts. The right infinite tail
+    is evaluated by capped modified Lentz iteration as in
+    CITE{CookZalutskiy}, and each stored entry is the complex rectangle
+    spanned by two computations.
+    Most rows use 50 decimal working digits with tail tolerance $10^{-10}$
+    and 70 decimal working digits with tail tolerance $10^{-12}$. The scalar
+    monopole row uses 60 decimal working digits with tail tolerance
+    $10^{-10}$ and 80 decimal working digits with tail tolerance $10^{-12}$
+    because its continued-fraction tail converges more slowly.
+    The generator uses the Dolan-Ottewill expansion CITE{DolanOttewill} only
+    for initial guesses,
+    compares every stored row with the Black Hole Perturbation Toolkit qnm
+    cache CITE{BHPToolkitQNM} CITE{Stein}, and compares the diagonal
+    $s=\ell=2$ and $s=\ell=1$ rows with Berti's tabulation CITE{BertiTables}.
+    The continued-fraction residuals are used as numerical diagnostics rather
+    than certified error bounds, so the table does not claim proven values.
+Display properties:
+  number-header: $M\omega_{s\ell n}$
+  group parameters:
+    - - s
+    - - l
+    - - n
+Numbers: []
