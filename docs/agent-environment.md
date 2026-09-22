@@ -7169,6 +7169,31 @@ after T393 and was corrected by reopening the issue. It happened again after
 T403 and was corrected with
 <https://github.com/numberdb/numberdb-data/issues/180#issuecomment-5773287406>.
 
+## A bad `(answers #N)` marker makes `queue.py built` close the wrong request
+
+What happened: issue #180 listed `Kronecker limit constants of the imaginary
+quadratic discriminants (answers #121)`, but numberdb-data#121 is the
+Lagrange interpolation-polynomial request. The cheap corpus check found that
+T230 already holds the proposed constants, so the ordinary instruction would
+have been
+
+    python3 agents/queue.py built 180 "Kronecker limit constants of the imaginary quadratic discriminants" T230
+
+That command would have done the useful part, ticking the #180 checklist line,
+but it also would have commented on and closed #121 again. Since #180 still had
+an Epstein zeta line marked `[~]`, it also risked the false family closure
+described above.
+
+What to do instead: if the `answers` marker plainly names an unrelated issue,
+do not run `queue.py built` blindly. Patch the family issue to the same final
+state, remove the bad marker, and comment on the family issue explaining why
+the normal helper was not used. Leave the unrelated request alone.
+
+Evidence: 2026-09-22, issue #180. The Kronecker line was ticked as T230 by
+editing the issue body directly, the spurious `answers #121` marker was
+removed, and #180 was left open because the Epstein zeta proposal was still
+only claimed.
+
 ## `/history`, `/revisions` and `/files` render a private draft to anybody who guesses the number
 
 What happened: reading T403 as a draft, `/T403` answered 404 to an anonymous
