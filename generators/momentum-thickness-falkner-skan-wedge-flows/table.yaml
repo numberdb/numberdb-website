@@ -6,9 +6,8 @@ Definition: >-
   For the upper-branch solution $f$ of the Falkner-Skan boundary-layer problem
   CITE{FalknerSkan} CITE{Wiki}, with wedge parameter $\beta=2m/(m+1)$, this
   table gives the dimensionless momentum thickness
-  $\delta_2=\int_0^\infty f^{\prime}(\eta)(1-f^{\prime}(\eta))\,d\eta$.
-  The wedge normalisation uses $\eta=y\sqrt{u_e/(\nu x)}$; the Hartree
-  normalisation uses $\eta_\beta=\eta/\sqrt{2-\beta}$.
+  $\delta_2=\int_0^\infty f^{\prime}(\eta)(1-f^{\prime}(\eta))\,d\eta$ in two
+  normalisations, related by CITE{formula-conversion}.
 Keywords: Falkner Skan, boundary layer, momentum thickness, wedge flow
 Parameters:
   beta:
@@ -35,9 +34,10 @@ Parameters:
 Comments:
   comment-normalisations: >-
     Falkner and Skan's equation is commonly tabulated in Hartree's coordinate
-    CITE{Hartree}. The two coordinates differ by the factor
-    $\eta_\beta=\eta/\sqrt{2-\beta}$, so the thickness values differ by the
-    reciprocal factor.
+    CITE{Hartree}. The wedge normalisation uses
+    $\eta=y\sqrt{u_e/(\nu x)}$, and the Hartree normalisation uses
+    $\eta_\beta=\eta/\sqrt{2-\beta}$. These are two conventions for the same
+    thickness, and each value determines the other.
   comment-endpoint: >-
     The endpoint $\beta=2$ is not listed. It is a limiting favourable
     Falkner-Skan profile, but $m=\beta/(2-\beta)$ and the coordinate
@@ -101,7 +101,6 @@ Programs:
 Tags:
   - analysis
   - physics
-  - fluid dynamics
 Data properties:
   type: R
   complete: 'no'
