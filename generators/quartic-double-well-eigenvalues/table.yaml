@@ -1,0 +1,103 @@
+# Draft table document for numberdb.org/T411.
+Title: Eigenvalues of the quartic double well $-y''+(x^2-a^2)^2y$
+Definition: For $a>0$, this table gives the eigenvalues $E_n(a)$ of the
+  Schrodinger operator $-y''(x)+(x^2-a^2)^2y(x)=E y(x)$ on
+  $L^2(\mathbb{R})$, with no factor of $\tfrac12$ on the kinetic term. The
+  eigenvalues are listed in increasing order, and the level index $n$ starts
+  at $0$ for the ground state.
+Keywords:
+- quartic double well
+- double-well oscillator
+- double well oscillator
+- tunnelling
+- tunneling
+- anharmonic oscillator
+- Schrodinger equation
+- energy levels
+- quantum mechanics
+Parameters:
+  a:
+    type: Q
+    title: well parameter
+    display: $a$
+    constraints: $a>0$
+  n:
+    type: Z
+    title: energy level
+    display: $n$
+    constraints: integer with $n\geq0$
+Comments:
+  comment-shape: The potential has minima $0$ at $x=\pm a$ and barrier height
+    $a^4$ at $x=0$.
+  comment-index: The index $n$ is the number of nodes of the square-integrable
+    eigenfunction. Since the potential is even, even $n$ gives an even
+    eigenfunction and odd $n$ gives an odd eigenfunction.
+  comment-pure-quartic: The limiting case $a=0$ is not included. It is the pure
+    quartic oscillator stored in HREF{T408}[the table of pure quartic, sextic,
+    octic and decic oscillator eigenvalues].
+Formulas:
+  formula-general-quartic: If $\mathcal{E}_n(\alpha,\beta)$ denotes the $n$th
+    eigenvalue of $-y''+(\alpha x^2+\beta x^4)y=E y$, then
+    $E_n(a)=a^4+\mathcal{E}_n(-2a^2,1)$.
+  formula-scaling: For $\beta>0$,
+    $\mathcal{E}_n(\alpha,\beta)=\beta^{1/3}
+    \mathcal{E}_n(\alpha\beta^{-2/3},1)$, with
+    $\mathcal{E}_n$ as in CITE{formula-general-quartic}.
+Similar tables:
+- table: HREF{T404}[Eigenvalues of the quartic anharmonic oscillator
+    $-y''+(x^2+\lambda x^4)y$]
+  relation: stores the positive-quadratic quartic oscillator, while this table
+    stores the negative-quadratic double-well case with the constant shift
+    chosen so that the minima are $0$
+- table: HREF{T408}[Eigenvalues of the pure quartic, sextic, octic and decic
+    oscillators $-y''+x^{2m}y$]
+  relation: contains the limiting case $a=0$ for the quartic potential
+Links:
+  WikiDoubleWell:
+    title: 'Wikipedia: Double-well potential'
+    url: https://en.wikipedia.org/wiki/Double-well_potential
+References:
+  RontoPollak2020:
+    bib: >-
+      Miklos Ronto and Eli Pollak, Upper and lower bounds for tunneling
+      splittings in a symmetric double-well potential, RSC Advances 10 (2020),
+      34681-34689.
+    doi: 10.1039/D0RA07292C
+Programs:
+  program-sage:
+    language: Sage
+    code: 'Run `generate.py` with SageMath. It forms the even and odd banded
+      harmonic-basis Galerkin matrices and bisects their eigenvalues by Sturm
+      counts.'
+Tags:
+- eigenvalue
+- physics
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: it holds $0\leq n\leq9$ for
+    $a\in\{1/2,1,3/2,2,5/2,3\}$, the half-step well parameters selected by
+    the oscillator family as common benchmark double wells
+  rigour details: The generator computes Rayleigh-Ritz eigenvalues in the
+    harmonic-oscillator basis for $-d^2/dx^2+\omega^2x^2$, with even and odd
+    parity separated. For each $a$ it uses the two truncations $N=320$ and
+    $N=460$, and the two basis frequencies $\omega=1$ and $\omega=13/10$.
+    Eigenvalues of the finite Galerkin matrices are isolated by Sturm counts
+    from a banded $LDL^T$ factorisation and by bisection, rather than by a
+    dense high-precision eigensolver. Each entry is the real interval spanning
+    those four computations; the widest interval in the dry run had relative
+    diameter less than $4\cdot10^{-61}$.
+
+    As controls, the generator checks the $a=0$ pure-quartic limit against
+    HREF{T408}[the pure oscillator table]. It also checks the scaled
+    non-grid case equivalent to
+    $-\tfrac12 d^2/dx^2+x^4-6x^2$ against the eigenvalues tabulated by
+    Ronto and Pollak CITE{RontoPollak2020}. Rayleigh-Ritz eigenvalues are upper
+    bounds for the true eigenvalues by the variational principle, so the
+    agreement between truncations is not a rigorous error bound.
+Display properties:
+  number-header: $E_n(a)$
+  group parameters:
+  - - a
+  - - n
