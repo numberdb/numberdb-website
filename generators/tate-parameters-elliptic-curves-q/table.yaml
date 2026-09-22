@@ -3,11 +3,10 @@
 # is a person's act on the site.
 Title: Tate parameters $q_E$ of elliptic curves over $\mathbb{Q}$
 Definition: >-
-  Let $E/\mathbb{Q}$ be the reduced global minimal Weierstrass model recovered
-  from $(c_4,c_6)$ by Formula CITE{formula-model-from-invariants}. If $E$ has
-  split multiplicative reduction at the prime $p$, the entry is the Tate
-  parameter $q_E\in p\mathbb{Z}_p$ of the Tate curve over $\mathbb{Q}_p$
-  isomorphic to $E$ CITE{WikiTate} CITE{SageTate}.
+  For an elliptic curve $E/\mathbb{Q}$ with split multiplicative reduction at
+  the prime $p$, the entry is the Tate parameter $q_E\in p\mathbb{Z}_p$ of the
+  Tate curve over $\mathbb{Q}_p$ isomorphic to $E$ CITE{WikiTate}
+  CITE{SageTate}.
 Parameters:
   N:
     type: Z
@@ -84,7 +83,6 @@ Tags:
   - p-adic
   - elliptic curves
   - number theory
-  - Iwasawa theory
 Data properties:
   type: Qp
   rigour: proven
