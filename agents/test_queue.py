@@ -378,5 +378,59 @@ class WhichTableIsNext(unittest.TestCase):
 		self.assertIsNone(q.next_table())
 
 
+class TickingABoxTwiceIsNotAFailure(unittest.TestCase):
+	"""Two parties tick the same box, on purpose.
+
+	The build ticks it when it finishes, because its prompt says to. The
+	campaign ticks it again, because it is the only party holding both the
+	proposal it handed out and the number that came back. Whichever got there
+	second used to fail, and the campaign turned that into "could not tick
+	<title> in #185; do it by hand" -- sending a person after work already
+	done. It said exactly that on 2026-09-22 for T404 and T386, both ticked
+	correctly by the run itself.
+
+	A *different* table against the same proposal is a different matter and
+	still stops: two tables for one line is what the tick exists to prevent.
+	"""
+
+	def setUp(self):
+		batch = q.parse_batch(BATCH, 'BATCH-2026-09-12T1857.md')
+		self.title = batch['proposals'][0]
+		body = q._tick(q.parse_family({'number': 42, 'title': 'Family: x',
+		                               'body': q.issue_body(batch)}),
+		               self.title, 'T226')
+		self.family = q.parse_family({'number': 42, 'title': 'Family: x',
+		                              'body': body})
+		self.patched = []
+		self.real_api = q.api
+
+		def api(path, method='GET', payload=None):
+			if method == 'GET':
+				return {'number': 42, 'title': 'Family: x',
+				        'body': body}
+			self.patched.append(payload)
+			return {}
+
+		q.api = api
+
+	def tearDown(self):
+		q.api = self.real_api
+
+	def run_built(self, tid):
+		import argparse
+
+		args = argparse.Namespace(number=42, title=self.title, tid=tid)
+		return q.cmd_built(args)
+
+	def test_the_same_table_again_is_success_and_changes_nothing(self):
+		self.assertEqual(self.run_built('T226'), 0)
+		#Nothing was written back: the box already says what it should.
+		self.assertEqual(self.patched, [])
+
+	def test_a_different_table_for_the_same_proposal_still_stops(self):
+		self.assertEqual(self.run_built('T999'), 1)
+		self.assertEqual(self.patched, [])
+
+
 if __name__ == '__main__':
 	unittest.main(verbosity=1)
