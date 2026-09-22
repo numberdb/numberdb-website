@@ -79,9 +79,9 @@ def _initial_guess(x):
     return np.vstack((f, fp, fpp, d1, d2))
 
 
-def _solve(beta, previous=None):
+def _solve(beta, previous=None, points=POINTS, tol=SOLVE_TOL):
     b = _float(beta)
-    x = np.linspace(0.0, ETA_MAX, POINTS)
+    x = np.linspace(0.0, ETA_MAX, points)
     y = previous.sol(x) if previous is not None else _initial_guess(x)
 
     def ode(_x, y):
@@ -104,7 +104,7 @@ def _solve(beta, previous=None):
         bc,
         x,
         y,
-        tol=SOLVE_TOL,
+        tol=tol,
         max_nodes=MAX_NODES,
         verbose=0,
     )
@@ -117,23 +117,23 @@ def _solve(beta, previous=None):
     return answer
 
 
-def _compute_all():
+def _compute_all(points=POINTS, tol=SOLVE_TOL):
     solutions = {}
 
     zero = QQ(0)
-    zero_solution = _solve(zero, None)
+    zero_solution = _solve(zero, None, points=points, tol=tol)
     solutions[zero] = zero_solution
 
     previous = zero_solution
     for n in range(1, 200):
         beta = QQ(n) / QQ(100)
-        previous = _solve(beta, previous)
+        previous = _solve(beta, previous, points=points, tol=tol)
         solutions[beta] = previous
 
     previous = zero_solution
     for n in range(-1, -20, -1):
         beta = QQ(n) / QQ(100)
-        previous = _solve(beta, previous)
+        previous = _solve(beta, previous, points=points, tol=tol)
         solutions[beta] = previous
 
     out = {}
@@ -167,7 +167,7 @@ def _comment(beta):
     return ""
 
 
-def _rk4(beta, wall_shear, eta_max=ETA_MAX, step=0.002):
+def _rk4(beta, wall_shear, eta_max=ETA_MAX, step=0.0001):
     b = _float(beta)
     n = int(round(eta_max / step))
     h = eta_max / n
@@ -197,6 +197,17 @@ def _rk4(beta, wall_shear, eta_max=ETA_MAX, step=0.002):
 
 def run_checks():
     values = _cache()
+    comparison = _compute_all(points=240, tol=1e-8)
+    worst_second_solve = 0.0
+    for beta in BETAS:
+        first = values[str(beta)]
+        second = comparison[str(beta)]
+        for normalisation in NORMALISATIONS:
+            worst_second_solve = max(
+                worst_second_solve,
+                abs(first[normalisation] - second[normalisation]),
+            )
+
     worst_rk4 = 0.0
     for beta in (QQ(-19) / QQ(100), QQ(-1) / QQ(10), QQ(0),
                  QQ(1) / QQ(2), QQ(1), QQ(3) / QQ(2), QQ(199) / QQ(100)):
@@ -221,6 +232,7 @@ def run_checks():
         right = b * row["hartree"] + (1 + b) * row["delta2_hartree"]
         worst_identity = max(worst_identity, abs(left - right))
     print("worst RK4 delta1 check: %.3g" % worst_rk4)
+    print("worst second solve check: %.3g" % worst_second_solve)
     print("worst printed-table check: %.3g" % worst_table)
     print("worst momentum identity check: %.3g" % worst_identity)
 
