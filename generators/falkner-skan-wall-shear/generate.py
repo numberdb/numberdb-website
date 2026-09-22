@@ -36,7 +36,7 @@ MAX_NODES = 20000
 NORMALISATIONS = ("hartree", "wedge")
 BRANCH = "upper"
 BETAS = tuple(QQ(n) / QQ(100) for n in range(-19, 134))
-DISPLAY_BETAS = tuple(sorted(BETAS, key=lambda beta: (abs(beta), beta < 0)))
+DISPLAY_BETAS = BETAS
 
 BLASIUS_HARTREE = 0.469599988361
 ASAITHAMBI_HARTREE_SHEAR = {

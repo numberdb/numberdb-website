@@ -3,11 +3,11 @@
 # that is sent with the computed entries.
 Title: Wall shear $f''(0)$ of the Falkner-Skan wedge flows
 Definition: >-
-  The Falkner-Skan wedge flow is the upper-branch solution of
+  The Falkner-Skan similarity function $f$ solves
   $f'''+ff''+\beta(1-(f')^2)=0$, with $f(0)=f'(0)=0$ and
-  $f'(\infty)=1$ in Hartree variables CITE{Hartree} CITE{WikiFalknerSkan}.
-  Each pair of rows gives the same wall shear $f''(0)$ in the Hartree and
-  wedge coordinate conventions.
+  $f'(\infty)=1$ in Hartree variables CITE{FalknerSkan} CITE{Hartree}
+  CITE{WikiFalknerSkan}. Each pair of rows gives the same wall shear
+  $f''(0)$ in the Hartree and wedge coordinate conventions.
 Keywords:
   - Falkner Skan wall shear
   - Blasius wall shear
@@ -18,41 +18,43 @@ Parameters:
     type: Q
     title: Hartree pressure-gradient parameter
     display: $\beta$
-    constraints: $\beta$ is rational and lies on a Falkner-Skan upper branch
+    constraints: $\beta_s<\beta<2$, where $\beta_s=-0.19883\ldots$ is the separation value
   branch:
     type: Symbolic
-    title: branch
+    title: solution branch of the Falkner-Skan problem
     display: branch
-    constraints: either `upper` or `lower`
+    constraints: one of `upper` and `lower`
     values:
       upper: upper branch
       lower: lower branch
   normalisation:
     type: Symbolic
-    title: normalisation
+    title: normalisation of the similarity variable
     display: normalisation
-    constraints: either `hartree` or `wedge`
+    constraints: one of `hartree` and `wedge`
     values:
-      hartree: Hartree
-      wedge: wedge
+      hartree: Hartree coordinate
+      wedge: wedge coordinate
 Comments:
   comment-normalisations: >-
     The `hartree` rows use Hartree's coordinate and equation. The `wedge`
     rows use $\eta_w=y\sqrt{u_e/(\nu x)}$ and
-    $f'''+\tfrac{m+1}{2}ff''+m(1-(f')^2)=0$, where
-    $m=\beta/(2-\beta)$. Formula CITE{formula-normalisation} gives the
-    conversion between the two wall-shear normalisations.
+    $f'''+\tfrac{m+1}{2}ff''+m(1-(f')^2)=0$, with $m$ related to $\beta$
+    by Formula CITE{formula-m-beta} CITE{Fitzpatrick}. Formula
+    CITE{formula-normalisation} gives the conversion between the two
+    wall-shear normalisations.
   comment-branch: >-
     The upper branch is the solution with $f''(0)>0$ and $f'(\eta)$ tending
     to $1$ from below. Hartree identifies this branch as the one used for the
     boundary-layer application when negative-$\beta$ solutions are not unique
     CITE{Hartree}.
   comment-range: >-
-    The present rows stop at $\beta=1.33$, the largest two-decimal grid point
-    not exceeding the Hartree and Schlichting tabulation endpoint
-    $\beta=4/3$. The profiles with $4/3<\beta<2$ are not included here
-    because sources disagree about whether they belong to the physical
-    wedge-flow table.
+    The present rows start at $\beta=-0.19$, the smallest two-decimal grid
+    point above the separation value $\beta_s=-0.19883\ldots$, and stop at
+    $\beta=1.33$, the largest two-decimal grid point not exceeding the
+    Hartree and Schlichting tabulation endpoint $\beta=4/3$. The profiles
+    with $4/3<\beta<2$ are not included here because sources disagree about
+    whether they belong to the physical wedge-flow table.
 Formulas:
   formula-m-beta: >-
     The Hartree parameter and the power-law exponent in
@@ -69,7 +71,28 @@ Programs:
   program-sage:
     language: Sage
     code: |-
-      # The attached generate.py reproduces the stored grid and its checks.
+      import numpy as np
+      from scipy.integrate import solve_bvp
+
+      beta = 0.5
+      eta_max = 40.0
+      x = np.linspace(0.0, eta_max, 500)
+
+      def ode(_x, y):
+          f = y[0]
+          fp = y[1]
+          fpp = y[2]
+          return np.vstack((fp, fpp, -f * fpp - beta * (1 - fp * fp)))
+
+      def bc(left, right):
+          return np.array((left[0], left[1], right[1] - 1))
+
+      tail = np.exp(-x)
+      y = np.vstack((x + tail - 1, 1 - tail, tail))
+      answer = solve_bvp(ode, bc, x, y, tol=1e-10, max_nodes=20000)
+      if not answer.success:
+          raise ArithmeticError(answer.message)
+      print("%.12g" % answer.y[2, 0])
 Links:
   WikiFalknerSkan:
     title: "Wikipedia: Falkner-Skan boundary layer"
