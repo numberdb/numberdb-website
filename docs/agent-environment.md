@@ -7514,3 +7514,59 @@ Evidence: 2026-09-22 build run for "Values of the Epstein zeta function of the
 classical lattices"; `/tmp/epstein_cheap_checks.py` through `agents/sage.sh`
 printed the `already_here` transport error, and direct `curl` retries timed out
 against both HTTPS and HTTP.
+
+## `/preview` renders nothing at all without a `Numbers:` section, and says so as a Python error
+
+What happened: rendering the private draft T413 through `/preview?table=` in
+pieces, as the T221 and T225 notes describe, the first ten pieces answered 200
+with an empty preview and a red message reading
+
+    Error while parsing numbers: cannot access local variable
+    'number_section' where it is not associated with a value
+
+which is an `UnboundLocalError` leaking through to the reader. The cause is
+simply that those pieces carried prose and no `Numbers:` key. Adding one stub
+entry rendered every one of them. So `/preview` needs three things together,
+not two: the existing note says to send `Parameters` with `Numbers`, and it
+also needs `Numbers` with anything at all -- plus `Display properties` when the
+table groups parameters, or the stub's nesting depth is read against the
+ungrouped parameter list and the piece fails with `'str' object has no
+attribute 'items'`.
+
+For a four-parameter table grouped `[[N],[c4,c6],[p]]` the whole tail to append
+to every piece is `Parameters`, `Display properties`, and
+
+    Numbers:
+      '11':
+        496,20008:
+          '5':
+            number: 5 + 4*5^2 + O(5^3)
+
+What to do instead: append that tail to every `/preview` piece before sending
+any of them, and do not read an empty preview as a fault in the field you were
+trying to render. The site should also catch its own `UnboundLocalError` here
+and say "no Numbers section" instead; it is a bug in `views.preview`, not in
+any table.
+
+Evidence: 2026-09-22, T413 critique. `/tmp/crit413/*.yaml` and `*.html`; the ten
+pieces at 6.0 to 7.5 KB carrying the error message, the same ten at 15 to 19 KB
+after the tail was appended, and `a_definition` failing in between with the
+`'str' object has no attribute 'items'` message when `Numbers` was sent without
+`Display properties`.
+
+## The SOCKS proxy on 127.0.0.1:1080 was refused again; direct `curl` served every fetch
+
+What happened: the same failure as the six notes above, recorded once more only
+because the count is the evidence. `curl --socks5-hostname 127.0.0.1:1080
+https://numberdb.org/skill` exited 7, "Failed to connect to 127.0.0.1 port
+1080", and `ss -ltn` showed no listener on 1080 at all. Direct
+`curl https://numberdb.org/skill` returned the whole 48740-byte page, and every
+other fetch in the run -- the API, `/preview`, `/api/lookup`, published table
+pages -- worked direct.
+
+What to do instead: unchanged. Try direct first. The critique prompt still
+opens with the proxy form of the command and still calls it needed, and the
+`agents/table-critique/PROMPT.md` line "The proxy is needed" is the thing that
+should change: it has not been needed in any run recorded here.
+
+Evidence: 2026-09-22, T413 critique.
