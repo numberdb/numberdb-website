@@ -6,8 +6,8 @@ Definition: >-
   For a Falkner-Skan similarity solution $f$ of the wedge boundary layer
   CITE{FSWiki}, this table gives the wall heat-transfer coefficient
   $-\theta'(0)$ for the constant-property thermal boundary layer with uniform
-  wall temperature and no viscous dissipation. In the wedge normalisation,
-  with $m=\beta/(2-\beta)$, the temperature satisfies
+  wall temperature and no viscous dissipation CITE{RosalesValencia}. In the
+  wedge normalisation, with $m=\beta/(2-\beta)$, the temperature satisfies
   $\theta''+\frac{m+1}{2}\mathrm{Pr}\,f\theta'=0$,
   $\theta(0)=1$ and $\theta(\infty)=0$.
 Keywords:
@@ -24,7 +24,7 @@ Parameters:
     type: Q
     title: Falkner-Skan pressure-gradient parameter
     display: $\beta$
-    constraints: $\beta_s<\beta\leq2$, where $\beta_s$ is the separation value
+    constraints: $\beta_s<\beta<2$, where $\beta_s$ is the separation value
   branch:
     type: Symbolic
     title: solution branch
@@ -55,9 +55,11 @@ Comments:
     coefficient in the two standard similarity coordinates.
   comment-range: >-
     The beta grid is the thermal table's coarse wedge-flow grid: $\beta=-0.19$
-    and then $-0.1,0,0.1,\ldots,2.0$. It is coarser than the two-decimal
+    and then $-0.1,0,0.1,\ldots,1.9$. It is coarser than the two-decimal
     velocity-table grid because $\mathrm{Pr}$ is the second physical argument
-    varied in heat-transfer tables. The Prandtl grid contains liquid-metal
+    varied in heat-transfer tables. The grid stops before the limiting
+    Hartree endpoint $\beta=2$, where $m=\beta/(2-\beta)$ and the wedge
+    normalisation are not finite. The Prandtl grid contains liquid-metal
     values, air at $0.7$ and $0.72$, water near room temperature at $7$,
     round decades and the large-$\mathrm{Pr}$ oil values.
   comment-correlation: >-
@@ -102,6 +104,9 @@ References:
   Iyer:
     bib: Sameer Iyer, Stability of the favorable Falkner-Skan profiles for the stationary Prandtl equations, 2024.
     arxiv: '2403.07791'
+  RosalesValencia:
+    bib: Marco Rosales-Vera and Alvaro Valencia, Solutions of Falkner-Skan equation with heat transfer by Fourier series, International Communications in Heat and Mass Transfer 37, 761-765, 2010.
+    doi: 10.1016/j.icheatmasstransfer.2010.05.013
 Tags:
   - fluid dynamics
   - analysis
@@ -119,7 +124,7 @@ Data properties:
   complete: 'no'
   complete-note: >-
     it holds the upper branch for $\beta=-0.19$ and for every tenth from
-    $\beta=-0.1$ through $\beta=2.0$, with $\mathrm{Pr}=0.001,0.003,0.01,
+    $\beta=-0.1$ through $\beta=1.9$, with $\mathrm{Pr}=0.001,0.003,0.01,
     0.03,0.1,0.3,0.6,0.7,0.72,1,2,3,5,7,10,30,100,300,1000$, in both the
     wedge and Hartree normalisations
 Display properties:
