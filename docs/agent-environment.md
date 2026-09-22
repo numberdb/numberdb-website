@@ -7148,3 +7148,23 @@ Evidence: 2026-09-22, T401 repair. `agents/sage.sh /tmp/t401_render_probe.py`
 failed with `ModuleNotFoundError: No module named 'django'`; rerunning with
 `NUMBERDB_SAGE_IMAGE=numberdb/web:latest` failed with Docker's
 `pull access denied for numberdb/web`.
+
+## `queue.py built` can close a family whose remaining lines are only claimed
+
+What happened: after T403 was built from issue #180, running
+`python3 agents/queue.py built 180 "Madelung constants of the ionic crystal
+structures" T403` ticked the Madelung line correctly, then closed the family.
+The issue still had two `- [~]` claim-marked lines: the Epstein zeta table and
+the Kronecker limit constants. They were not built, only claimed, but
+`waiting(family)` treats claimed lines as not waiting, and `cmd_built` closes
+when `waiting(family)` is empty.
+
+What to do instead: after `queue.py built` on a family with claim-marked
+siblings, immediately re-read the issue. If it closed while `- [~]` lines
+remain, reopen it and comment that claimed is not settled. Do not create
+`agents/runs/batch-exhausted` from this state.
+
+Evidence: 2026-09-22, issue #180. The same false closure had already happened
+after T393 and was corrected by reopening the issue. It happened again after
+T403 and was corrected with
+<https://github.com/numberdb/numberdb-data/issues/180#issuecomment-5773287406>.
