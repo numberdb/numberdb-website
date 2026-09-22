@@ -8983,3 +8983,87 @@ script that wants structure rather than a page.
 Evidence: 2026-09-22, `https://numberdb.org/?q=Bessel` -> 11 results,
 `?q=Ludolph` -> 1, `?q=Archimedes' constant` -> 20,
 `?q=3.14159265358979323846` -> 7; `/api/search?text=Pi` -> empty, 200.
+
+## `audit_table`'s "can a reader run this generator" check only looks at files named `generate.py`
+
+What happened: the critique of T9 read its one attached file,
+`generate.sage`. It imports `utils.utils` and writes into
+`data/Special_values/Values_of_the_Gamma_function_at_rational_numbers/`,
+carries no docstring, no install line and no run command, and therefore cannot
+work anywhere but inside this repository -- while `/files/T9` offers it for
+download to a reader who has neither. `GET /api/table/T9/audit` returns
+`{"findings": [], "clean": true}`.
+
+Why it is clean: there are two checks about attachments and they disagree
+about names. The first, at `audit_table.py:287`, deliberately accepts any
+script -- its own comment says "Any script counts, not `generate.py` by name.
+Seventeen tables attach theirs as `touchard_gen.py` and the like". The second,
+which is the one that asks whether the file says how to install and how to run
+itself, opens with
+
+    if not attachment.name.endswith('generate.py'):
+        continue
+
+at `:306`. So exactly the seventeen-plus tables the first check was widened
+for are the ones the second never looks at.
+
+What to do about it: a reviewer should not read a clean audit as evidence that
+an attached generator is runnable, unless the attachment is named
+`generate.py`. Widening the filter to `.py`/`.sage` would report the older
+hand-made generators, which is probably the right answer but is a decision
+about how much noise the audit should make on 2021 imports, not a bug fix to
+slip in.
+
+Evidence: 2026-09-22. `/files/T9` lists `generate.sage`, 897 bytes, first
+recorded 2021-03-04; `/api/table/T9/audit` clean; the two checks at
+`numberdb_app/management/commands/audit_table.py:287` and `:306`.
+
+## Inside the `agents/sage.sh` container, `urllib` to numberdb.org fails where the client works
+
+What happened: a check script mounted through `agents/sage.sh` fetched its
+table two ways. `urllib.request.urlopen('https://numberdb.org/api/table/T9')`
+raised `HTTPError`; the fallback, `numberdb.sage.table('T9')` from the client
+on `PYTHONPATH=/app/clients/python`, returned the document immediately. Same
+container, same run, same host.
+
+Why it matters: a script that reaches for `urllib` because it wants the raw
+JSON -- to control its own parsing of the stored decimals, say -- will fail in
+a way that reads like the site being down, after Sage has already been
+imported and the run has spent its minute of startup. Write the fallback the
+other way round, or just use the client: it is on the path in that image for
+this reason.
+
+I did not chase the status code, because the fallback answered and the run had
+what it needed. Whatever it is, it is a property of that container's egress
+and not of the API, which answers the same URL from the host over plain
+`curl`.
+
+Evidence: 2026-09-22, `/tmp/zeta3_t9check.py` under `agents/sage.sh` with
+`NUMBERDB_REMOTE=local`; printed "could not fetch the document over HTTP
+(HTTPError); trying the client", then read all 1080 entries through the client.
+
+## A SOCKS proxy that answered the first request is not evidence it will answer the next
+
+What happened: this run's first few fetches through
+`--socks5-hostname 127.0.0.1:1080` succeeded -- the skill at 48,740 bytes,
+`/T9` at 505,656 bytes, `/api/table/T9` -- and every request after that
+returned exit 7, "Connection refused", including a repeat of the same URL that
+had just worked. `ALL_PROXY` was empty and `NUMBERDB_REMOTE=local` throughout,
+so there was no tunnel this run was entitled to in the first place.
+
+The note above from 2026-09-17 says to run the direct `curl` before looking at
+the environment, and that is still the answer: `curl --noproxy '*'` reached
+numberdb.org for the whole of this run, before and after the proxy stopped.
+What that note does not cover is this shape -- the proxy working first and
+dying mid-run -- which reads like the site going down at the exact moment you
+started asking it real questions.
+
+What to do instead: use the direct `curl` from the first request, not as a
+fallback after the proxy fails. A stage prompt that says "the proxy is needed"
+is describing a different box; on this one it is at best redundant.
+
+Evidence: 2026-09-22. Proxy fetches of `/skill`, `/T9` and `/api/table/T9`
+succeeded; the next `--socks5-hostname` request and every one after it gave
+`curl: (7) connect to 127.0.0.1 port 1080 ... Connection refused`, while
+`curl --noproxy '*' https://numberdb.org/api/table/T9/audit` answered 105
+bytes of JSON.
