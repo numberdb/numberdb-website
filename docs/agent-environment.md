@@ -9355,3 +9355,25 @@ Evidence: T404 critique, 2026-09-22. `agents/sage.sh /tmp/crit404.py` ended
 Sage lock; the preview route answered 200 with 20 KB for each of six pieces,
 and a 4884-byte YAML answered 400 with `Request Line is too large (5892 >
 4094)`.
+
+## `/api/lookup` may time out for both Qp values and integer controls
+
+What happened: the T409 build tried to re-check the screened proposal with
+`/api/lookup` on three expected p-adic Tate parameters. Each request used
+`curl -G --data-urlencode text=...` and timed out after 30 seconds. Shorter
+p-adic probes such as `text=11^5 + O(11^6)` then timed out after 20 seconds,
+and so did a control request for `kind=Z&number=1729`. Earlier in the same
+run, text lookup for "Tate parameter" had answered normally, so the failure
+was not that the route was unreachable in general.
+
+What to do instead: treat this as an availability or endpoint-performance
+failure, not as evidence that no value is present. Record that the by-value
+duplicate check could not be completed, keep the successful `already_here`,
+`already_asked` and tag checks, and do not retry the same long p-adic lookup
+in a loop.
+
+Evidence: T409 build, 2026-09-22. Three p-adic `text=` lookups with 20 to 25
+terms each returned `curl: (28) Connection timed out after 3000x
+milliseconds`; two shorter p-adic `text=` lookups and the integer control
+`https://numberdb.org/api/lookup?kind=Z&number=1729` returned the same timeout
+after 20 seconds.
