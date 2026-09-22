@@ -703,14 +703,37 @@ while [ "$made" -lt "$builds" ]; do
 	#request and needs no judgement. The API refuses it for a table that is
 	#already published or has no entries yet, which is the right answer in
 	#both cases.
+	#Direct first, then through the tunnel -- the same order as
+	#`sync-costs.sh`, and for the same reason: the laptop reaches the site
+	#only through a proxy and the build machine cannot reach the proxy. This
+	#was written proxy-only, so on the builder every offer died with
+	#"Failed to connect to 127.0.0.1 port 1080" and every table built there
+	#stayed a draft nobody had been asked to look at. The answer was thrown
+	#away with `2>&1` and reported as "it may already be published", which is
+	#what kept it hidden: seven drafts had collected by 2026-09-22, four of
+	#them finished tables waiting on a review that had never been requested.
 	if [ -n "$tid" ]; then
-		ALL_PROXY="${ALL_PROXY:-${NUMBERDB_PROXY:-socks5h://127.0.0.1:1080}}" \
-		curl -sS --max-time 30 -X POST \
-			-H "Authorization: Bearer $(cat "${NUMBERDB_KEY:-$HOME/.config/numberdb/zeta3-key}")" \
-			"${NUMBERDB_HOST:-https://numberdb.org}/api/table/$tid/offer" \
-			>/dev/null 2>&1 \
-			&& say "$tid is offered for review" \
-			|| say "could not offer $tid; it may already be published"
+		offer() {
+			curl -sS --max-time 30 -X POST \
+				-H "Authorization: Bearer $(cat "${NUMBERDB_KEY:-$HOME/.config/numberdb/zeta3-key}")" \
+				"${NUMBERDB_HOST:-https://numberdb.org}/api/table/$tid/offer" \
+				"$@" 2>/dev/null
+		}
+		answer=$(offer --noproxy '*')
+		if [ -z "$answer" ]; then
+			answer=$(ALL_PROXY="${NUMBERDB_PROXY:-socks5h://127.0.0.1:1080}" offer)
+		fi
+		case "$answer" in
+			*'"ready_for_review": true'*|*'"ready_for_review":true'*)
+				say "$tid is offered for review" ;;
+			'')
+				say "could not reach the site to offer $tid; it is still a draft" ;;
+			*)
+				#The API refuses a table that is published already or has no
+				#entries yet, and both are right. Say which, rather than
+				#guessing on its behalf.
+				say "$tid was not offered: $(printf '%s' "$answer" | head -c 160)" ;;
+		esac
 	fi
 
 	#The ceiling is the intended stopping point and it announces itself: the

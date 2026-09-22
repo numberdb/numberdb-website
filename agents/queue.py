@@ -669,11 +669,27 @@ def _site(path, method='GET', payload=None):
 			request.add_header('Authorization', 'Bearer %s' % (token,))
 	except OSError:
 		pass
-	proxy = os.environ.get('ALL_PROXY') or ''
-	if proxy:
-		#The laptop reaches the site only through a tunnel; a build machine
-		#does not and must not try.
-		pass
+	#The laptop reaches the site only through a tunnel; a build machine does
+	#not and must not try. This read ALL_PROXY and then did nothing with it --
+	#`if proxy: pass`, under a comment describing the thing it was not doing.
+	#`urllib` does not honour ALL_PROXY on its own, so on the laptop every
+	#call here timed out, `_SITE_IS_THERE` went False, and the site lock was
+	#silently skipped for the rest of the process: claiming fell back to the
+	#`~` marks in the issue body, which is the race the lock exists to settle.
+	#It has never shown up because the campaigns run on the builder, where
+	#there is no proxy and the direct call is right.
+	#
+	#`api_edit.use_socks_proxy_if_set` already does this, and is the same
+	#bootstrap `table-ideas/screen.py` uses.
+	if (os.environ.get('ALL_PROXY') or '').startswith('socks'):
+		try:
+			sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+			from api_edit import use_socks_proxy_if_set
+		except ImportError:
+			pass
+		else:
+			use_socks_proxy_if_set()
+
 	global _SITE_IS_THERE
 	if _SITE_IS_THERE is False:
 		#Asked once and it was not. A queue that waits thirty seconds per
