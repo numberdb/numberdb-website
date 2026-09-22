@@ -9306,3 +9306,52 @@ prevent and cannot catch here.
 Evidence: 2026-09-22 ideas run. `curl -s https://oeis.org/search?q=0.332057336215196&fmt=json`
 returned `403` and the challenge page; Wikipedia and `dlmf.nist.gov` answered
 normally from the same shell minutes earlier.
+
+## Rendering a draft fails under the builder image; `/preview?table=` renders it anyway
+
+What happened: the T404 critique had to read the rendered page, and the
+recipe two notes above -- Django's `RequestFactory` under `agents/sage.sh`,
+which the T136 and T137 critiques used -- failed at `import django`. This
+campaign runs with `NUMBERDB_SAGE_IMAGE=numberdb/builder:latest`, and the
+builder image deliberately has no Django and no `/app`, as the note further
+up says. `/tmp/crit394_out.txt` and `/tmp/crit399_out.txt` show the two
+previous critiques of this campaign hitting the same wall and, from the look
+of it, going no further: one failed on `import django`, the other on
+`docker pull numberdb/web:latest`, which this machine may not pull.
+
+What to do instead: render through the site's own preview route, which is
+public and runs the same `table_context(preview=True)` the table page runs:
+
+    curl -s -m 60 -G --data-urlencode "table@doc.yaml" https://numberdb.org/preview
+
+Get the document first with `GET /api/table?id=T404` and the key on stdin
+through `curl -K -`; that answers for a draft the key may see, and returns
+`full_yaml` reparsed, so the field order is the author's. Three things make
+it work:
+
+* **The request line caps at 4094 bytes.** Over that, nginx answers 400
+  "Request Line is too large" rather than rendering anything. A 9 KB
+  document goes through in overlapping pieces of two or three sections each,
+  with `Numbers` cut to a couple of entries and only the `References` the
+  pieces' own `CITE{}`s need. Six pieces covered T404.
+* **`preview=True` changes one thing only**: `table_context` passes an empty
+  tag list (`views.py`, `if not preview:`). Everything else -- the prose
+  rendering, the `HREF`/`CITE` resolution, the parameter columns, the value
+  column header, the shared Formulas/Comments numbering -- is the code the
+  page runs, which is where the rendering-only faults live.
+* `HREF{}` targets render as relative anchors (`href="T390"`), so whether
+  they resolve has to be checked separately; `GET /api/table?id=T390` with
+  no key answers 200 for a published table and an `error` for a draft, which
+  is the check the audit's `public` set makes.
+
+Also worth knowing for a critique: `GET /api/table/<tid>/audit` runs
+`findings_for(table, fetch=False)`, so it applies every prose and structure
+check but never fetches an external link. Fetch the `Links` URLs and the
+`doi`/`arxiv` identifiers yourself; a publisher gate answering 403
+(`doi.org/10.1103/PhysRev.184.1231` does) is this network, not a dead link.
+
+Evidence: T404 critique, 2026-09-22. `agents/sage.sh /tmp/crit404.py` ended
+`ModuleNotFoundError: No module named 'django'` after waiting 120s on the
+Sage lock; the preview route answered 200 with 20 KB for each of six pieces,
+and a 4884-byte YAML answered 400 with `Request Line is too large (5892 >
+4094)`.
