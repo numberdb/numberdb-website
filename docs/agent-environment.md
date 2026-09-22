@@ -7364,3 +7364,97 @@ listed "Twisted Kloosterman sums modulo a prime (numberdb-data#13)" as open
 work; the issue comment named T368; `api/table?id=T368` returned the Charlier
 zeros table; T376 was then built and `queue.py built 174 ... T376` added the
 correct answer.
+
+## `screen.py requests` returns `[]` when GitHub fails, which now reads as "the backlog is empty"
+
+What happened: the 2026-09-22 ideas run was told to build its batch from the
+open `table wanted` issues. `python3 agents/table-ideas/screen.py requests`
+printed nothing at all. `screen.requests()` catches every exception and returns
+`[]`, so an unreachable API, a rate-limited one and an empty backlog are the
+same answer, and the function's own docstring is about a backlog of 81 open
+requests -- which makes the empty answer look like a failure rather than a
+result.
+
+It was a result. `gh issue list --repo numberdb/numberdb-data --label
+"table wanted" --state open --limit 300 | wc -l` gives `0`, and
+`--state all` gives `126`: every request ever filed has been closed, the last
+of them on 2026-09-21. Five issues are open in the repository and none is a
+request for a new family (three `proposal` families, and #133 and #137 asking
+for existing tables to be extended).
+
+This matters more than it did when the backlog was long. `already_here` was
+fixed in this module precisely so that a failed question and an empty answer
+would not look the same; `requests` still has the bug, and it now has it at the
+moment when `[]` is the true answer and therefore impossible to distinguish
+from the failure by eye.
+
+What to do instead: cross-check an empty `requests` with `gh issue list` before
+concluding anything, and say in the batch which one you ran. `requests` should
+raise, or return `None`, when the HTTP call fails -- the same treatment
+`already_here` got.
+
+Evidence: 2026-09-22 ideas run. `screen.py requests` printed nothing; a direct
+`urllib` call in the same process returned a 200 with a zero-length JSON array;
+`gh issue list ... --label "table wanted" --state open` returned nothing and
+`--state all` returned 126 closed issues.
+
+## The ideation stage now has to find its own anchor, because there are no requests left
+
+What happened: the stage prompt says to start from the open requests and build
+the family around one, and cites the 81 that were waiting when it was written.
+There are none. The 2026-09-22 run replaced that anchor with the corpus's own
+shape: walk `numberdb.table('T1')` through `T420`, which answers for 403 tables
+(T1 to T404, with T75 absent), list the subjects it reaches, and propose into
+one it does not reach at all. That walk is the only way to see the shape, since
+there is no call that lists the corpus; eight threads did 260 T-numbers in one
+call, and the two calls covering T1 to T420 were a few minutes between them.
+
+What to do instead: when `requests` is empty and `gh` confirms it, say so in
+the batch as a result rather than hunting for something to cite, and choose the
+subject by the walk. Note that `numberdb.table` answers for a table whose
+`Tags` are `None` (T404 at the time of this run), so a walk that filters on
+tags will drop the newest tables.
+
+Evidence: 2026-09-22 ideas run, `/tmp/nd/walk.py`.
+
+## `source_names_it` passes a two-surname family name on a page that names the two people separately
+
+What happened: `source_names_it('Widom-Dyson constant',
+'https://en.wikipedia.org/wiki/Random_matrix')` returned `None`, meaning pass.
+The page does not contain the phrase. It contains "Widom" only inside
+"Tracy-Widom distribution" and "Dyson" only in "their Dyson index" and
+"Freeman Dyson", so both words are present, in unrelated roles, and the check
+matches the words of a name independently of each other.
+
+This is the failure mode already recorded for navigation boxes and reference
+lists, in its sharpest form: a family named after two people is exactly the
+case where the two words occur on any page about the subject, whether or not
+anybody has ever used them together. The proposal was dropped after reading the
+page.
+
+What to do instead: for a compound surname family, read the page rather than
+trusting the pass, or screen the name as one token where the checker allows it.
+A pass on a two-surname name is weak evidence.
+
+Evidence: 2026-09-22 ideas run. `source_names_it` gave `None`; the fetched
+article's occurrences of "Widom" and "Dyson" are the ones quoted above.
+
+## `doi.org` and `ams.org` also refuse the screener, so the fetchable sources are Wikipedia and DLMF
+
+What happened: screening a batch whose standard reference is a Markov
+Processes and Related Fields review, the run tried the DOI resolver and the AMS
+journal page as sources. `https://doi.org/10.1090/S0025-5718-09-02280-7`
+answered 403 and
+`https://www.ams.org/journals/mcom/2010-79-270/S0025-5718-09-02280-7/` answered
+403. `http://export.arxiv.org/abs/0904.1581` answered 200 with a body
+containing neither "tracy" nor "widom", which the checker reports as "the
+source does not mention tracy, widom" -- a statement about the stub, not about
+the paper. Wikipedia and `dlmf.nist.gov` both answer with full text.
+
+What to do instead: cite Wikipedia or DLMF for the screen, name the paper in
+the proposal's prose so the build can put it in `References` where it belongs,
+and say in the batch that the screen could not reach it. Do not reword a
+proposal to match whatever page happens to fetch.
+
+Evidence: 2026-09-22 ideas run, the `source_names_it` lines quoted in
+`agents/table-ideas/BATCH-2026-09-22T0807.md`.

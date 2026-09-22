@@ -77,13 +77,24 @@ attempted=0
 # once per stage would cost a failed run each time.
 run_stage() {                    # role variable, stage, task...
 	local role="$1" stage="$2"; shift 2
-	local engine other status
+	local engine other status=0
 	eval "engine=\$$role"
-	if NUMBERDB_AGENT="$engine" agents/run.sh "$stage" "$@"; then
+	#`$?` after `if cmd; then ...; fi` is the status of the *`if`*, and an
+	#`if` whose condition failed and which has no `else` succeeds -- so this
+	#read 0 for every failure there is. `run_stage` then returned 0, the
+	#campaign believed every build had worked, and two things that exist for
+	#exactly these moments never ran: the triage that decides what to do
+	#about a failed build, and the handover to the other engine when one
+	#runs out of quota. On 2026-09-22 w1 walked a whole family of proposals
+	#this way, refusing each one at preflight for an unpushed HEAD, spending
+	#nothing, reporting nothing, and consuming the queue.
+	NUMBERDB_AGENT="$engine" agents/run.sh "$stage" "$@" || status=$?
+	if [ "$status" -eq 0 ]; then
 		return 0
 	fi
-	status=$?
-	[ "$status" -eq 6 ] || return "$status"
+	if [ "$status" -ne 6 ]; then
+		return "$status"
+	fi
 	#Written as an if, not as `[ ... ] && other=codex`: under `set -e` a test
 	#that is simply false ends the campaign.
 	if [ "$engine" = claude ]; then other=codex; else other=claude; fi
