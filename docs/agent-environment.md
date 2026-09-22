@@ -7130,3 +7130,88 @@ Evidence: 2026-09-22 build run for "Values of the Epstein zeta function of the
 classical lattices"; `/tmp/epstein_cheap_checks.py` through `agents/sage.sh`
 printed the `already_here` transport error, and direct `curl` retries timed out
 against both HTTPS and HTTP.
+
+## `screen.py requests` cannot tell an empty backlog from a refused question
+
+What happened: `python3 agents/table-ideas/screen.py requests` printed nothing.
+That is the correct answer today — all 126 `table wanted` issues are closed —
+but it is also what the script prints when GitHub declines to answer, because
+`requests()` catches every exception and returns `[]`. The stage's whole
+instruction is "start from the open requests", so the difference between "there
+are none" and "I could not ask" decides whether the run is finished or blocked.
+
+What to do instead: confirm with the authenticated CLI, which is on this box
+and says which of the two it is:
+
+    gh issue list --repo numberdb/numberdb-data --label "table wanted" \
+        --state open --limit 200
+
+Same rule as `already_here`: a failed question and an empty answer must not
+look the same. `requests()` would be better raising.
+
+Evidence: 2026-09-22T1633 ideas run. `screen.py requests` silent; `gh` returned
+zero open and 126 closed, so the silence was real that time.
+
+## `already_asked` rate-limits after about one call per run
+
+What happened: screening six names, the first `already_asked` answered and the
+other five returned `could not ask GitHub (HTTPError)`. It uses the
+unauthenticated GitHub *search* API, whose limit is ten requests a minute for
+anonymous callers and is shared with everything else on the machine.
+
+What to do instead: run it once for the family's distinguishing word, and put
+the rest of the question through `gh issue list --search`, which is
+authenticated here and has a far larger budget:
+
+    for q in quantile "critical value" Kolmogorov; do
+        gh issue list --repo numberdb/numberdb-data --state all --search "$q" \
+            --limit 8 --json number,title,state
+    done
+
+A run that reports "no issue asks for it" on the strength of five HTTPErrors
+has not checked anything.
+
+Evidence: 2026-09-22T1633 ideas run, `/tmp/screenrun.py`, six names, five
+HTTPErrors.
+
+## `source_names_it` does not stem, and the site's search does
+
+What happened: four proposals titled *Quantiles of the …* failed the source
+check against Wikipedia articles that name the family perfectly well, because
+those articles write "quantile function" and the check looks for the literal
+`quantiles`. Re-run with the singular, the same pages pass. The site's text
+index stems (the skill records that "regulator" matches "regular"), so the
+screen is stricter than the thing it is standing in for.
+
+What to do instead: when the only missing word is an inflection, re-run with
+the other form, read the page to confirm by hand, and say both in the batch
+rather than renaming a table to suit a substring test. Renaming is the real
+hazard here: the title is what a reader's search reaches, and bending it to
+please `source_names_it` makes the table worse at the only job the title has.
+
+Evidence: 2026-09-22T1633 ideas run. `Quantiles of the chi-squared
+distribution` failed against
+`https://en.wikipedia.org/wiki/Chi-squared_distribution`; `Quantile of the
+chi-squared distribution` passed against the same URL.
+
+## `import numberdb` from the repository root finds the Django project
+
+What happened: `python3 -c "import numberdb; numberdb.search_text(...)"` run
+from `/home/ubuntu/numberdb-website` fails with `module 'numberdb' has no
+attribute 'search_text'`. The repository's own `numberdb/` package — the Django
+project, with `settings`, `urls`, `wsgi` — shadows the client, because the
+working directory is on `sys.path` first. `agents/sage.sh` documents the
+equivalent trap for `sage -python`; the same thing happens to plain `python3`,
+and the error names the attribute rather than the cause.
+
+What to do instead: put the client ahead of it explicitly, from wherever you
+are running:
+
+    PYTHONPATH=/home/ubuntu/numberdb-website/clients/python python3 script.py
+    # or, inside the script, before importing:
+    sys.path.insert(0, '/home/ubuntu/numberdb-website/clients/python')
+
+`/tmp` is not a fix on its own — the client is not installed there either.
+
+Evidence: 2026-09-22T1633 ideas run; the same script failed from the repository
+root and answered from `/tmp` with the path inserted.
