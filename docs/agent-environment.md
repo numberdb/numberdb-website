@@ -9489,3 +9489,68 @@ claims, 11 proposals waiting). 41 prior `*-verdict` files in this checkout dated
 `agents/run.sh:556-559,565-568,583-586,650-655`.
 `agents/workers.stop` and `agents/campaign.stop` both absent;
 supervisor `agents/workers.sh 4` running as pid 1950235.
+
+## The pool's spend on a broken build stage is unbounded, not capped at a budget
+
+**Correction to the section above.** It says the retry loop's "cost is bounded
+only by the budget". There is no such bound. `agents/campaign.sh:290` is
+`while [ "$made" -lt "$builds" ]`, and both halves are the opposite of a spend
+cap:
+
+* `builds` is the argument, `agents/workers.sh:46`'s
+  `budget="${NUMBERDB_WORKER_BUDGET:-200}"` -- **200 completed work items, not
+  200 dollars.** The name is the whole of the confusion.
+* `made` is incremented only where work finished (`campaign.sh:439,445,606,674`
+  -- a table built, a critique filed, a repair done). The build-failure branch
+  at `campaign.sh:545-547` exits the process without touching it, and
+  `made=0` at `campaign.sh:40` runs again in the fresh process the supervisor
+  starts 300s later.
+
+So the counter that is supposed to end the campaign only advances on the thing
+that is broken. The same holds for the other two documented stopping conditions
+at `campaign.sh:23-29`: the draft ceiling needs a draft, which needs a build,
+and the empty-batch counter (`campaign.sh:596`) is reached only by a build that
+exits 0 having made nothing. All three stops are downstream of a successful
+build.
+
+And nothing else watches the money. `campaign.sh`, `workers.sh` and `run.sh`
+contain no dollar threshold at all, and `agents/spend.py` -- which could compute
+one -- **has no caller anywhere in `agents/` or `scripts/`.** It is a reporting
+tool that nothing reports to.
+
+The consequence is worth stating plainly, because "bounded by the budget" reads
+like a reassurance and is the reverse of the truth: **a build stage that fails
+deterministically makes the pool's spend unbounded in time.** A build stage that
+fails *sometimes* is bounded; one that fails *always* removes every brake. The
+cheaper and more total the build failure, the longer it runs -- `build $0.00`
+next to `triage $313.78` is the signature, and the failure being free is what
+makes it invisible.
+
+**Which flag is actually the lever.** The section above names
+`agents/workers.stop`. Of the three flags, only one does the whole job:
+
+* `agents/campaign.stop` -- checked by `workers.sh:185` (supervisor exits) *and*
+  `campaign.sh:302` (each campaign exits at its next loop head), and removed by
+  neither. Both layers stop, and they stay stopped. This is the one to touch.
+* `agents/workers.stop` -- `workers.sh:185` only. The supervisor stands down;
+  campaigns already running carry on to their own next stop.
+* `agents/campaign.<name>.stop` -- a one-shot. `campaign.sh:307` deletes it
+  after acting ("Only its own"), `workers.sh:185` does not look at it, so the
+  supervisor restarts that worker at the next tick with the flag gone. It stops
+  one campaign for one iteration, which is almost never what somebody reaching
+  for a stop flag wants.
+
+Order of operations for whoever picks this up: `touch agents/campaign.stop`
+first (it costs nothing and stops the meter), then fix `NUMBERDB_WRITER` in
+`agents/workers.sh`, then remove the flag. Fixing the writer first leaves the
+pool running on whatever the next failure is.
+
+Evidence: 2026-09-23 14:37Z, triage of build run `20260923T143507Z` -- 0 turns,
+$0.0000, tokens_in/out both 0, two identical turn-0 400s on `gpt-5.4`, HEAD
+unmoved at `39de0692`, tree clean, `queue.py stale` empty, 18 proposals waiting
+across #203-#206. 42 prior `*-verdict` files in this checkout, every first line
+`stop`; this is the 43rd. Four ledgers since `20260923T072522Z`: 355 runs,
+$400.53 -- build 173 at $0.00, triage 171 at $313.78 (mean $1.83), ideas 10 at
+$86.74; $45.76 in the hour to 14:37Z. `agents/campaign.sh:23-29,40,290,302,307,
+439,445,545-547,596,606,674`; `agents/workers.sh:46,185`.
+`grep -rn spend.py agents/ scripts/` matches only the file itself.
