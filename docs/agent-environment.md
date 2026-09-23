@@ -8211,3 +8211,51 @@ worktrees. `agents/runs/workers.log`, restarts at 07:44:51 and 07:50:12.
 `agents/runs/20260923T073856Z-verdict`, written 07:44:23Z and restarted into at
 07:50:12Z. `python3 agents/queue.py open` and `show 197`. `agents/run.sh` lines
 80, 556, 565, 584, 623, 634-662.
+
+## The ideas stage still works, so the failure loop never runs out of proposals to drop
+
+The note above predicted the loop would eventually claim the queue empty and
+`campaign.sh:355` would stop for a reason that is not the real one. That
+self-limit does not arrive, because only the *codex* stages are dead. The
+ideas stage runs on claude and is unaffected: `agents/screener.sh` (pid
+1950272) was still up at 08:03Z on 2026-09-23 and `agents/run.sh ideas` (pid
+2395660) was writing `BATCH-2026-09-23T0742` at the time. A working producer is
+feeding a broken consumer, and the consumer's appetite is one proposal per
+worker per eleven minutes.
+
+Measured over the twenty-three minutes after the previous note:
+
+* Family **#197** went from five of six claimed to **six of six, none built**.
+* Family **#198** opened from `BATCH-2026-09-23T0602` and had **three of six
+  claimed within six minutes** -- w3 07:55Z, w4 07:56Z, w1 08:01Z -- every one
+  of them by a build that died on the 400 in under a second.
+
+Claims still lapse at `CLAIM_MINUTES = 90` and still need no cleaning up. The
+damage is not stranded state; it is that the pipeline's only working stage is
+being spent to manufacture work that is guaranteed to be dropped, and that
+there is therefore no natural end to the loop short of the bill.
+
+Cost, extending the twenty-one-minute measurement to thirty-eight, 07:25:18Z to
+08:03Z, all four worktrees:
+
+    w1   7 runs   $7.1921
+    w2   6 runs   $5.7125
+    w3  10 runs   $8.3074
+    w4   6 runs   $8.2678
+        29 runs  $29.4798     -- about $46/hour
+
+Every build row in that window is `$0.0000 error`. The rate is a little below
+the $52/hour measured earlier for one reason worth recording: **successive
+triage runs on the same worker get cheaper**, because each reads the verdict
+before it and writes less. w1's three verdicts cost $3.0653, $2.6234, $1.5034.
+The loop converges on a triage floor of about $1.50 a cycle per worker, not on
+zero, so the hourly rate flattens rather than falling away.
+
+So a person stopping this needs `touch agents/workers.stop` *and* to stop the
+screener; otherwise the batches keep arriving for whatever restarts next.
+
+Evidence: 2026-09-23, triage of `20260923T080136Z-build.log`, the fourth
+identical refusal on w1 and the third consecutive `stop` verdict there
+(07:44:23Z, 07:55Z, 08:0xZ). `python3 agents/queue.py open`, `show 197`,
+`show 198`. `pgrep -af screener.sh`. `agents/runs/COSTS.tsv` in all four
+worktrees. `agents/runs/workers.log`, restart at 08:01:32.
