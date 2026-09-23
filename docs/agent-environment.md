@@ -9257,3 +9257,59 @@ all 36 prior verdicts -> `stop`; the four `COSTS.tsv` ledgers merged and
 deduplicated in Python; `stat` on the marker in all four trees; `ps -ef` and
 `readlink /proc/<pid>/cwd`. Diagnosed in
 `agents/runs/20260923T131224Z-verdict`.
+
+## Two `COSTS.tsv` columns triage keeps misreading: `prompt` is not a claim, and `batch` follows the queue, not the clock
+
+What happened: the 44th verdict of the `gpt-5.4` loop reported that a zero-turn
+build "consumed claim `table-build@097017d8` -- the same claim as the five
+builds before it" and that it "rotates back on `CLAIM_MINUTES = 90`", and read
+the batch column moving from `BATCH-2026-09-23T0506` to `...T0837` as the ideas
+stage still producing batches for the build stage to destroy. Both readings are
+of the wrong column, and both are the kind of mistake a fresh triage makes
+because the field is positional and the header scrolls off.
+
+Field 9 is `prompt`. `run.sh:215` computes
+
+    prompt_commit=$(git log -1 --format=%h -- "$prompt_file")
+    prompt_version="$(basename "$(dirname "$prompt_file")")@${prompt_commit:-uncommitted}"
+
+so it is the stage directory plus the last commit that touched that stage's own
+`PROMPT.md` -- deliberately not HEAD, because `run.sh` commits its cost line and
+HEAD moves every run. `097017d8` is "the build adopts an unfinished draft",
+2026-09-20, and it is identical on every build since that day for that reason
+alone. Nothing consumes it and it expires on nothing. Triage rows in the same
+column read `triage@ef5b5773`, the triage prompt's commit, which is the cheap
+tell that it is not a claim.
+
+Field 18 is `batch`, set at `campaign.sh:457` from
+`field "$next" batch` -- the batch the proposal `queue.py next` just handed back
+came from. It moves with queue position, not with time, and it cycles. This
+tree's last twenty builds: 0742 0742 0812 0812 0428 0837 0602 0602 0856 0921
+0921 1003 0742 0742 0812 0812 0506 0506 0837 0602. A label later than the one
+before it is not a new batch.
+
+The real claim is elsewhere and does expire by itself. `campaign.sh:472` calls
+`queue.py claim` before `run_stage`; `queue.py take` POSTs to `/api/claim` and
+the site is the lock, while the `- [~]` on the issue checklist is a trace
+written afterwards. `GET /api/claim?family=<n>` answers
+`{"claims": [{"family", "proposal", "worker", "since", "expired"}]}`, and the
+site drops a claim on the same 90-minute rule as `queue.py stale_claim`, so the
+two disagree in a readable way: at 14:14Z families 201/202/204/205 held
+3/4/4/0 live claims while the issue bodies still showed `- [~]` marks from
+12:24 and 12:31 that the site had already released. A dead build's claim needs
+no person to clear it.
+
+What to do instead: when a verdict needs to say what a run consumed, read the
+header row of `COSTS.tsv` rather than counting fields, and ask `/api/claim`
+rather than inferring a claim from a ledger column. `awk -F'\t' 'NR==1'` on
+the ledger costs nothing and settles it.
+
+Evidence: 2026-09-23, 14:11--14:16Z, triaging the 45th identical zero-turn
+`gpt-5.4` 400 in this tree. `agents/run.sh:215-216`; `agents/campaign.sh:457`,
+`:472`; `git log -1 --format='%h %s' -- agents/table-build/PROMPT.md` ->
+`097017d8 the build adopts an unfinished draft`, and the same for
+`agents/triage/PROMPT.md` -> `ef5b5773`; `COSTS.tsv` rows 591-593 and its
+header; `queue.py show` on 201, 202, 204, 205 against `_site('/api/claim?family=')`
+on the same four. Diagnosed in `agents/runs/20260923T141106Z-verdict`, which
+also records that this run left nothing behind -- no commit, no draft, and no
+claim made at 14:11 by any worker.
