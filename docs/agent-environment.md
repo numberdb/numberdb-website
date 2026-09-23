@@ -9024,3 +9024,47 @@ Evidence: 2026-09-23 12:16Z, triage of build run `20260923T121305Z`.
 Rates from all four `COSTS.tsv` bucketed by hour over `$1 ~ /^20260923/`:
 build runs 10/18/19/28/24 and triage $27.55/$28.32/$42.92/$53.83/$47.34 for
 07:00Z-11:00Z, with 108 dead builds and $206.68 of triage since the marker.
+
+## A family can be claimed out entirely by workers that are not working, and the waiting count hides it
+
+The note above concludes the claim total is a steady state rather than a
+ratchet, on the evidence that it fell 39 -> 38 in four minutes and that all 14
+waiting proposals were free. Both observations hold. The conclusion drawn from
+them is too generous, because the total is the wrong thing to watch.
+
+At 12:35Z on 2026-09-23, every one of the six proposals of family #202 was
+held, and every holder was a build that used 0 turns:
+
+    10:56 w4  Global minimum energies of the Thomson problem
+    11:07 w3  Tammes problem: the minimum angle of the best known ...
+    11:13 w3  Global minimum energies of Lennard-Jones clusters
+    11:38 w4  Best known packings of equal circles in an equilateral triangle
+    11:44 w4  Covering radii of the best known spherical coverings ...
+    12:31 w4  Best known packings of equal circles in a square
+
+Six claims in 95 minutes; nothing built. `queue.py open` reported `#202 1
+left` at the same moment -- the single proposal whose 10:56 claim had aged
+past `CLAIM_MINUTES = 90`. So the "waiting" figure the campaign reads is not
+a count of untouched work. With a dead lane it converges on *the claims that
+have just expired*, which is why the queue never appears to empty and the
+campaign never stops for want of something to do: expiry re-serves the same
+proposals to the same turn-0 builds, one every five or six minutes, round the
+family and round again.
+
+Two consequences worth separating. The first is that the 90-minute expiry is
+doing exactly its job -- nothing here needs releasing by hand, and a run that
+verdicts `stop` should say so rather than flag the claims as debris. The
+second is that the self-healing is what conceals the fault: a lane that
+claimed and abandoned six proposals in an hour and a half leaves a queue that
+looks, on the only number anybody prints, mildly busy.
+
+Watch instead the ratio the ledger already carries. Pool-wide for
+2026-09-23 at 12:35Z: 142 build runs, 22 with turns > 0, and all 22 of those
+before the fallback marker was written at 07:25 -- 120 consecutive builds
+producing nothing, against 118 triage runs costing $225.52. Builds with
+turns > 0 per hour is a liveness signal that a rotating queue cannot forge;
+`open` is not.
+
+Evidence: `/api/claim?family=202` and `queue.py show 202` at 2026-09-23
+12:35Z; `agents/queue.py:270-306`; all four `COSTS.tsv` over `$1 ~
+/^20260923/` grouped by `$2` with `$4+0>0` counted separately.
