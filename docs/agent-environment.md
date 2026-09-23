@@ -9514,3 +9514,88 @@ Evidence: 2026-09-23, triage of `20260923T111940Z-build.log`.
 `agents/propose-batch.sh` lines 26-28; `/proc/{2715643,2717977,2720346,2720353,
 2720378,2720403}/cwd`; `agents/runs/20260923T112015Z-ideas.log`, first `system`
 event; `git show --stat` on the five commits above.
+
+## The four worktrees share one address, so the unkeyed API allowance is a host budget the triage stage spends on itself
+
+The API's anonymous limit is 60 requests an hour counted against the caller's
+IP (`numberdb_app/throttle.py:88-110`, scope `ip:<addr>`). Every run on this
+machine -- four campaign worktrees, the screener, and each triage -- leaves
+from the same address, so that is not sixty requests each. It is sixty for the
+host, per clock hour, and the stage most eager to spend them is triage: the
+standard "is this a draft or was it never created" probe is an *unkeyed* read,
+and each verdict runs a handful to a couple of dozen of them.
+
+By 11:33Z on 2026-09-23 it was gone. The first anonymous request this triage
+made answered `429 ... retry_after 1602`, i.e. the allowance had been spent by
+sibling runs before this one started, and none of my own probes had reached a
+lookup.
+
+**Why it matters more than an inconvenience.** The failure is silent in the
+direction of "yes". A 429 body is valid JSON that does not contain
+`does not exist`, so the one-line test every verdict has been using --
+
+    published = b"does not exist" not in body
+
+-- reports *every* id public, including ids that do not exist. A triage that
+trusted it would report that the failed run had published a table, or that a
+standing draft had been picked up for review. That is a wrong verdict produced
+by a working check, which is the same shape as the hazard in the note above
+about reading another agent's `git status` in a shared worktree.
+
+**What to use instead, here.** Two things, in this order:
+
+* The **keyed** read, `GET /api/table?id=<TID>` with the zeta3 key, has a
+  separate 1000/hour counter scoped to the key rather than the address, so it
+  is not affected by whatever the siblings have been doing. It is also the only
+  request that tells a draft apart from an id nobody has used.
+* `GET https://numberdb.org/<TID>` -- the bare id, not `/table/<TID>`, which is
+  not a route -- is the rendered page and is **not rate limited at all**; only
+  `/api/*` is (`throttle.py:13-15`). 200 published, 404 draft-or-absent. Free,
+  and the right way to answer "is this still sitting unpublished" without
+  touching either allowance.
+
+The window is fixed and aligned to the clock hour rather than rolling
+(`window_start = now - (now % window)`), so the allowance comes back all at
+once on the hour and `retry_after` is just the countdown to it. A run that
+meets a 429 at :55 is five minutes from a full sixty; one that meets it at :05
+is not.
+
+**Worth fixing properly**: nothing in the pipeline needs unkeyed reads except
+the draft-visibility test, and that test has a better answer (the page). If the
+triage prompt or the skill is ever amended, saying "use the key, or use the
+page, never an unkeyed API read" would remove the contention entirely.
+
+Evidence: 2026-09-23, triage of `20260923T113121Z-build.log`. Measured
+11:33-11:40Z: anonymous `/api/table?id=T{438,441,445,446,999}` all
+`429 retry_after ~1600`; `/T20` 200 and `/T{438,441,443,445}` 404 anonymous in
+the same minutes; `Authorization: Bearer not-a-real-key` -> `403 {"error":
+"Invalid API key."}`, which is returned at `throttle.py:176-187` before the
+counter is touched and therefore costs nothing.
+
+## `pkill -f campaign.sh` matches the process running it
+
+Already recorded as advice; here is the demonstration, because it is cheaper
+than the incident. From this triage:
+
+    $ pgrep -f "campaign.sh 200"
+    2735172   /home/ubuntu/numberdb-website
+    2737975   /home/ubuntu/numberdb-campaign-w2
+    2742144   /home/ubuntu/numberdb-website   <- this triage's own shell
+
+The third pid is the shell that ran `pgrep`, matched because the pattern it
+was searching for appeared in its own command line. `pkill` behaves the same
+way, so the command intended to stop the supervisor kills every worker, and
+the agent issuing it, at once. Filter on the full `args` and check
+`readlink /proc/<pid>/cwd` instead:
+
+    ps -eo pid,lstart,args | grep -E "bash agents/(campaign|workers|screener)\.sh"
+
+At 11:35:52Z that gave `workers.sh 4` (pid 1950235, up since Sep 22 20:38),
+`screener.sh` (1950272), and only **two** live `campaign.sh`: w1 in
+`numberdb-website` and one in `-w2`. `-w3` and `-w4` had none, their newest
+build logs being 11:20:02Z and 11:26:01Z against a supervisor cycle of about
+five and a half minutes. Not enough observation to say whether that is a
+restart gap or two dead workers, but the way to look is the `ps` line above,
+not `pgrep`.
+
+Evidence: 2026-09-23, triage of `20260923T113121Z-build.log`.
