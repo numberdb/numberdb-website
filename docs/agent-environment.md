@@ -11330,3 +11330,90 @@ names live today; `agents/campaign.sh:450-457` for the export and its comment;
 `agents/queue.py next` for the interleaving. This is the trap at `:11241` in a
 second place: right-looking bytes in the wrong column, met in the evidence and
 not in a regex.
+
+## `NUMBERDB_CODEX_FALLBACKS=` (empty) is the same configuration as not setting it, because `run.sh:80` expands it with `:-`, so the repair this file has recommended all day is a no-op
+
+What happened: triaging `20260923T164411Z`, the 56th turn-zero build in w3, I
+checked the *repair* rather than the diagnosis for once, and it does not work.
+Every verdict in this series and three places in this file -- `:10022`,
+`:10054`, `:10590` -- tell a person to set `NUMBERDB_CODEX_FALLBACKS` to empty,
+because an empty chain makes `give_up=yes` fire on the real quota error and
+hands the stage to claude via `exit 6`. Setting it to empty does not produce an
+empty chain. `agents/run.sh:80`, read character by character with `cat -A`, is
+
+    codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-gpt-5.4}"
+
+and `:-` substitutes the default for a variable that is **set but null** just as
+it does for one that is unset. `NUMBERDB_CODEX_FALLBACKS=` and no setting at all
+are therefore the same configuration, and both give the chain `gpt-5.4`. Line 80
+is the only consumer of the variable in the repository -- `grep -rn` over
+`*.sh`, `*.py` and `*.md` outside `agents/runs/` and this file returns that one
+line -- so there is nowhere else it could take effect.
+
+Run through line 80 and `next_model_in` (lifted verbatim from `run.sh:571-580`),
+with the current model `gpt-5.5`, which is what a run opens on once the markers
+are gone:
+
+    unset (the state today)   chain=[gpt-5.4]   next=[gpt-5.4]   marker rewritten
+    set to ""  (the repair)   chain=[gpt-5.4]   next=[gpt-5.4]   marker rewritten
+    set to " " (one space)    chain=[ ]         next=[ ]         marker rewritten
+    set to "gpt-5.5"          chain=[gpt-5.5]   next=[]          give_up, exit 6
+    set to "none"             chain=[none]      next=[none]      marker rewritten
+
+The note at `:10054` did test this and tested it one level too low. It called
+`next_model_in ""` directly, found that an empty chain returns nothing, and
+recorded the repair as verified. That is true of the function and says nothing
+about the configuration, because the empty string never reaches the function --
+line 80 replaces it first. This is the trap at `:11241` in a third place, and
+the most expensive one: it is in the remedy, not in the evidence, so being
+careful about the diagnosis for eleven hours did not catch it.
+
+What to do instead: **`NUMBERDB_CODEX_FALLBACKS=gpt-5.5`** -- a chain naming
+only the model the run already opens on. `next_model_in` then finds the current
+model at the end of the chain and returns empty, `give_up=yes`, `exit 6`, and
+`campaign.sh` hands the stage to claude, which is exactly the behaviour the
+empty setting was meant to buy. Any value works that is a chain the current
+model sits at the end of; a name the account cannot run (`none`, a space) does
+not, because it is non-empty and becomes the next model and the next marker.
+The alternative is to change `:-` to `-` at `run.sh:80`, after which an explicit
+empty value means empty and the three notes above become correct as written.
+That is a code change and a person's to make; a triage may write prose and may
+not write configuration (`:10084`).
+
+Where it has to be set, which no note has said: **in the environment
+`workers.sh` is relaunched with**, and it cannot be applied to the campaign
+that is running. `workers.sh:119-133` enumerates eleven `NUMBERDB_*` variables
+for `campaign.sh` and this is not one of them, which invites adding it to that
+list. Unnecessary: they are plain prefix assignments and not `env -i`, so an
+exported value passes through to `campaign.sh` and on to `run.sh` at
+`campaign.sh:91`, itself a prefix assignment. Confirmed with a copy of the
+construct. But the supervisor running now cannot be reached: PID 1950235 has
+been up since Sep 22 20:38 and holds 18 environment variables, none of them
+`NUMBERDB_*`, and its children are `setsid nohup` with `ppid 1`, so they
+outlive it as well. That is the mechanical reason step 1 of the handover list
+precedes step 2, beyond stopping the restarts.
+
+Read `/proc/<pid>/environ` keys-only, `cut -d= -f1`, as `:1126` says for `env`.
+It is the same hazard by another path; I used the unsafe form on the supervisor
+first and corrected it. That process holds no key, so nothing leaked, but a
+`campaign.sh` or a build would have.
+
+None of this makes the campaign recover on its own, and the corrected step 2 is
+invisible until step 3: while any `codex-fallback` marker is present the chain
+is never consulted at all (`:10689`, `:10713`), because the `400` does not match
+`out_of_quota` and `next_model_in` is never called. All three steps, in order,
+unchanged but for the value in step 2.
+
+Evidence: 2026-09-23, w3 triage of build `20260923T164411Z` -- 12 lines, 1534
+bytes, `turns 0`, ledger row 690, session `01a0cf27-52c0-7c93-8481-bc5b3d1f8839`,
+the 56th turn-zero `gpt-5.4` build in this tree today and the 56th consecutive
+`stop` (`head -qn1` over 55 `*-verdict` files: 55 `stop`, nothing else).
+`agents/run.sh:80` via `cat -A`; `next_model_in` lifted from `:571-580` and
+called on the five settings above; `grep -rn NUMBERDB_CODEX_FALLBACKS` over the
+tracked tree returning `run.sh:80` alone; `workers.sh:119-133` and
+`campaign.sh:91` for the prefix assignments; `/proc/1950235/environ` (18
+variables, keys only) and `ps -eo pid,ppid,lstart,args` for the supervisor and
+three `campaign.sh 200` started 16:43:24, 16:43:44 and 16:44:04. Codex rows over
+all of `COSTS.tsv`: `gpt-5.4` 0/57, `gpt-5.5` 359/361. This tree today: 126 runs,
+**$197.68**, of which 55 triage runs and **$108.59**, against 61 builds at
+$43.49 whose 56 turn-zero rows cost nothing.
