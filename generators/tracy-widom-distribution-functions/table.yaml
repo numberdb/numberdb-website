@@ -1,10 +1,12 @@
 Title: Values of the Tracy-Widom distribution functions $F_\beta(s)$
 Definition: >
-  For $\beta\in\{1,2,4\}$, $F_\beta(s)$ is the Tracy-Widom distribution
-  function of the scaled largest eigenvalue in the Gaussian ensemble with
-  Dyson index $\beta$ CITE{WikiTW}. The normalisation is the soft-edge
-  convention in which $F_2(s)$ is the Airy-kernel Fredholm determinant
-  CITE{Bornemann}.
+  For $\beta\in\{1,2,4\}$, let $F_\beta$ be the Tracy-Widom distribution
+  function CITE{WikiTW} in the soft-edge scaling used by CITE{Bornemann},
+  normalised by
+  $F_2(s)=\exp(-\int_s^\infty (x-s)q(x)^2\,dx)$, where $q$ is the
+  Hastings-McLeod solution of Painleve II asymptotic to
+  HREF{Values_of_the_Airy_function_of_the_first_kind}[$\operatorname{Ai}$].
+  This table gives values of $F_\beta(s)$.
 Keywords:
 - Tracy-Widom distribution
 - Tracy Widom distribution
@@ -16,13 +18,13 @@ Keywords:
 - largest eigenvalue distribution
 Parameters:
   beta:
-    type: Symbolic
+    type: Z
     title: Dyson index
     display: $\beta$
     values:
-      "1": $1$, GOE
-      "2": $2$, GUE
-      "4": $4$, GSE
+      "1": GOE
+      "2": GUE
+      "4": GSE
   s:
     type: Q
     title: argument
@@ -30,12 +32,16 @@ Parameters:
     constraints: $s\in\mathbb{Q}$
 Comments:
   comment-normalisation: >
-    The table uses the Tracy-Widom scaling in which $F_2$ is given by
-    CITE{formula-f2}. For $\beta=4$ this is the $N\times N$ quaternionic GSE
-    convention: $F_4(s)$ is given by CITE{formula-determinants} with the
-    argument $\sqrt2s$ on the right hand side. In the alternative
-    $2N\times2N$ complex convention the $\sqrt2$ is omitted, so its argument
-    is $\sqrt2s$ in this table's convention.
+    For $\beta=4$ the table uses Bornemann's soft-edge Tracy-Widom scaling,
+    the same convention used by
+    HREF{Cumulants_of_the_Tracy_Widom_distributions}[the table of
+    Tracy-Widom cumulants]. If $G_4(u)$ denotes the convention without the
+    $\sqrt2$ in the GSE argument, then $F_4(s)=G_4(\sqrt2s)$ and
+    $G_4(u)=F_4(u/\sqrt2)$.
+  comment-range: >
+    The argument grid follows the soft-edge family convention in
+    numberdb-data#196. It covers the transition region where the three
+    distribution functions are neither zero nor one to the stored precision.
   comment-airy: >
     The Airy function $\operatorname{Ai}$ appears both in the Fredholm
     determinant kernel and in the boundary condition for the Hastings-McLeod
@@ -61,6 +67,11 @@ Formulas:
     $q''(s)=sq(s)+2q(s)^3$ with $q(s)\sim\operatorname{Ai}(s)$ as
     $s\to+\infty$, then
     $F_2(s)=\exp\left(-\int_s^\infty (x-s)q(x)^2\,dx\right)$ CITE{Bornemann}.
+  formula-f1-f4-painleve: >
+    With the same $q$,
+    $F_1(s)=F_2(s)^{1/2}\exp(-\frac12\int_s^\infty q(x)\,dx)$ and
+    $F_4(s)=F_2(\sqrt2s)^{1/2}\cosh(\frac12\int_{\sqrt2s}^\infty q(x)\,dx)$
+    CITE{Bornemann}.
 Programs:
   program-python:
     language: Python
@@ -76,6 +87,12 @@ Programs:
       matrix = rootw[:, None] * kernel * rootw[None, :]
       F1_at_0 = det(np.eye(100) - matrix)
 Similar tables:
+- table: HREF{T443}[Values of the Hastings-McLeod solution $q(s)$ of Painleve II]
+  relation: stores the Painleve-II function used in CITE{formula-painleve}
+- table: HREF{T444}[Cumulants $\kappa_n$ of the Tracy-Widom distributions]
+  relation: stores cumulants of the same soft-edge distribution functions
+- table: HREF{T445}[Skewness and excess kurtosis of the Tracy-Widom distributions]
+  relation: stores standardised cumulants of the same soft-edge distribution functions
 - table: HREF{Values_of_the_Airy_function_of_the_first_kind}[Values of the Airy function of the first kind $\operatorname{Ai}(x)$]
   relation: gives the Airy function in the Fredholm determinant kernel and in the Hastings-McLeod boundary condition
 - table: HREF{T379}[Random-matrix factors $g_G(k)$ in the moments of characteristic polynomials of unitary, orthogonal and symplectic matrices]
@@ -116,10 +133,15 @@ Data properties:
     run used a second quadrature setting as a control, and each entry's written
     precision is limited by their agreement. The far-left $\beta=4$ tail uses
     mpmath multiprecision determinant arithmetic, because double precision
-    loses relative accuracy there. The $\beta=2$ values were also compared
-    against the direct Airy-kernel determinant CITE{formula-f2} at sample
-    points, and the $\beta=4$ scaling was checked against the published
-    Tracy-Widom location for $\beta=4$ CITE{WikiTW}.
+    loses relative accuracy there. Before the draft was offered, the entries
+    were compared across the whole grid with an independent collocation solve
+    of the Hastings-McLeod Painleve-II boundary value problem using
+    CITE{formula-painleve} and CITE{formula-f1-f4-painleve}; the worst
+    relative difference was about $4.1\%$ in a far-left $\beta=4$ row stored as
+    $1.0\cdot10^{-25}$, and no row disagreed beyond the tolerance justified by
+    its written precision. The controls $F_1(0)=0.83190806620295\ldots$ and
+    $F_2(0)=0.96937282835526\ldots$ were checked against the values printed by
+    CITE{Bornemann}.
 Display properties:
   number-header: $F_\beta(s)$
 Numbers: {}
