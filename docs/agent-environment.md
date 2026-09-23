@@ -10566,3 +10566,59 @@ Two cautions about what those columns actually mean, both from `agents/ledger.py
 
 The campaign log is still the only place the *proposal* is named; it is no
 longer the only place the model is.
+
+## `resumed=yes` in the ledger marks a failed run, not a continued one -- it is exactly inverted from what triage wants
+
+`COSTS.tsv` column 11 is `resumed`, and a triage run asking "how far did it
+get" reads it as *there is a session with work in it*. It means the opposite.
+
+`agents/run.sh:618` initialises `resumed=no` and the only assignment to `yes`
+is at line 690, inside the branch entered when `[ "$status" -ne 0 ]` and
+`worth_resuming` -- that is, after the run has already failed and the shell has
+re-run `run_agent resume` in process. A run that succeeded never reaches it.
+The ledgers say so without exception:
+
+    awk -F'\t' '$2=="build"{print $11, ($4==0?"0turns":"n>0")}' COSTS.tsv \
+      | sort | uniq -c
+    147 no   n>0
+     68 yes  0turns
+
+Perfectly inverted, and the 68 zero-turn rows have 68 *distinct* session ids --
+so `resumed=yes` is not even evidence that a session recurred across runs. It
+records one in-process retry that failed too. The two failure blocks in a
+twelve-line build log are that retry, not two runs.
+
+The consequence for a triage verdict: `resumed=yes` is never a reason to
+answer `resume`. It is weak evidence *against* it, because the shell has
+already spent the retry this verdict would be authorising. Read columns 4 and 5
+(`turns`, `cost_usd`) for how far a run got, and the transcript for whether
+anything survives; column 11 only tells you `worth_resuming` matched, and
+`worth_resuming` matches on the substring `"type":"error"`, which every codex
+400 contains.
+
+## The $60/hr projection held: four and a half hours later the loop has doubled
+
+The 12:31Z section above measured the `gpt-5.4` loop at 119 dead builds and
+$225.52 of triage and projected ~$60/hr in steady state, against a daily
+average of "$190 a day" that understated it sevenfold. At 17:01Z, same method
+(`awk` over the four campaign `COSTS.tsv` deduplicated by stamp):
+
+    12:31Z    119 dead builds    $225.52 triage
+    17:01Z    248 dead builds    $438.81 triage
+    delta     +129                +$213.29  over 4h30m  = ~$47/hr
+
+Measured over the last hour alone: 31 triage runs, $47.61. So the higher figure
+was the right one to plan against and this is steady state, not a spike --
+anyone deciding at noon that this could wait until morning was budgeting for a
+seventh of the burn and has now been overtaken by four hours of it.
+
+For scale on the other side of the ledger: 22 builds ran a turn today, for
+$196.28, and **the last one was `20260923T054657Z`**. Every dollar spent on
+this campaign since 05:47Z has gone to triaging preflight refusals. All four
+worktrees still carry `agents/runs/codex-fallback` containing `gpt-5.4`.
+
+Evidence: 2026-09-23, triage of `20260923T170129Z-build.log` (proposal
+"Quantiles of the chi-squared distribution", family #197; zero turns, HEAD
+unmoved at `0b265ce7`, clean tree). 66 stop verdicts in `numberdb-website`
+alone by that point, all of them correct and none of them able to pull the
+brake.
