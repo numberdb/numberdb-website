@@ -11532,3 +11532,24 @@ from `agents/runs/COSTS.tsv`: 122 runs and $118.00, of which builds are 61 runs
 at $0.00 (`turns 0` on every one, unmeasured rather than free, `:10382`) and
 triage is 61 runs at $118.00 -- the outage's entire measured cost is now the
 stage that diagnoses it.
+
+Still unrun at 2026-09-23 18:16Z, triage of build `20260923T181551Z`: the 70th
+turn-zero `gpt-5.4` build and the 70th consecutive `stop`. Loop cost since
+07:25Z is now 137 runs and $125.08, still entirely triage. One line updated per
+triage rather than a fresh section each time -- restating a diagnosis that is
+already written is the same loop, in the repository instead of the ledger.
+
+Two details this round adds to the mechanism above, both read from `run.sh`
+rather than inferred. First, the marker does not merely survive, it *wins*:
+`run.sh:585-596` overrides `codex_model` with the marker's first line whenever
+`NUMBERDB_CODEX_MODEL` is unset, which is every run. So the repair needs both
+halves -- `rm agents/runs/codex-fallback` *and* the fallback chain -- because
+deleting the marker alone leaves `codex_fallbacks` defaulting to `gpt-5.4`
+(`:80`) to rewrite it on the next quota, and setting the chain alone leaves the
+existing marker overriding the start model.
+
+Second, a corollary for whoever writes the next triage check: `agents/runs/` is
+gitignored (`.gitignore:167`), so no verdict, log or ledger row moves HEAD, and
+neither does the runner's own cost line. In this tree HEAD is not evidence of
+work in either direction -- the campaign has sat at `b9f889e0` through eight
+builds and eight triages.
