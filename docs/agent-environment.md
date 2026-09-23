@@ -9329,3 +9329,60 @@ distribution", family #197). `agents/campaign.sh` lines 63, 514, 526, 537, 541,
 `agents/runs/*-verdict`. `pgrep -fa "workers.sh|campaign.sh"` at 10:47Z showing
 `workers.sh 4`, three live campaigns and three concurrent triage runs, with
 neither `agents/workers.stop` nor `agents/campaign.stop` present.
+
+## The Codex quota's "try again at" time does not predict availability, and the fallback marker makes sure nobody finds out
+
+The note above at "the fallback must name a model the ChatGPT account actually
+has" records the shape of the 2026-09-23 loop correctly. One inference drawn
+from it since is wrong, and it is the one that decides how long the campaign
+stays down.
+
+The usage-limit message carries a reset time:
+
+    You've hit your usage limit. Visit https://chatgpt.com/codex/settings/usage
+    to purchase more credits or try again at Sep 25th, 2026 3:51 AM.
+
+That has been read as a two-day horizon. The day's codex runs, ordered across
+all four worktrees, say otherwise:
+
+    05:59:38Z  w1  usage limit hit, falls back to gpt-5.4, 400
+    06:05:21Z  w2  gpt-5.5  success
+    06:10:43Z  w4  gpt-5.5  success
+    06:18:59Z  w2  gpt-5.5  success  -> T443, 1001 entries, $11.39
+    06:27:51Z  w4  usage limit hit, falls back, 400
+    06:52:06Z  w3  gpt-5.5  success        <- last success anywhere
+    07:08:48Z  w3  usage limit hit, falls back, 400
+    07:25Z-07:34Z   all four codex-fallback markers last written
+    07:33Z onward   every run gpt-5.4, 0 turns, $0.0000
+
+`gpt-5.5` built a complete table at 06:18Z and completed another run at
+06:52Z -- 53 minutes after w1 had been told to try again on Sep 25. One worker
+was being served while another was refused, so the limit is not a single
+account-wide gate that opens at the stated time, and the stated time is the
+worst case rather than the forecast.
+
+Why it matters: the two facts compose badly. Availability fluctuates, and
+`agents/runs/codex-fallback` is sticky and is read by every later stage
+(`run.sh:583-586`), so the first refusal a worktree meets pins it to `gpt-5.4`
+permanently. **No run in any worktree has attempted `gpt-5.5` since
+07:08:48Z.** The campaign is not waiting out a quota it has measured; it is
+failing on an entitlement error against a model nobody chose, and the marker
+guarantees the question "can we build now?" is never asked again. Four hours of
+possible availability have gone untested, at roughly $2 of Opus triage per dead
+build per worker.
+
+What to do with it: treat the reset time as a lower bound on nothing and an
+upper bound only. Before assuming the account is out, clear the marker and
+spend one `gpt-5.5` run to find out -- it is the cheapest measurement
+available, and the alternative is a two-day outage that may be self-inflicted
+from the first minute. When the marker is cleared, clear all four; each
+worktree has its own, and one left behind keeps that worker dead and keeps
+paying to triage it.
+
+Evidence: 2026-09-23, triage of `20260923T105521Z-build.log`.
+`agents/runs/COSTS.tsv` rows for 2026-09-23 in all four worktrees (79 builds
+since 05:59:38Z, exactly one with turns > 0); `grep "usage limit"` over the
+day's build logs, matching in `20260923T055938Z` (w1), `20260923T062751Z` (w4)
+and `20260923T070848Z` (w3); `stat` on the four `agents/runs/codex-fallback`
+markers, mtimes 07:25:01Z to 07:34:27Z; `agents/run.sh` lines 80, 583-586,
+650-655, 685.
