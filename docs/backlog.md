@@ -35,6 +35,47 @@ Lock on, an application key **without `deleteFiles`**, and an `age` keypair in
 Bitwarden. Once those exist: `scripts/backup-push.sh`, a systemd timer on the
 server, `restore.sh --from-remote`, and a weekly `make restore_check`.
 
+## A ball's centre is written to the table's precision, not to its own
+
+`_ball_text` in `clients/python/numberdb/_write.py` writes the centre at the
+table's declared `digits` and the radius at three:
+
+    centre = (lower + upper) / 2
+    radius = (upper - lower) / 2
+    return '%s +/- %s' % (_plain_decimal(_as_decimal(centre), digits),
+                          _plain_decimal(_as_decimal(radius), 3))
+
+So the width of the centre is chosen independently of how wide the ball is,
+and every entry comes out padded to the same number of places. In T441's
+growth rates of the power-free languages, all 122 entries are written to
+eleven decimals while the radius leaves seven to nine meaningful:
+
+    1.22063830000 +/- 0.00000655      seven meaningful, eleven written
+    2.60587900000 +/- 1.50e-7         eight
+    2.62150800000 +/- 5.00e-8         nine
+
+**Why it matters here and not in the bare-decimal form.** This corpus writes a
+plain decimal with the last place as the implied uncertainty, so every digit
+shown is a claim and the count carries information. `a +/- b` states the
+uncertainty outright, which is exactly why the digit count of `a` says
+nothing -- and padding it invites a reader to think eleven places were
+determined when seven were. The zeros are not *wrong*: the centre really is
+exactly 1.2206383 and a zero tail is an exact decimal. They are inert.
+
+The convention to write instead quotes the centre to the place of the
+uncertainty: `1.2206383 +/- 0.0000065`, which is what arb prints and what a
+physicist would expect.
+
+**The fix is not truncation.** Here the dropped digits are zeros, so nothing
+moves. In general they are not, and a centre rounded in must have the radius
+widened to keep `[c-r, c+r]` containing what it contained before -- round the
+centre outward into the radius, never chop.
+
+**Nothing stored is wrong and search is unaffected**: a value is indexed by
+its interval, which the padding does not move. This is presentation, and it
+changes how every ball-valued entry in the corpus is written, so it wants to
+be one deliberate pass with a test rather than a change made in passing.
+
 ## What is left of saying how well each number is known
 
 Most of it is done -- see *Done* at the bottom, and `docs/design/rigour.md`.
