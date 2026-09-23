@@ -10199,11 +10199,18 @@ Running total, appended by each triage that measures it, same window (from
 
     17:50Z  $559.69   554 runs  (triage 269 / ideas 11 / build 274)
     18:45Z  $604.23   618 runs  (triage 302 / ideas 11 / build 305)
+    18:56Z  $611.31   631 runs  (triage 307 / ideas 12 / build 312)
 
 The build column is the one to read: 305 runs, **0 turns between them**, and 31
 more of them than at 17:50Z. `ideas` has not run since 20260923T160954Z
 ($10.62), so the whole $44.54 of the last hour is triage -- 33 runs at about
 $1.35 each, all reaching `stop` correctly.
+
+Correcting the `ideas` half of that at 18:56Z: the twelfth `ideas` run is
+20260923T184716Z and it is **not** a $10 screening. It is a zero-turn `gpt-5.4`
+400 -- the same one the builds get -- so the producing half of the campaign is
+now entirely at zero turns, and the whole $7.08 of the eleven minutes to 18:56Z
+is again triage. Why `ideas` ended up on codex at all is `:10390` below.
 
 The remedy is unchanged and still unrun: `NUMBERDB_WRITER=claude` on a
 restarted supervisor (`:8461`), and stop `ideas` as well (`:10043`). At 17:50Z
@@ -10379,3 +10386,64 @@ high-water mark and the 298 failed builds of this outage have created nothing.
 Anonymous `/api/table` answered 429 for every id throughout, so the public-page
 probe of `:9937` was unavailable and was not used. Found while triaging
 `agents/runs/20260923T182731Z-build.log`.
+
+## A claude token within 15 minutes of expiry exits 6, and exit 6 means "hand this stage to codex"
+
+What happened: the `ideas` stage ran on **codex** at 18:47Z on 2026-09-23 and
+died on the `gpt-5.4` 400, even though every campaign banner in all four trees
+says `miner claude` and `ideas` had run on claude eleven times that day. It was
+not reconfigured. `agents/runs/screener.log` has the whole sequence:
+
+    === 18:47:07 11 proposals waiting, below 12; screening a family
+    === 8 minutes of token left, under the 90-minute floor; refreshing
+    Refusing: 8 minutes of token left, under the 15-minute
+    hard floor, and the refresh did not take. Re-authenticate
+    with 'claude auth login'.
+
+    === claude has no quota left; codex screens instead
+    === ideas run 20260923T184716Z, engine codex
+
+The mechanism is one exit code doing two jobs. `run.sh:289-302` guards a claude
+run against starting on a nearly-dead token: below `NUMBERDB_TOKEN_FLOOR` (90
+min) it makes a short call to force a refresh, and if that leaves it below
+`NUMBERDB_TOKEN_HARD_FLOOR` (15 min) it **`exit 6`**s. But `exit 6` is also the
+code that means "this engine has spent every model it may use", and it is read
+that way by `propose-batch.sh:53-57` (`say "$miner has no quota left; $other
+screens instead"`) and by the same handover in `campaign.sh`. So a token eight
+minutes from a routine refresh is indistinguishable from an exhausted account,
+and the stage is handed to the other engine.
+
+Why it matters more than it looks. The two conditions have opposite lifetimes.
+A spent quota lasts days -- the gpt-5.5 one here does not refill until
+2026-09-25 03:51Z -- and handing over is the right answer. A token near expiry
+lasts **minutes**: this one was refreshed at 18:52:08Z, five minutes later, and
+now runs to 2026-09-24T02:52:08Z. Waiting would have cost five minutes and
+screened a family. Handing over cost the whole run, because during this outage
+"the other engine" is codex and codex is pinned to an unusable `gpt-5.4`. The
+refusal is also self-defeating in its own terms: it says "re-authenticate with
+`claude auth login`", and nobody needed to -- the credential repaired itself.
+
+Two details worth having. The refresh does not take on demand: the CLI renews
+when it decides to, which `run.sh:305-311` already records, so the window
+between the two floors is one where nothing can be done but wait. And **triage
+is exempt** from the whole guard (`[ "$stage" != "triage" ]`, `:287`) -- which
+is why three triages ran on claude at 18:46-18:47Z while the screener was being
+refused, and why a claude process was still starting at 18:52:08Z to renew the
+credential for everyone. The exempt stage is the one that repairs the token.
+
+What to check if you meet it: `agents/runs/screener.log` or the campaign log
+for `has no quota left` immediately after a `minutes of token left` line -- that
+pair, rather than a quota, is this. `expiresAt` in `~/.claude/.credentials.json`
+is a timestamp and not a secret (`run.sh:267`); if it is in the future, the
+account was never out of quota. It does not change the verdict on a build that
+died this way -- there is still nothing to resume -- but "claude ran out" in a
+log is not evidence that claude ran out, and the standing
+`NUMBERDB_WRITER=claude` remedy (`:8461`) is not affected: the account is fine.
+
+Evidence: 2026-09-23, 18:47-18:57Z. `agents/runs/screener.log` tail (screener
+pid 1950272, up 22h17m); `agents/runs/20260923T184716Z-ideas.log` in the main
+tree, 12 lines, the same 400 twice; its `COSTS.tsv` row
+`ideas codex 0 0.0000 error gpt-5.4 ... resumed=yes`; `run.sh:258-317`;
+`propose-batch.sh:30-60`; `expiresAt` read as a timestamp at 18:56Z ->
+2026-09-24T02:52:08Z, i.e. refreshed 18:52:08Z; the four campaign banners, all
+`miner claude`. Found while triaging `agents/runs/20260923T185211Z-build.log`.
