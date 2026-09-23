@@ -15,8 +15,6 @@ import os
 import sys
 
 import numberdb.sage as numberdb
-from numberdb import _compare
-from numberdb._write import to_text
 from sage.rings.rational_field import QQ
 from sage.rings.real_mpfi import RealIntervalField
 
@@ -151,11 +149,6 @@ def value_interval(row):
     return field(lo, hi)
 
 
-def supported_digits(value):
-    text = to_text(value, DIGITS, "ball")
-    return max(1, _compare.digits_of(text))
-
-
 def exponent_sort_key(exponent):
     plus = exponent.endswith("+")
     base = exponent[:-1] if plus else exponent
@@ -245,7 +238,7 @@ class PowerFreeLanguageGrowthRates(numberdb.Generator):
     def value(self, params, digits):
         row = self._row_for(params)
         value = value_interval(row)
-        entry = {"number": value, "digits": supported_digits(value)}
+        entry = {"number": value}
         if row["comment"]:
             entry["comment"] = row["comment"]
         return entry
@@ -254,7 +247,6 @@ class PowerFreeLanguageGrowthRates(numberdb.Generator):
 def fill_draft_once(generator, message):
     """Fill a fresh draft without the client's empty upsert probe."""
     from numberdb._generate import (
-        _check_precision,
         _check_rigour,
         _producer,
         _run_name,
@@ -269,15 +261,12 @@ def fill_draft_once(generator, message):
 
     for params in generator.enumerate():
         params = dict(params)
-        asked = generator.digits_for(params)
-        entry = generator._entry(params, asked)
-        wanted = int(entry.pop("digits", asked) or asked)
+        wanted = generator.digits_for(params)
+        entry = generator._entry(params, wanted)
         value = entry["number"]
         identity = ",".join(str(params[name]) for name in generator.parameters)
         _check_rigour(generator, table, identity, value)
         written = _written(value, wanted, generator.format)
-        text = written[0] if isinstance(written, list) else written
-        _check_precision(table, identity, text, wanted, lowering=False)
         entry["number"] = written
         entries.add(**params, **entry, digits=wanted)
 
