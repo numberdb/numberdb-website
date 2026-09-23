@@ -8628,3 +8628,54 @@ identical refusal on w1 and the twenty-second across the four worktrees.
 `python3 agents/queue.py show 197 198 199 200` for the claim times,
 `agents/queue.py` lines 280 and 296-315, `agents/campaign.sh:337-356`,
 `agents/runs/COSTS.tsv` in all four worktrees.
+
+## `stop` is advisory: the supervisor keeps no failure memory across restarts
+
+Thirty-one triage runs today have written `stop` on the first line of a
+verdict. Every one of them. Nothing about the machine's behaviour has changed,
+and the reason is not that anybody ignored them -- it is that there is nowhere
+for a `stop` to be remembered.
+
+`campaign.sh:544` treats any verdict that is not `resume`, `restart` or `skip`
+as "leave", and the worker exits. That is the whole effect of the word. The
+supervisor's loop at `agents/workers.sh:255-283` then does this, once every
+`every` seconds, for ever:
+
+    for n in $(seq 1 "$workers"); do
+        name="w$n"
+        if ! running "$name"; then
+            start "$name" "$(family_for "$n")" || true
+            sleep 20
+        fi
+    done
+    sleep "$every"
+
+`running` is the only question asked. There is no backoff, no counter of
+consecutive failures, and no record that this worker has just been stopped on
+purpose -- `grep -i backoff docs/agent-environment.md agents/workers.sh` finds
+nothing in either. A worker that exits because triage said `stop` is
+indistinguishable, to the supervisor, from one that exited because the machine
+rebooted, and it is restarted within the minute on the same terms.
+
+So the escalation channel the triage prompt describes is inert by construction.
+`agents/runs/workers.log` counts **75 restarts today**, 24 of them inside the
+08:00 hour and 4 in the first five minutes of the 09:00 hour. w1 was restarted
+at 09:02:33 and began the build at 09:02:40 that this note came out of, seven
+seconds later. The only thing that ends the loop is the `agents/workers.stop`
+file, checked at the top of the same loop.
+
+The fix has a precedent in the file itself. `engine_for_reading()` at
+`workers.sh:99-120` already does a one-time preflight probe of the *reading*
+engine at supervisor start, and its comment gives the reason exactly: without
+it, "each restart would rediscover it, one refusal at a time, for ever." The
+*writing* engine gets no such probe. That asymmetry is the entire shape of
+today: a model name the account may not use, rediscovered 29 times since
+07:25Z at one refusal and one ~$1.80 triage each. A one-second probe of the
+model `run.sh` is about to write with, in the one place every restart passes
+through, would have caught it before the first build.
+
+Evidence: 2026-09-23, triage of `20260923T090240Z-build.log`, the tenth
+identical refusal on w1 and the thirty-first `stop` of the day.
+`agents/workers.sh` lines 99-120 and 250-283; `agents/campaign.sh` lines
+505-545; `agents/runs/workers.log`; `head -1` of every
+`agents/runs/20260923T*-verdict` in all four worktrees.
