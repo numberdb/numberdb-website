@@ -3,12 +3,9 @@
 # person's act on the site.
 Title: Markov forms
 Definition: >-
-  For a normalized Markov triple $(m_1,m_2,m)$, where
-  $m_1\leq m_2\leq m$ and $m_1^2+m_2^2+m^2=3m_1m_2m$
-  CITE{WikiMarkovNumber}, this table stores Markov's binary quadratic form
-  $f(x,y)=m x^2+(3m-2k)xy+(l-3k)y^2$ CITE{Cassels}. Here
-  $0\leq k\leq m/2$ is the unique integer satisfying
-  $k m_2\equiv\pm m_1\pmod m$, and $l=(k^2+1)/m$.
+  For a normalized Markov triple $(m_1,m_2,m_3)$ CITE{WikiMarkovNumber}, this
+  table stores Markov's binary quadratic form $f_{m_1,m_2,m_3}(x,y)$ defined
+  by Formula CITE{formula-form} CITE{Cassels}.
 Parameters:
   m1:
     type: Z
@@ -52,6 +49,10 @@ Comments:
     $\sqrt{9m_3^2-4}/m_3=3-2/(3m_3^2)+O(m_3^{-4})$, so these values
     accumulate at $3$ from smaller values.
 Formulas:
+  formula-form: >-
+    Put $m=m_3$. Let $0\leq k\leq m/2$ be the unique integer satisfying
+    $k m_2\equiv\pm m_1\pmod m$, and let $l=(k^2+1)/m$. Then
+    $f_{m_1,m_2,m_3}(x,y)=m x^2+(3m-2k)xy+(l-3k)y^2$.
   formula-markov-equation: >-
     The indexing triples satisfy
     $m_1^2+m_2^2+m_3^2=3m_1m_2m_3$.
