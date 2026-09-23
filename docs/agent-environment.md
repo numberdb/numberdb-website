@@ -10502,3 +10502,45 @@ enough for the trap to be worth naming at the point of use.
 Measured 2026-09-23T18:08Z. Levers unchanged from the 17:48Z note:
 `codex-fallback` = `gpt-5.4`/`xhigh` mtime 07:25, `workers.stop` still absent,
 `out_of_quota()` still 429-only; `workers.sh 4` up 21h29m.
+
+## The stalled pool has now cost $601.85 across four checkouts for no table at all
+
+The notes above give the rate -- ~37 turn-0 builds an hour, ~$67 an hour -- but
+never the running total, and the total is what a person deciding whether this
+can wait another hour actually wants. Measured at 2026-09-23T18:18Z, over the
+window from `20260923T062751Z` (the first build to take the `gpt-5.4` fallback)
+to now, summing the four gitignored `agents/runs/COSTS.tsv` files:
+
+    numberdb-website   78 builds   0 with any turns   $0.00 of build spend
+    campaign-w2        76 builds   0 with any turns   $0.00
+    campaign-w3        69 builds   0 with any turns   $0.00
+    campaign-w4        72 builds   0 with any turns   $0.00
+    ------------------------------------------------------------------
+    295 builds, not one of which sampled a token
+    $601.85 total spend in the window, all of it triage
+    0 tables committed on any branch
+
+The last line is the one that is independent of the cost files:
+`git log --all --since="2026-09-23T06:27:51Z" -- tables/` is empty. The last
+build that produced anything was `20260923T061043Z` -- 1 turn, $5.73, success,
+on `gpt-5.5`, seventeen minutes before the 429 that wrote the marker.
+
+Two things this adds to the rate figure. The arithmetic is **cumulative and
+already large**: 11h50m of delay has bought 295 dead builds, and the per-hour
+figure understates the case by framing it as a future cost. And the split is
+**entirely triage**: every build row in all four files is $0.0000, so the whole
+$601.85 is spent by the stage whose job is to decide what to do about builds
+that cost nothing -- 72 times in this worktree alone, each time reaching the
+same answer.
+
+This changes no decision. It is the same `stop`, for the same three unpulled
+levers. It is here so the next reader does not have to re-derive the total from
+four cost files, and so the sentence "this can wait another hour" carries its
+price.
+
+Measured during triage of build `20260923T181614Z` (w4, family #200, "Mean
+distance from a uniform random point of a region to its centroid", 0 turns,
+$0.0000, the same 400 on `gpt-5.4`, verdict `stop` -- the 72nd in this worktree
+and all 72 the same). Levers unchanged: `codex-fallback` = `gpt-5.4`/`xhigh`
+mtime 07:25:22Z, `/home/ubuntu/numberdb-website/agents/workers.stop` still
+absent, `out_of_quota()` still 429-only; `workers.sh 4` up 21h40m, pid 1950235.
