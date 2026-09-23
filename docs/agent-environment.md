@@ -10222,3 +10222,71 @@ field, spread over four workers; `queue.py open` -> `#202 4 left`, `4 waiting`;
 `queue.py show 202` -> `[~] Global minimum energies of the Thomson problem --
 claimed by w3 at 2026-09-23T09:21Z`, this run's own claim, with the time in
 the checklist and nowhere else.
+
+## `GET /api/claim` does carry a timestamp; it is the checklist that goes stale
+
+What happened: the section immediately above ends by saying that
+`GET /api/claim?family=<n>` "answers with `worker` and `proposal` but **no
+timestamp**", so that "the issue body is the only place a claim's age is
+legible". That is wrong, and it is wrong in the direction that matters: it
+sends the next reader to the one of the two sources that is *not* kept up to
+date. It was committed at `af1a94e2` at 09:25Z; this run checked it at 09:32Z
+and found the opposite.
+
+Every row the endpoint returns carries `since` and `expired`:
+
+    {"family": 198,
+     "proposal": "Weil--Petersson volumes $V_{g,n}$ of the moduli spaces ...",
+     "worker": "w3",
+     "since": "2026-09-23T09:26:58.854120+00:00",
+     "expired": false}
+
+`api.py:1387-1391` builds exactly those four fields, and does it *before*
+`_writer_of(request)` at line 1393 -- so the GET is unauthenticated and the
+timestamp is not something a key unlocks. The same line filters `row.expired`
+out, so what comes back is the live set, already aged for you.
+
+The checklist is the stale one, and this is the useful half. A claim expires
+after ninety minutes and is dropped from the endpoint's answer; nothing
+rewrites the `- [~]` mark in the issue body, because `queue.py:take()` calls
+the mark "a trace, not the decision". The two sources therefore disagree, and
+the checklist always over-reports. Family #198 at 09:32Z:
+
+    queue.py show 198      6 lines marked `- [~]`, the oldest w1 at 08:01Z
+    GET /api/claim?f=198   5 claims, the 08:01Z one gone (91 minutes old)
+
+So: to ask who holds what *now*, and for how long, read `/api/claim` and
+subtract `since` from the clock. Read the checklist for a claim's age only if
+you also check it against the endpoint -- a `- [~]` line with a time on it may
+name a hold that lapsed an hour ago, and that is precisely the case an outage
+produces in quantity.
+
+A second thing this run met while checking it. The endpoint is rate limited
+per IP, and an anonymous caller gets little:
+
+    HTTP 429 {"error": "Rate limit exceeded (60 requests per 60 minutes).
+              An API key raises this limit; see /help#section-api.",
+              "retry_after": 1634}
+
+Thirteen unauthenticated requests from this triage were refused at once, which
+means roughly forty-seven of the hour's anonymous budget had already been spent
+by something else sharing this IP -- all four worktrees do. `queue.py._site()`
+sends the key only `if token:` and falls through to an unauthenticated request
+when the key file cannot be read, so a tree with an unreadable key drops onto
+that small shared budget silently. What happens then is worth knowing:
+`held_by_others()` (`queue.py:715`) turns *any* non-200, 429 included, into
+`set()` -- "nobody is holding anything" -- and `unheld()` then hands out
+proposals with the site-side lock effectively switched off, falling back to the
+checklist marks that the lock exists to stop two workers racing on. `take()`
+fails the other way, returning `status is None` -> False on a 429, which the
+campaign reads as "another worker has it" and skips. Neither is loud. This run
+did not observe a campaign being rate limited -- the key file here is readable
+and `queue.py` was authenticated throughout -- but the failure mode is one
+unreadable key file away, and it would look like a quiet queue rather than an
+error.
+
+Evidence: 2026-09-23 09:32Z, triage of build `20260923T092700Z` in w3.
+Authenticated `GET /api/claim?family=196..203` -> 31 live claims across four
+workers, every row carrying `since` and `expired: false`; `queue.py show 198`
+-> six `- [~]` lines against those five claims; unauthenticated
+`GET /api/claim?family=193..204` -> twelve consecutive 429s.
