@@ -8968,3 +8968,59 @@ the four `campaign.sh 200` pids, whose cwds are one per checkout;
 `.gitignore:167`; `git status` clean and `git rev-parse HEAD` = `0754ee92` after
 the run that this triage is about. `numberdb/settings/base.py:389-392`;
 `numberdb_app/permissions.py:305-322`.
+
+## The claim table is at a steady state, not a ratchet: the drain is wasteful, not destructive
+
+The note above establishes that an abandoned claim expires by itself in ninety
+minutes and so costs a bounded amount. Two later triage verdicts nevertheless
+read the standing total -- 38, then 40, then 39 live claims, none expired,
+none being worked -- as *"the pool is taking claims faster than they expire"*.
+That is the one reading of this failure under which the dead build lane is
+consuming the queue rather than merely idling on it, and under which clearing
+the marker late would find nothing left to build. It is wrong, and it is worth
+retiring before a third verdict repeats it.
+
+Measured across four minutes with the lane still cycling at full rate:
+
+    12:14:18Z   39 live claims, 0 expired   (w1 9, w2 12, w3 8, w4 10)
+                oldest 10:44:39Z
+    12:16:11Z   38 live claims, 0 expired   (w1 9, w2 12, w3 8, w4  9)
+                oldest 10:49:59Z
+
+Two claims left in those four minutes -- "Quantiles of Student's
+$t$-distribution" (taken 10:44:39Z) and "Quantiles of the chi-squared
+distribution" (10:44:20Z) -- each at its ninety-minute mark to the second, and
+each reappeared in `unheld()` immediately. Expiry retires claims at the rate
+new dead runs take them. The total has sat at 38-40 all afternoon because that
+is where those two rates meet, not because it is climbing.
+
+**And there is work behind them.** `queue.py open` reports 14 proposals
+waiting across families #197, #201, #203, #204 and #205, and `unheld()` --
+which subtracts live site claims, so it is the number that decides what gets
+offered -- returns **all 14 as free**. Whenever a person gets round to the four
+`rm`s, the queue still has a full batch in it.
+
+Two smaller corrections while reading the same state:
+
+  * A family can hold three simultaneous claims from three dead runs (#201 was
+    held by w3 from 12:06:42Z and by w4 twice, 12:07:01Z and 12:13:03Z) and
+    still show its remaining proposals as free. Duplicate claims on one family
+    are a symptom of the dead lane walking the queue, not of the lock failing.
+  * `Numbers` on a table read through `GET /api/table?id=` is a dict of dicts,
+    not a flat list. `len()` on it counts parameter rows, not values: T444
+    reads as 3 at the top level and 12 leaves, and earlier notes quoting "12
+    entries" and this one quoting 3 are the same table. Count the leaves
+    before reporting a table as shrunken.
+
+None of this makes the standing failure less urgent -- it is still ~25 dead
+builds and ~$50 of triage an hour, and at 12:13Z four triage processes were
+alive at once on four different stamps. It bounds the *damage*: what is being
+destroyed is money and attention, not the queue.
+
+Evidence: 2026-09-23 12:16Z, triage of build run `20260923T121305Z`.
+`GET /api/claim` with no family at 12:14:18Z and 12:16:11Z;
+`queue.py open` and `queue.unheld(fam, mine='w4')` over all open families;
+`agents/queue.py:280,306-332,712-719`; `numberdb_app/models.py:1560`.
+Rates from all four `COSTS.tsv` bucketed by hour over `$1 ~ /^20260923/`:
+build runs 10/18/19/28/24 and triage $27.55/$28.32/$42.92/$53.83/$47.34 for
+07:00Z-11:00Z, with 108 dead builds and $206.68 of triage since the marker.
