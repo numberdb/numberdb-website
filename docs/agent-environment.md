@@ -10194,6 +10194,17 @@ tracked file. Three successive entries have now had to correct the same number
 upward. If you are triaging one of these and you compute it again, put it here
 -- one line is enough -- or the entry after yours will quote 10:11Z too.
 
+Running total, appended by each triage that measures it, same window (from
+07:34:39Z) and same deduplication:
+
+    17:50Z  $559.69   554 runs  (triage 269 / ideas 11 / build 274)
+    18:45Z  $604.23   618 runs  (triage 302 / ideas 11 / build 305)
+
+The build column is the one to read: 305 runs, **0 turns between them**, and 31
+more of them than at 17:50Z. `ideas` has not run since 20260923T160954Z
+($10.62), so the whole $44.54 of the last hour is triage -- 33 runs at about
+$1.35 each, all reaching `stop` correctly.
+
 The remedy is unchanged and still unrun: `NUMBERDB_WRITER=claude` on a
 restarted supervisor (`:8461`), and stop `ideas` as well (`:10043`). At 17:50Z
 pid 1950235 is up 21h12m, no `workers.stop` exists in any tree, and
