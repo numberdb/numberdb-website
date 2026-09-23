@@ -8185,3 +8185,51 @@ failure); `agents/workers.sh` lines 1-45 and its `every` default;
 `agents/campaign.sh` lines 513-547; the `COSTS.tsv` of all four worker trees
 from 07:00 onwards; supervisor pid 1950235, up 11h20m at 07:58. Diagnosed in
 `agents/runs/20260923T075538Z-verdict`.
+
+## A zero-turn build keeps its claim, and four of them empty the queue
+
+What happened: by 08:09 on 2026-09-23, `python3 agents/queue.py open` reported
+**0 waiting**. Nine minutes earlier it reported four. All twelve proposals
+across the two screened families -- numberdb-data #197 (statistics quantiles)
+and #198 (tautological numbers of the moduli space) -- were claimed, and most
+were held by runs that had built nothing and read nothing:
+
+    #197  6 of 6 claimed (w1 x2, w3 x2, w4, w2)
+    #198  6 of 6 claimed (w1 x2, w3 x2, w4, w2)
+
+Build run 20260923T080716Z is typical: it claimed "$\lambda_g$ Hodge integrals
+on $\overline{\mathcal M}_{g,n}$" in #198 at 08:07 and was refused by the
+gpt-5.4 400 two seconds later, having never read the proposal it took.
+
+Why: `campaign.sh:472` claims the proposal *before* it launches the stage, and
+there is a guard for exactly this harm at `campaign.sh:686`, whose own comment
+names it -- "A worker whose runs all refuse would otherwise claim a family's
+every proposal in a minute and hold them for ninety, which is what happened to
+numberdb-data#178." But that guard fires only on exit statuses **2, 3 and 5**,
+the preflight refusals. A run that dies inside the engine exits **1**, so
+control reaches the `else` branch, the claim stays, and `queue.py`'s
+`CLAIM_MINUTES = 90` holds it for an hour and a half. The guard built to
+prevent this does not cover the way it is now happening, and #197 and #198 have
+been drained exactly as #178 was.
+
+This is worth separating from the money. The fallback loop documented above
+wastes about $30 an hour; this empties the work queue as well, so a worker that
+got a working engine inside the ninety minutes would find nothing to build --
+and proposals from an ideas run still in flight will be claimed and burned the
+same way as soon as they land. A pool stuck this way looks, from the queue,
+like a pool that has finished its families.
+
+What to do instead: fix the engine problem first (above), since these claims
+expire on their own and need no cleanup. When touching the runner, consider
+widening the release guard to cover any build that used **zero turns**, however
+it exited, rather than enumerating preflight statuses -- a run that completed no
+turn has not tried its proposal, whatever the exit code says. Note for whoever
+restarts a stopped pool: an empty queue immediately after this loop means the
+proposals are claimed, not finished; they come back within ninety minutes of
+the last failed build.
+
+Evidence: 2026-09-23. `agents/queue.py show 197` and `show 198` at 08:09;
+`queue.py open` reporting 0 waiting against 4 in the 08:00 verdict;
+`agents/campaign.sh` lines 464-472 and 683-710; `agents/queue.py:280`
+(`CLAIM_MINUTES = 90`); `agents/runs/20260923T080716Z-build.log`. Diagnosed in
+`agents/runs/20260923T080716Z-verdict`.
