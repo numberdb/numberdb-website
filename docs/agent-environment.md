@@ -10725,3 +10725,67 @@ volume polynomials $V_{g,n}(L_1,\dots,L_n)$", family #198; zero turns, HEAD
 unmoved at `037d6a01`, clean tree, no draft). 70 dead `gpt-5.4` builds against 5
 `gpt-5.5` builds that each ran a turn; 69 triage runs at $117.99 versus $38.05
 of build. Every one of today's 69 verdicts is `stop`.
+
+## `sync-costs` prints a one-number health check at the end of every run, and nothing reads it
+
+Every run ends with a line from `agents/sync-costs.sh`, which POSTs the whole
+ledger to `/api/costs` and echoes the site's reply:
+
+    sync-costs: rows: 638, tables: 131, unattributed: 207, unattributed_usd: 584.2228
+
+The fields are not opaque. They are computed from `agents/runs/COSTS.tsv`, and
+the arithmetic checks out from this end:
+
+* `unattributed` is the count of ledger rows whose `table` column (16) is
+  empty -- 207 locally, 207 at the site.
+* `unattributed_usd` sums their `cost_usd` -- $584.2210 locally against the
+  site's $584.2228, the difference being other machines' ledgers rounding.
+* `tables` is the number of distinct non-empty `table` values -- 131 both
+  sides, and **unmoved all day**.
+
+`rows` is the only field that does not tie out exactly (638 at the site
+against 644 data rows here); the other three do, so they can be trusted
+without reading the campaign log.
+
+A row is unattributed when the run produced no table. Triage and ideas runs
+are unattributed by nature, so a nonzero count is normal and the raw number
+means nothing on its own. The **ratio** is the signal, and it is stark:
+
+    day          unattributed          attributed
+    2026-09-16     4 rows $ 34.50      94 rows $514.19
+    2026-09-17     8 rows $ 51.56      91 rows $497.81
+    2026-09-18     6 rows $ 26.75      57 rows $364.92
+    2026-09-19     2 rows $ 27.25      51 rows $175.18
+    2026-09-20     2 rows $ 18.37      34 rows $228.51
+    2026-09-22     9 rows $101.81      10 rows $128.55
+    2026-09-23   156 rows $248.16      15 rows $ 81.50
+
+A campaign that is building runs 2-9 unattributed rows a day, 4-15% of rows
+and well under a tenth of the spend. Today it is 156 rows of 171 (91%) and the
+dollars have inverted: $248.16 bought no table against $81.50 that did. Of
+those 156, 154 rows and $230.07 fall after the `gpt-5.4` pin at 05:59Z.
+
+Two cautions for anyone wiring an alarm to this:
+
+* **Watch the count, not the dollars.** A zero-turn build adds a row and
+  $0.0000, so `unattributed_usd` stands still across exactly the runs that are
+  wasting the most wall clock. Across the last two hours of dead builds the
+  count went 182 -> 207 while the dollars moved only on the triage runs
+  between them. The dollar figure decelerates as the loop gets worse.
+* **`tables` frozen is the blunter signal.** It has read 131 since the last
+  build that ran a turn (`20260923T050854Z`). It costs nothing to compare
+  against the previous run's line.
+
+This is the cheapest detector of the failure mode documented in the sections
+above, and it was on stdout at the end of all 72 dead builds. It would have
+flagged this by about 08:00Z, when the count first pulled away from the
+single digits, for the price of reading a line the runner already prints.
+Triage, which did notice, costs about $1.40 a run and has now been asked the
+same question 72 times.
+
+Evidence: triage of `20260923T173149Z-build.log` (proposal "Best known
+packings of equal circles in a square", family #202 -- on its second lap, the
+first also zero turns; 0 turns, $0.0000, HEAD unmoved at `b3801fe6`, clean
+tree, no draft). 72 zero-turn `gpt-5.4` builds against 5 `gpt-5.5` builds that
+each ran a turn; all 72 of today's verdicts are `stop`. Counts reproduce with
+`awk -F'\t' 'NR>1 && $16==""' agents/runs/COSTS.tsv`.
