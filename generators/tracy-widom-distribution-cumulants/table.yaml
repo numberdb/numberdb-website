@@ -1,4 +1,4 @@
-# Created as a draft through the API with X-Draft: yes, to be filled by
+# Created as draft T444 through the API with X-Draft: yes, to be filled by
 # generate.py beside it and offered for review. Publishing is a person's act.
 Title: Cumulants $\kappa_n$ of the Tracy–Widom distributions
 Definition: >-
@@ -83,9 +83,9 @@ Data properties:
     skewness and excess kurtosis to the raw cumulants using
     CITE{formula-standardised}; the stored digits are no longer than the
     published input digits justify. The $\beta=2$ values were compared with a
-    direct Painleve-II integration from the screening run, and the $\beta=4$
+    direct Painlevé-II integration from the screening run, and the $\beta=4$
     scaling was checked by recomputing the GSE mean and variance from the same
-    Painleve-II representation.
+    Painlevé-II representation.
 Display properties:
   number-header: $\kappa_n(\beta)$
 Tags:
