@@ -10815,3 +10815,47 @@ first also zero turns; 0 turns, $0.0000, HEAD unmoved at `b3801fe6`, clean
 tree, no draft). 72 zero-turn `gpt-5.4` builds against 5 `gpt-5.5` builds that
 each ran a turn; all 72 of today's verdicts are `stop`. Counts reproduce with
 `awk -F'\t' 'NR>1 && $16==""' agents/runs/COSTS.tsv`.
+
+## The live claim count drifts; 50 was a sample, not a cap
+
+The section above records "still exactly 50 at 17:38Z" across families
+196-206 and concludes the per-family sum can be trusted. The sum can be
+trusted. The number cannot be read as a constant, and a watcher who alarms on
+it moving will alarm on nothing.
+
+Three samples of `GET /api/claim`, same worker pool, same families 196-206,
+half an hour apart:
+
+    17:38Z   50 live
+    18:04Z   52 live
+    18:07Z   51 live
+
+It went up and then down inside four minutes. There is no cap at 50 and no
+drift toward a ceiling; the count is simply **how many claims happen to have
+been taken in the last ninety minutes**, and that oscillates with the worker
+cadence.
+
+The lease boundary is visible directly in the response, which is the useful
+part. At 18:07:14Z the oldest live claim was `2026-09-23T16:37:27Z` -- 89
+minutes 47 seconds old. It is always within a minute of ninety, because
+`/api/claim` filters expired claims out of the response rather than flagging
+them (recorded above), so the oldest row in the list *is* the trailing edge of
+the window. That, and not the count, is what tells you the endpoint is
+behaving.
+
+So for anyone reading this endpoint to judge campaign health:
+
+* **The count is noise in the low fifties.** Do not alarm on it, either
+  direction. Four workers restarting every six minutes and holding for ninety
+  puts the steady state somewhere near fifty whether or not a single one of
+  those claims produced a table -- which today not one of them did.
+* **The family range is still the signal**, as recorded above.
+* **The oldest `since` is the sanity check.** If it is much older than ninety
+  minutes, leases have stopped lapsing; if it is much younger, the pool has
+  stopped claiming.
+
+Evidence: triage of `20260923T180311Z-build.log`, three `GET /api/claim`
+samples at 17:38Z (from the commit above), 18:04Z and 18:07:14Z. That build
+itself claimed family #206 "Theta series of the classical lattices" at
+18:03:09.861Z, one second before it started, used 0 turns, and holds the
+claim until about 19:33Z -- one of the fifty-odd.
