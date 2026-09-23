@@ -7527,3 +7527,53 @@ both faster and available.
 Evidence: 2026-09-22 ideas run. Two `agents/sage.sh` invocations, both timed
 out on the lock; the same mathematics ran locally in 12 seconds, and eight
 OEIS sequences were compared against it over plain HTTP.
+
+## The sweep that closed the backlog cited the wrong table 45 times, and eight requests have no table at all
+
+What happened: the note above records one closed request carrying a stale
+wrong T-number (#13, answered "T368", which is the Charlier zeros). It is not
+one. Reading the closing comment of all 126 closed `table wanted` issues:
+
+* 26 were closed with "This is now <https://numberdb.org/T359>". T359 is
+  *Sharp constant in Nash's inequality*. They include #70 (Ramsey numbers),
+  #29 and #30 (lattice packings), #91 (knot polynomials), #21 (Faltings
+  heights) and #28 (Maass form coefficients).
+* 19 were closed pointing at T380, *Arithmetic factors $A_k$ in the moments of
+  quadratic Dirichlet $L$-functions*, including #51 (the Wikipedia constants
+  checklist), #136 (the Cantor pairing polynomial) and #68 (Waring bounds).
+* 12 at T384 (*Resultants of two monic polynomials*) and 13 at T368, in the
+  same way.
+* 45 carry no such comment at all: those are the 2021 and August closures,
+  which were closed by hand when the table was made.
+
+Most of the mis-cited ones were nonetheless answered under some other number
+(#36 is T152, #94 is T232-T235), so the usual damage is a wrong link. Eight
+were not answered at all. Searching the live corpus for each name returns
+nothing for:
+
+    #23  analytic conductors of L-functions
+    #24  Selberg data of L-functions
+    #25  analytic conductors of classical modular forms
+    #49  elliptic curves x^3 + y^3 = k of high rank
+    #70  Ramsey numbers beyond the diagonal (only T6 exists)
+    #71  binary forms with 2-power discriminant
+    #132 moments of the distribution of primes in short intervals
+    #136 the Cantor pairing polynomial, packing polynomials
+
+(Three more -- #68 Waring bounds, #69 mass partitions, #52 topological
+complexity -- are families of a handful of small integers known mostly as
+bounds, and are fairly closed on the merits even though they were closed for
+the wrong stated reason.)
+
+What to do instead: do not read "126 closed" as "126 answered". The eight
+above are the anchors the ideation stage now lacks, and reopening them costs
+nothing. Whatever closes an issue should name the table it means and be
+checked against `api/table?id=`, the way the #13 note already says a reader
+must -- the sweep evidently matched issues to a family's tables by something
+looser than the request's own subject.
+
+Evidence: 2026-09-22 ideas run.
+`gh issue list --repo numberdb/numberdb-data --label "table wanted" --state
+closed --limit 300 --json number,title,comments`, grouped by the T-numbers in
+each closing comment; `numberdb.search_text` on each unanswered name, through
+`PYTHONPATH=clients/python` from outside the repository root.
