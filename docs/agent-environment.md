@@ -4982,6 +4982,48 @@ Evidence: 2026-09-23. `agents/runs/20260923T062751Z-build.log`, last 6 lines;
 `:565-568` (`worth_resuming`), `:583-601` (the marker), `:634-690` (the chain
 and the `give_up` handoff).
 
+It recurred a third time twelve minutes later, build run `20260923T073936Z`,
+and what that one adds is that **the `stop` verdict is not a brake.** The
+triage above returned `stop`, `campaign.sh:546` exited on it, and the campaign
+log duly says `=== stopping: stop` -- and then `workers.sh:132` relaunched
+`campaign.sh` under `setsid nohup`, six minutes later, into the same marker.
+The `attempted < 2` guard at `campaign.sh:514` does not dampen this either,
+because `stop` exits the process and the relaunched campaign starts over with
+`attempted=0`. Nothing in the loop carries a count of how many times a stage
+has failed the same way, so "a person should look" has no way to make the pool
+wait for one.
+
+Two more things that are only visible from outside a single stage:
+
+- **The marker is in every checkout**, not just the campaign that earned it:
+  `numberdb-campaign-w2`, `-w3`, `-w4` and `numberdb-website` all hold
+  `agents/runs/codex-fallback` = `gpt-5.4 / xhigh`. Clearing one fixes one
+  worker. At 07:45 on 2026-09-23 `pgrep` showed one `workers.sh 4`, three live
+  `campaign.sh 200` processes and three triage runs in flight simultaneously,
+  for builds `20260923T073439Z`, `20260923T073936Z` and `20260923T074456Z` --
+  one turn-0 failure roughly every five minutes across the pool.
+
+- **"Costs $0" is true of the build and false of the loop.** Each free failure
+  buys one Opus triage run, and the measured one (`20260923T072538Z`) cost
+  **$3.8853** over 63 turns. At the cadence above that is on the order of $45
+  an hour for as long as nobody intervenes. The trap is where it lands: every
+  `build` row reads `0.0000`, so the spend shows up under `triage` and the
+  cost curve indicts the stage that is doing its job. The earlier note here
+  says a fallback that fails for free is more dangerous than one that fails
+  expensively; sharper still is that this one fails for free and bills the
+  watchman.
+
+So the remedy above needs doing in all four checkouts, and the `give_up`
+handoff is what makes it stick. Worth fixing at the same time, because it is
+what turns one bad run into a standing charge: `worth_resuming()` counts a 400
+`invalid_request_error` as a passing error. A 400 is the server saying this
+request will never be valid, and resuming on it cannot help.
+
+Evidence: 2026-09-23. `agents/runs/20260923T073936Z-build.log` (1534 bytes,
+the same four lines twice); `agents/runs/20260923T073936Z-verdict`;
+`agents/runs/campaign-w4.log:43652-43669`; `agents/campaign.sh:505-548`;
+`agents/workers.sh:120-135`.
+
 ## `COSTS.tsv` records the failed resume and not the turn that did the work
 
 What happened: the same run's ledger row is
