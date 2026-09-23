@@ -10570,3 +10570,61 @@ Evidence: 2026-09-23 11:08Z, triage of build `20260923T110741Z` in w3.
 T444 (3) built, the other two items claimed by w1 and w2 at 10:38Z. Triage spend
 in `COSTS.tsv` for 2026-09-23 is now $42.27 against $23.28 when the quota date
 was written down at 09:39Z -- twenty-one dead builds, none of them priced.
+
+## The refill is two days out, so emptying the fallback chain is the only move left
+
+Added at 12:15Z from the w3 triage of build `20260923T120643Z`, the
+twenty-sixth turn-zero codex build in this tree today. Three things the
+sections above could not have known.
+
+**The quota does not come back today.** Every note so far has said to clear
+`codex-fallback` "after the quota has refilled", which reads like a wait of
+hours. The first log of the series, `20260923T070848Z-build.log`, gives the
+date:
+
+    try again at Sep 25th, 2026 3:51 AM.
+
+Two days. So the marker cannot simply be deleted and the campaign left to
+recover: the first codex run after the deletion hits the gpt-5.5 limit again
+and writes `gpt-5.4` straight back. Until 25 Sep the only configuration that
+works is an empty `NUMBERDB_CODEX_FALLBACKS`, which makes `give_up=yes` fire on
+the real quota error and hands the stage to claude via `exit 6`. Order matters
+and step 2 is load-bearing: stop the supervisor, *change the chain*, then
+delete the four markers. Doing 1 and 3 without 2 buys about five minutes.
+
+**It is accelerating, and the $55/hour estimate is now low.** The cadence was
+one build per six minutes when that figure was written. At 12:07Z `ps` showed
+three triages live at once, for builds stamped `20260923T120602Z`,
+`20260923T120643Z` and `20260923T120702Z` — three in sixty seconds, each about
+$2, each reaching the same verdict. Recomputed from the four ledgers for runs
+since 07:33Z: **$249.90 over 215 runs**, of which **$196.52 is 102 triage
+runs**. In w2, w3 and w4 *every cent since 07:33Z is triage* — $47.06, $48.41
+and $49.61 against zero tables. The builds still price at $0.0000, so nothing
+in the spend curve points at the builds; the entire cost of a turn-zero outage
+is the diagnosis of it.
+
+**The claim on T445's title has moved, which the ninety-minute lapse predicts.**
+The 11:08Z note recorded the *Skewness and kurtosis of the Tracy–Widom
+distributions* item as claimed by w4 at 10:09Z. As of 12:10Z `agents/queue.py
+show 196` reports it **claimed by w1 at 2026-09-23T11:43Z**. The claim lapsed
+and was re-taken by a different worker while the draft sat still — so anyone
+resolving T445 must re-read the claim rather than trust a verdict written an
+hour earlier, and the holder will keep changing every ninety minutes for as
+long as the wall stands. T445 itself is unchanged: `"Numbers": []`, hidden,
+created 07:24Z, still holding a draft slot.
+
+One caution for whoever counts those slots. Sweeping `/api/table` to find
+zeta3's other drafts by comparing a keyed read against an anonymous one does
+not work naively: the anonymous side earns a `429` after a few score requests
+while the keyed side keeps answering, and a probe that reads a failed request
+as "absent" then reports drafts that do not exist — it claimed 55, including
+tables confirmed public. The generalisable half of that is a skill lesson and
+is filed as `agents/lessons/proposals/20260923T120717Z-triage.md`; the half
+that belongs here is simply that the number of draft slots zeta3 currently
+holds is **not known**, and one of the five is T445.
+
+Evidence: 2026-09-23 12:07–12:15Z, w3 triage of build `20260923T120643Z`.
+`ps aux` for pids 1950235 (`workers.sh 4`, up since Sep 22) and three
+`campaign.sh 200`; `codex-fallback` reading `gpt-5.4`/`xhigh` in all four trees
+with mtimes 07:25:01–07:34:27Z; ledger sums over
+`/home/ubuntu/numberdb-*/agents/runs/COSTS.tsv`.
