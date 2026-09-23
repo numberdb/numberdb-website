@@ -10118,3 +10118,44 @@ exceeds all building by $78.19. Dead builds run unbroken from 05:59:38Z to
 (T443, $11.39). 149 verdicts now exist across the four trees and all 149 say
 `stop`. Three of the four workers were running triage simultaneously while
 this was written and the fourth was in ideation; none was building.
+
+## A run cut by the caller's own `timeout` exits 0, because the pipeline ends in `grep`
+
+`agents/sage.sh` ends its remote command with
+
+    ... | grep --line-buffered -viE 'collecting static|...'
+
+so the exit status of the whole script is **grep's**, not the container's and
+not `timeout`'s. Wrapping the call as `timeout 1750 agents/sage.sh script.py`
+therefore produces, when the wrapper fires, a run that stops mid-sentence and
+reports `[exited with code 0]`.
+
+That is what happened on 2026-09-23 to the ideation run's first polyhedron
+computation. The script reported nine of thirteen solids and then stopped
+between two `print` calls inside the tenth, with exit 0. Read as a successful
+run it says "Sage has no dihedral angles for the truncated icosahedron", which
+is false; read correctly it says the call was cut at its wall clock. The only
+tell was that the last solid's output was half written.
+
+Two consequences for a run that uses `agents/sage.sh`:
+
+* **Do not trust exit 0 to mean the script finished.** Print an explicit last
+  line and check for it, or count the records you expected. A script that ends
+  with `print('DONE', n)` is checkable; one that ends by falling off the loop
+  is not.
+* **The inner timeout is the one that matters.** `NUMBERDB_TIMEOUT` (default
+  1800) is applied to `docker run` on the Sage host and does kill the
+  container. An outer `timeout` on this side only kills the local ssh or
+  pipeline; the note at `cleanup()` in `sage.sh` already says the remote work
+  survives it, and the exit code hides that it happened. Set
+  `NUMBERDB_TIMEOUT` rather than wrapping the call, or set the outer one
+  comfortably longer than the inner one so that the inner one is always what
+  fires.
+
+The same run also measured the queueing this box now has: two ideation Sage
+calls placed nine minutes apart, with another worker's preflight already
+running, and the second had printed nothing 20 minutes after it started. The
+named-slot mechanism (`NUMBERDB_SAGE_SLOT`) exists for exactly this and an
+ideation run does not set it, so it contends on the shared lock with every
+build. That is the right default for a job that makes two Sage calls; it is
+worth knowing before waiting on the second one.
