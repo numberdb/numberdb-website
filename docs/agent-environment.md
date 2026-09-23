@@ -8782,3 +8782,45 @@ which on 2026-09-23 returns 126 issues, every one `CLOSED`.
 Evidence: 2026-09-23, `python3 agents/table-ideas/screen.py requests` printed
 nothing and exited 0; the GitHub API answered the same query with an empty
 array and a 200.
+
+## A failed repair produces no verdict, so the day's own record undercounts itself
+
+Only the *build* stage's failure reaches triage. `campaign.sh:727-728` runs the
+repair and, when it fails, says so to the campaign log and carries on to the
+offer:
+
+    run_stage writer repair "Act on $critiques/$tid.md, ..." \
+        || say "the repair run failed; the critique stands and somebody should read it"
+
+`say` is `printf` to stdout. Nothing reads it, no `-verdict` file is written,
+and the loop continues. The same is true of the critique at line 714 and of
+the earlier repair arm at 442-444.
+
+On 2026-09-23 this happened once and cost a finished table its corrections.
+The ledger has exactly one repair error, `20260923T073411Z` (T443, the
+`gpt-5.4` 400 that also killed every build that day), and there is no
+`agents/runs/20260923T073411Z-verdict` in any of the four worktrees -- the next
+verdict on w2 is `20260923T073439Z`, the build that followed. T443 was built
+for $11.39 and critiqued for $4.82; `/home/ubuntu/numberdb-critiques/T443.md`
+is 12140 bytes with six findings, five of which the critic said it would act
+on, and `T443-repaired.md` does not exist. Every other table that day has both
+files.
+
+The consequence for anybody reading `agents/runs/*-verdict` as the record of
+what went wrong: it is the build column only. That day's refusals were 43
+builds **and one repair**; forty-two verdicts were written and each of them
+counted only the builds, so every "Nth consecutive failure" figure in them is
+low by the non-build stages. A stage other than the build can fail this way
+indefinitely without a single verdict appearing.
+
+The smallest fix is to call `run_triage` on the critique and repair failures
+too, or -- cheaper, since a repair failure does not need a judgement so much as
+a witness -- to append the stamp to a file the next triage reads, so the
+failure is at least counted.
+
+Evidence: 2026-09-23, `agents/campaign.sh` lines 442-444, 714 and 727-728;
+`agents/runs/COSTS.tsv` in all four worktrees, the single `repair ... error`
+row at `20260923T073411Z`; `ls /home/ubuntu/numberdb-*/agents/runs/20260923T0734*-verdict`
+returns only `20260923T073439Z-verdict`, which is a build;
+`/home/ubuntu/numberdb-critiques/` holds `T440.md` + `T440-repaired.md`,
+`T442.md` + `T442-repaired.md`, and `T443.md` alone.
