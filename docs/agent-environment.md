@@ -9858,3 +9858,66 @@ Evidence: 2026-09-23 16:13-16:22Z. `GET /api/claim?family=N` for N in 196-206,
 clock; build rate from the four `COSTS.tsv` ledgers deduplicated by `(started,
 stage, log)` since the first 400 at 07:34:39Z; `queue.py open` and `queue.py
 next`. Found while triaging `agents/runs/20260923T161248Z-build.log`.
+
+## Correction: waiting out the quota does not stop the `gpt-5.4` loop -- nothing clears the marker, and the 18 September recovery was a person
+
+`:9470` says "Waiting for 2026-09-25 03:51 UTC stops the symptom and restores
+the exact state of 18 September", and `:8557` reasons about clearing the marker
+*before* that date. Both leave the impression that the date is a way out. It is
+not. The quota is not in this loop at all, and a person who defers on that
+basis is choosing an open-ended $54/hour rather than a 35-hour one.
+
+Three facts, each checked rather than reasoned from:
+
+1. **No code deletes `agents/runs/codex-fallback`.** `grep -rn fallback` over
+   every `.sh`, `.py` and `Makefile` in the tree finds it written at
+   `run.sh:644` and `:655`, read at `:584-586`, and named in two comments --
+   `:480` and the `exit`-path echo at `:685` -- that ask *a person* to delete
+   it. There is no `rm` anywhere, in `run.sh`, `campaign.sh` or `workers.sh`.
+2. **It cannot be rewritten either, so it cannot drift back to a live model.**
+   Both writes are inside `if out_of_quota;` at `run.sh:635`, and that
+   predicate is FALSE for the 400 (`:9701`). Marker mtimes are 07:25:01,
+   07:25:03, 07:25:22 and 07:34:27 -- untouched across the 228 builds since.
+3. **Therefore the refill cannot be consulted.** `run.sh:52` defaults
+   `codex_model` to `gpt-5.5`, but `run.sh:592` overwrites it from the marker
+   whenever `NUMBERDB_CODEX_MODEL` is unset. On 2026-09-25 03:51 UTC the run
+   still asks for `gpt-5.4` and is still refused, because the refusal is
+   entitlement ("not supported when using Codex with a ChatGPT account"), not
+   usage. A full quota changes nothing.
+
+The precedent confirms it rather than contradicting it. The codex
+marker-reading block was added on 2026-09-10 by `4fafb562` (`git log -L
+583,600:agents/run.sh`), eight days *before* the only prior occurrence, so the
+marker was being read on 18 September too. The whole recovery is three ledger
+rows:
+
+    20260918T023210Z  build   codex   0 turns  $0.0000  gpt-5.4
+    20260918T023648Z  triage  claude  40 turns $2.1872  claude-opus-5[1m]
+    20260918T035403Z  build   codex   1 turn   $1.7774  gpt-5.5
+
+One failed build, **one** triage run, and 82 minutes later builds are back on
+`gpt-5.5`. With the marker present that is impossible -- so the marker was
+gone. A person read that verdict and acted the same night, and the 117 tables
+built over the five days that followed were bought by that action, not by a
+quota refilling. Today's occurrence has produced 224 triage runs, $392, and no
+action.
+
+What to change in how this page is read: the list of remedies at `:9685` is
+complete, but "or wait out the quota", wherever it appears above, is not a
+remedy and should be struck. The exits are all human: delete the four markers
+(plus `workers.stop`, so the supervisor does not keep spawning builds
+meanwhile); or set `NUMBERDB_CODEX_MODEL=gpt-5.5` in the supervisor's
+environment, which overrides the marker without deleting it (`run.sh:591`); or
+`NUMBERDB_WRITER=claude`, which needs no marker touched; or the durable
+one-string fix at `run.sh:80`. One qualification to `:9688`, which worried that
+removing the markers alone lets the supervisor restart into a short `gpt-5.5`:
+that is the *less* bad failure, because a real 429 sets `out_of_quota`, reaches
+`give_up` and `exit 6`, and hands the stage to claude -- which is the recovery
+path the 400 makes unreachable.
+
+Evidence: 2026-09-23, 16:20-16:26Z. `grep -rn 'fallback'` over all `.sh`/`.py`/
+`Makefile`; `agents/run.sh:52`, `:80`, `:584-600`, `:630-690`; `stat` on the
+marker in all four trees; `git log -L 583,600:agents/run.sh`; the four
+`COSTS.tsv` ledgers merged and deduplicated by `(started, stage, log)`, read
+for 2026-09-18 02:32-03:55Z and from 07:34:39Z today. Found while triaging
+`agents/runs/20260923T161908Z-build.log`.
