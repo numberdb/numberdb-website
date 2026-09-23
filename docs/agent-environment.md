@@ -8824,3 +8824,76 @@ row at `20260923T073411Z`; `ls /home/ubuntu/numberdb-*/agents/runs/20260923T0734
 returns only `20260923T073439Z-verdict`, which is a build;
 `/home/ubuntu/numberdb-critiques/` holds `T440.md` + `T440-repaired.md`,
 `T442.md` + `T442-repaired.md`, and `T443.md` alone.
+
+## The `table wanted` backlog is empty, and an empty backlog looks like a broken network
+
+`agents/table-ideas/screen.py requests` prints nothing and exits 0. That is
+correct: on 2026-09-23 there were **126 `table wanted` issues in
+numberdb-data and 0 of them open**, the last having been closed on
+2026-09-21. The only open issues were #133 and #137 (`enhancement`, both about
+extending an existing table) and #196 to #202, which are this stage's own
+`proposal` issues from earlier the same day.
+
+The problem is that the same empty output is what the script prints when it
+cannot reach GitHub, because `requests()` catches every exception and returns
+`[]`:
+
+    except Exception as trouble:                     # noqa: BLE001
+        return []
+
+`already_asked` in the same file is careful about this -- it returns
+`['could not ask GitHub (...)']` so that a failed question and an empty answer
+do not look alike -- and `already_here` has a comment explaining why that
+matters. `requests()` is the one that does not. A prompt that says "start from
+the open requests" therefore cannot tell "there is nothing left to build from"
+from "the network is down", which are opposite results.
+
+Until that is fixed, a run told to start from the backlog should confirm with
+the authenticated client, which distinguishes them:
+
+    gh issue list --repo numberdb/numberdb-data --label "table wanted" \
+        --state all --limit 400 --json number,title,closedAt
+
+`gh` is installed and authenticated here as `bmatschke` via `GH_TOKEN`;
+`screen.py` uses bare `urllib` with no token, so it is also subject to the
+60-per-hour unauthenticated core limit and the much tighter search limit,
+while `gh` is not.
+
+## Walking the T-numbers is the only way an agent sees the drafts
+
+`https://numberdb.org/drafts` returns the sign-in page when fetched with
+`Authorization: Bearer <key>`. The listing is behind a session cookie, not the
+API key, so a program with a key cannot read it.
+
+What does work is `numberdb.table('T445')`: the API serves a draft table to a
+key that may see it, so a walk of the T-numbers reaches drafts as well as
+published tables. On 2026-09-23 that walk answered for 444 tables between T1
+and T445, gaps at T75 and above T445, and the tail of it -- T441 to T445, the
+Tracy-Widom family built hours earlier -- is exactly the part `search_text`
+did not return (see the proposals lesson for this run). For an ideation run the
+practical consequence is that the duplicate check has to be the walk; the
+search alone will not show what the campaign built this morning.
+
+The walk costs about 450 requests. Do it with the key configured
+(`numberdb.configure(api_key=...)`) or it is throttled part way through, which
+is the failure `agents/verify-corpus.py` already documents for the same reason.
+
+## `pkill -f <name>.py` from the Bash tool kills the shell that runs it
+
+A call of the form
+
+    pkill -f checks3.py; cat > /tmp/checks4.py <<'PY'
+    ...
+    PY
+    python3 /tmp/checks4.py
+
+kills itself. `pkill -f` matches against the full command line, the shell's own
+command line contains the string `checks3.py` as the argument to `pkill`, and
+the shell dies before the heredoc is written. The visible symptom is two turns
+later and points somewhere else entirely:
+
+    python3: can't open file '/tmp/checks4.py': [Errno 2] No such file or directory
+
+and the earlier background job is reported as having failed with exit code
+144. Use `pkill -f '[c]hecks3.py'`, or kill by the job's PID, or -- since every
+long computation here is already started with `timeout` -- just let it expire.
