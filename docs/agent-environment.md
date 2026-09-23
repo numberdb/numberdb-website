@@ -8122,3 +8122,66 @@ Evidence: 2026-09-23. `agents/runs/20260923T073411Z-repair.log` and
 failure); `agents/runs/codex-fallback`; `agents/run.sh` lines 80, 556-559 and
 650-676; the last two rows of `agents/runs/COSTS.tsv`. Diagnosed in
 `agents/runs/20260923T073439Z-verdict`.
+
+## `stop` stops a campaign, not the pool, and every restart pays for a triage
+
+What happened: the entry above was written at 07:43 on 2026-09-23 by the
+triage of build run 20260923T073439Z, which returned the verdict `stop`.
+`campaign.sh` honoured it and exited. Twenty minutes later build run
+20260923T075538Z failed in this same worktree in the same two seconds for the
+same reason, and a second triage was started to look at it. By 07:58 all four
+workers were doing this at once: w2's 20260923T075538Z, w3's 20260923T075556Z
+and w4's 20260923T075617Z were three triage runs alive in `ps` simultaneously,
+each reading its own twelve-line copy of the same 400.
+
+Why: `campaign.sh:546` exits on `stop`, but `workers.sh` is a supervisor whose
+whole job is to put a stopped worker back -- "A campaign is a loop that ends
+... Every one of those is a fine reason to stop *that* loop and a poor reason
+for the machine to go quiet." It checks every `NUMBERDB_WORKERS_EVERY` seconds
+(300 by default) and starts a fresh `campaign.sh`, in which `attempted` is back
+to zero. So a `stop` verdict buys about five minutes.
+
+**That loop is not free, even though the failure is.** The build costs $0.0000
+because it dies before turn 1; the triage that looks at it costs $1.50-$3.89.
+Ledger rows since 07:00 on 2026-09-23, across the four worker trees:
+
+    w1 (numberdb-website)  2 zero-turn build failures,  3 triages, $7.19
+    w2                     3 zero-turn build failures,  1 triage,  $3.38
+    w3                     5 zero-turn build failures,  4 triages, $6.37
+    w4                     2 zero-turn build failures,  2 triages, $6.22
+
+About $23 in fifty minutes to build nothing, with four more triages in flight.
+The gpt-5.5 quota that started it does not refill until 2026-09-25 03:51 UTC.
+
+Two things follow that are worth stating separately from the fallback bug.
+
+**The marker is per-worktree, so the whole pool poisons itself independently.**
+`agents/runs/codex-fallback` lives in a gitignored directory inside each
+worktree, and the quota is a property of the shared ChatGPT account. So each
+worker hits the limit on its own, writes its own marker, and is stuck on its
+own; clearing one tree fixes one worker. On 2026-09-23 all four held
+`gpt-5.4` / `xhigh`. Check all four:
+
+    for d in ~/numberdb-website ~/numberdb-campaign-w[234]; do
+        printf '%s: ' "$d"; cat "$d/agents/runs/codex-fallback" 2>/dev/null || echo none
+    done
+
+**A triage run cannot fix what it diagnoses, by design.** The brief forbids it
+from changing anything but its verdict, and the repair here -- delete four
+marker files, edit `agents/run.sh:80`, restart the supervisor -- is all outside
+that. So a failure whose cause lives in the runner rather than in a table will
+be re-diagnosed, correctly and at full price, once per restart per worker until
+a person acts. Stopping the pool is the action that ends it:
+
+    touch agents/workers.stop        # workers finish and stay down
+
+Anything that writes a verdict of `stop` for a runner-level cause should say
+that in the verdict, because the verdict alone will not be read in time by
+anything that can act on it.
+
+Evidence: 2026-09-23. `agents/runs/20260923T073439Z-verdict` (verdict `stop`,
+07:43) followed by `agents/runs/20260923T075538Z-build.log` (07:55, identical
+failure); `agents/workers.sh` lines 1-45 and its `every` default;
+`agents/campaign.sh` lines 513-547; the `COSTS.tsv` of all four worker trees
+from 07:00 onwards; supervisor pid 1950235, up 11h20m at 07:58. Diagnosed in
+`agents/runs/20260923T075538Z-verdict`.
