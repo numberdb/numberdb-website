@@ -9274,4 +9274,4 @@ Evidence: 2026-09-23, triage of `20260923T103220Z-build.log`.
 `agents/queue.py open` (11 waiting, #196/#203/#204) and `show 196` at 10:33Z;
 `agents/queue.py` lines 280, 303, 484, 752-786; the `table` column of
 `agents/runs/COSTS.tsv` for `20260923T055938Z`; `GET /api/table?id=T441` keyed
-and anonymous at 10:40Z.
+and anonymous at 10:33Z.
