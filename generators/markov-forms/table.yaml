@@ -1,0 +1,141 @@
+# Draft document for T429, built from numberdb-data issue #193.
+# Created as a draft through the API with X-Draft: yes. Publishing is a
+# person's act on the site.
+Title: Markov forms
+Definition: >-
+  For a normalized Markov triple $(m_1,m_2,m)$, where
+  $m_1\leq m_2\leq m$ and $m_1^2+m_2^2+m^2=3m_1m_2m$
+  CITE{WikiMarkovNumber}, this table stores Markov's binary quadratic form
+  $f(x,y)=m x^2+(3m-2k)xy+(l-3k)y^2$ CITE{Cassels}. Here
+  $0\leq k\leq m/2$ is the unique integer satisfying
+  $k m_2\equiv\pm m_1\pmod m$, and $l=(k^2+1)/m$.
+Parameters:
+  m1:
+    type: Z
+    title: smallest member
+    display: $m_1$
+    constraints: >-
+      $(m_1,m_2,m_3)$ is a Markov triple with
+      $m_1\leq m_2\leq m_3$
+  m2:
+    type: Z
+    title: middle member
+    display: $m_2$
+    constraints: >-
+      $(m_1,m_2,m_3)$ is a Markov triple with
+      $m_1\leq m_2\leq m_3$
+  m3:
+    type: Z
+    title: largest member
+    display: $m_3$
+    constraints: >-
+      $(m_1,m_2,m_3)$ is a Markov triple with
+      $m_1\leq m_2\leq m_3$
+Comments:
+  comment-index: >-
+    The triples are normalized by sorting them as
+    $m_1\leq m_2\leq m_3$ and are listed by increasing $m_3$, then by
+    increasing $m_2$, then by increasing $m_1$. The table is keyed by the
+    full triple rather than by $m_3$ alone, so it does not use the Markov
+    unicity conjecture CITE{Aigner}.
+  comment-convention: >-
+    This table stores Markov's form itself, with leading coefficient $m_3$,
+    not its primitive part. Its content is $2$ when $m_3$ is even, and is
+    $1$ when $m_3$ is odd.
+  comment-k: >-
+    The two congruence signs give the residues $k$ and $m_3-k$ modulo
+    $m_3$; the closed range $0\leq k\leq m_3/2$ selects the stored form.
+    This gives $k=0$ for $(1,1,1)$ and $k=1$ for $(1,1,2)$.
+  comment-spectrum: >-
+    The associated value in the Markov and Lagrange spectra
+    CITE{WikiMarkovSpectrum} is
+    $\sqrt{9m_3^2-4}/m_3=3-2/(3m_3^2)+O(m_3^{-4})$, so these values
+    accumulate at $3$ from smaller values.
+Formulas:
+  formula-markov-equation: >-
+    The indexing triples satisfy
+    $m_1^2+m_2^2+m_3^2=3m_1m_2m_3$.
+  formula-discriminant: >-
+    If $f(x,y)=Ax^2+Bxy+Cy^2$ is the stored form, then
+    $B^2-4AC=9m_3^2-4$.
+  formula-markov-value: >-
+    The Markov value of the stored form is
+    $\sqrt{9m_3^2-4}/m_3$.
+  formula-content: >-
+    $\gcd(A,B,C)=2$ when $m_3$ is even, and $\gcd(A,B,C)=1$ when
+    $m_3$ is odd.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      from sage.rings.integer_ring import ZZ
+      from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+
+      R = PolynomialRing(ZZ, ("x", "y"))
+      x, y = R.gens()
+      m1, m2, m3 = ZZ(2), ZZ(5), ZZ(29)
+      if m3 == 1:
+          k = ZZ(0)
+      else:
+          r = (m1 * ZZ(pow(int(m2), -1, int(m3)))) % m3
+          k = min(r, (-r) % m3)
+      l = (k**2 + 1) // m3
+      m3*x**2 + (3*m3 - 2*k)*x*y + (l - 3*k)*y**2
+Similar tables:
+  - table: HREF{Hermite's_constants}[Hermite's constants]
+    relation: stores the analogous extremal constants for positive-definite quadratic forms
+  - table: HREF{Khinchin's_means}[Khinchin's means]
+    relation: records typical continued-fraction growth rather than the extremal quadratic irrational cases
+  - table: HREF{Eigenvalues_of_the_Gauss-Kuzmin-Wirsing_operator}[Eigenvalues of the Gauss-Kuzmin-Wirsing operator]
+    relation: concerns the Gauss map behind continued fractions rather than its badly approximable extremal values
+  - table: HREF{Pisot_numbers_less_than_the_golden_ratio}[Pisot numbers less than the golden ratio]
+    relation: stores another family of real algebraic numbers indexed by a canonical enumeration
+  - table: HREF{Minimal_polynomials_of_the_Pisot_numbers_less_than_the_golden_ratio}[Minimal polynomials of the Pisot numbers less than the golden ratio]
+    relation: stores the polynomial companions to that algebraic-number table
+Links:
+  WikiMarkovNumber:
+    title: 'Wikipedia: Markov number'
+    url: https://en.wikipedia.org/wiki/Markov_number
+  WikiMarkovSpectrum:
+    title: 'Wikipedia: Markov spectrum'
+    url: https://en.wikipedia.org/wiki/Markov_spectrum
+  OEISTriples:
+    title: 'OEIS A291694: Markov triples ordered by largest entry'
+    url: https://oeis.org/A291694
+  OEISK:
+    title: 'OEIS A305310: the parameter $k$ for Markov triples'
+    url: https://oeis.org/A305310
+References:
+  Cassels:
+    bib: J. W. S. Cassels, An Introduction to Diophantine Approximation, Cambridge Tracts in Mathematics and Mathematical Physics 45, Cambridge University Press, 1957.
+  Aigner:
+    bib: Martin Aigner, Markov's Theorem and 100 Years of the Uniqueness Conjecture, Springer, 2013.
+Keywords:
+  - Markoff forms
+  - Markov quadratic forms
+  - Markoff quadratic forms
+  - Markov spectrum forms
+Tags:
+  - number theory
+  - continued fractions
+  - algebraic
+  - polynomial
+Data properties:
+  type: Z[]
+  rigour: exact
+  complete: 'no'
+  complete-note: it holds every normalized Markov triple with $m_3\leq10^{12}$
+  rigour details: >-
+    The generator enumerates triples from $(1,1,1)$ by the Vieta involutions
+    of Formula CITE{formula-markov-equation}, sorts each triple into
+    normalized order, and keeps exactly the triples with $m_3\leq10^{12}$.
+    It computes $k$ by modular inversion in the congruence from the
+    definition, using exact integer arithmetic throughout. For every stored
+    row, the generator verifies the Markov equation, the divisibility of
+    $k^2+1$ by $m_3$, Formula CITE{formula-discriminant}, and
+    Formula CITE{formula-content}. The first triples were compared with
+    CITE{OEISTriples}, and the first forty $k$ values were compared with
+    CITE{OEISK}.
+Display properties:
+  number-header: $f_{m_1,m_2,m_3}(x,y)$
+Numbers: []
