@@ -9712,3 +9712,53 @@ began). `agents/queue.py:296-320,847-854`. Four ledgers since
 `20260923T072522Z`: 378 runs, $418.11 -- build 184 at $0.00, triage 183 at
 $331.37, ideas 10 at $86.74. The ideas spend bought the proposals the carousel
 is now turning without building.
+
+## The writer every verdict recommends has never once been run
+
+Forty-eight triages today have ended by offering `NUMBERDB_WRITER=claude` (or
+the empty `NUMBERDB_CODEX_FALLBACKS` that reaches the same place through `exit
+6`). Two facts about that recommendation had gone unchecked, and they cut
+against each other.
+
+**The claude harness is alive on this machine, and is the only thing that is.**
+Pool-wide since `20260923T072522Z`, across all four ledgers
+(`campaign-w2`, `campaign-w3`, `campaign-w4`, `website`): 396 runs, $432.92 --
+build 191 runs at $0.00 (not one reached turn 1), triage 190 runs at $346.18,
+ideas 10 at $86.74, repair 1 and stage 4 at $0.00. Every triage row is
+`engine=claude` and **190 of 190 have `result=success`**, on
+`claude-opus-5[1m]`, through the same `run.sh` and the same account that the
+codex builds fail under. The switch is therefore not a guess: the pool is
+already paying $346 a day for claude tokens, and spending all of them writing
+verdicts about the engine that cannot start.
+
+**But no build has ever run on it.** `COSTS.tsv` across the four ledgers holds
+**808 `build` rows since 2026-09-12 and all 808 are `engine=codex`** -- the
+claude branch of `run_agent` (`run.sh:470-505`) has never executed for this
+stage. It reads as complete: `--session-id`/`--resume`, `--permission-mode
+acceptEdits`, `--max-turns`, and the Bash deny list for
+`ssh`/`scp`/`rsync`/`docker`/`git push`/`scripts/ship.sh` that stands in for an
+allowlist (the comment there records why the allowlist was abandoned). There is
+also a pre-check that only non-triage claude stages meet -- `run.sh:288-301`
+refuses below `NUMBERDB_TOKEN_HARD_FLOOR=15` minutes of token and tries one
+refresh below `NUMBERDB_TOKEN_FLOOR=90` -- which no run has ever exercised in
+anger, because no claude stage but triage has ever run and triage is excluded
+from it by name.
+
+So the accurate form of the advice a person is being given is: *switch the
+writer to claude, and watch the first build instead of handing it to the
+supervisor loop.* It is the change most likely to work and the only engine
+demonstrably working; it is also a code path with no production history, so the
+first table built on it may need a fix. That is still strictly better than the
+current state, which guarantees nothing is built at all until the gpt-5.5 quota
+returns on 2026-09-25 03:51.
+
+Either form still has to be edited into `workers.sh` itself in all four
+checkouts with the pool stopped: `workers.sh:120` re-defaults
+`NUMBERDB_WRITER` to codex every 300s, so an environment variable exported
+beside the supervisor does not survive a tick.
+
+Evidence: 2026-09-23 15:12Z, triage of build `20260923T151208Z` (turn 0, HTTP
+400 on gpt-5.4, HEAD unmoved at `4ed10310`, tree clean; its claim is `Expected
+volume of the convex hull of $n$ uniform random points of a convex body` on
+#200 at 15:12Z). `run.sh:288-301,470-505`; `workers.sh:120`;
+`campaign.sh:58,95-103`; the four `agents/runs/COSTS.tsv`.
