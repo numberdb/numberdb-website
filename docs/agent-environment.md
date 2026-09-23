@@ -9339,3 +9339,65 @@ and without the `Authorization: Bearer` header from `NUMBERDB_KEY_FILE`:
 "Sign in - NumberDB" and carrying a password field. `numberdb_app/urls.py:81,84,92`;
 `numberdb_app/views.py:359,376-380,1645-1648,2634`;
 `numberdb_app/permissions.py:121,136,171,177,311-322`.
+
+## The gpt-5.4 standing charge, measured pool-wide: $55.91/hour, and triage is 79% of it
+
+What happened: triaging build run `20260923T141127Z` -- the same turn-0 400 as
+the runs above, nothing new in the log -- I totalled the four ledgers instead of
+just this checkout's. The note above estimates the cost of leaving the marker in
+place "on the order of $45 an hour", extrapolated from one $3.8853 triage at an
+assumed five-minute cadence. The estimate was conservative.
+
+Summing `agents/runs/COSTS.tsv` from `numberdb-campaign-w2`, `-w3`, `-w4` and
+`numberdb-website` for every row at or after the moment the marker was written
+(`20260923T072522Z`), a span of 6h46m:
+
+    338 runs   $378.52       ->  $54.91/hour
+      build    165 runs   $  0.00     all 165 at 0 turns
+      triage   163 runs   $299.12
+      ideas      9 runs   $ 79.40
+      repair     1 run    $  0.00
+
+165 consecutive builds pool-wide, not one of which used a single turn or
+produced a single table, and $299.12 of diagnosis bolted to them. Triage is 79%
+of everything spent since the marker landed. The day's pool total is $785.73
+over 400 runs. Only `ideas` is still doing real work, because it runs on claude.
+
+The run count drifts while you read it and the dollar figure does not, which is
+the fastest way to see the shape: over the eight minutes it took to write this
+section the build count went 162 -> 165 and the total stayed $378.52 to the
+cent, because every arriving build is another 0-turn $0.00.
+
+Why it is worth a line of its own: **the per-checkout view understates it by
+4x, and a triage run only ever sees its own checkout.** w4's ledger reads 40
+triages and $79.73 -- about $12/hour -- which is a reasonable-looking number
+that does not obviously demand anybody's attention. Each of the four workers
+computes that same reassuring quarter and writes it into a verdict. The number
+that would prompt action only exists if you add the four ledgers up, and nothing
+in the pipeline does: `sync-costs.sh` and `spend.py` are per-checkout, and
+`campaign.sh` has no view above one worker. So the pool has a cost that no
+participant can see, and the aggregate is the whole finding.
+
+What to do instead: when judging whether a standing failure is worth stopping
+the pool for, total the four ledgers first --
+
+    cat ~/numberdb-campaign-w{2,3,4}/agents/runs/COSTS.tsv \
+        ~/numberdb-website/agents/runs/COSTS.tsv |
+      awk -F'\t' '$1 ~ /^20/ && $1 >= "STAMP" {t+=$5; n++; c[$2]+=$5}
+                  END {printf "%d runs $%.2f\n", n, t;
+                       for (s in c) printf "  %-9s $%7.2f\n", s, c[s]}'
+
+-- and read the `build` line next to the `triage` line. `build $0.00` beside
+`triage $299.12` is the signature of this failure class: the stage that is
+broken is free, so it never appears in a spend curve, and the watchman it wakes
+carries the entire bill.
+
+The `$1 ~ /^20/` is load-bearing and easy to leave out. Concatenating four
+ledgers concatenates four header lines, and a header's first field is `started`
+-- which is lexically greater than any `2026...` stamp, so a bare `$1 >= STAMP`
+silently counts all four as runs and adds a `stage $0.00` row to the breakdown.
+
+Evidence: 2026-09-23 14:19Z, triage of build run `20260923T141127Z` (0 turns,
+$0.0000, HEAD unmoved at `7a47fb84`, tree clean, no stale queue claims, 13
+proposals still waiting). Four `COSTS.tsv` files, rows at or after
+`20260923T072522Z`; `agents/runs/codex-fallback` mtime 07:25:22.638Z.
