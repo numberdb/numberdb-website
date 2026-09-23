@@ -10151,3 +10151,66 @@ Checked at 16:43Z: `/api/claim?family=N` for N in 170..214 via
 `queue.py:_site`; `agents/queue.py open`; `queue.py show 200`; the driver
 narration in `agents/runs/campaign-w4.log`; `waiting()` and the `[~]`
 convention at `queue.py:752`.
+
+## The failing builds are free; the triage of them is 80% of the spend, and every alarm got quieter when the pipeline broke
+
+The notes above establish *why* every build dies at turn 0 on the `gpt-5.4`
+400. This one is about what it costs, because the shape of the cost is the
+reason nobody has noticed.
+
+Merging and de-duplicating the four `agents/runs/COSTS.tsv` ledgers and
+splitting today at `20260923T061859Z` -- the last build anywhere in the pool
+to pass turn 0 (w2, `gpt-5.5`, 1 turn, $11.39):
+
+                      runs    spend      builds past turn 0
+    before 06:18:59Z    59   $385.39     22 builds, $184.89, tables produced
+    after  06:18:59Z   504   $534.21     0
+
+and the $534.21 after the break, by stage:
+
+    build      246  $  0.00     all 0 turns, all gpt-5.4, all the same 400
+    triage     244  $428.36     all 245 verdicts `stop`
+    ideas       11  $ 97.36     screening more proposals for the loop to park
+    critique     1  $  4.82     nothing left to critique
+    repair       2  $  3.67
+
+**A build that dies on the model name costs nothing.** The 400 arrives
+before the first token, so the ledger row is `$0.0000` with `tokens_in=0`
+and `tokens_out=0`, 246 times over. The money is spent entirely on the
+stages that *react* to the failure: triage is 80% of it, and `ideas` is
+still running at $8.85 a time, manufacturing screened proposals for the
+turn-0 loop to claim and park.
+
+The consequence is the part worth remembering. **Every signal a person might
+watch moved in the reassuring direction when the pipeline stopped working:**
+
+* *Hourly spend fell by half.* $90-$115 an hour while tables were being
+  built (03Z-05Z, ~17 runs an hour at ~$5.70 each); a flat $48-$60 an hour
+  ever since (07Z-16Z, 40-60 runs an hour at ~$1 each). An alarm on cost
+  per hour would have gone **quieter** at the moment of the break.
+* *Run count rose.* 59 runs before the break in six hours, 504 after it in
+  ten. Throughput looks better than ever.
+* *Cost per run fell 5x.* Which is what a cheap fast pipeline looks like.
+* *Queue depth looks healthy.* `queue.py open` reports `13 waiting` --
+  see the note above for why it cannot see the 50 parked claims.
+* *`HEAD` moves every run*, because the runner commits its own cost line.
+* *Failures are non-zero exits*, which the supervisor is built to absorb:
+  `campaign.sh` exits on a `stop` verdict and `workers.sh` relaunches it
+  within its poll interval, twenty seconds apart per worker.
+
+The only measurement that distinguishes the last ten hours from the previous
+six is **tables produced**, which is zero. Nothing in the harness watches it.
+Anything built to notice this class of failure has to watch output, not cost,
+not throughput, not queue depth, and not whether the process exited zero.
+
+Steady state as of 16:52Z: **~$50 an hour, ~57 runs, no tables.** That is the
+price of each further hour in which nobody looks. Cumulatively since the
+break: 504 runs, $534.21, nothing built.
+
+Measured at 2026-09-23T16:52Z during triage of build `20260923T164949Z`
+(w4, family #196, Tracy-Widom densities; 0 turns, $0.0000, 400 on
+`gpt-5.4`). The three levers -- `rm agents/runs/codex-fallback` in all four
+checkouts, `touch agents/workers.stop` in `/home/ubuntu/numberdb-website`,
+or teaching `out_of_quota()` about a 400 so the claude handover can fire --
+are all still unpulled, verified at the same moment. Claim sweep at 16:52Z:
+50 standing, none expired, #196-#206, w1 15, w3 13, w4 12, w2 10.
