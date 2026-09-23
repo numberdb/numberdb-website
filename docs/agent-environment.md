@@ -10206,3 +10206,41 @@ tree clean). `awk` over the four `COSTS.tsv` deduplicated on
 `(started, stage, log)` and windowed from 07:34:39Z, grouped by stage;
 `ps -p 1950235`; `ls` on the marker in all trees; `python3 agents/queue.py open`
 -> 13 waiting. Diagnosed in `agents/runs/20260923T174430Z-verdict`.
+
+## Every verdict this outage has produced is `stop`: 72 of 72, and the tracked count for it said 19
+
+This corrects one number and adds no diagnosis, for the reason the entry above
+gives: `agents/runs` is gitignored, so a figure that lives only in a verdict is
+lost with it, and the next triage quotes the last one that reached a tracked
+file.
+
+`:8873` measures the unreachable breaker against "nineteen consecutive `stop`
+verdicts in `campaign/w2`", recorded at 11:02Z. At 17:51Z the count is **72 of
+72** -- `head -1` of every `agents/runs/*-verdict` in this tree, tallied; the
+word `stop` appears 72 times and no other word appears at all. They span
+20260923T073439Z to 20260923T174430Z, ten hours and ten minutes. The build
+triaged here, 20260923T175053Z, is the 73rd.
+
+That is the number worth keeping separate from the bill, because the two say
+different things. The bill (`$559.69` at 17:50Z, previous entry) says what the
+loop costs. This says the loop has been correctly diagnosed seventy-two
+consecutive times and restarted seventy-two consecutive times anyway -- so the
+open question is not what is wrong, and never was after 07:43Z. Nothing reads a
+verdict except `campaign.sh:520`, which exits the one process that asked for
+it; `workers.sh` then replaces that process. A triage's output has no other
+reader, which is why seventy-two correct answers have moved nothing.
+
+If you are triaging another of these: `:8095` and `:8479`-`:10093` are the
+mechanism and do not need re-deriving. Increment this count rather than
+restating the diagnosis, and check the remedy is still unrun before repeating
+it -- at 17:51Z it was (pid 1950235 up since Sep 22 20:38, all four workers
+restarted in one sweep 20s apart at 17:50:25-17:51:25, no `workers.stop` in any
+tree, marker `gpt-5.4`/`xhigh` mtime 07:34:27.331Z everywhere).
+
+Evidence: 2026-09-23, 17:51-17:55Z, triaging `20260923T175053Z-build.log`
+(twelve lines, two `turn.failed`, 0 turns, $0.0000, `resumed=yes`; `HEAD` still
+at the pre-run commit 7455bd87, working tree clean). `head -1 | sort | uniq -c`
+over all 72 `agents/runs/*-verdict`; `ps -eo pid,ppid,lstart,args` for the four
+`campaign.sh 200` processes, all parented to init; `python3 agents/queue.py
+open` -> 13 waiting, unchanged. Diagnosed in
+`agents/runs/20260923T175053Z-verdict`.
