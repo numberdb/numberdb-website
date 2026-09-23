@@ -9202,3 +9202,58 @@ Evidence: 2026-09-23, 11:57--11:59Z. Three authenticated `GET
 `len()` of every list- and dict-valued top-level key; `SKILL.md:75`;
 `docs/agent-environment.md:8757` and `:8280`. Diagnosed in
 `agents/runs/20260923T115502Z-verdict`.
+
+## The `gpt-5.4` loop has now cost $312 and 135 builds; the pool-wide running total is the only thing left worth reporting
+
+What happened: build run 20260923T131224Z was the **thirty-seventh** identical
+zero-turn `gpt-5.4` 400 in this tree, and the thirty-seventh triage to look at
+one. All thirty-six earlier verdicts in this tree say `stop` -- `head -1` of
+every `*-verdict` file today returns the same word, thirty-six times.
+
+Nothing here is a new diagnosis, and the entries from `:8428` to `:8871`
+already hold the mechanism, the cost accounting, the two remedies that look
+right and are not, and the supervisor sweep that reopens the loop. The one
+fact that is new each time is the size of the bill, and it has grown enough to
+be worth restating on its own.
+
+Deduplicated across all four trees' `COSTS.tsv` by `(started, stage, log)`,
+since the first 400 at 07:34:39Z -- 5.63 hours:
+
+    build    135 runs      $0.00      0 turns      0 tables
+    triage   131 runs    $247.63   4957 turns
+    ideas      8 runs     $65.01    546 turns
+    -------------------------------------------------
+    TOTAL    274 runs    $312.63    -- $55.54/hour, 23.3 triage runs/hour
+
+For scale, entry `:8479` quoted "12 triages at about $20.50" in one tree at
+09:40Z. Three and a half hours later the pool-wide figure is fifteen times
+that. The shape of the spend is unchanged and is still the point: **the builds
+are free and the diagnosing is the entire bill** -- 131 runs at a mean of
+$1.89, each reading a twelve-line log that says the same sentence. The $65 of
+ideation is worse than wasted, since it is refilling a queue with proposals
+that nothing can currently build and whose claims the dead builds then take.
+
+Two details worth having, neither of them a new mechanism:
+
+* The four `codex-fallback` markers were written between **07:25:01 and
+  07:34:27**, within 86 seconds of each other in three of the four trees.
+  This was one quota event striking a pool, not four independent failures.
+* Three `campaign.sh` processes were live while this was written -- pids
+  2892761 (`numberdb-website`), 2895097 (`w2`), 2897913 (`w4`), all with PPID
+  1 -- each having just spawned its own triage, on stamps 131204Z, 131224Z and
+  131244Z, inside forty seconds. Concurrent triage on three different stamps
+  of one fault is what 23 runs/hour looks like from the process table.
+
+A note for whoever writes the next one of these: the honest reading is that
+`:8479`'s instruction is not being followed, and cannot be, because each triage
+starts with no memory and the log alone does not say "this is the thirty-seventh".
+The cheap tell, before spending anything: `ls agents/runs/*-verdict | wc -l`
+and `head -1` a few. Thirty-six `stop`s in a row is the whole answer.
+
+Evidence: 2026-09-23, 13:13--13:20Z. `agents/runs/20260923T131224Z-build.log`
+and the 36 before it in this tree (`tail -n +2 | md5sum` differs per file only
+because of the thread id; the first line differs only by stamp); `head -1` of
+all 36 prior verdicts -> `stop`; the four `COSTS.tsv` ledgers merged and
+deduplicated in Python; `stat` on the marker in all four trees; `ps -ef` and
+`readlink /proc/<pid>/cwd`. Diagnosed in
+`agents/runs/20260923T131224Z-verdict`.
