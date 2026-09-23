@@ -8363,3 +8363,64 @@ claims in `numberdb-website/agents/runs/campaign-w1.log` and
 `numberdb-campaign-w3/agents/runs/campaign-w3.log`; `agents/queue.py:280`
 (`CLAIM_MINUTES = 90`); the four `COSTS.tsv` from 07:00Z; supervisor pid 1950235,
 up 12h30m. Diagnosed in `agents/runs/20260923T090759Z-verdict`.
+
+## `touch agents/workers.stop` only stops the pool from one directory, and it is not the one you are reading this in
+
+What happened: eight triage verdicts in this worktree now end by recommending
+`touch agents/workers.stop`, and the entry above makes it "the first item".
+Nobody has done it, and the pool has been running for twelve and a half hours.
+Before repeating the advice a ninth time it is worth checking that the advice
+works as written. It does not.
+
+The supervisor is pid 1950235, `bash agents/workers.sh 4`, up 12h40m. Its
+working directory is **`/home/ubuntu/numberdb-website`**, the main checkout on
+`main` -- not any of the three campaign worktrees. Its loop begins:
+
+    while true; do
+        for flag in agents/workers.stop agents/campaign.stop; do
+            if [ -e "$flag" ]; then
+                say "$flag is there; leaving the workers alone and stopping"
+                exit 0
+            fi
+        done
+
+`agents/workers.stop` there is a **relative path**, resolved against the
+supervisor's own cwd. So the one path that stops the pool is
+
+    /home/ubuntu/numberdb-website/agents/workers.stop
+
+and creating `agents/workers.stop` in `numberdb-campaign-w2`, `-w3` or `-w4`
+does nothing whatever: the supervisor never looks in those directories. That is
+the trap, because a verdict saying `touch agents/workers.stop` is read inside a
+campaign worktree, by somebody whose shell is already sitting in it, and the
+command will succeed, create a file, and change nothing. The file is gitignored
+(`.gitignore:221`), so it will not show up in `git status` to contradict them
+either -- they get silence from every direction.
+
+Two further properties of the flag, both wanted by anybody using it:
+
+* It is checked **once per loop**, and `every="${NUMBERDB_WORKERS_EVERY:-300}"`
+  (`workers.sh:45`), so the pool can take up to five minutes to notice.
+* It stops the *supervisor*, not the work in flight -- `leaving the workers
+  alone`. Runs already started finish; no new ones begin. Builds cost $0 and
+  triages about $1.90, so the tail after touching the flag is a few dollars,
+  not nothing.
+
+Note the line numbers differ between checkouts: the check is `workers.sh:257`
+in `numberdb-website` (on `main`, the copy actually running) and
+`workers.sh:185` in `numberdb-campaign-w2` (on `campaign/w2`). Read the
+running one.
+
+What to do instead: write the absolute path in the advice, not the relative
+one. `touch /home/ubuntu/numberdb-website/agents/workers.stop`, then confirm
+within five minutes that pid 1950235 is gone. Better still, `workers.sh` should
+resolve the flag against the directory the script lives in rather than the cwd,
+so that the documented command works from anywhere; until it does, every
+verdict that quotes the bare relative path is giving an instruction that
+silently fails for its most likely reader.
+
+Evidence: 2026-09-23, 09:18Z. `readlink /proc/1950235/cwd` =
+`/home/ubuntu/numberdb-website`; `numberdb-website/agents/workers.sh:257` and
+`:45`; `git check-ignore -v agents/workers.stop` -> `.gitignore:221`; neither
+flag present in any of the four trees. Found while triaging build run
+20260923T091438Z, the eighth identical zero-turn `gpt-5.4` 400 in this tree.
