@@ -9098,3 +9098,62 @@ possible that are impossible today. `snappy` being present is the precedent --
 it is in the image because two knot tables needed it.
 
 Evidence: `/tmp/sd_probe.py` under `agents/sage.sh`, 2026-09-23.
+
+## The key's allowance is a rolling hour, so triage's blindness comes and goes rather than deepening
+
+The note above at "The failure loop has spent the key's hourly allowance" ends
+by predicting that the next triage "will be worse off, because it will be the
+47th." That prediction is wrong, and it is worth correcting before somebody
+plans around it. The limit is 1000 requests per **rolling** 60 minutes
+(`numberdb_app/throttle.py`), so an hour after a spending spike the allowance
+is back whether or not the loop has calmed down.
+
+Measured: at 09:44Z on 2026-09-23 `GET /api/table?id=T441` with the zeta3 key
+answered `429 ... retry_after: 970`, three times a minute apart. At 10:18Z --
+thirty-four minutes later, with the loop still turning, four more dead builds
+and their triages in between -- the same request returned the document, and so
+did five more reads. The 58th triage could see what the 47th could not.
+
+What this means for a triage asked "what did it leave behind": **try the read**
+before falling back to a previous verdict's readings. The refusal is not a
+state the loop settles into; it is a bucket that empties when an ideas run
+sweeps the corpus (each screens every candidate against it) and refills an hour
+later. Two targeted reads cost nothing against a thousand -- what exhausts the
+bucket is a corpus walk or a thirty-id sweep, not a check of the two tables the
+verdict actually names. Taking the previous verdict's word for something a
+single request would settle is how a figure repeated through eleven verdicts
+stops being checked by anybody: this triage confirmed T441 at 903 entries and
+T443 at 1001 by asking, and both are still unpublished.
+
+Evidence: 2026-09-23. The 09:44Z 429s are recorded in the note above with
+`retry_after` 937, 876, 816. At 10:18-10:25Z from
+`/home/ubuntu/numberdb-website`, keyed `GET /api/table?id=T441` and `T443`
+returned 200 with their documents (T441's `Numbers` keyed `'1'`,`'2'`,`'4'` at
+301 values each; T443 1001 entries), and anonymous reads of both returned the
+"does not exist" reply, with `T444` and `T99999` as controls -- eight requests
+in all. `numberdb_app/throttle.py:57-62`, `88-106`.
+
+## The queue has begun a second lap: the same proposals, claimed and dropped twice
+
+The note at "A lapsed claim goes back into the queue, so the failure loop feeds
+itself" predicted this; it has now happened and can be timed. All five
+proposals of family #200 were claimed between 08:38Z and 08:45Z by builds that
+each died in a second on `gpt-5.4`. `CLAIM_MINUTES = 90`, so they lapsed, and
+at 10:14:35-10:15:15Z -- within forty seconds of the supervisor restarting w1,
+w2 and w4 -- three of the five were claimed again, by three builds that also
+died in a second. `queue.py open` still reads 8 waiting.
+
+The detail worth having: the queue serves the **oldest** open proposal, so as
+claims lapse the workers walk *backwards* through the day's batches. Build
+`20260923T100820Z` on w1 drew from `BATCH-2026-09-23T0856`; the next build on
+the same worker, `20260923T101439Z`, drew from `BATCH-2026-09-23T0812`. So the
+nine ideas batches written today ($82.16) do not form a queue that drains -- the
+loop re-enters the earliest of them every ninety minutes, and each lap buys a
+fresh set of ~$2 triages to judge proposals that have already been judged. The
+cost of a lapsed claim is not the lost table; it is the triage of losing it
+again.
+
+Evidence: 2026-09-23, `agents/queue.py show 200` at 10:20Z (claim times and
+holders); `agents/runs/workers.log` (w1 10:14:35, w2 10:14:55, w4 10:15:15);
+the `batch` column of `agents/runs/COSTS.tsv` for `20260923T100820Z` and
+`20260923T101439Z`, both w1; `agents/queue.py` `CLAIM_MINUTES`.
