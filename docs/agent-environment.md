@@ -4951,6 +4951,37 @@ Evidence: 2026-09-18. `agents/runs/20260918T023210Z-build.log` lines 140-147;
 `agents/runs/campaign-20260917T011039Z.log` lines 35190-35201;
 `agents/runs/codex-fallback`.
 
+Happened again on 2026-09-23, build run `20260923T062751Z`: same quota message
+(`try again at Sep 25th, 2026 3:51 AM`), same switch to gpt-5.4, same 400.
+Nothing above had been applied, and the marker is back.
+
+What this run adds is why it cannot recover on its own. The runner's two
+detectors read the tail of the log, and the 400 lands in neither's intended
+class:
+
+- `out_of_quota()` greps for `"api_error_status":429|rate.?limit|quota|usage
+  limit|too many requests`. `The 'gpt-5.4' model is not supported when using
+  Codex with a ChatGPT account.` contains none of those words, so it is
+  **false**. The fallback chain therefore never advances past gpt-5.4, and the
+  `give_up` branch -- the one that exits 6 so `campaign.sh` hands the stage to
+  the claude engine, which is the documented remedy above -- is unreachable.
+- `worth_resuming()` matches on `"type":"error"`, which the 400 envelope does
+  contain, so it is **true**.
+
+So every later codex stage reads the marker (`run.sh:583-598`), starts on
+gpt-5.4, takes the 400 at turn 0, is judged resumable, resumes on gpt-5.4, and
+takes the same 400 again. Two failures per stage, $0 each, one triage run
+each, and no path out of it: the condition that would hand the work to the
+other engine is precisely the one the error's wording defeats. Clearing the
+marker is still the fix; widening `out_of_quota()` -- or narrowing
+`worth_resuming()` so a 400 `invalid_request_error` is not treated as a
+passing error -- is what would stop it recurring a third time.
+
+Evidence: 2026-09-23. `agents/runs/20260923T062751Z-build.log`, last 6 lines;
+`agents/runs/COSTS.tsv` row 503; `agents/run.sh:556-559` (`out_of_quota`),
+`:565-568` (`worth_resuming`), `:583-601` (the marker), `:634-690` (the chain
+and the `give_up` handoff).
+
 ## `COSTS.tsv` records the failed resume and not the turn that did the work
 
 What happened: the same run's ledger row is
