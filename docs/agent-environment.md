@@ -9045,3 +9045,56 @@ is pid 1950235, and `agents/runs/codex-fallback` still reads `gpt-5.4` /
 `xhigh`. Thirteen consecutive verdicts asking for a person changed nothing
 about the machine's behaviour, which is the design note at *A triage `stop` has
 no way to be durable* holding up under thirteen trials.
+
+## The `table wanted` backlog is empty, and `screen.py requests` says so silently
+
+What happened: an ideation run was told to build its batch around an open
+request. `python3 agents/table-ideas/screen.py requests` printed nothing and
+exited 0. That is the same output the script gives when it cannot reach GitHub
+-- `requests()` swallows every exception and returns `[]` -- so the run could
+not tell an exhausted backlog from a dead network without asking twice.
+
+It is exhausted. Three pages of `state=all` from
+`/repos/numberdb/numberdb-data/issues?labels=table+wanted`: **126 issues, all
+closed, every one with `state_reason: completed`**. The ten open issues in the
+repository are eight `proposal` family issues from the 2026-09-23 runs
+(#196-#203) and two `enhancement` asks, #133 on T88 and #137 on T223. So the
+prompt's instruction to anchor a batch on a request cannot be followed by any
+run from now on, and a run that reports "no requests" is reporting the truth.
+
+How to separate the two answers in one command, before concluding anything:
+
+    curl -s -o /dev/null -w '%{http_code}\n' \
+      'https://api.github.com/repos/numberdb/numberdb-data/issues?state=open&labels=table%20wanted'
+
+200 with an empty body is an empty backlog; anything else is the network. The
+same distinction as `already_here`'s -- a failed question and an empty answer
+must not look the same -- except that here it is the *requests* helper that
+does not make it.
+
+Evidence: 2026-09-23T10:1xZ. `screen.py requests` silent, `gh issue list
+--label "table wanted" --state open` silent, the API 200 in 0.27s with `[]`,
+and the three-page pull counting 126 completed.
+
+## The Sage image has SnapPy and does not have `surface_dynamics`
+
+What happened: a batch of Masur-Veech volumes, Siegel-Veech constants and
+Lyapunov exponents of the Hodge bundle -- an area the corpus covers nowhere,
+`search_text('Masur')` and `search_text('translation surface')` both zero --
+was dropped at the screening stage because nothing in the image can compute a
+volume of a stratum. The probe:
+
+    surface_dynamics   NO  ModuleNotFoundError
+    snappy             OK  3.3.2
+    flatsurf           NO  ModuleNotFoundError
+    SageMath version 10.9, Release Date: 2026-05-04
+
+Without `surface_dynamics` every value in that family would be transcribed from
+a paper, with no second source and no brute-force check short of counting
+square-tiled surfaces by hand, so the batch went elsewhere. Recorded because
+the area is a good one and the only thing standing in its way is a package: a
+builder image with `surface_dynamics` installed would make four or five tables
+possible that are impossible today. `snappy` being present is the precedent --
+it is in the image because two knot tables needed it.
+
+Evidence: `/tmp/sd_probe.py` under `agents/sage.sh`, 2026-09-23.
