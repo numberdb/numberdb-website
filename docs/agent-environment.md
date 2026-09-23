@@ -8022,3 +8022,31 @@ before and after the tag cleanup. `python3 manage.py audit_table T424` failed
 with `ModuleNotFoundError: No module named 'django'`. Manual API checks
 resolved all four HREF targets and confirmed `special functions` has many
 tables while `elliptic function` has none.
+
+## The critique prompt still tells the run to use a SOCKS proxy that is not running
+
+What happened: the stage-three prompt opens with
+`curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/T1xx` and says
+"the proxy is needed". On this runner it is not there: nothing listens on
+1080, `ALL_PROXY` is empty and `NUMBERDB_REMOTE=local`, so every proxied
+request fails instantly with `curl: (7) Failed to connect to 127.0.0.1 port
+1080`. Direct `curl https://numberdb.org/...` answers 200 and reached
+everything the critique needed: `/skill`, `/preview`, `/api/table?id=`,
+`/api/table/<TID>/audit`, `/tables`, `/tags/<tag>`, Wikipedia raw wikitext.
+
+The notes above record this from 2026-09-16, 2026-09-17 and the T226 run, and
+each of those runs discovered it by listing the environment -- which is how
+the key leaked four times. It keeps happening because the prompt asserts the
+proxy before the run has any reason to doubt it.
+
+What to do instead: the first network call of a run should be the direct
+`curl`, not the proxied one, and the prompt should say so rather than naming
+the proxy. Until it does: when a proxied `curl` gives connection refused, drop
+`--socks5-hostname` and retry, and do not list the environment to find out
+why -- the answer is already in this file, and `[ -n "$ALL_PROXY" ] && echo
+set` is the whole diagnostic.
+
+Evidence: 2026-09-23, T429 critique (run `20260923T035333Z`). Two proxied
+`curl` calls to `/skill` and `/T429` failed with exit 7 and `HTTP 000`; the
+same two URLs answered 200 and 404 respectively with no proxy, and the 404 was
+the real answer (T429 is an unpublished draft), not a network failure.
