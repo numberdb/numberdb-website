@@ -2534,6 +2534,23 @@ Do not infer that the draft does not exist from a 404 on the rendered route.
 Evidence: T182, 2026-09-09; authenticated `GET /api/table?id=T182` returned
 the Mahler polynomial draft, while authenticated `GET /T182` returned 404.
 
+## Keyed API reads are rate limited too
+
+What happened: the T433 repair read a private draft with
+`GET /api/table?id=T433` and a valid zeta3 bearer token, and the API answered
+`429` with `{"error": "Rate limit exceeded (1000 requests per 60 minutes).",
+"retry_after": 829}`. The key was valid and the same draft route is the right
+one to use; the allowance had simply been spent earlier in the fixed window.
+
+What to do instead: a key raises the API limit; it does not remove it. Budget
+keyed corpus reads the same way as anonymous reads, batch what can be batched,
+and obey `Retry-After` before retrying. The rendered page route is unaffected
+by this limit, but it still will not show a private draft to a bearer token.
+
+Evidence: `/tmp/fetch_t433.py`, 2026-09-23, with
+`cat "$NUMBERDB_KEY_FILE" | python3 /tmp/fetch_t433.py`; the table API
+response was the `429` above, while `/T433` returned its ordinary draft `404`.
+
 ## A repair cannot infer findings when the critique file is missing
 
 What happened: the T183 repair task named `agents/critiques/T183.md`, but the
