@@ -7874,3 +7874,36 @@ Evidence: T415 build run, 2026-09-22. The queued command was
 `agents/sage.sh /tmp/run_falkner_checks.py .../generate.py`; process listing
 showed another worker holding `/tmp/numberdb-sage.lock` through a
 `timeout 10800 docker run` dry run.
+
+## The audit cannot report a dead sibling link until the moment it is too late
+
+What happened: T426's `Similar tables` links
+`HREF{Values_of_the_elliptic_nome}`, which names T425 -- a real table in the
+database, and an unpublished draft, so
+`curl https://numberdb.org/Values_of_the_elliptic_nome` answers 404 to
+everybody. `GET /api/table/T426/audit` reports `clean: true` anyway. The check
+exists and is guarded:
+
+    elif (table.published and public is not None and target not in public):
+        yield 'HREF{%s} points at a draft, which answers 404 to everybody; ...'
+
+(`numberdb_app/management/commands/audit_table.py:329`). The guard is right --
+a batch of sibling drafts links itself while it is being built, and a draft
+that complained about that would cry on every table in the batch. The
+consequence is that the finding can first fire only *after* T426 is published,
+and nothing re-audits a table at publication, so the one reader-visible fault
+in a sibling batch is reported to nobody at the moment it is created.
+
+What to do instead: a critique or a review of a draft that carries
+`Similar tables` should fetch each slug itself rather than trusting a clean
+audit -- `curl -o /dev/null -w '%{http_code}'` on each -- and say in its report
+which sibling must be published first. Two lines of shell; the audit will not
+do it for you on a draft. Publishing the batch in dependency order is the
+actual fix, and it is a fact about the batch that only the critique is in a
+position to write down.
+
+Evidence: 2026-09-23, T426 critique. `Values_of_the_elliptic_nome` 404,
+`Complete_elliptic_integral_of_the_first_kind_K` 200, audit
+`{"tid": "T426", "findings": [], "clean": true}`. T425 is
+"Values of the elliptic nome $q(m)$", read through
+`GET /api/table?id=T425` with the key.
