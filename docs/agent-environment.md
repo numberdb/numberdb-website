@@ -8674,3 +8674,47 @@ Evidence: 2026-09-23, 10:17Z. `head -1 agents/runs/COSTS.tsv`; the same awk over
 2,349 turns) and on column 5 ($144.08), against the $137.66 the fourteenth
 verdict computed correctly six minutes earlier. Diagnosed in
 `agents/runs/20260923T101459Z-verdict`.
+
+## `turns == 0` cannot detect a dead build: the test is a log whose only completed item is the metadata warning
+
+What happened: sixteen verdicts have established "this run did nothing" by
+quoting `0 turns, $0.0000` from its `COSTS.tsv` row. That column cannot carry
+the claim. The entry above ("`COSTS.tsv` records the failed resume and not the
+turn that did the work") documents a row of exactly the same shape --
+
+    0  0.0000  error  ...  resumed=yes  0  0  0
+
+-- whose *first* attempt made about seventy tool calls and created draft T320
+before the resume overwrote the row. A zero-turn row means "unmeasured", not
+"free" and not "did nothing", and any supervisor gate written on it would stop
+runs that worked and pass runs that did not.
+
+The distinguishing evidence is in the log, not the ledger. A build that died on
+the engine 400 has *no* completed item except the `Model metadata for
+\`gpt-5.4\` not found` warning it emits once per attempt; a build that did any
+work has more. Over every build log since the breakage at 07:34Z, in all four
+trees:
+
+    for f in /home/ubuntu/numberdb-{campaign-w2,campaign-w3,campaign-w4,website}/agents/runs/*-build.log; do
+      n=$(grep -c '"type":"item.completed"' $f)   # completed items
+      e=$(grep -c 'Model metadata for' $f)        # the per-attempt warning
+      o=$(grep -c 'not supported when using Codex' $f)
+      [ "$n" = "$e" ] && [ "$o" -ge 1 ] && echo "$f did nothing"
+    done
+
+58 logs, 58 that did nothing, no anomalies -- 2h46m of four workers with not
+one tool call and not one table. The same shape is what tells you the opposite,
+too: on the T320 run, `n` exceeds `e` by seventy.
+
+What to do instead: when reconciling what a run achieved, read its log for
+completed items and read the API for drafts it holds. Use `COSTS.tsv` for money
+(column 5), never for whether work happened. If a gate is ever wanted to break
+a loop like this one, gate on the log shape above -- N consecutive builds whose
+only completed item is the metadata warning means the engine is misconfigured,
+and that is a condition no amount of retrying resolves.
+
+Evidence: 2026-09-23, 10:24Z. The sweep above over 58 build logs from
+07:34Z; `agents/runs/20260923T102039Z-build.log` (12 lines, two attempts);
+`agents/runs/COSTS.tsv` rows for those runs; the T320 counter-example at
+`agents/runs/20260918T023210Z-build.log` item_69/item_70. Diagnosed in
+`agents/runs/20260923T102039Z-verdict`.
