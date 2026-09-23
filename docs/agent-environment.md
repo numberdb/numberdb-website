@@ -8342,3 +8342,69 @@ ran for three hours without anything flagging it.
 Evidence: 2026-09-23, triage of build run `20260923T081258Z`. Ledger rows
 from all four `agents/runs/COSTS.tsv`; `campaign.sh:514`, `:546`;
 `workers.sh:132`; marker still present and identical in all four checkouts.
+
+## An empty queue pulls the screener into the failure loop: every abandoned claim buys a $9.70 batch that is abandoned in turn
+
+What happened: the sixth run in this checkout to die at turn 0 on `The
+'gpt-5.4' model is not supported when using Codex with a ChatGPT account.`
+The two notes above diagnose it and say what to change. This one records the
+third paying stage, which neither of them could see because it takes about an
+hour of failures to appear.
+
+`campaign.sh` claims a proposal *before* it invokes the engine, so a build
+that dies at turn 0 leaves the claim behind. `queue.py open` counts only
+unclaimed proposals. So each free failure decrements the visible queue by one
+and returns nothing to it.
+
+The screener is a separate process in `numberdb-website` -- `workers.sh:131`
+sets `NUMBERDB_SCREEN=0` on the builders, so only it buys proposals. It loops
+every `NUMBERDB_SCREEN_EVERY` (600s) and screens a family whenever `waiting`
+is under `NUMBERDB_QUEUE_TARGET` (12; `screener.sh:28,33-63`). Nothing in that
+condition distinguishes a proposal consumed by a build from one claimed by a
+build that never started.
+
+The measured cycle, today:
+
+    07:42  screener buys BATCH-2026-09-23T0742 -> issue #199, 4 proposals
+           run 20260923T074230Z, ideas, claude, 75 turns, $9.7020
+    08:12  w4 claims #199's first proposal;  build dies at turn 0
+    08:13  w1 claims the second;             build dies at turn 0
+    08:19  w1 claims the third;              build dies at turn 0
+    08:19  w4 claims the fourth;             build dies at turn 0  <- this run
+    08:21  `queue.py open` -> 0 waiting;  `queue.py next` -> nothing waiting
+           an `ideas` run for BATCH-2026-09-23T0812 is already in flight
+
+Thirty-seven minutes from a $9.70 batch to an empty queue, four tables
+claimed and none attempted, and the screener starting again. The failure has
+stopped being free even in the narrow sense: it now consumes screening as
+well as triage.
+
+What the pool spent in the ninety minutes after its last useful run
+(06:52, w3's T442 repair), across all four checkouts:
+
+    triage     19 runs   $39.18
+    ideas       1 run    $ 9.70
+    critique    1 run    $ 4.82
+    repair      2 runs   $ 3.67
+    build      19 runs   $ 0.00
+                         -------
+                          $57.37     tables produced: 0
+
+Two things follow for anyone reading the ledger. The `ideas` spend is booked
+in `numberdb-website` and nowhere else, so a per-checkout cost view shows the
+screening as the screener's own appetite rather than as damage from builds in
+three other trees -- `$49.87` of ideas there today against `$0.00` in w2, w3
+and w4. And a queue-depth alarm cannot see this at all: `waiting` looks
+healthy for a few minutes after each screening, exactly as it would if the
+work were being done.
+
+What to do instead, beyond clearing the marker: have `campaign.sh` release
+its claim when the stage exits without having created a draft, so an
+unattempted proposal returns to the queue instead of leaving a hole the
+screener pays to fill. `queue.py stale` will eventually reclaim these, but it
+measures weeks and the loop measures minutes.
+
+Evidence: 2026-09-23, triage of build run `20260923T081937Z`. `queue.py show
+199`, `open`, `next`; ledger rows from all four `agents/runs/COSTS.tsv`;
+`screener.sh:28,33-63`; `workers.sh:131`; `campaign.sh:183-233`; the ideas
+run's cwd read from `/proc`.
