@@ -10050,3 +10050,40 @@ comment reads "Nothing was built, and the claim *stays*." The claim is not
 leaked by oversight; it is retained deliberately, for a failure shape the
 guard was not written to cover. `#205` accordingly still shows `- [~] ... ber`
 claimed by w4 at 15:43Z from a run that never reached turn 1.
+
+### Reading at 2026-09-23T16:35Z (build `20260923T163148Z`)
+
+Numbers only; the mechanism above is unchanged and is not re-argued.
+
+                          16:10Z       16:35Z
+    pool runs today        518          546
+    pool spend today       $887.54      $906.78
+    triage runs / spend    222/$395.52  236/$414.76
+    gpt-5.4 0-turn builds  224          239
+    verdicts, all `stop`   222          236
+
+Twenty-five minutes, $19.24, fourteen more `stop` verdicts, no builds.
+Triage is 46% of all spend. Neither `agents/workers.stop` nor
+`agents/campaign.stop` exists in any of the four checkouts;
+`agents/runs/codex-fallback` is present in all four, `gpt-5.4` / `xhigh`,
+unchanged since 07:25:22Z. Two supervisors are up, `agents/campaign.sh 200`
+at 3h30m and 3h10m.
+
+One thing the claim retention described above has now compounded into, which
+is worth recording because it is not visible from any single worker. Asking
+`/api/claim` for both open families at 16:35Z returns five claims, and every
+one of them belongs to a build that reached turn 0 and stopped:
+
+    #205  bei_\nu       w4  16:31:47Z   20260923T163148Z   0 turns
+    #205  ber_\nu       w4  15:43:09Z   20260923T154311Z   0 turns
+    #205  Struve H      w3  16:01:07Z   20260923T160...    0 turns
+    #206  Aut orders    w2  16:31:27Z   20260923T163129Z   0 turns
+    #206  Theta series  w1  16:31:07Z   20260923T163108Z   0 turns
+
+So the retention is per *failure*, not per worker: w4 is holding two at once
+because its second turn-0 build came before the first one's claim aged out at
+ninety minutes. Each failure draws a fresh proposal and parks it, which is
+why `agents/queue.py open` still says "7 waiting" while nothing whatever is
+being built -- the queue is being consumed at one proposal per failure and
+refilled by the recycle at the same rate. A reader looking at the queue depth
+for a sign of trouble will not find one there.
