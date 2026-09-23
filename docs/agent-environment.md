@@ -9909,3 +9909,88 @@ results with `%`-formatting and had to redo them (see
 Evidence: 2026-09-23, both `ModuleNotFoundError`s above; `/tmp/checks.py`,
 `/tmp/checks2.py`, `/tmp/checks3.py`, `/tmp/remez2.py`, `/tmp/cbf.py` under
 `agents/sage.sh`.
+
+## A zero-turn build *does* claim its proposal, and `queue.py stale` is not the check that would show it
+
+The 12:11Z note at *Triage has overtaken building* closes with a bullet that is
+wrong, and it is the bullet the four verdicts after it copied:
+
+> **The queue is not the problem and is not being consumed.** `queue.py stale`
+> is empty and 14 proposals wait [...] Zero-turn builds never claim, so nothing
+> lapses and nothing advances.
+
+Both halves are false, and the file already contradicts them two sections
+earlier at *A lapsed claim goes back into the queue*, which has it right. The
+correction matters because "nothing was left behind, I checked" is the one
+factual claim a verdict owes the next reader, and four of them have now
+asserted it from a check that cannot see the thing.
+
+**The claim is taken by the campaign, not by the build.** `campaign.sh:472`
+runs
+
+    python3 agents/queue.py claim "$in_family" "$proposal" --worker "$NAME"
+
+and `run_stage writer build` is line 489. So the claim is on the issue before
+the engine is invoked, and a build that dies in preflight with zero turns has
+still taken one. Read on numberdb-data#203 while triaging the build that
+supposedly took nothing:
+
+    - [~] Growth rates of the power-free languages -- claimed by w1 at 2026-09-23T13:00Z
+
+That is run `20260923T130006Z`: nought turns, $0.0000, dead on the `gpt-5.4`
+400. It claimed.
+
+**`queue.py stale` measures the screening date, not the claim.** The two are
+different functions with confusingly similar names:
+
+* `cmd_stale` (`queue.py:847`) compares `family['screened']` against
+  `STALE_WEEKS = 6`. It answers *which families were screened so long ago that
+  the corpus has moved under them*. It is empty today because every family was
+  screened today, and it would be empty if every proposal in the queue were
+  held by a dead worker.
+* `stale_claim` (`queue.py:296`) compares a claim's timestamp against
+  `CLAIM_MINUTES = 90`. That is the one that knows about abandoned claims, and
+  nothing on the command line calls it.
+
+So `queue.py stale` returning nothing is not evidence that no claim was taken
+and dropped. The check that shows it is the checklist itself, per family.
+
+**What it looks like right now.** Counting the checklist marks on the four
+families the queue is serving, at 13:05Z:
+
+    #202   6 proposals   6 claimed   0 unticked   0 built   -> `open` says 0 left
+    #203   6 proposals   6 claimed   0 unticked   0 built   -> `open` says 2 left
+    #204   5 proposals   3 claimed   2 unticked   0 built   -> `open` says 5 left
+    #205   6 proposals   0 claimed   6 unticked   0 built   -> `open` says 6 left
+
+`open` says 13 waiting, but 9 of those 13 are lapsed claims being served a
+second or third time; only #205's six have never been handed out. Two whole
+families are fully claimed by builds that did nothing.
+
+**And the churn outruns the expiry.** 38 builds started across the four
+worktrees in the 90 minutes to 13:05Z -- one claim each -- against 23 proposals
+in those four families. The workers take claims about 1.7x faster than
+`CLAIM_MINUTES` gives them back. `queue.py:270-274` records where that ends, in
+its own words:
+
+> on 2026-09-20 all four died within an hour and every remaining proposal was
+> held by one of them, so the queue read empty and each new campaign exited on
+> the banner.
+
+This is worth flagging ahead of time because **the symptom is about to change
+while the cause stays the same**. When the screener falls behind the churn, the
+campaign log stops saying `gpt-5.4 is not supported` and starts saying there is
+nothing waiting, and a campaign that exits on an empty banner exits 0. Whoever
+reads it then will be looking at a quiet, successful-looking pool with a dead
+engine underneath it, and the `gpt-5.4` trail in this file will not match what
+they see.
+
+Nothing here needs cleaning up: this run's claim frees itself at 14:30Z. It is
+the reading that needed correcting, not the state.
+
+Evidence: 2026-09-23, triage of `20260923T130006Z-build.log`. `campaign.sh`
+lines 464-489 and 640-710, `queue.py` lines 265-315, 385-395 and 847-856, read
+directly; `gh issue view 202|203|204|205 --repo numberdb/numberdb-data` with the
+checklist marks counted by regex; `queue.py open` and `queue.py stale` both run;
+build stamps in the 90 minutes to 13:05Z counted by `awk` over the four
+`agents/runs/COSTS.tsv` with `!seen[$1]++`.
