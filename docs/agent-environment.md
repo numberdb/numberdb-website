@@ -8122,3 +8122,40 @@ Two things about it, each of which cost a few minutes:
 
 Evidence: 2026-09-23, T437 critique (run `20260923T052215Z`). Seven `/preview`
 fetches, 1727 raw bytes through and 3751 refused; `/tmp/prev.py`.
+
+## Four more routes serve a private draft, and `/files/<TID>/<name>` hands over the generator to anybody
+
+What happened: the T440 critique needed the rendered page of a private draft.
+`/T440`, `/preview/T440`, `/bundle/T440`, `/discuss/T440` and `/blame/T440`
+all answer 404, with and without `X-API-Key`, which is `_refuse_a_draft`
+doing its job -- it tests `request.user`, and an API key is not a session.
+Four other routes answer **200 to an anonymous request** on the same draft:
+
+    /history/T440        title, tag list and the contributor list
+    /revisions/T440      200
+    /files/T440          title and the file manifest, with sizes and dates
+    /files/T440/generate.py    the whole source of the generator, 6983 bytes
+
+`views.table_files` and `views.table_file` (`numberdb_app/views.py:3126` and
+`:3217`) reach the table through `get_object_or_404(Table, tid=tid)` and never
+call `_refuse_a_draft`; `?rev=` works on them too. The commit that closed this
+on the table page ("a draft is not private: four routes serve it, because the
+guard is a call somebody has to remember", 29aa3617) is exactly right about
+why, and four more routes are still calling nothing.
+
+For a draft that is meant to be "invisible, in no listing, answers no search",
+this means the generator -- which carries the transcribed values in a Python
+literal -- is a public document from the moment the first revision lands.
+
+What to do instead: as a reader of a draft, `/files/<TID>/<name>` is a working
+way to read the attached generator without a session, and that is how this run
+read T440's. As a matter of the site, `_refuse_a_draft` wants calling from
+`table_files`, `table_file`, `table_history` and `revision_history`, or the
+guard wants moving somewhere a new view cannot forget it.
+
+Evidence: 2026-09-23, T440 critique (run `20260923T055843Z`). `curl -s -o
+/dev/null -w "%{http_code}"` with no key: `T440` 404, `preview/T440` 404,
+`bundle/T440` 404, `discuss/T440` 404, `blame/T440` 404, `edit/T440` 302,
+`history/T440` 200, `revisions/T440` 200, `files/T440` 200,
+`files/T440?rev=1` 200, `files/T440/generate.py` 200 (19,622 bytes of HTML
+around the 6,983-byte source).
