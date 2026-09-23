@@ -10685,3 +10685,52 @@ Nine fetches of `/tables?page=N`; `/tmp/probe_gaps.sh` over the 24 gaps;
 anonymous side of the first sweep answered `429` with
 `"Rate limit exceeded (60 requests per 60 minutes)"` and `retry_after` about
 1130 seconds, exactly as the note above predicts.
+
+## Deleting the four `codex-fallback` markers is load-bearing for its own reason: with one in place the run never produces a quota error, so an emptied chain is never consulted
+
+The note *The refill is two days out, so emptying the fallback chain is the
+only move left* gives the right remedy in the right order -- stop the
+supervisor, change the chain, then delete the four markers -- and warns that
+doing steps 1 and 3 without step 2 buys about five minutes. The converse is
+also true and the note does not say it, so a person following it could do
+steps 1 and 2, leave the markers, and get another hundred turn-zero builds.
+
+The reason is that the chain is only ever reached through `out_of_quota`. I ran
+`run.sh`'s two predicates verbatim against `20260923T125443Z-build.log`, the
+130th turn-zero build of the day:
+
+    out_of_quota    FALSE   (run.sh:556)
+    worth_resuming  TRUE    (run.sh:565)
+
+`out_of_quota` greps for `429`, `rate limit`, `quota`, `usage limit`. What a
+marker-pinned run actually dies of is
+
+    400 invalid_request_error
+    The 'gpt-5.4' model is not supported when using Codex with a ChatGPT account.
+
+which matches none of them. So `give_up` is never set, `exit 6` never fires,
+the `next_model_in` call at `run.sh:650` is never made, and the contents of
+`NUMBERDB_CODEX_FALLBACKS` -- empty or not -- are never read. `worth_resuming`
+matches `"type":"error"`, so the run resumes once into the same `400` and exits
+1.
+
+The emptied chain only does its work once a run reaches a *real* quota error,
+and it can only do that when it opens on `gpt-5.5`, which it does only when no
+marker is present. Both halves are necessary and neither is sufficient:
+
+* chain emptied, markers left  -> every run opens on `gpt-5.4`, dies on a
+  `400`, and the chain is never consulted. No change at all.
+* markers deleted, chain left  -> the first run opens on `gpt-5.5`, hits the
+  real limit, and writes `gpt-5.4` straight back. About five minutes.
+* both, supervisor stopped first -> the run opens on `gpt-5.5`, `out_of_quota`
+  is true, the chain is empty, `give_up=yes`, `exit 6`, and `campaign.sh`
+  hands the stage to claude.
+
+Evidence: 2026-09-23 13:00-13:05Z, w3 triage of build `20260923T125443Z`.
+The two predicates copied out of `run.sh` and run against that log; the four
+markers reading `gpt-5.4`/`xhigh` with mtimes 07:25:01Z, 07:25:03Z, 07:25:22Z
+and 07:34:27Z; `ps -eo pid,lstart,args` showing `workers.sh 4` (1950235, up
+since Sep 22 20:38) and four `campaign.sh 200` restarted at 12:54:38, 12:59:58,
+13:00:18 and 13:00:38. Ledger sums over the four trees from each one's first
+turn-zero build: 268 runs, **$324.16**, 130 turn-zero builds, 129 `stop`
+verdicts, no table.
