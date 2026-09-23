@@ -10359,3 +10359,33 @@ rather than the campaign emitting it — the same over-count already recorded fo
 
 Evidence: triage of `20260923T153607Z-build.log`. `run.sh:424,583-602`;
 counts as above.
+
+## The claim leak has two faults, and the documented one is the shallower
+
+The note above records that a zero-turn build keeps its claim because
+`campaign.sh` exits on a `stop` verdict *before* its release path. That is true
+and it is not the whole fault. Reordering the verdict `case` would not return a
+single claim, because the release path is also guarded on the exit status
+(`campaign.sh:686-687`):
+
+    elif [ "${status:-0}" = 2 ] || [ "${status:-0}" = 3 ] \
+            || [ "${status:-0}" = 5 ]; then
+            #The build never started -- a preflight refusal, not a decline
+
+A codex build refused at the model check is exactly what that comment describes
+-- `turns 0`, `tokens_in 0`, no tool call, no assistant text -- and `run.sh`
+exits **1** for it, which the guard does not list. So it reaches the `else`
+instead: "left $proposal claimed; it frees itself in ninety minutes". The two
+faults are independent and both have to go; fixing either alone leaves the
+queue filling with claims that never ran a turn.
+
+This matters because the `case` ordering is the visible one -- it is what the
+`=== stopping: stop` line in the campaign log points at -- and it is the one a
+reader of these notes would fix first, restart, and then find #202 and #203
+still held.
+
+Evidence: triage of `20260923T161847Z-build.log`, status 1, proposal "Best
+known packings of equal circles in an equilateral triangle" (#202), claimed by
+w1 at 16:18Z and still claimed after the `stop`. All six proposals of #202
+claimed, zero turns run against any of them; `queue.py stale` silent.
+`campaign.sh:545-548` (the exiting `*)` arm) and `campaign.sh:686-700`.
