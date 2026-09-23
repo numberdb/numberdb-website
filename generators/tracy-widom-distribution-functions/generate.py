@@ -250,9 +250,7 @@ class TracyWidomDistributionFunctions(numberdb.Generator):
                 yield {"beta": beta, "s": _fraction_text(s)}
 
     def digits_for(self, params):
-        beta = str(params["beta"])
-        _number, digits = _entry(beta, str(params["s"]))
-        return digits
+        return self.digits
 
     def value(self, params, digits):
         beta = str(params["beta"])
