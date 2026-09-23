@@ -11533,11 +11533,22 @@ at $0.00 (`turns 0` on every one, unmeasured rather than free, `:10382`) and
 triage is 61 runs at $118.00 -- the outage's entire measured cost is now the
 stage that diagnoses it.
 
-Still unrun at 2026-09-23 18:16Z, triage of build `20260923T181551Z`: the 70th
-turn-zero `gpt-5.4` build and the 70th consecutive `stop`. Loop cost since
-07:25Z is now 137 runs and $125.08, still entirely triage. One line updated per
-triage rather than a fresh section each time -- restating a diagnosis that is
-already written is the same loop, in the repository instead of the ledger.
+Still unrun at 2026-09-23 18:28Z, triage of build `20260923T182754Z`: the 71st
+turn-zero `gpt-5.4` build and the 71st consecutive `stop`. Loop cost in w3
+since 07:25Z is now 140 runs and $127.22, still entirely triage -- 70 builds at
+$0.00 against 70 triages at $127.22. Across the three readable ledgers, 440
+runs and $373.42 (w2 $115.50, w3 $127.22, w4 $130.70); w1's ledger is no longer
+readable from w3, so the four-tree figure in the acceleration note above cannot
+be refreshed as a like-for-like. One line updated per triage rather than a
+fresh section each time -- restating a diagnosis that is already written is the
+same loop, in the repository instead of the ledger.
+
+The 12:07Z three-at-once observation is a standing condition, not a spike: at
+18:28Z `ps` shows four `campaign.sh` supervisors started between 18:21:26 and
+18:28:06 and three triages live together, for builds `20260923T182731Z`,
+`20260923T182754Z` and `20260923T182813Z` -- three in ninety seconds, against
+three different pre-run commits. So the cadence figure to use when estimating
+the burn is the supervisor count, not the six-minute stage interval.
 
 Two details this round adds to the mechanism above, both read from `run.sh`
 rather than inferred. First, the marker does not merely survive, it *wins*:
