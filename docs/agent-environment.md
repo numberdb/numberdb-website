@@ -8897,3 +8897,85 @@ later and points somewhere else entirely:
 and the earlier background job is reported as having failed with exit code
 144. Use `pkill -f '[c]hecks3.py'`, or kill by the job's PID, or -- since every
 long computation here is already started with `timeout` -- just let it expire.
+
+## The failure loop has spent the key's hourly allowance, so triage cannot read what it is asked to report on
+
+The note above at "Keyed API reads are rate limited too" records a repair
+meeting `429 (1000 requests per 60 minutes)` on a draft it owned. That is now
+the normal state, and the loop is what spends it.
+
+At 09:44Z on 2026-09-23, with four builds dead and their triages running,
+`GET /api/table?id=T441` with the zeta3 key answered
+
+    429 {"error": "Rate limit exceeded (1000 requests per 60 minutes)",
+         "retry_after": 970}
+
+The builds cannot be the spenders: **50 of the 51 build runs since 05:59:38Z
+used zero turns and made no request at all** -- the only exception is
+`20260923T061859Z` on w2, which built T443 for $11.39. What is left running is
+everything the loop still reaches, and each of those stages reads the API hard:
+the ideas runs screen every candidate against the corpus (8 today, $73.24), and
+the **triages read it to answer "what did it leave behind"** -- 46 today,
+$89.21, of which 23 and $43.79 were in the single hour to 09:44Z, three or four
+of them concurrent at any moment.
+
+So the loop's shape is self-blinding: a build that dies in one second spawns a
+triage that costs $1.94 and a few dozen API reads, four workers do it in
+parallel, and within the hour the account's whole allowance is gone. This
+triage could not re-read T441 or T443, could not read `/api/claim`, and had to
+take the previous verdict's readings on trust for want of a request to check
+them with. The next one will be worse off, because it will be the 47th.
+
+The `retry_after` is the honest measure of it: 970 seconds of an hour already
+spent, at a moment when nothing whatever was being built.
+
+Evidence: 2026-09-23 09:44Z-09:47Z, `/tmp/probe.py` against the live site with
+`$NUMBERDB_KEY_FILE`; the same 429 body three times sixty seconds apart with
+`retry_after` 937, 876, 816. `agents/runs/COSTS.tsv` in all four worktrees for
+the build, ideas and triage rows quoted; `ps` at 09:45Z showing `agents/run.sh
+triage` for `20260923T093759Z`, `20260923T093841Z` and `20260923T093900Z` alive
+together, plus the `20260923T092122Z` ideas run started at 09:21:31.
+
+## Thirteen drafts are held against a ceiling of fifteen, so draft creation is the next wall behind gpt-5.4
+
+`draft_allowance` (`numberdb_app/permissions.py:311-322`) counts **every**
+unpublished table `created_by` the account -- including one already offered for
+review, since offering is not publishing -- and `may_create_drafts_through_api`
+refuses when that count reaches the ceiling. Two notes above establish that
+zeta3's ceiling is the deployed default of fifteen and not the `bulk drafts`
+hundred: the T146 creation answered `drafts_held = 6, drafts_remaining = 9`,
+and the T152 one `drafts_held = 2, drafts_remaining = 13`.
+
+The triage of `20260923T092540Z` established by probing with and without the key
+that **thirteen of T415-T445 were unpublished** at 09:26Z on 2026-09-23. All of
+T415-T444 were created by campaign builds on this key, and a draft is visible to
+its author and the board only -- zeta3 is not on the board -- so those thirteen
+are zeta3's own, and the true held count is thirteen *or more*, since drafts
+older than T415 would not have been in that range.
+
+That leaves at most two. The campaign creates a draft every ten minutes or so
+when it is healthy, and the count only falls when a person publishes one; the
+offer step is not even reached by a build that failed (see "The campaign's offer
+step cannot be reached by a build that failed"), so the drafts have been
+accumulating all day without anybody being asked to look at them.
+
+The consequence for whoever fixes `run.sh:80`: the engine is not the only wall.
+Two more tables after the fix, `POST /api/tables` starts answering 403 from
+`may_create_drafts_through_api`, with a message about drafts and nothing to do
+with gpt-5.4, and every build fails again in a new way. The fix for that one is
+not in this repository -- somebody has to review and publish the backlog, or
+put zeta3 in the `bulk drafts` group.
+
+What cannot be read from here: the exact held count. `Table.objects.filter(
+created_by=zeta3, published=False).count()` needs the server's database, and
+the only proxy this side has is `drafts_held`/`drafts_remaining` in the 201 body
+of `POST /api/tables` -- which only a build that successfully creates a table
+sees, and none has since 06:27Z.
+
+Evidence: 2026-09-23; `numberdb_app/permissions.py:268` (`DRAFTS_IN_FLIGHT`,
+default 15), `:288` (`BULK_DRAFTS_IN_FLIGHT`, default 100), `:298-322`;
+`numberdb/settings/base.py:391,398`; `numberdb_app/api.py:985,1056` for the
+refusal and the reported allowance; the thirteen-draft count and its method in
+`agents/lessons/proposals/20260923T092609Z-triage.md`; the two `drafts_remaining`
+readings in the notes at "The draft ceiling of fifteen is deployed" and "The
+draft ceiling is fifteen and the run prompt still says five".
