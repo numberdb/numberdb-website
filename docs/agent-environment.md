@@ -14158,3 +14158,67 @@ files in this worktree today and the first word of all 78 is `stop`.
 (22h32m). The T441 reconciliation named in the section above is still
 outstanding -- `agents/queue.py show 196` at 19:14Z still reads
 `[~] claimed by w1`.
+
+## A critique run cannot fetch the page it is asked to read: a draft renders nowhere, and `/preview` is capped by the URL length
+
+The critique prompt says to fetch `https://numberdb.org/T1xx` and read the
+rendered HTML, because three faults this year lived only in the rendering. For
+a draft that is not possible, and the failure does not announce itself as a
+permissions problem.
+
+`/T447`, `/preview/T447`, `/table/T447` and `/T447?draft=1` all answer **404
+with the ordinary "Not found" page, including with the owner's key in an
+`Authorization: Bearer` header**. The draft guard is `_refuse_a_draft`
+(`numberdb_app/views.py:1569` for the preview route), which asks whether the
+*logged-in user* may see the draft. An API key is not a session, so no header
+gets a page out of any of those routes. Only the API reads a draft for a key,
+via `_may_see_draft` in `numberdb_app/api.py:413`, and the API returns JSON.
+
+The one render route that needs no session is `GET /preview?table=<yaml>`,
+which renders whatever document is in the query string
+(`views.preview`, `numberdb_app/views.py:1553`). That works, and it is how
+T447's page was read. It has a hard ceiling: the whole document is 13.7 KB of
+YAML, and nginx answered
+
+    5951 bytes percent-encoded -> HTTP 400
+    7815 bytes percent-encoded -> HTTP 400
+    4523 bytes percent-encoded -> HTTP 200
+
+with `curl -G --data-urlencode "table@file.yaml"`, and a full-size attempt
+closed the connection outright (curl exit 56). So a document has to be read in
+pieces -- prose with References but a truncated parameter list, then the
+parameter list with two numbers, and so on -- and the pieces have to be chosen
+so that each one still contains what it is meant to test. Dropping `References`
+to save room makes every `CITE{}` in the rendered fragment print its raw key
+("in Tables 1 and 2 of ShurTables"), which looks exactly like the citation
+fault a critique is hunting for and is an artefact of the trimming. Keep the
+`References` block, with the `bib` strings shortened, in any fragment that
+carries prose.
+
+Two things follow for the prompt rather than for the site. A critique of a
+draft should expect to reconstruct the page, and should say in its report which
+parts of it were never seen whole. And the `<` hazard is still checkable this
+way: `$\beta<2$` reaches the fragment as `&lt;` and the rest of the comment
+survives, which is visible in the raw HTML of the fragment and not in the
+document.
+
+Evidence: 2026-09-23, critique of T447 (`NUMBERDB_RUN_ID=20260923T194051Z`).
+Five draft routes tried with a bearer token, all 404 with 11533-11554 byte
+bodies. `GET /api/table?id=T447` with the same token: HTTP 200, 12972 bytes.
+Four `/preview?table=` fragments at 3051, 3178, 3313 and 4523 encoded bytes:
+all HTTP 200.
+
+## The SOCKS proxy the critique prompt names does not exist on the builder; https to numberdb.org is direct
+
+`curl -s --socks5-hostname 127.0.0.1:1080 https://numberdb.org/T447` exits 7,
+"failed to connect", on `ip-172-31-47-40`. Nothing listens on 1080 (`ss -ltn`
+shows 22 and the two resolver ports and nothing else), `ALL_PROXY` is set to
+the empty string, and plain `curl https://numberdb.org/...` reaches the site
+and returns pages. The proxy line in the prompt is inherited from a setup where
+the agent ran somewhere without direct egress; on this box it is a red herring
+that costs a run its first fetch and can be read as "the site is down".
+
+Evidence: 2026-09-23, 19:4xZ, `NUMBERDB_MACHINE=ip-172-31-47-40`,
+`NUMBERDB_REMOTE=local`. Proxied fetch: exit 7, HTTP 000. Same URL direct: HTTP
+404 with an 11533-byte "Not found" page, which is the draft answering, not a
+network failure.
