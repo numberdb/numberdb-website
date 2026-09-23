@@ -7978,3 +7978,26 @@ lock-wait lines; `ps aux | grep -c '[s]age.sh'` was 22 at the time. The same
 run's `GET /api/table/T421/audit` answered `{"findings": [], "clean": true}`
 in under a second, and seven `/preview` requests rendered every section of the
 document.
+
+## `dry_run.py` needs a scratch runner under `agents/sage.sh`
+
+What happened: the stage-two prompt says to run
+`sage -python agents/table-build/dry_run.py path/to/generate.py`, but this
+deployment requires every Sage computation to go through `agents/sage.sh`.
+Calling `agents/sage.sh agents/table-build/dry_run.py path/to/generate.py`
+does not pass the generator path as an argument; it only mounts the extra file
+in `/work`. Calling it with only `dry_run.py` also loses the sibling
+`check.py`, because the wrapper mounts just the files it is given.
+
+What to do instead: create a scratch runner that imports `dry_run` and calls
+`dry_run.main(["/work/generate.py"])`, then pass all three files to the
+wrapper:
+
+    agents/sage.sh /tmp/run_dry.py \
+      agents/table-build/dry_run.py agents/table-build/check.py \
+      generators/.../generate.py
+
+Evidence: 2026-09-23, T424 build. The first wrapper run failed with
+`ModuleNotFoundError: No module named 'check'`; the second printed the
+`dry_run.py` usage text because no argument was forwarded. The scratch runner
+computed all 1000 entries and ran the exactness, prose and size checks.
