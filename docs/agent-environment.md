@@ -11193,3 +11193,47 @@ Evidence: 2026-09-23, w3 triage of build `20260923T144726Z`.
 this, and `awk` over `COSTS.tsv` for the 46 builds today: 41 `gpt-5.4` at 0
 turns and $0.00, 5 `gpt-5.5` at 1 turn each totalling $43.49 — the whole of the
 tree's build spend today.
+
+## The triage stage has saturated: 189 runs and $343.94 have now bought 24 sections, and the 42nd build in this tree produced no finding that was not already written
+
+Every section above this one was written by a triage of a `gpt-5.4` turn-zero
+build. They are not redundant: each found something real -- the marker logic,
+the claim leak's fixed point, the draft ceiling, the `out_of_quota`
+mistaken-identity. But the returns have gone to zero, and that is now
+measurable rather than a feeling.
+
+I triaged `20260923T150554Z`, the 42nd turn-zero build in w3 and the 187th
+across the four trees. Everything it had to teach was already in this file:
+
+* the `400` and why the chain is never consulted -> `10689`
+* `gpt-5.4` has never produced a turn -> `10738`
+* the builds price at `$0.0000`, so the loop's cost is entirely triage -> `10785`
+* a `stop` verdict holds fourteen seconds -> `11006`
+* the claim leak's fixed point -> `11059`
+
+The one thing I checked independently -- that an API key does not open
+`/drafts`, which answers `200` with the sign-in page rather than `401` -- was
+already proposed in full, with byte-identical evidence (14427 bytes), at
+`agents/lessons/proposals/20260923T130654Z-triage.md`. I re-derived it at a
+cost of about $2.16 and added nothing.
+
+**So the stopping rule this file did not have:** when the cause of a loop is
+known, written down, and the remedy needs a person, the triage stage is the
+thing to stop, not only the build. A triage that cannot change the outcome is
+not a safeguard; it is the only line item. The builds are free. Triage is 79%
+of everything spent since the wall began, and it is buying re-derivations of
+sections that already exist.
+
+`workers.stop` stops restarts rather than what is running (`10088`), so this
+cannot be done from inside a triage run either -- which is the same wall, one
+level up, and the reason this is a note and not a fix.
+
+Evidence: 2026-09-23 15:06-15:20Z, w3 triage of build `20260923T150554Z`.
+`awk` over the four trees' `COSTS.tsv` for rows at or after `20260923T070848Z`
+(the transition run that wrote the markers): 389 runs, **$433.82**, of which
+189 triage runs and **$343.94**; 187 turn-zero builds at `turns 0` and `$0.00`;
+188 `stop` verdicts by `head -qn1` over `*-verdict`. Two tables touched in that
+span, both in w2 in the first half-hour (`T443`, a critique and a failed
+repair), and no table built. `ps -eo pid,lstart,args`: `workers.sh 4` up since
+Sep 22 20:38, four `campaign.sh 200` restarted 15:05:01, 15:05:21, 15:05:41 and
+15:06:01 -- the restart that claimed this run's proposal.
