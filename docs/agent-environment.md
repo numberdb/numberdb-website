@@ -3114,6 +3114,13 @@ evidence that anything rendered: grep the piece for "Error while parsing".
 
 Evidence: 2026-09-13, `/tmp/crit226/p_[b-f].html` first run (error) and
 second run (rendered), made by `/tmp/crit226/pieces.py`.
+A prose piece needs the entry but not `Parameters`: the T448 critique of
+2026-09-23 sent each prose section with a bare `Numbers: ['3.14']` and no
+`Parameters` at all, and every section rendered in full, `CITE` and `HREF`
+resolved. That matters for the 4094-byte budget, because a table whose
+`Parameters` block is fourteen named values spends 1.5 KB of it on a block
+the prose does not use. `Parameters` is still required in the pieces that
+carry the table's own entries, as the T225 note says.
 
 ## The `env | grep` key leak happened again, with a different mask
 
