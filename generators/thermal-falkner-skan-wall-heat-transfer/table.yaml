@@ -3,13 +3,11 @@
 # Numbers: [] so generate.py can fill it once. Publishing is a person's act.
 Title: Wall heat transfer $-\theta'(0)$ of the thermal Falkner–Skan boundary layer
 Definition: >-
-  For a Falkner-Skan similarity solution $f$ of the wedge boundary layer
-  CITE{FSWiki}, this table gives the wall heat-transfer coefficient
-  $-\theta'(0)$ for the constant-property thermal boundary layer with uniform
-  wall temperature and no viscous dissipation CITE{RosalesValencia}. In the
-  wedge normalisation, with $m=\beta/(2-\beta)$, the temperature satisfies
-  $\theta''+\frac{m+1}{2}\mathrm{Pr}\,f\theta'=0$,
-  $\theta(0)=1$ and $\theta(\infty)=0$.
+  For a Falkner-Skan similarity solution $f$ CITE{FSWiki}, this table gives
+  the wall heat-transfer coefficient $-\theta'(0)$ for the constant-property
+  thermal boundary layer CITE{RosalesValencia}. The wedge and Hartree
+  normalisations are one number in several conventions, related in
+  CITE{formula-conversion}.
 Keywords:
   - Nusselt
   - Pohlhausen
@@ -69,6 +67,11 @@ Comments:
     coefficient. The exact ratio $-\theta'(0)/\mathrm{Pr}^{1/3}$ is not
     constant as $\mathrm{Pr}$ varies.
 Formulas:
+  formula-thermal-problem: >-
+    In the wedge normalisation, with $m=\beta/(2-\beta)$, the uniform-wall
+    temperature problem without viscous dissipation is
+    $\theta''+\frac{m+1}{2}\mathrm{Pr}\,f\theta'=0$, $\theta(0)=1$ and
+    $\theta(\infty)=0$.
   formula-quadrature: >-
     In Hartree variables, $-\theta_H'(0)=\left(\int_0^\infty
     \exp\left(-\mathrm{Pr}\int_0^\eta f_H(s)\,ds\right)\,d\eta\right)^{-1}$.
@@ -108,7 +111,6 @@ References:
     bib: Marco Rosales-Vera and Alvaro Valencia, Solutions of Falkner-Skan equation with heat transfer by Fourier series, International Communications in Heat and Mass Transfer 37, 761-765, 2010.
     doi: 10.1016/j.icheatmasstransfer.2010.05.013
 Tags:
-  - fluid dynamics
   - analysis
   - physics
 Data properties:

@@ -17,6 +17,9 @@ and then converted to the wedge normalisation by
 
 Run it under the repository's Sage wrapper:
 
+    $ sage -pip install numberdb
+    $ sage -python generate.py
+    $ sage -python generate.py --only beta=0,branch=upper,prandtl=0.7,normalisation=wedge
     $ agents/sage.sh generators/thermal-falkner-skan-wall-heat-transfer/generate.py
     $ cat "$NUMBERDB_KEY_FILE" | NUMBERDB_KEY_FROM_STDIN=1 NUMBERDB_PUBLISH=1 \
         agents/sage.sh generators/thermal-falkner-skan-wall-heat-transfer/generate.py
