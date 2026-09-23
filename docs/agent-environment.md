@@ -15158,3 +15158,71 @@ T444 and T445 as `[x]`, while `Values of the Tracy-Widom densities
 $f_\beta(s)$` remained `[~] claimed by w4 at 20:06Z`. A transient deletion of
 `agents/runs/batch-exhausted` showed it is tracked as an empty file here and
 was restored.
+
+## `/files/T<n>`, `/files/T<n>/<name>` and `/history/T<n>` serve a private draft to anybody
+
+What happened: the T453 critique needed to know whether `generate.py` was
+attached to a draft it could not render. `/T453` answers 404 anonymously, as a
+draft must. `/files/T453` answers **200** to a request with no key and no
+session: it prints the draft's title, its current revision date, the revision
+message, the file manifest, and a download link. `/files/T453/generate.py`
+answers 200 with the whole source highlighted, 20 KB of it, and
+`/history/T453` answers 200 with the title, the tag and the contributions
+page. The same three routes answer for T452, the sibling draft. Only the
+rendered table page and the API are guarded.
+
+The cause is in `numberdb_app/views.py`: `table_files` (line 3126) and
+`table_file` (line 3217) both open with `get_object_or_404(Table, tid=tid)`
+and never call `_refuse_a_draft`, which is the guard `table_by_tid` and
+`views.preview` use -- and whose docstring at line 1560 describes this exact
+bug being fixed for `/preview/T133`, "the one thing a draft is supposed not to
+do: it is invisible, answers no search, and is readable by its author and the
+board. This route loaded it by tid and asked nothing." The fix that landed on
+`/preview` was not carried to the files and history routes.
+
+What to do instead: as a run, nothing -- do not rely on it, and do not treat a
+200 from `/files/T<n>` as evidence that a draft is public. As a finding it is
+worth a person's attention: a draft's generator is the part an author is least
+expecting to be readable, and the T-numbers are consecutive and guessable.
+`_refuse_a_draft(request, table)` after the `get_object_or_404` in both views,
+and the same in the history view, with a test beside `test_preview_privacy.py`.
+
+Evidence: 2026-09-23, T453 critique. `curl -s -o /dev/null -w '%{http_code}'
+https://numberdb.org/files/T453` printed 200 with no `Authorization` header and
+no cookie jar, and the body's navbar shows "Login"; `curl
+https://numberdb.org/files/T453/generate.py` returned 20096 bytes containing
+`DEGREES_OF_FREEDOM = tuple(range(1, 31)) + (40, 50, 60, 100)`; `/files/T452`,
+`/files/T452/generate.py` and `/history/T453` all 200 the same way, while
+`/T453` and `/preview/T453` both 404 -- the latter even with the key in an
+`Authorization` header, since the HTML views read a session and not a bearer
+token.
+
+## A `/preview` slice that leaves out the section a `CITE{}` points at renders it as `CITE-broken`
+
+What happened: the T453 critique rendered a private draft section by section
+through `/preview?table=...`, the documented fallback on a builder box. The
+`Similar tables` piece came back with
+
+    <span class="CITE-broken" title="this table defines no reference by that
+    name">formula-normal</span>
+
+which reads on the page as "the row $\nu=1$ is the square of a standard-normal
+quantile by formula-normal" -- an internal key printed at the reader, and
+exactly the class of fault a critique is looking for. It is not a fault. The
+draft's `CITE{formula-normal}` points at a key in `Formulas`, which is
+legitimate (`test_audit.py` asserts it), and the piece that was sent carried
+`Similar tables` and no `Formulas`. Re-sending the same row with
+`formula-normal` alongside it renders `<a class="CITE" href="#formula-normal">(1)</a>`.
+The whole-document audit confirms it: it reports no dangling citation.
+
+What to do instead: when slicing a document for `/preview`, carry every section
+a piece's `CITE{}` and `HREF{#...}` resolve into, not just the section under
+test -- `Links` with a piece that cites a link, `References` with one that
+cites a paper, the one `Formulas` entry with one that cites a formula. And
+before writing up a `CITE-broken` as a finding, check the audit, which sees the
+whole document and is the authority on whether a citation dangles.
+
+Evidence: 2026-09-23, T453 critique. `/tmp/prev453/similar.html` (piece without
+`Formulas`) against `/tmp/prev453/similar_fx.html` (same row plus
+`formula-normal`); `GET /api/table/T453/audit` returned one finding and it was
+about the decimal grid.
