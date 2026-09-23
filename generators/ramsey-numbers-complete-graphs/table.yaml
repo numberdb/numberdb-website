@@ -1,0 +1,92 @@
+# Draft document for T439. Publishing is a person's act.
+Title: Ramsey numbers $R(k_1,\dots,k_r)$ of complete graphs
+Definition: >-
+  For a weakly increasing tuple $k=(k_1,\ldots,k_r)$, the Ramsey number
+  $R(k_1,\ldots,k_r)$ CITE{Rad} CITE{Wiki} is the least positive integer $N$
+  such that every $r$-colouring of the edges of $K_N$ contains a monochromatic
+  clique $K_{k_i}$ in some colour $i$.
+Keywords:
+  - Ramsey number
+  - complete graph Ramsey number
+  - multicolor Ramsey number
+  - graph Ramsey number
+Parameters:
+  r:
+    type: Z
+    title: number of colours
+    display: $r$
+    constraints: $r\geq 2$
+  k:
+    type: Symbolic
+    title: clique-size tuple
+    display: $k_1,\ldots,k_r$
+    constraints: a weakly increasing tuple of $r$ positive integers, written with commas
+Comments:
+  comment-order: >-
+    The tuple is stored weakly increasing because $R(k_1,\ldots,k_r)$ is fixed
+    under permutations of its arguments.
+  comment-convention: >-
+    The entries use the forcing convention: $R(k_1,\ldots,k_r)$ is the least
+    $N$ that forces a monochromatic clique. Some equivalent sources state the
+    largest order of a colouring that avoids all listed cliques, which is one
+    less.
+  comment-induced: >-
+    DS1 defines graph Ramsey numbers using subgraphs that are not necessarily
+    induced. For complete graphs this is the usual monochromatic clique
+    condition.
+  comment-bounds: >-
+    An entry written as an integer interval $[a,b]$ means that DS1 revision #18
+    records a construction proving $R(k_1,\ldots,k_r)\geq a$ and a proof of
+    $R(k_1,\ldots,k_r)\leq b$.
+  comment-lower-only: >-
+    DS1 revision #18 also records one-sided lower bounds for larger complete
+    graph Ramsey numbers. Those are not entries here because this table stores
+    integers and closed integer intervals.
+Formulas:
+  formula-recursive-upper: >-
+    $R(k_1,\ldots,k_r)\leq 2-r+\sum_{i=1}^r
+    R(k_1,\ldots,k_i-1,\ldots,k_r)$, with strict inequality when the right side
+    is even and at least one summand is even CITE{Rad}.
+Similar tables:
+  - table: HREF{Diagonal_Ramsey_numbers}[Diagonal Ramsey numbers]
+    relation: the two-colour diagonal entries $R(n,n)$ are the diagonal slice of this table
+Links:
+  Wiki:
+    title: "Wikipedia: Ramsey's theorem"
+    url: "https://en.wikipedia.org/wiki/Ramsey%27s_theorem"
+  Requested70:
+    title: "Requested in numberdb-data#70"
+    url: "https://github.com/numberdb/numberdb-data/issues/70"
+Tags:
+  - combinatorics
+Data properties:
+  type: Z
+  rigour: proven
+  repeats: HREF{Diagonal_Ramsey_numbers}
+  rigour details: >-
+    The exact values and integer intervals are transcribed from DS1 revision
+    #18 CITE{Rad}. For two colours, the lower endpoints through
+    $3\leq k\leq7$ and $k\leq l\leq13$ are from Table Ia; the upper endpoints
+    for $k=3$ are from Table Ia, and the upper endpoints for $4\leq k\leq7$
+    are the Angeltveit-McKay bounds in Table Ib. The multicolour exact values
+    and two-sided bounds are the values and ranges stated in section 6.1. The
+    generator checks the trivial identities $R(2,t)=t$, the diagonal rows
+    against T6, and the displayed recursive upper bound on every multicolour
+    interval whose upper endpoint it can check from earlier stored rows. The
+    width of an interval is ignorance about the exact Ramsey number, not
+    numerical error.
+  complete: 'no'
+  complete-note: >-
+    it holds $R(1,1)$, every trivial two-colour value $R(2,t)$ with
+    $2\leq t\leq13$, every DS1 two-sided entry $R(k,l)$ with
+    $3\leq k\leq7$ and $k\leq l\leq13$, and the complete-graph multicolour
+    exact values or explicit two-sided bounds stated in DS1 revision #18,
+    section 6.1
+Display properties:
+  number-header: $R(k_1,\ldots,k_r)$
+References:
+  Rad:
+    bib: >-
+      Stanislaw Radziszowski, "Small Ramsey Numbers", Dynamic Surveys,
+      Electronic Journal of Combinatorics, DS1 revision #18, April 24, 2026.
+    doi: 10.37236/21
