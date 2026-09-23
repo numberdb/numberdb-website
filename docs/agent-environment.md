@@ -10544,3 +10544,58 @@ $0.0000, the same 400 on `gpt-5.4`, verdict `stop` -- the 72nd in this worktree
 and all 72 the same). Levers unchanged: `codex-fallback` = `gpt-5.4`/`xhigh`
 mtime 07:25:22Z, `/home/ubuntu/numberdb-website/agents/workers.stop` still
 absent, `out_of_quota()` still 429-only; `workers.sh 4` up 21h40m, pid 1950235.
+
+## The four cost ledgers share a 415-row prefix, so concatenating them over all time counts $2,323.55 four times
+
+The recipe above -- `cat ~/numberdb-campaign-w{2,3,4}/agents/runs/COSTS.tsv
+~/numberdb-website/agents/runs/COSTS.tsv | awk ... $1 >= "STAMP"` -- is right,
+and it is right only because every use of it so far has had STAMP set to a
+moment today. It has no de-duplication in it, and the four ledgers are not
+disjoint.
+
+They share a **415-row prefix**, identical on `(started, stage, cost_usd)`,
+running from `20260913T053845Z` to `20260919T204428Z` and worth **$2,323.55**.
+That is the campaign's history from before the worktrees diverged, copied into
+each checkout; every `campaign` value in it is a dated stamp rather than a
+worker name, and `w2`/`w3`/`w4`/`w1` rows begin only after it. Measured against
+w4, w2 and w3 and `numberdb-website` each share exactly the same 415 rows.
+
+So over all time the naive concatenation reports
+
+    naive    2692 rows   $12,939.86
+    deduped  1447 rows   $ 5,969.21
+
+-- a $6,970.65 overcount, because the shared prefix is counted four times
+instead of once. Today's window is safe: for rows at or after
+`20260923T000000Z` the four ledgers are disjoint, one worker each, 0 shared
+`(started, stage)` pairs, so `$1015.52` for the day and `$608.31` since the
+marker are honest sums and need no de-duplication.
+
+Two things to know before widening the window past 2026-09-19:
+
+* **De-duplicate on `(started, stage)`, not on `started`.** A stamp alone
+  collides between live workers: `20260923T175752Z` is a w3 `triage` (claude,
+  16 turns, $0.7149) *and* a w4 `build` (codex, 0 turns, $0.0000). Keying on
+  the stamp would discard one of two genuinely different runs. Adding
+  `session` to the key does not work either -- it is empty on some rows and
+  differs between copies of the same old run.
+* **Check the assumption rather than inheriting it.** One line does it:
+
+      comm -12 <(awk -F'\t' 'NR>1{print $1"|"$2}' A/COSTS.tsv | sort -u) \
+               <(awk -F'\t' 'NR>1{print $1"|"$2}' B/COSTS.tsv | sort -u) | wc -l
+
+  Zero over the window you care about means the plain `cat` is safe for it.
+
+Why it matters beyond the arithmetic: the whole point of the earlier note is
+that the per-checkout view understates the pool by 4x and only the aggregate
+prompts action. A reader who takes that lesson, widens the window to "the whole
+campaign" to see the trend, and reads $12,939.86 has over-corrected by the same
+factor in the other direction -- and an aggregate nobody trusts is no better
+than one nobody computes.
+
+Measured 2026-09-23 18:39Z during triage of build `20260923T183411Z` (w4,
+family #197, "Quantiles of the $F$-distribution", 0 turns, $0.0000, the same
+400 on `gpt-5.4`, verdict `stop` -- the 74th in this worktree). The ledgers
+themselves are gitignored (`.gitignore:167`), so these row counts are of the
+files on this disk at that moment and will have grown by the time anyone reads
+this; the 415-row shared prefix will not, because it ends on 2026-09-19.
