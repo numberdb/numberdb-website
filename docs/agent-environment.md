@@ -8437,3 +8437,43 @@ Evidence: 2026-09-23, triage of build run `20260923T084023Z`. `queue.py show
 200`, `open`, `next`; ledger rows from all five `agents/runs/COSTS.tsv`;
 `pgrep -af` showing three concurrent triage runs and the `ideas` run for
 `BATCH-2026-09-23T0837`.
+
+**The drain has overtaken the refill, and the batches are getting thinner.**
+Measured one cycle later again, 2026-09-23 09:00. The screener bought
+`BATCH-2026-09-23T0837` at 08:37 for `$5.9129` -- issue #201, five proposals.
+Four of them were claimed between 08:56:00 and 08:57:01, by w4, w1, w2 and w3,
+one per failed build; none was attempted. `queue.py open` reports `1 waiting`
+against a target of 12, and an `ideas` run for `BATCH-2026-09-23T0856` was
+already in flight.
+
+Three cycles, in order: a batch emptied in 37 minutes, then three-fifths of one
+in 2 minutes, then four-fifths of one in 61 seconds. The screening interval has
+tracked it down -- 08:12, 08:37, 08:56: thirty minutes, twenty-five, nineteen
+-- and the batches have got **cheaper** as it hurries: `$9.7020`, `$8.1403`,
+`$5.9129`. That last part is the new finding and the one worth acting on: the
+screener is not just paying for the damage, it is being driven to screen faster
+and thinner, so the proposals it does produce are bought with less work each
+time. Seven `ideas` runs today, `$63.92`, an eighth running.
+
+The practical consequence: while the builders cannot build, pausing
+`agents/screener.sh` is worth more than any other single intervention except
+deleting the marker, because every proposal it buys is claimed and discarded
+inside a minute, and the quality of what it buys is degrading meanwhile.
+
+Pool-wide since the last successful codex run (06:52, w3's T442 repair), now
+over two hours:
+
+    triage     27 runs   $ 52.42
+    ideas       3 runs   $ 23.76
+    critique    1 run    $  4.82
+    repair      1 run    $  0.00
+    build      29 runs   $  0.00
+                         --------
+                          $ 81.00     tables produced: 0
+
+Thirty `gpt-5.4` turn-0 refusals in that window; thirty-two today.
+
+Evidence: 2026-09-23, triage of build run `20260923T085621Z`. `queue.py show
+201`, `open`; ledger rows from all five `agents/runs/COSTS.tsv`; `pgrep -af`
+showing four `campaign.sh`, the `screener.sh`, the `ideas` run for
+`BATCH-2026-09-23T0856` and two concurrent triage runs.
