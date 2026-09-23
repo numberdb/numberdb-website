@@ -1,0 +1,125 @@
+Title: Values of the Tracy-Widom distribution functions $F_\beta(s)$
+Definition: >
+  For $\beta\in\{1,2,4\}$, $F_\beta(s)$ is the Tracy-Widom distribution
+  function of the scaled largest eigenvalue in the Gaussian ensemble with
+  Dyson index $\beta$ CITE{WikiTW}. The normalisation is the soft-edge
+  convention in which $F_2(s)$ is the Airy-kernel Fredholm determinant
+  CITE{Bornemann}.
+Keywords:
+- Tracy-Widom distribution
+- Tracy Widom distribution
+- Tracy-Widom distribution function
+- random matrix theory
+- Painleve II
+- Painlevé II
+- Hastings-McLeod solution
+- largest eigenvalue distribution
+Parameters:
+  beta:
+    type: Symbolic
+    title: Dyson index
+    display: $\beta$
+    values:
+      "1": $1$, GOE
+      "2": $2$, GUE
+      "4": $4$, GSE
+  s:
+    type: Q
+    title: argument
+    display: $s$
+    constraints: $s\in\mathbb{Q}$
+Comments:
+  comment-normalisation: >
+    The table uses the Tracy-Widom scaling in which $F_2$ is given by
+    CITE{formula-f2}. For $\beta=4$ this is the $N\times N$ quaternionic GSE
+    convention: $F_4(s)$ is given by CITE{formula-determinants} with the
+    argument $\sqrt2s$ on the right hand side. In the alternative
+    $2N\times2N$ complex convention the $\sqrt2$ is omitted, so its argument
+    is $\sqrt2s$ in this table's convention.
+  comment-airy: >
+    The Airy function $\operatorname{Ai}$ appears both in the Fredholm
+    determinant kernel and in the boundary condition for the Hastings-McLeod
+    solution. It is tabulated in
+    HREF{Values_of_the_Airy_function_of_the_first_kind}[the table of Airy
+    function values].
+Formulas:
+  formula-airy-kernel: >
+    The Airy kernel is
+    $K_{\operatorname{Ai}}(x,y)=\frac{\operatorname{Ai}(x)\operatorname{Ai}'(y)-\operatorname{Ai}'(x)\operatorname{Ai}(y)}{x-y}$.
+  formula-f2: >
+    $F_2(s)=\det(I-K_{\operatorname{Ai}}\!\upharpoonright_{L^2(s,\infty)})$
+    CITE{Bornemann}.
+  formula-t-kernel: >
+    Let $T_t$ be the operator on $L^2(0,\infty)$ with kernel
+    $T_t(x,y)=\operatorname{Ai}(x+y+t)$.
+  formula-determinants: >
+    $F_1(s)=\det(I-T_s)$, $F_2(s)=\det(I-T_s)\det(I+T_s)$, and
+    $F_4(s)=\frac12(\det(I-T_{\sqrt2s})+\det(I+T_{\sqrt2s}))$
+    CITE{Bornemann}.
+  formula-painleve: >
+    Equivalently, if $q$ is the Hastings-McLeod solution of
+    $q''(s)=sq(s)+2q(s)^3$ with $q(s)\sim\operatorname{Ai}(s)$ as
+    $s\to+\infty$, then
+    $F_2(s)=\exp\left(-\int_s^\infty (x-s)q(x)^2\,dx\right)$ CITE{Bornemann}.
+Programs:
+  program-python:
+    language: Python
+    code: |
+      import numpy as np
+      from scipy.linalg import det
+      from scipy.special import airy
+
+      nodes, weights = np.polynomial.legendre.leggauss(100)
+      x = 24.0 * (nodes + 1.0) / 2.0
+      rootw = np.sqrt(24.0 * weights / 2.0)
+      kernel = airy(x[:, None] + x[None, :])[0]
+      matrix = rootw[:, None] * kernel * rootw[None, :]
+      F1_at_0 = det(np.eye(100) - matrix)
+Similar tables:
+- table: HREF{Values_of_the_Airy_function_of_the_first_kind}[Values of the Airy function of the first kind $\operatorname{Ai}(x)$]
+  relation: gives the Airy function in the Fredholm determinant kernel and in the Hastings-McLeod boundary condition
+- table: HREF{T379}[Random-matrix factors $g_G(k)$ in the moments of characteristic polynomials of unitary, orthogonal and symplectic matrices]
+  relation: is another random-matrix table involving the unitary, orthogonal and symplectic symmetry types
+Links:
+  WikiTW:
+    title: "Wikipedia: Tracy-Widom distribution"
+    url: https://en.wikipedia.org/wiki/Tracy%E2%80%93Widom_distribution
+  WikiRMT:
+    title: "Wikipedia: Random matrix"
+    url: https://en.wikipedia.org/wiki/Random_matrix
+  DLMFPainleveII:
+    title: "DLMF 32.11: Painleve transcendents"
+    url: https://dlmf.nist.gov/32.11
+References:
+  Bornemann:
+    bib: >
+      Folkmar Bornemann, On the numerical evaluation of distributions in
+      random matrix theory: a review, Markov Processes and Related Fields 16
+      (2010), 803-866.
+    arxiv: "0904.1581"
+  TracyWidom:
+    bib: >
+      Craig A. Tracy and Harold Widom, Level-spacing distributions and the
+      Airy kernel, Communications in Mathematical Physics 159 (1994), 151-174.
+    doi: 10.1007/BF02100489
+Tags:
+- probability theory
+- special functions
+Data properties:
+  type: R
+  rigour: measured
+  complete: no
+  complete-note: it holds $\beta=1,2,4$ for every grid point $s=-10,-9.95,\ldots,5$
+  rigour details: >
+    Values were computed from CITE{formula-determinants} by Gauss-Legendre
+    Nystrom quadrature for the operator $T_t$ on $[0,\infty)$. The production
+    run used a second quadrature setting as a control, and each entry's written
+    precision is limited by their agreement. The far-left $\beta=4$ tail uses
+    mpmath multiprecision determinant arithmetic, because double precision
+    loses relative accuracy there. The $\beta=2$ values were also compared
+    against the direct Airy-kernel determinant CITE{formula-f2} at sample
+    points, and the $\beta=4$ scaling was checked against the published
+    Tracy-Widom location for $\beta=4$ CITE{WikiTW}.
+Display properties:
+  number-header: $F_\beta(s)$
+Numbers: {}

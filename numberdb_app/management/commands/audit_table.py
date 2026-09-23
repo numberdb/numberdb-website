@@ -54,6 +54,72 @@ def _entry_records(tree):
 	return list(walk(numbers)) if numbers is not None else []
 
 
+def parameter_heights(tree):
+	"""How the rational parameters are distributed by denominator.
+
+	A *sensor*, not a verdict. It reports what the parameters are, and the
+	judgement of whether those are the right values belongs to whoever reads
+	the report -- a critique run, or a person. That split is deliberate: the
+	critic already reads these tables and, asked for a judgement with no
+	measurement in front of it, defended the grids by precedent ("T197 does
+	the same with its two-decimal grid -- so it is the site's behaviour and
+	not this table's"). A number is harder to wave through than a habit.
+
+	What it measures is *height*: the denominator in lowest terms. A decimal
+	grid is short in base ten and large in height -- $51/50$, $103/100$ --
+	and that is exactly what makes it read as arbitrary. The skill's rule is
+	rationals of small height, so the sensor counts them.
+
+	Returns None when there are too few rational parameters to say anything.
+	"""
+	from fractions import Fraction
+
+	heights = []
+	numbers = tree.get('Numbers')
+
+	def values(node, key=None):
+		if isinstance(node, dict):
+			if 'number' in node or 'numbers' in node or 'equals' in node:
+				for one in (node.get('params') or {}).values():
+					yield one
+				return
+			for k, v in node.items():
+				yield k
+				yield from values(v, k)
+		elif isinstance(node, list):
+			for v in node:
+				yield from values(v, key)
+
+	for raw in values(numbers) if numbers is not None else []:
+		text = str(raw).strip()
+		if not re.fullmatch(r'-?\d+(/\d+)?', text):
+			continue
+		try:
+			heights.append(Fraction(text).denominator)
+		except (ValueError, ZeroDivisionError):
+			continue
+
+	rationals = [h for h in heights if h > 1]
+	if len(rationals) < 3:
+		return None
+	#Ten-smooth: a denominator whose only prime factors are 2 and 5, which is
+	#what a decimal grid produces and almost nothing else does.
+	def ten_smooth(d):
+		for p in (2, 5):
+			while d % p == 0:
+				d //= p
+		return d == 1
+
+	decimal = [h for h in rationals if ten_smooth(h)]
+	return {
+		'rational_parameters': len(rationals),
+		'largest_height': max(rationals),
+		'median_height': sorted(rationals)[len(rationals) // 2],
+		'decimal_denominators': len(decimal),
+		'decimal_share': len(decimal) / len(rationals),
+	}
+
+
 #: Words a title cannot begin or end with once its mathematics is stripped.
 #: T61 is "$\\cos(\\pi x)$ for rational $x$", which bares to "for rational" --
 #: a fragment, not a name. Matching prose against it reported that every
@@ -241,6 +307,33 @@ class Command(BaseCommand):
 		#no check that looked at values could have noticed.
 		for complaint in self._indexed_as_many_as_written(table, tree):
 			yield complaint
+
+		#The sensor, reported rather than enforced. Whether these are the
+		#right parameter values is a judgement about the mathematics, and the
+		#audit is not the place for it -- but the measurement belongs in front
+		#of whoever makes it. See `parameter_heights`.
+		heights = parameter_heights(tree)
+		if heights and heights['median_height'] >= 10:
+			#Height, not ten-smoothness. A decimal grid is the common case and
+			#the first version tested only for it -- which let the same
+			#mistake through in another base: T437 steps its angle by 5
+			#degrees, so its denominators are 36, 18, 12, 9, none of them a
+			#power of two times a power of five, and the check said nothing.
+			#What is wrong with both is the size of the denominator.
+			shape = ''
+			if heights['decimal_share'] >= 0.6:
+				shape = (' %d of them are a power of two times a power of '
+				         'five, which is a decimal grid.'
+				         % (heights['decimal_denominators'],))
+			yield ('its %d rational parameters have a median denominator of '
+			       '%d and a largest of %d.%s The skill asks for rationals of '
+			       'small height: 1/2, 2/3, 3/4 rather than 51/50 and '
+			       '103/100, and small rational multiples of pi for angles '
+			       'rather than a degree grid. Say why these are the values a '
+			       'reader will have, or change them.'
+			       % (heights['rational_parameters'],
+			          heights['median_height'], heights['largest_height'],
+			          shape))
 
 		#Two tables wearing one title. The skill has said since May that
 		#"seven functions evaluated at the same rational x are still seven

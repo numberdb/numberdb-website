@@ -119,7 +119,28 @@ pythonpath=()
 # `flock` makes it impossible instead. The lock is held on the server for the
 # life of the command, so it applies across sessions and across people, not
 # just within one script.
-LOCK="/tmp/numberdb-sage.lock"
+# One slot, or one slot per worker.
+#
+# The paragraph above is about a 961 MB machine with two cores, where one Sage
+# process is all there is room for. That is still the default, and a laptop or
+# a one-off `agents/sage.sh` gets it without asking.
+#
+# It is the wrong bound for a machine bought to hold more. On 2026-09-22 four
+# builders drew Sage-heavy proposals from one family and serialised behind
+# this single lock: three of them sat 2h26m with 18 to 32 seconds of CPU
+# between them, and one gave up mid-build and left an empty draft. The
+# contention was not a bug in any of them; it was four workers sharing one
+# slot.
+#
+# So the slot is named. `NUMBERDB_SAGE_SLOT=w3` locks `numberdb-sage.w3.lock`
+# and contends only with other runs in that slot, which is how a worker gets a
+# Sage instance of its own. The bound then lives where the hardware is known
+# -- `agents/workers.sh` sizes the pool to the machine and hands each worker
+# its slot -- rather than here, where it is one for everybody for ever.
+#
+# Unset means the shared lock, so nothing that does not opt in can start a
+# second Sage beside a run that is already going.
+LOCK="/tmp/numberdb-sage${NUMBERDB_SAGE_SLOT:+.$NUMBERDB_SAGE_SLOT}.lock"
 
 
 main=$1

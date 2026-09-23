@@ -45,6 +45,48 @@ workers="${1:-4}"
 every="${NUMBERDB_WORKERS_EVERY:-300}"
 budget="${NUMBERDB_WORKER_BUDGET:-200}"
 
+#: How much memory one Sage container may take, and therefore how many fit.
+#: `sage.sh` caps each container at this; four of them is four times this.
+sage_mb="${NUMBERDB_SAGE_MB:-900}"
+
+# How many workers this machine can actually hold.
+#
+# Each worker now gets a Sage slot of its own (NUMBERDB_SAGE_SLOT), so the
+# thing that used to bound concurrency -- one global lock in `sage.sh` -- no
+# longer does. The bound has to live somewhere, and it belongs here, where the
+# machine is in front of us.
+#
+# Each worker costs a Sage container capped at `sage_mb`, plus its agent CLI
+# (node, about 300 MB), and the box needs room for the OS, docker and the
+# screener. On the 1906 MB two-core builder that arithmetic gives one, which
+# is exactly what the old global lock enforced by accident; on a 16 GB machine
+# it gives a dozen, and the point of naming the slots is to let it.
+#
+# Cores matter as much: a Sage ODE solve is CPU-bound, and more concurrent
+# solves than cores is thrashing rather than throughput.
+room_for() {
+	local mb cores by_memory by_cores
+	mb=$(free -m 2>/dev/null | awk '/^Mem:/{print $2}')
+	cores=$(nproc 2>/dev/null || echo 1)
+	[ -n "$mb" ] || { echo "$workers"; return; }   #cannot tell: trust the caller
+	#Leave 1200 MB for the OS, docker, the screener and the supervisor.
+	by_memory=$(( (mb - 1200) / (sage_mb + 300) ))
+	by_cores="$cores"
+	[ "$by_memory" -lt 1 ] && by_memory=1
+	[ "$by_cores" -lt 1 ] && by_cores=1
+	if [ "$by_memory" -lt "$by_cores" ]; then echo "$by_memory"; else echo "$by_cores"; fi
+}
+
+fits=$(room_for)
+if [ "$workers" -gt "$fits" ] && [ "${NUMBERDB_FORCE_WORKERS:-0}" != "1" ]; then
+	printf '\n=== %s asked for %s workers; this machine holds %s\n' \
+		"$(date -u +%H:%M:%S)" "$workers" "$fits"
+	printf '=== %sMB and %s core(s), at %sMB of Sage plus ~300MB of agent each\n' \
+		"$(free -m 2>/dev/null | awk '/^Mem:/{print $2}')" "$(nproc 2>/dev/null)" "$sage_mb"
+	printf '=== running %s. NUMBERDB_FORCE_WORKERS=1 to insist, or use a bigger machine.\n' "$fits"
+	workers="$fits"
+fi
+
 #: Shared between every worker. Outside the worktrees on purpose: four trees
 #: meant four memories, and the same growth question was put to T293 twelve
 #: times.
@@ -89,6 +131,34 @@ engine_for_reading() {
 	fi
 }
 
+# Which family a worker builds from, when it has been told.
+#
+# Mining and building are already separate processes -- the screener stocks
+# the queue, the builders consume it with NUMBERDB_SCREEN=0 -- and pinning is
+# the piece that lets the builders be spread over machines. Set
+# NUMBERDB_FAMILIES to a list and each worker takes one of them, round robin;
+# set NUMBERDB_FAMILY and every worker on this machine builds from that one;
+# set neither and a worker takes whatever the queue offers next, which is
+# what it has always done.
+#
+# The point is a second machine: `NUMBERDB_FAMILY=190 NUMBERDB_SCREENER=0
+# agents/workers.sh 4` builds nothing but family 190 and mines nothing, while
+# the first machine keeps the queue full. The claim in the database still
+# settles who gets which proposal, so two machines on the same family is
+# wasteful rather than wrong.
+family_for() {
+	local n="$1" list count
+	if [ -n "${NUMBERDB_FAMILIES:-}" ]; then
+		#shellcheck disable=SC2086
+		set -- ${NUMBERDB_FAMILIES}
+		count=$#
+		[ "$count" -gt 0 ] || { echo ""; return; }
+		eval "echo \"\${$(( (n - 1) % count + 1 ))}\""
+		return
+	fi
+	echo "${NUMBERDB_FAMILY:-}"
+}
+
 tree_of() {                      # worker name -> its working tree
 	if [ "$1" = w1 ]; then echo "$here"; else echo "$here/../numberdb-campaign-$1"; fi
 }
@@ -108,7 +178,7 @@ running() {                      # is this worker's loop alive?
 }
 
 start() {                        # one worker, in its own tree
-	local name="$1" tree
+	local name="$1" family="${2:-}" tree
 	tree=$(tree_of "$name")
 	[ -d "$tree" ] || { say "$name has no working tree at $tree"; return 1; }
 	say "starting $name"
@@ -123,7 +193,9 @@ start() {                        # one worker, in its own tree
 		NUMBERDB_REMOTE="${NUMBERDB_REMOTE:-local}" \
 		NUMBERDB_SAGE_IMAGE="${NUMBERDB_SAGE_IMAGE:-numberdb/builder:latest}" \
 		NUMBERDB_SAGE_PYTHONPATH="${NUMBERDB_SAGE_PYTHONPATH:-}" \
-		NUMBERDB_SAGE_MEMORY="${NUMBERDB_SAGE_MEMORY:-900m}" \
+		NUMBERDB_SAGE_MEMORY="${NUMBERDB_SAGE_MEMORY:-${sage_mb}m}" \
+		NUMBERDB_SAGE_SLOT="$name" \
+		${family:+NUMBERDB_FAMILY="$family"} \
 		NUMBERDB_KEY="${NUMBERDB_KEY:-$HOME/.config/numberdb/zeta3-key}" \
 		NUMBERDB_MACHINE="${NUMBERDB_MACHINE:-$(hostname -s)}" \
 		NUMBERDB_CODEX_SANDBOX="${NUMBERDB_CODEX_SANDBOX:-danger-full-access}" \
@@ -189,7 +261,10 @@ while true; do
 		fi
 	done
 
-	if ! screener_running; then
+	#A machine that only builds does not mine. `NUMBERDB_SCREENER=0` leaves
+	#the producer to somebody else, which is what lets one machine keep the
+	#queue stocked while others spend their whole time building from it.
+	if [ "${NUMBERDB_SCREENER:-1}" != "0" ] && ! screener_running; then
 		start_screener || true
 		sleep 10
 	fi
@@ -197,7 +272,7 @@ while true; do
 	for n in $(seq 1 "$workers"); do
 		name="w$n"
 		if ! running "$name"; then
-			start "$name" || true
+			start "$name" "$(family_for "$n")" || true
 			#A moment between starts: four campaigns reading the queue in the
 			#same second is four chances of the same proposal being offered
 			#twice before any claim is written.

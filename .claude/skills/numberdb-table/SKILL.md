@@ -298,6 +298,61 @@ See `docs/design/corpus-shape.md` for what the corpus does. Very roughly, and
 only as a starting point to think from: 500–1000 entries for cheap
 approximations, one or two integer parameters, 100 significant digits.
 
+### Which parameter values, when the parameter is continuous
+
+A family indexed by an integer chooses itself: the $n$th zero, the packing of
+$n$ circles. A family indexed by a real number does not, and the choice is
+the whole of the table's usefulness — because **search is by value, not by
+parameter**. Nobody looks up $\xi(1.37)$; somebody has $0.3070\ldots$ and
+searches for it. An entry earns its place only if a reader's parameter lands
+on ours exactly.
+
+**Use rationals of small height. Not rationals of short decimal length.**
+
+A rational's size is its denominator in lowest terms. $1/2$, $2/3$, $3/4$
+have heights 2, 3, 4; $7/100$ and $103/100$ have height 100. A decimal grid
+is tidy in base ten and mathematically large-height, which is exactly why it
+reads as arbitrary: $51/50$ is not a number anybody writes down for its own
+sake. There is no natural reason for 10 here. It is a fact about human
+notation, not about the function.
+
+So, in order:
+
+1. **Distinguished points first.** Closed forms, named values, singularities,
+   the arguments other problems land on: $m=0,\tfrac12,1$; $q\to0$; the
+   Blasius case $\beta=0$; the Falkner–Skan separation value. Prefer *exact*
+   entries — an exact value outranks any number of decimals, and raises the
+   table's rigour instead of spending it.
+
+2. **Then rationals of bounded height.** All $p/q$ in the range with
+   $q\leq N$ for a small $N$ — the Farey enumeration. It is canonical rather
+   than chosen, it already contains $\tfrac12,\tfrac13,\tfrac23,\tfrac14$,
+   and it is dense where the rationals are interesting rather than where base
+   ten is. Say the bound in `complete-note`: "every $p/q$ with $q\leq8$ and
+   $0\leq p/q\leq10$".
+
+3. **Angles are small rational multiples of $\pi$.** $\pi/6$, $\pi/4$,
+   $\pi/3$, $\pi/2$ — where the trigonometry is exact. Degree grids are the
+   same mistake in another base: $5°$ is $\pi/36$, height 36, against
+   height 3 to 6 for the values that mean something.
+
+**No decimal grid, even when the function has no distinguished points.** That
+case is real — $\operatorname{erf}$ has none beyond $\operatorname{erf}(0)=0$,
+no closed form at any rational argument — and it is still not a reason for
+tenths. Bounded height gives a table of comparable size whose every point is
+a rational somebody might name.
+
+**If a fine grid is genuinely right, it is because a named source publishes
+that grid.** Cite it, and check it rather than assuming: the handbooks are
+decimal because they were built for hand interpolation, which is a claim
+about a book and needs to be true of the book you cite. "The corpus already
+does this" is not a reason — it is how one table's choice became forty.
+
+**Density is not completeness.** `complete-note` says which points were
+chosen and why, not the arithmetic of the step size. "Every decimal grid
+point $q=j/1000$" describes a step; it does not say why those are the
+values a reader will have.
+
 **Two things move that number down, and they are the usual case.**
 
 *Expensive digits.* Few numbers known to great precision is as legitimate as

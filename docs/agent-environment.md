@@ -2534,6 +2534,23 @@ Do not infer that the draft does not exist from a 404 on the rendered route.
 Evidence: T182, 2026-09-09; authenticated `GET /api/table?id=T182` returned
 the Mahler polynomial draft, while authenticated `GET /T182` returned 404.
 
+## Keyed API reads are rate limited too
+
+What happened: the T433 repair read a private draft with
+`GET /api/table?id=T433` and a valid zeta3 bearer token, and the API answered
+`429` with `{"error": "Rate limit exceeded (1000 requests per 60 minutes).",
+"retry_after": 829}`. The key was valid and the same draft route is the right
+one to use; the allowance had simply been spent earlier in the fixed window.
+
+What to do instead: a key raises the API limit; it does not remove it. Budget
+keyed corpus reads the same way as anonymous reads, batch what can be batched,
+and obey `Retry-After` before retrying. The rendered page route is unaffected
+by this limit, but it still will not show a private draft to a bearer token.
+
+Evidence: `/tmp/fetch_t433.py`, 2026-09-23, with
+`cat "$NUMBERDB_KEY_FILE" | python3 /tmp/fetch_t433.py`; the table API
+response was the `429` above, while `/T433` returned its ordinary draft `404`.
+
 ## A repair cannot infer findings when the critique file is missing
 
 What happened: the T183 repair task named `agents/critiques/T183.md`, but the
@@ -10447,3 +10464,3485 @@ tree, 12 lines, the same 400 twice; its `COSTS.tsv` row
 `propose-batch.sh:30-60`; `expiresAt` read as a timestamp at 18:56Z ->
 2026-09-24T02:52:08Z, i.e. refreshed 18:52:08Z; the four campaign banners, all
 `miner claude`. Found while triaging `agents/runs/20260923T185211Z-build.log`.
+## `oeis.org` does answer here, to `urllib` with an honest bot User-Agent, and never to `curl`
+
+What happened: two notes above say OEIS cannot be reached from this machine --
+"answers a Cloudflare challenge here" (2026-09-20) and "cannot be reached from
+this machine at all ... with or without a browser `User-Agent`" (2026-09-22,
+earlier the same day as this one). Both are right about what they tried and
+both conclusions are too strong. From the same box, at 23:15 on 2026-09-22,
+OEIS answered in under a third of a second:
+
+    urllib.request.urlopen(urllib.request.Request(
+        'https://oeis.org/search?q=id:A002559&fmt=json',
+        headers={'User-Agent': 'numberdb-proposal'}), timeout=30)
+    -> 200, 13715 bytes, 0.28 s
+
+What divides the successes from the 403s is not the network and not the
+sequence. Measured, all in one minute:
+
+| client | User-Agent | result |
+|---|---|---|
+| `urllib` | `numberdb-proposal`, `nb`, `x` | 200, with the data |
+| `urllib` | none (so `Python-urllib/3.x`) | 403 |
+| `urllib` | `Mozilla/5.0` | 403 |
+| `curl` | none | 403 |
+| `curl` | `-A numberdb-proposal` | 403 |
+| `curl` | a full Chrome UA string | 403 |
+
+So the rule is: **`urllib` with a plain, non-browser, non-default
+`User-Agent`**. `curl` is refused whatever it claims to be, which is why the
+earlier notes -- both of which used `curl` -- concluded the site was
+unreachable; and a browser UA is refused too, which is why "with or without a
+browser User-Agent" did not find the way through. It is a bot rule that lets an
+honest bot in and challenges anything that claims to be a browser without
+being one.
+
+What to do instead: an A-number *can* be verified here, and OEIS is worth
+using for the check the skill asks for. `fmt=json` gives the record (`data`,
+`name`); `fmt=text` gives the `%N` line. Note also that
+`screen.source_names_it` already sends `User-Agent: numberdb-proposal-screen`,
+so screening a proposal against an `oeis.org` URL works too -- the earlier note
+that it "will refuse every family for want of the words" no longer holds.
+
+Evidence: 2026-09-22 ideas run. The table above; and the batch's Markov
+numbers were checked against A002559 (42 terms, exact match) and Freiman's
+constant against A118472 (40 digits, exact match), both fetched this way.
+
+## `source_names_it` fails a possessive name against Wikipedia, which renders the apostrophe as U+2019
+
+What happened: screening `Hall's ray` against
+`https://en.wikipedia.org/wiki/Markov_spectrum` complained that "the source
+does not mention hall's". The article does -- the phrase "known as Hall's ray"
+is in it -- but rendered with U+2019, the typographic right single quote, while
+`_distinguishing` keeps `hall's` with U+0027 and the check is a literal
+substring test. The page reads perfectly well and the name is right; only the
+character differs.
+
+Two tells that it is this and not a wrong name: the complaint names a word
+*with an apostrophe in it*, and the same name passes against MathWorld, which
+writes a plain `'` (`Freiman's constant` passed against
+`mathworld.wolfram.com/FreimansConstant.html` in the same run).
+
+What to do instead: when a possessive name is refused, look for the phrase on
+the page before believing the complaint, and screen the possessive against
+MathWorld rather than Wikipedia, or drop the possessive from the name given to
+the screen (`Hall ray`, `Freiman constant`) since the rest of the words carry
+the identification anyway. A fix would be to fold U+2019 to `'` in
+`source_names_it` before the substring test; it belongs beside the note above
+about plurals, which is the same class of failure at the character level.
+
+Evidence: 2026-09-22 ideas run. `source_names_it("Hall's ray", <Markov
+spectrum>)` complained; a fetch of the same URL, tags stripped, contains
+`hall’s ray` and not `hall's ray`.
+
+## The twenty-minute give-up exits 75; the 0 came from the caller's pipe
+
+What happened: the note above, added earlier on 2026-09-22, says
+`agents/sage.sh` gives up after twenty minutes *and exits 0*, "because the
+script's status is the status of the `grep` at the end of its pipeline". The
+give-up is real and happened twice more tonight, once for each of two
+scripts. The exit status is not 0:
+
+    $ timeout 1800 agents/sage.sh /tmp/ideas2249/check3.py
+    waiting for the Sage lock: another worker is using it (0s)
+    ... (once a minute) ...
+    the Sage box has been busy for twenty minutes; try again
+    [exited with code 75]
+
+`agents/sage.sh` runs under `set -euo pipefail`, so the trailing
+`grep -viE ...` does not mask the failure and 75 comes through. The zero in
+the earlier report came from the **caller's own pipe**: that run invoked
+
+    timeout 1800 agents/sage.sh script.py 2>&1 | tail -60
+
+and a pipeline's status is its last command's, so `tail` reported 0 whatever
+Sage did. Same advice as before, for a better reason: run it without a pipe.
+Then `$?` is 75 on a lock timeout and is worth testing for, rather than having
+to grep the output for "has been busy".
+
+Evidence: 2026-09-22 ideas run, two invocations twenty minutes apart. The
+first, piped through `tail -60`, ended `[exited with code 0]`; the second, run
+bare, ended `[exited with code 75]`. Both printed the busy message and neither
+ran a line of the script.
+
+## Four workers can hold the Sage lock for the whole of an ideation run
+
+What happened: an ideation run needed Sage twice and got it neither time --
+forty minutes of waiting in twenty-minute blocks, while a Falkner-Skan build
+family occupied the box. The proposals were checked in plain Python instead
+(exact integer arithmetic plus `decimal`), and the batch says so.
+
+What to do instead: at ideation, **ask whether the check needs Sage at all**.
+Markov triples, binary quadratic forms, continued fractions of quadratic
+irrationals, modular inverses and the digits of an algebraic number are all
+exact integer arithmetic; `decimal` at 140 digits with `Decimal.sqrt` settles
+a square root to more places than a proposal needs, and `fractions.Fraction`
+settles a continued fraction exactly. Sage earns the wait when the check needs
+a special function, ball arithmetic for a transcendental, or a library routine
+(`BinaryQF.cycle`, `elliptic_k`, SnapPy). Otherwise the local interpreter is
+both faster and available.
+
+Evidence: 2026-09-22 ideas run. Two `agents/sage.sh` invocations, both timed
+out on the lock; the same mathematics ran locally in 12 seconds, and eight
+OEIS sequences were compared against it over plain HTTP.
+
+## The sweep that closed the backlog cited the wrong table 45 times, and eight requests have no table at all
+
+What happened: the note above records one closed request carrying a stale
+wrong T-number (#13, answered "T368", which is the Charlier zeros). It is not
+one. Reading the closing comment of all 126 closed `table wanted` issues:
+
+* 26 were closed with "This is now <https://numberdb.org/T359>". T359 is
+  *Sharp constant in Nash's inequality*. They include #70 (Ramsey numbers),
+  #29 and #30 (lattice packings), #91 (knot polynomials), #21 (Faltings
+  heights) and #28 (Maass form coefficients).
+* 19 were closed pointing at T380, *Arithmetic factors $A_k$ in the moments of
+  quadratic Dirichlet $L$-functions*, including #51 (the Wikipedia constants
+  checklist), #136 (the Cantor pairing polynomial) and #68 (Waring bounds).
+* 12 at T384 (*Resultants of two monic polynomials*) and 13 at T368, in the
+  same way.
+* 45 carry no such comment at all: those are the 2021 and August closures,
+  which were closed by hand when the table was made.
+
+Most of the mis-cited ones were nonetheless answered under some other number
+(#36 is T152, #94 is T232-T235), so the usual damage is a wrong link. Eight
+were not answered at all. Searching the live corpus for each name returns
+nothing for:
+
+    #23  analytic conductors of L-functions
+    #24  Selberg data of L-functions
+    #25  analytic conductors of classical modular forms
+    #49  elliptic curves x^3 + y^3 = k of high rank
+    #70  Ramsey numbers beyond the diagonal (only T6 exists)
+    #71  binary forms with 2-power discriminant
+    #132 moments of the distribution of primes in short intervals
+    #136 the Cantor pairing polynomial, packing polynomials
+
+(Three more -- #68 Waring bounds, #69 mass partitions, #52 topological
+complexity -- are families of a handful of small integers known mostly as
+bounds, and are fairly closed on the merits even though they were closed for
+the wrong stated reason.)
+
+What to do instead: do not read "126 closed" as "126 answered". The eight
+above are the anchors the ideation stage now lacks, and reopening them costs
+nothing. Whatever closes an issue should name the table it means and be
+checked against `api/table?id=`, the way the #13 note already says a reader
+must -- the sweep evidently matched issues to a family's tables by something
+looser than the request's own subject.
+
+Evidence: 2026-09-22 ideas run.
+`gh issue list --repo numberdb/numberdb-data --label "table wanted" --state
+closed --limit 300 --json number,title,comments`, grouped by the T-numbers in
+each closing comment; `numberdb.search_text` on each unanswered name, through
+`PYTHONPATH=clients/python` from outside the repository root.
+
+## OEIS is behind a Cloudflare challenge from this host, and was not yesterday
+
+What happened: the ideation run of 2026-09-23 wanted A-numbers for four
+integer sequences as specialisation checks. Every `oeis.org` request answered
+`403` with `cf-mitigated: challenge` and a "Just a moment..." body: the
+`fmt=json` and `fmt=text` search endpoints, direct A-number pages, `curl` with
+a plain user-agent, `curl` with a Chrome user-agent, and the `web-fetch`
+subagent, which egresses differently and was blocked identically. Plain `http`
+redirects to `https` at Cloudflare's edge, so there is no way round it.
+
+The run immediately before this one, on 2026-09-22, "compared eight OEIS
+sequences over plain HTTP" and recorded that as working, so this is new within
+a day rather than a standing property of the host.
+
+What to do instead: do not plan a batch's checks around OEIS. Wikipedia and
+MathWorld both answer normally, and both cite A-numbers in their references,
+which is how this run got A212954, A003323 and A030126 -- secondhand, and said
+so in the batch. Where a check *needs* the sequence itself, compute the terms
+and say in the proposal that the A-number is unconfirmed, rather than quoting
+one from memory. A wrong A-number in a published table's `Links` is worse than
+an absent one.
+
+Evidence: 2026-09-23 ideas run.
+`curl -s -i "https://oeis.org/search?q=9,35,178,1132&fmt=json"` ->
+`HTTP/2 403`, `cf-mitigated: challenge`, `server: cloudflare`; the same with
+`-A "Mozilla/5.0 (X11; Linux x86_64) ... Chrome/125.0"` -> `403`;
+`http://oeis.org/...` -> `301` to https, then `403`.
+
+## `import numberdb` from the repository root gets the Django app, not the client
+
+What happened: `screen.already_here(...)` returned
+`(could not ask the corpus: AttributeError: module 'numberdb' has no attribute
+'search_text')` for every name, with `PYTHONPATH=clients/python` set and the
+shell in `/home/ubuntu/numberdb-website`. The cause is that the repository root
+contains a `numberdb/` package of its own -- the site's -- and `''` precedes
+`PYTHONPATH` on `sys.path`, so the client is shadowed. Running the identical
+code from `/tmp` with absolute paths in `PYTHONPATH` works.
+
+This is worth a note of its own because of how the failure reads. `screen.py`
+is careful never to confuse a failed question with an empty answer, and it
+does report the exception -- but the exception is an `AttributeError` about a
+missing attribute, which looks like a version skew in the client rather than
+"you are in the wrong directory". The run of 2026-09-22 recorded the fix
+(`PYTHONPATH=clients/python` *from outside the repository root*) without the
+symptom; this is the symptom.
+
+What to do instead: run anything that imports the client from `/tmp`, with
+`PYTHONPATH=/home/ubuntu/numberdb-website/clients/python:/home/ubuntu/numberdb-website/agents/table-ideas`.
+Note that `agents/sage.sh` and the generators are unaffected, since they run
+elsewhere.
+
+Evidence: 2026-09-23 ideas run. Same script, same environment variables,
+`cd /home/ubuntu/numberdb-website` -> `AttributeError` on every one of eight
+names; `cd /tmp` -> 40 matching titles for "Van der Waerden numbers" and an
+empty list for "Zarankiewicz numbers".
+
+## `screen.py requests` printing nothing now means the backlog is empty, not broken
+
+What happened: `python3 agents/table-ideas/screen.py requests` exited 0 with
+no output. `requests()` swallows every exception and returns `[]`, so an empty
+print is also what a network failure looks like, and the first guess was the
+proxy. It was not: `gh issue list --repo numberdb/numberdb-data --label
+"table wanted" --state all --limit 200` returns 126 issues of which **zero are
+open**. The sweep of 2026-09-22 closed the last of them.
+
+What to do instead: the ideation prompt's instruction to "start from the open
+requests" has nothing left to start from, and will not until somebody reopens
+the eight requests the previous run found were closed without being answered
+(#23, #24, #25, #49, #70, #71, #132, #136). Until then, a run anchoring on a
+request must anchor on a closed one and say so in the batch, which is what the
+2026-09-23 batch does with #70. Separately, `requests()` should distinguish
+"asked and got none" from "could not ask", the way `already_here` already
+does; as written it is the exact failure mode that function's docstring warns
+against.
+
+Evidence: 2026-09-23 ideas run. `screen.py requests` -> no output, exit 0;
+the same query through `gh` -> 126 issues, 0 open; `urllib` against
+`api.github.com/repos/numberdb/numberdb-data/issues?state=open&labels=table%20wanted`
+-> a list of length 0, HTTP 200.
+
+## arXiv `abs` pages are now a JavaScript shell, so `source_names_it` cannot screen a name that lives only in a paper
+
+What happened: the random-matrix batch wanted "Cumulants of the Tracy-Widom
+distributions", a name that is Bornemann's and is not on any Wikipedia page
+(the article tabulates the same numbers under mean, variance, skewness and
+kurtosis, and never writes "cumulant"). The obvious source is
+arXiv:0904.1581, and the note above at "Springer article pages answer
+`urllib` with a gate" tells a run to do exactly that: *cite the arXiv abstract
+or the Wikipedia page*. That advice no longer works.
+
+`source_names_it` on `https://arxiv.org/abs/0904.1581` reports that the source
+mentions neither "tracy" nor "widom". It is not a fetch failure: the request
+returns HTTP 200 and 41829 bytes, and the `<title>` is right ("[0904.1581] On
+the Numerical Evaluation of Distributions in Random Matrix Theory: A Review").
+But the body is a script shell, so once `source_names_it` strips the tags the
+abstract is not in the text. Scanning the stripped page for keywords confirms
+it: `tracy`, `widom`, `cumulant`, `moment`, `sine`, `kernel`, `fredholm`,
+`determinant` are all absent; only `mean` and `painlev` survive, and those
+come from the page furniture. `http://export.arxiv.org/abs/0904.1581`
+behaves the same way, and `http://export.arxiv.org/api/query?id_list=0904.1581`
+answers **406 Not Acceptable** to the screen's `numberdb-proposal-screen`
+User-Agent -- a different failure from the empty body recorded for the same
+endpoint on 2026-09-06.
+
+What to do instead: do not cite an arXiv `abs` URL as the source
+`source_names_it` checks; it will fail a real family and read exactly like an
+invented one. Screen against Wikipedia, DLMF, MathWorld or OEIS, which all
+still answer `urllib` with readable text. Where the only name is a paper's, the
+proposal has two honest options and should say which it took: fall back to a
+title the readable page does name -- for this batch, "Mean and variance of the
+Tracy-Widom distributions" passes Wikipedia where "Cumulants" fails -- or keep
+the paper's name and record the screen failure with the keyword scan beside
+it, so the next person can tell "the page cannot be read" from "the family is
+not called this".
+
+Evidence: 2026-09-23 ideas run.
+`source_names_it("Tracy-Widom distribution", "https://arxiv.org/abs/0904.1581")`
+-> `the source does not mention tracy, widom`; the same URL through `urllib`
+with the screen's User-Agent -> `status 200 len 41829`, first bytes
+`<!DOCTYPE html> <html lang="en"> <head><script>...`;
+`http://export.arxiv.org/api/query?id_list=0904.1581` -> `HTTPError 406`.
+The same eight-keyword scan against
+`https://en.wikipedia.org/wiki/Tracy%E2%80%93Widom_distribution` finds
+`tracy`, `widom`, `skewness`, `kurtosis`, `mean`, `variance`, `sine`,
+`kernel`, `painlev`, `hastings`, `mcleod` and `dyson`, and not `cumulant`.
+
+## #70 is answered, so seven of the closed-without-answer requests remain
+
+What happened: the note above, "`screen.py requests` printing nothing now
+means the backlog is empty", lists eight requests closed without being
+answered (#23, #24, #25, #49, #70, #71, #132, #136) and records that the
+2026-09-23T03:37Z batch anchored on #70, Ramsey numbers. That batch is now
+open as proposal issue **#195**, so #70 is spoken for and the list a later run
+should read is **#23, #24, #25, #49, #71, #132, #136**.
+
+Read against the corpus, they are not equally available. #70 is taken. #71
+("Binary forms with power of 2 discriminant") carries its own blocker in its
+body -- *Need to choose representatives of equivalence classes, which ones?* --
+which is the numberdb-data#121 situation the prompt's rule 5 describes, and a
+batch touching it has to settle the representatives before it is a table at
+all. #136 (the Cantor pairing polynomial) is one polynomial, not a family,
+unless it is widened to the Fueter-Polya pair and the higher-dimensional
+Cantor polynomials. That leaves #23 and #25 (analytic conductors of
+$L$-functions and of classical modular forms), #24 (Selberg data, of which
+T84 holds the level-one Maass spectral parameters and nothing else) and #132
+(moments of the distribution of primes in short intervals, Montgomery-
+Soundararajan) as the four with a plain path to a table, and they share a
+subject, which is what a batch wants.
+
+What to do instead: a run told to anchor on the backlog should read this list
+rather than `screen.py requests`, which returns nothing and will keep
+returning nothing. The 2026-09-23T04:28Z batch did not anchor on any of them,
+because it went to random matrix theory, which none of the seven touches; it
+says so in its own first section rather than claiming an anchor it does not
+have.
+
+Evidence: 2026-09-23 ideas run. The eight issue bodies read through
+`api.github.com/repos/numberdb/numberdb-data/issues/<n>`; the open-issue list
+for the repository is #195, #194 (`proposal`) and #137, #133
+(`enhancement`), with #195 being the Ramsey family that answers #70.
+
+## `already_here` does not treat "distribution", "solution" or "densities" as generic, so such a name answers with six unrelated tables
+
+What happened: the five titles of the random-matrix batch were screened with
+`already_here` after waiting out the rate limit. All five returned hits. Not
+one of them was a near miss:
+
+    "Values of the Tracy-Widom distribution functions"
+      -> Differential entropies of continuous probability distributions
+         (matched 'distribution'), Eigenvalues of the Gauss-Kuzmin-Wirsing
+         operator (matched 'distribution'), Khinchin's means $K_p$ (matched
+         'distribution'), ... six in all
+    "Values of the Hastings-McLeod solution of Painlevé II"
+      -> $abc$-triples of high merit (matched 'solution'), Bessel polynomials
+         $y_n$ (matched 'solution'), Coiflet scaling filters (matched
+         'solution'), ... six in all
+    "Values of the Tracy-Widom densities"
+      -> Covering radii and covering densities of the classical lattices
+         (matched 'densities'), Densities of primes with a given primitive
+         root (matched 'densities'), ... six in all
+
+No hit matched `tracy`, `widom`, `hastings`, `mcleod`, `painlevé`,
+`cumulants`, `skewness` or `kurtosis` -- the words that would actually mean
+the family is already here. `screen.GENERIC` holds *polynomial*, *numbers*,
+*function*, *values*, *constant*, *zeros*, *series* and a dozen more, and the
+docstring's premise is that "a family is recognised by the rest"; but
+*distribution*, *distributions*, *solution* and *densities* are not on the
+list, and the corpus is full of tables whose titles contain them. A name built
+out of any of those three words produces a full screen of matches that reads,
+skimmed, exactly like a duplicate.
+
+What to do instead: read the `(matched '...')` clause on every row rather than
+the number of rows. A hit whose matched word is the subject noun of the title
+is a real one; a hit whose matched word is *distribution*, *solution* or
+*densities* is the stemmer. Where the whole result is of the second kind, say
+so in the batch with the matched word quoted, as the 2026-09-23T04:28Z batch
+does in its closing table, so the next reader does not have to re-run it.
+Adding those four words to `GENERIC` would fix it, but it is a judgement about
+every future proposal and not one an unattended run should make.
+
+Evidence: 2026-09-23 ideas run, `already_here` on the five titles, run from
+`/tmp` with `PYTHONPATH` pointing at `clients/python` and
+`agents/table-ideas`. `already_asked` returned `[]` for all five in the same
+run. Note also that two attempts were needed: the first, timed for 500s after
+the limit was hit, still got `RateLimitError: ... retry in 147s`, so the
+21-minute window the error quotes is the window.
+
+## Rendering a private draft on the builder box: `/preview?table=` in chunks under 4094 bytes, and what the chunking then lies about
+
+What happened: the T438 critique had to read the rendered page of a private
+draft. Every route already recorded was shut. `GET /T438` answers 404 to the
+zeta3 bearer token, as the T182 note above says the rendered route does.
+`/preview/T438` makes the same guard. The `RequestFactory` owner-view path the
+T136/T137 note describes needs Django and the database, and this box has
+neither: `NUMBERDB_REMOTE=local` here means the builder, `python3 manage.py`
+fails with `No module named 'django'`, and `NUMBERDB_SAGE_IMAGE` is
+`numberdb/builder:latest`, which by design has no app.
+
+What worked: the anonymous `/preview?table=<yaml>` route. It takes YAML from
+`request.GET`, so it needs no key and no session, and it renders with the
+site's own templates and its own `_render_text`, which is what a critique
+needs. Two limits, both measured today:
+
+  * The **request line** is capped at **4094 bytes**, and over it the answer is
+    HTTP 400 with a body reading `Request Line is too large (5152 > 4094)`.
+    The T219 note above records a 414 from the same route without a number;
+    4094 is the number, and it is the whole URL, so about 3,900 bytes of
+    URL-encoded YAML. T438's prose alone did not fit; six chunks did.
+  * The route **refuses to render at all without a `Numbers:` block**: a
+    document of prose only answers 200 and prints `Error while parsing
+    numbers: cannot access local variable 'number_section' where it is not
+    associated with a value`, showing the YAML source and no preview. Carry
+    two or three entries, in the real nesting, in every chunk.
+
+The trap, which cost a wrong finding before it was caught: **a chunk that
+omits a cited section reports every citation into it as broken.** Rendering
+`Comments` without `Formulas` turned `CITE{formula-normalisation}` into
+`<span class="CITE-broken" title="this table defines no reference by that
+name">formula-normalisation</span>` -- which reads exactly like a real fault
+and is not one; `validate.CITED_SECTIONS` includes `Formulas`, and with
+`Formulas` in the same chunk the three citations render as `(2)`, `(3)`, `(4)`
+links. The same is true of `Links` and `References`.
+
+What to do instead: chunk by *citation closure*, not by section. Put `Links`
+and `References` in every chunk that cites them, and put `Formulas` in the
+chunk that holds `Comments`. Before believing a `CITE-broken` span, re-render
+with the section it names present.
+
+One more: build the chunk YAML with **block scalars** (`|`) or quote it so
+that real newlines survive. A single-quoted YAML scalar folds newlines into
+spaces, which made `program-scipy`'s seven lines of Python render as one line
+and looked like a fault in the table until the stored string was checked
+(`repr()` showed the newlines were there).
+
+Evidence: T438, 2026-09-23. `/tmp/prev2.py` with six chunk lists; the 400 body
+above is from a 5,159-byte URL, the `number_section` message from a
+prose-only chunk, and the broken-citation span from `/tmp/prev2_c1.html`
+against the resolved `(2)` link in `/tmp/prev2_c5.html`.
+
+## `agents/sage.sh` can run a `/tmp` script without seeing the rest of host `/tmp`
+
+What happened: a T438 repair check wrote `/tmp/t438_check.py` and
+`/tmp/T438-live.json`, then ran `agents/sage.sh /tmp/t438_check.py`. The
+wrapper found and ran the script, but inside Sage it appeared at
+`/work/t438_check.py`; the separate `/tmp/T438-live.json` was not present, so
+the run failed with `FileNotFoundError`.
+
+What to do instead: pass small input files on stdin, which the wrapper
+forwards. The same check succeeded as
+`agents/sage.sh /tmp/t438_check.py < /tmp/T438-live.json` after the script read
+from `sys.stdin`.
+
+Evidence: T438 repair, 2026-09-23T05:58:42Z.
+
+## arXiv `abs` pages were readable again six hours later, so the JS-shell note is a weather report, not a rule
+
+The note above at "arXiv `abs` pages are now a JavaScript shell, so
+`source_names_it` cannot screen a name that lives only in a paper" was filed
+this morning and says to stop citing arXiv to the screener at all. Six hours
+later the pages answer with their text.
+
+Six `https://arxiv.org/abs/...` URLs fetched through `urllib` with the
+screen's own `numberdb-proposal-screen` User-Agent, tags stripped the way
+`source_names_it` strips them, all HTTP 200 and all carrying the title *and
+the abstract* in the stripped text:
+
+    math/9810173   Hodge integrals and Gromov-Witten theory
+                   ... "Integrals of the Chern classes of the Hodge bundle"
+    math/9908052   Hodge integrals, partition matrices, and the lambda_g conjecture
+    1103.4674      Moduli spaces of hyperbolic surfaces and their Weil-Petersson volumes
+    1112.1151      Towards large genus asymtotics of intersection numbers ...
+    2011.14889     A high-genus asymptotic expansion of Weil-Petersson volume polynomials
+    1908.08611     Masur-Veech volumes, frequencies of simple closed geodesics ...
+
+`source_names_it` then passed on four of them against names whose
+distinguishing words appear nowhere but the title and abstract --
+`("Weil-Petersson volumes of moduli spaces of hyperbolic surfaces",
+1103.4674)`, `("Weil-Petersson volume polynomials", 2011.14889)`,
+`("Hodge integrals of the lambda_g class", math/9908052)` and
+`("Masur-Veech volumes", 1908.08611)` all returned `None`.
+
+Two of the six failed, and both failures were correct rather than a fetch
+problem: `math/9810173` really does not write "lambda", and `math/0004096`
+really does not write "simple". That is the check working, not the page being
+a shell.
+
+What to do: **screen the URL, do not assume either note.** Both are true on
+some days. Before deciding a family is unciteable, fetch the page once and
+look at whether the title came through -- if it did, the page is readable and
+a missing word is a real missing word. Wikipedia, DLMF, MathWorld and OEIS
+remain the safer first choice; the point is only that an arXiv failure today
+is evidence about today.
+
+What has **not** changed: `export.arxiv.org/api/query` still answers
+**406 Not Acceptable**, to `numberdb-proposal-screen` and to a
+`Mozilla/5.0 ...` User-Agent alike, so the API is not a way to look an
+identifier up here. The `abs` page is: fetch it and read the `Title:` out of
+the stripped text. That is how the wrong identifier in this run's batch was
+caught (`math/0602012` turned out to be *On a special congruence of
+Carlitz*).
+
+Evidence: 2026-09-23T06:2x, ideation run, from the runner host with no proxy
+set.
+
+## `oeis.org` answered plain `urllib` this run, with the screener's own User-Agent
+
+Three notes above disagree about OEIS from this host -- "behind a Cloudflare
+challenge", "cannot be reached at all", and "does answer here, to `urllib`
+with an honest bot User-Agent, and never to `curl`". This run is a data point
+for the third.
+
+    Request(url, headers={'User-Agent': 'numberdb-proposal-screen'})
+
+answered HTTP 200 for both query shapes used here,
+`oeis.org/search?q=<terms>&fmt=json&start=0` and
+`oeis.org/search?q=id:A007888&fmt=json`, with no challenge and no retry. Six
+searches and four `id:` lookups, all first try.
+
+The trap is not the fetch but the empty answer: OEIS returns the body `null`
+for a search with no hits, so `json.load` gives `None` and the usual
+`d.get('results')` raises `AttributeError`. That is filed as a lesson for the
+skill in `agents/lessons/proposals/20260923T060219Z-ideas.md`, because it is
+true on anybody's laptop; the only part that belongs here is that the
+exception it raises is easy to misread as this host being blocked again when
+it is not.
+
+Evidence: 2026-09-23T06:1x, ideation run.
+
+## The campaign's offer step cannot be reached by a build that failed
+
+What happened: build run `20260923T055938Z` built T441 completely -- 903
+entries, `audit` clean, `generate.py` attached, five commits -- and then hit a
+quota on the request after its last write. `campaign.sh` offers a table itself
+rather than trusting the agent to, and the comment above that block says why:
+
+    Offering is the last thing a build agent does, so a build that was
+    interrupted -- killed, or stopped when the site went away -- leaves a
+    finished table outside the review queue with no button to accept it, and
+    nothing afterwards notices. T210 sat there with 384 entries.
+
+The block cannot do that. It is at line 755; the build-failure branch is at
+line 500 and ends in `exit "$status"` for a `stop` verdict, `exit 1` for a
+failed resume, and `continue` for `restart` and `skip`. Every one of those
+leaves the loop body before line 755. So the offer runs when the build
+succeeded -- the case that needs it least, because a build that got that far
+was going to say it was done anyway -- and never in the interrupted case it
+was written for. T441 is now sitting where T210 sat.
+
+Two neighbours have the same shape. `queue.py built "$in_family" "$proposal"
+"$tid"` is at line 684 and `queue.py release` at 672, both downstream of the
+same exits, so a failed-but-productive build also leaves its proposal marked
+claimed rather than built. The claim lapses after ninety minutes and the
+proposal returns to the queue as unbuilt, pointing the next worker at a table
+that already exists.
+
+What to do instead: the offer, and the `built` mark, belong before the failure
+branch decides anything, or in a trap -- they are idempotent, they need a
+tid and no judgement, and the API refuses them correctly for a table that is
+published or empty. Until then, a `stop` or `skip` verdict on a build that
+created a table is a signal to check by hand whether that table is offered:
+
+    curl -sS -X POST -H "Authorization: Bearer $(cat "$NUMBERDB_KEY_FILE")" \
+         https://numberdb.org/api/table/<tid>/offer
+
+A finished draft that nobody was asked to look at is indistinguishable from an
+abandoned one from outside, which is what made the first four cost a fortnight.
+
+Evidence: 2026-09-23, triage of `20260923T055938Z-build.log`.
+`agents/campaign.sh` lines 500-551 against 672-773; `queue.py show 196`.
+
+## The codex fallback re-armed itself, because only the marker was cleared
+
+What happened: the note above, *The codex quota fallback names a model the
+account cannot use*, was written on 2026-09-18 from build run
+`20260918T023210Z`. Its remedy -- clear `agents/runs/codex-fallback` -- was
+carried out, and it worked: every codex stage on 2026-09-23 up to 05:59Z ran
+on `gpt-5.5` and succeeded, six builds and four repairs.
+
+Then `20260923T055938Z` hit a quota, and the identical thing happened again:
+the same `HTTP 400 invalid_request_error: The 'gpt-5.4' model is not supported
+when using Codex with a ChatGPT account`, preceded by the same two warnings,
+and `agents/runs/codex-fallback` written back to `gpt-5.4` / `xhigh` at
+07:25. Twice in five days.
+
+Clearing the marker was treating the symptom. The marker is generated, not
+configured -- `run.sh:655` writes it from `codex_fallbacks`, and `run.sh:80`
+still reads
+
+    codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-gpt-5.4}"
+
+so the trap re-arms on the next quota, every time, whatever was deleted in
+between. Nothing between quotas reveals it, because the marker only bites when
+it is written, and it is only written when a quota is hit.
+
+There is a second cost, which the first note did not reach. `run.sh` has the
+right answer to a quota already: `give_up=yes` leads to exit 6, "one engine's
+quota is not both engines' quota", and `campaign.sh` flips the role and runs
+the stage on claude -- which was running the critique and ideas stages of this
+same batch all day without trouble. That path fires only when `next_model_in`
+returns empty. It never returns empty, because `gpt-5.4` is always there to be
+tried. A fallback naming a model the account cannot use is therefore not
+merely useless: it *masks* the working recovery, and converts a stage that
+would have been handed to the other engine into a 400, a triage run, and a
+stopped campaign.
+
+What to do instead: fix `run.sh:80`, not the marker -- either name a model the
+ChatGPT account actually has, or set it empty (`NUMBERDB_CODEX_FALLBACKS=`) so
+an exhausted codex takes the exit-6 path to claude. Setting it empty is
+probably right: the comment above that line argues that each step down buys a
+worse table and the campaign should stop rather than build fifteen of them,
+and handing the stage to the other engine honours that better than a second
+model does.
+
+Evidence: 2026-09-23, triage of `20260923T055938Z-build.log` (the 400 and both
+warnings are its last four events); `agents/run.sh` lines 80, 583-601, 645-680;
+`agents/runs/codex-fallback`, mtime 07:25.
+
+## `COSTS.tsv` under-reported a failed resume again, and it was the day's largest build
+
+What happened: the same pattern the 2026-09-18 note recorded, unchanged. The
+row for `20260923T055938Z` is
+
+    20260923T055938Z  build  codex  0  0.0000  error  ...  gpt-5.4  ...  resumed=yes  0  0  0  gpt-5.4=0.0000  T441
+
+Every number describes the resumed attempt -- the 400 that never ran a tool.
+The attempt that did the work ran 85 minutes on `gpt-5.5`, made 309 transcript
+items, built a 903-entry table, and exhausted the account's quota. It is
+recorded as zero turns, zero tokens and $0.0000.
+
+One thing has improved since September: the `table` column says `T441` rather
+than being empty, so draft ownership is now recoverable from the ledger. Spend
+is not. A run that exhausts a quota is by construction the most expensive run
+of its day, and it is the one the ledger prices at nothing -- so the spend
+curve is flattest exactly where the money went, and a quota exhaustion is
+invisible to anything watching cost rather than exit status.
+
+Evidence: 2026-09-23, `agents/runs/COSTS.tsv` line 492, against
+`agents/runs/20260923T055938Z-build.log`.
+
+## A triage `stop` does not stop the machine: the supervisor restarts the campaign
+
+What happened: build run `20260923T055938Z` was triaged at 07:25 and answered
+`stop`, for the `gpt-5.4` fallback recorded in the two sections above.
+`campaign.sh:549` honoured it -- `say "stopping: $verdict"; exit "$status"` --
+and w1's loop ended. At **07:38:51** `workers.sh` started w1 again. At
+**07:38:56**, five seconds later, build run `20260923T073856Z` read the same
+marker, took the same HTTP 400 on turn 1, and bought another triage run.
+
+`agents/workers.sh` is a supervisor (pid 1950235 on this machine, up since
+2026-09-22 20:38:46). Every 300 seconds it asks the process table whether each
+worker's `campaign.sh` is alive in its worktree, and starts it if not. Its
+header explains why, and the reason is sound: on 2026-09-21 the pool sat at one
+worker for sixteen hours because four separate good reasons to end a loop were
+also four reasons for the machine to go quiet.
+
+But the reasons are not all alike. A budget ceiling and a quota are loops
+ending where they should. A triage `stop` is the pipeline saying *a person is
+needed*, and restarting it five minutes later is restarting it into the thing
+the person was needed for. Nothing carries that word from `campaign.sh` to
+`workers.sh`: the supervisor reads only the process table, and `campaign.sh`'s
+exit status is the build's status, which says "failed", not "do not retry".
+
+It is four workers, not one. Each worktree has its own `agents/runs/codex-fallback`
+and all four were written when their own build hit the quota, so all four hold
+`gpt-5.4` / `xhigh`. Four builds failed on the identical 400 inside five
+minutes -- `20260923T073439Z` (w2), `20260923T073856Z` (w1), `20260923T073916Z`
+(w3), `20260923T073936Z` (w4) -- and four triage runs ran concurrently, one per
+worker, each ~$3.
+
+The arithmetic, which is the part worth keeping. The build costs nothing: it
+dies in about a second for $0.0000. The triage does not: `20260923T072522Z` cost
+$3.0653 and took about eight minutes. A worker's cycle is a one-second build, an
+eight-minute triage, an exit, and up to five minutes before the supervisor
+looks -- about thirteen minutes, four to five cycles an hour, times four
+workers. **Roughly eighteen triage runs an hour, about $55 an hour, building
+nothing.** w1's ledger records twenty runs on 2026-09-23 totalling $114.72, so
+the failure loop costs more per hour than the day's real work did.
+
+And it does not converge. The `gpt-5.5` quota refills at Sep 25 03:51, and
+reaching it changes nothing, because `run.sh` never removes the marker: lines
+644 and 655 write `$fallback_marker`, line 584 reads it, and there is no third
+mention. A successful run does not clear it. Only a person does.
+
+Three things follow, of which the first is operational and the others are
+design:
+
+* **The brake is a file.** `touch agents/workers.stop` (or
+  `agents/campaign.stop`) -- the supervisor checks both at the top of its loop
+  and exits, leaving running workers alone. This is the thing to do first when
+  a failure is in the configuration rather than in a table. Not `pkill -f
+  campaign.sh` and not `pkill -f workers.sh`: `workers.sh`'s own header warns
+  that the pattern matches every worker as readily as the supervisor, and this
+  project has killed all four that way more than once.
+* **A triage `stop` has no way to be durable.** Whatever else changes, the
+  verdict a person is meant to act on should survive the campaign that received
+  it -- a flag the supervisor reads would be enough, and `workers.stop` is
+  already the file it would be.
+* **A failure that costs nothing to hit still costs $3 to judge.** Triage is
+  priced for a run that built something, and a build that dies on turn 1 for
+  $0.0000 does not need eight minutes of judgement to be told it has no session
+  to resume. A zero-turn, zero-token, zero-dollar build with an empty `table`
+  column is a case the shell can recognise without guessing at anything.
+
+Evidence: 2026-09-23, triage of `20260923T073856Z-build.log` (twelve lines, two
+identical four-event blocks, no tool call). `agents/runs/workers.log`, the
+restarts at 07:33:31, 07:38:51, 07:39:11 and 07:39:31. `agents/workers.sh`, the
+`while true` loop and the `workers.stop` check. `agents/campaign.sh:517-549`.
+`agents/run.sh` lines 80, 584, 644, 655. `agents/runs/codex-fallback` in all
+four worktrees. `pgrep -fa campaign.sh` showing four loops and four concurrent
+triage runs.
+
+Outcome, ten hours on. The projection above held and nothing broke the loop.
+By 17:13Z on 2026-09-23, w1's `COSTS.tsv` records for the day 74 build runs and
+68 triage runs: **every one of the 68 verdicts written under
+`agents/runs/20260923T*-verdict` is `stop`**, each correct, each acted on by
+`campaign.sh` and each undone by the supervisor minutes later. Triage cost
+$116.58; build cost $38.05 and produced nothing after 05:09Z. All four
+worktrees still hold `gpt-5.4` / `xhigh`.
+
+The split by model is the whole story and is worth recording as a number: of
+the day's 74 builds, the 5 that ran on `gpt-5.5` (all before 05:09Z) each used
+a turn and four produced a table -- T427, T431, T433, T438 -- while all 69 that
+ran on `gpt-5.4` used 0 turns. Nothing about the proposals changed at 05:47Z;
+only the marker did. So when triage sees a 0-turn build, column 8 of
+`COSTS.tsv` is the first thing to read, and a run of consecutive `stop`
+verdicts in `agents/runs/` is the second: if the previous verdict was already
+`stop` for the same reason, the answer is not in this run's log and re-deriving
+it costs another $1.50. The sixty-ninth `stop` is not more informative than the
+first -- it is the same finding, bought again.
+
+## The handover to the other engine is gated on `out_of_quota`, so a non-quota codex failure can never reach it
+
+The note above, *A triage `stop` does not stop the machine*, says the exit-6
+handover to claude never fires because `next_model_in` always has `gpt-5.4`
+left to return. That is not the reason, and the difference decides what fixing
+this actually requires.
+
+`agents/run.sh:634-662` is
+
+    give_up=no
+    if out_of_quota; then
+        ... next=$(next_model_in ...); if [ -n "$next" ]; then ... else give_up=yes; fi
+    fi
+    if [ "$give_up" = "yes" ]; then   # exit 6, campaign.sh hands the stage to the other engine
+
+`give_up` is only assignable inside the `if out_of_quota`, and `out_of_quota`
+(line 556) is
+
+    tail -c 4000 "$log" | grep -qiE '"api_error_status":429|rate.?limit|quota|usage limit|too many requests'
+
+A log reading `"status":400` and `The 'gpt-5.4' model is not supported when
+using Codex with a ChatGPT account` matches none of those five alternatives.
+So **exit 6 is unreachable for any codex failure that is not quota-shaped**,
+and the run exits 1 into triage instead of handing the stage to claude, which
+was working throughout.
+
+So clearing `NUMBERDB_CODEX_FALLBACKS` at line 80 -- still the right change,
+and still what stops the trap re-arming at the next quota -- does not by itself
+buy the recovery. It only reaches the handover on a failure whose log says
+429 or "quota". A permanent 400, a revoked credential, a model retired out from
+under the account: each of those still exits 1, and with the supervisor running
+that is the $52/hour loop again under a different cause. Reaching claude on
+those needs `give_up` to be settable outside the `out_of_quota` branch.
+
+The companion is `worth_resuming` (line 565), whose pattern includes the bare
+alternative `"type":"error"` -- which matches *any* codex error event, since
+that is the envelope codex prints every error in. That is why each of these
+logs is twelve lines and not six: a configuration that will refuse identically
+for ever is classified as worth another go and retried once inside every run.
+The two ends of the same file disagree, and the loose one wins.
+
+## The failure loop, measured: $18.27 in twenty-one minutes, and it eats the queue
+
+The note above estimated about $55/hour by extrapolating one triage run. The
+ledgers now have the rows to measure it. Triage runs across all four worktrees
+between 07:25:18Z and 07:45:50Z on 2026-09-23:
+
+    w1   2 runs   $5.6887
+    w3   4 runs   $6.3668
+    w4   2 runs   $6.2180
+         8 runs  $18.2735     -- about $52/hour
+
+Every build in that window cost $0.0000 and built nothing. w1's cycle is
+measured end to end at eleven and a half minutes: supervisor restart at
+07:38:51, build dead at 07:38:56, triage 07:39:29, verdict `stop` written
+07:44:23, campaign exits, supervisor restarts it 07:50:12, build dead
+07:50:16, next triage 07:50:49. **That second cycle is the proof the first
+verdict could only predict: a triage `stop` was written, read, and restarted
+into within six minutes.**
+
+Two things the earlier note did not have:
+
+* **It is not only the build stage.** w2's `20260923T073411Z` *repair* died on
+  the same 400. Every codex stage in every worktree is refused. A repair dying
+  part-way leaves a half-corrected table, which is a worse state to restart
+  from than a build that never began, and it has not happened yet only by
+  luck.
+* **The loop consumes the queue.** `campaign.sh` claims a proposal before the
+  build runs, so a build that dies in one second still burns a claim. By
+  07:50Z five of the six proposals in family #197 were claimed by builds that
+  never started -- w1 at 07:38Z and 07:50Z, w3 at 07:39Z and 07:44Z, w4 at
+  07:39Z -- and `queue.py open` read `#197  1 left`. `CLAIM_MINUTES = 90`
+  (`agents/queue.py:280`), so they lapse on their own and need no cleaning up;
+  but four workers cycling every eleven minutes claim faster than claims
+  lapse, and a campaign that then finds nothing waiting stops at
+  `campaign.sh:355` for a reason that is not the real one. A failure loop that
+  is merely expensive becomes a failure loop that also misreports why it
+  stopped.
+
+Evidence: 2026-09-23, triage of `20260923T075016Z-build.log`, the second
+identical refusal on w1 in twelve minutes. `agents/runs/COSTS.tsv` in all four
+worktrees. `agents/runs/workers.log`, restarts at 07:44:51 and 07:50:12.
+`agents/runs/20260923T073856Z-verdict`, written 07:44:23Z and restarted into at
+07:50:12Z. `python3 agents/queue.py open` and `show 197`. `agents/run.sh` lines
+80, 556, 565, 584, 623, 634-662.
+
+## The ideas stage still works, so the failure loop never runs out of proposals to drop
+
+The note above predicted the loop would eventually claim the queue empty and
+`campaign.sh:355` would stop for a reason that is not the real one. That
+self-limit does not arrive, because only the *codex* stages are dead. The
+ideas stage runs on claude and is unaffected: `agents/screener.sh` (pid
+1950272) was still up at 08:03Z on 2026-09-23 and `agents/run.sh ideas` (pid
+2395660) was writing `BATCH-2026-09-23T0742` at the time. A working producer is
+feeding a broken consumer, and the consumer's appetite is one proposal per
+worker per eleven minutes.
+
+Measured over the twenty-three minutes after the previous note:
+
+* Family **#197** went from five of six claimed to **six of six, none built**.
+* Family **#198** opened from `BATCH-2026-09-23T0602` and had **three of six
+  claimed within six minutes** -- w3 07:55Z, w4 07:56Z, w1 08:01Z -- every one
+  of them by a build that died on the 400 in under a second.
+
+Claims still lapse at `CLAIM_MINUTES = 90` and still need no cleaning up. The
+damage is not stranded state; it is that the pipeline's only working stage is
+being spent to manufacture work that is guaranteed to be dropped, and that
+there is therefore no natural end to the loop short of the bill.
+
+Cost, extending the twenty-one-minute measurement to thirty-eight, 07:25:18Z to
+08:03Z, all four worktrees:
+
+    w1   7 runs   $7.1921
+    w2   6 runs   $5.7125
+    w3  10 runs   $8.3074
+    w4   6 runs   $8.2678
+        29 runs  $29.4798     -- about $46/hour
+
+Every build row in that window is `$0.0000 error`. The rate is a little below
+the $52/hour measured earlier for one reason worth recording: **successive
+triage runs on the same worker get cheaper**, because each reads the verdict
+before it and writes less. w1's three verdicts cost $3.0653, $2.6234, $1.5034.
+The loop converges on a triage floor of about $1.50 a cycle per worker, not on
+zero, so the hourly rate flattens rather than falling away.
+
+So a person stopping this needs `touch agents/workers.stop` *and* to stop the
+screener; otherwise the batches keep arriving for whatever restarts next.
+
+Evidence: 2026-09-23, triage of `20260923T080136Z-build.log`, the fourth
+identical refusal on w1 and the third consecutive `stop` verdict there
+(07:44:23Z, 07:55Z, 08:0xZ). `python3 agents/queue.py open`, `show 197`,
+`show 198`. `pgrep -af screener.sh`. `agents/runs/COSTS.tsv` in all four
+worktrees. `agents/runs/workers.log`, restart at 08:01:32.
+
+## The `table wanted` backlog is empty because a sweep closed 17 issues with the wrong table
+
+`agents/table-ideas/screen.py requests` prints nothing, and has done since
+2026-09-21. All 126 `table wanted` issues in `numberdb/numberdb-data` are
+closed: 43 on 2026-09-20, 18 on 2026-09-21, 16 on 2026-08-27, the rest older.
+
+Seventeen of them were closed wrongly. Each carries a closing comment of the
+form "This is now https://numberdb.org/T380" or ".../T384" -- T380 is
+*Arithmetic factors $A_k$ in the moments of quadratic Dirichlet $L$-functions*
+and T384 is *Resultants of two monic polynomials*, and neither has anything to
+do with the issue it closed:
+
+    #20 #23 #24 #25 #26 #35 #49 #51 #68 #71 #86 #87 #95 #108 #123 #132 #136
+
+Some are answered anyway by tables built since (#86 by T114/T115/T123/T124,
+#35 by T156 and T272-T277). Several are not: #136 (Cantor and packing
+polynomials), #95 (Newton interpolation), #123 (interpolation on the discrete
+simplex), #68 (bounds in Waring's problem), #132 (moments of primes in short
+intervals). Nothing in the corpus answers those, and nothing now records that
+anybody asked for them.
+
+The mechanism to look for: whatever posts "This is now <url>" takes the table
+from the build it has just finished rather than from the issue it is closing,
+so a run that closes several issues at once stamps them all with its own last
+table. Worth fixing before the next campaign closes anything else; worth
+reopening the five or six that are genuinely unanswered.
+
+Evidence: 2026-09-23. `gh issue list --repo numberdb/numberdb-data --label
+"table wanted" --state all --limit 300 --json number,title,closedAt,comments`,
+then grouping by the T-numbers mentioned in the comments. `gh issue view 136`
+shows the Cantor polynomial request closed with "This is now
+https://numberdb.org/T380".
+
+## `screen.py requests` cannot tell an empty backlog from an unreachable GitHub
+
+`requests()` catches every exception and returns `[]`:
+
+    except Exception as trouble:                     # noqa: BLE001
+        return []
+
+So "no open requests" and "GitHub refused, rate-limited or unroutable" print
+the same nothing, and a run that reads the nothing as "the backlog is empty"
+may be wrong. `already_here` was fixed for exactly this -- it returns
+`(could not ask the corpus: ...)` rather than `[]` -- and `requests` was not.
+Until it is, confirm with `gh issue list --repo numberdb/numberdb-data --label
+"table wanted" --state open` before writing "the backlog is empty" into a
+batch; this run did, and the emptiness is real.
+
+Evidence: 2026-09-23, `agents/table-ideas/screen.py`, lines of `requests()`.
+
+## `agents/sage.sh` treats every argument as a file to mount, so a script takes no options
+
+    agents/sage.sh /tmp/check.py 8        ->  no such file: 8
+
+Every argument after the first is copied into the container and mounted at
+`/work/<basename>`; there is no way to pass `sys.argv` to the script. A
+parameter that would have been an option -- a loop-order cutoff, a sample size
+-- has to be a constant in the file, edited between runs. `sed` on a copy is
+the cheap way:
+
+    sed 's/^MAXLOOP = 8/MAXLOOP = 11/' check.py > check11.py
+
+The mounting behaviour is what makes a data file work, which is the reason it
+is that way: `agents/sage.sh /tmp/check.py /tmp/Periods` gives the script a
+5.7 MB input at `/work/Periods`, read-only, with no copy into the repository.
+
+Evidence: 2026-09-23, the `$@` loop in `agents/sage.sh`; two runs of the
+period checks, one with a 5.7 MB ancillary file mounted beside the script.
+
+## `import numberdb` from the repository root is the Django project, not the client
+
+In a checkout of this repository, `numberdb/` is the site's Django project --
+`settings`, `urls`, `wsgi` -- and Python puts the working directory first on
+`sys.path`. So from the repository root:
+
+    python3 -c "import numberdb; numberdb.table('T53')"
+    AttributeError: module 'numberdb' has no attribute 'table'
+
+while from anywhere else the name is simply missing, because the client is not
+installed on this box at all. It lives at `clients/python`. Both ways round:
+
+    cd /tmp && PYTHONPATH=/home/ubuntu/numberdb-website/clients/python python3 ...
+
+`agents/sage.sh` already does the equivalent inside the container
+(`PYTHONPATH=/app/clients/python`), and its header records the same trap for
+`sage -python`. This note is for the ordinary `python3` calls a screening or
+ideation run makes on the host, which have no such help: `screen.already_here`
+run from the repository root reports `(could not ask the corpus: ...)` for
+every name, which reads like a network problem.
+
+Evidence: 2026-09-23, both invocations above.
+
+## `/tables` and `/tags` are paginated, and a page past the end repeats the last one
+
+There is no call that lists the corpus, so a run that wants the whole of it
+walks `https://numberdb.org/tables?page=N`. The pages hold 50 rows; page 9 held
+21 and page 10 returned the same 21 again rather than an empty page or a 404.
+So the loop must stop when a page contributes **no new T-numbers**, not when it
+comes back empty -- the latter never happens.
+
+Walked this way on 2026-09-23 the corpus is **421 published tables**, T0 to
+T444 with gaps, and `/tags` is 73 tags over two pages. The ideation prompt
+still says 126 tables and 66 tags.
+
+Evidence: 2026-09-23, nine pages of `/tables` (50, 50, 50, 50, 50, 50, 50, 50,
+21) and a tenth contributing nothing.
+
+## The failure loop survived a person's commit, and the pool sizing that arrived is not a fix for it
+
+`agents/run.sh:136` pushes after every stage, so a triage verdict and the note
+it writes here are on `origin/main` within seconds of being committed --
+`git reflog show origin/main` is a column of `update by push`. The notes are
+therefore visible to anybody working in the repository, and on 2026-09-23 one
+was:
+
+    2ee97453  sage, workers: a Sage slot per worker, and a pool sized to the
+              machine        authored 07:57:39Z, parent b39fbcc6
+
+`b39fbcc6` is the verdict note from the codex-400 loop written eleven minutes
+earlier. The commit arrived by fetch at 08:06:58Z, w1 rebased its own note onto
+it and pushed, and the build two seconds later failed on the same 400 as the
+four before it. Afterwards: all four `codex-fallback` markers present with
+mtimes unchanged, `run.sh:80` unchanged, the `out_of_quota` gate unchanged, no
+`workers.stop` or `campaign.stop`, supervisor pid 1950235 still up from
+2026-09-22 20:38:46.
+
+Two things for a later run to take from that. A triage `stop` reaching a
+person's repository is not the same as it reaching the person -- so a sixth
+triage of the same failure should not reason that the fifth must have been
+enough. And **`HEAD` moving away from the commit the prompt names is not
+evidence the run did anything**: here it moved because the *previous* triage's
+note was rebased onto an arriving `origin/main`. `git reflog` distinguishes the
+two in one line; comparing hashes does not.
+
+**The new pool sizing runs one worker on this box, not four.** `room_for()` in
+`workers.sh` takes `(mb - 1200) / (sage_mb + 300)` and the smaller of that and
+`nproc`. Here `free -m` is 1906 and `nproc` is 2, so the memory term is
+`(1906-1200)/1200 = 0`, clamped to the floor of 1, and `min(1, 2) = 1`. The
+supervisor's environment has no `NUMBERDB_*` in it, so `NUMBERDB_FORCE_WORKERS`
+will not override it. It is not in effect yet -- `workers.sh:24` says editing
+the file does nothing until the supervisor restarts, and `workers.log` shows
+w2, w3 and w4 started at 08:07:12, 08:07:32 and 08:07:52, after the new file
+landed at 08:06:58. So the next supervisor restart quietly turns a four-worker
+box into a one-worker box. That is the right bound for 1906 MB, and it is worth
+knowing before somebody wonders why three worktrees went idle.
+
+For the loop it changes the rate and not the fact: measured 07:25:18Z to
+08:07:37Z across all four ledgers, 14 triage runs at $30.5260 against 14 builds
+and 1 repair at $0.0000 -- about $44/hour, which one worker makes about $11/hour
+and still builds nothing.
+
+**Nothing probes the writing engine at supervisor start, and something probes
+the reading one.** `engine_for_reading()` runs `claude -p 'Reply with exactly:
+ok'` once, and its comment gives the reason exactly: without it *"each restart
+would rediscover it, one refusal at a time, for ever."* That is what has
+happened to codex thirty-odd times since 07:25Z. The same one-second probe of
+the model `run.sh` is about to write with would have caught `gpt-5.4` before
+the first build, in the one place a restart passes through.
+
+Evidence: 2026-09-23, triage of `20260923T080700Z-build.log`, the fifth
+identical refusal on w1 and the fourth consecutive `stop`. `git reflog`,
+`git reflog show origin/main`, `git log -1 2ee97453`. `free -m`, `nproc`,
+`/proc/1950235/environ`, `agents/runs/workers.log`. `agents/runs/COSTS.tsv` in
+all four worktrees.
+
+## The failure loop's price for ideation: a $9.70 batch dropped inside a minute
+
+The note above ("The ideas stage still works...") predicted that a working
+producer feeding a broken consumer removes the queue exhaustion that would
+otherwise end the loop. It has now happened with a number attached, which is
+the part worth recording.
+
+Ideas run `20260923T074230Z` **succeeded**: 75 turns, **$9.7020**, 101k output
+tokens, writing `BATCH-2026-09-23T0742` -- family **#199**, the periods of
+Feynman graphs and the multiple zeta values they are made of. Within a minute
+of that family opening, two of its four proposals were claimed by builds that
+died on the same `gpt-5.4` 400 in one second: w4 at 08:12Z, w1 at 08:13Z.
+`queue.py open` then reads `#199  2 left`.
+
+So the loop's bill is not triage alone. It is triage plus about ten dollars a
+batch for proposals manufactured to be dropped. Measured 07:25:18Z to 08:14Z,
+forty-nine minutes, all four worktrees:
+
+    17 triage runs   $35.9285
+     1 ideas run     $ 9.7020
+    16 builds        $ 0.0000
+     1 repair        $ 0.0000
+                     $45.6305     -- about $56/hour, of which $44 is triage
+
+That is the third consecutive batch consumed without a table:
+`BATCH-2026-09-23T0506` (#197, six of six claimed, none built), `T0602` (#198,
+six of six), `T0742` (#199, two of four within a minute). A person stopping
+this needs `touch agents/workers.stop` *and* to stop the screener (pid
+1950272); stopping only the workers leaves the expensive stage running.
+
+**The runner's own advice about the marker is on a path this failure cannot
+reach.** The marker is `fallback_marker="agents/runs/$engine-fallback"`
+(`run.sh:583`), read at 584-586 and written at 644 and 655. `run.sh:685` prints
+*"the quota refills; rerun this stage then, or delete $fallback_marker to start
+from the first model again"* -- but 685 is inside the `give_up` branch, which
+is inside the `out_of_quota` block at 556, which a 400 reading "not supported"
+never enters. The one line that tells anybody how to clear the trap is
+unreachable from the failure that springs it, which is part of why this has now
+refused forty-odd builds without the cure ever being printed.
+
+Evidence: 2026-09-23, triage of `20260923T081316Z-build.log`, the sixth
+identical refusal on w1 and the fifth consecutive `stop`. `agents/runs/COSTS.tsv`
+in all four worktrees, `python3 agents/queue.py open` and `show 199`,
+`agents/run.sh` lines 80, 556, 583-586, 644, 655, 685, `ps -p 1950235,1950272`.
+
+## The screener's throttle cannot engage while builds claim and drop
+
+The note above priced one batch the failure loop threw away and expected more
+"within the hour". The rate is worse than hourly and the reason is structural,
+not a coincidence of timing: **`screener.sh`'s back-pressure is measured in
+proposals *waiting*, and a build that claims a proposal and dies in one second
+removes it from that count without building anything.**
+
+`waiting_now()` (`screener.sh:33-36`) is `queue.py open`, which counts
+unclaimed proposals. The loop sleeps its `every` interval -- 600s -- only on
+the branch where `waiting >= target`; after a successful screening it sleeps
+**30 seconds** and asks again. So while four builders claim four proposals a
+minute and build none, the queue can never reach the target of twelve, the
+600s throttle is never taken, and the screener buys a ten-dollar batch
+back to back for ever.
+
+The live screener's own log (pid 1950272) has the whole shape of it:
+
+    07:02:25  14 proposals waiting, which is enough
+    07:12:27  13 proposals waiting, which is enough
+    07:22:28  13 proposals waiting, which is enough
+    07:32:29  14 proposals waiting, which is enough      <- last quiet check
+    07:42:30   9 proposals waiting, below 12; screening a family
+    08:11:46  a family was opened                        <- $9.7020, 29 minutes
+    08:12:17   4 proposals waiting, below 12; screening a family
+
+Thirty-one seconds after delivering family #199 it found three of its four
+proposals already claimed by builds that had died, and started buying another.
+That run is `20260923T081219Z-ideas`, pid 2440122, ten minutes in and not yet
+in any ledger. The quiet checks stop exactly at 07:32 -- the last one before
+the first `gpt-5.4` refusal at 07:25 had worked through to an empty queue.
+
+Family #199 was consumed in seven minutes: 08:12Z w4, 08:13Z w1, 08:19Z w4,
+08:19Z w1 -- the last of them this triage's build, which claimed *Multiple zeta
+values of length 5*. `queue.py open` now reads `0 waiting`, so the next check
+will screen again.
+
+Measured 07:25:18Z to 08:20Z, fifty-five minutes, all four worktrees' ledgers
+deduplicated by stamp:
+
+    19 triage runs   $39.1809
+     1 ideas run     $ 9.7020
+    18 builds        $ 0.0000
+     1 repair        $ 0.0000
+                     $48.8829     -- about $53/hour
+
+and that excludes the batch in flight and two triages running as this is
+written. Twenty-two build logs across the four worktrees now carry this same
+400.
+
+The practical consequence for whoever stops this: `touch agents/workers.stop`
+alone leaves the *more* expensive stage running, and it will not wind itself
+down. The screener needs `touch agents/screener.stop` -- which it checks at the
+top of its loop, alongside `agents/campaign.stop` -- or its pid stopped.
+
+Evidence: 2026-09-23, triage of `20260923T081916Z-build.log`, the seventh
+identical refusal on w1 and the sixth consecutive `stop`. `agents/screener.sh`
+lines 28-29 and 33-69, `agents/runs/screener.log`, `python3 agents/queue.py
+open` and `show 199`, `agents/runs/COSTS.tsv` in all four worktrees,
+`ps -p 1950235,1950272,2440122`.
+
+## `screen.already_here` answers a descriptive title with the whole corpus
+
+The screen searches the *distinguishing* words of a name and ORs them, and
+`screen.GENERIC` -- the stop list that keeps "polynomials" and "values" from
+matching everything -- does not contain `points`, `random`, `uniform`, `mean`,
+`volume`, `convex`, `position`, `distance` or `two`. So a proposal whose title
+is a description rather than a proper name is screened against nothing:
+
+    already_here("Mean distance between two uniform random points of a region")
+    -> 84 tables, among them "Abel polynomials (matched 'two')",
+       "Feigenbaum constants (matched 'points')",
+       "Bernstein basis polynomials (matched 'uniform')"
+
+Not one of the 84 was a real collision, and finding that out means reading 84
+lines. Asked instead for the proper name of the same family the answer is one
+line or none:
+
+    already_here("Robbins constant")   -> []
+    already_here("line picking")       -> stemmed noise on "line" only
+    search_text('Efron'), ('Valtr'), ('centroid'), ('box integral')   -> nothing
+
+So: screen the **name the subject is known by**, not the sentence the table
+will be titled with, and run `numberdb.search_text` directly on the two or
+three proper nouns as well. A run whose family has no proper noun at all
+should say so, because then the screen is telling it nothing either way.
+
+Two smaller findings from the same session, both in `source_names_it`:
+
+* **A PDF cannot be the cited source.** The check strips HTML tags from the
+  bytes it downloads, and a PDF's text is compressed, so every word is
+  "missing": the Bailey-Borwein-Crandall box-integrals paper failed with "the
+  source does not mention box, integrals". Cite a MathWorld or Wikipedia page
+  and put the paper in the proposal's prose.
+* **A 404 is a fact worth keeping.** `en.wikipedia.org/wiki/Sylvester's_four-point_problem`
+  answers 404 with the apostrophe raw and with it percent-encoded, and `curl`
+  agrees, so the article does not exist under that name however it is written.
+  That is not a screen failure; it is the screen working, and MathWorld's
+  `SylvestersFour-PointProblem.html` passed.
+
+Evidence: 2026-09-23, ideation run 20260923T081219Z, five candidate names
+screened twice each, descriptively and by proper name.
+
+## A lapsed claim goes back into the queue, so the failure loop feeds itself
+
+The note above recorded that a build which claims a proposal and dies still
+burns the claim, and that `CLAIM_MINUTES = 90` (`agents/queue.py:280`) makes
+those claims lapse on their own so they "need no cleaning up". That is true and
+it is half of it. The other half decides how this loop ends, which is that it
+does not.
+
+`waiting()` at `agents/queue.py:306` is:
+
+    return [item for item in family['items']
+            if not item['done'] or stale_claim(item)]
+
+A claim older than ninety minutes counts as **waiting again**. So the lapse
+that makes cleanup unnecessary is also what hands every dropped proposal back
+to be claimed and dropped a second time. The claims are timed, so the schedule
+is exact -- measured at 08:43Z on 2026-09-23, with twenty-two builds dead on
+the `gpt-5.4` 400 and no table built:
+
+    #197  claimed 07:38-07:55Z by builds that died  ->  returns 09:08-09:25Z
+    #198  claimed 07:55-08:07Z                      ->  returns 09:25-09:37Z
+    #199  claimed 08:12-08:19Z                      ->  returns 09:42-09:49Z
+    #200  claimed 08:38-08:40Z                      ->  returns 10:08-10:10Z
+
+Twenty-two proposals come back between 09:08Z and 10:10Z, and every ninety
+minutes after that, with no ideation bought at all.
+
+Two things follow, and both correct advice written earlier today.
+
+* **Stopping the screener is not sufficient.** Three verdicts made `touch
+  agents/screener.stop` the urgent item, on the reasoning that the ideas stage
+  is the working producer feeding the broken consumer. That was right while the
+  queue was being consumed faster than claims lapsed. Once a full cycle has
+  gone by it is not: the workers have a self-replenishing supply of their own
+  leavings. Stopping the screener now only removes the ~$9 per batch ideation
+  line; `agents/workers.stop` is what stops the spend.
+* **`campaign.sh:355` can never fire again.** The `exit 6` on "nothing waiting
+  anywhere and no screening to be had" was the one path by which an empty queue
+  could have ended a worker on its own. From 09:08Z there is always something
+  waiting, so the last self-limit in the loop is gone.
+
+One measurement worth keeping beside this, because it says where the money
+goes. Over 07:25:18Z to 08:40:23Z, all four worktrees deduplicated by stamp:
+22 triage runs $43.4372, 2 ideas runs $17.8423, 22 builds $0.0000 at zero turns
+each, 1 repair $0.0000 -- $61.2795, about $49/hour. Triage is the bill. It is
+*not* growing as the pile of verdicts each run reads grows: the mean is $1.97,
+the first five averaged $2.69 and the last five $1.50. The cost is the number
+of runs, which is four workers on a six-minute cycle, so anything that changes
+the rate changes the bill and nothing about the size of a single triage will.
+
+Evidence: 2026-09-23, triage of `20260923T084003Z-build.log`, the seventh
+identical refusal on w1 and the twenty-second across the four worktrees.
+`python3 agents/queue.py show 197 198 199 200` for the claim times,
+`agents/queue.py` lines 280 and 296-315, `agents/campaign.sh:337-356`,
+`agents/runs/COSTS.tsv` in all four worktrees.
+
+## `stop` is advisory: the supervisor keeps no failure memory across restarts
+
+Thirty-one triage runs today have written `stop` on the first line of a
+verdict. Every one of them. Nothing about the machine's behaviour has changed,
+and the reason is not that anybody ignored them -- it is that there is nowhere
+for a `stop` to be remembered.
+
+`campaign.sh:545` treats any verdict that is not `resume`, `restart` or `skip`
+as "leave", and the worker exits. That is the whole effect of the word. The
+supervisor's loop at `agents/workers.sh:256-283` then does this, once every
+`every` seconds, for ever:
+
+    for n in $(seq 1 "$workers"); do
+        name="w$n"
+        if ! running "$name"; then
+            start "$name" "$(family_for "$n")" || true
+            sleep 20
+        fi
+    done
+    sleep "$every"
+
+`running` is the only question asked. There is no backoff, no counter of
+consecutive failures, and no record that this worker has just been stopped on
+purpose -- `grep -i backoff docs/agent-environment.md agents/workers.sh` finds
+nothing in either. A worker that exits because triage said `stop` is
+indistinguishable, to the supervisor, from one that exited because the machine
+rebooted, and it is restarted within the minute on the same terms.
+
+So the escalation channel the triage prompt describes is inert by construction.
+`agents/runs/workers.log` counts **75 restarts today**, 24 of them inside the
+08:00 hour and 4 in the first five minutes of the 09:00 hour. w1 was restarted
+at 09:02:33 and began the build at 09:02:40 that this note came out of, seven
+seconds later. The only thing that ends the loop is the `agents/workers.stop`
+file, checked at the top of the same loop.
+
+The fix has a precedent in the file itself. `engine_for_reading()` at
+`workers.sh:99-120` already does a one-time preflight probe of the *reading*
+engine at supervisor start, and its comment gives the reason exactly: without
+it, "each restart would rediscover it, one refusal at a time, for ever." The
+*writing* engine gets no such probe. That asymmetry is the entire shape of
+today: a model name the account may not use, rediscovered 29 times since
+07:25Z at one refusal and one ~$1.80 triage each. A one-second probe of the
+model `run.sh` is about to write with, in the one place every restart passes
+through, would have caught it before the first build.
+
+Evidence: 2026-09-23, triage of `20260923T090240Z-build.log`, the tenth
+identical refusal on w1 and the thirty-first `stop` of the day.
+`agents/workers.sh` lines 99-120 and 256-283; `agents/campaign.sh` lines
+505-545; `agents/runs/workers.log`; `head -1` of every
+`agents/runs/20260923T*-verdict` in all four worktrees.
+
+## Triage is never shown the previous verdicts, so ten runs bought the same answer
+
+What happened: this is the eleventh identical `gpt-5.4` refusal today and the
+tenth consecutive triage of one. The sections above cover the marker, the
+supervisor restart, the missing backoff and the absent preflight of the writing
+engine. This note is not about any of those, and deliberately adds no further
+account of the 400 -- twelve sections on this loop already exist and every
+triage run pays to read them.
+
+The new fact is about the triage stage itself. `campaign.sh:517` builds its
+prompt from four things:
+
+    "The build run $stamp failed with status $status. Its log is
+     agents/runs/$stamp-build.log and the campaign was at $before before it.
+     Decide what happens next and write agents/runs/$stamp-verdict."
+
+The stamp, the status, the log and the pre-run commit. All four describe *this*
+run and nothing else. Meanwhile `agents/runs/` already holds
+
+    20260923T055938Z-verdict   stop
+    20260923T073856Z-verdict   stop
+    ... eight more ...
+    20260923T090240Z-verdict   stop
+
+ten one-word answers, in the same directory the prompt names twice, and nothing
+puts them in front of the run being asked. So each triage re-derives the
+diagnosis from the log, `run.sh`, `codex-fallback` and the cost ledger, at
+$1.05 to $3.07 a time -- $18.28 today. Each one arrived at `stop` and each one
+was right; the money went on rediscovering that, not on deciding it.
+
+This is a different lever from the ones already recorded. Fixing `run.sh:80`
+stops the failure; probing the writing engine at supervisor start catches it
+early; a backoff slows the loop. This one is cheaper than all three and
+independent of them: `campaign.sh` can read `head -1` of the last few
+`*-verdict` files before it spends anything, and either pass the count into the
+prompt ("the last N triages of this stage all answered stop") or short-circuit
+to `stop` without buying a run at all. The channel is one `head -1` away from
+being a memory, and today it was a write-only log.
+
+Note also that `attempted` -- the "one attempt per table" guard at
+`campaign.sh:513` -- is a shell variable in the campaign loop, so a supervisor
+restart resets it to 0 along with everything else. It cannot bound anything
+across the restarts that are actually happening.
+
+Evidence: 2026-09-23, triage of `20260923T090858Z-build.log`;
+`agents/campaign.sh` lines 505-548, the prompt at 517 and `attempted` at 513;
+`head -1` of every `agents/runs/20260923T*-verdict`; the triage rows of
+`agents/runs/COSTS.tsv` for 2026-09-23 ($18.2768 over ten runs).
+
+## In this repository `import numberdb` is the Django app, not the client
+
+`agents/table-ideas/screen.py` imports `numberdb` for `already_here`, and the
+stage-one prompt tells a run to call `numberdb.search_text`. Run from the
+repository root both fail in a way that reads like a broken install:
+
+    $ python3 -c "import numberdb; numberdb.search_text('Chebyshev')"
+    AttributeError: module 'numberdb' has no attribute 'search_text'
+
+The client is not installed system-wide here; it is the source tree at
+`clients/python/numberdb`. But the working directory is
+`/home/ubuntu/numberdb-website`, which contains the site's own `numberdb/`
+package, and `''` comes first on `sys.path`, so the site's package wins even
+when `PYTHONPATH` names the client. The two have no symbol in common, so every
+client call raises `AttributeError` rather than anything that points at the
+shadowing.
+
+What works:
+
+    $ cd /tmp && PYTHONPATH=/home/ubuntu/numberdb-website/clients/python python3 ...
+
+A different working directory, not just the `PYTHONPATH`. With
+`NUMBERDB_API_KEY` exported as well, `numberdb.table('T404')` also answers for
+drafts, which is how a proposal checks its area against work in progress; the
+lesson file for this run records that part, since it is true for anybody with a
+key.
+
+Evidence: 2026-09-23, from the repository root the import above gave
+`AttributeError` and `numberdb.__file__` was
+`/home/ubuntu/numberdb-website/numberdb/__init__.py`; from `/tmp` with the same
+`PYTHONPATH` it was `clients/python/numberdb/__init__.py` and
+`search_text('Chebyshev')` returned five tables.
+
+## `screen.py requests` prints nothing when the backlog is empty, which reads as a broken script
+
+`screen.requests()` returns `[]` both when GitHub cannot be reached (it catches
+every exception and returns `[]`) and when there are genuinely no open `table
+wanted` issues. On 2026-09-23 the second is the case: the repository holds 126
+`table wanted` issues and all 126 are closed, so the command prints nothing and
+exits 0. Three batches this week have had to establish that by hand with `gh`
+before trusting it.
+
+A one-line fix would separate the two: print how many issues came back and
+whether the request failed, rather than iterating an empty list. Until then, a
+run that sees no output should confirm with
+
+    $ gh issue list --repo numberdb/numberdb-data --label "table wanted" --state all --limit 300 --json number,state
+
+which on 2026-09-23 returns 126 issues, every one `CLOSED`.
+
+Evidence: 2026-09-23, `python3 agents/table-ideas/screen.py requests` printed
+nothing and exited 0; the GitHub API answered the same query with an empty
+array and a 200.
+
+## A failed repair produces no verdict, so the day's own record undercounts itself
+
+Only the *build* stage's failure reaches triage. `campaign.sh:727-728` runs the
+repair and, when it fails, says so to the campaign log and carries on to the
+offer:
+
+    run_stage writer repair "Act on $critiques/$tid.md, ..." \
+        || say "the repair run failed; the critique stands and somebody should read it"
+
+`say` is `printf` to stdout. Nothing reads it, no `-verdict` file is written,
+and the loop continues. The same is true of the critique at line 714 and of
+the earlier repair arm at 442-444.
+
+On 2026-09-23 this happened once and cost a finished table its corrections.
+The ledger has exactly one repair error, `20260923T073411Z` (T443, the
+`gpt-5.4` 400 that also killed every build that day), and there is no
+`agents/runs/20260923T073411Z-verdict` in any of the four worktrees -- the next
+verdict on w2 is `20260923T073439Z`, the build that followed. T443 was built
+for $11.39 and critiqued for $4.82; `/home/ubuntu/numberdb-critiques/T443.md`
+is 12140 bytes with six findings, five of which the critic said it would act
+on, and `T443-repaired.md` does not exist. Every other table that day has both
+files.
+
+The consequence for anybody reading `agents/runs/*-verdict` as the record of
+what went wrong: it is the build column only. That day's refusals were 43
+builds **and one repair**; forty-two verdicts were written and each of them
+counted only the builds, so every "Nth consecutive failure" figure in them is
+low by the non-build stages. A stage other than the build can fail this way
+indefinitely without a single verdict appearing.
+
+The smallest fix is to call `run_triage` on the critique and repair failures
+too, or -- cheaper, since a repair failure does not need a judgement so much as
+a witness -- to append the stamp to a file the next triage reads, so the
+failure is at least counted.
+
+Evidence: 2026-09-23, `agents/campaign.sh` lines 442-444, 714 and 727-728;
+`agents/runs/COSTS.tsv` in all four worktrees, the single `repair ... error`
+row at `20260923T073411Z`; `ls /home/ubuntu/numberdb-*/agents/runs/20260923T0734*-verdict`
+returns only `20260923T073439Z-verdict`, which is a build;
+`/home/ubuntu/numberdb-critiques/` holds `T440.md` + `T440-repaired.md`,
+`T442.md` + `T442-repaired.md`, and `T443.md` alone.
+
+## The `table wanted` backlog is empty, and an empty backlog looks like a broken network
+
+`agents/table-ideas/screen.py requests` prints nothing and exits 0. That is
+correct: on 2026-09-23 there were **126 `table wanted` issues in
+numberdb-data and 0 of them open**, the last having been closed on
+2026-09-21. The only open issues were #133 and #137 (`enhancement`, both about
+extending an existing table) and #196 to #202, which are this stage's own
+`proposal` issues from earlier the same day.
+
+The problem is that the same empty output is what the script prints when it
+cannot reach GitHub, because `requests()` catches every exception and returns
+`[]`:
+
+    except Exception as trouble:                     # noqa: BLE001
+        return []
+
+`already_asked` in the same file is careful about this -- it returns
+`['could not ask GitHub (...)']` so that a failed question and an empty answer
+do not look alike -- and `already_here` has a comment explaining why that
+matters. `requests()` is the one that does not. A prompt that says "start from
+the open requests" therefore cannot tell "there is nothing left to build from"
+from "the network is down", which are opposite results.
+
+Until that is fixed, a run told to start from the backlog should confirm with
+the authenticated client, which distinguishes them:
+
+    gh issue list --repo numberdb/numberdb-data --label "table wanted" \
+        --state all --limit 400 --json number,title,closedAt
+
+`gh` is installed and authenticated here as `bmatschke` via `GH_TOKEN`;
+`screen.py` uses bare `urllib` with no token, so it is also subject to the
+60-per-hour unauthenticated core limit and the much tighter search limit,
+while `gh` is not.
+
+## Walking the T-numbers is the only way an agent sees the drafts
+
+`https://numberdb.org/drafts` returns the sign-in page when fetched with
+`Authorization: Bearer <key>`. The listing is behind a session cookie, not the
+API key, so a program with a key cannot read it.
+
+What does work is `numberdb.table('T445')`: the API serves a draft table to a
+key that may see it, so a walk of the T-numbers reaches drafts as well as
+published tables. On 2026-09-23 that walk answered for 444 tables between T1
+and T445, gaps at T75 and above T445, and the tail of it -- T441 to T445, the
+Tracy-Widom family built hours earlier -- is exactly the part `search_text`
+did not return (see the proposals lesson for this run). For an ideation run the
+practical consequence is that the duplicate check has to be the walk; the
+search alone will not show what the campaign built this morning.
+
+The walk costs about 450 requests. Do it with the key configured
+(`numberdb.configure(api_key=...)`) or it is throttled part way through, which
+is the failure `agents/verify-corpus.py` already documents for the same reason.
+
+## `pkill -f <name>.py` from the Bash tool kills the shell that runs it
+
+A call of the form
+
+    pkill -f checks3.py; cat > /tmp/checks4.py <<'PY'
+    ...
+    PY
+    python3 /tmp/checks4.py
+
+kills itself. `pkill -f` matches against the full command line, the shell's own
+command line contains the string `checks3.py` as the argument to `pkill`, and
+the shell dies before the heredoc is written. The visible symptom is two turns
+later and points somewhere else entirely:
+
+    python3: can't open file '/tmp/checks4.py': [Errno 2] No such file or directory
+
+and the earlier background job is reported as having failed with exit code
+144. Use `pkill -f '[c]hecks3.py'`, or kill by the job's PID, or -- since every
+long computation here is already started with `timeout` -- just let it expire.
+
+## The failure loop has spent the key's hourly allowance, so triage cannot read what it is asked to report on
+
+The note above at "Keyed API reads are rate limited too" records a repair
+meeting `429 (1000 requests per 60 minutes)` on a draft it owned. That is now
+the normal state, and the loop is what spends it.
+
+At 09:44Z on 2026-09-23, with four builds dead and their triages running,
+`GET /api/table?id=T441` with the zeta3 key answered
+
+    429 {"error": "Rate limit exceeded (1000 requests per 60 minutes)",
+         "retry_after": 970}
+
+The builds cannot be the spenders: **50 of the 51 build runs since 05:59:38Z
+used zero turns and $0.0000** -- the only exception is `20260923T061859Z` on
+w2, which built T443 for $11.39. A run that completes no turn issues no tool
+call, and `campaign.sh:663-668`'s own fill-check `curl` is skipped because the
+transcript yields no `tid`, so the whole build stage costs the allowance
+nothing. What is left running is
+everything the loop still reaches, and each of those stages reads the API hard:
+the ideas runs screen every candidate against the corpus (8 today, $73.24), and
+the **triages read it to answer "what did it leave behind"** -- 46 today,
+$89.21, of which 23 and $43.79 were in the single hour to 09:44Z, three or four
+of them concurrent at any moment.
+
+So the loop's shape is self-blinding: a build that dies in one second spawns a
+triage that costs $1.94 and a few dozen API reads, four workers do it in
+parallel, and within the hour the account's whole allowance is gone. This
+triage could not re-read T441 or T443, could not read `/api/claim`, and had to
+take the previous verdict's readings on trust for want of a request to check
+them with. The next one will be worse off, because it will be the 47th.
+
+The `retry_after` is the honest measure of it: 970 seconds of an hour already
+spent, at a moment when nothing whatever was being built.
+
+Evidence: 2026-09-23 09:44Z-09:47Z, `/tmp/probe.py` against the live site with
+`$NUMBERDB_KEY_FILE`; the same 429 body three times sixty seconds apart with
+`retry_after` 937, 876, 816. `agents/runs/COSTS.tsv` in all four worktrees for
+the build, ideas and triage rows quoted; `ps` at 09:45Z showing `agents/run.sh
+triage` for `20260923T093759Z`, `20260923T093841Z` and `20260923T093900Z` alive
+together, plus the `20260923T092122Z` ideas run started at 09:21:31.
+
+## Thirteen drafts are held against a ceiling of fifteen, so draft creation is the next wall behind gpt-5.4
+
+`draft_allowance` (`numberdb_app/permissions.py:311-322`) counts **every**
+unpublished table `created_by` the account -- including one already offered for
+review, since offering is not publishing -- and `may_create_drafts_through_api`
+refuses when that count reaches the ceiling. Two notes above establish that
+zeta3's ceiling is the deployed default of fifteen and not the `bulk drafts`
+hundred: the T146 creation answered `drafts_held = 6, drafts_remaining = 9`,
+and the T152 one `drafts_held = 2, drafts_remaining = 13`.
+
+The triage of `20260923T092540Z` established by probing with and without the key
+that **thirteen of T415-T445 were unpublished** at 09:26Z on 2026-09-23. All of
+T415-T444 were created by campaign builds on this key, and a draft is visible to
+its author and the board only -- zeta3 is not on the board -- so those thirteen
+are zeta3's own, and the true held count is thirteen *or more*, since drafts
+older than T415 would not have been in that range.
+
+That leaves at most two. The campaign creates a draft every ten minutes or so
+when it is healthy, and the count only falls when a person publishes one; the
+offer step is not even reached by a build that failed (see "The campaign's offer
+step cannot be reached by a build that failed"), so the drafts have been
+accumulating all day without anybody being asked to look at them.
+
+The consequence for whoever fixes `run.sh:80`: the engine is not the only wall.
+Two more tables after the fix, `POST /api/tables` starts answering 403 from
+`may_create_drafts_through_api`, with a message about drafts and nothing to do
+with gpt-5.4, and every build fails again in a new way. The fix for that one is
+not in this repository -- somebody has to review and publish the backlog, or
+put zeta3 in the `bulk drafts` group.
+
+What cannot be read from here: the exact held count. `Table.objects.filter(
+created_by=zeta3, published=False).count()` needs the server's database, and
+the only proxy this side has is `drafts_held`/`drafts_remaining` in the 201 body
+of `POST /api/tables` -- which only a build that successfully creates a table
+sees, and none has since 06:27Z.
+
+Evidence: 2026-09-23; `numberdb_app/permissions.py:268` (`DRAFTS_IN_FLIGHT`,
+default 15), `:288` (`BULK_DRAFTS_IN_FLIGHT`, default 100), `:298-322`;
+`numberdb/settings/base.py:391,398`; `numberdb_app/api.py:985,1056` for the
+refusal and the reported allowance; the thirteen-draft count and its method in
+`agents/lessons/proposals/20260923T092609Z-triage.md`; the two `drafts_remaining`
+readings in the notes at "The draft ceiling of fifteen is deployed" and "The
+draft ceiling is fifteen and the run prompt still says five".
+
+## `pgrep -fa claude` pastes every sibling agent's whole prompt into the agent that ran it
+
+What happened: triaging build run `20260923T100820Z`, I wanted to know whether
+the worker pool was still turning, and ran
+
+    pgrep -fa workers.sh; pgrep -fa campaign.sh
+
+as the note at *Sage checks queue behind another campaign's* recommends
+(`pgrep -fa codex` or `pgrep -fa claude` "says whether another campaign is on
+the machine"). It does say that. It also says a great deal more. Each worker's
+`campaign.sh` has a `claude -p '<the entire stage prompt>'` child, and `-f`
+matches against the full command line while `-a` prints it. So the output
+contained three complete copies of the triage brief -- about 900 words each,
+plus every `--allowed-tools` and `--disallowed-tools` flag and the `--session-id`
+-- for the two sibling triages and for the reading agent's own process, which
+`pgrep` matches too. Roughly fourteen thousand tokens to learn that four loops
+are alive.
+
+Two costs, and the second is the one worth the note:
+
+* The tokens. On a stage whose entire job is to be cheaper than the run it
+  judges, one diagnostic can be a tenth of the budget.
+* **The text arrives as tool output and reads as instructions.** What comes
+  back is a prompt in the imperative -- *Write `agents/runs/<stamp>-verdict`
+  with one word on the first line* -- addressed to a different run about a
+  different stamp. `20260923T100839Z` and `20260923T100900Z` appeared in my
+  context in the same grammar as my own task. Confusing another worker's stamp
+  for one's own would put the verdict in the wrong file, and the run prompt's
+  own rule -- *work from the database and the issues, not from other people's
+  transcripts* -- is the rule this accidentally breaks.
+
+What to do instead: ask the process table for a count or for fields that are not
+the command line.
+
+    pgrep -f campaign.sh | wc -l                    # how many loops
+    pgrep -f workers.sh | head -1                   # is the supervisor up
+    ps -o pid=,etime=,args= -p "$(pgrep -f workers.sh | head -1)" | cut -c1-120
+
+`pgrep -f <pat> | wc -l` answers "is the pool turning" with one integer, which
+is the question. When the command line genuinely matters, truncate it: `ps
+-o args= -p <pid> | cut -c1-200`. And remember `pgrep -f` matches the shell that
+ran it, so a count is one higher than the number of siblings -- the same
+self-match that `agents/workers.sh`'s header warns about for `pkill -f`.
+
+Evidence: 2026-09-23, triage of `20260923T100820Z`. The recommendation being
+corrected is in this file under *Sage checks queue behind another campaign's
+build*. The same command's useful form is at
+`agents/runs/20260923T092609Z-verdict`'s sibling notes and in the evidence line
+of *A triage `stop` does not stop the machine*, which cites `pgrep -fa
+campaign.sh showing four loops and four concurrent triage runs` -- that reading
+cost the same fourteen thousand tokens.
+
+The count, since this triage established it: `20260923T100820Z` is the
+**fourteenth** zero-turn `gpt-5.4` build today and the fourteenth `stop`.
+Every one of `agents/runs/20260923T0*-verdict` and `...T09*-verdict` begins
+with the word `stop` -- 055938Z, 073856Z, 075016Z, 080136Z, 080700Z, 081316Z,
+081916Z, 084003Z, 085640Z, 090240Z, 090858Z, 092540Z, 093759Z. At 10:09Z
+neither `agents/workers.stop` nor `agents/campaign.stop` exists, `workers.sh`
+is pid 1950235, and `agents/runs/codex-fallback` still reads `gpt-5.4` /
+`xhigh`. Thirteen consecutive verdicts asking for a person changed nothing
+about the machine's behaviour, which is the design note at *A triage `stop` has
+no way to be durable* holding up under thirteen trials.
+
+## The `table wanted` backlog is empty, and `screen.py requests` says so silently
+
+What happened: an ideation run was told to build its batch around an open
+request. `python3 agents/table-ideas/screen.py requests` printed nothing and
+exited 0. That is the same output the script gives when it cannot reach GitHub
+-- `requests()` swallows every exception and returns `[]` -- so the run could
+not tell an exhausted backlog from a dead network without asking twice.
+
+It is exhausted. Three pages of `state=all` from
+`/repos/numberdb/numberdb-data/issues?labels=table+wanted`: **126 issues, all
+closed, every one with `state_reason: completed`**. The ten open issues in the
+repository are eight `proposal` family issues from the 2026-09-23 runs
+(#196-#203) and two `enhancement` asks, #133 on T88 and #137 on T223. So the
+prompt's instruction to anchor a batch on a request cannot be followed by any
+run from now on, and a run that reports "no requests" is reporting the truth.
+
+How to separate the two answers in one command, before concluding anything:
+
+    curl -s -o /dev/null -w '%{http_code}\n' \
+      'https://api.github.com/repos/numberdb/numberdb-data/issues?state=open&labels=table%20wanted'
+
+200 with an empty body is an empty backlog; anything else is the network. The
+same distinction as `already_here`'s -- a failed question and an empty answer
+must not look the same -- except that here it is the *requests* helper that
+does not make it.
+
+Evidence: 2026-09-23T10:1xZ. `screen.py requests` silent, `gh issue list
+--label "table wanted" --state open` silent, the API 200 in 0.27s with `[]`,
+and the three-page pull counting 126 completed.
+
+## The Sage image has SnapPy and does not have `surface_dynamics`
+
+What happened: a batch of Masur-Veech volumes, Siegel-Veech constants and
+Lyapunov exponents of the Hodge bundle -- an area the corpus covers nowhere,
+`search_text('Masur')` and `search_text('translation surface')` both zero --
+was dropped at the screening stage because nothing in the image can compute a
+volume of a stratum. The probe:
+
+    surface_dynamics   NO  ModuleNotFoundError
+    snappy             OK  3.3.2
+    flatsurf           NO  ModuleNotFoundError
+    SageMath version 10.9, Release Date: 2026-05-04
+
+Without `surface_dynamics` every value in that family would be transcribed from
+a paper, with no second source and no brute-force check short of counting
+square-tiled surfaces by hand, so the batch went elsewhere. Recorded because
+the area is a good one and the only thing standing in its way is a package: a
+builder image with `surface_dynamics` installed would make four or five tables
+possible that are impossible today. `snappy` being present is the precedent --
+it is in the image because two knot tables needed it.
+
+Evidence: `/tmp/sd_probe.py` under `agents/sage.sh`, 2026-09-23.
+
+## The key's allowance is a rolling hour, so triage's blindness comes and goes rather than deepening
+
+The note above at "The failure loop has spent the key's hourly allowance" ends
+by predicting that the next triage "will be worse off, because it will be the
+47th." That prediction is wrong, and it is worth correcting before somebody
+plans around it. The limit is 1000 requests per **rolling** 60 minutes
+(`numberdb_app/throttle.py`), so an hour after a spending spike the allowance
+is back whether or not the loop has calmed down.
+
+Measured: at 09:44Z on 2026-09-23 `GET /api/table?id=T441` with the zeta3 key
+answered `429 ... retry_after: 970`, three times a minute apart. At 10:18Z --
+thirty-four minutes later, with the loop still turning, four more dead builds
+and their triages in between -- the same request returned the document, and so
+did five more reads. The 58th triage could see what the 47th could not.
+
+What this means for a triage asked "what did it leave behind": **try the read**
+before falling back to a previous verdict's readings. The refusal is not a
+state the loop settles into; it is a bucket that empties when an ideas run
+sweeps the corpus (each screens every candidate against it) and refills an hour
+later. Two targeted reads cost nothing against a thousand -- what exhausts the
+bucket is a corpus walk or a thirty-id sweep, not a check of the two tables the
+verdict actually names. Taking the previous verdict's word for something a
+single request would settle is how a figure repeated through eleven verdicts
+stops being checked by anybody: this triage confirmed T441 at 903 entries and
+T443 at 1001 by asking, and both are still unpublished.
+
+Evidence: 2026-09-23. The 09:44Z 429s are recorded in the note above with
+`retry_after` 937, 876, 816. At 10:18-10:25Z from
+`/home/ubuntu/numberdb-website`, keyed `GET /api/table?id=T441` and `T443`
+returned 200 with their documents (T441's `Numbers` keyed `'1'`,`'2'`,`'4'` at
+301 values each; T443 1001 entries), and anonymous reads of both returned the
+"does not exist" reply, with `T444` and `T99999` as controls -- eight requests
+in all. `numberdb_app/throttle.py:57-62`, `88-106`.
+
+## The queue has begun a second lap: the same proposals, claimed and dropped twice
+
+The note at "A lapsed claim goes back into the queue, so the failure loop feeds
+itself" predicted this; it has now happened and can be timed. All five
+proposals of family #200 were claimed between 08:38Z and 08:45Z by builds that
+each died in a second on `gpt-5.4`. `CLAIM_MINUTES = 90`, so they lapsed, and
+at 10:14:35-10:15:15Z -- within forty seconds of the supervisor restarting w1,
+w2 and w4 -- three of the five were claimed again, by three builds that also
+died in a second. `queue.py open` still reads 8 waiting.
+
+The detail worth having: the queue serves the **oldest** open proposal, so as
+claims lapse the workers walk *backwards* through the day's batches. Build
+`20260923T100820Z` on w1 drew from `BATCH-2026-09-23T0856`; the next build on
+the same worker, `20260923T101439Z`, drew from `BATCH-2026-09-23T0812`. So the
+nine ideas batches written today ($82.16) do not form a queue that drains -- the
+loop re-enters the earliest of them every ninety minutes, and each lap buys a
+fresh set of ~$2 triages to judge proposals that have already been judged. The
+cost of a lapsed claim is not the lost table; it is the triage of losing it
+again.
+
+Evidence: 2026-09-23, `agents/queue.py show 200` at 10:20Z (claim times and
+holders); `agents/runs/workers.log` (w1 10:14:35, w2 10:14:55, w4 10:15:15);
+the `batch` column of `agents/runs/COSTS.tsv` for `20260923T100820Z` and
+`20260923T101439Z`, both w1; `agents/queue.py` `CLAIM_MINUTES`.
+
+## The ideas stage exits 0, so the breakage is invisible to it and it fills a queue nothing is emptying
+
+Every note above about the `gpt-5.4` loop measures it through triage, because
+triage is where the money visibly goes. That undercounts it, and it misreads
+which stage a person has to stop.
+
+The ideas stage does not use the codex engine. It runs on claude, it has
+succeeded every time today, and it **exits 0**, so no failure path in the
+pipeline -- not `out_of_quota()`, not the `exit 6` handover, not triage, which
+is only invoked for the build stage -- ever looks at it. It therefore keeps
+running at full rate throughout a breakage that has made its output
+unconsumable. Since the first refusal at 05:59Z it is the second-largest line
+in the ledger, and it is larger than every codex stage combined:
+
+    since 05:59Z, four worktrees, deduplicated by (stamp, stage):
+      triage     62 runs  $121.62
+      ideas       7 runs  $ 59.45   <- exits 0; nothing watches it
+      repair      4 runs  $ 14.26
+      critique    2 runs  $ 12.51
+      build      66 runs  $ 11.39
+      total     142 runs  $219.24   and no table
+
+The consequence is worse than the cost. Earlier notes established that the
+queue does not drain -- claims lapse at `CLAIM_MINUTES = 90` and the workers
+walk backwards through the day's batches re-failing proposals. Two
+measurements thirteen minutes apart show it is not merely failing to drain, it
+is **filling**:
+
+    10:14Z   8 waiting   across #200, #203
+    10:27Z  12 waiting   across #201, #203, #204
+
+Builds consume nothing; ideas adds about five proposals per batch at ~$8.49 a
+batch. So the backlog grows monotonically for as long as the supervisor runs,
+and each new proposal is another claim for a dead build to take and drop,
+another lapse, and another ~$2 triage to judge it a second time.
+
+Two things follow for whoever fixes the engine:
+
+* **`touch agents/workers.stop` is not sufficient on its own.**
+  `agents/screener.stop` is the one that stops ideas. Stopping only the workers
+  leaves the most expensive still-running stage running.
+* **Fixing `run.sh:80` and restarting does not clear the debt.** It restarts
+  into twelve waiting proposals across four families, two of which are already
+  on their second lap, with a screener still adding to them faster than a
+  healthy build stage drains them. The queue should be inspected, and probably
+  truncated, before the engine is repaired -- otherwise the first thing a
+  working build stage meets is the ceiling of fifteen drafts, which is the wall
+  behind this one.
+
+The general shape, which is the part worth keeping: **a stage that cannot fail
+is not the same as a stage that is doing useful work.** The pipeline's health
+checks all ask whether a stage exited non-zero. A producer whose consumer is
+dead exits 0 every time, costs the most, and is the last thing anybody looks
+at.
+
+Evidence: 2026-09-23, triage of `20260923T102622Z-build.log`.
+`agents/runs/COSTS.tsv` in all four worktrees, deduplicated by `(stamp, stage)`
+-- 196 rows today ($574.29), 142 since 05:59Z ($219.24), the `ideas` rows being
+`20260923T0837`, `0921`, `1003` and four earlier. `agents/queue.py open` at
+10:14Z (recorded in `20260923T101439Z-verdict`) and at 10:27Z; `show 201`
+showing two proposals claimed at 08:56-09:02Z and re-claimed at 10:26Z.
+`agents/table-ideas/BATCH-2026-09-23T*.md`, ten batches today.
+`agents/workers.sh`, the `workers.stop` and `screener.stop` checks.
+
+## A lapsed claim outlives the table it produced, so the queue re-orders finished work
+
+Earlier notes establish that `agents/queue.py` claims lapse at
+`CLAIM_MINUTES = 90` and that the workers therefore walk backwards through the
+day's batches re-failing proposals. That is the harmless version. Here is the
+harmful one, found while triaging `20260923T103220Z`.
+
+A proposal's line is ticked to `[x] Title -- [T441](...)` at `queue.py:484`,
+and only when a run hands the queue a table id. A run that creates the table
+and then dies leaves `[~] claimed by w4 at 09:03Z`. Ninety minutes later
+`claim()` (line 752) treats that line as stale and re-serves it, unbuilt, to
+the next worker. The table is not mentioned anywhere in the family issue, so
+nothing downstream knows it exists.
+
+It has happened. Family #196's first-ranked proposal, *Values of the
+Tracy-Widom distribution functions $F_\beta(s)$*, was open in the pool again at
+10:33Z on 2026-09-23, while the table it asks for sat in the database:
+
+    GET /api/table?id=T441  keyed  200  903 entries, keys '1','2','4'
+    GET /api/table?id=T441  anon   200  {"error": "... does not exist."}
+
+Complete, unpublished, and invisible. The ledger knew -- the row for
+`20260923T055938Z` carries `T441` in its `table` column and zero in every other
+column -- but the ledger and the queue never speak, so the checklist was never
+told. And the build that receives the re-served proposal cannot find out for
+itself: `search_text` indexes published tables only, so `already_here` is blind
+to drafts. It would build T441 a second time, spend a full build's money, and
+take a second of the five draft slots to collide with itself.
+
+The docstring at `queue.py:765` states the assumption the design rests on: *"a
+campaign that dies mid-build leaves one for a person to look at, which is the
+right amount of ceremony for a checklist in an issue."* That is true of a
+campaign that dies once. It is false of one that dies sixty-nine times in five
+hours, because the ninety-minute lapse converts a marker meant for a person
+into an instruction to rebuild. A timeout tuned for a worker that crashed is
+the wrong timeout for a stage that cannot start.
+
+Two consequences:
+
+* **Reconcile the queue against the corpus before repairing the engine, not
+  after.** The ledger's `table` column is the reconciliation key: any build row
+  carrying a table id whose queue line is still `[~]` should be ticked to `[x]`
+  by hand. Restarting first sends the first healthy build in five hours to
+  rebuild finished work.
+* **A `[~]` is not evidence that a table was not built**, and neither is a
+  family issue read on its own. The database is the authority; the checklist is
+  a cache with no invalidation.
+
+Evidence: 2026-09-23, triage of `20260923T103220Z-build.log`.
+`agents/queue.py open` (11 waiting, #196/#203/#204) and `show 196` at 10:33Z;
+`agents/queue.py` lines 280, 303, 484, 752-786; the `table` column of
+`agents/runs/COSTS.tsv` for `20260923T055938Z`; `GET /api/table?id=T441` keyed
+and anonymous at 10:33Z.
+
+## The attempt counter is process-local too, so neither brake on the failure loop can hold
+
+What happened: the note above, *A triage `stop` does not stop the machine*,
+records that a `stop` verdict cannot reach `workers.sh` -- `campaign.sh` exits,
+the supervisor reads only the process table, and a fresh campaign starts within
+five minutes. That note treats the attempt limit in `campaign.sh` as the thing
+still standing between the machine and an unbounded loop. It is not.
+
+`campaign.sh:514` gates triage on
+
+    if [ -n "$stamp" ] && [ "$attempted" -lt 2 ]; then
+
+and the comment above it calls this "what is policy rather than judgement: one
+attempt per table". But `attempted=0` is set at line 63, outside the `while`
+loop, once per process -- and the `stop` branch at 546-547 exits the process.
+So a campaign that hits this failure runs exactly one build, triages it, and
+dies with `attempted` still 0. The supervisor starts a new `campaign.sh`, which
+sets `attempted=0` again.
+
+The counter therefore limits only `resume` and `restart` *within* a single
+campaign process. It cannot limit the stop-restart-stop cycle at all, because
+that cycle destroys the variable on every iteration. "One attempt per table" is
+true per process and vacuous per table: nineteen builds on 2026-09-23 each
+believed they were the first attempt.
+
+Both brakes on this loop are scoped to a process that exits every time the
+failure occurs. That is the shape of the bug, and it is why the loop is
+unbounded rather than merely expensive: there is no counter anywhere that
+survives to notice repetition. The only durable state is on disk --
+`agents/runs/codex-fallback`, which sustains the failure, and
+`agents/workers.stop`, which a person must create by hand.
+
+Measured this time: nineteen `gpt-5.4` builds in the ledger for 2026-09-23, all
+0 turns and $0.0000; eighteen triage runs in w1 alone totalling $36.5233 against
+a worktree day of $195.574; twenty-one build logs in the repository carrying the
+400. **All nineteen verdict files in `agents/runs/` say `stop` -- the triage
+stage has never returned any other word.** A stage whose output is constant is
+not deciding anything, and the constant has been ignored nineteen times.
+
+What to do instead: whatever fixes `run.sh:80`, the loop also needs one piece of
+state that outlives a campaign process. `agents/workers.stop` is already the
+file the supervisor reads; having `campaign.sh` create it on a `stop` verdict
+would make the verdict durable and cost nothing. Failing that, a count of
+consecutive zero-turn builds kept in `agents/runs/` would at least let the
+second occurrence know about the first.
+
+Evidence: 2026-09-23, triage of `20260923T104400Z-build.log` (twelve lines, two
+identical blocks, no tool call, for "Quantiles of the standard normal
+distribution", family #197). `agents/campaign.sh` lines 63, 514, 526, 537, 541,
+546-551. `agents/runs/COSTS.tsv` rows for 2026-09-23. `head -1` of every
+`agents/runs/*-verdict`. `pgrep -fa "workers.sh|campaign.sh"` at 10:47Z showing
+`workers.sh 4`, three live campaigns and three concurrent triage runs, with
+neither `agents/workers.stop` nor `agents/campaign.stop` present.
+
+## The Codex quota's "try again at" time does not predict availability, and the fallback marker makes sure nobody finds out
+
+The note above at "the fallback must name a model the ChatGPT account actually
+has" records the shape of the 2026-09-23 loop correctly. One inference drawn
+from it since is wrong, and it is the one that decides how long the campaign
+stays down.
+
+The usage-limit message carries a reset time:
+
+    You've hit your usage limit. Visit https://chatgpt.com/codex/settings/usage
+    to purchase more credits or try again at Sep 25th, 2026 3:51 AM.
+
+That has been read as a two-day horizon. The day's codex runs, ordered across
+all four worktrees, say otherwise:
+
+    05:59:38Z  w1  usage limit hit, falls back to gpt-5.4, 400
+    06:05:21Z  w2  gpt-5.5  success
+    06:10:43Z  w4  gpt-5.5  success
+    06:18:59Z  w2  gpt-5.5  success  -> T443, 1001 entries, $11.39
+    06:27:51Z  w4  usage limit hit, falls back, 400
+    06:52:06Z  w3  gpt-5.5  success        <- last success anywhere
+    07:08:48Z  w3  usage limit hit, falls back, 400
+    07:25Z-07:34Z   all four codex-fallback markers last written
+    07:33Z onward   every run gpt-5.4, 0 turns, $0.0000
+
+`gpt-5.5` built a complete table at 06:18Z and completed another run at
+06:52Z -- 53 minutes after w1 had been told to try again on Sep 25. One worker
+was being served while another was refused, so the limit is not a single
+account-wide gate that opens at the stated time, and the stated time is the
+worst case rather than the forecast.
+
+Why it matters: the two facts compose badly. Availability fluctuates, and
+`agents/runs/codex-fallback` is sticky and is read by every later stage
+(`run.sh:583-586`), so the first refusal a worktree meets pins it to `gpt-5.4`
+permanently. **No run in any worktree has attempted `gpt-5.5` since
+07:08:48Z.** The campaign is not waiting out a quota it has measured; it is
+failing on an entitlement error against a model nobody chose, and the marker
+guarantees the question "can we build now?" is never asked again. Four hours of
+possible availability have gone untested, at roughly $2 of Opus triage per dead
+build per worker.
+
+What to do with it: treat the reset time as a lower bound on nothing and an
+upper bound only. Before assuming the account is out, clear the marker and
+spend one `gpt-5.5` run to find out -- it is the cheapest measurement
+available, and the alternative is a two-day outage that may be self-inflicted
+from the first minute. When the marker is cleared, clear all four; each
+worktree has its own, and one left behind keeps that worker dead and keeps
+paying to triage it.
+
+Evidence: 2026-09-23, triage of `20260923T105521Z-build.log`.
+`agents/runs/COSTS.tsv` rows for 2026-09-23 in all four worktrees (79 builds
+since 05:59:38Z, exactly one with turns > 0); `grep "usage limit"` over the
+day's build logs, matching in `20260923T055938Z` (w1), `20260923T062751Z` (w4)
+and `20260923T070848Z` (w3); `stat` on the four `agents/runs/codex-fallback`
+markers, mtimes 07:25:01Z to 07:34:27Z; `agents/run.sh` lines 80, 583-586,
+650-655, 685.
+
+## Measured: `gpt-5.5` was serving at 11:10Z, so the outage is the marker and nothing else
+
+The note above asked for one `gpt-5.5` run to settle whether the account is
+actually out of quota, and called it the cheapest measurement available. It has
+now been spent, during triage of `20260923T110700Z-build.log`:
+
+    $ cd /tmp && codex exec --json --skip-git-repo-check -m gpt-5.5 \
+        -c model_reasoning_effort=low -c approval_policy=never \
+        -c sandbox_mode=read-only "Reply with the single word OK." </dev/null
+    {"type":"item.completed","item":{"type":"agent_message","text":"OK"}}
+    {"type":"turn.completed","usage":{"input_tokens":12304,
+     "cached_input_tokens":1408,"output_tokens":5,...}}
+
+A completed turn at about 11:10Z. **The account was not out of quota**, four
+hours after the last run that asked (07:08:48Z) and two days before the reset
+time the usage-limit message named. The inference above is now a measurement.
+
+What it settles: the 2026-09-23 outage has no quota component left in it. Every
+codex build since 07:25Z died on an entitlement 400 against `gpt-5.4`, a model
+nobody chose and the account may not use, purely because
+`agents/runs/codex-fallback` is sticky and `run.sh:583-586` reads it first.
+Deleting the four markers is not a step towards a fix that also needs the quota
+to refill; it is the fix. At the time of writing that is 84 dead builds since
+05:59:38Z with exactly one completed turn between them, against $608.48 spent
+across the four worktrees today, $155.81 of it triage.
+
+The general lesson, since this cost a day: **a sticky fallback marker converts
+a transient refusal into a permanent one, and the measurement that would
+disprove it is exactly the one the marker prevents.** When a fallback is
+remembered between runs, something has to be willing to spend one cheap request
+on the first rung again. Nothing here does, so a person must.
+
+Probing the primary model by hand is safe and costs a cent: read-only sandbox,
+`/tmp` as cwd, a five-token prompt. It touches no marker, creates no draft and
+is not a resume of anything, so it is available to a triage run, which may not
+fix but may look.
+
+Evidence: 2026-09-23, triage of `20260923T110700Z-build.log`; the probe above;
+`agents/runs/COSTS.tsv` in all four worktrees.
+
+### Two corrections to the run table above
+
+* The table at "The Codex quota's 'try again at' time" labels the 06:05:21Z,
+  06:10:43Z and 06:52:06Z `gpt-5.5` successes as builds. Reading the `stage`
+  column across all four ledgers, **all three were `repair` runs.** The
+  conclusion drawn from them is unaffected -- `gpt-5.5` completed turns at
+  06:52Z, 53 minutes after w1 was told to try again on Sep 25 -- but the last
+  successful *build* anywhere was `20260923T061859Z` (T443, w2, $11.39), not
+  06:52Z. When ordering a day's runs to argue about availability, filter on
+  `stage`: builds, repairs and critiques all appear as codex successes and only
+  one of them is the thing the campaign exists to do.
+
+* `run.sh:541-542` says stdin is closed "with it open codex prints *Reading
+  additional input from stdin...* and waits for a prompt it already has". The
+  probe above passed `</dev/null` and **still printed that line**, then
+  completed normally. So in codex-cli 0.154.0 (the installed version; the
+  comment at `run.sh:512` names 0.150.1) the message is printed regardless and
+  is not evidence that stdin was left open. It appears at the head of every
+  dead build log in this campaign, where it is easy to read as a second fault.
+  It is noise. The "waits for a prompt" half was not tested and may still hold.
+
+## The screener and the w1 campaign share the primary worktree, so two agents commit to one index -- and both are told to append to this file
+
+What happened: triaging `20260923T111940Z` I found a second agent running in
+`/home/ubuntu/numberdb-website` while I worked. Not a sibling in another
+worktree -- the *same* directory, the same `.git`, the same `HEAD`.
+
+The cause is that both supervisors were started here and neither moves:
+
+    1950235  Sep 22 20:38:46  bash agents/workers.sh 4
+    1950272  Sep 22 20:38:51  bash agents/screener.sh
+
+`agents/propose-batch.sh` opens with `here=$(cd "$(dirname "$0")/.." && pwd);
+cd "$here"`, so the ideas stage runs wherever the script lives -- the primary
+worktree. `workers.sh` independently hands that same worktree to the w1
+campaign. Measured at 11:20Z on 2026-09-23, through `/proc/<pid>/cwd`:
+
+    2720346  propose-batch.sh   (parent: screener.sh 1950272)  /home/ubuntu/numberdb-website
+    2720353  run.sh ideas       (writing BATCH-2026-09-23T1120) /home/ubuntu/numberdb-website
+    2715643  campaign.sh 200                                    /home/ubuntu/numberdb-website
+    2720403  run.sh triage      (this run)                      /home/ubuntu/numberdb-website
+    2717977  campaign.sh 200                                    /home/ubuntu/numberdb-campaign-w3
+    2720378  campaign.sh 200                                    /home/ubuntu/numberdb-campaign-w4
+
+So `numberdb-website` carries two agents and `-w2` carried none at that
+instant. The ideas log confirms it from the other side:
+`{"type":"system","subtype":"init","cwd":"/home/ubuntu/numberdb-website",...}`.
+
+**Why it matters.** Each stage is instructed to write its lesson to a path no
+other run writes to -- `agents/lessons/proposals/<stamp>-<stage>.md` -- and the
+reason given is that "two campaigns running at once conflict on every merge of
+a shared file". That rule works: the per-stamp files never collide. But the
+*same instructions* send anything about the deployment to `docs/agent-environment.md`,
+which is one shared file, and here two concurrent runs in one worktree really
+do append to it. The interleaving is already in this branch's history:
+
+    c812a38d 10:01:58  agents/lessons/proposals/20260923T092122Z-ideas.md
+    848a2e13 10:19:07  agents/lessons/proposals/20260923T100319Z-ideas.md
+    678644d9 10:19:07  docs/agent-environment.md
+    81d4db8b 10:21:08  ...20260923T101517Z-triage.md + docs/agent-environment.md
+    1188aea0 09:20:28  ...20260923T085635Z-ideas.md  + docs/agent-environment.md
+
+Two commits inside the same second from two different stages. Nothing has been
+lost yet -- appends to the end of a file mostly merge, and `git commit` takes
+`index.lock` for long enough to serialise -- but a run that stages a file
+another run is mid-edit on, or that hits `index.lock` contention, will fail for
+a reason that has nothing to do with its work. A triage reading `git status` to
+answer "what did the failed run leave behind" can also see another agent's
+working tree and attribute it to the run it is triaging. That is the sharper
+hazard, because it produces a wrong verdict rather than an error.
+
+**What to do about it.** Give the screener its own worktree -- it needs no Sage
+and no heavy image, which is the whole reason `propose-batch.sh` is separate
+from `campaign.sh` in the first place -- or stop `workers.sh` from assigning w1
+to the directory the screener already occupies. Until then, a run in
+`numberdb-website` should treat `git status` and `HEAD` as shared state and
+check `/proc/<pid>/cwd` of any live sibling before drawing a conclusion from
+either.
+
+`readlink /proc/<pid>/cwd` is the cheap way to ask which worktree a process is
+in; `pgrep -fa campaign.sh` cannot answer it, because every worker's command
+line is the identical `bash agents/campaign.sh 200`.
+
+Evidence: 2026-09-23, triage of `20260923T111940Z-build.log`.
+`agents/propose-batch.sh` lines 26-28; `/proc/{2715643,2717977,2720346,2720353,
+2720378,2720403}/cwd`; `agents/runs/20260923T112015Z-ideas.log`, first `system`
+event; `git show --stat` on the five commits above.
+
+## The four worktrees share one address, so the unkeyed API allowance is a host budget the triage stage spends on itself
+
+The API's anonymous limit is 60 requests an hour counted against the caller's
+IP (`numberdb_app/throttle.py:88-110`, scope `ip:<addr>`). Every run on this
+machine -- four campaign worktrees, the screener, and each triage -- leaves
+from the same address, so that is not sixty requests each. It is sixty for the
+host, per clock hour, and the stage most eager to spend them is triage: the
+standard "is this a draft or was it never created" probe is an *unkeyed* read,
+and each verdict runs a handful to a couple of dozen of them.
+
+By 11:33Z on 2026-09-23 it was gone. The first anonymous request this triage
+made answered `429 ... retry_after 1602`, i.e. the allowance had been spent by
+sibling runs before this one started, and none of my own probes had reached a
+lookup.
+
+**Why it matters more than an inconvenience.** The failure is silent in the
+direction of "yes". A 429 body is valid JSON that does not contain
+`does not exist`, so the one-line test every verdict has been using --
+
+    published = b"does not exist" not in body
+
+-- reports *every* id public, including ids that do not exist. A triage that
+trusted it would report that the failed run had published a table, or that a
+standing draft had been picked up for review. That is a wrong verdict produced
+by a working check, which is the same shape as the hazard in the note above
+about reading another agent's `git status` in a shared worktree.
+
+**What to use instead, here.** Two things, in this order:
+
+* The **keyed** read, `GET /api/table?id=<TID>` with the zeta3 key, has a
+  separate 1000/hour counter scoped to the key rather than the address, so it
+  is not affected by whatever the siblings have been doing. It is also the only
+  request that tells a draft apart from an id nobody has used.
+* `GET https://numberdb.org/<TID>` -- the bare id, not `/table/<TID>`, which is
+  not a route -- is the rendered page and is **not rate limited at all**; only
+  `/api/*` is (`throttle.py:13-15`). 200 published, 404 draft-or-absent. Free,
+  and the right way to answer "is this still sitting unpublished" without
+  touching either allowance.
+
+The window is fixed and aligned to the clock hour rather than rolling
+(`window_start = now - (now % window)`), so the allowance comes back all at
+once on the hour and `retry_after` is just the countdown to it. A run that
+meets a 429 at :55 is five minutes from a full sixty; one that meets it at :05
+is not.
+
+**Worth fixing properly**: nothing in the pipeline needs unkeyed reads except
+the draft-visibility test, and that test has a better answer (the page). If the
+triage prompt or the skill is ever amended, saying "use the key, or use the
+page, never an unkeyed API read" would remove the contention entirely.
+
+Evidence: 2026-09-23, triage of `20260923T113121Z-build.log`. Measured
+11:33-11:40Z: anonymous `/api/table?id=T{438,441,445,446,999}` all
+`429 retry_after ~1600`; `/T20` 200 and `/T{438,441,443,445}` 404 anonymous in
+the same minutes; `Authorization: Bearer not-a-real-key` -> `403 {"error":
+"Invalid API key."}`, which is returned at `throttle.py:176-187` before the
+counter is touched and therefore costs nothing.
+
+## `pkill -f campaign.sh` matches the process running it
+
+Already recorded as advice; here is the demonstration, because it is cheaper
+than the incident. From this triage:
+
+    $ pgrep -f "campaign.sh 200"
+    2735172   /home/ubuntu/numberdb-website
+    2737975   /home/ubuntu/numberdb-campaign-w2
+    2742144   /home/ubuntu/numberdb-website   <- this triage's own shell
+
+The third pid is the shell that ran `pgrep`, matched because the pattern it
+was searching for appeared in its own command line. `pkill` behaves the same
+way, so the command intended to stop the supervisor kills every worker, and
+the agent issuing it, at once. Filter on the full `args` and check
+`readlink /proc/<pid>/cwd` instead:
+
+    ps -eo pid,lstart,args | grep -E "bash agents/(campaign|workers|screener)\.sh"
+
+At 11:35:52Z that gave `workers.sh 4` (pid 1950235, up since Sep 22 20:38),
+`screener.sh` (1950272), and only **two** live `campaign.sh`: w1 in
+`numberdb-website` and one in `-w2`. `-w3` and `-w4` had none, their newest
+build logs being 11:20:02Z and 11:26:01Z against a supervisor cycle of about
+five and a half minutes. Not enough observation to say whether that is a
+restart gap or two dead workers, but the way to look is the `ps` line above,
+not `pgrep`.
+
+Evidence: 2026-09-23, triage of `20260923T113121Z-build.log`.
+
+## The `table wanted` backlog is empty, and `screen.py requests` cannot say so
+
+What happened: the ideation stage is told to start from the open `table wanted`
+issues. There are none. The label has 126 issues in numberdb-data and every one
+is closed:
+
+    $ curl -s "https://api.github.com/search/issues?q=repo:numberdb/numberdb-data+label:%22table+wanted%22"          -> total_count 126
+    $ curl -s "https://api.github.com/search/issues?q=repo:numberdb/numberdb-data+label:%22table+wanted%22+is:open"  -> total_count 0
+
+`agents/table-ideas/screen.py requests` prints nothing, which is correct, and
+is also what it prints when GitHub refuses the request: `requests()` catches
+every exception and returns `[]`. That is the failure `already_here` was fixed
+for and `requests` was not -- a failed question and an empty answer must not
+look the same. Until it is fixed, confirm an empty backlog with the `curl`
+above before concluding the stage has nothing to anchor to.
+
+Two consequences for the prompts, not for the code:
+
+* The ideation prompt's "start from the open requests, and build the family
+  around one" can no longer be followed. A run that reads that instruction
+  literally will look for a request to cite and find none; it should say so in
+  its batch, which is a result about the backlog worth having.
+* **numberdb-data#204 shows what happens when it is not said.** That proposal,
+  opened at 11:2xZ today, carries `- [ ] Steklov eigenvalues of the classical
+  planar domains (answers #133, #137)` and repeats both numbers in its
+  `Draws on:` line. #133 asks for T88 to be extended to $23 \in S$ and #137
+  asks for T223 to be extended to all finite-volume hyperbolic Coxeter simplex
+  groups; neither has anything to do with Steklov eigenvalues. They are simply
+  the only two open issues in the repository. If #204 is closed as answering
+  them, two real enhancement requests are closed with nothing done. Detach them
+  by hand.
+
+Evidence: 2026-09-23T11:2xZ, ideation run `20260923T112015Z`.
+
+## `import numberdb` from inside this checkout finds the Django app
+
+What happened: `screen.already_here(...)` answered
+`(could not ask the corpus: AttributeError: module 'numberdb' has no attribute
+'search_text')` for every name. The repository has a `numberdb/` package of its
+own -- the Django project -- and a script run with the repository as the
+working directory imports that rather than the client. The message is the one
+`already_here` prints when the corpus is unreachable, so the failure reads like
+a network problem and not like a shadowed import.
+
+`agents/sage.sh` already documents this for `sage -python`. It is true of plain
+`python3` too:
+
+    $ cd /tmp && PYTHONPATH=/home/ubuntu/numberdb-website/clients/python python3 -c \
+        "import numberdb; print(numberdb.__file__)"
+    /home/ubuntu/numberdb-website/clients/python/numberdb/__init__.py
+
+Run the screens from outside the repository root with the client on
+`PYTHONPATH`. The client is not installed for the system Python; only that path
+has it.
+
+Evidence: 2026-09-23, ideation run `20260923T112015Z`.
+
+## oeis.org answers 403 from this host
+
+What happened: the batch wanted to know whether any of six computed constants
+is already an OEIS decimal expansion. Every search, with and without a browser
+`User-Agent`, in JSON and in text format, came back `403` with a Cloudflare
+"Just a moment..." interstitial:
+
+    $ curl -s -o /dev/null -w "%{http_code}\n" "https://oeis.org/search?q=0.984381781&fmt=text"
+    403
+
+Nothing of ours is wrong and nothing here will fix it. What matters is that a
+script parsing `fmt=json` sees no `results` key and reports "not in OEIS",
+which is the opposite of what is known. An OEIS check is a real check and
+belongs in a build; it has to be run from somewhere else, and a proposal that
+could not run it should say so rather than leave the silence to be read as an
+answer.
+
+Evidence: 2026-09-23, ideation run `20260923T112015Z`, six searches.
+
+## The `gpt-5.4` loop, measured over a full day: $193.05 and 103 dead builds
+
+Three sections above describe this failure and its mechanism; none of them
+needs restating. What this note adds is the outcome, because the earlier ones
+were written while it was still a projection and the projection was low.
+
+Counted at 11:57Z on 2026-09-23, deduplicated by stamp across all four
+worktrees' ledgers:
+
+    103   zero-turn builds on gpt-5.4 (0 turns, $0.0000, empty table column)
+     99   triage runs today, total $193.05
+     26   verdict files in numberdb-website/agents/runs -- all 26 read `stop`
+
+The note *A triage `stop` does not stop the machine* estimated "roughly
+eighteen triage runs an hour, about $55 an hour, building nothing". Over a
+whole day that came to $193.05, and not one table. The estimate was sound; the
+point is that being sound changed nothing, because the loop does not read what
+triage writes.
+
+Two things are worth drawing out of the day-scale numbers that the single-cycle
+analysis could not show:
+
+* **The verdict is unanimous, which is itself the evidence.** Twenty-six
+  independent triage runs, each spending ~$2 to re-derive the same conclusion
+  from the same twelve-line log, and all twenty-six agreeing. When every
+  verdict in a worktree's history is the same word, the pipeline has stopped
+  being a decision procedure and become a very expensive `echo`.
+* **It is not converging on anything.** The `gpt-5.5` quota refills on Sep 25
+  at 03:51, and reaching it changes nothing: `run.sh` writes the marker at
+  lines 644 and 655 and reads it at 584, and there is no third mention, so a
+  refilled quota is never consulted while the marker stands. Left alone, this
+  runs at roughly $190 a day indefinitely.
+
+The remedy is unchanged and is in the section above: `touch
+agents/workers.stop` first, then delete `agents/runs/codex-fallback` from all
+four worktrees, then set `NUMBERDB_CODEX_FALLBACKS` to a model the account may
+use or start the pool with `NUMBERDB_WRITER=claude`, then restart the
+supervisor. The claude engine is demonstrably fine: it is what ran all 99
+triages.
+
+Evidence: 2026-09-23, triage of `20260923T115442Z-build.log`. Counts by `awk`
+over `numberdb-*/agents/runs/COSTS.tsv` deduplicating on the stamp column;
+verdict tally by `head -1` over `agents/runs/*-verdict`. The marker present and
+reading `gpt-5.4` in all four worktrees at the time of writing; three
+`campaign.sh` loops and a second concurrent triage (`20260923T115502Z`) running
+alongside.
+
+## Triage has overtaken building: $205.40 to judge failures against $196.28 of builds that ran
+
+The section above measured the `gpt-5.4` loop at $193.05 and 103 dead builds
+and called it "roughly $190 a day indefinitely". An hour and a half later the
+day's totals crossed a line that the projection did not anticipate, and the
+crossing is the note.
+
+Counted at 12:11Z on 2026-09-23 over all four worktrees' `agents/runs/COSTS.tsv`,
+deduplicated by stamp (the ledgers are near-disjoint -- three stamps appear in
+two of them):
+
+    110   zero-turn gpt-5.4 builds since 20260918T023210Z
+    130   build attempts today, of which 22 ran at all, costing $196.28
+    105   triage runs today, costing $205.40
+    105   verdict files across the four worktrees -- every one reads `stop`
+    $664.06  total spend today
+
+**Triage now costs more than every build that did any work.** $205.40 against
+$196.28. A failure that is free to hit is not free, because the pipeline prices
+its judgement for a run that built something: eight minutes and ~$2 to read
+twelve lines and re-derive, for the hundred-and-fifth time, that a run with
+`turns=0`, `cost=0.0000` and an empty `table` column has no session to resume.
+The shell can recognise that case without guessing at anything, and the three
+columns it needs are already in the ledger it writes.
+
+Two further facts, both cheap to check and both worth checking before writing
+another verdict:
+
+* **The brake has never been pulled.** Neither `agents/workers.stop` nor
+  `agents/campaign.stop` exists. 105 verdicts have now recommended `touch
+  agents/workers.stop`; `pgrep -fa 'campaign.sh|workers.sh'` still shows
+  `workers.sh 4` and three `campaign.sh 200` loops turning. A verdict written
+  into `agents/runs/` has no path to the process that caused it, which is the
+  same finding as *A triage `stop` does not stop the machine*, now with a
+  number on it.
+* **The queue is not the problem and is not being consumed.** `queue.py stale`
+  is empty and 14 proposals wait across families #196, #201, #203, #204, #205.
+  Zero-turn builds never claim, so nothing lapses and nothing advances; the
+  backlog neither drains nor spoils while the loop runs.
+
+The remedy is unchanged and is two sections above: `touch agents/workers.stop`,
+delete `agents/runs/codex-fallback` from all four worktrees, point
+`NUMBERDB_CODEX_FALLBACKS` at a model the account may use or start the pool
+with `NUMBERDB_WRITER=claude`, restart the supervisor.
+
+Evidence: 2026-09-23, triage of `20260923T120602Z-build.log` (twelve lines, two
+identical four-event blocks, no tool call, session `01a0ce28` appearing exactly
+once in the ledger -- so its `resumed=yes` is a runner flag, not a
+continuation). Counts by `awk` over the four ledgers with `!seen[$1]++`. The
+latest zero-turn stamp at the time of writing was `20260923T120702Z`, one
+minute after the run being judged.
+
+## The daily average understates it sevenfold: triage burns ~$60 an hour in steady state
+
+The section above projected the `gpt-5.4` loop at "roughly $190 a day
+indefinitely". That number is a daily average over a day that included idle
+stretches, and it is the wrong shape for deciding how fast to act on this.
+
+Two measurements twenty minutes apart, both by `awk` over the four
+`agents/runs/COSTS.tsv` deduplicated by stamp:
+
+    12:11Z    110 dead builds    $205.40 triage    105 verdicts
+    12:31Z    119 dead builds    $225.52 triage    119 verdicts
+    delta      +9                 +$20.12           +14
+
+**$20.12 of triage in twenty minutes is about $60 an hour**, which is what four
+workers and a screener actually cost while every build dies in preflight. The
+daily figure is seven times lower because it is diluted by hours when the pool
+was not turning. Anyone reading "$190 a day" and deciding it can wait until
+morning is budgeting for one-seventh of the burn.
+
+## A verdict cannot end the loop, and following the previous verdict's advice does not either
+
+The 12:11Z note closed by naming "two further facts, both cheap to check and
+both worth checking before writing another verdict" -- the brake being unpulled
+and the queue being intact. The next triage checked both, found both unchanged,
+and wrote verdict number 119 anyway.
+
+It had no other move. The triage stage is required to write
+`agents/runs/<stamp>-verdict` and is forbidden to fix anything, so "this has
+been decided 118 times, I decline to spend $1.50 deciding it again" is not an
+available output. Each run therefore re-reads the same twelve-line log from a
+cold context, re-derives the same conclusion, and files it next to 118 copies.
+The unanimity is not consensus; it is the same function evaluated repeatedly at
+the same point.
+
+Two structural consequences, both worth knowing before trusting this pipeline
+to bound its own costs:
+
+* **The supervisor outlives its diagnoses.** `workers.sh` has been pid 1950235
+  since before the 2026-09-18 write-up of this failure. Every verdict since has
+  named it. It is still running, because nothing a verdict can write is read by
+  anything that can signal a process.
+* **A stop-shaped verdict is not a stop.** `agents/workers.stop` and
+  `agents/campaign.stop` are the only brakes, they are checked at the top of the
+  supervisor's loop, and neither has ever existed. The gap between "triage said
+  stop" and "the machine stopped" is a person, and there is no timeout on that
+  person's attention.
+
+If the loop is meant to be able to halt itself, the runner needs the check, not
+the model: a `build` row with `turns=0`, `cost=0.0000` and an empty `table`
+column is recognisable in `awk`, and N of them in a row is a brake condition
+that costs nothing to evaluate. That is a change to `campaign.sh`/`run.sh`, and
+triage is not allowed to make it.
+
+Evidence: 2026-09-23, triage of `20260923T123043Z-build.log`. Deltas from the
+12:11Z counts recorded in the section above, recounted at 12:31Z by the same
+method. Brake files absent in all four worktrees; `pgrep -af` showing
+`workers.sh 4` as pid 1950235 and two `campaign.sh 200` loops; verdict tally 119
+of 119 reading `stop`.
+
+## The brake is one file in the supervisor's own tree, and the marker is four
+
+Two remedies are written in the same breath by almost every note above --
+`touch agents/workers.stop`, and delete `agents/runs/codex-fallback` -- and
+they have opposite scopes. The 12:36Z verdict of 2026-09-23 says to do the
+first one "in all four worktrees", which would not stop anything.
+
+`agents/workers.sh` opens with
+
+    here=$(cd "$(dirname "$0")/.." && pwd)
+    cd "$here"
+
+and the check at the top of its loop is `[ -e agents/workers.stop ]` -- taken
+relative to that directory and to no other. The supervisor was started from the
+primary worktree, so `readlink -f /proc/<pid>/cwd` is
+`/home/ubuntu/numberdb-website`, and that one path is the brake. A
+`workers.stop` in `numberdb-campaign-w2`, `w3` or `w4` is a file nothing reads.
+`agents/screener.sh` is built identically (lines 19-20, and the
+`screener.stop`/`campaign.stop` check at 41), and its process has the same cwd,
+so `agents/screener.stop` is one file in the same one place.
+
+The fallback marker is the opposite: `run.sh` resolves it against the working
+tree of the run, so each worktree has its own and all four must be cleared.
+
+So, with the scopes right:
+
+    touch /home/ubuntu/numberdb-website/agents/workers.stop     # one file
+    touch /home/ubuntu/numberdb-website/agents/screener.stop    # one file
+    rm /home/ubuntu/numberdb-*/agents/runs/codex-fallback       # all four
+
+and then the supervisor must be restarted, because editing `workers.sh` while
+it runs changes nothing -- bash has already parsed `start()`, which the file's
+own header says.
+
+The general point, which outlives this particular outage: **a stop flag's
+meaning depends on which directory the process that reads it is sitting in, and
+that is not visible from the flag's name.** Where several worktrees share one
+supervisor, `/proc/<pid>/cwd` is the only way to find out, and it is worth
+checking before relying on a brake rather than after.
+
+Evidence: 2026-09-23, triage of `20260923T124303Z-build.log`.
+`agents/workers.sh` lines 43-45 and the `for flag in agents/workers.stop
+agents/campaign.stop` loop; `agents/screener.sh` 19-20 and 41;
+`readlink -f /proc/1950235/cwd` and `/proc/1950272/cwd`, both
+`/home/ubuntu/numberdb-website`; `git worktree list`; the marker present in all
+four trees at 12:47Z.
+
+## The host's `python3` has no `mpmath` and no `sympy`, so an ideation run cannot check one digit without `agents/sage.sh`
+
+What happened: screening the approximation-theory batch of 2026-09-23T12:32Z
+meant checking a Favard constant, three Lebesgue constants and the Halphen
+constant against OEIS. On the host:
+
+    $ python3 -c "import mpmath"
+    ModuleNotFoundError: No module named 'mpmath'
+    $ python3 -c "import sympy"
+    ModuleNotFoundError: No module named 'sympy'
+
+and there is no `pip` to add them (see the `database_knotinfo` note above).
+The host's Python reaches the corpus and GitHub and OEIS perfectly well --
+`urllib` plus `PYTHONPATH=clients/python` from a directory that is not the
+repository root -- but it cannot evaluate anything above `binary64`.
+
+So the split for an ideation run is: **HTTP on the host, arithmetic in the
+container.** Every numeric check goes through `agents/sage.sh script.py`,
+which does have `mpmath` as well as Sage, and which costs about forty seconds
+of container start before the first line of output. Batch the checks into one
+script rather than running five: this run spent three container starts on what
+should have been one, and a fourth because it had printed the first two
+results with `%`-formatting and had to redo them (see
+`agents/lessons/proposals/20260923T123234Z-ideas.md`).
+
+Evidence: 2026-09-23, both `ModuleNotFoundError`s above; `/tmp/checks.py`,
+`/tmp/checks2.py`, `/tmp/checks3.py`, `/tmp/remez2.py`, `/tmp/cbf.py` under
+`agents/sage.sh`.
+
+## A zero-turn build *does* claim its proposal, and `queue.py stale` is not the check that would show it
+
+The 12:11Z note at *Triage has overtaken building* closes with a bullet that is
+wrong, and it is the bullet the four verdicts after it copied:
+
+> **The queue is not the problem and is not being consumed.** `queue.py stale`
+> is empty and 14 proposals wait [...] Zero-turn builds never claim, so nothing
+> lapses and nothing advances.
+
+Both halves are false, and the file already contradicts them two sections
+earlier at *A lapsed claim goes back into the queue*, which has it right. The
+correction matters because "nothing was left behind, I checked" is the one
+factual claim a verdict owes the next reader, and four of them have now
+asserted it from a check that cannot see the thing.
+
+**The claim is taken by the campaign, not by the build.** `campaign.sh:472`
+runs
+
+    python3 agents/queue.py claim "$in_family" "$proposal" --worker "$NAME"
+
+and `run_stage writer build` is line 489. So the claim is on the issue before
+the engine is invoked, and a build that dies in preflight with zero turns has
+still taken one. Read on numberdb-data#203 while triaging the build that
+supposedly took nothing:
+
+    - [~] Growth rates of the power-free languages -- claimed by w1 at 2026-09-23T13:00Z
+
+That is run `20260923T130006Z`: nought turns, $0.0000, dead on the `gpt-5.4`
+400. It claimed.
+
+**`queue.py stale` measures the screening date, not the claim.** The two are
+different functions with confusingly similar names:
+
+* `cmd_stale` (`queue.py:847`) compares `family['screened']` against
+  `STALE_WEEKS = 6`. It answers *which families were screened so long ago that
+  the corpus has moved under them*. It is empty today because every family was
+  screened today, and it would be empty if every proposal in the queue were
+  held by a dead worker.
+* `stale_claim` (`queue.py:296`) compares a claim's timestamp against
+  `CLAIM_MINUTES = 90`. That is the one that knows about abandoned claims, and
+  nothing on the command line calls it.
+
+So `queue.py stale` returning nothing is not evidence that no claim was taken
+and dropped. The check that shows it is the checklist itself, per family.
+
+**What it looks like right now.** Counting the checklist marks on the four
+families the queue is serving, at 13:05Z:
+
+    #202   6 proposals   6 claimed   0 unticked   0 built   -> `open` says 0 left
+    #203   6 proposals   6 claimed   0 unticked   0 built   -> `open` says 2 left
+    #204   5 proposals   3 claimed   2 unticked   0 built   -> `open` says 5 left
+    #205   6 proposals   0 claimed   6 unticked   0 built   -> `open` says 6 left
+
+`open` says 13 waiting, but 9 of those 13 are lapsed claims being served a
+second or third time; only #205's six have never been handed out. Two whole
+families are fully claimed by builds that did nothing.
+
+**And the churn outruns the expiry.** 38 builds started across the four
+worktrees in the 90 minutes to 13:05Z -- one claim each -- against 23 proposals
+in those four families. The workers take claims about 1.7x faster than
+`CLAIM_MINUTES` gives them back. `queue.py:270-274` records where that ends, in
+its own words:
+
+> on 2026-09-20 all four died within an hour and every remaining proposal was
+> held by one of them, so the queue read empty and each new campaign exited on
+> the banner.
+
+This is worth flagging ahead of time because **the symptom is about to change
+while the cause stays the same**. When the screener falls behind the churn, the
+campaign log stops saying `gpt-5.4 is not supported` and starts saying there is
+nothing waiting, and a campaign that exits on an empty banner exits 0. Whoever
+reads it then will be looking at a quiet, successful-looking pool with a dead
+engine underneath it, and the `gpt-5.4` trail in this file will not match what
+they see.
+
+Nothing here needs cleaning up: this run's claim frees itself at 14:30Z. It is
+the reading that needed correcting, not the state.
+
+Evidence: 2026-09-23, triage of `20260923T130006Z-build.log`. `campaign.sh`
+lines 464-489 and 640-710, `queue.py` lines 265-315, 385-395 and 847-856, read
+directly; `gh issue view 202|203|204|205 --repo numberdb/numberdb-data` with the
+checklist marks counted by regex; `queue.py open` and `queue.py stale` both run;
+build stamps in the 90 minutes to 13:05Z counted by `awk` over the four
+`agents/runs/COSTS.tsv` with `!seen[$1]++`.
+
+## The pool is not draining, and 139-for-139 is the number that says how dead the engine is
+
+Two corrections to the section above, both measured at 13:13-13:17Z while
+triaging `20260923T131204Z-build.log`. This is the sixth note on one outage and
+is meant to be the last: the mechanism, the remedy and its scope are already
+here, and what follows is only a number and a retraction.
+
+**The forecast at the end of the 13:04Z note does not hold.** It says the pool
+is "heading for the 2026-09-20 state where the queue reads empty and campaigns
+exit 0 on the banner", from 38 claims in 90 minutes against 23 proposals. But
+`queue.py:306-315` — `waiting()` returns items that are `not done` **or**
+`stale_claim`, so a lapsed claim is *counted as waiting*. Claim pressure alone
+cannot take `open` to zero; that needs claims taken faster than
+`CLAIM_MINUTES` returns them **and** held, which a zero-turn build does not do.
+`numberdb_app/api.py:1356-1391` says the same from the other end: an expired
+`ProposalClaim` is taken over in place, and the GET filters expired rows out.
+
+What actually happens is a loop, not a drain. At 13:13Z `open` read 11 —
+`#205` 6, `#204` 2, `#199` 2, `#196` 1 — and the never-served count was eight
+(`#205`'s six and `#204`'s last two), *the same eight* as at 13:05Z. All three
+claims on `#204` carried timestamps later than the note that forecast the
+drain (13:06Z, 13:12Z, 13:12Z). `next_table` takes `free[0]` in checklist
+order, so the lapsed lines at the head of each family are re-served over and
+over while the tail is never reached. **Expect the symptom to stay exactly as
+it is.** Nobody will be rescued by the campaign log changing its story.
+
+**The census.** Across the four worktrees on 2026-09-23: 161 builds started;
+22 ran, all on `gpt-5.5`, $196.27; **139 ran on `gpt-5.4` and every single one
+used zero turns and cost $0.0000**, from the first at 05:59:38Z onward. The
+last build that did any work was `20260923T061859Z`, at 06:18Z. Since the
+first `codex-fallback` marker at 07:25Z, 136 triage runs have billed $259.11,
+about $1.91 each — one verdict per dead build, all 139 of them saying `stop`.
+Triage has outspent building for the day by $62.84 and is the only line still
+growing. claude has never been offered a build today; the `exit 6` handover has
+not once been reached, because the 400 matches `worth_resuming` and not
+`out_of_quota`.
+
+Evidence: 2026-09-23, triage of `20260923T131204Z-build.log`. `queue.py` lines
+280-340 and 385-407 and `numberdb_app/api.py` lines 1356-1391 read directly;
+`queue.py open` run; `gh issue view 196|199|202|203|204|205 --repo
+numberdb/numberdb-data` with the checklist marks read; all counts by `awk` over
+the four `agents/runs/COSTS.tsv`, and the verdict tally by `head -1` over the
+four `agents/runs/*-verdict`.
+
+## `started()` counts a claim as work, so a family nobody has claimed is never served
+
+The note above explains the eight never-served proposals as `next_table`
+taking `free[0]` "so the lapsed lines at the head of each family are re-served
+over and over while the tail is never reached". That is not what happens, and
+the correction matters because the real mechanism will outlive the `gpt-5.4`
+outage.
+
+**The tails are reached.** At 13:29Z the ten open families hold 54 proposals,
+and the checklist marks are `[~]` 45, `[ ]` 7, `[x]` 2. All six of `#203`, all
+six of `#198`, all six of `#197`, all five of `#201`, all five of `#200` carry
+a claim — whole families, head to tail. The last thirty-five assignments in
+each worker's log are twenty-four to twenty-seven *distinct* titles, and the
+four workers are walking the same set: of the union, most titles appear
+exactly four times, once per worker. Nothing is stuck at a head.
+
+**One whole family is starved instead, and it is the newest one.** `#205`
+(six `[ ]` Kelvin and Struve tables) was created 11:41:58Z and its
+`updated_at` is still 11:41:58Z. In the 1h47m since, `#196`-`#204` were handed
+out 145 times between them and `#205` **zero** times — no `=== next:` line in
+any of the four campaign logs has ever named it. Every family from `#164`
+onward appears in those logs; `#205` alone does not.
+
+**Why.** `queue.py:335-337`:
+
+    def started(family):
+        return any(item['done'] for item in family['items'])
+
+and `done` is set at line 235 for `x`, `-` *and* `~`. So one claim makes a
+family "half-built". `next_table` (`queue.py:374-379`) serves `half_built`
+families before untouched ones, by design — finish what somebody started. But
+`CLAIM_MINUTES = 90` returns those lines to `waiting()` (`queue.py:296-315`),
+so a claimed family is permanently *both* started and non-empty, and the loop
+over `half_built` finds something free every time and returns before it ever
+reaches the untouched list. A family enters the rotation only by being claimed
+and can only be claimed once it is in the rotation.
+
+**What this means once the pin is cleared.** Under working builds a claim
+settles to `[x]` and the family drains, so the rule does what it says; the
+pathology needs claims that never settle, which is exactly what 145 zero-turn
+builds produce. But `#205` will stay at the back until `#196`-`#204` are
+genuinely finished or their lines are hand-released, and any family screened
+after it inherits the same position. A one-line fix would be to have
+`started()` look at the raw mark rather than `done`, so a bare claim does not
+count; that is a person's change, not a triage run's.
+
+Evidence: 2026-09-23 13:24-13:31Z, triage of `20260923T132343Z-build.log`.
+`queue.py` lines 225-240, 269-315, 335-337 and 340-380 read directly; the
+marks counted by regex over `families()` bodies; `created_at`/`updated_at` for
+`#199`, `#203`, `#204`, `#205` from the issues API; assignments counted with
+`grep -a '^=== next:'` over the four `agents/runs/campaign-w<n>.log` and
+bucketed by `family #NNN`.
+
+**`queue.py open` is not the check for this, and at 13:47Z it says the
+opposite.** The finding above is easy to test wrongly. Running the obvious
+command now prints `#205` *first*, six left, at the head of ten waiting, which
+reads as though the starvation has cleared. It has not: `cmd_open`
+(`queue.py:385`) iterates `families()` in its own order and never calls
+`next_table`, so its ordering carries no information about what will be served
+next. The check that answers the question is the serve count --
+
+    grep -ah '^=== next:' /home/ubuntu/numberdb-*/agents/runs/campaign-w*.log \
+      | grep -o 'family #[0-9]*' | sort | uniq -c | sort -rn
+
+-- and at 13:47Z `#205` is still absent from that list entirely, zero serves
+against 30 for `#180` and 16 for `#199`, more than two hours after screening.
+Confirmed against the code a second time on a separate reading:
+`parse_family` sets `settled = mark.lower() in ('x', '-', '~')` (line 233), so
+a `[~]` claim sets `done=True`; `started()` is `any(item['done'] ...)`
+(line 337); `next_table` walks `half_built` first (line 375).
+
+Evidence: 2026-09-23 13:40-13:50Z, triage of `20260923T133544Z-build.log`.
+Day totals at 13:47Z, deduplicated by stamp over the four `COSTS.tsv`: 171
+builds, 149 of them zero-turn, $196.28; triage 145 runs, $274.47 -- triage now
+exceeds all building by $78.19. Dead builds run unbroken from 05:59:38Z to
+13:36:24Z; the last build that did any work was `20260923T061859Z` at 06:18Z
+(T443, $11.39). 149 verdicts now exist across the four trees and all 149 say
+`stop`. Three of the four workers were running triage simultaneously while
+this was written and the fourth was in ideation; none was building.
+
+## A run cut by the caller's own `timeout` exits 0, because the pipeline ends in `grep`
+
+`agents/sage.sh` ends its remote command with
+
+    ... | grep --line-buffered -viE 'collecting static|...'
+
+so the exit status of the whole script is **grep's**, not the container's and
+not `timeout`'s. Wrapping the call as `timeout 1750 agents/sage.sh script.py`
+therefore produces, when the wrapper fires, a run that stops mid-sentence and
+reports `[exited with code 0]`.
+
+That is what happened on 2026-09-23 to the ideation run's first polyhedron
+computation. The script reported nine of thirteen solids and then stopped
+between two `print` calls inside the tenth, with exit 0. Read as a successful
+run it says "Sage has no dihedral angles for the truncated icosahedron", which
+is false; read correctly it says the call was cut at its wall clock. The only
+tell was that the last solid's output was half written.
+
+Two consequences for a run that uses `agents/sage.sh`:
+
+* **Do not trust exit 0 to mean the script finished.** Print an explicit last
+  line and check for it, or count the records you expected. A script that ends
+  with `print('DONE', n)` is checkable; one that ends by falling off the loop
+  is not.
+* **The inner timeout is the one that matters.** `NUMBERDB_TIMEOUT` (default
+  1800) is applied to `docker run` on the Sage host and does kill the
+  container. An outer `timeout` on this side only kills the local ssh or
+  pipeline; the note at `cleanup()` in `sage.sh` already says the remote work
+  survives it, and the exit code hides that it happened. Set
+  `NUMBERDB_TIMEOUT` rather than wrapping the call, or set the outer one
+  comfortably longer than the inner one so that the inner one is always what
+  fires.
+
+The same run also measured the queueing this box now has: two ideation Sage
+calls placed nine minutes apart, with another worker's preflight already
+running, and the second had printed nothing 20 minutes after it started. The
+named-slot mechanism (`NUMBERDB_SAGE_SLOT`) exists for exactly this and an
+ideation run does not set it, so it contends on the shared lock with every
+build. That is the right default for a job that makes two Sage calls; it is
+worth knowing before waiting on the second one.
+
+## Dated: one nine-minute quota episode at 07:25Z pinned all four trees, and the markers have outlived it by seven hours
+
+The sections above establish that the `gpt-5.4` loop is the fallback marker and
+not an outage. This note only dates it, which turns that from an inference into
+a fact and tells a person how long the brake has been worth pulling.
+
+The four markers carry their own timestamps:
+
+    /home/ubuntu/numberdb-website          gpt-5.4 xhigh   written 07:25:03Z
+    /home/ubuntu/numberdb-campaign-w2      gpt-5.4 xhigh   written 07:34:27Z
+    /home/ubuntu/numberdb-campaign-w3      gpt-5.4 xhigh   written 07:25:01Z
+    /home/ubuntu/numberdb-campaign-w4      gpt-5.4 xhigh   written 07:25:22Z
+
+One quota episode, nine minutes wide, caught all four workers and pinned every
+one of them permanently. Nothing has written them since -- 6h49m at the time of
+writing. The earlier 11:10Z measurement that `gpt-5.5` was serving still holds
+at 14:13Z: `codex exec --model gpt-5.5 -s read-only "Reply with exactly: ok"`
+answered `ok` (session 01a0ce9d-59df-7633-b5fd-346721f7eb96, 10,914 tokens).
+`mtime` on the marker is the cheapest way to tell a live outage from a stale
+pin, and it is worth reading before anything more expensive: a marker older
+than the quota window it was written for is by definition no longer describing
+the world.
+
+What this costs while nobody pulls the brake, measured at 14:14Z from
+`COSTS.tsv`: the last build that ran a single turn was 05:08:54Z. Since then,
+$179.55 spent and $0.00 of it on building -- 42 dead builds, $79.31 of triage
+judging them and $91.46 of ideation stocking a queue nothing empties. About $22
+an hour.
+
+A second-order effect worth naming, because it makes the queue lie in a new
+way. A zero-turn build still claims its proposal (see the section on that), and
+`campaign.sh` exits on a `stop` verdict *before* its release path, so the claim
+stays. Family #198 was screened today with six proposals; by 14:11Z all six
+were claimed -- three at 12:43-12:48Z, three at 14:10-14:11Z -- with zero turns
+run against any of them. `queue.py stale` reported nothing at that moment,
+because `CLAIM_MINUTES = 90` and the loop re-claims every ~11 minutes: the
+claims never get old enough to be noticed as abandoned. **A staleness check
+whose window is longer than the failure loop's period cannot see the loop**, so
+"no stale claims" is not evidence that claims are being honoured. The serve
+count, or turns-per-claim, is what answers it.
+
+Evidence: 2026-09-23, triage of `20260923T141046Z-build.log`. Marker `mtime`s
+above; the `gpt-5.5` probe; `queue.py show 198`; `queue.py stale` silent at
+14:12Z; 163 verdict files across the four trees, 163 of them reading `stop`.
+
+## The claim timeout is the retry period: one proposal, five serves, 90 minutes apart
+
+The note above on the second lap counts laps for a family. Counting them for a
+single proposal gives the loop a period, and therefore a forecast. "Orbifold
+Euler characteristics of the moduli spaces of curves" (family #198) has been
+served five times today, every one of them to a build that died in a second on
+`gpt-5.4`:
+
+    20260923T080700Z  w1   turns=0  $0.0000  12-line log
+    20260923T093759Z  w1   turns=0  $0.0000  12-line log     +90m59s
+    20260923T110801Z  w4   turns=0  $0.0000  12-line log     +90m02s
+    20260923T124303Z  w1   turns=0  $0.0000  12-line log     +95m02s
+    20260923T141644Z  w1   turns=0  $0.0000  12-line log     +93m41s
+
+The four intervals are 91, 90, 95 and 94 minutes against `CLAIM_MINUTES = 90`.
+**The claim timeout is not protecting the proposal, it is scheduling its
+retry.** A zero-turn build takes the claim and never releases it (`campaign.sh`
+exits on the `stop` verdict before its release path), so the line ages out
+rather than being returned, and `claim()` hands it to the next worker that asks.
+`built 0 so far` never advances, so the proposal never leaves the head of its
+checklist and is first in line again each lap.
+
+Two consequences worth having in this form:
+
+* **It is predictable.** The sixth serve of this line was due at about 15:47Z.
+  Anything that reads a future serve as new work — a serve count, a burn-rate
+  forecast, a "the queue is moving" impression — should be checked against the
+  lap, not the timestamp.
+* **`queue.py stale` is structurally blind to it**, for a reason stronger than
+  the one already recorded. It is not merely that the window is longer than the
+  ~11-minute re-claim loop; it is that no claim *ever* reaches ninety minutes
+  while held. At ninety minutes it stops being a claim. The check can only fire
+  on a claim that outlives the timeout, and this loop's claims never do.
+
+The cost of a lap is not the lost table. It is $0.00 of build and one full-price
+triage run to conclude, again, what the four previous triages of the same
+proposal concluded.
+
+Evidence: 2026-09-23, triage of `20260923T141644Z-build.log`. Build stamps
+matched to `=== next: Orbifold Euler` in `campaign-w1.log` and `campaign-w4.log`
+across the four trees; `turns` and `cost_usd` from the `COSTS.tsv` rows for all
+five stamps; line counts of the five `-build.log` files, all 12; `queue.py show
+198` at 14:17Z; `agents/queue.py` `CLAIM_MINUTES`. The `gpt-5.5` probe answered
+`ok` at 14:20Z (session 01a0cea2-35e8-7ec3-9a29-a93fea8114c7), so the engine was
+healthy throughout; marker mtime 07:25:03Z, untouched. 166 verdict files across
+the four trees, 166 of them reading `stop`.
+
+## `NUMBERDB_WORKER_BUDGET` is a count of builds, not a spend cap, and a `stop` exit never spends one
+
+The section "A budget ceiling and a quota are loops ending where they should"
+(above, at the `workers.sh` supervisor) leaves the impression that the failing
+loop will at least run out of allowance. It will not. There is no allowance it
+can reach, and this is the third independent reason a `stop` cannot end the
+pipeline — alongside the supervisor not reading verdicts, and no `.stop` file
+ever having been written.
+
+**There is no spend cap anywhere.** Neither `campaign.sh` nor `run.sh` contains
+one. The only limit is `workers.sh:46`,
+`budget="${NUMBERDB_WORKER_BUDGET:-200}"`, passed as `$1` to `campaign.sh`,
+where line 39 reads `builds="${1:-999}"` and line 290 loops
+`while [ "$made" -lt "$builds" ]`. It counts *builds*, so a build that costs
+$0.0000 and a build that costs $10 are the same size to it. Today's failing
+builds cost $0.0000 each, so no number of them approaches any ceiling; the money
+is spent entirely by the triage runs they buy, which the counter does not see at
+all.
+
+**And `made` is not incremented on the failing path.** The `stop` arm of the
+verdict `case` in `campaign.sh` is
+
+    *) say "stopping: $verdict"; exit "$status" ;;
+
+which is above `made=$((made + 1))` at line 606. The loop exits before the
+counter moves. Even if it did move, `workers.sh:204` starts a *fresh*
+`campaign.sh "$budget"` on each restart, so `made` begins at 0 every time — the
+counter is per-process and the process is replaced every five minutes.
+
+The measurement, 2026-09-23 at 14:47Z. Anchored `^=== stopping: stop` in each
+tree's own `campaign-w*.log` (the unanchored form over-counts: `run_stage`
+appends the triage agent's JSON stream to the same log, so a triage that greps
+for the string writes it back into the file it is reading):
+
+    numberdb-website    (w1)   47
+    numberdb-campaign-w2       50
+    numberdb-campaign-w3       40
+    numberdb-campaign-w4       44
+                              ---
+                              181
+
+which matches the 181 verdict files on disk exactly, all 181 reading `stop`. The
+highest `built N so far` any worker has ever reached, over the whole history of
+these logs, is **50** (w3) against a budget of 200 — and that was before the
+07:25Z pin. The supervisor, pid 1950235, up since 2026-09-22 20:38:46, has
+absorbed all 181 exits without a single one costing a unit of budget.
+
+So the terminating conditions are exactly two: a `.stop` file, and a person.
+Waiting for the workers to exhaust themselves is waiting for something that
+cannot happen.
+
+Evidence: triage of `20260923T144646Z-build.log`. `workers.sh:46,204`;
+`campaign.sh:39,290,606` and the verdict `case`; `grep -i budget` over
+`agents/run.sh` returning only a prose mention at line 250. Counts as above;
+`spend.py` at 14:48Z gave 593 runs, $3125.41 lifetime, of which today is
+$817.82 across 432 runs, triage $325.81 against build $196.28.
+
+## The line that says why a run was pinned is not in the file triage is handed
+
+Triage is given `agents/runs/<stamp>-build.log`. The reason a build ran on a
+model nobody chose is not in it, and cannot be: `run.sh:424` opens the log with
+
+    echo "=== $stage run $started, engine $engine" | tee "$log"
+
+while the fallback-marker notice eleven lines before the agent starts,
+`run.sh:600`, is a bare `echo` with no `tee`:
+
+    if [ -n "$remembered_model" ]; then
+        echo "=== a previous run hit a quota; running $remembered_model at effort $remembered_effort"
+    fi
+
+So it goes to `campaign.sh`'s stdout and lands in `campaign-w*.log` instead.
+Measured 2026-09-23 at 15:40Z: **0 of 202** build logs on disk contain that
+string; `campaign-w1.log` contains 52 of them, anchored at `^=== `.
+
+This is not cosmetic. It is why the pin keeps being re-derived from scratch,
+and why it has been re-derived wrongly. The build log for a pinned run shows a
+400 and a model id and nothing that explains where the model id came from, so
+triage has to go to `run.sh`, `/proc/<pid>/environ` and the marker file to
+learn what one untee'd line already said. The verdict for `20260923T151127Z`
+quotes that line as the first line of the build log it was triaging. It is not
+in that log, nor in any other.
+
+Reading the two logs together is what the failure actually looks like:
+
+    campaign-w1.log                      20260923T153607Z-build.log
+    === next: Quantiles of the studentized range …
+    === build run 20260923T153607Z …      === build run 20260923T153607Z …
+    === a previous run hit a quota;       (absent)
+        running gpt-5.4 at effort xhigh
+                                          … 400 … 'gpt-5.4' is not supported …
+    === build failed and looks resumable  (the same five events again)
+    === 0 turns, $0.0000
+
+The `=== next:` line above it is the other thing only the campaign log has: the
+build log never names the proposal, and the ledger's `table` column is blank on
+a zero-turn run, so this is the only record of which proposal a failed build
+consumed a claim for.
+
+Note when grepping `campaign-w*.log` that `run_stage` appends each agent's JSON
+stream to it, so an unanchored count includes triage runs quoting the string
+rather than the campaign emitting it — the same over-count already recorded for
+`=== stopping: stop` above. Unanchored, `a previous run hit a quota` returns
+147 in `campaign-w1.log`; anchored at `^=== `, 52.
+
+Evidence: triage of `20260923T153607Z-build.log`. `run.sh:424,583-602`;
+counts as above.
+
+## The claim leak has two faults, and the documented one is the shallower
+
+The note above records that a zero-turn build keeps its claim because
+`campaign.sh` exits on a `stop` verdict *before* its release path. That is true
+and it is not the whole fault. Reordering the verdict `case` would not return a
+single claim, because the release path is also guarded on the exit status
+(`campaign.sh:686-687`):
+
+    elif [ "${status:-0}" = 2 ] || [ "${status:-0}" = 3 ] \
+            || [ "${status:-0}" = 5 ]; then
+            #The build never started -- a preflight refusal, not a decline
+
+A codex build refused at the model check is exactly what that comment describes
+-- `turns 0`, `tokens_in 0`, no tool call, no assistant text -- and `run.sh`
+exits **1** for it, which the guard does not list. So it reaches the `else`
+instead: "left $proposal claimed; it frees itself in ninety minutes". The two
+faults are independent and both have to go; fixing either alone leaves the
+queue filling with claims that never ran a turn.
+
+This matters because the `case` ordering is the visible one -- it is what the
+`=== stopping: stop` line in the campaign log points at -- and it is the one a
+reader of these notes would fix first, restart, and then find #202 and #203
+still held.
+
+Evidence: triage of `20260923T161847Z-build.log`, status 1, proposal "Best
+known packings of equal circles in an equilateral triangle" (#202), claimed by
+w1 at 16:18Z and still claimed after the `stop`. All six proposals of #202
+claimed, zero turns run against any of them; `queue.py stale` silent.
+`campaign.sh:545-548` (the exiting `*)` arm) and `campaign.sh:686-700`.
+
+## `already_asked` reads issue titles, so a batch can duplicate work already claimed
+
+`screen.already_asked(name)` asks GitHub for `repo:numberdb/numberdb-data
+in:title <words>`. A `table wanted` issue is titled after the table, so the
+check works on those. A `proposal` issue is titled after the **family** — "the
+polynomial invariants of a matroid" — and the tables it commits to are a
+checklist in the *body*. Nothing in a title search can reach them.
+
+On 2026-09-23 an ideation run screened a matroid Kazhdan–Lusztig batch to
+completion — `search_text('Kazhdan')` empty, `already_asked` empty, four arXiv
+sources confirmed, $P_{U(3,6)}$, $P_{U(4,8)}$, $P_{U(5,10)}$ and the Boolean
+Chow polynomials computed in Sage — before finding **numberdb-data#186**, which
+proposes the same five tables in the same order and has had four of them
+claimed by a worker since 2026-09-22. The whole screen was clean and the batch
+was a duplicate.
+
+The check that finds it is a grep of every issue body, which is one call:
+
+    gh api --paginate "repos/numberdb/numberdb-data/issues?state=all&per_page=100" \
+        --jq '.[] | "@@ISSUE \(.number) [\(.state)] \(.title)\n\(.body // "")"' > /tmp/issues.txt
+
+206 issues, 5792 lines, and grepping it for each candidate table name takes a
+second. Worth doing **before** the Sage work rather than after, and worth
+folding into `already_asked` itself: it should report body matches beside title
+matches, or the stage will keep paying for the same collision.
+
+Note also that `gh issue view <n>` fails outright against this repository with
+`GraphQL: Projects (classic) is being deprecated ... (repository.issue.projectCards)`.
+`gh api repos/numberdb/numberdb-data/issues/<n>` answers fine, and is what to
+use for a body.
+
+## OEIS answers b-files and refuses everything else from this machine
+
+`https://oeis.org/A073001` and `https://oeis.org/search?q=...` both answer
+**403** here, with a Cloudflare interstitial ("Just a moment..."), in `curl`
+with any user agent and in `urllib`. So a proposal cannot screen a name against
+OEIS from this host and should not claim to have.
+
+`https://oeis.org/A073001/b073001.txt` answers **200**. The b-files are not
+behind the challenge, they are plain text, and for a decimal-expansion sequence
+they are a better digit check than the page anyway. Four were fetched on
+2026-09-23 (A073001, A072558, A073007, A086199) without trouble.
+
+So: an A-number found elsewhere — MathWorld's references, a Wikipedia citation,
+a paper — can still be checked here. Only the search cannot be run.
+
+## arXiv: the `abs` page answers, the export API does not
+
+`screen.source_names_it` on `https://arxiv.org/abs/1412.7408` works, and the
+abstract page carries `citation_title` and `citation_author` meta tags, which is
+enough to confirm a paper is the one being cited.
+
+`http://export.arxiv.org/api/query?...` answers **406 Not Acceptable** to
+`urllib.request` with any of the user agents tried, and **301** to plain `curl`
+over http. `curl -sSL` over **https** answers 200 with the Atom feed, which is
+how a title search can be run here:
+
+    curl -sSL "https://export.arxiv.org/api/query?search_query=ti:%22...%22&max_results=6"
+
+Evidence: 2026-09-23, four searches for matroid Chow-polynomial and
+Postnikov–Stanley papers, all 406 under `urllib` and all 200 under `curl -sSL`.
+
+## Grepping the campaign log for a run stamp matches the triage run's own transcript
+
+The campaign log is the only place a zero-turn build's proposal is named (see
+the note above on the model line being echoed without `tee`), so every triage
+run has to go looking in it. The obvious search finds mostly itself.
+
+`agents/campaign.sh` tees the *triage* session's JSONL into the same
+`agents/runs/campaign-w1.log` as its own `=== ` status lines. A triage run
+quotes its run stamp in every `Bash` command it issues, and each of those is
+echoed back twice — once in the `tool_use` and once in the `tool_result` — so
+the file accumulates matches for the stamp as the run works. For
+`20260923T163708Z`, `grep -c` in campaign-w1.log answered **4** early in the
+triage run and **12** a few turns later; of those twelve, **2** were the
+campaign's own lines and **9** were the triage session echoing itself. The
+count is a function of how long you have been looking.
+
+Worse, the line that actually names the proposal does not contain the stamp at
+all. The campaign writes it *before* the build header:
+
+    === next: Feynman periods of the primitive log-divergent $\phi^4$ graphs (family #199, built 0 so far)
+    === build run 20260923T163708Z, engine codex
+
+So a grep for the stamp can never return the one line worth having, however
+carefully it is filtered.
+
+What works: find the header's line number, then read the lines above it.
+
+    n=$(grep -n "^=== build run $S" agents/runs/campaign-w1.log | cut -d: -f1)
+    sed -n "$((n-6)),$((n+2))p" agents/runs/campaign-w1.log
+
+Anchoring on `^=== ` is what separates the campaign's own output from the
+transcript it has tee'd in; the JSONL lines all start with `{`.
+
+## A `stop` verdict stops the worker; `agents/workers.sh` starts it again six minutes later
+
+Triage decided `stop` on four consecutive builds today and the campaign carried
+on through all four. The verdict was not ignored — the *worker* exited each
+time. But `agents/workers.sh:256` is a `while true` that restarts any worker it
+finds not running:
+
+    for n in $(seq 1 "$workers"); do
+        name="w$n"
+        if ! running "$name"; then
+            start "$name" "$(family_for "$n")" || true
+
+The only things it stands down for are the flag files it checks at the top of
+the same loop, `agents/workers.stop` and `agents/campaign.stop`. Neither is
+written by any verdict path, and a triage run may not write one. So `stop` buys
+one supervisor tick — about six minutes — and `agents/runs/workers.log` shows
+w1 restarting at 16:31, 16:37, 16:43 and 16:49.
+
+This is how a correctly-diagnosed failure became expensive. **64 triage runs
+today cost $111.02 between them, against $0.00 of building**, each one
+re-deriving the same refusal. Triage cannot break this loop from inside; a
+person has to `touch agents/workers.stop`.
+
+## The codex fallback chain has one entry and this account may not use it
+
+`agents/runs/codex-fallback` pins the model for every subsequent run:
+
+    fallback_marker="agents/runs/$engine-fallback"      # run.sh:583
+
+Written only by the quota path, and — per the message at run.sh:685 — cleared
+only by hand. Today it holds `gpt-5.4`, and `gpt-5.4` is refused outright:
+
+    400 invalid_request_error: The 'gpt-5.4' model is not supported when
+    using Codex with a ChatGPT account.
+
+It cannot fall forward out of it either, because the chain's only entry is the
+model already pinned:
+
+    codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-gpt-5.4}"   # run.sh:80
+
+So one quota event pins a model the account cannot use, and every codex build
+after it dies at turn zero. **66 rows in `COSTS.tsv` are pinned to `gpt-5.4`;
+all 66 are 0 turns, $0.0000, `error`** — 65 of them today between 05:59Z and
+16:49Z. The primary `gpt-5.5` is healthy: all five gpt-5.5 builds today
+succeeded, the last at 20260923T050854Z, an hour before the pin.
+
+`rm agents/runs/codex-fallback` fixes today. It does not fix the trapdoor: the
+next real quota event pins the same dead model again. `NUMBERDB_CODEX_FALLBACKS`
+wants either a usable model or nothing at all, so a quota stops the campaign
+instead of pinning it to a refusal.
+
+## `COSTS.tsv` names the pinned model, so triage need not read the campaign log for it
+
+An earlier note here concluded that the model line is echoed without `tee` and
+so the campaign log is the only place a triage run can learn which model was
+pinned. That is true of the *logs*, but the cost ledger has it directly:
+`agents/runs/COSTS.tsv` column 8 is `model`, one row per run keyed by the stamp
+in column 1, and the build's row is written by `sync-costs` *before* the stage
+reports its status — so it is already there when triage starts.
+
+    awk -F'\t' '$1=="20260923T164929Z"{print $8}' agents/runs/COSTS.tsv
+
+answers `gpt-5.4` against a 148 KB file, instead of seeking through 74 MB of
+campaign-w1.log and reading upward from the build header. Columns 4 and 5,
+`turns` and `cost_usd`, settle "how far did it get" the same way.
+
+Two cautions about what those columns actually mean, both from `agents/ledger.py`:
+
+* `model` is `max(by_model, key=by_model.get)` — the model the run spent *most*
+  on, not the model it was pinned to. For a zero-turn refusal there is only one
+  entry and the two coincide, but a run that fell back part-way through names
+  whichever half cost more. Trust it on a build with 0 turns; corroborate it
+  against the campaign log on a run that got somewhere.
+* `result` is `subtype`, but corrected: when `is_error` is set it is rewritten
+  to `error <api_error_status>` (ledger.py:137-142, added after a 401 was
+  recorded as a success by every other field). So it is safe against the
+  specific trap the triage prompt warns about, while still inheriting raw
+  `subtype` whenever `is_error` is false.
+
+The campaign log is still the only place the *proposal* is named; it is no
+longer the only place the model is.
+
+## `resumed=yes` in the ledger marks a failed run, not a continued one -- it is exactly inverted from what triage wants
+
+`COSTS.tsv` column 11 is `resumed`, and a triage run asking "how far did it
+get" reads it as *there is a session with work in it*. It means the opposite.
+
+`agents/run.sh:618` initialises `resumed=no` and the only assignment to `yes`
+is at line 690, inside the branch entered when `[ "$status" -ne 0 ]` and
+`worth_resuming` -- that is, after the run has already failed and the shell has
+re-run `run_agent resume` in process. A run that succeeded never reaches it.
+The ledgers say so without exception:
+
+    awk -F'\t' '$2=="build"{print $11, ($4==0?"0turns":"n>0")}' COSTS.tsv \
+      | sort | uniq -c
+    147 no   n>0
+     68 yes  0turns
+
+Perfectly inverted, and the 68 zero-turn rows have 68 *distinct* session ids --
+so `resumed=yes` is not even evidence that a session recurred across runs. It
+records one in-process retry that failed too. The two failure blocks in a
+twelve-line build log are that retry, not two runs.
+
+The consequence for a triage verdict: `resumed=yes` is never a reason to
+answer `resume`. It is weak evidence *against* it, because the shell has
+already spent the retry this verdict would be authorising. Read columns 4 and 5
+(`turns`, `cost_usd`) for how far a run got, and the transcript for whether
+anything survives; column 11 only tells you `worth_resuming` matched, and
+`worth_resuming` matches on the substring `"type":"error"`, which every codex
+400 contains.
+
+## The $60/hr projection held: four and a half hours later the loop has doubled
+
+The 12:31Z section above measured the `gpt-5.4` loop at 119 dead builds and
+$225.52 of triage and projected ~$60/hr in steady state, against a daily
+average of "$190 a day" that understated it sevenfold. At 17:01Z, same method
+(`awk` over the four campaign `COSTS.tsv` deduplicated by stamp):
+
+    12:31Z    119 dead builds    $225.52 triage
+    17:01Z    248 dead builds    $438.81 triage
+    delta     +129                +$213.29  over 4h30m  = ~$47/hr
+
+Measured over the last hour alone: 31 triage runs, $47.61. So the higher figure
+was the right one to plan against and this is steady state, not a spike --
+anyone deciding at noon that this could wait until morning was budgeting for a
+seventh of the burn and has now been overtaken by four hours of it.
+
+For scale on the other side of the ledger: 22 builds ran a turn today, for
+$196.28, and **the last one was `20260923T054657Z`**. Every dollar spent on
+this campaign since 05:47Z has gone to triaging preflight refusals. All four
+worktrees still carry `agents/runs/codex-fallback` containing `gpt-5.4`.
+
+Evidence: 2026-09-23, triage of `20260923T170129Z-build.log` (proposal
+"Quantiles of the chi-squared distribution", family #197; zero turns, HEAD
+unmoved at `0b265ce7`, clean tree). 66 stop verdicts in `numberdb-website`
+alone by that point, all of them correct and none of them able to pull the
+brake.
+
+## The `gpt-5.4` pin is self-sealing: one predicate holds it, the other re-tries it
+
+Earlier sections record *that* `agents/runs/codex-fallback` pins the writer to
+a model this account 400s. This is *why* nothing in `run.sh` can leave it. Both
+halves are visible in one twelve-line build log
+(`20260923T170730Z-build.log`, and the 68 before it look the same):
+
+* `out_of_quota` (run.sh:556) greps for
+  `429|rate.?limit|quota|usage limit|too many requests`. The refusal is
+  `400 invalid_request_error, "The 'gpt-5.4' model is not supported when using
+  Codex with a ChatGPT account."` -- which matches none of them. So `give_up`
+  stays `no`, `next_model_in` is never called, and the `exit 6` handover that
+  would pass the stage to claude is never reached.
+* `worth_resuming` (run.sh:565) greps for, among others, the bare substring
+  `"type":"error"` -- which every codex error envelope contains, including this
+  400. So the run is judged resumable and the same session is re-run on the
+  same dead model, in-process, immediately.
+
+One predicate concludes "not a quota, so do not move off this model"; the other
+concludes "resumable, so run it again" -- about the same four bytes of status.
+Between them the pin cannot be escaped from inside a run, and the retry is
+spent before any triage verdict can ask for it.
+
+`run.sh:685` already names the remedy -- `delete $fallback_marker to start from
+the first model again` -- but that line is on the `give_up` path, which this
+failure never reaches. The marker is written once (here 07:25:03Z, on a real
+quota event) and **nothing clears it on success**, so it outlives the quota
+that justified it by an unbounded margin.
+
+The practical consequence for anyone reading a build log: a codex 400 and a
+codex 429 produce the same `resumed=yes` and the same two-block log, and only
+the `message` field distinguishes "wait for the quota to refill" from "this
+will never work". Read the message, not the shape.
+
+## The loop now consumes screened proposals, not just money
+
+A stop verdict does not stop the supervisor (see above), so the workers keep
+claiming. Each claim is taken before the model refusal, and the release path is
+guarded on exit status `2|3|5` while a refusal exits 1 -- so a zero-turn build
+holds its proposal for the full ninety-minute lease.
+
+At four workers on a six-minute restart cadence, that is one screened proposal
+consumed every ninety seconds of wall clock. Issue #197 -- a six-table batch of
+distribution quantiles screened this morning -- went from fully unclaimed to
+fully claimed between 16:55Z and 17:07Z, every claim by a build that ran zero
+turns:
+
+    normal  w1 16:55Z | chi-squared w1 17:01Z | Student's t w3 17:01Z
+    F       w4 17:02Z | Kolmogorov  w1 17:07Z | stud. range w2 17:07Z
+
+#202 went the same way earlier. So the cost of leaving this running is not only
+the triage bill: the ideation stage costs $137.53/day to produce these batches,
+and they are being spent unread. Anyone restarting the campaign after the pin is
+fixed should expect the most recent families to be claim-locked for ninety
+minutes with nothing built against them.
+
+Evidence: 2026-09-23, triage of `20260923T170730Z-build.log` (proposal
+"Quantiles of the Kolmogorov distribution", family #197; zero turns, HEAD
+unmoved at `babfd9be`, clean tree). 69 dead `gpt-5.4` builds and 67 triage runs
+at $115.29 in this worktree; last build to run a turn was `20260923T050854Z`
+(T438), twelve hours earlier. All four worktrees still carry the marker.
+
+The prediction above held within the hour, and the cadence is tightening.
+Family #198 -- the moduli-of-curves batch -- went from one claim to fully
+claimed in the six minutes to 17:20Z, against twelve for #197:
+
+    Hurwitz numbers      w1 15:54Z | psi intersections  w1 17:13Z
+    WP volumes V_{g,n}   w2 17:14Z | WP volume polys    w1 17:19Z
+    orbifold Euler chars w2 17:19Z | lambda_g Hodge     w3 17:20Z
+
+Five of the six inside seven minutes, all four workers participating, none of
+them building. So the rate is not one proposal per ninety seconds but bursts
+that take a whole screened family at once, because all four workers restart
+together and the queue hands each a different proposal from the newest batch.
+`GET /api/claim` is the cheap way to see this from outside -- but note it omits
+expired claims rather than flagging them, so a live-looking list is exactly what
+you get whether the lease is fresh or lapsing.
+
+Evidence: triage of `20260923T171929Z-build.log` (proposal "Weil--Petersson
+volume polynomials $V_{g,n}(L_1,\dots,L_n)$", family #198; zero turns, HEAD
+unmoved at `037d6a01`, clean tree, no draft). 70 dead `gpt-5.4` builds against 5
+`gpt-5.5` builds that each ran a turn; 69 triage runs at $117.99 versus $38.05
+of build. Every one of today's 69 verdicts is `stop`.
+
+Twenty minutes later the working set is a sliding window rather than a growing
+one: still exactly 50 live claims, but now spread across eleven families, 196
+to 206, at three to six proposals each. Old leases lapse at ninety minutes and
+are immediately replaced, so the count is flat while the frontier moves -- by
+17:38Z the claims had run past the last screened batch on disk
+(`BATCH-2026-09-23T1609`) into families 203, 205 and 206. A watcher reading
+only the claim *count* sees a steady 50 and nothing wrong; the family range is
+what moves.
+
+Two things about the endpoint, for anyone wiring that watcher. **The 50 is
+real, not a page cap** -- summing `GET /api/claim?family=N` over 196..206 gives
+exactly 50, tying out against the unfiltered list, so the number can be trusted
+at face value. But **`limit` and `page` are silently ignored**: `?limit=200`
+and `?page=2` both return the same 50 rows as the bare call, with no error and
+no pagination key in the envelope. `?family=` is the only filter that does
+anything. So the round 50 invites two opposite misreadings -- that the list is
+truncated, and that paging past it would show more -- and neither is true. Read
+it with `?family=` if you want to be sure.
+
+Evidence: triage of `20260923T173750Z-build.log` (proposal "Global minimum
+energies of Lennard-Jones clusters", family #202, claimed by w1 at 17:37:49Z,
+one second before the build died; zero turns, HEAD unmoved at `c40e2ac4`, clean
+tree, no draft). 73 dead `gpt-5.4` builds against 5 `gpt-5.5` builds that each
+ran a turn; 72 triage runs at $122.03 against $38.05 of build and $137.53 of
+ideation. Every one of today's 72 verdicts is `stop`; this was the 73rd.
+
+## `sync-costs` prints a one-number health check at the end of every run, and nothing reads it
+
+Every run ends with a line from `agents/sync-costs.sh`, which POSTs the whole
+ledger to `/api/costs` and echoes the site's reply:
+
+    sync-costs: rows: 638, tables: 131, unattributed: 207, unattributed_usd: 584.2228
+
+The fields are not opaque. They are computed from `agents/runs/COSTS.tsv`, and
+the arithmetic checks out from this end:
+
+* `unattributed` is the count of ledger rows whose `table` column (16) is
+  empty -- 207 locally, 207 at the site.
+* `unattributed_usd` sums their `cost_usd` -- $584.2210 locally against the
+  site's $584.2228, the difference being other machines' ledgers rounding.
+* `tables` is the number of distinct non-empty `table` values -- 131 both
+  sides, and **unmoved all day**.
+
+`rows` is the only field that does not tie out exactly (638 at the site
+against 644 data rows here); the other three do, so they can be trusted
+without reading the campaign log.
+
+A row is unattributed when the run produced no table. Triage and ideas runs
+are unattributed by nature, so a nonzero count is normal and the raw number
+means nothing on its own. The **ratio** is the signal, and it is stark:
+
+    day          unattributed          attributed
+    2026-09-16     4 rows $ 34.50      94 rows $514.19
+    2026-09-17     8 rows $ 51.56      91 rows $497.81
+    2026-09-18     6 rows $ 26.75      57 rows $364.92
+    2026-09-19     2 rows $ 27.25      51 rows $175.18
+    2026-09-20     2 rows $ 18.37      34 rows $228.51
+    2026-09-22     9 rows $101.81      10 rows $128.55
+    2026-09-23   156 rows $248.16      15 rows $ 81.50
+
+A campaign that is building runs 2-9 unattributed rows a day, 4-15% of rows
+and well under a tenth of the spend. Today it is 156 rows of 171 (91%) and the
+dollars have inverted: $248.16 bought no table against $81.50 that did. Of
+those 156, 154 rows and $230.07 fall after the `gpt-5.4` pin at 05:59Z.
+
+Two cautions for anyone wiring an alarm to this:
+
+* **Watch the count, not the dollars.** A zero-turn build adds a row and
+  $0.0000, so `unattributed_usd` stands still across exactly the runs that are
+  wasting the most wall clock. Across the last two hours of dead builds the
+  count went 182 -> 207 while the dollars moved only on the triage runs
+  between them. The dollar figure decelerates as the loop gets worse.
+* **`tables` frozen is the blunter signal.** It has read 131 since the last
+  build that ran a turn (`20260923T050854Z`). It costs nothing to compare
+  against the previous run's line.
+
+This is the cheapest detector of the failure mode documented in the sections
+above, and it was on stdout at the end of all 72 dead builds. It would have
+flagged this by about 08:00Z, when the count first pulled away from the
+single digits, for the price of reading a line the runner already prints.
+Triage, which did notice, costs about $1.40 a run and has now been asked the
+same question 72 times.
+
+Evidence: triage of `20260923T173149Z-build.log` (proposal "Best known
+packings of equal circles in a square", family #202 -- on its second lap, the
+first also zero turns; 0 turns, $0.0000, HEAD unmoved at `b3801fe6`, clean
+tree, no draft). 72 zero-turn `gpt-5.4` builds against 5 `gpt-5.5` builds that
+each ran a turn; all 72 of today's verdicts are `stop`. Counts reproduce with
+`awk -F'\t' 'NR>1 && $16==""' agents/runs/COSTS.tsv`.
+
+## The live claim count drifts; 50 was a sample, not a cap
+
+The section above records "still exactly 50 at 17:38Z" across families
+196-206 and concludes the per-family sum can be trusted. The sum can be
+trusted. The number cannot be read as a constant, and a watcher who alarms on
+it moving will alarm on nothing.
+
+Three samples of `GET /api/claim`, same worker pool, same families 196-206,
+half an hour apart:
+
+    17:38Z   50 live
+    18:04Z   52 live
+    18:07Z   51 live
+
+It went up and then down inside four minutes. There is no cap at 50 and no
+drift toward a ceiling; the count is simply **how many claims happen to have
+been taken in the last ninety minutes**, and that oscillates with the worker
+cadence.
+
+The lease boundary is visible directly in the response, which is the useful
+part. At 18:07:14Z the oldest live claim was `2026-09-23T16:37:27Z` -- 89
+minutes 47 seconds old. It is always within a minute of ninety, because
+`/api/claim` filters expired claims out of the response rather than flagging
+them (recorded above), so the oldest row in the list *is* the trailing edge of
+the window. That, and not the count, is what tells you the endpoint is
+behaving.
+
+So for anyone reading this endpoint to judge campaign health:
+
+* **The count is noise in the low fifties.** Do not alarm on it, either
+  direction. Four workers restarting every six minutes and holding for ninety
+  puts the steady state somewhere near fifty whether or not a single one of
+  those claims produced a table -- which today not one of them did.
+* **The family range is still the signal**, as recorded above.
+* **The oldest `since` is the sanity check.** If it is much older than ninety
+  minutes, leases have stopped lapsing; if it is much younger, the pool has
+  stopped claiming.
+
+Evidence: triage of `20260923T180311Z-build.log`, three `GET /api/claim`
+samples at 17:38Z (from the commit above), 18:04Z and 18:07:14Z. That build
+itself claimed family #206 "Theta series of the classical lattices" at
+18:03:09.861Z, one second before it started, used 0 turns, and holds the
+claim until about 19:33Z -- one of the fifty-odd.
+
+## The unticked table is not merely complete, it audits clean -- and the reconciliation has been outstanding for eight hours
+
+The section *A lapsed claim outlives the table it produced* established at
+10:33Z that T441 was finished and invisible, and told the next person to
+reconcile the queue against the corpus **before** repairing the engine. That
+recommendation is still unactioned.
+
+What is new is how finished T441 is. Not "903 entries and probably fine":
+
+    GET /api/table/T441/audit   keyed   {"clean": true}     18:26Z
+
+with `rigour: measured` and its details, a `complete: no` note naming the grid,
+a `number-header`, a Programs block and two tags. Its generator is committed
+and pushed at `4d51febf`. This is a draft a reviewer could pick up as it
+stands; the only thing between it and a person is a checklist line that still
+reads `[~] claimed by w1`.
+
+Why it matters that this is measurable. The earlier note could be read as
+"there is a partly built thing in the database somewhere, sort it out when
+convenient". `/api/table/<tid>/audit` turns that into a yes-or-no a triage run
+can ask for one request, and the answer here is that the campaign has been
+spending money for thirteen hours to rebuild a table that was ready at 06:00Z.
+Between the 10:33Z note and this one, roughly forty more builds failed on the
+`gpt-5.4` 400 and forty more triages were paid for.
+
+The reconciliation is two commands and no judgement, which is what makes the
+delay expensive rather than merely untidy:
+
+    python3 agents/queue.py built 196 "Values of the Tracy-Widom distribution functions $F_\beta(s)$" T441
+
+then clear `agents/runs/codex-fallback` in each worktree, or set the writer to
+claude. In that order: ticking after restarting sends the first healthy build
+in thirteen hours to rebuild T441 and collide with its own draft.
+
+A triage run may not do either -- it reads and decides. So the note is the
+whole of what it can leave, and this is the second one.
+
+Evidence: 2026-09-23, triage of `20260923T182131Z-build.log`. `GET
+/api/table/T441/audit` and `GET /api/table?id=T441` with the zeta3 key at
+18:26Z (903 values, keys `'1'`,`'2'`,`'4'`, 301 grid points each); `git log
+generators/tracy-widom-distribution-functions/`; `agents/queue.py show 196` and
+`GET /api/claim?family=196` at 18:27Z, showing the proposal re-claimed by w1 at
+18:21:29.8Z. Counts from `agents/runs/COSTS.tsv`: 80 `gpt-5.4` builds today at
+0 turns, 79 triage runs at $131.62, 79 verdicts all `stop`.

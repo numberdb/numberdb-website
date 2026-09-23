@@ -1,0 +1,77 @@
+# The table document for numberdb.org/T431. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Freiman's constant
+Definition: >-
+  Freiman's constant $c_F$ is the endpoint of the last gap in the Lagrange
+  spectrum CITE{MathWorldFreiman}. It is the quadratic irrational in Formula
+  CITE{formula-value}.
+Keywords:
+  - Freiman constant
+  - Hall ray
+  - Lagrange spectrum
+  - Markov spectrum
+Parameters: ''
+Comments:
+  comment-hall-ray: >-
+    The half-line beginning at $c_F$ is often called Hall's ray. Every real
+    number greater than $c_F$ lies in both the Markov and Lagrange spectra
+    CITE{CusickFlahive} CITE{WikiMarkovSpectrum}; this table stores the
+    endpoint, not the continuum of all values on the ray.
+  comment-less-than-three: >-
+    The discrete part of the Markov and Lagrange spectra with value less than
+    $3$ is stored in
+    HREF{Lagrange_numbers_of_the_Markov_spectrum}[Lagrange numbers $L_m$ of
+    the Markov spectrum].
+  comment-name: >-
+    Freiman proved the endpoint result in his monograph CITE{Freiman}; Cusick
+    and Flahive give the value and spectrum context CITE{CusickFlahive}.
+Formulas:
+  formula-value: >-
+    $c_F=\dfrac{2221564096+283748\sqrt{462}}{491993569}$.
+  formula-minimal-polynomial: >-
+    $491993569c_F^2-4443128192c_F+10031248672=0$, with $c_F>4$.
+Programs:
+  program-sage:
+    language: SageMath
+    code: |-
+      R = RealBallField(400)
+      (R(2221564096) + R(283748) * R(462).sqrt()) / R(491993569)
+Similar tables:
+  - table: HREF{Lagrange_numbers_of_the_Markov_spectrum}[Lagrange numbers $L_m$ of the Markov spectrum]
+    relation: store the discrete Markov and Lagrange spectrum values less than $3$
+  - table: HREF{Khinchin's_means}[Khinchin's means]
+    relation: describe almost-sure limits of regular continued fractions, while Freiman's constant is an extremal threshold
+  - table: HREF{Lévy's_constant}[Lévy's constant]
+    relation: describes the almost-sure denominator growth rate for the same regular continued fraction
+Links:
+  MathWorldFreiman:
+    title: 'MathWorld: Freiman''s Constant'
+    url: https://mathworld.wolfram.com/FreimansConstant.html
+  WikiMarkovSpectrum:
+    title: 'Wikipedia: Markov spectrum'
+    url: https://en.wikipedia.org/wiki/Markov_spectrum
+  OEISA118472:
+    title: 'OEIS A118472: decimal expansion of Freiman''s constant'
+    url: https://oeis.org/A118472
+References:
+  CusickFlahive:
+    bib: T. W. Cusick and M. E. Flahive, The Markoff and Lagrange Spectra, Mathematical Surveys and Monographs 30, American Mathematical Society, 1989.
+  Freiman:
+    bib: G. A. Freiman, Diophantine approximations and the geometry of numbers (Markov's problem), Kalinin State University Press, Kalinin, 1975.
+Tags:
+  - number theory
+  - continued fractions
+  - algebraic
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'yes'
+  rigour details: >-
+    The generator computes Formula CITE{formula-value} in real ball arithmetic
+    from exact integers. The stored decimal was compared with OEIS A118472
+    CITE{OEISA118472}, and the computed ball was checked against the minimal
+    polynomial in Formula CITE{formula-minimal-polynomial}.
+Display properties:
+  number-header: $c_F$
+Numbers: []
