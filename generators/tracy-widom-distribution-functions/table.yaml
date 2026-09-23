@@ -1,12 +1,8 @@
 Title: Values of the Tracy-Widom distribution functions $F_\beta(s)$
 Definition: >
   For $\beta\in\{1,2,4\}$, let $F_\beta$ be the Tracy-Widom distribution
-  function CITE{WikiTW} in the soft-edge scaling used by CITE{Bornemann},
-  normalised by
-  $F_2(s)=\exp(-\int_s^\infty (x-s)q(x)^2\,dx)$, where $q$ is the
-  Hastings-McLeod solution of Painleve II asymptotic to
-  HREF{Values_of_the_Airy_function_of_the_first_kind}[$\operatorname{Ai}$].
-  This table gives values of $F_\beta(s)$.
+  function CITE{WikiTW} in the soft-edge scaling used by CITE{Bornemann}.
+  This table gives values of $F_\beta(s)$ at rational $s$.
 Keywords:
 - Tracy-Widom distribution
 - Tracy Widom distribution
@@ -41,7 +37,9 @@ Comments:
   comment-range: >
     The argument grid follows the soft-edge family convention in
     numberdb-data#196. It covers the transition region where the three
-    distribution functions are neither zero nor one to the stored precision.
+    distribution functions are neither zero nor one to the stored precision,
+    and uses a $0.05$ step because numerical Tracy-Widom evaluations are
+    commonly requested at decimal arguments.
   comment-airy: >
     The Airy function $\operatorname{Ai}$ appears both in the Fredholm
     determinant kernel and in the boundary condition for the Hastings-McLeod
