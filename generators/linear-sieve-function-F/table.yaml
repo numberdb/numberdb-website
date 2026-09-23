@@ -1,0 +1,89 @@
+Title: Values of the linear sieve function $F(s)$
+Definition: The upper linear sieve function $F$ is the continuous function in the dimension-one
+  linear sieve normalisation of Halberstam-Richert and Iwaniec, with $sF(s)=2e^\gamma$
+  for $0<s\leq3$ and $(sF(s))'=f(s-1)$ for $s>3$, coupled to the lower function
+  $f$ by $sf(s)=0$ for $0<s\leq2$ and $(sf(s))'=F(s-1)$ for $s>2$ CITE{CambridgeLinearSieve}.
+  This table gives $F(s)$ at rational sifting ratios $s$.
+Keywords:
+- upper linear sieve function
+- linear sieve F
+- Rosser-Iwaniec sieve
+- Jurkat-Richert sieve
+Parameters:
+  s:
+    type: Q
+    title: sifting ratio
+    display: $s$
+    constraints: $s>0$
+Comments:
+  comment-normalisation: The table uses the normalisation for which $F(s)\to1$
+    as $s\to\infty$. In the sieve, $s$ is the ratio $\log D/\log z$ between the
+    level $D$ and the sifting bound $z$.
+  comment-lower-range: The entries start at $s=1.00$. For $0<s<1$ the linear
+    sieve gives no sharper upper bound than the endpoint value $F(1)$, and the
+    family convention keeps the stored rows to the range used as a sifting ratio.
+Formulas:
+  formula-initial: $F(s)=2e^\gamma/s$ for $0<s\leq3$ CITE{CambridgeLinearSieve}.
+  formula-delay: The coupled delay equations are $(sF(s))'=f(s-1)$ for $s>3$
+    and $(sf(s))'=F(s-1)$ for $s>2$ CITE{CambridgeLinearSieve}.
+  formula-buchstab: $F(s)+f(s)=2e^\gamma\omega(s)$, where $\omega$ is the Buchstab
+    function CITE{TaoLinearSieve}.
+Programs:
+  program-sage:
+    language: Sage
+    code: 'import numberdb.sage as numberdb
+
+      from sage.rings.rational_field import QQ
+
+
+      # The attached generate.py evaluates F(s) by the linear-sieve
+
+      # delay equations and can be run with sage -python generate.py.
+
+      from generate import LinearSieveF
+
+
+      LinearSieveF().value({"s": str(QQ(4))}, 100)'
+Similar tables:
+- table: HREF{Twin_prime_constant}[Twin prime constant $C_2$]
+  relation: an arithmetic Euler-product factor in prime-pair asymptotics, where
+    $F$ is an analytic sieve factor
+- table: HREF{Hardy-Littlewood_singular_series_of_prime_tuples}[Hardy-Littlewood
+    singular series of prime tuples]
+  relation: stores singular-series factors for prime-tuple sieves
+- table: HREF{Bateman-Horn_constants_of_monic_quadratic_polynomials}[Bateman-Horn
+    constants of monic quadratic polynomials]
+  relation: stores arithmetic constants for a family of sieve-theoretic prime-value
+    conjectures
+- table: HREF{Named_rational_Euler_products_over_primes}[Named rational Euler products
+    over primes]
+  relation: stores prime-product constants that often supply the arithmetic factor
+    beside sieve functions
+Links:
+  CambridgeLinearSieve:
+    title: 'Mangerel, Weighted sieves with switching, §2'
+    url: https://www.cambridge.org/core/journals/mathematical-proceedings-of-the-cambridge-philosophical-society/article/weighted-sieves-with-switching/986429394BA969687D48224E177E2F1C
+  TaoLinearSieve:
+    title: 'Tao, Chen''s theorem notes: the linear sieve'
+    url: https://terrytao.wordpress.com/tag/chens-theorem/
+  WikiSieve:
+    title: 'Wikipedia: Sieve theory'
+    url: https://en.wikipedia.org/wiki/Sieve_theory
+Tags:
+- number theory
+- special functions
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: it holds $F(s)$ for every $s$ of two decimal places with $1\leq
+    s\leq10$
+  rigour details: Each value was computed in Sage real ball arithmetic by solving
+    the coupled delay equations for $F$ and $f$ on successive unit intervals. On
+    each interval the functions are represented by Taylor series with ball coefficients
+    and an explicit geometric tail bound for the truncated product by $1/s$. The
+    entries were checked against the closed form in CITE{formula-initial}, the delay
+    equations in CITE{formula-delay}, the Buchstab relation in CITE{formula-buchstab},
+    and the formula for $f(s)$ on $2\leq s\leq4$ stated with CITE{CambridgeLinearSieve}.
+Display properties:
+  number-header: $F(s)$
