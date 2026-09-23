@@ -8469,3 +8469,64 @@ Evidence: 2026-09-23, triage of `20260923T081316Z-build.log`, the sixth
 identical refusal on w1 and the fifth consecutive `stop`. `agents/runs/COSTS.tsv`
 in all four worktrees, `python3 agents/queue.py open` and `show 199`,
 `agents/run.sh` lines 80, 556, 583-586, 644, 655, 685, `ps -p 1950235,1950272`.
+
+## The screener's throttle cannot engage while builds claim and drop
+
+The note above priced one batch the failure loop threw away and expected more
+"within the hour". The rate is worse than hourly and the reason is structural,
+not a coincidence of timing: **`screener.sh`'s back-pressure is measured in
+proposals *waiting*, and a build that claims a proposal and dies in one second
+removes it from that count without building anything.**
+
+`waiting_now()` (`screener.sh:33-36`) is `queue.py open`, which counts
+unclaimed proposals. The loop sleeps its `every` interval -- 600s -- only on
+the branch where `waiting >= target`; after a successful screening it sleeps
+**30 seconds** and asks again. So while four builders claim four proposals a
+minute and build none, the queue can never reach the target of twelve, the
+600s throttle is never taken, and the screener buys a ten-dollar batch
+back to back for ever.
+
+The live screener's own log (pid 1950272) has the whole shape of it:
+
+    07:02:25  14 proposals waiting, which is enough
+    07:12:27  13 proposals waiting, which is enough
+    07:22:28  13 proposals waiting, which is enough
+    07:32:29  14 proposals waiting, which is enough      <- last quiet check
+    07:42:30   9 proposals waiting, below 12; screening a family
+    08:11:46  a family was opened                        <- $9.7020, 29 minutes
+    08:12:17   4 proposals waiting, below 12; screening a family
+
+Thirty-one seconds after delivering family #199 it found three of its four
+proposals already claimed by builds that had died, and started buying another.
+That run is `20260923T081219Z-ideas`, pid 2440122, ten minutes in and not yet
+in any ledger. The quiet checks stop exactly at 07:32 -- the last one before
+the first `gpt-5.4` refusal at 07:25 had worked through to an empty queue.
+
+Family #199 was consumed in seven minutes: 08:12Z w4, 08:13Z w1, 08:19Z w4,
+08:19Z w1 -- the last of them this triage's build, which claimed *Multiple zeta
+values of length 5*. `queue.py open` now reads `0 waiting`, so the next check
+will screen again.
+
+Measured 07:25:18Z to 08:20Z, fifty-five minutes, all four worktrees' ledgers
+deduplicated by stamp:
+
+    19 triage runs   $39.1809
+     1 ideas run     $ 9.7020
+    18 builds        $ 0.0000
+     1 repair        $ 0.0000
+                     $48.8829     -- about $53/hour
+
+and that excludes the batch in flight and two triages running as this is
+written. Twenty-two build logs across the four worktrees now carry this same
+400.
+
+The practical consequence for whoever stops this: `touch agents/workers.stop`
+alone leaves the *more* expensive stage running, and it will not wind itself
+down. The screener needs `touch agents/screener.stop` -- which it checks at the
+top of its loop, alongside `agents/campaign.stop` -- or its pid stopped.
+
+Evidence: 2026-09-23, triage of `20260923T081916Z-build.log`, the seventh
+identical refusal on w1 and the sixth consecutive `stop`. `agents/screener.sh`
+lines 28-29 and 33-69, `agents/runs/screener.log`, `python3 agents/queue.py
+open` and `show 199`, `agents/runs/COSTS.tsv` in all four worktrees,
+`ps -p 1950235,1950272,2440122`.
