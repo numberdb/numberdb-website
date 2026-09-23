@@ -8574,3 +8574,58 @@ numbers under it. I have not touched it.
 Evidence: 2026-09-23, triage of build run `20260923T090338Z`. `GET
 /api/table?id=T4xx` for `x` in 425..445, each twice, with and without
 `Authorization: Bearer`; `GET /api/table/T445/audit`.
+
+## The proposal lock is now held end to end by runs that died at turn 0, and it recycles every ninety minutes
+
+What happened: triaging the twenty-ninth turn-0 refusal since 07:25, I asked
+the lock table what the pool was holding rather than asking the log what it
+had done. `GET /api/claim` with no family returns every live claim:
+
+    live claims: 31, families 196-202, all four workers
+    oldest 88 min (w2, f197)   newest 2 min (w2/w3, f202)
+
+None of the 31 is being worked on. No codex stage in any checkout has reached
+turn 1 since 07:25 -- w2 logged 9 turn-0 refusals in that window, w3 11, w4 9
+-- so every hold in the table was taken by a run that died seconds after
+taking it. `ProposalClaim.MINUTES = 90` and an expired claim is taken over in
+place (`api.py:1455-1461`), so the table does not need sweeping; it churns.
+A line ages out, the queue re-issues it, the next dead build claims it, and
+ninety minutes later it ages out again.
+
+Why this is worth recording separately from the marker itself. The note above
+records one proposal (#196's `F_\beta` line, already built as T441) being
+re-issued because a build that ends in error never ticks the box. That is not
+a single accident -- it is what this cycle does to *every* proposal whose
+table was built before 07:25 and whose stage then exited non-zero, and the
+cycle has now run through seven families. Whoever deletes the marker should
+expect the pool's first pass after it to meet a queue where most lines have
+been re-issued at least once, and should check the corpus for each title
+before believing the checklist. Two consequences follow from the mechanics
+and are easy to get wrong:
+
+  * A live claim returns 409 even to the worker that holds it
+    (`api.py:1463-1467`). A checkout whose build died holding a proposal
+    cannot retry that proposal for ninety minutes; it will be handed a
+    different one. So a dead lane does not retry its way through the queue,
+    it walks forward through it, parking a fresh line every ten minutes.
+  * Nothing needs cleaning up by hand, and cleaning up by hand is worse than
+    leaving it: `DELETE /api/claim` on a line another worker is genuinely
+    building removes the only lock there is.
+
+The cost of the standing failure, re-measured two hours after the $23.16
+figure in the note above, counting from 07:25:
+
+    w2   9 dead builds   8 triages   $14.68
+    w3  11 dead builds  11 triages   $18.61
+    w4   8 dead builds   8 triages   $18.98
+                                     ------
+        28 dead builds  27 triages   $52.27
+
+It has more than doubled and is not decaying. All of it is booked under
+`triage`, because a build that dies at turn 0 records $0.0000.
+
+Evidence: 2026-09-23 09:25Z, triage of build run `20260923T092022Z`.
+`GET /api/claim` and `GET /api/claim?family=197` with ages computed against
+the response's `since`; `models.py:1519-1564`; `api.py:1435-1467`; per-checkout
+tallies from `agents/runs/COSTS.tsv` in `numberdb-campaign-w2`, `-w3` and
+`-w4`.
