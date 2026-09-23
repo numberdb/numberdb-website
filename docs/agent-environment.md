@@ -9221,3 +9221,57 @@ Evidence: 2026-09-23, triage of `20260923T102622Z-build.log`.
 showing two proposals claimed at 08:56-09:02Z and re-claimed at 10:26Z.
 `agents/table-ideas/BATCH-2026-09-23T*.md`, ten batches today.
 `agents/workers.sh`, the `workers.stop` and `screener.stop` checks.
+
+## A lapsed claim outlives the table it produced, so the queue re-orders finished work
+
+Earlier notes establish that `agents/queue.py` claims lapse at
+`CLAIM_MINUTES = 90` and that the workers therefore walk backwards through the
+day's batches re-failing proposals. That is the harmless version. Here is the
+harmful one, found while triaging `20260923T103220Z`.
+
+A proposal's line is ticked to `[x] Title -- [T441](...)` at `queue.py:484`,
+and only when a run hands the queue a table id. A run that creates the table
+and then dies leaves `[~] claimed by w4 at 09:03Z`. Ninety minutes later
+`claim()` (line 752) treats that line as stale and re-serves it, unbuilt, to
+the next worker. The table is not mentioned anywhere in the family issue, so
+nothing downstream knows it exists.
+
+It has happened. Family #196's first-ranked proposal, *Values of the
+Tracy-Widom distribution functions $F_\beta(s)$*, was open in the pool again at
+10:33Z on 2026-09-23, while the table it asks for sat in the database:
+
+    GET /api/table?id=T441  keyed  200  903 entries, keys '1','2','4'
+    GET /api/table?id=T441  anon   200  {"error": "... does not exist."}
+
+Complete, unpublished, and invisible. The ledger knew -- the row for
+`20260923T055938Z` carries `T441` in its `table` column and zero in every other
+column -- but the ledger and the queue never speak, so the checklist was never
+told. And the build that receives the re-served proposal cannot find out for
+itself: `search_text` indexes published tables only, so `already_here` is blind
+to drafts. It would build T441 a second time, spend a full build's money, and
+take a second of the five draft slots to collide with itself.
+
+The docstring at `queue.py:765` states the assumption the design rests on: *"a
+campaign that dies mid-build leaves one for a person to look at, which is the
+right amount of ceremony for a checklist in an issue."* That is true of a
+campaign that dies once. It is false of one that dies sixty-nine times in five
+hours, because the ninety-minute lapse converts a marker meant for a person
+into an instruction to rebuild. A timeout tuned for a worker that crashed is
+the wrong timeout for a stage that cannot start.
+
+Two consequences:
+
+* **Reconcile the queue against the corpus before repairing the engine, not
+  after.** The ledger's `table` column is the reconciliation key: any build row
+  carrying a table id whose queue line is still `[~]` should be ticked to `[x]`
+  by hand. Restarting first sends the first healthy build in five hours to
+  rebuild finished work.
+* **A `[~]` is not evidence that a table was not built**, and neither is a
+  family issue read on its own. The database is the authority; the checklist is
+  a cache with no invalidation.
+
+Evidence: 2026-09-23, triage of `20260923T103220Z-build.log`.
+`agents/queue.py open` (11 waiting, #196/#203/#204) and `show 196` at 10:33Z;
+`agents/queue.py` lines 280, 303, 484, 752-786; the `table` column of
+`agents/runs/COSTS.tsv` for `20260923T055938Z`; `GET /api/table?id=T441` keyed
+and anonymous at 10:40Z.
