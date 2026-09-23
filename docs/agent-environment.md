@@ -9675,3 +9675,50 @@ could not run it should say so rather than leave the silence to be read as an
 answer.
 
 Evidence: 2026-09-23, ideation run `20260923T112015Z`, six searches.
+
+## The `gpt-5.4` loop, measured over a full day: $193.05 and 103 dead builds
+
+Three sections above describe this failure and its mechanism; none of them
+needs restating. What this note adds is the outcome, because the earlier ones
+were written while it was still a projection and the projection was low.
+
+Counted at 11:57Z on 2026-09-23, deduplicated by stamp across all four
+worktrees' ledgers:
+
+    103   zero-turn builds on gpt-5.4 (0 turns, $0.0000, empty table column)
+     99   triage runs today, total $193.05
+     26   verdict files in numberdb-website/agents/runs -- all 26 read `stop`
+
+The note *A triage `stop` does not stop the machine* estimated "roughly
+eighteen triage runs an hour, about $55 an hour, building nothing". Over a
+whole day that came to $193.05, and not one table. The estimate was sound; the
+point is that being sound changed nothing, because the loop does not read what
+triage writes.
+
+Two things are worth drawing out of the day-scale numbers that the single-cycle
+analysis could not show:
+
+* **The verdict is unanimous, which is itself the evidence.** Twenty-six
+  independent triage runs, each spending ~$2 to re-derive the same conclusion
+  from the same twelve-line log, and all twenty-six agreeing. When every
+  verdict in a worktree's history is the same word, the pipeline has stopped
+  being a decision procedure and become a very expensive `echo`.
+* **It is not converging on anything.** The `gpt-5.5` quota refills on Sep 25
+  at 03:51, and reaching it changes nothing: `run.sh` writes the marker at
+  lines 644 and 655 and reads it at 584, and there is no third mention, so a
+  refilled quota is never consulted while the marker stands. Left alone, this
+  runs at roughly $190 a day indefinitely.
+
+The remedy is unchanged and is in the section above: `touch
+agents/workers.stop` first, then delete `agents/runs/codex-fallback` from all
+four worktrees, then set `NUMBERDB_CODEX_FALLBACKS` to a model the account may
+use or start the pool with `NUMBERDB_WRITER=claude`, then restart the
+supervisor. The claude engine is demonstrably fine: it is what ran all 99
+triages.
+
+Evidence: 2026-09-23, triage of `20260923T115442Z-build.log`. Counts by `awk`
+over `numberdb-*/agents/runs/COSTS.tsv` deduplicating on the stamp column;
+verdict tally by `head -1` over `agents/runs/*-verdict`. The marker present and
+reading `gpt-5.4` in all four worktrees at the time of writing; three
+`campaign.sh` loops and a second concurrent triage (`20260923T115502Z`) running
+alongside.
