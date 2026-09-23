@@ -11285,3 +11285,48 @@ for the genuine lines, which is how the run's proposal was identified as
 *Growth constants of the classes of trees*, family #203 -- confirmed against
 `queue.py show 203`, `claimed by w3 at 2026-09-23T16:06Z`. `agents/campaign.sh:236`
 for `say`, `:472` for the claim that precedes the build.
+
+## The ledger's `batch` column belongs to the proposal, not to the campaign, so it is not monotone in time and a change in it is not a rollover
+
+What happened: triaging `20260923T161928Z` I compared its `COSTS.tsv` row with
+the rows above it and saw the last column go
+
+    20260923T160648Z  build  ...  BATCH-2026-09-23T0921
+    20260923T161308Z  build  ...  BATCH-2026-09-23T0921
+    20260923T161928Z  build  ...  BATCH-2026-09-23T1003
+
+which reads as a batch rollover between the 52nd turn-zero build and the 53rd,
+and would have been a finding: it would mean a fresh batch had started and the
+`gpt-5.4` wall had survived it, i.e. that the campaign gets a clean start it
+does not benefit from. It is not a rollover and there was no fresh start.
+
+The column is `NUMBERDB_BATCH_NAME`, set at `campaign.sh:457` from
+`field "$next" batch` -- the batch of *the proposal this iteration picked*,
+re-read on every pass of the loop. Its own comment says so: it tells the ledger
+where a run came from, and is deliberately not `NUMBERDB_BATCH`, which used to
+pin a campaign to its first batch for ever. `queue.py next` picks across
+families screened at different times, so the column walks back and forth:
+
+    20260923T144726Z  build  BATCH-2026-09-23T1003
+    20260923T160109Z  build  BATCH-2026-09-23T1120
+    20260923T160648Z  build  BATCH-2026-09-23T0921
+    20260923T161308Z  build  BATCH-2026-09-23T0921
+    20260923T161928Z  build  BATCH-2026-09-23T1003
+
+T1003, then T1120, then back to T0921 twice, then T1003 again, all inside
+ninety minutes. Sorted by stamp the column is unsorted, and that is correct
+behaviour rather than a fault. A campaign does not have a current batch.
+
+What to do instead: to ask what a run was working on, read the `table` column
+and the family (`queue.py show N`), not the batch. To ask whether the queue has
+moved on, read the queue. `grep -c BATCH-...` over the ledger counts *proposals
+drawn from a batch*, which is a real quantity and a different one from "runs
+since that batch started" -- there is no such quantity, because batches do not
+start and stop, they are screened and drawn from.
+
+Evidence: 2026-09-23, w3 triage of build `20260923T161928Z`.
+`agents/runs/COSTS.tsv` last column by `awk -F'\t' '{print $NF}'`, five batch
+names live today; `agents/campaign.sh:450-457` for the export and its comment;
+`agents/queue.py next` for the interleaving. This is the trap at `:11241` in a
+second place: right-looking bytes in the wrong column, met in the evidence and
+not in a regex.
