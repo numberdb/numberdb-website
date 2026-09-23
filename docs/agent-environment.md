@@ -10089,3 +10089,72 @@ deduplicated on `(started, stage, log)`, grouped by `stage` over
 `20260923T171410Z` row (`BATCH-2026-09-23T0602`) resolved by `:9579`;
 `run.sh:78-82,554-562,581-590`. Diagnosed in
 `agents/runs/20260923T171410Z-verdict`.
+
+## Sharpening `:9820`: the live-claim count *is* the 90-minute build count, so it reports the cadence and not a limit -- and no claim ceiling exists to rest against
+
+`:9820` established that the burned backlog is a steady state and warned
+against reading a falling `queue.py open` as the work running out. The reading
+that has since grown on top of it is the opposite error and needs killing: a
+verdict written at 17:19Z described 46 outstanding claims as "the pool sitting
+on its documented ~50 saturation ceiling rather than damage accumulating." The
+conclusion was right and the reason was invented. **There is no such ceiling.**
+`grep -n "saturat\|ceiling" docs/agent-environment.md agents/queue.py` finds
+nothing of the kind; claims are unbounded in the code and bounded only by the
+clock.
+
+What the number is, measured at 17:40Z:
+
+    outstanding claims, families #195-#208          : 49
+    pool-wide builds in the preceding 90 minutes    : 49
+    pool-wide builds in the preceding 60 minutes    : 32
+
+Equal, and necessarily so. Every build claims exactly once before it runs
+(`campaign.sh:472` precedes `campaign.sh:489`, so a build that dies before turn
+1 still spends one), and every claim expires at `CLAIM_MINUTES = 90`
+(`queue.py:279`). The live count is therefore an exact rolling ninety-minute
+window on the build cadence. It reports the rate; it does not resist it. When
+`:9820` measured 48 live against a predicted 39 at 16:20Z, the gap was the
+cadence rising, not a limit being approached -- it has risen again since, from
+25.9 builds/hour to **~33**.
+
+Three things follow, and the third is the one for whoever eventually looks.
+
+* **Do not read the claim count as a health bound.** It has no headroom to run
+  out of and no wall to hit. If the cycle time halves, it doubles. It is a
+  cadence gauge wearing a capacity gauge's clothes.
+* **The correct burn figure is pool-wide, not per-worker.** Earlier verdicts
+  estimated "four proposals an hour" from w2's own cycle. Across four loops it
+  is ~33/hour, and every one of them is claimed, never read, and released
+  ninety minutes later. That is the number that makes a `skip` verdict during
+  this episode actively destructive.
+* **`queue.py open` understates the unbuilt backlog about fourfold.** Claiming
+  writes `- [~]`, the parser reads `~` as settled, so a claimed proposal leaves
+  `waiting()` at once (`:9763` has the mechanism). At 17:40Z `open` said **14
+  waiting** while 49 more sat held by builds that died before turn 1: a real
+  backlog near 63, displayed as 14. A person checking whether the queue is
+  healthy reads the small tidy number, and it is wrong in the reassuring
+  direction. `queue.py:270-279` records where this ends when the TTL does not
+  save it -- 2026-09-20, all four workers dead inside an hour, every proposal
+  held, the queue reading empty and each new campaign exiting on the banner.
+  Today the brake is still on; the mechanism is the same one.
+
+One more count worth having in a tracked file, because the verdicts that hold
+it are not tracked -- `agents/runs` is gitignored, so every figure quoted in a
+`*-verdict` dies with the run. The gpt-5.4/gpt-5.5 split, counted across all
+four ledgers deduplicated on `(started, stage, log)` since 07:34:39Z:
+
+    gpt-5.4 builds   266      with >= 1 turn:   0
+    gpt-5.5 builds   238      with >= 1 turn: 238
+
+No exceptions in either direction. Earlier verdicts quoted 154 for the gpt-5.5
+side, which was one tree's share. The marker at `agents/runs/codex-fallback`
+is the entire difference between those two rows, and its mtime is still
+07:34:27.331Z.
+
+Evidence: 2026-09-23, 17:32-17:45Z, triaging `20260923T173211Z-build.log`.
+`GET /api/claim?family=N` for N in 195-208, counting `claims` entries;
+`awk` over the four `COSTS.tsv` (main checkout plus w2/w3/w4) deduplicated on
+`(started, stage, log)`, windowed on the `started` stamp for the 90- and
+60-minute counts and grouped on the `model` column for the split;
+`python3 agents/queue.py open`; `queue.py:270-305`; `ls --time-style=full-iso`
+on the marker. Diagnosed in `agents/runs/20260923T173211Z-verdict`.
