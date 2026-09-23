@@ -10076,3 +10076,55 @@ Evidence: 2026-09-23, triage of build 20260923T075556Z.
 trees for 07:00–08:00: twelve codex runs at `turns 0`, `$0.0000`, `$23.15` of
 triage, two screenings already banked at `$19.78`, a third in flight, and no
 table.
+
+## Claims held by failing runs drain the queue, which makes the screener's throttle unreachable
+
+What happened: an hour into the outage above, the shared queue reached
+`0 waiting` and `agents/work.py counts` answered `demands 0, proposals 0,
+growth 0, sweep 0` — not because the work had been done, but because every
+proposal in the last family was held by a run that had died at turn zero.
+`campaign.sh:472` claims a proposal *before* launching the stage and
+`queue.py:280` holds the claim for ninety minutes, so a builder that fails
+instantly still removes an item from the queue for an hour and a half. Six
+tables of family #198 were claimed by four trees in twelve minutes, none of
+them by a run that reached turn 1.
+
+That empty queue is read by two loops, and they respond in opposite
+directions. The builders idle: `work.py next` returns nothing, and with
+`NUMBERDB_SCREEN=0` `campaign.sh:345-353` sleeps 300s, counts to
+`NUMBERDB_IDLE_GIVE_UP` (12) and exits for the supervisor to restart. So a
+failing machine goes quiet, and the triage spending that measured the failure
+goes quiet with it — which is a bad moment to conclude the outage is over.
+
+**The screener does the opposite, and nothing throttles it any more.**
+`screener.sh:53-57` takes the 600-second sleep only when `waiting >= target`,
+with `target = 12` (`screener.sh:28`); after a successful screening it sleeps
+**30 seconds** and asks again (`screener.sh:69`). A family is four to eight
+proposals, so a brand-new family never reaches the target on its own — the
+queue used to get there by accumulating families faster than real builders
+consumed them. Turn-zero claims consume six proposals per twelve minutes,
+which no real builder ever approached, so `waiting >= 12` stops being
+reachable and the poll interval effectively becomes zero: screening runs
+back-to-back for as long as the builders keep claiming and dying. Four
+screenings on 2026-09-23 cost `$9.20`, `$11.19`, `$7.72` and `$12.06` —
+`$40.17`, averaging `$10.04` a family, 26 to 50 minutes each.
+
+What to do instead: when diagnosing a build-side outage, check
+`queue.py open` and `work.py counts` as well as the ledgers — an empty queue
+during an outage means claims, not completed work, and it is the signal that
+the cost has moved from triage to screening. To halt it, the screener is the
+process to stop first (`touch agents/campaign.stop` in `numberdb-website`;
+`screener.sh:41` finishes the batch in flight and exits), because the
+campaigns will have gone quiet on their own and look harmless. The durable
+fix is to make `waiting` count unclaimed items only, or to give the screener a
+floor that a claim-drained queue cannot trip: a queue emptied by claims is
+precisely a queue that does not need refilling.
+
+Evidence: 2026-09-23 08:11Z, triage of build 20260923T080737Z. `queue.py open`
+→ `0 waiting`; `work.py counts` → all four sources 0; `queue.py show 198` →
+all six items `[~] claimed` between 07:55Z and 08:07Z by w1, w2, w3 and w4,
+every one of those runs a `turns 0`, `$0.0000` codex row; `queue.py stale` →
+empty, so none lapse before ~09:25Z. Screening `20260923T074230Z-ideas`
+(PID 2400754) was 26 minutes in and still running. Ledgers across the four
+trees, 07:08–08:11: sixteen codex rows at `turns 0`, `$30.53` of triage,
+`$4.82` of critique, `$35.35` total, no table.
