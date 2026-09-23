@@ -10204,3 +10204,50 @@ count, or turns-per-claim, is what answers it.
 Evidence: 2026-09-23, triage of `20260923T141046Z-build.log`. Marker `mtime`s
 above; the `gpt-5.5` probe; `queue.py show 198`; `queue.py stale` silent at
 14:12Z; 163 verdict files across the four trees, 163 of them reading `stop`.
+
+## The claim timeout is the retry period: one proposal, five serves, 90 minutes apart
+
+The note above on the second lap counts laps for a family. Counting them for a
+single proposal gives the loop a period, and therefore a forecast. "Orbifold
+Euler characteristics of the moduli spaces of curves" (family #198) has been
+served five times today, every one of them to a build that died in a second on
+`gpt-5.4`:
+
+    20260923T080700Z  w1   turns=0  $0.0000  12-line log
+    20260923T093759Z  w1   turns=0  $0.0000  12-line log     +90m59s
+    20260923T110801Z  w4   turns=0  $0.0000  12-line log     +90m02s
+    20260923T124303Z  w1   turns=0  $0.0000  12-line log     +95m02s
+    20260923T141644Z  w1   turns=0  $0.0000  12-line log     +93m41s
+
+The four intervals are 91, 90, 95 and 94 minutes against `CLAIM_MINUTES = 90`.
+**The claim timeout is not protecting the proposal, it is scheduling its
+retry.** A zero-turn build takes the claim and never releases it (`campaign.sh`
+exits on the `stop` verdict before its release path), so the line ages out
+rather than being returned, and `claim()` hands it to the next worker that asks.
+`built 0 so far` never advances, so the proposal never leaves the head of its
+checklist and is first in line again each lap.
+
+Two consequences worth having in this form:
+
+* **It is predictable.** The sixth serve of this line was due at about 15:47Z.
+  Anything that reads a future serve as new work — a serve count, a burn-rate
+  forecast, a "the queue is moving" impression — should be checked against the
+  lap, not the timestamp.
+* **`queue.py stale` is structurally blind to it**, for a reason stronger than
+  the one already recorded. It is not merely that the window is longer than the
+  ~11-minute re-claim loop; it is that no claim *ever* reaches ninety minutes
+  while held. At ninety minutes it stops being a claim. The check can only fire
+  on a claim that outlives the timeout, and this loop's claims never do.
+
+The cost of a lap is not the lost table. It is $0.00 of build and one full-price
+triage run to conclude, again, what the four previous triages of the same
+proposal concluded.
+
+Evidence: 2026-09-23, triage of `20260923T141644Z-build.log`. Build stamps
+matched to `=== next: Orbifold Euler` in `campaign-w1.log` and `campaign-w4.log`
+across the four trees; `turns` and `cost_usd` from the `COSTS.tsv` rows for all
+five stamps; line counts of the five `-build.log` files, all 12; `queue.py show
+198` at 14:17Z; `agents/queue.py` `CLAIM_MINUTES`. The `gpt-5.5` probe answered
+`ok` at 14:20Z (session 01a0cea2-35e8-7ec3-9a29-a93fea8114c7), so the engine was
+healthy throughout; marker mtime 07:25:03Z, untouched. 166 verdict files across
+the four trees, 166 of them reading `stop`.
