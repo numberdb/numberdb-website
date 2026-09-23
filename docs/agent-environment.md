@@ -10049,6 +10049,26 @@ diagnose it are themselves unrecoverable: `agents/runs/` is gitignored
 evidence dies with the worktree unless it is copied into a tracked file like
 this one.
 
+The repair has now been tested rather than asserted, added at 11:58Z from the
+w3 triage of build 20260923T114922Z -- the twenty-fourth. Every verdict in this
+series has recommended setting `NUMBERDB_CODEX_FALLBACKS` to empty and none had
+run `run.sh`'s `next_model_in` to check that empty behaves as claimed, so here
+it is, the function lifted out of `run.sh:571` and called directly:
+
+    next_model_in ""         gpt-5.5  ->  []          give_up=yes, exit 6
+    next_model_in ""         gpt-5.4  ->  []          give_up=yes, exit 6
+    next_model_in "gpt-5.4"  gpt-5.5  ->  [gpt-5.4]   the wall being built
+    next_model_in "gpt-5.4"  gpt-5.4  ->  []          never reached
+
+An empty chain returns empty on any current model, which is what sets
+`give_up=yes` (`run.sh:647,657`) and reaches `exit 6`, the branch that hands the
+stage to claude. So empty is the working configuration and not a degraded one:
+it converts a codex quota from an outage into a handover. The fourth line is the
+interlock stated exactly -- a run that *starts* on `gpt-5.4` would give up
+correctly, but it never gets there, because it dies on a 400 rather than a quota
+error and `out_of_quota` is therefore false. Checked against this run's log with
+the predicates as written: `out_of_quota` FALSE, `worth_resuming` TRUE.
+
 ## The screener keeps buying batches nobody can build, and `workers.stop` stops restarts rather than what is running
 
 What happened: during the fifth turn-zero codex build of the morning (see "A
