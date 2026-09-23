@@ -10941,3 +10941,64 @@ Evidence: 2026-09-23 14:2xZ, triage of build `20260923T141725Z` in w3 (family
 taken 14:17:23.974686Z, two seconds before the run stamp). `GET
 /api/claim?family=193..209` → 41 rows, `expired false` on every one, against 38
 measured 27 minutes earlier. `queue.py show 201` and `queue.py open` as quoted.
+
+## The open queue is one day's screening, bought during the outage: all eleven families created today, the newest twelve minutes before a build that could not start
+
+The sections above establish that claims held by failing runs drain the queue
+(`10133`) and that the screener keeps buying batches nobody can build
+(`10088`). Both describe the mechanism. This is the measurement, and it is
+worse than "the throttle is unreachable" suggests, because the queue's own
+health indicator has been moving in the *reassuring* direction while nothing
+was built.
+
+`GET repos/numberdb/numberdb-data/issues?labels=proposal&state=open` returns
+eleven families and **every one of them was created on 2026-09-23**:
+
+    #206  14:29:13Z    #202  09:20:51Z    #198  06:51:53Z
+    #205  11:41:58Z    #201  08:56:04Z    #197  05:31:45Z
+    #204  10:19:38Z    #200  08:37:16Z    #196  05:06:15Z
+    #203  10:02:47Z    #199  08:11:46Z
+
+That is one family roughly every 56 minutes across a 9h23m span. The last w3
+build to reach turn 1 was `20260923T055854Z` (gpt-5.5, T442) at 05:58Z, so ten
+of the eleven were bought *after* this tree last produced anything, and #206 was
+bought at 14:29Z — twelve minutes before build `20260923T144107Z`, the 40th
+consecutive turn-zero `gpt-5.4` run. The screener is not stocking a backlog; it
+is the only thing on the machine still spending to a purpose, and the purpose is
+unreachable.
+
+The counts over those eleven families, from the checklists and
+`GET /api/claim`:
+
+    60 proposals   45 claimed   41 claims still live (<90m)   0 built today
+    7 of 11 families have zero waiting and never appear in `queue.py open`
+
+So `queue.py open` answers **17 waiting**, and 17 is not a backlog being worked
+through: it is #205 and #206 (six each) plus the remnants of #204 and #202 —
+this morning's purchases that the claim leak has not reached yet. The trap is
+that the number **went up**. It read 11 at 14:29Z (triage of
+`20260923T142909Z`) and 17 at 14:44Z, not because a table was built but because
+the screener posted #206 faster than the leak consumed the older families. A
+person checking "is the queue healthy" at two points an hour apart sees it
+improving.
+
+Why this matters for the order of operations: the remedy at `10689` starts with
+`touch agents/workers.stop`, and the cost of *not* pulling that lever is usually
+quoted as the triage bill ($80.59 in w3 today, 47% of the tree's spend). It is
+also a family of screened proposals per hour — at the ~$1.50 a proposal
+`queue.py`'s own docstring quotes, about $18/hour of ideation bought into a
+queue that cannot retire it, plus a dozen more proposals per hour available to
+be drained into dead claims. `workers.stop` does not stop the screener if it
+runs from somewhere else; whoever clears the markers should check what is still
+posting families and stop that too.
+
+Evidence: 2026-09-23 14:44Z, w3 triage of build `20260923T144107Z` (family #203,
+*Growth constants of the classes of planar maps*, `turns 0`, `$0.0000`, HEAD
+unmoved at `243136b9`, claim taken 14:41Z). Issue `created_at` values as
+tabulated, read through `queue.py`'s `api()`. Per-family counts from
+`queue.py`'s own `families()`, `waiting()` and `stale_claim()`. Ledger figures
+from `agents/runs/COSTS.tsv` filtered to `started` on 20260923 and
+`campaign == w3`: 94 runs, $169.68, builds 45/$43.49 with 40 turn-zero, triage
+39/$80.59. The w3 ledger has **no ideation rows today** — the batches are posted
+from another tree, so their cost is not visible from here and the $18/hour above
+is the docstring's rate, not a measured one.
