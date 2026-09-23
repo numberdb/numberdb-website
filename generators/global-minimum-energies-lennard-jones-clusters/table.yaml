@@ -1,0 +1,94 @@
+# Draft document for numberdb.org/T446. Publishing is a person's review act.
+Title: Global minimum energies of Lennard-Jones clusters
+Definition: >-
+  For each integer $n\geq2$, $E_n$ is the minimum Lennard-Jones potential
+  energy of an $n$-atom cluster in $\mathbb{R}^3$, in units of the pair well
+  depth $\epsilon$ and with length measured in units of $\sigma$.
+Parameters:
+  n:
+    type: Z
+    title: number of atoms
+    display: $n$
+    constraints: $n\geq2$
+Comments:
+  comment-source: >-
+    The Cambridge Cluster Database table CITE{CCDTable} and coordinate archive
+    CITE{CCDTar} were read on 2026-09-23. The table page gives global minima
+    of $LJ_N$ for $N$ through $150$, with energies in units of the pair well
+    depth. Its HTTP `Last-Modified` date was 2018-02-26, and the coordinate
+    archive's was 1999-12-13.
+  comment-normalisation: >-
+    The coordinate files use length unit $\sigma$. With the potential in
+    CITE{formula-potential}, one pair has energy $-1$ at distance
+    $2^{1/6}\sigma$.
+  comment-proof-status: >-
+    Optimality is proven here for $n=2,3,4$ by the pairwise lower bound
+    $E_n\geq-\binom{n}{2}$, attained by a simplex with every pair at distance
+    $2^{1/6}\sigma$. For $n\geq5$, this table records the Cambridge Cluster
+    Database published optimisation results and does not cite a proof of
+    global optimality.
+Formulas:
+  formula-potential: >-
+    $E_n=\min_{x_1,\ldots,x_n\in\mathbb{R}^3}\sum_{1\leq i<j\leq n}
+    4\left((\sigma/\|x_i-x_j\|)^{12}-(\sigma/\|x_i-x_j\|)^6\right)$.
+  formula-exact-small: >-
+    For $n=2,3,4$, $E_n=-\binom{n}{2}$.
+Programs:
+  program-python:
+    language: Python
+    code: |-
+      from itertools import combinations
+
+      def lennard_jones_energy(points):
+          total = 0.0
+          for a, b in combinations(points, 2):
+              r2 = sum((ai - bi) ** 2 for ai, bi in zip(a, b))
+              inv6 = r2 ** -3
+              total += 4 * (inv6 * inv6 - inv6)
+          return total
+Similar tables:
+  - table: HREF{Best_known_packings_of_equal_circles_in_a_circle}[Best known packings of equal circles in a circle]
+    relation: another finite extremal-configuration table, storing best known geometric arrangements by the number of objects
+Links:
+  CCDHome:
+    title: 'Cambridge Cluster Database: Lennard-Jones Clusters'
+    url: https://www-wales.ch.cam.ac.uk/~jon/structures/LJ/
+  CCDTable:
+    title: 'Cambridge Cluster Database: Table of Lennard-Jones Cluster Global Minima'
+    url: https://www-wales.ch.cam.ac.uk/~jon/structures/LJ/tables.150.html
+  CCDTar:
+    title: 'Cambridge Cluster Database: Lennard-Jones coordinate archive'
+    url: https://www-wales.ch.cam.ac.uk/~jon/structures/LJ/LJ.tar
+References:
+  WalesDoye:
+    bib: David J. Wales and Jonathan P. K. Doye, Global optimization by basin-hopping and the lowest energy structures of Lennard-Jones clusters containing up to 110 atoms, Journal of Physical Chemistry A 101 (1997), no. 28, 5111-5116.
+    doi: 10.1021/jp970984n
+Keywords:
+  - Lennard-Jones clusters
+  - LJ clusters
+  - Cambridge Cluster Database
+Tags:
+  - physics
+  - chemistry
+  - extremal configurations
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: >-
+    it holds the global-minimum rows $2\leq n\leq150$ from the Cambridge
+    Cluster Database table read on 2026-09-23
+  rigour details: >-
+    The values for $n=2,3,4$ are exact by CITE{formula-exact-small}. The
+    remaining values are transcribed from the Cambridge Cluster Database table
+    CITE{CCDTable} at the six decimal places printed by the source. The
+    generator recomputes the Lennard-Jones energy in CITE{formula-potential}
+    from the source coordinate archive CITE{CCDTar} for every $3\leq n\leq150$
+    and checks that every recomputed coordinate energy is within
+    $5\cdot10^{-6}$ of the printed value. It also checks that 125 of the 148
+    coordinate rows agree to the printed sixth decimal; among the others, the
+    largest discrepancy from the printed value is less than $1.34\cdot10^{-6}$,
+    caused by the rounded coordinates published in the archive.
+Display properties:
+  number-header: $E_n/\epsilon$
+Numbers: []
