@@ -1,0 +1,91 @@
+# The table document for numberdb.org/T423. It was created as a draft through
+# the API with X-Draft: yes and filled by generate.py beside it. Publishing is
+# a separate human review act.
+Title: Values of $\xi(u)$ in the Dickman-de Bruijn estimate
+Definition: >-
+  For real $u>1$, $\xi(u)$ is the positive solution of
+  $e^{\xi(u)}-1=u\xi(u)$; at $u=1$ the branch has the exact value
+  $\xi(1)=0$. The function is the saddle-point parameter in de Bruijn's
+  asymptotic estimate for the Dickman-de Bruijn function $\rho(u)$
+  CITE{WikiDickman} CITE{HildebrandTenenbaum}.
+Parameters:
+  u:
+    type: Q
+    title: argument
+    display: $u$
+    constraints: $u\in\mathbb Q$, $u\geq1$
+Comments:
+  comment-zero-root: >-
+    The equation $e^x-1=ux$ also has the zero root for every $u$. For $u>1$
+    this table stores the positive root; at $u=1$ the positive branch meets
+    the zero root.
+  comment-core-thresholds: >-
+    For integer $u=k-1$, the same equation gives the $r=2$ rows
+    $\lambda_{k,2}$ in
+    HREF{Minimisers_in_the_core_threshold_formula_of_random_k-uniform_hypergraphs}[the
+    table of core-threshold minimisers].
+Formulas:
+  formula-defining-equation: >-
+    For $u>1$, $\xi(u)$ is the positive zero of
+    $f_u(x)=e^x-1-ux$.
+  formula-dickman-estimate: >-
+    Hildebrand and Tenenbaum state de Bruijn's estimate as
+    $\rho(u)=\left(1+O(1/u)\right)
+    \sqrt{\xi'(u)/(2\pi)}\exp\{\gamma-u\xi(u)+E(\xi(u))\}$, where
+    $E(s)=\int_0^s(e^t-1)t^{-1}\,\mathrm dt$ CITE{HildebrandTenenbaum}.
+  formula-lambert-w: >-
+    Equivalently, for $u>1$,
+    $\xi(u)=-W_{-1}(-e^{-1/u}/u)-1/u$, with the $-1$ branch of the
+    Lambert $W$ function.
+Programs:
+  program-python:
+    language: Python
+    code: |-
+      import mpmath
+
+      mpmath.mp.dps = 100
+      u = mpmath.mpf("2")
+      mpmath.findroot(lambda x: mpmath.exp(x) - 1 - u*x, (1, 2))
+Similar tables:
+  - table: HREF{Minimisers_in_the_core_threshold_formula_of_random_k-uniform_hypergraphs}[Minimisers in the core threshold formula of random $k$-uniform hypergraphs]
+    relation: stores the same positive root at the integer arguments $u=k-1$ for its $r=2$ rows
+Links:
+  WikiDickman:
+    title: 'Wikipedia: Dickman function'
+    url: https://en.wikipedia.org/wiki/Dickman_function
+References:
+  HildebrandTenenbaum:
+    bib: >-
+      A. Hildebrand and G. Tenenbaum, Integers without large prime factors,
+      Journal de Theorie des Nombres de Bordeaux 5 (1993), 411-484.
+    url: https://tenenb.perso.math.cnrs.fr/PPP/Survey_friables.pdf
+Keywords:
+  - Dickman xi function
+  - de Bruijn xi function
+  - smooth numbers saddle point
+Tags:
+  - number theory
+  - special functions
+Data properties:
+  type: R
+  rigour: proven
+  sources:
+    - CITE{HildebrandTenenbaum}
+  complete: 'no'
+  complete-note: >-
+    it holds $\xi(u)$ at every $u$ of two decimal places with
+    $1\leq u\leq12$
+  rigour details: >-
+    Each entry with $u>1$ is enclosed by bisection in Sage ball arithmetic,
+    using `numberdb.bits(digits, losing=64)` bits. The endpoints of the final
+    bracket are checked in ball arithmetic to give opposite signs for
+    $e^x-1-ux$, and the stored value is the resulting interval. The row
+    $u=1$ is exact. The generator checks every stored row against the
+    Lambert-$W$ formula in CITE{formula-lambert-w}, and it checks the integer
+    arguments $u=2,\ldots,7$ against
+    HREF{Minimisers_in_the_core_threshold_formula_of_random_k-uniform_hypergraphs}[the
+    core-threshold minimiser table], whose $r=2$ rows satisfy the same
+    equation.
+Display properties:
+  number-header: $\xi(u)$
+Numbers: []
