@@ -8636,9 +8636,9 @@ verdict. Every one of them. Nothing about the machine's behaviour has changed,
 and the reason is not that anybody ignored them -- it is that there is nowhere
 for a `stop` to be remembered.
 
-`campaign.sh:544` treats any verdict that is not `resume`, `restart` or `skip`
+`campaign.sh:545` treats any verdict that is not `resume`, `restart` or `skip`
 as "leave", and the worker exits. That is the whole effect of the word. The
-supervisor's loop at `agents/workers.sh:255-283` then does this, once every
+supervisor's loop at `agents/workers.sh:256-283` then does this, once every
 `every` seconds, for ever:
 
     for n in $(seq 1 "$workers"); do
@@ -8676,6 +8676,6 @@ through, would have caught it before the first build.
 
 Evidence: 2026-09-23, triage of `20260923T090240Z-build.log`, the tenth
 identical refusal on w1 and the thirty-first `stop` of the day.
-`agents/workers.sh` lines 99-120 and 250-283; `agents/campaign.sh` lines
+`agents/workers.sh` lines 99-120 and 256-283; `agents/campaign.sh` lines
 505-545; `agents/runs/workers.log`; `head -1` of every
 `agents/runs/20260923T*-verdict` in all four worktrees.
