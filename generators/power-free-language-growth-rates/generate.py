@@ -52,8 +52,6 @@ ROUNDING_HALF_WIDTH = QQ(1) / (2 * QQ(10) ** DECIMAL_PLACES)
 def _expanded_interval(low, high=None):
     low_q = _q_decimal(low)
     high_q = _q_decimal(high or low)
-    if high is not None and low == high:
-        return low_q, high_q
     return low_q - ROUNDING_HALF_WIDTH, high_q + ROUNDING_HALF_WIDTH
 
 
