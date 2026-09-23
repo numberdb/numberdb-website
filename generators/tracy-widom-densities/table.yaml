@@ -1,0 +1,126 @@
+# Created as draft T451 through the API with X-Draft: yes, to be filled by
+# generate.py beside it and offered for review. Publishing is a person's act.
+Title: Values of the Tracy–Widom densities $f_\beta(s)$
+Definition: >-
+  For $\beta\in\{1,2,4\}$, $f_\beta(s)=dF_\beta(s)/ds$ is the density of the
+  Tracy–Widom distribution CITE{WikiTW} in the soft-edge scaling used by
+  CITE{Bornemann}.
+Keywords:
+  - Tracy-Widom density
+  - Tracy Widom density
+  - Tracy-Widom probability density
+  - Tracy-Widom distribution
+  - random matrix theory
+  - Painleve II
+  - Painlevé II
+  - Hastings-McLeod solution
+Parameters:
+  beta:
+    type: Symbolic
+    title: Dyson index
+    display: $\beta$
+    values:
+      "1": $1$, GOE
+      "2": $2$, GUE
+      "4": $4$, GSE
+  s:
+    type: Q
+    title: argument
+    display: $s$
+    constraints: $s\in\mathbb{Q}$
+Comments:
+  comment-normalisation: >-
+    The table uses the Tracy–Widom scaling in which
+    HREF{T441}[$F_2(s)$] is the Airy-kernel Fredholm determinant. For
+    $\beta=4$ this is the $N\times N$ quaternionic GSE convention:
+    $F_4(s)$ is expressed through the operators $T_{\sqrt2s}$ in
+    CITE{formula-determinants}. In the alternative $2N\times2N$ complex
+    convention the $\sqrt2$ is omitted.
+  comment-airy: >-
+    The Airy function $\operatorname{Ai}$ appears in the Fredholm determinant
+    kernel and in the boundary condition for the HREF{T443}[Hastings–McLeod
+    solution]. It is tabulated in
+    HREF{Values_of_the_Airy_function_of_the_first_kind}[the table of Airy
+    function values].
+Formulas:
+  formula-t-kernel: >-
+    Let $T_t$ be the operator on $L^2(0,\infty)$ with kernel
+    $T_t(x,y)=\operatorname{Ai}(x+y+t)$.
+  formula-determinants: >-
+    $F_1(s)=\det(I-T_s)$, $F_2(s)=\det(I-T_s)\det(I+T_s)$, and
+    $F_4(s)=\frac12(\det(I-T_{\sqrt2s})+\det(I+T_{\sqrt2s}))$
+    CITE{Bornemann}.
+  formula-painleve-density: >-
+    Let $q$ be the Hastings–McLeod solution of $q''(s)=sq(s)+2q(s)^3$ with
+    $q(s)\sim\operatorname{Ai}(s)$ as $s\to+\infty$, and put
+    $u(s)=\int_s^\infty q(x)\,dx$ and
+    $I(s)=\int_s^\infty q(x)^2\,dx$. Then
+    $f_1(s)=F_1(s)(I(s)+q(s))/2$, $f_2(s)=F_2(s)I(s)$, and
+    $f_4(s)=2^{-1/2}F_2(\sqrt2s)^{1/2}
+    (I(\sqrt2s)\cosh(u(\sqrt2s)/2)-q(\sqrt2s)\sinh(u(\sqrt2s)/2))$
+    CITE{Bornemann}.
+Programs:
+  program-python:
+    language: Python
+    code: |-
+      import numpy as np
+      from scipy.linalg import det, solve
+      from scipy.special import airy
+
+      nodes, weights = np.polynomial.legendre.leggauss(100)
+      x = 24.0 * (nodes + 1.0) / 2.0
+      rootw = np.sqrt(24.0 * weights / 2.0)
+      z = x[:, None] + x[None, :]
+      ai, aip, _, _ = airy(z)
+      K = rootw[:, None] * ai * rootw[None, :]
+      Kp = rootw[:, None] * aip * rootw[None, :]
+      I = np.eye(100)
+      Dm = det(I - K)
+      Dp = det(I + K)
+      Dm_prime = -Dm * np.trace(solve(I - K, Kp))
+      Dp_prime = Dp * np.trace(solve(I + K, Kp))
+      f2_at_0 = Dm_prime * Dp + Dm * Dp_prime
+Similar tables:
+  - table: HREF{T441}[Values of the Tracy–Widom distribution functions $F_\beta(s)$]
+    relation: gives the distribution functions whose derivatives are tabulated here
+  - table: HREF{T443}[Values of the Hastings–McLeod solution $q(s)$ of Painlevé II]
+    relation: gives the Painlevé-II solution used in the density formulas
+  - table: HREF{T444}[Cumulants $\kappa_n$ of the Tracy–Widom distributions]
+    relation: gives moment information for the same three soft-edge laws
+  - table: HREF{T445}[Skewness and excess kurtosis of the Tracy-Widom distributions]
+    relation: gives standardised third and fourth cumulants for the same three soft-edge laws
+  - table: HREF{Values_of_the_Airy_function_of_the_first_kind}[Values of the Airy function of the first kind $\operatorname{Ai}(x)$]
+    relation: gives the Airy function in the Fredholm determinant kernel and in the Hastings-McLeod boundary condition
+Links:
+  WikiTW:
+    title: "Wikipedia: Tracy-Widom distribution"
+    url: https://en.wikipedia.org/wiki/Tracy%E2%80%93Widom_distribution
+References:
+  Bornemann:
+    bib: >-
+      Folkmar Bornemann, On the numerical evaluation of distributions in
+      random matrix theory: a review, Markov Processes and Related Fields 16
+      (2010), 803-866.
+    arxiv: "0904.1581"
+Tags:
+  - probability theory
+  - special functions
+Data properties:
+  type: R
+  rigour: measured
+  complete: no
+  complete-note: it holds $\beta=1,2,4$ for every grid point $s=-10,-9.95,\ldots,5$
+  rigour details: >-
+    Values were computed from CITE{formula-determinants} by Gauss-Legendre
+    Nystrom quadrature for the operator $T_t$ and its derivative with respect
+    to $t$. The derivative of the determinant was evaluated by
+    $d\det(I\pm T_t)/dt=\det(I\pm T_t)\operatorname{tr}((I\pm T_t)^{-1}
+    (\pm dT_t/dt))$. A Painlevé-II integration of $q$, $u$, $I$ and
+    $\int_s^\infty (x-s)q(x)^2\,dx$ was used as an independent control, and
+    each entry's written precision is limited by agreement with that control
+    and a second determinant quadrature. The far-left $\beta=4$ tail uses
+    mpmath multiprecision determinant arithmetic, because double precision
+    loses relative accuracy there.
+Display properties:
+  number-header: $f_\beta(s)$
+Numbers: []
