@@ -213,7 +213,9 @@ def _ball_text(value, controls):
     return "%s +/- %s" % (_scientific(centre, 3), _scientific(radius, 2))
 
 
-def _entry(beta, s):
+@functools.lru_cache(maxsize=None)
+def _entry(beta, s_text):
+    s = Fraction(s_text)
     high, controls = _determinants(beta, s)
     value = _combine(beta, high)
     control_values = [_combine(beta, control) for control in controls]
@@ -222,16 +224,13 @@ def _entry(beta, s):
     value_float = float(value)
     if value_float <= 0:
         number = _ball_text(abs(value_float), [abs(float(c)) for c in control_values])
-        return {"number": number, "digits": 1}
+        return number, 1
 
     if digits < 2:
-        return {"number": _ball_text(value, control_values), "digits": 1}
+        return _ball_text(value, control_values), 1
 
     written_digits = min(MAX_DIGITS, max(2, digits))
-    return {
-        "number": _plain_decimal(value, written_digits),
-        "digits": written_digits,
-    }
+    return _plain_decimal(value, written_digits), written_digits
 
 
 class TracyWidomDistributionFunctions(numberdb.Generator):
@@ -247,9 +246,15 @@ class TracyWidomDistributionFunctions(numberdb.Generator):
             for s in _s_values():
                 yield {"beta": beta, "s": _fraction_text(s)}
 
+    def digits_for(self, params):
+        beta = str(params["beta"])
+        _number, digits = _entry(beta, str(params["s"]))
+        return digits
+
     def value(self, params, digits):
         beta = str(params["beta"])
-        return _entry(beta, _s_value(params))
+        number, _digits = _entry(beta, str(params["s"]))
+        return {"number": number}
 
     def environment(self):
         out = super().environment()
