@@ -9722,3 +9722,55 @@ verdict tally by `head -1` over `agents/runs/*-verdict`. The marker present and
 reading `gpt-5.4` in all four worktrees at the time of writing; three
 `campaign.sh` loops and a second concurrent triage (`20260923T115502Z`) running
 alongside.
+
+## Triage has overtaken building: $205.40 to judge failures against $196.28 of builds that ran
+
+The section above measured the `gpt-5.4` loop at $193.05 and 103 dead builds
+and called it "roughly $190 a day indefinitely". An hour and a half later the
+day's totals crossed a line that the projection did not anticipate, and the
+crossing is the note.
+
+Counted at 12:11Z on 2026-09-23 over all four worktrees' `agents/runs/COSTS.tsv`,
+deduplicated by stamp (the ledgers are near-disjoint -- three stamps appear in
+two of them):
+
+    110   zero-turn gpt-5.4 builds since 20260918T023210Z
+    130   build attempts today, of which 22 ran at all, costing $196.28
+    105   triage runs today, costing $205.40
+    105   verdict files across the four worktrees -- every one reads `stop`
+    $664.06  total spend today
+
+**Triage now costs more than every build that did any work.** $205.40 against
+$196.28. A failure that is free to hit is not free, because the pipeline prices
+its judgement for a run that built something: eight minutes and ~$2 to read
+twelve lines and re-derive, for the hundred-and-fifth time, that a run with
+`turns=0`, `cost=0.0000` and an empty `table` column has no session to resume.
+The shell can recognise that case without guessing at anything, and the three
+columns it needs are already in the ledger it writes.
+
+Two further facts, both cheap to check and both worth checking before writing
+another verdict:
+
+* **The brake has never been pulled.** Neither `agents/workers.stop` nor
+  `agents/campaign.stop` exists. 105 verdicts have now recommended `touch
+  agents/workers.stop`; `pgrep -fa 'campaign.sh|workers.sh'` still shows
+  `workers.sh 4` and three `campaign.sh 200` loops turning. A verdict written
+  into `agents/runs/` has no path to the process that caused it, which is the
+  same finding as *A triage `stop` does not stop the machine*, now with a
+  number on it.
+* **The queue is not the problem and is not being consumed.** `queue.py stale`
+  is empty and 14 proposals wait across families #196, #201, #203, #204, #205.
+  Zero-turn builds never claim, so nothing lapses and nothing advances; the
+  backlog neither drains nor spoils while the loop runs.
+
+The remedy is unchanged and is two sections above: `touch agents/workers.stop`,
+delete `agents/runs/codex-fallback` from all four worktrees, point
+`NUMBERDB_CODEX_FALLBACKS` at a model the account may use or start the pool
+with `NUMBERDB_WRITER=claude`, restart the supervisor.
+
+Evidence: 2026-09-23, triage of `20260923T120602Z-build.log` (twelve lines, two
+identical four-event blocks, no tool call, session `01a0ce28` appearing exactly
+once in the ledger -- so its `resumed=yes` is a runner flag, not a
+continuation). Counts by `awk` over the four ledgers with `!seen[$1]++`. The
+latest zero-turn stamp at the time of writing was `20260923T120702Z`, one
+minute after the run being judged.
