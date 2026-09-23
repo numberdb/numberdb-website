@@ -9504,3 +9504,74 @@ four `COSTS.tsv` ledgers merged in Python and grouped by `model` and by day;
 206`; `ps -ef` -> four `campaign.sh 200`, build pid 3040106 launched 14:41Z; the
 marker still `gpt-5.4` / `xhigh`; no `workers.stop` anywhere. Diagnosed in
 `agents/runs/20260923T144045Z-verdict`.
+
+## The cleanup step fifty verdicts have asked a person for is not work: `open` has already counted the claim back, `show` just never redraws the `[~]`
+
+What happened: every triage verdict in this tree since 09:38Z ends with a list
+for a person whose last item is "then clear the burned claims", and each one
+computes the current inventory of damaged families to go with it. The verdict
+written at 14:43Z does it; so does the one at 14:35Z, which spent its own
+paragraph on the inventory going stale in twenty minutes. Meanwhile `:9296`,
+written between them, already says the opposite in one sentence: *a dead
+build's claim needs no person to clear it.* Before asking a fifty-first time it
+is worth reading the code instead of the verdicts. The sentence is right and
+the lists are wrong.
+
+`queue.py:280` sets `CLAIM_MINUTES = 90`. `stale_claim` (`:296`) returns true
+for any claim whose timestamp is older than that -- and for any claim carrying
+no timestamp at all. `waiting` (`:306`) is
+`[item for item in family['items'] if not item['done'] or stale_claim(item)]`,
+so a stale claim is counted as available again with no network call and no
+intervention. The site drops its side on the same 90-minute rule (`:9296`).
+Both locks self-release; nothing persists.
+
+**What persists is the rendering, and that is the whole of the illusion.** The
+`- [~] ... claimed by w2 at <time>` line on the issue checklist is a trace
+written after the fact and is never rewritten, so `queue.py show` displays a
+claim as live for ever while `queue.py open` has long since counted it free.
+The two disagree by design, and a verdict-writer reading `show` sees permanent
+damage that `open` does not. Observed at 14:48Z on 2026-09-23:
+
+    queue.py show 202   ->  all six proposals render [~]
+    queue.py open       ->  #202  1 left      (the claim past 90 minutes)
+
+`#196` reads the same way. `#198` and `#203`, named in earlier verdicts as
+families needing to be cleared by hand, had rotated back out on their own with
+nobody touching them.
+
+Why it matters, in two places. For the person: the remedy is two steps -- stop
+the pool, fix `agents/run.sh:80` (or set `NUMBERDB_WRITER=claude`) -- and the
+third was never real. No screened work is being destroyed by the dead builds;
+each burned proposal is delayed ninety minutes and returns. For the next
+triage: **do not compute the family inventory.** It is not an action item, it
+is stale before it is read (`:9400`), and producing it is a measurable part of
+why triage costs $1.81 a run to restate a known conclusion. Record which
+proposal this run took, note that it expires by itself, and stop.
+
+A related trap for the arithmetic in these entries, already recorded at `:8362`
+and `:8376` but easy to re-hit: the worker the queue calls `w1` is the main
+checkout `/home/ubuntu/numberdb-website`. There is no `numberdb-campaign-w1`,
+so a sweep globbing `numberdb-campaign-w*` silently drops a quarter of the pool
+and a quarter of the ledger -- it returns $234.01 where the total is $403.86.
+
+The running total, which `:9206` designates as the one figure worth restating.
+All four trees, deduplicated by `(started, stage, log)`, since 07:34:39Z --
+7.24 hours:
+
+    build    180 runs    $  0.00       0 turns    0 tables
+    ideas     10 runs    $ 86.74     702 turns
+    triage   175 runs    $317.12    6369 turns
+    ---------------------------------------------------
+    TOTAL    365 runs    $403.86              $55.78/hour
+
+$312.63 at 13:20Z, $391.24 at 14:35Z, $397.96 at 14:43Z, $403.86 at 14:49Z.
+Shape unchanged: builds free, triage the entire bill. `gpt-5.4` is now 185
+builds and 0 turns.
+
+Evidence: 2026-09-23, 14:49Z. `agents/runs/20260923T144706Z-build.log` (1534
+bytes, as the 50 before it); `head -1` of all 50 prior verdicts -> `stop`,
+50/50; `agents/queue.py:280,283-303,306-315` read directly; `python3
+agents/queue.py open` and `show 196 202 203 204 205 206` at 14:48Z; the four
+`COSTS.tsv` merged in Python; `ps -ef` plus `readlink /proc/<pid>/cwd` on pids
+1950235, 3047281, 3048531, 3051607, 3054999 for the worker roots. Diagnosed in
+`agents/runs/20260923T144706Z-verdict`.
