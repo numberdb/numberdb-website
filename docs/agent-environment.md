@@ -10069,6 +10069,22 @@ correctly, but it never gets there, because it dies on a 400 rather than a quota
 error and `out_of_quota` is therefore false. Checked against this run's log with
 the predicates as written: `out_of_quota` FALSE, `worth_resuming` TRUE.
 
+**Writing the repair here did not apply it, and nothing a triage may do could.**
+Recording the times, because the paragraph above reads like a fix and is not
+one. The tested repair was committed as `1c0e693d` at **11:55:32Z**. The next
+build, `20260923T120042Z`, started at **12:00:42Z** -- five minutes later, off
+the same commit -- read `agents/runs/codex-fallback`, opened on `gpt-5.4` and
+took the same 400 twice, for a log byte-identical to its predecessor's once the
+stamp and thread id are normalised away. It could not have done otherwise: the
+chain default is `run.sh:80` and the remembered model is
+`agents/runs/codex-fallback`, and `agents/runs/` is gitignored
+(`.gitignore:167`), so a tracked file is the one place the repair has no effect.
+As of 12:03Z the marker still reads `gpt-5.4` / `xhigh` in all four trees. The
+distinction to carry: this document can hold a tested repair indefinitely while
+the wall it repairs stands, because a triage may write prose and may not write
+configuration. Step 2 of the handover list is a person's to run, not a note that
+has already been actioned.
+
 ## The screener keeps buying batches nobody can build, and `workers.stop` stops restarts rather than what is running
 
 What happened: during the fifth turn-zero codex build of the morning (see "A
