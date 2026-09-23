@@ -9160,3 +9160,85 @@ Evidence: 2026-09-23 12:39Z, triage of build `20260923T123743Z`.
 `agents/runs/campaign-w4.log` for the deal-to-build pairing;
 `numberdb_app/api.py:1391,1455-1461`; `numberdb_app/models.py:1519-1575`;
 `agents/queue.py:721-745`; `agents/campaign.sh:463-476`.
+
+## The supervisor holds no `NUMBERDB_*` variables, so every documented remedy is erased within five minutes -- and `workers.stop` is the one lever that is not
+
+Four notes above end with the same two remedies for the standing `gpt-5.4`
+refusal: `NUMBERDB_WRITER=claude`, or `NUMBERDB_CODEX_FALLBACKS=` so that
+`run.sh` exits 6 and `campaign.sh:90-104` hands the writer role to claude.
+Both are correct about `run.sh` and both are undone by the thing that starts
+the campaigns, which none of those notes inspected.
+
+`workers.sh 4` -- pid 1950235, up since 2026-09-22 20:38:46 with cwd
+`numberdb-website` -- restores one `campaign.sh 200` per checkout every 300s
+(`workers.sh:184-204`). **Its own environment contains no `NUMBERDB_*` entry
+at all**: `tr '\0' '\n' < /proc/1950235/environ | grep NUMBERDB` returns
+nothing, because it was launched from a plain login shell. So `start()`
+supplies the whole environment from its own defaults, and `workers.sh:120`
+reads
+
+    NUMBERDB_WRITER="${NUMBERDB_WRITER:-codex}"
+
+with `codex_fallbacks` likewise falling back to `run.sh:80`'s `gpt-5.4`. The
+handover at `campaign.sh:102` is explicitly scoped -- "takes over as $role for
+the rest of *this campaign*" -- and this campaign is replaced within five
+minutes of ending. Exporting either variable in a shell and starting one
+`campaign.sh` therefore fixes one worker until the next tick, and the four
+`stop` verdicts an hour go on being bought. The variables have to be in the
+*supervisor's* environment, which means replacing the supervisor:
+
+    kill 1950235
+    NUMBERDB_CODEX_FALLBACKS= setsid nohup ~/numberdb-website/agents/workers.sh 4 \
+        >> ~/numberdb-website/agents/runs/workers.log 2>&1 &
+
+`workers.sh:24-37` explains why it cannot be reloaded in place: bash parses
+`start()` when it reads the file, so a supervisor goes on starting workers
+from the definition it read at launch however often the file changes. Its
+children are `setsid`, so killing it leaves the four running workers alone.
+
+**And the flag nobody has used.** `workers.sh:185-190` checks
+`agents/workers.stop` and `agents/campaign.stop`, relative to the repository
+root it was launched from, at the top of every tick:
+
+    touch ~/numberdb-website/agents/workers.stop
+
+The supervisor then says `... is there; leaving the workers alone and
+stopping` and exits; the four running campaigns each end at their next `stop`
+verdict, roughly eleven minutes out, and nothing puts them back. This is the
+cheapest way to halt the pool, it needs no restart, and it is not mentioned
+anywhere else in this file or in any of today's 130 verdicts. It is also
+verified to be present in the *running* supervisor and not only on disk:
+`agents/workers.sh` was last committed 2026-09-22 19:33 (`38729eea`), an hour
+before pid 1950235 started, so the file parsed and the file on disk agree.
+
+The header of `workers.sh:36-38` is worth repeating rather than rediscovering:
+never `pkill -f workers.sh` and never `pkill -f campaign.sh`. The pattern
+matches every worker's loop as readily as the supervisor.
+
+Scale, so the next reader does not have to re-measure it. Today across the
+four checkouts: 332 runs, **$717.38**, of which 129 triage runs and
+**$247.09**; 134 ledger rows at `gpt-5.4 / 0 turns / error`; 130
+`agents/runs/*-verdict` files whose first word is `stop`, and not one that is
+anything else. `agents/runs/workers.log` records 192 worker starts since the
+supervisor came up, 91 of them between 10:00 and 14:00 today. The last build
+anywhere that used a turn was `20260923T061859Z` (w2); the pool has built
+nothing for just under seven hours.
+
+Evidence: 2026-09-23 13:0xZ, triage of build run `20260923T130047Z` (family
+#203, "Asymptotic amplitudes of the classes of trees", 0 turns, $0.0000, HEAD
+unmoved at `9b54c82d`). `/proc/1950235/environ` and `ps -o lstart` on it;
+`readlink -f /proc/<pid>/cwd` on the four live `campaign.sh 200` pids
+(2871424 website, 2873856 w2, 2861499 w3, 2876057 w4), each holding
+`NUMBERDB_WRITER=codex`; `agents/workers.sh:24-37,120,132,184-204`;
+`agents/campaign.sh:58,90-104,546`; `agents/run.sh:52,80,556-568,583-598`;
+`agents/runs/workers.log`; `agents/runs/COSTS.tsv` in all four checkouts over
+`$1 ~ /^20260923/`; `head -qn1` of every `*-verdict` in all four checkouts;
+`git log -1 -- agents/workers.sh`.
+
+One incidental finding while reading a process's environment, worth a line
+because the habit is easy to fall into: `/proc/<pid>/environ` of a live
+`run.sh` stage prints `NUMBERDB_API_KEY` in plaintext to whoever runs it. The
+project is careful to pass the key by file (`NUMBERDB_KEY_FILE`) and to tell
+agents never to write it down, and that care does not extend to an
+already-running stage. Grep the environment for `NUMBERDB_` and read the
+answer, but do not paste it anywhere.
