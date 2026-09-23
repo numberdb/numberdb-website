@@ -9940,3 +9940,94 @@ a missing `Numbers` skips.
 
 Evidence: 2026-09-23, T442 critique; the same five YAML pieces, with and
 without `Numbers:`.
+
+## `workers.sh` restarts a stopped campaign, so a `stop` verdict cannot hold a machine-wide failure
+
+What happened: three build runs in thirty-one minutes died identically at turn
+zero, and two triage runs returned `stop` in between. Both stops worked and
+neither held. `agents/workers.sh 4` had been running as PID 1950235 since
+2026-09-22 20:38, and its loop puts a campaign back within `every` seconds
+(default 300) of noticing the process gone:
+
+    07:33:58  triage -> verdict: stop
+    07:38:__  campaign.sh: "=== stopping: stop", exits as designed
+    07:38:51  workers.log: "starting w1"
+    07:39:11  workers.log: "starting w3"     <- 73 seconds after the stop
+    07:39:16  build 20260923T073916Z, dead at turn 0
+    07:39:31  workers.log: "starting w4"
+
+The restarted campaign has `attempted` reset to 0, so it spends its retries
+again from the beginning. This is `workers.sh` doing exactly what its header
+says it is for -- a campaign ending is "a fine reason to stop *that* loop and a
+poor reason for the machine to go quiet" -- and that reasoning is sound for the
+failures it was written for, which are per-campaign: an item limit, a stale
+claim, an unpushed commit. It does not hold for a failure that is machine-wide
+and fires *before* the model is asked anything. There, a correct `stop` becomes
+an unbounded loop, and the cost is entirely in the triage runs the dead builds
+provoke: six codex builds at 0 turns and $0.00 against $10.09 of triage over
+the same half hour, four trees wide, with no table produced and none possible.
+
+Verdicts are also per-worktree files, so w2 and w4 could not read w3's stop
+even in principle.
+
+What to do instead: a triage verdict is not a lever on the machine. To hold
+four workers down, `touch agents/workers.stop` (or `agents/campaign.stop`) in
+the main checkout -- `workers.sh:185-190` checks both at the top of each pass
+and exits 0, leaving running workers alone. Do this *first*, before clearing
+whatever caused the failure; otherwise the supervisor restarts a worker into
+the broken state while it is being repaired. And per `workers.sh:24-38`,
+editing `workers.sh` changes nothing until the supervisor itself is restarted,
+and `pkill -f workers.sh` / `pkill -f campaign.sh` matches every worker as
+readily as the supervisor.
+
+Evidence: 2026-09-23, triage of build 20260923T073916Z.
+`ps -eo pid,lstart,args` showed PID 1950235 `bash agents/workers.sh 4`;
+`readlink /proc/<pid>/cwd` placed one live `campaign.sh` in each of
+`numberdb-website`, `numberdb-campaign-w2`, `-w3` and `-w4`, and
+`agents/runs/workers.log` carries the three "starting" lines above.
+
+## A fallback chain naming a model the account may not use takes both engines down
+
+What happened: gpt-5.5 hit its usage limit mid-build on 2026-09-23 07:08.
+`run.sh` did what it is written to do -- matched `out_of_quota`, took the next
+model from the chain, and wrote `agents/runs/codex-fallback` holding `gpt-5.4`
+and `xhigh` so the quota would be remembered between runs. The next request
+was refused outright:
+
+    400 invalid_request_error
+    The 'gpt-5.4' model is not supported when using Codex with a ChatGPT account.
+
+`NUMBERDB_CODEX_FALLBACKS` defaults to `gpt-5.4` (`run.sh:80`), which this
+account cannot use at all. So the cheaper second chance is a model that cannot
+answer, and `run.sh:583-592` reads the marker at the top of every subsequent
+codex run, making it stick until somebody deletes the file.
+
+The escape hatch then cannot fire, and this is the part worth remembering.
+`exit 6` -- hand the stage to the other harness -- needs `give_up=yes`, which
+needs `out_of_quota` to match the *new* log. That log holds only the 400: no
+429, no "quota", no "usage limit", no "rate limit". So `out_of_quota` is false
+while `worth_resuming` is true on `"type":"error"`; the run resumes once onto
+the dead model, is refused again, and exits 1. `campaign.sh` never reaches the
+branch at `run.sh:663-672` that exists for exactly this, and one engine's
+exhausted quota becomes both engines' outage -- with the claude stages
+demonstrably healthy throughout (a $4.82 critique completed at 07:18).
+
+Two further consequences. The marker is per-worktree and `agents/runs/` is
+gitignored, so each tree poisons itself separately and invisibly; all four had
+their own copy, and deleting one helps only that one. And the ledger prices a
+run by the model that was live when it ended, so the near-complete build that
+triggered all this is recorded as `turns 0`, `cost 0.0000`, `gpt-5.4=0.0000` --
+any later accounting of the campaign is short by roughly a full build.
+
+What to do instead: set `NUMBERDB_CODEX_FALLBACKS` to a model the account can
+actually use, or to empty. Empty is not a downgrade: it makes `give_up=yes`
+fire on the real quota error, which is what hands the stage to the other
+engine. Clearing up after an occurrence means deleting
+`agents/runs/codex-fallback` in *every* tree -- and doing it after the
+supervisor is down and the quota has refilled, since the first codex run
+before the refill writes the same marker straight back.
+
+Evidence: 2026-09-23, builds 20260923T070848Z, T073335Z and T073916Z in w3,
+T073856Z in w1, T073936Z in w4, and repair T073411Z in w2 -- so the wall is not
+specific to the build stage. All four trees held an identical two-line
+`codex-fallback`.
