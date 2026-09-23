@@ -1,0 +1,86 @@
+# The table document for numberdb.org/T426, numberdb-data#191 proposal 7. It was
+# created as a draft through the API with X-Draft: yes and is filled by
+# generate.py beside it; publishing is a person's act.
+Title: Values of the Jacobi theta constant $\theta_4(0,q)$
+Definition: >-
+  For a real nome $0<q<1$, this table stores the Jacobi theta constant
+  $\theta_4(0,q)$, with $q=e^{i\pi\tau}$ and
+  $\theta_4(z,q)=1+2\sum_{n=1}^{\infty}(-1)^nq^{n^2}\cos(2nz)$
+  CITE{DLMFThetaNotation} CITE{DLMFThetaDefinitions}.
+Keywords:
+- Jacobi theta
+- theta constant
+- theta four
+Parameters:
+  q:
+    type: Q
+    title: real nome
+    display: $q$
+    constraints: $0<q<1$
+Comments:
+  comment-nome: >-
+    The parameter is the real nome $q$, not the lattice parameter $\tau$. In
+    this rectangular case $0<q<1$, the relation $q=e^{i\pi\tau}$ determines
+    $\tau=\log(q)/(i\pi)$ uniquely CITE{DLMFThetaNotation}.
+  comment-theta1: >-
+    The table stores a theta constant, so $z=0$ is not a parameter. There is
+    no nonzero companion for $\theta_1(0,q)$, since $\theta_1(z,q)$ is odd in
+    $z$ CITE{DLMFThetaDefinitions}.
+Formulas:
+  formula-series: >-
+    $\theta_4(0,q)=1+2\sum_{n=1}^{\infty}(-1)^nq^{n^2}$.
+  formula-jacobi-identity: >-
+    $\theta_3(0,q)^4=\theta_2(0,q)^4+\theta_4(0,q)^4$
+    CITE{DLMFThetaIdentities}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |
+      import numberdb.sage as numberdb
+      from sage.rings.complex_arb import ComplexBallField
+      from sage.rings.rational_field import QQ
+
+      CBF = ComplexBallField(numberdb.bits(100, losing=80))
+      q = QQ(1) / QQ(10)
+      tau = CBF(0, -1) * CBF(q).log() / CBF.pi()
+      value = CBF(0).jacobi_theta(tau)[3]
+      assert value.imag().contains_zero()
+      value.real()
+Similar tables:
+- table: HREF{Values_of_the_elliptic_nome}[Values of the elliptic nome $q(m)$]
+  relation: the nome table stores the elliptic-parameter values whose theta constants recover the modulus
+- table: HREF{Complete_elliptic_integral_of_the_first_kind_K}[Complete elliptic integral of the first kind $K(m)$]
+  relation: the theta constants and $K(m)$ are related by Jacobi's inversion formulas CITE{DLMFThetaRelations}
+Links:
+  DLMFThetaNotation:
+    title: 'DLMF 20.1: Special notation for theta functions'
+    url: https://dlmf.nist.gov/20.1
+  DLMFThetaDefinitions:
+    title: 'DLMF 20.2: Definitions and periodic properties of theta functions'
+    url: https://dlmf.nist.gov/20.2
+  DLMFThetaIdentities:
+    title: 'DLMF 20.7: Identities for theta functions'
+    url: https://dlmf.nist.gov/20.7
+  DLMFThetaRelations:
+    title: 'DLMF 20.9: Relations of theta functions to other functions'
+    url: https://dlmf.nist.gov/20.9
+Tags:
+- special values
+- special functions
+- elliptic function
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds $\theta_4(0,q)$ for every decimal grid point $q=j/1000$, with
+    $j=1,\ldots,900$
+  rigour details: >-
+    Each value was computed as a Sage complex ball with arb at
+    `numberdb.bits(digits, losing=80)` bits, after converting the real nome to
+    $\tau=\log(q)/(i\pi)$. The imaginary part was checked to contain zero, and
+    the real part was returned. Before the draft was filled, the run compared
+    every value with the defining $q$-series with an explicit tail bound and
+    checked CITE{formula-jacobi-identity} across the stored range.
+Display properties:
+  number-header: $\theta_4(0,q)$
