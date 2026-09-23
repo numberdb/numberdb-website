@@ -10251,3 +10251,60 @@ five stamps; line counts of the five `-build.log` files, all 12; `queue.py show
 `ok` at 14:20Z (session 01a0cea2-35e8-7ec3-9a29-a93fea8114c7), so the engine was
 healthy throughout; marker mtime 07:25:03Z, untouched. 166 verdict files across
 the four trees, 166 of them reading `stop`.
+
+## `NUMBERDB_WORKER_BUDGET` is a count of builds, not a spend cap, and a `stop` exit never spends one
+
+The section "A budget ceiling and a quota are loops ending where they should"
+(above, at the `workers.sh` supervisor) leaves the impression that the failing
+loop will at least run out of allowance. It will not. There is no allowance it
+can reach, and this is the third independent reason a `stop` cannot end the
+pipeline — alongside the supervisor not reading verdicts, and no `.stop` file
+ever having been written.
+
+**There is no spend cap anywhere.** Neither `campaign.sh` nor `run.sh` contains
+one. The only limit is `workers.sh:46`,
+`budget="${NUMBERDB_WORKER_BUDGET:-200}"`, passed as `$1` to `campaign.sh`,
+where line 39 reads `builds="${1:-999}"` and line 290 loops
+`while [ "$made" -lt "$builds" ]`. It counts *builds*, so a build that costs
+$0.0000 and a build that costs $10 are the same size to it. Today's failing
+builds cost $0.0000 each, so no number of them approaches any ceiling; the money
+is spent entirely by the triage runs they buy, which the counter does not see at
+all.
+
+**And `made` is not incremented on the failing path.** The `stop` arm of the
+verdict `case` in `campaign.sh` is
+
+    *) say "stopping: $verdict"; exit "$status" ;;
+
+which is above `made=$((made + 1))` at line 606. The loop exits before the
+counter moves. Even if it did move, `workers.sh:204` starts a *fresh*
+`campaign.sh "$budget"` on each restart, so `made` begins at 0 every time — the
+counter is per-process and the process is replaced every five minutes.
+
+The measurement, 2026-09-23 at 14:47Z. Anchored `^=== stopping: stop` in each
+tree's own `campaign-w*.log` (the unanchored form over-counts: `run_stage`
+appends the triage agent's JSON stream to the same log, so a triage that greps
+for the string writes it back into the file it is reading):
+
+    numberdb-website    (w1)   47
+    numberdb-campaign-w2       50
+    numberdb-campaign-w3       40
+    numberdb-campaign-w4       44
+                              ---
+                              181
+
+which matches the 181 verdict files on disk exactly, all 181 reading `stop`. The
+highest `built N so far` any worker has ever reached, over the whole history of
+these logs, is **50** (w3) against a budget of 200 — and that was before the
+07:25Z pin. The supervisor, pid 1950235, up since 2026-09-22 20:38:46, has
+absorbed all 181 exits without a single one costing a unit of budget.
+
+So the terminating conditions are exactly two: a `.stop` file, and a person.
+Waiting for the workers to exhaust themselves is waiting for something that
+cannot happen.
+
+Evidence: triage of `20260923T144646Z-build.log`. `workers.sh:46,204`;
+`campaign.sh:39,290,606` and the verdict `case`; `grep -i budget` over
+`agents/run.sh` returning only a prose mention at line 250. Counts as above;
+`spend.py` at 14:48Z gave 593 runs, $3125.41 lifetime, of which today is
+$817.82 across 432 runs, triage $325.81 against build $196.28.
