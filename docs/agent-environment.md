@@ -8629,3 +8629,91 @@ Evidence: 2026-09-23 09:25Z, triage of build run `20260923T092022Z`.
 the response's `since`; `models.py:1519-1564`; `api.py:1435-1467`; per-checkout
 tallies from `agents/runs/COSTS.tsv` in `numberdb-campaign-w2`, `-w3` and
 `-w4`.
+
+## The standing failure costs $112 an hour-and-a-bit, not $52: the tally left out the fourth worker and the screener
+
+The two notes above put the cost of the `gpt-5.4` marker at `$23.16` and then
+at `$52.27`. Both undercount by more than half, for two reasons that are easy
+to repeat.
+
+**The fourth worker is not in a `numberdb-campaign-*` directory.** `w1` runs
+from `/home/ubuntu/numberdb-website`, so a loop over
+`numberdb-campaign-w[234]` -- which is how both earlier tallies were taken --
+silently drops a quarter of the pool. Its `agents/runs/COSTS.tsv` is the one to
+read, and its `campaign` column says `w1`.
+
+**The screener is inside the loop, not beside it.** It bills under
+`numberdb-website` too, with stage `ideas` and campaign `screener`, so the same
+loop misses it twice over.
+
+Summed over every checkout and every stage, restricted to runs started at or
+after `20260923T072500Z` (when the marker was written), measured at 09:30Z:
+
+    checkout                 builds  triages  build $  triage $   other
+    numberdb-website (w1)        11       11     0.00     20.46   4 ideas  33.07
+    numberdb-campaign-w2         10       10     0.00     17.05
+    numberdb-campaign-w3         12       12     0.00     20.39
+    numberdb-campaign-w4          9        9     0.00     21.22
+                                 --       --              -----            -----
+                                 42       42              79.12            33.07
+
+                                                      total   $112.19
+
+It reconciles against the earlier figure exactly: `$52.27` + w1's `$20.46` +
+`$33.07` of screening + `$6.39` of drift in w2/w3/w4 in the five minutes
+between the two measurements. The four `ideas` runs are 07:42 `$9.70`, 08:12
+`$8.14`, 08:37 `$5.91`, 08:56 `$9.32`.
+
+The reason this matters beyond the arithmetic: **every dollar is booked under
+`triage` and `ideas`, and none under `build`.** A run that dies at turn 0
+records `$0.0000`, so a spend report grouped by stage says triage and screening
+are what this campaign spends its money on, and says the build stage is free.
+The stage that is broken is the one the ledger exonerates. Group by stage to
+find the expensive part of a campaign and you will look in exactly the wrong
+place; the tell that a `$0.0000` build is a dead build rather than a cheap one
+is its empty `table` column and `turns = 0`.
+
+The command, for whoever re-measures it next:
+
+    for f in /home/ubuntu/numberdb-campaign-w[234]/agents/runs/COSTS.tsv \
+             /home/ubuntu/numberdb-website/agents/runs/COSTS.tsv; do
+        awk -F'\t' '$1 >= "20260923T072500Z" {n[$2]++; c[$2]+=$5}
+                    END {for (s in n) printf "%-8s %3d  $%.2f\n", s, n[s], c[s]}' "$f"
+    done
+
+Evidence: 2026-09-23 09:30Z, triage of build run `20260923T092719Z`.
+Per-checkout sums over `agents/runs/COSTS.tsv` in `numberdb-campaign-w2`,
+`-w3`, `-w4` and `numberdb-website`; the `campaign` column (field 17) of the
+last of those, which reads `w1` for 22 runs, `screener` for 4 and `campaign`
+for the header.
+
+## There is no other work in the pool, so stopping the workers forfeits nothing
+
+Nine `stop` verdicts have asked a person to delete the fallback marker or stop
+the pool without saying what stopping it would cost. It costs nothing, and
+this is cheap to check. `agents/work.py counts` is read-only -- `demands()`,
+`growth()`, `sweep()` and `queue.next_table()` all only read, and the claim is
+taken later by `campaign.sh`, not by `work.py` -- so triage may run it:
+
+    $ python3 agents/work.py counts
+    demands   0
+    proposals some
+    growth    0
+    sweep     0
+
+`agents/campaign.sh` draws every stage from `work.py next`, which picks from
+those four sources (`work.py:202-228`). Three of them are empty. So the only
+work the pool can be handed is a build, every build dies at turn 0, and there
+is no critique, repair, growth question or demand that the workers would get
+to if they were left running. A pool in this state is not "degraded"; it is
+doing nothing at a hundred dollars every two hours.
+
+Worth checking before deciding to leave a broken pool up, and worth checking
+again before restarting one: if `proposals` reads `some` and the other three
+read `0`, the build stage is the whole campaign, and whatever is wrong with it
+is the whole campaign's problem.
+
+Evidence: 2026-09-23 09:30Z, triage of build run `20260923T092719Z`.
+`python3 agents/work.py counts` in `numberdb-campaign-w4`; `work.py:188-228`
+and `269-278`; `queue.py:340-375` for `next_table` having no side effect;
+`campaign.sh:336` for the single call that feeds every stage.
