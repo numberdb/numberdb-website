@@ -10389,3 +10389,65 @@ known packings of equal circles in an equilateral triangle" (#202), claimed by
 w1 at 16:18Z and still claimed after the `stop`. All six proposals of #202
 claimed, zero turns run against any of them; `queue.py stale` silent.
 `campaign.sh:545-548` (the exiting `*)` arm) and `campaign.sh:686-700`.
+
+## `already_asked` reads issue titles, so a batch can duplicate work already claimed
+
+`screen.already_asked(name)` asks GitHub for `repo:numberdb/numberdb-data
+in:title <words>`. A `table wanted` issue is titled after the table, so the
+check works on those. A `proposal` issue is titled after the **family** — "the
+polynomial invariants of a matroid" — and the tables it commits to are a
+checklist in the *body*. Nothing in a title search can reach them.
+
+On 2026-09-23 an ideation run screened a matroid Kazhdan–Lusztig batch to
+completion — `search_text('Kazhdan')` empty, `already_asked` empty, four arXiv
+sources confirmed, $P_{U(3,6)}$, $P_{U(4,8)}$, $P_{U(5,10)}$ and the Boolean
+Chow polynomials computed in Sage — before finding **numberdb-data#186**, which
+proposes the same five tables in the same order and has had four of them
+claimed by a worker since 2026-09-22. The whole screen was clean and the batch
+was a duplicate.
+
+The check that finds it is a grep of every issue body, which is one call:
+
+    gh api --paginate "repos/numberdb/numberdb-data/issues?state=all&per_page=100" \
+        --jq '.[] | "@@ISSUE \(.number) [\(.state)] \(.title)\n\(.body // "")"' > /tmp/issues.txt
+
+206 issues, 5792 lines, and grepping it for each candidate table name takes a
+second. Worth doing **before** the Sage work rather than after, and worth
+folding into `already_asked` itself: it should report body matches beside title
+matches, or the stage will keep paying for the same collision.
+
+Note also that `gh issue view <n>` fails outright against this repository with
+`GraphQL: Projects (classic) is being deprecated ... (repository.issue.projectCards)`.
+`gh api repos/numberdb/numberdb-data/issues/<n>` answers fine, and is what to
+use for a body.
+
+## OEIS answers b-files and refuses everything else from this machine
+
+`https://oeis.org/A073001` and `https://oeis.org/search?q=...` both answer
+**403** here, with a Cloudflare interstitial ("Just a moment..."), in `curl`
+with any user agent and in `urllib`. So a proposal cannot screen a name against
+OEIS from this host and should not claim to have.
+
+`https://oeis.org/A073001/b073001.txt` answers **200**. The b-files are not
+behind the challenge, they are plain text, and for a decimal-expansion sequence
+they are a better digit check than the page anyway. Four were fetched on
+2026-09-23 (A073001, A072558, A073007, A086199) without trouble.
+
+So: an A-number found elsewhere — MathWorld's references, a Wikipedia citation,
+a paper — can still be checked here. Only the search cannot be run.
+
+## arXiv: the `abs` page answers, the export API does not
+
+`screen.source_names_it` on `https://arxiv.org/abs/1412.7408` works, and the
+abstract page carries `citation_title` and `citation_author` meta tags, which is
+enough to confirm a paper is the one being cited.
+
+`http://export.arxiv.org/api/query?...` answers **406 Not Acceptable** to
+`urllib.request` with any of the user agents tried, and **301** to plain `curl`
+over http. `curl -sSL` over **https** answers 200 with the Atom feed, which is
+how a title search can be run here:
+
+    curl -sSL "https://export.arxiv.org/api/query?search_query=ti:%22...%22&max_results=6"
+
+Evidence: 2026-09-23, four searches for matroid Chow-polynomial and
+Postnikov–Stanley papers, all 406 under `urllib` and all 200 under `curl -sSL`.
