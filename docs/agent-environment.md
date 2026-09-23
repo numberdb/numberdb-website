@@ -9157,3 +9157,67 @@ Evidence: 2026-09-23, `agents/queue.py show 200` at 10:20Z (claim times and
 holders); `agents/runs/workers.log` (w1 10:14:35, w2 10:14:55, w4 10:15:15);
 the `batch` column of `agents/runs/COSTS.tsv` for `20260923T100820Z` and
 `20260923T101439Z`, both w1; `agents/queue.py` `CLAIM_MINUTES`.
+
+## The ideas stage exits 0, so the breakage is invisible to it and it fills a queue nothing is emptying
+
+Every note above about the `gpt-5.4` loop measures it through triage, because
+triage is where the money visibly goes. That undercounts it, and it misreads
+which stage a person has to stop.
+
+The ideas stage does not use the codex engine. It runs on claude, it has
+succeeded every time today, and it **exits 0**, so no failure path in the
+pipeline -- not `out_of_quota()`, not the `exit 6` handover, not triage, which
+is only invoked for the build stage -- ever looks at it. It therefore keeps
+running at full rate throughout a breakage that has made its output
+unconsumable. Since the first refusal at 05:59Z it is the second-largest line
+in the ledger, and it is larger than every codex stage combined:
+
+    since 05:59Z, four worktrees, deduplicated by (stamp, stage):
+      triage     62 runs  $121.62
+      ideas       7 runs  $ 59.45   <- exits 0; nothing watches it
+      repair      4 runs  $ 14.26
+      critique    2 runs  $ 12.51
+      build      66 runs  $ 11.39
+      total     142 runs  $219.24   and no table
+
+The consequence is worse than the cost. Earlier notes established that the
+queue does not drain -- claims lapse at `CLAIM_MINUTES = 90` and the workers
+walk backwards through the day's batches re-failing proposals. Two
+measurements thirteen minutes apart show it is not merely failing to drain, it
+is **filling**:
+
+    10:14Z   8 waiting   across #200, #203
+    10:27Z  12 waiting   across #201, #203, #204
+
+Builds consume nothing; ideas adds about five proposals per batch at ~$8.49 a
+batch. So the backlog grows monotonically for as long as the supervisor runs,
+and each new proposal is another claim for a dead build to take and drop,
+another lapse, and another ~$2 triage to judge it a second time.
+
+Two things follow for whoever fixes the engine:
+
+* **`touch agents/workers.stop` is not sufficient on its own.**
+  `agents/screener.stop` is the one that stops ideas. Stopping only the workers
+  leaves the most expensive still-running stage running.
+* **Fixing `run.sh:80` and restarting does not clear the debt.** It restarts
+  into twelve waiting proposals across four families, two of which are already
+  on their second lap, with a screener still adding to them faster than a
+  healthy build stage drains them. The queue should be inspected, and probably
+  truncated, before the engine is repaired -- otherwise the first thing a
+  working build stage meets is the ceiling of fifteen drafts, which is the wall
+  behind this one.
+
+The general shape, which is the part worth keeping: **a stage that cannot fail
+is not the same as a stage that is doing useful work.** The pipeline's health
+checks all ask whether a stage exited non-zero. A producer whose consumer is
+dead exits 0 every time, costs the most, and is the last thing anybody looks
+at.
+
+Evidence: 2026-09-23, triage of `20260923T102622Z-build.log`.
+`agents/runs/COSTS.tsv` in all four worktrees, deduplicated by `(stamp, stage)`
+-- 196 rows today ($574.29), 142 since 05:59Z ($219.24), the `ideas` rows being
+`20260923T0837`, `0921`, `1003` and four earlier. `agents/queue.py open` at
+10:14Z (recorded in `20260923T101439Z-verdict`) and at 10:27Z; `show 201`
+showing two proposals claimed at 08:56-09:02Z and re-claimed at 10:26Z.
+`agents/table-ideas/BATCH-2026-09-23T*.md`, ten batches today.
+`agents/workers.sh`, the `workers.stop` and `screener.stop` checks.
