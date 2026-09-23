@@ -11463,3 +11463,72 @@ turn-zero `gpt-5.4` build in this tree and the 61st consecutive `stop`.
 marker block, and the `echo` at `:600` is untee'd, which is why no "a previous
 run hit a quota" line appears in any build log); `agents/runs/codex-fallback`
 still `gpt-5.4` / `xhigh`, mtime 07:25:01.703Z, 14 bytes.
+
+## `NUMBERDB_CODEX_FALLBACKS` needs no code edit: `workers.sh` passes the supervisor's environment through, and only the supervisor's own environment is empty
+
+What happened: the section above established that the `campaign.sh` children
+name neither `NUMBERDB_CODEX_MODEL` nor `NUMBERDB_CODEX_FALLBACKS`, so the
+marker wins and the three-step repair stands. It left the practical question
+open: *where does a person put step 3?* Every phrasing of the handover so far
+says "set `NUMBERDB_CODEX_FALLBACKS`" without saying in which file or process,
+and the natural reading -- that `workers.sh:119-131` is a whitelist of the
+variables a worker is allowed, so a new one must be added to that list and the
+edit committed -- is wrong.
+
+`workers.sh:119-132` is a shell *assignment prefix*:
+
+    NUMBERDB_CAMPAIGN="$name" \
+    NUMBERDB_WRITER="${NUMBERDB_WRITER:-codex}" \
+    ... eleven more ... \
+    NUMBERDB_SCREEN=0 \
+        setsid nohup agents/campaign.sh "$budget" ...
+
+There is no `env -i` and no `env -u` anywhere in the path. A prefix of that
+form *adds to and overrides* the current environment; it does not replace it.
+So any `NUMBERDB_*` exported into the supervisor is inherited by `campaign.sh`
+and by the `run.sh` beneath it, whether or not it is named in those thirteen
+lines. `NUMBERDB_CODEX_FALLBACKS` is read at `run.sh:80` from exactly that
+inherited environment.
+
+The reason it is absent is therefore not that `workers.sh` filters it out. It
+is that nobody ever set it: `/proc/1950235/environ` (`bash agents/workers.sh 4`,
+up Tue Sep 22 20:38:46) holds **18 variables and zero `NUMBERDB_*`** --
+`DBUS_SESSION_BUS_ADDRESS GH_TOKEN HOME LANG LOGNAME OLDPWD PATH PWD SHELL
+SHLVL SSH_CLIENT SSH_CONNECTION USER XDG_RUNTIME_DIR XDG_SESSION_CLASS
+XDG_SESSION_ID XDG_SESSION_TYPE _`. Every `${NUMBERDB_X:-default}` in that
+prefix is taking its default, which is also why the children hold exactly the
+thirteen the prefix names.
+
+Why it matters: it removes the last reason the repair has not been run. Step 3
+is a word on the relaunch command line, not a patch to review, and it does not
+collide with the two constraints that have defeated the other attempts --
+a tracked-file edit cannot reach a gitignored marker (`85907e5f`), and a
+committed default cannot reach a supervisor whose environment was frozen on
+22 Sep. Relaunching is already required by step 1, so step 3 costs nothing
+beyond typing it:
+
+    NUMBERDB_CODEX_FALLBACKS=gpt-5.5 agents/workers.sh 4
+
+`gpt-5.5` rather than empty, per `e70d896f`: `:-` makes empty identical to
+unset. With `gpt-5.5` as both the start model (`run.sh:52`) and the whole
+chain, `next_model_in "gpt-5.5" "gpt-5.5"` returns empty on the next quota,
+`give_up=yes`, and `run.sh:679` exits 6 -- which hands the stage to `claude`
+rather than pinning a marker to a model the account cannot use.
+
+The counterpart worth stating once: editing `workers.sh` to add the variable
+to that prefix would *also* work, but it is the slower route -- it needs a
+commit, a review, and the same supervisor restart anyway (`:9979`: editing
+`workers.sh` changes nothing until the supervisor itself is restarted), and it
+hard-codes into a tracked file a value that is a property of this account's
+quota rather than of the pipeline.
+
+Evidence: 2026-09-23 17:33Z, w3 triage of build `20260923T173231Z` -- the 62nd
+turn-zero `gpt-5.4` build in this tree and the 62nd consecutive `stop`.
+`agents/workers.sh:104-134` read in full (no `env -i`, no `env -u`;
+`grep -n 'env -' agents/workers.sh` is empty); `/proc/1950235/environ` keys via
+`tr '\0' '\n' | cut -d= -f1`, 18 entries, `grep -c NUMBERDB_` = 0;
+`agents/run.sh:80`. Cost of the loop since the marker was written at 07:25Z,
+from `agents/runs/COSTS.tsv`: 122 runs and $118.00, of which builds are 61 runs
+at $0.00 (`turns 0` on every one, unmeasured rather than free, `:10382`) and
+triage is 61 runs at $118.00 -- the outage's entire measured cost is now the
+stage that diagnoses it.
