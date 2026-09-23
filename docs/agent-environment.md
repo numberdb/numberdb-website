@@ -10039,3 +10039,53 @@ Evidence: 2026-09-23, 17:00-17:20Z, triaging `20260923T165529Z-build.log`.
 the `offer()` case arms; `queue.py:803-821`; anchored `^=== .* is offered for
 review` greps of the four `campaign-*.log`; `awk` on the `table` column of the
 four `COSTS.tsv`. Diagnosed in `agents/runs/20260923T165529Z-verdict`.
+
+## Addendum to `:9445`: the dead builds are free, but the `ideas` stage is not -- the trap pays ~$9 a run to grow a backlog it cannot build
+
+What happened: triaging the 68th identical zero-turn `gpt-5.4` 400, I merged the
+four ledgers to re-measure the bill and found the previous two verdicts had
+billed this episode as builds plus triage only, concluding "the builds are free;
+triage re-deriving this 400 is the entire cost." A stage is missing from that.
+Pool-wide since the first 400 at 07:34:39Z, deduplicated on
+`(started, stage, log)`:
+
+    build    256 runs        0 turns   $  0.00
+    triage   253 runs     8968 turns   $439.02
+    ideas     11 runs      792 turns   $ 97.36
+    TOTAL    520 runs                  $536.38
+
+The `ideas` stage runs on **claude**, so `agents/runs/codex-fallback` never
+touches it and the 400 never reaches it: all eleven runs since the trap began
+succeeded, 43 to 104 turns each, $5.40 to $14.40 a time. It is working correctly
+into a queue whose consumer is dead. `queue.py open` reports **15 waiting**
+across #198 and #204--#207, up from 13 ninety minutes earlier -- the backlog of
+unbuilt proposals *grows* for as long as this runs.
+
+Why it matters, given `:9620` has been unrun for six hours: "the builds cost
+nothing, so the loop is only wasting triage" is the summary a person is most
+likely to inherit from the recent verdicts, and it understates the bill by
+$97 and mischaracterises the damage. A fifth of the trap's spend is the pool
+manufacturing good proposals it cannot consume, and that part leaves a mess
+behind rather than only a charge.
+
+It does not change the remedy at `:9685` -- `workers.stop` halts every stage,
+`ideas` included -- so nothing here needs a new fix. It changes the urgency, and
+it is the number to quote when explaining why this could not just be left to
+run.
+
+One thing this measurement also settles, against a tempting reading of the
+repeated logs: the campaign is **not** stuck retrying one proposal. Consecutive
+w2 builds took #197 "Quantiles of the studentized range distribution" and then
+#198 "Weil--Petersson volumes $V_{g,n}$"; it advances every cycle and fails
+identically on each, because the 400 is upstream of anything the proposal could
+be. A triage that answers `skip` on this evidence would therefore strip the
+queue at four proposals an hour, each one unread. `stop` is the only verdict
+that does not destroy something.
+
+Evidence: 2026-09-23, 17:14--17:30Z. The four `COSTS.tsv` ledgers merged and
+deduplicated on `(started, stage, log)`, grouped by `stage` over
+`started >= 20260923T073439Z`; `python3 agents/queue.py open`;
+`GET /api/claim?family=197` and `?family=198`; the `batch` column of the
+`20260923T171410Z` row (`BATCH-2026-09-23T0602`) resolved by `:9579`;
+`run.sh:78-82,554-562,581-590`. Diagnosed in
+`agents/runs/20260923T171410Z-verdict`.
