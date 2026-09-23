@@ -10774,6 +10774,11 @@ tells a model that works from one that has only ever been written down:
                 END{for(m in n) printf "%s %d/%d\n", m, ok[m], n[m]}' \
         agents/runs/COSTS.tsv
 
+which answers, over every codex row of every stage rather than builds alone:
+
+    gpt-5.4 0/34
+    gpt-5.5 359/361
+
 Evidence: 2026-09-23 13:20-13:35Z, w3 triage of build `20260923T131804Z`, the
 33rd turn-zero build of the day and the 33rd `stop`. Tallies over all 644 rows
 of `COSTS.tsv`. Since 07:08:48Z in w3 alone: 65 runs, **$64.77**, every cent of
