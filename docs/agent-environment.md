@@ -9697,3 +9697,65 @@ the four `COSTS.tsv` ledgers merged and deduplicated in Python;
 `queue.py show 195..206 | grep numberdb-family` mapping
 `BATCH-2026-09-23T0506` -> family #197; `_site('/api/claim?family=197')`.
 Diagnosed in `agents/runs/20260923T153007Z-verdict`.
+
+## The `gpt-5.4` fallback makes the `exit 6` handover unreachable, which is why the loop never ends by itself
+
+What happened: the trap two sections up ("The codex quota fallback names a
+model the account cannot use") has now run 60 times over five days, 0 turns and
+$0.00 on every one. The remedy recorded there -- clear the marker, wait out the
+quota, or move the stage to claude -- has never once happened on its own, and
+this is the mechanism that prevents it.
+
+`run.sh` classifies a failed run with two greps over the same 4000-byte log
+tail:
+
+    out_of_quota()    '"api_error_status":429|rate.?limit|quota|usage limit|too many requests'
+    worth_resuming()  '"api_error_status":[0-9]|OAuth access token has expired|overloaded_error|Internal server error|"type":"error"|stream disconnected|rate limit'
+
+The `gpt-5.4` refusal is an HTTP 400 `invalid_request_error`. Its log contains
+`"type":"error"`, so `worth_resuming` is true and the run retries once -- which
+is why every one of these logs holds two identical `turn.failed` blocks. It
+contains no 429, no "quota", no "usage limit", so `out_of_quota` is **false**.
+
+That asymmetry is the whole problem. `out_of_quota` guards the only path to
+`give_up=yes`, and `give_up=yes` is the only path to `exit 6`, which is what
+`campaign.sh` reads to hand the stage to the other engine. So:
+
+* a quota exhaustion on `gpt-5.5` hands builds to claude and the campaign
+  continues, but
+* a quota exhaustion that has already fallen back to `gpt-5.4` cannot, because
+  the fallback rewrote the failure into a shape the quota test does not match.
+
+Falling back destroys the evidence that would have triggered the handover. The
+first exhaustion is recoverable; the second state it puts you in is not.
+
+Why it matters: `run.sh:80` describes the chain as "the second best, and then
+nothing" and says "the campaign stops and waits, and the stop is the message".
+The design intends a stop. What it produces instead is an unbounded loop whose
+builds are free -- 60 rows at $0.00 -- and whose cost is entirely in the triage
+runs the failures summon: 58 of them, $83.13, $80.94 of that on 23 September
+alone, ~$1.43 an iteration to re-derive the same verdict. Nothing in the spend
+curve attributes that to the build stage, because the build stage spends
+nothing.
+
+What to do instead: take `gpt-5.4` out of `NUMBERDB_CODEX_FALLBACKS` -- a model
+the account is not entitled to is not a fallback -- or add the 400 to
+`out_of_quota` so that an unusable model is treated as a spent one and reaches
+`exit 6`. Either makes the handover fire. Clearing
+`agents/runs/codex-fallback` alone fixes the current incident and leaves the
+mechanism armed for the next quota exhaustion.
+
+Note also that `agents/runs/codex-fallback` is gitignored (`.gitignore:167`,
+`agents/runs/`) and untracked. It survives every clean-tree precondition,
+appears in no `git status` and no diff, and is read back at `run.sh:584` on
+every codex run where `NUMBERDB_CODEX_MODEL` is unset. A 14-byte invisible file
+is what stands between this campaign and a working engine.
+
+Evidence: 2026-09-23. `agents/runs/20260923T073411Z-repair.log` line 5 is the
+originating exhaustion (`try again at Sep 25th, 2026 3:51 AM`), mtime of
+`agents/runs/codex-fallback` 07:34 the same minute; six `gpt-5.5` builds
+succeeded earlier the same day, last at `20260923T061859Z`, $7.41-$11.39 each;
+`awk` over `agents/runs/COSTS.tsv` for `$8=="gpt-5.4"` -> 60 rows, 0 with
+turns > 0; `out_of_quota` and `worth_resuming` at `agents/run.sh:556-569`, the
+`give_up`/`exit 6` branch at 635-680. Diagnosed in
+`agents/runs/20260923T154227Z-verdict`.
