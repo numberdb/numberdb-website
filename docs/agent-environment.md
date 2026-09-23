@@ -7755,3 +7755,49 @@ Evidence: 2026-09-23 ideas run. The eight issue bodies read through
 `api.github.com/repos/numberdb/numberdb-data/issues/<n>`; the open-issue list
 for the repository is #195, #194 (`proposal`) and #137, #133
 (`enhancement`), with #195 being the Ramsey family that answers #70.
+
+## `already_here` does not treat "distribution", "solution" or "densities" as generic, so such a name answers with six unrelated tables
+
+What happened: the five titles of the random-matrix batch were screened with
+`already_here` after waiting out the rate limit. All five returned hits. Not
+one of them was a near miss:
+
+    "Values of the Tracy-Widom distribution functions"
+      -> Differential entropies of continuous probability distributions
+         (matched 'distribution'), Eigenvalues of the Gauss-Kuzmin-Wirsing
+         operator (matched 'distribution'), Khinchin's means $K_p$ (matched
+         'distribution'), ... six in all
+    "Values of the Hastings-McLeod solution of Painlevé II"
+      -> $abc$-triples of high merit (matched 'solution'), Bessel polynomials
+         $y_n$ (matched 'solution'), Coiflet scaling filters (matched
+         'solution'), ... six in all
+    "Values of the Tracy-Widom densities"
+      -> Covering radii and covering densities of the classical lattices
+         (matched 'densities'), Densities of primes with a given primitive
+         root (matched 'densities'), ... six in all
+
+No hit matched `tracy`, `widom`, `hastings`, `mcleod`, `painlevé`,
+`cumulants`, `skewness` or `kurtosis` -- the words that would actually mean
+the family is already here. `screen.GENERIC` holds *polynomial*, *numbers*,
+*function*, *values*, *constant*, *zeros*, *series* and a dozen more, and the
+docstring's premise is that "a family is recognised by the rest"; but
+*distribution*, *distributions*, *solution* and *densities* are not on the
+list, and the corpus is full of tables whose titles contain them. A name built
+out of any of those three words produces a full screen of matches that reads,
+skimmed, exactly like a duplicate.
+
+What to do instead: read the `(matched '...')` clause on every row rather than
+the number of rows. A hit whose matched word is the subject noun of the title
+is a real one; a hit whose matched word is *distribution*, *solution* or
+*densities* is the stemmer. Where the whole result is of the second kind, say
+so in the batch with the matched word quoted, as the 2026-09-23T04:28Z batch
+does in its closing table, so the next reader does not have to re-run it.
+Adding those four words to `GENERIC` would fix it, but it is a judgement about
+every future proposal and not one an unattended run should make.
+
+Evidence: 2026-09-23 ideas run, `already_here` on the five titles, run from
+`/tmp` with `PYTHONPATH` pointing at `clients/python` and
+`agents/table-ideas`. `already_asked` returned `[]` for all five in the same
+run. Note also that two attempts were needed: the first, timed for 500s after
+the limit was hit, still got `RateLimitError: ... retry in 147s`, so the
+21-minute window the error quotes is the window.
