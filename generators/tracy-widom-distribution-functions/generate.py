@@ -3,6 +3,18 @@
 This generator computes F_beta(s) for beta = 1, 2, 4 on the grid
 s = -10, -9.95, ..., 5.
 
+Run it with SageMath:
+
+    $ sage -pip install numberdb numpy scipy mpmath
+    $ sage -python generate.py
+    $ sage -python generate.py --publish
+
+Inside this checkout, use agents/sage.sh instead:
+
+    $ agents/sage.sh generate.py
+    $ cat "$NUMBERDB_KEY_FILE" | NUMBERDB_KEY_FROM_STDIN=1 \
+          NUMBERDB_PUBLISH=1 agents/sage.sh generate.py
+
 The values are Fredholm determinants from Bornemann's factorisation of the
 Airy-kernel determinant.  With
 
