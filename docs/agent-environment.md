@@ -10484,3 +10484,85 @@ What works: find the header's line number, then read the lines above it.
 
 Anchoring on `^=== ` is what separates the campaign's own output from the
 transcript it has tee'd in; the JSONL lines all start with `{`.
+
+## A `stop` verdict stops the worker; `agents/workers.sh` starts it again six minutes later
+
+Triage decided `stop` on four consecutive builds today and the campaign carried
+on through all four. The verdict was not ignored — the *worker* exited each
+time. But `agents/workers.sh:256` is a `while true` that restarts any worker it
+finds not running:
+
+    for n in $(seq 1 "$workers"); do
+        name="w$n"
+        if ! running "$name"; then
+            start "$name" "$(family_for "$n")" || true
+
+The only things it stands down for are the flag files it checks at the top of
+the same loop, `agents/workers.stop` and `agents/campaign.stop`. Neither is
+written by any verdict path, and a triage run may not write one. So `stop` buys
+one supervisor tick — about six minutes — and `agents/runs/workers.log` shows
+w1 restarting at 16:31, 16:37, 16:43 and 16:49.
+
+This is how a correctly-diagnosed failure became expensive. **64 triage runs
+today cost $111.02 between them, against $0.00 of building**, each one
+re-deriving the same refusal. Triage cannot break this loop from inside; a
+person has to `touch agents/workers.stop`.
+
+## The codex fallback chain has one entry and this account may not use it
+
+`agents/runs/codex-fallback` pins the model for every subsequent run:
+
+    fallback_marker="agents/runs/$engine-fallback"      # run.sh:583
+
+Written only by the quota path, and — per the message at run.sh:685 — cleared
+only by hand. Today it holds `gpt-5.4`, and `gpt-5.4` is refused outright:
+
+    400 invalid_request_error: The 'gpt-5.4' model is not supported when
+    using Codex with a ChatGPT account.
+
+It cannot fall forward out of it either, because the chain's only entry is the
+model already pinned:
+
+    codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-gpt-5.4}"   # run.sh:80
+
+So one quota event pins a model the account cannot use, and every codex build
+after it dies at turn zero. **66 rows in `COSTS.tsv` are pinned to `gpt-5.4`;
+all 66 are 0 turns, $0.0000, `error`** — 65 of them today between 05:59Z and
+16:49Z. The primary `gpt-5.5` is healthy: all five gpt-5.5 builds today
+succeeded, the last at 20260923T050854Z, an hour before the pin.
+
+`rm agents/runs/codex-fallback` fixes today. It does not fix the trapdoor: the
+next real quota event pins the same dead model again. `NUMBERDB_CODEX_FALLBACKS`
+wants either a usable model or nothing at all, so a quota stops the campaign
+instead of pinning it to a refusal.
+
+## `COSTS.tsv` names the pinned model, so triage need not read the campaign log for it
+
+An earlier note here concluded that the model line is echoed without `tee` and
+so the campaign log is the only place a triage run can learn which model was
+pinned. That is true of the *logs*, but the cost ledger has it directly:
+`agents/runs/COSTS.tsv` column 8 is `model`, one row per run keyed by the stamp
+in column 1, and the build's row is written by `sync-costs` *before* the stage
+reports its status — so it is already there when triage starts.
+
+    awk -F'\t' '$1=="20260923T164929Z"{print $8}' agents/runs/COSTS.tsv
+
+answers `gpt-5.4` against a 148 KB file, instead of seeking through 74 MB of
+campaign-w1.log and reading upward from the build header. Columns 4 and 5,
+`turns` and `cost_usd`, settle "how far did it get" the same way.
+
+Two cautions about what those columns actually mean, both from `agents/ledger.py`:
+
+* `model` is `max(by_model, key=by_model.get)` — the model the run spent *most*
+  on, not the model it was pinned to. For a zero-turn refusal there is only one
+  entry and the two coincide, but a run that fell back part-way through names
+  whichever half cost more. Trust it on a build with 0 turns; corroborate it
+  against the campaign log on a run that got somewhere.
+* `result` is `subtype`, but corrected: when `is_error` is set it is rewritten
+  to `error <api_error_status>` (ledger.py:137-142, added after a 401 was
+  recorded as a success by every other field). So it is safe against the
+  specific trap the triage prompt warns about, while still inheriting raw
+  `subtype` whenever `is_error` is false.
+
+The campaign log is still the only place the *proposal* is named; it is no
+longer the only place the model is.
