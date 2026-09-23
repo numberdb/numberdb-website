@@ -10726,6 +10726,32 @@ unmoved at `037d6a01`, clean tree, no draft). 70 dead `gpt-5.4` builds against 5
 `gpt-5.5` builds that each ran a turn; 69 triage runs at $117.99 versus $38.05
 of build. Every one of today's 69 verdicts is `stop`.
 
+Twenty minutes later the working set is a sliding window rather than a growing
+one: still exactly 50 live claims, but now spread across eleven families, 196
+to 206, at three to six proposals each. Old leases lapse at ninety minutes and
+are immediately replaced, so the count is flat while the frontier moves -- by
+17:38Z the claims had run past the last screened batch on disk
+(`BATCH-2026-09-23T1609`) into families 203, 205 and 206. A watcher reading
+only the claim *count* sees a steady 50 and nothing wrong; the family range is
+what moves.
+
+Two things about the endpoint, for anyone wiring that watcher. **The 50 is
+real, not a page cap** -- summing `GET /api/claim?family=N` over 196..206 gives
+exactly 50, tying out against the unfiltered list, so the number can be trusted
+at face value. But **`limit` and `page` are silently ignored**: `?limit=200`
+and `?page=2` both return the same 50 rows as the bare call, with no error and
+no pagination key in the envelope. `?family=` is the only filter that does
+anything. So the round 50 invites two opposite misreadings -- that the list is
+truncated, and that paging past it would show more -- and neither is true. Read
+it with `?family=` if you want to be sure.
+
+Evidence: triage of `20260923T173750Z-build.log` (proposal "Global minimum
+energies of Lennard-Jones clusters", family #202, claimed by w1 at 17:37:49Z,
+one second before the build died; zero turns, HEAD unmoved at `c40e2ac4`, clean
+tree, no draft). 73 dead `gpt-5.4` builds against 5 `gpt-5.5` builds that each
+ran a turn; 72 triage runs at $122.03 against $38.05 of build and $137.53 of
+ideation. Every one of today's 72 verdicts is `stop`; this was the 73rd.
+
 ## `sync-costs` prints a one-number health check at the end of every run, and nothing reads it
 
 Every run ends with a line from `agents/sync-costs.sh`, which POSTs the whole
