@@ -39,6 +39,7 @@ integration of the Hastings-McLeod solution.
 """
 
 import numberdb.sage as numberdb
+from numberdb import _compare
 
 import functools
 import math
@@ -339,6 +340,10 @@ def _ball_text(value, controls):
     return "%s +/- %s" % (_scientific(centre, 3), _scientific(radius, 2))
 
 
+def _with_claimed_digits(number, known_digits):
+    return number, max(1, min(int(known_digits), _compare.digits_of(number)))
+
+
 @functools.lru_cache(maxsize=None)
 def _entry(beta, s_text):
     s = Fraction(s_text)
@@ -352,13 +357,14 @@ def _entry(beta, s_text):
     if value_float <= 0:
         positive_controls = [abs(float(control)) for control in control_values]
         number = _ball_text(abs(value_float), positive_controls)
-        return number, 1
+        return _with_claimed_digits(number, 1)
 
     if digits < 2:
-        return _ball_text(value, control_values), 1
+        return _with_claimed_digits(_ball_text(value, control_values), 1)
 
     written_digits = min(MAX_DIGITS, max(2, digits))
-    return _plain_decimal(value, written_digits), written_digits
+    number = _plain_decimal(value, written_digits)
+    return _with_claimed_digits(number, written_digits)
 
 
 class TracyWidomDensities(numberdb.Generator):
