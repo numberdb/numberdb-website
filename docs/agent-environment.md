@@ -10389,3 +10389,70 @@ is a lesson for the skill and is written to
 `agents/lessons/proposals/20260923T172703Z-triage.md`; what is deployment-
 specific, and belongs here, is that this is how the claim sweeps in these
 notes can go wrong and that the measurements above were re-run with the key.
+
+## The parked-claim ceiling, proved from the arrival rate; and the loop's duty cycle is 20 s of claims then 5.3 minutes of triage
+
+The note "The parked-claim pool saturates; it does not compound" derives the
+~50 ceiling from build counts and supports it with three flat sweeps. Three
+flat totals are also what a *stalled* pool looks like, so the seventh sweep
+measured the mechanism instead. `/api/claim` over families 150-239 at
+2026-09-23T17:48Z, through `agents/queue.py`'s `_site` so the key is attached,
+0 non-200s:
+
+    50 standing claims  —  48/50/49/50/50/49/50 across the seven sweeps
+    50 distinct proposals, 11 distinct families, no proposal claimed twice
+    w1 15  w4 12  w3 12  w2 11
+    claim age  min 2.6  median 46.0  max 89.0  minutes
+
+Two things there are new. **The ages are uniform across the whole expiry
+window** — median 46.0 against the 45.0 a uniform spread predicts, oldest 89.0
+against `CLAIM_MINUTES = 90` (`agents/queue.py:280`). A stalled pool would show
+a clump of old claims and no young ones; this is a steady arrival against a
+fixed-age eviction, sitting on its fixed point. And **every standing claim is a
+distinct proposal**: 50 claims, 50 titles. Re-drawing a proposal refreshes its
+claim rather than adding one.
+
+The arrival rate closes it. Gaps between the last twenty claims, in seconds:
+
+    20 320 20 20 23 317 20 23 317 21 20 319 22 18 22 318 20 20 21
+
+Mean 99.0 s → **0.61 claims/min**, and 0.61 × 90 = 55 against 50 measured. The
+ceiling is arrival rate times expiry, which is what the earlier note said. It
+is *not* capped by the number of distinct proposals the closed pool can reach,
+which was the competing explanation the 50-claims/50-titles line invites and
+which this measurement rules out: the pool is rate-limited, not inventory-
+limited.
+
+**The gap pattern is the four workers' duty cycle read off the wire.** Bursts
+of four claims 20 s apart, then ~318 s of silence. One worker's full cycle is
+~338 s: a build that fails in milliseconds on the `gpt-5.4` 400, then ~5.5
+minutes of triage deciding what to do about it. The four are phase-locked 20 s
+apart, which `ps` confirms — four `campaign.sh 200` alive at 1:34, 1:54, 2:14,
+2:34 elapsed under one `workers.sh 4`, up 21h08m. The same 20 s stagger is
+visible inside a single family: family #203 was claimed by w1 at 17:44:09, w2
+at 17:44:29, w3 at 17:44:49 and w4 at 17:45:10, four different proposals in
+61 seconds.
+
+**What it costs, derived from the wire rather than from the cost file.** 0.61
+claims/min is ~37 builds an hour campaign-wide, every one of them 0 turns, each
+followed by a triage. w4's mean triage today is $1.83 (67 runs, $122.63), so
+the pool burns roughly **$67 an hour to produce nothing**. w4's day at 17:48Z:
+149 runs, $225.17 — triage 67 runs $122.63, build 74 runs $59.07, critique 4
+runs $23.91, repair 4 runs $19.56. That is an independent route to the figure
+in "The failing builds are free; the triage of them is 80% of the spend", and
+it agrees with it.
+
+Why it matters for the decision: it does not change it. The ~50 claims are
+still a standing hostage set that releases itself within ninety minutes of the
+last failing build, still nothing to clean up by hand. What the tempo adds is a
+denominator for how long the remedy can wait — every hour of delay is ~37 more
+turn-0 builds and ~$67, and the arithmetic no longer depends on counting rows
+in a gitignored cost file.
+
+Measured at 2026-09-23T17:48Z during triage of build `20260923T174511Z` (w4,
+family #203, "Growth constants of polyominoes and lattice animals", its third
+deal today after 14:41Z and 16:13Z; 0 turns, $0.0000, the same 400 on
+`gpt-5.4`, verdict `stop` — the 68th in this worktree today and all 68 the
+same). All three levers still unpulled: `codex-fallback` = `gpt-5.4`/`xhigh`
+mtime 07:25:22Z, `/home/ubuntu/numberdb-website/agents/workers.stop` still
+absent, `out_of_quota()` still 429-only.
