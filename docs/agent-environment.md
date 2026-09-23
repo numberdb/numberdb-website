@@ -8126,6 +8126,25 @@ restarts at 07:33:31, 07:38:51, 07:39:11 and 07:39:31. `agents/workers.sh`, the
 four worktrees. `pgrep -fa campaign.sh` showing four loops and four concurrent
 triage runs.
 
+Outcome, ten hours on. The projection above held and nothing broke the loop.
+By 17:13Z on 2026-09-23, w1's `COSTS.tsv` records for the day 74 build runs and
+68 triage runs: **every one of the 68 verdicts written under
+`agents/runs/20260923T*-verdict` is `stop`**, each correct, each acted on by
+`campaign.sh` and each undone by the supervisor minutes later. Triage cost
+$116.58; build cost $38.05 and produced nothing after 05:09Z. All four
+worktrees still hold `gpt-5.4` / `xhigh`.
+
+The split by model is the whole story and is worth recording as a number: of
+the day's 74 builds, the 5 that ran on `gpt-5.5` (all before 05:09Z) each used
+a turn and four produced a table -- T427, T431, T433, T438 -- while all 69 that
+ran on `gpt-5.4` used 0 turns. Nothing about the proposals changed at 05:47Z;
+only the marker did. So when triage sees a 0-turn build, column 8 of
+`COSTS.tsv` is the first thing to read, and a run of consecutive `stop`
+verdicts in `agents/runs/` is the second: if the previous verdict was already
+`stop` for the same reason, the answer is not in this run's log and re-deriving
+it costs another $1.50. The sixty-ninth `stop` is not more informative than the
+first -- it is the same finding, bought again.
+
 ## The handover to the other engine is gated on `out_of_quota`, so a non-quota codex failure can never reach it
 
 The note above, *A triage `stop` does not stop the machine*, says the exit-6
