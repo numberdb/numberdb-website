@@ -8717,3 +8717,86 @@ Evidence: 2026-09-23 09:30Z, triage of build run `20260923T092719Z`.
 `python3 agents/work.py counts` in `numberdb-campaign-w4`; `work.py:188-228`
 and `269-278`; `queue.py:340-375` for `next_table` having no side effect;
 `campaign.sh:336` for the single call that feeds every stage.
+
+## The four workers share one API key, and the triage loop alone exhausts its hourly budget
+
+What happened: at 09:40:2xZ on 2026-09-23 `GET /api/claim` answered 200. Half
+a minute later every call from this box answered
+
+    {"error": "Rate limit exceeded (1000 requests per 60 minutes)",
+     "retry_after": 1101}
+
+with zeta3's key on the request. This is not the per-IP anonymous limit
+already written up above ("Anonymous reads are rate limited per IP"); that one
+is cured by sending the key. This is the *identified* ceiling that advice runs
+into: `throttle.py` scopes the counter to `key:<pk>`, so all four workers --
+`numberdb-website` (w1), `numberdb-campaign-w2`, `-w3`, `-w4` -- and every
+stage they run spend out of one allowance of 1000 per hour.
+
+Who spent it, between 09:00:00 and 09:42: 19 builds that died at turn 0 and
+15 triages, across the four checkouts, for $31.40. The dead builds make one or
+two calls each (`queue.py claim`, then they die). The triages are the readers
+-- each probes table ids, lists claims and searches the corpus, and one of them
+paged `/tables?page=1..11` for 421 titles in a single stretch. Fifteen of
+those in forty minutes is the thousand.
+
+So the standing `gpt-5.4` failure is no longer only burning money. Each dead
+build costs $0.00 and buys a triage; each triage spends a few dozen API calls
+to diagnose the same 400; and the loop has now eaten the one resource a
+*working* build would need to fill a table. Deleting the fallback marker
+during an exhausted window does not restart useful work -- see the next
+section for what the builds would do instead.
+
+What to do about it: when the pool is restarted, either wait for the top of
+the hour (the window is clock-aligned, so the counter resets at :00 exactly)
+or give the workers separate keys. A triage that needs to survey the corpus
+should be counted as expensive: `/tables?page=N` for eleven pages is eleven
+units of a budget the builders need. And the general point for anything
+running more than one worker here: the key, not the checkout, is the shared
+resource, and nothing in the runner accounts for it.
+
+Evidence: 2026-09-23 09:41Z, triage of build run `20260923T093900Z`.
+`numberdb_app/throttle.py`: `IDENTIFIED_LIMIT = 1000`, `WINDOW_SECONDS = 3600`,
+`requester_of` returning `'key:%d' % key.pk`, `_consume` bucketing on
+`now - (now % window)`. `GET /api/claim` at 09:40:2xZ (200, 33 live claims) and
+at 09:41:39Z (429, `retry_after` 1101, which lands on 10:00:00Z exactly).
+Run counts summed over `agents/runs/COSTS.tsv` in all four checkouts for
+started stamps in `[20260923T090000Z, 20260923T094200Z)`.
+
+## A 429 breaks `queue.py`'s site lock in both directions at once
+
+What happened: while the key was rate limited the two questions `queue.py`
+asks the site failed the opposite ways, so the lock was simultaneously absent
+and absolute.
+
+* `held_by_others()` (`queue.py:712-719`) returns `set()` for any status that
+  is not 200. During the window `unheld()` therefore reports **every**
+  unsettled proposal in a family as free: the lock is invisible, and two
+  workers reading the same checklist would both pick the same line.
+* `take()` (`queue.py:721-744`) returns True on 201, False on 409, and
+  otherwise `status is None`. A 429 is not None, so it returns **False**, and
+  `cmd_claim` (`:803-806`) prints "is held by another worker" and exits 1.
+
+The net effect is that no proposal can be claimed at all: the selector offers
+everything and the claim refuses everything. That is fail-closed against work
+and, by luck rather than design, fail-safe against duplicates -- the
+`held_by_others` half on its own would hand the same proposal to all four
+workers.
+
+Note the shape, because it is the second time this campaign has met it: two
+halves of one safety check disagreeing on the same input, failing on opposite
+sides. The other is the hyphen/en-dash note (the text index folds them
+together, the unique-title constraint does not), recorded 2026-09-23.
+
+What to do about it: `take()` should distinguish "the site refused me" from
+"the site could not be asked" -- a 429 is the latter in every way that
+matters, and returning `status is None or status == 429` would at least make
+the two halves agree. Better, the campaign should not start a build while the
+key is exhausted: one cheap `GET` before the stage, and defer rather than
+spend a run. Neither is a triage's job to write, and neither has been.
+
+Evidence: 2026-09-23 09:41Z, triage of build run `20260923T093900Z`.
+`agents/queue.py:305-330` (`waiting`, `unheld`), `:712-719`
+(`held_by_others`), `:721-744` (`take`), `:803-806` (`cmd_claim`); observed
+against a live 429, where a second `GET /api/claim` reported `live claims: 0`
+seconds after the first had listed 33.
