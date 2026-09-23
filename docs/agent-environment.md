@@ -10290,3 +10290,38 @@ Authenticated `GET /api/claim?family=196..203` -> 31 live claims across four
 workers, every row carrying `since` and `expired: false`; `queue.py show 198`
 -> six `- [~]` lines against those five claims; unauthenticated
 `GET /api/claim?family=193..204` -> twelve consecutive 429s.
+
+## The codex quota that started this has a date on it, and it is two days out
+
+The section above records that a `gpt-5.5` quota sent `run.sh` onto a `gpt-5.4`
+it may not use. What none of the thirteen verdicts written since had picked up
+is that the original refusal names its own horizon, and it is not the same day:
+
+    You've hit your usage limit. Visit
+    https://chatgpt.com/codex/settings/usage to purchase more credits or
+    try again at Sep 25th, 2026 3:51 AM.
+
+That line is in `agents/runs/20260923T070848Z-build.log` -- the transition run,
+and the only one of the fourteen that holds both failures, because it started
+on `gpt-5.5`, hit the limit, fell back, and got the 400 in the same log. Every
+build after it carries the 400 alone, which is why the date is invisible unless
+you go back to the first one.
+
+Why it matters for a verdict: it settles whether the failure is an accident of
+the moment. It is not. Clearing `codex-fallback` without also changing the
+model or buying credits puts the next run back on `gpt-5.5`, into a live usage
+limit, which rewrites the same marker -- so the obvious one-step repair loops.
+Until 2026-09-25 03:51 there is no codex path at all on this account, and a
+`restart` verdict on any codex stage before then is spending triage money to
+re-learn this. The cost is not in the dead builds, which are $0.00 at turn 0;
+it is in the triage each one provokes, which ran $23.28 across thirteen runs in
+w3 alone between 07:08 and 09:39, four trees wide.
+
+The general form, worth remembering past this incident: when a fallback
+converts one failure into a different one, the log you need is the *first*
+one in the series, not the one you were handed.
+
+Evidence: 2026-09-23 09:39Z, triage of build `20260923T093841Z` in w3.
+`agents/runs/COSTS.tsv` filtered to `started >= 20260923T0708` -> `build 14
+$0.00`, `triage 13 $23.28`; the fourteen build logs all carry the `gpt-5.4`
+400 and only `20260923T070848Z-build.log` also carries the usage-limit line.
