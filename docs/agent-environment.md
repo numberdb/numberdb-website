@@ -15135,3 +15135,23 @@ across four trees, every first word `stop`. `ps -o pid,lstart` at 19:10Z: PID
 1950235 still up since Tue 20:38:46, now **four** `campaign.sh 200` children at
 19:03:47/19:04:07/19:04:27/19:04:47Z, twenty seconds apart, up from three at
 18:34Z.
+
+## `queue.py built` can say a family is closed while a sibling is only claimed
+
+What happened: after T441 was offered, `python3 agents/queue.py built 196
+"Values of the Tracy-Widom distribution functions $F_\beta(s)$" T441` printed
+`#196 closed; the family is built`. A fresh `python3 agents/queue.py show 196`
+still showed the density table as `[~] ... claimed by w4`, not `[x]`. The
+parser treats `~` as `done`, which is right for not offering it to another
+worker and wrong for deciding the batch is exhausted.
+
+What to do instead: after `queue.py built` says it closed a family, run
+`queue.py show <family>` before touching `agents/runs/batch-exhausted`. Create
+the marker only if every proposal is actually `[x]` or `[-]`; a `[~]` line is
+work in flight, not a built table.
+
+Evidence: 2026-09-23, T441 build. `queue.py built 196 ... T441` printed the
+closed message; immediately afterwards `queue.py show 196` showed T441, T443,
+T444 and T445 as `[x]`, while `Values of the Tracy-Widom densities
+$f_\beta(s)$` remained `[~] claimed by w4 at 20:06Z`. The marker
+`agents/runs/batch-exhausted` had to be removed.
