@@ -11002,3 +11002,194 @@ from `agents/runs/COSTS.tsv` filtered to `started` on 20260923 and
 39/$80.59. The w3 ledger has **no ideation rows today** — the batches are posted
 from another tree, so their cost is not visible from here and the $18/hour above
 is the docstring's rate, not a measured one.
+
+## A `stop` verdict holds fourteen seconds, not five minutes, and one supervisor pass costs four proposals
+
+The note above quotes `workers.sh`'s `every=300` and concludes that a stopped
+campaign comes back "within `every` seconds". That is the wrong end of the
+loop. The restart is not paced by `sleep "$every"` at the bottom of the `while`;
+it is paced by the `sleep 20` *inside* the `for` loop over workers, which runs
+once per dead worker before the outer sleep is ever reached. So a pass that
+finds several workers down restarts them 20 seconds apart, and a worker that
+died just before a pass is back almost at once.
+
+Measured, not inferred. The w3 triage of `20260923T144107Z` returned `stop` and
+its campaign exited between 14:47:07Z and 14:47:21Z; the replacement was
+running at 14:47:21Z. The four `campaign.sh` processes alive at 14:53Z were all
+started by that one pass:
+
+    3047281  14:46:41  cwd /home/ubuntu/numberdb-website        (w1)
+    3048531  14:47:01  cwd /home/ubuntu/numberdb-campaign-w2
+    3051607  14:47:21  cwd /home/ubuntu/numberdb-campaign-w3
+    3054999  14:47:41  cwd /home/ubuntu/numberdb-campaign-w4
+
+Exactly 20 seconds apart, and `ppid 1` on all four (`setsid`), so the supervisor
+found **all four workers dead in the same pass**. That is the shape of this
+outage that a per-worktree verdict cannot see: the pool does not fail one tree
+at a time, it fails in lockstep, because every tree carries the same marker and
+every build dies in the same twenty seconds.
+
+The queue records the cost of that single pass, in the same minute:
+
+    #202  Best known packings of equal circles in an equilateral triangle -- w1 at 14:46Z
+    #204  Neumann eigenvalues of the classical planar domains             -- w2 at 14:47Z
+    #204  Roots of the frequency equations of the Euler-Bernoulli beam    -- w3 at 14:47Z
+    #204  Zeros of cross-products of Bessel functions                     -- w4 at 14:47Z
+
+The `sleep 20` is commented "four campaigns reading the queue in the same second
+is four chances of the same proposal being offered twice before any claim is
+written", and it does prevent that — the four took four *different* proposals.
+What it does not prevent is one family being stripped by the whole pool in sixty
+seconds: three of #204's five proposals went to three dead workers within a
+minute of each other, which is why a family can go from freshly posted to
+`0 waiting` between two triages.
+
+For a person at the keyboard: the practical consequence is that
+`touch agents/workers.stop` must come **first**, before reading anything, and
+that a verdict is not a lever. There is no window between a `stop` and the next
+build in which to work.
+
+Evidence: 2026-09-23 14:53Z, w3 triage of build `20260923T144726Z`.
+`ps -eo pid,ppid,lstart,args` for the four `campaign.sh` processes and
+`readlink -f /proc/<pid>/cwd` for each; `agents/workers.sh:196-207` for the two
+sleeps; `agents/runs/campaign-w3.log:86219-86234` for the previous campaign's
+last output at 14:47:07Z and the next build's banner at 14:47:26Z;
+`queue.py show 202` and `show 204` for the claim timestamps.
+
+## The claim leak has a fixed point and the queue has reached it: 45 live claims, and `queue.py open` counts an expired claim as waiting
+
+The note above reads 41 live claims at 14:44Z as a leak still filling. It is not
+filling; it is at equilibrium, and the arithmetic says so. Counted at 14:52Z
+across all eleven open families:
+
+    60 proposals   45 claimed   13 with an empty box   2 ticked built
+    oldest live claim 13:18Z   newest 14:47Z   span 89 minutes
+
+Not one live claim is older than 89 minutes, because `CLAIM_MINUTES = 90`. So
+the 45 claims *are* the last ninety minutes of claiming and nothing else: the
+rate is about 30 claims an hour, the expiry is 1.5 hours, and 30 × 1.5 = 45 is
+the fixed point. It will not grow, and it will not clear while the wall lasts;
+each proposal is claimed, killed at turn zero, released by timeout ninety
+minutes later, and claimed again. The screener's ~5.5 proposals an hour is
+absorbed as fast as it arrives, and `queue.py next` works oldest-family first,
+so the newest families (#205 and #206 have no claims at all) sit untouched
+until the older ones are fully drained.
+
+**How to read the `waiting` number correctly.** `queue.py open` answered 15 at
+14:52Z while only 13 proposals have an empty box. The difference is not a bug
+and not progress: `is_stale()` treats a claim older than 90 minutes as available
+again, so the two 13:18Z claims (#196, #202) are counted as waiting while still
+*displayed* as `[~] claimed by w3/w4`. The number therefore recovers on its own
+as claims age out, with nothing built — the mechanism behind the "it went up"
+trap in the note above. A checklist line that says `[~] claimed by` and a
+proposal that `open` counts as waiting are not the same set, and neither one
+means anybody is working.
+
+The two ticked boxes are worth naming so a later reader does not chase them:
+both are in #196 and both predate the wall. `T444` (*Cumulants of the
+Tracy-Widom distributions*) is published. `T443` (*Values of the Hastings-McLeod
+solution q(s)*) is a **draft awaiting review**, so the `https://numberdb.org/T443`
+link the checklist writes answers 404 to everybody but its owner. That is the
+intended flow — offering a draft is a finished job — and not a fault, but a
+`[x]` in a family checklist means "offered", not "public".
+
+Evidence: 2026-09-23 14:52Z, w3 triage of build `20260923T144726Z`.
+`queue.py show` over families 196-206, counting `- [~]`, `- [ ]` and `- [x]`
+lines; `queue.py open` in the same minute; `agents/queue.py:280,303` for
+`CLAIM_MINUTES` and `is_stale`; anonymous `curl` against `/T443` (404) and
+`/T444` (200), and keyed `GET /api/table?id=T443` (the draft's document).
+
+## The draft ceiling is 15 or 100, never five, and an offered draft still holds its slot — the open question at the 23-draft note is answered
+
+The note *Twenty-three drafts under this key* leaves a question — "whether the
+limit counts a draft offered for review separately cannot be told from here" —
+and advises creating a draft and reading `drafts_held` before letting four
+workers loose. That advice spends a slot to learn how many slots remain, and it
+is not needed. The rule is in `numberdb_app/permissions.py` in this checkout:
+
+    DRAFTS_IN_FLIGHT      = getattr(settings, 'NUMBERDB_DRAFTS_IN_FLIGHT', 15)
+    BULK_DRAFTS_IN_FLIGHT = getattr(settings, 'NUMBERDB_BULK_DRAFTS_IN_FLIGHT', 100)
+
+    def draft_allowance(user):
+        if is_board_member(user):
+            return (None, Table.objects.filter(created_by=user, published=False).count())
+        held = Table.objects.filter(created_by=user, published=False).count()
+        return (max(0, draft_ceiling(user) - held), held)
+
+So:
+
+* **Offering does not free the slot.** The count is every `published=False`
+  table the account created, in any state. Only publication releases one, and
+  publication is a person's act this account may not perform. The refusal's own
+  `detail` — "the limit is on drafts in flight rather than on drafts made" —
+  reads as though offering released one. It does not.
+* **The ceiling is 15**, or 100 for the bulk-drafts group, or none for a board
+  member. Every build prompt in this project says five. Since 23 are held here
+  and creation has not been refused, this key's ceiling is one of the larger
+  two, and there is room — the campaign is not blocked on drafts.
+* Both figures come from the process environment:
+  `numberdb/settings/base.py:391-399` reads `NUMBERDB_DRAFTS_IN_FLIGHT`
+  (default `'15'`) and `NUMBERDB_BULK_DRAFTS_IN_FLIGHT` (default `'100'`). The
+  deployed numbers are therefore the container's, which cannot be read from
+  here — `docker` is refused and `agents/sage.sh` reaches the builder image,
+  not the web one. The defaults are what this checkout would serve.
+* The bulk group is meant for exactly this account: the comment at
+  `base.py:394-397` says "an account running a campaign holds a batch of drafts
+  until they are reviewed together, which is what the ordinary ceiling is too
+  low for". 23 held against a ceiling of 100 is a quarter full.
+
+Whoever restarts the campaign can stop worrying about draft room and should not
+create a probe draft to check it.
+
+## `run.sh`'s `out_of_quota` cannot tell the site refusing the agent from the provider refusing the runner
+
+Not what happened today — the trigger at `campaign-w3.log:75400` is a genuine
+Codex refusal, *"You've hit your usage limit ... try again at Sep 25th, 2026
+3:51 AM"* — but the same one-line marker is reachable without any model ever
+being out of quota, and whoever repairs the chain should close this at the same
+time.
+
+`out_of_quota` greps the transcript's last 4000 bytes:
+
+    '"api_error_status":429|rate.?limit|quota|usage limit|too many requests'
+
+case-insensitively, over **everything the run printed**, including the output of
+the agent's own tool calls. Two of this site's own refusals match it:
+
+* the throttle, `429` with `{"error": "Rate limit exceeded (60 requests per 60
+  minutes)...", "retry_after": N}` — matches `rate.?limit` outright, and this
+  file already records a triage hitting it while walking `/tables?page=N`;
+* the draft ceiling, `429` with `{"error": "This account already holds N
+  unpublished drafts."}` — matches nothing in the body, but any client that
+  prints the reason phrase (`curl -i`, most libraries' error text) puts *Too
+  Many Requests* in the transcript, which matches `too many requests`.
+
+Either one, in a run that also exits non-zero and passes `worth_resuming`,
+writes `agents/runs/codex-fallback` and moves the engine down the chain for that
+run **and every run after it, in that tree, until somebody deletes the file**.
+The layer that refused is nowhere in the decision. This is the same
+mistaken-identity shape as the release branch at `10843`, one level up: there,
+an engine `400` is read as a build failure; here, a site `429` would be read as
+a provider quota.
+
+Narrowing the predicate to the engine's own error envelope — codex's
+`{"type":"error", ...}` frame, claude's `api_error_status` — would cost nothing
+and remove the whole class.
+
+One reading note for a later triage, since the column invites the opposite
+conclusion: in `COSTS.tsv`, **codex rows count codex turns, and a complete build
+is `turns 1`**. Today's five real builds (`T423`, `T432`, `T436`, `T442`, and
+one that made no table) each read `turns 1`, against `turns 0` for all 41 dead
+ones. On this engine the column separates "the model never answered" from "the
+model did the whole job" and has no value in between; the triage prompt's "died
+on turn 39 with a draft half filled" has no analogue here, and `turns 1` is not
+a run that barely started.
+
+Evidence: 2026-09-23, w3 triage of build `20260923T144726Z`.
+`agents/run.sh:556-559` (`out_of_quota`), `:565-568` (`worth_resuming`),
+`:622-651` (the branch, reached only when the run exits non-zero);
+`numberdb_app/throttle.py:186-196`; `numberdb_app/api.py:985-999`;
+`agents/runs/campaign-w3.log:75400-75402` for the one genuine quota that started
+this, and `awk` over `COSTS.tsv` for the 46 builds today: 41 `gpt-5.4` at 0
+turns and $0.00, 5 `gpt-5.5` at 1 turn each totalling $43.49 — the whole of the
+tree's build spend today.
