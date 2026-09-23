@@ -8075,3 +8075,50 @@ attached, including any comment in it about work that is not finished.
 Evidence: 2026-09-23, T443 critique. Four unauthenticated requests:
 `files/T443` 200 (13332 bytes), `files/T443/generate.py` 200 (23104 bytes),
 `T443` 404, `preview/T443` 404.
+
+## The codex fallback poisons the engine handoff that would have rescued it
+
+What happened: the failure written up above under "The codex quota fallback
+names a model the account cannot use" happened again on 2026-09-23, five days
+later and unchanged. Repair run 20260923T073411Z hit a real ChatGPT Codex usage
+limit on gpt-5.5 ("try again at Sep 25th, 2026 3:51 AM"), the runner wrote
+`agents/runs/codex-fallback` = `gpt-5.4` / `xhigh`, and both that run and build
+run 20260923T073439Z 28 seconds later died on the same
+`invalid_request_error` before turn 1, twice each, for $0.0000. The prescribed
+fix -- "the fallback must name a model the ChatGPT account actually has" -- was
+never applied; `agents/run.sh:80` still reads
+`codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-gpt-5.4}"`.
+
+What is new, and is the reason this is worth a second entry: **the poisoned
+marker disables the escape hatch built for exactly this situation.** `run.sh`
+already knows what to do when codex is out of quota and has no model left --
+`give_up=yes`, exit 6, and `campaign.sh` runs the stage on claude instead,
+which is installed here and which carried the critique and ideas stages of this
+same batch without trouble. But that branch is reachable only through
+`out_of_quota`, which greps the log tail for quota wording. Once the marker is
+in place the next run's failure is a 400 whose message is
+`invalid_request_error`, with no `quota`, `usage limit`, `429` or `rate limit`
+anywhere in it. So `out_of_quota` is false, `give_up` stays `no`, and the run
+takes the ordinary resumable-error path: it resumes the same dead thread on the
+same forbidden model and fails again.
+
+The net effect is that the first quota hit converts every later codex stage
+from "hand this to claude" into "fail to triage, for free". Free is the trap:
+there is no spend to notice, `agents/runs/` is gitignored so `git status` never
+shows the marker, and the only visible symptom is a run of $0.0000 rows in
+`COSTS.tsv` with `resumed=yes` and `turns=0`.
+
+What to do instead: as before, delete `agents/runs/codex-fallback` and give
+`codex_fallbacks` a model the account actually has. If no such model exists,
+set it **empty** rather than wrong -- an empty chain makes `next_model_in`
+return nothing on the first quota hit, which reaches `give_up=yes` and hands
+the stage to claude immediately. A wrong fallback is strictly worse than none.
+Separately, `out_of_quota` and `worth_resuming` should not both match a 400
+naming a model the account cannot use: that is neither transient nor a quota,
+and resuming it is never right.
+
+Evidence: 2026-09-23. `agents/runs/20260923T073411Z-repair.log` and
+`agents/runs/20260923T073439Z-build.log` (12 lines each, both entirely the
+failure); `agents/runs/codex-fallback`; `agents/run.sh` lines 80, 556-559 and
+650-676; the last two rows of `agents/runs/COSTS.tsv`. Diagnosed in
+`agents/runs/20260923T073439Z-verdict`.
