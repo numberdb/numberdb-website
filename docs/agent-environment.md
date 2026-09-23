@@ -10244,3 +10244,59 @@ over all 72 `agents/runs/*-verdict`; `ps -eo pid,ppid,lstart,args` for the four
 `campaign.sh 200` processes, all parented to init; `python3 agents/queue.py
 open` -> 13 waiting, unchanged. Diagnosed in
 `agents/runs/20260923T175053Z-verdict`.
+
+## A key does lift the read lockout: anonymous and keyed calls are separate buckets, 60/hour and 1000/hour
+
+`:6905` ("The read lockout is per IP and a key does not lift it") records that
+during a lockout on 2026-09-21 `curl` with the bearer header refused alongside
+the anonymous call. Measured again today it does not hold, and the difference
+matters because a run that reads a 429 as "this box is locked out" gives up a
+budget it still has.
+
+At **18:11:13Z**, one script, four calls, same second, from this worktree:
+
+    anonymous  /api/table   429   Rate limit exceeded (60 requests per 60 minutes)
+    key:       /api/table   200   {"Title": "Values of the Hastings-McLeod ...
+    anonymous  /api/lookup  429   Rate limit exceeded (60 requests per 60 minutes)
+    key:       /api/lookup  200
+
+`numberdb_app/throttle.py:88-112` is why. `requester_of` returns
+`('key:<pk>', 1000, key)` for a valid token, `('user:<pk>', 1000, None)` for a
+session, and `('ip:<addr>', 60, None)` otherwise, and `_consume` counts each
+scope against its own cache entry. They are different buckets with different
+allowances; exhausting the box's anonymous 60 does not touch a key's 1000.
+
+Two things that follow, both of which cost me turns today:
+
+* **The 429 body tells you which bucket you are in.** The sentence "An API key
+  raises this limit; see /help#section-api" is appended only when the scope
+  starts with `ip:` (`throttle.py:191-192`). So a 429 carrying that sentence
+  means the server saw no key on the request -- not that your key is
+  exhausted, and not that it was rejected. A key that is present but wrong is
+  refused with **403 `Invalid API key.`** before the counter is touched
+  (`throttle.py:178-186`), never with a 429. Those three cases are
+  distinguishable from the response alone.
+* **The window is hour-aligned**, `now - (now % 3600)` (`throttle.py:122-123`),
+  so `retry_after` is the time to the top of the hour and is *identical for
+  every scope*. It tells you nothing about which bucket refused you; only the
+  body does. I spent three probes inferring a shared bucket from a matching
+  countdown before reading the arithmetic.
+
+The entry at `:3703` stands as written -- the anonymous 60/hour is per address
+and four workers plus their triages share it, so it is usually already spent
+when you get there; at 18:06Z today it was gone before this run made its first
+call. What is wrong is only the conclusion that a key does not help. It does,
+by a factor of about seventeen, and `agents/queue.py` is unaffected by an
+anonymous lockout for exactly this reason: `_site` reads `KEY_FILE` and sends
+`Authorization: Bearer` on every call (`queue.py:666-669`), so its claim counts
+stay trustworthy through one. Worth knowing, because `held()` returns an empty
+set on any non-200 (`queue.py:714-717`) -- a silent "nothing is claimed" that
+would send workers back to the racy checklist path if the keyed calls ever did
+start refusing.
+
+Evidence: 2026-09-23, 18:06-18:12Z, triaging `20260923T180332Z-build.log`.
+Four calls from one `/tmp` script reading the key from `$NUMBERDB_KEY_FILE`;
+`Authorization: Bearer <a deliberately wrong token>` -> 403 `Invalid API key.`
+at 18:09Z, confirming the deployed throttle is the code in this tree;
+`numberdb_app/throttle.py` at 6b70e5e1. Diagnosed in
+`agents/runs/20260923T180332Z-verdict`.
