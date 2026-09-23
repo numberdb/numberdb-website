@@ -8791,3 +8791,79 @@ the 64-log sweep from `20260923T062751Z` and the tails of the two non-empty
 logs; `GET /T443`, `/T444`, `/T445` with and without a key, and
 `/api/table/*/{entries,audit}` and `/bundle/*`. Diagnosed in
 `agents/runs/20260923T102643Z-verdict`.
+
+## The verdicts are read and obeyed; it is the supervisor's five-minute sweep that restarts the loop
+
+What happened: build run 20260923T103846Z was the **eighteenth** identical
+zero-turn `gpt-5.4` 400 in this tree. The entry above records the seventeenth
+verdict's conclusion that "the verdict is not a control surface -- nothing
+downstream reads them". That is wrong, and `agents/runs/campaign-w2.log`
+catches the whole cycle in five lines:
+
+    === verdict: stop
+    === stopping: stop
+    === campaign w2: writer codex, critic claude, miner claude
+    === next: Values of the Tracy-Widom densities $f_\beta(s)$ (family #196...)
+    === build run 20260923T103846Z, engine codex
+
+`campaign.sh` read the verdict, obeyed it, and exited: the seventeenth
+triage's last write is 10:34:25. The replacement worker started at 10:38:35
+(`ps -o lstart=`), four minutes later, and immediately claimed and burnt a
+fresh proposal. The gap is not luck -- `workers.sh` polls on
+`NUMBERDB_WORKERS_EVERY`, default 300s, so **a worker stopped by a verdict is
+replaced within five minutes of stopping, every time.**
+
+The mechanism is the entry at "`stop` stops a campaign, not the pool". What
+is added here is the evidence, and why the distinction is worth keeping
+straight: "nothing reads the verdicts" invites the wrong remedy -- wiring the
+verdict to something, or making it louder. It is already wired to the only
+loop it governs and that loop obeys it. Two individually correct components
+compose into a cycle that cannot stop itself, and `workers.sh` composes that
+way *on purpose*: its header argues that a campaign ending is "a poor reason
+for the machine to go quiet", which is right when campaigns end on their item
+limit and wrong when they end on a configuration that cannot succeed. The
+supervisor has no notion of a failure that repeating will not fix.
+
+So the only thing that breaks the cycle remains `touch agents/workers.stop`
+in `/home/ubuntu/numberdb-website`, the supervisor's own directory -- not the
+tree the verdict is written in. A triage that recommends anything else is
+recommending something the next sweep undoes.
+
+## Correction: `git status` does see a build's work when the table already exists
+
+The entry above concludes from `.gitignore:205` that "a build's whole work
+product -- the generator and its `table.yaml` -- is invisible to `git
+status`", and that a clean tree here "says almost nothing". The ignore rule is
+real; the conclusion holds only for a **new** table.
+
+Ignore rules do not apply to tracked paths, and 288 files under `generators/`
+are tracked:
+
+    git ls-files generators | wc -l          # 288
+    git check-ignore -v generators/foo/generate.py              # silent
+    git check-ignore -v --no-index generators/foo/generate.py   # .gitignore:205
+
+That asymmetry is what makes the rule easy to over-read: without `--no-index`,
+`check-ignore` says nothing about a tracked path, so probing it with a path
+that happens to exist and be tracked gives the opposite answer to probing it
+with a new one.
+
+* A build creating a **new** generator directory leaves it untracked and
+  ignored -- invisible, and needing `git add -f`, as w4's T444 build did in
+  `30bfcd90`.
+* A build **extending or correcting** an existing table edits a tracked file,
+  and `git status` reports it normally.
+
+The advice to check `generators/*/` mtimes rather than the tree is right in
+both cases and stands. But a clean tree is not uniformly uninformative, and a
+triage told it "says almost nothing" may throw away a true negative for the
+update case -- which is a large part of what this campaign does.
+
+Evidence: 2026-09-23, 10:47Z. `agents/runs/20260923T103846Z-build.log` (12
+lines, two pre-turn 400s, 0 turns, $0.0000); the non-JSON lines of
+`agents/runs/campaign-w2.log`; `stat` on `20260923T102730Z-triage.log` against
+`ps -o lstart=` for pid 2653337, and `every=300` in `agents/workers.sh`;
+`git ls-files generators | wc -l` and `git check-ignore -v` with and without
+`--no-index`; `python3 agents/queue.py open`; `GET /api/table?id=` and the
+public page for T443, T444, T445 (both drafts still drafts, both unrescued).
+Diagnosed in `agents/runs/20260923T103846Z-verdict`.
