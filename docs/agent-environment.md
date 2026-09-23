@@ -8125,3 +8125,89 @@ restarts at 07:33:31, 07:38:51, 07:39:11 and 07:39:31. `agents/workers.sh`, the
 `agents/run.sh` lines 80, 584, 644, 655. `agents/runs/codex-fallback` in all
 four worktrees. `pgrep -fa campaign.sh` showing four loops and four concurrent
 triage runs.
+
+## The handover to the other engine is gated on `out_of_quota`, so a non-quota codex failure can never reach it
+
+The note above, *A triage `stop` does not stop the machine*, says the exit-6
+handover to claude never fires because `next_model_in` always has `gpt-5.4`
+left to return. That is not the reason, and the difference decides what fixing
+this actually requires.
+
+`agents/run.sh:634-662` is
+
+    give_up=no
+    if out_of_quota; then
+        ... next=$(next_model_in ...); if [ -n "$next" ]; then ... else give_up=yes; fi
+    fi
+    if [ "$give_up" = "yes" ]; then   # exit 6, campaign.sh hands the stage to the other engine
+
+`give_up` is only assignable inside the `if out_of_quota`, and `out_of_quota`
+(line 556) is
+
+    tail -c 4000 "$log" | grep -qiE '"api_error_status":429|rate.?limit|quota|usage limit|too many requests'
+
+A log reading `"status":400` and `The 'gpt-5.4' model is not supported when
+using Codex with a ChatGPT account` matches none of those five alternatives.
+So **exit 6 is unreachable for any codex failure that is not quota-shaped**,
+and the run exits 1 into triage instead of handing the stage to claude, which
+was working throughout.
+
+So clearing `NUMBERDB_CODEX_FALLBACKS` at line 80 -- still the right change,
+and still what stops the trap re-arming at the next quota -- does not by itself
+buy the recovery. It only reaches the handover on a failure whose log says
+429 or "quota". A permanent 400, a revoked credential, a model retired out from
+under the account: each of those still exits 1, and with the supervisor running
+that is the $52/hour loop again under a different cause. Reaching claude on
+those needs `give_up` to be settable outside the `out_of_quota` branch.
+
+The companion is `worth_resuming` (line 565), whose pattern includes the bare
+alternative `"type":"error"` -- which matches *any* codex error event, since
+that is the envelope codex prints every error in. That is why each of these
+logs is twelve lines and not six: a configuration that will refuse identically
+for ever is classified as worth another go and retried once inside every run.
+The two ends of the same file disagree, and the loose one wins.
+
+## The failure loop, measured: $18.27 in twenty-one minutes, and it eats the queue
+
+The note above estimated about $55/hour by extrapolating one triage run. The
+ledgers now have the rows to measure it. Triage runs across all four worktrees
+between 07:25:18Z and 07:45:50Z on 2026-09-23:
+
+    w1   2 runs   $5.6887
+    w3   4 runs   $6.3668
+    w4   2 runs   $6.2180
+         8 runs  $18.2735     -- about $52/hour
+
+Every build in that window cost $0.0000 and built nothing. w1's cycle is
+measured end to end at eleven and a half minutes: supervisor restart at
+07:38:51, build dead at 07:38:56, triage 07:39:29, verdict `stop` written
+07:44:23, campaign exits, supervisor restarts it 07:50:12, build dead
+07:50:16, next triage 07:50:49. **That second cycle is the proof the first
+verdict could only predict: a triage `stop` was written, read, and restarted
+into within six minutes.**
+
+Two things the earlier note did not have:
+
+* **It is not only the build stage.** w2's `20260923T073411Z` *repair* died on
+  the same 400. Every codex stage in every worktree is refused. A repair dying
+  part-way leaves a half-corrected table, which is a worse state to restart
+  from than a build that never began, and it has not happened yet only by
+  luck.
+* **The loop consumes the queue.** `campaign.sh` claims a proposal before the
+  build runs, so a build that dies in one second still burns a claim. By
+  07:50Z five of the six proposals in family #197 were claimed by builds that
+  never started -- w1 at 07:38Z and 07:50Z, w3 at 07:39Z and 07:44Z, w4 at
+  07:39Z -- and `queue.py open` read `#197  1 left`. `CLAIM_MINUTES = 90`
+  (`agents/queue.py:280`), so they lapse on their own and need no cleaning up;
+  but four workers cycling every eleven minutes claim faster than claims
+  lapse, and a campaign that then finds nothing waiting stops at
+  `campaign.sh:355` for a reason that is not the real one. A failure loop that
+  is merely expensive becomes a failure loop that also misreports why it
+  stopped.
+
+Evidence: 2026-09-23, triage of `20260923T075016Z-build.log`, the second
+identical refusal on w1 in twelve minutes. `agents/runs/COSTS.tsv` in all four
+worktrees. `agents/runs/workers.log`, restarts at 07:44:51 and 07:50:12.
+`agents/runs/20260923T073856Z-verdict`, written 07:44:23Z and restarted into at
+07:50:12Z. `python3 agents/queue.py open` and `show 197`. `agents/run.sh` lines
+80, 556, 565, 584, 623, 634-662.
