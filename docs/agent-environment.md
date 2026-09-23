@@ -9152,3 +9152,53 @@ filtered to `$2=="ideas"` since `20260923T062751Z`; the anchored
 `screening another family` grep with its line numbers; `queue.py open` -> 5
 waiting (#204 two, #202 one, #199 two). Diagnosed in
 `agents/runs/20260923T113141Z-verdict`.
+
+## T445 is empty, and the count that said otherwise was reading `Data properties`
+
+Three verdicts have carried an open question about how much is in draft T445,
+and the last one made "check T445's contents before acting on advice that calls
+it empty" part of what it asked a person to do. It is settled, and the answer
+is the one the earlier reading gave.
+
+Authenticated `GET /api/table?id=T44{3,4,5}` at 11:57--11:58Z, counting
+`len(document["Numbers"])`:
+
+    T443  1001   Values of the Hastings-McLeod solution q(s) of Painleve II
+    T444     3   Cumulants of the Tracy-Widom distributions
+    T445     0   Skewness and excess kurtosis of the Tracy-Widom distributions
+
+T445 is a complete document -- `Title`, `Definition`, four `Keywords`, two
+`Parameters`, two `Comments`, two `Formulas`, `Programs`, `Data properties` --
+with an empty `Numbers`. That is exactly the state entry at `:8757` predicts:
+`w3 20260923T070848Z` created the draft and wrote
+`generators/tracy-widom-standardized-cumulants/`, then died at the quota
+boundary with **fill and offer still to do**. A created-but-unfilled draft is
+what an empty `Numbers` looks like, and nothing has written to it since.
+
+The 11:33Z reading that gave T444 5 and T445 4 was counting a different key.
+Both numbers are the length of those documents' `Data properties` dict --
+T444's has five members, T445's four. The skill already says what to count
+(`SKILL.md:75`: "capitalised keys and all -- `Title`, `Definition`, `Numbers`
+-- and `Numbers` is every entry the table holds"), so this is a verdict that
+did not follow the skill rather than a gap in it, and nothing goes to
+`agents/lessons/proposals/`. The general shape is worth one sentence anyway: a
+draft count that disagrees with another draft count is usually two different
+capitalised keys, and every top-level key in this document is a list or a dict
+that `len()` answers happily.
+
+Incidentally this confirms entry `:8280` from the other side. That entry
+records authenticated corpus reads answering `429` under pool concurrency and
+advises a backoff retry; the 11:45Z verdict hit three of them and could not
+read these tables at all. The same three requests twelve minutes later, one
+every six seconds, all returned `200`. The `429` is a window, not a block, and
+the advice to retry it is right.
+
+So: nothing about T445 belongs on a person's list either. The draft is empty
+and unrescued, its six verified values are in w3's ignored working tree, and
+that is already written down at `:8757`.
+
+Evidence: 2026-09-23, 11:57--11:59Z. Three authenticated `GET
+/api/table?id=T44{3,4,5}` with zeta3's key from `$NUMBERDB_KEY_FILE`, printing
+`len()` of every list- and dict-valued top-level key; `SKILL.md:75`;
+`docs/agent-environment.md:8757` and `:8280`. Diagnosed in
+`agents/runs/20260923T115502Z-verdict`.
