@@ -10622,3 +10622,65 @@ Evidence: 2026-09-23, triage of `20260923T170129Z-build.log` (proposal
 unmoved at `0b265ce7`, clean tree). 66 stop verdicts in `numberdb-website`
 alone by that point, all of them correct and none of them able to pull the
 brake.
+
+## The `gpt-5.4` pin is self-sealing: one predicate holds it, the other re-tries it
+
+Earlier sections record *that* `agents/runs/codex-fallback` pins the writer to
+a model this account 400s. This is *why* nothing in `run.sh` can leave it. Both
+halves are visible in one twelve-line build log
+(`20260923T170730Z-build.log`, and the 68 before it look the same):
+
+* `out_of_quota` (run.sh:556) greps for
+  `429|rate.?limit|quota|usage limit|too many requests`. The refusal is
+  `400 invalid_request_error, "The 'gpt-5.4' model is not supported when using
+  Codex with a ChatGPT account."` -- which matches none of them. So `give_up`
+  stays `no`, `next_model_in` is never called, and the `exit 6` handover that
+  would pass the stage to claude is never reached.
+* `worth_resuming` (run.sh:565) greps for, among others, the bare substring
+  `"type":"error"` -- which every codex error envelope contains, including this
+  400. So the run is judged resumable and the same session is re-run on the
+  same dead model, in-process, immediately.
+
+One predicate concludes "not a quota, so do not move off this model"; the other
+concludes "resumable, so run it again" -- about the same four bytes of status.
+Between them the pin cannot be escaped from inside a run, and the retry is
+spent before any triage verdict can ask for it.
+
+`run.sh:685` already names the remedy -- `delete $fallback_marker to start from
+the first model again` -- but that line is on the `give_up` path, which this
+failure never reaches. The marker is written once (here 07:25:03Z, on a real
+quota event) and **nothing clears it on success**, so it outlives the quota
+that justified it by an unbounded margin.
+
+The practical consequence for anyone reading a build log: a codex 400 and a
+codex 429 produce the same `resumed=yes` and the same two-block log, and only
+the `message` field distinguishes "wait for the quota to refill" from "this
+will never work". Read the message, not the shape.
+
+## The loop now consumes screened proposals, not just money
+
+A stop verdict does not stop the supervisor (see above), so the workers keep
+claiming. Each claim is taken before the model refusal, and the release path is
+guarded on exit status `2|3|5` while a refusal exits 1 -- so a zero-turn build
+holds its proposal for the full ninety-minute lease.
+
+At four workers on a six-minute restart cadence, that is one screened proposal
+consumed every ninety seconds of wall clock. Issue #197 -- a six-table batch of
+distribution quantiles screened this morning -- went from fully unclaimed to
+fully claimed between 16:55Z and 17:07Z, every claim by a build that ran zero
+turns:
+
+    normal  w1 16:55Z | chi-squared w1 17:01Z | Student's t w3 17:01Z
+    F       w4 17:02Z | Kolmogorov  w1 17:07Z | stud. range w2 17:07Z
+
+#202 went the same way earlier. So the cost of leaving this running is not only
+the triage bill: the ideation stage costs $137.53/day to produce these batches,
+and they are being spent unread. Anyone restarting the campaign after the pin is
+fixed should expect the most recent families to be claim-locked for ninety
+minutes with nothing built against them.
+
+Evidence: 2026-09-23, triage of `20260923T170730Z-build.log` (proposal
+"Quantiles of the Kolmogorov distribution", family #197; zero turns, HEAD
+unmoved at `babfd9be`, clean tree). 69 dead `gpt-5.4` builds and 67 triage runs
+at $115.29 in this worktree; last build to run a turn was `20260923T050854Z`
+(T438), twelve hours earlier. All four worktrees still carry the marker.
