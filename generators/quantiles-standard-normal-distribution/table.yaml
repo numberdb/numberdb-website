@@ -1,0 +1,100 @@
+# Draft document for T452, Quantiles of the standard normal distribution. It
+# was created through the API with X-Draft: yes and Numbers: [] so generate.py
+# can fill it once. Publishing is a person's act.
+Title: Quantiles of the standard normal distribution
+Definition: >-
+  For the standard normal distribution with cumulative distribution function
+  $\Phi$ CITE{NormalWiki}, this table gives the lower-tail quantile
+  $z_p=\inf\{x:\Phi(x)\ge p\}$.
+Keywords:
+  - critical value
+  - percentage point
+  - percentile
+  - significance level
+  - p-value
+  - table
+  - z-score
+  - probit
+  - Gaussian
+Parameters:
+  p:
+    type: Q
+    title: lower-tail probability
+    display: $p$
+    constraints: $0<p<1$
+Comments:
+  comment-convention: >-
+    The table stores lower-tail probabilities. If a printed table is indexed by
+    an upper-tail probability $\alpha$, its value is $z_{1-\alpha}$ here.
+  comment-grid: >-
+    The parameter is written as an exact rational in lowest terms, so the
+    familiar decimal probability $0.975$ is the row $p=39/40$.
+  comment-median: >-
+    The row $p=1/2$ is exact: the standard normal distribution has median
+    zero, so $z_{1/2}=0$ is stored as an integer.
+  comment-signs: >-
+    Negative quantiles are stored as entries, not only recovered from the
+    symmetry in CITE{formula-symmetry}, because a reader may arrive with the
+    negative critical value itself.
+Formulas:
+  formula-cdf: >-
+    $\Phi(x)=\frac{1}{2}\left(1+\operatorname{erf}(x/\sqrt{2})\right)$, so
+    $z_p=\sqrt{2}\,\operatorname{erf}^{-1}(2p-1)$.
+  formula-erfc: >-
+    Equivalently, using the complementary error function,
+    $z_p=\sqrt{2}\,\operatorname{erfc}^{-1}(2(1-p))$.
+  formula-symmetry: >-
+    The standard normal distribution is symmetric, so $z_{1-p}=-z_p$.
+  formula-upper-tail: >-
+    If $z^{\mathrm{upper}}_{\alpha}$ denotes the upper-tail critical value,
+    then $z^{\mathrm{upper}}_{\alpha}=z_{1-\alpha}$.
+  formula-two-sided: >-
+    A two-sided normal test with significance level $\alpha$ uses the cutoffs
+    $z_{\alpha/2}$ and $z_{1-\alpha/2}$.
+  formula-chi-square: >-
+    If $\chi^2_{1,p}$ is the $p$-quantile of the chi-squared distribution with
+    one degree of freedom, then $\chi^2_{1,p}=z_{(1+p)/2}^2$.
+Programs:
+  program-r:
+    language: R
+    code: qnorm(0.975)
+  program-python:
+    language: Python
+    code: |-
+      import mpmath as mp
+      p = mp.mpf(39) / 40
+      mp.findroot(lambda z: (1 + mp.erf(z / mp.sqrt(2))) / 2 - p, 2)
+Similar tables:
+  - table: HREF{Values_of_the_error_function}[Values of the error function $\operatorname{erf}(x)$]
+    relation: $\Phi(x)$ is an affine rescaling of $\operatorname{erf}(x/\sqrt{2})$, and this table stores the inverse values selected by rational probabilities
+  - table: HREF{Values_of_the_complementary_error_function}[Values of the complementary error function $\operatorname{erfc}(x)$]
+    relation: upper-tail normal probabilities are written with $\operatorname{erfc}(x/\sqrt{2})/2$
+  - table: HREF{Differential_entropies_of_continuous_probability_distributions}[Differential entropies of continuous probability distributions]
+    relation: includes the entropy of the same standard normal distribution
+  - table: HREF{Kullback-Leibler_divergences_between_probability_distributions}[Kullback-Leibler divergences between probability distributions]
+    relation: includes divergences between normal distributions
+Links:
+  NormalWiki:
+    title: 'Wikipedia: Normal distribution'
+    url: https://en.wikipedia.org/wiki/Normal_distribution
+Tags:
+  - probability theory
+  - statistics
+Data properties:
+  type: R
+  rigour: proven
+  rigour details: >-
+    Values are computed by bisection in Sage real ball arithmetic, evaluating
+    $\Phi(x)$ through `RealBall.erf` at exact rational endpoints until the
+    bracket determines 100 decimal digits. The returned value is the final
+    bracketing ball, not a rounded midpoint. The stored entries were checked
+    against the error-function relation in CITE{formula-cdf}, the symmetry in
+    CITE{formula-symmetry}, strict monotonicity in $p$, the exact median row,
+    and the reference value $z_{39/40}$ printed in the screening report.
+  complete: 'no'
+  complete-note: >-
+    it holds every $p=k/1000$ with $1\leq k\leq999$, and also
+    $p=1/10000,1/2000,1/400,399/400,1999/2000,9999/10000$
+Display properties:
+  number-header: $z_p$
+Numbers: []
