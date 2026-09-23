@@ -7577,3 +7577,83 @@ Evidence: 2026-09-22 ideas run.
 closed --limit 300 --json number,title,comments`, grouped by the T-numbers in
 each closing comment; `numberdb.search_text` on each unanswered name, through
 `PYTHONPATH=clients/python` from outside the repository root.
+
+## OEIS is behind a Cloudflare challenge from this host, and was not yesterday
+
+What happened: the ideation run of 2026-09-23 wanted A-numbers for four
+integer sequences as specialisation checks. Every `oeis.org` request answered
+`403` with `cf-mitigated: challenge` and a "Just a moment..." body: the
+`fmt=json` and `fmt=text` search endpoints, direct A-number pages, `curl` with
+a plain user-agent, `curl` with a Chrome user-agent, and the `web-fetch`
+subagent, which egresses differently and was blocked identically. Plain `http`
+redirects to `https` at Cloudflare's edge, so there is no way round it.
+
+The run immediately before this one, on 2026-09-22, "compared eight OEIS
+sequences over plain HTTP" and recorded that as working, so this is new within
+a day rather than a standing property of the host.
+
+What to do instead: do not plan a batch's checks around OEIS. Wikipedia and
+MathWorld both answer normally, and both cite A-numbers in their references,
+which is how this run got A212954, A003323 and A030126 -- secondhand, and said
+so in the batch. Where a check *needs* the sequence itself, compute the terms
+and say in the proposal that the A-number is unconfirmed, rather than quoting
+one from memory. A wrong A-number in a published table's `Links` is worse than
+an absent one.
+
+Evidence: 2026-09-23 ideas run.
+`curl -s -i "https://oeis.org/search?q=9,35,178,1132&fmt=json"` ->
+`HTTP/2 403`, `cf-mitigated: challenge`, `server: cloudflare`; the same with
+`-A "Mozilla/5.0 (X11; Linux x86_64) ... Chrome/125.0"` -> `403`;
+`http://oeis.org/...` -> `301` to https, then `403`.
+
+## `import numberdb` from the repository root gets the Django app, not the client
+
+What happened: `screen.already_here(...)` returned
+`(could not ask the corpus: AttributeError: module 'numberdb' has no attribute
+'search_text')` for every name, with `PYTHONPATH=clients/python` set and the
+shell in `/home/ubuntu/numberdb-website`. The cause is that the repository root
+contains a `numberdb/` package of its own -- the site's -- and `''` precedes
+`PYTHONPATH` on `sys.path`, so the client is shadowed. Running the identical
+code from `/tmp` with absolute paths in `PYTHONPATH` works.
+
+This is worth a note of its own because of how the failure reads. `screen.py`
+is careful never to confuse a failed question with an empty answer, and it
+does report the exception -- but the exception is an `AttributeError` about a
+missing attribute, which looks like a version skew in the client rather than
+"you are in the wrong directory". The run of 2026-09-22 recorded the fix
+(`PYTHONPATH=clients/python` *from outside the repository root*) without the
+symptom; this is the symptom.
+
+What to do instead: run anything that imports the client from `/tmp`, with
+`PYTHONPATH=/home/ubuntu/numberdb-website/clients/python:/home/ubuntu/numberdb-website/agents/table-ideas`.
+Note that `agents/sage.sh` and the generators are unaffected, since they run
+elsewhere.
+
+Evidence: 2026-09-23 ideas run. Same script, same environment variables,
+`cd /home/ubuntu/numberdb-website` -> `AttributeError` on every one of eight
+names; `cd /tmp` -> 40 matching titles for "Van der Waerden numbers" and an
+empty list for "Zarankiewicz numbers".
+
+## `screen.py requests` printing nothing now means the backlog is empty, not broken
+
+What happened: `python3 agents/table-ideas/screen.py requests` exited 0 with
+no output. `requests()` swallows every exception and returns `[]`, so an empty
+print is also what a network failure looks like, and the first guess was the
+proxy. It was not: `gh issue list --repo numberdb/numberdb-data --label
+"table wanted" --state all --limit 200` returns 126 issues of which **zero are
+open**. The sweep of 2026-09-22 closed the last of them.
+
+What to do instead: the ideation prompt's instruction to "start from the open
+requests" has nothing left to start from, and will not until somebody reopens
+the eight requests the previous run found were closed without being answered
+(#23, #24, #25, #49, #70, #71, #132, #136). Until then, a run anchoring on a
+request must anchor on a closed one and say so in the batch, which is what the
+2026-09-23 batch does with #70. Separately, `requests()` should distinguish
+"asked and got none" from "could not ask", the way `already_here` already
+does; as written it is the exact failure mode that function's docstring warns
+against.
+
+Evidence: 2026-09-23 ideas run. `screen.py requests` -> no output, exit 0;
+the same query through `gh` -> 126 issues, 0 open; `urllib` against
+`api.github.com/repos/numberdb/numberdb-data/issues?state=open&labels=table%20wanted`
+-> a list of length 0, HTTP 200.
