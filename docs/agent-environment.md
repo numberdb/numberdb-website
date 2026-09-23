@@ -9994,3 +9994,47 @@ directly; `gh issue view 202|203|204|205 --repo numberdb/numberdb-data` with the
 checklist marks counted by regex; `queue.py open` and `queue.py stale` both run;
 build stamps in the 90 minutes to 13:05Z counted by `awk` over the four
 `agents/runs/COSTS.tsv` with `!seen[$1]++`.
+
+## The pool is not draining, and 139-for-139 is the number that says how dead the engine is
+
+Two corrections to the section above, both measured at 13:13-13:17Z while
+triaging `20260923T131204Z-build.log`. This is the sixth note on one outage and
+is meant to be the last: the mechanism, the remedy and its scope are already
+here, and what follows is only a number and a retraction.
+
+**The forecast at the end of the 13:04Z note does not hold.** It says the pool
+is "heading for the 2026-09-20 state where the queue reads empty and campaigns
+exit 0 on the banner", from 38 claims in 90 minutes against 23 proposals. But
+`queue.py:306-315` — `waiting()` returns items that are `not done` **or**
+`stale_claim`, so a lapsed claim is *counted as waiting*. Claim pressure alone
+cannot take `open` to zero; that needs claims taken faster than
+`CLAIM_MINUTES` returns them **and** held, which a zero-turn build does not do.
+`numberdb_app/api.py:1356-1391` says the same from the other end: an expired
+`ProposalClaim` is taken over in place, and the GET filters expired rows out.
+
+What actually happens is a loop, not a drain. At 13:13Z `open` read 11 —
+`#205` 6, `#204` 2, `#199` 2, `#196` 1 — and the never-served count was eight
+(`#205`'s six and `#204`'s last two), *the same eight* as at 13:05Z. All three
+claims on `#204` carried timestamps later than the note that forecast the
+drain (13:06Z, 13:12Z, 13:12Z). `next_table` takes `free[0]` in checklist
+order, so the lapsed lines at the head of each family are re-served over and
+over while the tail is never reached. **Expect the symptom to stay exactly as
+it is.** Nobody will be rescued by the campaign log changing its story.
+
+**The census.** Across the four worktrees on 2026-09-23: 161 builds started;
+22 ran, all on `gpt-5.5`, $196.27; **139 ran on `gpt-5.4` and every single one
+used zero turns and cost $0.0000**, from the first at 05:59:38Z onward. The
+last build that did any work was `20260923T061859Z`, at 06:18Z. Since the
+first `codex-fallback` marker at 07:25Z, 136 triage runs have billed $259.11,
+about $1.91 each — one verdict per dead build, all 139 of them saying `stop`.
+Triage has outspent building for the day by $62.84 and is the only line still
+growing. claude has never been offered a build today; the `exit 6` handover has
+not once been reached, because the 400 matches `worth_resuming` and not
+`out_of_quota`.
+
+Evidence: 2026-09-23, triage of `20260923T131204Z-build.log`. `queue.py` lines
+280-340 and 385-407 and `numberdb_app/api.py` lines 1356-1391 read directly;
+`queue.py open` run; `gh issue view 196|199|202|203|204|205 --repo
+numberdb/numberdb-data` with the checklist marks read; all counts by `awk` over
+the four `agents/runs/COSTS.tsv`, and the verdict tally by `head -1` over the
+four `agents/runs/*-verdict`.
