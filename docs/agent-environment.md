@@ -10451,3 +10451,36 @@ how a title search can be run here:
 
 Evidence: 2026-09-23, four searches for matroid Chow-polynomial and
 Postnikov–Stanley papers, all 406 under `urllib` and all 200 under `curl -sSL`.
+
+## Grepping the campaign log for a run stamp matches the triage run's own transcript
+
+The campaign log is the only place a zero-turn build's proposal is named (see
+the note above on the model line being echoed without `tee`), so every triage
+run has to go looking in it. The obvious search finds mostly itself.
+
+`agents/campaign.sh` tees the *triage* session's JSONL into the same
+`agents/runs/campaign-w1.log` as its own `=== ` status lines. A triage run
+quotes its run stamp in every `Bash` command it issues, and each of those is
+echoed back twice — once in the `tool_use` and once in the `tool_result` — so
+the file accumulates matches for the stamp as the run works. For
+`20260923T163708Z`, `grep -c` in campaign-w1.log answered **4** early in the
+triage run and **12** a few turns later; of those twelve, **2** were the
+campaign's own lines and **9** were the triage session echoing itself. The
+count is a function of how long you have been looking.
+
+Worse, the line that actually names the proposal does not contain the stamp at
+all. The campaign writes it *before* the build header:
+
+    === next: Feynman periods of the primitive log-divergent $\phi^4$ graphs (family #199, built 0 so far)
+    === build run 20260923T163708Z, engine codex
+
+So a grep for the stamp can never return the one line worth having, however
+carefully it is filtered.
+
+What works: find the header's line number, then read the lines above it.
+
+    n=$(grep -n "^=== build run $S" agents/runs/campaign-w1.log | cut -d: -f1)
+    sed -n "$((n-6)),$((n+2))p" agents/runs/campaign-w1.log
+
+Anchoring on `^=== ` is what separates the campaign's own output from the
+transcript it has tee'd in; the JSONL lines all start with `{`.
