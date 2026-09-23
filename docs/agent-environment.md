@@ -7942,3 +7942,114 @@ exception it raises is easy to misread as this host being blocked again when
 it is not.
 
 Evidence: 2026-09-23T06:1x, ideation run.
+
+## The campaign's offer step cannot be reached by a build that failed
+
+What happened: build run `20260923T055938Z` built T441 completely -- 903
+entries, `audit` clean, `generate.py` attached, five commits -- and then hit a
+quota on the request after its last write. `campaign.sh` offers a table itself
+rather than trusting the agent to, and the comment above that block says why:
+
+    Offering is the last thing a build agent does, so a build that was
+    interrupted -- killed, or stopped when the site went away -- leaves a
+    finished table outside the review queue with no button to accept it, and
+    nothing afterwards notices. T210 sat there with 384 entries.
+
+The block cannot do that. It is at line 755; the build-failure branch is at
+line 500 and ends in `exit "$status"` for a `stop` verdict, `exit 1` for a
+failed resume, and `continue` for `restart` and `skip`. Every one of those
+leaves the loop body before line 755. So the offer runs when the build
+succeeded -- the case that needs it least, because a build that got that far
+was going to say it was done anyway -- and never in the interrupted case it
+was written for. T441 is now sitting where T210 sat.
+
+Two neighbours have the same shape. `queue.py built "$in_family" "$proposal"
+"$tid"` is at line 684 and `queue.py release` at 672, both downstream of the
+same exits, so a failed-but-productive build also leaves its proposal marked
+claimed rather than built. The claim lapses after ninety minutes and the
+proposal returns to the queue as unbuilt, pointing the next worker at a table
+that already exists.
+
+What to do instead: the offer, and the `built` mark, belong before the failure
+branch decides anything, or in a trap -- they are idempotent, they need a
+tid and no judgement, and the API refuses them correctly for a table that is
+published or empty. Until then, a `stop` or `skip` verdict on a build that
+created a table is a signal to check by hand whether that table is offered:
+
+    curl -sS -X POST -H "Authorization: Bearer $(cat "$NUMBERDB_KEY_FILE")" \
+         https://numberdb.org/api/table/<tid>/offer
+
+A finished draft that nobody was asked to look at is indistinguishable from an
+abandoned one from outside, which is what made the first four cost a fortnight.
+
+Evidence: 2026-09-23, triage of `20260923T055938Z-build.log`.
+`agents/campaign.sh` lines 500-551 against 672-773; `queue.py show 196`.
+
+## The codex fallback re-armed itself, because only the marker was cleared
+
+What happened: the note above, *The codex quota fallback names a model the
+account cannot use*, was written on 2026-09-18 from build run
+`20260918T023210Z`. Its remedy -- clear `agents/runs/codex-fallback` -- was
+carried out, and it worked: every codex stage on 2026-09-23 up to 05:59Z ran
+on `gpt-5.5` and succeeded, six builds and four repairs.
+
+Then `20260923T055938Z` hit a quota, and the identical thing happened again:
+the same `HTTP 400 invalid_request_error: The 'gpt-5.4' model is not supported
+when using Codex with a ChatGPT account`, preceded by the same two warnings,
+and `agents/runs/codex-fallback` written back to `gpt-5.4` / `xhigh` at
+07:25. Twice in five days.
+
+Clearing the marker was treating the symptom. The marker is generated, not
+configured -- `run.sh:655` writes it from `codex_fallbacks`, and `run.sh:80`
+still reads
+
+    codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-gpt-5.4}"
+
+so the trap re-arms on the next quota, every time, whatever was deleted in
+between. Nothing between quotas reveals it, because the marker only bites when
+it is written, and it is only written when a quota is hit.
+
+There is a second cost, which the first note did not reach. `run.sh` has the
+right answer to a quota already: `give_up=yes` leads to exit 6, "one engine's
+quota is not both engines' quota", and `campaign.sh` flips the role and runs
+the stage on claude -- which was running the critique and ideas stages of this
+same batch all day without trouble. That path fires only when `next_model_in`
+returns empty. It never returns empty, because `gpt-5.4` is always there to be
+tried. A fallback naming a model the account cannot use is therefore not
+merely useless: it *masks* the working recovery, and converts a stage that
+would have been handed to the other engine into a 400, a triage run, and a
+stopped campaign.
+
+What to do instead: fix `run.sh:80`, not the marker -- either name a model the
+ChatGPT account actually has, or set it empty (`NUMBERDB_CODEX_FALLBACKS=`) so
+an exhausted codex takes the exit-6 path to claude. Setting it empty is
+probably right: the comment above that line argues that each step down buys a
+worse table and the campaign should stop rather than build fifteen of them,
+and handing the stage to the other engine honours that better than a second
+model does.
+
+Evidence: 2026-09-23, triage of `20260923T055938Z-build.log` (the 400 and both
+warnings are its last four events); `agents/run.sh` lines 80, 583-601, 645-680;
+`agents/runs/codex-fallback`, mtime 07:25.
+
+## `COSTS.tsv` under-reported a failed resume again, and it was the day's largest build
+
+What happened: the same pattern the 2026-09-18 note recorded, unchanged. The
+row for `20260923T055938Z` is
+
+    20260923T055938Z  build  codex  0  0.0000  error  ...  gpt-5.4  ...  resumed=yes  0  0  0  gpt-5.4=0.0000  T441
+
+Every number describes the resumed attempt -- the 400 that never ran a tool.
+The attempt that did the work ran 85 minutes on `gpt-5.5`, made 309 transcript
+items, built a 903-entry table, and exhausted the account's quota. It is
+recorded as zero turns, zero tokens and $0.0000.
+
+One thing has improved since September: the `table` column says `T441` rather
+than being empty, so draft ownership is now recoverable from the ledger. Spend
+is not. A run that exhausts a quota is by construction the most expensive run
+of its day, and it is the one the ledger prices at nothing -- so the spend
+curve is flattest exactly where the money went, and a quota exhaustion is
+invisible to anything watching cost rather than exit status.
+
+Evidence: 2026-09-23, `agents/runs/COSTS.tsv` line 492, against
+`agents/runs/20260923T055938Z-build.log`.
