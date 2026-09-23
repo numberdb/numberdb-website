@@ -10214,3 +10214,41 @@ checkouts, `touch agents/workers.stop` in `/home/ubuntu/numberdb-website`,
 or teaching `out_of_quota()` about a 400 so the claude handover can fire --
 are all still unpulled, verified at the same moment. Claim sweep at 16:52Z:
 50 standing, none expired, #196-#206, w1 15, w3 13, w4 12, w2 10.
+
+## The parked-claim pool saturates; it does not compound
+
+What happened: three notes above this one say the claims the turn-0 loop parks
+are "still compounding" and rising hour on hour. A fourth sweep says otherwise.
+`/api/claim` over families 150-239, three measurements inside twenty minutes:
+
+    16:43Z   48 claims
+    16:52Z   50 claims
+    17:03Z   49 claims, #196-#206, w1 15  w3 13  w4 12  w2 9
+
+That is oscillation about a fixed point. The fixed point has a cause: a claim
+expires ninety minutes after it is taken, and w4 ran 13 builds in the 92
+minutes from 15:30Z to 17:02Z. Four workers at that rate take ~52 claims per
+expiry window, so the standing total settles at ~50 and stays there however
+long the loop runs. The earlier readings were the pool filling, and were read
+as a trend before it reached its ceiling.
+
+What to do instead: when a retention bug is measured by repeated sweeps, get a
+third and fourth sample before calling it growth, and check the measurement
+against the mechanism -- an expiry window and an arrival rate give the ceiling
+in one multiplication, without waiting.
+
+Why it matters for the decision, which is the reason this is worth a note: the
+~50 parked claims are a standing hostage set, not a widening leak. They cost a
+fixed amount of queue visibility and they release themselves within ninety
+minutes of the last failing build. Nothing needs releasing by hand, and a
+person who stops the loop does not then have a claim cleanup waiting for them.
+It is the same single action either way, and it is not more urgent than it was
+at 16:43Z.
+
+`queue.py open` still cannot see most of these, for the reason in the note
+above: a family drops out of `waiting()` once every proposal in it is claimed.
+
+Measured at 2026-09-23T17:03Z during triage of build `20260923T170210Z`
+(w4, family #197, quantiles of the F-distribution; 0 turns, $0.0000, 400 on
+`gpt-5.4`, verdict `stop` -- the 63rd in this worktree today and all 63 the
+same). All three levers still unpulled.
