@@ -9749,3 +9749,68 @@ Evidence: T415 build run, 2026-09-22. The queued command was
 `agents/sage.sh /tmp/run_falkner_checks.py .../generate.py`; process listing
 showed another worker holding `/tmp/numberdb-sage.lock` through a
 `timeout 10800 docker run` dry run.
+
+## The `/preview` route needs a `Numbers` block, or it renders nothing at all
+
+What happened: the T417 critique rendered a private draft field by field
+through `/preview?table=...`, which is the documented fallback when the
+`RequestFactory` path is closed. The first six pieces carried the title and
+one prose section each, and no `Numbers`. Every one answered HTTP 200 with the
+message
+
+    Error while parsing numbers: cannot access local variable
+    'number_section' where it is not associated with a value
+
+in an `alert-danger` box, and nothing after the `— preview —` marker: no
+title, no sections, no prose. The failure looks like a YAML fault in the piece
+that was sent, and it is not -- the same piece with a one-entry `Numbers`
+block appended renders completely.
+
+This is reachable from outside: anybody pasting a prose-only draft into the
+editor at <https://numberdb.org/preview> sees an internal error message about
+a Python local variable, which is why it is written down here rather than
+proposed as a lesson. `views.preview` builds the numbers section before it
+draws anything, and the empty case escapes through a variable that was never
+bound.
+
+What to do instead: put a `Numbers` block in every preview piece, however
+small -- one entry, with the same nesting as the table's own parameters. The
+measured shape for T417, whose document is 20 KB: ten pieces, each the title
+plus one or two sections plus one entry, request lines of 420 to 1665 bytes
+against the server's 4094-byte limit, all 200 and all rendering.
+
+Evidence: 2026-09-23, T417 critique. `/tmp/preview417.py` and
+`/tmp/prev417/*.html`; the first run of ten pieces produced the message above
+in all of them, the second run with `Numbers` added produced the rendered
+sections.
+
+## The Sage image is the builder now, so the `RequestFactory` way of rendering a draft is closed
+
+What happened: the T417 critique followed the note above titled "Rendering a
+draft's page as its owner sees it, without a session" -- `sys.path.insert(0,
+'/app')`, `django.setup()`, `views.table_by_tid` with the owner attached. It
+failed at `import django`. A filesystem probe through the same wrapper shows
+what the earlier T221 note found: the container has `/opt/numberdb-client` and
+`/work`, no `/app`, and no Django. `sys.path` inside it is `['/work',
+'/opt/numberdb-client', ...]`.
+
+So both documented ways of reading a draft's rendered page now depend on the
+image: the owner-view path needs the website image, and only `/preview` works
+from the builder. The two notes above should be read as alternatives rather
+than as first and second choice, and a run that needs the whole page rather
+than field-by-field prose should check for `/app` before planning on it.
+
+`manage.py audit_table` is unavailable for the same reason; `GET
+/api/table/<tid>/audit` with the key is the substitute and gives the same
+findings, except that it cannot fetch the external links -- `--links` has no
+equivalent there, so a critique should fetch them with `curl` itself.
+
+Also, for the standing proxy notes: nothing was listening on 127.0.0.1:1080
+again on 2026-09-23 (`curl: (7) connection refused`, `ss -lntp` shows only 22
+and the two resolvers). Direct `curl https://numberdb.org/...` answered 200
+throughout the run.
+
+Evidence: 2026-09-23, T417 critique. `/tmp/crit417.py` failed with
+`ModuleNotFoundError: No module named 'django'` at line 11; `/tmp/probe417.py`
+printed `/app ERR [Errno 2] No such file or directory` and `/opt
+['numberdb-client']`.
