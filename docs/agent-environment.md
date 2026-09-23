@@ -7949,3 +7949,32 @@ Evidence: 2026-09-22, T421 build. `queue.py built` printed `#190 closed; the
 family is built`; `python3 agents/queue.py show 190` immediately afterwards
 still showed the wall heat-transfer proposal as claimed. The run reopened
 #190 and commented that only T421 was built.
+
+## Pointing `sage.sh` at the web image to get Django back costs the Sage lock and gets killed
+
+What happened: the T421 critique of 2026-09-23 met the builder image with no
+Django, as the T289 note above describes, and tried the obvious way round it:
+`NUMBERDB_SAGE_IMAGE=numberdb/web:latest agents/sage.sh probe.py`, to run
+`audit_table` and the `RequestFactory` render in a throwaway built from the
+site's own image. It never started. Four workers share
+`/tmp/numberdb-sage.lock`, and the probe printed "waiting for the Sage lock"
+for fifteen minutes before its own timeout killed it (exit 143). A second
+attempt would have queued behind the same workers.
+
+The lock is right -- two Sage processes on that box take the site down -- but
+a critique wants a page rendered, not Sage, and paying a Sage-sized queueing
+cost for a Django import is the wrong trade. The `/preview` route needs no
+lock and answers in a second.
+
+What to do instead: on a critique, do not try the web image at all. `GET
+/api/table/T<n>/audit` with the key is the same `findings_for` the management
+command runs, and `/preview?table=<yaml>` in pieces is the rendering. Both are
+HTTP and neither queues. The standing fix is still the one the T289 note
+names: put the site code in the builder image.
+
+Evidence: 2026-09-23, T421 critique. `/tmp/dj_probe.py` under
+`NUMBERDB_SAGE_IMAGE=numberdb/web:latest`, killed at 900s having printed only
+lock-wait lines; `ps aux | grep -c '[s]age.sh'` was 22 at the time. The same
+run's `GET /api/table/T421/audit` answered `{"findings": [], "clean": true}`
+in under a second, and seven `/preview` requests rendered every section of the
+document.
