@@ -10087,3 +10087,67 @@ why `agents/queue.py open` still says "7 waiting" while nothing whatever is
 being built -- the queue is being consumed at one proposal per failure and
 refilled by the recycle at the same rate. A reader looking at the queue depth
 for a sign of trouble will not find one there.
+
+### Reading at 2026-09-23T16:43Z (build `20260923T163809Z`)
+
+                          16:10Z       16:35Z       16:43Z
+    pool runs today        518          546          554
+    pool spend today       $887.54      $906.78      $922.17
+    triage runs / spend    222/$395.52  236/$414.76  239/$419.54
+    gpt-5.4 0-turn builds  224          239          242
+    verdicts, all `stop`   222          236          242
+
+Eight minutes, $15.39, six more `stop` verdicts, no builds. The mechanism is
+unchanged and is not re-argued. `agents/runs/codex-fallback` is present in
+all four checkouts, `gpt-5.4` / `xhigh`, mtime 07:25; neither
+`agents/workers.stop` nor `agents/campaign.stop` exists anywhere. The last
+build to pass turn 0 anywhere in the pool was `20260923T061859Z` (w2,
+`gpt-5.5`, $11.39) -- the 05:46:57Z figure quoted in an earlier note is w4's
+own ledger, not the pool's.
+
+## `queue.py open` cannot see the parked claims, because a fully drained family drops out of it
+
+The note above this one counted the claims left behind by turn-0 builds and
+found five. That was an undercount by a factor of ten, and the method is why.
+It asked `/api/claim` about the families `agents/queue.py open` listed. But
+`open` lists a family only while the family still has *unclaimed* proposals
+in it: `waiting()` reads `- [~]` as settled, so once every proposal in a
+family is claimed, the family reports nothing waiting and disappears from the
+listing -- and takes its parked claims with it. The families the failure has
+damaged most are exactly the ones it hides.
+
+Asking the site directly instead, `/api/claim?family=N` for N in 170..214 at
+16:43Z:
+
+    48 claims standing, none expired, across 11 families (#196-#206)
+    #196 3  #197 6  #198 6  #199 3  #200 3  #201 5
+    #202 6  #203 6  #204 5  #205 3  #206 2
+    w1 13   w3 13   w4 12   w2 10
+
+Every one of them belongs to a build that reached turn 0. The earliest is
+15:11Z and the pool's last build past turn 0 was 06:18:59Z, so nothing that
+holds a claim has read the proposal it holds. Forty-eight screened proposals
+are held by nothing, ageing out at ninety minutes and being re-taken at one
+per failure.
+
+At the same moment `agents/queue.py open` reports:
+
+    #207 5 left  #206 4 left  #205 3 left   12 waiting
+
+Twelve waiting, three healthy-looking families, no sign of trouble. **A
+reader measuring the damage through `queue.py` will not find it**, and a
+reader measuring it through `queue.py open` plus `/api/claim` -- which is
+what the previous note did, and what looks like the careful version of the
+same check -- gets a number ten times too small. The only reading that is
+correct is a direct sweep of `/api/claim` over a range of family numbers,
+ignoring the queue's own idea of which families are interesting.
+
+Build `20260923T163809Z` is the demonstration. It was handed `#200,
+"Probability that $n$ uniform random points of a convex body are in convex
+position"`, claimed it at 16:38:08.220225Z, and died at turn 0 on the same
+`gpt-5.4` 400 -- and `#200` appears nowhere in `queue.py open`.
+
+Checked at 16:43Z: `/api/claim?family=N` for N in 170..214 via
+`queue.py:_site`; `agents/queue.py open`; `queue.py show 200`; the driver
+narration in `agents/runs/campaign-w4.log`; `waiting()` and the `[~]`
+convention at `queue.py:752`.
