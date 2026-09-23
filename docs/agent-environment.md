@@ -9816,3 +9816,45 @@ Evidence: 2026-09-23 16:03-16:06Z. `parse_family`, `waiting`, `stale_claim`,
 for the site side, where the 14:34 Lennard-Jones claim expired at 16:04 and the
 proposal reappeared in `next` two minutes later. Found while triaging
 `agents/runs/20260923T160049Z-build.log`.
+
+## The burned backlog is a steady state, not a drain: claim ages are flat across the 90-minute window, so a builder switched on at any instant waits about two minutes
+
+`:9763` established that the `[~]` marks do not consume the backlog and that
+`queue.py next` still answers, and closed by noting the churn hides the free
+list -- "8 of 60 unheld at the instant I sampled, 13 waiting a minute later".
+That was two samples a minute apart, which cannot tell a slow drain from an
+equilibrium. It is an equilibrium, and the measurement that shows it is the age
+distribution of the live claims rather than their count.
+
+At 16:20Z, `GET /api/claim` over all eleven open families (#196-#206):
+
+    48 claims live, 48 unexpired, 0 expired
+    ages: min 1.9 min, median 44.9, max 88.6
+    10 of 48 younger than 20 minutes
+
+Flat across `CLAIM_MINUTES = 90`. A backlog being consumed would pile up at the
+young end and thin out at the old; a backlog recycling in place spreads evenly,
+because each expiry is immediately replaced by a fresh claim somewhere else.
+The arithmetic agrees: 25.9 builds/hour across four loops is ~39 claims per
+90-minute window against 48 live ones, so the remaining proposals cycle about
+once every 111 minutes. The 48 live claims are the same 48 `[~]` proposals
+`:9774` counted -- one set, burned and re-burned.
+
+Two things follow that the count alone does not give you:
+
+* **`queue.py open` dropping is not the backlog emptying.** It read 13 waiting
+  across four families at 16:05Z and 10 across two at 16:20Z. That is which
+  claims happened to be old at each instant, nothing more. Do not read a
+  falling `waiting` as a deadline to act before the work runs out, and do not
+  read a family showing zero-left as that family being finished.
+* **Recovery has no queue-shaped wait.** Because claims expire continuously
+  rather than in a batch, there is no window in which a working builder would
+  find nothing. Worst case is roughly the gap between expiries -- about two
+  minutes -- not the 90 minutes a reader of `CLAIM_MINUTES` might budget for.
+  `queue.py next` is read-only and takes no claim, so checking costs nothing.
+
+Evidence: 2026-09-23 16:13-16:22Z. `GET /api/claim?family=N` for N in 196-206,
+`since` parsed with `datetime.fromisoformat` and differenced against the wall
+clock; build rate from the four `COSTS.tsv` ledgers deduplicated by `(started,
+stage, log)` since the first 400 at 07:34:39Z; `queue.py open` and `queue.py
+next`. Found while triaging `agents/runs/20260923T161248Z-build.log`.
