@@ -11417,3 +11417,49 @@ three `campaign.sh 200` started 16:43:24, 16:43:44 and 16:44:04. Codex rows over
 all of `COSTS.tsv`: `gpt-5.4` 0/57, `gpt-5.5` 359/361. This tree today: 126 runs,
 **$197.68**, of which 55 triage runs and **$108.59**, against 61 builds at
 $43.49 whose 56 turn-zero rows cost nothing.
+
+## The live `campaign.sh` children's environment is readable, and it names neither `NUMBERDB_CODEX_MODEL` nor `NUMBERDB_CODEX_FALLBACKS`
+
+What happened: every section above rests on one premise -- that
+`agents/runs/codex-fallback` decides the model because `NUMBERDB_CODEX_MODEL` is
+unset, so `run.sh:590-593` overrides the `gpt-5.5` default at `:52`. That
+premise had only ever been established by inference: from behaviour (runs open
+on `gpt-5.4`), from `grep -rn` over the tracked tree, and from the supervisor's
+own environment, which `:11404`'s section correctly reports as holding no
+`NUMBERDB_*` at all and therefore cannot confirm it either.
+
+It can be observed directly. The supervisor's `campaign.sh` children are the
+processes that actually export the campaign's variables, they are `setsid nohup`
+with `ppid 1`, and their `/proc/<pid>/environ` is readable by this account.
+Read on the w4 worker running now, it holds thirteen `NUMBERDB_*` variables --
+`WRITER=codex`, `CRITIC=claude`, `MINER=claude`, `CAMPAIGN=w4`,
+`KEY=/home/ubuntu/.config/numberdb/zeta3-key`, `CODEX_SANDBOX`, the four
+`SAGE_*`, `REMOTE`, `MACHINE`, `SCREEN`, `CRITIQUES` -- and **neither**
+`NUMBERDB_CODEX_MODEL` nor `NUMBERDB_CODEX_FALLBACKS`.
+
+Why it matters: it rules out the one alternative diagnosis under which the
+handover list is wrong. Had the supervisor pinned `NUMBERDB_CODEX_MODEL=gpt-5.4`
+explicitly, deleting the marker (step 3) would change nothing and step 2 would
+be addressing the wrong variable; the whole three-step repair would be a
+no-op for a second reason, after `e70d896f` already found the first. It does
+not, so the marker wins by default and the list stands as written. It also
+gives the person doing the relaunch a way to verify step 2 landed: the variable
+should appear in the new `campaign.sh`'s environ, where it is absent now.
+
+What to do instead of inferring it: read the *child* `campaign.sh`, not the
+`workers.sh` supervisor, and read it keys-only -- `tr '\0' '\n' <
+/proc/<pid>/environ | cut -d= -f1`, as `:1126` and `:11404` both say. I used the
+value-printing form here and it happened to be safe (this process holds the key
+as a *path*, `NUMBERDB_KEY=`, not inline), but a build process under it would
+not have been, and the keys-only form answers this question completely: the
+finding is which names are absent.
+
+Evidence: 2026-09-23 17:33Z, w3 triage of build `20260923T172610Z` -- the 61st
+turn-zero `gpt-5.4` build in this tree and the 61st consecutive `stop`.
+`/proc/3338509/environ` (`campaign.sh 200`, w4, `ppid 1`) and `/proc/1950235/environ`
+(`workers.sh 4`, up Sep 22 20:38, 18 variables, no `NUMBERDB_*`);
+`agents/run.sh:52` (`codex_model="${NUMBERDB_CODEX_MODEL:-gpt-5.5}"`), `:80`
+(`codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-gpt-5.4}"`), `:584-602` (the
+marker block, and the `echo` at `:600` is untee'd, which is why no "a previous
+run hit a quota" line appears in any build log); `agents/runs/codex-fallback`
+still `gpt-5.4` / `xhigh`, mtime 07:25:01.703Z, 14 bytes.
