@@ -3,11 +3,9 @@
 # is a person's act on the site.
 Title: Best known packings of equal circles in an equilateral triangle
 Definition: >-
-  For each integer $n\geq2$, $d_n$ is the largest possible minimum distance
-  among $n$ points in a unit-side equilateral triangle. The table also stores
-  $S_n=2\sqrt3+2/d_n$, the side length of the smallest equilateral triangle
-  containing $n$ non-overlapping unit circles. Thus each packing value is
-  listed in two invertible normalisations.
+  For $n\geq2$, $d_n$ is the largest possible minimum distance among $n$
+  points in a unit-side equilateral triangle. The table stores the same
+  packing as both $d_n$ and $S_n$.
 Keywords:
   - circle packing
   - circles in an equilateral triangle
@@ -79,7 +77,6 @@ References:
     mr: '1439300'
 Tags:
   - discrete geometry
-  - extremal configurations
   - sequence
 Data properties:
   type: R
@@ -92,9 +89,10 @@ Data properties:
   rigour details: >-
     Each container row is computed in Sage real ball arithmetic from the exact
     radical formula transcribed from CITE{WikiTriangle}. Each transcribed
-    formula was checked against the decimal printed beside it in the source
-    table. The separation rows are computed from Formula CITE{formula-conversion},
-    and the generator checks that converting them back gives the same $S_n$.
+    formula was checked against the decimal printed for the same row in the
+    source table. The separation rows are computed from Formula
+    CITE{formula-conversion}, and the generator checks that converting them
+    back gives the same $S_n$.
 Display properties:
   number-header: $d_n$ or $S_n$
 Numbers: []
