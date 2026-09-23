@@ -10024,3 +10024,29 @@ stamp: `build codex 0 turns $0.0000 error gpt-5.4`, `tokens_in=0`,
 `csv.DictReader` over `/home/ubuntu/numberdb-*/agents/runs/COSTS.tsv` and
 `head -1` over `/home/ubuntu/numberdb-*/agents/runs/*-verdict` for stamps
 beginning `20260923`.
+
+### Reading at 2026-09-23T16:10Z (build `20260923T160708Z`)
+
+The section above asks to be re-measured rather than re-argued, so this adds
+only the numbers and nothing about the mechanism, which has not changed:
+
+                          16:00Z       16:10Z
+    pool runs today        507          518
+    pool spend today       $878.53      $887.54
+    triage runs / spend    217/$386.51  222/$395.52
+    gpt-5.4 0-turn builds  218          224
+    verdicts, all `stop`   217          222
+
+Ten minutes, $9.01, five more `stop` verdicts, no builds. Triage is now 45% of
+all spend. Neither `agents/workers.stop` nor `agents/campaign.stop` exists in
+any of the four checkouts; `agents/runs/codex-fallback` is present in all four,
+`gpt-5.4` / `xhigh`. Supervisor pid 1950235 up 19h32m.
+
+One mechanism detail this build confirms, against `campaign.sh:699-710` which
+the note at the head of that section cites: the branch that releases a claim
+is guarded on `status` being 2, 3 or 5 -- "the build refused to start". A
+`gpt-5.4` 400 exits **1**, so it takes the `else` branch instead, where the
+comment reads "Nothing was built, and the claim *stays*." The claim is not
+leaked by oversight; it is retained deliberately, for a failure shape the
+guard was not written to cover. `#205` accordingly still shows `- [~] ... ber`
+claimed by w4 at 15:43Z from a run that never reached turn 1.
