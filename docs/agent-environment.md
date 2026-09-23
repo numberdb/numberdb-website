@@ -11533,11 +11533,11 @@ at $0.00 (`turns 0` on every one, unmeasured rather than free, `:10382`) and
 triage is 61 runs at $118.00 -- the outage's entire measured cost is now the
 stage that diagnoses it.
 
-Still unrun at 2026-09-23 18:28Z, triage of build `20260923T182754Z`: the 71st
-turn-zero `gpt-5.4` build and the 71st consecutive `stop`. Loop cost in w3
-since 07:25Z is now 140 runs and $127.22, still entirely triage -- 70 builds at
-$0.00 against 70 triages at $127.22. Across the three readable ledgers, 440
-runs and $373.42 (w2 $115.50, w3 $127.22, w4 $130.70); w1's ledger is no longer
+Still unrun at 2026-09-23 18:34Z, triage of build `20260923T183351Z`: the 72nd
+turn-zero `gpt-5.4` build and the 72nd consecutive `stop`. Loop cost in w3
+since 07:25Z is now 143 runs and $128.20, still entirely triage -- 71 builds at
+$0.00 against 71 triages at $128.20. Across the three readable ledgers, 448
+runs and $377.32 (w2 $117.06, w3 $128.20, w4 $132.06); w1's ledger is no longer
 readable from w3, so the four-tree figure in the acceleration note above cannot
 be refreshed as a like-for-like. One line updated per triage rather than a
 fresh section each time -- restating a diagnosis that is already written is the
@@ -11549,6 +11549,15 @@ The 12:07Z three-at-once observation is a standing condition, not a spike: at
 `20260923T182754Z` and `20260923T182813Z` -- three in ninety seconds, against
 three different pre-run commits. So the cadence figure to use when estimating
 the burn is the supervisor count, not the six-minute stage interval.
+
+And the spacing is tightening. At 18:34Z, `ps -o pid,lstart` shows three
+`campaign.sh 200` supervisors started at 18:33:26, 18:33:46 and 18:34:06 --
+**twenty seconds apart**, not ninety, with three triages live beside them.
+Between the 18:28Z line above and this one, six minutes of wall clock bought
+one more turn-zero build and $0.98 of triage in w3 alone. Anyone estimating how
+long this can be left should extrapolate from the supervisor spawn interval,
+which is shrinking, rather than from the per-tree daily total, which averages
+over a slower morning.
 
 Two details this round adds to the mechanism above, both read from `run.sh`
 rather than inferred. First, the marker does not merely survive, it *wins*:
