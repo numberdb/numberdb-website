@@ -9401,3 +9401,91 @@ Evidence: 2026-09-23 14:19Z, triage of build run `20260923T141127Z` (0 turns,
 $0.0000, HEAD unmoved at `7a47fb84`, tree clean, no stale queue claims, 13
 proposals still waiting). Four `COSTS.tsv` files, rows at or after
 `20260923T072522Z`; `agents/runs/codex-fallback` mtime 07:25:22.638Z.
+
+## `stop` has no addressee: why 41 correct verdicts changed nothing
+
+What happened: triaging build run `20260923T142325Z` -- the same turn-0 400 as
+the 167 builds before it, nothing new in the log -- I stopped re-diagnosing the
+failure and asked instead why the 41 `stop` verdicts already filed in this
+checkout had produced no change. The failure is well understood and correctly
+written up. The escalation is what is broken, and it is broken in two places.
+
+**Nothing is notified.** Grepping `agents/campaign.sh`, `agents/workers.sh` and
+`agents/run.sh` for `notify|slack|mail|gh issue create|webhook` matches nothing.
+A `agents/runs/<stamp>-verdict` file has exactly two readers:
+
+* `campaign.sh:519-521`, which reduces the first line to a `case` branch, and
+* `scripts/agent-log.sh:57`, which lists verdict filenames in a digest that
+  nothing in the pipeline runs.
+
+For `stop` the branch is `campaign.sh:545-547`: `say "stopping: $verdict"` into
+`agents/runs/campaign-<name>.log`, then `exit "$status"`. `workers.sh:132` then
+relaunches `campaign.sh` under `setsid nohup` at the next tick
+(`every=${NUMBERDB_WORKERS_EVERY:-300}`, `workers.sh:45`, slept at `:207`).
+
+And the verdict is not in version control either: `.gitignore:167` ignores
+`agents/runs/`, so `git add` of a verdict path is refused and no `*-verdict`
+file is tracked (`git ls-files agents/runs/` returns only `batch-exhausted`,
+force-added at some point). A triage's entire output therefore exists as one
+untracked file on one worker's disk. It does not reach a person through a
+notification, through the supervisor, or through `git log` -- which is worth
+knowing before writing a careful one, and is why a triage should put its
+finding in a tracked file like this one and keep the verdict short.
+
+So **to `workers.sh`, a campaign that exited on a reasoned `stop` and one that
+segfaulted are the same state: not running.** Of the four verdict words, `stop`
+is the only one that costs a full triage run and changes nothing an outside
+observer can see. `resume` and `restart` at least act; `skip` at least writes a
+line to `SKIPPED.md`. `stop` writes a file into a directory with no reader.
+
+**The cap that was meant to bound repeated triage cannot fire.**
+`campaign.sh:514` gates triage on `[ "$attempted" -lt 2 ]` -- the "one attempt
+per table" policy its own comment describes. But `attempted` is a plain shell
+variable initialised at `campaign.sh:63`, in the process that the `stop` branch
+terminates three lines after reading the verdict. Every supervisor tick supplies
+a fresh `campaign.sh` with `attempted=0`. The counter is therefore 0 at every
+build failure, the gate never bites, and triage runs on every one: 167 times
+pool-wide since 07:25Z. The brake is correctly written and scoped to a lifetime
+shorter than the thing it brakes -- a per-process counter in a loop whose job is
+replacing the process.
+
+**Why this is the finding and not the gpt-5.4 marker.** The marker is one bad
+model name and a person fixes it in a minute. This is the mechanism that decided
+nobody was told for ten hours. Any standing failure of the build stage will
+reproduce it exactly: build fails deterministically, triage diagnoses it
+correctly at $1.70-$2.70, writes `stop`, campaign exits, supervisor restarts it
+in 300s, repeat. The loop's cost is bounded only by the budget, and the
+diagnosis accumulates in files nobody is pointed at.
+
+The structural shape of it: **the stage that holds the diagnosis is forbidden
+from pulling the lever, and the stage that pulls levers cannot read.** Triage is
+told, correctly, that it may not fix anything -- the flags `workers.sh:185-189`
+honours (`agents/workers.stop`, `agents/campaign.stop`) are exactly the kind of
+thing it may not create. And `workers.sh` has no way to consult a verdict; it
+looks only at whether a pid exists. The two halves of the decision never meet.
+
+What to do about it, for whoever fixes this: a `stop` verdict needs to reach
+something that outlives the campaign process. Either `campaign.sh`'s `stop`
+branch should set a flag the supervisor already checks, or `workers.sh` should
+count consecutive `stop` verdicts for one stage across restarts (the ledger
+already has the data: `agents/runs/COSTS.tsv` rows with `turns` 0 and
+`result` `error`) and stand the worker down after the second. Until one of those
+exists, treat a `stop` verdict as a note to a person who has not been paged, and
+say so in the verdict -- which is all a triage run is able to do.
+
+What a triage run should do meanwhile: check whether your verdict word is one
+that has already been written for this same failure, and if so, say the count
+rather than re-deriving the diagnosis. `for f in agents/runs/*-verdict; do
+head -1 "$f"; done | sort | uniq -c` takes a second and tells you whether you
+are the first to see something or the 42nd.
+
+Evidence: 2026-09-23 14:3xZ, triage of build run `20260923T142325Z` (0 turns,
+$0.0000, tokens_in/out both 0, HEAD unmoved at `f1951452`, tree clean, no stale
+claims, 11 proposals waiting). 41 prior `*-verdict` files in this checkout dated
+2026-09-23, every first line `stop`. Four ledgers since `20260923T072522Z`:
+345 runs, $387.12; build 168 at $0.00, triage 167 at $307.71.
+`agents/campaign.sh:63,513-514,519-521,545-547`;
+`agents/workers.sh:44-46,120,132,185-189,207`;
+`agents/run.sh:556-559,565-568,583-586,650-655`.
+`agents/workers.stop` and `agents/campaign.stop` both absent;
+supervisor `agents/workers.sh 4` running as pid 1950235.
