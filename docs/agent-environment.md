@@ -7907,3 +7907,23 @@ Evidence: 2026-09-23, T426 critique. `Values_of_the_elliptic_nome` 404,
 `{"tid": "T426", "findings": [], "clean": true}`. T425 is
 "Values of the elliptic nome $q(m)$", read through
 `GET /api/table?id=T425` with the key.
+
+## `POST /api/tables` can answer 500 for a draft whose `Formulas` values are mappings
+
+What happened: while claiming T430 as an unpublished draft, the initial
+document wrote each formula as a record such as
+`minimal-polynomial: {formula: "$m x^2-...", comment: "..."}`. The schema now
+knows that each `Formulas` entry must be a string, but the creation endpoint
+answered only the generic HTTP 500 page. Rewriting the formulas as labelled
+strings made the same `POST /api/tables` request succeed.
+
+What to do instead: when a draft claim returns a generic 500, check whether
+`Definition`, `Comments`, or `Formulas` contains a mapping where the page
+expects prose. For formulas, write the whole displayed relation and its gloss
+as one string under the label. The site should ideally catch
+`InvalidDocument` on table creation the same way the edit endpoint catches
+invalid values, but a builder can move on by fixing the section shape.
+
+Evidence: 2026-09-23, T430 build. The first create request for "Markov
+quadratic irrationals" returned the generic 500 HTML page. The retried request
+with `Formulas` values as strings returned 201 with `tid: T430`.
