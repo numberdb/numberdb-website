@@ -7868,3 +7868,77 @@ forwards. The same check succeeded as
 from `sys.stdin`.
 
 Evidence: T438 repair, 2026-09-23T05:58:42Z.
+
+## arXiv `abs` pages were readable again six hours later, so the JS-shell note is a weather report, not a rule
+
+The note above at "arXiv `abs` pages are now a JavaScript shell, so
+`source_names_it` cannot screen a name that lives only in a paper" was filed
+this morning and says to stop citing arXiv to the screener at all. Six hours
+later the pages answer with their text.
+
+Six `https://arxiv.org/abs/...` URLs fetched through `urllib` with the
+screen's own `numberdb-proposal-screen` User-Agent, tags stripped the way
+`source_names_it` strips them, all HTTP 200 and all carrying the title *and
+the abstract* in the stripped text:
+
+    math/9810173   Hodge integrals and Gromov-Witten theory
+                   ... "Integrals of the Chern classes of the Hodge bundle"
+    math/9908052   Hodge integrals, partition matrices, and the lambda_g conjecture
+    1103.4674      Moduli spaces of hyperbolic surfaces and their Weil-Petersson volumes
+    1112.1151      Towards large genus asymtotics of intersection numbers ...
+    2011.14889     A high-genus asymptotic expansion of Weil-Petersson volume polynomials
+    1908.08611     Masur-Veech volumes, frequencies of simple closed geodesics ...
+
+`source_names_it` then passed on four of them against names whose
+distinguishing words appear nowhere but the title and abstract --
+`("Weil-Petersson volumes of moduli spaces of hyperbolic surfaces",
+1103.4674)`, `("Weil-Petersson volume polynomials", 2011.14889)`,
+`("Hodge integrals of the lambda_g class", math/9908052)` and
+`("Masur-Veech volumes", 1908.08611)` all returned `None`.
+
+Two of the six failed, and both failures were correct rather than a fetch
+problem: `math/9810173` really does not write "lambda", and `math/0004096`
+really does not write "simple". That is the check working, not the page being
+a shell.
+
+What to do: **screen the URL, do not assume either note.** Both are true on
+some days. Before deciding a family is unciteable, fetch the page once and
+look at whether the title came through -- if it did, the page is readable and
+a missing word is a real missing word. Wikipedia, DLMF, MathWorld and OEIS
+remain the safer first choice; the point is only that an arXiv failure today
+is evidence about today.
+
+What has **not** changed: `export.arxiv.org/api/query` still answers
+**406 Not Acceptable**, to `numberdb-proposal-screen` and to a
+`Mozilla/5.0 ...` User-Agent alike, so the API is not a way to look an
+identifier up here. The `abs` page is: fetch it and read the `Title:` out of
+the stripped text. That is how the wrong identifier in this run's batch was
+caught (`math/0602012` turned out to be *On a special congruence of
+Carlitz*).
+
+Evidence: 2026-09-23T06:2x, ideation run, from the runner host with no proxy
+set.
+
+## `oeis.org` answered plain `urllib` this run, with the screener's own User-Agent
+
+Three notes above disagree about OEIS from this host -- "behind a Cloudflare
+challenge", "cannot be reached at all", and "does answer here, to `urllib`
+with an honest bot User-Agent, and never to `curl`". This run is a data point
+for the third.
+
+    Request(url, headers={'User-Agent': 'numberdb-proposal-screen'})
+
+answered HTTP 200 for both query shapes used here,
+`oeis.org/search?q=<terms>&fmt=json&start=0` and
+`oeis.org/search?q=id:A007888&fmt=json`, with no challenge and no retry. Six
+searches and four `id:` lookups, all first try.
+
+The trap is not the fetch but the empty answer: OEIS returns the body `null`
+for a search with no hits, so `json.load` gives `None` and the usual
+`d.get('results')` raises `AttributeError`. That is filed as a lesson for the
+skill in `agents/lessons/proposals/20260923T060219Z-ideas.md`, because it is
+true on anybody's laptop; the only part that belongs here is that the
+exception it raises is easy to misread as this host being blocked again when
+it is not.
+
+Evidence: 2026-09-23T06:1x, ideation run.
