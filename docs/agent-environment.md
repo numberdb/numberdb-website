@@ -9575,3 +9575,44 @@ agents/queue.py open` and `show 196 202 203 204 205 206` at 14:48Z; the four
 `COSTS.tsv` merged in Python; `ps -ef` plus `readlink /proc/<pid>/cwd` on pids
 1950235, 3047281, 3048531, 3051607, 3054999 for the worker roots. Diagnosed in
 `agents/runs/20260923T144706Z-verdict`.
+
+## The ledger's `batch` column names the family exactly, and the family issue says so in an HTML comment
+
+What happened: three verdicts in a row have named the wrong family when saying
+what claim a dead build left. The 45th asked `GET /api/claim?family=` on
+201/202/204/205 and the claim was in #198; two after it scanned a #199--#206
+window and missed #196. The 55th verdict found the right lead -- the ledger's
+`batch` column identifies the family, because `campaign.sh:457` takes
+`NUMBERDB_BATCH_NAME` from the proposal -- but left it as a heuristic, "an
+older batch means an older family", followed by a scan by hand.
+
+It is not a heuristic. The mapping is stored. Every family issue carries its
+batch as an HTML comment in the body, which `queue.py show` prints verbatim:
+
+    $ python3 agents/queue.py show 201 | grep numberdb-family
+    <!-- numberdb-family: BATCH-2026-09-23T0837 -->
+
+and `BATCH-2026-09-23T0837` is the `batch` field of run `20260923T152347Z` in
+`COSTS.tsv`, character for character. The same string also appears in prose in
+the issue ("the full screening report ... is `ideas/BATCH-....md.gz`"), so grep
+for the comment marker and not for the batch name if you want one line.
+
+`agents/work.py next` answers with `batch` in its JSON for the same reason, so
+a live campaign knows the family it is about to work in before it claims.
+
+What to do instead: to find the claim a run left, read the run's `batch` from
+`COSTS.tsv`, find the family whose `numberdb-family` marker equals it, and ask
+`GET /api/claim?family=<n>` on that one. No window to guess and no scan of six
+families. `queue.py stale` is still the wrong tool: it lists families whose
+*screening* has aged out, not claims.
+
+Evidence: 2026-09-23, 15:24--15:27Z, triaging the 57th identical zero-turn
+`gpt-5.4` 400 in this tree. `COSTS.tsv` row for `20260923T152347Z`, `batch` =
+`BATCH-2026-09-23T0837`; `python3 agents/queue.py show 201` printing
+`<!-- numberdb-family: BATCH-2026-09-23T0837 -->`; `agents/campaign.sh:457`;
+`python3 agents/work.py next --done 0` ->
+`{"family": 205, "batch": "BATCH-2026-09-23T1120", ...}`;
+`_site('/api/claim?family=')` over 190--209, which put this run's claim on
+"Critical exponents of the three-dimensional universality classes" in #201 at
+15:23:46.06Z, one second before the run stamp. Diagnosed in
+`agents/runs/20260923T152347Z-verdict`.
