@@ -10899,3 +10899,45 @@ at 14:12, refilling faster than it drains; `campaign.sh:464-489, 630-711` and
 `run.sh:85-87, 324, 332, 833` read; `campaign-w3.log:85043` for the proposal
 (`OPE coefficients of the 3D Ising CFT`, family #201) and `:85061` for
 `finished with status 1`; `COSTS.tsv` row 652, `turns 0`, `$0.0000`.
+
+## Family #201 is the finished instance of the claim-release gap: all five proposals claimed, four by one worker, none built
+
+The section above records the mechanism — `campaign.sh:686` sorts failures by
+which layer refused, so an engine-level 400 exits 1, walks past the release
+branch and keeps the claim for ninety minutes — and predicts that four such
+builds take a family. At 14:17Z that finished happening, so it is worth having
+the completed case on the record rather than the prediction.
+
+`queue.py show 201`, read at 14:2xZ:
+
+    [~] Critical exponents of the three-dimensional universality classes  w3 13:42Z
+    [~] Scaling dimensions of the 3D Ising CFT                            w2 14:05Z
+    [~] OPE coefficients of the 3D Ising CFT                              w3 14:05Z
+    [~] Scaling dimensions of the 3D O(N) CFTs                            w3 14:17Z
+    [~] Universal amplitude ratios of the Ising universality class        w3 12:25Z
+
+Every proposal of the family is claimed, **four of the five by the same
+worker**, and not one of the holding runs reached turn 1. w3 walked the whole
+family in 112 minutes at roughly one proposal per twelve minutes — which is the
+cadence of the build loop, because each refusal costs nothing and returns at
+once. `campaign.sh`'s own comment on that branch describes this exactly: "a
+worker whose runs all refuse would otherwise claim a family's every proposal in
+a minute and hold them for ninety, which is what happened to numberdb-data#178."
+It has now happened again, with the guard in place.
+
+Two practical consequences for whoever triages the next one:
+
+* A family with every box `[~]` and no table is not a family being worked on.
+  `queue.py open` still counted `11 waiting` with 41 live claims outstanding
+  across #196–#204, so the waiting count does not reveal it either. The check
+  that shows it is `queue.py show <n>` or `GET /api/claim?family=<n>`.
+* The worker that holds the claims is the one that can least use them. Because
+  claims are per `(family, proposal)` and the refusing worker is the fastest
+  round-tripper in the fleet, a broken engine does not merely fail to build —
+  it out-competes the working engines for the queue.
+
+Evidence: 2026-09-23 14:2xZ, triage of build `20260923T141725Z` in w3 (family
+#201, *Scaling dimensions of the 3D O(N) CFTs*, `turns 0`, `$0.0000`, claim
+taken 14:17:23.974686Z, two seconds before the run stamp). `GET
+/api/claim?family=193..209` → 41 rows, `expired false` on every one, against 38
+measured 27 minutes earlier. `queue.py show 201` and `queue.py open` as quoted.
