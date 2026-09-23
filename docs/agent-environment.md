@@ -10325,3 +10325,58 @@ Evidence: 2026-09-23 09:39Z, triage of build `20260923T093841Z` in w3.
 `agents/runs/COSTS.tsv` filtered to `started >= 20260923T0708` -> `build 14
 $0.00`, `triage 13 $23.28`; the fourteen build logs all carry the `gpt-5.4`
 400 and only `20260923T070848Z-build.log` also carries the usage-limit line.
+
+## A failed codex run is not mis-priced, it is unpriced -- correcting "`COSTS.tsv` records the failed resume"
+
+What happened: the entry above at "`COSTS.tsv` records the failed resume and
+not the turn that did the work" is right about the symptom and wrong about the
+cause, and so its repair would not work. It says the row is "overwritten by the
+last one" and asks that a resumed run "accumulate across attempts". Nothing is
+overwritten, and accumulating across attempts sums zero to zero.
+
+`agents/ledger.py:180-185` adds tokens on `turn.completed` **only**;
+`turn.failed` is matched two lines later and contributes nothing but the
+`failed` flag. A whole codex build is a *single* turn -- which is why every
+successful codex build in the ledger reads `turns 1`, never more. So a codex
+run that fails anywhere inside that one turn emits no usage at all, and the
+ledger has nothing to record, resumed or not. The streams, checked directly:
+
+    20260923T061859Z  w2  success  1 x turn.completed, usage present
+                      input 17,793,179  cached 17,523,200  output 42,716  -> $11.39
+    20260923T062751Z  w4  failed   2 x turn.failed, zero occurrences of "usage"
+                      284 command_execution events, 2.0 MB of log, created T444
+    20260923T070848Z  w3  failed   2 x turn.failed, no usage
+                      148 command_execution events, 0.6 MB of log, created T445
+
+Three consequences. First, **`turns` cannot be used to judge how far a run
+got**: it cannot tell a run that died before its first command from one that
+died after 284 of them with a draft created -- both read `turns 0`. Triage
+verdicts through 2026-09-23 repeatedly called that column "load-bearing" and
+"honest"; it is honest only about runs that finished. Second, **a `$0.0000`
+codex row means unmeasured, never free**: all 59 `gpt-5.4` rows across the four
+ledgers read `$0.0000`, and two of them are full `gpt-5.5` sessions, one longer
+than the $11.39 build that succeeded an hour earlier. Any reconciliation from
+these files under-reports by about two builds per outage of this shape. Third,
+the `table` column is inconsistent rather than simply empty as the earlier entry
+states: the 06:27 row does carry `T444`, while the 07:08 row that created T445
+is blank.
+
+Also worth correcting there: the `gpt-5.4` wall is 41 minutes older than the
+record says. Every verdict dates it from `20260923T070848Z`; the first run
+actually refused on `gpt-5.4` is `20260923T062751Z` in w4, which started on
+`gpt-5.5` at 06:27, was still working when the quota lapsed, and created T444
+before it died.
+
+What to do instead: from inside the repository, measure a failed codex run by
+its log -- byte count and `command_execution` count -- and not by `turns`,
+`cost_usd` or `table`. The real spend is on the account's usage page and
+nowhere else. The fix in `ledger.py` is to record something for a failed turn
+(at minimum the log's size and command count) rather than to accumulate across
+attempts, so that the next outage of this shape is visible in the ledger
+instead of invisible in it.
+
+Evidence: 2026-09-23 10:09Z, triage of build `20260923T100900Z` in w3.
+`agents/ledger.py:156-199`; `grep -c '"usage"'` over
+`20260923T062751Z-build.log` (w4) -> 0 against 2.0 MB and 284
+`command_execution` events, with `tid\": \"T444` present in it; the live API
+confirming T444 at 3 entries and T445 at 0.
