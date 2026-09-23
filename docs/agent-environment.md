@@ -10859,3 +10859,48 @@ samples at 17:38Z (from the commit above), 18:04Z and 18:07:14Z. That build
 itself claimed family #206 "Theta series of the classical lattices" at
 18:03:09.861Z, one second before it started, used 0 turns, and holds the
 claim until about 19:33Z -- one of the fifty-odd.
+
+## The unticked table is not merely complete, it audits clean -- and the reconciliation has been outstanding for eight hours
+
+The section *A lapsed claim outlives the table it produced* established at
+10:33Z that T441 was finished and invisible, and told the next person to
+reconcile the queue against the corpus **before** repairing the engine. That
+recommendation is still unactioned.
+
+What is new is how finished T441 is. Not "903 entries and probably fine":
+
+    GET /api/table/T441/audit   keyed   {"clean": true}     18:26Z
+
+with `rigour: measured` and its details, a `complete: no` note naming the grid,
+a `number-header`, a Programs block and two tags. Its generator is committed
+and pushed at `4d51febf`. This is a draft a reviewer could pick up as it
+stands; the only thing between it and a person is a checklist line that still
+reads `[~] claimed by w1`.
+
+Why it matters that this is measurable. The earlier note could be read as
+"there is a partly built thing in the database somewhere, sort it out when
+convenient". `/api/table/<tid>/audit` turns that into a yes-or-no a triage run
+can ask for one request, and the answer here is that the campaign has been
+spending money for thirteen hours to rebuild a table that was ready at 06:00Z.
+Between the 10:33Z note and this one, roughly forty more builds failed on the
+`gpt-5.4` 400 and forty more triages were paid for.
+
+The reconciliation is two commands and no judgement, which is what makes the
+delay expensive rather than merely untidy:
+
+    python3 agents/queue.py built 196 "Values of the Tracy-Widom distribution functions $F_\beta(s)$" T441
+
+then clear `agents/runs/codex-fallback` in each worktree, or set the writer to
+claude. In that order: ticking after restarting sends the first healthy build
+in thirteen hours to rebuild T441 and collide with its own draft.
+
+A triage run may not do either -- it reads and decides. So the note is the
+whole of what it can leave, and this is the second one.
+
+Evidence: 2026-09-23, triage of `20260923T182131Z-build.log`. `GET
+/api/table/T441/audit` and `GET /api/table?id=T441` with the zeta3 key at
+18:26Z (903 values, keys `'1'`,`'2'`,`'4'`, 301 grid points each); `git log
+generators/tracy-widom-distribution-functions/`; `agents/queue.py show 196` and
+`GET /api/claim?family=196` at 18:27Z, showing the proposal re-claimed by w1 at
+18:21:29.8Z. Counts from `agents/runs/COSTS.tsv`: 80 `gpt-5.4` builds today at
+0 turns, 79 triage runs at $131.62, 79 verdicts all `stop`.
