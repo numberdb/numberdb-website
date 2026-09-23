@@ -8477,3 +8477,100 @@ Evidence: 2026-09-23, triage of build run `20260923T085621Z`. `queue.py show
 201`, `open`; ledger rows from all five `agents/runs/COSTS.tsv`; `pgrep -af`
 showing four `campaign.sh`, the `screener.sh`, the `ideas` run for
 `BATCH-2026-09-23T0856` and two concurrent triage runs.
+
+## The queue has begun re-issuing proposals that are already built, because a build that ends in error never ticks the box
+
+What happened: the ninth run to die at turn 0 on `The 'gpt-5.4' model is not
+supported when using Codex with a ChatGPT account.` The notes above diagnose
+that and say what to change; this one records a second fault that the first
+one has been hiding, and that will outlive it.
+
+The proposal this run was handed -- `campaign.sh` printed
+
+    === next: Values of the Tracy–Widom distribution functions $F_\beta(s)$
+        (family #196, built 0 so far)
+
+-- **already exists**. `T441` is that table: same title, 903 leaf entries in
+`Numbers`, which is the $301$ grid points $s = -10, -9.95, \ldots, 5$ times
+$\beta \in \{1,2,4\}$ that #196's own conventions section specifies, and
+`GET /api/table/T441/audit` answers `{"clean": true, "findings": []}`. Its
+generator is on `main` as `c5523a27`, "add Tracy-Widom distribution draft
+generator", committed at 06:57 by a sibling checkout.
+
+The checklist line for it reads
+
+    - [~] Values of the Tracy–Widom distribution functions $F_\beta(s)$
+          -- claimed by w4 at 2026-09-23T09:03Z
+
+and not `- [x] ... -- T441`. The run that built it never reached
+`agents/queue.py built`, because `campaign.sh` ticks the box only on a stage
+that exits 0 and that run did not. Ninety minutes later `stale_claim()`
+(`queue.py:280`, `CLAIM_MINUTES = 90`) released the line as abandoned, and the
+next worker to ask for work was told to build a table that was finished and
+sitting in the database.
+
+Why this is worse than a wasted claim. Only the dead build lane stopped a
+duplicate from being made: no run has reached turn 1 since 07:25, so nothing
+could act on the instruction. The moment the marker is deleted and codex
+builds again, the first thing the pool will do is rebuild `T441` -- and
+`Table.title` is `unique=True` on a plain `CharField` (`models.py:322-326`),
+byte-exact, so it will not necessarily refuse the second one. `T441`'s title
+spells the name `Tracy-Widom` with U+002D; the checklist and `T444` spell it
+`Tracy–Widom` with U+2013. Those are two different strings and the database
+will accept both.
+
+What to do instead: tick the box from the campaign's knowledge rather than
+from the stage's exit status. `campaign.sh` already asks the site whether a
+claimed table holds values (`:662-676`) before releasing a proposal; the
+same request settles the other case. If the id is known and the table is
+filled, run `queue.py built` whatever the stage's status was -- a run that
+built a table and then died still built it. Failing that, a released claim
+should re-check the corpus for the proposal's title before handing it out
+again.
+
+Left behind now, for a person: #196's `F_\beta` line is claimed by w4 as of
+09:03Z and goes stale again at 10:33Z, when it will be re-issued a third time.
+The settlement is
+
+    python3 agents/queue.py built 196 \
+        "Values of the Tracy–Widom distribution functions \$F_\beta(s)\$" T441
+
+not `queue.py skipped` and not a `skip` verdict: the table exists, and
+`SKIPPED.md` would record a built table as a declined proposal.
+
+Evidence: 2026-09-23, triage of build run `20260923T090338Z`. `queue.py show
+196`; `GET /api/table?id=T441` with zeta3's key, counting leaves of the nested
+`Numbers` rather than its length (903, not 3 -- see the `len(Numbers)` lesson
+from `20260923T072538Z`); `GET /api/table/T441/audit`; `git show -s c5523a27`;
+`git merge-base --is-ancestor c5523a27 HEAD` answers no on `campaign/w4`,
+`git branch --contains` answers `main`.
+
+## zeta3 is holding eleven unpublished tables, not five
+
+What happened: scanning `T425` through `T445` with zeta3's key and then
+anonymously -- a draft answers the owner with the document and everyone else
+with `{"error": "Table with id 'T4xx' does not exist."}` at status 200 -- the
+tables that are visible to the key and not to the public are
+
+    T425 999   T426 900   T432   1   T433 902   T434 701   T436 770
+    T437 456   T438 456   T441 903   T443 1001  T445     0
+
+eleven of them, in a twenty-one-id window, ten holding values. The run prompt
+says zeta3 "may write to tables and hold up to five drafts". Either the cap
+counts something narrower than "unpublished table" -- most likely a draft that
+has been offered for review stops counting against it -- or it is not being
+enforced. This note records the count, not a conclusion: I did not test the
+cap, because the only test is creating a draft, and triage may not.
+
+Worth knowing either way, because a build that assumes it has draft capacity
+and discovers it does not will discover it after it has done the mathematics.
+
+`T445` is the one to look at: zero entries, claimed by w3 at 08:39Z, and
+`GET /api/table/T445/audit` is not clean -- "Definition is 450 characters
+(median here is 195)" and "Definition links to another table; a
+cross-reference belongs in Similar tables or a comment". It is prose with no
+numbers under it. I have not touched it.
+
+Evidence: 2026-09-23, triage of build run `20260923T090338Z`. `GET
+/api/table?id=T4xx` for `x` in 425..445, each twice, with and without
+`Authorization: Bearer`; `GET /api/table/T445/audit`.
