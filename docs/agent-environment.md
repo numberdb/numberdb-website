@@ -10321,3 +10321,22 @@ made T440. All four checkouts (`numberdb-website` = w1, `-w2`, `-w3`, `-w4`)
 still carry `agents/runs/codex-fallback` = `gpt-5.4`/`xhigh`;
 `/home/ubuntu/numberdb-website/agents/workers.stop` still absent. All three
 levers unpulled.
+
+**Confirmed at 17:23Z, and the rate is not merely falling but zero.** The
+next build, `20260923T172033Z`, makes it 65 builds since 05:47Z against the
+same **38** distinct proposals -- one further draw, no further proposal:
+
+                           builds since 05:47Z    distinct proposals
+    at 12:39Z                      36                    30
+    at 17:13Z                      64                    38
+    at 17:23Z                      65                    38
+
+It drew "Eigenvalues of the clamped plate" (#204) for the third time today, at
+13:24Z, 15:24Z and 17:20Z -- two hours apart each time, which is the
+ninety-minute expiry plus the draw, i.e. the re-deal period of a single
+proposal measured directly. Fifth claim sweep: 50 standing (48/50/49/50/50),
+w1 15, w4 12, w3 12, w2 11, oldest 89.0 minutes. Family #204 carries five
+claims of which three are w4's, so a worker competes with its own parked
+claims as well as the other three workers'. The practical consequence is
+unchanged and now unarguable: there is no unexplored proposal for waiting to
+reach, and each further hour is ~$50 to re-fail proposals already failed.
