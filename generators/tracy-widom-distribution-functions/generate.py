@@ -238,7 +238,10 @@ class TracyWidomDistributionFunctions(numberdb.Generator):
     table = TABLE
     parameters = ("beta", "s")
     type = "R"
-    digits = MAX_DIGITS
+    # The writer in the Sage image treats this as a minimum for every entry.
+    # The generated decimal or ball string carries the actual per-entry
+    # precision, which is determined from the control quadrature.
+    digits = 1
     rigour = "measured"
 
     def enumerate(self):
