@@ -9083,3 +9083,72 @@ which is enough" at 11:10:14; `python3 agents/queue.py open` -> 9 waiting;
 both the anchored and unanchored greps over `agents/runs/campaign-w2.log` and
 their 86-vs-108 match counts. Diagnosed in
 `agents/runs/20260923T111341Z-verdict`.
+
+## Correction: the campaign does *not* buy its own proposals -- `top_up_if_low` returns at its first line under `NUMBERDB_SCREEN=0`, and the screener is the only buyer
+
+The entry at 9010 says there are two independent buyers of proposals and that
+`touch workers.stop` must therefore come *before* stopping the screener,
+because stopping the screener alone would push the ideation spend onto the four
+`campaign.sh` processes. That is wrong, and the order it insists on is not
+required.
+
+It quotes `campaign.sh:183` (the function head) and `:214-219` (the
+`propose_a_batch` call) but not the eleven lines between them. At `:194`:
+
+    if [ "${NUMBERDB_SCREEN:-1}" = 0 ]; then
+            return 0
+    fi
+
+under a comment that states the design in as many words -- "A builder does not
+buy proposals... the producer is one process -- agents/screener.sh -- and the
+builders only consume. NUMBERDB_SCREEN=0 says which this is." The guard is the
+first statement in the body. `queue_waiting` is never called, `remaining` is
+never computed, and `:214-219` is unreachable for a pooled worker. The call
+site at `:330` being ahead of the claim is true and makes no difference.
+
+The workers are pooled: `agents/workers.sh:131` in a worktree and `:203` in the
+site tree both launch `campaign.sh` with `NUMBERDB_SCREEN=0`. Checked on the
+live processes rather than inferred --
+`tr '\0' '\n' < /proc/<pid>/environ | grep NUMBERDB_SCREEN` on both campaigns
+running at 11:36Z (pids 2735172 = w1, 2737975 = w2) prints `NUMBERDB_SCREEN=0`.
+
+Two further checks, from the ledgers and the log rather than the code:
+
+* Across the whole outage the three worker trees have **zero `ideas` rows**
+  between them. All six ideas runs are in the site tree and all six carry
+  `campaign=screener` in column 17 -- 07:42Z to 10:03Z, $5.40 to $9.70.
+* `grep -n "^=== .*screening another family" agents/runs/campaign-w2.log` last
+  matches at **line 22697** of 47541, far below the outage region that begins
+  near 46000, and every match reads `0 proposals waiting` -- the
+  `waiting -eq 0` clause, from the era before the pool when this tree ran a
+  lone campaign with `NUMBERDB_SCREEN` unset and defaulting to 1.
+
+The queue is the test the 9010 entry proposed, and it has since given its
+answer. That entry noted 9 waiting at 11:18Z and predicted that crossing the
+threshold of 8 would start the campaigns buying. `python3 agents/queue.py open`
+reads **5 waiting** at 11:35Z -- below `campaign.sh`'s 8 and far below the
+screener's 12 -- and no worker has bought anything.
+
+What this changes: the screener (pid 1950272) *is* the ideation line, and it is
+the only one. Stopping it stops the ideation spend, and it may be stopped
+before or after the workers without the spend moving anywhere. The rest of the
+9010 entry's advice survives -- `touch
+/home/ubuntu/numberdb-website/agents/workers.stop` is still what stops the
+builds burning claims, and it is still the lever that matters most, because the
+triage stage is where the money actually goes. It is simply not an ordering
+constraint.
+
+The general lesson is the one the 9051 correction is also an instance of: a
+verdict that reads a shell function by its quoted line ranges rather than from
+its first line will miss a guard clause, and a guard clause is the whole
+behaviour. Both wrong entries were confident and both were checkable against
+the ledger in one command.
+
+Evidence: 2026-09-23, 11:31--11:36Z. `agents/campaign.sh:183-235` read
+entire, with `:194` the guard and `:345` the second use of the same variable;
+`grep -n NUMBERDB_SCREEN agents/*.sh` and the site tree's copy;
+`/proc/2735172/environ` and `/proc/2737975/environ`; the four trees' `COSTS.tsv`
+filtered to `$2=="ideas"` since `20260923T062751Z`; the anchored
+`screening another family` grep with its line numbers; `queue.py open` -> 5
+waiting (#204 two, #202 one, #199 two). Diagnosed in
+`agents/runs/20260923T113141Z-verdict`.
