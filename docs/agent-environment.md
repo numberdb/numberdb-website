@@ -10038,3 +10038,56 @@ Evidence: 2026-09-23, triage of `20260923T131204Z-build.log`. `queue.py` lines
 numberdb/numberdb-data` with the checklist marks read; all counts by `awk` over
 the four `agents/runs/COSTS.tsv`, and the verdict tally by `head -1` over the
 four `agents/runs/*-verdict`.
+
+## `started()` counts a claim as work, so a family nobody has claimed is never served
+
+The note above explains the eight never-served proposals as `next_table`
+taking `free[0]` "so the lapsed lines at the head of each family are re-served
+over and over while the tail is never reached". That is not what happens, and
+the correction matters because the real mechanism will outlive the `gpt-5.4`
+outage.
+
+**The tails are reached.** At 13:29Z the ten open families hold 54 proposals,
+and the checklist marks are `[~]` 45, `[ ]` 7, `[x]` 2. All six of `#203`, all
+six of `#198`, all six of `#197`, all five of `#201`, all five of `#200` carry
+a claim — whole families, head to tail. The last thirty-five assignments in
+each worker's log are twenty-four to twenty-seven *distinct* titles, and the
+four workers are walking the same set: of the union, most titles appear
+exactly four times, once per worker. Nothing is stuck at a head.
+
+**One whole family is starved instead, and it is the newest one.** `#205`
+(six `[ ]` Kelvin and Struve tables) was created 11:41:58Z and its
+`updated_at` is still 11:41:58Z. In the 1h47m since, `#196`-`#204` were handed
+out 145 times between them and `#205` **zero** times — no `=== next:` line in
+any of the four campaign logs has ever named it. Every family from `#164`
+onward appears in those logs; `#205` alone does not.
+
+**Why.** `queue.py:335-337`:
+
+    def started(family):
+        return any(item['done'] for item in family['items'])
+
+and `done` is set at line 235 for `x`, `-` *and* `~`. So one claim makes a
+family "half-built". `next_table` (`queue.py:374-379`) serves `half_built`
+families before untouched ones, by design — finish what somebody started. But
+`CLAIM_MINUTES = 90` returns those lines to `waiting()` (`queue.py:296-315`),
+so a claimed family is permanently *both* started and non-empty, and the loop
+over `half_built` finds something free every time and returns before it ever
+reaches the untouched list. A family enters the rotation only by being claimed
+and can only be claimed once it is in the rotation.
+
+**What this means once the pin is cleared.** Under working builds a claim
+settles to `[x]` and the family drains, so the rule does what it says; the
+pathology needs claims that never settle, which is exactly what 145 zero-turn
+builds produce. But `#205` will stay at the back until `#196`-`#204` are
+genuinely finished or their lines are hand-released, and any family screened
+after it inherits the same position. A one-line fix would be to have
+`started()` look at the raw mark rather than `done`, so a bare claim does not
+count; that is a person's change, not a triage run's.
+
+Evidence: 2026-09-23 13:24-13:31Z, triage of `20260923T132343Z-build.log`.
+`queue.py` lines 225-240, 269-315, 335-337 and 340-380 read directly; the
+marks counted by regex over `families()` bodies; `created_at`/`updated_at` for
+`#199`, `#203`, `#204`, `#205` from the issues API; assignments counted with
+`grep -a '^=== next:'` over the four `agents/runs/campaign-w<n>.log` and
+bucketed by `family #NNN`.
