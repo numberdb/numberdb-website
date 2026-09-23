@@ -8718,3 +8718,76 @@ Evidence: 2026-09-23, 10:24Z. The sweep above over 58 build logs from
 `agents/runs/COSTS.tsv` rows for those runs; the T320 counter-example at
 `agents/runs/20260918T023210Z-build.log` item_69/item_70. Diagnosed in
 `agents/runs/20260923T102039Z-verdict`.
+
+## The `codex-fallback` marker's mtime dates the last fallback, not the first -- and `git status` cannot see what a build makes
+
+What happened: sixteen verdicts have opened the gpt-5.4 outage at 07:34Z,
+which is the mtime of `agents/runs/codex-fallback`. That file is **rewritten on
+every fallback**, so its mtime is the most recent one. The ledger holds the
+first: `20260923T062751Z build codex 0 0.0000 error gpt-5.4` in w4, an hour and
+six minutes earlier. The last run that succeeded is `20260923T061859Z`, T443,
+`gpt-5.5`, $11.39. Everything after it is the outage, and dating it from the
+marker under-counts it by an hour, four builds and about $25.
+
+    awk -F'\t' '$1>="20260923T062751Z"{c[$2]+=$5; n[$2]++} END{for(s in c) printf "%-9s n=%3d $%8.2f\n", s, n[s], c[s]}' \
+      /home/ubuntu/numberdb-{campaign-w2,campaign-w3,campaign-w4,website}/agents/runs/COSTS.tsv
+
+    build n= 64 $  0.00   triage n= 62 $121.62   ideas n=  6 $ 47.39
+    critique n= 1 $4.82   repair n=  2 $  3.67   -- $177.50 in 4h00m, no table
+
+To date an outage, find the last `success` row for the stage in `COSTS.tsv` and
+take the next row. Never date it from a marker file that the failure path
+writes.
+
+Second, and worse: **`.gitignore:205` is `generators/`**. A build's whole work
+product -- the generator and its `table.yaml` -- is invisible to `git status`,
+which is the instrument every verdict in this series has used to conclude that
+a failed run left nothing behind. (`agents/runs/` is ignored at line 167 too,
+so the cost row and the verdict files are equally invisible; a clean tree in
+this repository says almost nothing.) A build that wants its generator kept has
+to `git add -f` it, as w4's did in `30bfcd90` on `campaign/w4`.
+
+What this hid, found by sweeping build logs from 06:27:51Z rather than 07:34Z
+-- 64 logs, of which **two are not empty**, both killed at the quota boundary
+rather than by the 400:
+
+* `w4 20260923T062751Z`, 239 completed items: built **T444** and it is
+  published and live. `GET https://numberdb.org/T444` with no key returns the
+  rendered page. Its ledger row is `0 turns / error / resumed=yes`.
+* `w3 20260923T070848Z`, 108 completed items: created draft **T445**, wrote
+  `generators/tracy-widom-standardized-cumulants/{generate.py,table.yaml}`,
+  dry-ran it clean (6 entries, all exact or error-bounded), and verified all
+  six values against independently printed digits -- then died with fill and
+  offer still to do. The generator is on disk in w3, uncommitted because
+  `generators/` is ignored.
+
+Third, **the repair stage stops silently**. It died once on the same 400
+(`20260923T073411Z`, resuming a `gpt-5.5` session for T443) and has not run
+since, because `campaign.sh` reaches repair only after a critique and critique
+only after a build. With builds dead the stage is starved rather than failing,
+so it appears in no log and no ledger row. `campaign.sh:444` emits *"the repair
+failed for T443; the report stands and somebody should read it"* and nothing
+consumes it. `~/numberdb-critiques/T443.md` is 64 turns and $4.82 of reading
+with six findings, the first being that T443's `rigour: measured` is wrong for
+a Painlevé-II computation.
+
+Fourth, reading a draft's state from outside: `GET /api/table?id=T<n>` returns
+the document to a bearer token and `GET /api/table/T<n>/audit` returns prose
+findings, but there is **no read path for entries** -- `/api/table/T<n>/entries`
+is 405 *"Use POST or PUT"*, `/bundle/T<n>` is 404 for a draft even with the
+owner's key, and `/preview?table=T<n>` is 500. So a triage cannot tell a filled
+draft from an empty one; combined with `/drafts` redirecting a key to a login
+form, the draft budget (five) is not observable from here at all.
+
+What to do instead: when reconciling what a run achieved, sweep build logs from
+the true start of the outage for any `item.completed` that is not the metadata
+warning, and read the non-empty ones in full. Check `generators/*/` mtimes, not
+`git status`. Expect drafts to survive a failed build and to hold the budget.
+
+Evidence: 2026-09-23, 10:40Z. The awk above; `git check-ignore -v` on
+`generators/tracy-widom-standardized-cumulants/generate.py` and on
+`agents/runs/COSTS.tsv`; `git -C ~/numberdb-campaign-w4 show --stat 30bfcd90`;
+the 64-log sweep from `20260923T062751Z` and the tails of the two non-empty
+logs; `GET /T443`, `/T444`, `/T445` with and without a key, and
+`/api/table/*/{entries,audit}` and `/bundle/*`. Diagnosed in
+`agents/runs/20260923T102643Z-verdict`.
