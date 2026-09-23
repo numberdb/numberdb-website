@@ -8276,3 +8276,43 @@ command's five unclaimed rows in BATCH-2026-09-23T0812;
 trees from 07:00; supervisor pid 1950235, up 12h00m, and campaign pids 2447893,
 2449530, 2460306, 2460445 all alive. Diagnosed in
 `agents/runs/20260923T083849Z-verdict`.
+
+## An authenticated corpus read can answer 429 when the worker pool runs concurrently
+
+What happened: while reading two drafts to write the triage verdict for build
+run 20260923T085700Z, the first two `GET /api/table?id=...` requests -- sent
+one second apart, each with zeta3's key in an `Authorization: Bearer` header --
+both returned `HTTP 429 Too Many Requests`. A retry after a 12-second backoff
+answered 200, and a controlled probe of eight authenticated reads at one per
+second, a minute later, answered 200 eight times.
+
+This qualifies the entry above, "Anonymous reads are rate limited per IP". That
+entry records that during the 2026-09-16 lockout "Authenticated `curl` to
+`/api/table?id=T260` answered 200 throughout", and the ideas-stage entry
+describes the authenticated path as "not rate-limited the same way". A key
+raises the ceiling; it does not remove it. An authenticated read can still be
+refused, and the refusal is a plain `429` from the proxy rather than the
+client's `RateLimitError` with a retry-in figure.
+
+What made it reachable here was self-inflicted concurrency rather than one
+greedy sweep. At 09:00 on 2026-09-23 four triage runs were alive at once --
+pids 2497164, 2499654, 2501470 and 2502749, for builds 20260923T085621Z,
+085640Z, 085700Z and 085722Z -- one per worker tree, each reading the corpus to
+write its own verdict. The four worktrees share one egress IP with the Sage
+container, so the pool spends a single budget. The failure mode of the codex
+fallback loop documented above is therefore not only a spend problem: when it
+puts all four workers into triage on the same minute, their reads contend, and
+a corpus read from any of them -- or from `agents/sage.sh` -- can be refused.
+
+What to do instead: retry an authenticated corpus read on `429` with a short
+backoff rather than treating it as fatal; two seconds was enough here. Where a
+script needs one table's document more than once, read it to a file and pass
+that to `agents/sage.sh script.py /tmp/T443.json`, which costs no request. And
+do not assume a key exempts a burst: space reads at about one per second when
+other workers may be alive.
+
+Evidence: 2026-09-23, triage of build run 20260923T085700Z. Two consecutive
+`429`s on `/api/table?id=T443` and `?id=T445` at ~08:58Z with a valid key;
+success on backoff; eight-for-eight `200` on a 1/second probe at ~09:01Z.
+`ps` showing the four concurrent triage runs. Diagnosed in
+`agents/runs/20260923T085700Z-verdict`.
