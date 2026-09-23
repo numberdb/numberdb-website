@@ -10788,3 +10788,54 @@ cost of deciding, thirty-three times, that it cannot be decided here.
 (1950272) are still running, three `campaign.sh 200` restarted at 13:17:58,
 13:23:38 and 13:23:58, and no `campaign.stop`, `workers.stop` or
 `screener.stop` exists in this tree.
+
+## The retry cost lands on single proposals, not spread across the queue: one unread batch has absorbed 29 builds and $45.73 of triage
+
+What happened: the section at 10185 shows *why* a claim-drained queue refills
+itself during a build-side outage, and proposes triage dedupe as the cheaper
+half of the fix. It does not say what the cycle costs per proposal, and the
+per-run view hides it: every triage sees one twelve-line log and prices itself
+at about `$2`, which reads as small. Grouping the four trees' ledgers by the
+batch column instead of by run shows where the money actually goes.
+
+`BATCH-2026-09-23T0506` (family #197, *Quantiles of the studentized range
+distribution*), counted across all four trees at 2026-09-23 14:05Z:
+
+    29 build attempts    turns 0 on every one     $ 0.00
+    26 triage runs       turns 14-53              $45.73
+
+First attempt `20260923T073916Z` in w3 at 07:39Z; still being re-offered six
+hours twenty minutes later, `queue.py next` → family #197, `waiting: 1`. No
+model has ever read the proposal — the builds die on a 400 before the prompt is
+sent — so the $45.73 bought twenty-six identical readings of the same refusal.
+Context: $378.88 and 160 turn-zero codex stages across the four trees since the
+outage began, so **one batch is 12% of the whole bill**.
+
+Why it concentrates rather than spreads: `CLAIM_MINUTES = 90` releases the
+claim, and `work.py next` then offers the *oldest* unclaimed proposal, which is
+the one the outage killed first. Four trees claim it in turn. Nothing carries a
+verdict between them, because a verdict is a per-worktree, per-stamp file in a
+gitignored directory that neither `campaign.sh` nor a sibling tree reads.
+
+How to measure it: the batch is field 18 of `COSTS.tsv`, and it is worth
+reading across trees rather than within one — w3 saw only 8 of the 29 attempts,
+so a single tree's ledger understates the concentration by roughly four times.
+
+    cat {.,../numberdb-website,../numberdb-campaign-w2,../numberdb-campaign-w4}\
+        /agents/runs/COSTS.tsv \
+      | awk -F'\t' '$18=="BATCH-..."{t+=$5; if($2=="build")b++; if($2=="triage")r++}
+                    END{printf "builds=%d triages=%d $%.2f\n",b,r,t}'
+
+What to do with it: this is the number that prices 10185's proposed fix. Either
+half pays for itself within a day — a queue that does not re-offer a proposal
+whose holder exited at turn zero with a `stop` verdict against it, or a triage
+that reads a sibling verdict for the same batch and exits without spending a
+turn. Until one exists, treat "each triage is only $2" as the wrong unit: the
+unit is the proposal, and it is $45.73 and rising.
+
+Evidence: 2026-09-23 14:05Z, triage of build `20260923T135906Z` (w3).
+Per-batch sums over all four trees' `COSTS.tsv` on field 18; per-tree sums from
+each tree's first `gpt-5.4` row today; `queue.py next`; 157 verdicts written
+today across the four trees, every one `stop`. `workers.sh 4` still PID 1950235
+and four `campaign.sh 200` restarted between 13:58:19 and 13:59:19 — one more
+than the three at 13:23, so the supervisor is scaling up while this is written.
