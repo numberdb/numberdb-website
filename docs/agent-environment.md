@@ -8233,3 +8233,46 @@ Evidence: 2026-09-23. `agents/queue.py show 197` and `show 198` at 08:09;
 `agents/campaign.sh` lines 464-472 and 683-710; `agents/queue.py:280`
 (`CLAIM_MINUTES = 90`); `agents/runs/20260923T080716Z-build.log`. Diagnosed in
 `agents/runs/20260923T080716Z-verdict`.
+
+## The refusal loop eats each new batch as the ideas stage produces it
+
+What happened: the entry above predicted that "proposals from an ideas run
+still in flight will be claimed and burned the same way as soon as they land."
+By 08:40 on 2026-09-23 that had happened. Family numberdb-data **#200**
+(geometric probability) landed as BATCH-2026-09-23T0812 -- five proposals,
+screened by an ideas stage that runs on claude and worked. Two were claimed and
+refused within two minutes by builds that read neither:
+
+    - [~] Mean distance between two uniform random points of a region
+            -- claimed by w2 at 08:38Z   (build 20260923T083849Z, refused 08:38:51)
+    - [~] Probability that n uniform random points ... in convex position
+            -- claimed by w1 at 08:40Z
+
+This is the part that makes the loop self-sustaining rather than merely idle.
+Ideation and critique still work, so the queue keeps refilling; the build stage
+takes each new proposal, holds it ninety minutes under `CLAIM_MINUTES`, and
+returns it unread. A fresh batch is not a recovery, it is more fuel, and the
+pool cannot work its way out on its own. Expect the same for #197 and #198 as
+their 07:38--08:07 claims begin expiring around 09:08Z.
+
+The cost curve over the same window, recomputed from the four `COSTS.tsv`:
+
+    07:00-08:07   16 zero-turn builds, 14 triages, $30.53
+    07:00-08:40   22 zero-turn builds, 21 triages, $65.11
+
+About $65 an hour, sustained, with the builds themselves free -- so nothing in
+the spend attribution points at the stage that is failing. Every dollar of it
+is triage reaching a conclusion that was already written down four times.
+
+What to do instead: nothing new -- the fix is still the three items in the two
+entries above, and the first is `touch agents/workers.stop`. Recorded here only
+so that the next person to read this file knows the failure does not decay on
+its own, and that an ideas run completing during the loop makes the pool look
+busier and cost more without building anything.
+
+Evidence: 2026-09-23. `agents/queue.py show 200` at 08:40 against the same
+command's five unclaimed rows in BATCH-2026-09-23T0812;
+`agents/runs/20260923T083849Z-build.log`; the `COSTS.tsv` of all four worker
+trees from 07:00; supervisor pid 1950235, up 12h00m, and campaign pids 2447893,
+2449530, 2460306, 2460445 all alive. Diagnosed in
+`agents/runs/20260923T083849Z-verdict`.
