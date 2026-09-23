@@ -9947,3 +9947,60 @@ dated 2026-09-20 onward. `python3 /tmp/zz_shadowtest.py` containing only
 `/tmp/inspect.py` mtime 2026-09-23 14:18 and `/tmp/screen.py` mtime
 2026-09-22 03:38. The same script run from a directory containing no
 `inspect.py` prints `ok`.
+
+## The remedy was written down at 13:0xZ and is still unused at 16:00Z; the pool has spent $161 since
+
+Not a new mechanism. The section "The supervisor holds no `NUMBERDB_*`
+variables..." above already found the lever and named it exactly:
+`touch ~/numberdb-website/agents/workers.stop`, which `workers.sh:185-190`
+checks at the top of every tick. This note records only that it has not been
+pulled, and what the delay costs, because that is the one fact a section
+written three hours ago cannot contain -- and because a reader skimming
+nineteen sections about the same failure has no way to tell which of them is
+still live. All of them are.
+
+Checked at 2026-09-23T16:00Z, triage of build `20260923T155512Z`: neither
+`agents/workers.stop` nor `agents/campaign.stop` exists in any of the four
+checkouts (`numberdb-website`, `numberdb-campaign-w2`, `-w3`, `-w4`).
+`agents/runs/codex-fallback` is present in all four, byte-identical,
+`gpt-5.4` / `xhigh`. Supervisor pid 1950235 is still up, now 19h20m.
+
+What moved since that section measured:
+
+                          13:0xZ      16:00Z
+    pool runs today        332         507
+    pool spend today       $717.38     $878.53
+    triage runs / spend    129/$247.09 217/$386.51
+    gpt-5.4 0-turn builds  134         218
+    verdicts, all `stop`   130         217
+
+Eighty-seven more `stop` verdicts and $161.15 in under three hours, and the
+proportion has not improved: triage is 44% of all spend, and 217 of 217
+verdicts today say `stop`. The rate is roughly $55/hour to keep asking a
+question that has been answered 217 times.
+
+One detail worth adding to the mechanism, because it explains why this
+particular loop cannot wear itself out the way a quota would. The fallback
+was written at 06:27 by `20260923T062751Z`, the last build that did any work:
+it ran on gpt-5.5, built T444, hit a genuine quota, and wrote the next model
+in `run.sh:80`'s chain to the marker for its successors. But `gpt-5.4` does
+not fail with 429. It fails with
+
+    400 invalid_request_error: The 'gpt-5.4' model is not supported when
+    using Codex with a ChatGPT account.
+
+-- a statement about the account's capabilities, not its budget. So the
+quota-detection at `run.sh:649-657` never recognises it, `give_up` is never
+set, exit 6 is never returned, and `campaign.sh:90-104` never hands the
+writer role to claude. The engine-handover path that exists precisely for
+"this account cannot run this stage" is unreachable by the failure that most
+needs it, because that failure is the wrong shape. A 429 would have healed
+itself hours ago; a 400 recurses forever.
+
+Evidence: `agents/runs/20260923T155512Z-build.log`, twelve lines, two
+`thread.started` events with one `turn.failed` each. Ledger row for the
+stamp: `build codex 0 turns $0.0000 error gpt-5.4`, `tokens_in=0`,
+`tokens_out=0`, empty `table`, `resumed=yes`. Counts by
+`csv.DictReader` over `/home/ubuntu/numberdb-*/agents/runs/COSTS.tsv` and
+`head -1` over `/home/ubuntu/numberdb-*/agents/runs/*-verdict` for stamps
+beginning `20260923`.
