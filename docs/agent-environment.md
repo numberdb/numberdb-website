@@ -8522,3 +8522,47 @@ eleven before it, identical but for stamp and thread id; `head -1` of all
 eleven prior verdicts -> `stop`; `COSTS.tsv` rows from 07:34Z;
 `ps -p 1950235`; the marker in all four trees; `python3 agents/queue.py show
 202`. Diagnosed in `agents/runs/20260923T093820Z-verdict`.
+
+## The `gpt-5.4` cost every verdict quotes is per-tree and understates the bill four times over
+
+What happened: build run 20260923T100219Z was the thirteenth identical zero-turn
+`gpt-5.4` 400 in this tree. The entry above it asks anyone triaging another one
+to read the diagnosis and stop rather than re-derive it, and that stands -- this
+is not a new mechanism. It is a correction to one number, because that number is
+what a person uses to decide whether this is worth getting out of bed for.
+
+Every verdict so far has counted its own worktree: "12 builds at $0.0000 and 12
+triages at about $20.50". Four worktrees run the same pool against the same
+poisoned marker, and each triages its own failures. Across all four, today, from
+07:34Z:
+
+    w2    14 failures   $20.52 over 12 triages
+    w3    13 failures   $22.01 over 12 triages
+    w4    11 failures   $22.21 over 10 triages
+    site  12 failures   $25.90 over 12 triages
+    ------------------------------------------
+          50 failures   $90.64 over 46 triages
+
+Why it matters: the per-tree figure reads like a nuisance and the real one does
+not. The builds are free -- they die in two seconds -- so the triage *is* the
+expense, it scales with the number of workers, and it does not stop on its own.
+The rate is about $4 and one screened proposal every twenty-five minutes.
+
+The proposal side is the part that never shows in the ledger. Issue #202 went
+from four of six claimed at 09:38Z to five of six at 10:02Z, each by a run that
+never read a word of it. None can be skipped, because none was judged; they
+rotate on `CLAIM_MINUTES = 90` and need clearing by hand.
+
+One thing confirmed rather than assumed, because it rules out the obvious remedy:
+deleting the markers is not enough *yet*. `agents/runs/20260923T073411Z-repair.log`
+carries the usage limit that wrote them -- "try again at Sep 25th, 2026 3:51 AM".
+Clearing a marker puts the run back on gpt-5.5, which is still over its limit, and
+`out_of_quota` writes the marker again on the way down. The loop restores itself
+until either that date passes or `run.sh:80` is edited. `NUMBERDB_WRITER=claude`
+remains the remedy that needs neither.
+
+Evidence: 2026-09-23, 10:06Z. `COSTS.tsv` in all four trees filtered from 07:34Z;
+`agents/runs/20260923T100219Z-build.log`; `agents/runs/20260923T073411Z-repair.log`;
+`ps -p 1950235` (still up, 13h27m); the marker present in all four trees;
+`python3 agents/queue.py show 202`. Diagnosed in
+`agents/runs/20260923T100219Z-verdict`.
