@@ -1,0 +1,100 @@
+# The table document for numberdb.org/T449. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Best known packings of equal circles in an equilateral triangle
+Definition: >-
+  For each integer $n\geq2$, $d_n$ is the largest possible minimum distance
+  among $n$ points in a unit-side equilateral triangle. The table also stores
+  $S_n=2\sqrt3+2/d_n$, the side length of the smallest equilateral triangle
+  containing $n$ non-overlapping unit circles. Thus each packing value is
+  listed in two invertible normalisations.
+Keywords:
+  - circle packing
+  - circles in an equilateral triangle
+  - equal circles in a triangle
+  - point packing in a triangle
+Parameters:
+  n:
+    type: Z
+    title: number of circles
+    display: $n$
+    constraints: $n\geq2$
+  normalisation:
+    type: Symbolic
+    title: whether the row holds the separation $d_n$ or the container side length $S_n$
+    display: normalisation
+    constraints: either `separation` or `container`
+    values:
+      separation: $d_n$
+      container: $S_n$
+Comments:
+  comment-normalisation: >-
+    The `separation` rows measure points in a unit-side equilateral triangle.
+    The `container` rows use unit small circles and give the side length of the
+    enclosing equilateral triangle.
+  comment-source: >-
+    The source table copied from Wikipedia CITE{WikiTriangle} was read on
+    23-Sep-2026. It lists exact side lengths for $1\leq n\leq15$ and states
+    that optimality is proven for $n\leq15$.
+  comment-proof-status: >-
+    Optimality is proven for every stored row, $2\leq n\leq15$ CITE{Melissen}
+    CITE{Payan}. The conjectural families beyond this range are not included
+    here.
+Formulas:
+  formula-conversion: >-
+    $S_n=2\sqrt3+2/d_n$, equivalently $d_n=2/(S_n-2\sqrt3)$.
+  formula-triangular: >-
+    If $n=k(k+1)/2$ for one of the stored triangular-number rows, then
+    $S_n=2(k-1)+2\sqrt3$ and $d_n=1/(k-1)$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.real_arb import RealBallField
+
+      R = RealBallField(numberdb.bits(100, losing=64))
+      S8 = R(2) + R(2) * R(3).sqrt() + (R(2) / R(3)) * R(33).sqrt()
+      d8 = R(2) / (S8 - R(2) * R(3).sqrt())
+      d8, S8
+Similar tables:
+  - table: HREF{Best_known_packings_of_equal_circles_in_a_circle}[Best known packings of equal circles in a circle]
+    relation: the same finite equal-circle packing problem in a disk rather than in an equilateral triangle
+  - table: HREF{Densities_of_the_densest_known_lattice_sphere_packings}[Densities of the densest known lattice sphere packings]
+    relation: stores infinite lattice sphere packing densities rather than best known finite configurations in a bounded container
+  - table: HREF{Kissing_numbers}[Kissing numbers]
+    relation: another finite extremal packing problem for equal spheres
+Links:
+  WikiTriangle:
+    title: 'Wikipedia: Circle packing in an equilateral triangle'
+    url: https://en.wikipedia.org/wiki/Circle_packing_in_an_equilateral_triangle
+References:
+  Melissen:
+    bib: H. Melissen, Densest packings of congruent circles in an equilateral triangle, The American Mathematical Monthly 100 (1993), no. 10, 916-925.
+    doi: 10.2307/2324212
+    mr: '1252928'
+  Payan:
+    bib: C. Payan, Empilement de cercles egaux dans un triangle equilateral. A propos d'une conjecture d'Erdos-Oler, Discrete Mathematics 165/166 (1997), 555-565.
+    doi: 10.1016/S0012-365X(96)00201-4
+    mr: '1439300'
+Tags:
+  - discrete geometry
+  - extremal configurations
+  - sequence
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds both normalisations for every $2\leq n\leq15$ from the source
+    table, the range for which it gives exact side-length formulas and proven
+    optimality
+  rigour details: >-
+    Each container row is computed in Sage real ball arithmetic from the exact
+    radical formula transcribed from CITE{WikiTriangle}. Each transcribed
+    formula was checked against the decimal printed beside it in the source
+    table. The separation rows are computed from Formula CITE{formula-conversion},
+    and the generator checks that converting them back gives the same $S_n$.
+Display properties:
+  number-header: $d_n$ or $S_n$
+Numbers: []
