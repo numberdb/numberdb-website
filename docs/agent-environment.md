@@ -9814,3 +9814,65 @@ Evidence: 2026-09-23, T417 critique. `/tmp/crit417.py` failed with
 `ModuleNotFoundError: No module named 'django'` at line 11; `/tmp/probe417.py`
 printed `/app ERR [Errno 2] No such file or directory` and `/opt
 ['numberdb-client']`.
+
+## The node MathJax check passes everything unless `formatError` is made to throw
+
+What happened: the T432 critique typeset every `$...$` fragment of the draft
+with `mathjax-full@3` in node, the way the T221 note describes, and got
+"checked 17 errors 0" -- including the planted control `\frac{1}{2`, which has
+an unclosed brace and must fail. The check was reporting success on a fragment
+that cannot render.
+
+The cause is that MathJax's TeX input jax does not throw on a TeX error. Its
+default `formatError` swallows the exception and returns a *merror* node, so
+`doc.convert(tex)` returns normally and a `try`/`catch` around it never fires.
+The T221 note says its control did raise, so that run must have configured
+this and the note does not record it; a later run following the note as
+written gets a check that passes every fragment, valid or not, which is worse
+than no check at all.
+
+What to do instead: construct the input jax with an error handler that
+rethrows, and always plant a control fragment that must fail:
+
+```js
+new TeX({packages: AllPackages,
+         formatError: (jax, err) => { throw err; }})
+```
+
+With that one option the control fails with "Missing close brace" and the
+sixteen real fragments still pass. If the control passes, the harness is
+broken -- do not report the table's TeX as checked.
+
+Evidence: 2026-09-23, T432 critique. `/tmp/mjcheck.js` and `/tmp/frags.json`;
+before the change, "checked 17 errors 0"; after it, `ERROR in CONTROL :
+\frac{1}{2 -> Missing close brace` and "checked 17 errors 1".
+
+## `api/table` needs `Authorization: Bearer`, and any other scheme reads as a missing table
+
+What happened: the T432 critique's first authenticated read sent
+`Authorization: Api-Key <key>` and got `{"error": "Table with id 'T432' does
+not exist."}`. T432 exists; it is a draft. The header name was right and the
+scheme was not, so the request arrived unauthenticated, and `api.table`
+answers a draft the caller may not see with the same "does not exist" it gives
+a number nobody has used. Four neighbouring T-numbers were probed the same way
+and the run was three calls from concluding the table had never been built.
+
+The client settles it: `clients/python/numberdb/_http.py` sends
+`'Authorization': 'Bearer %s'`, in both the read and the write path. With
+`Bearer` the same URL returned the whole document.
+
+This is the same trap `agents/sage.sh` warns about for a script that never
+reads the key off stdin, reached by a different route: the failure mode is not
+"denied" but "does not exist", and it looks like a fact about the corpus
+rather than about the request. The HTML route is stricter still and honours no
+key at all -- `https://numberdb.org/T432` answers 404 with `Bearer` as well as
+without, because the table view resolves a session.
+
+What to do instead: use `Authorization: Bearer` for every API call, and when a
+T-number in your own campaign's range answers "does not exist", check the
+scheme before believing it. `curl -s -H "Authorization: Bearer $(cat
+"$NUMBERDB_KEY_FILE")" "https://numberdb.org/api/table?id=T432"`.
+
+Evidence: 2026-09-23, T432 critique. `Api-Key` gave the "does not exist" error
+for T428 through T432; `Bearer` gave 200 and 2,969 bytes for T432 and the
+titles of the other four.
