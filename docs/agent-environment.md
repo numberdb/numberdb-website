@@ -9441,3 +9441,66 @@ ledgers merged and deduplicated in Python; `ps -ef` -> pid 1950235 up since Sep
 22 20:38 and four `campaign.sh 200` spawned 14:29--14:35; the marker still
 `gpt-5.4` / `xhigh` in all four trees; no `workers.stop` anywhere. Diagnosed in
 `agents/runs/20260923T143445Z-verdict`.
+
+## The fallback has never once worked: `gpt-5.4` is 181 builds and 0 turns, and waiting out the quota leaves it armed
+
+What happened: build run `20260923T144045Z` was the **fiftieth** identical
+zero-turn `gpt-5.4` 400 in this tree; all forty-nine prior verdicts say `stop`.
+No new mechanism -- `:4914` diagnosed it and the entries from `:8428` on hold
+it, and the instruction there to read them rather than re-derive them stands.
+
+What is new is a number that changes what a person should fix. Split every
+build in all four ledgers by model, deduplicated by `(started, stage, log)`:
+
+    gpt-5.5    238 builds    238 with turns > 0    207 tables
+    gpt-5.4    181 builds      0 with turns > 0      0 tables
+
+`gpt-5.4` has produced **zero turns in every build it has ever been given**.
+It is not a degraded path, and today's outage is not when it broke. By day:
+
+    09-18   gpt-5.4=1    gpt-5.5=20
+    09-19 .. 09-22       gpt-5.5=97      (fallback dormant, never fired)
+    09-23   gpt-5.4=180  gpt-5.5=22
+
+The single build on 18 September is `20260918T023210Z` -- the one `:4914` was
+written about. That entry was correct, complete, and named the remedy the same
+day. Then gpt-5.5's quota recovered, the campaign built 117 more tables over
+five days, and the marker sat armed behind every one of them because nothing
+re-read it while builds were succeeding.
+
+Why it matters: it rules out the remedy that looks cheapest. Every entry above
+offers "wait out the quota **or** `NUMBERDB_WRITER=claude`" as alternatives.
+They are not alternatives. Waiting for 2026-09-25 03:51 UTC stops the symptom
+and restores the exact state of 18 September: the next time gpt-5.5 hits a
+limit, for any reason and on any batch, `run.sh:80` writes `gpt-5.4` into
+`agents/runs/codex-fallback` again and the pool resumes burning screened
+proposals for free. The quota is the trigger; the fault is that
+`codex_fallbacks` defaults to a model the ChatGPT account is not entitled to,
+and it is one string at `agents/run.sh:80`. A fallback that fails for $0 is
+invisible to the spend curve, so this will not announce itself next time
+either -- it did not this time, for five days.
+
+The running total, which `:9206` designates as the one figure worth restating.
+All four trees, deduplicated, since 07:34:39Z -- 7.11 hours:
+
+    build    176 runs    $  0.00       0 turns    0 tables
+    ideas     10 runs    $ 86.74     702 turns
+    triage   171 runs    $311.22    6248 turns
+    ---------------------------------------------------
+    TOTAL    357 runs    $397.96              $55.95/hour
+
+$312.63 at 13:20Z, $391.24 at 14:35Z, $397.96 at 14:43Z. Shape unchanged:
+builds free, triage the entire bill at a mean of $1.82.
+
+On the claim side, the rotation warning at `:9400` held within seven minutes of
+being written: #203 went from "4 left" at 14:35Z to all six `[~]` and out of
+`queue.py open` by 14:42Z, claimed between 14:34Z and 14:41Z by six dead builds
+across w1--w4.
+
+Evidence: 2026-09-23, 14:43Z. `agents/runs/20260923T144045Z-build.log` (1534
+bytes, as the 49 before it); `head -1` of all 49 prior verdicts -> `stop`; the
+four `COSTS.tsv` ledgers merged in Python and grouped by `model` and by day;
+`agents/run.sh:70-81`; `python3 agents/queue.py open` and `show 203 204 205
+206`; `ps -ef` -> four `campaign.sh 200`, build pid 3040106 launched 14:41Z; the
+marker still `gpt-5.4` / `xhigh`; no `workers.stop` anywhere. Diagnosed in
+`agents/runs/20260923T144045Z-verdict`.
