@@ -10217,6 +10217,7 @@ Running total, appended by each triage that measures it, same window (from
     17:50Z  $559.69   554 runs  (triage 269 / ideas 11 / build 274)
     18:45Z  $604.23   618 runs  (triage 302 / ideas 11 / build 305)
     18:56Z  $611.31   631 runs  (triage 307 / ideas 12 / build 312)
+    19:28Z  $619.71   643 runs  (triage 313 / ideas 12 / build 318)
 
 The build column is the one to read: 305 runs, **0 turns between them**, and 31
 more of them than at 17:50Z. `ideas` has not run since 20260923T160954Z
@@ -13946,3 +13947,99 @@ generators/tracy-widom-distribution-functions/`; `agents/queue.py show 196` and
 `GET /api/claim?family=196` at 18:27Z, showing the proposal re-claimed by w1 at
 18:21:29.8Z. Counts from `agents/runs/COSTS.tsv`: 80 `gpt-5.4` builds today at
 0 turns, 79 triage runs at $131.62, 79 verdicts all `stop`.
+
+## The fix for the `gpt-5.4` outage changed the default, and the outage is driven by the marker
+
+`2488b51e` ("run: no codex fallback model by default", authored 19:02:35Z on
+2026-09-23) diagnoses the outage correctly and changes a line the failing path
+does not read. Seventeen seconds after it merged into `campaign/w2` as
+`63eaccb7`, build run `20260923T190853Z` started at 19:08:53Z and failed on the
+same 400 as the 79 before it -- the 80th in that tree.
+
+The two are different lines with different jobs, and the distinction is the
+whole of this note:
+
+* `run.sh:96` `codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-}"` is the chain
+  consulted **at the moment of a quota failure**, to pick the next model down.
+  That is what `2488b51e` emptied, and emptying it is right.
+* `run.sh:599-618` reads `agents/runs/codex-fallback` and assigns `codex_model`
+  from it **before the run starts**, whenever `NUMBERDB_CODEX_MODEL` is unset.
+  That is what actually puts a build on `gpt-5.4`, and nothing in the commit
+  touches it.
+
+A build never gets from the first to the second, because the 400 is not a quota:
+`out_of_quota` is false, so `codex_fallbacks` is not consulted at all and
+control goes straight to the resume at `:703`. The banner names the mechanism on
+every one of these runs, at `:616`:
+
+    === build run 20260923T190853Z, engine codex
+    === a previous run hit a quota; running gpt-5.4 at effort xhigh
+
+So **the new default is unreachable while a marker stands**, and on 2026-09-23
+one stood in every tree (`gpt-5.4` / `xhigh`, mtimes 07:25:01Z-07:34:27Z).
+`run.sh:701` already knows the missing step -- *"delete $fallback_marker to
+start from the first model again"* -- and prints it only on the give-up path,
+which this failure never reaches.
+
+Worth stating plainly for whoever ships the next fix: a correct diagnosis, a
+correct patch and a merge are not evidence that the pool is building. The
+marker is untracked (`agents/runs` is gitignored, `:10141`), so it survives
+every commit, merge and restart, and it is per-worktree (`:8177`) -- a patch
+fixes all four trees at once and the markers do not.
+
+Evidence: 2026-09-23, triage of `20260923T190853Z-build.log`. `git show
+2488b51e`; `git log --date=format-local` in UTC for the
+19:02:35Z / 19:02:52Z / 19:08:53Z ordering; `run.sh:52`, `:96`, `:599-618`,
+`:638-708`; the banner at `campaign-w2.log:59093-59096`; marker contents and
+mtimes in all four trees; `grep -l` for the 400 over the 111 build logs in w2
+-> 80.
+
+## `gpt-5.5` is serving again, twelve hours early: the "not until Sep 25 03:51" premise is spent
+
+Every entry since the marker was written has carried the same figure -- the
+`gpt-5.5` quota "does not refill until 2026-09-25 03:51 UTC" (`:8171`, `:8535`,
+`:9490`, `:11138`, `:12768`). It is now wrong, and several recommendations rest
+on it.
+
+Probed at 19:20Z on 2026-09-23, from inside a repository so the trust check
+passes:
+
+    codex exec --model gpt-5.5 -s read-only --skip-git-repo-check \
+        "Reply with exactly: ok"
+    -> ok          (xhigh effort, 7,609 tokens, no rate-limit event)
+
+(Run outside a git repository it fails with *"Not inside a trusted directory and
+--skip-git-repo-check was not specified"* -- a refusal that looks nothing like a
+quota but stops the probe just as dead. Pass the flag, or probe from a worktree.)
+
+The marker was born on a real exhaustion at 07:34Z in repair run
+`20260923T073411Z` (`campaign-w2.log:41614`, `=== out of quota on gpt-5.5;
+resuming on gpt-5.4 at effort xhigh`). Whatever window that was has refilled
+twelve hours early, so the account can use its primary model now.
+
+What that changes, because it makes the standing remedy smaller rather than
+larger:
+
+* **No waiting.** `:9490` offers "waiting for 2026-09-25 03:51 UTC" as one of
+  two routes. It has already arrived.
+* **`NUMBERDB_WRITER=claude` is no longer a precondition** (`:8461`, `:9620`,
+  `:9990`). It was a way to route around a codex that could not run; codex runs.
+  Still a fine fallback, no longer required.
+* **Deleting the four markers is now sufficient**, and with `2488b51e` in place
+  the chain behind them is empty -- so a future genuine exhaustion exits 6 and
+  `campaign.sh` hands the stage to claude, instead of writing a marker for an
+  unusable model. The two halves of the repair fit together; only the marker
+  deletion is missing.
+* `:12768`'s "it does not converge" still holds as written -- a refill changes
+  nothing *while the marker stands* -- but its example has now happened, and the
+  marker is the only thing still holding.
+
+Order unchanged (`:13930`): `queue.py built 196 ...` to tick T441 first, then
+clear the markers, then restart. Ticking after restarting sends the first
+healthy build in thirteen hours to rebuild T441 and collide with its own draft.
+
+Evidence: 2026-09-23, 19:20-19:28Z, triage of `20260923T190853Z-build.log`. The
+probe above, twice (once without the flag, to record the refusal);
+`campaign-w2.log:41614` and the surrounding banner for repair run
+`20260923T073411Z`; marker mtime 07:34:27.331Z in w2 matching it; T443 (1001
+values, 06:18Z) as the last thing gpt-5.5 built.
