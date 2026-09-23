@@ -116,11 +116,12 @@ Data properties:
   rigour: heuristic (agreement-checked)
   rigour details: >-
     Values are computed in Hartree variables by a shooting method for the
-    Falkner-Skan initial slope, followed by an augmented initial-value
-    integration of the thermal quadrature. Each value is computed twice at
-    the working precisions stated in `generate.py`, and only the digits common
-    to both runs are written. The row $\beta=0$, $\mathrm{Pr}=1$ is also
-    checked against Reynolds's analogy in CITE{formula-reynolds}.
+    Falkner-Skan initial slope, using fixed-step fourth-order Runge-Kutta for
+    the velocity profile and Simpson quadrature for the thermal integral. Each
+    value is computed twice, with the step sizes and working precisions stated
+    in `generate.py`, and the values are stored to 10 significant digits. The
+    row $\beta=0$, $\mathrm{Pr}=1$ is also checked against Reynolds's analogy
+    in CITE{formula-reynolds}.
   complete: 'no'
   complete-note: >-
     it holds the upper branch for $\beta=-0.19$ and for every tenth from

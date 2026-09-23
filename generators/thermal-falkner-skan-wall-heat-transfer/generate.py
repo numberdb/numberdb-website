@@ -1,4 +1,4 @@
-"""Wall heat transfer of the thermal Falkner-Skan boundary layer -- numberdb.org/T417.
+"""Wall heat transfer -theta'(0) of the thermal Falkner-Skan boundary layer -- numberdb.org/T417.
 
 For the upper branch of the Falkner-Skan profile, this computes
 
@@ -33,8 +33,13 @@ from mpmath import mp
 
 
 TABLE = os.environ.get("NUMBERDB_TABLE", "T417")
-DIGITS = 12
-WORKING_DIGITS = (24, 30)
+DIGITS = 10
+WORKING_DIGITS = (30, 36)
+WORKING_STEPS = {
+    24: Fraction(1, 500),
+    30: Fraction(1, 1000),
+    36: Fraction(1, 2000),
+}
 BRANCHES = ("upper",)
 NORMALISATIONS = ("wedge", "hartree")
 
@@ -104,6 +109,11 @@ def _eta_limit(beta):
 
 def _shooting_guess(beta):
     beta = _mp_fraction(beta)
+    if beta >= 0:
+        guess = mp.mpf("0.4695999883610133")
+        guess += mp.mpf("0.95") * beta
+        guess -= mp.mpf("0.19") * beta * beta
+        return max(mp.mpf("0.05"), guess)
     guess = mp.mpf("0.4695999883610133") + mp.mpf("0.88") * beta
     guess += mp.mpf("0.05") * beta * beta
     return max(mp.mpf("0.015"), guess)
@@ -113,53 +123,172 @@ def _ode_tolerance():
     return mp.mpf(10) ** (-(mp.dps - 8))
 
 
-def _end_slope(beta, shear, eta_max):
-    def ode(_eta, state):
-        f, fp, fpp = state
-        return [fp, fpp, -f * fpp - beta * (1 - fp * fp)]
-
-    solution = mp.odefun(
-        ode,
-        mp.mpf("0"),
-        [mp.mpf("0"), mp.mpf("0"), shear],
-        tol=_ode_tolerance(),
-    )
-    return solution(eta_max)[1]
+def _step_for(working):
+    return _mp_fraction(WORKING_STEPS.get(working, Fraction(1, 1000)))
 
 
-def _shoot(beta_fraction):
+def _rk4_count(eta_max, step):
+    n = int(mp.ceil(eta_max / step))
+    if n % 2:
+        n += 1
+    return n, eta_max / n
+
+
+def _velocity_rhs(beta, f, fp, fpp):
+    return fp, fpp, -f * fpp - beta * (1 - fp * fp)
+
+
+def _rk4_velocity_end(beta, shear, eta_max, step):
+    n, h = _rk4_count(eta_max, step)
+    f = mp.mpf("0")
+    fp = mp.mpf("0")
+    fpp = shear
+    for _ in range(n):
+        k1 = _velocity_rhs(beta, f, fp, fpp)
+        k2 = _velocity_rhs(
+            beta,
+            f + h * k1[0] / 2,
+            fp + h * k1[1] / 2,
+            fpp + h * k1[2] / 2,
+        )
+        k3 = _velocity_rhs(
+            beta,
+            f + h * k2[0] / 2,
+            fp + h * k2[1] / 2,
+            fpp + h * k2[2] / 2,
+        )
+        k4 = _velocity_rhs(
+            beta,
+            f + h * k3[0],
+            fp + h * k3[1],
+            fpp + h * k3[2],
+        )
+        f += h * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]) / 6
+        fp += h * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]) / 6
+        fpp += h * (k1[2] + 2 * k2[2] + 2 * k3[2] + k4[2]) / 6
+    return f, fp, fpp
+
+
+def _shoot(beta_fraction, step):
     beta = _mp_fraction(beta_fraction)
     eta_max = _eta_limit(beta_fraction)
 
     def residual(shear):
-        return _end_slope(beta, shear, eta_max) - 1
+        return _rk4_velocity_end(beta, shear, eta_max, step)[1] - 1
 
     guess = _shooting_guess(beta_fraction)
+    threshold = mp.mpf(10) ** (-min(14, max(8, mp.dps // 2)))
+    root = _root_near_guess(residual, guess, threshold)
+    if root is not None:
+        return root
+
     pairs = (
+        (guess * mp.mpf("0.95"), guess * mp.mpf("1.05")),
+        (guess * mp.mpf("0.90"), guess * mp.mpf("1.10")),
         (guess * mp.mpf("0.75"), guess * mp.mpf("1.25")),
         (guess * mp.mpf("0.45"), guess * mp.mpf("1.60")),
         (mp.mpf("0.01"), max(mp.mpf("0.08"), guess)),
         (mp.mpf("0.05"), mp.mpf("1.0")),
         (mp.mpf("0.25"), mp.mpf("3.0")),
     )
-    for a, b in pairs:
+    for low, high in pairs:
+        root = _root_from_bracket(residual, low, high, threshold)
+        if root is not None:
+            return root
+
+        try:
+            flow = residual(low)
+            fhigh = residual(high)
+        except Exception:
+            continue
+        if not (_reasonable_residual(flow) and _reasonable_residual(fhigh)):
+            continue
         try:
             root = mp.findroot(
                 residual,
-                (a, b),
-                tol=mp.mpf(10) ** (-(mp.dps - 10)),
-                maxsteps=25,
+                (low, high),
+                tol=threshold,
+                maxsteps=12,
             )
         except Exception:
-            continue
-        if root > 0 and mp.isfinite(root):
-            if abs(residual(root)) < mp.mpf(10) ** (-(mp.dps // 2)):
+            root = None
+        if root is not None and root > 0 and mp.isfinite(root):
+            if abs(residual(root)) < threshold:
                 return root
 
-    return _scan_for_positive_root(residual)
+    return _scan_for_positive_root(residual, threshold)
 
 
-def _scan_for_positive_root(residual):
+def _reasonable_residual(value):
+    return mp.isfinite(value) and abs(value) < mp.mpf("1.0e6")
+
+
+def _root_near_guess(residual, guess, threshold):
+    try:
+        fguess = residual(guess)
+    except Exception:
+        return None
+    if abs(fguess) < threshold:
+        return guess
+    if not _reasonable_residual(fguess):
+        return None
+
+    upper_factors = (
+        "1.005", "1.01", "1.02", "1.05", "1.10", "1.20", "1.35",
+    )
+    for factor in upper_factors:
+        root = _root_from_bracket(
+            residual, guess, guess * mp.mpf(factor), threshold,
+            flow=fguess)
+        if root is not None:
+            return root
+
+    lower_factors = (
+        "0.995", "0.99", "0.98", "0.95", "0.90", "0.80", "0.65",
+    )
+    for factor in lower_factors:
+        root = _root_from_bracket(
+            residual, guess * mp.mpf(factor), guess, threshold,
+            fhigh=fguess)
+        if root is not None:
+            return root
+    return None
+
+
+def _root_from_bracket(residual, low, high, threshold,
+                       flow=None, fhigh=None):
+    try:
+        if flow is None:
+            flow = residual(low)
+        if fhigh is None:
+            fhigh = residual(high)
+    except Exception:
+        return None
+    if abs(flow) < threshold:
+        return low
+    if abs(fhigh) < threshold:
+        return high
+    if not (_reasonable_residual(flow) and _reasonable_residual(fhigh)):
+        return None
+    if flow * fhigh >= 0:
+        return None
+    try:
+        root = mp.findroot(
+            residual, (low, high), tol=threshold, maxsteps=12)
+        if low <= root <= high and abs(residual(root)) < threshold:
+            return root
+    except Exception:
+        pass
+    root = _bisect_positive_root(residual, low, high, flow)
+    try:
+        if abs(residual(root)) < threshold:
+            return root
+    except Exception:
+        return None
+    return None
+
+
+def _scan_for_positive_root(residual, threshold):
     points = [mp.mpf("0")]
     point = mp.mpf("0.004")
     while point < mp.mpf("5"):
@@ -172,23 +301,32 @@ def _scan_for_positive_root(residual):
     brackets = []
     for point in points[1:]:
         value = residual(point)
-        if last_value == 0:
+        if abs(last_value) < threshold:
             return last_point
-        if value == 0:
+        if abs(value) < threshold:
             return point
-        if last_value * value < 0:
+        if (
+            _reasonable_residual(last_value)
+            and _reasonable_residual(value)
+            and last_value * value < 0
+        ):
             brackets.append((last_point, point, last_value, value))
         last_point, last_value = point, value
 
-    if not brackets:
-        raise RuntimeError("could not bracket the upper Falkner-Skan branch")
+    for low, high, flow, fhigh in reversed(brackets):
+        root = _root_from_bracket(
+            residual, low, high, threshold, flow=flow, fhigh=fhigh)
+        if root is not None:
+            return root
+    raise RuntimeError("could not bracket the upper Falkner-Skan branch")
 
-    low, high, flow, fhigh = brackets[-1]
-    for _ in range(max(80, 2 * mp.dps)):
+
+def _bisect_positive_root(residual, low, high, flow):
+    for _ in range(52):
         mid = (low + high) / 2
         fmid = residual(mid)
         if flow * fmid <= 0:
-            high, fhigh = mid, fmid
+            high = mid
         else:
             low, flow = mid, fmid
     return (low + high) / 2
@@ -204,6 +342,56 @@ def _thermal_tail(prandtl, integral_f, f_at_end, working):
         * mp.e ** (prandtl * f_at_end * f_at_end / 2)
         * mp.erfc(z)
     )
+
+
+def _profile_integral_grid(beta, shear, eta_max, step):
+    n, h = _rk4_count(eta_max, step)
+    f = mp.mpf("0")
+    fp = mp.mpf("0")
+    fpp = shear
+    integral_f = mp.mpf("0")
+    grid = [integral_f]
+
+    def rhs(f_value, fp_value, fpp_value):
+        df, dfp, dfpp = _velocity_rhs(beta, f_value, fp_value, fpp_value)
+        return df, dfp, dfpp, f_value
+
+    for _ in range(n):
+        k1 = rhs(f, fp, fpp)
+        k2 = rhs(
+            f + h * k1[0] / 2,
+            fp + h * k1[1] / 2,
+            fpp + h * k1[2] / 2,
+        )
+        k3 = rhs(
+            f + h * k2[0] / 2,
+            fp + h * k2[1] / 2,
+            fpp + h * k2[2] / 2,
+        )
+        k4 = rhs(
+            f + h * k3[0],
+            fp + h * k3[1],
+            fpp + h * k3[2],
+        )
+        f += h * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]) / 6
+        fp += h * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]) / 6
+        fpp += h * (k1[2] + 2 * k2[2] + 2 * k3[2] + k4[2]) / 6
+        integral_f += h * (k1[3] + 2 * k2[3] + 2 * k3[3] + k4[3]) / 6
+        grid.append(integral_f)
+    return f, fp, fpp, integral_f, h, grid
+
+
+def _simpson_exponential_integral(prandtl, h, grid):
+    total = mp.e ** (-prandtl * grid[0]) + mp.e ** (-prandtl * grid[-1])
+    odd = mp.mpf("0")
+    even = mp.mpf("0")
+    for index, value in enumerate(grid[1:-1], start=1):
+        term = mp.e ** (-prandtl * value)
+        if index % 2:
+            odd += term
+        else:
+            even += term
+    return h * (total + 4 * odd + 2 * even) / 3
 
 
 @lru_cache(maxsize=None)
@@ -237,28 +425,25 @@ def _compute_values_for_beta(beta_text, working):
     beta_fraction = Fraction(beta_text)
     beta = _mp_fraction(beta_fraction)
     eta_max = _eta_limit(beta_fraction)
-    shear = _shoot(beta_fraction)
+    step = _step_for(working)
+    shear = _shoot(beta_fraction, step)
     prandtls = tuple(_mp_fraction(prandtl) for prandtl in PRANDTL_VALUES)
     scale = 1 / mp.sqrt(2 - beta)
-
-    def ode(_eta, state):
-        f, fp, fpp, integral_f = state[:4]
-        out = [fp, fpp, -f * fpp - beta * (1 - fp * fp), f]
-        for prandtl in prandtls:
-            out.append(mp.e ** (-prandtl * integral_f))
-        return out
-
-    initial = [mp.mpf("0"), mp.mpf("0"), shear, mp.mpf("0")]
-    initial.extend([mp.mpf("0")] * len(prandtls))
-    solution = mp.odefun(ode, mp.mpf("0"), initial, tol=_ode_tolerance())
-    at_end = solution(eta_max)
-    f_at_end = at_end[0]
-    integral_f = at_end[3]
+    f_at_end, fp_at_end, _fpp_at_end, integral_f, h, grid = \
+        _profile_integral_grid(beta, shear, eta_max, step)
+    residual = abs(fp_at_end - 1)
+    residual_limit = mp.mpf(10) ** (-min(10, max(8, mp.dps // 2)))
+    if residual > residual_limit:
+        raise RuntimeError(
+            "shooting residual %s exceeds %s for beta=%s"
+            % (_as_text(residual, working), _as_text(residual_limit, working),
+               beta_text)
+        )
 
     values = {}
     for index, prandtl_fraction in enumerate(PRANDTL_VALUES):
         prandtl = prandtls[index]
-        integral = at_end[4 + index]
+        integral = _simpson_exponential_integral(prandtl, h, grid)
         integral += _thermal_tail(prandtl, integral_f, f_at_end, working)
         hartree = 1 / integral
         values[(str(prandtl_fraction), "hartree")] = _as_text(hartree, working)
@@ -289,6 +474,16 @@ def check_controls():
             % (_as_text(wedge_heat, 40), _as_text(wedge_shear, 40))
         )
     print("Blasius/Reynolds controls passed", flush=True)
+
+
+def _only_params(argument):
+    requested = {}
+    for item in argument.split(","):
+        if not item:
+            continue
+        key, value = item.split("=", 1)
+        requested[key.strip()] = value.strip()
+    return requested
 
 
 class ThermalFalknerSkanWallHeatTransfer(numberdb.Generator):
@@ -329,7 +524,11 @@ def main():
     _key_from_stdin()
     check_controls()
     generator = ThermalFalknerSkanWallHeatTransfer()
-    if os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
+    if "--only" in sys.argv:
+        index = sys.argv.index("--only")
+        params = _only_params(sys.argv[index + 1])
+        print(generator.value(params, generator.digits))
+    elif os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
         print(generator.publish(
             message="thermal Falkner-Skan wall heat transfer on the upper branch"))
     else:
