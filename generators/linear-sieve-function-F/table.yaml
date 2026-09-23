@@ -1,8 +1,6 @@
 Title: Values of the linear sieve function $F(s)$
-Definition: The upper linear sieve function $F$ is the continuous function in the dimension-one
-  linear sieve normalisation of Halberstam-Richert and Iwaniec, with $sF(s)=2e^\gamma$
-  for $0<s\leq3$ and $(sF(s))'=f(s-1)$ for $s>3$, coupled to the lower function
-  $f$ by $sf(s)=0$ for $0<s\leq2$ and $(sf(s))'=F(s-1)$ for $s>2$ CITE{CambridgeLinearSieve}.
+Definition: The upper linear sieve function $F$ is the upper function in the dimension-one
+  linear sieve normalisation of Halberstam-Richert and Iwaniec CITE{CambridgeLinearSieve}.
   This table gives $F(s)$ at rational sifting ratios $s$.
 Keywords:
 - upper linear sieve function
