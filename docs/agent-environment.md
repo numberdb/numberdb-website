@@ -9821,3 +9821,66 @@ uniform random points` on #200 at 15:18Z. Pool-wide since 07:25:22Z: 401 runs,
 $437.28 -- 194 builds at $0.00 and not one past turn 0, 193 triages at $350.54
 and all 193 successful. `run.sh:52,288-301,583-592,644,655,685`;
 `grep -rn fallback` over `*.sh`; `crontab -l`.
+
+## Correction: the campaign branches *are* on GitHub. `run.sh` pushes them; only the merge is missing
+
+What happened: the note above headed "Only the `main` checkout's notes leave
+the machine" tells a campaign worker that its write-up "is committed, and then
+stops", that "`git push` is refused for these runs, the branch has nowhere to
+push to anyway", and that a campaign triage therefore has "no channel to a
+person at all". The first half of that is wrong, and it is the half a reader
+acts on: it says do not bother looking, when in fact the notes are already
+published.
+
+The evidence it rested on is real but does not mean what it was read to mean.
+`git for-each-ref` does give an **empty upstream** for `campaign/w2`, `w3` and
+`w4` -- no tracking ref is configured. But `git push origin HEAD` does not need
+one. It pushes to the same-named branch on the remote, and `run.sh:823-827`
+runs exactly that at the end of every run:
+
+    if [ "${NUMBERDB_PUSH:-1}" = "1" ] \
+            && [ -n "$(git log --oneline origin/main..HEAD 2>/dev/null)" ]; then
+        if git push --quiet origin HEAD 2>/dev/null; then
+            echo "=== pushed $(git rev-parse --short HEAD)"
+
+It succeeds. `agents/runs/campaign-w4.log` for run `20260923T153048Z` carries
+`=== pushed 383b390a` at 15:30Z, and `git ls-remote --heads origin` agrees --
+all three campaign branches are on GitHub and current to the byte:
+
+    campaign/w2   local 113fd5df   remote 113fd5df   same
+    campaign/w3   local 299665e6   remote 299665e6   same
+    campaign/w4   local 383b390a   remote 383b390a   same
+
+So **54 commits touching this file on `campaign/w4` are readable right now** at
+`github.com/numberdb/numberdb-website`, branch `campaign/w4`. That is a channel.
+A triage that wants a person to see a finding should still put it in this file
+-- not because somebody may open the worktree, but because pushing it is the
+last thing the run does.
+
+Two things the earlier note got right, and they still stand:
+
+* **Nothing merges the branch.** `git merge-base --is-ancestor HEAD origin/main`
+  is false; `campaign/w4` is 203 ahead of `origin/main` and 95 behind; `gh pr
+  list` on the repo returns no open PR. Published is not merged, and a finding
+  on a branch nobody has opened is still waiting.
+* **The verdict files are not published at all.** `.gitignore:167` ignores
+  `agents/runs/` wholesale, so `git ls-files agents/runs/` returns one path
+  (`batch-exhausted`) and **zero** of the 51 `*-verdict` files in this checkout.
+  They are untracked, never committed, never pushed, and exist only on this
+  disk. The split is exactly: commit messages and tracked files travel, the
+  verdict does not.
+
+What to do: do not tell a person "the write-up went nowhere" -- point them at
+the branch. Do not check `%(upstream:short)` and conclude the branch is
+unpushed; check `git ls-remote --heads origin` against local `HEAD`, which is
+what the push actually affects. And keep the verdict short with the finding in
+this file, which the earlier note advised for the wrong reason and is right for
+the right one.
+
+Evidence: 2026-09-23 15:31Z, triage of build `20260923T153048Z` -- the 51st
+consecutive turn-0 HTTP 400 on `gpt-5.4`, `COSTS.tsv:603` 0 turns, $0.0000,
+all three token counts 0, HEAD unmoved at `383b390a`, tree clean; its claim is
+`Quantiles of the Kolmogorov distribution` on numberdb-data#197 at 15:30Z.
+`run.sh:137,823-827`; `git ls-remote --heads origin`; `git ls-files
+agents/runs/`; `git check-ignore -v`; `gh pr list --repo
+numberdb/numberdb-website --state open`.
