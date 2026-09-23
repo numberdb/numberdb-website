@@ -8424,3 +8424,54 @@ Evidence: 2026-09-23, 09:18Z. `readlink /proc/1950235/cwd` =
 `:45`; `git check-ignore -v agents/workers.stop` -> `.gitignore:221`; neither
 flag present in any of the four trees. Found while triaging build run
 20260923T091438Z, the eighth identical zero-turn `gpt-5.4` 400 in this tree.
+
+## `NUMBERDB_CODEX_FALLBACKS=` empty is a no-op: `:-` restores the default
+
+What happened: the entry "`codex`'s fallback names a model the ChatGPT account
+cannot use" above prescribes, when no usable fallback model exists, setting the
+chain "**empty** rather than wrong -- an empty chain makes `next_model_in`
+return nothing on the first quota hit, which reaches `give_up=yes` and hands
+the stage to claude immediately". The reasoning about `next_model_in` is
+correct. The way every verdict since has told people to *do* it is not.
+
+`agents/run.sh:80` reads
+
+    codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-gpt-5.4}"
+
+and `${VAR:-default}` substitutes the default when `VAR` is unset **or null**.
+Setting the variable to the empty string therefore leaves the chain as
+`gpt-5.4`, exactly as if it had never been set:
+
+    NUMBERDB_CODEX_FALLBACKS= ...${NUMBERDB_CODEX_FALLBACKS:-gpt-5.4}  -> gpt-5.4
+    (unset)                   ...${NUMBERDB_CODEX_FALLBACKS:-gpt-5.4}  -> gpt-5.4
+    NUMBERDB_CODEX_FALLBACKS= ...${NUMBERDB_CODEX_FALLBACKS-gpt-5.4}   -> (empty)
+
+The verdict of build run 20260923T092641Z made the distinction explicit --
+"empty, not unset; unset re-defaults to gpt-5.4" -- and it is not a
+distinction. Only the colon-less `${VAR-default}` honours an empty value.
+
+Why it matters more than a shell footnote: this is the half of the fix that
+looks like it needs no judgement, so it is the half a person in a hurry does
+first. It appears to succeed -- the variable is set, nothing errors -- and the
+400s continue, which is good evidence that the *diagnosis* was wrong when in
+fact the instruction was. Emptying the chain requires **editing line 80** to
+`${NUMBERDB_CODEX_FALLBACKS:-}` or to the colon-less form; there is no
+environment-only version of it.
+
+What to do instead, and it needs neither that edit nor the markers deleted nor
+the gpt-5.5 quota to refill: `NUMBERDB_WRITER` already picks the harness per
+stage (`agents/workers.sh:120`, `agents/campaign.sh:58`), so restarting the
+supervisor with `NUMBERDB_WRITER=claude` routes builds and repairs past codex
+entirely. Checked before recommending it: `claude` is at `/usr/bin/claude`, no
+`agents/runs/claude-fallback` marker exists in any of the four trees, and the
+ideas and critique stages of these same batches ran on claude today without
+trouble. The supervisor's environment holds no `NUMBERDB_*` at all, so this
+means stopping it (absolute path, per the entry above) and starting it again
+with the variable set -- it cannot be changed in place.
+
+Evidence: 2026-09-23, 09:36Z. `agents/run.sh:80`; the three expansions above
+run in `bash`; `tr '\0' '\n' < /proc/1950235/environ` -> no `NUMBERDB_*`;
+`command -v claude` -> `/usr/bin/claude`; no `claude-fallback` in any tree.
+Found while triaging build run 20260923T093239Z, the eleventh identical
+zero-turn `gpt-5.4` 400 in this tree, at which point the last build that did
+any work was 20260923T061859Z, three hours and seventeen minutes earlier.
