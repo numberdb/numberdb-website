@@ -9774,3 +9774,62 @@ once in the ledger -- so its `resumed=yes` is a runner flag, not a
 continuation). Counts by `awk` over the four ledgers with `!seen[$1]++`. The
 latest zero-turn stamp at the time of writing was `20260923T120702Z`, one
 minute after the run being judged.
+
+## The daily average understates it sevenfold: triage burns ~$60 an hour in steady state
+
+The section above projected the `gpt-5.4` loop at "roughly $190 a day
+indefinitely". That number is a daily average over a day that included idle
+stretches, and it is the wrong shape for deciding how fast to act on this.
+
+Two measurements twenty minutes apart, both by `awk` over the four
+`agents/runs/COSTS.tsv` deduplicated by stamp:
+
+    12:11Z    110 dead builds    $205.40 triage    105 verdicts
+    12:31Z    119 dead builds    $225.52 triage    119 verdicts
+    delta      +9                 +$20.12           +14
+
+**$20.12 of triage in twenty minutes is about $60 an hour**, which is what four
+workers and a screener actually cost while every build dies in preflight. The
+daily figure is seven times lower because it is diluted by hours when the pool
+was not turning. Anyone reading "$190 a day" and deciding it can wait until
+morning is budgeting for one-seventh of the burn.
+
+## A verdict cannot end the loop, and following the previous verdict's advice does not either
+
+The 12:11Z note closed by naming "two further facts, both cheap to check and
+both worth checking before writing another verdict" -- the brake being unpulled
+and the queue being intact. The next triage checked both, found both unchanged,
+and wrote verdict number 119 anyway.
+
+It had no other move. The triage stage is required to write
+`agents/runs/<stamp>-verdict` and is forbidden to fix anything, so "this has
+been decided 118 times, I decline to spend $1.50 deciding it again" is not an
+available output. Each run therefore re-reads the same twelve-line log from a
+cold context, re-derives the same conclusion, and files it next to 118 copies.
+The unanimity is not consensus; it is the same function evaluated repeatedly at
+the same point.
+
+Two structural consequences, both worth knowing before trusting this pipeline
+to bound its own costs:
+
+* **The supervisor outlives its diagnoses.** `workers.sh` has been pid 1950235
+  since before the 2026-09-18 write-up of this failure. Every verdict since has
+  named it. It is still running, because nothing a verdict can write is read by
+  anything that can signal a process.
+* **A stop-shaped verdict is not a stop.** `agents/workers.stop` and
+  `agents/campaign.stop` are the only brakes, they are checked at the top of the
+  supervisor's loop, and neither has ever existed. The gap between "triage said
+  stop" and "the machine stopped" is a person, and there is no timeout on that
+  person's attention.
+
+If the loop is meant to be able to halt itself, the runner needs the check, not
+the model: a `build` row with `turns=0`, `cost=0.0000` and an empty `table`
+column is recognisable in `awk`, and N of them in a row is a brake condition
+that costs nothing to evaluate. That is a change to `campaign.sh`/`run.sh`, and
+triage is not allowed to make it.
+
+Evidence: 2026-09-23, triage of `20260923T123043Z-build.log`. Deltas from the
+12:11Z counts recorded in the section above, recounted at 12:31Z by the same
+method. Brake files absent in all four worktrees; `pgrep -af` showing
+`workers.sh 4` as pid 1950235 and two `campaign.sh 200` loops; verdict tally 119
+of 119 reading `stop`.
