@@ -15148,10 +15148,13 @@ worker and wrong for deciding the batch is exhausted.
 What to do instead: after `queue.py built` says it closed a family, run
 `queue.py show <family>` before touching `agents/runs/batch-exhausted`. Create
 the marker only if every proposal is actually `[x]` or `[-]`; a `[~]` line is
-work in flight, not a built table.
+work in flight, not a built table. In this checkout the marker path is already
+an empty tracked file, so its mere presence is not evidence that this run
+exhausted the batch.
 
 Evidence: 2026-09-23, T441 build. `queue.py built 196 ... T441` printed the
 closed message; immediately afterwards `queue.py show 196` showed T441, T443,
 T444 and T445 as `[x]`, while `Values of the Tracy-Widom densities
-$f_\beta(s)$` remained `[~] claimed by w4 at 20:06Z`. The marker
-`agents/runs/batch-exhausted` had to be removed.
+$f_\beta(s)$` remained `[~] claimed by w4 at 20:06Z`. A transient deletion of
+`agents/runs/batch-exhausted` showed it is tracked as an empty file here and
+was restored.
