@@ -8475,3 +8475,50 @@ run in `bash`; `tr '\0' '\n' < /proc/1950235/environ` -> no `NUMBERDB_*`;
 Found while triaging build run 20260923T093239Z, the eleventh identical
 zero-turn `gpt-5.4` 400 in this tree, at which point the last build that did
 any work was 20260923T061859Z, three hours and seventeen minutes earlier.
+
+## The `gpt-5.4` 400 is fully diagnosed: triage it once more and you are wasting $1.50
+
+What happened: build run 20260923T093820Z was the **twelfth** identical
+zero-turn `gpt-5.4` 400 in this tree, and the twelfth triage to look at one.
+All eleven earlier verdicts said `stop`. All eleven were right. Nothing acted
+on any of them: supervisor pid 1950235 was still up (since Sep 22 20:38), still
+running four workers, no `workers.stop` in any of the four trees, and all four
+still holding `gpt-5.4` / `xhigh` in `agents/runs/codex-fallback`.
+
+This entry is a signpost, not a new diagnosis. The mechanism is already in the
+five entries above: the unusable fallback and the 400 that hides the quota so
+exit 6 never fires, the per-worktree marker, the stop flag read from the
+supervisor's cwd, `${VAR:-default}` restoring `gpt-5.4` when you set the
+variable empty, and the ninety-minute claim circulation. **If you are triaging
+another one of these, read those and stop; do not re-derive them.** The
+remaining question was never "why does this fail".
+
+What it costs to keep asking. Since 07:34Z on 2026-09-23, in this tree alone:
+12 builds at $0.0000 and 12 triages at about $20.50, to build nothing. The
+build dies in two seconds for free; the triage is the entire expense. The last
+build that did any work was 20260923T061859Z (T443), 3h20m before the twelfth
+failure.
+
+What it costs in proposals, which is the part that does not show in the ledger.
+The campaign marks the checklist before the build runs, so a build that dies at
+turn 0 still consumes a claim. By 09:38Z four of the six proposals in
+numberdb-data issue #202 -- a good, fully-screened extremal-configurations
+family: circle packings, Thomson, Tammes, Lennard-Jones, spherical coverings --
+read `[~] claimed` by runs that never read a word of them. None was skipped,
+because none was judged; they will simply rotate on `CLAIM_MINUTES = 90`. They
+need clearing by hand once the pool is stopped, and a triage may not do it.
+
+One thing worth confirming rather than repeating: the `NUMBERDB_WRITER=claude`
+remedy recommended by the previous verdict does hold up when traced end to end,
+which matters because the advice before it (`NUMBERDB_CODEX_FALLBACKS=`) did
+not. `workers.sh:190` passes the variable through with a codex default,
+`campaign.sh:58` sets `writer` from it, and `campaign.sh:489` runs
+`run_stage writer build`, which puts `NUMBERDB_AGENT=claude` on the build. It
+needs no edit, no marker deleted, and not the gpt-5.5 quota that does not
+refill until 2026-09-25 03:51 UTC.
+
+Evidence: 2026-09-23, 09:40Z. `agents/runs/20260923T093820Z-build.log` and the
+eleven before it, identical but for stamp and thread id; `head -1` of all
+eleven prior verdicts -> `stop`; `COSTS.tsv` rows from 07:34Z;
+`ps -p 1950235`; the marker in all four trees; `python3 agents/queue.py show
+202`. Diagnosed in `agents/runs/20260923T093820Z-verdict`.
