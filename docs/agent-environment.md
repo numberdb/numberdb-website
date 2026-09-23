@@ -9242,3 +9242,40 @@ project is careful to pass the key by file (`NUMBERDB_KEY_FILE`) and to tell
 agents never to write it down, and that care does not extend to an
 already-running stage. Grep the environment for `NUMBERDB_` and read the
 answer, but do not paste it anywhere.
+
+## A triage that greps the campaign log for its own run stamp reads its own transcript back
+
+What happened: triaging build run `20260923T132426Z`, I ran
+`grep -n 20260923T132426Z agents/runs/campaign-w4.log` to find where the
+campaign dealt the proposal. Three of the first four hits were my *own* tool
+calls, logged seconds earlier -- `{"type":"assistant",...,"name":"Bash",...}`
+and the matching `tool_result`, at lines 52311-52331, while the deal I was
+looking for was at 52285. The triage stage runs under the same `tee` as the
+build it is triaging, so its transcript lands in the campaign log in real time,
+and the run stamp is in every command a triage types.
+
+Why it matters beyond the noise: the `tool_result` blocks contain the build log
+*quoted whole*, escaped, on one line. So a triage that counts evidence in the
+campaign log double-counts it -- `grep -c turn.failed` over the log rises every
+time a triage cats the build log, and "the last mention of the stamp" is always
+the triage's own most recent command, never the runner's. The four misreadings
+in the triage brief are all regexes over a log; this is a fifth of the same
+kind, and it is aimed at the stage meant to catch the others.
+
+What to do instead: read the campaign log by line range around the `=== build
+run <stamp>` banner (`sed -n '52270,52305p'`), or restrict the pattern to the
+runner's own banner lines, which a triage never emits:
+`grep -n '^=== ' agents/runs/campaign-w4.log | tail`. The runner's lines all
+start at column 1 with `=== `; every line the triage contributes is a JSON
+object starting `{"type":`. The build's own `agents/runs/<stamp>-build.log` is
+the clean copy and is the right file to read for the failure itself -- the
+campaign log is only needed for what surrounds it (the `=== next:` deal, the
+`=== a previous run hit a quota` and `=== looks resumable` decisions).
+
+Evidence: 2026-09-23 13:25Z, triage of build run `20260923T132426Z` (family
+#204, "Eigenvalues of the clamped plate", 0 turns, $0.0000, HEAD unmoved at
+`d919fe53`). `agents/runs/campaign-w4.log:52285-52304` for the run itself and
+`:52311-52331` for this triage's first three tool calls appearing inline;
+`agents/archive-run.sh` and the `tee` in `agents/campaign.sh` for why both
+stages share the file. The key-leak note at line 1092 above already relies on
+this same `tee` behaviour without naming the consequence for reading.
