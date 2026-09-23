@@ -1,0 +1,77 @@
+# The table document for numberdb-data#193, proposal 5. It was created as
+# draft T432 through the API with X-Draft: yes and is filled by generate.py
+# beside it. Publishing is a person's act on the site.
+Title: The Markoff number asymptotic density constant
+Definition: >-
+  Let $M(x)$ be the number of Markoff numbers CITE{WikiMarkovNumber}
+  less than $x$. The Markoff number asymptotic density constant $C$
+  is the constant in Zagier's asymptotic
+  $M(x)=C(\log(3x))^2+O(\log x(\log\log x)^2)$ CITE{Zagier1982}.
+Comments:
+  comment-printed-decimal: >-
+    The decimal $0.18071704711507\ldots$ printed in CITE{Zagier1982}
+    has a missing digit and rounding errors; OEIS A261613 records the
+    corrected digits CITE{OEISConstant}.
+Formulas:
+  formula-zagier-sum: >-
+    $C=\frac{3}{\pi^2}\sum c(p,q,r)
+    \frac{f(p)+f(q)-f(r)}{f(p)f(q)f(r)}$, where the sum is over
+    normalized Markoff triples $(p,q,r)$ with $p\leq q\leq r$,
+    $c(p,q,r)=1$ except that $c(1,1,1)=c(1,1,2)=1/2$, and
+    $f(t)=\log((3t+\sqrt{9t^2-4})/2)=\operatorname{arcosh}(3t/2)$
+    CITE{OEISConstant}.
+Similar tables:
+  - table: HREF{T428}[Lagrange numbers $L_m$ of the Markov spectrum]
+    relation: >-
+      the discrete Markov-spectrum values indexed by the same Markoff numbers
+      whose counting function has leading constant $C$
+  - table: HREF{T429}[Markov forms]
+    relation: the quadratic forms attached to normalized Markoff triples
+  - table: HREF{T430}[Markov quadratic irrationals]
+    relation: the quadratic irrationals attached to normalized Markoff triples
+  - table: HREF{T431}[Freiman's constant]
+    relation: another named constant in the Markov and Lagrange spectra
+Links:
+  OEISConstant:
+    title: OEIS A261613
+    url: https://oeis.org/A261613
+  OEISDigits:
+    title: OEIS A261613 b-file
+    url: https://oeis.org/A261613/b261613.txt
+  WikiMarkovNumber:
+    title: 'Wikipedia: Markov number'
+    url: https://en.wikipedia.org/wiki/Markov_number
+  WikiMarkovSpectrum:
+    title: 'Wikipedia: Markov spectrum'
+    url: https://en.wikipedia.org/wiki/Markov_spectrum
+References:
+  Zagier1982:
+    bib: >-
+      D. Zagier, On the number of Markoff numbers below a given bound,
+      Mathematics of Computation 39 (1982), no. 160, 709-723.
+    doi: 10.1090/S0025-5718-1982-0669663-7
+    mr: '0669663'
+Keywords:
+  - Markoff numbers
+  - Markov numbers
+  - Markoff spectrum
+  - Markov spectrum
+Tags:
+  - number theory
+  - continued fractions
+  - special values
+Data properties:
+  type: R
+  rigour: assumed-bound
+  complete: 'yes'
+  rigour details: >-
+    The stored value is the 72-digit decimal recorded in CITE{OEISConstant}.
+    OEIS says those digits were computed using Markoff numbers up to
+    $10^{40}$; this table takes that bound on trust rather than deriving an
+    independent tail estimate. The generator transcribes the digit string and
+    checks its leading digits against Zagier's rapidly convergent sum over
+    normalized Markoff triples through $r\leq10^7$, with triple counts checked
+    against the controls in numberdb-data#193.
+Display properties:
+  number-header: $C$
+Numbers: []
