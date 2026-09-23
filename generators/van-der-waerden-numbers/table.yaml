@@ -1,0 +1,100 @@
+# Draft document for T440, proposed in numberdb-data#195. Publishing is a
+# person's act.
+Title: Van der Waerden numbers $w(r; k_1,\dots,k_r)$
+Definition: >-
+  The Van der Waerden number $w(r; k_1,\dots,k_r)$ is the least positive
+  integer $N$ such that every coloring of $\{1,\dots,N\}$ with $r$ colors has,
+  for some color $i$, a monochromatic arithmetic progression of length $k_i$
+  in color $i$ CITE{Wiki}.
+Parameters:
+  r:
+    type: Z
+    title: number of colors
+    display: $r$
+    constraints: $r \geq 1$
+  k:
+    type: Symbolic
+    title: progression-length tuple
+    display: $k_1,\dots,k_r$
+    constraints: >-
+      a weakly increasing comma-separated tuple of $r$ positive integers.
+Comments:
+  comment-order: >-
+    The tuple is stored weakly increasing. Permuting the colors permutes the
+    entries $k_i$ and does not change the value.
+  comment-diagonal: >-
+    The diagonal notation $W(r,k)$ means $w(r; k,\dots,k)$.
+  comment-bounds: >-
+    The cited source table also lists one-sided lower bounds for some
+    diagonal values. Those rows are omitted here because they do not give an
+    integer interval with both endpoints.
+Formulas:
+  formula-one-color: >-
+    $w(1;k)=k$.
+  formula-length-two: >-
+    $w(r;2,\dots,2)=r+1$.
+  formula-symmetry: >-
+    For any permutation $\sigma$ of $\{1,\dots,r\}$,
+    $w(r;k_{\sigma(1)},\dots,k_{\sigma(r)})=w(r;k_1,\dots,k_r)$.
+Similar tables:
+  - table: HREF{Diagonal_Ramsey_numbers}[Diagonal Ramsey numbers]
+    relation: uses the same least-forcing convention for a Ramsey-theoretic coloring threshold
+Links:
+  Wiki:
+    title: "Wikipedia: Van der Waerden number"
+    url: https://en.wikipedia.org/wiki/Van_der_Waerden_number
+  MathWorld:
+    title: "MathWorld: van der Waerden Number"
+    url: https://mathworld.wolfram.com/vanderWaerdenNumber.html
+References:
+  LandmanRobertsonCulver:
+    bib: >-
+      Bruce M. Landman, Aaron Robertson and Clay Culver, "Some New Exact van
+      der Waerden Numbers", Integers 5 (2), A10, 2005.
+    arXiv: math/0507019
+    mr: '2192088'
+  Ahmed2009:
+    bib: >-
+      Tanbir Ahmed, "Some new van der Waerden numbers and some van
+      der Waerden-type numbers", Integers 9, A6, 65-76, 2009.
+    doi: 10.1515/integ.2009.007
+    mr: '2506138'
+  Ahmed2013:
+    bib: >-
+      Tanbir Ahmed, "Some More Van der Waerden numbers", Journal of Integer
+      Sequences 16, Article 13.4.4, 2013.
+    mr: '3056628'
+  Karki:
+    bib: >-
+      Sikij Karki, "A New van der Waerden Number", U(t)-Mathazine 9, 34-39,
+      2024.
+Keywords:
+  - off-diagonal van der Waerden number
+  - mixed van der Waerden number
+  - arithmetic progression
+Tags:
+  - Ramsey theory
+  - combinatorics
+  - sequence
+Data properties:
+  type: Z
+  rigour: exact
+  complete: 'no'
+  complete-note: >-
+    it includes the exact off-diagonal values in the cited source table and
+    omits entries for which that source gives only a one-sided lower bound
+  sources:
+    - CITE{Wiki}
+    - CITE{MathWorld}
+    - CITE{LandmanRobertsonCulver}
+    - CITE{Ahmed2009}
+    - CITE{Ahmed2013}
+    - CITE{Karki}
+  rigour details: >-
+    The entries are exact integers transcribed from the source table in
+    Wikipedia's Van der Waerden number article CITE{Wiki}. The diagonal
+    exact values are checked against MathWorld CITE{MathWorld}, and the
+    generator checks the trivial one-color and length-two formulas.
+Display properties:
+  number-header: $w(r;k_1,\dots,k_r)$
+Numbers: []
