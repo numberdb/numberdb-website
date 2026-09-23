@@ -1,0 +1,165 @@
+# The table document for numberdb.org/T447. It was created as a draft through
+# the API with X-Draft: yes and is filled by generate.py beside it. Publishing
+# is a person's act on the site.
+Title: Growth rates of the power-free languages
+Definition: >-
+  Let $L_{k,\beta}$ be the language of finite words over a $k$-letter
+  alphabet whose factors have no exponent at least $\beta$; let
+  $L_{k,\beta^+}$ use the strict cutoff, forbidding factors whose exponent is
+  greater than $\beta$ CITE{ShurTables} CITE{WikiCriticalExponent}. The table
+  stores the exponential growth rate
+  $\gamma=\alpha(k,\beta)=\lim_{n\to\infty} c_n^{1/n}$, where $c_n$ counts
+  words of length $n$ in the indicated language.
+Keywords:
+  - power-free languages
+  - power-free words
+  - beta-free words
+  - repetition-free words
+  - square-free words
+  - cube-free words
+  - growth rate
+  - combinatorics on words
+Parameters:
+  alphabet:
+    type: Z
+    title: alphabet size
+    display: $k$
+    constraints: $2\leq k\leq15$
+  exponent:
+    type: Symbolic
+    title: avoided exponent
+    display: $\beta$
+    values:
+      2: $2$
+      2+: $2^+$
+      7/3: $7/3$
+      7/3+: $(7/3)^+$
+      17/7: $17/7$
+      17/7+: $(17/7)^+$
+      5/2: $5/2$
+      5/2+: $(5/2)^+$
+      18/7: $18/7$
+      18/7+: $(18/7)^+$
+      13/5: $13/5$
+      13/5+: $(13/5)^+$
+      8/3: $8/3$
+      8/3+: $(8/3)^+$
+      14/5: $14/5$
+      14/5+: $(14/5)^+$
+      17/6: $17/6$
+      17/6+: $(17/6)^+$
+      3: $3$
+      3+: $3^+$
+      13/4: $13/4$
+      13/4+: $(13/4)^+$
+      10/3: $10/3$
+      10/3+: $(10/3)^+$
+      7/2: $7/2$
+      7/2+: $(7/2)^+$
+      11/3: $11/3$
+      11/3+: $(11/3)^+$
+      4: $4$
+      4+: $4^+$
+      9/2: $9/2$
+      9/2+: $(9/2)^+$
+      5: $5$
+      5+: $5^+$
+      6: $6$
+      6+: $6^+$
+      7: $7$
+      7+: $7^+$
+      8: $8$
+      8+: $8^+$
+      9: $9$
+      9+: $9^+$
+    constraints: >-
+      the values are the exponents listed in Shur's rounded tables for
+      $\beta\geq2$; a trailing `+` means that only factors of exponent
+      strictly greater than $\beta$ are forbidden
+  size:
+    type: Symbolic
+    title: size
+    display: size
+    values:
+      length: word length
+    constraints: "`length`"
+  labelling:
+    type: Symbolic
+    title: labelling convention
+    display: labelling
+    values:
+      unlabelled: ordinary words
+    constraints: "`unlabelled`"
+Comments:
+  exponent-convention: >-
+    The exponent of a nonempty word is its length divided by its least period.
+    Thus a plain $\beta$ row forbids factors with exponent at least $\beta$,
+    while a $\beta^+$ row permits exponent exactly $\beta$ and forbids larger
+    exponents.
+  source-rounding: >-
+    Shur's tables print all bounds rounded to seven decimal places. The
+    generator widens each printed endpoint by one half of the last printed
+    decimal place before storing it.
+  omitted-upper-bound-tables: >-
+    Shur's later tables for $\beta<2$ give one-sided upper bounds and
+    extrapolated estimates. They are not stored here because they would not be
+    two-sided growth-rate intervals.
+Formulas:
+  formula-growth-rate: >-
+    $\alpha(k,\beta)=\lim_{n\to\infty} c_n^{1/n}$, where $c_n$ is the number
+    of $k$-ary words of length $n$ in the indicated power-free language
+    CITE{ShurTables}.
+  formula-radius: >-
+    If $C(x)=\sum_{n\geq0} c_n x^n$ is the ordinary counting generating
+    function and $\rho$ is its radius of convergence, then
+    $\gamma=\alpha(k,\beta)=1/\rho$.
+Similar tables:
+  - table: HREF{Capacity_of_the_run-length-limited_constrained_codes}[Capacity of the $(d,k)$ run-length-limited constrained codes]
+    relation: stores logarithmic capacities of regular constrained binary languages rather than raw exponential growth rates of power-free languages
+  - table: HREF{Growth_rates_of_hyperbolic_Coxeter_triangle_groups}[Growth rates of hyperbolic Coxeter triangle groups]
+    relation: stores group growth rates rather than growth rates of formal languages
+  - table: HREF{Growth_rates_of_hyperbolic_Coxeter_simplex_groups}[Growth rates of hyperbolic Coxeter simplex groups]
+    relation: stores group growth rates rather than growth rates of formal languages
+Links:
+  WikiCriticalExponent:
+    title: 'Wikipedia: Critical exponent of a word'
+    url: https://en.wikipedia.org/wiki/Critical_exponent_of_a_word
+References:
+  ShurTables:
+    bib: >-
+      Arseny M. Shur, Numerical values of the growth rates of power-free
+      languages, arXiv preprint, 2010.
+    arxiv: '1009.4415'
+  ShurDLT:
+    bib: >-
+      Arseny M. Shur, Two-sided bounds for the growth rates of power-free
+      languages, Developments in Language Theory 2009, Lecture Notes in
+      Computer Science 5583, Springer, 2009, 466-477.
+    doi: 10.1007/978-3-642-02737-6_38
+  ShurTCS:
+    bib: >-
+      Arseny M. Shur, Growth rates of complexity of power-free languages,
+      Theoretical Computer Science 411 (2010), no. 34-36, 3209-3223.
+    doi: 10.1016/j.tcs.2010.05.017
+Tags:
+  - asymptotic enumeration
+  - combinatorics
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds the rounded two-sided entries with $\beta\geq2$ in Tables 1 and
+    2 of CITE{ShurTables}: the listed binary exponents where the jump is at
+    least $0.001$, and the exponents $2$, $2^+$, $3$, $3^+$, $4$, and $4^+$
+    for $3\leq k\leq15$
+  rigour details: >-
+    The entries are transcribed from Shur's rounded Tables 1 and 2
+    CITE{ShurTables}. For $\beta\geq2$, the upper bounds in those tables are
+    converted to two-sided bounds by the method of CITE{ShurDLT}. The
+    generator stores a Sage real interval for each row, widening each printed
+    endpoint by one half of the last printed decimal place to account for the
+    source rounding.
+Display properties:
+  number-header: $\gamma$
+Numbers: []
