@@ -8050,3 +8050,75 @@ Evidence: 2026-09-23, T429 critique (run `20260923T035333Z`). Two proxied
 `curl` calls to `/skill` and `/T429` failed with exit 7 and `HTTP 000`; the
 same two URLs answered 200 and 404 respectively with no proxy, and the 404 was
 the real answer (T429 is an unpublished draft), not a network failure.
+
+## A private draft is public through `/files`, `/history` and `/revisions`
+
+What happened: reading T437 for a critique, `/T437` answered 404 as a draft
+should. Four other routes, with no key and no cookie, did not:
+
+    /T437                      404      correct
+    /blame/T437                404      correct
+    /bundle/T437               404      correct
+    /discuss/T437              404      correct
+    /preview/T437              404      correct
+    /files/T437                200      title, revision message, file list
+    /files/T437/generate.py    200      the whole generator, 10580 bytes
+    /history/T437              200
+    /revisions/T437            200      146 KB, containing the stored values
+
+`views._refuse_a_draft` exists for exactly this and is called from
+`table_by_tid`, `table_by_url` and `preview`. It is not called from
+`table_files`, `table_file`, `table_history` or `revision_history`. Its own
+docstring says a draft answers 404 rather than 403 so that a stranger cannot
+confirm the number exists; `/files/T437` answers with the title, and
+`/revisions/T437` answers with the numbers.
+
+The comment above `preview` records that `/preview/T133` had this same bug and
+was fixed by adding the guard -- in one place. That is the shape of it: the
+guard is a call somebody has to remember at each new route, and four routes
+did not.
+
+What to do: add `_refuse_a_draft` to those four views, and add a test that
+walks every route taking a `tid` and asserts 404 for an anonymous request
+against an unpublished table, so the next route added fails CI instead of
+leaking.
+
+Evidence: 2026-09-23, T437 critique (run `20260923T052215Z`). `curl -sS -o
+/dev/null -w '%{http_code}'` on each of the eleven routes above;
+`curl -sS https://numberdb.org/revisions/T437 | grep -c
+0.384827829301299075847491024834` returned 1.
+
+## How to read a draft's *rendering* when `/T<n>` is 404
+
+What happened: a critique has to look at what a reader gets, and a draft's page
+is unreachable -- the HTML views authenticate by session, and the API key does
+not open them. `GET /api/table?id=T437` with the key returns the document, but
+a document is not a rendering, and three faults this year lived only in the
+rendering.
+
+What works: `/preview` takes a whole table as a YAML query parameter, needs no
+key, and runs the real `table_context`. Rebuild the YAML from the API's JSON
+(`yaml.safe_dump(doc, sort_keys=False)` -- `_ordered_document` already returns
+the table's own key order) and `curl -sS -G --data-urlencode table@piece.yaml
+https://numberdb.org/preview`.
+
+Two things about it, each of which cost a few minutes:
+
+  * **The request line is capped at 4094 bytes** and the reply is a bare
+    `400 Bad Request -- Request Line is too large (4901 > 4094)` with no hint
+    that it came from the proxy rather than from Django. LaTeX-heavy YAML
+    roughly triples under URL encoding, so a piece of about 1200 raw bytes is
+    the most that goes through. Send the document in pieces -- one or two
+    sections plus `Title` plus `Links`, since `Links` is what makes `CITE{}`
+    resolve rather than print its key -- and a separate piece carrying
+    `Parameters`, `Display properties` and a slice of real rows.
+  * **A piece with no `Numbers` key renders nothing** and shows
+    `Error while parsing numbers: cannot access local variable
+    'number_section' where it is not associated with a value`, which reads
+    like a crash and is only a missing section. Add `Numbers: ['3.14']` to
+    every piece that is not about the rows. (This is also what a contributor
+    pasting a document into `/preview` sees, and it should be a message about
+    the missing section.)
+
+Evidence: 2026-09-23, T437 critique (run `20260923T052215Z`). Seven `/preview`
+fetches, 1727 raw bytes through and 3751 refused; `/tmp/prev.py`.
