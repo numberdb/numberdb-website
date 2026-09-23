@@ -9275,3 +9275,57 @@ Evidence: 2026-09-23, triage of `20260923T103220Z-build.log`.
 `agents/queue.py` lines 280, 303, 484, 752-786; the `table` column of
 `agents/runs/COSTS.tsv` for `20260923T055938Z`; `GET /api/table?id=T441` keyed
 and anonymous at 10:33Z.
+
+## The attempt counter is process-local too, so neither brake on the failure loop can hold
+
+What happened: the note above, *A triage `stop` does not stop the machine*,
+records that a `stop` verdict cannot reach `workers.sh` -- `campaign.sh` exits,
+the supervisor reads only the process table, and a fresh campaign starts within
+five minutes. That note treats the attempt limit in `campaign.sh` as the thing
+still standing between the machine and an unbounded loop. It is not.
+
+`campaign.sh:514` gates triage on
+
+    if [ -n "$stamp" ] && [ "$attempted" -lt 2 ]; then
+
+and the comment above it calls this "what is policy rather than judgement: one
+attempt per table". But `attempted=0` is set at line 63, outside the `while`
+loop, once per process -- and the `stop` branch at 546-547 exits the process.
+So a campaign that hits this failure runs exactly one build, triages it, and
+dies with `attempted` still 0. The supervisor starts a new `campaign.sh`, which
+sets `attempted=0` again.
+
+The counter therefore limits only `resume` and `restart` *within* a single
+campaign process. It cannot limit the stop-restart-stop cycle at all, because
+that cycle destroys the variable on every iteration. "One attempt per table" is
+true per process and vacuous per table: nineteen builds on 2026-09-23 each
+believed they were the first attempt.
+
+Both brakes on this loop are scoped to a process that exits every time the
+failure occurs. That is the shape of the bug, and it is why the loop is
+unbounded rather than merely expensive: there is no counter anywhere that
+survives to notice repetition. The only durable state is on disk --
+`agents/runs/codex-fallback`, which sustains the failure, and
+`agents/workers.stop`, which a person must create by hand.
+
+Measured this time: nineteen `gpt-5.4` builds in the ledger for 2026-09-23, all
+0 turns and $0.0000; eighteen triage runs in w1 alone totalling $36.5233 against
+a worktree day of $195.574; twenty-one build logs in the repository carrying the
+400. **All nineteen verdict files in `agents/runs/` say `stop` -- the triage
+stage has never returned any other word.** A stage whose output is constant is
+not deciding anything, and the constant has been ignored nineteen times.
+
+What to do instead: whatever fixes `run.sh:80`, the loop also needs one piece of
+state that outlives a campaign process. `agents/workers.stop` is already the
+file the supervisor reads; having `campaign.sh` create it on a `stop` verdict
+would make the verdict durable and cost nothing. Failing that, a count of
+consecutive zero-turn builds kept in `agents/runs/` would at least let the
+second occurrence know about the first.
+
+Evidence: 2026-09-23, triage of `20260923T104400Z-build.log` (twelve lines, two
+identical blocks, no tool call, for "Quantiles of the standard normal
+distribution", family #197). `agents/campaign.sh` lines 63, 514, 526, 537, 541,
+546-551. `agents/runs/COSTS.tsv` rows for 2026-09-23. `head -1` of every
+`agents/runs/*-verdict`. `pgrep -fa "workers.sh|campaign.sh"` at 10:47Z showing
+`workers.sh 4`, three live campaigns and three concurrent triage runs, with
+neither `agents/workers.stop` nor `agents/campaign.stop` present.
