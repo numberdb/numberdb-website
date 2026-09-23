@@ -190,7 +190,23 @@ def _format_significant(value, digits):
         )
     if "." not in text:
         text += ".0"
+    while _significant_digits_in(text) < digits:
+        text += "0"
     return text
+
+
+def _significant_digits_in(text):
+    mantissa = text.lower().split("e", 1)[0].lstrip("-")
+    seen_nonzero = False
+    count = 0
+    for character in mantissa:
+        if not character.isdigit():
+            continue
+        if character != "0":
+            seen_nonzero = True
+        if seen_nonzero:
+            count += 1
+    return count
 
 
 def _compute_table():
@@ -232,6 +248,9 @@ class HastingsMcLeodPainleveIIValues(numberdb.Generator):
     def value(self, params, digits=None):
         record = _compute_table()[params["s"]]
         return {"number": record["number"], "digits": record["digits"]}
+
+    def digits_for(self, params):
+        return _compute_table()[params["s"]]["digits"]
 
 
 def run_integrity_checks():
