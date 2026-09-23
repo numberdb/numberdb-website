@@ -8891,3 +8891,80 @@ build logs identical after normalising stamp and thread id; `COSTS.tsv`
 aggregated by stage from `20260923T062751Z`; first line of all twenty-two
 `agents/runs/*-verdict` files from today. `run.sh:52`, `:80`, `:556-568`,
 `:583-598`, `:591`, `:685`.
+
+## Ninety-eight `stop` verdicts, four checkouts, $191: the note above undercounts by a factor of four
+
+What happened: triage of build run `20260923T114403Z`, the 24th byte-identical
+gpt-5.4 refusal in this checkout. Three notes above already diagnose this
+failure and the last of them says plainly that a fourth diagnosis would cost
+more than it returns. That is still true and this is not one: the root cause,
+the mechanism and the remedy are unchanged and correct as written.
+
+What is new is the denominator. Every tally in this file so far was taken
+inside `numberdb-campaign-w4` and reads as though w4 were the campaign. It is
+one of four. `workers.sh 4` has been running since 2026-09-22 20:38Z from
+`numberdb-website` and maintains exactly one `campaign.sh 200` per checkout --
+`numberdb-website`, `-w2`, `-w3`, `-w4` -- and all four hold their own
+`agents/runs/codex-fallback` = `gpt-5.4 / xhigh`. Summed across the four, today:
+
+    checkout                 triage runs    spend    turn-0 builds
+    numberdb-website                  25   $52.57               25
+    numberdb-campaign-w2              26   $43.75               26
+    numberdb-campaign-w3              24   $46.73               25
+    numberdb-campaign-w4              23   $47.91               24
+    total                             98  $190.96              100
+
+One hundred builds that died before their first tool call, and **ninety-eight
+triage runs, of which ninety-eight returned `stop`.** Not ninety-seven: the
+first word of every `agents/runs/20260923T*-verdict` file in all four
+checkouts is `stop`. Nothing stopped. The pool relaunched after each, and at
+11:50Z four triage runs were in flight at once, one per checkout, on four
+different stamps -- so the four workers do not serialise on this, they
+multiply it. The previous note's "$46.53" is this number divided by four, and
+anyone reading it to decide how urgent the fix is is off by that factor.
+
+The single `rm` in the remedy is therefore four:
+
+    rm ~/numberdb-{website,campaign-w2,campaign-w3,campaign-w4}/agents/runs/codex-fallback
+
+and clearing one, which is what the earlier note's phrasing invites, leaves
+three workers cycling.
+
+**A correction to the triage prompt itself, which is worth more than the
+arithmetic.** The prompt opens by listing four ways a line of shell got this
+decision wrong, and the first is: *"did it build anything?" asked whether HEAD
+had moved -- and the runner commits its own cost line, so HEAD always moves.*
+The second clause is false in these checkouts. `.gitignore:167` ignores
+`agents/runs/` wholesale, so `COSTS.tsv`, the build logs and the verdict files
+are all untracked; the cost line for this run was appended to `COSTS.tsv`
+without a commit, `git status` is clean, and HEAD is still exactly the
+`0754ee92` the prompt named as the before-commit. HEAD does move often, which
+is presumably where the belief came from -- but it moves because *triage*
+commits its notes and lessons, which is to say the only thing moving HEAD
+today is the diagnosing, not the building. So "has HEAD moved?" does not
+overcount a dead build as the prompt says; on this repository it is a test of
+whether the previous triage wrote something down.
+
+One distraction to rule out, since the ceiling is the obvious next suspect
+once the marker is cleared and it is not the problem. The run prompt tells
+each agent that zeta3 "may hold up to five drafts". The code's default is
+fifteen -- `NUMBERDB_DRAFTS_IN_FLIGHT = 15` in `numberdb/settings/base.py:391`,
+read by `draft_ceiling`, with no override anywhere in `env/`, `deploy/` or
+`docker-compose.yml`. `draft_allowance` counts every unpublished table the
+account created, so drafts left offered for review do count against it, but
+zeta3 held two at 07:57Z (T437 and T443, per the `20260923T075706Z` proposal)
+and the number of candidate drafts in the T436-T445 range is six at the
+outside. There is no draft-ceiling problem behind the marker, and the "five" in
+the prompt is either stale or a deliberate self-restraint rather than what the
+server enforces.
+
+Evidence: 2026-09-23 11:50Z, triage of build run `20260923T114403Z`.
+`COSTS.tsv` in all four checkouts aggregated by stage over `$1 ~ /^20260923/`;
+`head -qn1` of all ninety-eight of today's `*-verdict` files;
+`ps -o lstart` on pid 1950235 (`workers.sh 4`, cwd `numberdb-website`) and on
+the four `campaign.sh 200` pids, whose cwds are one per checkout;
+`readlink /proc/<pid>/cwd` on the four live `run.sh triage` processes at 11:50Z
+(stamps `20260923T114321Z`, `114341Z`, `114403Z`, `114922Z`).
+`.gitignore:167`; `git status` clean and `git rev-parse HEAD` = `0754ee92` after
+the run that this triage is about. `numberdb/settings/base.py:389-392`;
+`numberdb_app/permissions.py:305-322`.
