@@ -11237,3 +11237,51 @@ span, both in w2 in the first half-hour (`T443`, a critique and a failed
 repair), and no table built. `ps -eo pid,lstart,args`: `workers.sh 4` up since
 Sep 22 20:38, four `campaign.sh 200` restarted 15:05:01, 15:05:21, 15:05:41 and
 15:06:01 -- the restart that claimed this run's proposal.
+
+## `campaign-w*.log` holds the agents' own transcripts, so grepping it for a script's output returns a previous run's scratch shell
+
+What happened: triaging `20260923T160648Z` I pulled the campaign's decisions out
+of `agents/runs/campaign-w3.log` to find which proposal the run had claimed --
+the right move, because the claim is made by `campaign.sh` before the engine is
+reached and so appears nowhere in the build log. Among the `=== ` lines it
+returned was
+
+    === next_model_in on an exhausted chain ===
+
+which reads exactly like a message from `run.sh`, and would have been a finding:
+it would mean the fallback chain *is* consulted and comes back empty, which is
+the opposite of what the marker at `:10689` says happens. It is not a message
+from anything. `grep -rn "exhausted chain" agents/ docs/` outside `agents/runs/`
+matches nothing. The string is the `echo` of a Bash call made by an *earlier
+triage agent*, sitting inside the `"command"` field of a `tool_use` event in
+that agent's JSONL transcript, which is in the campaign log because the stage's
+whole stdout is `tee`d there.
+
+So the file is not a campaign log with transcripts beside it. It is one stream
+in which `campaign.sh`'s own `say` lines (`:236`, `printf '\n=== %s\n'`) are a
+small minority, and most of the `===` matches are quoted text belonging to the
+agents the campaign ran -- their shell commands, their heredocs, their drafts of
+verdicts, and every log line they `cat`ed. 168 MB of it as of today.
+
+What to do instead: read it only for `campaign.sh`'s own lines, and anchor on
+the JSON that carries them rather than on `=== `. A `say` line reaches the file
+as raw text at the start of a line; an agent's copy is always inside a JSON
+string, so it arrives with escapes (`\"`, `\\n`) and never at column 0. The
+cheap discriminator is that anything worth trusting matches `grep -a '^=== '`,
+and the ones this trap produces do not. Better still, confirm against the source
+that supposedly emitted it before reporting it -- `grep -rn` over `agents/` with
+`agents/runs/` excluded, which is two seconds and settles it either way.
+
+This matters here more than it would elsewhere: the triage prompt's whole
+premise is four shell heuristics that matched the right-looking bytes in the
+wrong place (`T182` inside a run stamp, and so on). This is a fifth, and it is
+in the evidence rather than in the test, so it survives being careful about
+regexes.
+
+Evidence: 2026-09-23, w3 triage of build `20260923T160648Z`.
+`agents/runs/campaign-w3.log` (168247133 bytes, mtime 16:09:30Z);
+`tail -c 3000000 ... | grep -aoE '=== (next|left|could not claim|stopping)[^"\\]*'`
+for the genuine lines, which is how the run's proposal was identified as
+*Growth constants of the classes of trees*, family #203 -- confirmed against
+`queue.py show 203`, `claimed by w3 at 2026-09-23T16:06Z`. `agents/campaign.sh:236`
+for `say`, `:472` for the claim that precedes the build.
