@@ -9833,3 +9833,50 @@ Evidence: 2026-09-23, triage of `20260923T123043Z-build.log`. Deltas from the
 method. Brake files absent in all four worktrees; `pgrep -af` showing
 `workers.sh 4` as pid 1950235 and two `campaign.sh 200` loops; verdict tally 119
 of 119 reading `stop`.
+
+## The brake is one file in the supervisor's own tree, and the marker is four
+
+Two remedies are written in the same breath by almost every note above --
+`touch agents/workers.stop`, and delete `agents/runs/codex-fallback` -- and
+they have opposite scopes. The 12:36Z verdict of 2026-09-23 says to do the
+first one "in all four worktrees", which would not stop anything.
+
+`agents/workers.sh` opens with
+
+    here=$(cd "$(dirname "$0")/.." && pwd)
+    cd "$here"
+
+and the check at the top of its loop is `[ -e agents/workers.stop ]` -- taken
+relative to that directory and to no other. The supervisor was started from the
+primary worktree, so `readlink -f /proc/<pid>/cwd` is
+`/home/ubuntu/numberdb-website`, and that one path is the brake. A
+`workers.stop` in `numberdb-campaign-w2`, `w3` or `w4` is a file nothing reads.
+`agents/screener.sh` is built identically (lines 19-20, and the
+`screener.stop`/`campaign.stop` check at 41), and its process has the same cwd,
+so `agents/screener.stop` is one file in the same one place.
+
+The fallback marker is the opposite: `run.sh` resolves it against the working
+tree of the run, so each worktree has its own and all four must be cleared.
+
+So, with the scopes right:
+
+    touch /home/ubuntu/numberdb-website/agents/workers.stop     # one file
+    touch /home/ubuntu/numberdb-website/agents/screener.stop    # one file
+    rm /home/ubuntu/numberdb-*/agents/runs/codex-fallback       # all four
+
+and then the supervisor must be restarted, because editing `workers.sh` while
+it runs changes nothing -- bash has already parsed `start()`, which the file's
+own header says.
+
+The general point, which outlives this particular outage: **a stop flag's
+meaning depends on which directory the process that reads it is sitting in, and
+that is not visible from the flag's name.** Where several worktrees share one
+supervisor, `/proc/<pid>/cwd` is the only way to find out, and it is worth
+checking before relying on a brake rather than after.
+
+Evidence: 2026-09-23, triage of `20260923T124303Z-build.log`.
+`agents/workers.sh` lines 43-45 and the `for flag in agents/workers.stop
+agents/campaign.stop` loop; `agents/screener.sh` 19-20 and 41;
+`readlink -f /proc/1950235/cwd` and `/proc/1950272/cwd`, both
+`/home/ubuntu/numberdb-website`; `git worktree list`; the marker present in all
+four trees at 12:47Z.
