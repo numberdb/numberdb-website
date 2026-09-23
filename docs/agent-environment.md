@@ -9601,3 +9601,61 @@ Four ledgers since `20260923T072522Z`: 365 runs, $409.68 -- build 177 at $0.00,
 triage 177 at $322.94 (mean $1.82), ideas 10 at $86.74; $51.42 in the hour to
 14:42Z, of which $44.08 is triage. `git merge-base main campaign/w4` is
 `6a2462da`, 2026-09-22 23:31.
+
+## A turn-0 build still claims its proposal, so "0 tokens" bounds the draft and not the queue
+
+What happened: triaging build run `20260923T144746Z` -- the 45th consecutive
+turn-0 `gpt-5.4` 400 in this checkout -- I checked the queue directly instead of
+inferring it, and found the run holding a proposal it never read:
+
+    numberdb-data#204
+    - [~] Zeros of cross-products of Bessel functions -- claimed by w4 at 2026-09-23T14:47Z
+
+The run stamp is `14:47:46Z`; the issue's `updatedAt` is `14:47:45Z`. The
+`COSTS.tsv` row for the same stamp is `0` turns, `$0.0000`, `tokens_in 0`,
+`tokens_out 0`, table column empty.
+
+Why the two are consistent: the claim is not the model's. `campaign.sh:472`
+runs `queue.py claim "$in_family" "$proposal" --worker "$NAME"` *before*
+`run_stage writer build` at `:489` -- "claim it before spending anything, so
+that the worker beside this one takes a different table" -- and the
+build-failure branch at `campaign.sh:699-710` then leaves the claim standing on
+purpose, because releasing it offered the same proposal straight back to the
+same worker and tripped the repeat guard. So the shell takes a proposal a
+second before the model is asked for anything, and keeps it whether or not the
+model ever answers.
+
+What this corrects. The `/profile` note above licenses exactly one inference
+from an all-zero cost row: a run with `tokens_in` and `tokens_out` both 0 made
+no API call and therefore **left no draft**. That is right and stays right. But
+the verdicts for `20260923T142325Z`, `143507Z` and `144126Z` each widened it to
+"this run took no claim and stranded none" and reported nothing left behind.
+The widening does not hold: the claim is written by `gh` against
+`numberdb/numberdb-data`, not by the NumberDB API with `NUMBERDB_KEY_FILE`, so
+no token count in `COSTS.tsv` can ever reflect it. Nor does the usual second
+check catch it -- `queue.py stale` only reports claims past
+`CLAIM_MINUTES = 90`, and a claim from the run being triaged is minutes old by
+construction. Three careful triages in a row read both instruments, read them
+correctly, and still missed the one piece of state the run actually produced.
+
+What to do instead: when a triage asks "what did it leave behind?", read the
+family checklist for the worker's own name -- `python3 agents/queue.py show
+<family>`, or `gh issue view <n> --repo numberdb/numberdb-data --json body`
+and grep the `- [~]` lines -- and do not substitute a token count for it. The
+checklist is also the only place the answer to "which table was it?" exists for
+a turn-0 build: the `table` column of `COSTS.tsv` is empty and the twelve-line
+log names nothing, so the claim mark is the sole record of which proposal the
+run consumed.
+
+It does not need sweeping. `ProposalClaim.MINUTES = 90` and an expired claim is
+taken over in place, as the note on the lock recycling above records; w4 was
+holding `Eigenvalues of the clamped plate` in the same family from 13:24Z on the
+same terms. The consequence worth writing down is for whoever pulls the lever:
+for up to ninety minutes after the workers stop, the queue still reads busy with
+claims held by processes that no longer exist.
+
+Evidence: 2026-09-23 ~14:5xZ, triage of `20260923T144746Z` (HEAD unmoved at
+`75d67019`, tree clean, `queue.py stale` empty, `queue.py open` 15 waiting
+across #196-#206). `agents/campaign.sh:463-476,489,699-711`;
+`agents/queue.py:270-303`. Four ledgers since `20260923T072522Z`: 375 runs,
+$413.14 -- build 181 at $0.00, triage 179 at $326.40, ideas 10 at $86.74.
