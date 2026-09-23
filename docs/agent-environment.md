@@ -9876,3 +9876,67 @@ scheme before believing it. `curl -s -H "Authorization: Bearer $(cat
 Evidence: 2026-09-23, T432 critique. `Api-Key` gave the "does not exist" error
 for T428 through T432; `Bearer` gave 200 and 2,969 bytes for T432 and the
 titles of the other four.
+
+## On a builder box there is no Django and no web image, so a draft has to be rendered through `/preview`
+
+What happened: the T442 critique had to read the rendered page, and `/T442`
+is 404 to anybody without a session (with `Bearer` as well as without, as the
+note above says). The documented way round that -- `django.setup()` in the
+throwaway, `RequestFactory`, `request.user = table.created_by`,
+`views.table_by_tid` -- failed at `import django`. The campaign runs with
+`NUMBERDB_SAGE_IMAGE=numberdb/builder:latest` and `NUMBERDB_REMOTE=local`, and
+the builder image is *deliberately* the one with no Django and no app: that is
+the point of it. Overriding to `numberdb/web:latest` does not help on a builder
+box either -- `docker: pull access denied for numberdb/web` -- and the host has
+no Django outside a container. So every route in the earlier notes that starts
+"read it with Django in the throwaway" is unavailable to a run on this machine,
+including the ones for reading a draft's slug and its stored tree.
+
+What to do instead: `GET /preview?table=<yaml>` renders a document with the
+same `table_context` the table page uses, needs no session and no key, and
+reads the YAML out of the query string -- `_refuse_a_draft` guards only the
+`/preview/<tid>` form, which loads from the database. So fetch the document
+with `api/table?id=T442`, dump it back to YAML, and send it to `/preview`:
+
+    curl -s --noproxy '*' -G --data-urlencode "table@/tmp/T442.yaml" \
+        https://numberdb.org/preview
+
+Two limits. nginx caps the request line at 4094 bytes ("Request Line is too
+large (8037 > 4094)"), so a 14 KB document goes in pieces -- one per section,
+each with the `Title` -- and the entry table has to be rendered from a handful
+of rows rather than all of them. And the footnote numbering is per request, so
+`References` and `Links` must go in the *same* piece if what you are checking
+is which number a citation resolves to; a `CITE` whose label is in another
+piece renders as `CITE-broken`, which is an artefact of the splitting and not
+a finding.
+
+Evidence: 2026-09-23, T442 critique. `/tmp/t442_read.py` failed with
+`ModuleNotFoundError: No module named 'django'` under `agents/sage.sh` (uid
+1001, `/home/sage/sage/local/var/lib/sage/venv-python3.12/bin/python3`, and a
+glob for `django/__init__.py` under every plausible site-packages found
+nothing); five `/preview` requests then returned 200 and between 14 and 18 KB
+each, and showed the four request-issue links rendering as footnotes [3] to
+[6].
+
+## `/preview` refuses a document that has no `Numbers`
+
+What happened: the first four `/preview` requests above sent a section of
+T442's document with no `Numbers` key, and every one answered 200 with the
+form and no rendering, above the message
+
+    Error while parsing numbers: cannot access local variable
+    'number_section' where it is not associated with a value
+
+Adding a one-entry `Numbers` block rendered the page. This is a real bug rather
+than a quirk of splitting a document up: the workflow the site documents is
+that a draft's prose is written first and may have no numbers in it yet, so an
+author previewing the prose they have just written sees an error instead of it.
+
+What to do instead: until it is fixed, put a minimal `Numbers` block in
+anything sent to `/preview` -- one entry under the table's own parameters is
+enough -- and ignore the row it prints. Somebody should look at
+`views.preview`'s number path: `number_section` is assigned on some branch that
+a missing `Numbers` skips.
+
+Evidence: 2026-09-23, T442 critique; the same five YAML pieces, with and
+without `Numbers:`.
