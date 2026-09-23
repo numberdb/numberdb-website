@@ -59,10 +59,6 @@ Links:
   CCDTar:
     title: 'Cambridge Cluster Database: Lennard-Jones coordinate archive'
     url: https://www-wales.ch.cam.ac.uk/~jon/structures/LJ/LJ.tar
-References:
-  WalesDoye:
-    bib: David J. Wales and Jonathan P. K. Doye, Global optimization by basin-hopping and the lowest energy structures of Lennard-Jones clusters containing up to 110 atoms, Journal of Physical Chemistry A 101 (1997), no. 28, 5111-5116.
-    doi: 10.1021/jp970984n
 Keywords:
   - Lennard-Jones clusters
   - LJ clusters
