@@ -8053,3 +8053,75 @@ invisible to anything watching cost rather than exit status.
 
 Evidence: 2026-09-23, `agents/runs/COSTS.tsv` line 492, against
 `agents/runs/20260923T055938Z-build.log`.
+
+## A triage `stop` does not stop the machine: the supervisor restarts the campaign
+
+What happened: build run `20260923T055938Z` was triaged at 07:25 and answered
+`stop`, for the `gpt-5.4` fallback recorded in the two sections above.
+`campaign.sh:549` honoured it -- `say "stopping: $verdict"; exit "$status"` --
+and w1's loop ended. At **07:38:51** `workers.sh` started w1 again. At
+**07:38:56**, five seconds later, build run `20260923T073856Z` read the same
+marker, took the same HTTP 400 on turn 1, and bought another triage run.
+
+`agents/workers.sh` is a supervisor (pid 1950235 on this machine, up since
+2026-09-22 20:38:46). Every 300 seconds it asks the process table whether each
+worker's `campaign.sh` is alive in its worktree, and starts it if not. Its
+header explains why, and the reason is sound: on 2026-09-21 the pool sat at one
+worker for sixteen hours because four separate good reasons to end a loop were
+also four reasons for the machine to go quiet.
+
+But the reasons are not all alike. A budget ceiling and a quota are loops
+ending where they should. A triage `stop` is the pipeline saying *a person is
+needed*, and restarting it five minutes later is restarting it into the thing
+the person was needed for. Nothing carries that word from `campaign.sh` to
+`workers.sh`: the supervisor reads only the process table, and `campaign.sh`'s
+exit status is the build's status, which says "failed", not "do not retry".
+
+It is four workers, not one. Each worktree has its own `agents/runs/codex-fallback`
+and all four were written when their own build hit the quota, so all four hold
+`gpt-5.4` / `xhigh`. Four builds failed on the identical 400 inside five
+minutes -- `20260923T073439Z` (w2), `20260923T073856Z` (w1), `20260923T073916Z`
+(w3), `20260923T073936Z` (w4) -- and four triage runs ran concurrently, one per
+worker, each ~$3.
+
+The arithmetic, which is the part worth keeping. The build costs nothing: it
+dies in about a second for $0.0000. The triage does not: `20260923T072522Z` cost
+$3.0653 and took about eight minutes. A worker's cycle is a one-second build, an
+eight-minute triage, an exit, and up to five minutes before the supervisor
+looks -- about thirteen minutes, four to five cycles an hour, times four
+workers. **Roughly eighteen triage runs an hour, about $55 an hour, building
+nothing.** w1's ledger records twenty runs on 2026-09-23 totalling $114.72, so
+the failure loop costs more per hour than the day's real work did.
+
+And it does not converge. The `gpt-5.5` quota refills at Sep 25 03:51, and
+reaching it changes nothing, because `run.sh` never removes the marker: lines
+644 and 655 write `$fallback_marker`, line 584 reads it, and there is no third
+mention. A successful run does not clear it. Only a person does.
+
+Three things follow, of which the first is operational and the others are
+design:
+
+* **The brake is a file.** `touch agents/workers.stop` (or
+  `agents/campaign.stop`) -- the supervisor checks both at the top of its loop
+  and exits, leaving running workers alone. This is the thing to do first when
+  a failure is in the configuration rather than in a table. Not `pkill -f
+  campaign.sh` and not `pkill -f workers.sh`: `workers.sh`'s own header warns
+  that the pattern matches every worker as readily as the supervisor, and this
+  project has killed all four that way more than once.
+* **A triage `stop` has no way to be durable.** Whatever else changes, the
+  verdict a person is meant to act on should survive the campaign that received
+  it -- a flag the supervisor reads would be enough, and `workers.stop` is
+  already the file it would be.
+* **A failure that costs nothing to hit still costs $3 to judge.** Triage is
+  priced for a run that built something, and a build that dies on turn 1 for
+  $0.0000 does not need eight minutes of judgement to be told it has no session
+  to resume. A zero-turn, zero-token, zero-dollar build with an empty `table`
+  column is a case the shell can recognise without guessing at anything.
+
+Evidence: 2026-09-23, triage of `20260923T073856Z-build.log` (twelve lines, two
+identical four-event blocks, no tool call). `agents/runs/workers.log`, the
+restarts at 07:33:31, 07:38:51, 07:39:11 and 07:39:31. `agents/workers.sh`, the
+`while true` loop and the `workers.stop` check. `agents/campaign.sh:517-549`.
+`agents/run.sh` lines 80, 584, 644, 655. `agents/runs/codex-fallback` in all
+four worktrees. `pgrep -fa campaign.sh` showing four loops and four concurrent
+triage runs.
