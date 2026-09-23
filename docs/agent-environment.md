@@ -8290,3 +8290,55 @@ Evidence: 2026-09-23, triage of build run `20260923T075617Z`. Predicates run
 by hand against the real log; `run.sh:80`, `:161`, `:424`, `:556-568`,
 `:583-598`, `:634-679`; marker present and identical in
 `numberdb-campaign-w2`, `-w3`, `-w4` and `numberdb-website`.
+
+## The codex fallback marker stops repairs as well as builds, and three `stop` verdicts did not damp the loop
+
+What happened: the fifth run in six days, and the fourth today, to die at
+turn 0 on `The 'gpt-5.4' model is not supported when using Codex with a
+ChatGPT account.` The note above diagnoses it and says what to change; this
+one records only the two things three consecutive triages could not see from
+inside a single stage, because both change what the failure costs.
+
+**It is not a build-stage problem.** Every codex stage reads
+`agents/runs/codex-fallback` at `run.sh:583-598`, and one of today's twenty
+refusals is a *repair*: `numberdb-campaign-w2/agents/runs/20260923T073411Z-repair.log`,
+on T443, twelve lines and byte-identical to the build logs. That is worse
+than a lost build. T443 was critiqued successfully at 07:18 and its repair
+cannot start, so a draft sits carrying findings that nothing is able to act
+on, and the critique that cost $4.82 buys nothing. Any stage assigned to
+codex is blocked, not just the one that makes new tables.
+
+**Nothing is being built anywhere.** Last successful codex run per checkout:
+
+    numberdb-campaign-w2   20260923T061859Z  build   T443
+    numberdb-campaign-w3   20260923T065206Z  repair  T442
+    numberdb-campaign-w4   20260923T061043Z  repair  T440
+    numberdb-website       20260923T054853Z  repair  T438
+
+Nothing succeeded anywhere between 06:52 and 08:13, while the pool kept four
+`campaign.sh` processes busy failing and triaging.
+
+**A `stop` verdict does not stop anything, measured over three of them.**
+`campaign.sh:546` exits on `stop` and does; `workers.sh:132` relaunches under
+`setsid nohup`, and the relaunched campaign starts with `attempted=0`, so the
+`attempted < 2` guard at `:514` never engages. The verdicts at 07:25, 07:40
+and 07:57 each ended in `stop` and each was followed by the campaign walking
+into the same marker minutes later. Nothing in the loop counts how many times
+a stage has failed the same way, so there is no state that a `stop` can
+leave behind to be honoured. Anyone relying on `stop` to halt a pool should
+know it is advisory.
+
+The tally against the same tally three hours earlier, four checkouts, today:
+
+                        07:57      08:15
+    gpt-5.4 error runs     14       20   (19 build, 1 repair)
+    triage runs            10       17
+    triage spend       $23.16   $35.93
+
+Every failing row reads `0.0000` and the spend lands under `triage`, so the
+cost curve indicts the stage that is working correctly -- which is why this
+ran for three hours without anything flagging it.
+
+Evidence: 2026-09-23, triage of build run `20260923T081258Z`. Ledger rows
+from all four `agents/runs/COSTS.tsv`; `campaign.sh:514`, `:546`;
+`workers.sh:132`; marker still present and identical in all four checkouts.
