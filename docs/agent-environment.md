@@ -8572,3 +8572,59 @@ Two smaller findings from the same session, both in `source_names_it`:
 
 Evidence: 2026-09-23, ideation run 20260923T081219Z, five candidate names
 screened twice each, descriptively and by proper name.
+
+## A lapsed claim goes back into the queue, so the failure loop feeds itself
+
+The note above recorded that a build which claims a proposal and dies still
+burns the claim, and that `CLAIM_MINUTES = 90` (`agents/queue.py:280`) makes
+those claims lapse on their own so they "need no cleaning up". That is true and
+it is half of it. The other half decides how this loop ends, which is that it
+does not.
+
+`waiting()` at `agents/queue.py:306` is:
+
+    return [item for item in family['items']
+            if not item['done'] or stale_claim(item)]
+
+A claim older than ninety minutes counts as **waiting again**. So the lapse
+that makes cleanup unnecessary is also what hands every dropped proposal back
+to be claimed and dropped a second time. The claims are timed, so the schedule
+is exact -- measured at 08:43Z on 2026-09-23, with twenty-two builds dead on
+the `gpt-5.4` 400 and no table built:
+
+    #197  claimed 07:38-07:55Z by builds that died  ->  returns 09:08-09:25Z
+    #198  claimed 07:55-08:07Z                      ->  returns 09:25-09:37Z
+    #199  claimed 08:12-08:19Z                      ->  returns 09:42-09:49Z
+    #200  claimed 08:38-08:40Z                      ->  returns 10:08-10:10Z
+
+Twenty-two proposals come back between 09:08Z and 10:10Z, and every ninety
+minutes after that, with no ideation bought at all.
+
+Two things follow, and both correct advice written earlier today.
+
+* **Stopping the screener is not sufficient.** Three verdicts made `touch
+  agents/screener.stop` the urgent item, on the reasoning that the ideas stage
+  is the working producer feeding the broken consumer. That was right while the
+  queue was being consumed faster than claims lapsed. Once a full cycle has
+  gone by it is not: the workers have a self-replenishing supply of their own
+  leavings. Stopping the screener now only removes the ~$9 per batch ideation
+  line; `agents/workers.stop` is what stops the spend.
+* **`campaign.sh:355` can never fire again.** The `exit 6` on "nothing waiting
+  anywhere and no screening to be had" was the one path by which an empty queue
+  could have ended a worker on its own. From 09:08Z there is always something
+  waiting, so the last self-limit in the loop is gone.
+
+One measurement worth keeping beside this, because it says where the money
+goes. Over 07:25:18Z to 08:40:23Z, all four worktrees deduplicated by stamp:
+22 triage runs $43.4372, 2 ideas runs $17.8423, 22 builds $0.0000 at zero turns
+each, 1 repair $0.0000 -- $61.2795, about $49/hour. Triage is the bill. It is
+*not* growing as the pile of verdicts each run reads grows: the mean is $1.97,
+the first five averaged $2.69 and the last five $1.50. The cost is the number
+of runs, which is four workers on a six-minute cycle, so anything that changes
+the rate changes the bill and nothing about the size of a single triage will.
+
+Evidence: 2026-09-23, triage of `20260923T084003Z-build.log`, the seventh
+identical refusal on w1 and the twenty-second across the four worktrees.
+`python3 agents/queue.py show 197 198 199 200` for the claim times,
+`agents/queue.py` lines 280 and 296-315, `agents/campaign.sh:337-356`,
+`agents/runs/COSTS.tsv` in all four worktrees.
