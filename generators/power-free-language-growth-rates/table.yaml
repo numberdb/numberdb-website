@@ -3,12 +3,9 @@
 # is a person's act on the site.
 Title: Growth rates of the power-free languages
 Definition: >-
-  Let $L_{k,\beta}$ be the language of finite words over a $k$-letter
-  alphabet with no factor of exponent at least $\beta$; let $L_{k,\beta^+}$
-  use the strict cutoff CITE{ShurTables} CITE{WikiCriticalExponent}. The table
-  stores
-  $\gamma=\alpha(k,\beta)=\lim_{n\to\infty} c_n^{1/n}$, where $c_n$ counts
-  words of length $n$ in the indicated language.
+  For Shur's power-free language $L_{k,\beta}$ over a $k$-letter alphabet,
+  with $\beta^+$ denoting the strict cutoff, the table stores the growth rate
+  $\gamma=\alpha(k,\beta)$ CITE{ShurTables} CITE{WikiCriticalExponent}.
 Keywords:
   - power-free languages
   - power-free words
