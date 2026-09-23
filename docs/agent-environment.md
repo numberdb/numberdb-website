@@ -8800,3 +8800,53 @@ Evidence: 2026-09-23 09:41Z, triage of build run `20260923T093900Z`.
 (`held_by_others`), `:721-744` (`take`), `:803-806` (`cmd_claim`); observed
 against a live 429, where a second `GET /api/claim` reported `live claims: 0`
 seconds after the first had listed 33.
+
+## The rate limiter was the only brake on the queue drain, and no tool in the campaign reports an abandoned claim
+
+What happened: the section above called `take()`'s behaviour under a 429 --
+refusing every claim -- "fail-closed against work". Watching the window close
+shows it was doing something better than that. It was the only thing stopping
+the dead build lane from consuming proposals.
+
+The key's hourly counter reset exactly on the hour, as `throttle.py`'s
+`now - (now % window)` bucketing predicted: `GET /api/claim` at 10:05Z answers
+200 and lists 32 live claims. Either side of 10:00:00Z the campaign behaved
+completely differently, at identical cost to the builder:
+
+  * 09:39Z-10:00Z, key exhausted. Two cycles reached `queue.py claim`, got
+    False out of `take()` on a 429, printed "could not claim ... another
+    worker has it" and stopped. **No build run, no proposal consumed, $0.**
+  * 10:02Z, first cycle after the reset. The claim succeeded, the build ran,
+    and it died at turn 0 on the same refused model as the fifty before it.
+    **One proposal consumed, $0.**
+
+So for those 23 minutes the outage was worth more than the working lock. That
+is not an argument for leaving `take()` as it is -- it is the measurement of
+how fast a broken build lane empties a queue when nothing stands in its way,
+which is one screened proposal per cycle, about one every 8 minutes.
+
+The related gap, and the reason nobody noticed 32 abandoned claims: **no
+command in the campaign reports them.** `queue.py stale` (`:847-855`) sounds
+like the one that would, but it filters on `f['screened'] < cutoff` with a
+cutoff in *weeks* -- it measures how long ago the family was screened, not how
+long a claim has been held. It printed nothing here while 32 claims sat in the
+table, all of them held by runs that never reached turn 1. Asking the site
+directly (`GET /api/claim` with no `family`) is the only way to see them.
+
+Nothing needs sweeping by hand, because both halves of the lock expire at
+ninety minutes and agree on the number: `ProposalClaim.MINUTES = 90` with an
+expired claim taken over in place (`models.py:1560,1575`), and
+`CLAIM_MINUTES = 90` in `queue.py:280`, which `stale_claim()` applies to the
+`[~]` line so the checklist ages out with the site. The cost of an abandoned
+claim is therefore bounded -- the proposal is invisible for up to ninety
+minutes -- but it is invisible *silently*, and that is what to fix: `stale`
+should be able to answer "which claims are held by nothing", and a supervisor
+that sees the same family recycle should read it as the build lane being dead
+rather than the queue being busy.
+
+Evidence: 2026-09-23 10:05Z, triage of build run `20260923T100300Z`.
+`agents/runs/campaign-w4.log:46350-46366` for the two aborted cycles and the
+claim that succeeded; `GET /api/claim` returning 200 with 32 rows, five of
+them family #202 taken between 09:20Z and 10:02Z by four workers, none of
+which reached turn 1. `agents/queue.py:280`, `:847-855`;
+`numberdb_app/models.py:1519-1575`.
