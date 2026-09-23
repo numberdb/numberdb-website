@@ -7927,3 +7927,73 @@ invalid values, but a builder can move on by fixing the section shape.
 Evidence: 2026-09-23, T430 build. The first create request for "Markov
 quadratic irrationals" returned the generic 500 HTML page. The retried request
 with `Formulas` values as strings returned 201 with `tid: T430`.
+
+## On the builder box there is no Django, so the `RequestFactory` recipe for rendering a draft does not exist; split `/preview?table=` instead
+
+What happened: the T430 critique of 2026-09-23 had to read a private draft's
+rendered page. The two notes above say to render it in the throwaway with
+`django.setup()` and `RequestFactory`, and to avoid `/preview?table=` because
+a whole document exceeds the URL limit. Both assume the website's image.
+This run had `NUMBERDB_REMOTE=local`, `NUMBERDB_MACHINE=ip-172-31-47-40` and
+`NUMBERDB_SAGE_IMAGE=numberdb/builder:latest`, and the builder image has no
+Django, no app and no database: the script failed at `import django` with
+`ModuleNotFoundError`, before `sys.path.insert(0, "/app")` could matter,
+because there is no `/app`. `manage.py audit_table` is unavailable for the
+same reason.
+
+What to do instead, on a box with the builder image:
+
+* `GET /api/table/<tid>/audit` with the key replaces `manage.py audit_table`,
+  as the critique prompt says. `?links=1` is accepted.
+* `GET /api/table?id=<tid>` with the key returns the draft's document. It
+  serves `full_yaml` reparsed (`api.py:_ordered_document`), which is the same
+  string `table_context` loads, so what the API hands back is exactly what the
+  renderer will read. A shape fault in the document is therefore visible here.
+* For the rendering, cut the document into pieces of four or five sections and
+  `curl -G --data-urlencode "table@piece.yaml" https://numberdb.org/preview`.
+  T430's whole document is 10,459 bytes URL-encoded and answers 414; six
+  pieces of 1 to 3 KB each answered 200. Two traps: `preview` requires a
+  `Title` in every piece, and it requires a `Numbers` section in every piece
+  or it dies with `cannot access local variable 'number_section'` — a
+  one-entry stub is enough. `/preview` is not login-guarded, and it calls the
+  same `table_context` as the table page, so an error there is an error on the
+  page.
+
+Note also that a private draft is 404 on `/T<n>` even with `X-API-Key`, while
+`/api/table?id=T<n>` with the same key answers: the page resolves a session
+and the API resolves a key. That is already recorded twice further up; it is
+repeated here because it is what sends a run looking for a rendering route in
+the first place.
+
+Evidence: 2026-09-23, T430 critique. `/tmp/crit430.py` failed at `import
+django`; `/tmp/p_{a,b,c,d1,e,f,g}.yaml` are the pieces that rendered.
+
+## The T430 draft shipped with `Programs` as a string, and the page it makes is a 500
+
+What happened: this is the same family as the note above about `Formulas`
+values being mappings, found in the same table two hours later. The build
+fixed `Formulas` when `POST /api/tables` answered 500, and left `Programs` as
+`{Sage: "<prose>"}`. That one is accepted — by the create endpoint, by the
+write endpoint, and by `audit_table`, which reports `clean: true` — and the
+table page then raises `ValueError: Error while Parse program Sage: string
+indices must be integers, not 'str'` out of `table_context`, which
+`render_table` does not catch.
+
+So a draft can be offered for review in a state where neither `/T430` nor
+`/review/T430` nor `/preview/T430` renders, and nothing in the pipeline says
+so. The one thing that does say so is `/preview?table=<the document>`, which
+is not run anywhere in the campaign scripts.
+
+What to do instead: after filling a table and before offering it, preview the
+document once. On this box that is the split `curl -G` above; it costs six
+requests and would have caught this.
+
+The skill lesson (that `Programs` is a mapping with `language` and `code`) is
+in `agents/lessons/proposals/20260923T035634Z-critique.md`; what belongs here
+is that `audit_table` and the offer step both pass a document that cannot
+render, so the campaign has no gate on it.
+
+Evidence: 2026-09-23, T430 critique. `numberdb_app/views.py:961` indexes
+`program['language']`; `views.py:1507` re-raises; `views.py:489`
+(`render_table`) has no `except`. Previewing T430's `Programs` alone renders
+nothing; the same stub with `{language: Sage, code: "print(1)"}` renders.
