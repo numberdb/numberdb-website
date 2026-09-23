@@ -8001,3 +8001,24 @@ Evidence: 2026-09-23, T424 build. The first wrapper run failed with
 `ModuleNotFoundError: No module named 'check'`; the second printed the
 `dry_run.py` usage text because no argument was forwarded. The scratch runner
 computed all 1000 entries and ran the exactness, prose and size checks.
+
+## The audit API can return 500 where the review page would continue
+
+What happened: after T424 verified 1000/1000, `GET /api/table/T424/audit`
+with the draft author's key returned a bare 500 page. Removing the only likely
+tag finding, a new `elliptic function` tag that reached no public tables, did
+not change the 500. The local `manage.py audit_table T424` fallback could not
+run in this checkout because Django is not installed. The review page wraps
+`findings_for(table)` in a broad exception handler and would show no findings;
+the API route calls the same function without that guard.
+
+What to do instead: when the audit API 500s on a build machine, record the
+failure and run the deterministic checks that can be run over the API: CITE
+labels, HREF targets, established tags, stored-value verification and size.
+Do not treat the 500 as a clean audit; say it happened in the review report.
+
+Evidence: 2026-09-23, T424 build. `/tmp/audit_t424.py` received HTTP 500
+before and after the tag cleanup. `python3 manage.py audit_table T424` failed
+with `ModuleNotFoundError: No module named 'django'`. Manual API checks
+resolved all four HREF targets and confirmed `special functions` has many
+tables while `elliptic function` has none.
