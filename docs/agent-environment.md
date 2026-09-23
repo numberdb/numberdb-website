@@ -10180,3 +10180,45 @@ did not exist when the previous verdict was written. Screening
 started 08:37:57). `agents/workers.sh 4` still PID 1950235, `screener.sh` still
 PID 1950272, four `campaign.sh 200` alive, and no `campaign.stop` or
 `workers.stop` in any tree.
+
+## `queue.py stale` reports families screened long ago, not claims held too long
+
+What happened: triaging a turn-zero build, this run wanted to know whether the
+claims piling up across families #196-#202 had lapsed, and reached for
+`python3 agents/queue.py stale`. It printed nothing and exited 1. The obvious
+reading -- "no claim is stale" -- is wrong, and at that moment 31 claims were
+live and none had ever been built.
+
+The two things are unrelated despite the shared word. `stale_claim()`
+(`queue.py:296`) is the ninety-minute test, `CLAIM_MINUTES = 90`
+(`queue.py:280`), and it is reached only through `waiting()` and `unheld()`
+when a worker is choosing what to build. `cmd_stale()` (`queue.py:847`) never
+calls it: it takes `--weeks` (`STALE_WEEKS = 6`) and lists families whose
+`screened` date is older than six weeks and that still have work left. On a
+machine whose families were all screened the same morning, it can only ever
+print nothing -- `--weeks 0` prints nothing too, because the cutoff is today
+and a family screened today is not before it. Its silence carries no
+information about claims at all.
+
+The section above, "`queue.py built` can close a family whose remaining entries
+are only claimed", ends by saying `cmd_stale()` "only scans open families, so a
+premature close can hide a dead worker's stale claim". That is true of the
+family scan but reads as though `cmd_stale()` surfaces stale claims; it does
+not. Reopening a prematurely closed family is still right -- `waiting()` is
+what recovers the claim, when the next worker calls it -- but no report will
+list the claim for you.
+
+What to do instead: to see claim ages, read the checklist, which is where the
+time is written -- `queue.py show <family>` prints
+`- [~] <title> -- claimed by w3 at 2026-09-23T09:21Z`. The site's own
+`GET /api/claim?family=<n>` answers with `worker` and `proposal` but **no
+timestamp**, so it tells you who holds what and not for how long; the issue
+body is the only place a claim's age is legible.
+
+Evidence: 2026-09-23 09:2xZ, triage of build `20260923T092118Z` in w3.
+`queue.py stale` -> no output, exit 1; `queue.py stale --weeks 0` -> the same.
+`GET /api/claim?family=196..202` -> 31 rows, every one with a null timestamp
+field, spread over four workers; `queue.py open` -> `#202 4 left`, `4 waiting`;
+`queue.py show 202` -> `[~] Global minimum energies of the Thomson problem --
+claimed by w3 at 2026-09-23T09:21Z`, this run's own claim, with the time in
+the checklist and nowhere else.
