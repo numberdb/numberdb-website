@@ -9921,3 +9921,68 @@ marker in all four trees; `git log -L 583,600:agents/run.sh`; the four
 `COSTS.tsv` ledgers merged and deduplicated by `(started, stage, log)`, read
 for 2026-09-18 02:32-03:55Z and from 07:34:39Z today. Found while triaging
 `agents/runs/20260923T161908Z-build.log`.
+
+## Correction to `:8780`: the draft budget is not five, it is observable, and it is not the next wall
+
+What happened: triage of `20260923T164349Z` -- the 65th zero-turn `gpt-5.4`
+build -- asked a question none of the previous 64 verdicts had: when somebody
+finally clears the markers, does the campaign simply resume, or is there a
+second wall behind the first? The obvious candidate is the draft budget, and
+`:8780` says it "is not observable from here at all", a sentence two later
+verdicts repeated as "there is no draft-listing endpoint". Both the number and
+the claim of unobservability are wrong.
+
+**It is observable.** Not the *fill* state -- `:8774` is right that there is no
+read path for entries, so a filled draft still cannot be told from an empty one
+-- but the count is plain. A table is a draft exactly when its public page 404s
+while `GET /api/table?id=T<n>` returns the document to zeta3's key. Walking
+`T360`-`T450` both ways, 22 tables answer the API and 404 in public; T445 is
+the highest table that exists at all. Attributing them through the four
+ledgers' `table` column, 18 were created by campaign builds, plus T445 (already
+recorded at `:8757` as w3's), so zeta3 holds at least 19.
+
+**The budget is not five.** `permissions.py:268` sets `DRAFTS_IN_FLIGHT = 15`
+and `:288` `BULK_DRAFTS_IN_FLIGHT = 100` for the bulk-drafts group; the ceiling
+is per-account and enforced at creation by `may_create_drafts_through_api`. The
+count above already exceeds both 5 and 15, and the behavioural proof is
+stronger than the count: T443 was created successfully at 06:18:59Z with at
+least 17 drafts already held, which the API would have refused under either
+lower ceiling. zeta3 is on the bulk ceiling, with roughly 80 of headroom.
+
+So the draft budget is not on anybody's list. It will not block the restart,
+and nobody needs to clear drafts before fixing the writer.
+
+**What will need a decision is T443, and T441 with it.** The outage interrupted
+a table mid-pipeline and no verdict has said so:
+
+    w2  20260923T061859Z  build     1 turn    $11.3930  success  T443
+    w2  20260923T071817Z  critique  64 turns   $4.8213  success  T443
+    w2  20260923T073411Z  repair     0 turns   $0.0000  error    T443
+
+That repair log ends on the identical 400 and is the **first** occurrence, at
+07:34:11Z -- three minutes before this tree's marker was written. T443, *Values
+of the Hastings-McLeod solution $q(s)$ of Painlevé II*, is a draft holding
+critique findings that were never applied, $16.21 spent, including the six
+findings at `:8770` of which the first is that its `rigour: measured` is wrong.
+T441 is in the same state from w1's errored build.
+
+The queue hands out *proposals*, not drafts. A campaign restarted cleanly takes
+the next proposal and never returns to either table. Re-running the repair
+stage on T443 and T441 is a separate human decision from clearing the markers,
+and it should be made at the same time or the two tables are simply lost among
+the other 19.
+
+What to change in how this page is read: strike "(five)" and "not observable
+from here at all" at `:8780`; the budget is the bulk ceiling of 100 and the
+count is one id-walk away. Keep the rest of that note -- fill state genuinely
+is unreadable. And add T443/T441 to the list of things a person has to settle
+at `:9685`, which currently ends at the writer and says nothing about the work
+already bought.
+
+Evidence: 2026-09-23, 16:44-17:15Z. `GET /api/table?id=T<n>` with zeta3's key
+against the anonymous public page for `T360`-`T450`; the four `COSTS.tsv`
+ledgers merged and deduplicated by `(started, stage, log)`, joined on the
+`table` column; `numberdb_app/permissions.py:268-335`;
+`numberdb_app/api.py:954-999`; `numberdb_app/views.py:359-399`;
+`agents/runs/20260923T073411Z-repair.log`. Found while triaging
+`agents/runs/20260923T164349Z-build.log`.
