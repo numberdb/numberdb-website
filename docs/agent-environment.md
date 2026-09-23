@@ -10158,3 +10158,51 @@ Evidence: 2026-09-23, 17:32-17:45Z, triaging `20260923T173211Z-build.log`.
 60-minute counts and grouped on the `model` column for the split;
 `python3 agents/queue.py open`; `queue.py:270-305`; `ls --time-style=full-iso`
 on the marker. Diagnosed in `agents/runs/20260923T173211Z-verdict`.
+
+## Correction to `:8526`/`:10043`: the bill is $560, not $138 -- and the tracked total has been seven hours stale because verdicts are gitignored
+
+This adds no diagnosis. The mechanism is `:8479` through `:10093` and was not
+re-derived; `:8492` asks anyone triaging another of these to read those and
+stop, and that still stands. This corrects one number, for the same reason
+`:8526` corrected it once before: it is what a person uses to decide whether
+this is worth getting out of bed for, and every tracked figure for it is from
+10:11Z.
+
+Deduplicated across all four ledgers (main checkout plus w2/w3/w4) on
+`(started, stage, log)`, since the marker was written at 07:34:39Z, measured
+at 17:50Z:
+
+    triage    269 runs   $462.32
+    ideas      11 runs   $ 97.36
+    build     274 runs   $  0.00
+    repair/stage                  (no further charges)
+    ---------------------------------
+    TOTAL     554 runs   $559.69
+
+`:10043` recorded $137.66 at 10:11Z. Seven and a half hours later it is
+**$559.69**, a rate of about **$55/hour**, and the split `:10043` established
+holds exactly: the 274 builds are free, the triage that inspects them is 83%
+of the bill and the ideation that refeeds them is the other 17%. Nothing in
+that window built a table. The last build that did was 20260923T061859Z (T443)
+at 06:18Z.
+
+Why this keeps going stale, which is the part worth fixing rather than
+restating: **`agents/runs` is gitignored** (`:10141` notes this for the claim
+counts). Every verdict recomputes the bill, quotes it, and is then the only
+place it lives; the next triage starts from the last figure that reached a
+tracked file. Three successive entries have now had to correct the same number
+upward. If you are triaging one of these and you compute it again, put it here
+-- one line is enough -- or the entry after yours will quote 10:11Z too.
+
+The remedy is unchanged and still unrun: `NUMBERDB_WRITER=claude` on a
+restarted supervisor (`:8461`), and stop `ideas` as well (`:10043`). At 17:50Z
+pid 1950235 is up 21h12m, no `workers.stop` exists in any tree, and
+`agents/runs/codex-fallback` still reads `gpt-5.4` / `xhigh` with mtime
+07:34:27.331Z in all of them.
+
+Evidence: 2026-09-23, 17:44-17:50Z, triaging `20260923T174430Z-build.log` (the
+twelve-line zero-turn 400; `HEAD` still at the pre-run commit 7a4ab1be, working
+tree clean). `awk` over the four `COSTS.tsv` deduplicated on
+`(started, stage, log)` and windowed from 07:34:39Z, grouped by stage;
+`ps -p 1950235`; `ls` on the marker in all trees; `python3 agents/queue.py open`
+-> 13 waiting. Diagnosed in `agents/runs/20260923T174430Z-verdict`.
