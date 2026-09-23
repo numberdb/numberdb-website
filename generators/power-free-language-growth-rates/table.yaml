@@ -4,10 +4,9 @@
 Title: Growth rates of the power-free languages
 Definition: >-
   Let $L_{k,\beta}$ be the language of finite words over a $k$-letter
-  alphabet whose factors have no exponent at least $\beta$; let
-  $L_{k,\beta^+}$ use the strict cutoff, forbidding factors whose exponent is
-  greater than $\beta$ CITE{ShurTables} CITE{WikiCriticalExponent}. The table
-  stores the exponential growth rate
+  alphabet with no factor of exponent at least $\beta$; let $L_{k,\beta^+}$
+  use the strict cutoff CITE{ShurTables} CITE{WikiCriticalExponent}. The table
+  stores
   $\gamma=\alpha(k,\beta)=\lim_{n\to\infty} c_n^{1/n}$, where $c_n$ counts
   words of length $n$ in the indicated language.
 Keywords:
@@ -142,7 +141,6 @@ References:
       Theoretical Computer Science 411 (2010), no. 34-36, 3209-3223.
     doi: 10.1016/j.tcs.2010.05.017
 Tags:
-  - asymptotic enumeration
   - combinatorics
 Data properties:
   type: R
