@@ -9447,3 +9447,70 @@ Evidence: 2026-09-23, triage of `20260923T110700Z-build.log`; the probe above;
   is not evidence that stdin was left open. It appears at the head of every
   dead build log in this campaign, where it is easy to read as a second fault.
   It is noise. The "waits for a prompt" half was not tested and may still hold.
+
+## The screener and the w1 campaign share the primary worktree, so two agents commit to one index -- and both are told to append to this file
+
+What happened: triaging `20260923T111940Z` I found a second agent running in
+`/home/ubuntu/numberdb-website` while I worked. Not a sibling in another
+worktree -- the *same* directory, the same `.git`, the same `HEAD`.
+
+The cause is that both supervisors were started here and neither moves:
+
+    1950235  Sep 22 20:38:46  bash agents/workers.sh 4
+    1950272  Sep 22 20:38:51  bash agents/screener.sh
+
+`agents/propose-batch.sh` opens with `here=$(cd "$(dirname "$0")/.." && pwd);
+cd "$here"`, so the ideas stage runs wherever the script lives -- the primary
+worktree. `workers.sh` independently hands that same worktree to the w1
+campaign. Measured at 11:20Z on 2026-09-23, through `/proc/<pid>/cwd`:
+
+    2720346  propose-batch.sh   (parent: screener.sh 1950272)  /home/ubuntu/numberdb-website
+    2720353  run.sh ideas       (writing BATCH-2026-09-23T1120) /home/ubuntu/numberdb-website
+    2715643  campaign.sh 200                                    /home/ubuntu/numberdb-website
+    2720403  run.sh triage      (this run)                      /home/ubuntu/numberdb-website
+    2717977  campaign.sh 200                                    /home/ubuntu/numberdb-campaign-w3
+    2720378  campaign.sh 200                                    /home/ubuntu/numberdb-campaign-w4
+
+So `numberdb-website` carries two agents and `-w2` carried none at that
+instant. The ideas log confirms it from the other side:
+`{"type":"system","subtype":"init","cwd":"/home/ubuntu/numberdb-website",...}`.
+
+**Why it matters.** Each stage is instructed to write its lesson to a path no
+other run writes to -- `agents/lessons/proposals/<stamp>-<stage>.md` -- and the
+reason given is that "two campaigns running at once conflict on every merge of
+a shared file". That rule works: the per-stamp files never collide. But the
+*same instructions* send anything about the deployment to `docs/agent-environment.md`,
+which is one shared file, and here two concurrent runs in one worktree really
+do append to it. The interleaving is already in this branch's history:
+
+    c812a38d 10:01:58  agents/lessons/proposals/20260923T092122Z-ideas.md
+    848a2e13 10:19:07  agents/lessons/proposals/20260923T100319Z-ideas.md
+    678644d9 10:19:07  docs/agent-environment.md
+    81d4db8b 10:21:08  ...20260923T101517Z-triage.md + docs/agent-environment.md
+    1188aea0 09:20:28  ...20260923T085635Z-ideas.md  + docs/agent-environment.md
+
+Two commits inside the same second from two different stages. Nothing has been
+lost yet -- appends to the end of a file mostly merge, and `git commit` takes
+`index.lock` for long enough to serialise -- but a run that stages a file
+another run is mid-edit on, or that hits `index.lock` contention, will fail for
+a reason that has nothing to do with its work. A triage reading `git status` to
+answer "what did the failed run leave behind" can also see another agent's
+working tree and attribute it to the run it is triaging. That is the sharper
+hazard, because it produces a wrong verdict rather than an error.
+
+**What to do about it.** Give the screener its own worktree -- it needs no Sage
+and no heavy image, which is the whole reason `propose-batch.sh` is separate
+from `campaign.sh` in the first place -- or stop `workers.sh` from assigning w1
+to the directory the screener already occupies. Until then, a run in
+`numberdb-website` should treat `git status` and `HEAD` as shared state and
+check `/proc/<pid>/cwd` of any live sibling before drawing a conclusion from
+either.
+
+`readlink /proc/<pid>/cwd` is the cheap way to ask which worktree a process is
+in; `pgrep -fa campaign.sh` cannot answer it, because every worker's command
+line is the identical `bash agents/campaign.sh 200`.
+
+Evidence: 2026-09-23, triage of `20260923T111940Z-build.log`.
+`agents/propose-batch.sh` lines 26-28; `/proc/{2715643,2717977,2720346,2720353,
+2720378,2720403}/cwd`; `agents/runs/20260923T112015Z-ideas.log`, first `system`
+event; `git show --stat` on the five commits above.
