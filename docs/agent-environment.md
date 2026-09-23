@@ -9392,3 +9392,52 @@ Evidence: 2026-09-23. `git check-ignore -v agents/runs/COSTS.tsv`;
 `agents/run.sh:766-797` and its comment at `:788`; `grep -n 'git commit\|git add'
 agents/run.sh agents/campaign.sh` -> `campaign.sh:790,791` only;
 `git rev-parse HEAD` before and after `20260923T141706Z`.
+
+## A list of burned-claim families is stale in twenty minutes: re-enumerate at cleanup time, do not work from a verdict
+
+What happened: build run `20260923T143445Z` was the **forty-ninth** identical
+zero-turn `gpt-5.4` 400 in this tree; all forty-eight prior verdicts here say
+`stop`. No new mechanism -- the entries from `:8428` on hold it, and the
+instruction there to read them rather than re-derive them stands.
+
+One thing is new, and it is the part a person acts on. Every verdict since
+09:38Z ends by naming the families whose proposals were claimed by dead builds
+and asking for them to be cleared by hand: `:8479` names #202, `:9317` names
+#198. **Both are already gone from `queue.py open`**, which at 14:35Z returns:
+
+    #206  6 left     #205  6 left     #204  2 left     #203  4 left
+
+The live claims have moved with it -- #203 fully `[~]` with none built (this
+run took "Growth constants of the classes of trees" at 14:34Z and was refused
+two seconds later), four more in #204. Claims rotate on `CLAIM_MINUTES = 90`
+and the workers re-claim into whatever the queue offers next, so the *set* of
+damaged families turns over roughly every half hour while the *count* of burned
+proposals only grows. A cleanup list written into a verdict is worth about
+twenty minutes.
+
+What to do instead: whoever clears these should run `queue.py open` and
+`queue.py show <family>` **at the moment they do the clearing**, and treat every
+family named in any verdict -- including the one that sent them -- as a sample
+from a past state, not an inventory. The stop-the-pool step is unchanged and
+comes first; clearing claims under a live pool just feeds them back.
+
+The running total, which `:9206` designates as the one figure worth restating.
+Deduplicated across all four trees by `(started, stage, log)`, since 07:34:39Z
+-- 7.02 hours:
+
+    build    172 runs      $0.00      0 turns      0 tables
+    triage   167 runs    $304.49   6117 turns
+    ideas     10 runs     $86.74    702 turns
+    -------------------------------------------------
+    TOTAL    349 runs    $391.24    -- $55.76/hour
+
+$312.63 at 13:20Z, $391.24 at 14:35Z. The shape is unchanged: builds free,
+triage the entire bill at a mean of $1.82.
+
+Evidence: 2026-09-23, 14:35Z. `agents/runs/20260923T143445Z-build.log` (1534
+bytes, as the 48 before it); `head -1` of all 48 prior verdicts -> `stop`;
+`python3 agents/queue.py open` and `show 203 204 205 206`; the four `COSTS.tsv`
+ledgers merged and deduplicated in Python; `ps -ef` -> pid 1950235 up since Sep
+22 20:38 and four `campaign.sh 200` spawned 14:29--14:35; the marker still
+`gpt-5.4` / `xhigh` in all four trees; no `workers.stop` anywhere. Diagnosed in
+`agents/runs/20260923T143445Z-verdict`.
