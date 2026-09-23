@@ -2,9 +2,9 @@
 # generate.py beside it and offered for review. Publishing is a person's act.
 Title: Values of the Tracy–Widom densities $f_\beta(s)$
 Definition: >-
-  For $\beta\in\{1,2,4\}$, $f_\beta(s)=dF_\beta(s)/ds$ is the density of the
-  Tracy–Widom distribution CITE{WikiTW} in the soft-edge scaling used by
-  CITE{Bornemann}.
+  For $\beta\in\{1,2,4\}$, let $F_\beta$ be the Tracy–Widom distribution
+  function CITE{WikiTW} in the soft-edge scaling used by CITE{Bornemann}. The
+  table gives its density $f_\beta(s)=dF_\beta(s)/ds$.
 Keywords:
   - Tracy-Widom density
   - Tracy Widom density
@@ -27,7 +27,6 @@ Parameters:
     type: Q
     title: argument
     display: $s$
-    constraints: $s\in\mathbb{Q}$
 Comments:
   comment-normalisation: >-
     The table uses the Tracy–Widom scaling in which
@@ -43,11 +42,9 @@ Comments:
     HREF{Values_of_the_Airy_function_of_the_first_kind}[the table of Airy
     function values].
   comment-grid: >-
-    The $0.05$ grid is used because $s$ is a plotted and numerically evaluated
-    soft-edge coordinate in random-matrix computations, so two-decimal
-    arguments in the transition window are values a computation or graph can
-    hand to a reader. It also keeps the arguments aligned with
-    HREF{T441}[the companion table of distribution functions].
+    The $0.05$ grid keeps the density values aligned with
+    HREF{T441}[the companion table of distribution functions]: each tabulated
+    $f_\beta(s)$ has the corresponding $F_\beta(s)$ at the same $s$ there.
 Formulas:
   formula-t-kernel: >-
     Let $T_t$ be the operator on $L^2(0,\infty)$ with kernel
@@ -60,10 +57,10 @@ Formulas:
     Let $q$ be the Hastings–McLeod solution of $q''(s)=sq(s)+2q(s)^3$ with
     $q(s)\sim\operatorname{Ai}(s)$ as $s\to+\infty$, and put
     $u(s)=\int_s^\infty q(x)\,dx$ and
-    $I(s)=\int_s^\infty q(x)^2\,dx$. Then
-    $f_1(s)=F_1(s)(I(s)+q(s))/2$, $f_2(s)=F_2(s)I(s)$, and
+    $J(s)=\int_s^\infty q(x)^2\,dx$. Then
+    $f_1(s)=F_1(s)(J(s)+q(s))/2$, $f_2(s)=F_2(s)J(s)$, and
     $f_4(s)=2^{-1/2}F_2(\sqrt2s)^{1/2}
-    (I(\sqrt2s)\cosh(u(\sqrt2s)/2)-q(\sqrt2s)\sinh(u(\sqrt2s)/2))$
+    (J(\sqrt2s)\cosh(u(\sqrt2s)/2)-q(\sqrt2s)\sinh(u(\sqrt2s)/2))$
     CITE{Bornemann}.
 Programs:
   program-python:
@@ -74,9 +71,10 @@ Programs:
       from scipy.special import airy
 
       nodes, weights = np.polynomial.legendre.leggauss(100)
+      t = 0.0
       x = 24.0 * (nodes + 1.0) / 2.0
       rootw = np.sqrt(24.0 * weights / 2.0)
-      z = x[:, None] + x[None, :]
+      z = x[:, None] + x[None, :] + t
       ai, aip, _, _ = airy(z)
       K = rootw[:, None] * ai * rootw[None, :]
       Kp = rootw[:, None] * aip * rootw[None, :]
@@ -85,7 +83,8 @@ Programs:
       Dp = det(I + K)
       Dm_prime = -Dm * np.trace(solve(I - K, Kp))
       Dp_prime = Dp * np.trace(solve(I + K, Kp))
-      f2_at_0 = Dm_prime * Dp + Dm * Dp_prime
+      f2_at_t = Dm_prime * Dp + Dm * Dp_prime
+      print(f2_at_t)
 Similar tables:
   - table: HREF{T441}[Values of the Tracy–Widom distribution functions $F_\beta(s)$]
     relation: gives the distribution functions whose derivatives are tabulated here
@@ -113,17 +112,25 @@ Tags:
   - special functions
 Data properties:
   type: R
-  rigour: measured
+  rigour: heuristic (agreement-checked)
   complete: no
-  complete-note: it holds $\beta=1,2,4$ for every grid point $s=-10,-9.95,\ldots,5$
+  complete-note: >-
+    it holds $\beta=1,2,4$ at every multiple of $0.05$ from $s=-10$ to
+    $s=5$; a $0.01$ grid for all three Dyson indices would have $4503$
+    entries, past the $1200$-entry soft limit, and the $0.05$ grid matches the
+    companion distribution-function table
   rigour details: >-
     Values were computed from CITE{formula-determinants} by Gauss-Legendre
-    Nystrom quadrature for the operator $T_t$ and its derivative with respect
+    Nyström quadrature for the operator $T_t$ and its derivative with respect
     to $t$. The derivative of the determinant was evaluated by
     $d\det(I\pm T_t)/dt=\det(I\pm T_t)\operatorname{tr}((I\pm T_t)^{-1}
-    (\pm dT_t/dt))$. A Painlevé-II integration of $q$, $u$, $I$ and
+    (\pm dT_t/dt))$. A Painlevé-II integration of $q$, $u$, $J$ and
     $\int_s^\infty (x-s)q(x)^2\,dx$ was used as an independent control where
-    the downward integration stays on the Hastings-McLeod branch. In the
+    the downward integration stays on the Hastings–McLeod branch. Only the
+    digits that survived these comparisons were written. On the left flank this
+    leaves two-digit entries for $-8.40\leq s\leq -7.85$ when $\beta=1$,
+    $-8.30\leq s\leq -7.80$ when $\beta=2$, and for
+    $-8.45\leq s\leq -8.20$ and $-6.90\leq s\leq -6.55$ when $\beta=4$. In the
     far-left $\beta=4$ tail that integration follows the unstable mode, so
     the written precision there is limited by convergence of the determinant
     quadrature alone. That tail uses mpmath multiprecision central differences

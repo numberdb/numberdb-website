@@ -373,7 +373,7 @@ class TracyWidomDensities(numberdb.Generator):
     parameters = ("beta", "s")
     type = "R"
     digits = 1
-    rigour = "measured"
+    rigour = "heuristic (agreement-checked)"
 
     def enumerate(self):
         for beta in ("1", "2", "4"):
