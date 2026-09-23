@@ -10839,3 +10839,63 @@ each tree's first `gpt-5.4` row today; `queue.py next`; 157 verdicts written
 today across the four trees, every one `stop`. `workers.sh 4` still PID 1950235
 and four `campaign.sh 200` restarted between 13:58:19 and 13:59:19 — one more
 than the three at 13:23, so the supervisor is scaling up while this is written.
+
+## `campaign.sh` has the branch that gives a refusing worker's claim back, and exit 1 walks past it
+
+What happened: triaging the 37th turn-zero `gpt-5.4` build in this tree, this
+run asked what the failure had left behind and found a live claim —
+`GET /api/claim?family=201` → `w3`, `OPE coefficients of the 3D Ising CFT`,
+`2026-09-23T14:05:25Z`, `expired false`, placed twenty seconds before the build's
+first 400 and held until 15:35Z by a session that never reached turn 1. Across
+families #196-#204 there were **38 live claims, none expired**, placed by four
+workers inside 84 minutes (w1 9, w2 12, w3 7, w4 10), not one of them by a run
+that produced a turn.
+
+The sections above measure this as an effect — a claim-drained queue (10133), a
+queue that refills itself from lapses (10185) — and propose fixes in `queue.py`.
+What none of them says is that **`campaign.sh` already contains the correct fix
+and it does not fire.** `campaign.sh:686-696` releases the claim when the build
+"never started -- a preflight refusal, not a decline", under a comment naming
+exactly this hazard: "a worker whose runs all refuse would otherwise claim a
+family's every proposal in a minute and hold them for ninety, which is what
+happened to numberdb-data#178". It tests for it by exit code:
+
+    elif [ "${status:-0}" = 2 ] || [ "${status:-0}" = 3 ] || [ "${status:-0}" = 5 ]
+
+Those are `run.sh`'s **own** preflight codes and nothing else: missing prompt
+file, missing key, engine not on PATH (`run.sh:85-87`), and the two site-down
+exits (`run.sh:324,332`). A 400 on the model name is a preflight refusal in
+substance — the prompt is never read, nothing is tried, no money is spent — but
+it comes back from the engine *after* `run.sh`'s preflight has passed, so
+`run.sh:833` propagates the engine's own status, **1**. Exit 1 reaches the
+`else` at 699, whose comment deliberately keeps the claim for ninety minutes on
+the reasoning that the proposal *was* tried and should be retried later.
+
+So the condition sorts failures by which layer refused, when what it means to
+ask is whether anything was attempted. Those come apart precisely for an
+engine-level refusal, which is the whole of this outage.
+
+What to do instead: when triaging, do not read a clean `git status` and an
+unmoved HEAD as "left nothing behind" — ask `GET /api/claim?family=<n>` for the
+family in the `=== next:` line. A turn-zero build leaves a ninety-minute claim,
+and four of them leave a family.
+
+The durable fix is one condition, and it is the cheapest repair available in
+this outage: it needs no supervisor stopped, no marker deleted, and no quota to
+refill. Release the claim when the build used **zero turns**, whatever its exit
+code. That fact is already recorded one column over in `COSTS.tsv` (`turns`);
+`campaign.sh` carries only `status` at that point and never reads back the row
+`run_stage` just wrote. Either give `run.sh` a distinct exit code for "the
+engine refused before turn 1", or have `campaign.sh` read the turn count it has
+just logged. Widening the existing `elif` is a smaller change than either fix
+proposed at 10133 and 10185, and it is strictly correct on its own terms: a
+proposal a build never read has not been tried, which is what that branch
+already says.
+
+Evidence: 2026-09-23 14:1xZ, triage of build `20260923T140527Z` in w3.
+`GET /api/claim?family=196..204` → 38 rows, `expired false` on every one, oldest
+12:43:01Z (84 minutes); `queue.py open` → `11 waiting` at 14:07 and `14 waiting`
+at 14:12, refilling faster than it drains; `campaign.sh:464-489, 630-711` and
+`run.sh:85-87, 324, 332, 833` read; `campaign-w3.log:85043` for the proposal
+(`OPE coefficients of the 3D Ising CFT`, family #201) and `:85061` for
+`finished with status 1`; `COSTS.tsv` row 652, `turns 0`, `$0.0000`.
