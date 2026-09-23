@@ -116,11 +116,13 @@ Data properties:
     to $t$. The derivative of the determinant was evaluated by
     $d\det(I\pm T_t)/dt=\det(I\pm T_t)\operatorname{tr}((I\pm T_t)^{-1}
     (\pm dT_t/dt))$. A Painlevé-II integration of $q$, $u$, $I$ and
-    $\int_s^\infty (x-s)q(x)^2\,dx$ was used as an independent control, and
-    each entry's written precision is limited by agreement with that control
-    and a second determinant quadrature. The far-left $\beta=4$ tail uses
-    mpmath multiprecision determinant arithmetic, because double precision
-    loses relative accuracy there.
+    $\int_s^\infty (x-s)q(x)^2\,dx$ was used as an independent control where
+    the downward integration stays on the Hastings-McLeod branch. In the
+    far-left $\beta=4$ tail that integration follows the unstable mode, so
+    the written precision there is limited by convergence of the determinant
+    quadrature alone. That tail uses mpmath multiprecision central differences
+    of the determinant values, because double precision loses relative
+    accuracy there.
 Display properties:
   number-header: $f_\beta(s)$
 Numbers: []
