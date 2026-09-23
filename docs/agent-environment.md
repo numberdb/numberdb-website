@@ -9880,3 +9880,32 @@ agents/campaign.stop` loop; `agents/screener.sh` 19-20 and 41;
 `readlink -f /proc/1950235/cwd` and `/proc/1950272/cwd`, both
 `/home/ubuntu/numberdb-website`; `git worktree list`; the marker present in all
 four trees at 12:47Z.
+
+## The host's `python3` has no `mpmath` and no `sympy`, so an ideation run cannot check one digit without `agents/sage.sh`
+
+What happened: screening the approximation-theory batch of 2026-09-23T12:32Z
+meant checking a Favard constant, three Lebesgue constants and the Halphen
+constant against OEIS. On the host:
+
+    $ python3 -c "import mpmath"
+    ModuleNotFoundError: No module named 'mpmath'
+    $ python3 -c "import sympy"
+    ModuleNotFoundError: No module named 'sympy'
+
+and there is no `pip` to add them (see the `database_knotinfo` note above).
+The host's Python reaches the corpus and GitHub and OEIS perfectly well --
+`urllib` plus `PYTHONPATH=clients/python` from a directory that is not the
+repository root -- but it cannot evaluate anything above `binary64`.
+
+So the split for an ideation run is: **HTTP on the host, arithmetic in the
+container.** Every numeric check goes through `agents/sage.sh script.py`,
+which does have `mpmath` as well as Sage, and which costs about forty seconds
+of container start before the first line of output. Batch the checks into one
+script rather than running five: this run spent three container starts on what
+should have been one, and a fourth because it had printed the first two
+results with `%`-formatting and had to redo them (see
+`agents/lessons/proposals/20260923T123234Z-ideas.md`).
+
+Evidence: 2026-09-23, both `ModuleNotFoundError`s above; `/tmp/checks.py`,
+`/tmp/checks2.py`, `/tmp/checks3.py`, `/tmp/remez2.py`, `/tmp/cbf.py` under
+`agents/sage.sh`.
