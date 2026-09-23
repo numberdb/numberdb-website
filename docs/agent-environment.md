@@ -9313,3 +9313,82 @@ header; `queue.py show` on 201, 202, 204, 205 against `_site('/api/claim?family=
 on the same four. Diagnosed in `agents/runs/20260923T141106Z-verdict`, which
 also records that this run left nothing behind -- no commit, no draft, and no
 claim made at 14:11 by any worker.
+
+## Correction: a dead build *does* leave a claim, and it is in the family the last verdict did not look at
+
+What happened: the section immediately above ends "this run left nothing
+behind -- no commit, no draft, and no claim made at 14:11 by any worker." The
+first two are right. The third is wrong, and it contradicts the section at
+"A zero-turn build keeps its claim, and four of them empty the queue" above,
+which gets it right.
+
+The 45th verdict asked `GET /api/claim?family=` on **201, 202, 204 and 205**.
+The claims were in **#198**, which was not in that set:
+
+    python3 agents/queue.py show 198
+      - [~] Weil--Petersson volumes $V_{g,n}$ ... -- claimed by w2 at 2026-09-23T14:11Z
+      - [~] $\lambda_g$ Hodge integrals ...     -- claimed by w2 at 2026-09-23T14:17Z
+
+Those are runs `20260923T141106Z` and `20260923T141706Z` by stamp: the run that
+verdict was written about, and the next one. Both exited 1, both used zero
+turns, and `campaign.sh:686` releases only on statuses 2, 3 and 5, so both
+claims stayed.
+
+Why it matters: a verdict asserting that this loop leaves nothing behind
+removes the one harm that is not just money, and the next triage will read the
+newest section rather than the older correct one. The harm is live now. All six
+proposals of #198 read `- [~]` with none built, five of them claimed between
+14:10 and 14:17 by three workers whose builds run zero turns -- the exact case
+`campaign.sh:686`'s comment names ("what happened to numberdb-data#178").
+
+And the loop has closed on one proposal. Run `20260923T080716Z` claimed
+`$\lambda_g$ Hodge integrals` in #198 at 08:07 and was refused two seconds
+later. The claim expired on the 90-minute rule, the queue offered it back, and
+`20260923T141706Z` claimed the same proposal in the same family at 14:17 and
+burned it the same way. Six hours and ten minutes apart, 46 builds in between,
+nothing carried across.
+
+What to do instead: enumerate the open families before asking about claims
+(`queue.py open` costs one call and lists them), or ask `queue.py show` per
+family, which reads the checklist and cannot miss one by omission. An absence
+of claims in four families out of five is not an absence of claims.
+
+Evidence: 2026-09-23, 14:17--14:22Z. `queue.py open` -> families 198, 201, 202,
+204, 205 (11 waiting); `queue.py show 198`; `agents/campaign.sh:472,686,698`;
+`agents/runs/20260923T080716Z-build.log` and the section above that cites it.
+Diagnosed in `agents/runs/20260923T141706Z-verdict`.
+
+## Correction: `run.sh` does not commit the ledger, and HEAD does not move on a build
+
+What happened: the section above justifies `prompt_version` using the prompt's
+own commit rather than HEAD with "because `run.sh` commits its cost line and
+HEAD moves every run". The conclusion is right; that reason has been false
+since `agents/runs/` was excluded from git.
+
+    git check-ignore -v agents/runs/COSTS.tsv   ->  .gitignore:167  agents/runs/
+    grep -n 'git commit' agents/run.sh          ->  (nothing)
+
+`run.sh:788` says so on purpose, and records that the old guard was dead code
+nobody noticed: "`git status --porcelain -- agents/runs/COSTS.tsv` reports
+nothing for an ignored file, so the guard never passed". The only `git commit`
+in the pipeline is `campaign.sh:791`, for `agents/lessons/proposals`.
+
+Why it matters beyond the footnote: the triage prompt opens by telling the
+reader that `"did it build anything?"` cannot be answered from HEAD, *because*
+the runner commits its own cost line. In this tree it can. HEAD moves when a
+**triage** commits its lesson, not when a build runs -- which is why HEAD at
+the start of every one of these triages is the previous triage's commit. For
+run `20260923T141706Z`, HEAD before and after is
+`06652c925bc3fa753ba25e66c50e2addb898e269`, the previous triage's
+`docs/agent-environment.md` commit.
+
+What to do instead: `git log`/`git status` against the pre-run commit named in
+the triage prompt *is* a sound cheap test of whether a build committed
+anything here, and it is worth running. It is not a test of whether the build
+**did** anything -- `generators/` is gitignored too (`.gitignore:205`), and a
+build's real product is on the site, not in the tree. Ask the site for that.
+
+Evidence: 2026-09-23. `git check-ignore -v agents/runs/COSTS.tsv`;
+`agents/run.sh:766-797` and its comment at `:788`; `grep -n 'git commit\|git add'
+agents/run.sh agents/campaign.sh` -> `campaign.sh:790,791` only;
+`git rev-parse HEAD` before and after `20260923T141706Z`.
