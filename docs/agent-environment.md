@@ -9884,3 +9884,66 @@ all three token counts 0, HEAD unmoved at `383b390a`, tree clean; its claim is
 `run.sh:137,823-827`; `git ls-remote --heads origin`; `git ls-files
 agents/runs/`; `git check-ignore -v`; `gh pr list --repo
 numberdb/numberdb-website --state open`.
+
+## `/tmp` is shared by all four checkouts and nothing cleans it, so one run's scratch executes inside another's imports
+
+Every run is told to keep scratch out of the repository and put working
+scripts in `/tmp`. Four campaigns run concurrently on this machine, in
+`numberdb-website`, `numberdb-campaign-w2`, `-w3` and `-w4`, and they are four
+checkouts on one host, not four hosts. They therefore share one `/tmp`. It is
+never cleaned: `ls /tmp/*.py` today lists scratch from 2026-09-20 and
+2026-09-21 alongside this hour's, more than thirty files, all owned by
+`ubuntu`, all in one flat namespace that every run writes into and none
+sweeps.
+
+That turns a private scratch directory into shared mutable state between
+campaigns that are otherwise carefully isolated by worktree. Two consequences,
+and the second is not obvious:
+
+* **Name collisions overwrite silently.** Two runs that both write
+  `/tmp/check.py` clobber each other, with no lock and no warning, and the
+  loser runs the winner's script.
+* **A file named after a standard-library module hijacks every script run
+  from `/tmp`.** Python puts the script's own directory first on `sys.path`,
+  so `/tmp` is `sys.path[0]` for anything under it. `/tmp/inspect.py` -- 791
+  bytes, written today at 14:18 by some other checkout's run -- is imported
+  in place of the standard library's `inspect` by `import dataclasses`, which
+  in turn is reached by `import numberdb`. Its module-level body then *runs*:
+  it calls `screen.use_socks_proxy_if_set()` (resolving `screen` from
+  `/tmp/screen.py`, another run's leftover, dated 2026-09-22) and prints four
+  hard-coded tables.
+
+So a triage in `-w4` that ran a script from `/tmp` to query the API received a
+tidy, correctly formatted listing of `T147`, `T150` and `T402` that had
+nothing to do with what it asked, produced during an import, before its own
+first statement. The output was plausible enough to be read as an answer. The
+general failure -- do not name a scratch file after a standard-library module
+-- is a contributor lesson and is written up in
+`agents/lessons/proposals/20260923T154348Z-triage.md`. What belongs *here* is
+that this deployment makes it far likelier than it would be on a laptop,
+because the instruction to use `/tmp` plus four concurrent writers plus no
+cleanup means a run inherits a directory it did not create and cannot see the
+contents of.
+
+What to do instead: the run instructions should ask for a per-run scratch
+directory rather than bare `/tmp` -- `mktemp -d` , or
+`/tmp/<run-stamp>/`, which the stamp already makes unique across all four
+checkouts. That fixes both consequences at once: no collisions, and
+`sys.path[0]` is a directory containing only this run's files. Pending that, a
+run putting scripts directly in `/tmp` should treat unexpected output as
+somebody else's and check `ls /tmp/*.py` before believing it.
+
+Somebody should also delete `/tmp/inspect.py`. It is actively breaking every
+Python script run from `/tmp` on this host right now, including for the three
+other campaigns, and no agent here may remove it -- triage does not fix.
+
+Evidence: 2026-09-23 15:45Z, triage of build `20260923T154311Z`. `readlink
+/proc/<pid>/cwd` for the three live `agents/campaign.sh 200` processes gives
+three different checkouts on one host. `ls -la /tmp/*.py` shows 30+ files
+dated 2026-09-20 onward. `python3 /tmp/zz_shadowtest.py` containing only
+`import dataclasses` fails with `ModuleNotFoundError: No module named
+'numberdb'` raised from `/tmp/inspect.py` line 3, reached via
+`/usr/lib/python3.12/dataclasses.py` line 5 `import inspect`. `stat` gives
+`/tmp/inspect.py` mtime 2026-09-23 14:18 and `/tmp/screen.py` mtime
+2026-09-22 03:38. The same script run from a directory containing no
+`inspect.py` prints `ok`.
