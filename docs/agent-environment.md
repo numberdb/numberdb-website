@@ -10128,3 +10128,55 @@ empty, so none lapse before ~09:25Z. Screening `20260923T074230Z-ideas`
 (PID 2400754) was 26 minutes in and still running. Ledgers across the four
 trees, 07:08–08:11: sixteen codex rows at `turns 0`, `$30.53` of triage,
 `$4.82` of critique, `$35.35` total, no table.
+
+## A lapsed claim hands a dead run its own work back, so a claim-drained queue refills itself
+
+What happened: the section above measured `0 waiting` an hour into the codex
+outage of 2026-09-23 and concluded the builders would idle while only the
+screener spent. Half of that expired thirty minutes later. `queue.py:280` holds
+a claim for `CLAIM_MINUTES = 90` and then releases it, so the proposals that
+turn-zero runs had drained out of the queue came back into it — and the next
+build claimed one of them and died the same way.
+
+The run that made this visible is `20260923T083908Z` in w3. Its proposal,
+*Skewness and kurtosis of the Tracy–Widom distributions*, was claimed at 07:08Z
+by the run that created draft T445 and then died; that claim went stale at
+08:38Z; the campaign re-claimed it at **08:39Z** for a run that was refused in
+under a second. The ledger's batch column is the tell — `BATCH-2026-09-23T0428`,
+two families older than the three builds before it, because `work.py next` was
+not offering new work, it was offering the first thing the outage had killed.
+
+So the cycle has no terminating state. Two sources refill the queue: lapsed
+claims on a ninety-minute period, and the screener, which under the same
+conditions has lost its throttle (see above). Between 08:11Z and 08:40Z, while
+the machine was supposed to be going quiet, the four trees spent `$14.66` —
+six more codex rows at `turns 0`, four triages at `$6.52`, one screening at
+`$8.14` — and built nothing. Since the outage began at 07:08Z: 24 codex rows at
+`turns 0`, `$42.45` of triage, `$17.84` of screening, `$4.82` of critique,
+`$65.11`, no table.
+
+What to do instead: do not read an idling campaign or a quiet ledger as an
+outage that is resolving. During a build-side outage the quiet period is one
+claim-lapse long, and both spenders resume after it. Stop the supervisor and
+the screener explicitly (`touch agents/campaign.stop` in all four trees;
+`workers.sh:185`, `screener.sh:41`) rather than waiting for the machine to
+settle — it does not settle.
+
+The durable fix is for the queue not to re-offer a proposal whose previous
+holder exited at turn zero with a `stop` verdict written against it. A claim
+that lapses because the holder failed instantly is not the same event as a
+claim that lapses because a long build overran, and only the second one wants
+re-offering. Failing that, triage dedupe does most of the work: seven triage
+runs in ninety-one minutes read the same twelve-line log to the same conclusion
+at about `$2` each, because a verdict is a per-worktree, per-stamp file that
+neither `campaign.sh` nor a sibling tree consults.
+
+Evidence: 2026-09-23 08:40Z, triage of build `20260923T083908Z`.
+`queue.py show 196` → `[~] Skewness and kurtosis … claimed by w3 at
+2026-09-23T08:39Z`, the same proposal as the 07:08Z claim; `queue.py open` →
+`2 waiting`; `work.py next` → family #200 from `BATCH-2026-09-23T0812`, which
+did not exist when the previous verdict was written. Screening
+`20260923T081219Z-ideas` cost `$8.14` and a seventh was in flight (PID 2463064,
+started 08:37:57). `agents/workers.sh 4` still PID 1950235, `screener.sh` still
+PID 1950272, four `campaign.sh 200` alive, and no `campaign.stop` or
+`workers.stop` in any tree.
