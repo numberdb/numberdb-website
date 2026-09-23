@@ -10425,3 +10425,56 @@ generators/" -- .gitignore` -> `831e34f5`; `api/table?url=Skewness_and_excess_
 kurtosis_of_the_Tracy-Widom_distributions` -> `Table with id 'T445' does not
 exist.` against `?url=No_Such_Table_At_All_XYZ` -> `Table with url '...' does
 not exist.`
+
+## Probing a draft: the key is the variable, not `url=` versus `id=` -- correcting the entry above
+
+The entry above ends by telling the next triage to "probe by `url=` and not by
+`id=`", on the evidence that `?id=T445` said the table did not exist while
+`?url=Skewness...` produced an error naming T445. The observation is real and
+the prescription drawn from it is wrong: **the parameter is not what differs,
+the `Authorization` header is.** Both probes in that evidence were
+unauthenticated. Measured against the live API with zeta3's key, all four
+combinations:
+
+    NOAUTH  id=T445    -> {"error": "Table with id 'T445' does not exist."}
+    NOAUTH  url=Skew…  -> {"error": "Table with id 'T445' does not exist."}
+    AUTH    id=T445    -> 200, full document, "Numbers": []
+    AUTH    url=Skew…  -> 200, full document, "Numbers": []
+
+Unauthenticated, *both* forms deny the draft. Authenticated, *both* return it.
+Probing by `url=` without the key does not tell a hidden draft from a missing
+table; it only leaks that the url resolved, because the refusal for a url that
+does resolve is phrased with the **id** it resolved to, while a url that
+resolves to nothing is refused by url:
+
+    AUTH  url=No_Such_Table_At_All_XYZ -> "Table with url 'No_Such_Table_At_All_XYZ' does not exist."
+
+That id-shaped refusal is a genuine signal and worth knowing, but it is the
+weaker one: it says only that *something* is there. Sending the key says what.
+
+Why the difference matters for a verdict rather than for tidiness: what triage
+needs is not whether the draft exists but **how many entries it has**, which is
+the distinction `agents/table-build/PROMPT.md` hangs three separate actions on
+-- an empty draft to continue, a filled one somebody else is holding, a
+published table to record and stop. Only the authenticated read carries it, in
+`Numbers`, which is `[]` when empty and a dict of rows when filled:
+
+    AUTH  id=T445 -> "Numbers": []                     0 entries, continue it
+    AUTH  id=T444 -> "Numbers": {"1": {...}, "2": ..}  3 rows, somebody holds it
+
+Note also that **every one of these answers is HTTP 200, errors included**, so
+the status code decides nothing; parse the body for `"error"`. A probe that
+checks `resp.status == 200` and stops reads a refusal as a table.
+
+What to do instead: probe with the key, by either parameter, and read
+`Numbers`. If a read of a draft you believe in comes back "does not exist",
+suspect the request before the corpus -- an empty key, a missing header and a
+non-`Bearer` scheme all land on that same sentence, which is written up at
+"An empty key reads as 'does not exist'" in
+`agents/lessons/proposals/20260923T074550Z-triage.md` and in the `Api-Key`
+entry earlier in this file.
+
+Evidence: 2026-09-23 10:56Z, triage of build `20260923T105601Z` in w3. Four
+requests to `api/table` differing only in parameter and header, plus the two
+controls above; `T444` (created 06:27Z in w4) read back with three parameter
+rows against `T445` (created 07:24Z in w3) with none.
