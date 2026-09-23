@@ -8049,3 +8049,29 @@ Evidence: 2026-09-23, T439 repair. The original relation said "the two-colour
 diagonal entries $R(n,n)$ are the diagonal slice of this table" while T6 also
 held $R(8,8)$, $R(9,9)$ and $R(10,10)$ and T439 did not. The audit returned
 `{"findings": [], "clean": true}` before the wording was repaired.
+
+## `/files/<tid>` serves a private draft's attached files to anybody
+
+What happened: while critiquing draft T443, `curl https://numberdb.org/files/T443`
+and `curl https://numberdb.org/files/T443/generate.py` both returned 200 with
+**no credentials at all** -- the file listing page, the draft's title in the
+`<title>` element, and the entire 10 KB generator. The same request to
+`/T443` and `/preview/T443` correctly answered 404, which is what
+`_refuse_a_draft` in `numberdb_app/views.py` is for: "a draft is not found,
+rather than forbidden, to anybody else ... that number exists is the one thing
+a private draft should not" reveal.
+
+`views.table_files` and `views.table_file` (`numberdb_app/urls.py` lines 69 and
+72) do not call `_refuse_a_draft`. This is the same shape as the earlier note
+about `/bundle/T310`: a draft is private only on the routes somebody
+remembered, and the guard has to be on the model lookup rather than on each
+view.
+
+What to do instead: add `_refuse_a_draft(request, table)` to both file views.
+Until then, do not treat "the draft is invisible" as true of anything it has
+attached -- a generator filled in a draft is public from the moment it is
+attached, including any comment in it about work that is not finished.
+
+Evidence: 2026-09-23, T443 critique. Four unauthenticated requests:
+`files/T443` 200 (13332 bytes), `files/T443/generate.py` 200 (23104 bytes),
+`T443` 404, `preview/T443` 404.
