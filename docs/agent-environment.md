@@ -10628,3 +10628,60 @@ Evidence: 2026-09-23 12:07–12:15Z, w3 triage of build `20260923T120643Z`.
 `campaign.sh 200`; `codex-fallback` reading `gpt-5.4`/`xhigh` in all four trees
 with mtimes 07:25:01–07:34:27Z; ledger sums over
 `/home/ubuntu/numberdb-*/agents/runs/COSTS.tsv`.
+
+## zeta3 holds twenty-three drafts, four of them empty, and the count is reachable without Django
+
+What happened: the note above leaves the number of draft slots **not known**,
+because the keyed-versus-anonymous sweep that tried to measure it was poisoned
+by `429`s on the anonymous side. Counting them does not need the anonymous API
+at all. The published set comes from the paginated *site* listing, which is not
+on the API's sixty-per-hour budget: `/tables?page=1` through `page=9`,
+following the next link until a page has none, gave **422 published tids in
+nine requests**. Anything that exists but is not in that set is a table this
+key can see and the public cannot, which is a draft. Keyed reads of the 24
+gaps answered:
+
+    T75    does not exist -- deleted; the only gap that is not a draft
+    23 drafts: T342 T404 T405 T413 T415 T416 T417 T418 T419 T422 T423
+               T424 T425 T426 T432 T433 T434 T436 T437 T438 T441 T443 T445
+
+The arithmetic closes exactly, which is the check that the method works: tids
+`T0`-`T445` are 446 slots, 422 published + 23 drafts + 1 deleted = 446.
+
+**Four of the twenty-three hold nothing at all**: `T342` (*Capacity of the
+discrete memoryless channels*), `T405` (*Eigenvalues of the pure quartic,
+sextic and octic oscillators*), `T416` (*Momentum thickness $\delta_2$ of the
+Falkner-Skan wedge flows*) and `T445`. T445 is not a lone casualty of today's
+wall; it is the fourth empty draft in the corpus, and the other three predate
+it. Several more are nearly empty -- `T432` holds 1 entry, `T441` 3, `T424` 5,
+`T437` and `T438` 6 each, `T404` 7 -- against `T423` at 1101 and `T443` at
+1001.
+
+So "may hold up to five drafts", which every build prompt states, is not what
+the server is enforcing: twenty-three exist under this key. Whether the limit
+counts a draft offered for review separately cannot be told from here -- the
+API document carries no publication or review field (its top-level keys are
+`Comments`, `Data properties`, `Definition`, `Display properties`, `Formulas`,
+`Keywords`, `Links`, `Numbers`, `Parameters`, `Programs`, `References`,
+`Similar tables`, `Tags`, `Title`), and `agents/review-queue.tsv` is a stale
+checkout artefact that lists none of the twenty-three. Whoever restarts the
+campaign should not assume there is room to create, and should create one
+draft and read the answer's `drafts_held` before letting four workers loose.
+
+Why Django was not the way: the note *The Sage helper image may not contain the
+Django app* says "may". Under the campaign it never does. `agents/workers.sh`
+sets `NUMBERDB_SAGE_IMAGE=numberdb/builder:latest` at lines 124 and 170 for
+every stage it launches, and a probe of that image shows no `/app`, no
+`django`, no `psycopg2` and no `DATABASE_URL` -- only `/opt/numberdb-client`
+and Sage, which is healthy (`sage.all` imports, `ZZ(6).factor()` answers
+`2 * 3`). The three places in this file that still tell a run to list the
+drafts with Django in the throwaway are therefore unavailable to every run
+`workers.sh` starts; the listing walk above is the replacement, and it needs
+nothing but `curl` and the key.
+
+Evidence: 2026-09-23 12:40-12:46Z, w3 triage of build `20260923T123726Z`.
+Nine fetches of `/tables?page=N`; `/tmp/probe_gaps.sh` over the 24 gaps;
+`/tmp/probe_env.py` and `/tmp/probe_sage.py` through `agents/sage.sh`. The
+anonymous side of the first sweep answered `429` with
+`"Rate limit exceeded (60 requests per 60 minutes)"` and `retry_after` about
+1130 seconds, exactly as the note above predicts.
