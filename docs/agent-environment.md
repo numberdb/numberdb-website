@@ -9107,7 +9107,7 @@ cannot use converts "out of quota, hand this to the other harness" into "exit
 1, buy a triage", once per build, indefinitely.
 
 Evidence: 2026-09-23, triage of build `20260923T123743Z`. `run.sh:52,80,
-556-559,565-568,582-602,635-660`; `campaign.sh:58,95-103`; the usage-limit
+556-559,565-568,583-602,635-660`; `campaign.sh:58,95-103`; the usage-limit
 message in `agents/runs/20260923T062751Z-build.log`; `codex-fallback` holding
 `gpt-5.4 / xhigh` with mtimes 07:25:01Z, 07:25:03Z, 07:25:22Z and 07:34:27Z
 across the four checkouts.
@@ -9131,7 +9131,7 @@ separate reasons for that:
   the existing row. `ProposalClaim` is `unique_together ('family',
   'proposal')`, so there is at most one row per proposal ever, and it carries
   no count.
-* `GET /api/claim` filters expired rows out in Python (`api.py:1390`, `if not
+* `GET /api/claim` filters expired rows out in Python (`api.py:1391`, `if not
   row.expired`), so a claim that aged out a minute ago is indistinguishable
   from one that was never made. The `expired` key in the answer is therefore
   always `false`.
@@ -9139,8 +9139,8 @@ separate reasons for that:
   (`queue.py:752-786`).
 
 The one signal that does exist is discarded. A takeover answers 201 with
-`took_over_from` naming the previous holder (`api.py:1458-1460`);
-`queue.take()` reduces the whole answer to `True` (`queue.py:736-739`), and
+`took_over_from` naming the previous holder (`api.py:1459-1461`);
+`queue.take()` reduces the whole answer to `True` (`queue.py:735-736`), and
 `campaign.sh:472-474` sends `queue.py claim`'s output to `/dev/null`. Had
 either kept it, the campaign log would have said "took this over from w4" on
 six of today's 36 deals and the loop would have been visible without anyone
@@ -9158,5 +9158,5 @@ Evidence: 2026-09-23 12:39Z, triage of build `20260923T123743Z`.
 2026-09-23T12:37:41.952Z`, two seconds before the run stamp;
 `awk '/^=== next: /{t=$0} /^=== build run 20260923/{...}'` over
 `agents/runs/campaign-w4.log` for the deal-to-build pairing;
-`numberdb_app/api.py:1390,1455-1461`; `numberdb_app/models.py:1519-1575`;
+`numberdb_app/api.py:1391,1455-1461`; `numberdb_app/models.py:1519-1575`;
 `agents/queue.py:721-745`; `agents/campaign.sh:463-476`.
