@@ -9989,13 +9989,33 @@ not fail with 429. It fails with
     400 invalid_request_error: The 'gpt-5.4' model is not supported when
     using Codex with a ChatGPT account.
 
--- a statement about the account's capabilities, not its budget. So the
-quota-detection at `run.sh:649-657` never recognises it, `give_up` is never
-set, exit 6 is never returned, and `campaign.sh:90-104` never hands the
-writer role to claude. The engine-handover path that exists precisely for
-"this account cannot run this stage" is unreachable by the failure that most
-needs it, because that failure is the wrong shape. A 429 would have healed
-itself hours ago; a 400 recurses forever.
+-- a statement about the account's capabilities, not its budget. Two greps
+over the log's last 4000 bytes decide what happens next, and this message
+lands on the wrong side of both.
+
+`out_of_quota()` (`run.sh:556-559`) matches
+`"api_error_status":429|rate.?limit|quota|usage limit|too many requests`. The
+refusal contains none of those words -- it is a 400, and it is about support,
+not limits -- so it is **false**. `give_up` is therefore never set, exit 6 is
+never returned, and `campaign.sh:90-104` never hands the writer role to
+claude. The engine-handover path that exists precisely for "this account
+cannot run this stage" is unreachable by the failure that most needs it.
+
+`worth_resuming()` (`run.sh:566-568`) matches, among other things, the bare
+string `"type":"error"` -- and the log's own error envelope is literally
+`{"type":"error","message":"{\"type\":\"error\",\"status\":400,...`. So it is
+**true**, `run.sh:687` says "failed and looks resumable", and the run is
+resumed once onto the same unsupported model for the same 400. That is the
+`resumed=yes` in every one of the 218 ledger rows: not a considered retry, a
+substring.
+
+So the classification is exactly inverted. A permanent, account-level refusal
+is read as transient and retried; the one failure shape that could have
+handed the stage to a working engine is read as not-a-quota and ignored. A
+429 would have healed itself hours ago; a 400 recurses forever. `"type":
+"error"` as a resumability test is the same mistake the triage prompt lists
+against its four predecessors -- a grep that cannot tell a run which died on
+turn 1 from one which died on turn 39.
 
 Evidence: `agents/runs/20260923T155512Z-build.log`, twelve lines, two
 `thread.started` events with one `turn.failed` each. Ledger row for the
