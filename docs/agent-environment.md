@@ -8424,3 +8424,48 @@ identical refusal on w1 and the fourth consecutive `stop`. `git reflog`,
 `git reflog show origin/main`, `git log -1 2ee97453`. `free -m`, `nproc`,
 `/proc/1950235/environ`, `agents/runs/workers.log`. `agents/runs/COSTS.tsv` in
 all four worktrees.
+
+## The failure loop's price for ideation: a $9.70 batch dropped inside a minute
+
+The note above ("The ideas stage still works...") predicted that a working
+producer feeding a broken consumer removes the queue exhaustion that would
+otherwise end the loop. It has now happened with a number attached, which is
+the part worth recording.
+
+Ideas run `20260923T074230Z` **succeeded**: 75 turns, **$9.7020**, 101k output
+tokens, writing `BATCH-2026-09-23T0742` -- family **#199**, the periods of
+Feynman graphs and the multiple zeta values they are made of. Within a minute
+of that family opening, two of its four proposals were claimed by builds that
+died on the same `gpt-5.4` 400 in one second: w4 at 08:12Z, w1 at 08:13Z.
+`queue.py open` then reads `#199  2 left`.
+
+So the loop's bill is not triage alone. It is triage plus about ten dollars a
+batch for proposals manufactured to be dropped. Measured 07:25:18Z to 08:14Z,
+forty-nine minutes, all four worktrees:
+
+    17 triage runs   $35.9285
+     1 ideas run     $ 9.7020
+    16 builds        $ 0.0000
+     1 repair        $ 0.0000
+                     $45.6305     -- about $56/hour, of which $44 is triage
+
+That is the third consecutive batch consumed without a table:
+`BATCH-2026-09-23T0506` (#197, six of six claimed, none built), `T0602` (#198,
+six of six), `T0742` (#199, two of four within a minute). A person stopping
+this needs `touch agents/workers.stop` *and* to stop the screener (pid
+1950272); stopping only the workers leaves the expensive stage running.
+
+**The runner's own advice about the marker is on a path this failure cannot
+reach.** The marker is `fallback_marker="agents/runs/$engine-fallback"`
+(`run.sh:583`), read at 584-586 and written at 644 and 655. `run.sh:685` prints
+*"the quota refills; rerun this stage then, or delete $fallback_marker to start
+from the first model again"* -- but 685 is inside the `give_up` branch, which
+is inside the `out_of_quota` block at 556, which a 400 reading "not supported"
+never enters. The one line that tells anybody how to clear the trap is
+unreachable from the failure that springs it, which is part of why this has now
+refused forty-odd builds without the cure ever being printed.
+
+Evidence: 2026-09-23, triage of `20260923T081316Z-build.log`, the sixth
+identical refusal on w1 and the fifth consecutive `stop`. `agents/runs/COSTS.tsv`
+in all four worktrees, `python3 agents/queue.py open` and `show 199`,
+`agents/run.sh` lines 80, 556, 583-586, 644, 655, 685, `ps -p 1950235,1950272`.
