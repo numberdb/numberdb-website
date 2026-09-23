@@ -8259,3 +8259,110 @@ identical refusal on w1 and the third consecutive `stop` verdict there
 (07:44:23Z, 07:55Z, 08:0xZ). `python3 agents/queue.py open`, `show 197`,
 `show 198`. `pgrep -af screener.sh`. `agents/runs/COSTS.tsv` in all four
 worktrees. `agents/runs/workers.log`, restart at 08:01:32.
+
+## The `table wanted` backlog is empty because a sweep closed 17 issues with the wrong table
+
+`agents/table-ideas/screen.py requests` prints nothing, and has done since
+2026-09-21. All 126 `table wanted` issues in `numberdb/numberdb-data` are
+closed: 43 on 2026-09-20, 18 on 2026-09-21, 16 on 2026-08-27, the rest older.
+
+Seventeen of them were closed wrongly. Each carries a closing comment of the
+form "This is now https://numberdb.org/T380" or ".../T384" -- T380 is
+*Arithmetic factors $A_k$ in the moments of quadratic Dirichlet $L$-functions*
+and T384 is *Resultants of two monic polynomials*, and neither has anything to
+do with the issue it closed:
+
+    #20 #23 #24 #25 #26 #35 #49 #51 #68 #71 #86 #87 #95 #108 #123 #132 #136
+
+Some are answered anyway by tables built since (#86 by T114/T115/T123/T124,
+#35 by T156 and T272-T277). Several are not: #136 (Cantor and packing
+polynomials), #95 (Newton interpolation), #123 (interpolation on the discrete
+simplex), #68 (bounds in Waring's problem), #132 (moments of primes in short
+intervals). Nothing in the corpus answers those, and nothing now records that
+anybody asked for them.
+
+The mechanism to look for: whatever posts "This is now <url>" takes the table
+from the build it has just finished rather than from the issue it is closing,
+so a run that closes several issues at once stamps them all with its own last
+table. Worth fixing before the next campaign closes anything else; worth
+reopening the five or six that are genuinely unanswered.
+
+Evidence: 2026-09-23. `gh issue list --repo numberdb/numberdb-data --label
+"table wanted" --state all --limit 300 --json number,title,closedAt,comments`,
+then grouping by the T-numbers mentioned in the comments. `gh issue view 136`
+shows the Cantor polynomial request closed with "This is now
+https://numberdb.org/T380".
+
+## `screen.py requests` cannot tell an empty backlog from an unreachable GitHub
+
+`requests()` catches every exception and returns `[]`:
+
+    except Exception as trouble:                     # noqa: BLE001
+        return []
+
+So "no open requests" and "GitHub refused, rate-limited or unroutable" print
+the same nothing, and a run that reads the nothing as "the backlog is empty"
+may be wrong. `already_here` was fixed for exactly this -- it returns
+`(could not ask the corpus: ...)` rather than `[]` -- and `requests` was not.
+Until it is, confirm with `gh issue list --repo numberdb/numberdb-data --label
+"table wanted" --state open` before writing "the backlog is empty" into a
+batch; this run did, and the emptiness is real.
+
+Evidence: 2026-09-23, `agents/table-ideas/screen.py`, lines of `requests()`.
+
+## `agents/sage.sh` treats every argument as a file to mount, so a script takes no options
+
+    agents/sage.sh /tmp/check.py 8        ->  no such file: 8
+
+Every argument after the first is copied into the container and mounted at
+`/work/<basename>`; there is no way to pass `sys.argv` to the script. A
+parameter that would have been an option -- a loop-order cutoff, a sample size
+-- has to be a constant in the file, edited between runs. `sed` on a copy is
+the cheap way:
+
+    sed 's/^MAXLOOP = 8/MAXLOOP = 11/' check.py > check11.py
+
+The mounting behaviour is what makes a data file work, which is the reason it
+is that way: `agents/sage.sh /tmp/check.py /tmp/Periods` gives the script a
+5.7 MB input at `/work/Periods`, read-only, with no copy into the repository.
+
+Evidence: 2026-09-23, the `$@` loop in `agents/sage.sh`; two runs of the
+period checks, one with a 5.7 MB ancillary file mounted beside the script.
+
+## `import numberdb` from the repository root is the Django project, not the client
+
+In a checkout of this repository, `numberdb/` is the site's Django project --
+`settings`, `urls`, `wsgi` -- and Python puts the working directory first on
+`sys.path`. So from the repository root:
+
+    python3 -c "import numberdb; numberdb.table('T53')"
+    AttributeError: module 'numberdb' has no attribute 'table'
+
+while from anywhere else the name is simply missing, because the client is not
+installed on this box at all. It lives at `clients/python`. Both ways round:
+
+    cd /tmp && PYTHONPATH=/home/ubuntu/numberdb-website/clients/python python3 ...
+
+`agents/sage.sh` already does the equivalent inside the container
+(`PYTHONPATH=/app/clients/python`), and its header records the same trap for
+`sage -python`. This note is for the ordinary `python3` calls a screening or
+ideation run makes on the host, which have no such help: `screen.already_here`
+run from the repository root reports `(could not ask the corpus: ...)` for
+every name, which reads like a network problem.
+
+Evidence: 2026-09-23, both invocations above.
+
+## `/tables` and `/tags` are paginated, and a page past the end repeats the last one
+
+There is no call that lists the corpus, so a run that wants the whole of it
+walks `https://numberdb.org/tables?page=N`. The pages hold 50 rows; page 9 held
+21 and page 10 returned the same 21 again rather than an empty page or a 404.
+So the loop must stop when a page contributes **no new T-numbers**, not when it
+comes back empty -- the latter never happens.
+
+Walked this way on 2026-09-23 the corpus is **421 published tables**, T0 to
+T444 with gaps, and `/tags` is 73 tags over two pages. The ideation prompt
+still says 126 tables and 66 tags.
+
+Evidence: 2026-09-23, nine pages of `/tables` (50, 50, 50, 50, 50, 50, 50, 50,
+21) and a tenth contributing nothing.
