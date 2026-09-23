@@ -10031,3 +10031,48 @@ Evidence: 2026-09-23, builds 20260923T070848Z, T073335Z and T073916Z in w3,
 T073856Z in w1, T073936Z in w4, and repair T073411Z in w2 -- so the wall is not
 specific to the build stage. All four trees held an identical two-line
 `codex-fallback`.
+
+## The screener keeps buying batches nobody can build, and `workers.stop` stops restarts rather than what is running
+
+What happened: during the fifth turn-zero codex build of the morning (see "A
+fallback chain naming a model the account may not use takes both engines
+down"), two things turned out to be true that the earlier notes on this
+outage missed.
+
+**The producer side is not idle and not free.** `screener.sh` runs as its own
+process — PID 1950272, cwd `numberdb-website`, started 2026-09-22 20:38 and
+mid-run at 07:59 — and it only fills the queue; it never consumes it, and
+nothing about a dead builder reaches it. Each dead build meanwhile *claims* a
+proposal before dying (`campaign.sh:472`) and holds it for ninety minutes
+(`queue.py:280`), so the queue reads as short exactly when no builder can use
+it, and `screener.sh` tops it up. Batches cost real money: `$7.72` at 05:06
+and `$12.06` at 06:02 on 2026-09-23, with `20260923T074230Z-ideas` still
+running seventeen minutes in. So the cost of a build-side outage is triage
+plus screening, and the screening half is the larger one.
+
+**`touch agents/workers.stop` stops restarts, not the campaigns.**
+`workers.sh:185-190` exits on that flag with the words *"leaving the workers
+alone"*. Every `campaign.sh` already running keeps cycling — three of them
+were alive at the time, each started with `campaign.sh 200` — and the screener
+is untouched, since `screener.sh:41` watches `agents/screener.stop` and
+`agents/campaign.stop` and knows nothing of `workers.stop`.
+
+What to do instead: the complete lever is `touch agents/campaign.stop` **in
+every tree**, not in one. `campaign.sh:302` checks
+`agents/campaign.$NAME.stop` and `agents/campaign.stop` relative to its own
+cwd, and `workers.sh:116` starts each worker with `cd "$tree"`, so a flag in
+the main checkout is invisible to the other three. The `numberdb-website` copy
+is worth three: it stops w1, it stops the supervisor (`workers.sh:185` checks
+`campaign.stop` as well as `workers.stop`), and it stops the screener, which
+finishes the batch in flight and then exits. `campaign.sh:307` deletes
+`agents/campaign.$NAME.stop` after acting but leaves `agents/campaign.stop`
+standing, so the per-name flag is the one to use for a pause and the shared
+one for a halt.
+
+Evidence: 2026-09-23, triage of build 20260923T075556Z.
+`readlink /proc/<pid>/cwd` put campaigns 2407716, 2410521 and 2413726 in
+`numberdb-campaign-w2`, `-w3` and `-w4`, and both `workers.sh` (1950235) and
+`screener.sh` (1950272) in `numberdb-website`. Ledger rows across the four
+trees for 07:00–08:00: twelve codex runs at `turns 0`, `$0.0000`, `$23.15` of
+triage, two screenings already banked at `$19.78`, a third in flight, and no
+table.
