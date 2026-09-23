@@ -9068,3 +9068,95 @@ turns > 0 per hour is a liveness signal that a rotating queue cannot forge;
 Evidence: `/api/claim?family=202` and `queue.py show 202` at 2026-09-23
 12:35Z; `agents/queue.py:270-306`; all four `COSTS.tsv` over `$1 ~
 /^20260923/` grouped by `$2` with `$4+0>0` counted separately.
+
+## Deleting `codex-fallback` does not restore the codex lane while the quota it recorded is still out
+
+Every triage verdict since 07:25Z on 2026-09-23 -- around thirty of them, in
+four checkouts -- has ended by telling a person to `rm
+agents/runs/codex-fallback`. That instruction is wrong on its own, and a
+person who follows it will watch the marker come back.
+
+The marker exists because gpt-5.5 ran out. Build `20260923T062751Z` carries
+the message that wrote it:
+
+    You've hit your usage limit. Visit https://chatgpt.com/codex/settings/usage
+    to purchase more credits or try again at Sep 25th, 2026 3:51 AM.
+
+So the cycle after the `rm` is: the stage starts on
+`codex_model="${NUMBERDB_CODEX_MODEL:-gpt-5.5}"` (`run.sh:52`); gpt-5.5
+answers 429; `out_of_quota()` matches that, correctly; `next_model_in
+"$codex_fallbacks"` with `codex_fallbacks` defaulting to the single entry
+`gpt-5.4` (`run.sh:80`) returns gpt-5.4; the marker is rewritten; the resume
+takes the 400 that says a ChatGPT account may not use gpt-5.4. One 429 spent,
+same state restored. The `rm` is only the fix after 2026-09-25 03:51.
+
+The chain has one entry and that entry is unusable on this account, so the
+codex writer has no working model at all until the quota returns. Two ways
+out, both one line:
+
+* `NUMBERDB_WRITER=claude` -- codex is never asked (`campaign.sh:58`).
+* `NUMBERDB_CODEX_FALLBACKS=` (empty). The gpt-5.5 429 then finds no next
+  model, `give_up=yes`, `run.sh` exits 6, and `campaign.sh:95-103` flips the
+  writer role to claude for the rest of the campaign.
+
+The second is worth noticing for its own sake: the handover to the other
+engine is exactly what the runner was built to do here, and the only thing
+stopping it is that gpt-5.4 sits in the chain failing in a way
+`out_of_quota()` cannot read. A fallback chain whose last entry the account
+cannot use converts "out of quota, hand this to the other harness" into "exit
+1, buy a triage", once per build, indefinitely.
+
+Evidence: 2026-09-23, triage of build `20260923T123743Z`. `run.sh:52,80,
+556-559,565-568,582-602,635-660`; `campaign.sh:58,95-103`; the usage-limit
+message in `agents/runs/20260923T062751Z-build.log`; `codex-fallback` holding
+`gpt-5.4 / xhigh` with mtimes 07:25:01Z, 07:25:03Z, 07:25:22Z and 07:34:27Z
+across the four checkouts.
+
+## The claim table keeps no history, so a queue going round in a circle looks like a queue
+
+The note above this one predicted that claim expiry would re-serve the same
+proposals to the same turn-0 builds. It does, and the next build measured it:
+`20260923T123743Z` was dealt **Global minimum energies of the Thomson
+problem** at 12:37Z, having been dealt the same proposal as
+`20260923T105621Z` at 10:56Z. Both used 0 turns. Of 36 builds in this
+checkout on 2026-09-23, 30 distinct proposals were dealt; five titles were
+dealt twice and `Quantiles of Student's $t$-distribution` three times. Three
+of the last four deals were repeats.
+
+The re-deal leaves no trace anywhere the workers can see, and there are three
+separate reasons for that:
+
+* An expired claim is **taken over in place**, not re-created:
+  `api.py:1455-1461` does `.update(worker=..., claimed_at=timezone.now())` on
+  the existing row. `ProposalClaim` is `unique_together ('family',
+  'proposal')`, so there is at most one row per proposal ever, and it carries
+  no count.
+* `GET /api/claim` filters expired rows out in Python (`api.py:1390`, `if not
+  row.expired`), so a claim that aged out a minute ago is indistinguishable
+  from one that was never made. The `expired` key in the answer is therefore
+  always `false`.
+* The checklist mark in the issue body is rewritten in place too
+  (`queue.py:752-786`).
+
+The one signal that does exist is discarded. A takeover answers 201 with
+`took_over_from` naming the previous holder (`api.py:1458-1460`);
+`queue.take()` reduces the whole answer to `True` (`queue.py:736-739`), and
+`campaign.sh:472-474` sends `queue.py claim`'s output to `/dev/null`. Had
+either kept it, the campaign log would have said "took this over from w4" on
+six of today's 36 deals and the loop would have been visible without anyone
+doing arithmetic.
+
+Two consequences. For a triage: "the queue still has work" proves nothing
+about whether the work is new, and the only way to tell a first attempt from a
+sixth is the campaign log's own `=== next:` lines. For anybody fixing the
+lane: a dead worker pool cannot exhaust its queue, because expiry refills it
+at exactly the rate the pool consumes it, so the campaign will not stop on its
+own -- it has to be stopped.
+
+Evidence: 2026-09-23 12:39Z, triage of build `20260923T123743Z`.
+`GET /api/claim?family=202` showing the Thomson claim with `since
+2026-09-23T12:37:41.952Z`, two seconds before the run stamp;
+`awk '/^=== next: /{t=$0} /^=== build run 20260923/{...}'` over
+`agents/runs/campaign-w4.log` for the deal-to-build pairing;
+`numberdb_app/api.py:1390,1455-1461`; `numberdb_app/models.py:1519-1575`;
+`agents/queue.py:721-745`; `agents/campaign.sh:463-476`.
