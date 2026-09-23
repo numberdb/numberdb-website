@@ -9,10 +9,6 @@ Run it with SageMath:
     $ sage -python generate.py                   # check the table
     $ sage -python generate.py --publish         # fill the draft, with NUMBERDB_API_KEY set
 
-For this repository's unattended build wrapper:
-
-    $ cat "$NUMBERDB_KEY_FILE" | NUMBERDB_KEY_FROM_STDIN=1 NUMBERDB_PUBLISH=1 agents/sage.sh generate.py
-
 The computation uses the sine Fourier basis.  In that basis
 -d^2/dz^2 + 2q cos(2z) is a tridiagonal matrix with off-diagonal entries q;
 the k=1 sine row has the extra diagonal contribution -q from sin(-z)=-sin(z).
