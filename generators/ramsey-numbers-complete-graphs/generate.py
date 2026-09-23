@@ -2,9 +2,10 @@
 
 This generator fills T439 with the small complete-graph Ramsey numbers
 selected from DS1 revision #18: a complete two-colour rectangle through
-3 <= k <= 7 and l <= 13, the matching trivial rows, and the multicolour
-complete-graph exact values or explicit two-sided bounds stated in DS1
-section 6.1.
+3 <= k <= 7 and l <= 13, and the multicolour complete-graph exact values or
+explicit two-sided bounds stated in DS1 section 6.1. The trivial rows
+R(1,t)=1 and R(2,t)=t are stated as formulas in the table instead of stored as
+searchable values.
 
 Run it with SageMath:
 
@@ -21,7 +22,6 @@ from sage.rings.integer_ring import ZZ
 
 
 TABLE = os.environ.get("NUMBERDB_TABLE", "T439")
-MAX_TWO_COLOUR_CLIQUE = 13
 
 
 def _key_from_stdin():
@@ -38,22 +38,8 @@ def _tuple_text(values):
     return ",".join(str(value) for value in values)
 
 
-def _interval(lower, upper, comment):
-    return {"number": "[%d, %d]" % (lower, upper), "comment": comment}
-
-
-TABLE_IA_COMMENT = (
-    "The endpoints are the lower and upper bounds in DS1 revision #18, "
-    "Table Ia."
-)
-TABLE_IB_COMMENT = (
-    "The lower endpoint is from DS1 revision #18, Table Ia. The upper "
-    "endpoint is the Angeltveit-McKay bound in Table Ib."
-)
-SECTION_61_COMMENT = (
-    "The endpoints are the lower and upper bounds stated in DS1 revision #18, "
-    "section 6.1."
-)
+def _interval(lower, upper):
+    return "[%d, %d]" % (lower, upper)
 
 
 DATA = {}
@@ -64,14 +50,9 @@ def add_exact(values, number):
     DATA[(len(values), values)] = ZZ(number)
 
 
-def add_interval(values, lower, upper, comment):
+def add_interval(values, lower, upper):
     values = tuple(values)
-    DATA[(len(values), values)] = _interval(lower, upper, comment)
-
-
-add_exact((1, 1), 1)
-for t in range(2, MAX_TWO_COLOUR_CLIQUE + 1):
-    add_exact((2, t), t)
+    DATA[(len(values), values)] = _interval(lower, upper)
 
 for l, value in {
     3: 6,
@@ -89,7 +70,7 @@ for l, bounds in {
     12: (53, 59),
     13: (61, 68),
 }.items():
-    add_interval((3, l), *bounds, TABLE_IA_COMMENT)
+    add_interval((3, l), *bounds)
 
 add_exact((4, 4), 18)
 add_exact((4, 5), 25)
@@ -103,7 +84,7 @@ for l, bounds in {
     12: (128, 210),
     13: (139, 256),
 }.items():
-    add_interval((4, l), *bounds, TABLE_IB_COMMENT)
+    add_interval((4, l), *bounds)
 
 for l, bounds in {
     5: (43, 46),
@@ -116,7 +97,7 @@ for l, bounds in {
     12: (203, 672),
     13: (233, 860),
 }.items():
-    add_interval((5, l), *bounds, TABLE_IB_COMMENT)
+    add_interval((5, l), *bounds)
 
 for l, bounds in {
     6: (102, 160),
@@ -128,7 +109,7 @@ for l, bounds in {
     12: (294, 1855),
     13: (347, 2499),
 }.items():
-    add_interval((6, l), *bounds, TABLE_IB_COMMENT)
+    add_interval((6, l), *bounds)
 
 for l, bounds in {
     7: (205, 492),
@@ -139,7 +120,7 @@ for l, bounds in {
     12: (417, 4665),
     13: (511, 6653),
 }.items():
-    add_interval((7, l), *bounds, TABLE_IB_COMMENT)
+    add_interval((7, l), *bounds)
 
 add_exact((3, 3, 3), 17)
 add_exact((3, 3, 4), 30)
@@ -158,12 +139,10 @@ for values, bounds in {
     (3, 3, 3, 3, 3, 3): (538, 1838),
     (3, 3, 3, 3, 3, 3, 3): (1698, 12861),
 }.items():
-    add_interval(values, *bounds, SECTION_61_COMMENT)
+    add_interval(values, *bounds)
 
 
 T6_DIAGONAL = {
-    (1, 1): "1",
-    (2, 2): "2",
     (3, 3): "6",
     (4, 4): "18",
     (5, 5): "[43, 46]",
@@ -207,8 +186,8 @@ def _recursive_upper(values):
 
 
 def run_integrity_checks():
-    if len(DATA) != 73:
-        raise ArithmeticError("expected 73 Ramsey entries, found %d" % len(DATA))
+    if len(DATA) != 60:
+        raise ArithmeticError("expected 60 Ramsey entries, found %d" % len(DATA))
 
     expected_order = sorted(DATA, key=lambda item: (item[0], item[1]))
     if list(DATA) != expected_order:
@@ -219,10 +198,6 @@ def run_integrity_checks():
             raise ArithmeticError("wrong tuple length for %s" % (values,))
         if tuple(sorted(values)) != values:
             raise ArithmeticError("tuple is not weakly increasing: %s" % (values,))
-
-    for t in range(2, MAX_TWO_COLOUR_CLIQUE + 1):
-        if _number_text(DATA[(2, (2, t))]) != str(t):
-            raise ArithmeticError("R(2,%d) is not stored as %d" % (t, t))
 
     for values, expected in T6_DIAGONAL.items():
         found = _number_text(DATA[(2, values)])

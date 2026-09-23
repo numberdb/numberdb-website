@@ -8031,3 +8031,21 @@ Evidence: 2026-09-23, T435 critique. `/tmp/p_a.yaml` (no `Display
 properties`) answers 200 with the banner; `/tmp/p_head.yaml` and
 `/tmp/p_rows.yaml` (same entries, display properties included) render the
 rows.
+
+## `audit_table` does not run prose checks on `Similar tables` relations
+
+What happened: the T439 critique found and repaired a misleading
+`Similar tables` relation, but `/api/table/T439/audit` was clean before and
+after. The relation is a list item, `{"table": ..., "relation": ...}`, and the
+audit's prose scan collects strings and mapping values but not dictionaries
+inside lists. A relation could say "the former", "below", or name an internal
+family without linking it and still pass this part of the audit.
+
+What to do instead: treat `Similar tables` prose as manually checked until the
+audit walks list entries as well as mappings. A repair that changes one should
+read the rendered relation, not rely on the clean audit alone.
+
+Evidence: 2026-09-23, T439 repair. The original relation said "the two-colour
+diagonal entries $R(n,n)$ are the diagonal slice of this table" while T6 also
+held $R(8,8)$, $R(9,9)$ and $R(10,10)$ and T439 did not. The audit returned
+`{"findings": [], "clean": true}` before the wording was repaired.
