@@ -1,0 +1,101 @@
+# Draft document for numberdb.org/T437.
+# Publishing is a person's act on the site.
+Title: Values of the even Mathieu functions $\mathrm{ce}_n(z,q)$
+Definition: >-
+  Listed are values of the DLMF even Mathieu function
+  $\mathrm{ce}_n(z,q)$ CITE{DLMF28.2}: the even periodic solution of
+  $w''+(a_n(q)-2q\cos(2z))w=0$, where $a_n(q)$ is the corresponding
+  characteristic value, with the normalization of CITE{DLMF28.4}.
+Parameters:
+  n:
+    type: Z
+    title: order
+    display: $n$
+    constraints: $n\geq0$
+  q:
+    type: Q
+    title: Mathieu parameter
+    display: $q$
+    constraints: $q>0$
+  z_over_pi:
+    type: Q
+    title: argument divided by $\pi$
+    display: $z/\pi$
+    constraints: $0\leq z/\pi\leq1/2$
+Comments:
+  comment-argument: >-
+    The argument $z$ is measured in radians. A row with $z/\pi=\rho$ stores
+    $\mathrm{ce}_n(\rho\pi,q)$; software that takes the argument in degrees
+    must convert before comparing with this table.
+  comment-symmetry: >-
+    The values on $0\leq z\leq\pi/2$ determine the function on the real line:
+    $\mathrm{ce}_n(-z,q)=\mathrm{ce}_n(z,q)$ and
+    $\mathrm{ce}_n(z+\pi,q)=(-1)^n\mathrm{ce}_n(z,q)$.
+Formulas:
+  formula-equation: >-
+    $\mathrm{ce}_n(z,q)$ satisfies
+    $w''+(a_n(q)-2q\cos(2z))w=0$.
+  formula-normalisation: >-
+    $\int_0^{2\pi}\mathrm{ce}_n(z,q)^2\,dz=\pi$.
+  formula-zero-q: >-
+    $\mathrm{ce}_0(z,0)=1/\sqrt2$, and
+    $\mathrm{ce}_n(z,0)=\cos(nz)$ for $n\geq1$.
+  formula-fourier: >-
+    $\mathrm{ce}_{2r}(z,q)=\sum_{m\geq0}A_{2m}^{(2r)}(q)\cos(2mz)$ and
+    $\mathrm{ce}_{2r+1}(z,q)=\sum_{m\geq0}A_{2m+1}^{(2r+1)}(q)\cos((2m+1)z)$.
+Programs:
+  program-scipy:
+    language: Python
+    code: |-
+      from scipy.special import mathieu_cem
+
+      n = 1
+      q = 1.0
+      z_degrees = 30.0        # z = pi/6
+      mathieu_cem(n, q, z_degrees)[0]
+Similar tables:
+  - table: HREF{Values_of_Bessel_functions_of_the_first_kind}[Values of Bessel functions of the first kind $J_\nu(x)$]
+    relation: stores values of another classical special function used in separated-coordinate eigenfunction expansions
+  - table: HREF{Values_of_the_Airy_function_of_the_first_kind}[Values of the Airy function of the first kind $\operatorname{Ai}(x)$]
+    relation: stores values of another classical special function defined by a second-order differential equation
+Links:
+  DLMF28.2:
+    title: 'DLMF 28.2: Definitions and basic properties of Mathieu functions'
+    url: https://dlmf.nist.gov/28.2
+  DLMF28.4:
+    title: 'DLMF 28.4: Fourier series for Mathieu functions'
+    url: https://dlmf.nist.gov/28.4
+  SciPyCem:
+    title: 'SciPy: scipy.special.mathieu_cem'
+    url: https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.mathieu_cem.html
+Keywords:
+  - Mathieu equation
+  - Mathieu function
+  - even Mathieu function
+  - MathieuC
+  - elliptic coordinates
+  - elliptical drum
+  - parametric resonance
+Tags:
+  - special functions
+  - special values
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  complete: 'no'
+  complete-note: >-
+    it holds every entry with $0\leq n\leq5$, $q\in\{1,2,5,10\}$ and
+    $z/\pi\in\{0,1/36,2/36,\ldots,1/2\}$
+  rigour details: >-
+    The generator diagonalises the truncated Fourier matrix for
+    $-d^2/dz^2+2q\cos(2z)$ in the orthonormal cosine basis, chooses the sign
+    by continuation from the $q=0$ coefficients in CITE{formula-zero-q}, and
+    normalises the coefficient vector to CITE{formula-normalisation}. Each
+    stored decimal is required to agree between two working precisions and two
+    truncation lengths. The run checks the coefficient normalization, the
+    Fourier coefficient equations, the exact $q=0$ control values, the exact
+    zeros $\mathrm{ce}_{2r+1}(\pi/2,q)=0$, and agreement with SciPy's
+    `mathieu_cem` CITE{SciPyCem} after converting radians to degrees.
+Display properties:
+  number-header: $\mathrm{ce}_n(z,q)$
+Numbers: []
