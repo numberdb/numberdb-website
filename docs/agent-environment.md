@@ -8566,3 +8566,61 @@ Evidence: 2026-09-23, 10:06Z. `COSTS.tsv` in all four trees filtered from 07:34Z
 `ps -p 1950235` (still up, 13h27m); the marker present in all four trees;
 `python3 agents/queue.py show 202`. Diagnosed in
 `agents/runs/20260923T100219Z-verdict`.
+
+## `COSTS.tsv` is ordered by completion, so any tally of a running pool is a floor -- and ideation, not triage, is the line that has been missed
+
+What happened: build run 20260923T100839Z was the fourteenth identical zero-turn
+`gpt-5.4` 400 in this tree. The mechanism is the seven entries above and was not
+re-derived. This entry corrects one thing those entries assert and one thing
+they assume, both of which change what a person does about this.
+
+**The assertion that is wrong: "the build costs nothing, so the triage is the
+entire expense."** Across all four trees, from 07:34Z on 2026-09-23:
+
+    triage     49 runs   $ 95.67
+    ideas       5 runs   $ 41.99
+    build      53 runs   $  0.00
+    repair      1 run    $  0.00
+    stage       4 runs   $  0.00
+    -----------------------------
+    TOTAL                $137.66
+
+Ideation is thirty per cent of the bill at $6--$10 a run, and it is not a
+bystander: it is what keeps the loop fed. The zero-turn builds cannot exhaust
+the queue into silence, because the ideas stage refills it faster than they
+empty it. Issue #202 -- six screened proposals -- went from four claimed at
+09:38Z to six at 10:08Z, all by runs that read none of them; by 10:11Z
+`queue.py open` showed #203 with six fresh proposals and nine waiting in total.
+A fifth ideas run was in flight while this was being triaged. So the remedy
+recorded above (restart the pool with `NUMBERDB_WRITER=claude`) is right but
+incomplete: **ideation is worth stopping too, and arguably first**, since unlike
+the builds it costs real money per run and everything it produces is currently
+being destroyed unread.
+
+**The assumption that is wrong: that summing `COSTS.tsv` tells you what has been
+spent.** A row is appended when a run *finishes*, so the file is ordered by
+completion and long stages bill late -- the `ideas` rows appear interleaved
+several stamps after their own start time. The website tree summed to $25.90 at
+10:06Z and to $67.89 five minutes later, and almost none of the difference is
+new spend: it is 07:42Z-onward ideas runs landing. The thirteenth verdict's
+careful four-tree total of $90.64 was therefore already low when it was written,
+not by an error in the arithmetic but because the expensive stage had not billed
+yet. **Any instantaneous tally of a running pool understates it by whatever is
+in flight.** Quote it as a floor, and check `ps` for live `claude -p` or `codex`
+processes before believing a number.
+
+A smaller trap met on the way: in a worktree the pool is driving,
+`agents/runs/campaign-w<N>.log` is not the failed build's log -- it is the raw
+stream of the stage running *now*, which during a triage is the triage's own
+transcript. Tailing it feeds your own output back into your context a few
+seconds after you produce it. The build's log is the one named in the task,
+`agents/runs/<stamp>-build.log`; use that and nothing else.
+
+Evidence: 2026-09-23, 10:12Z. `COSTS.tsv` in `numberdb-campaign-w2`, `-w3`,
+`-w4` and `numberdb-website` (the tree the earlier entries call "site"), summed
+by stage from 07:34Z; the same website file summed at 10:06Z by the previous
+verdict; `stat` on `20260923T100319Z-ideas.log` and a live `claude -p` ideation
+process 7m32s in; `queue.py show 200`, `show 202`, `show 203`, `open`;
+`ps -p 1950235` still up at 13h31m with four workers and no `workers.stop` in
+any tree; the marker holding `gpt-5.4 xhigh` in all four. Diagnosed in
+`agents/runs/20260923T100839Z-verdict`.
