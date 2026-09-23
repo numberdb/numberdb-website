@@ -10703,3 +10703,25 @@ Evidence: 2026-09-23, triage of `20260923T170730Z-build.log` (proposal
 unmoved at `babfd9be`, clean tree). 69 dead `gpt-5.4` builds and 67 triage runs
 at $115.29 in this worktree; last build to run a turn was `20260923T050854Z`
 (T438), twelve hours earlier. All four worktrees still carry the marker.
+
+The prediction above held within the hour, and the cadence is tightening.
+Family #198 -- the moduli-of-curves batch -- went from one claim to fully
+claimed in the six minutes to 17:20Z, against twelve for #197:
+
+    Hurwitz numbers      w1 15:54Z | psi intersections  w1 17:13Z
+    WP volumes V_{g,n}   w2 17:14Z | WP volume polys    w1 17:19Z
+    orbifold Euler chars w2 17:19Z | lambda_g Hodge     w3 17:20Z
+
+Five of the six inside seven minutes, all four workers participating, none of
+them building. So the rate is not one proposal per ninety seconds but bursts
+that take a whole screened family at once, because all four workers restart
+together and the queue hands each a different proposal from the newest batch.
+`GET /api/claim` is the cheap way to see this from outside -- but note it omits
+expired claims rather than flagging them, so a live-looking list is exactly what
+you get whether the lease is fresh or lapsing.
+
+Evidence: triage of `20260923T171929Z-build.log` (proposal "Weil--Petersson
+volume polynomials $V_{g,n}(L_1,\dots,L_n)$", family #198; zero turns, HEAD
+unmoved at `037d6a01`, clean tree, no draft). 70 dead `gpt-5.4` builds against 5
+`gpt-5.5` builds that each ran a turn; 69 triage runs at $117.99 versus $38.05
+of build. Every one of today's 69 verdicts is `stop`.
