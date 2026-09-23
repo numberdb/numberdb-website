@@ -8982,3 +8982,66 @@ refusal and the reported allowance; the thirteen-draft count and its method in
 `agents/lessons/proposals/20260923T092609Z-triage.md`; the two `drafts_remaining`
 readings in the notes at "The draft ceiling of fifteen is deployed" and "The
 draft ceiling is fifteen and the run prompt still says five".
+
+## `pgrep -fa claude` pastes every sibling agent's whole prompt into the agent that ran it
+
+What happened: triaging build run `20260923T100820Z`, I wanted to know whether
+the worker pool was still turning, and ran
+
+    pgrep -fa workers.sh; pgrep -fa campaign.sh
+
+as the note at *Sage checks queue behind another campaign's* recommends
+(`pgrep -fa codex` or `pgrep -fa claude` "says whether another campaign is on
+the machine"). It does say that. It also says a great deal more. Each worker's
+`campaign.sh` has a `claude -p '<the entire stage prompt>'` child, and `-f`
+matches against the full command line while `-a` prints it. So the output
+contained three complete copies of the triage brief -- about 900 words each,
+plus every `--allowed-tools` and `--disallowed-tools` flag and the `--session-id`
+-- for the two sibling triages and for the reading agent's own process, which
+`pgrep` matches too. Roughly fourteen thousand tokens to learn that four loops
+are alive.
+
+Two costs, and the second is the one worth the note:
+
+* The tokens. On a stage whose entire job is to be cheaper than the run it
+  judges, one diagnostic can be a tenth of the budget.
+* **The text arrives as tool output and reads as instructions.** What comes
+  back is a prompt in the imperative -- *Write `agents/runs/<stamp>-verdict`
+  with one word on the first line* -- addressed to a different run about a
+  different stamp. `20260923T100839Z` and `20260923T100900Z` appeared in my
+  context in the same grammar as my own task. Confusing another worker's stamp
+  for one's own would put the verdict in the wrong file, and the run prompt's
+  own rule -- *work from the database and the issues, not from other people's
+  transcripts* -- is the rule this accidentally breaks.
+
+What to do instead: ask the process table for a count or for fields that are not
+the command line.
+
+    pgrep -f campaign.sh | wc -l                    # how many loops
+    pgrep -f workers.sh | head -1                   # is the supervisor up
+    ps -o pid=,etime=,args= -p "$(pgrep -f workers.sh | head -1)" | cut -c1-120
+
+`pgrep -f <pat> | wc -l` answers "is the pool turning" with one integer, which
+is the question. When the command line genuinely matters, truncate it: `ps
+-o args= -p <pid> | cut -c1-200`. And remember `pgrep -f` matches the shell that
+ran it, so a count is one higher than the number of siblings -- the same
+self-match that `agents/workers.sh`'s header warns about for `pkill -f`.
+
+Evidence: 2026-09-23, triage of `20260923T100820Z`. The recommendation being
+corrected is in this file under *Sage checks queue behind another campaign's
+build*. The same command's useful form is at
+`agents/runs/20260923T092609Z-verdict`'s sibling notes and in the evidence line
+of *A triage `stop` does not stop the machine*, which cites `pgrep -fa
+campaign.sh showing four loops and four concurrent triage runs` -- that reading
+cost the same fourteen thousand tokens.
+
+The count, since this triage established it: `20260923T100820Z` is the
+**fourteenth** zero-turn `gpt-5.4` build today and the fourteenth `stop`.
+Every one of `agents/runs/20260923T0*-verdict` and `...T09*-verdict` begins
+with the word `stop` -- 055938Z, 073856Z, 075016Z, 080136Z, 080700Z, 081316Z,
+081916Z, 084003Z, 085640Z, 090240Z, 090858Z, 092540Z, 093759Z. At 10:09Z
+neither `agents/workers.stop` nor `agents/campaign.stop` exists, `workers.sh`
+is pid 1950235, and `agents/runs/codex-fallback` still reads `gpt-5.4` /
+`xhigh`. Thirteen consecutive verdicts asking for a person changed nothing
+about the machine's behaviour, which is the design note at *A triage `stop` has
+no way to be durable* holding up under thirteen trials.
