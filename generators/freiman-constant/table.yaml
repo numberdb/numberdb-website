@@ -4,10 +4,8 @@
 Title: Freiman's constant
 Definition: >-
   Freiman's constant $c_F$ is the endpoint of the last gap in the Lagrange
-  spectrum CITE{MathWorldFreiman}: every real number greater than $c_F$ lies
-  in the Markov spectrum CITE{WikiMarkovSpectrum}, and the same threshold is
-  the start of Hall's ray in the Lagrange spectrum CITE{CusickFlahive}. It is
-  the quadratic irrational in Formula CITE{formula-value}.
+  spectrum CITE{MathWorldFreiman}. It is the quadratic irrational in Formula
+  CITE{formula-value}.
 Keywords:
   - Freiman constant
   - Hall ray
@@ -16,8 +14,10 @@ Keywords:
 Parameters: ''
 Comments:
   comment-hall-ray: >-
-    The half-line beginning at $c_F$ is often called Hall's ray. This table
-    stores the endpoint, not the continuum of all values on the ray.
+    The half-line beginning at $c_F$ is often called Hall's ray. Every real
+    number greater than $c_F$ lies in both the Markov and Lagrange spectra
+    CITE{CusickFlahive} CITE{WikiMarkovSpectrum}; this table stores the
+    endpoint, not the continuum of all values on the ray.
   comment-less-than-three: >-
     The discrete part of the Markov and Lagrange spectra with value less than
     $3$ is stored in
