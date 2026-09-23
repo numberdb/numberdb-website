@@ -119,7 +119,7 @@ Data properties:
     Falkner-Skan initial slope, using fixed-step fourth-order Runge-Kutta for
     the velocity profile and Simpson quadrature for the thermal integral. Each
     value is computed twice, with the step sizes and working precisions stated
-    in `generate.py`, and the values are stored to 10 significant digits. The
+    in `generate.py`, and the values are stored to 9 significant digits. The
     row $\beta=0$, $\mathrm{Pr}=1$ is also checked against Reynolds's analogy
     in CITE{formula-reynolds}.
   complete: 'no'

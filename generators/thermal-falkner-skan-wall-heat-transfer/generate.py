@@ -33,7 +33,7 @@ from mpmath import mp
 
 
 TABLE = os.environ.get("NUMBERDB_TABLE", "T417")
-DIGITS = 10
+DIGITS = 9
 WORKING_DIGITS = (30, 36)
 WORKING_STEPS = {
     24: Fraction(1, 500),
@@ -530,7 +530,9 @@ def main():
         print(generator.value(params, generator.digits))
     elif os.environ.get("NUMBERDB_PUBLISH") == "1" or "--publish" in sys.argv:
         print(generator.publish(
-            message="thermal Falkner-Skan wall heat transfer on the upper branch"))
+            message="thermal Falkner-Skan wall heat transfer on the upper branch",
+            lowering=os.environ.get("NUMBERDB_LOWERING") == "1"
+            or "--lowering" in sys.argv))
     else:
         report = generator.verify(sample=None)
         print(report)
