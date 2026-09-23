@@ -9599,3 +9599,79 @@ restart gap or two dead workers, but the way to look is the `ps` line above,
 not `pgrep`.
 
 Evidence: 2026-09-23, triage of `20260923T113121Z-build.log`.
+
+## The `table wanted` backlog is empty, and `screen.py requests` cannot say so
+
+What happened: the ideation stage is told to start from the open `table wanted`
+issues. There are none. The label has 126 issues in numberdb-data and every one
+is closed:
+
+    $ curl -s "https://api.github.com/search/issues?q=repo:numberdb/numberdb-data+label:%22table+wanted%22"          -> total_count 126
+    $ curl -s "https://api.github.com/search/issues?q=repo:numberdb/numberdb-data+label:%22table+wanted%22+is:open"  -> total_count 0
+
+`agents/table-ideas/screen.py requests` prints nothing, which is correct, and
+is also what it prints when GitHub refuses the request: `requests()` catches
+every exception and returns `[]`. That is the failure `already_here` was fixed
+for and `requests` was not -- a failed question and an empty answer must not
+look the same. Until it is fixed, confirm an empty backlog with the `curl`
+above before concluding the stage has nothing to anchor to.
+
+Two consequences for the prompts, not for the code:
+
+* The ideation prompt's "start from the open requests, and build the family
+  around one" can no longer be followed. A run that reads that instruction
+  literally will look for a request to cite and find none; it should say so in
+  its batch, which is a result about the backlog worth having.
+* **numberdb-data#204 shows what happens when it is not said.** That proposal,
+  opened at 11:2xZ today, carries `- [ ] Steklov eigenvalues of the classical
+  planar domains (answers #133, #137)` and repeats both numbers in its
+  `Draws on:` line. #133 asks for T88 to be extended to $23 \in S$ and #137
+  asks for T223 to be extended to all finite-volume hyperbolic Coxeter simplex
+  groups; neither has anything to do with Steklov eigenvalues. They are simply
+  the only two open issues in the repository. If #204 is closed as answering
+  them, two real enhancement requests are closed with nothing done. Detach them
+  by hand.
+
+Evidence: 2026-09-23T11:2xZ, ideation run `20260923T112015Z`.
+
+## `import numberdb` from inside this checkout finds the Django app
+
+What happened: `screen.already_here(...)` answered
+`(could not ask the corpus: AttributeError: module 'numberdb' has no attribute
+'search_text')` for every name. The repository has a `numberdb/` package of its
+own -- the Django project -- and a script run with the repository as the
+working directory imports that rather than the client. The message is the one
+`already_here` prints when the corpus is unreachable, so the failure reads like
+a network problem and not like a shadowed import.
+
+`agents/sage.sh` already documents this for `sage -python`. It is true of plain
+`python3` too:
+
+    $ cd /tmp && PYTHONPATH=/home/ubuntu/numberdb-website/clients/python python3 -c \
+        "import numberdb; print(numberdb.__file__)"
+    /home/ubuntu/numberdb-website/clients/python/numberdb/__init__.py
+
+Run the screens from outside the repository root with the client on
+`PYTHONPATH`. The client is not installed for the system Python; only that path
+has it.
+
+Evidence: 2026-09-23, ideation run `20260923T112015Z`.
+
+## oeis.org answers 403 from this host
+
+What happened: the batch wanted to know whether any of six computed constants
+is already an OEIS decimal expansion. Every search, with and without a browser
+`User-Agent`, in JSON and in text format, came back `403` with a Cloudflare
+"Just a moment..." interstitial:
+
+    $ curl -s -o /dev/null -w "%{http_code}\n" "https://oeis.org/search?q=0.984381781&fmt=text"
+    403
+
+Nothing of ours is wrong and nothing here will fix it. What matters is that a
+script parsing `fmt=json` sees no `results` key and reports "not in OEIS",
+which is the opposite of what is known. An OEIS check is a real check and
+belongs in a build; it has to be run from somewhere else, and a proposal that
+could not run it should say so rather than leave the silence to be read as an
+answer.
+
+Evidence: 2026-09-23, ideation run `20260923T112015Z`, six searches.
