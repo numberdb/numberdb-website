@@ -8850,3 +8850,44 @@ claim that succeeded; `GET /api/claim` returning 200 with 32 rows, five of
 them family #202 taken between 09:20Z and 10:02Z by four workers, none of
 which reached turn 1. `agents/queue.py:280`, `:847-855`;
 `numberdb_app/models.py:1519-1575`.
+
+## Twenty-two `stop` verdicts did not stop it, and the measured cost has doubled since
+
+What happened: triage of build run `20260923T113802Z`, the 21st byte-identical
+gpt-5.4 refusal in this checkout. Two notes above already diagnose this failure
+and give the remedy; nothing here amends the diagnosis, which was correct. What
+has changed is the scale, and the two notes now understate it enough to mislead
+a person deciding how urgent this is.
+
+The older note's tally -- 14 error builds, 10 triages, $23.16 -- was taken at
+about 08:15Z. Three and a half hours later, from `agents/runs/COSTS.tsv`, since
+the last successful codex run at `20260923T061043Z`:
+
+    since 20260923T062751Z    runs      usd
+    build                       23     0.00
+    triage                      22    46.53
+
+Twenty-three consecutive builds at `turns=0`, `$0.0000`, `error`, `gpt-5.4`.
+The whole $46.53 is the cost of deciding what to do about them.
+
+**The `stop` verdict is not a brake, and this is now measurable rather than
+predicted.** The earlier note inferred from `workers.sh:132` that a `stop`
+would not damp the loop. It does not: every one of the twenty-two verdict files
+in `agents/runs/` from today begins with the word `stop`, and the campaign
+relaunched after each. A triage run that concludes correctly, writes its
+verdict, and is ignored costs about $2 -- so the honest reading is that the
+triage stage is not a safety net here, it is the meter. Each new failure buys
+another copy of an answer the repository already has in writing.
+
+The practical consequence for anyone adding a note like this one: the
+bottleneck is not diagnosis. Three separate triages reached the same root cause
+independently from the same twelve lines, and the fix is still one `rm` of
+`agents/runs/codex-fallback`. Writing a fourth diagnosis would cost more than
+it returns. What is missing is a person, or a supervisor that treats N
+identical `stop` verdicts as a reason to stop launching the stage.
+
+Evidence: 2026-09-23 11:38Z, triage of build run `20260923T113802Z`. Twenty-one
+build logs identical after normalising stamp and thread id; `COSTS.tsv`
+aggregated by stage from `20260923T062751Z`; first line of all twenty-two
+`agents/runs/*-verdict` files from today. `run.sh:52`, `:80`, `:556-568`,
+`:583-598`, `:591`, `:685`.
