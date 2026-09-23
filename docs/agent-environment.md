@@ -10091,3 +10091,30 @@ marks counted by regex over `families()` bodies; `created_at`/`updated_at` for
 `#199`, `#203`, `#204`, `#205` from the issues API; assignments counted with
 `grep -a '^=== next:'` over the four `agents/runs/campaign-w<n>.log` and
 bucketed by `family #NNN`.
+
+**`queue.py open` is not the check for this, and at 13:47Z it says the
+opposite.** The finding above is easy to test wrongly. Running the obvious
+command now prints `#205` *first*, six left, at the head of ten waiting, which
+reads as though the starvation has cleared. It has not: `cmd_open`
+(`queue.py:385`) iterates `families()` in its own order and never calls
+`next_table`, so its ordering carries no information about what will be served
+next. The check that answers the question is the serve count --
+
+    grep -ah '^=== next:' /home/ubuntu/numberdb-*/agents/runs/campaign-w*.log \
+      | grep -o 'family #[0-9]*' | sort | uniq -c | sort -rn
+
+-- and at 13:47Z `#205` is still absent from that list entirely, zero serves
+against 30 for `#180` and 16 for `#199`, more than two hours after screening.
+Confirmed against the code a second time on a separate reading:
+`parse_family` sets `settled = mark.lower() in ('x', '-', '~')` (line 233), so
+a `[~]` claim sets `done=True`; `started()` is `any(item['done'] ...)`
+(line 337); `next_table` walks `half_built` first (line 375).
+
+Evidence: 2026-09-23 13:40-13:50Z, triage of `20260923T133544Z-build.log`.
+Day totals at 13:47Z, deduplicated by stamp over the four `COSTS.tsv`: 171
+builds, 149 of them zero-turn, $196.28; triage 145 runs, $274.47 -- triage now
+exceeds all building by $78.19. Dead builds run unbroken from 05:59:38Z to
+13:36:24Z; the last build that did any work was `20260923T061859Z` at 06:18Z
+(T443, $11.39). 149 verdicts now exist across the four trees and all 149 say
+`stop`. Three of the four workers were running triage simultaneously while
+this was written and the fourth was in ideation; none was building.
