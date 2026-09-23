@@ -10032,6 +10032,23 @@ T073856Z in w1, T073936Z in w4, and repair T073411Z in w2 -- so the wall is not
 specific to the build stage. All four trees held an identical two-line
 `codex-fallback`.
 
+How long it ran, added at 11:45Z from the w3 triage of build 20260923T113741Z.
+Four hours after the note above was first written the loop was still turning,
+because a verdict cannot stop it (see "a stop verdict cannot hold a machine-wide
+failure"). Since 07:33Z the four ledgers hold 199 runs and **$228.74** -- w1
+$99.90, w2 $41.43, w3 $43.38, w4 $44.03 -- for **95 builds that ran no turns**
+and no table. In w3 the whole $43.38 is triage: 23 build logs, every one 1534
+bytes and byte-identical but for the run stamp and thread id, each triaged at
+about $2 to reach the same verdict. All 23 verdicts say `stop`; none did.
+
+Two practical consequences for whoever reads this next. The per-run triage is
+the expensive half of a turn-zero outage, so the cost of leaving it up is
+roughly $55/hour, not the $0.00 the build rows suggest. And the verdicts that
+diagnose it are themselves unrecoverable: `agents/runs/` is gitignored
+(`.gitignore:167`) and not one of the 23 `-verdict` files is tracked, so the
+evidence dies with the worktree unless it is copied into a tracked file like
+this one.
+
 ## The screener keeps buying batches nobody can build, and `workers.stop` stops restarts rather than what is running
 
 What happened: during the fifth turn-zero codex build of the morning (see "A
