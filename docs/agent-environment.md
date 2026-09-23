@@ -9006,3 +9006,80 @@ all 86 `=== next:` lines of `agents/runs/campaign-w2.log` bucketed on their
 -> 82 build rows, column 4 tested `> 0` and matching none, 79 triages at
 $155.82, $55.88 other, $211.70 total. Diagnosed in
 `agents/runs/20260923T110720Z-verdict`.
+
+## The campaign buys its own proposals: `top_up_if_low` runs before the claim, so stopping the screener moves the ideation spend rather than ending it
+
+Several verdicts have ended with "stop the supervisor, and consider stopping
+the screener first, because the screener is the ideation line." The second half
+is a half-lever, and the half it leaves behind is the one holding the tap.
+
+There are two independent buyers of proposals:
+
+* `agents/screener.sh:28` -- `target="${1:-${NUMBERDB_QUEUE_TARGET:-12}}"`, a
+  ten-minute loop that opens a family whenever fewer than twelve are waiting.
+  This is the one the verdicts name.
+* `agents/campaign.sh:183` -- `top_up_if_low()`, with
+  `low="${NUMBERDB_QUEUE_LOW:-8}"`, called at **`:330`, at the top of every
+  loop iteration and ahead of `work.py next`**. At `:214-219` it calls
+  `propose_a_batch` itself when `waiting -eq 0`, or when `waiting < low` and
+  `remaining > waiting`.
+
+The call site is what matters. `top_up_if_low` runs *before* the claim, so a
+campaign process reaches it on its first pass -- and under this outage the
+first pass is the only pass any of them gets, since the build dies pre-turn and
+the process exits. `remaining` is `builds - made`, and `made` is 0 for every
+one of these processes (the entry at 8948), so `remaining` is a constant 200
+and the second clause turns purely on queue depth.
+
+So killing the screener does not stop proposals being bought. It lets the queue
+fall to eight, after which each newborn `campaign.sh` screens a family on its
+own account -- four processes, one every six minutes under the supervisor's
+sweep, at roughly the $7.90 the ideas runs have averaged. The spend does not
+stop; it moves from one long-lived process that can be found with `ps` onto
+four short-lived ones that are replaced as fast as they are killed.
+
+Why it matters for the order of operations: `touch
+/home/ubuntu/numberdb-website/agents/workers.stop` must come **first**, because
+it is the only lever that stops both the burning of claims and the buying of
+their replacements. Stopping the screener is worth doing afterwards, and is
+actively counterproductive before.
+
+How to see the margin: `python3 agents/queue.py open` prints the waiting count.
+At 11:18Z on 2026-09-23 it read 9 -- one claim above `campaign.sh`'s own
+threshold of 8, with the screener's threshold of 12 already crossed.
+
+## Correction: grep a campaign log with a `^=== ` anchor, or you are reading the previous triage's homework
+
+The entry at 8948 offers a one-line check for whether a worker is progressing:
+grep the tree's campaign log for `built N so far` and look at the tail. Run
+literally it gives the wrong answer. On `agents/runs/campaign-w2.log` at 11:18Z
+the unanchored form reported **2** consecutive `built 0 so far` at the tail, on
+a log whose last **22** claims were every one of them zero.
+
+The cause: the triage stage runs inside the tree and its whole JSONL transcript
+is appended to the same campaign log. Every prior verdict a triage reads back
+is in that file as escaped JSON inside a tool result, so the phrase matches in
+quoted text as often as in real claim lines -- 108 matches against 86 actual
+claims -- and in the quoted passage's order rather than the campaign's. The
+tail of the raw matches is therefore the tail of somebody's quotation.
+
+Anchor on the line the campaign itself writes:
+
+    grep "^=== next:" agents/runs/campaign-w2.log | grep -o "built [0-9]* so far"
+
+-> 22 consecutive `built 0 so far`, consistent with the 21 recorded at 8948
+plus one more run. The finding at 8948 stands unchanged; only its check needed
+the anchor. This applies to every `^=== ` line a campaign log carries --
+`=== next:`, `=== verdict:`, `=== stopping:` -- and to any count of runs,
+verdicts or claims taken from one of these files. A campaign log is not a log
+of the campaign alone; it is that interleaved with the full transcripts of
+every triage the campaign ran.
+
+Evidence: 2026-09-23, 11:18Z, while triaging build run `20260923T111341Z`, the
+twenty-third identical zero-turn `gpt-5.4` 400 in this tree. `campaign.sh:183,
+214-219, 330`; `screener.sh:28, 33-59`; `ps --ppid 1950272` showing the
+screener healthy in `sleep 600` with its log reading "13 proposals waiting,
+which is enough" at 11:10:14; `python3 agents/queue.py open` -> 9 waiting;
+both the anchored and unanchored greps over `agents/runs/campaign-w2.log` and
+their 86-vs-108 match counts. Diagnosed in
+`agents/runs/20260923T111341Z-verdict`.
