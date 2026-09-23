@@ -8232,3 +8232,61 @@ Evidence: 2026-09-23, T440 critique (run `20260923T055843Z`). `curl -s -o
 `history/T440` 200, `revisions/T440` 200, `files/T440` 200,
 `files/T440?rev=1` 200, `files/T440/generate.py` 200 (19,622 bytes of HTML
 around the 6,983-byte source).
+
+## The codex fallback cannot heal itself because the quota announcement is written to a different file from the one the quota test reads
+
+What happened: the fourth build run in six days to die at turn 0 on
+`The 'gpt-5.4' model is not supported when using Codex with a ChatGPT
+account.` The previous note explains that the 400's wording contains none of
+the words `out_of_quota()` greps for. That is true, and it is half of it.
+The other half is smaller and more fixable.
+
+`run.sh:161` sets `log="agents/runs/$started-$stage.log"`. `:424` tees a
+single header line into it, and the agent's stream-json is appended with
+`tee -a`. **Every other `echo` in `run.sh` goes to stdout only**, where
+`campaign.sh` collects it into `campaign-w<N>.log`. Those are two different
+files, and the one sentence that records why this run is on a strange model --
+
+    === a previous run hit a quota; running gpt-5.4 at effort xhigh
+
+-- is in the second and never the first. Both `out_of_quota()` and
+`worth_resuming()` read `$log`. Measured against `20260923T075617Z-build.log`:
+
+    out_of_quota()    0 matches   (no 'quota', 'rate limit', '429', ...)
+    worth_resuming()  4 matches   (on '"type":"error"')
+
+which is exactly the loop: resumable, not quota-struck, so resume into the
+identical refusal and exit 1.
+
+Why this matters more than it looks. `codex_fallbacks` defaults to `gpt-5.4`
+(`run.sh:80`) and nothing in `agents/` or `env/` overrides it, so the chain
+has **one** element. Had `out_of_quota()` fired,
+`next_model_in("gpt-5.4", "gpt-5.4")` returns empty, `give_up=yes`, and the
+run takes `exit 6` at `:679` -- "codex is out of quota on every model it may
+use; claude can take this stage" -- which `campaign.sh` turns into a role
+flip. The pool would have recovered on the first run that read the marker.
+The whole standing failure is downstream of which file one `echo` lands in.
+
+What to do instead: tee the marker block's announcement into `$log` as well as
+stdout, or have `out_of_quota()` consult the marker file directly rather than
+inferring a quota from log text. Separately, `worth_resuming()` should not
+match a 400 `invalid_request_error`: a 400 is the server saying the request
+will never be valid, so resuming on it spends a second refusal to learn
+nothing. A run's own reasoning about itself is not in its transcript, and any
+predicate over `$log` is blind to it.
+
+The cost of not doing it, measured: on 2026-09-23 the four checkouts logged
+**14** gpt-5.4 error builds, **10** triage runs and **$23.16** of triage
+spend, with three more triages in flight at the time of writing. Three builds
+died within forty seconds of each other -- `20260923T075538Z` (w2),
+`20260923T075556Z` (w3), `20260923T075617Z` (w4) -- with byte-identical
+twelve-line logs. Each failing build reads `0.0000` in the ledger and the
+spend appears under `triage`, so the cost curve indicts the stage that is
+working correctly. A `stop` verdict does not damp it either: `campaign.sh:546`
+exits, but `workers.sh:132` relaunches under `setsid nohup` with
+`attempted=0`, so the `attempted < 2` guard at `:514` never engages.
+
+Evidence: 2026-09-23, triage of build run `20260923T075617Z`. Predicates run
+by hand against the real log; `run.sh:80`, `:161`, `:424`, `:556-568`,
+`:583-598`, `:634-679`; marker present and identical in
+`numberdb-campaign-w2`, `-w3`, `-w4` and `numberdb-website`.
