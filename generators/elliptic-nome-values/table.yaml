@@ -1,0 +1,90 @@
+Title: Values of the elliptic nome $q(m)$
+Definition: >-
+  For $0<m<1$, this table stores the real elliptic nome
+  $q(m)=\exp(-\pi K(1-m)/K(m))$, where $K(m)$ is the complete elliptic integral
+  of the first kind in the parameter convention $m=k^2$
+  CITE{DLMFThetaRelations} CITE{DLMFEllipticIntegrals}.
+Keywords:
+- elliptic nome
+- Jacobi nome
+- theta nome
+- modular lambda inverse
+Parameters:
+  m:
+    type: Q
+    title: elliptic parameter
+    display: $m$
+    constraints: $0<m<1$
+Comments:
+  comment-parameter: >-
+    The stored parameter is $m=k^2$, matching
+    HREF{Complete_elliptic_integral_of_the_first_kind_K}[the complete
+    first-kind elliptic integral table] and Sage's elliptic integral convention.
+    A source that writes the nome as a function of the modulus $k$ is using
+    this table's $q(k^2)$.
+  comment-q-convention: >-
+    The nome convention here is the theta-function convention
+    $q=e^{i\pi\tau}$ CITE{DLMFThetaNotation}. Some modular-form sources write
+    $q$ for $e^{2\pi i\tau}$, which is the square of this nome
+    CITE{MathWorldNome}.
+Formulas:
+  formula-tau: >-
+    If $\tau=iK(1-m)/K(m)$, then $q(m)=e^{i\pi\tau}$.
+  formula-theta-inversion: >-
+    With the same nome,
+    $m=\theta_2(0,q(m))^4/\theta_3(0,q(m))^4$
+    CITE{DLMFThetaRelations}.
+  formula-half: >-
+    $q(1/2)=e^{-\pi}$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |
+      import numberdb.sage as numberdb
+      from sage.rings.complex_arb import ComplexBallField
+      from sage.rings.rational_field import QQ
+
+      CBF = ComplexBallField(numberdb.bits(100, losing=80))
+      m = CBF(QQ(1) / QQ(2))
+      q = (-CBF.pi() * (CBF(1) - m).elliptic_k() / m.elliptic_k()).exp()
+      q.real()
+Similar tables:
+- table: HREF{Complete_elliptic_integral_of_the_first_kind_K}[Complete elliptic integral of the first kind $K(m)$]
+  relation: $K(m)$ and $K(1-m)$ are the two complete first-kind integrals in the defining quotient
+- table: HREF{Singular_values_of_the_elliptic_modulus}[Singular values $k_r$ of the elliptic modulus]
+  relation: for the singular parameter $m_r$ stored there, $K(1-m_r)/K(m_r)=\sqrt r$ and $q(m_r)=e^{-\pi\sqrt r}$
+- table: HREF{Complete_elliptic_integral_of_the_first_kind_at_the_singular_values}[Complete elliptic integral of the first kind $K(m_r)$ at the singular values]
+  relation: holds the $K(m_r)$ factor at the singular parameters for which the nome is $e^{-\pi\sqrt r}$
+- table: HREF{Values_of_the_Rogers_Ramanujan_continued_fraction}[Values of the Rogers-Ramanujan continued fraction $R(e^{-\pi\sqrt r})$]
+  relation: evaluates another function at the singular nomes $e^{-\pi\sqrt r}$
+Links:
+  DLMFThetaNotation:
+    title: 'DLMF 20.1: Special notation for theta functions'
+    url: https://dlmf.nist.gov/20.1
+  DLMFThetaRelations:
+    title: 'DLMF 20.9: Relations of theta functions to elliptic functions'
+    url: https://dlmf.nist.gov/20.9
+  DLMFEllipticIntegrals:
+    title: 'DLMF 19.2: Definitions of elliptic integrals'
+    url: https://dlmf.nist.gov/19.2
+  MathWorldNome:
+    title: 'MathWorld: Nome'
+    url: https://mathworld.wolfram.com/Nome.html
+Tags:
+- special values
+- special functions
+Data properties:
+  type: R
+  rigour: proven
+  complete: 'no'
+  complete-note: >-
+    it holds $q(m)$ for every decimal grid point $m=j/1000$, with
+    $j=1,\ldots,999$
+  rigour details: >-
+    Each value was computed as a Sage complex ball with arb at
+    `numberdb.bits(digits, losing=80)` bits, with the imaginary part checked to
+    contain zero, and returned as its real part. The run checked
+    CITE{formula-half} and CITE{formula-theta-inversion} across the stored
+    range.
+Display properties:
+  number-header: $q(m)$
