@@ -10252,3 +10252,72 @@ Measured at 2026-09-23T17:03Z during triage of build `20260923T170210Z`
 (w4, family #197, quantiles of the F-distribution; 0 turns, $0.0000, 400 on
 `gpt-5.4`, verdict `stop` -- the 63rd in this worktree today and all 63 the
 same). All three levers still unpulled.
+
+## The proposal pool has closed: the loop can no longer reach work it has not already failed
+
+What happened: the note above ("the parked-claim pool saturates") establishes
+that claims settle at a ceiling of ~50 because expiry returns them at the rate
+four workers consume them. That is the same mechanism seen from the claim side.
+Seen from the *proposal* side it says something stronger, and worth stating on
+its own because it bounds what waiting is worth.
+
+Pairing each `=== next:` line in `agents/runs/campaign-w4.log` with the
+`=== build run` that follows it gives what each build was actually dealt:
+
+    since 05:47Z    64 builds    38 distinct proposals
+    of the last 20 deals, 14 had already been dealt earlier the same day
+
+Against the earlier measurement at 12:37Z -- 36 builds, 30 distinct -- the 28
+builds in between bought 8 proposals that had not been tried. The marginal rate
+of new work fell from 0.83 per build to 0.29 and is still falling. Individual
+proposals are now on their third pass: "OPE coefficients of the 3D Ising CFT"
+(#201) was dealt at 12:13:05Z, 15:36:47Z and 17:08:30Z, each build 0 turns,
+$0.0000, 400 on `gpt-5.4`, each triaged at ~$1.84.
+
+Why it is not the same note twice: a saturated *claim* pool is a fixed cost in
+queue visibility. A closed *proposal* pool is a statement about the future --
+the reachable set is bounded by (claim rate x expiry window), the workers have
+drained it, and expiry hands back exactly what they take. So the loop will not
+work its way through to anything new, however long it runs. An hour from now it
+will be re-failing the same ~38 proposals in rotation. This is the arrival of
+what the 12:39Z note predicted ("a dead worker pool cannot exhaust its queue");
+that note gave the mechanism, this is the measurement that it has happened.
+
+What to do with it, which is the reason it is worth writing down: it removes
+the last argument for letting the loop run while somebody decides. There is no
+unexplored proposal it might reach, no possibility that the next deal is a
+different kind of work. Every further hour is ~$50 to re-fail proposals it has
+already failed. It also tells a triage not to read a repeat count as evidence
+against the proposal: a proposal on its third deal has not been rejected three
+times, it has never been read once, and `skip` would lose a sound proposal
+permanently to paper over a harness fault.
+
+How to measure it, since no single command reports it:
+
+    grep -a '^=== next: \|^=== build run 2026' agents/runs/campaign-<w>.log
+
+then pair adjacent lines and count distinct titles. `queue.py open` cannot
+answer this -- a family drops out of `waiting()` once every proposal in it is
+claimed -- and `/api/claim` cannot either, because a takeover updates the
+existing row in place (`api.py:1455-1461`) and carries no count. The campaign
+log's own deal lines are the only record that a proposal has been dealt twice.
+
+Two smaller confirmations from the same sweep, neither of them new mechanism:
+
+* `/api/claim` over families 150-239 at 17:11Z: 50 standing, #196-#206,
+  w1 15, w3 13, w4 12, w2 10. Fourth sample after 48 / 50 / 49. Flat.
+* The oldest claim still returned was taken at 15:42:06Z, 89.5 minutes before
+  the sweep, and nothing older appeared. That is `ProposalClaim.MINUTES = 90`
+  measured rather than derived. It is *not* corroborated by the `expired` key,
+  which is always `false` because `api.py:1391` filters aged rows out before
+  answering -- absence of expired rows is not evidence of anything.
+
+Measured at 2026-09-23T17:11Z during triage of build `20260923T170830Z`
+(w4, family #201, OPE coefficients of the 3D Ising CFT; 0 turns, $0.0000, 400
+on `gpt-5.4`, verdict `stop` -- the 64th in this worktree today and all 64 the
+same). w4's day: 141 runs, $218.50, of which $115.96 is 63 triages writing
+`stop` into a gitignored file; last build to reach turn 1 was 05:46:57Z, which
+made T440. All four checkouts (`numberdb-website` = w1, `-w2`, `-w3`, `-w4`)
+still carry `agents/runs/codex-fallback` = `gpt-5.4`/`xhigh`;
+`/home/ubuntu/numberdb-website/agents/workers.stop` still absent. All three
+levers unpulled.
