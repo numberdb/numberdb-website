@@ -10734,3 +10734,52 @@ since Sep 22 20:38) and four `campaign.sh 200` restarted at 12:54:38, 12:59:58,
 13:00:18 and 13:00:38. Ledger sums over the four trees from each one's first
 turn-zero build: 268 runs, **$324.16**, 130 turn-zero builds, 129 `stop`
 verdicts, no table.
+
+## `gpt-5.4` has never produced a turn in this ledger, so the chain was not a fallback that broke -- it never worked, and 18 Sep already said so
+
+The sections above establish that the chain must be emptied and the markers
+deleted together. They leave the impression that `NUMBERDB_CODEX_FALLBACKS`
+was a working arrangement until the quota moved the campaign onto it. The
+ledger does not support that. Every row it has ever held for `gpt-5.4` is a
+turn-zero error:
+
+    gpt-5.5   154 build rows  success
+    gpt-5.5     1 build row   error
+    gpt-5.4    34 build rows  error, turns 0, $0.0000 -- all of them
+
+Thirty-three of those are today's wall, from `20260923T070848Z`. The
+thirty-fourth is `20260918T023210Z`: a codex build, `resumed=yes`, `turns 0`,
+`error`, five days before the quota, in a different campaign. Its transcript
+has since been archived out of `agents/runs/`, so the `400` cannot be read back
+from here -- but the shape in `COSTS.tsv` is the shape of every row today, and
+the account has not changed.
+
+Why this changes the remedy rather than just the story: the default at
+`run.sh:80` is `codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-gpt-5.4}"`. It has
+never had a value this account can use. So emptying the chain is not a measure
+to be undone when the quota refills on 25 Sep -- it is the correct standing
+value, and putting `gpt-5.4` back afterwards restores a chain that has a 0%
+success rate over five days. If a second codex model is wanted, somebody has to
+name one the ChatGPT account may actually run and verify it with a single
+throwaway build *before* it goes in the chain, because the chain is only ever
+exercised on the day the first model is already gone, which is the worst day to
+discover it is empty in effect.
+
+The cheap check, for whoever does that: the failure is not in the exit status,
+which is 1 either way. It is `turns 0` with a `turn.failed` carrying
+`invalid_request_error` rather than a usage limit. One `awk` over the ledger
+tells a model that works from one that has only ever been written down:
+
+    awk -F'\t' '$3=="codex"{n[$8]++; if($6=="success") ok[$8]++}
+                END{for(m in n) printf "%s %d/%d\n", m, ok[m], n[m]}' \
+        agents/runs/COSTS.tsv
+
+Evidence: 2026-09-23 13:20-13:35Z, w3 triage of build `20260923T131804Z`, the
+33rd turn-zero build of the day and the 33rd `stop`. Tallies over all 644 rows
+of `COSTS.tsv`. Since 07:08:48Z in w3 alone: 65 runs, **$64.77**, every cent of
+it triage -- the builds are priced `$0.0000`, so the loop's whole cost is the
+cost of deciding, thirty-three times, that it cannot be decided here.
+`workers.sh 4` (PID 1950235, up since Sep 22 20:38:46) and `screener.sh`
+(1950272) are still running, three `campaign.sh 200` restarted at 13:17:58,
+13:23:38 and 13:23:58, and no `campaign.stop`, `workers.stop` or
+`screener.stop` exists in this tree.
