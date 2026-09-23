@@ -8867,3 +8867,80 @@ lines, two pre-turn 400s, 0 turns, $0.0000); the non-JSON lines of
 `--no-index`; `python3 agents/queue.py open`; `GET /api/table?id=` and the
 public page for T443, T444, T445 (both drafts still drafts, both unrescued).
 Diagnosed in `agents/runs/20260923T103846Z-verdict`.
+
+## The campaign's repeat-attempt breaker is a shell variable, and `stop` is the verdict that resets it
+
+`campaign.sh` has a counter written for exactly the situation this campaign has
+been in since 06:27Z, and in four and a half hours it has never reached 1.
+
+    campaign.sh:63
+    #Attempts at the table currently being built. Policy, not judgement: however
+    #good a reason triage gives, the same table is not tried a third time.
+    attempted=0
+
+It gates the triage itself, not just the retry:
+
+    campaign.sh:513
+    verdict=stop
+    if [ -n "$stamp" ] && [ "$attempted" -lt 2 ]; then
+            timeout 120 claude -p "Reply with exactly: ok" >/dev/null 2>&1 || true
+            say "the build run exited $status; asking what to do about it"
+            run_stage critic triage ...
+
+At `attempted >= 2` the campaign exits on the pre-set `verdict=stop` and never
+pays for a triage. That branch is the loop's off switch and it is unreachable,
+for two independent reasons.
+
+**`stop` is the only verdict that does not increment it.** The counter moves in
+the `resume` arm (526) and the `restart` arm (537); `skip` resets it to 0
+(541); `stop` falls through to `*)` at 547, which is
+`say "stopping: $verdict"; exit "$status"` and touches nothing.
+
+**And `exit` destroys it.** `attempted` is a plain shell variable in the
+`campaign.sh` process. `workers.sh:185-208` polls every `${NUMBERDB_WORKERS_EVERY:-300}`
+seconds, finds the worker gone and runs `start "$name"` -- a **fresh**
+`campaign.sh`, in which `attempted=0`, `empty=0` and `made=0` again.
+
+So the two facts compose into a loop with no memory: the correct verdict is the
+one that leaves no trace, and the act of honouring it is the same act as
+forgetting it. A run that returned `restart` twice would trip the breaker on the
+third failure and stop for free; nineteen runs that returned the right answer
+each reset the count to zero. Measured here: nineteen consecutive `stop`
+verdicts in `campaign/w2`, `head -1` of every `agents/runs/*-verdict` file, and
+`attempted` provably 0 at each one.
+
+The sibling breaker has the same shape and a different blind spot.
+`campaign.sh:596-606` counts `empty` -- batches in a row that produced no table
+-- and at `empty >= 2` with the queue still offering the same proposal it says
+*"the build declined $proposal twice and the queue still offers it"* and
+`exit 6`. That code is in the status-0 path, after the `if [ "$status" -ne 0 ]`
+block has already `exit`ed or `continue`d. A build that **fails** never reaches
+it. It catches a builder that runs and declines, not one that cannot start.
+
+The fix this points at is not a new breaker but a different storage class for
+the existing one. `agents/runs/codex-fallback` is the proof the campaign
+already knows the pattern: a marker file in `agents/runs/` survives process
+death, which is precisely why the `gpt-5.4`/`xhigh` setting has outlived
+nineteen worker restarts while the failure count has not survived one. The
+configuration persists and the evidence against it does not. A consecutive-`stop`
+count kept the same way would have ended this outage at two triages per tree,
+about $15, rather than 74 triages and $202.36.
+
+A triage reading this should not try to fix it: verdicts may write only
+themselves and `SKIPPED.md`. What a triage *can* do is stop re-deriving the
+`gpt-5.4` 400 (the signpost at 8479) and note that the restart it is about to
+be subjected to is structural, not an oversight of the moment.
+
+Evidence: 2026-09-23, 11:02Z, while triaging build run `20260923T105541Z`, the
+twentieth identical zero-turn `gpt-5.4` 400 in this tree. `campaign.sh:52-63`,
+`500-551`, `588-608` read in full; `workers.sh:185-208`, including
+`every="${NUMBERDB_WORKERS_EVERY:-300}"` and the deliberate 20s stagger at 199;
+`readlink /proc/1950235/cwd` -> `/home/ubuntu/numberdb-website`, confirming the
+standing `touch .../agents/workers.stop` recommendation is addressed correctly;
+`ps -eo pid,lstart` showing pids 2672518/2675058/2677690/2679474 started 20s
+apart inside a 60s window at 10:55, so all four trees now burn in lockstep;
+`head -1` of all 19 prior verdicts in `campaign/w2`, all `stop`; the non-JSON
+lines of `agents/runs/campaign-w2.log` for the 10:50 `stopping: stop` -> 10:55
+restart -> claim-#202 sequence; `COSTS.tsv` in all four trees from
+`20260923T062751Z` -> 77 builds at $0.00, 74 triages at $146.48, $55.88 other,
+$202.36 total. Diagnosed in `agents/runs/20260923T105541Z-verdict`.
