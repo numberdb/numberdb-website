@@ -7997,3 +7997,37 @@ Evidence: 2026-09-23, T430 critique. `numberdb_app/views.py:961` indexes
 `program['language']`; `views.py:1507` re-raises; `views.py:489`
 (`render_table`) has no `except`. Previewing T430's `Programs` alone renders
 nothing; the same stub with `{language: Sage, code: "print(1)"}` renders.
+
+## A `/preview` piece that carries `Numbers` must carry `Display properties` too, or it invents an error that is not in the table
+
+What happened: the T435 critique split the document the way the note above
+says to -- Title, a `Numbers` stub and four or five sections per piece -- and
+the first piece rendered
+
+    Error while parsing number with parameter ['1,&nbsp;1,&nbsp;1', 'm1']:
+    'str' object has no attribute 'items'
+
+which reads exactly like a fault in the table. It is a fault in the split.
+T435 groups its parameters: `Display properties: {group parameters: [[m1,
+m2, m3], [part]]}`, so its entries tree is two levels deep. With `Display
+properties` left out of the piece, `views.py:1216` falls back to
+`param_groups = [[p] for p in parameters]` -- four groups, one per parameter
+-- and `number_table_as_list` then walks four levels into a two-level tree
+and reaches `numbers.items()` at `views.py:1414` with a string in hand.
+
+What to do instead: put `Display properties` in *every* piece that carries a
+`Numbers` stub, or leave `Numbers` out of the pieces that are not about the
+entries (`/preview` needs *a* `Numbers` section, so the stub cannot simply
+go). Checked both ways on T435: the same stub renders clean with the
+display properties beside it and errors without them.
+
+Why it matters beyond the tidiness: a critique's whole job here is to report
+what a reader would see, and this is a manufactured fault that looks like a
+real one. It would have been reported against T435 as "the page errors on the
+first entry" if the second piece, which happened to carry the display
+properties, had not rendered the same entries cleanly.
+
+Evidence: 2026-09-23, T435 critique. `/tmp/p_a.yaml` (no `Display
+properties`) answers 200 with the banner; `/tmp/p_head.yaml` and
+`/tmp/p_rows.yaml` (same entries, display properties included) render the
+rows.
