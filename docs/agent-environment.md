@@ -9279,3 +9279,63 @@ Evidence: 2026-09-23 13:25Z, triage of build run `20260923T132426Z` (family
 `agents/archive-run.sh` and the `tee` in `agents/campaign.sh` for why both
 stages share the file. The key-leak note at line 1092 above already relies on
 this same `tee` behaviour without naming the consequence for reading.
+
+## `GET /profile` is a 500 for anybody not signed in, including a key holder
+
+What happened: triaging build run `20260923T135925Z` I wanted zeta3's standing
+and its draft count, and tried the three account pages in turn. Two behave;
+one does not.
+
+    GET /drafts    with Bearer key -> 200, and the body is the sign-in page
+    GET /overview  with Bearer key -> 200, and the body is the sign-in page
+    GET /profile   with Bearer key -> 500 Server Error (145 bytes, no detail)
+
+The 500 is steady -- two requests a second apart, identical -- and it is not
+about the key: an anonymous `GET /profile` returns the same 500. So this is not
+"the page refused a program", it is the page falling over for every caller who
+is not signed in.
+
+Why: `views.show_own_profile` (`numberdb_app/views.py:1645-1646`) is
+
+    def show_own_profile(request):
+        return show_profile_of_user(request, request.user)
+
+with no authentication guard, and `urls.py:92` routes `profile` straight to it.
+Its two neighbours both guard: `views.drafts` redirects explicitly
+(`views.py:376-380`, `if not request.user.is_authenticated: return redirect(...)`)
+and `views.overview` carries `@login_required` (`views.py:2634`). So an
+`AnonymousUser` reaches `show_profile_of_user` only on this one route. The
+helpers it calls first are defensive -- `accepted_edit_count` and `is_trusted`
+both return early on `getattr(user, 'is_authenticated', False)`
+(`permissions.py:136`, `:177`) -- so the raise is further in, in
+`draft_allowance`, `operator_of` or the template rendering `user_shown`. Which
+one is not visible from outside; the 500 body carries no traceback.
+
+Why it is worth a line rather than a shrug: `show_profile_of_user`'s own
+docstring says the page exists because "an account discovered it was not yet
+allowed to write with a program by being refused, at the end of whatever
+computation it had just finished -- and could not find out what would change
+that, because nothing said." The page written to stop a program learning its
+standing the hard way is the one page a program cannot load at all. It answers
+500 instead of the login redirect that would at least say "sign in".
+
+What to do instead, until it is fixed: do not use `/profile` to check standing
+or draft count from a stage. There is no read-only substitute -- `draft_allowance`
+is returned only inside a create/write response (`numberdb_app/api.py:1056`),
+and drafts answer no search by design (`api.py:952`). A triage asked "what did
+this run leave behind?" cannot answer the draft half of that question at all;
+see the lesson from run `20260923T123151Z` for the `/drafts` side of it. Read
+the turn count and the token counts in `agents/runs/COSTS.tsv` instead: a run
+with `tokens_in` and `tokens_out` both 0 made no API call and therefore left no
+draft, which is the inference that actually holds.
+
+Evidence: 2026-09-23 13:5xZ, triage of build run `20260923T135925Z` (family
+#197, "Quantiles of the Kolmogorov distribution", 0 turns, $0.0000, HEAD
+unmoved at `622be261`). `urllib.request` against `https://numberdb.org` with
+and without the `Authorization: Bearer` header from `NUMBERDB_KEY_FILE`:
+`/profile` -> 500 twice with the header and 500 without;
+`/drafts` and `/overview` -> 200 at final URL `/accounts/login/?next=...`,
+14427 and 14433 bytes, byte-identical with the header and without it, titled
+"Sign in - NumberDB" and carrying a password field. `numberdb_app/urls.py:81,84,92`;
+`numberdb_app/views.py:359,376-380,1645-1648,2634`;
+`numberdb_app/permissions.py:121,136,171,177,311-322`.
