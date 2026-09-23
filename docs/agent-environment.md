@@ -8366,3 +8366,61 @@ still says 126 tables and 66 tags.
 
 Evidence: 2026-09-23, nine pages of `/tables` (50, 50, 50, 50, 50, 50, 50, 50,
 21) and a tenth contributing nothing.
+
+## The failure loop survived a person's commit, and the pool sizing that arrived is not a fix for it
+
+`agents/run.sh:136` pushes after every stage, so a triage verdict and the note
+it writes here are on `origin/main` within seconds of being committed --
+`git reflog show origin/main` is a column of `update by push`. The notes are
+therefore visible to anybody working in the repository, and on 2026-09-23 one
+was:
+
+    2ee97453  sage, workers: a Sage slot per worker, and a pool sized to the
+              machine        authored 07:57:39Z, parent b39fbcc6
+
+`b39fbcc6` is the verdict note from the codex-400 loop written eleven minutes
+earlier. The commit arrived by fetch at 08:06:58Z, w1 rebased its own note onto
+it and pushed, and the build two seconds later failed on the same 400 as the
+four before it. Afterwards: all four `codex-fallback` markers present with
+mtimes unchanged, `run.sh:80` unchanged, the `out_of_quota` gate unchanged, no
+`workers.stop` or `campaign.stop`, supervisor pid 1950235 still up from
+2026-09-22 20:38:46.
+
+Two things for a later run to take from that. A triage `stop` reaching a
+person's repository is not the same as it reaching the person -- so a sixth
+triage of the same failure should not reason that the fifth must have been
+enough. And **`HEAD` moving away from the commit the prompt names is not
+evidence the run did anything**: here it moved because the *previous* triage's
+note was rebased onto an arriving `origin/main`. `git reflog` distinguishes the
+two in one line; comparing hashes does not.
+
+**The new pool sizing runs one worker on this box, not four.** `room_for()` in
+`workers.sh` takes `(mb - 1200) / (sage_mb + 300)` and the smaller of that and
+`nproc`. Here `free -m` is 1906 and `nproc` is 2, so the memory term is
+`(1906-1200)/1200 = 0`, clamped to the floor of 1, and `min(1, 2) = 1`. The
+supervisor's environment has no `NUMBERDB_*` in it, so `NUMBERDB_FORCE_WORKERS`
+will not override it. It is not in effect yet -- `workers.sh:24` says editing
+the file does nothing until the supervisor restarts, and `workers.log` shows
+w2, w3 and w4 started at 08:07:12, 08:07:32 and 08:07:52, after the new file
+landed at 08:06:58. So the next supervisor restart quietly turns a four-worker
+box into a one-worker box. That is the right bound for 1906 MB, and it is worth
+knowing before somebody wonders why three worktrees went idle.
+
+For the loop it changes the rate and not the fact: measured 07:25:18Z to
+08:07:37Z across all four ledgers, 14 triage runs at $30.5260 against 14 builds
+and 1 repair at $0.0000 -- about $44/hour, which one worker makes about $11/hour
+and still builds nothing.
+
+**Nothing probes the writing engine at supervisor start, and something probes
+the reading one.** `engine_for_reading()` runs `claude -p 'Reply with exactly:
+ok'` once, and its comment gives the reason exactly: without it *"each restart
+would rediscover it, one refusal at a time, for ever."* That is what has
+happened to codex thirty-odd times since 07:25Z. The same one-second probe of
+the model `run.sh` is about to write with would have caught `gpt-5.4` before
+the first build, in the one place a restart passes through.
+
+Evidence: 2026-09-23, triage of `20260923T080700Z-build.log`, the fifth
+identical refusal on w1 and the fourth consecutive `stop`. `git reflog`,
+`git reflog show origin/main`, `git log -1 2ee97453`. `free -m`, `nproc`,
+`/proc/1950235/environ`, `agents/runs/workers.log`. `agents/runs/COSTS.tsv` in
+all four worktrees.
