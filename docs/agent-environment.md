@@ -10308,3 +10308,54 @@ Evidence: triage of `20260923T144646Z-build.log`. `workers.sh:46,204`;
 `agents/run.sh` returning only a prose mention at line 250. Counts as above;
 `spend.py` at 14:48Z gave 593 runs, $3125.41 lifetime, of which today is
 $817.82 across 432 runs, triage $325.81 against build $196.28.
+
+## The line that says why a run was pinned is not in the file triage is handed
+
+Triage is given `agents/runs/<stamp>-build.log`. The reason a build ran on a
+model nobody chose is not in it, and cannot be: `run.sh:424` opens the log with
+
+    echo "=== $stage run $started, engine $engine" | tee "$log"
+
+while the fallback-marker notice eleven lines before the agent starts,
+`run.sh:600`, is a bare `echo` with no `tee`:
+
+    if [ -n "$remembered_model" ]; then
+        echo "=== a previous run hit a quota; running $remembered_model at effort $remembered_effort"
+    fi
+
+So it goes to `campaign.sh`'s stdout and lands in `campaign-w*.log` instead.
+Measured 2026-09-23 at 15:40Z: **0 of 202** build logs on disk contain that
+string; `campaign-w1.log` contains 52 of them, anchored at `^=== `.
+
+This is not cosmetic. It is why the pin keeps being re-derived from scratch,
+and why it has been re-derived wrongly. The build log for a pinned run shows a
+400 and a model id and nothing that explains where the model id came from, so
+triage has to go to `run.sh`, `/proc/<pid>/environ` and the marker file to
+learn what one untee'd line already said. The verdict for `20260923T151127Z`
+quotes that line as the first line of the build log it was triaging. It is not
+in that log, nor in any other.
+
+Reading the two logs together is what the failure actually looks like:
+
+    campaign-w1.log                      20260923T153607Z-build.log
+    === next: Quantiles of the studentized range …
+    === build run 20260923T153607Z …      === build run 20260923T153607Z …
+    === a previous run hit a quota;       (absent)
+        running gpt-5.4 at effort xhigh
+                                          … 400 … 'gpt-5.4' is not supported …
+    === build failed and looks resumable  (the same five events again)
+    === 0 turns, $0.0000
+
+The `=== next:` line above it is the other thing only the campaign log has: the
+build log never names the proposal, and the ledger's `table` column is blank on
+a zero-turn run, so this is the only record of which proposal a failed build
+consumed a claim for.
+
+Note when grepping `campaign-w*.log` that `run_stage` appends each agent's JSON
+stream to it, so an unanchored count includes triage runs quoting the string
+rather than the campaign emitting it — the same over-count already recorded for
+`=== stopping: stop` above. Unanchored, `a previous run hit a quota` returns
+147 in `campaign-w1.log`; anchored at `^=== `, 52.
+
+Evidence: triage of `20260923T153607Z-build.log`. `run.sh:424,583-602`;
+counts as above.
