@@ -8408,3 +8408,32 @@ Evidence: 2026-09-23, triage of build run `20260923T081937Z`. `queue.py show
 199`, `open`, `next`; ledger rows from all four `agents/runs/COSTS.tsv`;
 `screener.sh:28,33-63`; `workers.sh:131`; `campaign.sh:183-233`; the ideas
 run's cwd read from `/proc`.
+
+**It tightens as it runs.** Measured one cycle later, 2026-09-23 08:41. The
+screener bought `BATCH-2026-09-23T0812` at 08:12 for `$8.1403` -- issue #200,
+five proposals. Three of them were claimed between 08:38 and 08:40, by w2, w1
+and w4, one per failed build; none was attempted. `queue.py open` now reports
+`2 waiting` against the screener's target of 12 (`screener.sh:28`), so an
+`ideas` run for `BATCH-2026-09-23T0837` was already in flight while I wrote
+this. The first cycle took thirty-seven minutes to empty a batch; this one
+consumed three-fifths of one in two minutes, and the screening interval has
+gone from thirty minutes to twenty-five. Ideas spend today is `$58.01` over
+six runs with a seventh running. The loop is not in equilibrium -- it draws
+more the longer it is left, because each failure claims a proposal in the
+time it takes to be refused, which is no time at all.
+
+Pool-wide since the last successful codex run (06:52, w3's T442 repair),
+now nearly two hours:
+
+    triage     22 runs   $ 43.44
+    ideas       2 runs   $ 17.84
+    critique    1 run    $  4.82
+    repair      1 run    $  0.00
+    build      23 runs   $  0.00
+                         --------
+                          $ 66.10     tables produced: 0
+
+Evidence: 2026-09-23, triage of build run `20260923T084023Z`. `queue.py show
+200`, `open`, `next`; ledger rows from all five `agents/runs/COSTS.tsv`;
+`pgrep -af` showing three concurrent triage runs and the `ideas` run for
+`BATCH-2026-09-23T0837`.
