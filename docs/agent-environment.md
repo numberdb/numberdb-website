@@ -10478,3 +10478,42 @@ Evidence: 2026-09-23 10:56Z, triage of build `20260923T105601Z` in w3. Four
 requests to `api/table` differing only in parameter and header, plus the two
 controls above; `T444` (created 06:27Z in w4) read back with three parameter
 rows against `T445` (created 07:24Z in w3) with none.
+
+## The build that started the `gpt-5.4` wall left an empty draft, and another tree has since claimed it
+
+The sections above trace the `gpt-5.4` wall to `20260923T070848Z`, the run that
+began on `gpt-5.5`, hit the usage limit and wrote the marker. What none of the
+twenty verdicts since recorded is that it did not die empty-handed. It got as
+far as creating its draft and stopped before filling it:
+
+    AUTH  id=T445 -> "Skewness and excess kurtosis of the Tracy-Widom
+                      distributions", "Numbers": [], unpublished
+
+Created 07:24Z in w3, still at zero entries. It holds one of zeta3's five draft
+slots and has done for four hours, which is invisible to every cheap check: the
+ledger prices that run as `turns 0`, `$0.0000`, `gpt-5.4=0.0000`, so the build
+that made T445 reads as a build that did nothing at all.
+
+Why it is worth clearing rather than leaving: **issue #196 shows the same item
+claimed by w4 at 2026-09-23T10:09Z** -- *Skewness and kurtosis of the
+Tracy-Widom distributions*, the fourth entry in the family checklist. The claim
+is younger than the draft by three hours, because the checklist has no way to
+know that a dead run in another tree already created the table. When a builder
+can run again, w4 will go to create a draft whose title already exists as w3's
+empty one. Somebody has to decide which: hand T445 to w4, or withdraw it before
+w4 starts. Two workers cannot both create it, and the collision surfaces only at
+the create call, deep into a paid build.
+
+The general form: a quota that lands between `create` and `fill` leaves a draft
+the campaign cannot see and the queue cannot account for. Clearing up after a
+fallback incident means checking the transition run's transcript for a table id
+-- `grep -ao 'T[0-9][0-9][0-9]'` on the first log of the series -- and reading
+each one back with the key, not just deleting the marker. A draft at `"Numbers":
+[]` with a live claim on the same title in `queue.py show` is the signature.
+
+Evidence: 2026-09-23 11:08Z, triage of build `20260923T110741Z` in w3.
+`api/table?id=T445` with zeta3's key -> `"Numbers": []`; `agents/queue.py show
+196` -> that item `claimed by w4 at 2026-09-23T10:09Z`; T443 (1001 entries) and
+T444 (3) built, the other two items claimed by w1 and w2 at 10:38Z. Triage spend
+in `COSTS.tsv` for 2026-09-23 is now $42.27 against $23.28 when the quota date
+was written down at 09:39Z -- twenty-one dead builds, none of them priced.
