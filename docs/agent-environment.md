@@ -8530,3 +8530,45 @@ identical refusal on w1 and the sixth consecutive `stop`. `agents/screener.sh`
 lines 28-29 and 33-69, `agents/runs/screener.log`, `python3 agents/queue.py
 open` and `show 199`, `agents/runs/COSTS.tsv` in all four worktrees,
 `ps -p 1950235,1950272,2440122`.
+
+## `screen.already_here` answers a descriptive title with the whole corpus
+
+The screen searches the *distinguishing* words of a name and ORs them, and
+`screen.GENERIC` -- the stop list that keeps "polynomials" and "values" from
+matching everything -- does not contain `points`, `random`, `uniform`, `mean`,
+`volume`, `convex`, `position`, `distance` or `two`. So a proposal whose title
+is a description rather than a proper name is screened against nothing:
+
+    already_here("Mean distance between two uniform random points of a region")
+    -> 84 tables, among them "Abel polynomials (matched 'two')",
+       "Feigenbaum constants (matched 'points')",
+       "Bernstein basis polynomials (matched 'uniform')"
+
+Not one of the 84 was a real collision, and finding that out means reading 84
+lines. Asked instead for the proper name of the same family the answer is one
+line or none:
+
+    already_here("Robbins constant")   -> []
+    already_here("line picking")       -> stemmed noise on "line" only
+    search_text('Efron'), ('Valtr'), ('centroid'), ('box integral')   -> nothing
+
+So: screen the **name the subject is known by**, not the sentence the table
+will be titled with, and run `numberdb.search_text` directly on the two or
+three proper nouns as well. A run whose family has no proper noun at all
+should say so, because then the screen is telling it nothing either way.
+
+Two smaller findings from the same session, both in `source_names_it`:
+
+* **A PDF cannot be the cited source.** The check strips HTML tags from the
+  bytes it downloads, and a PDF's text is compressed, so every word is
+  "missing": the Bailey-Borwein-Crandall box-integrals paper failed with "the
+  source does not mention box, integrals". Cite a MathWorld or Wikipedia page
+  and put the paper in the proposal's prose.
+* **A 404 is a fact worth keeping.** `en.wikipedia.org/wiki/Sylvester's_four-point_problem`
+  answers 404 with the apostrophe raw and with it percent-encoded, and `curl`
+  agrees, so the article does not exist under that name however it is written.
+  That is not a screen failure; it is the screen working, and MathWorld's
+  `SylvestersFour-PointProblem.html` passed.
+
+Evidence: 2026-09-23, ideation run 20260923T081219Z, five candidate names
+screened twice each, descriptively and by proper name.
