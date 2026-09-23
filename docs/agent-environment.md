@@ -9762,3 +9762,62 @@ Evidence: 2026-09-23 15:12Z, triage of build `20260923T151208Z` (turn 0, HTTP
 volume of the convex hull of $n$ uniform random points of a convex body` on
 #200 at 15:12Z). `run.sh:288-301,470-505`; `workers.sh:120`;
 `campaign.sh:58,95-103`; the four `agents/runs/COSTS.tsv`.
+
+## The `codex-fallback` marker never expires: "wait for the quota" is not a fix
+
+Two notes above this one tell a reader that the codex writer has no working
+model "for another ~36 hours", until the gpt-5.5 usage limit that wrote
+`agents/runs/codex-fallback` refills at **2026-09-25 03:51**. That framing is
+wrong in the direction that matters, because it invites waiting. The lane does
+not come back at 03:51. It does not come back at all.
+
+`fallback_marker` occurs in exactly five places in the repository:
+
+    run.sh:583  fallback_marker="agents/runs/$engine-fallback"
+    run.sh:584  if [ -f "$fallback_marker" ]      # read at startup, every run
+    run.sh:644  ... > "$fallback_marker"          # written, claude quota branch
+    run.sh:655  ... > "$fallback_marker"          # written, codex quota branch
+    run.sh:685  echo "... or delete $fallback_marker to start from the first model again"
+
+It is written and it is read. **Nothing deletes it.** Not `run.sh`, not
+`campaign.sh`, not `workers.sh`, not `archive-run.sh`; there is no crontab for
+`ubuntu`. Line 685 is an `echo` addressed to a person.
+
+The read at `run.sh:584-592` is unconditional in practice. `run.sh:52` defaults
+`codex_model` to `gpt-5.5`, but the marker branch overwrites it whenever the
+file exists and `NUMBERDB_CODEX_MODEL` is unset -- and nothing in this
+repository sets `NUMBERDB_CODEX_MODEL`. So once a quota has been recorded, the
+campaign never asks for the first model again. The quota refilling changes
+nothing, because no request is made to discover it.
+
+The consequence, stated plainly so it is not mistaken for the note above:
+
+* Before 2026-09-25 03:51, `rm agents/runs/codex-fallback` alone buys one 429
+  and the fallback rewrites the marker -- as `d341b8b2` says.
+* After 2026-09-25 03:51, the `rm` is the **only** thing that restores the
+  lane, and no process will ever run it.
+* Doing nothing therefore leaves the turn-0 loop running on 2026-09-26 and on
+  2026-10-26, identically.
+
+The marker is per-checkout: `agents/runs/$engine-fallback` is a relative path
+resolved against each worktree, so there are four of them, and on 2026-09-23
+all four held the same two lines (`gpt-5.4` / `xhigh`), written within nine
+minutes of each other:
+
+    numberdb-campaign-w2   07:34:27Z
+    numberdb-campaign-w3   07:25:01Z
+    numberdb-campaign-w4   07:25:22Z
+    numberdb-website       07:25:03Z
+
+A person fixing this deletes four files, not one, and does it in the same
+sitting as the `workers.sh` edit recorded in the note above -- the `rm` without
+a usable writer is undone by the next quota, and the writer without the `rm` is
+overridden at `run.sh:591`.
+
+Evidence: 2026-09-23 15:18Z, triage of build `20260923T151807Z` -- turn 0,
+HTTP 400 on gpt-5.4, `COSTS.tsv:599` all-zero, HEAD unmoved at `67e1fb7c`,
+tree clean; its claim is `Expected number of vertices of the convex hull of $n$
+uniform random points` on #200 at 15:18Z. Pool-wide since 07:25:22Z: 401 runs,
+$437.28 -- 194 builds at $0.00 and not one past turn 0, 193 triages at $350.54
+and all 193 successful. `run.sh:52,288-301,583-592,644,655,685`;
+`grep -rn fallback` over `*.sh`; `crontab -l`.
