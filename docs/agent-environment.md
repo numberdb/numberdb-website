@@ -10456,3 +10456,49 @@ deal today after 14:41Z and 16:13Z; 0 turns, $0.0000, the same 400 on
 same). All three levers still unpulled: `codex-fallback` = `gpt-5.4`/`xhigh`
 mtime 07:25:22Z, `/home/ubuntu/numberdb-website/agents/workers.stop` still
 absent, `out_of_quota()` still 429-only.
+
+## A claim sweep answers zero to a wrongly-*formatted* key, not just a missing one
+
+The earlier note here says the sweep answers 0 without the key. It also
+answers 0 with a key attached the wrong way, and that is the more dangerous
+case because it looks like authentication succeeded.
+
+Sweeping `/api/claim?family=N` over families 150-229 during triage of build
+`20260923T180411Z` with a hand-rolled `urllib` client sending
+`Authorization: Token <key>` returned 19 claims across 4 families, then 0
+across all 80 on a retry pass. Neither number is real. The site accepts only
+`Authorization: Bearer` and `X-API-Key`; `Token` -- Django REST Framework's
+own default prefix, so a natural thing to reach for -- is not recognised and
+is treated as anonymous. Every request counted against the 60-per-60-minutes
+anonymous budget, which an 80-family sweep exhausts in its first minute, after
+which the endpoint answers
+
+    429 {"error": "Rate limit exceeded (60 requests per 60 minutes). An API
+    key raises this limit; see /help#section-api.", "retry_after": 3104}
+
+for everything. The error text asserts an API key would raise the limit while
+the request carries one, which is what makes the diagnosis slow.
+
+The failure is shaped exactly like the measurement: a partially-completed
+sweep reports a *small but plausible* pool, and a fully-throttled one reports
+an empty pool. Both are indistinguishable from the real finding a triage run
+would be looking for -- that the loop has stopped claiming. The previous
+sweep at 17:48Z avoided this only because it went through
+`agents/queue.py`'s `_site`, which reads `KEY_FILE` and sends `Bearer`
+(`agents/queue.py:668`).
+
+So: **sweep claims through `queue.py`'s `_site`, never a fresh urllib
+client**, and treat a zero from any other client as unmeasured rather than as
+an empty pool. The cost of getting it wrong is not only the bad number -- the
+anonymous budget is per address and shared, so it also refuses the next
+hour's `api/lookup` calls from the same machine.
+
+The portable half of this -- which headers the API accepts, and the 60/60
+limit -- is already in `agents/lessons/proposals/20260923T114449Z-triage.md`
+and `agents/lessons/PROPOSALS.md:317-341`. What is deployment-specific, and
+what belongs here, is that the triage stage re-measures the claim pool often
+enough for the trap to be worth naming at the point of use.
+
+Measured 2026-09-23T18:08Z. Levers unchanged from the 17:48Z note:
+`codex-fallback` = `gpt-5.4`/`xhigh` mtime 07:25, `workers.stop` still absent,
+`out_of_quota()` still 429-only; `workers.sh 4` up 21h29m.
