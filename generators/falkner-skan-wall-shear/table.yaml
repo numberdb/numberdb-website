@@ -1,0 +1,157 @@
+# The table document for draft numberdb.org/T418. T418 already existed as an
+# empty draft when this build reached it; this file is the replacement document
+# that is sent with the computed entries.
+Title: Wall shear $f''(0)$ of the Falkner-Skan wedge flows
+Definition: >-
+  The Falkner-Skan similarity function $f$ solves
+  $f'''+ff''+\beta(1-(f')^2)=0$, with $f(0)=f'(0)=0$ and
+  $f'(\infty)=1$ in Hartree variables CITE{FalknerSkan} CITE{Hartree}
+  CITE{WikiFalknerSkan}. Each pair of rows gives the same wall shear
+  $f''(0)$ in the Hartree and wedge coordinate conventions.
+Keywords:
+  - Falkner Skan wall shear
+  - Blasius wall shear
+  - Hiemenz flow wall shear
+  - Hartree profiles
+Parameters:
+  beta:
+    type: Q
+    title: Hartree pressure-gradient parameter
+    display: $\beta$
+    constraints: $\beta_s<\beta<2$, where $\beta_s=-0.19883\ldots$ is the separation value
+  branch:
+    type: Symbolic
+    title: solution branch of the Falkner-Skan problem
+    display: branch
+    constraints: one of `upper` and `lower`
+    values:
+      upper: upper branch
+      lower: lower branch
+  normalisation:
+    type: Symbolic
+    title: normalisation of the similarity variable
+    display: normalisation
+    constraints: one of `hartree` and `wedge`
+    values:
+      hartree: Hartree coordinate
+      wedge: wedge coordinate
+Comments:
+  comment-normalisations: >-
+    The `hartree` rows use Hartree's coordinate and equation. The `wedge`
+    rows use $\eta_w=y\sqrt{u_e/(\nu x)}$ and
+    $f'''+\tfrac{m+1}{2}ff''+m(1-(f')^2)=0$, with $m$ related to $\beta$
+    by Formula CITE{formula-m-beta} CITE{Fitzpatrick}. Formula
+    CITE{formula-normalisation} gives the conversion between the two
+    wall-shear normalisations.
+  comment-branch: >-
+    The upper branch is the solution with $f''(0)>0$ and $f'(\eta)$ tending
+    to $1$ from below. Hartree identifies this branch as the one used for the
+    boundary-layer application when negative-$\beta$ solutions are not unique
+    CITE{Hartree}.
+  comment-range: >-
+    The present rows start at $\beta=-0.19$, the smallest two-decimal grid
+    point above the separation value $\beta_s=-0.19883\ldots$, and stop at
+    $\beta=1.33$, the largest two-decimal grid point not exceeding the
+    Hartree and Schlichting tabulation endpoint $\beta=4/3$. The profiles
+    with $4/3<\beta<2$ are not included here because sources disagree about
+    whether they belong to the physical wedge-flow table.
+Formulas:
+  formula-m-beta: >-
+    The Hartree parameter and the power-law exponent in
+    $u_e(x)=U_0(x/L)^m$ are related by $m=\beta/(2-\beta)$.
+  formula-normalisation: >-
+    The wedge and Hartree wall shears satisfy
+    $f''_{\mathrm{wedge}}(0)=f''_{\mathrm{Hartree}}(0)/\sqrt{2-\beta}$.
+  formula-momentum-integral: >-
+    In Hartree's normalisation, if $\delta_1$ is the
+    HREF{T415}[displacement thickness] and $\delta_2$ is the
+    HREF{T416}[momentum thickness], then
+    $f''(0)=\beta\delta_1+(1+\beta)\delta_2$.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numpy as np
+      from scipy.integrate import solve_bvp
+
+      beta = 0.5
+      eta_max = 40.0
+      x = np.linspace(0.0, eta_max, 500)
+
+      def ode(_x, y):
+          f = y[0]
+          fp = y[1]
+          fpp = y[2]
+          return np.vstack((fp, fpp, -f * fpp - beta * (1 - fp * fp)))
+
+      def bc(left, right):
+          return np.array((left[0], left[1], right[1] - 1))
+
+      tail = np.exp(-x)
+      y = np.vstack((x + tail - 1, 1 - tail, tail))
+      answer = solve_bvp(ode, bc, x, y, tol=1e-10, max_nodes=20000)
+      if not answer.success:
+          raise ArithmeticError(answer.message)
+      print("%.12g" % answer.y[2, 0])
+Links:
+  WikiFalknerSkan:
+    title: "Wikipedia: Falkner-Skan boundary layer"
+    url: https://en.wikipedia.org/wiki/Falkner%E2%80%93Skan_boundary_layer
+  Fitzpatrick:
+    title: "Richard Fitzpatrick: Self-Similar Boundary Layers"
+    url: https://farside.ph.utexas.edu/teaching/336L/Fluidhtml/node112.html
+References:
+  FalknerSkan:
+    bib: >-
+      V. M. Falkner and S. W. Skan, Solutions of the boundary-layer
+      equations, The London, Edinburgh, and Dublin Philosophical Magazine and
+      Journal of Science 12 (1931), 865-896.
+    doi: 10.1080/14786443109461870
+  Hartree:
+    bib: >-
+      D. R. Hartree, On an equation occurring in Falkner and Skan's
+      approximate treatment of the equations of the boundary layer,
+      Mathematical Proceedings of the Cambridge Philosophical Society 33
+      (1937), 223-239.
+    doi: 10.1017/S0305004100019575
+  SchlichtingGersten:
+    bib: >-
+      H. Schlichting and K. Gersten, Boundary-Layer Theory, ninth edition,
+      Springer, Berlin, 2017.
+    doi: 10.1007/978-3-662-52919-5
+  Asaithambi:
+    bib: >-
+      A. Asaithambi, On solving the nonlinear Falkner-Skan boundary-value
+      problem: a review, Fluids 6 (2021), 153.
+    doi: 10.3390/fluids6040153
+Tags:
+  - fluid dynamics
+  - analysis
+  - physics
+Data properties:
+  type: R
+  rigour: heuristic (agreement-checked)
+  sources:
+    - CITE{Hartree}
+    - CITE{SchlichtingGersten}
+    - CITE{Asaithambi}
+  complete: no
+  complete-note: >-
+    it holds both Hartree and wedge normalisations on the upper branch for
+    every two-decimal value of $\beta$ from $-0.19$ through $1.33$; the lower
+    branch and the profiles with $4/3<\beta<2$ are not included
+  rigour details: >-
+    Values are computed by solving the Falkner-Skan boundary-value problem on
+    $0\leq\eta\leq40$ with SciPy's collocation solver and storing 12
+    significant digits. The generator checks selected rows against a
+    fixed-step RK4 shooting computation, checks the Blasius row against
+    Toepfer's scaling, checks selected rows against rounded values tabulated
+    in CITE{Asaithambi}, and checks Formula CITE{formula-momentum-integral}
+    on every computed Hartree row.
+Display properties:
+  number-header: $f''(0)$
+  group parameters:
+    - - beta
+    - - branch
+    - - normalisation
+Numbers: []

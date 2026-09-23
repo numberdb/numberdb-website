@@ -77,7 +77,23 @@ codex_effort="${NUMBERDB_CODEX_EFFORT:-xhigh}"
 # "the next best one" means down the list, not up it. Both names here are
 # priced in agents/model-rates.tsv, so the ledger can still say what a run
 # cost after it has moved.
-codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-gpt-5.4}"
+# Empty by default, because the fallback has to be a model this account may
+# actually use and that is not knowable from here. `gpt-5.4` was the default
+# and a ChatGPT-backed codex refuses it outright:
+#
+#     status 400 invalid_request_error: The 'gpt-5.4' model is not supported
+#     when using Codex with a ChatGPT account.
+#
+# A 400 is not a quota exhaustion, so it never reached the handover that
+# exists for exactly this moment; it failed the build, the triage said stop,
+# and on 2026-09-23 three workers stopped that way within minutes of each
+# other. With no fallback the run exits 6 instead, and `campaign.sh` hands the
+# stage to the other engine -- which is the behaviour that was wanted, one
+# step earlier than the list.
+#
+# Set it on a machine whose account has a second model: the mechanism is
+# sound, only the default was wrong.
+codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-}"
 claude_fallbacks="${NUMBERDB_CLAUDE_FALLBACKS:-opus}"
 key_file="${NUMBERDB_KEY:-$HOME/.config/numberdb/zeta3-key}"
 turns="${NUMBERDB_TURNS:-300}"
