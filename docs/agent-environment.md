@@ -8679,3 +8679,52 @@ identical refusal on w1 and the thirty-first `stop` of the day.
 `agents/workers.sh` lines 99-120 and 256-283; `agents/campaign.sh` lines
 505-545; `agents/runs/workers.log`; `head -1` of every
 `agents/runs/20260923T*-verdict` in all four worktrees.
+
+## Triage is never shown the previous verdicts, so ten runs bought the same answer
+
+What happened: this is the eleventh identical `gpt-5.4` refusal today and the
+tenth consecutive triage of one. The sections above cover the marker, the
+supervisor restart, the missing backoff and the absent preflight of the writing
+engine. This note is not about any of those, and deliberately adds no further
+account of the 400 -- twelve sections on this loop already exist and every
+triage run pays to read them.
+
+The new fact is about the triage stage itself. `campaign.sh:517` builds its
+prompt from four things:
+
+    "The build run $stamp failed with status $status. Its log is
+     agents/runs/$stamp-build.log and the campaign was at $before before it.
+     Decide what happens next and write agents/runs/$stamp-verdict."
+
+The stamp, the status, the log and the pre-run commit. All four describe *this*
+run and nothing else. Meanwhile `agents/runs/` already holds
+
+    20260923T055938Z-verdict   stop
+    20260923T073856Z-verdict   stop
+    ... eight more ...
+    20260923T090240Z-verdict   stop
+
+ten one-word answers, in the same directory the prompt names twice, and nothing
+puts them in front of the run being asked. So each triage re-derives the
+diagnosis from the log, `run.sh`, `codex-fallback` and the cost ledger, at
+$1.05 to $3.07 a time -- $18.28 today. Each one arrived at `stop` and each one
+was right; the money went on rediscovering that, not on deciding it.
+
+This is a different lever from the ones already recorded. Fixing `run.sh:80`
+stops the failure; probing the writing engine at supervisor start catches it
+early; a backoff slows the loop. This one is cheaper than all three and
+independent of them: `campaign.sh` can read `head -1` of the last few
+`*-verdict` files before it spends anything, and either pass the count into the
+prompt ("the last N triages of this stage all answered stop") or short-circuit
+to `stop` without buying a run at all. The channel is one `head -1` away from
+being a memory, and today it was a write-only log.
+
+Note also that `attempted` -- the "one attempt per table" guard at
+`campaign.sh:513` -- is a shell variable in the campaign loop, so a supervisor
+restart resets it to 0 along with everything else. It cannot bound anything
+across the restarts that are actually happening.
+
+Evidence: 2026-09-23, triage of `20260923T090858Z-build.log`;
+`agents/campaign.sh` lines 505-548, the prompt at 517 and `attempted` at 513;
+`head -1` of every `agents/runs/20260923T*-verdict`; the triage rows of
+`agents/runs/COSTS.tsv` for 2026-09-23 ($18.2768 over ten runs).
