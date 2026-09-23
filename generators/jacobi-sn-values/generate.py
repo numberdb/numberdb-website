@@ -195,7 +195,7 @@ def check_identities():
 class JacobiSnValues(numberdb.Generator):
 
     table = TABLE
-    parameters = ("u", "m")
+    parameters = ("m", "u")
     type = "R"
     digits = DIGITS
     rigour = "proven"
@@ -203,7 +203,7 @@ class JacobiSnValues(numberdb.Generator):
     def enumerate(self):
         for m in M_VALUES:
             for j in range(1, 201):
-                yield {"u": str(QQ(j) / QQ(100)), "m": str(m)}
+                yield {"m": str(m), "u": str(QQ(j) / QQ(100))}
 
     def value(self, params, digits):
         return _sn_ball(QQ(params["u"]), QQ(params["m"]), digits)
