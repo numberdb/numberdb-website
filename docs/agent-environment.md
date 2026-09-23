@@ -8944,3 +8944,65 @@ lines of `agents/runs/campaign-w2.log` for the 10:50 `stopping: stop` -> 10:55
 restart -> claim-#202 sequence; `COSTS.tsv` in all four trees from
 `20260923T062751Z` -> 77 builds at $0.00, 74 triages at $146.48, $55.88 other,
 $202.36 total. Diagnosed in `agents/runs/20260923T105541Z-verdict`.
+
+## The `200` in `campaign.sh 200` counts tables built, not runs attempted -- so the worker budget is the third breaker this failure is invisible to
+
+What happened: the entry above establishes two breakers and their blind spots
+-- `attempted` reset by the very verdict that is correct, and `empty` sitting
+in a status-0 path a failed build never reaches. There is a third, and it is
+the one that looks least like a shell variable and most like a hard ceiling.
+
+`workers.sh:46` sets `budget="${NUMBERDB_WORKER_BUDGET:-200}"` and `:132`
+launches `agents/campaign.sh "$budget"`. `campaign.sh:39` reads it as
+`builds="${1:-999}"` and `:290` loops `while [ "$made" -lt "$builds" ]`. All
+four supervised campaigns show as `campaign.sh 200` in `ps` right now, which
+reads like a cap of two hundred runs. It is a cap of two hundred **tables
+built**. `made=$((made + 1))` is `campaign.sh:606` -- one line past the
+`continue` the entry above identifies as unreachable from a failure, and far
+past the `exit "$status"` at `:546` that a `stop` verdict takes. A build that
+dies before turn 1 advances `made` by nothing, and the process that would have
+carried it forward exits in the same breath.
+
+Why it matters: it is the last place someone looking for a bound would expect
+to find none, and it is the reason "it will surely stop on its own eventually"
+is wrong rather than merely slow. Combined, the three bounds are
+
+    attempted < 2      (:514)  counts honoured retries -- `stop` is not one,
+                               and the count dies with the process
+    empty >= 2         (:598)  counts builds that ran and declined -- this one
+                               never runs; the test is in the status-0 path
+    made < builds      (:290)  counts tables built -- this one builds nothing
+
+Each counts a kind of progress. This failure makes none of the three kinds: it
+produces a verdict, a burnt claim and a restart, and nothing in the campaign
+counts any of those. That is why twenty-two triages in one tree have not
+tripped anything.
+
+How to see it without reading the shell: `campaign.sh:482` prints the counter
+on every claim. In `agents/runs/campaign-w2.log` the last twenty-one
+`=== next:` lines all read *"built 0 so far"*, against *"built 7 / 8 / 9 so
+far"* from the single long-lived healthy process that preceded them. Twenty-one
+campaign processes, each claiming one proposal and making zero. Any tree's log
+will show the same shape; it is a one-line check on whether a worker is
+progressing or circulating.
+
+What this asks for, sharpening the previous entry rather than replacing it:
+moving `attempted` into `agents/runs/` is still the right fix and is still not
+sufficient by itself. Of the three bounds only a persisted consecutive-`stop`
+count would ever see this failure, because it is the only one that counts the
+thing that is actually happening. If the worker budget is meant to be a ceiling
+on spend rather than on output, it also needs to decrement on a failed build --
+82 builds into this outage it stands exactly where it started.
+
+A triage reading this should not try to fix any of it: verdicts may write only
+themselves and `SKIPPED.md`.
+
+Evidence: 2026-09-23, 11:10Z, while triaging build run `20260923T110720Z`, the
+twenty-second identical zero-turn `gpt-5.4` 400 in this tree. `workers.sh:46`
+and `:132`; `campaign.sh:39, 290, 482, 546, 596-608`; `ps -eo pid,lstart,cmd`
+showing pids 2687620 / 2689876 / 2692911 / 2695700 all as `campaign.sh 200`;
+all 86 `=== next:` lines of `agents/runs/campaign-w2.log` bucketed on their
+`built N so far` field; the four trees' `COSTS.tsv` from `20260923T062751Z`
+-> 82 build rows, column 4 tested `> 0` and matching none, 79 triages at
+$155.82, $55.88 other, $211.70 total. Diagnosed in
+`agents/runs/20260923T110720Z-verdict`.
