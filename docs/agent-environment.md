@@ -10904,3 +10904,63 @@ generators/tracy-widom-distribution-functions/`; `agents/queue.py show 196` and
 `GET /api/claim?family=196` at 18:27Z, showing the proposal re-claimed by w1 at
 18:21:29.8Z. Counts from `agents/runs/COSTS.tsv`: 80 `gpt-5.4` builds today at
 0 turns, 79 triage runs at $131.62, 79 verdicts all `stop`.
+
+## Half the remedy landed at 19:02Z and changed nothing, because the marker is read before the default
+
+What happened: commit `2488b51e` ("run: no codex fallback model by default",
+2026-09-23 19:02:35 +0300 = 19:02:35Z) changed `agents/run.sh:96` from
+`codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-gpt-5.4}"` to
+`codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-}"`. It is a correct change and
+it is present in all four worktrees: `main` is at `2488b51e` and
+`campaign/w2`, `campaign/w3` and `campaign/w4` all have it as an ancestor.
+
+The very next build, `20260923T190948Z` at 19:09:48Z, still started on
+`gpt-5.4` and still died on the same 400.
+
+Why: the empty default and the marker are two different variables, and the
+marker wins. `codex_fallbacks` is only ever read at `run.sh:666`, inside the
+`out_of_quota` branch, to pick *the next model to move to*. What picks the
+model a run *starts* on is `run.sh:598-609`: `fallback_marker="agents/runs/$engine-fallback"`,
+and if that file exists and `NUMBERDB_CODEX_MODEL` is unset it assigns
+`codex_model="$remembered_model"` outright. The marker still reads `gpt-5.4` /
+`xhigh` with mtime 07:25 in all four worktrees. So emptying the chain removed
+the rung that a *future* quota would step onto, while the run still begins on
+the rung a *past* quota already wrote down.
+
+`agents/runs/` is gitignored (`.gitignore:167`), so the marker is local
+per-worktree state. No commit can clear it and no `git pull` will: the four
+files have to be deleted on the machine.
+
+What this changes about the remedy recorded above: it is now shorter, not
+longer. The recorded three-step form ends "then set `NUMBERDB_CODEX_FALLBACKS`
+to a model the account may use or start the pool with `NUMBERDB_WRITER=claude`".
+That third step is no longer needed, because `2488b51e` already made the empty
+chain the default, and an empty chain is what produces the handover:
+
+    marker deleted -> codex_model = gpt-5.5 (run.sh:52)
+    -> the real quota answers "You've hit your usage limit ... try again at
+       Sep 25th, 2026 3:51 AM"
+    -> out_of_quota() matches `usage limit`                    (run.sh:~570)
+    -> next_model_in("", "gpt-5.5") = ""  ->  give_up=yes      (run.sh:666-671)
+    -> `codex` is out of quota on every model it may use; exit 6
+    -> campaign.sh flips the role and runs the stage on claude
+
+So what remains is: `touch agents/workers.stop`, delete
+`agents/runs/codex-fallback` from all four worktrees, restart the supervisor.
+The engine question is already answered in the repository; only the four stale
+files stand between the pool and its first healthy build since 05:08Z.
+
+The general shape, which is the part worth keeping: **when a sticky marker
+caches a decision, fixing the rule that produced the decision does not undo
+it.** A fix to `run.sh` looks deployed because it is committed and checked out
+everywhere, and a reader checking `git log` will conclude the loop is over. The
+evidence that it is not is one `cat` of a gitignored file.
+
+Evidence: 2026-09-23, triage of `20260923T190948Z-build.log`. `git show
+--stat 2488b51e`; `git merge-base --is-ancestor 2488b51e` against each
+`campaign/w*` branch; `cat`/`stat` of `agents/runs/codex-fallback` in all four
+worktrees (all `gpt-5.4`/`xhigh`, mtime 07:25); `run.sh` lines 52, 96, 598-609,
+666-671; `grep -n runs .gitignore`; the quota message from
+`agents/runs/20260923T055938Z-build.log`. Ledger for 2026-09-23: 86 `gpt-5.4`
+builds at 0 turns and $0.00, 85 triages at $139.78, 5 successful `gpt-5.5`
+builds at $38.05 (all before 05:08Z), $348.80 for the day.
