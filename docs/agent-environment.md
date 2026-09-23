@@ -9986,3 +9986,56 @@ ledgers merged and deduplicated by `(started, stage, log)`, joined on the
 `numberdb_app/api.py:954-999`; `numberdb_app/views.py:359-399`;
 `agents/runs/20260923T073411Z-repair.log`. Found while triaging
 `agents/runs/20260923T164349Z-build.log`.
+
+## Addendum to `:9620`: nothing this pool emits says a run failed, and the one channel a person watches goes silent exactly when it should shout
+
+What happened: build run `20260923T165529Z` was the **66th** identical zero-turn
+`gpt-5.4` 400 in this tree. `:9620` recorded the negative result that the remedy
+on this page has not been applied and left the cause as "a person who has not
+arrived". The cause is mechanical and takes two greps to establish, and it is
+worth having because it is the difference between "somebody was slow" and "no
+signal was ever sent".
+
+The pool has exactly **two** outbound channels. This failure mode silences one
+and leaves the other looking healthy:
+
+* **`POST /api/table/<tid>/offer`** (`campaign.sh:751-772`) is the only thing
+  that ever reaches a person with a result, and it is reached only after a build
+  that produced a table. Anchored `^=== ` greps of the four campaign logs give
+  the last offer in each tree as T438 (w1), T440 (w4), T442 (w3), T443 (w2) --
+  all of them before the first 400 at 07:34:39Z. The last `build` row carrying a
+  table in each ledger is 05:58:54Z-06:27:51Z, same story. Nine and a half hours
+  of silence on the one channel anybody subscribes to.
+* **`queue.py claim`** PATCHes the family issue body on GitHub
+  (`queue.py:808-818`). This still fires four times every five minutes and is
+  **indistinguishable from a working pool**: a `[~]` appearing on a family issue
+  is exactly what a healthy build looks like at its first second. Watched from
+  GitHub, the pool has been busy all day.
+
+There is no third channel. No mail, webhook, `gh issue create`, or alert of any
+kind in `workers.sh`, `campaign.sh`, `run.sh` or `screener.sh`; the only `curl`
+calls in them are the site-reachability probe (`campaign.sh:258-263`,
+`run.sh:176`), the entry count (`campaign.sh:663`) and the review offer.
+Everything else -- the verdicts, the 30-odd headings on this page, `say` -- lands
+in a file on a disk nobody is tailing.
+
+So the honest reading is stronger than `:9620`'s. It is not that twenty
+well-argued notes went unread; it is that from outside this machine a failing
+pool and a working one look the same, minus the review requests that a person
+would have to be expecting in order to miss. Nine hours and $512 bought no human
+arrival because nothing asked for one.
+
+What follows for a triage in this position: do not write entry twenty-two
+expecting it to be read, and do not treat a rising claim count on the family
+issues as evidence the pool is alive. What follows for whoever fixes this: the
+pool needs one line that leaves the machine when a stage fails twice the same
+way, or the next trap is also measured in hundreds of dollars. That is a change
+to `workers.sh`, so it is a person's to make, and `workers.sh:24-34` is the note
+about having to restart the supervisor for it to take effect.
+
+Evidence: 2026-09-23, 17:00-17:20Z, triaging `20260923T165529Z-build.log`.
+`grep -nE "curl|mail|notify|webhook|slack|ntfy|gh issue create"` over
+`workers.sh`, `campaign.sh`, `run.sh`, `screener.sh`; `campaign.sh:751-772` and
+the `offer()` case arms; `queue.py:803-821`; anchored `^=== .* is offered for
+review` greps of the four `campaign-*.log`; `awk` on the `table` column of the
+four `COSTS.tsv`. Diagnosed in `agents/runs/20260923T165529Z-verdict`.
