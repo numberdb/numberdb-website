@@ -1,9 +1,8 @@
 Title: Values of the elliptic nome $q(m)$
 Definition: >-
   For $0<m<1$, this table stores the real elliptic nome
-  $q(m)=\exp(-\pi K(1-m)/K(m))$, where $K(m)$ is the complete elliptic integral
-  of the first kind in the parameter convention $m=k^2$
-  CITE{DLMFThetaRelations} CITE{DLMFEllipticIntegrals}.
+  $q(m)=\exp(-\pi K(1-m)/K(m))$, where $K$ is Legendre's $K$ in the parameter
+  convention $m=k^2$ CITE{DLMFThetaRelations} CITE{DLMFEllipticIntegrals}.
 Keywords:
 - elliptic nome
 - Jacobi nome
