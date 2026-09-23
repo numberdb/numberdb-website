@@ -10380,3 +10380,48 @@ Evidence: 2026-09-23 10:09Z, triage of build `20260923T100900Z` in w3.
 `20260923T062751Z-build.log` (w4) -> 0 against 2.0 MB and 284
 `command_execution` events, with `tid\": \"T444` present in it; the live API
 confirming T444 at 3 entries and T445 at 0.
+
+## A clean `git status` is not an empty-handed run: `generators/` is ignored and 299 of its files are tracked anyway
+
+What happened: triaging build `20260923T103240Z` in w3, `git status --porcelain`
+was empty and HEAD was still the campaign's `before` commit. Read plainly that
+says the tree holds nothing the next attempt will meet. It holds two files:
+
+    generators/tracy-widom-standardized-cumulants/generate.py   07:24Z
+    generators/tracy-widom-standardized-cumulants/table.yaml    07:24Z
+
+written by the 07:08Z build before the codex quota killed it, and invisible
+because commit `831e34f5` (2026-09-12, "the generators stop being tracked; the
+site stays the record") added `generators/` to `.gitignore:205`. The 299
+generator files committed before that date stay tracked -- an ignore rule does
+not unstage what is already in the index -- so `git ls-files generators/` looks
+healthy while anything written today is unseen by `status`, by `git add` without
+`-f`, and by `git diff`. Exactly the shape already recorded here for
+`agents/critiques/`, on a directory nobody expects it of, because the directory
+is visibly full of tracked files.
+
+Why it matters beyond bookkeeping: that `table.yaml` names draft **T445**, and
+recovering T445 is only possible from the tree holding the generator. `api/table
+?id=T445` answers "does not exist" (the hidden-draft answer; `?url=` tells the
+two apart), so a triage that checks the tree with `git status` and the site with
+`?id=` gets "nothing left behind" twice over and is wrong twice over.
+
+`campaign.sh:566-583` is not fooled -- it reads `"tid": "T..."` out of the
+transcript and keeps the generator diff as a fallback only, with a comment
+saying why. The hazard is for a reader, and for any later check that reaches for
+`git status` as the cheap question.
+
+What to do instead: when asking what a run left behind in a tree, ask
+`git status --porcelain --ignored` (or `ls` the directory the transcript names),
+never `git status` alone. For the site side, probe by `url=` and not by `id=`.
+The two together are what distinguish a run that built nothing from a run whose
+work is sitting where nothing looks.
+
+Evidence: 2026-09-23 10:37Z, triage of build `20260923T103240Z` in w3.
+`git status --porcelain` -> empty; `git check-ignore -v
+generators/tracy-widom-standardized-cumulants/generate.py` -> `.gitignore:205
+generators/`; `git ls-files generators/ | wc -l` -> 299; `git log -1 -S"
+generators/" -- .gitignore` -> `831e34f5`; `api/table?url=Skewness_and_excess_
+kurtosis_of_the_Tracy-Widom_distributions` -> `Table with id 'T445' does not
+exist.` against `?url=No_Such_Table_At_All_XYZ` -> `Table with url '...' does
+not exist.`
