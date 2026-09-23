@@ -7801,3 +7801,55 @@ Evidence: 2026-09-23 ideas run, `already_here` on the five titles, run from
 run. Note also that two attempts were needed: the first, timed for 500s after
 the limit was hit, still got `RateLimitError: ... retry in 147s`, so the
 21-minute window the error quotes is the window.
+
+## Rendering a private draft on the builder box: `/preview?table=` in chunks under 4094 bytes, and what the chunking then lies about
+
+What happened: the T438 critique had to read the rendered page of a private
+draft. Every route already recorded was shut. `GET /T438` answers 404 to the
+zeta3 bearer token, as the T182 note above says the rendered route does.
+`/preview/T438` makes the same guard. The `RequestFactory` owner-view path the
+T136/T137 note describes needs Django and the database, and this box has
+neither: `NUMBERDB_REMOTE=local` here means the builder, `python3 manage.py`
+fails with `No module named 'django'`, and `NUMBERDB_SAGE_IMAGE` is
+`numberdb/builder:latest`, which by design has no app.
+
+What worked: the anonymous `/preview?table=<yaml>` route. It takes YAML from
+`request.GET`, so it needs no key and no session, and it renders with the
+site's own templates and its own `_render_text`, which is what a critique
+needs. Two limits, both measured today:
+
+  * The **request line** is capped at **4094 bytes**, and over it the answer is
+    HTTP 400 with a body reading `Request Line is too large (5152 > 4094)`.
+    The T219 note above records a 414 from the same route without a number;
+    4094 is the number, and it is the whole URL, so about 3,900 bytes of
+    URL-encoded YAML. T438's prose alone did not fit; six chunks did.
+  * The route **refuses to render at all without a `Numbers:` block**: a
+    document of prose only answers 200 and prints `Error while parsing
+    numbers: cannot access local variable 'number_section' where it is not
+    associated with a value`, showing the YAML source and no preview. Carry
+    two or three entries, in the real nesting, in every chunk.
+
+The trap, which cost a wrong finding before it was caught: **a chunk that
+omits a cited section reports every citation into it as broken.** Rendering
+`Comments` without `Formulas` turned `CITE{formula-normalisation}` into
+`<span class="CITE-broken" title="this table defines no reference by that
+name">formula-normalisation</span>` -- which reads exactly like a real fault
+and is not one; `validate.CITED_SECTIONS` includes `Formulas`, and with
+`Formulas` in the same chunk the three citations render as `(2)`, `(3)`, `(4)`
+links. The same is true of `Links` and `References`.
+
+What to do instead: chunk by *citation closure*, not by section. Put `Links`
+and `References` in every chunk that cites them, and put `Formulas` in the
+chunk that holds `Comments`. Before believing a `CITE-broken` span, re-render
+with the section it names present.
+
+One more: build the chunk YAML with **block scalars** (`|`) or quote it so
+that real newlines survive. A single-quoted YAML scalar folds newlines into
+spaces, which made `program-scipy`'s seven lines of Python render as one line
+and looked like a fault in the table until the stored string was checked
+(`repr()` showed the newlines were there).
+
+Evidence: T438, 2026-09-23. `/tmp/prev2.py` with six chunk lists; the 400 body
+above is from a 5,159-byte URL, the `number_section` message from a
+prose-only chunk, and the broken-citation span from `/tmp/prev2_c1.html`
+against the resolved `(2)` link in `/tmp/prev2_c5.html`.
