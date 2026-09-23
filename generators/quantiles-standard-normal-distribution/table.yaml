@@ -28,7 +28,12 @@ Comments:
     an upper-tail probability $\alpha$, its value is $z_{1-\alpha}$ here.
   comment-grid: >-
     The parameter is written as an exact rational in lowest terms, so the
-    familiar decimal probability $0.975$ is the row $p=39/40$.
+    familiar decimal probability $0.975$ is the row $p=39/40$. The
+    $k/1000$ grid is deliberately decimal because standard normal tables,
+    statistical software and reported p-values commonly use three decimal
+    places for cumulative probabilities. The six extra tail probabilities are
+    the classical $0.01\%$, $0.05\%$, $0.25\%$ and complementary cutoffs named
+    in the screened family.
   comment-median: >-
     The row $p=1/2$ is exact: the standard normal distribution has median
     zero, so $z_{1/2}=0$ is stored as an integer.
