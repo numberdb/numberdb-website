@@ -53,21 +53,24 @@ def _expanded_interval(low, high=None):
     return low_q - ROUNDING_HALF_WIDTH, high_q + ROUNDING_HALF_WIDTH
 
 
-def _row(alphabet, exponent, low, high=None, comment=None):
-    return {
+def _row(alphabet, exponent, low=None, high=None, comment=None, exact=None):
+    row = {
         "alphabet": str(alphabet),
         "exponent": exponent,
-        "size": "length",
-        "labelling": "unlabelled",
         "low": low,
         "high": high,
-        "bounds": _expanded_interval(low, high),
         "comment": comment,
     }
+    if exact is None:
+        row["bounds"] = _expanded_interval(low, high)
+    else:
+        row["exact"] = QQ(exact)
+        row["bounds"] = (row["exact"], row["exact"])
+    return row
 
 
 DATA = [
-    _row(2, "7/3", "1.0000000", "1.0000000", r"This language has polynomial growth, so $\gamma=1$ CITE{ShurTables}."),
+    _row(2, "7/3", exact=1, comment=r"This language has polynomial growth, so $\gamma=1$ CITE{ShurTables}."),
     _row(2, "7/3+", "1.2206318", "1.2206448"),
     _row(2, "17/7", "1.2222235", "1.2222380"),
     _row(2, "17/7+", "1.2287081", "1.2287205"),
@@ -140,10 +143,12 @@ def _field():
 
 
 def _identity(row):
-    return (row["alphabet"], row["exponent"], row["size"], row["labelling"])
+    return (row["alphabet"], row["exponent"])
 
 
 def value_interval(row):
+    if "exact" in row:
+        return row["exact"]
     field = _field()
     lo, hi = row["bounds"]
     return field(lo, hi)
@@ -208,7 +213,7 @@ def run_integrity_checks():
 
 class PowerFreeLanguageGrowthRates(numberdb.Generator):
     table = TABLE
-    parameters = ("alphabet", "exponent", "size", "labelling")
+    parameters = ("alphabet", "exponent")
     type = "R"
     digits = DIGITS
     rigour = "proven"
@@ -219,16 +224,12 @@ class PowerFreeLanguageGrowthRates(numberdb.Generator):
             yield {
                 "alphabet": row["alphabet"],
                 "exponent": row["exponent"],
-                "size": row["size"],
-                "labelling": row["labelling"],
             }
 
     def _row_for(self, params):
         identity = (
             params["alphabet"],
             params["exponent"],
-            params["size"],
-            params["labelling"],
         )
         for row in DATA:
             if _identity(row) == identity:
