@@ -14,8 +14,9 @@ Run it with SageMath:
     $ sage -python generate.py            # check the table against this code
     $ sage -python generate.py --publish  # fill the draft, with NUMBERDB_API_KEY set
 
-The generator enumerates triples from (1,1,1) by Vieta involutions, orders them
-by m3, then m2, then m1, and keeps every triple with m3 <= 10^12.
+The generator finds triples from (1,1,1) by Vieta involutions and keeps every
+triple with m3 <= 10^12. The published rows are grouped by m1 because NumberDB
+stores a multi-parameter table nested by its parameter order.
 """
 
 import os
@@ -229,7 +230,11 @@ class MarkovForms(numberdb.Generator):
     rigour = "exact"
 
     def enumerate(self, limit=MAX_M3):
-        for m1, m2, m3 in markov_triples(limit):
+        triples = sorted(
+            markov_triples(limit),
+            key=lambda triple: (triple[0], triple[2], triple[1]),
+        )
+        for m1, m2, m3 in triples:
             yield {"m1": str(m1), "m2": str(m2), "m3": str(m3)}
 
     def value(self, params, digits):

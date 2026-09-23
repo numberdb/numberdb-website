@@ -9,43 +9,42 @@ Definition: >-
 Parameters:
   m1:
     type: Z
-    title: smallest member
+    title: smallest member of the triple
     display: $m_1$
     constraints: >-
       $(m_1,m_2,m_3)$ is a Markov triple with
       $m_1\leq m_2\leq m_3$
   m2:
     type: Z
-    title: middle member
+    title: middle member of the triple
     display: $m_2$
-    constraints: >-
-      $(m_1,m_2,m_3)$ is a Markov triple with
-      $m_1\leq m_2\leq m_3$
   m3:
     type: Z
-    title: largest member
+    title: largest member of the triple
     display: $m_3$
-    constraints: >-
-      $(m_1,m_2,m_3)$ is a Markov triple with
-      $m_1\leq m_2\leq m_3$
 Comments:
   comment-index: >-
     The triples are normalized by sorting them as
-    $m_1\leq m_2\leq m_3$ and are listed by increasing $m_3$, then by
-    increasing $m_2$, then by increasing $m_1$. The table is keyed by the
-    full triple rather than by $m_3$ alone, so it does not use the Markov
-    unicity conjecture CITE{Aigner}.
+    $m_1\leq m_2\leq m_3$. Rows are grouped by increasing $m_1$ and, within
+    each $m_1$ group, are listed by increasing $m_3$, then by increasing
+    $m_2$. The table is keyed by the full triple rather than by $m_3$ alone,
+    so it does not use the Markov unicity conjecture CITE{Aigner}.
   comment-convention: >-
     This table stores Markov's form itself, with leading coefficient $m_3$,
-    not its primitive part. Its content is $2$ when $m_3$ is even, and is
-    $1$ when $m_3$ is odd.
+    rather than its primitive part.
   comment-k: >-
-    The two congruence signs give the residues $k$ and $m_3-k$ modulo
-    $m_3$; the closed range $0\leq k\leq m_3/2$ selects the stored form.
-    This gives $k=0$ for $(1,1,1)$ and $k=1$ for $(1,1,2)$.
+    In Formula CITE{formula-form}, the sign in
+    $k m_2\equiv\pm m_1\pmod {m_3}$ gives the residues $k$ and $m_3-k$
+    modulo $m_3$. Markov's theorem CITE{WikiMarkovNumber} states this range
+    strictly, $0<k<m_3/2$; this table takes the range closed so that the
+    degenerate triples $(1,1,1)$ and $(1,1,2)$ have a $k$, giving $k=0$
+    and $k=1$.
   comment-spectrum: >-
-    The associated value in the Markov and Lagrange spectra
-    CITE{WikiMarkovSpectrum} is
+    Writing $f(x,y)=Ax^2+Bxy+Cy^2$, the root
+    $(-B+\sqrt{B^2-4AC})/(2A)$ of $f(x,1)$ has an eventually periodic
+    continued fraction; for every row here, a period uses only the partial
+    quotients $1$ and $2$. The associated value in the Markov and Lagrange
+    spectra CITE{WikiMarkovSpectrum} is
     $\sqrt{9m_3^2-4}/m_3=3-2/(3m_3^2)+O(m_3^{-4})$, so these values
     accumulate at $3$ from smaller values.
 Formulas:
@@ -60,8 +59,9 @@ Formulas:
     If $f(x,y)=Ax^2+Bxy+Cy^2$ is the stored form, then
     $B^2-4AC=9m_3^2-4$.
   formula-markov-value: >-
-    The Markov value of the stored form is
-    $\sqrt{9m_3^2-4}/m_3$.
+    For the stored form $f(x,y)=Ax^2+Bxy+Cy^2$, put
+    $\mu(f)=\min\{0<|f(x,y)|:(x,y)\in\mathbb Z^2\}$. The Markov value is
+    $\sqrt{B^2-4AC}/\mu(f)=\sqrt{9m_3^2-4}/m_3$.
   formula-content: >-
     $\gcd(A,B,C)=2$ when $m_3$ is even, and $\gcd(A,B,C)=1$ when
     $m_3$ is odd.
@@ -90,9 +90,9 @@ Similar tables:
   - table: HREF{Eigenvalues_of_the_Gauss-Kuzmin-Wirsing_operator}[Eigenvalues of the Gauss-Kuzmin-Wirsing operator]
     relation: concerns the Gauss map behind continued fractions rather than its badly approximable extremal values
   - table: HREF{Pisot_numbers_less_than_the_golden_ratio}[Pisot numbers less than the golden ratio]
-    relation: stores another family of real algebraic numbers indexed by a canonical enumeration
+    relation: is another non-rectangular family, but it stores real algebraic numbers rather than binary quadratic forms
   - table: HREF{Minimal_polynomials_of_the_Pisot_numbers_less_than_the_golden_ratio}[Minimal polynomials of the Pisot numbers less than the golden ratio]
-    relation: stores the polynomial companions to that algebraic-number table
+    relation: stores the polynomial companions to the table of Pisot numbers less than the golden ratio
 Links:
   WikiMarkovNumber:
     title: 'Wikipedia: Markov number'
@@ -134,7 +134,7 @@ Data properties:
     definition, using exact integer arithmetic throughout. For every stored
     row, the generator verifies the Markov equation, the divisibility of
     $k^2+1$ by $m_3$, Formula CITE{formula-discriminant}, and
-    Formula CITE{formula-content}. The first triples were compared with
+    Formula CITE{formula-content}. The first 23 triples were compared with
     CITE{OEISTriples}, and the first forty $k$ values were compared with
     CITE{OEISK}.
 Display properties:
