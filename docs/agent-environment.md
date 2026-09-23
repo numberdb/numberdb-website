@@ -9554,3 +9554,50 @@ $400.53 -- build 173 at $0.00, triage 171 at $313.78 (mean $1.83), ideas 10 at
 $86.74; $45.76 in the hour to 14:37Z. `agents/campaign.sh:23-29,40,290,302,307,
 439,445,545-547,596,606,674`; `agents/workers.sh:46,185`.
 `grep -rn spend.py agents/ scripts/` matches only the file itself.
+
+## Only the `main` checkout's notes leave the machine: a campaign branch has no upstream and nothing merges it
+
+What happened: the section above advises that a triage "should put its finding
+in a tracked file like this one and keep the verdict short", because the
+verdict itself is untracked (`.gitignore:167`). That advice is right in one
+checkout out of four and wrong in the other three, and this file is where it is
+wrong.
+
+`git worktree list` shows five trees on one repository. Only
+`/home/ubuntu/numberdb-website` is on `main`; `campaign/w2`, `campaign/w3` and
+`campaign/w4` are ordinary local branches. `git for-each-ref` gives `main ->
+origin/main` and an **empty upstream for all three campaign branches**. They
+are 176, 313 and 198 commits ahead of `main` respectively, and nothing brings
+them back: every merge commit on `main` is `Merge remote-tracking branch
+'origin/main'`, never a campaign branch. Three sampled subjects from
+`campaign/w4`'s notes today return 0 hits against `git log main --grep -F`.
+
+So a note appended here from a campaign worker is committed, and then stops.
+`git push` is refused for these runs, the branch has nowhere to push to anyway,
+and no merge is scheduled. **49 commits on `campaign/w4` alone touch this file
+and are not on `main`.** The triage in the `numberdb-website` checkout does the
+same thing to the same filename and its work does reach GitHub -- `main` and
+`origin/main` are the same sha and `main`'s tip is dated 14:28Z, after the last
+`git fetch` at 08:06Z, so a push happened from that tree this afternoon. The
+practice is identical; only the checkout differs.
+
+What to do meanwhile: keep writing findings here -- it is still the best
+available record, and a person who opens this worktree will read it. But do not
+count it as escalation. Combined with the section above, a campaign worker's
+triage has **no channel to a person at all**: not the verdict (ignored
+directory, two readers, both internal), not the supervisor (`stop` and a crash
+are the same state), and not `git log` (this branch). The only lever that acts
+is `agents/campaign.stop`, which triage may not pull. A run that believes its
+write-up is the escalation is mistaken about which tree it is in; check
+`git for-each-ref --format='%(refname:short) -> %(upstream:short)' refs/heads/`
+before assuming otherwise.
+
+Evidence: 2026-09-23 14:42Z, triage of build run `20260923T144126Z` -- the same
+turn-0 400 on `gpt-5.4`, 0 turns, $0.0000, tokens_in/out both 0, HEAD unmoved at
+`7ea54f1d`, tree clean, `queue.py stale` empty, 17 proposals waiting across
+#202-#206. 43 prior `*-verdict` files in this checkout and 177 pool-wide
+(w2 49, w3 39, w4 43, website 46), every first line `stop`; this is the 178th.
+Four ledgers since `20260923T072522Z`: 365 runs, $409.68 -- build 177 at $0.00,
+triage 177 at $322.94 (mean $1.82), ideas 10 at $86.74; $51.42 in the hour to
+14:42Z, of which $44.08 is triage. `git merge-base main campaign/w4` is
+`6a2462da`, 2026-09-22 23:31.
