@@ -9386,3 +9386,64 @@ day's build logs, matching in `20260923T055938Z` (w1), `20260923T062751Z` (w4)
 and `20260923T070848Z` (w3); `stat` on the four `agents/runs/codex-fallback`
 markers, mtimes 07:25:01Z to 07:34:27Z; `agents/run.sh` lines 80, 583-586,
 650-655, 685.
+
+## Measured: `gpt-5.5` was serving at 11:10Z, so the outage is the marker and nothing else
+
+The note above asked for one `gpt-5.5` run to settle whether the account is
+actually out of quota, and called it the cheapest measurement available. It has
+now been spent, during triage of `20260923T110700Z-build.log`:
+
+    $ cd /tmp && codex exec --json --skip-git-repo-check -m gpt-5.5 \
+        -c model_reasoning_effort=low -c approval_policy=never \
+        -c sandbox_mode=read-only "Reply with the single word OK." </dev/null
+    {"type":"item.completed","item":{"type":"agent_message","text":"OK"}}
+    {"type":"turn.completed","usage":{"input_tokens":12304,
+     "cached_input_tokens":1408,"output_tokens":5,...}}
+
+A completed turn at about 11:10Z. **The account was not out of quota**, four
+hours after the last run that asked (07:08:48Z) and two days before the reset
+time the usage-limit message named. The inference above is now a measurement.
+
+What it settles: the 2026-09-23 outage has no quota component left in it. Every
+codex build since 07:25Z died on an entitlement 400 against `gpt-5.4`, a model
+nobody chose and the account may not use, purely because
+`agents/runs/codex-fallback` is sticky and `run.sh:583-586` reads it first.
+Deleting the four markers is not a step towards a fix that also needs the quota
+to refill; it is the fix. At the time of writing that is 84 dead builds since
+05:59:38Z with exactly one completed turn between them, against $608.48 spent
+across the four worktrees today, $155.81 of it triage.
+
+The general lesson, since this cost a day: **a sticky fallback marker converts
+a transient refusal into a permanent one, and the measurement that would
+disprove it is exactly the one the marker prevents.** When a fallback is
+remembered between runs, something has to be willing to spend one cheap request
+on the first rung again. Nothing here does, so a person must.
+
+Probing the primary model by hand is safe and costs a cent: read-only sandbox,
+`/tmp` as cwd, a five-token prompt. It touches no marker, creates no draft and
+is not a resume of anything, so it is available to a triage run, which may not
+fix but may look.
+
+Evidence: 2026-09-23, triage of `20260923T110700Z-build.log`; the probe above;
+`agents/runs/COSTS.tsv` in all four worktrees.
+
+### Two corrections to the run table above
+
+* The table at "The Codex quota's 'try again at' time" labels the 06:05:21Z,
+  06:10:43Z and 06:52:06Z `gpt-5.5` successes as builds. Reading the `stage`
+  column across all four ledgers, **all three were `repair` runs.** The
+  conclusion drawn from them is unaffected -- `gpt-5.5` completed turns at
+  06:52Z, 53 minutes after w1 was told to try again on Sep 25 -- but the last
+  successful *build* anywhere was `20260923T061859Z` (T443, w2, $11.39), not
+  06:52Z. When ordering a day's runs to argue about availability, filter on
+  `stage`: builds, repairs and critiques all appear as codex successes and only
+  one of them is the thing the campaign exists to do.
+
+* `run.sh:541-542` says stdin is closed "with it open codex prints *Reading
+  additional input from stdin...* and waits for a prompt it already has". The
+  probe above passed `</dev/null` and **still printed that line**, then
+  completed normally. So in codex-cli 0.154.0 (the installed version; the
+  comment at `run.sh:512` names 0.150.1) the message is printed regardless and
+  is not evidence that stdin was left open. It appears at the head of every
+  dead build log in this campaign, where it is easy to read as a second fault.
+  It is noise. The "waits for a prompt" half was not tested and may still hold.
