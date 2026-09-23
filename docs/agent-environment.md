@@ -9616,3 +9616,84 @@ Evidence: 2026-09-23, 15:24--15:27Z, triaging the 57th identical zero-turn
 "Critical exponents of the three-dimensional universality classes" in #201 at
 15:23:46.06Z, one second before the run stamp. Diagnosed in
 `agents/runs/20260923T152347Z-verdict`.
+
+## The remedy has been on this page since 11:02Z and nobody has run it: no `workers.stop` exists in any tree after 19 hours of supervisor uptime
+
+What happened: build run `20260923T153007Z` was the **fifty-ninth** identical
+zero-turn `gpt-5.4` 400 in this tree and the fifty-seventh triage to look at
+one. The mechanism is at `:8871`, `:9206` and `:9445` and is not restated here.
+What is new is a negative result, and it is the one that matters: the fix those
+entries name has not been applied, and I could check that in four commands
+before spending anything.
+
+    $ ps -eo pid,ppid,lstart,args | grep "[w]orkers.sh"
+    1950235  1  Tue Sep 22 20:38:46 2026  bash agents/workers.sh 4
+
+    $ for d in numberdb-website numberdb-campaign-w{2,3,4}; do
+    >   [ -f "$HOME/$d/agents/workers.stop" ] && echo "$d PRESENT" || echo "$d absent"; done
+    numberdb-website      absent
+    numberdb-campaign-w2  absent
+    numberdb-campaign-w3  absent
+    numberdb-campaign-w4  absent
+
+The supervisor has been up **19 hours**, since before the quota event that set
+the markers. `:8871` recommended `touch .../agents/workers.stop` at 11:02Z;
+four and a half hours and roughly 120 triages later the file is still not
+there, and all four `codex-fallback` markers still read `gpt-5.4` / `xhigh`.
+
+So the honest reading of the last twenty entries on this page is that they are
+being written and not read. Each is addressed to a person who has not arrived,
+by a process that cannot act on them itself, and the loop's restart is
+structural rather than an oversight of the moment (`:8871`). A triage writing
+entry twenty-one should assume the same and keep it short.
+
+The bill, deduplicated across all four trees' `COSTS.tsv` by
+`(started, stage, log)`, since the first 400 at 07:34:39Z -- 7.94 hours:
+
+    build    201 runs      $0.00      0 turns      0 tables
+    triage   198 runs    $352.46   7103 turns
+    ideas     10 runs     $86.74    702 turns
+    -------------------------------------------------
+    TOTAL    409 runs    $439.20    -- $55.32/hour, 24.9 triage runs/hour
+
+`:9206` recorded $312.63 over 274 runs at 13:13Z. The hourly rate is unchanged
+to within a percent across two and a half hours, which is the measurement that
+says no feedback path exists: 135 further runs and $126.57 produced no change
+in behaviour anywhere. All-time across the four ledgers is $12,776.79.
+
+Two smaller observations, neither a new mechanism:
+
+* **Four loops are live, not three.** `:9206` caught three at 13:13Z; there are
+  four now -- pids 3124160 (`numberdb-website`/w1), 3125490 (w2), 3128544 (w3),
+  3131039 (w4) -- started 20 seconds apart between 15:29:42 and 15:30:42, the
+  deliberate stagger at `workers.sh:199`. `workers.sh 4` means all four are
+  expected to be up, so the three-of-four at 13:13Z was a sample mid-respawn,
+  not a smaller pool.
+* **The four workers claim from one family at once.** `GET /api/claim?family=197`
+  returns five unexpired claims, one per worker plus an earlier w1 one, each on
+  a *different* proposal of the same family, taken between 15:23:25 and
+  15:30:47: the t, F, Kolmogorov, chi-squared and standard normal quantile
+  tables. Each dead build burns one proposal's claim for 90 minutes, so the
+  pool chews through a family's proposals in lockstep and at four times the
+  rate a single campaign would. They do release themselves (`:9508`); the point
+  is the consumption rate, not cleanup.
+
+The order the fix has to happen in, since removing only one of the two leaves
+the trap armed:
+
+    touch /home/ubuntu/numberdb-website/agents/workers.stop
+    rm /home/ubuntu/numberdb-{website,campaign-w2,campaign-w3,campaign-w4}/agents/runs/codex-fallback
+
+The stop file alone leaves four markers that re-arm the 400 on the next start;
+removing the markers alone lets the supervisor restart into a `gpt-5.5` that may
+or may not have refilled, without the stop file to hold it if it has not.
+
+Evidence: 2026-09-23, 15:31-15:38Z, triaging build run `20260923T153007Z`.
+`ps -eo pid,ppid,lstart,args` for `workers.sh` and `campaign.sh`;
+`readlink /proc/<pid>/cwd` and `NUMBERDB_CAMPAIGN` from `/proc/<pid>/environ`
+for all four loops; `test -f agents/workers.stop` in all four trees;
+`cat agents/runs/codex-fallback` in all four trees -> `gpt-5.4` / `xhigh`;
+the four `COSTS.tsv` ledgers merged and deduplicated in Python;
+`queue.py show 195..206 | grep numberdb-family` mapping
+`BATCH-2026-09-23T0506` -> family #197; `_site('/api/claim?family=197')`.
+Diagnosed in `agents/runs/20260923T153007Z-verdict`.
