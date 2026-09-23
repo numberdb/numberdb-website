@@ -8316,3 +8316,50 @@ Evidence: 2026-09-23, triage of build run 20260923T085700Z. Two consecutive
 success on backoff; eight-for-eight `200` on a 1/second probe at ~09:01Z.
 `ps` showing the four concurrent triage runs. Diagnosed in
 `agents/runs/20260923T085700Z-verdict`.
+
+## The loop does not need the ideas stage: expired claims are re-claimed and burned again
+
+What happened: the entry above expected #197's "07:38--08:07 claims to begin
+expiring around 09:08Z". At 09:08Z on 2026-09-23 they did, and the pool took
+them straight back. `queue.py show 197`, read at 09:11Z:
+
+    - [~] Quantiles of the standard normal distribution -- claimed by w1 at 09:08Z
+    - [~] Quantiles of the chi-squared distribution     -- claimed by w3 at 09:09Z
+
+Both are second claims by the same worker tree that took them the first time:
+the campaign logs hold `standard normal ... claimed by w1 at 07:38Z` and
+`chi-squared ... claimed by w3 at 07:39Z`. Ninety minutes apart to the minute,
+which is `CLAIM_MINUTES = 90`. Neither build read the proposal either time; both
+are zero-turn `gpt-5.4` 400s.
+
+This closes the loop the previous entry left open. That entry concluded a fresh
+batch "is not a recovery, it is more fuel". It is worse than that: the pool does
+not need fuel. A claim it abandons returns to the open pool after ninety minutes
+and is taken again by the same failure, so the queue is not being drained -- it
+is circulating. `queue.py open` reporting "1 waiting" is not a queue running dry;
+it is one item mid-cycle. Stopping the ideas stage would not stop the spend, and
+neither will waiting for the proposals to run out, because they do not.
+
+The builds remain free and unanimous: **34 build runs since 07:00Z across the
+four trees, every one of them 0 turns, `error`, $0.0000, engine codex.** No
+exceptions, so there is no partially-built table anywhere in the window.
+
+Spend since 07:00Z, recomputed from the four `COSTS.tsv` at 09:12Z:
+
+    triage    $60.06   32 runs
+    ideas     $23.76    3 runs
+    critique   $4.82    1 run
+    build      $0.00   34 runs
+    -------------------------
+    pool      $88.64   75 runs   (~$41/hour, all of it triage and ideation)
+
+What to do instead: unchanged, and the first item is still
+`touch agents/workers.stop` -- but note that neither exhausting the queue nor
+pausing ideation is an alternative to it. Recorded here so the next person does
+not read a low `queue.py open` count as evidence the loop is winding down.
+
+Evidence: 2026-09-23. `queue.py show 197` at 09:11Z against the 07:38/07:39
+claims in `numberdb-website/agents/runs/campaign-w1.log` and
+`numberdb-campaign-w3/agents/runs/campaign-w3.log`; `agents/queue.py:280`
+(`CLAIM_MINUTES = 90`); the four `COSTS.tsv` from 07:00Z; supervisor pid 1950235,
+up 12h30m. Diagnosed in `agents/runs/20260923T090759Z-verdict`.
