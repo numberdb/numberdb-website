@@ -8728,3 +8728,57 @@ Evidence: 2026-09-23, triage of `20260923T090858Z-build.log`;
 `agents/campaign.sh` lines 505-548, the prompt at 517 and `attempted` at 513;
 `head -1` of every `agents/runs/20260923T*-verdict`; the triage rows of
 `agents/runs/COSTS.tsv` for 2026-09-23 ($18.2768 over ten runs).
+
+## In this repository `import numberdb` is the Django app, not the client
+
+`agents/table-ideas/screen.py` imports `numberdb` for `already_here`, and the
+stage-one prompt tells a run to call `numberdb.search_text`. Run from the
+repository root both fail in a way that reads like a broken install:
+
+    $ python3 -c "import numberdb; numberdb.search_text('Chebyshev')"
+    AttributeError: module 'numberdb' has no attribute 'search_text'
+
+The client is not installed system-wide here; it is the source tree at
+`clients/python/numberdb`. But the working directory is
+`/home/ubuntu/numberdb-website`, which contains the site's own `numberdb/`
+package, and `''` comes first on `sys.path`, so the site's package wins even
+when `PYTHONPATH` names the client. The two have no symbol in common, so every
+client call raises `AttributeError` rather than anything that points at the
+shadowing.
+
+What works:
+
+    $ cd /tmp && PYTHONPATH=/home/ubuntu/numberdb-website/clients/python python3 ...
+
+A different working directory, not just the `PYTHONPATH`. With
+`NUMBERDB_API_KEY` exported as well, `numberdb.table('T404')` also answers for
+drafts, which is how a proposal checks its area against work in progress; the
+lesson file for this run records that part, since it is true for anybody with a
+key.
+
+Evidence: 2026-09-23, from the repository root the import above gave
+`AttributeError` and `numberdb.__file__` was
+`/home/ubuntu/numberdb-website/numberdb/__init__.py`; from `/tmp` with the same
+`PYTHONPATH` it was `clients/python/numberdb/__init__.py` and
+`search_text('Chebyshev')` returned five tables.
+
+## `screen.py requests` prints nothing when the backlog is empty, which reads as a broken script
+
+`screen.requests()` returns `[]` both when GitHub cannot be reached (it catches
+every exception and returns `[]`) and when there are genuinely no open `table
+wanted` issues. On 2026-09-23 the second is the case: the repository holds 126
+`table wanted` issues and all 126 are closed, so the command prints nothing and
+exits 0. Three batches this week have had to establish that by hand with `gh`
+before trusting it.
+
+A one-line fix would separate the two: print how many issues came back and
+whether the request failed, rather than iterating an empty list. Until then, a
+run that sees no output should confirm with
+
+    $ gh issue list --repo numberdb/numberdb-data --label "table wanted" --state all --limit 300 --json number,state
+
+which on 2026-09-23 returns 126 issues, every one `CLOSED`.
+
+Evidence: 2026-09-23, `python3 agents/table-ideas/screen.py requests` printed
+nothing and exited 0; the GitHub API answered the same query with an empty
+array and a 200.
