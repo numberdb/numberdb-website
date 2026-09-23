@@ -10340,3 +10340,52 @@ claims of which three are w4's, so a worker competes with its own parked
 claims as well as the other three workers'. The practical consequence is
 unchanged and now unarguable: there is no unexplored proposal for waiting to
 reach, and each further hour is ~$50 to re-fail proposals already failed.
+
+**Corrected at 17:27Z: the rate is ~0.2 per build, not zero.** The build
+counts above reproduce exactly -- 64/38 at 17:13Z, 65/38 at 17:23Z, 66/38 at
+17:27Z over builds strictly after `20260923T054657Z` -- but reading three
+consecutive repeats as a rate of zero is one draw too strong.
+`20260923T170210Z`, inside that stretch, drew "Quantiles of the
+$F$-distribution", which had not been dealt before:
+
+    new proposals in the last 10 builds    2
+    new proposals in the last 20 builds    4
+    repeats among the last 20 deals       16
+
+So the marginal rate has gone 0.83 (to 12:39Z) -> 0.29 (17:13Z) -> ~0.20
+(17:27Z): still falling, not yet zero, and the pool is being replenished
+slowly rather than strictly closed. The conclusion does not depend on the
+difference, and is better stated without it: a turn-0 failure reads nothing,
+so whether a draw is new or a repeat makes no difference to what the hour
+buys. The case for stopping the loop is 66 builds at 0 turns and 0 tables,
+not the composition of the pool. Stated as "the rate is zero" it is a claim
+the next sweep can falsify, and one new draw would then be read as the loop
+recovering, which it would not be.
+
+Sixth claim sweep, 17:27Z, triaging build `20260923T172633Z` (w4, family #201,
+"Universal amplitude ratios of the Ising universality class", its second deal
+today after 10:33Z; 0 turns, $0.0000, the same 400 on `gpt-5.4`): **49**
+standing over families 150-239 (48/50/49/50/50/49), w1 15, w4 12, w3 12,
+w2 10, oldest 16:00:26Z = 87.2 minutes. Family #201 now carries five claims,
+three of them w4's. w4's day: 145 runs, $221.60, of which $119.05 is 65
+triages writing `stop`. All three levers still unpulled: `codex-fallback` =
+`gpt-5.4`/`xhigh` in all four checkouts (mtimes 07:25:01Z-07:34:27Z),
+`/home/ubuntu/numberdb-website/agents/workers.stop` still absent,
+`out_of_quota()` still 429-only.
+
+**Sweeping `/api/claim` without the key measures nothing, and says so as a
+number.** The first pass at the sweep above used plain `urllib` with no
+`Authorization` header and answered `total standing claims 150-239: 0`. The
+anonymous limit is 60 requests per hour per IP against 1000 per key
+(`numberdb_app/throttle.py:47,51`), so ninety families exhaust it two-thirds
+of the way through and the rest are 429s; an `except: continue` turns that
+into an empty survey rather than an error. Any triage measuring the parked
+pool must go through `agents/queue.py`'s `_site`, or otherwise attach
+`NUMBERDB_KEY_FILE`, and must fail on a non-200 rather than skip the family.
+Note that `agents/queue.py:714` `held_by_others()` returns `set()` on any
+non-200, so a rate-limited worker is told nobody holds anything. The general
+form of this -- believing an empty API answer without checking the status --
+is a lesson for the skill and is written to
+`agents/lessons/proposals/20260923T172703Z-triage.md`; what is deployment-
+specific, and belongs here, is that this is how the claim sweeps in these
+notes can go wrong and that the measurements above were re-run with the key.
