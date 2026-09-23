@@ -9759,3 +9759,60 @@ succeeded earlier the same day, last at `20260923T061859Z`, $7.41-$11.39 each;
 turns > 0; `out_of_quota` and `worth_resuming` at `agents/run.sh:556-569`, the
 `give_up`/`exit 6` branch at 635-680. Diagnosed in
 `agents/runs/20260923T154227Z-verdict`.
+
+## The `[~]` marks the dead builds leave do not consume the backlog: `queue.py next` still answers, so recovery is not blocked on the queue
+
+Sixty zero-turn builds have left a mark on almost every open proposal, and the
+checklist now reads as though the campaign had built the lot. It has not, and
+the difference matters because it is the one thing that might have stopped a
+person from applying the remedy at `:9701` -- "if I switch the writer, is there
+anything left to build?"
+
+Census across the 11 open family issues (#196-#206), by `queue.py`'s own `ITEM`
+regex over the bodies rather than by eye:
+
+    [~] claimed-and-died   48
+    [x] actually built      2
+    [ ] never touched      10
+
+`parse_family` sets `done` from `mark in ('x', '-', '~')`, so all 48 of those
+are "settled" as far as `waiting()`'s first test goes, and eight of the eleven
+families read zero-left at any given moment. The recovery is the second test:
+`waiting()` returns a settled item anyway when `stale_claim(item)` is true, and
+`stale_claim` parses the `claimed by wN at <ts>Z` tail that `_tick` writes onto
+every one of those lines. Ninety minutes after its last dead claim, a burned
+proposal is offered again. Measured end to end at 16:05Z rather than argued
+from the source:
+
+    $ python3 agents/queue.py open
+    #206    6 left      #205    4 left      #203    2 left      #202    1 left
+    13 waiting
+    $ python3 agents/queue.py next
+    {"family": 202, "title": "Global minimum energies of Lennard-Jones clusters", ...}
+
+So the queue is alive under the loop, and `next_table` is read-only -- running
+it to check costs nothing and takes no claim. Two consequences worth keeping:
+
+* **The backlog is not damaged and needs no repair.** This is `:9508` reached
+  from the other side: there, the site's claim expires at `CLAIM_MINUTES`;
+  here, the checklist line recovers by the same clock through `stale_claim`.
+  Neither needs a hand. A verdict that asks for the marks to be cleared is
+  asking for harm.
+* **A `[~]` never reverts to `[ ]`.** The mark is permanent even after the item
+  is offered again, so `queue.py show` will keep displaying 48 settled
+  proposals that nothing has been built from, and the `[x]` count -- 2 -- is
+  the only honest read of what today produced. Do not infer progress from
+  `[~]`, and do not infer exhaustion from a family showing zero-left: check
+  `open` and `next`, which consult the clock.
+
+The churn is fast enough to hide this. Four loops taking ~25 claims an hour
+re-claim each item well inside its 90-minute window, so the visible free list
+stays near-empty while never actually emptying: 8 of 60 proposals were unheld
+at the instant I sampled, 13 waiting a minute later.
+
+Evidence: 2026-09-23 16:03-16:06Z. `parse_family`, `waiting`, `stale_claim`,
+`unheld` and `next_table` at `agents/queue.py:223-380`; the census by
+`queue.py`'s `ITEM` pattern over `families('open')`; `GET /api/claim?family=202`
+for the site side, where the 14:34 Lennard-Jones claim expired at 16:04 and the
+proposal reappeared in `next` two minutes later. Found while triaging
+`agents/runs/20260923T160049Z-build.log`.
