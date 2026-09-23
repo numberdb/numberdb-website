@@ -7657,3 +7657,84 @@ Evidence: 2026-09-23 ideas run. `screen.py requests` -> no output, exit 0;
 the same query through `gh` -> 126 issues, 0 open; `urllib` against
 `api.github.com/repos/numberdb/numberdb-data/issues?state=open&labels=table%20wanted`
 -> a list of length 0, HTTP 200.
+
+## arXiv `abs` pages are now a JavaScript shell, so `source_names_it` cannot screen a name that lives only in a paper
+
+What happened: the random-matrix batch wanted "Cumulants of the Tracy-Widom
+distributions", a name that is Bornemann's and is not on any Wikipedia page
+(the article tabulates the same numbers under mean, variance, skewness and
+kurtosis, and never writes "cumulant"). The obvious source is
+arXiv:0904.1581, and the note above at "Springer article pages answer
+`urllib` with a gate" tells a run to do exactly that: *cite the arXiv abstract
+or the Wikipedia page*. That advice no longer works.
+
+`source_names_it` on `https://arxiv.org/abs/0904.1581` reports that the source
+mentions neither "tracy" nor "widom". It is not a fetch failure: the request
+returns HTTP 200 and 41829 bytes, and the `<title>` is right ("[0904.1581] On
+the Numerical Evaluation of Distributions in Random Matrix Theory: A Review").
+But the body is a script shell, so once `source_names_it` strips the tags the
+abstract is not in the text. Scanning the stripped page for keywords confirms
+it: `tracy`, `widom`, `cumulant`, `moment`, `sine`, `kernel`, `fredholm`,
+`determinant` are all absent; only `mean` and `painlev` survive, and those
+come from the page furniture. `http://export.arxiv.org/abs/0904.1581`
+behaves the same way, and `http://export.arxiv.org/api/query?id_list=0904.1581`
+answers **406 Not Acceptable** to the screen's `numberdb-proposal-screen`
+User-Agent -- a different failure from the empty body recorded for the same
+endpoint on 2026-09-06.
+
+What to do instead: do not cite an arXiv `abs` URL as the source
+`source_names_it` checks; it will fail a real family and read exactly like an
+invented one. Screen against Wikipedia, DLMF, MathWorld or OEIS, which all
+still answer `urllib` with readable text. Where the only name is a paper's, the
+proposal has two honest options and should say which it took: fall back to a
+title the readable page does name -- for this batch, "Mean and variance of the
+Tracy-Widom distributions" passes Wikipedia where "Cumulants" fails -- or keep
+the paper's name and record the screen failure with the keyword scan beside
+it, so the next person can tell "the page cannot be read" from "the family is
+not called this".
+
+Evidence: 2026-09-23 ideas run.
+`source_names_it("Tracy-Widom distribution", "https://arxiv.org/abs/0904.1581")`
+-> `the source does not mention tracy, widom`; the same URL through `urllib`
+with the screen's User-Agent -> `status 200 len 41829`, first bytes
+`<!DOCTYPE html> <html lang="en"> <head><script>...`;
+`http://export.arxiv.org/api/query?id_list=0904.1581` -> `HTTPError 406`.
+The same eight-keyword scan against
+`https://en.wikipedia.org/wiki/Tracy%E2%80%93Widom_distribution` finds
+`tracy`, `widom`, `skewness`, `kurtosis`, `mean`, `variance`, `sine`,
+`kernel`, `painlev`, `hastings`, `mcleod` and `dyson`, and not `cumulant`.
+
+## #70 is answered, so seven of the closed-without-answer requests remain
+
+What happened: the note above, "`screen.py requests` printing nothing now
+means the backlog is empty", lists eight requests closed without being
+answered (#23, #24, #25, #49, #70, #71, #132, #136) and records that the
+2026-09-23T03:37Z batch anchored on #70, Ramsey numbers. That batch is now
+open as proposal issue **#195**, so #70 is spoken for and the list a later run
+should read is **#23, #24, #25, #49, #71, #132, #136**.
+
+Read against the corpus, they are not equally available. #70 is taken. #71
+("Binary forms with power of 2 discriminant") carries its own blocker in its
+body -- *Need to choose representatives of equivalence classes, which ones?* --
+which is the numberdb-data#121 situation the prompt's rule 5 describes, and a
+batch touching it has to settle the representatives before it is a table at
+all. #136 (the Cantor pairing polynomial) is one polynomial, not a family,
+unless it is widened to the Fueter-Polya pair and the higher-dimensional
+Cantor polynomials. That leaves #23 and #25 (analytic conductors of
+$L$-functions and of classical modular forms), #24 (Selberg data, of which
+T84 holds the level-one Maass spectral parameters and nothing else) and #132
+(moments of the distribution of primes in short intervals, Montgomery-
+Soundararajan) as the four with a plain path to a table, and they share a
+subject, which is what a batch wants.
+
+What to do instead: a run told to anchor on the backlog should read this list
+rather than `screen.py requests`, which returns nothing and will keep
+returning nothing. The 2026-09-23T04:28Z batch did not anchor on any of them,
+because it went to random matrix theory, which none of the seven touches; it
+says so in its own first section rather than claiming an anchor it does not
+have.
+
+Evidence: 2026-09-23 ideas run. The eight issue bodies read through
+`api.github.com/repos/numberdb/numberdb-data/issues/<n>`; the open-issue list
+for the repository is #195, #194 (`proposal`) and #137, #133
+(`enhancement`), with #195 being the Ramsey family that answers #70.
