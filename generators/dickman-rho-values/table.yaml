@@ -1,0 +1,107 @@
+Title: Values of the Dickman-de Bruijn function $\rho(u)$
+Definition: >-
+  The Dickman-de Bruijn function $\rho$ is the continuous function with
+  $\rho(u)=1$ for $0\leq u\leq1$ and
+  $u\rho'(u)=-\rho(u-1)$ for $u>1$ CITE{WikiDickman}
+  CITE{deBruijn1951}. This table gives $\rho(u)$ at rational smoothness
+  ratios $u$.
+Keywords:
+  - Dickman function
+  - de Bruijn function
+  - Dickman-de Bruijn function
+  - smooth numbers
+  - smoothness ratio
+  - rho function
+Parameters:
+  u:
+    type: Q
+    title: smoothness ratio $\log x/\log y$
+    display: $u$
+    constraints: $u\geq0$
+Comments:
+  comment-smooth-numbers: >-
+    If $\Psi(x,y)$ counts the positive integers $n\leq x$ whose prime factors
+    are all at most $y$, then $\rho(u)$ is the limiting density for
+    $y=x^{1/u}$ in the fixed-$u$ smooth-number theorem CITE{HildebrandTenenbaum}.
+  comment-trivial-range: >-
+    The entries begin with $u=1.00$, where $\rho(1)=1$. For
+    $0\leq u<1$, the function has the same value $\rho(u)=1$, and those
+    repeated integer rows are not listed.
+Formulas:
+  formula-delay: >-
+    $\rho(u)=1$ for $0\leq u\leq1$, and
+    $u\rho'(u)=-\rho(u-1)$ for $u>1$ CITE{WikiDickman}.
+  formula-first-interval: >-
+    For $1\leq u\leq2$, $\rho(u)=1-\log u$.
+  formula-smooth-density: >-
+    For fixed $u\geq1$,
+    $\lim_{x\to\infty}\Psi(x,x^{1/u})/x=\rho(u)$, where $\Psi(x,y)$ counts
+    the positive integers $n\leq x$ whose prime factors are at most $y$
+    CITE{HildebrandTenenbaum}.
+Programs:
+  program-sage:
+    language: Sage
+    code: |-
+      import numberdb.sage as numberdb
+      from sage.rings.rational_field import QQ
+
+      # The attached generate.py evaluates rho(u) by the delay equation
+      # and can be run with sage -python generate.py.
+      from generate import DickmanRhoValues
+
+      DickmanRhoValues().value({"u": str(QQ(5))}, 100)
+Similar tables:
+  - table: HREF{T423}[Values of $\xi(u)$ in the Dickman-de Bruijn estimate]
+    relation: gives the saddle-point parameter in de Bruijn's asymptotic estimate for $\rho(u)$
+  - table: HREF{T427}[Golomb-Dickman constant $\lambda$]
+    relation: is an integral transform of the Dickman-de Bruijn function
+  - table: HREF{T422}[Values of the linear sieve function $F(s)$]
+    relation: is another analytic factor in sieve estimates, indexed by a sifting ratio rather than by a smoothness ratio
+Links:
+  WikiDickman:
+    title: 'Wikipedia: Dickman function'
+    url: https://en.wikipedia.org/wiki/Dickman_function
+  SageDickman:
+    title: 'SageMath reference: Dickman rho function'
+    url: https://doc.sagemath.org/html/en/reference/functions/sage/functions/transcendental.html
+References:
+  deBruijn1951:
+    bib: >-
+      N. G. de Bruijn, The asymptotic behaviour of a function occurring in the
+      theory of primes, Journal of the Indian Mathematical Society, New Series
+      15 (1951), 25-32.
+    url: https://research.tue.nl/en/publications/the-asymptotic-behaviour-of-a-function-occuring-in-the-theory-of-
+  HildebrandTenenbaum:
+    bib: >-
+      Adolf Hildebrand and Gerald Tenenbaum, Integers without large prime
+      factors, Journal de théorie des nombres de Bordeaux 5 (1993), no. 2,
+      411-484.
+    doi: 10.5802/jtnb.101
+    zbl: '0797.11070'
+    mr: '1265913'
+Tags:
+  - number theory
+  - special functions
+Data properties:
+  type: R
+  rigour: proven
+  sources:
+    - CITE{deBruijn1951}
+    - CITE{HildebrandTenenbaum}
+  complete: 'no'
+  complete-note: >-
+    it holds $\rho(u)$ for every $u$ of two decimal places with
+    $1\leq u\leq10$
+  rigour details: >-
+    Each entry was computed in Sage real ball arithmetic by the method of
+    steps. On each unit interval the generator represents $\rho$ by a Taylor
+    series about the midpoint with ball coefficients, applies
+    $u\rho'(u)=-\rho(u-1)$ coefficient by coefficient, and includes an
+    explicit geometric tail bound for the truncated product by $1/u$.
+
+    The values on $1<u\leq2$ were checked against
+    CITE{formula-first-interval}. Sample entries through $u=10$ were also
+    compared with Sage's independent `dickman_rho` implementation
+    CITE{SageDickman}.
+Display properties:
+  number-header: $\rho(u)$
