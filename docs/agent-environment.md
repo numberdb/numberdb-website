@@ -8911,8 +8911,11 @@ At 09:44Z on 2026-09-23, with four builds dead and their triages running,
          "retry_after": 970}
 
 The builds cannot be the spenders: **50 of the 51 build runs since 05:59:38Z
-used zero turns and made no request at all** -- the only exception is
-`20260923T061859Z` on w2, which built T443 for $11.39. What is left running is
+used zero turns and $0.0000** -- the only exception is `20260923T061859Z` on
+w2, which built T443 for $11.39. A run that completes no turn issues no tool
+call, and `campaign.sh:663-668`'s own fill-check `curl` is skipped because the
+transcript yields no `tid`, so the whole build stage costs the allowance
+nothing. What is left running is
 everything the loop still reaches, and each of those stages reads the API hard:
 the ideas runs screen every candidate against the corpus (8 today, $73.24), and
 the **triages read it to answer "what did it leave behind"** -- 46 today,
