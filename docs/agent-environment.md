@@ -15072,3 +15072,59 @@ generators/tracy-widom-distribution-functions/`; `agents/queue.py show 196` and
 `GET /api/claim?family=196` at 18:27Z, showing the proposal re-claimed by w1 at
 18:21:29.8Z. Counts from `agents/runs/COSTS.tsv`: 80 `gpt-5.4` builds today at
 0 turns, 79 triage runs at $131.62, 79 verdicts all `stop`.
+
+## The repair is now one command, and the merged commit that halved it is not evidence it has landed
+
+At 19:02:35Z somebody fixed this in code. `2488b51e run: no codex fallback model
+by default` changes one line, now `agents/run.sh:96`:
+
+    -codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-gpt-5.4}"
+    +codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-}"
+
+All four worktrees have it. Four builds ran after it -- `20260923T190853Z` in
+w2, `20260923T190854Z` in w3, `20260923T190914Z` in w4, `20260923T190948Z` in
+`numberdb-website` -- and **all four still failed on `gpt-5.4`, turns=0, $0.00.**
+
+Two corrections follow, and both change what the next person should type.
+
+**First: the two-step repair recorded above is now one step.** Do only this:
+
+    rm agents/runs/codex-fallback      # in all four worktrees
+
+Do *not* also put `NUMBERDB_CODEX_FALLBACKS=gpt-5.5` on the relaunch line. That
+instruction was right only while `:96` defaulted to `gpt-5.4`. `run.sh:52` is
+and always was `codex_model="${NUMBERDB_CODEX_MODEL:-gpt-5.5}"`, so a cleared
+marker already starts on `gpt-5.5`; naming `gpt-5.5` as its own fallback makes
+`next_model_in ",gpt-5.5," gpt-5.5` return empty, identical to unset. Plain
+`agents/workers.sh 4` is correct now.
+
+Deleting the marker is also durable for the first time today, which it was not
+before the commit: the next genuine quota event now finds an empty chain, takes
+the `give_up` branch and exits 6, and `campaign.sh` hands the stage to claude
+instead of stepping onto `gpt-5.4` and rewriting the marker with it.
+
+**Second, and the general lesson: a commit could never have fixed this, and
+`git log` cannot tell you whether the fix has landed.** `gpt-5.4` does not reach
+these runs through the fallback chain at all. It is the *starting* model, read
+from `agents/runs/codex-fallback` by `run.sh:599-608`, which assigns
+`codex_model` from the file's first line whenever `NUMBERDB_CODEX_MODEL` is
+unset. That file is in `.gitignore:167`; it is written only on the
+`out_of_quota` path at `:671`; and nothing in the runner ever removes it --
+`:701` only prints a sentence asking a human to. So the state file outlives
+every commit that touches the code around it, a successful run does not clear
+it, and version control is blind to it in both directions.
+
+Seventy-six verdicts in w3 asked for two things and got the one that could be
+committed. When a repair's subject is a file under `agents/runs/`, the check
+that it has been done is `ls`, never `git log`.
+
+Evidence: 2026-09-23, triage of `20260923T190854Z-build.log`. `git show
+2488b51e`; `grep -n 'codex_fallbacks=\|codex_model=' agents/run.sh` in all four
+worktrees; `ls -la agents/runs/codex-fallback` in all four (14 bytes, `gpt-5.4`
+/ `xhigh`, mtimes 07:25:01Z except w2 at 07:34Z -- unchanged). Fleet ledgers:
+`gpt-5.4` now 328 runs, 328 errors, 0 turns ever; 323 builds and $11.39 against
+318 triages and $533.57 since 05:59Z; 714 runs and $1036.21 today; 319 verdicts
+across four trees, every first word `stop`. `ps -o pid,lstart` at 19:10Z: PID
+1950235 still up since Tue 20:38:46, now **four** `campaign.sh 200` children at
+19:03:47/19:04:07/19:04:27/19:04:47Z, twenty seconds apart, up from three at
+18:34Z.
