@@ -9659,3 +9659,56 @@ Evidence: 2026-09-23 ~14:5xZ, triage of `20260923T144746Z` (HEAD unmoved at
 across #196-#206). `agents/campaign.sh:463-476,489,699-711`;
 `agents/queue.py:270-303`. Four ledgers since `20260923T072522Z`: 375 runs,
 $413.14 -- build 181 at $0.00, triage 179 at $326.40, ideas 10 at $86.74.
+
+## The abandoned claims refill the queue, so the empty-queue exit can never fire
+
+What happened: triaging build run `20260923T145346Z` -- the 44th byte-identical
+turn-0 `gpt-5.4` 400 today -- I counted the checklists across all eleven open
+families rather than one:
+
+    46 proposals `- [~]` claimed, 12 `- [ ]` unclaimed, 2 `- [x]` done
+
+Every one of the 46 claims was written today by a build that never reached turn
+1. Four workers are each taking a proposal about every six minutes and building
+none of them.
+
+Why this is not self-limiting. `queue.py open` reports `15 waiting`, and that is
+exactly `12 unclaimed + 3 claims older than ninety minutes` (#199 at 13:23Z and
+13:24Z, #204 at 13:24Z): `waiting()` at `queue.py:315` counts an item `if not
+item['done'] or stale_claim(item)`, and `CLAIM_MINUTES = 90`. So claims age back
+into `waiting` at the same rate fresh turn-0 builds consume them. **The queue
+cannot read empty while the workers are running**, and any campaign exit that
+waits for an exhausted queue will never be reached. The note above on the
+ninety-minute recycle records it as a courtesy that keeps the queue usable; when
+every build fails at turn 0 the same mechanism is what makes the loop perpetual.
+
+This closes the set. All three brakes are now accounted for and none of them
+works: the 200 "budget" counts completed work items and never increments
+(`campaign.sh:290`); there is no dollar cap anywhere and `agents/spend.py` has
+no caller; and the empty-queue exit cannot trigger. `agents/campaign.stop`
+(`workers.sh:185`, `campaign.sh:302`) is the only remaining lever, and a triage
+may not pull it.
+
+### Correction: `queue.py stale` is about families, not claims
+
+The note above says "`queue.py stale` only reports claims past `CLAIM_MINUTES =
+90`". That is wrong, and three verdicts have now relied on it. `cmd_stale`
+(`queue.py:847`) is:
+
+    cutoff = today - args.weeks          # STALE_WEEKS = 6
+    late = [f for f in families() if waiting(f) and f['screened'] < cutoff]
+
+It filters *families* by screening date and never calls `stale_claim()`. Every
+family in play was screened on 2026-09-23, so it prints nothing and exits 1 --
+which reads as "no stranded claims" and means "no family is six weeks old".
+There is no subcommand that lists stranded claims. A triage asking what a run
+left behind must read the `- [~]` lines itself: `python3 agents/queue.py show
+<family>`, or `gh issue view <n> --repo numberdb/numberdb-data --json body`.
+
+Evidence: 2026-09-23 ~14:5xZ, triage of `20260923T145346Z` (HEAD unmoved at
+`054cd336`, tree clean; the run's own claim is `Steklov eigenvalues of the
+classical planar domains` on #204 at 14:53Z, stamped one second after the run
+began). `agents/queue.py:296-320,847-854`. Four ledgers since
+`20260923T072522Z`: 378 runs, $418.11 -- build 184 at $0.00, triage 183 at
+$331.37, ideas 10 at $86.74. The ideas spend bought the proposals the carousel
+is now turning without building.
