@@ -10159,3 +10159,48 @@ named-slot mechanism (`NUMBERDB_SAGE_SLOT`) exists for exactly this and an
 ideation run does not set it, so it contends on the shared lock with every
 build. That is the right default for a job that makes two Sage calls; it is
 worth knowing before waiting on the second one.
+
+## Dated: one nine-minute quota episode at 07:25Z pinned all four trees, and the markers have outlived it by seven hours
+
+The sections above establish that the `gpt-5.4` loop is the fallback marker and
+not an outage. This note only dates it, which turns that from an inference into
+a fact and tells a person how long the brake has been worth pulling.
+
+The four markers carry their own timestamps:
+
+    /home/ubuntu/numberdb-website          gpt-5.4 xhigh   written 07:25:03Z
+    /home/ubuntu/numberdb-campaign-w2      gpt-5.4 xhigh   written 07:34:27Z
+    /home/ubuntu/numberdb-campaign-w3      gpt-5.4 xhigh   written 07:25:01Z
+    /home/ubuntu/numberdb-campaign-w4      gpt-5.4 xhigh   written 07:25:22Z
+
+One quota episode, nine minutes wide, caught all four workers and pinned every
+one of them permanently. Nothing has written them since -- 6h49m at the time of
+writing. The earlier 11:10Z measurement that `gpt-5.5` was serving still holds
+at 14:13Z: `codex exec --model gpt-5.5 -s read-only "Reply with exactly: ok"`
+answered `ok` (session 01a0ce9d-59df-7633-b5fd-346721f7eb96, 10,914 tokens).
+`mtime` on the marker is the cheapest way to tell a live outage from a stale
+pin, and it is worth reading before anything more expensive: a marker older
+than the quota window it was written for is by definition no longer describing
+the world.
+
+What this costs while nobody pulls the brake, measured at 14:14Z from
+`COSTS.tsv`: the last build that ran a single turn was 05:08:54Z. Since then,
+$179.55 spent and $0.00 of it on building -- 42 dead builds, $79.31 of triage
+judging them and $91.46 of ideation stocking a queue nothing empties. About $22
+an hour.
+
+A second-order effect worth naming, because it makes the queue lie in a new
+way. A zero-turn build still claims its proposal (see the section on that), and
+`campaign.sh` exits on a `stop` verdict *before* its release path, so the claim
+stays. Family #198 was screened today with six proposals; by 14:11Z all six
+were claimed -- three at 12:43-12:48Z, three at 14:10-14:11Z -- with zero turns
+run against any of them. `queue.py stale` reported nothing at that moment,
+because `CLAIM_MINUTES = 90` and the loop re-claims every ~11 minutes: the
+claims never get old enough to be noticed as abandoned. **A staleness check
+whose window is longer than the failure loop's period cannot see the loop**, so
+"no stale claims" is not evidence that claims are being honoured. The serve
+count, or turns-per-claim, is what answers it.
+
+Evidence: 2026-09-23, triage of `20260923T141046Z-build.log`. Marker `mtime`s
+above; the `gpt-5.5` probe; `queue.py show 198`; `queue.py stale` silent at
+14:12Z; 163 verdict files across the four trees, 163 of them reading `stop`.
