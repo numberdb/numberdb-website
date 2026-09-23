@@ -14090,3 +14090,71 @@ generators/tracy-widom-distribution-functions/`; `agents/queue.py show 196` and
 `GET /api/claim?family=196` at 18:27Z, showing the proposal re-claimed by w1 at
 18:21:29.8Z. Counts from `agents/runs/COSTS.tsv`: 80 `gpt-5.4` builds today at
 0 turns, 79 triage runs at $131.62, 79 verdicts all `stop`.
+
+## The fallback-default fix landed at 19:02:52Z and changed nothing: it repairs the path that writes the marker, not the marker already on disk
+
+This is the first failure to be triaged with a person's fix already merged, so
+it is worth recording that the fix did not take, and precisely why -- otherwise
+the next reader sees `2488b51e` in the log and concludes the matter is closed.
+
+`2488b51e run: no codex fallback model by default` changes one line:
+
+    -codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-gpt-5.4}"
+    +codex_fallbacks="${NUMBERDB_CODEX_FALLBACKS:-}"
+
+It merged into `campaign/w4` as `f4be70e1` at **19:02:52Z**. The four workers
+were relaunched at 19:03:47, 19:04:07, 19:04:27 and 19:04:47Z, so every one of
+them was running the fixed `run.sh`. All four then built:
+
+    20260923T190853Z  w2  codex  gpt-5.4  0 turns  error
+    20260923T190854Z  w3  codex  gpt-5.4  0 turns  error
+    20260923T190914Z  w4  codex  gpt-5.4  0 turns  error
+    20260923T190948Z  w1  codex  gpt-5.4  0 turns  error
+
+Identical 400s, identical twelve-line logs, and the w4 campaign log still
+prints `=== a previous run hit a quota; running gpt-5.4 at effort xhigh` at
+line 61873, *after* the merge.
+
+`codex_fallbacks` and the marker are two different mechanisms and only one of
+them was touched:
+
+* **The marker** (`run.sh:598-620`, unchanged) reads
+  `agents/runs/codex-fallback` at the top of every run and assigns
+  `codex_model` from its first line. It consults no fallback list. All four
+  checkouts still hold `gpt-5.4` / `xhigh`, mtime 07:25:22Z.
+* **The fallback list** (`run.sh:96`, the line that changed) is read only
+  inside `if out_of_quota; then`. A 400 is not a quota, so on this failure
+  `next_model_in` is never called and the edited line is never evaluated.
+
+So the commit fixes the *future* case -- a genuine 429 on the primary model no
+longer pins a dead second model, and instead reaches `exit 6` and the handover
+to claude. It cannot dislodge the pin written at 07:25Z, because on the 400
+path the changed line is unreachable. The two levers earlier sections name were
+always an `and`, and the half that was pulled is the half that does nothing
+while the other is outstanding:
+
+    # still required, in every checkout:
+    rm  /home/ubuntu/numberdb-website/agents/runs/codex-fallback
+    rm  /home/ubuntu/numberdb-campaign-w{2,3,4}/agents/runs/codex-fallback
+
+With `2488b51e` merged, the ordering warning in the earlier sections is now
+*lifted* rather than merely restated: deleting the marker used to risk the
+gpt-5.5 429 writing it straight back before the quota resets on Sep 25 03:51,
+which is why those sections said to halt the pool first. With an empty fallback
+list there is no second model to write, so the 429 now takes `give_up=yes` and
+`exit 6`, and `campaign.sh` flips the stage to claude. **Deleting the marker is
+now sufficient on its own.** That is the one thing this failure adds to the
+eleven sections above it.
+
+Evidence: 2026-09-23, triage of `20260923T190914Z-build.log`.
+`git log -1 --format=%cI f4be70e1` = 19:02:52Z; `ps -eo lstart` for the four
+`campaign.sh 200` processes; `grep 'codex_fallbacks='` on the working-tree
+`run.sh` = line 96, empty. Ledger de-duplicated on `(started, stage)` across
+the four `COSTS.tsv` per `c04e7194`: 319 `gpt-5.4` builds since the marker, all
+0 turns, all `result=error`, none producing a table, $0.0000 between them,
+against $530.50 of triage over the same window and $627.87 in all. 78 verdict
+files in this worktree today and the first word of all 78 is `stop`.
+`agents/workers.stop` still absent; `workers.sh 4` still up as pid 1950235
+(22h32m). The T441 reconciliation named in the section above is still
+outstanding -- `agents/queue.py show 196` at 19:14Z still reads
+`[~] claimed by w1`.
