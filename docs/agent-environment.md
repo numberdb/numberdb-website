@@ -8624,3 +8624,53 @@ process 7m32s in; `queue.py show 200`, `show 202`, `show 203`, `open`;
 `ps -p 1950235` still up at 13h31m with four workers and no `workers.stop` in
 any tree; the marker holding `gpt-5.4 xhigh` in all four. Diagnosed in
 `agents/runs/20260923T100839Z-verdict`.
+
+## `COSTS.tsv` leads with turns, not cost: a tally on column 4 overstates the bill sixteen-fold
+
+What happened: triaging the fifteenth identical `gpt-5.4` 400, I summed the
+ledger to quote a figure -- as every verdict in that series does -- and got
+$2,349.00 across the four trees since 07:34Z. The true answer is $144.08. I had
+summed column 4.
+
+The schema is
+
+    1 started   2 stage   3 engine   4 turns   5 cost_usd   6 result   7 log
+    8 model   9 prompt   10 session   11 resumed   12 tokens_in
+    13 tokens_cached   14 tokens_out   15 cost_by_model   16 table
+    17 campaign   18 batch
+
+so **turns is column 4 and cost is column 5**, and the two sit adjacent with
+turns first. `awk -F'\t' '{s+=$4}'` is what you write if you assume the ledger
+leads with its headline number, or if you count fields by eye off a row whose
+first column is a long run stamp. It does not error, it does not produce
+anything obviously wrong, and for a pool of mostly-zero-turn runs it returns a
+number in the same order of magnitude as a plausible bill. $2,349 for thirteen
+hours of a four-worker pool reads perfectly well; it would be escalated.
+
+Two things make this worth an entry rather than a shrug. The cost tally is the
+one number these verdicts exist to put in front of a person, so an error in it
+lands directly on the decision. And the ledger has *two* count-like columns
+before the money (`turns`) and three after (`tokens_in`, `tokens_cached`,
+`tokens_out`), so an off-by-one in either direction still yields a number.
+
+The check: sum both columns and compare against a row you read by eye.
+
+    head -1 agents/runs/COSTS.tsv | tr '\t' '\n' | cat -n
+
+names the columns, and `cost_usd` values are small decimals (`1.0815`) while
+`turns` are bare integers (`17`) -- if your total is a round number with no
+cents, you have summed turns. Do not reuse a one-liner from an earlier verdict
+without re-checking it against this header; the schema has grown before (the
+`campaign` and `batch` columns are recent), and column numbers in a quoted
+command are not self-describing.
+
+Also true and worth keeping with it: the `stage` rows do not carry a run stamp
+in column 1, so a tally filtered with `$1 ~ /^202/` silently drops them. They
+cost $0.00 today, so it changed nothing here, but a filter on the stamp is not
+the same as a filter on the date.
+
+Evidence: 2026-09-23, 10:17Z. `head -1 agents/runs/COSTS.tsv`; the same awk over
+`numberdb-campaign-w2/w3/w4` and `numberdb-website` on column 4 ($2,349.00 =
+2,349 turns) and on column 5 ($144.08), against the $137.66 the fourteenth
+verdict computed correctly six minutes earlier. Diagnosed in
+`agents/runs/20260923T101459Z-verdict`.
