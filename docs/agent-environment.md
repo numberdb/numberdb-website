@@ -7853,3 +7853,18 @@ Evidence: T438, 2026-09-23. `/tmp/prev2.py` with six chunk lists; the 400 body
 above is from a 5,159-byte URL, the `number_section` message from a
 prose-only chunk, and the broken-citation span from `/tmp/prev2_c1.html`
 against the resolved `(2)` link in `/tmp/prev2_c5.html`.
+
+## `agents/sage.sh` can run a `/tmp` script without seeing the rest of host `/tmp`
+
+What happened: a T438 repair check wrote `/tmp/t438_check.py` and
+`/tmp/T438-live.json`, then ran `agents/sage.sh /tmp/t438_check.py`. The
+wrapper found and ran the script, but inside Sage it appeared at
+`/work/t438_check.py`; the separate `/tmp/T438-live.json` was not present, so
+the run failed with `FileNotFoundError`.
+
+What to do instead: pass small input files on stdin, which the wrapper
+forwards. The same check succeeded as
+`agents/sage.sh /tmp/t438_check.py < /tmp/T438-live.json` after the script read
+from `sys.stdin`.
+
+Evidence: T438 repair, 2026-09-23T05:58:42Z.
