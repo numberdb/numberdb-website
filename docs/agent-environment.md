@@ -10300,3 +10300,71 @@ Four calls from one `/tmp` script reading the key from `$NUMBERDB_KEY_FILE`;
 at 18:09Z, confirming the deployed throttle is the code in this tree;
 `numberdb_app/throttle.py` at 6b70e5e1. Diagnosed in
 `agents/runs/20260923T180332Z-verdict`.
+
+## Correction to `:8774` and to `:9942`: fill state *is* readable, and it is in the `Numbers` key of the document those entries already fetched
+
+What happened: triage of `20260923T182731Z` -- the 77th zero-turn `gpt-5.4`
+build -- needed to know which of the drafts this outage stranded actually have
+content, because that governs what a person has to settle when they arrive.
+Two tracked entries say the question cannot be answered. `:8774`: "there is
+**no read path for entries** ... So a triage cannot tell a filled draft from an
+empty one." `:9942` re-measured the draft *count*, corrected `:8780`, and
+explicitly preserved the other half -- "`:8774` is right that there is no read
+path for entries, so a filled draft still cannot be told from an empty one."
+
+Both are wrong, and the counter-example is one key deep in the response both
+entries describe as returning "the document". `GET /api/table?id=T<n>` with
+zeta3's key returns the author's YAML document verbatim, and that document
+contains `Numbers`. The entries are simply *in there*:
+
+    T442  params=4  top-level=   32  leaf values=  314
+    T443  params=1  top-level= 1001  leaf values= 1001
+    T444  params=2  top-level=    3  leaf values=   12
+    T445  params=2  top-level=    0  leaf values=    0
+
+`:8774`'s conclusion came from probing the three routes named for entries --
+`/api/table/T<n>/entries` (405), `/bundle/T<n>` (404 for a draft), `/preview`
+(500) -- and stopping there. All three findings hold. The inference does not:
+there is no *dedicated* read path for entries, which is not the same as the
+entries being unreadable, and `/api/table` was never checked for the one field
+that carries them.
+
+Two things to get right when reading the count, both visible above:
+
+* **`len()` is the number of top-level keys, not the number of values.**
+  `Numbers` nests one level per parameter, so for T443 (one parameter) 1001 is
+  the entry count, while for T444 the 3 is three values of the first parameter
+  and the table holds 12 numbers. Sum the leaves; do not report the top level.
+* **An empty draft's `Numbers` is a JSON array, and `.items()` raises on it.**
+  Already written up from the read side in
+  `agents/lessons/proposals/20260923T130049Z-triage.md` and from the write side
+  at `PROPOSALS.md:4784`. `len()` works on both, which is why a leaf-summing
+  walk has to test the type before it recurses.
+
+Why this changes a decision rather than just a sentence. `:9954` puts T443 and
+T441 on the list of work already bought that a person must settle, on the
+strength of the ledger rows alone. That list can now be priced before anybody
+spends a turn on it: **T443 is finished** -- 1001 values, the complete
+Hastings-McLeod table, needing only the critique findings at `:8770` applied
+and a review -- whereas **T445 is a metadata shell with zero numbers**, title,
+definition, parameters, references and all, and nothing computed. They are not
+the same kind of leftover and should not be scheduled as though they were. A
+verdict written at 18:11Z today called them "two finished tables sitting
+unpublished"; that is the error this correction removes, and it was reachable
+only because the earlier verdict trusted `:8774` and did not look in `Numbers`.
+Anyone triaging the other ~19 stranded drafts can now sort them into
+finished / partial / empty with one keyed GET each and no guessing.
+
+What to change in how this page is read: strike "no read path for entries" and
+"a triage cannot tell a filled draft from an empty one" at `:8774`, and the
+clause preserving them at `:9942`. Keep the three route results. Read fill
+state from `Numbers` in the `/api/table?id=` document, summing leaves.
+
+Evidence: 2026-09-23, 18:30Z. `GET /api/table?id=T442..T447` with zeta3's key,
+`Numbers` walked with a type-testing recursive leaf count and `Parameters`
+counted alongside; T446 and T447 both answer 200 with
+`{"error": "Table with id 'T44x' does not exist."}`, so T445 remains the
+high-water mark and the 298 failed builds of this outage have created nothing.
+Anonymous `/api/table` answered 429 for every id throughout, so the public-page
+probe of `:9937` was unavailable and was not used. Found while triaging
+`agents/runs/20260923T182731Z-build.log`.
